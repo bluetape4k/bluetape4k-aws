@@ -1,0 +1,200 @@
+# @formatter:off
+# Gradle Version Catalog for bluetape4k-aws
+
+[versions]
+bluetape4k = "1.7.0-SNAPSHOT"
+
+kotlin = "2.3.21"
+kotlinx-coroutines = "1.10.2"
+kotlinx-atomicfu = "0.32.1"
+
+# AWS SDK v2 (Java)
+aws2 = "2.42.37"
+aws2-crt = "0.45.1"
+
+# AWS Kotlin SDK
+aws-kotlin = "1.6.59"
+aws-smithy-kotlin = "1.6.11"
+
+# Spring
+spring-boot = "4.0.6"
+spring-cloud-aws = "4.0.2"
+
+# Ktor
+ktor = "3.4.3"
+
+slf4j = "2.0.17"
+logback = "1.5.32"
+
+jackson = "2.19.0"
+resilience4j = "2.3.0"
+
+junit-jupiter = "6.0.3"
+kluent = "1.73"
+mockk = "1.14.9"
+awaitility = "4.3.0"
+testcontainers = "2.0.5"
+
+# Plugin versions
+detekt = "1.23.8"
+dependency-management = "1.1.7"
+dokka = "2.2.0"
+kover = "0.9.8"
+test-logger = "4.0.0"
+nmcp = "1.4.4"
+
+# ────────────────────────────────────────────────────────────────────────────
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+kotlin-noarg = { id = "org.jetbrains.kotlin.plugin.noarg", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlinx-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "kotlinx-atomicfu" }
+
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+dependency-management = { id = "io.spring.dependency-management", version.ref = "dependency-management" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+test-logger = { id = "com.adarshr.test-logger", version.ref = "test-logger" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+nmcp = { id = "com.gradleup.nmcp", version.ref = "nmcp" }
+nmcp-aggregation = { id = "com.gradleup.nmcp.aggregation", version.ref = "nmcp" }
+
+# ────────────────────────────────────────────────────────────────────────────
+[libraries]
+jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }
+
+# Kotlin
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test" }
+kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
+
+# Kotlinx Coroutines
+kotlinx-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core" }
+kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test" }
+kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "kotlinx-atomicfu" }
+
+# bluetape4k — consumed from Maven Central snapshots
+bluetape4k-bom = { module = "io.github.bluetape4k:bluetape4k-bom", version.ref = "bluetape4k" }
+bluetape4k-core = { module = "io.github.bluetape4k:bluetape4k-core" }
+bluetape4k-io = { module = "io.github.bluetape4k:bluetape4k-io" }
+bluetape4k-netty = { module = "io.github.bluetape4k:bluetape4k-netty" }
+bluetape4k-coroutines = { module = "io.github.bluetape4k:bluetape4k-coroutines" }
+bluetape4k-jackson2 = { module = "io.github.bluetape4k:bluetape4k-jackson2" }
+bluetape4k-idgenerators = { module = "io.github.bluetape4k:bluetape4k-idgenerators" }
+bluetape4k-resilience4j = { module = "io.github.bluetape4k:bluetape4k-resilience4j" }
+bluetape4k-logging = { module = "io.github.bluetape4k:bluetape4k-logging" }
+bluetape4k-junit5 = { module = "io.github.bluetape4k:bluetape4k-junit5" }
+bluetape4k-testcontainers = { module = "io.github.bluetape4k:bluetape4k-testcontainers" }
+
+# Logging
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+jcl-over-slf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
+jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
+log4j-over-slf4j = { module = "org.slf4j:log4j-over-slf4j", version.ref = "slf4j" }
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# Jackson
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
+jackson-module-blackbird = { module = "com.fasterxml.jackson.module:jackson-module-blackbird" }
+
+# Resilience4j
+resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version.ref = "resilience4j" }
+resilience4j-kotlin = { module = "io.github.resilience4j:resilience4j-kotlin", version.ref = "resilience4j" }
+
+# Spring Boot
+spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
+
+# Spring Cloud AWS
+spring-cloud-aws-bom = { module = "io.awspring.cloud:spring-cloud-aws-dependencies", version.ref = "spring-cloud-aws" }
+spring-cloud-aws-starter = { module = "io.awspring.cloud:spring-cloud-aws-starter" }
+spring-cloud-aws-starter-s3 = { module = "io.awspring.cloud:spring-cloud-aws-starter-s3" }
+spring-cloud-aws-starter-sqs = { module = "io.awspring.cloud:spring-cloud-aws-starter-sqs" }
+spring-cloud-aws-starter-sns = { module = "io.awspring.cloud:spring-cloud-aws-starter-sns" }
+spring-cloud-aws-starter-dynamodb = { module = "io.awspring.cloud:spring-cloud-aws-starter-dynamodb" }
+spring-cloud-aws-kinesis = { module = "io.awspring.cloud:spring-cloud-aws-kinesis" }
+spring-cloud-aws-starter-ses = { module = "io.awspring.cloud:spring-cloud-aws-starter-ses" }
+spring-cloud-aws-starter-secretsmanager = { module = "io.awspring.cloud:spring-cloud-aws-starter-secrets-manager" }
+
+# AWS SDK v2 (Java)
+aws2-bom = { module = "software.amazon.awssdk:bom", version.ref = "aws2" }
+aws2-aws-core = { module = "software.amazon.awssdk:aws-core", version.ref = "aws2" }
+aws2-sdk-core = { module = "software.amazon.awssdk:sdk-core", version.ref = "aws2" }
+aws2-auth = { module = "software.amazon.awssdk:auth", version.ref = "aws2" }
+aws2-apache-client = { module = "software.amazon.awssdk:apache-client", version.ref = "aws2" }
+aws2-aws-crt-client = { module = "software.amazon.awssdk:aws-crt-client", version.ref = "aws2" }
+aws2-netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client", version.ref = "aws2" }
+aws2-url-connection-client = { module = "software.amazon.awssdk:url-connection-client", version.ref = "aws2" }
+aws2-aws-crt = { module = "software.amazon.awssdk.crt:aws-crt", version.ref = "aws2-crt" }
+aws2-dynamodb-enhanced = { module = "software.amazon.awssdk:dynamodb-enhanced", version.ref = "aws2" }
+aws2-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws2" }
+aws2-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-manager", version.ref = "aws2" }
+aws2-ses = { module = "software.amazon.awssdk:ses", version.ref = "aws2" }
+aws2-sesv2 = { module = "software.amazon.awssdk:sesv2", version.ref = "aws2" }
+aws2-sns = { module = "software.amazon.awssdk:sns", version.ref = "aws2" }
+aws2-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "aws2" }
+aws2-kms = { module = "software.amazon.awssdk:kms", version.ref = "aws2" }
+aws2-cloudwatch = { module = "software.amazon.awssdk:cloudwatch", version.ref = "aws2" }
+aws2-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "aws2" }
+aws2-kinesis = { module = "software.amazon.awssdk:kinesis", version.ref = "aws2" }
+aws2-sts = { module = "software.amazon.awssdk:sts", version.ref = "aws2" }
+aws2-ec2 = { module = "software.amazon.awssdk:ec2", version.ref = "aws2" }
+aws2-utils = { module = "software.amazon.awssdk:utils", version.ref = "aws2" }
+aws2-test-utils = { module = "software.amazon.awssdk:test-utils", version.ref = "aws2" }
+
+# AWS Kotlin SDK
+aws-kotlin-aws-core = { module = "aws.sdk.kotlin:aws-core", version.ref = "aws-kotlin" }
+aws-kotlin-aws-config = { module = "aws.sdk.kotlin:aws-config", version.ref = "aws-kotlin" }
+aws-kotlin-aws-endpoint = { module = "aws.sdk.kotlin:aws-endpoint", version.ref = "aws-kotlin" }
+aws-kotlin-aws-http = { module = "aws.sdk.kotlin:aws-http", version.ref = "aws-kotlin" }
+aws-kotlin-dynamodb = { module = "aws.sdk.kotlin:dynamodb", version.ref = "aws-kotlin" }
+aws-kotlin-s3 = { module = "aws.sdk.kotlin:s3", version.ref = "aws-kotlin" }
+aws-kotlin-ses = { module = "aws.sdk.kotlin:ses", version.ref = "aws-kotlin" }
+aws-kotlin-sesv2 = { module = "aws.sdk.kotlin:sesv2", version.ref = "aws-kotlin" }
+aws-kotlin-sns = { module = "aws.sdk.kotlin:sns", version.ref = "aws-kotlin" }
+aws-kotlin-sqs = { module = "aws.sdk.kotlin:sqs", version.ref = "aws-kotlin" }
+aws-kotlin-kms = { module = "aws.sdk.kotlin:kms", version.ref = "aws-kotlin" }
+aws-kotlin-cloudwatch = { module = "aws.sdk.kotlin:cloudwatch", version.ref = "aws-kotlin" }
+aws-kotlin-cloudwatchlogs = { module = "aws.sdk.kotlin:cloudwatchlogs", version.ref = "aws-kotlin" }
+aws-kotlin-kinesis = { module = "aws.sdk.kotlin:kinesis", version.ref = "aws-kotlin" }
+aws-kotlin-sts = { module = "aws.sdk.kotlin:sts", version.ref = "aws-kotlin" }
+aws-kotlin-http-client-engine-crt = { module = "aws.sdk.kotlin:http-client-engine-crt", version.ref = "aws-kotlin" }
+
+# AWS Smithy Kotlin
+aws-smithy-kotlin-http = { module = "aws.smithy.kotlin:http-jvm", version.ref = "aws-smithy-kotlin" }
+aws-smithy-kotlin-http-client-engine-crt = { module = "aws.smithy.kotlin:http-client-engine-crt", version.ref = "aws-smithy-kotlin" }
+aws-smithy-kotlin-http-client-engine-default = { module = "aws.smithy.kotlin:http-client-engine-default", version.ref = "aws-smithy-kotlin" }
+aws-smithy-kotlin-http-client-engine-okhttp = { module = "aws.smithy.kotlin:http-client-engine-okhttp", version.ref = "aws-smithy-kotlin" }
+
+# Test
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-jupiter" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-engine = { module = "org.junit.platform:junit-platform-engine" }
+kluent = { module = "org.amshove.kluent:kluent", version.ref = "kluent" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+awaitility-kotlin = { module = "org.awaitility:awaitility-kotlin", version.ref = "awaitility" }
+testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
+testcontainers = { module = "org.testcontainers:testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-localstack = { module = "org.testcontainers:testcontainers-localstack", version.ref = "testcontainers" }
+
+# Ktor
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-jackson = { module = "io.ktor:ktor-serialization-jackson", version.ref = "ktor" }
