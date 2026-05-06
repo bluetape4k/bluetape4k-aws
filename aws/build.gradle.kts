@@ -51,6 +51,16 @@ dependencies {
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
     testImplementation(libs.awaitility.kotlin)
+
+    // Spring Boot (DynamoDB 예제 테스트용)
+    testImplementation(platform(libs.spring.boot.dependencies))
+    testImplementation(platform(libs.kotlin.bom))  // Spring Boot's kotlin.version override
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
+        exclude(group = "junit", module = "junit")
+        exclude(module = "mockito-core")
+    }
 }
 
 tasks.test {
