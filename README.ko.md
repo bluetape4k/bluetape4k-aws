@@ -1,30 +1,30 @@
 # bluetape4k-aws
 
-English | [한국어](./README.ko.md)
+[English](./README.md) | 한국어
 
 [![CI](https://github.com/bluetape4k/bluetape4k-aws/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/bluetape4k/bluetape4k-aws/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-Kotlin/JVM wrappers for **AWS Java SDK v2** and the **AWS Kotlin SDK**, with Kotlin Coroutines
-support, Spring Boot 4 auto-configuration, and Ktor 3 integration. Part of the
-[bluetape4k](https://github.com/bluetape4k) ecosystem.
+**AWS Java SDK v2** 및 **AWS Kotlin SDK** 를 위한 Kotlin/JVM 래퍼 라이브러리입니다.
+Kotlin Coroutines 지원, Spring Boot 4 자동설정, Ktor 3 통합을 제공합니다.
+[bluetape4k](https://github.com/bluetape4k) 에코시스템의 일부입니다.
 
 ---
 
-## Modules
+## 모듈
 
-| Module | Artifact | Description |
+| 모듈 | 아티팩트 | 설명 |
 |---|---|---|
-| `aws` | `io.github.bluetape4k.aws:aws` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
-| `aws-kotlin` | `io.github.bluetape4k.aws:aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
-| `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services (WIP — Coroutines-native, no awspring dependency) |
-| `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 client/server integration for AWS services (WIP — skeleton) |
+| `aws` | `io.github.bluetape4k.aws:aws` | AWS Java SDK v2 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장 제공 |
+| `aws-kotlin` | `io.github.bluetape4k.aws:aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
+| `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정 (개발 중 — Coroutines 네이티브, awspring 미사용) |
+| `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | AWS 서비스용 Ktor 3 클라이언트/서버 통합 (개발 중 — 스켈레톤) |
 
 ---
 
-## Architecture
+## 아키텍처
 
-### Overview
+### 전체 구조
 
 ```mermaid
 graph TD
@@ -35,12 +35,12 @@ graph TD
         KTOR["aws-ktor\n(Ktor 3)"]
     end
 
-    subgraph SDKs["AWS SDKs (compileOnly)"]
+    subgraph SDKs["AWS SDK (compileOnly)"]
         JAVASDK["AWS Java SDK v2\nsoftware.amazon.awssdk"]
         KOTLINSDK["AWS Kotlin SDK\naws.sdk.kotlin"]
     end
 
-    subgraph Services["Supported Services"]
+    subgraph Services["지원 서비스"]
         S3["S3"]
         DDB["DynamoDB"]
         SQS["SQS"]
@@ -62,51 +62,51 @@ graph TD
     KOTLINSDK --> Services
 ```
 
-### Three-Tier API (`aws` module — Java SDK v2)
+### 3단계 API (`aws` 모듈 — Java SDK v2)
 
 ```mermaid
 flowchart LR
-    SYNC["1. Sync (Blocking)\nDynamoDbClient\n.getItem(request)"]
-    ASYNC["2. Async (CompletableFuture)\nDynamoDbAsyncClient\n.getItem(request)"]
+    SYNC["1. 동기 (Blocking)\nDynamoDbClient\n.getItem(request)"]
+    ASYNC["2. 비동기 (CompletableFuture)\nDynamoDbAsyncClient\n.getItem(request)"]
     CORO["3. Coroutines (suspend)\nclient.getItemSuspend { }\n= CompletableFuture.await()"]
 
-    SYNC -->|"make async"| ASYNC
-    ASYNC -->|".await() extension"| CORO
+    SYNC -->|"비동기화"| ASYNC
+    ASYNC -->|".await() 확장"| CORO
 ```
 
-### Native Suspend (`aws-kotlin` module — Kotlin SDK)
+### 네이티브 Suspend (`aws-kotlin` 모듈 — Kotlin SDK)
 
 ```mermaid
 flowchart LR
     DSL["bluetape4k DSL\ndynamoDbClientOf()\nwithDynamoDbClient { }"]
     CLIENT["DynamoDbClient\n(AWS Kotlin SDK)"]
-    SUSPEND["native suspend\nclient.getItem { }\nNo .await() needed"]
+    SUSPEND["네이티브 suspend\nclient.getItem { }\n.await() 변환 불필요"]
 
     DSL --> CLIENT --> SUSPEND
 ```
 
 ---
 
-## Requirements
+## 요구사항
 
-- **JDK**: 21+
-- **Kotlin**: 2.3+
+- **JDK**: 21 이상
+- **Kotlin**: 2.3 이상
 - **Gradle**: 8.x
 
 ---
 
-## Installation
+## 설치
 
-AWS service SDKs are declared as `compileOnly` in this library. Add only the service dependencies
-you need at runtime.
+이 라이브러리는 AWS 서비스 SDK를 `compileOnly`로 선언합니다. 실제로 사용하는 서비스의
+런타임 의존성은 직접 추가해야 합니다.
 
-### Using `aws` (Java SDK v2 wrappers)
+### `aws` 사용 (Java SDK v2 래퍼)
 
 ```kotlin
 dependencies {
     implementation("io.github.bluetape4k.aws:aws:0.1.0-SNAPSHOT")
 
-    // Add the AWS Java SDK v2 services you use
+    // 사용할 AWS Java SDK v2 서비스 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
@@ -121,20 +121,20 @@ dependencies {
 }
 ```
 
-> For Maven Central Snapshots, add the repository:
+> Maven Central Snapshots를 사용하는 경우 다음 리포지토리를 추가하세요:
 > ```kotlin
 > repositories {
 >     maven("https://central.sonatype.com/repository/maven-snapshots/")
 > }
 > ```
 
-### Using `aws-kotlin` (Kotlin SDK wrappers)
+### `aws-kotlin` 사용 (Kotlin SDK 래퍼)
 
 ```kotlin
 dependencies {
     implementation("io.github.bluetape4k.aws:aws-kotlin:0.1.0-SNAPSHOT")
 
-    // Add the AWS Kotlin SDK services you use
+    // 사용할 AWS Kotlin SDK 서비스 추가
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
@@ -148,9 +148,9 @@ dependencies {
 
 ---
 
-## Usage
+## 사용 예시
 
-### S3 Upload — Coroutines (`aws` module)
+### S3 업로드 — Coroutines (`aws` 모듈)
 
 ```kotlin
 import io.bluetape4k.aws.s3.coroutines.*
@@ -164,7 +164,7 @@ suspend fun uploadObject(bucket: String, key: String, bytes: ByteArray) =
     }
 ```
 
-### SQS Send / Receive — Coroutines (`aws` module)
+### SQS 송수신 — Coroutines (`aws` 모듈)
 
 ```kotlin
 import io.bluetape4k.aws.sqs.coroutines.*
@@ -180,13 +180,13 @@ suspend fun receiveMessages(client: SqsAsyncClient, queueUrl: String) =
     }.messages()
 ```
 
-### DynamoDB — Native Suspend (`aws-kotlin` module)
+### DynamoDB — 네이티브 Suspend (`aws-kotlin` 모듈)
 
 ```kotlin
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import io.bluetape4k.aws.kotlin.dynamodb.*
 
-// One-shot: auto-close after the block
+// One-shot: 블록 종료 시 자동 close
 suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
     withDynamoDbClient(region = "ap-northeast-2") { client ->
         client.getItem {
@@ -196,7 +196,7 @@ suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
     }
 ```
 
-### CloudWatch Metrics — DSL (`aws-kotlin` module)
+### CloudWatch 메트릭 — DSL (`aws-kotlin` 모듈)
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.cloudwatch.*
@@ -220,23 +220,23 @@ suspend fun publishMetric(namespace: String, value: Double) {
 
 ---
 
-## Test Environment
+## 테스트 환경
 
-Integration tests use **LocalStack** (default) or **Floci** as a local AWS emulator, started
-automatically via Testcontainers.
+통합 테스트는 Testcontainers를 통해 자동으로 시작되는 **LocalStack** (기본값) 또는
+**Floci** 를 로컬 AWS 에뮬레이터로 사용합니다.
 
 ```bash
-# Run with LocalStack (default)
+# LocalStack으로 실행 (기본값)
 ./gradlew :aws:test
 ./gradlew :aws-kotlin:test
 
-# Run with Floci emulator
+# Floci 에뮬레이터로 실행
 ./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
 ./gradlew :aws-kotlin:test -Dbluetape4k.aws.emulator=floci
 ```
 
 ---
 
-## License
+## 라이선스
 
-Apache License 2.0 — see [LICENSE](https://www.apache.org/licenses/LICENSE-2.0).
+Apache License 2.0 — [LICENSE](https://www.apache.org/licenses/LICENSE-2.0) 참조.
