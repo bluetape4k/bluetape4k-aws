@@ -24,13 +24,13 @@ Work in progress tracker for `bluetape4k-aws`.
 
 | 서비스 | 이슈 | 우선순위 |
 |--------|------|----------|
-| S3 autoconfiguration + Coroutines extension | — | High |
-| SQS listener / template + Coroutines | — | High |
-| SNS publisher + Coroutines | — | Medium |
-| DynamoDB repository + Coroutines | — | High |
-| KMS encryption support | — | Medium |
-| SES email sender | — | Low |
-| Secrets Manager / Parameter Store | — | Medium |
+| S3 autoconfiguration + Coroutines extension | #1 | High |
+| SQS listener / template + Coroutines | #2 | High |
+| SNS publisher + Coroutines | #4 | Medium |
+| DynamoDB repository + Coroutines | #3 | High |
+| KMS encryption support | #5 | Medium |
+| SES email sender | #7 | Low |
+| Secrets Manager / Parameter Store | #6 | Medium |
 
 ### aws-ktor
 
@@ -38,21 +38,21 @@ Ktor 3.4.3 + AWS SDK v2 / AWS Kotlin SDK 통합.
 
 | 기능 | 이슈 | 우선순위 |
 |------|------|----------|
-| Ktor client plugin: AWS request signing (SigV4) | — | High |
-| S3 upload / download via Ktor client | — | High |
-| SQS consume / publish via Ktor server | — | Medium |
-| DynamoDB repository via Ktor server | — | Medium |
+| Ktor client plugin: AWS request signing (SigV4) | #8 | High |
+| S3 upload / download via Ktor client | #9 | High |
+| SQS consume / publish via Ktor server | #10 | Medium |
+| DynamoDB repository via Ktor server | #11 | Medium |
 
 ### 예제 (examples)
 
 | 예제 | 이슈 |
 |------|------|
-| `examples/spring-boot-s3` — Spring Boot 4 + S3 | — |
-| `examples/spring-boot-sqs` — Spring Boot 4 + SQS/SNS | — |
-| `examples/spring-boot-dynamodb` — Spring Boot 4 + DynamoDB | — |
-| `examples/ktor-s3` — Ktor + S3 | — |
-| `examples/ktor-sqs` — Ktor + SQS | — |
-| `examples/ktor-dynamodb` — Ktor + DynamoDB | — |
+| `examples/spring-boot-s3` — Spring Boot 4 + S3 | #12 |
+| `examples/spring-boot-sqs` — Spring Boot 4 + SQS/SNS | #13 |
+| `examples/spring-boot-dynamodb` — Spring Boot 4 + DynamoDB | #14 |
+| `examples/ktor-s3` — Ktor + S3 | #15 |
+| `examples/ktor-sqs` — Ktor + SQS | #16 |
+| `examples/ktor-dynamodb` — Ktor + DynamoDB | #17 |
 
 ---
 
