@@ -1,0 +1,57 @@
+name: Code Quality Analysis
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 매일 UTC 02:00 (KST 11:00)
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  codeql:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, actions]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Setup JDK
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: matrix.language == 'java-kotlin'
+        with:
+          gradle-version: wrapper
+
+      - name: Build with Gradle
+        if: matrix.language == 'java-kotlin'
+        run: ./gradlew build -x test --no-daemon
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'
