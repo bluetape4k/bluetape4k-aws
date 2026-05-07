@@ -2,14 +2,14 @@ package io.bluetape4k.aws.kotlin.dynamodb.model
 
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import io.bluetape4k.logging.KLogging
+import org.amshove.kluent.internal.assertFailsWith
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldNotBeNull
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 class DynamoDbDeleteTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `deleteOf AttributeValue 키로 Delete를 생성한다`() {
@@ -18,7 +18,7 @@ class DynamoDbDeleteTest {
 
         del.tableName shouldBeEqualTo "users"
         del.key.shouldNotBeNull()
-        del.key!!["id"] shouldBeEqualTo AttributeValue.S("u1")
+        del.key["id"] shouldBeEqualTo AttributeValue.S("u1")
     }
 
     @Test
@@ -27,7 +27,7 @@ class DynamoDbDeleteTest {
 
         del.tableName shouldBeEqualTo "users"
         del.key.shouldNotBeNull()
-        del.key!!["id"] shouldBeEqualTo AttributeValue.S("u1")
+        del.key["id"] shouldBeEqualTo AttributeValue.S("u1")
     }
 
     @Test
@@ -43,7 +43,7 @@ class DynamoDbDeleteTest {
         val req = deleteRequestOf(key)
 
         req.key.shouldNotBeNull()
-        req.key!!["id"] shouldBeEqualTo AttributeValue.S("u2")
+        req.key["id"] shouldBeEqualTo AttributeValue.S("u2")
     }
 
     @Test

@@ -2,14 +2,15 @@ package io.bluetape4k.aws.kotlin.s3.model
 
 import io.bluetape4k.logging.KLogging
 import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldContainAll
+import org.amshove.kluent.shouldBeTrue
+import org.amshove.kluent.shouldHaveSize
 import org.amshove.kluent.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 
 class S3ModelTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     // -------- ObjectIdentifier --------
 
@@ -48,8 +49,7 @@ class S3ModelTest {
     fun `deleteOf vararg String으로 Delete를 생성한다`() {
         val delete = deleteOf("key-1", "key-2", "key-3")
 
-        delete.objects.shouldNotBeNull()
-        delete.objects!!.size shouldBeEqualTo 3
+        delete.objects.shouldNotBeNull() shouldHaveSize 3
     }
 
     @Test
@@ -57,14 +57,14 @@ class S3ModelTest {
         val keys = listOf("key-1", "key-2")
         val delete = deleteOf(keys)
 
-        delete.objects!!.size shouldBeEqualTo 2
+        delete.objects.shouldNotBeNull() shouldHaveSize 2
     }
 
     @Test
     fun `deleteOf는 quiet 옵션을 설정할 수 있다`() {
         val delete = deleteOf("key-1", quiet = true)
 
-        delete.quiet shouldBeEqualTo true
+        delete.quiet.shouldNotBeNull().shouldBeTrue()
     }
 
     @Test

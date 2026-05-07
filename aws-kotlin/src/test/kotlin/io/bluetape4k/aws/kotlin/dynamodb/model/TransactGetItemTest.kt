@@ -22,7 +22,7 @@ class TransactGetItemTest {
 
         item.get.shouldNotBeNull()
         item.get!!.tableName shouldBeEqualTo "users"
-        item.get!!.key!!["id"] shouldBeEqualTo AttributeValue.S("u1")
+        item.get!!.key["id"] shouldBeEqualTo AttributeValue.S("u1")
     }
 
     @Test

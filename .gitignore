@@ -10,6 +10,7 @@ build/
 
 # IntelliJ IDEA
 .idea/
+.kotlin/
 *.iws
 *.iml
 *.ipr
@@ -30,6 +31,11 @@ Thumbs.db
 # Local env
 local.properties
 .env
-.omx/
 
 **/.profileconfig.json
+
+# AI
+
+.claude/
+.omc/
+.omx/

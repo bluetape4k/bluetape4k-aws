@@ -1,6 +1,6 @@
 package io.bluetape4k.aws.spring
 
-import org.slf4j.LoggerFactory
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
@@ -14,12 +14,12 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 @AutoConfiguration
 class AwsAutoConfiguration {
 
-    private val log = LoggerFactory.getLogger(AwsAutoConfiguration::class.java)
+    companion object: KLogging()
 
     @Bean
     @ConditionalOnMissingBean
     fun defaultAwsCredentialsProvider(): AwsCredentialsProvider {
         log.debug("Registering DefaultCredentialsProvider")
-        return DefaultCredentialsProvider.create()
+        return DefaultCredentialsProvider.builder().build()
     }
 }

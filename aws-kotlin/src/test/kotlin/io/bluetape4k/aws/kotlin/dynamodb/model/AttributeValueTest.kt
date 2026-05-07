@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 
 class AttributeValueTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `null값은 AttributeValue Null로 변환된다`() {
@@ -85,7 +85,7 @@ class AttributeValueTest {
         val mixed: List<Any> = listOf("a", 1, true)
         val av = mixed.toAttributeValue()
         av shouldBeInstanceOf AttributeValue.L::class
-        (av as AttributeValue.L).value.size shouldBeEqualTo 3
+        av.value.size shouldBeEqualTo 3
     }
 
     @Test
@@ -93,7 +93,7 @@ class AttributeValueTest {
         val map = mapOf("name" to "Alice", "age" to 30)
         val av = map.toAttributeValue()
         av shouldBeInstanceOf AttributeValue.M::class
-        val m = (av as AttributeValue.M).value
+        val m = av.value
         m.shouldNotBeNull()
         m["name"] shouldBeEqualTo AttributeValue.S("Alice")
         m["age"] shouldBeEqualTo AttributeValue.N("30")
