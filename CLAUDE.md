@@ -1,119 +1,50 @@
 # CLAUDE.md — bluetape4k-aws
 
-Guidance for Claude Code when working in this repository.
+AWS SDK v2 + AWS Kotlin SDK 래퍼. Coroutines, Spring Boot 4, Ktor 3 지원.
 
-## Project Overview
-
-`bluetape4k-aws` is a standalone Kotlin/JVM library repository providing AWS SDK wrappers for the
-bluetape4k ecosystem. It wraps both the **AWS Java SDK v2** and the **AWS Kotlin SDK**, adds
-Kotlin Coroutines support, and integrates with Spring Boot 4 and Ktor 3.
-
-- **Group**: `io.github.bluetape4k.aws`
-- **Base version**: `0.1.0` (published as `0.1.0-SNAPSHOT` on Maven Central Snapshots)
-- **Publishing**: Maven Central via `nmcp` (NMCP Aggregation plugin) with `publishingType=AUTOMATIC`
+- **Group**: `io.github.bluetape4k.aws` · **Base version**: `0.1.0-SNAPSHOT`
+- **Publishing**: Maven Central via `nmcp` (`publishingType=AUTOMATIC`)
 
 ## Repository Layout
 
 | Module | Status | Description |
 |---|---|---|
-| `aws/` | stable | AWS Java SDK v2 wrappers — sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES, SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
-| `aws-kotlin/` | stable | AWS Kotlin SDK wrappers — native `suspend` functions for DynamoDB, S3, SES, SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS; DSL builders |
-| `aws-spring-boot/` | WIP skeleton | Spring Boot 4 auto-configuration for AWS services (no awspring dependency — pure Coroutines implementation) |
-| `aws-ktor/` | WIP skeleton | Ktor 3 client/server integration for AWS services |
+| `aws/` | stable | AWS Java SDK v2 — sync/async(`CompletableFuture`)/Coroutines extensions (DynamoDB, S3, SES, SNS, SQS, KMS, CloudWatch, Kinesis, STS) |
+| `aws-kotlin/` | stable | AWS Kotlin SDK — native `suspend` functions + DSL builders |
+| `aws-spring-boot/` | WIP | Spring Boot 4 auto-configuration (no awspring dep — pure Coroutines) |
+| `aws-ktor/` | WIP | Ktor 3 client/server integration |
 
-> Integration tests for `aws` and `aws-kotlin` use LocalStack via Testcontainers.
-> Select emulator with `-Dbluetape4k.aws.emulator=localstack|floci` (default: `localstack`).
+> 통합 테스트는 LocalStack via Testcontainers. `-Dbluetape4k.aws.emulator=localstack|floci` (default: `localstack`)
 
 ## Build Commands
 
 ```bash
-# Compile all modules (no tests)
 ./gradlew build -x test --parallel
-
-# Compile + test a specific module
 ./gradlew :aws:test
 ./gradlew :aws-kotlin:test
-./gradlew :aws-spring-boot:test
-
-# Run a single test class
 ./gradlew :aws:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
-
-# Run with Floci emulator
 ./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
-
-# Full build (compile + test all)
 ./gradlew build
-
-# Detekt static analysis
 ./gradlew detekt
-
-# Publish SNAPSHOT to Maven Central Snapshots
-./gradlew publishBluetapeAwsPublicationToCentralPortal
-
-# Publish RELEASE (clear snapshotVersion)
-./gradlew publishBluetapeAwsPublicationToCentralPortal -PsnapshotVersion=
+./gradlew publishBluetapeAwsPublicationToCentralPortal           # SNAPSHOT
+./gradlew publishBluetapeAwsPublicationToCentralPortal -PsnapshotVersion=   # RELEASE
 ```
 
-## Kotlin Edit Workflow (MANDATORY)
+## AWS 특이사항
 
-Before modifying any class: use `ide_find_references` or `get_impact_radius_tool` to identify
-all affected files.
+### SDK 의존성 선언 방식
 
-After every `.kt` edit:
+`aws` + `aws-kotlin` 모두 AWS 서비스 SDK를 `compileOnly` 로 선언.
+소비자가 실제로 사용하는 서비스 런타임 의존성을 직접 추가해야 함.
 
-1. `ide_diagnostics` — check import errors and `@Deprecated` warnings
-2. Import errors → fix with `ide_optimize_imports` or `lsp_code_actions`
-3. `@Deprecated` → apply Quick Fix via `lsp_code_actions` — never leave unresolved
-4. Build/compile only after passing the above steps
+### Coroutines 패턴
 
-## Key Design Patterns
+- `aws` 모듈: `CompletableFuture` → `.await()` 로 래핑
+- `aws-kotlin` 모듈: AWS Kotlin SDK의 native `suspend` 함수 직접 사용
+- 블로킹 AWS 호출 → `withContext(Dispatchers.IO)` 래핑
 
-### Assert vs Require (CRITICAL — do NOT change exception types)
+### Client 라이프사이클 (aws-kotlin)
 
-- `assertXxx()` → `AssertionError` (internal invariants; `@Deprecated` in new code)
-- `requireXxx()` → `IllegalArgumentException` (parameter validation — always use this)
-
-### Coroutines-First
-
-All async work uses Kotlin Coroutines. The `aws` module wraps `CompletableFuture` with `.await()`.
-The `aws-kotlin` module uses native `suspend` functions from the AWS Kotlin SDK directly.
-Never use `runBlocking` in production code. Wrap blocking AWS calls with `withContext(Dispatchers.IO)`.
-
-### AWS SDK Service Dependencies
-
-Both `aws` and `aws-kotlin` declare AWS service SDKs as `compileOnly`. Consumers must add
-the service runtime dependencies they actually use. This keeps the library itself lightweight.
-
-### Client Lifecycle (aws-kotlin)
-
-AWS Kotlin SDK clients hold connection pools and threads. Always close them:
-- Short-lived: use `withXxxClient { }` (closes automatically, even on cancellation)
-- Long-lived: call `close()` explicitly at application shutdown
-
-### Virtual Threads
-
-Never use `@Synchronized` or `synchronized { }`. Use `reentrantLock()` if mutual exclusion is needed.
-
-## After Code Changes
-
-- [ ] Run `ide_diagnostics` for every modified `.kt` file
-- [ ] Compile changed module: `./gradlew :aws:build -x test` (or relevant module)
-- [ ] Run tests for changed module: `./gradlew :<module>:test`
-- [ ] Update both `README.md` and `README.ko.md` for every changed module
-- [ ] Add/update KDoc for all new or modified public APIs
-
-## Before Creating a PR (MANDATORY)
-
-- [ ] All module tests pass — report passing count + duration
-- [ ] Code review: run `oh-my-claudecode:code-reviewer` — resolve all HIGH/CRITICAL issues before push
-- [ ] PR description includes test results, fix rationale, and verification commands
-- [ ] `README.md` and `README.ko.md` updated for every changed module
-- [ ] KDoc added/updated for all new or modified public APIs
-- [ ] Work was done inside a git worktree (`.worktrees/<branch>/`)
-
-## Git Workflow
-
-- **Base branch**: `develop`
-- **Commits**: Korean + prefix (`feat: ...`, `fix: ...`, `docs: ...`, `refactor: ...`)
-- **Worktree**: `git worktree add .worktrees/<branch> -b <branch>`
-- **After merging PR**: `./bin/clean-branches` (if available) or `git branch -d <branch>`
+AWS Kotlin SDK 클라이언트는 연결 풀 + 스레드 보유. 반드시 닫아야 함:
+- 단기: `withXxxClient { }` (취소 시에도 자동 close)
+- 장기: 애플리케이션 종료 시 `close()` 명시적 호출
