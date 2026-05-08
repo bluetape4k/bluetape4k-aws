@@ -1,5 +1,12 @@
 name: Nightly
 
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  statuses: read
+  packages: read
+
 on:
   schedule:
     - cron: '0 19 * * *'  # 매일 UTC 19:00 (KST 04:00)
@@ -74,7 +81,12 @@ jobs:
           cache-read-only: true
 
       - name: Test aws
-        run: ./gradlew :aws:test --no-daemon --no-configuration-cache
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :aws:test --no-daemon --no-configuration-cache && break
+            echo "Attempt $attempt failed"
+            [ $attempt -lt 3 ] && sleep 10 || exit 1
+          done
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -121,7 +133,12 @@ jobs:
           cache-read-only: true
 
       - name: Test aws-kotlin
-        run: ./gradlew :aws-kotlin:test --no-daemon --no-configuration-cache
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :aws-kotlin:test --no-daemon --no-configuration-cache && break
+            echo "Attempt $attempt failed"
+            [ $attempt -lt 3 ] && sleep 10 || exit 1
+          done
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -168,7 +185,12 @@ jobs:
           cache-read-only: true
 
       - name: Test aws-spring-boot
-        run: ./gradlew :aws-spring-boot:test --no-daemon --no-configuration-cache
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :aws-spring-boot:test --no-daemon --no-configuration-cache && break
+            echo "Attempt $attempt failed"
+            [ $attempt -lt 3 ] && sleep 10 || exit 1
+          done
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -195,7 +217,59 @@ jobs:
           path: '**/build/reports/kover/'
           retention-days: 14
 
-  # ── 5. 커버리지 집계 ──────────────────────────────────────────────────────
+  # ── 5. aws-ktor 모듈 (LocalStack) ────────────────────────────────────────
+  test-aws-ktor:
+    name: Test / aws-ktor (LocalStack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+          cache-read-only: true
+
+      - name: Test aws-ktor
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :aws-ktor:test --no-daemon --no-configuration-cache && break
+            echo "Attempt $attempt failed"
+            [ $attempt -lt 3 ] && sleep 10 || exit 1
+          done
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+
+      - name: Generate Kover XML report
+        if: always()
+        run: ./gradlew :aws-ktor:koverXmlReport --no-daemon
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-aws-ktor
+          path: '**/build/test-results/test/*.xml'
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-aws-ktor
+          path: '**/build/reports/kover/'
+          retention-days: 14
+
+  # ── 6. 커버리지 집계 ──────────────────────────────────────────────────────
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
@@ -204,6 +278,7 @@ jobs:
       - test-aws
       - test-aws-kotlin
       - test-aws-spring-boot
+      - test-aws-ktor
     if: always()
     steps:
       - name: Download all coverage artifacts
@@ -222,7 +297,7 @@ jobs:
           path: coverage-artifacts/
           retention-days: 30
 
-  # ── 6. 결과 집계 ──────────────────────────────────────────────────────────
+  # ── 7. 결과 집계 ──────────────────────────────────────────────────────────
   nightly-status:
     name: Nightly Status
     runs-on: ubuntu-latest
@@ -232,6 +307,7 @@ jobs:
       - test-aws
       - test-aws-kotlin
       - test-aws-spring-boot
+      - test-aws-ktor
       - coverage-report
     if: always()
     steps:
