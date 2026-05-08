@@ -7,11 +7,11 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldBeFalse
-import org.amshove.kluent.shouldHaveSize
-import org.amshove.kluent.shouldNotBeEmpty
-import org.amshove.kluent.shouldNotBeNull
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order

@@ -3,8 +3,8 @@ package io.bluetape4k.aws.kotlin.cloudwatch.model
 import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
 import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 import io.bluetape4k.logging.KLogging
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldNotBeNull
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 
 class MetricTest {

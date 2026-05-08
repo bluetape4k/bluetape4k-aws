@@ -4,7 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
-import org.amshove.kluent.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.ses.SesAsyncClient
 import software.amazon.awssdk.services.ses.model.SendEmailRequest

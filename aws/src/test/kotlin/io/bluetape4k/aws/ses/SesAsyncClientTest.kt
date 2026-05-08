@@ -7,7 +7,7 @@ import io.bluetape4k.aws.ses.model.sendEmailRequest
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.test.runTest
-import org.amshove.kluent.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.ses.model.SendEmailResponse
 

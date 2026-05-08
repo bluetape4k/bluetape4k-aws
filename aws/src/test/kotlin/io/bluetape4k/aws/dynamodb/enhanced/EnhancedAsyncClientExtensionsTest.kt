@@ -4,8 +4,8 @@ import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.future.await
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldNotBeNull
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey

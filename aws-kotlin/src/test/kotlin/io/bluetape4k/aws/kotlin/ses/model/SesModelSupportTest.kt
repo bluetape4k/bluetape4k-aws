@@ -1,6 +1,6 @@
 package io.bluetape4k.aws.kotlin.ses.model
 
-import org.amshove.kluent.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 

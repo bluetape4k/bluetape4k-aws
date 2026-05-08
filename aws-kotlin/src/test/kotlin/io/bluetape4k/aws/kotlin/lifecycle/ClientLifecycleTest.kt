@@ -9,7 +9,7 @@ import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.closeSafe
 import kotlinx.coroutines.test.runTest
-import org.amshove.kluent.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
 

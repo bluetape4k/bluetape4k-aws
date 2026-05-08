@@ -2,7 +2,7 @@ package io.bluetape4k.aws.sqs
 
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import org.amshove.kluent.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 
 class SqsClientFactoryTest: AbstractSqsTest() {

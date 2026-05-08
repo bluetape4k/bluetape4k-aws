@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.client
 
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldNotBeNull
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption
 import java.util.concurrent.Executors

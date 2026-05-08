@@ -5,7 +5,7 @@ import io.bluetape4k.aws.ses.model.contentOf
 import io.bluetape4k.aws.ses.model.destinationOf
 import io.bluetape4k.aws.ses.model.sendEmailRequest
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import org.amshove.kluent.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 
 class SesClientFactoryTest: AbstractSesTest() {
