@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.kotlin.sesv2.model
 
 import aws.sdk.kotlin.services.sesv2.model.EmailContent
-import org.amshove.kluent.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 

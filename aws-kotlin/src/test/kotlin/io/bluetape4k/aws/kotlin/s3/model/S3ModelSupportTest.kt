@@ -2,7 +2,7 @@ package io.bluetape4k.aws.kotlin.s3.model
 
 import aws.sdk.kotlin.services.s3.model.EncodingType
 import aws.sdk.kotlin.services.s3.model.ObjectCannedAcl
-import org.amshove.kluent.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 

@@ -8,7 +8,7 @@ import io.bluetape4k.aws.ses.model.sendEmailRequest
 import io.bluetape4k.aws.ses.send
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import org.amshove.kluent.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test

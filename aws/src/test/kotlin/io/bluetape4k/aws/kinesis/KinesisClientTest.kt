@@ -3,8 +3,8 @@ package io.bluetape4k.aws.kinesis
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import org.amshove.kluent.shouldBeGreaterOrEqualTo
-import org.amshove.kluent.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order

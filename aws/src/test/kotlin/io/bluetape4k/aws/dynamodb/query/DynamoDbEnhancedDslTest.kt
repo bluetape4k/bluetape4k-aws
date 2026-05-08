@@ -7,9 +7,9 @@ import io.bluetape4k.aws.dynamodb.model.describe
 import io.bluetape4k.aws.dynamodb.schema.getTableSchema
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.info
-import org.amshove.kluent.shouldBeEqualTo
-import org.amshove.kluent.shouldBeTrue
-import org.amshove.kluent.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest
 import java.time.Instant
