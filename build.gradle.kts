@@ -48,7 +48,6 @@ allprojects {
     version = baseVersion + snapshotVersion
 
     repositories {
-        mavenLocal()
         mavenCentral()
         maven {
             name = "central-snapshots"
@@ -294,9 +293,6 @@ subprojects {
                     }
                 }
             }
-        }
-        repositories {
-            mavenLocal()
         }
     }
 
