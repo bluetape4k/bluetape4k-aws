@@ -17,3 +17,6 @@ include(
     "aws-spring-boot",
     "aws-ktor",
 )
+
+include("bluetape4k-aws-bom")
+project(":bluetape4k-aws-bom").projectDir = file("bom")
