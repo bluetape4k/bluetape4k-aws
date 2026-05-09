@@ -1,78 +1,68 @@
-# WIP — bluetape4k-aws
+# WIP - bluetape4k-aws
 
-Work in progress tracker for `bluetape4k-aws`.
+Snapshot: 2026-05-09 KST
+Scope: open GitHub issues assigned to `debop`, created on or after 2026-01-01.
+Open count: 17 issues.
 
----
+## Current Direction
 
-## 모듈 현황
+`aws` and `aws-kotlin` are the stable base modules. The active work is to add
+two integration surfaces without depending on awspring:
 
-| 모듈 | 상태 | 설명 |
-|------|------|------|
-| `aws` | ✅ 이관 완료 | AWS SDK v2 Java wrapper (168 main + 76 test kt) |
-| `aws-kotlin` | ✅ 이관 완료 | AWS Kotlin SDK wrapper (124 main + 87 test kt) |
-| `aws-spring-boot` | 🚧 스켈레톤 | Spring Boot 4 자동설정 — awspring 미사용, 자체 구현 |
-| `aws-ktor` | 🚧 스켈레톤 | Ktor 3.4.3 통합 |
+- `aws-spring-boot`: Spring Boot 4 auto-configuration and coroutine templates.
+- `aws-ktor`: Ktor 3 HTTP integration, starting from SigV4 signing.
 
----
+Examples should wait until their backing integration issue is closed.
 
-## 계획된 작업
+## Priority Queue
 
-### aws-spring-boot (자체 구현, awspring 불사용)
+| Priority | Issue | Difficulty | Notes |
+|---|---|---:|---|
+| P1 | [#8](https://github.com/bluetape4k/bluetape4k-aws/issues/8) Ktor SigV4 request signing | L | Foundation for all Ktor AWS HTTP clients. |
+| P1 | [#1](https://github.com/bluetape4k/bluetape4k-aws/issues/1) Spring Boot S3 | L | First high-value Spring Boot integration; unlocks `#12` and image S3 work. |
+| P1 | [#2](https://github.com/bluetape4k/bluetape4k-aws/issues/2) Spring Boot SQS | L | Needed before SQS/SNS example; likely reusable listener/container patterns. |
+| P1 | [#3](https://github.com/bluetape4k/bluetape4k-aws/issues/3) Spring Boot DynamoDB | L | Coroutine repository foundation; unlocks `#14` and Ktor DynamoDB reuse. |
+| P1 | [#9](https://github.com/bluetape4k/bluetape4k-aws/issues/9) Ktor S3 client | L | Depends on `#8`; high leverage for Ktor S3 example. |
+| P2 | [#4](https://github.com/bluetape4k/bluetape4k-aws/issues/4) Spring Boot SNS | M | Pair with `#2`; unlocks fanout example `#13`. |
+| P2 | [#5](https://github.com/bluetape4k/bluetape4k-aws/issues/5) KMS support | M | Security/ops feature after base clients settle. |
+| P2 | [#6](https://github.com/bluetape4k/bluetape4k-aws/issues/6) Secrets Manager / Parameter Store | M | Operationally useful, not an example blocker. |
+| P2 | [#10](https://github.com/bluetape4k/bluetape4k-aws/issues/10) Ktor SQS | L | Reuse `#8` and Spring SQS design decisions where possible. |
+| P2 | [#11](https://github.com/bluetape4k/bluetape4k-aws/issues/11) Ktor DynamoDB | L | Reuse `#3` mapping/repository conventions. |
+| P3 | [#12](https://github.com/bluetape4k/bluetape4k-aws/issues/12) Spring Boot S3 example | M | Depends on `#1`. |
+| P3 | [#13](https://github.com/bluetape4k/bluetape4k-aws/issues/13) Spring Boot SQS/SNS example | M | Depends on `#2` and `#4`. |
+| P3 | [#14](https://github.com/bluetape4k/bluetape4k-aws/issues/14) Spring Boot DynamoDB example | M | Depends on `#3`. |
+| P3 | [#15](https://github.com/bluetape4k/bluetape4k-aws/issues/15) Ktor S3 example | M | Depends on `#8` and `#9`. |
+| P3 | [#16](https://github.com/bluetape4k/bluetape4k-aws/issues/16) Ktor SQS example | M | Depends on `#10`. |
+| P3 | [#17](https://github.com/bluetape4k/bluetape4k-aws/issues/17) Ktor DynamoDB example | M | Depends on `#11`. |
+| P4 | [#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7) SES sender | M | Standalone and lower ecosystem leverage than S3/SQS/DynamoDB. |
 
-[awspring/spring-cloud-aws](https://github.com/awspring/spring-cloud-aws)를 **참고**하되,
-`bluetape4k-aws` 자체 구현으로 제공. Kotlin Coroutines 최우선.
+## Dependency Map
 
-| 서비스 | 이슈 | 우선순위 |
-|--------|------|----------|
-| S3 autoconfiguration + Coroutines extension | #1 | High |
-| SQS listener / template + Coroutines | #2 | High |
-| SNS publisher + Coroutines | #4 | Medium |
-| DynamoDB repository + Coroutines | #3 | High |
-| KMS encryption support | #5 | Medium |
-| SES email sender | #7 | Low |
-| Secrets Manager / Parameter Store | #6 | Medium |
+```text
+#8 SigV4
+  -> #9 Ktor S3
+      -> #15 Ktor S3 example
 
-### aws-ktor
+#1 Spring Boot S3
+  -> #12 Spring Boot S3 example
 
-Ktor 3.4.3 + AWS SDK v2 / AWS Kotlin SDK 통합.
+#2 Spring Boot SQS
+#4 Spring Boot SNS
+  -> #13 Spring Boot SQS/SNS example
 
-| 기능 | 이슈 | 우선순위 |
-|------|------|----------|
-| Ktor client plugin: AWS request signing (SigV4) | #8 | High |
-| S3 upload / download via Ktor client | #9 | High |
-| SQS consume / publish via Ktor server | #10 | Medium |
-| DynamoDB repository via Ktor server | #11 | Medium |
+#3 Spring Boot DynamoDB
+  -> #14 Spring Boot DynamoDB example
+  -> #11 Ktor DynamoDB conventions
+      -> #17 Ktor DynamoDB example
 
-### 예제 (examples)
+#10 Ktor SQS
+  -> #16 Ktor SQS example
+```
 
-| 예제 | 이슈 |
-|------|------|
-| `examples/spring-boot-s3` — Spring Boot 4 + S3 | #12 |
-| `examples/spring-boot-sqs` — Spring Boot 4 + SQS/SNS | #13 |
-| `examples/spring-boot-dynamodb` — Spring Boot 4 + DynamoDB | #14 |
-| `examples/ktor-s3` — Ktor + S3 | #15 |
-| `examples/ktor-sqs` — Ktor + SQS | #16 |
-| `examples/ktor-dynamodb` — Ktor + DynamoDB | #17 |
+## WIP Limits
 
----
-
-## awspring vs bluetape4k-aws 비교
-
-| 기능 | awspring | bluetape4k-aws |
-|------|----------|----------------|
-| S3 Template | `S3Template` | TBD |
-| SQS Listener (`@SqsListener`) | ✅ | TBD (Coroutines-native) |
-| SNS Publisher | ✅ | TBD |
-| DynamoDB Enhanced | ✅ | TBD (Coroutines-first) |
-| Kotlin Coroutines | 부분적 | 완전 지원 |
-| Ktor 지원 | ❌ | ✅ |
-| AWS Kotlin SDK 지원 | ❌ | ✅ |
-| Spring Boot 4 | ✅ (v4.0) | TBD |
-| Reactor 의존성 | 있음 | 없음 (순수 Coroutines) |
-
----
-
-## 이슈 트래커
-
-- PR-A (완료): `bluetape4k-aws` 초기 설정 → #258
-- PR-B (대기): `bluetape4k-projects`에서 `aws/**` 제거 → CI 통과 후
+| Lane | Limit | Current next |
+|---|---:|---|
+| Ktor foundation | 1 | `#8` |
+| Spring Boot foundation | 1 | `#1`, then `#2/#3` |
+| Examples | 0 until core closes | Start only after dependency issue closes. |
