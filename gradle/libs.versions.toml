@@ -2,46 +2,45 @@
 # Gradle Version Catalog for bluetape4k-aws
 
 [versions]
-bluetape4k = "1.8.0-SNAPSHOT"
+bluetape4k = "1.8.0-SNAPSHOT"  # https://mvnrepository.com/artifact/io.github.bluetape4k/bluetape4k-bom
 
-kotlin = "2.3.21"
-kotlinx-coroutines = "1.10.2"
-kotlinx-atomicfu = "0.32.1"
+kotlin = "2.3.21"  # https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-bom
+kotlinx-coroutines = "1.11.0"  # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-bom
+kotlinx-atomicfu = "0.32.1"  # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/atomicfu
 
 # AWS SDK v2 (Java)
-aws2 = "2.42.37"
-aws2-crt = "0.45.1"
+aws2 = "2.44.4"  # https://mvnrepository.com/artifact/software.amazon.awssdk/bom
+aws2-crt = "0.45.3"  # https://mvnrepository.com/artifact/software.amazon.awssdk.crt/aws-crt
 
 # AWS Kotlin SDK
-aws-kotlin = "1.6.59"
-aws-smithy-kotlin = "1.6.11"
+aws-kotlin = "1.6.72"  # https://mvnrepository.com/artifact/aws.sdk.kotlin/aws-core
+aws-smithy-kotlin = "1.6.14"  # https://mvnrepository.com/artifact/aws.smithy.kotlin/http-jvm
 
 # Spring
-spring-boot = "4.0.6"
-spring-cloud-aws = "4.0.2"
+spring-boot = "4.0.6"  # https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-dependencies
+spring-cloud-aws = "4.0.2"  # https://mvnrepository.com/artifact/io.awspring.cloud/spring-cloud-aws-dependencies
 
 # Ktor
-ktor = "3.4.3"
+ktor = "3.4.3"  # https://mvnrepository.com/artifact/io.ktor/ktor-server-core
 
-slf4j = "2.0.17"
-logback = "1.5.32"
+slf4j = "2.0.17"  # https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+logback = "1.5.32"  # https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
 
-jackson = "2.19.0"
-resilience4j = "2.3.0"
+jackson = "2.21.3"  # https://mvnrepository.com/artifact/com.fasterxml.jackson/jackson-bom
+resilience4j = "2.4.0"  # https://mvnrepository.com/artifact/io.github.resilience4j/resilience4j-retry
 
-junit-jupiter = "6.0.3"
-kluent = "1.73"
-mockk = "1.14.9"
-awaitility = "4.3.0"
-testcontainers = "2.0.5"
+junit-jupiter = "6.0.3"  # https://mvnrepository.com/artifact/org.junit/junit-bom
+mockk = "1.14.9"  # https://mvnrepository.com/artifact/io.mockk/mockk
+awaitility = "4.3.0"  # https://mvnrepository.com/artifact/org.awaitility/awaitility-kotlin
+testcontainers = "2.0.5"  # https://mvnrepository.com/artifact/org.testcontainers/testcontainers-bom
 
 # Plugin versions
-detekt = "1.23.8"
-dependency-management = "1.1.7"
-dokka = "2.2.0"
-kover = "0.9.8"
-test-logger = "4.0.0"
-nmcp = "1.4.4"
+detekt = "1.23.8"  # https://mvnrepository.com/artifact/io.gitlab.arturbosch.detekt/detekt-gradle-plugin
+dependency-management = "1.1.7"  # https://mvnrepository.com/artifact/io.spring.gradle/dependency-management-plugin
+dokka = "2.2.0"  # https://mvnrepository.com/artifact/org.jetbrains.dokka/dokka-gradle-plugin
+kover = "0.9.8"  # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kover-gradle-plugin
+test-logger = "4.0.0"  # https://mvnrepository.com/artifact/com.adarshr/gradle-test-logger-plugin
+nmcp = "1.4.4"  # https://mvnrepository.com/artifact/com.gradleup.nmcp/nmcp
 
 # ────────────────────────────────────────────────────────────────────────────
 [plugins]
@@ -63,7 +62,7 @@ nmcp-aggregation = { id = "com.gradleup.nmcp.aggregation", version.ref = "nmcp" 
 
 # ────────────────────────────────────────────────────────────────────────────
 [libraries]
-jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }  # https://mvnrepository.com/artifact/org.jetbrains/annotations
 
 # Kotlin
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
@@ -90,7 +89,6 @@ bluetape4k-jackson2 = { module = "io.github.bluetape4k:bluetape4k-jackson2" }
 bluetape4k-idgenerators = { module = "io.github.bluetape4k:bluetape4k-idgenerators" }
 bluetape4k-resilience4j = { module = "io.github.bluetape4k:bluetape4k-resilience4j" }
 bluetape4k-logging = { module = "io.github.bluetape4k:bluetape4k-logging" }
-bluetape4k-assertions = { module = "io.github.bluetape4k:bluetape4k-assertions", version.ref = "bluetape4k" }
 bluetape4k-junit5 = { module = "io.github.bluetape4k:bluetape4k-junit5" }
 bluetape4k-testcontainers = { module = "io.github.bluetape4k:bluetape4k-testcontainers" }
 
@@ -182,12 +180,11 @@ aws-smithy-kotlin-http-client-engine-okhttp = { module = "aws.smithy.kotlin:http
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-jupiter" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-engine = { module = "org.junit.platform:junit-platform-engine" }
-kluent = { module = "org.amshove.kluent:kluent", version.ref = "kluent" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 awaitility-kotlin = { module = "org.awaitility:awaitility-kotlin", version.ref = "awaitility" }
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
 testcontainers = { module = "org.testcontainers:testcontainers" }
-testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 testcontainers-localstack = { module = "org.testcontainers:testcontainers-localstack", version.ref = "testcontainers" }
 
 # Ktor

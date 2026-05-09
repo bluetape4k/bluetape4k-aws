@@ -17,4 +17,3 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - CI uses path filtering and retry configuration to reduce unnecessary test work and improve transient failure handling ([PR #23](https://github.com/bluetape4k/bluetape4k-aws/pull/23)).
 - Test code migrated from Kluent to `bluetape4k-assertions` ([PR #22](https://github.com/bluetape4k/bluetape4k-aws/pull/22)).
-
