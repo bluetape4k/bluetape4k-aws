@@ -2,9 +2,9 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Ktor 3 integration for bluetape4k AWS modules. The first feature is a Ktor
-`HttpClient` plugin that signs outgoing AWS HTTP requests with Signature
-Version 4.
+Ktor 3 integration for bluetape4k AWS modules. It provides a Ktor
+`HttpClient` plugin for AWS Signature Version 4 and a coroutine-friendly S3
+REST client built on that plugin.
 
 ## Features
 
@@ -14,6 +14,8 @@ Version 4.
 - Header signing and query-string signing.
 - Deterministic signing options for region, service, path normalization, URL
   encoding, payload signing, and clock injection.
+- `S3KtorClient` for S3 PutObject, GetObject, DeleteObject, ListObjectsV2,
+  multipart upload, and presigned GET/PUT URLs.
 
 ## Dependency
 
@@ -61,3 +63,37 @@ install(AwsSigV4Plugin) {
     payloadSigningEnabled = false
 }
 ```
+
+## S3 Client
+
+`S3KtorClient` uses the same SigV4 plugin with S3-specific signing flags:
+`doubleUrlEncode=false`, `normalizePath=false`, and unsigned payloads. It
+supports path-style endpoints for LocalStack and virtual-hosted AWS S3
+endpoints when the bucket name is DNS-safe.
+
+```kotlin
+import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
+import io.ktor.http.Url
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+
+val s3 = s3KtorClientOf(
+    region = "ap-northeast-2",
+    credentialsProvider = DefaultCredentialsProvider.builder().build(),
+    endpointOverride = Url("http://localhost:4566"), // optional, for LocalStack
+)
+
+suspend fun roundTrip(bucket: String, key: String): String {
+    s3.putObject(
+        bucket = bucket,
+        key = key,
+        bytes = "hello".encodeToByteArray(),
+        contentType = "text/plain; charset=utf-8",
+    )
+    return s3.getObjectBytes(bucket, key).decodeToString()
+}
+
+val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", expires = java.time.Duration.ofMinutes(15))
+```
+
+Runnable examples live in `examples/aws-ktor-s3-examples` and are included in
+the Nightly workflow.

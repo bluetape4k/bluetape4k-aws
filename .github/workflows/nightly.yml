@@ -269,7 +269,44 @@ jobs:
           path: '**/build/reports/kover/'
           retention-days: 14
 
-  # ── 6. 커버리지 집계 ──────────────────────────────────────────────────────
+  # ── 6. 예제 모듈 ─────────────────────────────────────────────────────────
+  test-examples:
+    name: Test / Examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+          cache-read-only: true
+
+      - name: Test example modules
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :aws-ktor-s3-examples:test --no-daemon --continue && break
+            echo "Attempt $attempt failed"
+            [ $attempt -lt 3 ] && sleep 10 || exit 1
+          done
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-examples
+          path: '**/build/test-results/test/*.xml'
+          retention-days: 14
+
+  # ── 7. 커버리지 집계 ──────────────────────────────────────────────────────
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
@@ -279,6 +316,7 @@ jobs:
       - test-aws-kotlin
       - test-aws-spring-boot
       - test-aws-ktor
+      - test-examples
     if: always()
     steps:
       - name: Download all coverage artifacts
@@ -297,7 +335,7 @@ jobs:
           path: coverage-artifacts/
           retention-days: 30
 
-  # ── 7. 결과 집계 ──────────────────────────────────────────────────────────
+  # ── 8. 결과 집계 ──────────────────────────────────────────────────────────
   nightly-status:
     name: Nightly Status
     runs-on: ubuntu-latest
@@ -308,6 +346,7 @@ jobs:
       - test-aws-kotlin
       - test-aws-spring-boot
       - test-aws-ktor
+      - test-examples
       - coverage-report
     if: always()
     steps:
