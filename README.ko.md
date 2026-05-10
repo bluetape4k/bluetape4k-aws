@@ -149,9 +149,49 @@ dependencies {
 }
 ```
 
+### `aws-spring-boot` 사용 (Spring Boot 4 자동설정)
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:aws-spring-boot:0.1.0-SNAPSHOT")
+
+    // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
+    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
+    implementation("software.amazon.awssdk:s3")
+}
+```
+
+```yaml
+bluetape4k:
+  aws:
+    s3:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      path-style-access-enabled: true
+      presign:
+        duration: PT15M
+```
+
 ---
 
 ## 사용 예시
+
+### S3 — Spring Boot Coroutines Template
+
+```kotlin
+import io.bluetape4k.aws.spring.s3.S3Operations
+
+class DocumentStorage(
+    private val s3: S3Operations,
+) {
+    suspend fun save(bucket: String, key: String, contents: String) {
+        s3.upload(bucket, key, contents, contentType = "text/plain")
+    }
+
+    suspend fun read(bucket: String, key: String): String =
+        s3.downloadText(bucket, key)
+}
+```
 
 ### S3 업로드 — Coroutines (`aws` 모듈)
 

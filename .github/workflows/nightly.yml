@@ -288,6 +288,30 @@ jobs:
           gradle-version: wrapper
           cache-read-only: true
 
+      - name: Test examples
+        run: |
+          if [ ! -d examples ]; then
+            echo "No examples directory found"
+            exit 0
+          fi
+
+          mapfile -t tasks < <(
+            find examples -mindepth 2 -maxdepth 2 -name build.gradle.kts -print \
+              | sed 's#^\./##; s#/build.gradle.kts$##; s#/#:#g; s#^#:#; s#$#:test#'
+          )
+
+          if [ ${#tasks[@]} -eq 0 ]; then
+            echo "No example modules found"
+            exit 0
+          fi
+
+          printf 'Running example test tasks:\n'
+          printf '  %s\n' "${tasks[@]}"
+          ./gradlew "${tasks[@]}" --no-daemon
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
       - name: Test example modules
         run: |
           for attempt in 1 2 3; do

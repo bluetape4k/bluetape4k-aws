@@ -149,9 +149,49 @@ dependencies {
 }
 ```
 
+### Using `aws-spring-boot` (Spring Boot 4 auto-configuration)
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:aws-spring-boot:0.1.0-SNAPSHOT")
+
+    // Add the AWS Java SDK v2 services you use at runtime.
+    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
+    implementation("software.amazon.awssdk:s3")
+}
+```
+
+```yaml
+bluetape4k:
+  aws:
+    s3:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      path-style-access-enabled: true
+      presign:
+        duration: PT15M
+```
+
 ---
 
 ## Usage
+
+### S3 — Spring Boot Coroutines Template
+
+```kotlin
+import io.bluetape4k.aws.spring.s3.S3Operations
+
+class DocumentStorage(
+    private val s3: S3Operations,
+) {
+    suspend fun save(bucket: String, key: String, contents: String) {
+        s3.upload(bucket, key, contents, contentType = "text/plain")
+    }
+
+    suspend fun read(bucket: String, key: String): String =
+        s3.downloadText(bucket, key)
+}
+```
 
 ### S3 Upload — Coroutines (`aws` module)
 
