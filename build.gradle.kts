@@ -60,7 +60,9 @@ allprojects {
 }
 
 subprojects {
-    apply(plugin = "com.gradleup.nmcp")
+    if (!path.contains("examples")) {
+        apply(plugin = "com.gradleup.nmcp")
+    }
 
     configurations.matching { it.name.startsWith("nmcp") }.configureEach {
         resolutionStrategy.eachDependency {
@@ -97,6 +99,9 @@ subprojects {
         plugin("io.spring.dependency-management")
         plugin("org.jetbrains.dokka")
         plugin("com.adarshr.test-logger")
+        if (!path.contains("examples")) {
+            plugin("org.jetbrains.kotlinx.kover")
+        }
     }
 
     pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
@@ -258,40 +263,42 @@ subprojects {
 
     publishing {
         publications {
-            create<MavenPublication>("BluetapeAws") {
-                val sourcesJar by tasks.registering(Jar::class) {
-                    archiveClassifier.set("sources")
-                    from(sourceSets["main"].allSource)
-                }
-                val javadocJar by tasks.registering(Jar::class) {
-                    archiveClassifier.set("javadoc")
-                    from(layout.buildDirectory.asFile.get().resolve("javadoc"))
-                }
-                from(components["java"])
-                artifact(sourcesJar)
-                artifact(javadocJar)
+            if (!project.path.contains("examples")) {
+                create<MavenPublication>("BluetapeAws") {
+                    val sourcesJar by tasks.registering(Jar::class) {
+                        archiveClassifier.set("sources")
+                        from(sourceSets["main"].allSource)
+                    }
+                    val javadocJar by tasks.registering(Jar::class) {
+                        archiveClassifier.set("javadoc")
+                        from(layout.buildDirectory.asFile.get().resolve("javadoc"))
+                    }
+                    from(components["java"])
+                    artifact(sourcesJar)
+                    artifact(javadocJar)
 
-                pom {
-                    name.set(project.name)
-                    description.set("Kotlin/JVM AWS SDK v2 and AWS Kotlin SDK wrappers with Spring Boot integration — part of the bluetape4k ecosystem")
-                    url.set("https://github.com/bluetape4k/bluetape4k-aws")
-                    licenses {
-                        license {
-                            name.set("The Apache License, Version 2.0")
-                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                        }
-                    }
-                    developers {
-                        developer {
-                            id.set("debop")
-                            name.set("Sunghyouk Bae")
-                            email.set("sunghyouk.bae@gmail.com")
-                        }
-                    }
-                    scm {
-                        connection.set("scm:git:git://github.com/bluetape4k/bluetape4k-aws.git")
-                        developerConnection.set("scm:git:ssh://github.com/bluetape4k/bluetape4k-aws.git")
+                    pom {
+                        name.set(project.name)
+                        description.set("Kotlin/JVM AWS SDK v2 and AWS Kotlin SDK wrappers with Spring Boot integration — part of the bluetape4k ecosystem")
                         url.set("https://github.com/bluetape4k/bluetape4k-aws")
+                        licenses {
+                            license {
+                                name.set("The Apache License, Version 2.0")
+                                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                            }
+                        }
+                        developers {
+                            developer {
+                                id.set("debop")
+                                name.set("Sunghyouk Bae")
+                                email.set("sunghyouk.bae@gmail.com")
+                            }
+                        }
+                        scm {
+                            connection.set("scm:git:git://github.com/bluetape4k/bluetape4k-aws.git")
+                            developerConnection.set("scm:git:ssh://github.com/bluetape4k/bluetape4k-aws.git")
+                            url.set("https://github.com/bluetape4k/bluetape4k-aws")
+                        }
                     }
                 }
             }
@@ -311,9 +318,13 @@ extensions.configure<NmcpAggregationExtension>("nmcpAggregation") {
 }
 
 dependencies {
-    subprojects.forEach { add("nmcpAggregation", project(it.path)) }
+    subprojects
+        .filterNot { it.path.contains("examples") }
+        .forEach { add("nmcpAggregation", project(it.path)) }
 }
 
 dependencies {
-    subprojects.filter { it.name != "bluetape4k-aws-bom" }.forEach { sub -> kover(project(sub.path)) }
+    subprojects
+        .filter { it.name != "bluetape4k-aws-bom" && !it.path.contains("examples") }
+        .forEach { sub -> kover(project(sub.path)) }
 }

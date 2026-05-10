@@ -20,3 +20,6 @@ include(
 
 include("bluetape4k-aws-bom")
 project(":bluetape4k-aws-bom").projectDir = file("bom")
+
+include("aws-ktor-s3-examples")
+project(":aws-ktor-s3-examples").projectDir = file("examples/aws-ktor-s3-examples")
