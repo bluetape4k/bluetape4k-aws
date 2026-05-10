@@ -126,7 +126,9 @@ private fun HttpRequestBuilder.toSdkHttpFullRequest(
 private fun OutgoingContent.toContentStreamProvider(payloadSigningEnabled: Boolean): ContentStreamProvider? {
     return when (this) {
         is OutgoingContent.NoContent -> null
-        is OutgoingContent.ByteArrayContent -> ContentStreamProvider.fromByteArray(bytes())
+        is OutgoingContent.ByteArrayContent -> {
+            if (payloadSigningEnabled) ContentStreamProvider.fromByteArray(bytes()) else null
+        }
         is OutgoingContent.ContentWrapper -> delegate().toContentStreamProvider(payloadSigningEnabled)
         else -> {
             if (payloadSigningEnabled) {
@@ -150,7 +152,11 @@ private fun HttpRequestBuilder.applySignedRequest(signedRequest: SdkHttpRequest)
 
     url.parameters.clear()
     signedRequest.rawQueryParameters().forEach { (name, values) ->
-        values.forEach { value -> url.parameters.append(name, value) }
+        if (values.isNullOrEmpty()) {
+            url.parameters.append(name, "")
+        } else {
+            values.forEach { value -> url.parameters.append(name, value.orEmpty()) }
+        }
     }
 }
 

@@ -269,9 +269,9 @@ jobs:
           path: '**/build/reports/kover/'
           retention-days: 14
 
-  # ── 6. examples 모듈 ─────────────────────────────────────────────────────
+  # ── 6. 예제 모듈 ─────────────────────────────────────────────────────────
   test-examples:
-    name: Test / examples
+    name: Test / Examples
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
@@ -312,6 +312,15 @@ jobs:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+      - name: Test example modules
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :aws-ktor-s3-examples:test --no-daemon --continue && break
+            echo "Attempt $attempt failed"
+            [ $attempt -lt 3 ] && sleep 10 || exit 1
+          done
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
 
       - name: Upload test results
         if: always()
@@ -331,6 +340,7 @@ jobs:
       - test-aws-kotlin
       - test-aws-spring-boot
       - test-aws-ktor
+      - test-examples
     if: always()
     steps:
       - name: Download all coverage artifacts

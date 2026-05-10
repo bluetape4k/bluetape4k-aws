@@ -2,9 +2,9 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-bluetape4k AWS 모듈을 위한 Ktor 3 통합 모듈입니다. 첫 기능은 Ktor
-`HttpClient`의 outgoing AWS HTTP 요청에 Signature Version 4 서명을 적용하는
-플러그인입니다.
+bluetape4k AWS 모듈을 위한 Ktor 3 통합 모듈입니다. Ktor `HttpClient`의 outgoing
+AWS HTTP 요청에 Signature Version 4 서명을 적용하는 플러그인과, 그 위에 구축한
+coroutine 친화적 S3 REST client를 제공합니다.
 
 ## 기능
 
@@ -14,6 +14,8 @@ bluetape4k AWS 모듈을 위한 Ktor 3 통합 모듈입니다. 첫 기능은 Kto
 - 헤더 서명과 쿼리 문자열 서명.
 - region, service, path normalization, URL encoding, payload signing, clock
   주입 옵션.
+- PutObject, GetObject, DeleteObject, ListObjectsV2, multipart upload,
+  presigned GET/PUT URL을 지원하는 `S3KtorClient`.
 
 ## 의존성
 
@@ -23,6 +25,40 @@ dependencies {
     implementation("io.ktor:ktor-client-cio")
 }
 ```
+
+## S3 Client
+
+`S3KtorClient`는 동일한 SigV4 플러그인을 사용하며 S3 전용 signing flag
+(`doubleUrlEncode=false`, `normalizePath=false`, unsigned payload)를 적용합니다.
+LocalStack 같은 path-style endpoint와 DNS-safe bucket의 virtual-hosted AWS S3
+endpoint를 모두 지원합니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
+import io.ktor.http.Url
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+
+val s3 = s3KtorClientOf(
+    region = "ap-northeast-2",
+    credentialsProvider = DefaultCredentialsProvider.builder().build(),
+    endpointOverride = Url("http://localhost:4566"), // LocalStack 사용 시
+)
+
+suspend fun roundTrip(bucket: String, key: String): String {
+    s3.putObject(
+        bucket = bucket,
+        key = key,
+        bytes = "hello".encodeToByteArray(),
+        contentType = "text/plain; charset=utf-8",
+    )
+    return s3.getObjectBytes(bucket, key).decodeToString()
+}
+
+val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", expires = java.time.Duration.ofMinutes(15))
+```
+
+실행 가능한 예제는 `examples/aws-ktor-s3-examples`에 있으며 Nightly workflow에
+포함됩니다.
 
 ## 사용법
 
