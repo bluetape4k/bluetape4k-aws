@@ -15,6 +15,7 @@ dependencies {
     testImplementation(libs.bluetape4k.testcontainers)
 
     // Ktor server
+    api(libs.aws2.auth)
     compileOnly(libs.ktor.server.core)
     compileOnly(libs.ktor.client.core)
     compileOnly(libs.ktor.client.cio)
@@ -26,6 +27,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 
     // Test
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
