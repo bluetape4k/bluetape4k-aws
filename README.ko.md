@@ -157,6 +157,7 @@ dependencies {
 
     // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
+    implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sqs")
 }
@@ -171,6 +172,10 @@ bluetape4k:
       path-style-access-enabled: true
       presign:
         duration: PT15M
+    dynamodb:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      table-prefix: local-
     sqs:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -201,6 +206,32 @@ class DocumentStorage(
 }
 ```
 
+### DynamoDB — Spring Boot Coroutine Repository
+
+```kotlin
+import io.bluetape4k.aws.spring.dynamodb.AbstractCoroutinesDynamoDbRepository
+import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
+import software.amazon.awssdk.enhanced.dynamodb.Key
+
+class OrderRepository(
+    enhancedClient: DynamoDbEnhancedAsyncClient,
+    tableNameResolver: DynamoDbTableNameResolver,
+) : AbstractCoroutinesDynamoDbRepository<OrderDocument, OrderId>(
+    enhancedClient = enhancedClient,
+    tableNameResolver = tableNameResolver,
+    entityClass = OrderDocument::class.java,
+) {
+    override val tableName: String = "orders"
+
+    override fun keyFromId(id: OrderId): Key =
+        Key.builder().partitionValue(id.orderId).sortValue(id.createdAt).build()
+}
+```
+
+`aws-spring-boot`는 DynamoDB 테이블을 자동 생성하지 않습니다. 테이블 생성은
+migration, 배포 자동화, 또는 테스트 setup에서 명시적으로 수행합니다.
+
 ### SQS — Spring Boot Coroutines Template과 Listener
 
 ```kotlin
@@ -221,7 +252,6 @@ class OrderQueue(
     }
 }
 ```
-
 ### S3 업로드 — Coroutines (`aws` 모듈)
 
 ```kotlin
