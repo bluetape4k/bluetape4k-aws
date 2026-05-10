@@ -159,6 +159,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sqs")
 }
 ```
 
@@ -175,6 +176,13 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    sqs:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      listener:
+        max-messages: 10
+        wait-time-seconds: 20
+        concurrency: 2
 ```
 
 ---
@@ -224,6 +232,26 @@ class OrderRepository(
 `aws-spring-boot` does not create DynamoDB tables automatically. Create tables
 through migrations, deployment automation, or explicit test setup.
 
+### SQS — Spring Boot Coroutines Template and Listener
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SqsListener
+import io.bluetape4k.aws.spring.sqs.SqsOperations
+
+class OrderQueue(
+    private val sqs: SqsOperations,
+) {
+    suspend fun send(queueUrl: String, payload: String) {
+        sqs.send(queueUrl, payload)
+    }
+
+    @SqsListener("\${orders.queue-url}")
+    suspend fun handle(body: String) {
+        // Make handlers idempotent; failed messages are not deleted automatically.
+        process(body)
+    }
+}
+```
 ### S3 Upload — Coroutines (`aws` module)
 
 ```kotlin

@@ -1,3 +1,4 @@
 io.bluetape4k.aws.spring.AwsAutoConfiguration
 io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
 io.bluetape4k.aws.spring.s3.S3AutoConfiguration
+io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration

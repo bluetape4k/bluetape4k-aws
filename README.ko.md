@@ -159,6 +159,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sqs")
 }
 ```
 
@@ -175,6 +176,13 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    sqs:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      listener:
+        max-messages: 10
+        wait-time-seconds: 20
+        concurrency: 2
 ```
 
 ---
@@ -224,6 +232,26 @@ class OrderRepository(
 `aws-spring-boot`는 DynamoDB 테이블을 자동 생성하지 않습니다. 테이블 생성은
 migration, 배포 자동화, 또는 테스트 setup에서 명시적으로 수행합니다.
 
+### SQS — Spring Boot Coroutines Template과 Listener
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SqsListener
+import io.bluetape4k.aws.spring.sqs.SqsOperations
+
+class OrderQueue(
+    private val sqs: SqsOperations,
+) {
+    suspend fun send(queueUrl: String, payload: String) {
+        sqs.send(queueUrl, payload)
+    }
+
+    @SqsListener("\${orders.queue-url}")
+    suspend fun handle(body: String) {
+        // 실패한 메시지는 자동 삭제되지 않으므로 핸들러는 idempotent하게 작성합니다.
+        process(body)
+    }
+}
+```
 ### S3 업로드 — Coroutines (`aws` 모듈)
 
 ```kotlin
