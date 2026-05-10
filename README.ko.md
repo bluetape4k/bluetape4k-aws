@@ -158,6 +158,7 @@ dependencies {
     // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sqs")
 }
 ```
 
@@ -170,6 +171,13 @@ bluetape4k:
       path-style-access-enabled: true
       presign:
         duration: PT15M
+    sqs:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      listener:
+        max-messages: 10
+        wait-time-seconds: 20
+        concurrency: 2
 ```
 
 ---
@@ -190,6 +198,27 @@ class DocumentStorage(
 
     suspend fun read(bucket: String, key: String): String =
         s3.downloadText(bucket, key)
+}
+```
+
+### SQS — Spring Boot Coroutines Template과 Listener
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SqsListener
+import io.bluetape4k.aws.spring.sqs.SqsOperations
+
+class OrderQueue(
+    private val sqs: SqsOperations,
+) {
+    suspend fun send(queueUrl: String, payload: String) {
+        sqs.send(queueUrl, payload)
+    }
+
+    @SqsListener("\${orders.queue-url}")
+    suspend fun handle(body: String) {
+        // 실패한 메시지는 자동 삭제되지 않으므로 핸들러는 idempotent하게 작성합니다.
+        process(body)
+    }
 }
 ```
 
