@@ -1,4 +1,4 @@
-# bluetape4k-aws-ktor
+# aws-ktor
 
 [English](README.md) | [한국어](README.ko.md)
 
@@ -19,10 +19,8 @@ bluetape4k AWS 모듈을 위한 Ktor 3 통합 모듈입니다. 첫 기능은 Kto
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k:bluetape4k-aws-ktor:${bluetape4kAwsVersion}")
-    implementation("io.ktor:ktor-client-core")
+    implementation("io.github.bluetape4k.aws:aws-ktor:${bluetape4kAwsVersion}")
     implementation("io.ktor:ktor-client-cio")
-    implementation("software.amazon.awssdk:auth")
 }
 ```
 

@@ -1,4 +1,4 @@
-# bluetape4k-aws-ktor
+# aws-ktor
 
 [English](README.md) | [한국어](README.ko.md)
 
@@ -19,10 +19,8 @@ Version 4.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k:bluetape4k-aws-ktor:${bluetape4kAwsVersion}")
-    implementation("io.ktor:ktor-client-core")
+    implementation("io.github.bluetape4k.aws:aws-ktor:${bluetape4kAwsVersion}")
     implementation("io.ktor:ktor-client-cio")
-    implementation("software.amazon.awssdk:auth")
 }
 ```
 

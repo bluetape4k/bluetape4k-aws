@@ -14,10 +14,10 @@ dependencies {
     testImplementation(libs.bluetape4k.junit5)
     testImplementation(libs.bluetape4k.testcontainers)
 
-    // Ktor server
+    // Ktor client
     api(libs.aws2.auth)
+    api(libs.ktor.client.core)
     compileOnly(libs.ktor.server.core)
-    compileOnly(libs.ktor.client.core)
     compileOnly(libs.ktor.client.cio)
     compileOnly(libs.ktor.client.content.negotiation)
     compileOnly(libs.ktor.serialization.jackson)
