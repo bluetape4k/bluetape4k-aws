@@ -157,6 +157,7 @@ dependencies {
 
     // Add the AWS Java SDK v2 services you use at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
+    implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
 }
 ```
@@ -170,6 +171,10 @@ bluetape4k:
       path-style-access-enabled: true
       presign:
         duration: PT15M
+    dynamodb:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      table-prefix: local-
 ```
 
 ---
@@ -192,6 +197,32 @@ class DocumentStorage(
         s3.downloadText(bucket, key)
 }
 ```
+
+### DynamoDB — Spring Boot Coroutine Repository
+
+```kotlin
+import io.bluetape4k.aws.spring.dynamodb.AbstractCoroutinesDynamoDbRepository
+import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
+import software.amazon.awssdk.enhanced.dynamodb.Key
+
+class OrderRepository(
+    enhancedClient: DynamoDbEnhancedAsyncClient,
+    tableNameResolver: DynamoDbTableNameResolver,
+) : AbstractCoroutinesDynamoDbRepository<OrderDocument, OrderId>(
+    enhancedClient = enhancedClient,
+    tableNameResolver = tableNameResolver,
+    entityClass = OrderDocument::class.java,
+) {
+    override val tableName: String = "orders"
+
+    override fun keyFromId(id: OrderId): Key =
+        Key.builder().partitionValue(id.orderId).sortValue(id.createdAt).build()
+}
+```
+
+`aws-spring-boot` does not create DynamoDB tables automatically. Create tables
+through migrations, deployment automation, or explicit test setup.
 
 ### S3 Upload — Coroutines (`aws` module)
 

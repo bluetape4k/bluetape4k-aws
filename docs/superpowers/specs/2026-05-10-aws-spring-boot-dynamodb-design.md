@@ -202,8 +202,8 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
     private val entityClass: Class<T>,
 ) : CoroutinesDynamoDbRepository<T, ID> {
     abstract override val tableName: String
-    abstract fun keyOf(id: ID): Key
-    open fun keyOf(item: T): Key = error("Override when delete(item) is used")
+    abstract fun keyFromId(id: ID): Key
+    open fun keyFromItem(item: T): Key = error("Override when delete(item) is used")
 }
 ```
 

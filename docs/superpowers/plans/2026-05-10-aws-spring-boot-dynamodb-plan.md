@@ -104,8 +104,8 @@ Base class:
    - `entityClass: Class<T>`
 2. Subclasses provide:
    - `tableName`
-   - `keyOf(id: ID)`
-   - optionally `keyOf(item: T)`
+   - `keyFromId(id: ID)`
+   - optionally `keyFromItem(item: T)`
    - optionally `tableSchema`
 3. Build table lazily with resolved table name and schema.
 4. Use `CompletableFuture.await()` for single operations.
