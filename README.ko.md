@@ -19,7 +19,7 @@ Kotlin Coroutines 지원, Spring Boot 4 자동설정, Ktor 3 통합을 제공합
 |---|---|---|
 | `aws` | `io.github.bluetape4k.aws:aws` | AWS Java SDK v2 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장 제공 |
 | `aws-kotlin` | `io.github.bluetape4k.aws:aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
-| `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정 (개발 중 — Coroutines 네이티브, awspring 미사용) |
+| `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 기반 S3 작업과 Presigned URL 지원 |
 | `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | AWS 서비스용 Ktor 3 클라이언트/서버 통합 (개발 중 — 스켈레톤) |
 
 ---
@@ -148,9 +148,49 @@ dependencies {
 }
 ```
 
+### `aws-spring-boot` 사용 (Spring Boot 4 자동설정)
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:aws-spring-boot:0.1.0-SNAPSHOT")
+
+    // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
+    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
+    implementation("software.amazon.awssdk:s3")
+}
+```
+
+```yaml
+bluetape4k:
+  aws:
+    s3:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      path-style-access-enabled: true
+      presign:
+        duration: PT15M
+```
+
 ---
 
 ## 사용 예시
+
+### S3 — Spring Boot Coroutines Template
+
+```kotlin
+import io.bluetape4k.aws.spring.s3.S3Operations
+
+class DocumentStorage(
+    private val s3: S3Operations,
+) {
+    suspend fun save(bucket: String, key: String, contents: String) {
+        s3.upload(bucket, key, contents, contentType = "text/plain")
+    }
+
+    suspend fun read(bucket: String, key: String): String =
+        s3.downloadText(bucket, key)
+}
+```
 
 ### S3 업로드 — Coroutines (`aws` 모듈)
 
