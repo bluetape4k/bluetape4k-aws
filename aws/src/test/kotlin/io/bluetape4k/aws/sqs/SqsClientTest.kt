@@ -88,7 +88,7 @@ class SqsClientTest: AbstractSqsTest() {
 
     @Test
     @Order(6)
-    fun `chnage messages`() {
+    fun `change messages`() {
         val messages = client.receiveMessages(queueUrl, 3).messages()
 
         val responses = messages.map { message ->

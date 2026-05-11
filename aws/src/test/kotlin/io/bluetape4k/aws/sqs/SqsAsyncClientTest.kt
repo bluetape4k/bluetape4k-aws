@@ -89,7 +89,7 @@ class SqsAsyncClientTest: AbstractSqsTest() {
 
     @Test
     @Order(6)
-    fun `chnage messages`() = runSuspendIO {
+    fun `change messages`() = runSuspendIO {
         val messages = asyncClient.receiveMessages(queueUrl, 3).messages()
 
         val responses = messages.map { message ->

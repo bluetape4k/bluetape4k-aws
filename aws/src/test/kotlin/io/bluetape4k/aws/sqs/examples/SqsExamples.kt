@@ -97,7 +97,7 @@ class SqsExamples: AbstractSqsTest() {
 
     @Test
     @Order(6)
-    fun `chnage messages`() {
+    fun `change messages`() {
         val messages = client
             .receiveMessage { it.queueUrl(queueUrl).maxNumberOfMessages(3) }
             .messages()
