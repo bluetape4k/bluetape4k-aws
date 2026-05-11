@@ -62,7 +62,7 @@ nmcp-aggregation = { id = "com.gradleup.nmcp.aggregation", version.ref = "nmcp" 
 
 # ────────────────────────────────────────────────────────────────────────────
 [libraries]
-jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }  # https://mvnrepository.com/artifact/org.jetbrains/annotations
+jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.1.0" }  # https://mvnrepository.com/artifact/org.jetbrains/annotations
 
 # Kotlin
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
