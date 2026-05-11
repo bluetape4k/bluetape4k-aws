@@ -297,7 +297,7 @@ jobs:
 
           mapfile -t tasks < <(
             find examples -mindepth 2 -maxdepth 2 -name build.gradle.kts -print \
-              | sed 's#^\./##; s#/build.gradle.kts$##; s#/#:#g; s#^#:#; s#$#:test#'
+              | sed 's#^\./##; s#^examples/##; s#/build.gradle.kts$##; s#/#:#g; s#^#:#; s#$#:test#'
           )
 
           if [ ${#tasks[@]} -eq 0 ]; then
