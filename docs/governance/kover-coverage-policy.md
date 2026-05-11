@@ -4,7 +4,7 @@
 
 `bluetape4k-aws` generates module Kover XML reports in Nightly for `aws`,
 `aws-kotlin`, `aws-spring-boot`, and `aws-ktor`. No module currently has a
-failing `koverVerify` threshold.
+failing coverage threshold.
 
 ## Policy
 
@@ -16,12 +16,15 @@ enable a broad repository-wide gate until module baselines are measured.
 
 ## Threshold Plan
 
-- Pure client/wrapper modules: target 70%, then raise toward 80%.
-- Spring/Ktor integration modules: start with a documented 60-70% bound after
-  baseline measurement.
-- Examples: informational coverage only.
+- Treat Kover as a trend signal, not a build gate.
+- Use Nightly XML reports and existing coverage artifact uploads to identify
+  coverage regressions.
+- Open a focused issue when a module needs coverage repair; do not introduce a
+  failing threshold as the default enforcement mechanism.
+- Examples remain informational coverage only.
 
 ## CI/Nightly Contract
 
-Nightly uploads Kover XML artifacts. Add `koverVerify` to CI or Nightly only
-after a module-level bound is introduced.
+Nightly uploads Kover XML artifacts and keeps trend visibility. CI and Nightly
+must not fail solely because a module is below a fixed coverage percentage
+unless a future issue explicitly reintroduces that gate.
