@@ -19,15 +19,21 @@ internal const val MAX_WAIT_TIME_SECONDS = 20
  * queueUrl, maxNumber, waitTimeSeconds, attributeNames를 사용하여 ReceiveMessageRequest를 생성합니다.
  *
  * ```kotlin
- * val request = receiveMessageRequestOf(
- *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
- *     maxNumberOfMessages = 5,
- *     waitTimeSeconds = 10
- * ) {
- *     receiveRequestAttemptId = "attempt-001"  // FIFO 큐 재시도 중복 수신 방지에 사용
+ * import aws.sdk.kotlin.services.sqs.SqsClient
+ * import io.bluetape4k.aws.kotlin.sqs.model.receiveMessageRequestOf
+ *
+ * suspend fun receiveOrders(sqsClient: SqsClient, queueUrl: String) {
+ *     val request = receiveMessageRequestOf(
+ *         queueUrl = queueUrl,
+ *         maxNumberOfMessages = 5,
+ *         waitTimeSeconds = 10
+ *     ) {
+ *         receiveRequestAttemptId = "attempt-001"  // FIFO 큐 재시도 중복 수신 방지에 사용
+ *     }
+ *     val response = sqsClient.receiveMessage(request)
+ *     val messages = response.messages
+ *     check(messages != null)
  * }
- * val response = sqsClient.receiveMessage(request)
- * val messages = response.messages
  * ```
  *
  * @param queueUrl 메시지를 수신할 Amazon SQS 큐의 URL입니다.

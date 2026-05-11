@@ -50,6 +50,8 @@ private val MAX_PRESIGN_EXPIRY: Duration = Duration.ofDays(7)
  * Ktor `HttpClient` 기반 S3 REST 클라이언트입니다.
  *
  * ```kotlin
+ * import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
+ *
  * suspend fun roundTrip() {
  *     s3KtorClientOf(region = "ap-northeast-2").use { s3 ->
  *         s3.putObject("demo-bucket", "docs/hello.txt", "hello".encodeToByteArray())
@@ -379,15 +381,17 @@ class S3KtorClient(
  * 내부 Ktor CIO client를 생성해 S3 REST client를 만듭니다.
  *
  * ```kotlin
- * s3KtorClientOf(
- *     region = "ap-northeast-2",
- *     endpointOverride = Url("http://localhost:4566"),
- *     addressingStyle = S3KtorAddressingStyle.Path,
- * )
+ * import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
+ * import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
+ * import io.ktor.http.Url
  *
  * suspend fun upload() {
- *     s3.use {
- *         it.putObject("demo-bucket", "hello.txt", "hello".encodeToByteArray())
+ *     s3KtorClientOf(
+ *         region = "ap-northeast-2",
+ *         endpointOverride = Url("http://localhost:4566"),
+ *         addressingStyle = S3KtorAddressingStyle.Path,
+ *     ).use { s3 ->
+ *         s3.putObject("demo-bucket", "hello.txt", "hello".encodeToByteArray())
  *     }
  * }
  * ```

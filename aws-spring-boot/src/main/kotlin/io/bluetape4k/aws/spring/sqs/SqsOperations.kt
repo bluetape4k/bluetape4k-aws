@@ -99,11 +99,13 @@ interface SqsOperations {
      * 메시지 삭제는 호출자가 명시적으로 수행해야 합니다.
      *
      * ```kotlin
-     * sqs.receiveFlow(queueUrl, maxMessages = 5)
-     *     .collect { message ->
-     *         check(message.body.isNotBlank())
-     *         sqs.delete(message.queueUrl, message.receiptHandle)
-     *     }
+     * suspend fun consume(sqs: SqsOperations, queueUrl: String) {
+     *     sqs.receiveFlow(queueUrl, maxMessages = 5)
+     *         .collect { message ->
+     *             check(message.body.isNotBlank())
+     *             sqs.delete(message.queueUrl, message.receiptHandle)
+     *         }
+     * }
      * ```
      */
     fun receiveFlow(

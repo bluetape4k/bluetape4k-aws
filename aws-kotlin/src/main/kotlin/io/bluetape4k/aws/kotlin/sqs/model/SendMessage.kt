@@ -10,14 +10,20 @@ import io.bluetape4k.support.requireNotEmpty
  * 제공된 queueUrl과 messageBody를 사용하여 SendMessageRequest를 생성합니다.
  *
  * ```kotlin
- * val request = sendMessageRequestOf(
- *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
- *     messageBody = "Hello, World!",
- *     delaySeconds = 0
- * ) {
- *     messageAttributes = mapOf("source" to messageAttributeValueOf("web"))
+ * import aws.sdk.kotlin.services.sqs.SqsClient
+ * import io.bluetape4k.aws.kotlin.sqs.model.messageAttributeValueOf
+ * import io.bluetape4k.aws.kotlin.sqs.model.sendMessageRequestOf
+ *
+ * suspend fun sendOrder(sqsClient: SqsClient, queueUrl: String) {
+ *     val request = sendMessageRequestOf(
+ *         queueUrl = queueUrl,
+ *         messageBody = "Hello, World!",
+ *         delaySeconds = 0
+ *     ) {
+ *         messageAttributes = mapOf("source" to messageAttributeValueOf("web"))
+ *     }
+ *     sqsClient.sendMessage(request)
  * }
- * sqsClient.sendMessage(request)
  * ```
  *
  * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
@@ -87,13 +93,19 @@ inline fun sendMessageBatchRequestEntryOf(
  * 제공된 queueUrl과 entries를 사용하여 SendMessageBatchRequest를 생성합니다.
  *
  * ```kotlin
- * val request = sendMessageBatchRequestOf(
- *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
- *     entries = listOf(
- *         sendMessageBatchRequestEntryOf("id1", "Hello!", messageGroupId = "orders")
+ * import aws.sdk.kotlin.services.sqs.SqsClient
+ * import io.bluetape4k.aws.kotlin.sqs.model.sendMessageBatchRequestEntryOf
+ * import io.bluetape4k.aws.kotlin.sqs.model.sendMessageBatchRequestOf
+ *
+ * suspend fun sendOrders(sqsClient: SqsClient, queueUrl: String) {
+ *     val request = sendMessageBatchRequestOf(
+ *         queueUrl = queueUrl,
+ *         entries = listOf(
+ *             sendMessageBatchRequestEntryOf("id1", "Hello!", messageGroupId = "orders")
+ *         )
  *     )
- * )
- * sqsClient.sendMessageBatch(request)
+ *     sqsClient.sendMessageBatch(request)
+ * }
  * ```
  *
  * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
@@ -122,12 +134,18 @@ inline fun sendMessageBatchRequestOf(
  * 제공된 queueUrl과 entries를 사용하여 SendMessageBatchRequest를 생성합니다.
  *
  * ```kotlin
- * val request = sendMessageBatchRequestOf(
- *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
- *     sendMessageBatchRequestEntryOf("id1", "Hello!", messageGroupId = "orders"),
- *     sendMessageBatchRequestEntryOf("id2", "World!", messageGroupId = "orders")
- * )
- * sqsClient.sendMessageBatch(request)
+ * import aws.sdk.kotlin.services.sqs.SqsClient
+ * import io.bluetape4k.aws.kotlin.sqs.model.sendMessageBatchRequestEntryOf
+ * import io.bluetape4k.aws.kotlin.sqs.model.sendMessageBatchRequestOf
+ *
+ * suspend fun sendOrders(sqsClient: SqsClient, queueUrl: String) {
+ *     val request = sendMessageBatchRequestOf(
+ *         queueUrl = queueUrl,
+ *         sendMessageBatchRequestEntryOf("id1", "Hello!", messageGroupId = "orders"),
+ *         sendMessageBatchRequestEntryOf("id2", "World!", messageGroupId = "orders")
+ *     )
+ *     sqsClient.sendMessageBatch(request)
+ * }
  * ```
  *
  * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
