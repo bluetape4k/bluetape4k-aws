@@ -152,6 +152,12 @@ fun SqsAsyncClient.sendAsync(
  * 메시지를 배치로 비동기 전송합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entry = sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello")
+ * val response = sqsAsyncClient.sendBatchAsync(queueUrl, entry).join()
+ * // response.successful().size == 1
+ * ```
  */
 fun SqsAsyncClient.sendBatchAsync(
     queueUrl: String,
@@ -169,6 +175,12 @@ fun SqsAsyncClient.sendBatchAsync(
  * 메시지를 배치로 비동기 전송합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entries = listOf(sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello"))
+ * val response = sqsAsyncClient.sendBatchAsync(queueUrl, entries).join()
+ * // response.failed().isEmpty() == true
+ * ```
  */
 fun SqsAsyncClient.sendBatchAsync(
     queueUrl: String,
@@ -186,6 +198,13 @@ fun SqsAsyncClient.sendBatchAsync(
  * 큐에서 메시지를 비동기로 조회합니다.
  *
  * [maxResults]를 지정하면 SQS 제약(1..10)을 선검증해 네트워크 호출 전에 실패합니다.
+ *
+ * ```kotlin
+ * val response = sqsAsyncClient.receiveMessagesAsync(queueUrl, maxResults = 10) {
+ *     waitTimeSeconds(5)
+ * }.join()
+ * // response.messages().size <= 10
+ * ```
  */
 fun SqsAsyncClient.receiveMessagesAsync(
     queueUrl: String,
@@ -226,6 +245,16 @@ fun SqsAsyncClient.changeMessageVisibilityAsync(
  * 메시지 가시성 타임아웃을 배치로 비동기 변경합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entry = ChangeMessageVisibilityBatchRequestEntry.builder()
+ *     .id("1")
+ *     .receiptHandle(receiptHandle)
+ *     .visibilityTimeout(30)
+ *     .build()
+ * val response = sqsAsyncClient.changeMessageVisibilityBatchAsync(queueUrl, entry).join()
+ * // response.successful().size == 1
+ * ```
  */
 fun SqsAsyncClient.changeMessageVisibilityBatchAsync(
     queueUrl: String,
@@ -279,6 +308,15 @@ fun SqsAsyncClient.deleteMessageAsync(
  * 메시지를 배치로 비동기 삭제합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entry = DeleteMessageBatchRequestEntry.builder()
+ *     .id("1")
+ *     .receiptHandle(receiptHandle)
+ *     .build()
+ * val response = sqsAsyncClient.deleteMessageBatchAsync(queueUrl, entry).join()
+ * // response.successful().size == 1
+ * ```
  */
 fun SqsAsyncClient.deleteMessageBatchAsync(
     queueUrl: String,

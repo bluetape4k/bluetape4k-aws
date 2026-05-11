@@ -140,6 +140,12 @@ fun SqsClient.send(
  * 메시지를 배치로 전송합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entry = sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello")
+ * val response = sqsClient.sendBatch(queueUrl, entry)
+ * // response.successful().size == 1
+ * ```
  */
 fun SqsClient.sendBatch(
     queueUrl: String,
@@ -157,6 +163,12 @@ fun SqsClient.sendBatch(
  * 메시지를 배치로 전송합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entries = listOf(sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello"))
+ * val response = sqsClient.sendBatch(queueUrl, entries)
+ * // response.failed().isEmpty() == true
+ * ```
  */
 fun SqsClient.sendBatch(
     queueUrl: String,
@@ -174,6 +186,13 @@ fun SqsClient.sendBatch(
  * 큐에서 메시지를 조회합니다.
  *
  * [maxResults]를 지정하면 SQS 제약(1..10)을 선검증해 네트워크 호출 전에 실패합니다.
+ *
+ * ```kotlin
+ * val response = sqsClient.receiveMessages(queueUrl, maxResults = 10) {
+ *     waitTimeSeconds(5)
+ * }
+ * // response.messages().size <= 10
+ * ```
  */
 fun SqsClient.receiveMessages(
     queueUrl: String,
@@ -215,6 +234,16 @@ fun SqsClient.changeMessageVisibility(
  * 수신된 메시지들의 가시성 타임아웃을 일괄 변경합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entry = ChangeMessageVisibilityBatchRequestEntry.builder()
+ *     .id("1")
+ *     .receiptHandle(receiptHandle)
+ *     .visibilityTimeout(30)
+ *     .build()
+ * val response = sqsClient.changeMessageVisibilityBatch(queueUrl, entry)
+ * // response.successful().size == 1
+ * ```
  */
 fun SqsClient.changeMessageVisibilityBatch(
     queueUrl: String,
@@ -268,6 +297,15 @@ fun SqsClient.deleteMessage(
  * 여러 메시지를 일괄 삭제합니다.
  *
  * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ *
+ * ```kotlin
+ * val entry = DeleteMessageBatchRequestEntry.builder()
+ *     .id("1")
+ *     .receiptHandle(receiptHandle)
+ *     .build()
+ * val response = sqsClient.deleteMessageBatch(queueUrl, entry)
+ * // response.successful().size == 1
+ * ```
  */
 fun SqsClient.deleteMessageBatch(
     queueUrl: String,

@@ -14,7 +14,7 @@ flowchart LR
         direction TB
         SYNC["1. Sync (Blocking)\nDynamoDbClient\n.getItem(request)"]
         ASYNC["2. Async (CompletableFuture)\nDynamoDbAsyncClient\n.getItem(request)\n.thenApply { }"]
-        CORO["3. Coroutines (suspend)\nclient.getItemSuspend { }\n= CompletableFuture.await()"]
+        CORO["3. Coroutines (suspend)\nclient.getItem(partitionValue)\n= CompletableFuture.await()"]
     end
 
     SYNC -->|"make async"| ASYNC
@@ -40,7 +40,7 @@ flowchart TD
     end
 
     subgraph Extensions["Per-Service Coroutines Extensions"]
-        EXT["XxxAsyncClientCoroutinesExtensions.kt\ngetItemSuspend { }\nsendMessageSuspend { }\n..."]
+        EXT["XxxAsyncClientCoroutinesExtensions.kt\ngetItem(...)\nsend(...)\n..."]
     end
 
     MOD --> Services
@@ -62,10 +62,9 @@ classDiagram
         +putItem(request) CompletableFuture
         +scan(request) CompletableFuture
     }
-    class DynamoDbCoroutinesExt {
-        +getItemSuspend(block) GetItemResponse
-        +putItemSuspend(block) PutItemResponse
-        +scanSuspend(block) ScanResponse
+    class DynamoDbEnhancedCoroutinesExt {
+        +getItem(partitionValue) T?
+        +scanAll() Flow~T~
     }
     class S3Client {
         +getObject(request) ResponseInputStream
@@ -81,12 +80,12 @@ classDiagram
         +deleteMessage(request) CompletableFuture
     }
     class SqsCoroutinesExt {
-        +sendMessageSuspend(block) SendMessageResponse
-        +receiveMessageSuspend(block) ReceiveMessageResponse
+        +send(queueUrl, messageBody) SendMessageResponse
+        +receiveMessages(queueUrl, maxResults) ReceiveMessageResponse
     }
 
     DynamoDbClient --> DynamoDbAsyncClient : wraps (async)
-    DynamoDbAsyncClient --> DynamoDbCoroutinesExt : .await() extension
+    DynamoDbAsyncClient --> DynamoDbEnhancedCoroutinesExt : .await() extension
     S3Client --> S3AsyncClient : wraps (async)
     SqsAsyncClient --> SqsCoroutinesExt : .await() extension
 ```
@@ -100,7 +99,7 @@ classDiagram
 | **SES**             | Email sending, Coroutines extensions                                         |
 | **SNS**             | Topic publishing, SMS, push notifications, Coroutines extensions             |
 | **SQS**             | Message send/receive/delete, Coroutines extensions                           |
-| **KMS**             | Encryption key management, data encryption/decryption, Coroutines extensions |
+| **KMS**             | Encryption key management, request DSLs, sync/async client builders          |
 | **CloudWatch**      | Metric publishing/querying, Coroutines extensions                            |
 | **CloudWatch Logs** | Log group/stream management, event publishing, Coroutines extensions         |
 | **Kinesis**         | Stream record send/receive, Coroutines extensions                            |
@@ -114,153 +113,151 @@ Each service provides three tiers of API:
 sync (blocking) → async (CompletableFuture) → coroutines (suspend)
 ```
 
-The coroutines tier wraps `CompletableFuture` with
-`.await()` extension functions, so no thread blocking occurs in coroutine contexts.
+Where coroutine extensions are provided, the coroutines tier wraps
+`CompletableFuture` with `.await()` extension functions, so no thread blocking
+occurs in coroutine contexts. Service SDK artifacts remain `compileOnly`;
+applications must add the AWS SDK and coroutine runtime modules they use.
 
 ## Usage Examples
 
-### DynamoDB (Coroutines)
+### DynamoDB Enhanced Async Table
 
 ```kotlin
-import io.bluetape4k.aws.dynamodb.coroutines.*
-import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
+import io.bluetape4k.aws.dynamodb.enhanced.getItem
+import kotlinx.coroutines.future.await
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 
-val client: DynamoDbAsyncClient = DynamoDbAsyncClient.create()
-
-suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
-    client.getItemSuspend {
-        it.tableName(tableName).key(key)
-    }
-```
-
-### S3 TransferManager (Large Files)
-
-```kotlin
-import software.amazon.awssdk.transfer.s3.S3TransferManager
-import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
-
-val transferManager = S3TransferManager.create()
-
-suspend fun uploadLargeFile(bucket: String, key: String, file: Path) {
-    val upload = transferManager.uploadFile(
-        UploadFileRequest.builder()
-            .putObjectRequest { it.bucket(bucket).key(key) }
-            .source(file)
-            .build()
-    )
-    upload.completionFuture().await()
+suspend fun saveAndLoad(table: DynamoDbAsyncTable<UserDocument>, user: UserDocument): UserDocument? {
+    table.putItem(user).await()
+    return table.getItem(partitionValue = user.id)
 }
 ```
 
-### SQS (Coroutines)
+### S3 Async Client
 
 ```kotlin
-import io.bluetape4k.aws.sqs.coroutines.*
+import io.bluetape4k.aws.s3.getAsString
+import io.bluetape4k.aws.s3.putAsString
+import software.amazon.awssdk.services.s3.S3AsyncClient
+
+suspend fun writeThenRead(client: S3AsyncClient, bucket: String, key: String): String {
+    client.putAsString(bucket, key, "hello")
+    return client.getAsString(bucket, key)
+}
+```
+
+### SQS Coroutine Extensions
+
+```kotlin
+import io.bluetape4k.aws.sqs.receiveMessages
+import io.bluetape4k.aws.sqs.send
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 suspend fun sendMessage(client: SqsAsyncClient, queueUrl: String, body: String) =
-    client.sendMessageSuspend {
-        it.queueUrl(queueUrl).messageBody(body)
-    }
+    client.send(queueUrl, body)
 
 suspend fun receiveMessages(client: SqsAsyncClient, queueUrl: String) =
-    client.receiveMessageSuspend {
-        it.queueUrl(queueUrl).maxNumberOfMessages(10)
-    }.messages()
+    client.receiveMessages(queueUrl, maxResults = 10).messages()
 ```
 
-### SNS (Coroutines)
+### SNS Coroutine Extensions
 
 ```kotlin
-import io.bluetape4k.aws.sns.coroutines.*
+import io.bluetape4k.aws.sns.createTopic
+import software.amazon.awssdk.services.sns.SnsAsyncClient
 
-suspend fun publishMessage(client: SnsAsyncClient, topicArn: String, message: String) =
-    client.publishSuspend {
-        it.topicArn(topicArn).message(message)
-    }
+suspend fun createTopic(client: SnsAsyncClient, topicName: String) =
+    client.createTopic(topicName)
 ```
 
-### KMS (Coroutines)
+### KMS Request DSL
 
 ```kotlin
-import io.bluetape4k.aws.kms.coroutines.*
+import io.bluetape4k.aws.kms.model.encryptRequestOf
+import software.amazon.awssdk.core.SdkBytes
 
-suspend fun encryptData(client: KmsAsyncClient, keyId: String, plaintext: ByteArray) =
-    client.encryptSuspend {
-        it.keyId(keyId).plaintext(SdkBytes.fromByteArray(plaintext))
-    }.ciphertextBlob().asByteArray()
+val request = encryptRequestOf(
+    keyId = "alias/my-key",
+    plainText = SdkBytes.fromUtf8String("plain-text"),
+)
 ```
 
-### CloudWatch (Coroutines)
+### CloudWatch Coroutine Extensions
 
 ```kotlin
-import io.bluetape4k.aws.cloudwatch.coroutines.*
+import io.bluetape4k.aws.cloudwatch.putMetricData
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
 
 suspend fun publishMetric(client: CloudWatchAsyncClient, namespace: String, value: Double) =
-    client.putMetricDataSuspend {
-        it.namespace(namespace)
-            .metricData(
-                MetricDatum.builder()
-                    .metricName("RequestCount")
-                    .value(value)
-                    .unit(StandardUnit.COUNT)
-                    .build()
-            )
-    }
+    client.putMetricData(
+        namespace = namespace,
+        metricDatum = MetricDatum.builder()
+            .metricName("RequestCount")
+            .value(value)
+            .unit(StandardUnit.COUNT)
+            .build()
+    )
 ```
 
-### Kinesis (Coroutines)
+### Kinesis Coroutine Extensions
 
 ```kotlin
-import io.bluetape4k.aws.kinesis.coroutines.*
+import io.bluetape4k.aws.kinesis.putRecord
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 
 suspend fun putRecord(client: KinesisAsyncClient, streamName: String, data: ByteArray) =
-    client.putRecordSuspend {
-        it.streamName(streamName)
-            .data(SdkBytes.fromByteArray(data))
-            .partitionKey("default")
-    }
+    client.putRecord(
+        streamName = streamName,
+        partitionKey = "default",
+        data = SdkBytes.fromByteArray(data),
+    )
 ```
 
 ## Test Environment
 
-Integration tests use `AwsEmulatorServer` — the common interface for local AWS emulators. Select the emulator via `-Dbluetape4k.aws.emulator=localstack|floci` (default: `localstack`).
+Integration tests use `LocalStackServer` through the shared AWS test base.
 
 ```kotlin
 abstract class AbstractAwsTest {
     companion object {
-        // Automatically selects emulator based on system property
-        val awsEmulator: AwsEmulatorServer by lazy {
-            when (System.getProperty("bluetape4k.aws.emulator", "localstack")) {
-                "floci" -> FlociServer.Launcher.floci
-                else -> LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
-            }
+        val awsEmulator: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
         }
     }
 
     fun buildS3Client(): S3Client = S3Client.builder()
-        .endpointOverride(awsEmulator.awsEndpoint)
-        .credentialsProvider(awsEmulator.getCredentialProvider())
-        .region(Region.of(awsEmulator.regionName))
+        .endpointOverride(awsEmulator.endpoint)
+        .credentialsProvider(awsEmulator.credentialsProvider)
+        .region(Region.of(awsEmulator.region))
         .build()
 }
 ```
 
-Run tests with Floci emulator:
+Run the `aws` module tests:
 
 ```bash
-./gradlew :bluetape4k-aws:test -Dbluetape4k.aws.emulator=floci
+./gradlew :aws:test
 ```
 
 ## Adding the Dependency
 
-AWS SDK services are declared as
-`compileOnly` dependencies, so you need to add the runtime dependencies for the services you use.
+AWS SDK services and coroutine helpers are declared as `compileOnly`
+dependencies, so consumers add the runtime dependencies for the APIs they use.
 
 ```kotlin
 dependencies {
     implementation("io.github.bluetape4k:bluetape4k-aws:${bluetape4kVersion}")
 
-    // Add only the services you need
+    // Coroutine extensions and Flow adapters used by public APIs
+    implementation("io.github.bluetape4k:bluetape4k-coroutines:${bluetape4kVersion}")
+    implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${coroutinesVersion}"))
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive")
+
+    // Add only the AWS services you need
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
