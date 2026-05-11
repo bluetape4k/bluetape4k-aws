@@ -210,10 +210,80 @@ class S3KtorClientTest {
         s3.close()
     }
 
+    @Test
+    fun `AWS S3 endpoint는 DNS-safe bucket에 virtual-hosted URL을 사용한다`() = runTest {
+        lateinit var captured: HttpRequestData
+        val s3 = s3Client(
+            endpointOverride = null,
+            capture = { captured = it },
+            response = { respond("") },
+        )
+
+        s3.deleteObject("demo-bucket", "logs/app.txt")
+
+        captured.method shouldBeEqualTo HttpMethod.Delete
+        captured.url.host shouldBeEqualTo "demo-bucket.s3.ap-northeast-2.amazonaws.com"
+        captured.url.encodedPath shouldBeEqualTo "/logs/app.txt"
+
+        s3.close()
+    }
+
+    @Test
+    fun `AWS S3 endpoint는 dotted bucket을 path-style URL로 fallback한다`() = runTest {
+        lateinit var captured: HttpRequestData
+        val s3 = s3Client(
+            endpointOverride = null,
+            capture = { captured = it },
+            response = { respond("") },
+        )
+
+        s3.deleteObject("demo.bucket", "logs/app.txt")
+
+        captured.method shouldBeEqualTo HttpMethod.Delete
+        captured.url.host shouldBeEqualTo "s3.ap-northeast-2.amazonaws.com"
+        captured.url.encodedPath shouldBeEqualTo "/demo.bucket/logs/app.txt"
+
+        s3.close()
+    }
+
+    @Test
+    fun `AWS S3 endpoint는 명시적 Path addressing style을 따른다`() = runTest {
+        lateinit var captured: HttpRequestData
+        val s3 = s3Client(
+            endpointOverride = null,
+            addressingStyle = S3KtorAddressingStyle.Path,
+            capture = { captured = it },
+            response = { respond("") },
+        )
+
+        s3.deleteObject("demo-bucket", "logs/app.txt")
+
+        captured.method shouldBeEqualTo HttpMethod.Delete
+        captured.url.host shouldBeEqualTo "s3.ap-northeast-2.amazonaws.com"
+        captured.url.encodedPath shouldBeEqualTo "/demo-bucket/logs/app.txt"
+
+        s3.close()
+    }
+
+    @Test
+    fun `Presign 만료 시간은 S3 SigV4 허용 범위를 검증한다`() {
+        val s3 = s3Client(endpointOverride = null)
+
+        assertFailsWith<IllegalArgumentException> {
+            s3.presignGetObject("demo-bucket", "logs/app.txt", Duration.ZERO)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            s3.presignPutObject("demo-bucket", "logs/app.txt", Duration.ofDays(7).plusSeconds(1))
+        }
+
+        s3.close()
+    }
+
     private fun s3Client(
         capture: (HttpRequestData) -> Unit = {},
         response: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData = { respond("") },
         endpointOverride: Url? = Url("http://localhost:4566"),
+        addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     ): S3KtorClient {
         val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("akid", "secret"))
         val client = HttpClient(MockEngine) {
@@ -240,6 +310,7 @@ class S3KtorClientTest {
             region = "ap-northeast-2",
             credentialsProvider = credentialsProvider,
             endpointOverride = endpointOverride,
+            addressingStyle = addressingStyle,
             signingClock = FIXED_CLOCK,
             closeClient = true,
         )

@@ -14,9 +14,13 @@ import java.time.Clock
  * - [payloadSigningEnabled]가 `true`이면 replay 가능한 body만 서명한다.
  *
  * ```kotlin
+ * import java.time.Clock
+ *
  * install(AwsSigV4Plugin) {
  *     region = "ap-northeast-2"
  *     service = "execute-api"
+ *     authLocation = AwsSigV4AuthLocation.QueryString
+ *     signingClock = Clock.systemUTC()
  * }
  * ```
  */

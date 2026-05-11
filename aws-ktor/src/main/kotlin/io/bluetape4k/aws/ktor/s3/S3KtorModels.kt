@@ -15,6 +15,15 @@ data class S3KtorObjectRef(
 
 /**
  * S3 PutObject 요청입니다.
+ *
+ * ```kotlin
+ * val request = S3KtorPutObjectRequest(
+ *     bucket = "demo-bucket",
+ *     key = "docs/hello.txt",
+ *     contentType = "text/plain; charset=utf-8",
+ *     metadata = mapOf("source" to "ktor"),
+ * )
+ * ```
  */
 data class S3KtorPutObjectRequest(
     val bucket: String,
@@ -92,6 +101,14 @@ data class S3KtorDeleteObjectResponse(
 
 /**
  * S3 ListObjectsV2 요청입니다.
+ *
+ * ```kotlin
+ * val request = S3KtorListObjectsRequest(
+ *     bucket = "demo-bucket",
+ *     prefix = "logs/",
+ *     maxKeys = 100,
+ * )
+ * ```
  */
 data class S3KtorListObjectsRequest(
     val bucket: String,
@@ -158,6 +175,13 @@ data class S3KtorCompleteMultipartUploadResponse(
 
 /**
  * Presigned S3 요청 URL입니다.
+ *
+ * ```kotlin
+ * import java.time.Duration
+ *
+ * val presigned = s3.presignGetObject("demo-bucket", "docs/hello.txt", Duration.ofMinutes(15))
+ * check(presigned.method == "GET")
+ * ```
  */
 data class S3KtorPresignedRequest(
     val method: String,

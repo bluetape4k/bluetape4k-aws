@@ -50,10 +50,17 @@ private val MAX_PRESIGN_EXPIRY: Duration = Duration.ofDays(7)
  * Ktor `HttpClient` 기반 S3 REST 클라이언트입니다.
  *
  * ```kotlin
- * val s3 = s3KtorClientOf(region = "ap-northeast-2")
- * val put = s3.putObject("demo-bucket", "docs/hello.txt", "hello".encodeToByteArray())
- * val bytes = s3.getObjectBytes("demo-bucket", "docs/hello.txt")
+ * suspend fun roundTrip() {
+ *     s3KtorClientOf(region = "ap-northeast-2").use { s3 ->
+ *         s3.putObject("demo-bucket", "docs/hello.txt", "hello".encodeToByteArray())
+ *         val bytes = s3.getObjectBytes("demo-bucket", "docs/hello.txt")
+ *         check(bytes.decodeToString() == "hello")
+ *     }
+ * }
  * ```
+ *
+ * [endpointOverride]가 있으면 path-style URL을 사용하고, AWS S3 기본 endpoint에서는 DNS-safe bucket에
+ * 한해 virtual-hosted URL을 사용합니다.
  */
 class S3KtorClient(
     private val httpClient: HttpClient,
@@ -72,6 +79,8 @@ class S3KtorClient(
 
     /**
      * [bytes]를 S3 객체로 저장합니다.
+     *
+     * [metadata]의 key는 `x-amz-meta-` 접두사 없이 전달합니다.
      */
     suspend fun putObject(
         bucket: String,
@@ -88,6 +97,8 @@ class S3KtorClient(
 
     /**
      * [body]를 S3 객체로 저장합니다.
+     *
+     * Streaming body를 전달할 때는 caller가 정확한 body semantics를 책임집니다.
      */
     suspend fun putObject(
         request: S3KtorPutObjectRequest,
@@ -129,6 +140,8 @@ class S3KtorClient(
 
     /**
      * S3 객체를 streaming channel로 가져옵니다.
+     *
+     * 반환된 [S3KtorStreamingObjectResponse.body]는 response channel이므로 caller가 소비를 완료해야 합니다.
      */
     suspend fun getObjectStream(bucket: String, key: String): S3KtorStreamingObjectResponse {
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
@@ -156,6 +169,13 @@ class S3KtorClient(
 
     /**
      * S3 ListObjectsV2를 호출합니다.
+     *
+     * ```kotlin
+     * val page = s3.listObjectsV2(
+     *     S3KtorListObjectsRequest(bucket = "demo-bucket", prefix = "logs/", maxKeys = 100)
+     * )
+     * val keys = page.contents.map { it.key }
+     * ```
      */
     suspend fun listObjectsV2(request: S3KtorListObjectsRequest): S3KtorListObjectsResponse {
         val response = httpClient.get(bucketUrl(request.bucket)) {
@@ -173,6 +193,8 @@ class S3KtorClient(
 
     /**
      * Multipart upload를 시작합니다.
+     *
+     * [metadata]의 key는 `x-amz-meta-` 접두사 없이 전달합니다.
      */
     suspend fun createMultipartUpload(
         bucket: String,
@@ -205,6 +227,8 @@ class S3KtorClient(
 
     /**
      * Multipart upload part를 streaming body로 업로드합니다.
+     *
+     * [partNumber]는 1 이상이어야 하며, [contentLength]는 음수일 수 없습니다.
      */
     suspend fun uploadPart(
         bucket: String,
@@ -232,6 +256,8 @@ class S3KtorClient(
 
     /**
      * Multipart upload를 완료합니다.
+     *
+     * [parts]는 비어 있을 수 없고, XML 생성 시 part number 순서로 정렬됩니다.
      */
     suspend fun completeMultipartUpload(
         bucket: String,
@@ -264,12 +290,16 @@ class S3KtorClient(
 
     /**
      * GetObject presigned URL을 생성합니다.
+     *
+     * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
     fun presignGetObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Get, objectUrl(bucket, key), expires)
 
     /**
      * PutObject presigned URL을 생성합니다.
+     *
+     * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
     fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Put, objectUrl(bucket, key), expires)
@@ -347,6 +377,22 @@ class S3KtorClient(
 
 /**
  * 내부 Ktor CIO client를 생성해 S3 REST client를 만듭니다.
+ *
+ * ```kotlin
+ * s3KtorClientOf(
+ *     region = "ap-northeast-2",
+ *     endpointOverride = Url("http://localhost:4566"),
+ *     addressingStyle = S3KtorAddressingStyle.Path,
+ * )
+ *
+ * suspend fun upload() {
+ *     s3.use {
+ *         it.putObject("demo-bucket", "hello.txt", "hello".encodeToByteArray())
+ *     }
+ * }
+ * ```
+ *
+ * 생성된 client는 [S3KtorClient.close] 호출 시 내부 `HttpClient`도 함께 닫습니다.
  */
 fun s3KtorClientOf(
     region: String,
