@@ -188,14 +188,16 @@ withSqsClient(endpointUrl, region, credentialsProvider) { client ->
 
 ```kotlin
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodb.getItem
 import io.bluetape4k.aws.kotlin.dynamodb.*
+import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValue
 
 // One-shot: use withDynamoDbClient (auto-close)
-suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
+suspend fun getItem(tableName: String, userId: String) =
     withDynamoDbClient(region = "ap-northeast-2") { client ->
         client.getItem {
             this.tableName = tableName
-            this.key = key
+            this.key = mapOf("userId" to userId.toAttributeValue())
         }
     }
 ```
@@ -204,7 +206,10 @@ suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.cloudwatch.*
+import io.bluetape4k.aws.kotlin.cloudwatch.model.metricDatum
 import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
+import aws.sdk.kotlin.services.cloudwatch.putMetricData
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 
 val cw = CloudWatchClient { region = "ap-northeast-2" }
 
@@ -225,7 +230,10 @@ suspend fun publishMetric(namespace: String, value: Double) {
 ### CloudWatch Logs (DSL)
 
 ```kotlin
-import io.bluetape4k.aws.kotlin.cloudwatchlogs.*
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.putLogEvents
+import io.bluetape4k.aws.kotlin.cloudwatch.*
+import io.bluetape4k.aws.kotlin.cloudwatch.model.cloudwatchlogs.inputLogEvent
 
 suspend fun sendLog(client: CloudWatchLogsClient, logGroup: String, logStream: String, message: String) {
     client.putLogEvents {
@@ -244,6 +252,7 @@ suspend fun sendLog(client: CloudWatchLogsClient, logGroup: String, logStream: S
 ### STS (DSL)
 
 ```kotlin
+import aws.sdk.kotlin.services.sts.getCallerIdentity
 import io.bluetape4k.aws.kotlin.sts.*
 
 // Create StsClient using bluetape4k DSL
@@ -255,7 +264,9 @@ suspend fun getCallerIdentity() = stsClient.getCallerIdentity {}
 ### Kinesis (DSL)
 
 ```kotlin
-import io.bluetape4k.aws.kotlin.kinesis.*
+import aws.sdk.kotlin.services.kinesis.KinesisClient
+import aws.sdk.kotlin.services.kinesis.putRecord
+import io.bluetape4k.aws.kotlin.kinesis.model.putRecordRequestOf
 
 suspend fun putRecord(client: KinesisClient, streamName: String, data: ByteArray) {
     client.putRecord(
@@ -266,16 +277,15 @@ suspend fun putRecord(client: KinesisClient, streamName: String, data: ByteArray
 
 ## Test Environment
 
-Integration tests use `AwsEmulatorServer` — the common interface for local AWS emulators. Select the emulator via `-Dbluetape4k.aws.emulator=localstack|floci` (default: `localstack`).
+Integration tests use LocalStack through Testcontainers. The Gradle test task still passes
+`-Dbluetape4k.aws.emulator=localstack` for consistency with sibling modules, but this module's
+test base creates `LocalStackServer` directly.
 
 ```kotlin
 abstract class AbstractAwsTest {
     companion object {
-        val awsEmulator: AwsEmulatorServer by lazy {
-            when (System.getProperty("bluetape4k.aws.emulator", "localstack")) {
-                "floci" -> FlociServer.Launcher.floci
-                else -> LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
-            }
+        val awsEmulator: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
         }
     }
 
@@ -290,16 +300,18 @@ abstract class AbstractAwsTest {
 }
 ```
 
-Run tests with Floci emulator:
+Run module tests:
 
 ```bash
-./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=floci
+./gradlew :aws-kotlin:test
 ```
 
 ## Adding the Dependency
 
 AWS Kotlin SDK services are declared as
 `compileOnly` dependencies, so you need to add the runtime dependencies for the services you use.
+`bluetape4k-aws-kotlin` exposes common bluetape4k coroutine utilities, but it does not force every
+AWS service client onto consumers that do not use that service.
 
 ```kotlin
 dependencies {

@@ -36,9 +36,29 @@ class SendMessageTest {
     }
 
     @Test
+    fun `sendMessageRequestOf는 builder 블록으로 속성을 추가할 수 있다`() {
+        val req = sendMessageRequestOf(
+            queueUrl = queueUrl,
+            messageBody = "Message with attributes"
+        ) {
+            messageAttributes = mapOf("source" to messageAttributeValueOf("test"))
+        }
+
+        req.messageAttributes.shouldNotBeNull()
+        req.messageAttributes!!["source"]?.stringValue shouldBeEqualTo "test"
+    }
+
+    @Test
     fun `sendMessageRequestOf는 빈 queueUrl을 허용하지 않는다`() {
         assertFailsWith<IllegalArgumentException> {
             sendMessageRequestOf(queueUrl = "", messageBody = "test")
+        }
+    }
+
+    @Test
+    fun `sendMessageRequestOf는 빈 messageBody를 허용하지 않는다`() {
+        assertFailsWith<IllegalArgumentException> {
+            sendMessageRequestOf(queueUrl = queueUrl, messageBody = " ")
         }
     }
 
@@ -54,9 +74,29 @@ class SendMessageTest {
     }
 
     @Test
+    fun `sendMessageBatchRequestEntryOf는 FIFO 속성과 delay를 설정할 수 있다`() {
+        val entry = sendMessageBatchRequestEntryOf(
+            id = "msg-001",
+            messageBody = "Batch message",
+            messageGroupId = "orders",
+            delaySeconds = 5
+        )
+
+        entry.messageGroupId shouldBeEqualTo "orders"
+        entry.delaySeconds shouldBeEqualTo 5
+    }
+
+    @Test
     fun `sendMessageBatchRequestEntryOf는 빈 id를 허용하지 않는다`() {
         assertFailsWith<IllegalArgumentException> {
             sendMessageBatchRequestEntryOf(id = "", messageBody = "test")
+        }
+    }
+
+    @Test
+    fun `sendMessageBatchRequestEntryOf는 빈 messageBody를 허용하지 않는다`() {
+        assertFailsWith<IllegalArgumentException> {
+            sendMessageBatchRequestEntryOf(id = "msg-001", messageBody = "")
         }
     }
 
