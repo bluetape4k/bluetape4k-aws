@@ -169,18 +169,22 @@ SpEL is not supported in `queue`; `${...}` placeholders are.
 
 ```kotlin
 import io.bluetape4k.aws.spring.dynamodb.AbstractCoroutinesDynamoDbRepository
+import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema
+import software.amazon.awssdk.enhanced.dynamodb.Key
 
 class OrderRepository(
-    client: DynamoDbEnhancedAsyncClient,
-    tableName: String,
+    enhancedClient: DynamoDbEnhancedAsyncClient,
+    tableNameResolver: DynamoDbTableNameResolver,
 ): AbstractCoroutinesDynamoDbRepository<Order, String>(
-    client = client,
-    tableName = tableName,
-    schema = TableSchema.fromBean(Order::class.java),
+    enhancedClient = enhancedClient,
+    tableNameResolver = tableNameResolver,
+    entityClass = Order::class.java,
 ) {
-    override fun keyOf(id: String) = keyOf(partitionValue = id)
+    override val tableName: String = "orders"
+
+    override fun keyFromId(id: String): Key =
+        Key.builder().partitionValue(id).build()
 }
 ```
 
