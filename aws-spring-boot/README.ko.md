@@ -106,6 +106,9 @@ bluetape4k:
 
 `endpoint-override` 를 지정하면 반드시 `region` 도 설정해야 한다. 각 Properties
 클래스의 `init` 블록에서 시작 시점에 강제한다.
+`sqs.queues.<name>.url` 은 `@SqsListener(queue = "<name>")` 에서 논리 큐 이름을
+실제 URL로 바꾸는 alias 설정이다. `SqsOperations.getQueueUrl("<name>")` 은 여전히
+AWS SQS `GetQueueUrl` 요청을 수행한다.
 
 ## 사용 예제
 
@@ -164,6 +167,8 @@ class OrderListener {
 리스너 메서드는 `String`, AWS SDK `Message`, `SqsReceivedMessage` 중 하나를
 인자로 받을 수 있다. `queue` 에는 SpEL 을 지원하지 않으며 `${...}` 플레이스홀더는
 지원한다.
+`bluetape4k.aws.sqs.queues.orders.url` 을 설정하면 `queue = "orders"` 는 해당 URL을
+직접 사용한다.
 
 ### DynamoDB — Coroutines Repository
 

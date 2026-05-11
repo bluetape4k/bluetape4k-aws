@@ -107,6 +107,9 @@ bluetape4k:
 
 `endpoint-override` requires `region` to be set. Each property class enforces
 this at startup via `require`.
+`sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a
+logical queue alias. `SqsOperations.getQueueUrl("<name>")` still performs an
+AWS SQS `GetQueueUrl` call.
 
 ## Usage Examples
 
@@ -164,6 +167,8 @@ class OrderListener {
 
 Listener method may receive `String`, AWS SDK `Message`, or `SqsReceivedMessage`.
 SpEL is not supported in `queue`; `${...}` placeholders are.
+If `bluetape4k.aws.sqs.queues.orders.url` is configured, `queue = "orders"`
+uses that URL directly.
 
 ### DynamoDB — Coroutines repository
 

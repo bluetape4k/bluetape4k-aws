@@ -8,6 +8,32 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
 /**
  * Spring 애플리케이션에서 사용하는 Coroutines 기반 SQS 작업 계약.
+ *
+ * ```kotlin
+ * import kotlinx.coroutines.CancellationException
+ *
+ * class OrderQueue(private val sqs: SqsOperations) {
+ *
+ *     suspend fun publish(orderJson: String) {
+ *         val queueUrl = sqs.getQueueUrl("orders")
+ *         sqs.send(queueUrl, orderJson)
+ *     }
+ *
+ *     suspend fun processOnce() {
+ *         val queueUrl = sqs.getQueueUrl("orders")
+ *         sqs.receive(queueUrl, maxMessages = 10).forEach { message ->
+ *             try {
+ *                 check(message.body.isNotBlank())
+ *                 sqs.delete(queueUrl, message.receiptHandle)
+ *             } catch (e: CancellationException) {
+ *                 throw e
+ *             } catch (e: Exception) {
+ *                 sqs.changeVisibility(queueUrl, message.receiptHandle, timeoutSeconds = 0)
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
  */
 interface SqsOperations {
 
@@ -26,6 +52,8 @@ interface SqsOperations {
 
     /**
      * `bluetape4k.aws.sqs.queues` 설정을 적용해 큐를 생성합니다.
+     *
+     * 현재는 `redrivePolicy` 설정을 `RedrivePolicy` 속성으로 변환해 적용합니다.
      */
     suspend fun createConfiguredQueue(queueName: String): String
 
@@ -69,6 +97,14 @@ interface SqsOperations {
      * 큐 수신 결과를 차가운 무한 [Flow]로 제공합니다.
      *
      * 메시지 삭제는 호출자가 명시적으로 수행해야 합니다.
+     *
+     * ```kotlin
+     * sqs.receiveFlow(queueUrl, maxMessages = 5)
+     *     .collect { message ->
+     *         check(message.body.isNotBlank())
+     *         sqs.delete(message.queueUrl, message.receiptHandle)
+     *     }
+     * ```
      */
     fun receiveFlow(
         queueUrl: String,
