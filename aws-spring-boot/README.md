@@ -1,4 +1,4 @@
-# aws-spring-boot
+# Module bluetape4k-aws-spring-boot
 
 [English](README.md) | [한국어](README.ko.md)
 
