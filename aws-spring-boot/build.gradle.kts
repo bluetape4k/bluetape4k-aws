@@ -27,6 +27,7 @@ dependencies {
     compileOnly(project(":aws-kotlin"))
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.s3)
+    compileOnly(libs.aws2.sns)
     compileOnly(libs.aws2.sqs)
 
     // bluetape4k artifacts
@@ -37,6 +38,7 @@ dependencies {
     testImplementation(libs.bluetape4k.testcontainers)
     testImplementation(libs.aws2.dynamodb.enhanced)
     testImplementation(libs.aws2.s3)
+    testImplementation(libs.aws2.sns)
     testImplementation(libs.aws2.sqs)
 
     // Spring Boot (autoconfigure only — no runtime dep)
