@@ -142,6 +142,18 @@ class SqsAutoConfigurationTest {
             }
     }
 
+    @Test
+    fun `listener disabled ignores invalid listener annotations`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
+            .withUserConfiguration(SpelListenerConfig::class.java)
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context.getBean(SqsMessageListenerContainerRegistry::class.java)
+                    .getContainer("listener.handle.#{queueName}")).isNull()
+            }
+    }
+
     @Configuration(proxyBeanMethods = false)
     internal class SpelListenerConfig {
         @Bean
