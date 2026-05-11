@@ -26,10 +26,15 @@ import java.time.Clock
  * - 기본 모드는 replay 가능한 body만 payload 서명한다. 스트리밍 body는 `payloadSigningEnabled=false`일 때만 허용한다.
  *
  * ```kotlin
- * val client = HttpClient {
+ * import io.ktor.client.HttpClient
+ * import io.ktor.client.engine.cio.CIO
+ * import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+ *
+ * val client = HttpClient(CIO) {
  *     install(AwsSigV4Plugin) {
  *         region = "ap-northeast-2"
  *         service = "execute-api"
+ *         credentialsProvider = DefaultCredentialsProvider.builder().build()
  *     }
  * }
  * ```

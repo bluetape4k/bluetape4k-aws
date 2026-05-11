@@ -2,6 +2,13 @@ package io.bluetape4k.aws.ktor.s3
 
 /**
  * S3 REST 요청의 bucket 주소 지정 방식입니다.
+ *
+ * ```kotlin
+ * val s3 = s3KtorClientOf(
+ *     region = "ap-northeast-2",
+ *     addressingStyle = S3KtorAddressingStyle.Path,
+ * )
+ * ```
  */
 enum class S3KtorAddressingStyle {
     /**

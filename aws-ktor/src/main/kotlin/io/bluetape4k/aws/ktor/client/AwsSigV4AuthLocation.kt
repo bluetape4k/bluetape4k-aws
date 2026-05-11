@@ -14,6 +14,15 @@ package io.bluetape4k.aws.ktor.client
  * ```
  */
 enum class AwsSigV4AuthLocation {
+    /**
+     * `Authorization`, `X-Amz-Date`, `X-Amz-Security-Token` 같은 헤더로 서명 정보를 보냅니다.
+     */
     Header,
+
+    /**
+     * `X-Amz-*` query parameter로 서명 정보를 보냅니다.
+     *
+     * Presigned URL처럼 요청 URL 자체가 인증 정보를 포함해야 할 때 사용합니다.
+     */
     QueryString,
 }
