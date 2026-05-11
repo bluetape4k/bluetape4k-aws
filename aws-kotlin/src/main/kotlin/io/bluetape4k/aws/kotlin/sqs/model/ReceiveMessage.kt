@@ -23,7 +23,9 @@ internal const val MAX_WAIT_TIME_SECONDS = 20
  *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
  *     maxNumberOfMessages = 5,
  *     waitTimeSeconds = 10
- * )
+ * ) {
+ *     receiveRequestAttemptId = "attempt-001"  // FIFO 큐 재시도 중복 수신 방지에 사용
+ * }
  * val response = sqsClient.receiveMessage(request)
  * val messages = response.messages
  * ```

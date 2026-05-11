@@ -14,7 +14,9 @@ import io.bluetape4k.support.requireNotEmpty
  *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
  *     messageBody = "Hello, World!",
  *     delaySeconds = 0
- * )
+ * ) {
+ *     messageAttributes = mapOf("source" to messageAttributeValueOf("web"))
+ * }
  * sqsClient.sendMessage(request)
  * ```
  *
@@ -48,7 +50,8 @@ inline fun sendMessageRequestOf(
  * ```kotlin
  * val entry = sendMessageBatchRequestEntryOf(
  *     id = "msg-001",
- *     messageBody = "Hello, World!"
+ *     messageBody = "Hello, World!",
+ *     messageGroupId = "orders"   // FIFO 큐에서 사용
  * )
  * ```
  *
@@ -86,13 +89,16 @@ inline fun sendMessageBatchRequestEntryOf(
  * ```kotlin
  * val request = sendMessageBatchRequestOf(
  *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
- *     entries = listOf(sendMessageBatchRequestEntryOf("id1", "Hello!"))
+ *     entries = listOf(
+ *         sendMessageBatchRequestEntryOf("id1", "Hello!", messageGroupId = "orders")
+ *     )
  * )
  * sqsClient.sendMessageBatch(request)
  * ```
  *
  * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
  * @param entries SendMessageBatchRequestEntry 인스턴스의 컬렉션입니다.
+ * @param builder SendMessageBatchRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
  * @return SendMessageBatchRequest 인스턴스를 반환합니다.
  */
 @JvmName("sendMessageBatchRequestOfCollection")
@@ -118,14 +124,15 @@ inline fun sendMessageBatchRequestOf(
  * ```kotlin
  * val request = sendMessageBatchRequestOf(
  *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue",
- *     sendMessageBatchRequestEntryOf("id1", "Hello!"),
- *     sendMessageBatchRequestEntryOf("id2", "World!")
+ *     sendMessageBatchRequestEntryOf("id1", "Hello!", messageGroupId = "orders"),
+ *     sendMessageBatchRequestEntryOf("id2", "World!", messageGroupId = "orders")
  * )
  * sqsClient.sendMessageBatch(request)
  * ```
  *
  * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
  * @param entries SendMessageBatchRequestEntry 인스턴스의 배열입니다.
+ * @param builder SendMessageBatchRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
  * @return SendMessageBatchRequest 인스턴스를 반환합니다.
  */
 @JvmName("sendMessageBatchRequestOfArray")

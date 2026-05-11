@@ -36,6 +36,17 @@ class ReceiveMessageTest {
     }
 
     @Test
+    fun `receiveMessageRequestOf는 수신 개수와 대기 시간 경계값을 허용한다`() {
+        val minReq = receiveMessageRequestOf(queueUrl = queueUrl, maxNumberOfMessages = 1, waitTimeSeconds = 0)
+        val maxReq = receiveMessageRequestOf(queueUrl = queueUrl, maxNumberOfMessages = 10, waitTimeSeconds = 20)
+
+        minReq.maxNumberOfMessages shouldBeEqualTo 1
+        minReq.waitTimeSeconds shouldBeEqualTo 0
+        maxReq.maxNumberOfMessages shouldBeEqualTo 10
+        maxReq.waitTimeSeconds shouldBeEqualTo 20
+    }
+
+    @Test
     fun `receiveMessageRequestOf는 visibilityTimeout을 설정할 수 있다`() {
         val req = receiveMessageRequestOf(queueUrl = queueUrl, visibilityTimeout = 30)
 
@@ -51,6 +62,15 @@ class ReceiveMessageTest {
 
         req.messageAttributeNames.shouldNotBeNull()
         req.messageAttributeNames!! shouldBeEqualTo listOf("All")
+    }
+
+    @Test
+    fun `receiveMessageRequestOf는 builder 블록으로 FIFO 수신 토큰을 설정할 수 있다`() {
+        val req = receiveMessageRequestOf(queueUrl = queueUrl) {
+            receiveRequestAttemptId = "attempt-001"
+        }
+
+        req.receiveRequestAttemptId shouldBeEqualTo "attempt-001"
     }
 
     @Test

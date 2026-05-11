@@ -32,6 +32,8 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 ## 설치
 
 AWS Kotlin SDK 서비스는 `compileOnly`로 선언되어 있으므로, 사용할 서비스 SDK를 런타임 의존성으로 추가해야 합니다.
+`bluetape4k-aws-kotlin`은 공통 bluetape4k coroutine 유틸리티를 노출하지만, 사용하지 않는 AWS 서비스 클라이언트를
+소비자 애플리케이션에 강제로 올리지는 않습니다.
 
 ```kotlin
 dependencies {
@@ -41,6 +43,12 @@ dependencies {
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... 필요한 서비스 추가
 }
 ```
@@ -88,14 +96,16 @@ withSqsClient(endpointUrl, region, credentialsProvider) { client ->
 
 ```kotlin
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodb.getItem
 import io.bluetape4k.aws.kotlin.dynamodb.*
+import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValue
 
 // 단발성: withDynamoDbClient 사용 (close 자동)
-suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
+suspend fun getItem(tableName: String, userId: String) =
     withDynamoDbClient(region = "ap-northeast-2") { client ->
         client.getItem {
             this.tableName = tableName
-            this.key = key
+            this.key = mapOf("userId" to userId.toAttributeValue())
         }
     }
 ```
@@ -104,7 +114,10 @@ suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.cloudwatch.*
+import io.bluetape4k.aws.kotlin.cloudwatch.model.metricDatum
 import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
+import aws.sdk.kotlin.services.cloudwatch.putMetricData
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 
 val cw = CloudWatchClient { region = "ap-northeast-2" }
 
@@ -125,7 +138,10 @@ suspend fun publishMetric(namespace: String, value: Double) {
 ### CloudWatch Logs (DSL)
 
 ```kotlin
-import io.bluetape4k.aws.kotlin.cloudwatchlogs.*
+import aws.sdk.kotlin.services.cloudwatchlogs.CloudWatchLogsClient
+import aws.sdk.kotlin.services.cloudwatchlogs.putLogEvents
+import io.bluetape4k.aws.kotlin.cloudwatch.*
+import io.bluetape4k.aws.kotlin.cloudwatch.model.cloudwatchlogs.inputLogEvent
 
 suspend fun sendLog(client: CloudWatchLogsClient, logGroup: String, logStream: String, message: String) {
     client.putLogEvents {
@@ -144,6 +160,7 @@ suspend fun sendLog(client: CloudWatchLogsClient, logGroup: String, logStream: S
 ### STS (DSL)
 
 ```kotlin
+import aws.sdk.kotlin.services.sts.getCallerIdentity
 import io.bluetape4k.aws.kotlin.sts.*
 
 // bluetape4k DSL로 StsClient 생성
@@ -155,7 +172,9 @@ suspend fun getCallerIdentity() = stsClient.getCallerIdentity {}
 ### Kinesis (DSL)
 
 ```kotlin
-import io.bluetape4k.aws.kotlin.kinesis.*
+import aws.sdk.kotlin.services.kinesis.KinesisClient
+import aws.sdk.kotlin.services.kinesis.putRecord
+import io.bluetape4k.aws.kotlin.kinesis.model.putRecordRequestOf
 
 suspend fun putRecord(client: KinesisClient, streamName: String, data: ByteArray) {
     client.putRecord(
@@ -255,16 +274,14 @@ flowchart TD
 
 ## 테스트 환경
 
-`AwsEmulatorServer` 공통 인터페이스를 통해 로컬 AWS 에뮬레이터와 통합 테스트를 지원합니다. `-Dbluetape4k.aws.emulator=localstack|floci` 시스템 프로퍼티로 에뮬레이터를 선택합니다 (기본값: `localstack`).
+통합 테스트는 Testcontainers 기반 LocalStack을 사용합니다. Gradle test 태스크는 sibling 모듈과의 일관성을 위해
+`-Dbluetape4k.aws.emulator=localstack` 값을 전달하지만, 이 모듈의 테스트 베이스는 `LocalStackServer`를 직접 생성합니다.
 
 ```kotlin
 abstract class AbstractAwsTest {
     companion object {
-        val awsEmulator: AwsEmulatorServer by lazy {
-            when (System.getProperty("bluetape4k.aws.emulator", "localstack")) {
-                "floci" -> FlociServer.Launcher.floci
-                else -> LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
-            }
+        val awsEmulator: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
         }
     }
 
@@ -279,8 +296,8 @@ abstract class AbstractAwsTest {
 }
 ```
 
-Floci 에뮬레이터로 테스트 실행:
+모듈 테스트 실행:
 
 ```bash
-./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=floci
+./gradlew :aws-kotlin:test
 ```
