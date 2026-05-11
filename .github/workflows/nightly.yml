@@ -9,8 +9,18 @@ permissions:
 
 on:
   schedule:
-    - cron: '0 19 * * *'  # 매일 UTC 19:00 (KST 04:00)
+    - cron: '0 19 * * 1-6'  # Daily smoke, UTC 19:00 (KST 04:00) Mon-Sat
+    - cron: '0 19 * * 0'    # Weekly full, UTC 19:00 (KST 04:00) Sunday
   workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Nightly scope to run'
+        required: true
+        type: choice
+        default: full
+        options:
+          - smoke
+          - full
 
 env:
   JAVA_VERSION: '21'
@@ -64,6 +74,8 @@ jobs:
   # ── 2. aws 모듈 (LocalStack) ──────────────────────────────────────────────
   test-aws:
     name: Test / aws (LocalStack)
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
@@ -116,6 +128,8 @@ jobs:
   # ── 3. aws-kotlin 모듈 (LocalStack) ──────────────────────────────────────
   test-aws-kotlin:
     name: Test / aws-kotlin (LocalStack)
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
@@ -220,6 +234,8 @@ jobs:
   # ── 5. aws-ktor 모듈 (LocalStack) ────────────────────────────────────────
   test-aws-ktor:
     name: Test / aws-ktor (LocalStack)
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
@@ -272,6 +288,8 @@ jobs:
   # ── 6. 예제 모듈 ─────────────────────────────────────────────────────────
   test-examples:
     name: Test / Examples
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: build
@@ -333,6 +351,7 @@ jobs:
   # ── 7. 커버리지 집계 ──────────────────────────────────────────────────────
   coverage-report:
     name: Coverage Report
+
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
@@ -341,7 +360,7 @@ jobs:
       - test-aws-spring-boot
       - test-aws-ktor
       - test-examples
-    if: always()
+    if: ${{ always() && ((github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full')) }}
     steps:
       - name: Download all coverage artifacts
         uses: actions/download-artifact@v4
