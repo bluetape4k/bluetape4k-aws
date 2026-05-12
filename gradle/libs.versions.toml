@@ -141,8 +141,10 @@ aws2-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws2" }
 aws2-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-manager", version.ref = "aws2" }
 aws2-ses = { module = "software.amazon.awssdk:ses", version.ref = "aws2" }
 aws2-sesv2 = { module = "software.amazon.awssdk:sesv2", version.ref = "aws2" }
+aws2-secretsmanager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "aws2" }
 aws2-sns = { module = "software.amazon.awssdk:sns", version.ref = "aws2" }
 aws2-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "aws2" }
+aws2-ssm = { module = "software.amazon.awssdk:ssm", version.ref = "aws2" }
 aws2-kms = { module = "software.amazon.awssdk:kms", version.ref = "aws2" }
 aws2-cloudwatch = { module = "software.amazon.awssdk:cloudwatch", version.ref = "aws2" }
 aws2-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "aws2" }

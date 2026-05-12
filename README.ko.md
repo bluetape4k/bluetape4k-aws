@@ -114,7 +114,9 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
+    implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:ssm")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:cloudwatch")
@@ -159,7 +161,9 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:ssm")
 }
 ```
 
@@ -183,6 +187,22 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+    secrets-manager:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      sources:
+        - name: app-secret
+          secret-id: local/app
+          prefix: app
+    parameter-store:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      sources:
+        - name: app-parameters
+          path: /config/app
+          prefix: app
+          recursive: true
+          with-decryption: true
 ```
 
 ---
@@ -231,6 +251,27 @@ class OrderRepository(
 
 `aws-spring-boot`는 DynamoDB 테이블을 자동 생성하지 않습니다. 테이블 생성은
 migration, 배포 자동화, 또는 테스트 setup에서 명시적으로 수행합니다.
+
+### Secrets Manager와 Parameter Store — Environment Source
+
+Secrets Manager와 SSM Parameter Store source는 Spring Environment
+post-processing 단계에서 로드되므로 일반 `@ConfigurationProperties` 바인딩 전에
+사용할 수 있습니다. source가 하나 이상 설정된 경우에만 원격 조회를 수행합니다.
+
+```kotlin
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("app.db")
+data class DatabaseSettings(
+    val username: String,
+    val password: String,
+)
+```
+
+`prefix: app`으로 `{"db":{"username":"scott","password":"tiger"}}` JSON
+secret을 로드하면 `app.db.username`, `app.db.password` 속성이 됩니다.
+Parameter Store의 `/config/app/db/password`는 `path: /config/app`,
+`prefix: app` 설정에서 `app.db.password` 속성이 됩니다.
 
 ### SQS — Spring Boot Coroutines Template과 Listener
 
