@@ -1,18 +1,21 @@
 package io.bluetape4k.aws.spring.sns
 
 /**
- * SNS FIFO topic 처리량 범위.
+ * Throughput scope for an SNS FIFO topic.
  *
- * AWS SNS `FifoThroughputScope` topic attribute에 전달할 값을 안전하게 표현합니다.
+ * ## Contract
+ *
+ * Provides safe enum values for the AWS SNS `FifoThroughputScope` topic
+ * attribute.
  */
 enum class SnsFifoThroughputScope(val attributeValue: String) {
     /**
-     * Topic 전체 단위로 FIFO 처리량을 계산합니다.
+     * Computes FIFO throughput at the whole-topic level.
      */
     TOPIC("Topic"),
 
     /**
-     * Message group 단위로 FIFO 처리량을 계산합니다.
+     * Computes FIFO throughput at the message-group level.
      */
     MESSAGE_GROUP("MessageGroup"),
 }

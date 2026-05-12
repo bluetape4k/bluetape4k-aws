@@ -4,10 +4,23 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 
 /**
- * SNS 자동 설정 속성.
+ * Configuration properties for SNS auto-configuration.
  *
- * `bluetape4k.aws.sns` prefix로 바인딩되며, SDK client region/endpoint와
- * 애플리케이션에서 생성할 topic 기본 속성을 정의합니다.
+ * ## Contract
+ *
+ * Binds the `bluetape4k.aws.sns` prefix and defines SDK client settings plus
+ * default topic attributes used by [SnsOperations.createConfiguredTopic].
+ *
+ * ```yaml
+ * bluetape4k:
+ *   aws:
+ *     sns:
+ *       region: ap-northeast-2
+ *       topics:
+ *         orders:
+ *           attributes:
+ *             Environment: prod
+ * ```
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.sns")
 data class SnsProperties(
@@ -23,7 +36,7 @@ data class SnsProperties(
     }
 
     /**
-     * 설정 기반 topic 생성에 사용할 속성.
+     * Topic properties used by configuration-driven topic creation.
      */
     data class Topic(
         val fifo: Boolean = false,

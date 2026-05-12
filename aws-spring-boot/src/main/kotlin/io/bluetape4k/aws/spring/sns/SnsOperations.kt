@@ -3,7 +3,12 @@ package io.bluetape4k.aws.spring.sns
 import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
- * Spring 애플리케이션에서 사용하는 Coroutines 기반 SNS 작업 계약.
+ * Coroutine-based SNS operations for Spring applications.
+ *
+ * ## Contract
+ *
+ * Provides topic creation, configured-topic creation, topic lookup, and message
+ * publishing without exposing `CompletableFuture` to application code.
  *
  * ```kotlin
  * class OrderTopic(private val sns: SnsOperations) {
@@ -16,7 +21,7 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
 interface SnsOperations {
 
     /**
-     * 표준 topic을 생성하고 topic ARN을 반환합니다.
+     * Creates a standard topic and returns its topic ARN.
      */
     suspend fun createTopic(
         topicName: String,
@@ -24,7 +29,7 @@ interface SnsOperations {
     ): String
 
     /**
-     * FIFO topic을 생성하고 topic ARN을 반환합니다.
+     * Creates a FIFO topic and returns its topic ARN.
      */
     suspend fun createFifoTopic(
         topicName: String,
@@ -34,19 +39,20 @@ interface SnsOperations {
     ): String
 
     /**
-     * `bluetape4k.aws.sns.topics` 설정을 적용해 topic을 생성합니다.
+     * Creates a topic using `bluetape4k.aws.sns.topics` configuration.
      */
     suspend fun createConfiguredTopic(topicName: String): String
 
     /**
-     * topic 이름으로 topic ARN을 조회합니다.
+     * Finds a topic ARN by topic name.
      *
-     * 모든 `ListTopics` 페이지를 순회한 뒤 없으면 null을 반환합니다.
+     * Scans every `ListTopics` page and returns null when no matching topic is
+     * found.
      */
     suspend fun findTopicArn(topicName: String): String?
 
     /**
-     * SNS topic으로 메시지를 발행합니다.
+     * Publishes a message to an SNS topic.
      */
     suspend fun publish(request: SnsPublishRequest): PublishResponse
 }

@@ -168,7 +168,8 @@ Update both `README.md` and `README.ko.md`:
 
 - `aws-spring-boot` compiles with SNS SDK as `compileOnly`.
 - SNS auto-configuration is listed in `AutoConfiguration.imports`.
-- Public API has Korean KDoc consistent with nearby SQS code.
+- Public API has English KDoc, because KDoc is contributor-facing public
+  documentation under the workspace language policy.
 - Targeted `aws-spring-boot` tests pass.
 - Strict code review has no unresolved correctness, cancellation, Spring Boot, or public API blockers.
 - PR is opened against `develop`, assigned to `debop`, and linked to issue #4.

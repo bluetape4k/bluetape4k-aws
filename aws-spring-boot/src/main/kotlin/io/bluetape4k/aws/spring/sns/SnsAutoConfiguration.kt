@@ -15,7 +15,17 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 
 /**
- * SNS용 Spring Boot 4 자동 설정.
+ * Spring Boot 4 auto-configuration for AWS SNS.
+ *
+ * ## Contract
+ *
+ * Registers an [SnsAsyncClient] and [SnsOperations] when the AWS SNS SDK is on
+ * the runtime classpath and `bluetape4k.aws.sns.enabled` is not disabled.
+ *
+ * ```kotlin
+ * @Bean
+ * fun publisher(sns: SnsOperations): OrderPublisher = OrderPublisher(sns)
+ * ```
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnClass(

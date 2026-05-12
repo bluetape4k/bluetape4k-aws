@@ -3,10 +3,21 @@ package io.bluetape4k.aws.spring.sns
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 
 /**
- * SNS publish 요청 값 객체.
+ * Value object for an SNS publish request.
  *
- * 같은 타입의 positional parameter 실수를 줄이기 위해 topic ARN, 본문,
- * FIFO 전용 필드를 하나의 명명된 값으로 묶습니다.
+ * ## Contract
+ *
+ * Groups the topic ARN, message body, optional subject, attributes, and FIFO
+ * fields into a named value to avoid same-typed positional mistakes. FIFO
+ * topics require `messageGroupId`; standard topics reject FIFO-only fields.
+ *
+ * ```kotlin
+ * val request = SnsPublishRequest(
+ *     topicArn = topicArn,
+ *     subject = "Order accepted",
+ *     message = orderJson,
+ * )
+ * ```
  */
 data class SnsPublishRequest(
     val topicArn: String,

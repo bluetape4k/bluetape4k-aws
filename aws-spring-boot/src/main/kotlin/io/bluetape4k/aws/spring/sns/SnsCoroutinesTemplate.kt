@@ -5,7 +5,18 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
- * AWS SDK v2 [SnsAsyncClient]를 Coroutines 친화적인 [SnsOperations]로 감싸는 템플릿.
+ * Coroutine-friendly [SnsOperations] implementation backed by AWS SDK v2 [SnsAsyncClient].
+ *
+ * ## Contract
+ *
+ * Wraps `CompletableFuture` SNS APIs with suspending functions, applies
+ * configured topic properties from [SnsProperties], and lets AWS SDK exceptions
+ * propagate to callers.
+ *
+ * ```kotlin
+ * val topicArn = sns.createConfiguredTopic("orders")
+ * sns.publish(SnsPublishRequest(topicArn = topicArn, message = orderJson))
+ * ```
  */
 class SnsCoroutinesTemplate(
     private val snsAsyncClient: SnsAsyncClient,

@@ -13,7 +13,8 @@ Implement issue #4 in `aws-spring-boot` using the reviewed design spec:
 
 1. Spec review must be clean of blockers before implementation.
 2. Plan review must be clean of blockers before implementation.
-3. Kotlin public API must have Korean KDoc.
+3. Kotlin public API must have English KDoc, because KDoc is contributor-facing
+   public documentation under the workspace language policy.
 4. Compile-only SNS SDK types must be protected by string-based `@ConditionalOnClass`.
 5. Tests must prove auto-configuration behavior and coroutine SNS behavior.
 6. Final strict code review must be completed before commit/PR.
