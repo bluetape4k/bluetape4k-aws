@@ -6,7 +6,7 @@ PR #58 was merged with KMS Spring Boot support, then post-merge review found one
 
 - P1 findings: 1
 - P2 findings: 1
-- Review-driven corrective iterations: 2
+- Review-driven corrective iterations: 3
 
 ## Decision
 
@@ -19,6 +19,7 @@ The text-encryptor phase also registers `KmsProperties` explicitly so a user-pro
 - Added a regression test for `bluetape4k.aws.kms.enabled=false` with a custom `KmsOperations` bean.
 - Added coverage that the text-encryptor phase can bind `KmsProperties` for custom operations.
 - Replaced KMS package AssertJ usage with bluetape4k assertions.
+- Fixed a Claude-review finding where generic `ByteArray shouldNotBeEqualTo` would only compare array references.
 - Replaced KMS LocalStack `runTest` usage with `runSuspendIO`.
 - Switched the KMS LocalStack test to `LocalStackServer.Launcher.getLocalStack("kms")`.
 
@@ -26,6 +27,7 @@ The text-encryptor phase also registers `KmsProperties` explicitly so a user-pro
 
 - `./gradlew :aws-spring-boot:compileKotlin :aws-spring-boot:compileTestKotlin`
 - `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.kms.*'`
+- `./gradlew :aws-spring-boot:test`
 - `git diff --check`
 
 Result: 15 KMS tests passed.

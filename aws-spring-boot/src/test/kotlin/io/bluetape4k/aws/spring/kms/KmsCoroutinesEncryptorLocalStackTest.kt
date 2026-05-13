@@ -64,7 +64,7 @@ class KmsCoroutinesEncryptorLocalStackTest {
                     encryptionContext = encryptionContext,
                 )
 
-                ciphertext shouldNotBeEqualTo plaintext
+                ciphertext.contentEquals(plaintext) shouldBeEqualTo false
                 operations.decrypt(
                     ciphertext = ciphertext,
                     keyId = keyId,
