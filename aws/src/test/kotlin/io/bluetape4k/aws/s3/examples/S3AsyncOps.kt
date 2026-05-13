@@ -1,17 +1,17 @@
 package io.bluetape4k.aws.s3.examples
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.s3.AbstractS3Test
 import io.bluetape4k.aws.s3.getAsByteArrayAsync
 import io.bluetape4k.aws.s3.putAsByteArrayAsync
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.support.toUtf8String
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.test.runTest
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.RepeatedTest
 
 class S3AsyncOps: AbstractS3Test() {
@@ -21,7 +21,7 @@ class S3AsyncOps: AbstractS3Test() {
     }
 
     @RepeatedTest(REPEAT_SIZE)
-    fun `put object asynchronously`() = runTest {
+    fun `put object asynchronously`() = runSuspendIO {
         val key = Base58.randomString(16)
         val response = s3AsyncClient
             .putAsByteArrayAsync(
@@ -36,7 +36,7 @@ class S3AsyncOps: AbstractS3Test() {
     }
 
     @RepeatedTest(REPEAT_SIZE)
-    fun `get object asynchronously`() = runTest {
+    fun `get object asynchronously`() = runSuspendIO {
         val key = randomKey()
         val value = randomString()
 

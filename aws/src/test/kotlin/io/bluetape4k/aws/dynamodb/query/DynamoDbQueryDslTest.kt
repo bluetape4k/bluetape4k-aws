@@ -1,13 +1,13 @@
 package io.bluetape4k.aws.dynamodb.query
 
-import io.bluetape4k.aws.dynamodb.model.describe
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.dynamodb.model.describe
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 class DynamoDbQueryDslTest {
 
@@ -53,7 +53,7 @@ class DynamoDbQueryDslTest {
 
     @Test
     fun `queryRequest는 tableName 없으면 예외를 던진다`() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             queryRequest {
                 primaryKey("pk") { eq("value") }
             }
@@ -62,7 +62,7 @@ class DynamoDbQueryDslTest {
 
     @Test
     fun `queryRequest는 primaryKey 없으면 예외를 던진다`() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             queryRequest {
                 tableName = "table"
             }
@@ -71,14 +71,14 @@ class DynamoDbQueryDslTest {
 
     @Test
     fun `PrimaryKeyBuilder는 comparator 미설정 시 예외를 던진다`() {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             PrimaryKeyBuilder("pk").build()
         }
     }
 
     @Test
     fun `SortKeyBuilder는 comparator 미설정 시 예외를 던진다`() {
-        assertThrows<IllegalStateException> {
+        assertFailsWith<IllegalStateException> {
             SortKeyBuilder("sk").build()
         }
     }

@@ -1,14 +1,14 @@
 package io.bluetape4k.aws.sts
 
-import io.bluetape4k.logging.KLogging
-import io.bluetape4k.logging.debug
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 
@@ -69,7 +69,7 @@ class StsClientTest: AbstractStsTest() {
     @Test
     @Order(4)
     fun `AssumeRole durationSeconds 범위 검증`() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.assumeRole(
                 roleArn = "arn:aws:iam::000000000000:role/TestRole",
                 sessionName = "invalid-session",
@@ -81,7 +81,7 @@ class StsClientTest: AbstractStsTest() {
     @Test
     @Order(5)
     fun `GetSessionToken durationSeconds 범위 검증`() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.getSessionToken(durationSeconds = 899)
         }
     }

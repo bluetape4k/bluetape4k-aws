@@ -1,11 +1,11 @@
 package io.bluetape4k.aws.sns
 
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.concurrent.completableFutureOf
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
-import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointRequest

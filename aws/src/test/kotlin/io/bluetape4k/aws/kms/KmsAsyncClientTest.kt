@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.kms
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.core.toUtf8SdkBytes
 import io.bluetape4k.aws.kms.model.createAliasRequestOf
 import io.bluetape4k.aws.kms.model.createGrantRequestOf
@@ -12,16 +17,11 @@ import io.bluetape4k.aws.kms.model.encryptRequestOf
 import io.bluetape4k.aws.kms.model.listAliasesRequestOf
 import io.bluetape4k.aws.kms.model.putKeyPolicyRequestOf
 import io.bluetape4k.aws.kms.model.revokeGrantRequestOf
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.info
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.test.runTest
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -57,7 +57,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(2)
-    fun `대칭 키 생성`() = runTest {
+    fun `대칭 키 생성`() = runSuspendIO {
         val request = createKeyRequestOf(
             description = keyDescription,
             keySpec = KeySpec.SYMMETRIC_DEFAULT,
@@ -75,7 +75,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(3)
-    fun `데이터 암호화`() = runTest {
+    fun `데이터 암호화`() = runSuspendIO {
         val request = encryptRequestOf(
             keyId = keyId,
             plainText = data.toUtf8SdkBytes()
@@ -92,7 +92,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(4)
-    fun `데이터 복호화`() = runTest {
+    fun `데이터 복호화`() = runSuspendIO {
         val request = decryptRequestOf(
             keyId = keyId,
             ciphertextBlob = encryptedData
@@ -106,7 +106,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(5)
-    fun `키 비활성화`() = runTest {
+    fun `키 비활성화`() = runSuspendIO {
         val request = disableKeyRequestOf(keyId)
 
         val response = asyncClient.disableKey(request).await()
@@ -115,7 +115,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(6)
-    fun `키 활성화`() = runTest {
+    fun `키 활성화`() = runSuspendIO {
         val request = enableKeyRequestOf(keyId)
         val response = asyncClient.enableKey(request).await()
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
@@ -123,7 +123,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(7)
-    fun `Grant 생성`() = runTest {
+    fun `Grant 생성`() = runSuspendIO {
         val request = createGrantRequestOf(
             keyId = keyId,
             granteePrincipal = granteePrincipal,
@@ -138,7 +138,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(8)
-    fun `Grant 목록 조회`() = runTest {
+    fun `Grant 목록 조회`() = runSuspendIO {
         val listResp = asyncClient.listGrants {
             it.keyId(keyId)
             it.limit(15)
@@ -156,7 +156,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(9)
-    fun `Grant 취소`() = runTest {
+    fun `Grant 취소`() = runSuspendIO {
         val request = revokeGrantRequestOf(keyId, grantId)
         val response = asyncClient.revokeGrant(request).await()
 
@@ -166,7 +166,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(10)
-    fun `키 메타데이터 조회`() = runTest {
+    fun `키 메타데이터 조회`() = runSuspendIO {
         val request = describeKeyOf(keyId)
         val response = asyncClient.describeKey(request).await()
 
@@ -180,7 +180,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(11)
-    fun `커스텀 Alias 생성`() = runTest {
+    fun `커스텀 Alias 생성`() = runSuspendIO {
         log.debug { "Create custom alias. alias name=${aliasName}, keyId=$keyId" }
 
         val request = createAliasRequestOf(aliasName, keyId)
@@ -194,7 +194,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(12)
-    fun `Alias 목록 조회`() = runTest {
+    fun `Alias 목록 조회`() = runSuspendIO {
         val request = listAliasesRequestOf(limit = 10)
         val response = asyncClient.listAliases(request).await()
 
@@ -210,14 +210,14 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(13)
-    fun `Alias 삭제`() = runTest {
+    fun `Alias 삭제`() = runSuspendIO {
         val response = asyncClient.deleteAlias { it.aliasName(aliasName) }.await()
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
     }
 
     @Test
     @Order(14)
-    fun `키 목록 조회`() = runTest {
+    fun `키 목록 조회`() = runSuspendIO {
         val response = asyncClient.listKeys { it.limit(15) }.await()
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
@@ -231,7 +231,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
 
     @Test
     @Order(15)
-    fun `키 정책 설정`() = runTest {
+    fun `키 정책 설정`() = runSuspendIO {
         val policyName = "default"
         val policy = """
             {  
