@@ -49,6 +49,13 @@ private val MAX_PRESIGN_EXPIRY: Duration = Duration.ofDays(7)
 /**
  * Ktor `HttpClient` 기반 S3 REST 클라이언트입니다.
  *
+ * ## 동작/계약
+ *
+ * Ktor `HttpClient`와 [AwsSigV4Plugin]을 사용해 S3 REST API를 호출합니다. 객체 업로드,
+ * 다운로드, 삭제, ListObjectsV2, multipart upload, presigned GET/PUT URL 생성을 제공하며
+ * `endpointOverride`가 있으면 path-style URL을 사용합니다. 외부에서 주입한 `HttpClient`는
+ * 닫지 않고, [s3KtorClientOf]로 생성한 내부 client만 [close]에서 닫습니다.
+ *
  * ```kotlin
  * import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
  *
@@ -380,6 +387,12 @@ class S3KtorClient(
 /**
  * 내부 Ktor CIO client를 생성해 S3 REST client를 만듭니다.
  *
+ * ## 동작/계약
+ *
+ * 생성된 `HttpClient`에는 S3용 SigV4 설정이 설치됩니다. S3 streaming body와 presigned URL
+ * 호환성을 위해 payload signing, double URL encode, path normalization은 비활성화됩니다.
+ * 반환된 [S3KtorClient]를 닫으면 내부 `HttpClient`도 함께 닫힙니다.
+ *
  * ```kotlin
  * import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
  * import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
@@ -395,8 +408,6 @@ class S3KtorClient(
  *     }
  * }
  * ```
- *
- * 생성된 client는 [S3KtorClient.close] 호출 시 내부 `HttpClient`도 함께 닫습니다.
  */
 fun s3KtorClientOf(
     region: String,

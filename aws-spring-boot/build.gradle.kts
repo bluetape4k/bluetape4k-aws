@@ -28,6 +28,7 @@ dependencies {
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.s3)
     compileOnly(libs.aws2.secretsmanager)
+    compileOnly(libs.aws2.sns)
     compileOnly(libs.aws2.sqs)
     compileOnly(libs.aws2.ssm)
 
@@ -40,6 +41,7 @@ dependencies {
     testImplementation(libs.aws2.dynamodb.enhanced)
     testImplementation(libs.aws2.s3)
     testImplementation(libs.aws2.secretsmanager)
+    testImplementation(libs.aws2.sns)
     testImplementation(libs.aws2.sqs)
     testImplementation(libs.aws2.ssm)
 

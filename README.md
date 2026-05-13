@@ -22,6 +22,7 @@ support, Spring Boot 4 auto-configuration, and Ktor 3 integration. Part of the
 | `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services (WIP — Coroutines-native, no awspring dependency) |
 | `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin and coroutine-friendly S3 REST client |
 | `aws-ktor-s3-examples` | not published | LocalStack-oriented examples for `S3KtorClient`; compiled and tested in Nightly |
+| `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled and tested in Nightly |
 
 ---
 
@@ -162,6 +163,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:secretsmanager")
+    implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:ssm")
 }
@@ -203,6 +205,14 @@ bluetape4k:
           prefix: app
           recursive: true
           with-decryption: true
+    sns:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      topics:
+        orders.fifo:
+          fifo: true
+          content-based-deduplication: true
+          fifo-throughput-scope: message-group
 ```
 
 ---
@@ -293,6 +303,32 @@ class OrderQueue(
     }
 }
 ```
+
+### SNS — Spring Boot Coroutines Template
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+
+class OrderTopic(
+    private val sns: SnsOperations,
+) {
+    suspend fun publish(topicArn: String, payload: String): String {
+        val response = sns.publish(
+            SnsPublishRequest(
+                topicArn = topicArn,
+                message = payload,
+            )
+        )
+        return response.messageId()
+    }
+}
+```
+
+SNS can publish to an SQS subscription when the queue policy allows
+`sqs:SendMessage` from the topic ARN. The full SQS-SNS application example is
+tracked separately in issue #13.
+
 ### S3 Upload — Coroutines (`aws` module)
 
 ```kotlin
