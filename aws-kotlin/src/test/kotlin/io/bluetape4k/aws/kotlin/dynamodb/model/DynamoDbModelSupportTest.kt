@@ -5,13 +5,12 @@ import aws.sdk.kotlin.services.dynamodb.model.KeyType
 import aws.sdk.kotlin.services.dynamodb.model.ReturnValue
 import aws.sdk.kotlin.services.dynamodb.model.ScalarAttributeType
 import aws.sdk.kotlin.services.dynamodb.model.WriteRequest
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 class DynamoDbModelSupportTest {
 
@@ -141,13 +140,13 @@ class DynamoDbModelSupportTest {
     fun `writeRequestOf는 put과 delete를 각각 생성한다`() {
         val putRequest = putRequestOf(mapOf("id" to "1"))
         val putWriteRequest = writeRequestOf(putRequest)
-        assertNotNull(putWriteRequest.putRequest)
-        assertNull(putWriteRequest.deleteRequest)
+        putWriteRequest.putRequest.shouldNotBeNull()
+        putWriteRequest.deleteRequest.shouldBeNull()
 
         val deleteRequest = deleteRequestOf(mapOf("id" to "1"))
         val deleteWriteRequest = writeRequestOf(deleteRequest = deleteRequest)
-        assertNotNull(deleteWriteRequest.deleteRequest)
-        assertNull(deleteWriteRequest.putRequest)
+        deleteWriteRequest.deleteRequest.shouldNotBeNull()
+        deleteWriteRequest.putRequest.shouldBeNull()
     }
 
     @Test

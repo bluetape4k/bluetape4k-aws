@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.kotlin.sqs.model
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 class SqsModelSupportTest {
 

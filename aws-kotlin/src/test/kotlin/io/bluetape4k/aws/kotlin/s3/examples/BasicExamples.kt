@@ -5,6 +5,12 @@ import aws.sdk.kotlin.services.s3.listBuckets
 import aws.sdk.kotlin.services.s3.listObjectsV2
 import aws.sdk.kotlin.services.s3.model.Permission
 import aws.sdk.kotlin.services.s3.model.S3Exception
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeGreaterThan
+import io.bluetape4k.assertions.shouldContainSame
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.s3.AbstractKotlinS3Test
 import io.bluetape4k.aws.kotlin.s3.ensureBucketExists
 import io.bluetape4k.aws.kotlin.s3.forceDeleteBucket
@@ -26,13 +32,7 @@ import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeGreaterThan
-import io.bluetape4k.assertions.shouldContainSame
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 @TempFolderTest
 class BasicExamples: AbstractKotlinS3Test() {

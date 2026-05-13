@@ -2,6 +2,10 @@ package io.bluetape4k.aws.kotlin.s3
 
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.decodeToString
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.s3.model.getObjectRequestOf
 import io.bluetape4k.aws.kotlin.s3.model.putObjectRequestOf
 import io.bluetape4k.io.deleteIfExists
@@ -13,20 +17,14 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.utils.Runtimex
-import kotlinx.coroutines.delay
+import java.io.File
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.File
-import kotlin.time.Duration.Companion.seconds
 
 @TempFolderTest
 class S3ClientExtensionsTest: AbstractKotlinS3Test() {
@@ -125,8 +123,6 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
 
             contents.size shouldBeEqualTo samples.size
             contents shouldBeEqualTo samples
-
-            delay(1.seconds)
         }
     }
 
