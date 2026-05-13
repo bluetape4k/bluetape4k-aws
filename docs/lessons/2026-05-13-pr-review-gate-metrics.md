@@ -50,6 +50,41 @@ PR #60 merged only after:
 - GitHub CI: green
 - Merge commit: `631d4278bdf448acf14866691a2f422b38f5a590`
 
+## Module-Sliced Review Series
+
+After PR #60 established the gate, four module-sliced hardening PRs applied the
+same discipline to `:aws`, `:aws-kotlin`, `:aws-spring-boot`, and `:aws-ktor`.
+
+| Module | PR | Files touched | Review rounds | P0 | P1 | P2 fixed/accepted | Local test evidence | CI evidence |
+|---|---:|---:|---:|---:|---:|---:|---|---|
+| `:aws` | #64 | 14 tests + 1 lesson | 3 | 0 | 0 | 3 | 252 passing, 2 pending | `Test / aws` passed |
+| `:aws-kotlin` | #65 | 37 tests + 1 lesson | 3 | 0 | 0 | 4 | 443 passing, 5 pending | `Test / aws-kotlin` passed |
+| `:aws-spring-boot` | #66 | 8 tests + 1 lesson | 2 | 0 | 0 | 3 | 68 passing | `Test / aws-spring-boot` passed |
+| `:aws-ktor` | #67 | 5 tests + 1 lesson | 2 | 0 | 0 | 2 | 33 passing | `Test / aws-ktor` passed |
+
+Series totals:
+
+- 4 PRs merged after module-local tests, GitHub CI, and external review.
+- 64 test files plus 4 lesson files touched.
+- 10 local/advisor review rounds before or during PR gates.
+- P0 findings: 0.
+- P1 findings: 0.
+- Documented P2 findings fixed or explicitly accepted before merge: 12.
+- Local module evidence covered 796 passing tests and 7 pending tests across
+  separate module runs.
+- GitHub CI passed for every affected module slice.
+
+Repeated rules promoted:
+
+- Use `bluetape4k-assertions` in touched tests; scan for `kotlin.test.*`,
+  AssertJ, Kluent, and JUnit assertion imports before review.
+- Prefer Awaitility or `untilSuspending {}` over fixed sleeps in asynchronous
+  consumer tests.
+- Use `runSuspendIO` for LocalStack, AWS SDK, Ktor, and other blocking I/O
+  boundaries; keep `runTest` for virtual-time or pure coroutine lifecycle tests.
+- When framework callbacks are synchronous, document why
+  `runBlocking(Dispatchers.IO)` remains instead of hiding the blocking bridge.
+
 ## Future Guidance
 
 Run this gate before merge, not after merge. The review cost is lower than the
