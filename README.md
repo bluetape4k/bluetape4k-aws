@@ -115,7 +115,9 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
+    implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:ssm")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:cloudwatch")
@@ -160,8 +162,10 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:ssm")
 }
 ```
 
@@ -185,6 +189,22 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+    secrets-manager:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      sources:
+        - name: app-secret
+          secret-id: local/app
+          prefix: app
+    parameter-store:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      sources:
+        - name: app-parameters
+          path: /config/app
+          prefix: app
+          recursive: true
+          with-decryption: true
     sns:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -241,6 +261,27 @@ class OrderRepository(
 
 `aws-spring-boot` does not create DynamoDB tables automatically. Create tables
 through migrations, deployment automation, or explicit test setup.
+
+### Secrets Manager and Parameter Store — Environment Sources
+
+Secrets Manager and SSM Parameter Store sources are loaded during Spring
+Environment post-processing, before normal `@ConfigurationProperties` binding.
+No remote lookup is performed unless at least one source is configured.
+
+```kotlin
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("app.db")
+data class DatabaseSettings(
+    val username: String,
+    val password: String,
+)
+```
+
+For a JSON secret such as `{"db":{"username":"scott","password":"tiger"}}`
+with `prefix: app`, the properties become `app.db.username` and
+`app.db.password`. For Parameter Store path `/config/app/db/password` with
+`path: /config/app` and `prefix: app`, the property becomes `app.db.password`.
 
 ### SQS — Spring Boot Coroutines Template and Listener
 
