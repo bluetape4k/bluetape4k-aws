@@ -558,4 +558,4 @@ suspend fun publishMetric(namespace: String, value: Double) {
 
 ## 라이선스
 
-Apache License 2.0 — [LICENSE](https://www.apache.org/licenses/LICENSE-2.0) 참조.
+MIT License — [LICENSE](LICENSE) 참조.
