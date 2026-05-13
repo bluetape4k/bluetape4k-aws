@@ -586,4 +586,4 @@ automatically via Testcontainers.
 
 ## License
 
-Apache License 2.0 — see [LICENSE](https://www.apache.org/licenses/LICENSE-2.0).
+MIT License — see [LICENSE](LICENSE).
