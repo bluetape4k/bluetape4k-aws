@@ -5,12 +5,16 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.future.await
+import kotlinx.coroutines.launch
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest
@@ -80,6 +84,69 @@ class SqsConsumerRuntimeFailureTest {
             }
         } finally {
             runtime.stop()
+        }
+    }
+
+    @Test
+    fun `visibility heartbeat continues while stop drains running handler`() = runSuspendIO {
+        coroutineScope {
+            val client = mockk<SqsAsyncClient>()
+            val visibilityCalls = AtomicInteger()
+            val handlerStarted = CountDownLatch(1)
+            val releaseHandler = CompletableFuture<Unit>()
+            val message = Message.builder()
+                .messageId("message-1")
+                .receiptHandle("receipt-1")
+                .body("slow")
+                .build()
+
+            every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } returns
+                CompletableFuture.completedFuture(ReceiveMessageResponse.builder().messages(message).build())
+            every { client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>()) } answers {
+                visibilityCalls.incrementAndGet()
+                CompletableFuture.completedFuture(mockk())
+            }
+            every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } returns
+                CompletableFuture.completedFuture(mockk())
+
+            val runtime = SqsConsumerRuntime(
+                SqsConsumerRuntimeConfig(
+                    sqsAsyncClient = client,
+                    queueUrl = "https://sqs.local/source",
+                    coroutines = 1,
+                    maxMessages = 1,
+                    waitTimeSeconds = 0,
+                    visibilityTimeoutSeconds = 5,
+                    visibilityHeartbeatSeconds = 1,
+                    shutdownTimeout = Duration.ofSeconds(3),
+                    messageType = String::class,
+                    messageHandler = {
+                        handlerStarted.countDown()
+                        releaseHandler.await()
+                    },
+                )
+            )
+
+            try {
+                runtime.start()
+                await.atMost(Duration.ofSeconds(5)).untilAsserted {
+                    handlerStarted.count shouldBeEqualTo 0L
+                }
+
+                val stopJob = launch {
+                    runtime.stop()
+                }
+
+                await.atMost(Duration.ofSeconds(2)).untilAsserted {
+                    visibilityCalls.get() shouldBeGreaterOrEqualTo 1
+                }
+
+                releaseHandler.complete(Unit)
+                stopJob.join()
+            } finally {
+                releaseHandler.complete(Unit)
+                runtime.stop()
+            }
         }
     }
 

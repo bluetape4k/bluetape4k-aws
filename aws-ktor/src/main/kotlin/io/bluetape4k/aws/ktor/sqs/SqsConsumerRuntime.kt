@@ -421,7 +421,7 @@ class SqsConsumerRuntime(
         val currentScope = scope ?: return null
 
         return currentScope.launch(CoroutineName("sqs-visibility-heartbeat")) {
-            while (running.get() && currentCoroutineContext().isActive) {
+            while (currentCoroutineContext().isActive) {
                 try {
                     delay(Duration.ofSeconds(heartbeatSeconds.toLong()).toMillis())
                     if (context.deleted) {
