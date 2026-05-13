@@ -15,9 +15,14 @@ Spring Boot 4, and Ktor 3.
 | `aws-kotlin/` | stable | AWS Kotlin SDK native suspend APIs and DSL builders |
 | `aws-spring-boot/` | WIP | Spring Boot 4 auto-configuration without awspring |
 | `aws-ktor/` | WIP | Ktor 3 client/server integration |
+| `bom/` | stable | `bluetape4k-aws-bom` consumer BOM |
+| `examples/aws-ktor-s3-examples/` | example | LocalStack-oriented Ktor S3 examples; not published |
 
 Integration tests use LocalStack via Testcontainers. Use
 `-Dbluetape4k.aws.emulator=localstack|floci`; default is `localstack`.
+
+Root README visual assets live under `docs/assets/` and should be shared by
+`README.md` and `README.ko.md` through the same relative path.
 
 ## Commands
 

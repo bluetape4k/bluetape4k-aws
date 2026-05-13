@@ -7,11 +7,27 @@
 
 [English](./README.md) | 한국어
 
+![bluetape4k AWS 작업대 일러스트](./docs/assets/aws-workbench.png)
+
 **AWS Java SDK v2** 및 **AWS Kotlin SDK** 를 위한 Kotlin/JVM 래퍼 라이브러리입니다.
 Kotlin Coroutines 지원, Spring Boot 4 자동설정, Ktor 3 통합을 제공합니다.
 [bluetape4k](https://github.com/bluetape4k) 에코시스템의 일부입니다.
 
 ---
+
+## 프로젝트 목적
+
+`bluetape4k-aws`는 Kotlin 서비스에서 AWS SDK를 더 자연스럽게 사용하도록 돕습니다.
+Java SDK v2의 async 모델, AWS Kotlin SDK의 suspend 모델, Spring Boot 4 자동 설정,
+Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공합니다.
+
+## 제공 기능
+
+- **Kotlin-first AWS 클라이언트** — Java SDK v2 coroutine adapter와 AWS Kotlin SDK DSL/헬퍼
+- **서비스 범위** — DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS
+- **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener, auto-configuration 제공
+- **Ktor 3 통합** — SigV4 signing, coroutine S3 client, SQS consumer runtime, Ktor server/client 예제
+- **로컬 통합 테스트** — Testcontainers 기반 LocalStack/FLOCI emulator와 Nightly 예제 검증
 
 ## 모듈
 

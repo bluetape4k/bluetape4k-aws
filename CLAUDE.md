@@ -1,20 +1,26 @@
-# CLAUDE.md — bluetape4k-aws
+# CLAUDE.md - bluetape4k-aws
 
-AWS SDK v2 + AWS Kotlin SDK 래퍼. Coroutines, Spring Boot 4, Ktor 3 지원.
+AWS SDK v2 and AWS Kotlin SDK wrappers for bluetape4k. This repository provides
+coroutine-first AWS access, Spring Boot 4 auto-configuration, and Ktor 3
+integration.
 
-- **Group**: `io.github.bluetape4k.aws` · **Base version**: `0.1.0-SNAPSHOT`
-- **Publishing**: Maven Central via `nmcp` (`publishingType=AUTOMATIC`)
+- **Group**: `io.github.bluetape4k.aws`
+- **Base version**: `0.1.0-SNAPSHOT`
+- **Publishing**: Maven Central through `nmcp` with `publishingType=AUTOMATIC`
 
 ## Repository Layout
 
 | Module | Status | Description |
 |---|---|---|
-| `aws/` | stable | AWS Java SDK v2 — sync/async(`CompletableFuture`)/Coroutines extensions (DynamoDB, S3, SES, SNS, SQS, KMS, CloudWatch, Kinesis, STS) |
-| `aws-kotlin/` | stable | AWS Kotlin SDK — native `suspend` functions + DSL builders |
-| `aws-spring-boot/` | WIP | Spring Boot 4 auto-configuration (no awspring dep — pure Coroutines) |
-| `aws-ktor/` | WIP | Ktor 3 client/server integration |
+| `aws/` | stable | AWS Java SDK v2 sync, async `CompletableFuture`, and coroutine extensions for DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, and STS |
+| `aws-kotlin/` | stable | AWS Kotlin SDK native `suspend` functions and DSL builders |
+| `aws-spring-boot/` | active | Spring Boot 4 auto-configuration without awspring |
+| `aws-ktor/` | active | Ktor 3 SigV4, S3, SQS, and upcoming DynamoDB integration |
+| `bom/` | stable | `bluetape4k-aws-bom` consumer BOM |
+| `examples/aws-ktor-s3-examples/` | example | LocalStack-oriented Ktor S3 examples; not published |
 
-> 통합 테스트는 LocalStack via Testcontainers. `-Dbluetape4k.aws.emulator=localstack|floci` (default: `localstack`)
+Integration tests use LocalStack via Testcontainers. Use
+`-Dbluetape4k.aws.emulator=localstack|floci`; default is `localstack`.
 
 ## Build Commands
 
@@ -26,25 +32,23 @@ AWS SDK v2 + AWS Kotlin SDK 래퍼. Coroutines, Spring Boot 4, Ktor 3 지원.
 ./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
 ./gradlew build
 ./gradlew detekt
-./gradlew publishBluetapeAwsPublicationToCentralPortal           # SNAPSHOT
-./gradlew publishBluetapeAwsPublicationToCentralPortal -PsnapshotVersion=   # RELEASE
+./gradlew publishBluetapeAwsPublicationToCentralPortal
+./gradlew publishBluetapeAwsPublicationToCentralPortal -PsnapshotVersion=
 ```
 
-## AWS 특이사항
+## AWS Rules
 
-### SDK 의존성 선언 방식
+- AWS service SDK dependencies are `compileOnly` in `aws` and `aws-kotlin`.
+  Consumers must add the runtime service dependencies they use.
+- In `aws`, wrap `CompletableFuture` with `.await()` for coroutine APIs.
+- In `aws-kotlin`, call native AWS Kotlin SDK suspend APIs directly.
+- Wrap blocking AWS calls in `withContext(Dispatchers.IO)`.
+- AWS Kotlin SDK clients own connection pools and threads. Use `withXxxClient`
+  for short-lived clients and explicit `close()` for application-scoped clients.
 
-`aws` + `aws-kotlin` 모두 AWS 서비스 SDK를 `compileOnly` 로 선언.
-소비자가 실제로 사용하는 서비스 런타임 의존성을 직접 추가해야 함.
+## Documentation Rules
 
-### Coroutines 패턴
-
-- `aws` 모듈: `CompletableFuture` → `.await()` 로 래핑
-- `aws-kotlin` 모듈: AWS Kotlin SDK의 native `suspend` 함수 직접 사용
-- 블로킹 AWS 호출 → `withContext(Dispatchers.IO)` 래핑
-
-### Client 라이프사이클 (aws-kotlin)
-
-AWS Kotlin SDK 클라이언트는 연결 풀 + 스레드 보유. 반드시 닫아야 함:
-- 단기: `withXxxClient { }` (취소 시에도 자동 close)
-- 장기: 애플리케이션 종료 시 `close()` 명시적 호출
+- Keep `README.md` and `README.ko.md` structurally aligned.
+- Store shared README images under `docs/assets/` and reference them with the
+  same relative path from both locales.
+- Keep this file and other agent-facing guidance in English.
