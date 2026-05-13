@@ -15,15 +15,16 @@ and expose `SqsConsumerRuntime` as the lifecycle-testable core behind the Ktor
 ## Outcome
 
 Implemented coroutine pollers, typed handler conversion, publishing,
-receive-error backoff, optional visibility heartbeat, graceful shutdown, failure
-visibility, and documented best-effort manual DLQ forwarding.
+receive-error backoff, in-flight handler backpressure, optional visibility
+heartbeat, graceful shutdown, failure visibility, and documented best-effort
+manual DLQ forwarding.
 
 ## Verification
 
 - `./gradlew :aws-ktor:compileKotlin`
 - `./gradlew :aws-ktor:compileTestKotlin`
-- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - 10 passing
-- `./gradlew :aws-ktor:test` - 29 passing
+- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - 11 passing
+- `./gradlew :aws-ktor:test` - 30 passing
 
 ## Future Guidance
 

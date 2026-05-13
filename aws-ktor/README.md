@@ -191,7 +191,7 @@ Close the client when the application scope ends.
 | Option | Default | Description |
 |---|---:|---|
 | `queueUrl` / `queueName` | required | Configure exactly one source queue identity. |
-| `coroutines` | `1` | Number of polling coroutines. The default dispatcher is `Dispatchers.IO.limitedParallelism(coroutines)`. |
+| `coroutines` | `1` | Number of polling coroutines. The default dispatcher is `Dispatchers.IO.limitedParallelism(coroutines)`. Runtime backpressure limits in-flight handlers to `coroutines * maxMessages`. |
 | `maxMessages` | `10` | SQS receive batch size, validated as `1..10`. |
 | `waitTimeSeconds` | `20` | Long-poll wait time, validated as `0..20`. |
 | `visibilityTimeoutSeconds` | `null` | Optional receive visibility timeout. Required when visibility heartbeat is enabled. |

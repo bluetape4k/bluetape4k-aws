@@ -107,7 +107,9 @@ end
 
 - Runtime uses `SupervisorJob` so one failed message handler does not kill sibling pollers.
 - Default dispatcher is `Dispatchers.IO.limitedParallelism(coroutines)`.
+- Handler launch is backpressured with coroutine permits, bounding in-flight handlers to `coroutines * maxMessages`.
 - Polling loop rethrows `CancellationException`.
+- Runtime failure policy handles non-fatal `Exception`; fatal `Error` is not hidden by SQS retry/DLQ handling.
 - Long loops use `isActive` and `delay` to remain cancellation friendly.
 - Receive-loop errors use `SqsPollBackoff` to avoid hot retry loops.
 - Shutdown stops new receives, waits for in-flight handlers up to `shutdownTimeout`, then cancels remaining handlers without deleting canceled messages.
@@ -122,10 +124,11 @@ end
   - Manual DLQ forwarding with metadata.
   - Queue-name resolution failure retry.
   - Successful handler delete failure does not route to handler-failure DLQ handling.
+  - Slow handlers apply backpressure to the receive loop.
 
 ## Verification
 
 - `./gradlew :aws-ktor:compileKotlin :aws-ktor:compileTestKotlin`
-- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - passed, 10 tests.
-- `./gradlew :aws-ktor:test` - passed, 29 tests.
+- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - passed, 11 tests.
+- `./gradlew :aws-ktor:test` - passed, 30 tests.
 - `git diff --check`

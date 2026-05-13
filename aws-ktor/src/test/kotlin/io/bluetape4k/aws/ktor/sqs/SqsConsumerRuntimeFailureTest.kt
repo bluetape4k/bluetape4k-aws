@@ -1,7 +1,10 @@
 package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,11 +22,63 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeFailureTest {
+
+    @Test
+    fun `slow handlers apply backpressure to receive loop`() = runSuspendIO {
+        val client = mockk<SqsAsyncClient>()
+        val receiveCalls = AtomicInteger()
+        val handlerStarted = CountDownLatch(1)
+        val message = Message.builder()
+            .messageId("message-1")
+            .receiptHandle("receipt-1")
+            .body("slow")
+            .build()
+
+        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+            val response = if (receiveCalls.incrementAndGet() == 1) {
+                ReceiveMessageResponse.builder().messages(message).build()
+            } else {
+                ReceiveMessageResponse.builder().build()
+            }
+            CompletableFuture.completedFuture(response)
+        }
+        every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } returns
+            CompletableFuture.completedFuture(mockk())
+
+        val runtime = SqsConsumerRuntime(
+            SqsConsumerRuntimeConfig(
+                sqsAsyncClient = client,
+                queueUrl = "https://sqs.local/source",
+                coroutines = 1,
+                maxMessages = 1,
+                waitTimeSeconds = 0,
+                shutdownTimeout = Duration.ofMillis(100),
+                messageType = String::class,
+                messageHandler = {
+                    handlerStarted.countDown()
+                    awaitCancellation()
+                },
+            )
+        )
+
+        try {
+            runtime.start()
+
+            await.atMost(Duration.ofSeconds(5)).untilAsserted {
+                handlerStarted.count shouldBeEqualTo 0L
+            }
+            delay(200)
+            receiveCalls.get() shouldBeEqualTo 1
+        } finally {
+            runtime.stop()
+        }
+    }
 
     @Test
     fun `successful handler delete failure does not forward message to dead letter queue`() = runSuspendIO {

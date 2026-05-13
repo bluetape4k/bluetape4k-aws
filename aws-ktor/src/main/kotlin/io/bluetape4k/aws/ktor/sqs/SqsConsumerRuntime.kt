@@ -19,6 +19,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -212,6 +213,7 @@ class SqsConsumerRuntime(
     private val pollerJobs = CopyOnWriteArrayList<Job>()
     private val handlerJobs = ConcurrentHashMap.newKeySet<Job>()
     private val queueUrlMutex = Mutex()
+    private val handlerPermits = Semaphore(config.coroutines * config.maxMessages)
 
     @Volatile
     private var scope: CoroutineScope? = null
@@ -305,11 +307,13 @@ class SqsConsumerRuntime(
         val backoff = config.pollBackoff.newState()
 
         while (running.get() && currentCoroutineContext().isActive) {
+            var permits = 0
             try {
                 val queueUrl = resolveQueueUrl()
+                permits = acquireHandlerPermits()
                 val response = config.sqsAsyncClient.receiveMessage {
                     it.queueUrl(queueUrl)
-                    it.maxNumberOfMessages(config.maxMessages)
+                    it.maxNumberOfMessages(permits)
                     it.waitTimeSeconds(config.waitTimeSeconds)
                     it.messageAttributeNames("All")
                     it.messageSystemAttributeNamesWithStrings("All")
@@ -318,15 +322,22 @@ class SqsConsumerRuntime(
 
                 backoff.reset()
                 if (!running.get()) {
+                    repeat(permits) { handlerPermits.release() }
+                    permits = 0
                     return
                 }
 
-                response.messages().orEmpty().forEach { message ->
+                val messages = response.messages().orEmpty()
+                repeat(permits - messages.size) { handlerPermits.release() }
+                messages.forEach { message ->
                     launchHandler(queueUrl, message)
                 }
+                permits = 0
             } catch (e: CancellationException) {
+                repeat(permits) { handlerPermits.release() }
                 throw e
-            } catch (e: Throwable) {
+            } catch (e: Exception) {
+                repeat(permits) { handlerPermits.release() }
                 val retryDelay = backoff.next()
                 log.warn(e) {
                     "SQS receive loop failed. Retrying after ${retryDelay.toMillis()} ms."
@@ -336,10 +347,33 @@ class SqsConsumerRuntime(
         }
     }
 
+    private suspend fun acquireHandlerPermits(): Int {
+        var acquired = 0
+        try {
+            handlerPermits.acquire()
+            acquired++
+            while (acquired < config.maxMessages && handlerPermits.tryAcquire()) {
+                acquired++
+            }
+            return acquired
+        } catch (e: CancellationException) {
+            repeat(acquired) { handlerPermits.release() }
+            throw e
+        }
+    }
+
     private fun launchHandler(queueUrl: String, message: Message) {
-        val currentScope = scope ?: return
+        val currentScope = scope
+        if (currentScope == null) {
+            handlerPermits.release()
+            return
+        }
         val job = currentScope.launch {
-            handleMessage(queueUrl, message)
+            try {
+                handleMessage(queueUrl, message)
+            } finally {
+                handlerPermits.release()
+            }
         }
         handlerJobs += job
         job.invokeOnCompletion {
@@ -356,7 +390,7 @@ class SqsConsumerRuntime(
                 config.messageHandler(context, payload)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Throwable) {
+            } catch (e: Exception) {
                 handleFailure(queueUrl, message, e)
                 return
             }
@@ -366,7 +400,7 @@ class SqsConsumerRuntime(
                     delete(queueUrl, message.receiptHandle())
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Throwable) {
+                } catch (e: Exception) {
                     log.warn(e) {
                         "Failed to delete successfully handled SQS message. Message will remain eligible for redelivery."
                     }
@@ -396,7 +430,7 @@ class SqsConsumerRuntime(
                     context.changeVisibility(visibilitySeconds)
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Throwable) {
+                } catch (e: Exception) {
                     log.warn(e) {
                         "Failed to extend SQS message visibility."
                     }
@@ -405,7 +439,7 @@ class SqsConsumerRuntime(
         }
     }
 
-    private suspend fun handleFailure(queueUrl: String, message: Message, cause: Throwable) {
+    private suspend fun handleFailure(queueUrl: String, message: Message, cause: Exception) {
         when {
             config.hasManualDeadLetterQueue -> {
                 forwardToDeadLetterQueue(queueUrl, message, cause)
