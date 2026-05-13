@@ -3,11 +3,14 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -68,27 +71,30 @@ class S3CoroutinesTemplateLocalStackTest {
                     contentType = "text/plain",
                 )
 
-                assertThat(operations.existsBucket(bucketName)).isTrue()
-                assertThat(operations.downloadText(bucketName, key)).isEqualTo("hello s3")
-                assertThat(operations.downloadBytes(bucketName, key).toString(StandardCharsets.UTF_8)).isEqualTo("hello s3")
+                operations.existsBucket(bucketName).shouldBeTrue()
+                operations.downloadText(bucketName, key) shouldBeEqualTo "hello s3"
+                operations.downloadBytes(bucketName, key).toString(StandardCharsets.UTF_8) shouldBeEqualTo "hello s3"
 
                 val page = operations.listPage(bucketName, prefix = "docs/", maxKeys = 10)
-                assertThat(page.objects.map { it.key() }).contains(key)
-                assertThat(operations.listFlow(bucketName, prefix = "docs/", pageSize = 1).toList().map { it.key() })
-                    .contains(key)
+                page.objects.map { it.key() } shouldContain key
+                operations.listFlow(bucketName, prefix = "docs/", pageSize = 1).toList().map { it.key() } shouldContain key
 
                 val resource = operations.resource(bucketName, key)
-                assertThat(resource.exists()).isTrue()
-                assertThat(resource.filename).isEqualTo("readme.txt")
-                assertThat(resource.contentLength()).isEqualTo("hello s3".toByteArray().size.toLong())
-                assertThat(resource.inputStream.bufferedReader().use { it.readText() }).isEqualTo("hello s3")
+                resource.exists().shouldBeTrue()
+                resource.filename shouldBeEqualTo "readme.txt"
+                resource.contentLength() shouldBeEqualTo "hello s3".toByteArray().size.toLong()
+                resource.inputStream.bufferedReader().use { it.readText() } shouldBeEqualTo "hello s3"
 
-                assertThat(operations.presignGet(bucketName, key).toString()).contains(bucketName, key)
-                assertThat(operations.presignPut(bucketName, "docs/write.txt", contentType = "text/plain").toString())
-                    .contains(bucketName, "docs/write.txt")
+                val getUrl = operations.presignGet(bucketName, key).toString()
+                getUrl shouldContain bucketName
+                getUrl shouldContain key
+
+                val putUrl = operations.presignPut(bucketName, "docs/write.txt", contentType = "text/plain").toString()
+                putUrl shouldContain bucketName
+                putUrl shouldContain "docs/write.txt"
 
                 operations.delete(bucketName, key)
-                assertThat(operations.listPage(bucketName, prefix = "docs/", maxKeys = 10).objects).isEmpty()
+                operations.listPage(bucketName, prefix = "docs/", maxKeys = 10).objects.shouldBeEmpty()
             }
         }
     }

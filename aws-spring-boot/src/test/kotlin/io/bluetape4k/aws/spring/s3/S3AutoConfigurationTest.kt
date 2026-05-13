@@ -1,7 +1,10 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import org.assertj.core.api.Assertions.assertThat
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -26,12 +29,12 @@ class S3AutoConfigurationTest {
     @Test
     fun `register S3 clients and operations`() {
         contextRunner.run { context ->
-            assertThat(context).hasSingleBean(S3Client::class.java)
-            assertThat(context).hasSingleBean(S3AsyncClient::class.java)
-            assertThat(context).hasSingleBean(S3Presigner::class.java)
-            assertThat(context).hasSingleBean(S3Properties::class.java)
-            assertThat(context).hasSingleBean(S3Operations::class.java)
-            assertThat(context).hasSingleBean(S3CoroutinesTemplate::class.java)
+            context.getBeansOfType(S3Client::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3Presigner::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3Properties::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 1
         }
     }
 
@@ -40,10 +43,10 @@ class S3AutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.s3.enabled=false")
             .run { context ->
-                assertThat(context).doesNotHaveBean(S3Client::class.java)
-                assertThat(context).doesNotHaveBean(S3AsyncClient::class.java)
-                assertThat(context).doesNotHaveBean(S3Presigner::class.java)
-                assertThat(context).doesNotHaveBean(S3Operations::class.java)
+                context.getBeansOfType(S3Client::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3Presigner::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -52,9 +55,9 @@ class S3AutoConfigurationTest {
         contextRunner
             .withBean(S3Operations::class.java, { NoopS3Operations })
             .run { context ->
-                assertThat(context).hasSingleBean(S3Operations::class.java)
-                assertThat(context).doesNotHaveBean(S3CoroutinesTemplate::class.java)
-                assertThat(context.getBean(S3Operations::class.java)).isSameAs(NoopS3Operations)
+                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 0
+                context.getBean(S3Operations::class.java) shouldBeSameInstanceAs NoopS3Operations
             }
     }
 
@@ -67,11 +70,11 @@ class S3AutoConfigurationTest {
             })
             .withPropertyValues("bluetape4k.aws.s3.endpoint-override=http://localhost:4566")
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("region is required")
+                messages shouldContain "region is required"
             }
     }
 }

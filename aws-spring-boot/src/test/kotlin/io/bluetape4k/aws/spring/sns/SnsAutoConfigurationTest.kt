@@ -1,10 +1,14 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -25,10 +29,10 @@ class SnsAutoConfigurationTest {
     @Test
     fun `register SNS client and operations`() {
         contextRunner.run { context ->
-            assertThat(context).hasSingleBean(SnsAsyncClient::class.java)
-            assertThat(context).hasSingleBean(SnsProperties::class.java)
-            assertThat(context).hasSingleBean(SnsOperations::class.java)
-            assertThat(context).hasSingleBean(SnsCoroutinesTemplate::class.java)
+            context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SnsProperties::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SnsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
         }
     }
 
@@ -37,8 +41,8 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sns.enabled=false")
             .run { context ->
-                assertThat(context).doesNotHaveBean(SnsAsyncClient::class.java)
-                assertThat(context).doesNotHaveBean(SnsOperations::class.java)
+                context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -49,9 +53,9 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withBean(SnsAsyncClient::class.java, { customClient })
             .run { context ->
-                assertThat(context).hasSingleBean(SnsAsyncClient::class.java)
-                assertThat(context.getBean(SnsAsyncClient::class.java)).isSameAs(customClient)
-                assertThat(context).hasSingleBean(SnsOperations::class.java)
+                context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBean(SnsAsyncClient::class.java) shouldBeSameInstanceAs customClient
+                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -60,9 +64,9 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withBean(SnsOperations::class.java, { NoopSnsOperations })
             .run { context ->
-                assertThat(context).hasSingleBean(SnsOperations::class.java)
-                assertThat(context).doesNotHaveBean(SnsCoroutinesTemplate::class.java)
-                assertThat(context.getBean(SnsOperations::class.java)).isSameAs(NoopSnsOperations)
+                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(SnsCoroutinesTemplate::class.java).size shouldBeEqualTo 0
+                context.getBean(SnsOperations::class.java) shouldBeSameInstanceAs NoopSnsOperations
             }
     }
 
@@ -72,11 +76,11 @@ class SnsAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(SnsAutoConfiguration::class.java))
             .withPropertyValues("bluetape4k.aws.sns.endpoint-override=http://localhost:4566")
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("region is required")
+                messages shouldContain "region is required"
             }
     }
 
@@ -85,9 +89,9 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sns.endpoint-override=http://localhost:4566")
             .run { context ->
-                assertThat(context).hasNotFailed()
-                assertThat(context.getBean(SnsProperties::class.java).endpointOverride.toString())
-                    .isEqualTo("http://localhost:4566")
+                context.startupFailure.shouldBeNull()
+                context.getBean(SnsProperties::class.java).endpointOverride.toString() shouldBeEqualTo
+                    "http://localhost:4566"
             }
     }
 
@@ -96,8 +100,8 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.sns"))
             .run { context ->
-                assertThat(context).doesNotHaveBean(SnsAsyncClient::class.java)
-                assertThat(context).doesNotHaveBean(SnsOperations::class.java)
+                context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -111,8 +115,8 @@ class SnsAutoConfigurationTest {
             .run { context ->
                 val properties = context.getBean(SnsProperties::class.java)
 
-                assertThat(properties.topics["orders.fifo"]?.fifoThroughputScope)
-                    .isEqualTo(SnsFifoThroughputScope.MESSAGE_GROUP)
+                properties.topics["orders.fifo"]?.fifoThroughputScope shouldBeEqualTo
+                    SnsFifoThroughputScope.MESSAGE_GROUP
             }
     }
 
@@ -123,12 +127,12 @@ class SnsAutoConfigurationTest {
             .run { context ->
                 val operations = context.getBean(SnsOperations::class.java)
 
-                assertThatThrownBy {
+                val error = assertFailsWith<IllegalArgumentException> {
                     runBlocking {
                         operations.createConfiguredTopic("orders")
                     }
-                }.isInstanceOf(IllegalArgumentException::class.java)
-                    .hasMessageContaining("FIFO topic name")
+                }
+                error.message.orEmpty() shouldContain "FIFO topic name"
             }
     }
 
@@ -137,12 +141,12 @@ class SnsAutoConfigurationTest {
         contextRunner.run { context ->
             val operations = context.getBean(SnsOperations::class.java)
 
-            assertThatThrownBy {
+            val error = assertFailsWith<IllegalArgumentException> {
                 runBlocking {
                     operations.createConfiguredTopic("missing")
                 }
-            }.isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("not configured")
+            }
+            error.message.orEmpty() shouldContain "not configured"
         }
     }
 }

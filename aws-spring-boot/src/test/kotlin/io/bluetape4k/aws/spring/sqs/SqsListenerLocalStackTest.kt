@@ -3,10 +3,14 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldContainAll
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -84,10 +88,10 @@ class SqsListenerLocalStackTest {
                 runBlocking { operations.send(queueUrl, "listener-ok") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
-                    assertThat(listener.bodies).contains("listener-ok")
+                    listener.bodies shouldContain "listener-ok"
                 }
                 runBlocking {
-                    assertThat(operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)).isEmpty()
+                    operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).shouldBeEmpty()
                 }
             }
         }
@@ -108,7 +112,7 @@ class SqsListenerLocalStackTest {
                 runBlocking { operations.send(queueUrl, "listener-suspend-ok") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
-                    assertThat(listener.bodies).contains("listener-suspend-ok")
+                    listener.bodies shouldContain "listener-suspend-ok"
                 }
             }
         }
@@ -133,13 +137,13 @@ class SqsListenerLocalStackTest {
                 runBlocking { operations.send(queueUrl, "listener-fail") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
-                    assertThat(listener.attempts.get()).isGreaterThanOrEqualTo(2)
+                    listener.attempts.get() shouldBeGreaterOrEqualTo 2
                 }
                 val stopped = CountDownLatch(1)
                 context.getBean(SqsMessageListenerContainerRegistry::class.java).stop {
                     stopped.countDown()
                 }
-                assertThat(stopped.await(5, TimeUnit.SECONDS)).isTrue()
+                stopped.await(5, TimeUnit.SECONDS).shouldBeTrue()
             }
         }
     }
@@ -166,7 +170,7 @@ class SqsListenerLocalStackTest {
                 }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
-                    assertThat(listener.bodies).contains("concurrency-1", "concurrency-2")
+                    listener.bodies shouldContainAll listOf("concurrency-1", "concurrency-2")
                 }
             }
         }
@@ -187,7 +191,7 @@ class SqsListenerLocalStackTest {
                 runBlocking { operations.send(queueUrl, "listener-proxy-ok") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
-                    assertThat(ProxiedListener.bodies).contains("listener-proxy-ok")
+                    ProxiedListener.bodies shouldContain "listener-proxy-ok"
                 }
             }
         }

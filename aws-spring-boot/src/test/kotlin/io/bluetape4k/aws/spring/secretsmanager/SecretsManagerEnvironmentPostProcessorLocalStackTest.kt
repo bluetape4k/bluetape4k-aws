@@ -2,9 +2,10 @@
 
 package io.bluetape4k.aws.spring.secretsmanager
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -73,9 +74,9 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
 
         SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
-        assertThat(environment.getProperty("app.db.username")).isEqualTo("scott")
-        assertThat(environment.getProperty("app.db.password")).isEqualTo("tiger")
-        assertThat(environment.getProperty("app.feature", Boolean::class.java)).isTrue()
+        environment.getProperty("app.db.username") shouldBeEqualTo "scott"
+        environment.getProperty("app.db.password") shouldBeEqualTo "tiger"
+        environment.getProperty("app.feature", Boolean::class.java) shouldBeEqualTo true
     }
 
     @Test
@@ -84,8 +85,7 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
 
         SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
-        assertThat(environment.propertySources.map { it.name })
-            .doesNotContain("bluetape4k.aws.secrets-manager")
+        environment.propertySources.map { it.name } shouldNotContain "bluetape4k.aws.secrets-manager"
     }
 
     private fun secretsManagerClient(): SecretsManagerClient =

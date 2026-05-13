@@ -3,12 +3,16 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldEndWith
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -60,8 +64,8 @@ class SnsCoroutinesTemplateLocalStackTest {
                 val topicName = "standard-${UUID.randomUUID()}"
                 val topicArn = operations.createTopic(topicName)
 
-                assertThat(topicArn).endsWith(":$topicName")
-                assertThat(operations.findTopicArn(topicName)).isEqualTo(topicArn)
+                topicArn shouldEndWith ":$topicName"
+                operations.findTopicArn(topicName) shouldBeEqualTo topicArn
 
                 val published = operations.publish(
                     SnsPublishRequest(
@@ -70,7 +74,7 @@ class SnsCoroutinesTemplateLocalStackTest {
                         message = "hello sns",
                     )
                 )
-                assertThat(published.messageId()).isNotBlank()
+                published.messageId().shouldNotBeBlank()
             }
         }
     }
@@ -85,8 +89,8 @@ class SnsCoroutinesTemplateLocalStackTest {
                 runBlocking {
                     val topicArn = operations.createConfiguredTopic("configured")
 
-                    assertThat(topicArn).endsWith(":configured")
-                    assertThat(operations.findTopicArn("configured")).isEqualTo(topicArn)
+                    topicArn shouldEndWith ":configured"
+                    operations.findTopicArn("configured") shouldBeEqualTo topicArn
                 }
             }
     }
@@ -113,21 +117,21 @@ class SnsCoroutinesTemplateLocalStackTest {
                     )
                 )
 
-                assertThat(published.messageId()).isNotBlank()
+                published.messageId().shouldNotBeBlank()
             }
         }
     }
 
     @Test
     fun `reject FIFO only publish fields for standard topic`() {
-        assertThatThrownBy {
+        val error = assertFailsWith<IllegalArgumentException> {
             SnsPublishRequest(
                 topicArn = "arn:aws:sns:us-east-1:000000000000:standard",
                 message = "hello",
                 messageGroupId = "orders",
             )
-        }.isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("not allowed for standard topic")
+        }
+        error.message.orEmpty() shouldContain "not allowed for standard topic"
     }
 
     @Test
@@ -135,7 +139,7 @@ class SnsCoroutinesTemplateLocalStackTest {
         contextRunner().run { context ->
             val operations = context.getBean(SnsOperations::class.java)
 
-            assertThatThrownBy {
+            val error = assertFailsWith<Exception> {
                 runBlocking {
                     operations.publish(
                         SnsPublishRequest(
@@ -144,7 +148,8 @@ class SnsCoroutinesTemplateLocalStackTest {
                         )
                     )
                 }
-            }.hasMessageContaining("Topic")
+            }
+            error.message.orEmpty() shouldContain "Topic"
         }
     }
 
@@ -192,8 +197,8 @@ class SnsCoroutinesTemplateLocalStackTest {
                         it.waitTimeSeconds(5)
                     }.await().messages()
 
-                    assertThat(received).hasSize(1)
-                    assertThat(received.single().body()).contains("fanout")
+                    received shouldHaveSize 1
+                    received.single().body() shouldContain "fanout"
                 } finally {
                     sqs.close()
                 }
