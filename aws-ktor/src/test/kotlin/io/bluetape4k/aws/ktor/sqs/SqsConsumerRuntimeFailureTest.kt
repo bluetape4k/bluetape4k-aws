@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -139,7 +140,7 @@ class SqsConsumerRuntimeFailureTest {
                     runtime.stop()
                 }
                 await.atMost(Duration.ofSeconds(2)).untilAsserted {
-                    runtime.isRunning shouldBeEqualTo false
+                    runtime.isRunning.shouldBeFalse()
                 }
 
                 runtime.start()

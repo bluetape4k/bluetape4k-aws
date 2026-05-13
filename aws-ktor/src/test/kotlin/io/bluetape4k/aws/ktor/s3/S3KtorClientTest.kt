@@ -1,9 +1,12 @@
 package io.bluetape4k.aws.ktor.s3
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -16,20 +19,18 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.headersOf
-import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
-import kotlin.test.Test
-import kotlin.test.assertFailsWith
 
 class S3KtorClientTest {
 
     @Test
-    fun `PutObject는 S3 path-style URL과 unsigned payload 헤더로 요청한다`() = runTest {
+    fun `PutObject는 S3 path-style URL과 unsigned payload 헤더로 요청한다`() = runSuspendIO {
         lateinit var captured: HttpRequestData
         val s3 = s3Client(
             capture = { captured = it },
@@ -61,7 +62,7 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `ListObjectsV2는 continuation token을 쿼리에 유지한다`() = runTest {
+    fun `ListObjectsV2는 continuation token을 쿼리에 유지한다`() = runSuspendIO {
         lateinit var captured: HttpRequestData
         val s3 = s3Client(
             capture = { captured = it },
@@ -105,7 +106,7 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `S3 error XML은 S3KtorException으로 변환한다`() = runTest {
+    fun `S3 error XML은 S3KtorException으로 변환한다`() = runSuspendIO {
         val s3 = s3Client(
             response = {
                 respond(
@@ -136,7 +137,7 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `Multipart upload는 S3 query contract를 사용한다`() = runTest {
+    fun `Multipart upload는 S3 query contract를 사용한다`() = runSuspendIO {
         val captured = mutableListOf<HttpRequestData>()
         val s3 = s3Client(
             capture = { captured += it },
@@ -181,7 +182,7 @@ class S3KtorClientTest {
         upload.uploadId shouldBeEqualTo "upload-1"
         part.eTag shouldBeEqualTo "\"part-etag-1\""
         complete.eTag shouldBeEqualTo "\"object-etag\""
-        captured[0].url.parameters.names().contains("uploads") shouldBeEqualTo true
+        captured[0].url.parameters.names().contains("uploads").shouldBeTrue()
         captured[1].url.parameters["partNumber"] shouldBeEqualTo "1"
         captured[1].url.parameters["uploadId"] shouldBeEqualTo "upload-1"
         captured[2].url.parameters["uploadId"] shouldBeEqualTo "upload-1"
@@ -205,13 +206,13 @@ class S3KtorClientTest {
         presigned.url.encodedPath shouldBeEqualTo "/demo.bucket/logs/2026/app%20log.txt"
         presigned.url.parameters["X-Amz-Algorithm"] shouldBeEqualTo "AWS4-HMAC-SHA256"
         presigned.url.parameters["X-Amz-Expires"] shouldBeEqualTo "900"
-        presigned.url.parameters["X-Amz-Signature"].orEmpty().isNotBlank() shouldBeEqualTo true
+        presigned.url.parameters["X-Amz-Signature"].orEmpty().isNotBlank().shouldBeTrue()
 
         s3.close()
     }
 
     @Test
-    fun `AWS S3 endpoint는 DNS-safe bucket에 virtual-hosted URL을 사용한다`() = runTest {
+    fun `AWS S3 endpoint는 DNS-safe bucket에 virtual-hosted URL을 사용한다`() = runSuspendIO {
         lateinit var captured: HttpRequestData
         val s3 = s3Client(
             endpointOverride = null,
@@ -229,7 +230,7 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `AWS S3 endpoint는 dotted bucket을 path-style URL로 fallback한다`() = runTest {
+    fun `AWS S3 endpoint는 dotted bucket을 path-style URL로 fallback한다`() = runSuspendIO {
         lateinit var captured: HttpRequestData
         val s3 = s3Client(
             endpointOverride = null,
@@ -247,7 +248,7 @@ class S3KtorClientTest {
     }
 
     @Test
-    fun `AWS S3 endpoint는 명시적 Path addressing style을 따른다`() = runTest {
+    fun `AWS S3 endpoint는 명시적 Path addressing style을 따른다`() = runSuspendIO {
         lateinit var captured: HttpRequestData
         val s3 = s3Client(
             endpointOverride = null,

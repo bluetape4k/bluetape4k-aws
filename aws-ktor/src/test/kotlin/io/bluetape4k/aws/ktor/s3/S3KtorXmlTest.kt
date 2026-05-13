@@ -1,8 +1,9 @@
 package io.bluetape4k.aws.ktor.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
 
 class S3KtorXmlTest {
 
@@ -33,7 +34,7 @@ class S3KtorXmlTest {
 
         result.bucket shouldBeEqualTo "demo-bucket"
         result.prefix shouldBeEqualTo "logs/"
-        result.isTruncated shouldBeEqualTo true
+        result.isTruncated.shouldBeTrue()
         result.nextContinuationToken shouldBeEqualTo "token-2"
         result.contents.single().key shouldBeEqualTo "logs/2026/app.log"
         result.contents.single().eTag shouldBeEqualTo "\"etag-1\""
@@ -51,7 +52,7 @@ class S3KtorXmlTest {
         )
 
         xml shouldContain "<CompleteMultipartUpload xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
-        (xml.indexOf("<PartNumber>1</PartNumber>") < xml.indexOf("<PartNumber>2</PartNumber>")) shouldBeEqualTo true
+        (xml.indexOf("<PartNumber>1</PartNumber>") < xml.indexOf("<PartNumber>2</PartNumber>")).shouldBeTrue()
         xml shouldContain "<ETag>&quot;etag-1&quot;</ETag>"
         xml shouldContain "<ETag>&quot;etag-2&quot;</ETag>"
     }

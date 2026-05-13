@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.ktor.client
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respondOk
@@ -12,19 +14,17 @@ import io.ktor.client.request.setBody
 import io.ktor.http.HttpHeaders
 import io.ktor.http.content.OutgoingContent
 import io.ktor.utils.io.ByteWriteChannel
-import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
-import kotlin.test.Test
-import kotlin.test.assertFailsWith
 
 class AwsSigV4PluginTest {
 
     @Test
-    fun `헤더 인증으로 요청에 Authorization 헤더를 추가한다`() = runTest {
+    fun `헤더 인증으로 요청에 Authorization 헤더를 추가한다`() = runSuspendIO {
         var authorization: String? = null
         var amzDate: String? = null
 
@@ -44,7 +44,7 @@ class AwsSigV4PluginTest {
     }
 
     @Test
-    fun `세션 자격 증명은 보안 토큰 헤더를 추가한다`() = runTest {
+    fun `세션 자격 증명은 보안 토큰 헤더를 추가한다`() = runSuspendIO {
         var token: String? = null
 
         val client = signedClient(
@@ -62,7 +62,7 @@ class AwsSigV4PluginTest {
     }
 
     @Test
-    fun `쿼리 문자열 인증은 X-Amz 서명 파라미터를 추가한다`() = runTest {
+    fun `쿼리 문자열 인증은 X-Amz 서명 파라미터를 추가한다`() = runSuspendIO {
         var query: Map<String, List<String>> = emptyMap()
 
         val client = signedClient(authLocation = AwsSigV4AuthLocation.QueryString) {
@@ -80,7 +80,7 @@ class AwsSigV4PluginTest {
     }
 
     @Test
-    fun `ByteArrayContent body는 payload 서명을 허용한다`() = runTest {
+    fun `ByteArrayContent body는 payload 서명을 허용한다`() = runSuspendIO {
         var authorization: String? = null
 
         val client = signedClient {
@@ -97,7 +97,7 @@ class AwsSigV4PluginTest {
     }
 
     @Test
-    fun `스트리밍 body는 payload 서명 활성화 시 실패한다`() = runTest {
+    fun `스트리밍 body는 payload 서명 활성화 시 실패한다`() = runSuspendIO {
         val client = signedClient()
 
         assertFailsWith<IllegalStateException> {
@@ -115,7 +115,7 @@ class AwsSigV4PluginTest {
     }
 
     @Test
-    fun `스트리밍 body는 payload 서명 비활성화 시 허용한다`() = runTest {
+    fun `스트리밍 body는 payload 서명 비활성화 시 허용한다`() = runSuspendIO {
         var authorization: String? = null
         val client = signedClient(payloadSigningEnabled = false) {
             authorization = it.headers[HttpHeaders.Authorization]
@@ -136,7 +136,7 @@ class AwsSigV4PluginTest {
     }
 
     @Test
-    fun `region은 빈 문자열일 수 없다`() = runTest {
+    fun `region은 빈 문자열일 수 없다`() = runSuspendIO {
         assertFailsWith<IllegalArgumentException> {
             HttpClient(MockEngine) {
                 engine {
