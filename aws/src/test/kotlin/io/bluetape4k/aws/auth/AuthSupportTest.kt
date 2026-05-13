@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.auth
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 
@@ -29,7 +29,7 @@ class AuthSupportTest {
     @ParameterizedTest
     @ValueSource(strings = ["", " ", "  "])
     fun `awsBasicCredentialsOf는 빈 accessKeyId에 대해 예외를 던진다`(blankKey: String) {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             awsBasicCredentialsOf(blankKey, "valid-secret")
         }
     }
@@ -37,7 +37,7 @@ class AuthSupportTest {
     @ParameterizedTest
     @ValueSource(strings = ["", " ", "  "])
     fun `awsBasicCredentialsOf는 빈 securityAccessKey에 대해 예외를 던진다`(blankSecret: String) {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             awsBasicCredentialsOf("valid-key", blankSecret)
         }
     }
@@ -59,4 +59,3 @@ class AuthSupportTest {
         provider.resolveCredentials().accessKeyId() shouldBeEqualTo "myKey"
     }
 }
-

@@ -1,16 +1,16 @@
 package io.bluetape4k.aws.sts
 
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.test.runTest
-import io.bluetape4k.assertions.shouldNotBeBlank
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 
@@ -25,7 +25,7 @@ class StsAsyncClientCoroutinesExtensionsTest: AbstractStsTest() {
 
     @Test
     @Order(1)
-    fun `코루틴으로 호출자 신원 조회`() = runTest {
+    fun `코루틴으로 호출자 신원 조회`() = runSuspendIO {
         val response = asyncClient.getCallerIdentityAsync().await()
 
         log.debug { "userId=${response.userId()}, account=${response.account()}, arn=${response.arn()}" }
@@ -38,7 +38,7 @@ class StsAsyncClientCoroutinesExtensionsTest: AbstractStsTest() {
 
     @Test
     @Order(2)
-    fun `코루틴으로 IAM 역할 임시 맡기 (AssumeRole)`() = runTest {
+    fun `코루틴으로 IAM 역할 임시 맡기 (AssumeRole)`() = runSuspendIO {
         val roleArn = "arn:aws:iam::000000000000:role/TestRole"
         val sessionName = "coroutine-test-session"
 
@@ -55,7 +55,7 @@ class StsAsyncClientCoroutinesExtensionsTest: AbstractStsTest() {
 
     @Test
     @Order(3)
-    fun `코루틴으로 임시 세션 자격 증명 발급 (GetSessionToken)`() = runTest {
+    fun `코루틴으로 임시 세션 자격 증명 발급 (GetSessionToken)`() = runSuspendIO {
         val response = asyncClient.getSessionToken(durationSeconds = 900)
 
         log.debug { "sessionToken credentials=${response.credentials()}" }
@@ -69,8 +69,8 @@ class StsAsyncClientCoroutinesExtensionsTest: AbstractStsTest() {
 
     @Test
     @Order(4)
-    fun `코루틴 AssumeRole durationSeconds 범위 검증`() = runTest {
-        assertThrows<IllegalArgumentException> {
+    fun `코루틴 AssumeRole durationSeconds 범위 검증`() = runSuspendIO {
+        assertFailsWith<IllegalArgumentException> {
             asyncClient.assumeRole(
                 roleArn = "arn:aws:iam::000000000000:role/TestRole",
                 sessionName = "invalid-coroutine-session",
@@ -81,8 +81,8 @@ class StsAsyncClientCoroutinesExtensionsTest: AbstractStsTest() {
 
     @Test
     @Order(5)
-    fun `코루틴 GetSessionToken durationSeconds 범위 검증`() = runTest {
-        assertThrows<IllegalArgumentException> {
+    fun `코루틴 GetSessionToken durationSeconds 범위 검증`() = runSuspendIO {
+        assertFailsWith<IllegalArgumentException> {
             asyncClient.getSessionToken(durationSeconds = 899)
         }
     }

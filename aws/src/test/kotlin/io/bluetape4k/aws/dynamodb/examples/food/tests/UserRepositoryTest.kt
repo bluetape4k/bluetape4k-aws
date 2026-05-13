@@ -1,18 +1,18 @@
 package io.bluetape4k.aws.dynamodb.examples.food.tests
 
-import io.bluetape4k.aws.dynamodb.examples.food.AbstractFoodApplicationTest
-import io.bluetape4k.aws.dynamodb.examples.food.model.UserDocument
-import io.bluetape4k.aws.dynamodb.examples.food.repository.UserRepository
-import io.bluetape4k.idgenerators.uuid.Uuid
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
-import io.bluetape4k.support.uninitialized
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.dynamodb.examples.food.AbstractFoodApplicationTest
+import io.bluetape4k.aws.dynamodb.examples.food.model.UserDocument
+import io.bluetape4k.aws.dynamodb.examples.food.repository.UserRepository
+import io.bluetape4k.idgenerators.uuid.Uuid
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.uninitialized
+import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -33,7 +33,7 @@ class UserRepositoryTest: AbstractFoodApplicationTest() {
 
     @Test
     fun `save item and load`() =
-        runTest {
+        runSuspendIO {
             val user = createUser()
             repository.save(user)
 
@@ -43,7 +43,7 @@ class UserRepositoryTest: AbstractFoodApplicationTest() {
 
     @Test
     fun `save item and delete`() =
-        runTest {
+        runSuspendIO {
             val user = createUser()
             repository.save(user)
 
@@ -55,7 +55,7 @@ class UserRepositoryTest: AbstractFoodApplicationTest() {
 
     @Test
     fun `save item and update`() =
-        runTest {
+        runSuspendIO {
             val user = createUser()
             repository.save(user)
 
@@ -70,7 +70,7 @@ class UserRepositoryTest: AbstractFoodApplicationTest() {
 
     @Test
     fun `save many items`() =
-        runTest {
+        runSuspendIO {
             val users = List(100) { createUser() }
 
             val saved = repository.saveAll(users).toList()

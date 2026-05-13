@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.sqs
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.aws.sqs.model.receiveMessageRequestOf
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
@@ -13,10 +13,10 @@ class SqsValidationTest: AbstractSqsTest() {
     fun `receiveMessages validates maxResults range in sync client`() {
         val queueUrl = "https://example.com/queue/demo"
 
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.receiveMessages(queueUrl, maxResults = 0)
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.receiveMessages(queueUrl, maxResults = 11)
         }
     }
@@ -25,10 +25,10 @@ class SqsValidationTest: AbstractSqsTest() {
     fun `receiveMessages validates maxResults range in async client`() {
         val queueUrl = "https://example.com/queue/demo"
 
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             asyncClient.receiveMessagesAsync(queueUrl, maxResults = 0)
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             asyncClient.receiveMessagesAsync(queueUrl, maxResults = 11)
         }
     }
@@ -37,29 +37,29 @@ class SqsValidationTest: AbstractSqsTest() {
     fun `batch operations reject empty entries`() {
         val queueUrl = "https://example.com/queue/demo"
 
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.sendBatch(queueUrl, entries = emptyList<SendMessageBatchRequestEntry>())
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.changeMessageVisibilityBatch(
                 queueUrl,
                 entries = emptyList<ChangeMessageVisibilityBatchRequestEntry>()
             )
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.deleteMessageBatch(queueUrl, entries = emptyList<DeleteMessageBatchRequestEntry>())
         }
 
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             asyncClient.sendBatchAsync(queueUrl, entries = emptyList<SendMessageBatchRequestEntry>())
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             asyncClient.changeMessageVisibilityBatchAsync(
                 queueUrl,
                 entries = emptyList<ChangeMessageVisibilityBatchRequestEntry>()
             )
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             asyncClient.deleteMessageBatchAsync(queueUrl, entries = emptyList<DeleteMessageBatchRequestEntry>())
         }
     }
@@ -68,16 +68,16 @@ class SqsValidationTest: AbstractSqsTest() {
     fun `receiveMessageRequestOf validates maxNumber and waitTimeSeconds`() {
         val queueUrl = "https://example.com/queue/demo"
 
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             receiveMessageRequestOf(queueUrl, maxNumber = 0)
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             receiveMessageRequestOf(queueUrl, maxNumber = 11)
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             receiveMessageRequestOf(queueUrl, waitTimeSeconds = -1)
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             receiveMessageRequestOf(queueUrl, waitTimeSeconds = 21)
         }
     }

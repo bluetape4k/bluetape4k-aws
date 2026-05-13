@@ -1,16 +1,18 @@
 package io.bluetape4k.aws.dynamodb.enhanced
 
-import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
-import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.future.await
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.junit5.awaitility.untilSuspending
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import kotlinx.coroutines.future.await
+import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
@@ -18,9 +20,11 @@ import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
+import software.amazon.awssdk.services.dynamodb.model.TableStatus
 import java.io.Serializable
+import java.time.Duration
 import java.util.*
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.coroutines.cancellation.CancellationException
 
 class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
@@ -34,6 +38,33 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
         var age: Int = 0,
     ): Serializable
 
+    private suspend fun waitUntilTableActive(tableName: String) {
+        await.atMost(Duration.ofSeconds(10)).untilSuspending {
+            try {
+                asyncClient
+                    .describeTable { it.tableName(tableName) }
+                    .await()
+                    .table()
+                    .tableStatus() == TableStatus.ACTIVE
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    private suspend fun waitUntilItemExists(table: DynamoDbAsyncTable<TestEntity>, id: String) {
+        await.atMost(Duration.ofSeconds(10)).untilSuspending {
+            table.getItem(id) != null
+        }
+    }
+
+    private suspend fun waitUntilItemMissing(table: DynamoDbAsyncTable<TestEntity>, id: String) {
+        await.atMost(Duration.ofSeconds(10)).untilSuspending {
+            table.getItem(id) == null
+        }
+    }
 
     @Test
     fun `getItem by partition key should return item`() = runSuspendIO {
@@ -68,11 +99,11 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
             }.await()
 
         // 테이블 활성화 대기
-        delay(500.milliseconds)
+        waitUntilTableActive(tableName)
 
         val entity = TestEntity(UUID.randomUUID().toString(), "John", 30)
         table.putItem(entity)
-        delay(100.milliseconds)
+        waitUntilItemExists(table, entity.id)
 
         val result = table.getItem(entity.id)
 
@@ -117,7 +148,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
                 )
             }.await()
 
-        delay(500.milliseconds)
+        waitUntilTableActive(tableName)
 
         val result = table.getItem("non-existent-id")
         result.shouldBeNull()
@@ -158,11 +189,11 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
                 )
             }.await()
 
-        delay(500.milliseconds)
+        waitUntilTableActive(tableName)
 
         val entity = TestEntity(UUID.randomUUID().toString(), "Jane", 25)
         table.putItem(entity)
-        delay(100.milliseconds)
+        waitUntilItemExists(table, entity.id)
 
         val beforeDelete = table.getItem(entity.id)
         beforeDelete.shouldNotBeNull()
@@ -172,7 +203,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
         deleted.shouldNotBeNull()
         deleted.id shouldBeEqualTo entity.id
 
-        delay(100.milliseconds)
+        waitUntilItemMissing(table, entity.id)
         val afterDelete = table.getItem(entity.id)
         afterDelete.shouldBeNull()
 
@@ -212,11 +243,11 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
                 )
             }.await()
 
-        delay(500.milliseconds)
+        waitUntilTableActive(tableName)
 
         val entity = TestEntity(UUID.randomUUID().toString(), "Test", 30)
         table.putItem(entity)
-        delay(100.milliseconds)
+        waitUntilItemExists(table, entity.id)
 
         val exists = table.exists(entity.id)
         exists.shouldBeTrue()
@@ -257,7 +288,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
                 )
             }.await()
 
-        delay(500.milliseconds)
+        waitUntilTableActive(tableName)
 
         val exists = table.exists("non-existent")
         exists.shouldBeFalse()
