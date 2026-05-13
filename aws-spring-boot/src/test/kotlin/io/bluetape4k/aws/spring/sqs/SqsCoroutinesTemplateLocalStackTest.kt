@@ -3,11 +3,15 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -56,14 +60,14 @@ class SqsCoroutinesTemplateLocalStackTest {
             runBlocking {
                 val queueUrl = operations.createQueue("template-${UUID.randomUUID()}")
                 val sent = operations.send(queueUrl, "hello sqs")
-                assertThat(sent.messageId()).isNotBlank()
+                sent.messageId().shouldNotBeBlank()
 
                 val received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
-                assertThat(received).hasSize(1)
-                assertThat(received.single().body).isEqualTo("hello sqs")
+                received shouldHaveSize 1
+                received.single().body shouldBeEqualTo "hello sqs"
 
                 operations.delete(queueUrl, received.single().receiptHandle)
-                assertThat(operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)).isEmpty()
+                operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).shouldBeEmpty()
             }
         }
     }
@@ -78,11 +82,11 @@ class SqsCoroutinesTemplateLocalStackTest {
                 operations.send(queueUrl, "flow sqs")
 
                 val received = operations.receiveFlow(queueUrl, maxMessages = 1, waitTimeSeconds = 1).first()
-                assertThat(received.body).isEqualTo("flow sqs")
+                received.body shouldBeEqualTo "flow sqs"
 
                 operations.changeVisibility(queueUrl, received.receiptHandle, 0)
                 val receivedAgain = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
-                assertThat(receivedAgain.map { it.body }).contains("flow sqs")
+                receivedAgain.map { it.body } shouldContain "flow sqs"
                 operations.delete(queueUrl, receivedAgain.single().receiptHandle)
             }
         }

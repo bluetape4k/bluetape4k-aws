@@ -1,7 +1,11 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import org.assertj.core.api.Assertions.assertThat
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -24,12 +28,12 @@ class SqsAutoConfigurationTest {
     @Test
     fun `register SQS client operations registry and processor`() {
         contextRunner.run { context ->
-            assertThat(context).hasSingleBean(SqsAsyncClient::class.java)
-            assertThat(context).hasSingleBean(SqsProperties::class.java)
-            assertThat(context).hasSingleBean(SqsOperations::class.java)
-            assertThat(context).hasSingleBean(SqsCoroutinesTemplate::class.java)
-            assertThat(context).hasSingleBean(SqsMessageListenerContainerRegistry::class.java)
-            assertThat(context).hasSingleBean(SqsListenerAnnotationBeanPostProcessor::class.java)
+            context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SqsProperties::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SqsMessageListenerContainerRegistry::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SqsListenerAnnotationBeanPostProcessor::class.java).size shouldBeEqualTo 1
         }
     }
 
@@ -38,9 +42,9 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.enabled=false")
             .run { context ->
-                assertThat(context).doesNotHaveBean(SqsAsyncClient::class.java)
-                assertThat(context).doesNotHaveBean(SqsOperations::class.java)
-                assertThat(context).doesNotHaveBean(SqsMessageListenerContainerRegistry::class.java)
+                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SqsMessageListenerContainerRegistry::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -49,9 +53,9 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withBean(SqsOperations::class.java, { NoopSqsOperations })
             .run { context ->
-                assertThat(context).hasSingleBean(SqsOperations::class.java)
-                assertThat(context).doesNotHaveBean(SqsCoroutinesTemplate::class.java)
-                assertThat(context.getBean(SqsOperations::class.java)).isSameAs(NoopSqsOperations)
+                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 0
+                context.getBean(SqsOperations::class.java) shouldBeSameInstanceAs NoopSqsOperations
             }
     }
 
@@ -61,11 +65,11 @@ class SqsAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(SqsAutoConfiguration::class.java))
             .withPropertyValues("bluetape4k.aws.sqs.endpoint-override=http://localhost:4566")
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("region is required")
+                messages shouldContain "region is required"
             }
     }
 
@@ -74,9 +78,9 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.endpoint-override=http://localhost:4566")
             .run { context ->
-                assertThat(context).hasNotFailed()
-                assertThat(context.getBean(SqsProperties::class.java).endpointOverride.toString())
-                    .isEqualTo("http://localhost:4566")
+                context.startupFailure.shouldBeNull()
+                context.getBean(SqsProperties::class.java).endpointOverride.toString() shouldBeEqualTo
+                    "http://localhost:4566"
             }
     }
 
@@ -85,8 +89,8 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.sqs"))
             .run { context ->
-                assertThat(context).doesNotHaveBean(SqsAsyncClient::class.java)
-                assertThat(context).doesNotHaveBean(SqsOperations::class.java)
+                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -95,11 +99,11 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.listener.max-messages=11")
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("maxMessages")
+                messages shouldContain "maxMessages"
             }
     }
 
@@ -108,11 +112,11 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(SpelListenerConfig::class.java)
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("SpEL is not supported")
+                messages shouldContain "SpEL is not supported"
             }
     }
 
@@ -121,11 +125,11 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(UnresolvedPlaceholderListenerConfig::class.java)
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("Could not resolve placeholder")
+                messages shouldContain "Could not resolve placeholder"
             }
     }
 
@@ -134,11 +138,11 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(UnsupportedListenerConfig::class.java)
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("@SqsListener method must have exactly one parameter")
+                messages shouldContain "@SqsListener method must have exactly one parameter"
             }
     }
 
@@ -148,9 +152,10 @@ class SqsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
             .withUserConfiguration(SpelListenerConfig::class.java)
             .run { context ->
-                assertThat(context).hasNotFailed()
-                assertThat(context.getBean(SqsMessageListenerContainerRegistry::class.java)
-                    .getContainer("listener.handle.#{queueName}")).isNull()
+                context.startupFailure.shouldBeNull()
+                context.getBean(SqsMessageListenerContainerRegistry::class.java)
+                    .getContainer("listener.handle.#{queueName}")
+                    .shouldBeNull()
             }
     }
 
