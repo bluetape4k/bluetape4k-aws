@@ -9,7 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Root README hero image plus refreshed project-purpose, feature, and architecture entrypoint documentation.
+- Root README hero image plus refreshed project-purpose, feature, and architecture entrypoint documentation ([PR #68](https://github.com/bluetape4k/bluetape4k-aws/pull/68)).
 - Ktor SQS consumer runtime and server integration ([PR #60](https://github.com/bluetape4k/bluetape4k-aws/pull/60)).
 - Spring Boot 4 SNS coroutine publisher ([PR #55](https://github.com/bluetape4k/bluetape4k-aws/pull/55)).
 - Spring Boot 4 Secrets Manager and Parameter Store property loading ([PR #57](https://github.com/bluetape4k/bluetape4k-aws/pull/57)).
