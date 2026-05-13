@@ -14,6 +14,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
@@ -415,6 +416,7 @@ class SqsConsumerRuntime(
             try {
                 val payload = convert(message)
                 config.messageHandler(context, payload)
+                currentCoroutineContext().ensureActive()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

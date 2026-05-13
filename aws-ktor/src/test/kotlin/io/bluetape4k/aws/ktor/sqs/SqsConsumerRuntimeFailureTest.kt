@@ -160,6 +160,7 @@ class SqsConsumerRuntimeFailureTest {
         coroutineScope {
             val client = mockk<SqsAsyncClient>()
             val visibilityCalls = AtomicInteger()
+            val deleteCalls = AtomicInteger()
             val handlerStarted = CountDownLatch(1)
             val neverCompletes = CompletableFuture<Unit>()
             val message = Message.builder()
@@ -174,8 +175,10 @@ class SqsConsumerRuntimeFailureTest {
                 visibilityCalls.incrementAndGet()
                 CompletableFuture.completedFuture(mockk())
             }
-            every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } returns
+            every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } answers {
+                deleteCalls.incrementAndGet()
                 CompletableFuture.completedFuture(mockk())
+            }
 
             val runtime = SqsConsumerRuntime(
                 SqsConsumerRuntimeConfig(
@@ -218,6 +221,13 @@ class SqsConsumerRuntimeFailureTest {
                     .atMost(Duration.ofSeconds(2))
                     .untilAsserted {
                         visibilityCalls.get() shouldBeEqualTo callsAfterStop
+                    }
+
+                neverCompletes.complete(Unit)
+                await.during(Duration.ofMillis(300))
+                    .atMost(Duration.ofSeconds(2))
+                    .untilAsserted {
+                        deleteCalls.get() shouldBeEqualTo 0
                     }
             } finally {
                 neverCompletes.complete(Unit)
