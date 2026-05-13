@@ -3,13 +3,14 @@
 package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeEqualTo
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -21,18 +22,8 @@ import software.amazon.awssdk.services.kms.model.DataKeySpec
 class KmsCoroutinesEncryptorLocalStackTest {
 
     companion object {
-        private val localStack: LocalStackServer = LocalStackServer().withServices("kms")
-
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            localStack.start()
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            localStack.stop()
+        private val localStack: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("kms")
         }
     }
 
@@ -59,7 +50,7 @@ class KmsCoroutinesEncryptorLocalStackTest {
             val kmsAsyncClient = context.getBean(KmsAsyncClient::class.java)
             val operations = context.getBean(KmsOperations::class.java)
 
-            runTest {
+            runSuspendIO {
                 val keyId = kmsAsyncClient.createKey {
                     it.description("bluetape4k aws-spring-boot kms test")
                 }.await().keyMetadata().keyId()
@@ -73,14 +64,12 @@ class KmsCoroutinesEncryptorLocalStackTest {
                     encryptionContext = encryptionContext,
                 )
 
-                assertThat(ciphertext).isNotEqualTo(plaintext)
-                assertThat(
-                    operations.decrypt(
-                        ciphertext = ciphertext,
-                        keyId = keyId,
-                        encryptionContext = encryptionContext,
-                    )
-                ).isEqualTo(plaintext)
+                ciphertext shouldNotBeEqualTo plaintext
+                operations.decrypt(
+                    ciphertext = ciphertext,
+                    keyId = keyId,
+                    encryptionContext = encryptionContext,
+                ) shouldBeEqualTo plaintext
 
                 val firstDataKey = operations.generateDataKey(
                     keyId = keyId,
@@ -93,9 +82,9 @@ class KmsCoroutinesEncryptorLocalStackTest {
                     encryptionContext = mapOf("purpose" to "cache"),
                 )
 
-                assertThat(cachedDataKey).isSameAs(firstDataKey)
-                assertThat(firstDataKey.plaintext).isNotEmpty()
-                assertThat(firstDataKey.encryptedDataKey).isNotEmpty()
+                cachedDataKey shouldBeSameInstanceAs firstDataKey
+                firstDataKey.plaintext.shouldNotBeEmpty()
+                firstDataKey.encryptedDataKey.shouldNotBeEmpty()
             }
         }
     }
@@ -106,7 +95,7 @@ class KmsCoroutinesEncryptorLocalStackTest {
             val kmsAsyncClient = context.getBean(KmsAsyncClient::class.java)
             val operations = context.getBean(KmsOperations::class.java)
 
-            runTest {
+            runSuspendIO {
                 val keyId = kmsAsyncClient.createKey {
                     it.description("bluetape4k aws-spring-boot text encryptor test")
                 }.await().keyMetadata().keyId()
@@ -118,8 +107,8 @@ class KmsCoroutinesEncryptorLocalStackTest {
 
                 val ciphertext = textEncryptor.encrypt("short secret value")
 
-                assertThat(ciphertext).isNotEqualTo("short secret value")
-                assertThat(textEncryptor.decrypt(ciphertext)).isEqualTo("short secret value")
+                ciphertext shouldNotBeEqualTo "short secret value"
+                textEncryptor.decrypt(ciphertext) shouldBeEqualTo "short secret value"
             }
         }
     }
