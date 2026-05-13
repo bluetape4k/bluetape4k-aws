@@ -160,6 +160,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
 }
 ```
@@ -184,6 +185,14 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+    sns:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      topics:
+        orders.fifo:
+          fifo: true
+          content-based-deduplication: true
+          fifo-throughput-scope: message-group
 ```
 
 ---
@@ -253,6 +262,32 @@ class OrderQueue(
     }
 }
 ```
+
+### SNS — Spring Boot Coroutines Template
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+
+class OrderTopic(
+    private val sns: SnsOperations,
+) {
+    suspend fun publish(topicArn: String, payload: String): String {
+        val response = sns.publish(
+            SnsPublishRequest(
+                topicArn = topicArn,
+                message = payload,
+            )
+        )
+        return response.messageId()
+    }
+}
+```
+
+SNS는 SQS queue policy가 topic ARN의 `sqs:SendMessage`를 허용하면 SQS
+subscription으로 메시지를 fanout할 수 있습니다. 전체 SQS-SNS 애플리케이션
+예제는 issue #13에서 별도로 처리합니다.
+
 ### S3 업로드 — Coroutines (`aws` 모듈)
 
 ```kotlin

@@ -160,6 +160,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
 }
 ```
@@ -184,6 +185,14 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+    sns:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      topics:
+        orders.fifo:
+          fifo: true
+          content-based-deduplication: true
+          fifo-throughput-scope: message-group
 ```
 
 ---
@@ -253,6 +262,32 @@ class OrderQueue(
     }
 }
 ```
+
+### SNS — Spring Boot Coroutines Template
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+
+class OrderTopic(
+    private val sns: SnsOperations,
+) {
+    suspend fun publish(topicArn: String, payload: String): String {
+        val response = sns.publish(
+            SnsPublishRequest(
+                topicArn = topicArn,
+                message = payload,
+            )
+        )
+        return response.messageId()
+    }
+}
+```
+
+SNS can publish to an SQS subscription when the queue policy allows
+`sqs:SendMessage` from the topic ARN. The full SQS-SNS application example is
+tracked separately in issue #13.
+
 ### S3 Upload — Coroutines (`aws` module)
 
 ```kotlin
