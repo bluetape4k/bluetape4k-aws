@@ -22,6 +22,7 @@ Kotlin Coroutines 지원, Spring Boot 4 자동설정, Ktor 3 통합을 제공합
 | `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정 (개발 중 — Coroutines 네이티브, awspring 미사용) |
 | `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin과 coroutine 친화적 S3 REST client |
 | `aws-ktor-s3-examples` | 배포 안 함 | `S3KtorClient`용 LocalStack 중심 예제. Nightly에서 컴파일 및 테스트 |
+| `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`용 Spring Boot 4 WebFlux 예제. Nightly에서 컴파일 및 테스트 |
 
 ---
 
@@ -160,6 +161,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
 
     // 선택: Spring Security TextEncryptor 어댑터가 필요할 때만 추가합니다.
@@ -203,6 +205,14 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+    sns:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      topics:
+        orders.fifo:
+          fifo: true
+          content-based-deduplication: true
+          fifo-throughput-scope: message-group
 ```
 
 KMS는 대용량 payload 암호화가 아니라 작은 secret과 key 관리를 위한 서비스입니다.
