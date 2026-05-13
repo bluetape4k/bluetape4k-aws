@@ -2,9 +2,9 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.delay
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -70,11 +70,14 @@ class SqsConsumerRuntimeFailureTest {
         try {
             runtime.start()
 
-            await.atMost(Duration.ofSeconds(5)).untilAsserted {
-                handlerStarted.count shouldBeEqualTo 0L
+            await.atMost(Duration.ofSeconds(5)).untilSuspending {
+                handlerStarted.count == 0L && receiveCalls.get() == 1
             }
-            delay(200)
-            receiveCalls.get() shouldBeEqualTo 1
+            await.during(Duration.ofMillis(300))
+                .atMost(Duration.ofSeconds(2))
+                .untilSuspending {
+                    receiveCalls.get() == 1
+            }
         } finally {
             runtime.stop()
         }

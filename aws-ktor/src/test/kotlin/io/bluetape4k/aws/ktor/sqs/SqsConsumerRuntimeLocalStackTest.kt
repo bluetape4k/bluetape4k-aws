@@ -4,13 +4,14 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.sqs.SqsClientFactory
+import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -94,7 +95,7 @@ class SqsConsumerRuntimeLocalStackTest {
         ) {
             handlerStarted.countDown()
             try {
-                delay(Duration.ofSeconds(10).toMillis())
+                awaitCancellation()
             } catch (e: CancellationException) {
                 handlerCancelled.set(true)
                 throw e
@@ -112,10 +113,14 @@ class SqsConsumerRuntimeLocalStackTest {
             runtime.stop()
             handlerCancelled.get().shouldBeTrue()
 
-            await.atMost(Duration.ofSeconds(30)).untilAsserted {
-                val message = kotlinx.coroutines.runBlocking { receiveOne(queueUrl) }
-                message?.body() shouldBeEqualTo "slow-message"
-                message?.let { kotlinx.coroutines.runBlocking { deleteMessage(queueUrl, it) } }
+            await.atMost(Duration.ofSeconds(30)).untilSuspending {
+                val message = receiveOne(queueUrl)
+                if (message?.body() == "slow-message") {
+                    deleteMessage(queueUrl, message)
+                    true
+                } else {
+                    false
+                }
             }
         } finally {
             runtime.stop()
@@ -138,11 +143,17 @@ class SqsConsumerRuntimeLocalStackTest {
             runtime.start()
             runtime.send("failed-message", queueUrl)
 
-            await.atMost(Duration.ofSeconds(30)).untilAsserted {
-                val deadLetter = kotlinx.coroutines.runBlocking { receiveOne(deadLetterQueueUrl) }
-                deadLetter?.body() shouldBeEqualTo "failed-message"
-                deadLetter?.messageAttributes()?.containsKey("bluetape4k-original-queue-url").shouldBeTrue()
-                deadLetter?.let { kotlinx.coroutines.runBlocking { deleteMessage(deadLetterQueueUrl, it) } }
+            await.atMost(Duration.ofSeconds(30)).untilSuspending {
+                val deadLetter = receiveOne(deadLetterQueueUrl)
+                val receivedExpectedDeadLetter = deadLetter?.body() == "failed-message" &&
+                    deadLetter.messageAttributes().containsKey("bluetape4k-original-queue-url")
+
+                if (receivedExpectedDeadLetter) {
+                    deleteMessage(deadLetterQueueUrl, deadLetter)
+                    true
+                } else {
+                    false
+                }
             }
         } finally {
             runtime.stop()

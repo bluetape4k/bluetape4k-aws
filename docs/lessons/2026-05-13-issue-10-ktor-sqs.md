@@ -31,4 +31,5 @@ manual DLQ forwarding.
 Prefer native SQS redrive policies unless failed messages must be enriched by
 application code. Keep any future multi-queue support as a registry-style layer
 above `SqsConsumerRuntime` instead of changing the one-handler-per-instance
-contract.
+contract. For consumer tests, use Awaitility and `untilSuspending {}` for
+suspend polling; avoid raw `delay` as a synchronization primitive.
