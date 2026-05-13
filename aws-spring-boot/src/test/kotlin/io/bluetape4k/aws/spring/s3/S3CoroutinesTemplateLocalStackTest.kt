@@ -7,12 +7,10 @@ import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -24,20 +22,10 @@ import java.util.UUID
 class S3CoroutinesTemplateLocalStackTest {
 
     companion object {
-        private val localStack: LocalStackServer = LocalStackServer().withServices("s3")
+        private val localStack: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("s3")
+        }
         private val bucketName: String = "spring-s3-${UUID.randomUUID()}"
-
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            localStack.start()
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            localStack.stop()
-        }
     }
 
     private fun contextRunner(): ApplicationContextRunner = ApplicationContextRunner()
@@ -62,7 +50,7 @@ class S3CoroutinesTemplateLocalStackTest {
             val operations = context.getBean(S3Operations::class.java)
             s3Client.createBucket { it.bucket(bucketName) }
 
-            runTest {
+            runSuspendIO {
                 val key = "docs/readme.txt"
                 operations.upload(
                     bucket = bucketName,

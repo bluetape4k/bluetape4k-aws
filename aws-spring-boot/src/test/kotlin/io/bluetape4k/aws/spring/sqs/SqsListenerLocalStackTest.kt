@@ -3,17 +3,15 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldContainAll
+import io.bluetape4k.junit5.awaitility.untilSuspending
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
-import kotlinx.coroutines.runBlocking
 import org.awaitility.kotlin.await
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.aop.framework.ProxyFactory
 import org.springframework.boot.autoconfigure.AutoConfigurations
@@ -31,18 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger
 class SqsListenerLocalStackTest {
 
     companion object {
-        private val localStack: LocalStackServer = LocalStackServer().withServices("sqs")
-
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            localStack.start()
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            localStack.stop()
+        private val localStack: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("sqs")
         }
     }
 
@@ -70,8 +58,13 @@ class SqsListenerLocalStackTest {
                 *properties,
             )
 
-    private fun createQueue(operations: SqsOperations, prefix: String): String =
-        runBlocking { operations.createQueue("$prefix-${UUID.randomUUID()}") }
+    private fun createQueue(operations: SqsOperations, prefix: String): String {
+        lateinit var queueUrl: String
+        runSuspendIO {
+            queueUrl = operations.createQueue("$prefix-${UUID.randomUUID()}")
+        }
+        return queueUrl
+    }
 
     @Test
     fun `listener deletes message after successful handling`() {
@@ -85,13 +78,15 @@ class SqsListenerLocalStackTest {
                 val operations = context.getBean(SqsOperations::class.java)
                 val listener = context.getBean(StringListener::class.java)
 
-                runBlocking { operations.send(queueUrl, "listener-ok") }
+                runSuspendIO { operations.send(queueUrl, "listener-ok") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
                     listener.bodies shouldContain "listener-ok"
                 }
-                runBlocking {
-                    operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).shouldBeEmpty()
+                runSuspendIO {
+                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                        operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
+                    }
                 }
             }
         }
@@ -109,7 +104,7 @@ class SqsListenerLocalStackTest {
                 val operations = context.getBean(SqsOperations::class.java)
                 val listener = context.getBean(SuspendListener::class.java)
 
-                runBlocking { operations.send(queueUrl, "listener-suspend-ok") }
+                runSuspendIO { operations.send(queueUrl, "listener-suspend-ok") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
                     listener.bodies shouldContain "listener-suspend-ok"
@@ -134,7 +129,7 @@ class SqsListenerLocalStackTest {
                 val operations = context.getBean(SqsOperations::class.java)
                 val listener = context.getBean(FailingListener::class.java)
 
-                runBlocking { operations.send(queueUrl, "listener-fail") }
+                runSuspendIO { operations.send(queueUrl, "listener-fail") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
                     listener.attempts.get() shouldBeGreaterOrEqualTo 2
@@ -164,7 +159,7 @@ class SqsListenerLocalStackTest {
                 val operations = context.getBean(SqsOperations::class.java)
                 val listener = context.getBean(ConcurrencyListener::class.java)
 
-                runBlocking {
+                runSuspendIO {
                     operations.send(queueUrl, "concurrency-1")
                     operations.send(queueUrl, "concurrency-2")
                 }
@@ -188,7 +183,7 @@ class SqsListenerLocalStackTest {
                 val operations = context.getBean(SqsOperations::class.java)
                 ProxiedListener.bodies.clear()
 
-                runBlocking { operations.send(queueUrl, "listener-proxy-ok") }
+                runSuspendIO { operations.send(queueUrl, "listener-proxy-ok") }
 
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
                     ProxiedListener.bodies shouldContain "listener-proxy-ok"

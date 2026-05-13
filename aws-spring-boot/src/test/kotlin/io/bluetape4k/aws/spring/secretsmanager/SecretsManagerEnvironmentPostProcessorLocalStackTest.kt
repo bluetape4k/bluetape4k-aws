@@ -19,7 +19,9 @@ import java.util.UUID
 class SecretsManagerEnvironmentPostProcessorLocalStackTest {
 
     companion object {
-        private val localStack: LocalStackServer = LocalStackServer().withServices("secretsmanager")
+        private val localStack: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("secretsmanager")
+        }
         private var systemProperties: AutoCloseable? = null
         private var previousAccessKeyId: String? = null
         private var previousSecretAccessKey: String? = null
@@ -27,8 +29,6 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
         @JvmStatic
         @BeforeAll
         fun beforeAll() {
-            localStack.start()
-            localStack.writeToSystemProperties()
             systemProperties = localStack.registerSystemProperties()
             previousAccessKeyId = System.getProperty("aws.accessKeyId")
             previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
@@ -42,7 +42,6 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
             restoreSystemProperty("aws.accessKeyId", previousAccessKeyId)
             restoreSystemProperty("aws.secretAccessKey", previousSecretAccessKey)
             systemProperties?.close()
-            localStack.stop()
         }
 
         private fun restoreSystemProperty(name: String, value: String?) {

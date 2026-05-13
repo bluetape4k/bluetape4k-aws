@@ -9,12 +9,10 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldEndWith
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -27,18 +25,8 @@ import java.util.UUID
 class SnsCoroutinesTemplateLocalStackTest {
 
     companion object {
-        private val localStack: LocalStackServer = LocalStackServer().withServices("sns", "sqs")
-
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            localStack.start()
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            localStack.stop()
+        private val localStack: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("sns", "sqs")
         }
     }
 
@@ -60,7 +48,7 @@ class SnsCoroutinesTemplateLocalStackTest {
         contextRunner().run { context ->
             val operations = context.getBean(SnsOperations::class.java)
 
-            runBlocking {
+            runSuspendIO {
                 val topicName = "standard-${UUID.randomUUID()}"
                 val topicArn = operations.createTopic(topicName)
 
@@ -86,7 +74,7 @@ class SnsCoroutinesTemplateLocalStackTest {
             .run { context ->
                 val operations = context.getBean(SnsOperations::class.java)
 
-                runBlocking {
+                runSuspendIO {
                     val topicArn = operations.createConfiguredTopic("configured")
 
                     topicArn shouldEndWith ":configured"
@@ -100,7 +88,7 @@ class SnsCoroutinesTemplateLocalStackTest {
         contextRunner().run { context ->
             val operations = context.getBean(SnsOperations::class.java)
 
-            runBlocking {
+            runSuspendIO {
                 val topicName = "fifo-${UUID.randomUUID()}.fifo"
                 val topicArn = operations.createFifoTopic(
                     topicName = topicName,
@@ -140,7 +128,7 @@ class SnsCoroutinesTemplateLocalStackTest {
             val operations = context.getBean(SnsOperations::class.java)
 
             val error = assertFailsWith<Exception> {
-                runBlocking {
+                runSuspendIO {
                     operations.publish(
                         SnsPublishRequest(
                             topicArn = "arn:aws:sns:${localStack.regionName}:000000000000:missing",
@@ -158,7 +146,7 @@ class SnsCoroutinesTemplateLocalStackTest {
         contextRunner().run { context ->
             val operations = context.getBean(SnsOperations::class.java)
 
-            runBlocking {
+            runSuspendIO {
                 val sqs = sqsAsyncClient()
                 try {
                     val topicArn = operations.createTopic("fanout-${UUID.randomUUID()}")
