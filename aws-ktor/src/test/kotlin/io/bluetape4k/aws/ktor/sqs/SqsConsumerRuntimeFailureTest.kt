@@ -75,8 +75,8 @@ class SqsConsumerRuntimeFailureTest {
             }
             await.during(Duration.ofMillis(300))
                 .atMost(Duration.ofSeconds(2))
-                .untilSuspending {
-                    receiveCalls.get() == 1
+                .untilAsserted {
+                    receiveCalls.get() shouldBeEqualTo 1
             }
         } finally {
             runtime.stop()
