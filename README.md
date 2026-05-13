@@ -7,11 +7,33 @@
 
 English | [한국어](./README.ko.md)
 
+![Bluetape4k AWS workbench](./docs/assets/aws-workbench.png)
+
 Kotlin/JVM wrappers for **AWS Java SDK v2** and the **AWS Kotlin SDK**, with Kotlin Coroutines
 support, Spring Boot 4 auto-configuration, and Ktor 3 integration. Part of the
 [bluetape4k](https://github.com/bluetape4k) ecosystem.
 
 ---
+
+## Project Purpose
+
+`bluetape4k-aws` keeps AWS service access idiomatic for Kotlin services. It
+bridges the Java SDK v2 async model, the AWS Kotlin SDK suspend model, Spring
+Boot 4 auto-configuration, and Ktor 3 HTTP integration without forcing
+applications to adopt a single framework or dependency stack.
+
+## What It Provides
+
+- **Kotlin-first AWS clients** — coroutine adapters for Java SDK v2 plus native
+  AWS Kotlin SDK helpers and DSL builders.
+- **Service coverage** — DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch,
+  CloudWatch Logs, Kinesis, and STS.
+- **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
+  listeners, and auto-configuration without awspring.
+- **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
+  consumer runtime, and Ktor server/client examples.
+- **Local integration testing** — LocalStack/FLOCI emulator wiring through
+  Testcontainers and Nightly examples.
 
 ## Modules
 
