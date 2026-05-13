@@ -2,12 +2,16 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -29,6 +33,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
+import kotlin.system.measureTimeMillis
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeFailureTest {
@@ -145,6 +150,77 @@ class SqsConsumerRuntimeFailureTest {
                 stopJob.join()
             } finally {
                 releaseHandler.complete(Unit)
+                runtime.stop()
+            }
+        }
+    }
+
+    @Test
+    fun `stop timeout cancels heartbeat without waiting for non cooperative handler`() = runSuspendIO {
+        coroutineScope {
+            val client = mockk<SqsAsyncClient>()
+            val visibilityCalls = AtomicInteger()
+            val handlerStarted = CountDownLatch(1)
+            val neverCompletes = CompletableFuture<Unit>()
+            val message = Message.builder()
+                .messageId("message-1")
+                .receiptHandle("receipt-1")
+                .body("stuck")
+                .build()
+
+            every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } returns
+                CompletableFuture.completedFuture(ReceiveMessageResponse.builder().messages(message).build())
+            every { client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>()) } answers {
+                visibilityCalls.incrementAndGet()
+                CompletableFuture.completedFuture(mockk())
+            }
+            every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } returns
+                CompletableFuture.completedFuture(mockk())
+
+            val runtime = SqsConsumerRuntime(
+                SqsConsumerRuntimeConfig(
+                    sqsAsyncClient = client,
+                    queueUrl = "https://sqs.local/source",
+                    coroutines = 1,
+                    maxMessages = 1,
+                    waitTimeSeconds = 0,
+                    visibilityTimeoutSeconds = 5,
+                    visibilityHeartbeatSeconds = 1,
+                    shutdownTimeout = Duration.ofMillis(100),
+                    messageType = String::class,
+                    messageHandler = {
+                        handlerStarted.countDown()
+                        withContext(NonCancellable) {
+                            neverCompletes.await()
+                        }
+                    },
+                )
+            )
+
+            try {
+                runtime.start()
+                await.atMost(Duration.ofSeconds(5)).untilAsserted {
+                    handlerStarted.count shouldBeEqualTo 0L
+                }
+                await.atMost(Duration.ofSeconds(2)).untilAsserted {
+                    visibilityCalls.get() shouldBeGreaterOrEqualTo 1
+                }
+
+                val stopElapsedMillis = measureTimeMillis {
+                    withTimeout(500) {
+                        runtime.stop()
+                    }
+                }
+                (stopElapsedMillis < 500L).shouldBeTrue()
+
+                val callsAfterStop = visibilityCalls.get()
+                await.during(Duration.ofMillis(1_200))
+                    .atMost(Duration.ofSeconds(2))
+                    .untilAsserted {
+                        visibilityCalls.get() shouldBeEqualTo callsAfterStop
+                    }
+            } finally {
+                neverCompletes.complete(Unit)
                 runtime.stop()
             }
         }

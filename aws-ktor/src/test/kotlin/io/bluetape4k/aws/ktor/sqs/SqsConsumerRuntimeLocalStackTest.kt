@@ -111,7 +111,9 @@ class SqsConsumerRuntimeLocalStackTest {
             }
 
             runtime.stop()
-            handlerCancelled.get().shouldBeTrue()
+            await.atMost(Duration.ofSeconds(5)).untilAsserted {
+                handlerCancelled.get().shouldBeTrue()
+            }
 
             await.atMost(Duration.ofSeconds(30)).untilSuspending {
                 val message = receiveOne(queueUrl)

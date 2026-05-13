@@ -212,6 +212,7 @@ class SqsConsumerRuntime(
     private val running = AtomicBoolean(false)
     private val pollerJobs = CopyOnWriteArrayList<Job>()
     private val handlerJobs = ConcurrentHashMap.newKeySet<Job>()
+    private val handlerPermitReleases = ConcurrentHashMap<Job, AtomicBoolean>()
     private val queueUrlMutex = Mutex()
     private val handlerPermits = Semaphore(config.coroutines * config.maxMessages)
 
@@ -254,15 +255,24 @@ class SqsConsumerRuntime(
         currentPollers.joinAll()
 
         val timeoutMillis = config.shutdownTimeout.toMillis()
-        withTimeoutOrNull(timeoutMillis) {
+        val drained = withTimeoutOrNull(timeoutMillis) {
             while (handlerJobs.isNotEmpty()) {
                 handlerJobs.toList().joinAll()
             }
-        }
+        } != null
 
-        handlerJobs.toList().forEach { it.cancelAndJoin() }
+        if (!drained) {
+            handlerJobs.toList().forEach { job ->
+                job.cancel()
+                releaseHandlerPermit(job)
+            }
+        }
         currentScope?.cancel()
         pollerJobs.clear()
+        if (!drained) {
+            handlerJobs.clear()
+            handlerPermitReleases.clear()
+        }
         scope = null
     }
 
@@ -368,16 +378,33 @@ class SqsConsumerRuntime(
             handlerPermits.release()
             return
         }
+        val permitReleased = AtomicBoolean(false)
+        fun releasePermit() {
+            if (permitReleased.compareAndSet(false, true)) {
+                handlerPermits.release()
+            }
+        }
+
         val job = currentScope.launch {
             try {
                 handleMessage(queueUrl, message)
             } finally {
-                handlerPermits.release()
+                releasePermit()
             }
         }
+        handlerPermitReleases[job] = permitReleased
         handlerJobs += job
         job.invokeOnCompletion {
             handlerJobs -= job
+            handlerPermitReleases -= job
+        }
+    }
+
+    private fun releaseHandlerPermit(job: Job) {
+        handlerPermitReleases[job]?.let { released ->
+            if (released.compareAndSet(false, true)) {
+                handlerPermits.release()
+            }
         }
     }
 
