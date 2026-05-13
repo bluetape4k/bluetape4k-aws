@@ -7,8 +7,8 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.mockk
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -127,10 +127,10 @@ class SnsAutoConfigurationTest {
             .run { context ->
                 val operations = context.getBean(SnsOperations::class.java)
 
-                val error = assertFailsWith<IllegalArgumentException> {
-                    runBlocking {
-                        operations.createConfiguredTopic("orders")
-                    }
+            val error = assertFailsWith<IllegalArgumentException> {
+                runSuspendIO {
+                    operations.createConfiguredTopic("orders")
+                }
                 }
                 error.message.orEmpty() shouldContain "FIFO topic name"
             }
@@ -142,7 +142,7 @@ class SnsAutoConfigurationTest {
             val operations = context.getBean(SnsOperations::class.java)
 
             val error = assertFailsWith<IllegalArgumentException> {
-                runBlocking {
+                runSuspendIO {
                     operations.createConfiguredTopic("missing")
                 }
             }

@@ -20,7 +20,9 @@ import java.util.UUID
 class ParameterStoreEnvironmentPostProcessorLocalStackTest {
 
     companion object {
-        private val localStack: LocalStackServer = LocalStackServer().withServices("ssm")
+        private val localStack: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("ssm")
+        }
         private var systemProperties: AutoCloseable? = null
         private var previousAccessKeyId: String? = null
         private var previousSecretAccessKey: String? = null
@@ -28,8 +30,6 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
         @JvmStatic
         @BeforeAll
         fun beforeAll() {
-            localStack.start()
-            localStack.writeToSystemProperties()
             systemProperties = localStack.registerSystemProperties()
             previousAccessKeyId = System.getProperty("aws.accessKeyId")
             previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
@@ -43,7 +43,6 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
             restoreSystemProperty("aws.accessKeyId", previousAccessKeyId)
             restoreSystemProperty("aws.secretAccessKey", previousSecretAccessKey)
             systemProperties?.close()
-            localStack.stop()
         }
 
         private fun restoreSystemProperty(name: String, value: String?) {

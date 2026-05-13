@@ -7,14 +7,12 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContainAll
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.await
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -47,18 +45,8 @@ class DynamoDbRepositoryLocalStackTest {
         private const val TABLE_NAME = "orders"
         private const val TABLE_PREFIX = "spring-dynamodb-"
         private const val CUSTOMER_INDEX = "customer-createdAt-index"
-        private val localStack: LocalStackServer = LocalStackServer().withServices("dynamodb")
-
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            localStack.start()
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            localStack.stop()
+        private val localStack: LocalStackServer by lazy {
+            LocalStackServer.Launcher.getLocalStack("dynamodb")
         }
     }
 
@@ -86,7 +74,7 @@ class DynamoDbRepositoryLocalStackTest {
             val repository = OrderRepository(enhancedClient, tableNameResolver)
             val actualTableName = tableNameResolver.resolve(TABLE_NAME)
 
-            runTest {
+            runSuspendIO {
                 createOrdersTable(asyncClient, actualTableName)
 
                 val order1 = OrderDocument(
