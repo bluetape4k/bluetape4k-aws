@@ -1,5 +1,7 @@
 io.bluetape4k.aws.spring.AwsAutoConfiguration
 io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
+io.bluetape4k.aws.spring.kms.KmsAutoConfiguration
+io.bluetape4k.aws.spring.kms.KmsTextEncryptorAutoConfiguration
 io.bluetape4k.aws.spring.s3.S3AutoConfiguration
 io.bluetape4k.aws.spring.sns.SnsAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration

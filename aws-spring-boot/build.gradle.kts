@@ -26,6 +26,7 @@ dependencies {
     api(project(":aws"))
     compileOnly(project(":aws-kotlin"))
     compileOnly(libs.aws2.dynamodb.enhanced)
+    compileOnly(libs.aws2.kms)
     compileOnly(libs.aws2.s3)
     compileOnly(libs.aws2.secretsmanager)
     compileOnly(libs.aws2.sns)
@@ -39,6 +40,7 @@ dependencies {
     testImplementation(libs.bluetape4k.junit5)
     testImplementation(libs.bluetape4k.testcontainers)
     testImplementation(libs.aws2.dynamodb.enhanced)
+    testImplementation(libs.aws2.kms)
     testImplementation(libs.aws2.s3)
     testImplementation(libs.aws2.secretsmanager)
     testImplementation(libs.aws2.sns)
@@ -47,6 +49,7 @@ dependencies {
 
     // Spring Boot (autoconfigure only — no runtime dep)
     compileOnly(libs.spring.boot.autoconfigure)
+    compileOnly(libs.spring.security.crypto)
     annotationProcessor(libs.spring.boot.configuration.processor)
 
     // Coroutines
@@ -57,6 +60,7 @@ dependencies {
 
     // Test
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.security.crypto)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
     testImplementation(libs.awaitility.kotlin)
