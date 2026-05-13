@@ -7,6 +7,7 @@ import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.util.AttributeKey
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -33,7 +34,8 @@ val SqsConsumer: ApplicationPlugin<SqsConsumerPluginConfig> = createApplicationP
         runtime.start()
     }
     on(MonitoringEvent(ApplicationStopping)) {
-        runBlocking {
+        // Ktor monitoring events are synchronous; use IO while draining SQS handlers.
+        runBlocking(Dispatchers.IO) {
             runtime.stop()
         }
     }

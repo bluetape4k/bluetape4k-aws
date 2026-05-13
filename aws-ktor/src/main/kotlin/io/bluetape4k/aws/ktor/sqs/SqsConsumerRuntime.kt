@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
@@ -204,6 +206,8 @@ class SqsMessageContext internal constructor(
 class SqsConsumerRuntime(
     private val config: SqsConsumerRuntimeConfig,
 ) {
+    companion object: KLogging()
+
     private val running = AtomicBoolean(false)
     private val pollerJobs = CopyOnWriteArrayList<Job>()
     private val handlerJobs = ConcurrentHashMap.newKeySet<Job>()
@@ -298,11 +302,11 @@ class SqsConsumerRuntime(
     }
 
     private suspend fun pollLoop() {
-        val queueUrl = resolveQueueUrl()
         val backoff = config.pollBackoff.newState()
 
         while (running.get() && currentCoroutineContext().isActive) {
             try {
+                val queueUrl = resolveQueueUrl()
                 val response = config.sqsAsyncClient.receiveMessage {
                     it.queueUrl(queueUrl)
                     it.maxNumberOfMessages(config.maxMessages)
@@ -322,8 +326,12 @@ class SqsConsumerRuntime(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Throwable) {
-                delay(backoff.next().toMillis().coerceAtLeast(1L))
+            } catch (e: Throwable) {
+                val retryDelay = backoff.next()
+                log.warn(e) {
+                    "SQS receive loop failed. Retrying after ${retryDelay.toMillis()} ms."
+                }
+                delay(retryDelay.toMillis().coerceAtLeast(1L))
             }
         }
     }
@@ -340,19 +348,30 @@ class SqsConsumerRuntime(
     }
 
     private suspend fun handleMessage(queueUrl: String, message: Message) {
-        val heartbeat = startVisibilityHeartbeat(queueUrl, message)
+        val context = SqsMessageContext(this, queueUrl, message)
+        val heartbeat = startVisibilityHeartbeat(context)
         try {
-            val context = SqsMessageContext(this, queueUrl, message)
-            val payload = convert(message)
-            config.messageHandler(context, payload)
+            try {
+                val payload = convert(message)
+                config.messageHandler(context, payload)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                handleFailure(queueUrl, message, e)
+                return
+            }
 
             if (config.deleteOnSuccess && !context.deleted) {
-                delete(queueUrl, message.receiptHandle())
+                try {
+                    delete(queueUrl, message.receiptHandle())
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    log.warn(e) {
+                        "Failed to delete successfully handled SQS message. Message will remain eligible for redelivery."
+                    }
+                }
             }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            handleFailure(queueUrl, message, e)
         } finally {
             heartbeat?.cancelAndJoin()
         }
@@ -362,15 +381,26 @@ class SqsConsumerRuntime(
     private fun convert(message: Message): Any =
         config.converter.convert(message, config.messageType as KClass<Any>)
 
-    private fun startVisibilityHeartbeat(queueUrl: String, message: Message): Job? {
+    private fun startVisibilityHeartbeat(context: SqsMessageContext): Job? {
         val heartbeatSeconds = config.visibilityHeartbeatSeconds ?: return null
         val visibilitySeconds = config.visibilityTimeoutSeconds ?: return null
         val currentScope = scope ?: return null
 
         return currentScope.launch(CoroutineName("sqs-visibility-heartbeat")) {
             while (running.get() && currentCoroutineContext().isActive) {
-                delay(Duration.ofSeconds(heartbeatSeconds.toLong()).toMillis())
-                changeVisibility(queueUrl, message.receiptHandle(), visibilitySeconds)
+                try {
+                    delay(Duration.ofSeconds(heartbeatSeconds.toLong()).toMillis())
+                    if (context.deleted) {
+                        return@launch
+                    }
+                    context.changeVisibility(visibilitySeconds)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    log.warn(e) {
+                        "Failed to extend SQS message visibility."
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -7,7 +5,6 @@ import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.sqs.SqsClientFactory
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
@@ -34,8 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeLocalStackTest {
 
-    private val localStack: LocalStackServer by lazy {
-        LocalStackServer.Launcher.getLocalStack("sqs")
+    @Suppress("DEPRECATION")
+    private val localStack: io.bluetape4k.testcontainers.aws.LocalStackServer by lazy {
+        io.bluetape4k.testcontainers.aws.LocalStackServer.Launcher.getLocalStack("sqs")
     }
 
     private val sqs: SqsAsyncClient by lazy {

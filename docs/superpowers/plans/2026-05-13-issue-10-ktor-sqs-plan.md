@@ -42,6 +42,8 @@ Issue: https://github.com/bluetape4k/bluetape4k-aws/issues/10
 - [x] Add multi-coroutine/multithread publisher test with Awaitility.
 - [x] Add graceful shutdown cancellation test with Awaitility.
 - [x] Add manual DLQ forwarding test with metadata assertion.
+- [x] Add queue-name resolution retry regression test.
+- [x] Add delete-failure-is-not-DLQ regression test.
 - [x] Add lifecycle start test.
 
 ### T5 - Docs

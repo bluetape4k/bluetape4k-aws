@@ -1,13 +1,15 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.mockk.mockk
+import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.Message
 import java.time.Duration
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeConfigTest {
 
     private val client = mockk<SqsAsyncClient>()

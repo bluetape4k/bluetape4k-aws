@@ -120,10 +120,12 @@ end
   - Ktor `ApplicationStarted` lifecycle behavior.
   - Graceful shutdown cancellation without accidental delete.
   - Manual DLQ forwarding with metadata.
+  - Queue-name resolution failure retry.
+  - Successful handler delete failure does not route to handler-failure DLQ handling.
 
 ## Verification
 
 - `./gradlew :aws-ktor:compileKotlin :aws-ktor:compileTestKotlin`
-- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - passed, 8 tests.
-- `./gradlew :aws-ktor:test`
+- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - passed, 10 tests.
+- `./gradlew :aws-ktor:test` - passed, 29 tests.
 - `git diff --check`

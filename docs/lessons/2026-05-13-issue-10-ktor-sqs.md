@@ -22,8 +22,8 @@ visibility, and documented best-effort manual DLQ forwarding.
 
 - `./gradlew :aws-ktor:compileKotlin`
 - `./gradlew :aws-ktor:compileTestKotlin`
-- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - 8 passing
-- `./gradlew :aws-ktor:test` - 27 passing
+- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - 10 passing
+- `./gradlew :aws-ktor:test` - 29 passing
 
 ## Future Guidance
 
