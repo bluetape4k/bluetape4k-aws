@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.kotlin.sesv2.model
 
 import aws.sdk.kotlin.services.sesv2.model.EmailContent
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 class SesV2ModelSupportTest {
 

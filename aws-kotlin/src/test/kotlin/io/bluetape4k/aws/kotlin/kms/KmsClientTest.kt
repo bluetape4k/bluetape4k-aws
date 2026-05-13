@@ -17,16 +17,16 @@ import aws.sdk.kotlin.services.kms.model.KeySpec
 import aws.sdk.kotlin.services.kms.model.KeyUsageType
 import aws.sdk.kotlin.services.kms.putKeyPolicy
 import aws.sdk.kotlin.services.kms.revokeGrant
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.info
 import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.support.toUtf8String
-import kotlinx.coroutines.test.runTest
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -52,7 +52,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(1)
-    fun `KmsClient 인스턴스 생성`() = runTest {
+    fun `KmsClient 인스턴스 생성`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -64,7 +64,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(2)
-    fun `대칭 키 생성`() = runTest {
+    fun `대칭 키 생성`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -85,7 +85,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(3)
-    fun `데이터 암호화`() = runTest {
+    fun `데이터 암호화`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -106,7 +106,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(4)
-    fun `데이터 복호화`() = runTest {
+    fun `데이터 복호화`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -124,7 +124,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(5)
-    fun `키 비활성화`() = runTest {
+    fun `키 비활성화`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -139,7 +139,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(6)
-    fun `키 활성화`() = runTest {
+    fun `키 활성화`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -154,7 +154,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(7)
-    fun `Grant 생성`() = runTest {
+    fun `Grant 생성`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -173,7 +173,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(8)
-    fun `Grant 목록 조회`() = runTest {
+    fun `Grant 목록 조회`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -195,7 +195,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(9)
-    fun `Grant 취소`() = runTest {
+    fun `Grant 취소`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -211,7 +211,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(10)
-    fun `키 메타데이터 조회`() = runTest {
+    fun `키 메타데이터 조회`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -231,7 +231,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(11)
-    fun `커스텀 Alias 생성`() = runTest {
+    fun `커스텀 Alias 생성`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -250,7 +250,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(12)
-    fun `Alias 목록 조회`() = runTest {
+    fun `Alias 목록 조회`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -269,7 +269,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(13)
-    fun `Alias 삭제`() = runTest {
+    fun `Alias 삭제`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -282,7 +282,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(14)
-    fun `키 목록 조회`() = runTest {
+    fun `키 목록 조회`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -300,7 +300,7 @@ class KmsClientTest: AbstractKmsTest() {
 
     @Test
     @Order(15)
-    fun `키 정책 설정`() = runTest {
+    fun `키 정책 설정`() = runSuspendIO {
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,

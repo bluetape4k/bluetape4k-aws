@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.kotlin.dynamodb
 
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.assertions.assertFailsWith
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 class DynamoDbClientSupportTest {
 

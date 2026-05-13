@@ -1,15 +1,15 @@
 package io.bluetape4k.aws.kotlin.sts
 
-import io.bluetape4k.logging.KLogging
-import io.bluetape4k.logging.debug
-import kotlinx.coroutines.test.runTest
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import kotlin.test.assertFailsWith
 
 /**
  * AWS Kotlin SDK [aws.sdk.kotlin.services.sts.StsClient] 확장 함수 테스트.
@@ -21,7 +21,7 @@ class StsClientTest: AbstractKotlinStsTest() {
 
     @Test
     @Order(1)
-    fun `StsClient 인스턴스 생성`() = runTest {
+    fun `StsClient 인스턴스 생성`() = runSuspendIO {
         withStsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -33,7 +33,7 @@ class StsClientTest: AbstractKotlinStsTest() {
 
     @Test
     @Order(2)
-    fun `호출자 신원 조회`() = runTest {
+    fun `호출자 신원 조회`() = runSuspendIO {
         withStsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -52,7 +52,7 @@ class StsClientTest: AbstractKotlinStsTest() {
 
     @Test
     @Order(3)
-    fun `IAM 역할 임시 맡기 (AssumeRole)`() = runTest {
+    fun `IAM 역할 임시 맡기 (AssumeRole)`() = runSuspendIO {
         withStsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -76,7 +76,7 @@ class StsClientTest: AbstractKotlinStsTest() {
 
     @Test
     @Order(4)
-    fun `임시 세션 자격 증명 발급 (GetSessionToken)`() = runTest {
+    fun `임시 세션 자격 증명 발급 (GetSessionToken)`() = runSuspendIO {
         withStsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -96,7 +96,7 @@ class StsClientTest: AbstractKotlinStsTest() {
 
     @Test
     @Order(5)
-    fun `AssumeRole durationSeconds 범위 검증`() = runTest {
+    fun `AssumeRole durationSeconds 범위 검증`() = runSuspendIO {
         withStsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -114,7 +114,7 @@ class StsClientTest: AbstractKotlinStsTest() {
 
     @Test
     @Order(6)
-    fun `GetSessionToken durationSeconds 범위 검증`() = runTest {
+    fun `GetSessionToken durationSeconds 범위 검증`() = runSuspendIO {
         withStsClient(
             localStackServer.endpointUrl,
             localStackServer.region,

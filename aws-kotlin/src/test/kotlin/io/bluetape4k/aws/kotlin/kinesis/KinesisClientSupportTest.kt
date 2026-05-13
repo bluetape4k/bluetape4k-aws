@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
 
 class KinesisClientSupportTest {
 
