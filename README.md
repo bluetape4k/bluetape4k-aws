@@ -158,14 +158,33 @@ dependencies {
     // Add the AWS Java SDK v2 services you use at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sqs")
+
+    // Optional: only needed if you want the Spring Security TextEncryptor adapter.
+    implementation("org.springframework.security:spring-security-crypto")
 }
 ```
+
+Use this module when your application wants Spring-managed AWS clients and coroutine-friendly service
+helpers. The library does not pull every AWS SDK service at runtime; add only the AWS SDK modules
+you actually use. For KMS, add `software.amazon.awssdk:kms`. Add `spring-security-crypto` only when
+you want to inject Spring Security's synchronous `TextEncryptor`.
 
 ```yaml
 bluetape4k:
   aws:
+    kms:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      key-id: alias/app-secrets
+      encryption-context:
+        service: order-api
+      data-key-cache:
+        enabled: true
+        max-size: 64
+        ttl: PT5M
     s3:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -183,6 +202,84 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+```
+
+KMS is intended for small secrets and key management, not for bulk payload encryption. Use
+`KmsOperations.encrypt` directly for short values such as tokens, credentials, or configuration
+secrets. For larger data, call `generateDataKey`, encrypt the payload locally with the plaintext data
+key, and store the encrypted data key with the payload metadata. The built-in `DataKeyCache` can reuse
+plaintext data keys briefly, but this is sensitive in-memory key material; keep the TTL and cache size
+small.
+
+#### KMS Spring Boot Components
+
+```plantuml
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Application" {
+  component "Service" as Service
+  component "TextEncryptor\n(optional)" as TextEncryptor
+}
+
+package "aws-spring-boot" {
+  component "KmsAutoConfiguration" as Auto
+  component "KmsProperties" as Props
+  component "KmsOperations" as Ops
+  component "KmsCoroutinesEncryptor" as Encryptor
+  component "DataKeyCache" as Cache
+  component "KmsTextEncryptor" as Adapter
+}
+
+package "AWS SDK v2" {
+  component "KmsAsyncClient" as Client
+}
+
+cloud "AWS KMS\nor LocalStack" as Kms
+
+Auto --> Props
+Auto --> Client
+Auto --> Cache
+Auto --> Encryptor
+Ops <|.. Encryptor
+TextEncryptor <|.. Adapter
+Adapter --> Ops
+Service --> Ops
+Service --> TextEncryptor
+Encryptor --> Client
+Encryptor --> Cache
+Client --> Kms
+@enduml
+```
+
+#### KMS Encrypt / Decrypt Flow
+
+```plantuml
+@startuml
+skinparam shadowing false
+actor App
+participant "KmsOperations" as Ops
+participant "KmsCoroutinesEncryptor" as Encryptor
+participant "KmsAsyncClient" as Client
+participant "AWS KMS" as Kms
+
+App -> Ops: encrypt(plaintext, keyId?, context?)
+Ops -> Encryptor: apply default key and context
+Encryptor -> Client: Encrypt
+Client -> Kms: encrypt request
+Kms --> Client: ciphertextBlob
+Client --> Encryptor: EncryptResponse
+Encryptor --> App: ciphertext bytes
+
+App -> Ops: decrypt(ciphertext, keyId?, context?)
+Ops -> Encryptor: apply default context
+Encryptor -> Client: Decrypt
+Client -> Kms: decrypt request
+Kms --> Client: plaintext
+Client --> Encryptor: DecryptResponse
+Encryptor --> App: plaintext bytes
+@enduml
 ```
 
 ---
@@ -252,6 +349,57 @@ class OrderQueue(
     }
 }
 ```
+
+### KMS — Spring Boot Coroutines Encryptor
+
+```kotlin
+import io.bluetape4k.aws.spring.kms.KmsOperations
+import java.util.Base64
+
+class SecretVault(
+    private val kms: KmsOperations,
+) {
+    suspend fun protectToken(token: String): String {
+        val ciphertext = kms.encrypt(
+            plaintext = token.encodeToByteArray(),
+            encryptionContext = mapOf("purpose" to "api-token"),
+        )
+        return Base64.getEncoder().encodeToString(ciphertext)
+    }
+
+    suspend fun revealToken(encodedCiphertext: String): String {
+        val plaintext = kms.decrypt(
+            ciphertext = Base64.getDecoder().decode(encodedCiphertext),
+            encryptionContext = mapOf("purpose" to "api-token"),
+        )
+        return plaintext.decodeToString()
+    }
+}
+```
+
+The encryption context is authenticated metadata. Use the same context for decrypt that you used for
+encrypt, and put stable identifiers such as `service`, `tenant`, or `purpose` in it. Do not put
+secrets in the context because AWS logs and policies may expose it.
+
+### KMS — Spring Security `TextEncryptor`
+
+```kotlin
+import org.springframework.security.crypto.encrypt.TextEncryptor
+
+class PropertyProtector(
+    private val textEncryptor: TextEncryptor,
+) {
+    fun encrypt(value: String): String =
+        textEncryptor.encrypt(value)
+
+    fun decrypt(value: String): String =
+        textEncryptor.decrypt(value)
+}
+```
+
+`TextEncryptor` is synchronous, so this adapter is best for short administrative flows or startup-time
+secret handling. Prefer `KmsOperations` in coroutine services.
+
 ### S3 Upload — Coroutines (`aws` module)
 
 ```kotlin

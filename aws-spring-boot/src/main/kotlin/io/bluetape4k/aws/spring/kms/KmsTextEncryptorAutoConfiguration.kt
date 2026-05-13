@@ -1,0 +1,36 @@
+package io.bluetape4k.aws.spring.kms
+
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Bean
+import org.springframework.security.crypto.encrypt.TextEncryptor
+
+/**
+ * Optional Spring Security Crypto adapter auto-configuration for AWS KMS.
+ */
+@AutoConfiguration(after = [KmsAutoConfiguration::class])
+@ConditionalOnClass(name = ["org.springframework.security.crypto.encrypt.TextEncryptor"])
+@ConditionalOnBean(KmsOperations::class)
+@ConditionalOnProperty(
+    prefix = "bluetape4k.aws.kms.text-encryptor",
+    name = ["enabled"],
+    havingValue = "true",
+    matchIfMissing = true,
+)
+class KmsTextEncryptorAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(TextEncryptor::class)
+    fun kmsTextEncryptor(
+        kmsOperations: KmsOperations,
+        properties: KmsProperties,
+    ): KmsTextEncryptor =
+        KmsTextEncryptor(
+            kmsOperations = kmsOperations,
+            keyId = properties.keyId,
+            encryptionContext = properties.encryptionContext,
+        )
+}

@@ -158,14 +158,34 @@ dependencies {
     // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sqs")
+
+    // 선택: Spring Security TextEncryptor 어댑터가 필요할 때만 추가합니다.
+    implementation("org.springframework.security:spring-security-crypto")
 }
 ```
+
+이 모듈은 Spring이 관리하는 AWS client와 coroutine 친화적인 서비스 helper가 필요할 때
+사용합니다. 모든 AWS SDK 서비스를 런타임으로 끌고 오지 않으므로 실제로 쓰는 서비스
+SDK만 직접 추가해야 합니다. KMS를 쓰려면 `software.amazon.awssdk:kms`를 추가하고,
+Spring Security의 동기식 `TextEncryptor`를 주입받고 싶을 때만 `spring-security-crypto`를
+추가합니다.
 
 ```yaml
 bluetape4k:
   aws:
+    kms:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      key-id: alias/app-secrets
+      encryption-context:
+        service: order-api
+      data-key-cache:
+        enabled: true
+        max-size: 64
+        ttl: PT5M
     s3:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -183,6 +203,84 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+```
+
+KMS는 대용량 payload 암호화가 아니라 작은 secret과 key 관리를 위한 서비스입니다.
+token, credential, 설정 secret처럼 짧은 값은 `KmsOperations.encrypt`를 바로 사용하세요.
+큰 payload는 `generateDataKey`로 data key를 발급받아 로컬에서 payload를 암호화하고,
+암호화된 data key를 payload metadata와 함께 저장하는 envelope encryption 방식이 적합합니다.
+기본 `DataKeyCache`는 plaintext data key를 짧게 재사용할 수 있지만, 프로세스 메모리에
+민감한 key material을 보관하는 것이므로 TTL과 cache size를 작게 유지하세요.
+
+#### KMS Spring Boot 구성요소
+
+```plantuml
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Application" {
+  component "Service" as Service
+  component "TextEncryptor\n(optional)" as TextEncryptor
+}
+
+package "aws-spring-boot" {
+  component "KmsAutoConfiguration" as Auto
+  component "KmsProperties" as Props
+  component "KmsOperations" as Ops
+  component "KmsCoroutinesEncryptor" as Encryptor
+  component "DataKeyCache" as Cache
+  component "KmsTextEncryptor" as Adapter
+}
+
+package "AWS SDK v2" {
+  component "KmsAsyncClient" as Client
+}
+
+cloud "AWS KMS\nor LocalStack" as Kms
+
+Auto --> Props
+Auto --> Client
+Auto --> Cache
+Auto --> Encryptor
+Ops <|.. Encryptor
+TextEncryptor <|.. Adapter
+Adapter --> Ops
+Service --> Ops
+Service --> TextEncryptor
+Encryptor --> Client
+Encryptor --> Cache
+Client --> Kms
+@enduml
+```
+
+#### KMS 암호화 / 복호화 흐름
+
+```plantuml
+@startuml
+skinparam shadowing false
+actor App
+participant "KmsOperations" as Ops
+participant "KmsCoroutinesEncryptor" as Encryptor
+participant "KmsAsyncClient" as Client
+participant "AWS KMS" as Kms
+
+App -> Ops: encrypt(plaintext, keyId?, context?)
+Ops -> Encryptor: 기본 key와 context 적용
+Encryptor -> Client: Encrypt
+Client -> Kms: encrypt request
+Kms --> Client: ciphertextBlob
+Client --> Encryptor: EncryptResponse
+Encryptor --> App: ciphertext bytes
+
+App -> Ops: decrypt(ciphertext, keyId?, context?)
+Ops -> Encryptor: 기본 context 적용
+Encryptor -> Client: Decrypt
+Client -> Kms: decrypt request
+Kms --> Client: plaintext
+Client --> Encryptor: DecryptResponse
+Encryptor --> App: plaintext bytes
+@enduml
 ```
 
 ---
@@ -252,6 +350,58 @@ class OrderQueue(
     }
 }
 ```
+
+### KMS — Spring Boot Coroutines Encryptor
+
+```kotlin
+import io.bluetape4k.aws.spring.kms.KmsOperations
+import java.util.Base64
+
+class SecretVault(
+    private val kms: KmsOperations,
+) {
+    suspend fun protectToken(token: String): String {
+        val ciphertext = kms.encrypt(
+            plaintext = token.encodeToByteArray(),
+            encryptionContext = mapOf("purpose" to "api-token"),
+        )
+        return Base64.getEncoder().encodeToString(ciphertext)
+    }
+
+    suspend fun revealToken(encodedCiphertext: String): String {
+        val plaintext = kms.decrypt(
+            ciphertext = Base64.getDecoder().decode(encodedCiphertext),
+            encryptionContext = mapOf("purpose" to "api-token"),
+        )
+        return plaintext.decodeToString()
+    }
+}
+```
+
+encryption context는 인증되는 metadata입니다. 암호화할 때 사용한 context와 같은 값을
+복호화에도 전달해야 하며, `service`, `tenant`, `purpose`처럼 안정적인 식별자를 넣는
+용도로 사용하세요. AWS 로그나 policy에서 노출될 수 있으므로 secret 자체를 context에
+넣으면 안 됩니다.
+
+### KMS — Spring Security `TextEncryptor`
+
+```kotlin
+import org.springframework.security.crypto.encrypt.TextEncryptor
+
+class PropertyProtector(
+    private val textEncryptor: TextEncryptor,
+) {
+    fun encrypt(value: String): String =
+        textEncryptor.encrypt(value)
+
+    fun decrypt(value: String): String =
+        textEncryptor.decrypt(value)
+}
+```
+
+`TextEncryptor`는 동기식 인터페이스이므로 짧은 관리 흐름이나 startup 시점 secret 처리에
+적합합니다. Coroutine service 안에서는 `KmsOperations`를 우선 사용하세요.
+
 ### S3 업로드 — Coroutines (`aws` 모듈)
 
 ```kotlin
