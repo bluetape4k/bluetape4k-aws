@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.kms
 
-import org.assertj.core.api.Assertions.assertThat
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import java.time.Clock
@@ -19,7 +21,7 @@ class InMemoryDataKeyCacheTest {
 
         cache.put(key, dataKey)
 
-        assertThat(cache.get(key)).isSameAs(dataKey)
+        cache.get(key) shouldBeSameInstanceAs dataKey
     }
 
     @Test
@@ -31,7 +33,7 @@ class InMemoryDataKeyCacheTest {
         cache.put(key, dataKey("key-1"))
         clock.currentInstant = clock.currentInstant.plus(Duration.ofMinutes(6))
 
-        assertThat(cache.get(key)).isNull()
+        cache.get(key).shouldBeNull()
     }
 
     @Test
@@ -44,8 +46,8 @@ class InMemoryDataKeyCacheTest {
         cache.put(first, dataKey("key-1"))
         cache.put(second, dataKey("key-2"))
 
-        assertThat(cache.get(first)).isNull()
-        assertThat(cache.get(second)).isNotNull()
+        cache.get(first).shouldBeNull()
+        cache.get(second).shouldNotBeNull()
     }
 
     private fun cacheKey(keyId: String): KmsDataKeyCacheKey =

@@ -1,7 +1,11 @@
 package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import org.assertj.core.api.Assertions.assertThat
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -34,13 +38,13 @@ class KmsAutoConfigurationTest {
     @Test
     fun `register KMS client operations cache and text encryptor`() {
         contextRunner.run { context ->
-            assertThat(context).hasSingleBean(KmsAsyncClient::class.java)
-            assertThat(context).hasSingleBean(KmsProperties::class.java)
-            assertThat(context).hasSingleBean(DataKeyCache::class.java)
-            assertThat(context).hasSingleBean(KmsOperations::class.java)
-            assertThat(context).hasSingleBean(KmsCoroutinesEncryptor::class.java)
-            assertThat(context).hasSingleBean(TextEncryptor::class.java)
-            assertThat(context).hasSingleBean(KmsTextEncryptor::class.java)
+            context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(KmsProperties::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(DataKeyCache::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(KmsCoroutinesEncryptor::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 1
         }
     }
 
@@ -49,9 +53,41 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.kms.enabled=false")
             .run { context ->
-                assertThat(context).doesNotHaveBean(KmsAsyncClient::class.java)
-                assertThat(context).doesNotHaveBean(KmsOperations::class.java)
-                assertThat(context).doesNotHaveBean(TextEncryptor::class.java)
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `text encryptor auto configuration backs off when KMS disabled with custom operations`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.kms.enabled=false")
+            .withBean(KmsOperations::class.java, { NoopKmsOperations })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
+                context.getBean(KmsOperations::class.java) shouldBeSameInstanceAs NoopKmsOperations
+                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `text encryptor auto configuration registers properties for custom operations`() {
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(KmsTextEncryptorAutoConfiguration::class.java))
+            .withBean(KmsOperations::class.java, { NoopKmsOperations })
+            .withPropertyValues(
+                "bluetape4k.aws.kms.key-id=alias/custom",
+                "bluetape4k.aws.kms.encryption-context.service=custom-service",
+            )
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(KmsProperties::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -60,9 +96,9 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withBean(KmsOperations::class.java, { NoopKmsOperations })
             .run { context ->
-                assertThat(context).hasSingleBean(KmsOperations::class.java)
-                assertThat(context).doesNotHaveBean(KmsCoroutinesEncryptor::class.java)
-                assertThat(context.getBean(KmsOperations::class.java)).isSameAs(NoopKmsOperations)
+                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(KmsCoroutinesEncryptor::class.java).size shouldBeEqualTo 0
+                context.getBean(KmsOperations::class.java) shouldBeSameInstanceAs NoopKmsOperations
             }
     }
 
@@ -71,9 +107,9 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.kms"))
             .run { context ->
-                assertThat(context).doesNotHaveBean(KmsAsyncClient::class.java)
-                assertThat(context).doesNotHaveBean(KmsOperations::class.java)
-                assertThat(context).doesNotHaveBean("kmsTextEncryptor")
+                context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 0
+                context.containsBean("kmsTextEncryptor") shouldBeEqualTo false
             }
     }
 
@@ -87,9 +123,9 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withBean(TextEncryptor::class.java, { custom })
             .run { context ->
-                assertThat(context).hasSingleBean(TextEncryptor::class.java)
-                assertThat(context).doesNotHaveBean(KmsTextEncryptor::class.java)
-                assertThat(context.getBean(TextEncryptor::class.java)).isSameAs(custom)
+                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 0
+                context.getBean(TextEncryptor::class.java) shouldBeSameInstanceAs custom
             }
     }
 
@@ -98,8 +134,8 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("org.springframework.security.crypto.encrypt"))
             .run { context ->
-                assertThat(context).hasSingleBean(KmsOperations::class.java)
-                assertThat(context).doesNotHaveBean("kmsTextEncryptor")
+                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
+                context.containsBean("kmsTextEncryptor") shouldBeEqualTo false
             }
     }
 
@@ -108,8 +144,8 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.kms.data-key-cache.enabled=false")
             .run { context ->
-                assertThat(context).hasSingleBean(DataKeyCache::class.java)
-                assertThat(context.getBean(DataKeyCache::class.java)).isSameAs(NoopDataKeyCache)
+                context.getBeansOfType(DataKeyCache::class.java).size shouldBeEqualTo 1
+                context.getBean(DataKeyCache::class.java) shouldBeSameInstanceAs NoopDataKeyCache
             }
     }
 
@@ -122,11 +158,11 @@ class KmsAutoConfigurationTest {
             })
             .withPropertyValues("bluetape4k.aws.kms.endpoint-override=http://localhost:4566")
             .run { context ->
-                assertThat(context).hasFailed()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                assertThat(messages).contains("region is required")
+                messages shouldContain "region is required"
             }
     }
 }
