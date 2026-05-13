@@ -93,6 +93,72 @@ class SqsConsumerRuntimeFailureTest {
     }
 
     @Test
+    fun `start is ignored while stop is draining handlers`() = runSuspendIO {
+        coroutineScope {
+            val client = mockk<SqsAsyncClient>()
+            val receiveCalls = AtomicInteger()
+            val handlerStarted = CountDownLatch(1)
+            val releaseHandler = CompletableFuture<Unit>()
+            val message = Message.builder()
+                .messageId("message-1")
+                .receiptHandle("receipt-1")
+                .body("slow")
+                .build()
+
+            every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+                receiveCalls.incrementAndGet()
+                CompletableFuture.completedFuture(ReceiveMessageResponse.builder().messages(message).build())
+            }
+            every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } returns
+                CompletableFuture.completedFuture(mockk())
+
+            val runtime = SqsConsumerRuntime(
+                SqsConsumerRuntimeConfig(
+                    sqsAsyncClient = client,
+                    queueUrl = "https://sqs.local/source",
+                    coroutines = 1,
+                    maxMessages = 1,
+                    waitTimeSeconds = 0,
+                    shutdownTimeout = Duration.ofSeconds(3),
+                    messageType = String::class,
+                    messageHandler = {
+                        handlerStarted.countDown()
+                        releaseHandler.await()
+                    },
+                )
+            )
+
+            try {
+                runtime.start()
+                await.atMost(Duration.ofSeconds(5)).untilAsserted {
+                    handlerStarted.count shouldBeEqualTo 0L
+                    receiveCalls.get() shouldBeEqualTo 1
+                }
+
+                val stopJob = launch {
+                    runtime.stop()
+                }
+                await.atMost(Duration.ofSeconds(2)).untilAsserted {
+                    runtime.isRunning shouldBeEqualTo false
+                }
+
+                runtime.start()
+                await.during(Duration.ofMillis(300))
+                    .atMost(Duration.ofSeconds(2))
+                    .untilAsserted {
+                        receiveCalls.get() shouldBeEqualTo 1
+                    }
+
+                releaseHandler.complete(Unit)
+                stopJob.join()
+            } finally {
+                releaseHandler.complete(Unit)
+                runtime.stop()
+            }
+        }
+    }
+
+    @Test
     fun `visibility heartbeat continues while stop drains running handler`() = runSuspendIO {
         coroutineScope {
             val client = mockk<SqsAsyncClient>()

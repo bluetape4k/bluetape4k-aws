@@ -31,6 +31,7 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToLong
 import kotlin.reflect.KClass
 
@@ -173,6 +174,7 @@ class SqsMessageContext internal constructor(
     val queueUrl: String,
     val message: Message,
 ) {
+    @Volatile
     internal var deleted: Boolean = false
 
     /** Deletes the current message from the source queue. */
@@ -210,7 +212,13 @@ class SqsConsumerRuntime(
 ) {
     companion object: KLogging()
 
-    private val running = AtomicBoolean(false)
+    private enum class LifecycleState {
+        STOPPED,
+        RUNNING,
+        STOPPING,
+    }
+
+    private val lifecycleState = AtomicReference(LifecycleState.STOPPED)
     private val pollerJobs = CopyOnWriteArrayList<Job>()
     private val handlerJobs = ConcurrentHashMap.newKeySet<Job>()
     private val handlerPermitReleases = ConcurrentHashMap<Job, AtomicBoolean>()
@@ -225,11 +233,11 @@ class SqsConsumerRuntime(
 
     /** True while the runtime accepts receives and handler launches. */
     val isRunning: Boolean
-        get() = running.get()
+        get() = lifecycleState.get() == LifecycleState.RUNNING
 
     /** Starts polling if the runtime is not already running. */
     fun start() {
-        if (!running.compareAndSet(false, true)) {
+        if (!lifecycleState.compareAndSet(LifecycleState.STOPPED, LifecycleState.RUNNING)) {
             return
         }
 
@@ -246,35 +254,39 @@ class SqsConsumerRuntime(
 
     /** Stops pollers and drains in-flight handlers according to the shutdown contract. */
     suspend fun stop() {
-        if (!running.compareAndSet(true, false)) {
+        if (!lifecycleState.compareAndSet(LifecycleState.RUNNING, LifecycleState.STOPPING)) {
             return
         }
 
-        val currentScope = scope
-        val currentPollers = pollerJobs.toList()
-        currentPollers.forEach { it.cancel() }
-        currentPollers.joinAll()
+        try {
+            val currentScope = scope
+            val currentPollers = pollerJobs.toList()
+            currentPollers.forEach { it.cancel() }
+            currentPollers.joinAll()
 
-        val timeoutMillis = config.shutdownTimeout.toMillis()
-        val drained = withTimeoutOrNull(timeoutMillis) {
-            while (handlerJobs.isNotEmpty()) {
-                handlerJobs.toList().joinAll()
-            }
-        } != null
+            val timeoutMillis = config.shutdownTimeout.toMillis()
+            val drained = withTimeoutOrNull(timeoutMillis) {
+                while (handlerJobs.isNotEmpty()) {
+                    handlerJobs.toList().joinAll()
+                }
+            } != null
 
-        if (!drained) {
-            handlerJobs.toList().forEach { job ->
-                job.cancel()
-                releaseHandlerPermit(job)
+            if (!drained) {
+                handlerJobs.toList().forEach { job ->
+                    job.cancel()
+                    releaseHandlerPermit(job)
+                }
             }
+            currentScope?.cancel()
+            pollerJobs.clear()
+            if (!drained) {
+                handlerJobs.clear()
+                handlerPermitReleases.clear()
+            }
+            scope = null
+        } finally {
+            lifecycleState.set(LifecycleState.STOPPED)
         }
-        currentScope?.cancel()
-        pollerJobs.clear()
-        if (!drained) {
-            handlerJobs.clear()
-            handlerPermitReleases.clear()
-        }
-        scope = null
     }
 
     /** Publishes [messageBody] to the configured source queue. */
@@ -317,7 +329,7 @@ class SqsConsumerRuntime(
     private suspend fun pollLoop() {
         val backoff = config.pollBackoff.newState()
 
-        while (running.get() && currentCoroutineContext().isActive) {
+        while (isRunning && currentCoroutineContext().isActive) {
             var permits = 0
             try {
                 val queueUrl = resolveQueueUrl()
@@ -332,7 +344,7 @@ class SqsConsumerRuntime(
                 }.await()
 
                 backoff.reset()
-                if (!running.get()) {
+                if (!isRunning) {
                     repeat(permits) { handlerPermits.release() }
                     permits = 0
                     return

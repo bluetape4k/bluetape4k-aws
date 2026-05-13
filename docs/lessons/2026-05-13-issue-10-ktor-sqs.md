@@ -23,8 +23,8 @@ manual DLQ forwarding.
 
 - `./gradlew :aws-ktor:compileKotlin`
 - `./gradlew :aws-ktor:compileTestKotlin`
-- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - 13 passing
-- `./gradlew :aws-ktor:test` - 32 passing
+- `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` - 14 passing
+- `./gradlew :aws-ktor:test` - 33 passing
 
 ## Future Guidance
 
