@@ -44,6 +44,7 @@ jobs:
         if: matrix.language == 'java-kotlin'
         with:
           gradle-version: wrapper
+          cache-provider: basic
 
       - name: Build with Gradle
         if: matrix.language == 'java-kotlin'

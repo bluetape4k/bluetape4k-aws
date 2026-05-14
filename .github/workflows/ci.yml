@@ -106,6 +106,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: wrapper
+          cache-provider: basic
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Build (compile only)
         run: ./gradlew build -x test --parallel
@@ -127,6 +128,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: wrapper
+          cache-provider: basic
           cache-read-only: true
       - name: Test aws
         run: |
@@ -162,6 +164,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: wrapper
+          cache-provider: basic
           cache-read-only: true
       - name: Test aws-kotlin
         run: |
@@ -197,6 +200,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: wrapper
+          cache-provider: basic
           cache-read-only: true
       - name: Test aws-spring-boot
         run: |
@@ -232,6 +236,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: wrapper
+          cache-provider: basic
           cache-read-only: true
       - name: Test aws-ktor
         run: |
