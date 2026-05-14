@@ -24,6 +24,10 @@ Integration tests use LocalStack via Testcontainers. Use
 Root README visual assets live under `docs/assets/` and should be shared by
 `README.md` and `README.ko.md` through the same relative path.
 
+For non-trivial GitHub issue work, add or update a durable lesson under
+`docs/lessons/YYYY-MM-DD-{slug}.md` before publishing the PR. Treat the lesson
+as part of the completion checklist, not an optional follow-up.
+
 ## Commands
 
 ```bash
