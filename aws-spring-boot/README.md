@@ -3,7 +3,8 @@
 [English](README.md) | [한국어](README.ko.md)
 
 Spring Boot 4 auto-configuration for AWS Java SDK v2. Provides coroutine-first
-templates and a SQS listener container, with no `awspring` runtime dependency.
+templates, a SQS listener container, and remote Environment sources, with no
+`awspring` runtime dependency.
 
 ## Architecture
 
@@ -17,8 +18,9 @@ flowchart LR
         SQSOPS["SqsOperations\n(SqsCoroutinesTemplate)"]
         DYN["CoroutinesDynamoDbRepository"]
         KMS["KmsOperations\n(KmsEncryptedFieldCodec)"]
+        ENV["Secrets / Parameter Store\nEnvironment sources"]
         LISTENER["SqsMessageListenerContainer\n(@SqsListener)"]
-        AUTO["S3/Sqs/DynamoDb/KmsAutoConfiguration"]
+        AUTO["AutoConfiguration +\nEnvironmentPostProcessor"]
     end
     subgraph SDK["AWS SDK v2 (compileOnly)"]
         S3CLI["S3AsyncClient / S3Presigner"]
@@ -30,14 +32,17 @@ flowchart LR
     BIZ --> SQSOPS
     BIZ --> DYN
     BIZ --> KMS
+    BIZ --> ENV
     LISTENER --> BIZ
     AUTO -.creates.-> S3OPS
     AUTO -.creates.-> SQSOPS
     AUTO -.creates.-> LISTENER
+    AUTO -.loads.-> ENV
     S3OPS --> S3CLI
     SQSOPS --> SQSCLI
     DYN --> DYNCLI
     KMS --> KMSCLI["KmsAsyncClient"]
+    ENV --> SECCLI["SecretsManagerClient / SsmClient"]
 ```
 
 ## Core Features
@@ -57,6 +62,9 @@ flowchart LR
 - **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
   generation, optional Spring Security `TextEncryptor`, and explicit
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
+- **Secrets Manager / Parameter Store** — startup Environment sources for
+  remote secrets and parameters, optional lazy refresh, and composed
+  `@SecretsValue` / `@ParameterStoreValue` annotations over Spring `@Value`.
 - **No awspring runtime dependency** — AWS SDK v2 services are `compileOnly`;
   the consumer adds only the services they actually use.
 
@@ -72,6 +80,8 @@ dependencies {
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
+    implementation("software.amazon.awssdk:secretsmanager")
+    implementation("software.amazon.awssdk:ssm")
 }
 ```
 
@@ -119,6 +129,27 @@ bluetape4k:
         service: order-api
       field-encryption:
         enabled: true
+    secrets-manager:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      refresh-interval: 30s
+      sources:
+        - name: app-secret
+          secret-id: /config/order-api
+          prefix: app
+          format: json
+    parameter-store:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      refresh-interval: 30s
+      sources:
+        - name: app-parameters
+          path: /config/order-api
+          prefix: app
+          recursive: true
+          with-decryption: true
 ```
 
 `endpoint-override` requires `region` to be set. Each property class enforces
@@ -126,8 +157,36 @@ this at startup via `require`.
 `sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a
 logical queue alias. `SqsOperations.getQueueUrl("<name>")` still performs an
 AWS SQS `GetQueueUrl` call.
+Secrets Manager and Parameter Store sources are loaded by
+`EnvironmentPostProcessor` before normal bean binding. When `refresh-interval`
+is set, the property source reloads lazily on property access after the interval
+has elapsed; failed reloads keep the previous values.
 
 ## Usage Examples
+
+### Secrets Manager / Parameter Store — Environment values
+
+```kotlin
+import io.bluetape4k.aws.spring.parameterstore.ParameterStoreValue
+import io.bluetape4k.aws.spring.secretsmanager.SecretsValue
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("app.db")
+data class DatabaseProperties(
+    val username: String,
+    val password: String,
+)
+
+class DatabaseTokenReader(
+    @SecretsValue("\${app.db.password}") private val password: String,
+    @ParameterStoreValue("\${app.db.username}") private val username: String,
+)
+```
+
+JSON secrets are flattened with dot notation. Parameter names under the
+configured path are mapped to dot-separated keys, and `prefix` is prepended to
+both source types. `@SecretsValue` and `@ParameterStoreValue` use normal Spring
+`@Value` placeholder syntax.
 
 ### S3 — coroutine-friendly template
 

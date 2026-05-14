@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -15,6 +16,7 @@ import org.springframework.core.env.StandardEnvironment
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.ParameterType
+import java.time.Duration
 import java.util.UUID
 
 class ParameterStoreEnvironmentPostProcessorLocalStackTest {
@@ -92,6 +94,43 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
         ParameterStoreEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
         environment.propertySources.map { it.name } shouldNotContain "bluetape4k.aws.parameter-store"
+    }
+
+    @Test
+    fun `refresh configured parameter source after refresh interval`() {
+        val rootPath = "/config/${UUID.randomUUID()}"
+        ssmClient().use { client ->
+            client.putParameter {
+                it.name("$rootPath/db/password")
+                it.value("initial")
+                it.type(ParameterType.STRING)
+            }
+        }
+
+        val environment = environmentOf(
+            "bluetape4k.aws.parameter-store.region" to localStack.regionName,
+            "bluetape4k.aws.parameter-store.endpoint-override" to localStack.awsEndpoint.toString(),
+            "bluetape4k.aws.parameter-store.refresh-interval" to "10ms",
+            "bluetape4k.aws.parameter-store.sources[0].name" to "app-parameters",
+            "bluetape4k.aws.parameter-store.sources[0].path" to rootPath,
+            "bluetape4k.aws.parameter-store.sources[0].prefix" to "app",
+        )
+
+        ParameterStoreEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
+        environment.getProperty("app.db.password") shouldBeEqualTo "initial"
+
+        ssmClient().use { client ->
+            client.putParameter {
+                it.name("$rootPath/db/password")
+                it.value("refreshed")
+                it.type(ParameterType.STRING)
+                it.overwrite(true)
+            }
+        }
+
+        await.atMost(Duration.ofSeconds(10)).untilAsserted {
+            environment.getProperty("app.db.password") shouldBeEqualTo "refreshed"
+        }
     }
 
     private fun ssmClient(): SsmClient =

@@ -1,13 +1,26 @@
 package io.bluetape4k.aws.spring.env
 
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.boot.json.JsonParserFactory
 import org.springframework.core.env.ConfigurableEnvironment
+import org.springframework.core.env.EnumerablePropertySource
 import org.springframework.core.env.MapPropertySource
 import org.springframework.util.ClassUtils
 import java.net.URI
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 internal const val COMMAND_LINE_PROPERTY_SOURCE_NAME = "commandLineArgs"
+
+internal data class AwsLoadedPropertySource(
+    val name: String,
+    val values: Map<String, Any>,
+    val reload: () -> Map<String, Any>?,
+)
 
 internal fun requireRegionWhenEndpointOverride(
     endpointOverride: URI?,
@@ -56,6 +69,98 @@ internal fun ConfigurableEnvironment.addAwsPropertySource(
         propertySources.contains(COMMAND_LINE_PROPERTY_SOURCE_NAME) ->
             propertySources.addAfter(COMMAND_LINE_PROPERTY_SOURCE_NAME, source)
         else -> propertySources.addFirst(source)
+    }
+}
+
+internal fun ConfigurableEnvironment.addAwsPropertySource(
+    loaded: AwsLoadedPropertySource,
+    refreshInterval: Duration?,
+    clock: Clock = Clock.systemUTC(),
+) {
+    if (loaded.values.isEmpty()) {
+        return
+    }
+
+    val source = if (refreshInterval == null) {
+        MapPropertySource(loaded.name, loaded.values)
+    } else {
+        RefreshingAwsMapPropertySource(
+            name = loaded.name,
+            initialValues = loaded.values,
+            refreshInterval = refreshInterval,
+            reload = loaded.reload,
+            clock = clock,
+        )
+    }
+
+    addAwsPropertySource(source)
+}
+
+private fun ConfigurableEnvironment.addAwsPropertySource(source: org.springframework.core.env.PropertySource<*>) {
+    val previousAwsSource = propertySources
+        .map { it.name }
+        .lastOrNull { it.startsWith("bluetape4k.aws.") }
+
+    when {
+        previousAwsSource != null -> propertySources.addAfter(previousAwsSource, source)
+        propertySources.contains(COMMAND_LINE_PROPERTY_SOURCE_NAME) ->
+            propertySources.addAfter(COMMAND_LINE_PROPERTY_SOURCE_NAME, source)
+        else -> propertySources.addFirst(source)
+    }
+}
+
+internal class RefreshingAwsMapPropertySource(
+    name: String,
+    initialValues: Map<String, Any>,
+    private val refreshInterval: Duration,
+    private val reload: () -> Map<String, Any>?,
+    private val clock: Clock = Clock.systemUTC(),
+): EnumerablePropertySource<MutableMap<String, Any>>(name, initialValues.toMutableMap()) {
+
+    companion object: KLogging()
+
+    private val refreshLock = ReentrantLock()
+
+    @Volatile
+    private var nextRefreshAt: Instant = clock.instant().plus(refreshInterval)
+
+    override fun getProperty(name: String): Any? {
+        refreshIfNeeded()
+        return source[name]
+    }
+
+    override fun containsProperty(name: String): Boolean {
+        refreshIfNeeded()
+        return source.containsKey(name)
+    }
+
+    override fun getPropertyNames(): Array<String> {
+        refreshIfNeeded()
+        return source.keys.toTypedArray()
+    }
+
+    private fun refreshIfNeeded() {
+        val now = clock.instant()
+        if (now.isBefore(nextRefreshAt)) {
+            return
+        }
+
+        refreshLock.withLock {
+            val lockedNow = clock.instant()
+            if (lockedNow.isBefore(nextRefreshAt)) {
+                return
+            }
+
+            try {
+                reload()?.let { values ->
+                    source.clear()
+                    source.putAll(values)
+                }
+            } catch (e: RuntimeException) {
+                log.warn("Keeping previous AWS property source values after refresh failure: $name", e)
+            }
+            nextRefreshAt = lockedNow.plus(refreshInterval)
+        }
     }
 }
 
@@ -123,4 +228,3 @@ internal fun joinPropertyKey(prefix: String?, key: String): String =
 
 internal fun String.trimToNull(): String? =
     trim().takeIf { it.isNotEmpty() }
-
