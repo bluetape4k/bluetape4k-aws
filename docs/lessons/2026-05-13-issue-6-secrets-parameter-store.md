@@ -29,8 +29,8 @@ remote values must be available before `@ConfigurationProperties` binding.
 - `./gradlew :aws-spring-boot:compileKotlin`
 - `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.secretsmanager.*' --tests 'io.bluetape4k.aws.spring.parameterstore.*'` — 4 passing
 - `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.env.AwsEnvironmentPropertySourceSupportTest' --tests 'io.bluetape4k.aws.spring.secretsmanager.SecretsValueTest' --tests 'io.bluetape4k.aws.spring.parameterstore.ParameterStoreValueTest'` — 5 passing
-- `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.secretsmanager.*' --tests 'io.bluetape4k.aws.spring.parameterstore.*' --tests 'io.bluetape4k.aws.spring.env.AwsEnvironmentPropertySourceSupportTest' -Dbluetape4k.aws.emulator=localstack` — 11 passing
-- `./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=localstack` — 85 passing
+- `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.secretsmanager.*' --tests 'io.bluetape4k.aws.spring.parameterstore.*' --tests 'io.bluetape4k.aws.spring.env.AwsEnvironmentPropertySourceSupportTest' -Dbluetape4k.aws.emulator=localstack` — 12 passing
+- `./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=localstack` — 86 passing
 
 ## Future Guard
 
@@ -40,3 +40,6 @@ guard classpath presence first, then delegate to SDK-backed loaders.
 For refreshable sources, reload lazily inside the `PropertySource` instead of
 adding a scheduler; this keeps the startup contract simple and avoids hidden
 threads in Spring Environment infrastructure.
+Refresh implementations should publish immutable snapshots by volatile
+reference swap, not mutate the backing map in place. This avoids exposing
+partially refreshed values and makes reader visibility explicit.

@@ -160,7 +160,9 @@ AWS SQS `GetQueueUrl` call.
 Secrets Manager and Parameter Store sources are loaded by
 `EnvironmentPostProcessor` before normal bean binding. When `refresh-interval`
 is set, the property source reloads lazily on property access after the interval
-has elapsed; failed reloads keep the previous values.
+has elapsed; failed reloads keep the previous values. When multiple remote
+sources define the same key, the earlier configured source has higher Spring
+property-source precedence.
 
 ## Usage Examples
 
