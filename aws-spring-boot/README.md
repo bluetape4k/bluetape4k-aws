@@ -16,8 +16,9 @@ flowchart LR
         S3OPS["S3Operations\n(S3CoroutinesTemplate)"]
         SQSOPS["SqsOperations\n(SqsCoroutinesTemplate)"]
         DYN["CoroutinesDynamoDbRepository"]
+        KMS["KmsOperations\n(KmsEncryptedFieldCodec)"]
         LISTENER["SqsMessageListenerContainer\n(@SqsListener)"]
-        AUTO["S3/Sqs/DynamoDbAutoConfiguration"]
+        AUTO["S3/Sqs/DynamoDb/KmsAutoConfiguration"]
     end
     subgraph SDK["AWS SDK v2 (compileOnly)"]
         S3CLI["S3AsyncClient / S3Presigner"]
@@ -28,6 +29,7 @@ flowchart LR
     BIZ --> S3OPS
     BIZ --> SQSOPS
     BIZ --> DYN
+    BIZ --> KMS
     LISTENER --> BIZ
     AUTO -.creates.-> S3OPS
     AUTO -.creates.-> SQSOPS
@@ -35,6 +37,7 @@ flowchart LR
     S3OPS --> S3CLI
     SQSOPS --> SQSCLI
     DYN --> DYNCLI
+    KMS --> KMSCLI["KmsAsyncClient"]
 ```
 
 ## Core Features
@@ -51,6 +54,9 @@ flowchart LR
   `DynamoDbAsyncTable` with `save`/`findById`/`update`/`delete`, plus
   `scan`/`query`/`queryIndex` `Flow` results. Logical table names are resolved
   through `DynamoDbTableNameResolver` (default applies `tablePrefix`).
+- **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
+  generation, optional Spring Security `TextEncryptor`, and explicit
+  `@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
 - **No awspring runtime dependency** — AWS SDK v2 services are `compileOnly`;
   the consumer adds only the services they actually use.
 
@@ -65,6 +71,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:kms")
 }
 ```
 
@@ -103,6 +110,15 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    kms:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      key-id: alias/app
+      encryption-context:
+        service: order-api
+      field-encryption:
+        enabled: true
 ```
 
 `endpoint-override` requires `region` to be set. Each property class enforces
@@ -195,6 +211,41 @@ class OrderRepository(
 
 `aws-spring-boot` does not create DynamoDB tables. Use migrations,
 deployment automation, or explicit test setup to provision tables.
+
+### KMS — explicit field encryption
+
+`@KmsEncrypted` is metadata for mapper/converter boundaries. It does not
+transparently mutate DTOs, entities, configuration properties, or existing
+plaintext data. The first supported field type is `String`/`String?`.
+
+```kotlin
+import io.bluetape4k.aws.spring.kms.KmsEncrypted
+import io.bluetape4k.aws.spring.kms.KmsEncryptedFieldCodec
+
+data class CustomerSecret(
+    @field:KmsEncrypted(encryptionContext = ["field=ssn"])
+    val ssn: String?,
+)
+
+class CustomerSecretMapper(private val codec: KmsEncryptedFieldCodec) {
+    private val ssnField = CustomerSecret::class.java.getDeclaredField("ssn")
+    private val ssnEncryption = ssnField.getAnnotation(KmsEncrypted::class.java)
+
+    suspend fun toStored(secret: CustomerSecret): String? {
+        codec.validate(ssnField)
+        return codec.encrypt(secret.ssn, ssnEncryption)
+    }
+
+    suspend fun fromStored(ciphertext: String?): CustomerSecret =
+        CustomerSecret(codec.decrypt(ciphertext, ssnEncryption))
+}
+```
+
+Ciphertext strings use the `b4k-kms:v1:` prefix. Malformed ciphertext,
+unsupported annotated field types, missing key ids, and KMS decrypt failures
+fail with deterministic exceptions. Use direct `KmsOperations` for service-level
+payloads or envelope-encryption flows; use field encryption only where a
+single short `String` needs a stable persistence or serialization boundary.
 
 ## Testing
 
