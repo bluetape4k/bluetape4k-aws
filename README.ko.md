@@ -26,7 +26,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 - **Kotlin-first AWS 클라이언트** — Java SDK v2 coroutine adapter와 AWS Kotlin SDK DSL/헬퍼
 - **서비스 범위** — DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener, auto-configuration 제공
-- **Ktor 3 통합** — SigV4 signing, coroutine S3 client, SQS consumer runtime, Ktor server/client 예제
+- **Ktor 3 통합** — SigV4 signing, coroutine S3 client, SQS consumer runtime, DynamoDB server repository, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 LocalStack/FLOCI emulator와 Nightly 예제 검증
 
 ## 모듈
@@ -36,7 +36,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `aws` | `io.github.bluetape4k.aws:aws` | AWS Java SDK v2 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장 제공 |
 | `aws-kotlin` | `io.github.bluetape4k.aws:aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정 (개발 중 — Coroutines 네이티브, awspring 미사용) |
-| `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin과 coroutine 친화적 S3 REST client |
+| `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin, coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin |
 | `aws-ktor-s3-examples` | 배포 안 함 | `S3KtorClient`용 LocalStack 중심 예제. Nightly에서 컴파일 및 테스트 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`용 Spring Boot 4 WebFlux 예제. Nightly에서 컴파일 및 테스트 |
 

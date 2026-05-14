@@ -13,7 +13,7 @@ import io.bluetape4k.aws.kotlin.dynamodb.model.provisionedThroughputOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.sortKey
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttributeDefinition
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValue
-import io.bluetape4k.jackson.Jackson
+import io.bluetape4k.jackson3.Jackson
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.info
@@ -50,10 +50,9 @@ class MovieService(private val client: DynamoDbClient) {
      */
     suspend fun loadMovies(tableName: String) {
         val data = Resourcex.getString("/movies/data.json")
-        val elements = objectMapper.readTree(data).elements()
 
-        elements.forEach {
-            val attrValue = it.toAttributeValue() as? AttributeValue.M
+        for (element in objectMapper.readTree(data).values()) {
+            val attrValue = element.toAttributeValue() as? AttributeValue.M
                 ?: error("Unexpected a top level object value")
             log.debug { "attrValue.value=${attrValue.value}" }
 

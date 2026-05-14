@@ -26,6 +26,14 @@ class DynamoItemMapperTest {
         mapOf("id" to AttributeValue.S(item.id))
     }
 
+    private val testReader = DynamoItemReader<TestItem> { item ->
+        TestItem(
+            id = item.getValue("id").asS(),
+            name = item.getValue("name").asS(),
+            age = item.getValue("age").asN().toInt(),
+        )
+    }
+
     @Test
     fun `DynamoItemMapper SAM 인터페이스로 매핑 생성`() {
         val item = TestItem("1", "Alice", 30)
@@ -34,6 +42,17 @@ class DynamoItemMapperTest {
         result["id"] shouldBeEqualTo AttributeValue.S("1")
         result["name"] shouldBeEqualTo AttributeValue.S("Alice")
         result["age"] shouldBeEqualTo AttributeValue.N("30")
+    }
+
+    @Test
+    fun `DynamoItemReader SAM 인터페이스로 아이템을 읽는다`() {
+        val source = mapOf(
+            "id" to AttributeValue.S("1"),
+            "name" to AttributeValue.S("Alice"),
+            "age" to AttributeValue.N("30"),
+        )
+
+        testReader.readDynamoItem(source) shouldBeEqualTo TestItem("1", "Alice", 30)
     }
 
     @Test
