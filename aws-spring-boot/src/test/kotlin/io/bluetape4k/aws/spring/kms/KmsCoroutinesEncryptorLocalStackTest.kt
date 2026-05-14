@@ -32,6 +32,7 @@ class KmsCoroutinesEncryptorLocalStackTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 KmsAutoConfiguration::class.java,
+                KmsFieldEncryptionAutoConfiguration::class.java,
                 KmsTextEncryptorAutoConfiguration::class.java,
             )
         )
@@ -112,4 +113,37 @@ class KmsCoroutinesEncryptorLocalStackTest {
             }
         }
     }
+
+    @Test
+    fun `field encryption codec round trips annotated String`() {
+        contextRunner().run { context ->
+            val kmsAsyncClient = context.getBean(KmsAsyncClient::class.java)
+            val beanCodec = context.getBean(KmsEncryptedFieldCodec::class.java)
+
+            runSuspendIO {
+                val keyId = kmsAsyncClient.createKey {
+                    it.description("bluetape4k aws-spring-boot field encryption test")
+                }.await().keyMetadata().keyId()
+                val annotation = FieldEncryptionFixture::class.java
+                    .getDeclaredField("secret")
+                    .getAnnotation(KmsEncrypted::class.java)
+                beanCodec.validate(FieldEncryptionFixture::class.java)
+                val keySpecificCodec = KmsEncryptedFieldCodec(
+                    kmsOperations = context.getBean(KmsOperations::class.java),
+                    keyId = keyId,
+                    encryptionContext = mapOf("service" to "kms-localstack-test"),
+                )
+
+                val ciphertext = keySpecificCodec.encrypt("field secret value", annotation)
+
+                ciphertext shouldNotBeEqualTo "field secret value"
+                beanCodec.decrypt(ciphertext, annotation) shouldBeEqualTo "field secret value"
+            }
+        }
+    }
+
+    private data class FieldEncryptionFixture(
+        @field:KmsEncrypted(encryptionContext = ["purpose=field"])
+        val secret: String,
+    )
 }

@@ -16,8 +16,9 @@ flowchart LR
         S3OPS["S3Operations\n(S3CoroutinesTemplate)"]
         SQSOPS["SqsOperations\n(SqsCoroutinesTemplate)"]
         DYN["CoroutinesDynamoDbRepository"]
+        KMS["KmsOperations\n(KmsEncryptedFieldCodec)"]
         LISTENER["SqsMessageListenerContainer\n(@SqsListener)"]
-        AUTO["S3/Sqs/DynamoDbAutoConfiguration"]
+        AUTO["S3/Sqs/DynamoDb/KmsAutoConfiguration"]
     end
     subgraph SDK["AWS SDK v2 (compileOnly)"]
         S3CLI["S3AsyncClient / S3Presigner"]
@@ -28,6 +29,7 @@ flowchart LR
     BIZ --> S3OPS
     BIZ --> SQSOPS
     BIZ --> DYN
+    BIZ --> KMS
     LISTENER --> BIZ
     AUTO -.creates.-> S3OPS
     AUTO -.creates.-> SQSOPS
@@ -35,6 +37,7 @@ flowchart LR
     S3OPS --> S3CLI
     SQSOPS --> SQSCLI
     DYN --> DYNCLI
+    KMS --> KMSCLI["KmsAsyncClient"]
 ```
 
 ## 주요 기능
@@ -50,6 +53,9 @@ flowchart LR
   `DynamoDbAsyncTable` 위에서 `save`/`findById`/`update`/`delete` 와
   `scan`/`query`/`queryIndex` 의 `Flow` 결과를 제공한다. 논리 테이블 이름은
   `DynamoDbTableNameResolver`(기본 구현은 `tablePrefix` 적용)로 해석된다.
+- **KMS** — `KmsOperations` 로 coroutine 암호화/복호화와 data key 생성을
+  제공하고, 선택적 Spring Security `TextEncryptor`, `String` 필드용 명시적
+  `@KmsEncrypted` + `KmsEncryptedFieldCodec` 를 지원한다.
 - **awspring 런타임 의존성 없음** — AWS SDK v2 서비스는 모두 `compileOnly` 로
   선언되어 있어, 사용자는 실제로 쓰는 서비스만 골라 추가할 수 있다.
 
@@ -64,6 +70,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:kms")
 }
 ```
 
@@ -102,6 +109,15 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    kms:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      key-id: alias/app
+      encryption-context:
+        service: order-api
+      field-encryption:
+        enabled: true
 ```
 
 `endpoint-override` 를 지정하면 반드시 `region` 도 설정해야 한다. 각 Properties
@@ -195,6 +211,41 @@ class OrderRepository(
 
 `aws-spring-boot` 은 DynamoDB 테이블을 자동 생성하지 않는다. 마이그레이션,
 배포 자동화, 또는 테스트 셋업에서 명시적으로 테이블을 만들어야 한다.
+
+### KMS — 명시적 필드 암호화
+
+`@KmsEncrypted` 는 mapper/converter 경계에서 사용하는 metadata 이다. DTO,
+entity, configuration properties, 기존 plaintext 데이터를 투명하게 변경하지 않는다.
+첫 지원 타입은 `String`/`String?` 이다.
+
+```kotlin
+import io.bluetape4k.aws.spring.kms.KmsEncrypted
+import io.bluetape4k.aws.spring.kms.KmsEncryptedFieldCodec
+
+data class CustomerSecret(
+    @field:KmsEncrypted(encryptionContext = ["field=ssn"])
+    val ssn: String?,
+)
+
+class CustomerSecretMapper(private val codec: KmsEncryptedFieldCodec) {
+    private val ssnField = CustomerSecret::class.java.getDeclaredField("ssn")
+    private val ssnEncryption = ssnField.getAnnotation(KmsEncrypted::class.java)
+
+    suspend fun toStored(secret: CustomerSecret): String? {
+        codec.validate(ssnField)
+        return codec.encrypt(secret.ssn, ssnEncryption)
+    }
+
+    suspend fun fromStored(ciphertext: String?): CustomerSecret =
+        CustomerSecret(codec.decrypt(ciphertext, ssnEncryption))
+}
+```
+
+Ciphertext 문자열은 `b4k-kms:v1:` prefix 를 사용한다. 잘못된 ciphertext, 지원하지
+않는 field type, 누락된 key id, KMS 복호화 실패는 결정적인 예외로 실패한다. 서비스
+단위 payload 나 envelope encryption 은 직접 `KmsOperations` 를 사용하고, 필드
+암호화는 짧은 단일 `String` 이 안정적인 persistence/serialization 경계를 가져야 할 때
+사용한다.
 
 ## 테스트
 

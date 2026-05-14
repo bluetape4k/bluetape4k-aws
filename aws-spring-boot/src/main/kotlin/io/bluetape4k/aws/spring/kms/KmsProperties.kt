@@ -34,6 +34,7 @@ data class KmsProperties(
     val encryptionAlgorithm: EncryptionAlgorithmSpec? = null,
     val dataKey: DataKey = DataKey(),
     val dataKeyCache: DataKeyCache = DataKeyCache(),
+    val fieldEncryption: FieldEncryption = FieldEncryption(),
     val textEncryptor: TextEncryptor = TextEncryptor(),
 ) {
     init {
@@ -61,6 +62,10 @@ data class KmsProperties(
     }
 
     data class TextEncryptor(
+        val enabled: Boolean = true,
+    )
+
+    data class FieldEncryption(
         val enabled: Boolean = true,
     )
 }

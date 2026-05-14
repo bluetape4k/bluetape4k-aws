@@ -23,6 +23,7 @@ class KmsAutoConfigurationTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 KmsAutoConfiguration::class.java,
+                KmsFieldEncryptionAutoConfiguration::class.java,
                 KmsTextEncryptorAutoConfiguration::class.java,
             )
         )
@@ -42,6 +43,7 @@ class KmsAutoConfigurationTest {
             context.getBeansOfType(KmsProperties::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(DataKeyCache::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(KmsCoroutinesEncryptor::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 1
@@ -56,6 +58,7 @@ class KmsAutoConfigurationTest {
                 context.startupFailure.shouldBeNull()
                 context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 0
             }
     }
@@ -69,8 +72,36 @@ class KmsAutoConfigurationTest {
                 context.startupFailure.shouldBeNull()
                 context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
                 context.getBean(KmsOperations::class.java) shouldBeSameInstanceAs NoopKmsOperations
+                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `field encryption auto configuration registers codec for custom operations`() {
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(KmsFieldEncryptionAutoConfiguration::class.java))
+            .withBean(KmsOperations::class.java, { NoopKmsOperations })
+            .withPropertyValues(
+                "bluetape4k.aws.kms.key-id=alias/custom",
+                "bluetape4k.aws.kms.encryption-context.service=custom-service",
+            )
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(KmsProperties::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `field encryption auto configuration backs off when disabled`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.kms.field-encryption.enabled=false")
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -109,6 +140,7 @@ class KmsAutoConfigurationTest {
             .run { context ->
                 context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 0
+                context.containsBean("kmsEncryptedFieldCodec") shouldBeEqualTo false
                 context.containsBean("kmsTextEncryptor") shouldBeEqualTo false
             }
     }
