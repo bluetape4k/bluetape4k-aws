@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -14,6 +15,7 @@ import org.springframework.core.env.MapPropertySource
 import org.springframework.core.env.StandardEnvironment
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import java.time.Duration
 import java.util.UUID
 
 class SecretsManagerEnvironmentPostProcessorLocalStackTest {
@@ -85,6 +87,40 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
         SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
         environment.propertySources.map { it.name } shouldNotContain "bluetape4k.aws.secrets-manager"
+    }
+
+    @Test
+    fun `refresh configured secret source after refresh interval`() {
+        val secretId = "secret-${UUID.randomUUID()}"
+        secretsManagerClient().use { client ->
+            client.createSecret {
+                it.name(secretId)
+                it.secretString("""{"db":{"password":"initial"}}""")
+            }
+        }
+
+        val environment = environmentOf(
+            "bluetape4k.aws.secrets-manager.region" to localStack.regionName,
+            "bluetape4k.aws.secrets-manager.endpoint-override" to localStack.awsEndpoint.toString(),
+            "bluetape4k.aws.secrets-manager.refresh-interval" to "10ms",
+            "bluetape4k.aws.secrets-manager.sources[0].name" to "app-secret",
+            "bluetape4k.aws.secrets-manager.sources[0].secret-id" to secretId,
+            "bluetape4k.aws.secrets-manager.sources[0].prefix" to "app",
+        )
+
+        SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
+        environment.getProperty("app.db.password") shouldBeEqualTo "initial"
+
+        secretsManagerClient().use { client ->
+            client.updateSecret {
+                it.secretId(secretId)
+                it.secretString("""{"db":{"password":"refreshed"}}""")
+            }
+        }
+
+        await.atMost(Duration.ofSeconds(10)).untilAsserted {
+            environment.getProperty("app.db.password") shouldBeEqualTo "refreshed"
+        }
     }
 
     private fun secretsManagerClient(): SecretsManagerClient =

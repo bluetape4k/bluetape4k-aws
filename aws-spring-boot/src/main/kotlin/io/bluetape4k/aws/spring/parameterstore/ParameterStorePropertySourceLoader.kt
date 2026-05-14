@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.parameterstore
 
+import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.parameterPathPropertyKey
 import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
@@ -9,7 +10,29 @@ import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException
 
 internal object ParameterStorePropertySourceLoader: KLogging() {
 
-    fun load(properties: ParameterStoreProperties): List<Pair<String, Map<String, Any>>> =
+    fun load(properties: ParameterStoreProperties): List<AwsLoadedPropertySource> =
+        buildClient(properties)
+            .use { client ->
+                properties.sources.mapNotNull { source ->
+                    loadSource(client, properties, source)?.let { values ->
+                        AwsLoadedPropertySource(
+                            name = source.propertySourceName,
+                            values = values,
+                            reload = { loadSingleSource(properties, source) },
+                        )
+                    }
+                }
+            }
+
+    private fun loadSingleSource(
+        properties: ParameterStoreProperties,
+        source: ParameterStoreProperties.Source,
+    ): Map<String, Any>? =
+        buildClient(properties).use { client ->
+            loadSource(client, properties, source)
+        }
+
+    private fun buildClient(properties: ParameterStoreProperties): SsmClient =
         SsmClient.builder()
             .credentialsProvider(DefaultCredentialsProvider.builder().build())
             .apply {
@@ -17,11 +40,6 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
                 properties.endpointOverride?.let { endpointOverride(it) }
             }
             .build()
-            .use { client ->
-                properties.sources.mapNotNull { source ->
-                    loadSource(client, properties, source)?.let { source.propertySourceName to it }
-                }
-            }
 
     private fun loadSource(
         client: SsmClient,
@@ -72,4 +90,3 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
         throw error
     }
 }
-

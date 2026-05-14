@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.secretsmanager
 
+import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.flattenJsonObject
 import io.bluetape4k.aws.spring.env.textSecretProperty
 import io.bluetape4k.logging.KLogging
@@ -10,7 +11,29 @@ import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundExce
 
 internal object SecretsManagerPropertySourceLoader: KLogging() {
 
-    fun load(properties: SecretsManagerProperties): List<Pair<String, Map<String, Any>>> =
+    fun load(properties: SecretsManagerProperties): List<AwsLoadedPropertySource> =
+        buildClient(properties)
+            .use { client ->
+                properties.sources.mapNotNull { source ->
+                    loadSource(client, properties, source)?.let { values ->
+                        AwsLoadedPropertySource(
+                            name = source.propertySourceName,
+                            values = values,
+                            reload = { loadSingleSource(properties, source) },
+                        )
+                    }
+                }
+            }
+
+    private fun loadSingleSource(
+        properties: SecretsManagerProperties,
+        source: SecretsManagerProperties.Source,
+    ): Map<String, Any>? =
+        buildClient(properties).use { client ->
+            loadSource(client, properties, source)
+        }
+
+    private fun buildClient(properties: SecretsManagerProperties): SecretsManagerClient =
         SecretsManagerClient.builder()
             .credentialsProvider(DefaultCredentialsProvider.builder().build())
             .apply {
@@ -18,11 +41,6 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
                 properties.endpointOverride?.let { endpointOverride(it) }
             }
             .build()
-            .use { client ->
-                properties.sources.mapNotNull { source ->
-                    loadSource(client, properties, source)?.let { source.propertySourceName to it }
-                }
-            }
 
     private fun loadSource(
         client: SecretsManagerClient,

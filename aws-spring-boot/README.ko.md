@@ -3,7 +3,8 @@
 한국어 | [English](README.md)
 
 AWS Java SDK v2 를 위한 Spring Boot 4 자동 설정 모듈. Coroutines 우선 템플릿과
-SQS 리스너 컨테이너를 제공하며, `awspring` 런타임 의존성은 사용하지 않는다.
+SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awspring` 런타임
+의존성은 사용하지 않는다.
 
 ## Architecture
 
@@ -17,8 +18,9 @@ flowchart LR
         SQSOPS["SqsOperations\n(SqsCoroutinesTemplate)"]
         DYN["CoroutinesDynamoDbRepository"]
         KMS["KmsOperations\n(KmsEncryptedFieldCodec)"]
+        ENV["Secrets / Parameter Store\nEnvironment sources"]
         LISTENER["SqsMessageListenerContainer\n(@SqsListener)"]
-        AUTO["S3/Sqs/DynamoDb/KmsAutoConfiguration"]
+        AUTO["AutoConfiguration +\nEnvironmentPostProcessor"]
     end
     subgraph SDK["AWS SDK v2 (compileOnly)"]
         S3CLI["S3AsyncClient / S3Presigner"]
@@ -30,14 +32,17 @@ flowchart LR
     BIZ --> SQSOPS
     BIZ --> DYN
     BIZ --> KMS
+    BIZ --> ENV
     LISTENER --> BIZ
     AUTO -.creates.-> S3OPS
     AUTO -.creates.-> SQSOPS
     AUTO -.creates.-> LISTENER
+    AUTO -.loads.-> ENV
     S3OPS --> S3CLI
     SQSOPS --> SQSCLI
     DYN --> DYNCLI
     KMS --> KMSCLI["KmsAsyncClient"]
+    ENV --> SECCLI["SecretsManagerClient / SsmClient"]
 ```
 
 ## 주요 기능
@@ -56,6 +61,9 @@ flowchart LR
 - **KMS** — `KmsOperations` 로 coroutine 암호화/복호화와 data key 생성을
   제공하고, 선택적 Spring Security `TextEncryptor`, `String` 필드용 명시적
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` 를 지원한다.
+- **Secrets Manager / Parameter Store** — 원격 secret/parameter 를 시작 시점에
+  Spring Environment 로 로드하고, 선택적 lazy refresh 및 Spring `@Value` 기반의
+  `@SecretsValue` / `@ParameterStoreValue` 조합 어노테이션을 제공한다.
 - **awspring 런타임 의존성 없음** — AWS SDK v2 서비스는 모두 `compileOnly` 로
   선언되어 있어, 사용자는 실제로 쓰는 서비스만 골라 추가할 수 있다.
 
@@ -71,6 +79,8 @@ dependencies {
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
+    implementation("software.amazon.awssdk:secretsmanager")
+    implementation("software.amazon.awssdk:ssm")
 }
 ```
 
@@ -118,6 +128,27 @@ bluetape4k:
         service: order-api
       field-encryption:
         enabled: true
+    secrets-manager:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      refresh-interval: 30s
+      sources:
+        - name: app-secret
+          secret-id: /config/order-api
+          prefix: app
+          format: json
+    parameter-store:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      refresh-interval: 30s
+      sources:
+        - name: app-parameters
+          path: /config/order-api
+          prefix: app
+          recursive: true
+          with-decryption: true
 ```
 
 `endpoint-override` 를 지정하면 반드시 `region` 도 설정해야 한다. 각 Properties
@@ -125,8 +156,35 @@ bluetape4k:
 `sqs.queues.<name>.url` 은 `@SqsListener(queue = "<name>")` 에서 논리 큐 이름을
 실제 URL로 바꾸는 alias 설정이다. `SqsOperations.getQueueUrl("<name>")` 은 여전히
 AWS SQS `GetQueueUrl` 요청을 수행한다.
+Secrets Manager 와 Parameter Store source 는 `EnvironmentPostProcessor` 로 일반 bean
+binding 전에 로드된다. `refresh-interval` 을 설정하면 interval 이 지난 뒤 property
+접근 시점에 lazy reload 하며, reload 실패 시에는 이전 값을 유지한다.
 
 ## 사용 예제
+
+### Secrets Manager / Parameter Store — Environment 값
+
+```kotlin
+import io.bluetape4k.aws.spring.parameterstore.ParameterStoreValue
+import io.bluetape4k.aws.spring.secretsmanager.SecretsValue
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("app.db")
+data class DatabaseProperties(
+    val username: String,
+    val password: String,
+)
+
+class DatabaseTokenReader(
+    @SecretsValue("\${app.db.password}") private val password: String,
+    @ParameterStoreValue("\${app.db.username}") private val username: String,
+)
+```
+
+JSON secret 은 dot notation 으로 flatten 된다. 설정한 path 아래의 parameter 이름은
+dot-separated key 로 매핑되고, 두 source 모두 `prefix` 를 앞에 붙인다.
+`@SecretsValue` 와 `@ParameterStoreValue` 는 일반 Spring `@Value` placeholder 문법을
+사용한다.
 
 ### S3 — Coroutines 템플릿
 

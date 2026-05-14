@@ -35,18 +35,19 @@ bean binding when users want remote values to participate in
    bean creation.
 3. Add typed properties for Secrets Manager and Parameter Store source lists.
 4. Add AWS SDK clients only when the relevant SDK module is present.
-5. Add ApplicationContextRunner and LocalStack tests for source loading.
-6. Update `README.md` and `README.ko.md`.
+5. Add optional lazy refresh for configured sources.
+6. Add composed `@SecretsValue` and `@ParameterStoreValue` annotations over
+   Spring `@Value`.
+7. Add ApplicationContextRunner and LocalStack tests for source loading and
+   refresh.
+8. Update `README.md` and `README.ko.md`.
 
 ## Non-Goals
 
 - No awspring or Spring Cloud dependency.
-- No `@SecretsValue` / `@ParameterStoreValue` annotation in the first PR. Normal
-  Spring `Environment`, `@Value`, and `@ConfigurationProperties` access should
-  cover the core use case.
-- No runtime refresh scheduler in the first PR. Startup-time loading is the
-  durable Spring Boot contract; refresh requires a separate lifecycle and
-  change-notification design.
+- No runtime refresh scheduler. Startup-time loading remains the durable Spring
+  Boot contract; optional refresh is lazy on property access and keeps previous
+  values if reload fails.
 - No binary Secrets Manager value support.
 - No cross-account AssumeRole helper.
 
@@ -58,6 +59,7 @@ Secrets Manager prefix: `bluetape4k.aws.secrets-manager`
 - `region: String? = null`
 - `endpointOverride: URI? = null`
 - `failFast: Boolean = true`
+- `refreshInterval: Duration? = null`
 - `sources: List<Source> = emptyList()`
 
 Secret source:
@@ -79,6 +81,7 @@ Parameter Store prefix: `bluetape4k.aws.parameter-store`
 - `region: String? = null`
 - `endpointOverride: URI? = null`
 - `failFast: Boolean = true`
+- `refreshInterval: Duration? = null`
 - `sources: List<Source> = emptyList()`
 
 Parameter source:
@@ -97,6 +100,7 @@ Validation:
 - Secret sources require non-blank `secretId`.
 - Parameter sources require a non-blank absolute path starting with `/`.
 - Remote lookup is skipped when a feature is disabled or has no sources.
+- `refreshInterval`, when present, must be positive.
 
 ## Property Mapping
 
@@ -132,6 +136,9 @@ Property source order:
   loading sources.
 - Post-processors use synchronous AWS SDK clients because Spring Environment
   mutation is a blocking startup phase.
+- When `refreshInterval` is set, a refreshable `PropertySource` reloads lazily
+  after the interval has elapsed. Successful reloads replace the in-memory map;
+  skipped or failed reloads keep the previous map.
 
 ## Tests
 
@@ -151,6 +158,8 @@ LocalStack tests:
 - Create a secret, load it as JSON, and bind it into the Environment.
 - Create SSM parameters under a path, load them recursively, and bind them into
   the Environment.
+- Update a LocalStack secret/parameter and verify the refreshable property
+  source observes the new value after `refreshInterval`.
 
 ## README Updates
 
@@ -159,14 +168,17 @@ Update both `README.md` and `README.ko.md`:
 - Add `software.amazon.awssdk:secretsmanager` and `software.amazon.awssdk:ssm`
   runtime dependencies for `aws-spring-boot`.
 - Add Secrets Manager and Parameter Store configuration snippets.
-- Show `@ConfigurationProperties` consuming a remotely loaded value.
+- Show `@ConfigurationProperties` and composed value annotations consuming
+  remotely loaded values.
 
 ## Acceptance Criteria
 
 - `aws-spring-boot` compiles with Secrets Manager and SSM SDKs as `compileOnly`.
 - Environment post-processors are registered in `META-INF/spring.factories`.
 - No AWS lookup happens by default when no sources are configured.
+- `refresh-interval` reloads configured sources lazily while preserving previous
+  values on reload failure.
+- `@SecretsValue` and `@ParameterStoreValue` resolve normal Spring placeholders.
 - Public API KDoc is English.
 - Targeted issue #6 tests pass.
 - `./gradlew :aws-spring-boot:test` passes.
-

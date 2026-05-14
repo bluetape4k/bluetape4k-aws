@@ -4,6 +4,7 @@ import io.bluetape4k.aws.spring.env.requireOptionalName
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
+import java.time.Duration
 
 /**
  * Configuration properties for Secrets Manager Environment sources.
@@ -20,10 +21,14 @@ data class SecretsManagerProperties(
     val region: String? = null,
     val endpointOverride: URI? = null,
     val failFast: Boolean = true,
+    val refreshInterval: Duration? = null,
     val sources: List<Source> = emptyList(),
 ) {
     init {
         requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.secrets-manager")
+        refreshInterval?.let {
+            require(!it.isZero && !it.isNegative) { "refreshInterval must be positive." }
+        }
     }
 
     /**
@@ -46,4 +51,3 @@ data class SecretsManagerProperties(
             get() = "bluetape4k.aws.secrets-manager.${name ?: secretId}"
     }
 }
-

@@ -36,8 +36,8 @@ class ParameterStoreEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered 
         )
 
         ParameterStorePropertySourceLoader.load(properties)
-            .forEach { (name, values) ->
-                environment.addAwsPropertySource(name, values)
+            .forEach { propertySource ->
+                environment.addAwsPropertySource(propertySource, properties.refreshInterval)
             }
     }
 }

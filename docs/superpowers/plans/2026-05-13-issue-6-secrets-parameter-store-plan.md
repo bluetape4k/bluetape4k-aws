@@ -21,6 +21,7 @@ Implement issue #6 in `aws-spring-boot` from:
 
 - Add a small internal property key flattener.
 - Add property source ordering helper.
+- Add refreshable property source support for optional lazy reload.
 - Add common AWS client builder helper only if it removes duplication without
   obscuring service-specific behavior.
 
@@ -30,6 +31,7 @@ Implement issue #6 in `aws-spring-boot` from:
 - Add `SecretsManagerEnvironmentPostProcessor`.
 - Add `SecretsManagerPropertySourceLoader` or equivalent testable internal
   collaborator.
+- Add `@SecretsValue` as a composed annotation over Spring `@Value`.
 - Register the post-processor in `META-INF/spring.factories`.
 
 ### 4. Parameter Store Environment Source
@@ -37,18 +39,22 @@ Implement issue #6 in `aws-spring-boot` from:
 - Add `ParameterStoreProperties`.
 - Add `ParameterStoreEnvironmentPostProcessor`.
 - Add paged `getParametersByPath` loading.
+- Add `@ParameterStoreValue` as a composed annotation over Spring `@Value`.
 - Register the post-processor in `META-INF/spring.factories`.
 
 ### 5. Tests
 
 - Add ApplicationContextRunner tests for binding, disabled/no-source behavior,
   missing SDK guard, and validation.
-- Add LocalStack tests for one JSON secret and one recursive parameter path.
+- Add unit tests for annotation placeholder resolution and refreshable property
+  source behavior.
+- Add LocalStack tests for one JSON secret, one recursive parameter path, and
+  refresh after remote value updates.
 
 ### 6. README
 
 - Update `README.md` and `README.ko.md` dependency snippets and configuration
-  examples.
+  examples, including refresh and annotation usage.
 
 ### 7. Verification
 
@@ -58,7 +64,8 @@ Run:
 2. `git diff --check`
 3. `./gradlew :aws-spring-boot:compileKotlin`
 4. `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.secretsmanager.*' --tests 'io.bluetape4k.aws.spring.parameterstore.*'`
-5. `./gradlew :aws-spring-boot:test`
+5. `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.secretsmanager.*' --tests 'io.bluetape4k.aws.spring.parameterstore.*' --tests 'io.bluetape4k.aws.spring.env.AwsEnvironmentPropertySourceSupportTest' -Dbluetape4k.aws.emulator=localstack`
+6. `./gradlew :aws-spring-boot:test`
 
 ## Review Checklist
 
@@ -68,6 +75,6 @@ Run:
 - SDK absence has a clear failure mode only when users configure sources.
 - Secrets and parameter values are not logged.
 - AWS clients are closed after startup loading.
+- Refresh keeps previous values on reload failures.
 - Public API KDoc is English.
 - README and Korean README stay in sync.
-

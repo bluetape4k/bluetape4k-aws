@@ -4,6 +4,7 @@ import io.bluetape4k.aws.spring.env.requireOptionalName
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
+import java.time.Duration
 
 /**
  * Configuration properties for SSM Parameter Store Environment sources.
@@ -20,10 +21,14 @@ data class ParameterStoreProperties(
     val region: String? = null,
     val endpointOverride: URI? = null,
     val failFast: Boolean = true,
+    val refreshInterval: Duration? = null,
     val sources: List<Source> = emptyList(),
 ) {
     init {
         requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.parameter-store")
+        refreshInterval?.let {
+            require(!it.isZero && !it.isNegative) { "refreshInterval must be positive." }
+        }
     }
 
     /**
@@ -48,4 +53,3 @@ data class ParameterStoreProperties(
             get() = "bluetape4k.aws.parameter-store.${name ?: path.trim('/').replace('/', '.')}"
     }
 }
-
