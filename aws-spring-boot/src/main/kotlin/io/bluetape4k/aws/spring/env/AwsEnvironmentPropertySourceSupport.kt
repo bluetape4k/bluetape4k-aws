@@ -52,27 +52,6 @@ internal inline fun <reified T: Any> ConfigurableEnvironment.bindOrCreate(prefix
     Binder.get(this).bindOrCreate(prefix, T::class.java)
 
 internal fun ConfigurableEnvironment.addAwsPropertySource(
-    name: String,
-    values: Map<String, Any>,
-) {
-    if (values.isEmpty()) {
-        return
-    }
-
-    val source = MapPropertySource(name, values)
-    val previousAwsSource = propertySources
-        .map { it.name }
-        .lastOrNull { it.startsWith("bluetape4k.aws.") }
-
-    when {
-        previousAwsSource != null -> propertySources.addAfter(previousAwsSource, source)
-        propertySources.contains(COMMAND_LINE_PROPERTY_SOURCE_NAME) ->
-            propertySources.addAfter(COMMAND_LINE_PROPERTY_SOURCE_NAME, source)
-        else -> propertySources.addFirst(source)
-    }
-}
-
-internal fun ConfigurableEnvironment.addAwsPropertySource(
     loaded: AwsLoadedPropertySource,
     refreshInterval: Duration?,
     clock: Clock = Clock.systemUTC(),
@@ -115,28 +94,31 @@ internal class RefreshingAwsMapPropertySource(
     private val refreshInterval: Duration,
     private val reload: () -> Map<String, Any>?,
     private val clock: Clock = Clock.systemUTC(),
-): EnumerablePropertySource<MutableMap<String, Any>>(name, initialValues.toMutableMap()) {
+): EnumerablePropertySource<Map<String, Any>>(name, initialValues.toMap()) {
 
     companion object: KLogging()
 
     private val refreshLock = ReentrantLock()
 
     @Volatile
+    private var currentValues: Map<String, Any> = initialValues.toMap()
+
+    @Volatile
     private var nextRefreshAt: Instant = clock.instant().plus(refreshInterval)
 
     override fun getProperty(name: String): Any? {
         refreshIfNeeded()
-        return source[name]
+        return currentValues[name]
     }
 
     override fun containsProperty(name: String): Boolean {
         refreshIfNeeded()
-        return source.containsKey(name)
+        return currentValues.containsKey(name)
     }
 
     override fun getPropertyNames(): Array<String> {
         refreshIfNeeded()
-        return source.keys.toTypedArray()
+        return currentValues.keys.toTypedArray()
     }
 
     private fun refreshIfNeeded() {
@@ -153,8 +135,7 @@ internal class RefreshingAwsMapPropertySource(
 
             try {
                 reload()?.let { values ->
-                    source.clear()
-                    source.putAll(values)
+                    currentValues = values.toMap()
                 }
             } catch (e: RuntimeException) {
                 log.warn("Keeping previous AWS property source values after refresh failure: $name", e)

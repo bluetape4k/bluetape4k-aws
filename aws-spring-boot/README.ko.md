@@ -158,7 +158,9 @@ bluetape4k:
 AWS SQS `GetQueueUrl` 요청을 수행한다.
 Secrets Manager 와 Parameter Store source 는 `EnvironmentPostProcessor` 로 일반 bean
 binding 전에 로드된다. `refresh-interval` 을 설정하면 interval 이 지난 뒤 property
-접근 시점에 lazy reload 하며, reload 실패 시에는 이전 값을 유지한다.
+접근 시점에 lazy reload 하며, reload 실패 시에는 이전 값을 유지한다. 여러 원격
+source 가 같은 key 를 제공하면 먼저 설정된 source 가 더 높은 Spring property-source
+우선순위를 가진다.
 
 ## 사용 예제
 
