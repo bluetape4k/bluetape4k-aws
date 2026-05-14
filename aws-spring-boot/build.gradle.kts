@@ -36,7 +36,7 @@ dependencies {
     // bluetape4k artifacts
     api(libs.bluetape4k.io)
     api(libs.bluetape4k.coroutines)
-    compileOnly(libs.bluetape4k.jackson2)
+    compileOnly(libs.bluetape4k.jackson3)
     testImplementation(libs.bluetape4k.junit5)
     testImplementation(libs.bluetape4k.testcontainers)
     testImplementation(libs.aws2.dynamodb.enhanced)

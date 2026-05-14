@@ -5,7 +5,9 @@
 Ktor 3 integration for bluetape4k AWS modules. It provides a Ktor
 `HttpClient` plugin for AWS Signature Version 4, a coroutine-friendly S3 REST
 client built on that plugin, and a server-side SQS consumer/publisher runtime
-that follows the Ktor application lifecycle.
+that follows the Ktor application lifecycle. It also provides a Ktor server
+plugin and repository facade for DynamoDB using `:aws-kotlin` and the official
+AWS SDK for Kotlin.
 
 ## Features
 
@@ -20,6 +22,8 @@ that follows the Ktor application lifecycle.
 - `SqsConsumer` Ktor `ApplicationPlugin` for coroutine SQS polling, publishing,
   graceful shutdown, retry visibility control, and optional manual DLQ
   forwarding.
+- `DynamoDbKtorPlugin` for Ktor server applications that need an AWS Kotlin SDK
+  DynamoDB client, explicit table auto-creation, and repository-style access.
 
 ## Dependency
 
@@ -37,6 +41,10 @@ dependencies {
     // SQS consumer/publisher usage
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:sqs")
+
+    // DynamoDB Ktor server usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
 }
 ```
 
@@ -185,6 +193,75 @@ suspend fun Application.publishOrder(json: String) {
 
 The application owns the injected `SqsAsyncClient`; the plugin never closes it.
 Close the client when the application scope ends.
+
+## DynamoDB Server Plugin
+
+`DynamoDbKtorPlugin` installs an AWS Kotlin SDK `DynamoDbClient` into the Ktor
+application lifecycle and exposes it through `application.dynamoDb()`. The
+plugin can use an injected application-owned client or create one from
+`region`, `endpointUrl`, and credentials. Injected clients are not closed by the
+plugin; plugin-created clients are closed on `ApplicationStopping`.
+
+Table creation is explicit. Set `autoCreateTables = true` and register table
+definitions with `table { }` when local development or tests should create
+missing tables. Existing tables are skipped; schema verification is left to
+operations and migration tooling. Auto-creation runs during `ApplicationStarted`
+and blocks Ktor startup until each registered table is ready or
+`tableReadyTimeout` expires.
+
+```kotlin
+import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
+import aws.sdk.kotlin.services.dynamodb.model.BillingMode
+import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemMapper
+import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemReader
+import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
+import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
+import io.bluetape4k.aws.ktor.dynamodb.DynamoDbKtorPlugin
+import io.bluetape4k.aws.ktor.dynamodb.dynamoDb
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+data class Order(val id: String, val status: String)
+
+val orderMapper = DynamoItemMapper<Order> { order ->
+    mapOf(
+        "id" to AttributeValue.S(order.id),
+        "status" to AttributeValue.S(order.status),
+    )
+}
+val orderReader = DynamoItemReader<Order> { item ->
+    Order(
+        id = item.getValue("id").asS(),
+        status = item.getValue("status").asS(),
+    )
+}
+val orderKeyMapper = DynamoItemMapper<String> { id ->
+    mapOf("id" to AttributeValue.S(id))
+}
+
+fun Application.module() {
+    install(DynamoDbKtorPlugin) {
+        region = "ap-northeast-2"
+        autoCreateTables = true
+        table(
+            tableName = "orders",
+            keySchema = listOf(partitionKeyOf("id")),
+            attributeDefinitions = listOf(stringAttrDefinitionOf("id")),
+        ) {
+            billingMode = BillingMode.PayPerRequest
+        }
+    }
+}
+
+suspend fun Application.findOrder(id: String): Order? =
+    dynamoDb()
+        .repository("orders", orderMapper, orderReader, orderKeyMapper)
+        .findById(id)
+```
+
+The repository intentionally uses explicit `DynamoItemMapper` and
+`DynamoItemReader` functions. It does not depend on the AWS Kotlin DynamoDB
+Mapper because that mapper is still a Developer Preview API.
 
 ### SQS Consumer Options
 

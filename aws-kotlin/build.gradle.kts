@@ -6,7 +6,7 @@ dependencies {
     // bluetape4k artifacts (via BOM)
     api(libs.bluetape4k.io)
     api(libs.bluetape4k.coroutines)
-    compileOnly(libs.bluetape4k.jackson2)
+    compileOnly(libs.bluetape4k.jackson3)
     compileOnly(libs.bluetape4k.resilience4j)
     testImplementation(libs.bluetape4k.junit5)
     testImplementation(libs.bluetape4k.testcontainers)

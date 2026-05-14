@@ -31,7 +31,8 @@ applications to adopt a single framework or dependency stack.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
   listeners, and auto-configuration without awspring.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
-  consumer runtime, and Ktor server/client examples.
+  consumer runtime, DynamoDB server repository support, and Ktor server/client
+  examples.
 - **Local integration testing** — LocalStack/FLOCI emulator wiring through
   Testcontainers and Nightly examples.
 
@@ -42,7 +43,7 @@ applications to adopt a single framework or dependency stack.
 | `aws` | `io.github.bluetape4k.aws:aws` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `aws-kotlin` | `io.github.bluetape4k.aws:aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services (WIP — Coroutines-native, no awspring dependency) |
-| `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin and coroutine-friendly S3 REST client |
+| `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, and DynamoDB server repository plugin |
 | `aws-ktor-s3-examples` | not published | LocalStack-oriented examples for `S3KtorClient`; compiled and tested in Nightly |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled and tested in Nightly |
 

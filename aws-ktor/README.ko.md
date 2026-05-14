@@ -5,7 +5,8 @@
 bluetape4k AWS 모듈을 위한 Ktor 3 통합 모듈입니다. Ktor `HttpClient`의 outgoing
 AWS HTTP 요청에 Signature Version 4 서명을 적용하는 플러그인, 그 위에 구축한
 coroutine 친화적 S3 REST client, Ktor lifecycle에 맞춰 동작하는 server-side SQS
-consumer/publisher runtime을 제공합니다.
+consumer/publisher runtime을 제공합니다. 또한 `:aws-kotlin` 과 공식 AWS SDK for
+Kotlin을 사용하는 DynamoDB Ktor server plugin과 repository facade를 제공합니다.
 
 ## 기능
 
@@ -20,6 +21,8 @@ consumer/publisher runtime을 제공합니다.
 - Coroutine 기반 SQS polling, publishing, graceful shutdown, retry visibility
   제어, 선택적 manual DLQ forwarding을 제공하는 `SqsConsumer` Ktor
   `ApplicationPlugin`.
+- AWS Kotlin SDK DynamoDB client, 명시적 table auto-create, repository-style
+  접근을 제공하는 `DynamoDbKtorPlugin`.
 
 ## 의존성
 
@@ -37,6 +40,10 @@ dependencies {
     // SQS consumer/publisher 사용 시
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:sqs")
+
+    // DynamoDB Ktor server 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
 }
 ```
 
@@ -184,6 +191,74 @@ suspend fun Application.publishOrder(json: String) {
 
 주입한 `SqsAsyncClient` 는 애플리케이션이 소유합니다. 플러그인은 client를 닫지
 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다.
+
+## DynamoDB Server Plugin
+
+`DynamoDbKtorPlugin` 은 AWS Kotlin SDK `DynamoDbClient` 를 Ktor application
+lifecycle에 설치하고 `application.dynamoDb()` 로 노출합니다. 플러그인은
+애플리케이션이 주입한 client를 사용할 수도 있고 `region`, `endpointUrl`,
+credentials로 직접 만들 수도 있습니다. 주입한 client는 플러그인이 닫지 않으며,
+플러그인이 만든 client만 `ApplicationStopping` 에서 닫습니다.
+
+테이블 생성은 명시적입니다. 로컬 개발이나 테스트에서 누락된 테이블을 만들고 싶을 때
+`autoCreateTables = true` 를 설정하고 `table { }` 정의를 등록합니다. 이미 존재하는
+테이블은 건너뛰며, schema 검증은 운영 절차와 migration 도구에 맡깁니다. Auto-create는
+`ApplicationStarted` 중 실행되므로 각 등록 테이블이 준비되거나 `tableReadyTimeout` 이
+만료될 때까지 Ktor startup을 block합니다.
+
+```kotlin
+import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
+import aws.sdk.kotlin.services.dynamodb.model.BillingMode
+import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemMapper
+import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemReader
+import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
+import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
+import io.bluetape4k.aws.ktor.dynamodb.DynamoDbKtorPlugin
+import io.bluetape4k.aws.ktor.dynamodb.dynamoDb
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+data class Order(val id: String, val status: String)
+
+val orderMapper = DynamoItemMapper<Order> { order ->
+    mapOf(
+        "id" to AttributeValue.S(order.id),
+        "status" to AttributeValue.S(order.status),
+    )
+}
+val orderReader = DynamoItemReader<Order> { item ->
+    Order(
+        id = item.getValue("id").asS(),
+        status = item.getValue("status").asS(),
+    )
+}
+val orderKeyMapper = DynamoItemMapper<String> { id ->
+    mapOf("id" to AttributeValue.S(id))
+}
+
+fun Application.module() {
+    install(DynamoDbKtorPlugin) {
+        region = "ap-northeast-2"
+        autoCreateTables = true
+        table(
+            tableName = "orders",
+            keySchema = listOf(partitionKeyOf("id")),
+            attributeDefinitions = listOf(stringAttrDefinitionOf("id")),
+        ) {
+            billingMode = BillingMode.PayPerRequest
+        }
+    }
+}
+
+suspend fun Application.findOrder(id: String): Order? =
+    dynamoDb()
+        .repository("orders", orderMapper, orderReader, orderKeyMapper)
+        .findById(id)
+```
+
+Repository는 명시적인 `DynamoItemMapper` 와 `DynamoItemReader` 함수를 사용합니다.
+AWS Kotlin DynamoDB Mapper는 아직 Developer Preview API이므로 기본 구현으로
+사용하지 않습니다.
 
 ### SQS Consumer 옵션
 

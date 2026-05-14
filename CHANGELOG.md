@@ -9,6 +9,8 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Ktor DynamoDB server plugin and repository facade built on `:aws-kotlin` and
+  the official AWS SDK for Kotlin.
 - KMS field-level encryption and Spring Boot SQS/SNS fanout examples ([PR #73](https://github.com/bluetape4k/bluetape4k-aws/pull/73)).
 - Root README hero image plus refreshed project-purpose, feature, and architecture entrypoint documentation ([PR #68](https://github.com/bluetape4k/bluetape4k-aws/pull/68)).
 - Ktor SQS consumer runtime and server integration ([PR #60](https://github.com/bluetape4k/bluetape4k-aws/pull/60)).
@@ -26,6 +28,8 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Standardized AWS modules on `bluetape4k-jackson3` and moved direct Jackson
+  helper usage to `tools.jackson`.
 - Refreshed README workbench image and aligned license text on MIT ([PR #72](https://github.com/bluetape4k/bluetape4k-aws/pull/72), [PR #70](https://github.com/bluetape4k/bluetape4k-aws/pull/70)).
 - Consolidated PR review gate metrics documentation ([PR #69](https://github.com/bluetape4k/bluetape4k-aws/pull/69)).
 - Hardened review findings across `aws`, `aws-kotlin`, `aws-spring-boot`, and `aws-ktor` tests ([PR #64](https://github.com/bluetape4k/bluetape4k-aws/pull/64), [PR #65](https://github.com/bluetape4k/bluetape4k-aws/pull/65), [PR #66](https://github.com/bluetape4k/bluetape4k-aws/pull/66), [PR #67](https://github.com/bluetape4k/bluetape4k-aws/pull/67)).

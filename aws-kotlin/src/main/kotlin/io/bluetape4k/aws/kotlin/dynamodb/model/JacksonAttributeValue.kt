@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.kotlin.dynamodb.model
 
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.JsonNodeType
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.node.JsonNodeType
 
 /**
  * Jackson의 [JsonNode]를 DynamoDB [AttributeValue]로 변환합니다.
@@ -27,8 +27,10 @@ fun JsonNode.toAttributeValue(): AttributeValue =
         JsonNodeType.NULL -> AttributeValue.Null(true)
         JsonNodeType.BOOLEAN -> this.booleanValue().toAttributeValue()
         JsonNodeType.NUMBER -> this.numberValue().toAttributeValue()
-        JsonNodeType.STRING -> this.textValue().toAttributeValue()
-        JsonNodeType.ARRAY -> AttributeValue.L(this.map { it.toAttributeValue() })
+        JsonNodeType.STRING -> this.stringValue().toAttributeValue()
+        JsonNodeType.ARRAY -> AttributeValue.L(
+            this.values().map { it.toAttributeValue() }
+        )
         JsonNodeType.OBJECT -> AttributeValue.M(
             this.properties().associate { (key, value) ->
                 key to value.toAttributeValue()

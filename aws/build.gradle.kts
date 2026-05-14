@@ -11,7 +11,7 @@ dependencies {
     api(libs.bluetape4k.io)
     api(libs.bluetape4k.netty)
     api(libs.bluetape4k.idgenerators)
-    compileOnly(libs.bluetape4k.jackson2)
+    compileOnly(libs.bluetape4k.jackson3)
     compileOnly(libs.bluetape4k.resilience4j)
     testImplementation(libs.bluetape4k.junit5)
     testImplementation(libs.bluetape4k.testcontainers)

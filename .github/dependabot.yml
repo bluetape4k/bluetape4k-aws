@@ -22,9 +22,6 @@ updates:
       testcontainers:
         patterns:
           - "org.testcontainers*"
-      jackson2:
-        patterns:
-          - "com.fasterxml.jackson*"
       jackson3:
         patterns:
           - "tools.jackson*"
@@ -37,11 +34,8 @@ updates:
         patterns:
           - "io.github.bluetape4k*"
     ignore:
-      # Compatibility-line aliases such as jackson2/jackson3 and spring-boot3/spring-boot4
+      # Compatibility-line aliases such as jackson3 and spring-boot3/spring-boot4
       # are manual major migrations. Dependabot may still propose patch/minor updates.
-      - dependency-name: "com.fasterxml.jackson*"
-        update-types:
-          - "version-update:semver-major"
       - dependency-name: "tools.jackson*"
         update-types:
           - "version-update:semver-major"
