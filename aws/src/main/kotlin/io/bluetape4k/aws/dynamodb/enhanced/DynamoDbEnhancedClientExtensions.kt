@@ -6,6 +6,7 @@ import io.bluetape4k.aws.dynamodb.model.BatchWriteItemEnhancedRequest
 import io.bluetape4k.aws.dynamodb.model.writeBatchOf
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient
+import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable
 import software.amazon.awssdk.enhanced.dynamodb.MappedTableResource
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema
@@ -91,7 +92,9 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.batchWriteItems(
  * @return 존재 여부
  */
 fun DynamoDbEnhancedClient.existsTable(tableName: String): Boolean =
-    runCatching {
+    try {
         table<Any>(tableName).describeTable()
         true
-    }.getOrDefault(false)
+    } catch (_: ResourceNotFoundException) {
+        false
+    }

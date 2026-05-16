@@ -35,6 +35,7 @@ import aws.sdk.kotlin.services.sqs.sendMessageBatch
 import aws.smithy.kotlin.runtime.ServiceException
 import aws.smithy.kotlin.runtime.http.response.statusCode
 import io.bluetape4k.logging.KotlinLogging
+import kotlinx.coroutines.CancellationException
 import io.bluetape4k.logging.info
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
@@ -109,11 +110,13 @@ suspend inline fun SqsClient.ensureQueue(
  * @return 큐가 존재하면 true, 그렇지 않으면 false를 반환합니다.
  */
 suspend inline fun SqsClient.existsQueue(queueName: String): Boolean =
-    runCatching {
+    try {
         getQueueUrl(queueName)?.isNotBlank() ?: false
-    }.recover { error ->
-        if (error.isMissingQueueError()) false else throw error
-    }.getOrThrow()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        if (e.isMissingQueueError()) false else throw e
+    }
 
 /**
  * [queueNamePrefix]를 접두사로 가지는 큐 목록을 반환합니다.

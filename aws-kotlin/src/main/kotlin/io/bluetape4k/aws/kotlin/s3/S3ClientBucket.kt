@@ -9,6 +9,7 @@ import aws.sdk.kotlin.services.s3.model.DeleteBucketRequest
 import aws.sdk.kotlin.services.s3.model.DeleteBucketResponse
 import aws.sdk.kotlin.services.s3.model.HeadBucketRequest
 import aws.smithy.kotlin.runtime.ServiceException
+import kotlinx.coroutines.CancellationException
 import aws.smithy.kotlin.runtime.http.response.statusCode
 import io.bluetape4k.aws.kotlin.s3.model.deleteBucketRequestOf
 import io.bluetape4k.aws.kotlin.s3.model.headBucketRequestOf
@@ -33,12 +34,14 @@ suspend inline fun S3Client.existsBucket(
     crossinline builder: HeadBucketRequest.Builder.() -> Unit = {},
 ): Boolean {
     val headBucketRequest = headBucketRequestOf(bucket, builder = builder)
-    return runCatching {
+    return try {
         headBucket(headBucketRequest)
         true
-    }.recover { error ->
-        if (error.isMissingBucketError()) false else throw error
-    }.getOrThrow()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        if (e.isMissingBucketError()) false else throw e
+    }
 }
 
 /**
