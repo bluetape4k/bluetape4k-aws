@@ -80,6 +80,10 @@ fun Application.dynamoDbExampleModule(
     routing {
         post("/dynamodb/orders") {
             val order = call.receive<Order>()
+            if (order.id.isBlank() || order.status.isBlank()) {
+                call.respond(HttpStatusCode.BadRequest, "id and status must not be blank")
+                return@post
+            }
             val repo = call.application.dynamoDb().repository(ORDERS_TABLE, orderMapper, orderReader, orderKeyMapper)
             val saved = repo.save(order)
             call.respond(HttpStatusCode.Created, saved)
