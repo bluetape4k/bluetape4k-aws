@@ -140,15 +140,20 @@ class OrderControllerLocalStackTest {
                 .expectStatus().isCreated
                 .expectBody<Order>()
                 .returnResult()
-                .responseBody!!
+                .responseBody
+                ?: error("POST /orders returned empty body")
 
             created.status shouldBeEqualTo "HTTP_TEST"
 
-            webClient.get().uri("/orders/${created.id}")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody<Order>()
-                .value { it.id shouldBeEqualTo created.id }
+            val found = requireNotNull(
+                webClient.get().uri("/orders/${created.id}")
+                    .exchange()
+                    .expectStatus().isOk
+                    .expectBody<Order>()
+                    .returnResult()
+                    .responseBody
+            ) { "GET /orders/${created.id} returned empty body" }
+            found.id shouldBeEqualTo created.id
 
             webClient.delete().uri("/orders/${created.id}")
                 .exchange()
