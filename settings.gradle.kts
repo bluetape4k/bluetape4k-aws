@@ -29,3 +29,6 @@ project(":aws-spring-boot-s3-examples").projectDir = file("examples/aws-spring-b
 
 include("aws-spring-boot-sqs-examples")
 project(":aws-spring-boot-sqs-examples").projectDir = file("examples/aws-spring-boot-sqs-examples")
+
+include("aws-ktor-sqs-examples")
+project(":aws-ktor-sqs-examples").projectDir = file("examples/aws-ktor-sqs-examples")
