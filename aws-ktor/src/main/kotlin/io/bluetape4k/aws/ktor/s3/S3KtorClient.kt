@@ -318,11 +318,12 @@ class S3KtorClient(
         presign(HttpMethod.Put, objectUrl(bucket, key), expires)
 
     override fun close() {
-        if (closeClient) {
-            httpClient.close()
-        }
-        if (closeCredentialsProvider && credentialsProvider is AutoCloseable) {
-            credentialsProvider.close()
+        try {
+            if (closeClient) httpClient.close()
+        } finally {
+            if (closeCredentialsProvider && credentialsProvider is AutoCloseable) {
+                (credentialsProvider as AutoCloseable).close()
+            }
         }
     }
 
@@ -431,29 +432,34 @@ fun s3KtorClientOf(
     val ownsProvider = credentialsProvider == null
     val effectiveProvider = credentialsProvider ?: DefaultCredentialsProvider.builder().build()
 
-    val client = HttpClient(CIO) {
-        install(AwsSigV4Plugin) {
-            this.region = region
-            service = S3_SERVICE
-            this.credentialsProvider = effectiveProvider
-            authLocation = AwsSigV4AuthLocation.Header
-            doubleUrlEncode = false
-            normalizePath = false
-            payloadSigningEnabled = false
-            this.signingClock = signingClock
+    try {
+        val client = HttpClient(CIO) {
+            install(AwsSigV4Plugin) {
+                this.region = region
+                service = S3_SERVICE
+                this.credentialsProvider = effectiveProvider
+                authLocation = AwsSigV4AuthLocation.Header
+                doubleUrlEncode = false
+                normalizePath = false
+                payloadSigningEnabled = false
+                this.signingClock = signingClock
+            }
         }
-    }
 
-    return S3KtorClient(
-        httpClient = client,
-        region = region,
-        credentialsProvider = effectiveProvider,
-        endpointOverride = endpointOverride,
-        addressingStyle = addressingStyle,
-        signingClock = signingClock,
-        closeClient = true,
-        closeCredentialsProvider = ownsProvider,
-    )
+        return S3KtorClient(
+            httpClient = client,
+            region = region,
+            credentialsProvider = effectiveProvider,
+            endpointOverride = endpointOverride,
+            addressingStyle = addressingStyle,
+            signingClock = signingClock,
+            closeClient = true,
+            closeCredentialsProvider = ownsProvider,
+        )
+    } catch (e: Throwable) {
+        if (ownsProvider && effectiveProvider is AutoCloseable) effectiveProvider.close()
+        throw e
+    }
 }
 
 private fun io.ktor.client.request.HttpRequestBuilder.applyPutHeaders(request: S3KtorPutObjectRequest) {
