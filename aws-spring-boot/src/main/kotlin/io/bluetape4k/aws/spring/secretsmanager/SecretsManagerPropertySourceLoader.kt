@@ -4,7 +4,6 @@ import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.flattenJsonObject
 import io.bluetape4k.aws.spring.env.textSecretProperty
 import io.bluetape4k.logging.KLogging
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundException
@@ -33,22 +32,13 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
             loadSource(client, properties, source)
         }
 
-    private fun buildClient(properties: SecretsManagerProperties): SecretsManagerClient {
-        val credentialsProvider = DefaultCredentialsProvider.builder().build()
-        return try {
-            SecretsManagerClient.builder()
-                .credentialsProvider(credentialsProvider)
-                .apply {
-                    properties.region?.let { region(Region.of(it)) }
-                    properties.endpointOverride?.let { endpointOverride(it) }
-                }
-                .build()
-                .also { credentialsProvider.close() }
-        } catch (e: Exception) {
-            credentialsProvider.close()
-            throw e
-        }
-    }
+    private fun buildClient(properties: SecretsManagerProperties): SecretsManagerClient =
+        SecretsManagerClient.builder()
+            .apply {
+                properties.region?.let { region(Region.of(it)) }
+                properties.endpointOverride?.let { endpointOverride(it) }
+            }
+            .build()
 
     private fun loadSource(
         client: SecretsManagerClient,

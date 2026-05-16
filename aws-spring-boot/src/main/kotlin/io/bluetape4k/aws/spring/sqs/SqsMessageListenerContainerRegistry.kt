@@ -16,29 +16,30 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
     private val containerMap = ConcurrentHashMap<String, SqsMessageListenerContainer>()
     private val lifecycleLock = ReentrantLock()
 
-    val containers: Collection<SqsMessageListenerContainer>
-        get() = containerMap.values
+    val containers: List<SqsMessageListenerContainer>
+        get() = containerMap.values.toList()
 
     internal fun register(id: String, container: SqsMessageListenerContainer) {
+        val shouldStart: Boolean
         lifecycleLock.withLock {
             require(containerMap.putIfAbsent(id, container) == null) {
                 "Duplicate SQS listener id: $id"
             }
-            if (running.get() && container.isAutoStartup) {
-                container.start()
-            }
+            shouldStart = running.get() && container.isAutoStartup
         }
+        if (shouldStart) container.start()
     }
 
     internal fun getContainer(id: String): SqsMessageListenerContainer? =
         containerMap[id]
 
     override fun start() {
+        val toStart: List<SqsMessageListenerContainer>
         lifecycleLock.withLock {
-            if (running.compareAndSet(false, true)) {
-                containers.filter { it.isAutoStartup }.forEach { it.start() }
-            }
+            if (!running.compareAndSet(false, true)) return
+            toStart = containers.filter { it.isAutoStartup }
         }
+        toStart.forEach { it.start() }
     }
 
     override fun stop() {

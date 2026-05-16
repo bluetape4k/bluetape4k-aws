@@ -3,7 +3,6 @@ package io.bluetape4k.aws.spring.parameterstore
 import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.parameterPathPropertyKey
 import io.bluetape4k.logging.KLogging
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException
@@ -32,22 +31,13 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
             loadSource(client, properties, source)
         }
 
-    private fun buildClient(properties: ParameterStoreProperties): SsmClient {
-        val credentialsProvider = DefaultCredentialsProvider.builder().build()
-        return try {
-            SsmClient.builder()
-                .credentialsProvider(credentialsProvider)
-                .apply {
-                    properties.region?.let { region(Region.of(it)) }
-                    properties.endpointOverride?.let { endpointOverride(it) }
-                }
-                .build()
-                .also { credentialsProvider.close() }
-        } catch (e: Exception) {
-            credentialsProvider.close()
-            throw e
-        }
-    }
+    private fun buildClient(properties: ParameterStoreProperties): SsmClient =
+        SsmClient.builder()
+            .apply {
+                properties.region?.let { region(Region.of(it)) }
+                properties.endpointOverride?.let { endpointOverride(it) }
+            }
+            .build()
 
     private fun loadSource(
         client: SsmClient,
