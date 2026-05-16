@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,8 @@ class SqsMessageListenerContainer internal constructor(
     private val operations: SqsOperations,
     private val invoker: SqsListenerMethodInvoker,
 ): SmartLifecycle {
+
+    companion object : KLogging()
 
     private val running = AtomicBoolean(false)
     private var scope: CoroutineScope? = null
@@ -90,7 +93,8 @@ class SqsMessageListenerContainer internal constructor(
                 messages.forEach { handle(queueUrl, it) }
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Throwable) {
+            } catch (e: Throwable) {
+                log.warn("SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl", e)
                 // Keep the listener alive; individual message failures are handled in handle().
             }
         }
@@ -102,9 +106,22 @@ class SqsMessageListenerContainer internal constructor(
             operations.delete(queueUrl, message.receiptHandle)
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            log.warn(
+                "SQS message handling failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
+                e,
+            )
             endpoint.errorVisibilityTimeoutSeconds?.let {
-                operations.changeVisibility(queueUrl, message.receiptHandle, it)
+                try {
+                    operations.changeVisibility(queueUrl, message.receiptHandle, it)
+                } catch (ve: CancellationException) {
+                    throw ve
+                } catch (ve: Throwable) {
+                    log.warn(
+                        "SQS changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
+                        ve,
+                    )
+                }
             }
         }
     }

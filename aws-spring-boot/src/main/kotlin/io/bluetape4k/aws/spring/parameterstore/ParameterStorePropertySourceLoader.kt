@@ -32,14 +32,22 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
             loadSource(client, properties, source)
         }
 
-    private fun buildClient(properties: ParameterStoreProperties): SsmClient =
-        SsmClient.builder()
-            .credentialsProvider(DefaultCredentialsProvider.builder().build())
-            .apply {
-                properties.region?.let { region(Region.of(it)) }
-                properties.endpointOverride?.let { endpointOverride(it) }
-            }
-            .build()
+    private fun buildClient(properties: ParameterStoreProperties): SsmClient {
+        val credentialsProvider = DefaultCredentialsProvider.builder().build()
+        return try {
+            SsmClient.builder()
+                .credentialsProvider(credentialsProvider)
+                .apply {
+                    properties.region?.let { region(Region.of(it)) }
+                    properties.endpointOverride?.let { endpointOverride(it) }
+                }
+                .build()
+                .also { credentialsProvider.close() }
+        } catch (e: Exception) {
+            credentialsProvider.close()
+            throw e
+        }
+    }
 
     private fun loadSource(
         client: SsmClient,
@@ -84,7 +92,11 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
         error: RuntimeException,
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
-            log.warn("Skipping Parameter Store source '${source.propertySourceName}'.", error)
+            log.warn(
+                "Skipping Parameter Store source '${source.propertySourceName}'" +
+                    " [path=${source.path}, region=${properties.region}, endpoint=${properties.endpointOverride}].",
+                error,
+            )
             return null
         }
         throw error

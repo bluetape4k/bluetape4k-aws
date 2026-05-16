@@ -33,14 +33,22 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
             loadSource(client, properties, source)
         }
 
-    private fun buildClient(properties: SecretsManagerProperties): SecretsManagerClient =
-        SecretsManagerClient.builder()
-            .credentialsProvider(DefaultCredentialsProvider.builder().build())
-            .apply {
-                properties.region?.let { region(Region.of(it)) }
-                properties.endpointOverride?.let { endpointOverride(it) }
-            }
-            .build()
+    private fun buildClient(properties: SecretsManagerProperties): SecretsManagerClient {
+        val credentialsProvider = DefaultCredentialsProvider.builder().build()
+        return try {
+            SecretsManagerClient.builder()
+                .credentialsProvider(credentialsProvider)
+                .apply {
+                    properties.region?.let { region(Region.of(it)) }
+                    properties.endpointOverride?.let { endpointOverride(it) }
+                }
+                .build()
+                .also { credentialsProvider.close() }
+        } catch (e: Exception) {
+            credentialsProvider.close()
+            throw e
+        }
+    }
 
     private fun loadSource(
         client: SecretsManagerClient,
@@ -68,7 +76,11 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
         error: RuntimeException,
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
-            log.warn("Skipping Secrets Manager source '${source.propertySourceName}'.", error)
+            log.warn(
+                "Skipping Secrets Manager source '${source.propertySourceName}'" +
+                    " [secretId=${source.secretId}, region=${properties.region}, endpoint=${properties.endpointOverride}].",
+                error,
+            )
             return null
         }
         throw error
