@@ -60,3 +60,12 @@ bluetape4k:
 
 테스트는 Testcontainers로 LocalStack을 시작하고 bucket을 만든 뒤 업로드, 다운로드,
 목록, presigned GET/PUT URL 생성, 삭제 동작을 검증합니다.
+
+## AOT
+
+모든 Spring Boot 예제는 GraalVM Native Build Tools 를 통해 Spring AOT 태스크가
+생성되도록 구성합니다. 이 예제는 다음 명령으로 검증합니다.
+
+```bash
+./gradlew :aws-spring-boot-s3-examples:processAot :aws-spring-boot-s3-examples:processTestAot
+```

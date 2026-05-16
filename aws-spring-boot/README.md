@@ -110,6 +110,7 @@ bluetape4k:
         max-messages: 10              # 1..10
         wait-time-seconds: 20         # 0..20
         visibility-timeout-seconds: 60
+        error-visibility-timeout-seconds: 0
         concurrency: 2
         stop-timeout-millis: 25000
       queues:
@@ -246,6 +247,35 @@ Listener method may receive `String`, AWS SDK `Message`, or `SqsReceivedMessage`
 SpEL is not supported in `queue`; `${...}` placeholders are.
 If `bluetape4k.aws.sqs.queues.orders.url` is configured, `queue = "orders"`
 uses that URL directly.
+Listener acknowledgement is delete-on-success: the container deletes the message
+only after the listener method returns normally. If the listener throws, the
+message is not deleted; when `error-visibility-timeout-seconds` is configured,
+the container changes visibility so retry timing is explicit. `stop-timeout-millis`
+bounds container shutdown after poller cancellation.
+
+FIFO queue metadata is preserved in `SqsReceivedMessage` when messages are
+received. Use `SqsSendRequest` to publish FIFO messages with group and
+deduplication IDs:
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SqsSendRequest
+import io.bluetape4k.aws.spring.sqs.SqsOperations
+
+suspend fun publishOrder(sqs: SqsOperations, queueUrl: String, body: String) {
+    sqs.send(
+        SqsSendRequest(
+            queueUrl = queueUrl,
+            body = body,
+            messageGroupId = "orders",
+            messageDeduplicationId = "order-123",
+        )
+    )
+}
+```
+
+`SqsReceivedMessage.messageGroupId`, `messageDeduplicationId`, `sequenceNumber`,
+`approximateReceiveCount`, and `messageAttributes` expose the SQS metadata that
+is needed for FIFO and retry handling.
 
 ### DynamoDB — Coroutines repository
 

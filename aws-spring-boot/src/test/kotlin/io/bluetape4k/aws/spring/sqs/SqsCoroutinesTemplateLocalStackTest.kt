@@ -8,6 +8,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.util.UUID
 
 class SqsCoroutinesTemplateLocalStackTest {
@@ -76,6 +79,49 @@ class SqsCoroutinesTemplateLocalStackTest {
                 val receivedAgain = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
                 receivedAgain.map { it.body } shouldContain "flow sqs"
                 operations.delete(queueUrl, receivedAgain.single().receiptHandle)
+            }
+        }
+    }
+
+    @Test
+    fun `FIFO message exposes group deduplication and message attributes`() {
+        contextRunner().run { context ->
+            val operations = context.getBean(SqsOperations::class.java)
+
+            runSuspendIO {
+                val queueUrl = operations.createQueue(
+                    queueName = "fifo-${UUID.randomUUID()}.fifo",
+                    attributes = mapOf(
+                        QueueAttributeName.FIFO_QUEUE to "true",
+                    )
+                )
+                operations.send(
+                    SqsSendRequest(
+                        queueUrl = queueUrl,
+                        body = "hello fifo sqs",
+                        messageGroupId = "orders",
+                        messageDeduplicationId = "order-1",
+                        messageAttributes = mapOf(
+                            "source" to MessageAttributeValue.builder()
+                                .dataType("String")
+                                .stringValue("spring")
+                                .build()
+                        )
+                    )
+                )
+
+                val received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                received shouldHaveSize 1
+
+                val message = received.single()
+                message.body shouldBeEqualTo "hello fifo sqs"
+                message.messageGroupId shouldBeEqualTo "orders"
+                message.messageDeduplicationId shouldBeEqualTo "order-1"
+                message.sequenceNumber.shouldNotBeNull().shouldNotBeBlank()
+                message.approximateReceiveCount shouldBeEqualTo 1
+                message.messageAttributes["source"]?.stringValue() shouldBeEqualTo "spring"
+
+                operations.delete(queueUrl, message.receiptHandle)
             }
         }
     }

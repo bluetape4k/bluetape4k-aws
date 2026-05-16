@@ -93,3 +93,12 @@ queue with `RedrivePolicy`.
 ```bash
 ./gradlew :aws-spring-boot-sqs-examples:test -Dbluetape4k.aws.emulator=localstack
 ```
+
+## AOT
+
+All Spring Boot examples are wired for Spring AOT through GraalVM Native Build
+Tools. Verify this example with:
+
+```bash
+./gradlew :aws-spring-boot-sqs-examples:processAot :aws-spring-boot-sqs-examples:processTestAot
+```

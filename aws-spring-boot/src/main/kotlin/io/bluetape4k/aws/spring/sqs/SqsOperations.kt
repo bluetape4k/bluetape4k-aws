@@ -67,6 +67,20 @@ interface SqsOperations {
     ): SendMessageResponse
 
     /**
+     * Sends a message to an SQS queue URL.
+     *
+     * FIFO queues use [SqsSendRequest.messageGroupId] and
+     * [SqsSendRequest.messageDeduplicationId].
+     *
+     * The default implementation preserves compatibility with existing
+     * [SqsOperations] implementations by delegating to [send] and therefore
+     * ignores FIFO fields and custom [SqsSendRequest.messageAttributes].
+     * Override this method to preserve every request field.
+     */
+    suspend fun send(request: SqsSendRequest): SendMessageResponse =
+        send(request.queueUrl, request.body, request.delaySeconds)
+
+    /**
      * 큐에서 메시지를 배치로 수신합니다.
      */
     suspend fun receive(

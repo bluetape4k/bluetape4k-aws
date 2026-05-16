@@ -109,6 +109,7 @@ bluetape4k:
         max-messages: 10              # 1..10
         wait-time-seconds: 20         # 0..20
         visibility-timeout-seconds: 60
+        error-visibility-timeout-seconds: 0
         concurrency: 2
         stop-timeout-millis: 25000
       queues:
@@ -245,6 +246,33 @@ class OrderListener {
 지원한다.
 `bluetape4k.aws.sqs.queues.orders.url` 을 설정하면 `queue = "orders"` 는 해당 URL을
 직접 사용한다.
+리스너 ack 는 성공 시 삭제 방식이다. 리스너 메서드가 정상 반환된 뒤에만 메시지를
+삭제하고, 예외가 발생하면 삭제하지 않는다. `error-visibility-timeout-seconds` 를
+설정하면 실패 메시지의 visibility 를 명시적으로 바꿔 재시도 타이밍을 제어한다.
+`stop-timeout-millis` 는 poller 취소 후 컨테이너 종료 대기 시간을 제한한다.
+
+FIFO 큐 메타데이터는 수신 시 `SqsReceivedMessage` 에 유지된다. FIFO 메시지는
+`SqsSendRequest` 로 group/deduplication ID 를 지정해 발송한다.
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SqsOperations
+import io.bluetape4k.aws.spring.sqs.SqsSendRequest
+
+suspend fun publishOrder(sqs: SqsOperations, queueUrl: String, body: String) {
+    sqs.send(
+        SqsSendRequest(
+            queueUrl = queueUrl,
+            body = body,
+            messageGroupId = "orders",
+            messageDeduplicationId = "order-123",
+        )
+    )
+}
+```
+
+`SqsReceivedMessage.messageGroupId`, `messageDeduplicationId`, `sequenceNumber`,
+`approximateReceiveCount`, `messageAttributes` 로 FIFO 및 재시도 처리에 필요한 SQS
+메타데이터를 읽을 수 있다.
 
 ### DynamoDB — Coroutines Repository
 
