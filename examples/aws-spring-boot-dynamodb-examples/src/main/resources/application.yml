@@ -1,0 +1,4 @@
+bluetape4k:
+  aws:
+    dynamodb:
+      enabled: true
