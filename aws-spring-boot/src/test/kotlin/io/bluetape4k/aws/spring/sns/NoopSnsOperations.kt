@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import software.amazon.awssdk.services.sns.model.PublishResponse
+import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 
 object NoopSnsOperations: SnsOperations {
 
@@ -26,4 +27,22 @@ object NoopSnsOperations: SnsOperations {
 
     override suspend fun publish(request: SnsPublishRequest): PublishResponse =
         PublishResponse.builder().messageId("noop").build()
+
+    override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
+        PublishResponse.builder().messageId("noop-sms").build()
+
+    override suspend fun confirmSubscription(
+        topicArn: String,
+        token: String,
+        authenticateOnUnsubscribe: Boolean,
+    ): ConfirmSubscriptionResponse =
+        ConfirmSubscriptionResponse.builder()
+            .subscriptionArn("$topicArn:confirmed")
+            .build()
+
+    override suspend fun confirmSubscription(
+        message: SnsHttpMessage,
+        authenticateOnUnsubscribe: Boolean,
+    ): ConfirmSubscriptionResponse =
+        confirmSubscription(message.topicArn, message.requireConfirmationToken(), authenticateOnUnsubscribe)
 }

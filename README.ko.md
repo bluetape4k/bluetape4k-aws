@@ -483,6 +483,60 @@ class PropertyProtector(
 `TextEncryptor`는 동기식 인터페이스이므로 짧은 관리 흐름이나 startup 시점 secret 처리에
 적합합니다. Coroutine service 안에서는 `KmsOperations`를 우선 사용하세요.
 
+### SNS — Spring Boot Coroutines 템플릿
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
+import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsType
+
+class OrderTopic(
+    private val sns: SnsOperations,
+) {
+    suspend fun publish(topicArn: String, payload: String): String {
+        val response = sns.publish(
+            SnsPublishRequest(
+                topicArn = topicArn,
+                message = payload,
+            )
+        )
+        return response.messageId()
+    }
+
+    suspend fun sendSms(phoneNumber: String, text: String): String =
+        sns.publishSms(
+            SnsSmsRequest(
+                phoneNumber = phoneNumber,
+                message = text,
+                smsType = SnsSmsType.TRANSACTIONAL,
+                senderId = "BLUETAPE",
+            )
+        ).messageId()
+
+    suspend fun handleHttpEndpoint(body: String, messageTypeHeader: String?) {
+        val message = SnsHttpMessageParser.parse(body, messageTypeHeader)
+        // 여기서 Signature, SigningCertURL, SignatureVersion, expected TopicArn 검증.
+        when (message.type) {
+            SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION,
+            SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION -> sns.confirmSubscription(message)
+            SnsHttpMessageType.NOTIFICATION -> processNotification(message.message)
+        }
+    }
+
+    private fun processNotification(message: String) = Unit
+}
+```
+
+SNS 는 queue policy 가 topic ARN 의 `sqs:SendMessage` 를 허용하면 SQS subscription 으로
+fanout 할 수 있습니다. 전체 SQS-SNS application 예제는 issue #13에서 별도로 추적합니다.
+`SnsHttpMessageParser` 는 SNS HTTP JSON 과 선택적 `x-amz-sns-message-type` header 를
+매핑하고, HTTPS가 아니거나 SNS host가 아닌 `SigningCertURL` 은 거부합니다. 다만
+signature 검증은 수행하지 않습니다. Notification 처리나 subscription confirmation 전에
+certificate chain, `Signature`, `SignatureVersion`, 기대한 `TopicArn` 을 검증하세요.
+
 ### S3 업로드 — Coroutines (`aws` 모듈)
 
 ```kotlin

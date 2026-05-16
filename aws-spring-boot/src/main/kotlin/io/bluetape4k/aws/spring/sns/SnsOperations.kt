@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import software.amazon.awssdk.services.sns.model.PublishResponse
+import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 
 /**
  * Coroutine-based SNS operations for Spring applications.
@@ -55,4 +56,27 @@ interface SnsOperations {
      * Publishes a message to an SNS topic.
      */
     suspend fun publish(request: SnsPublishRequest): PublishResponse
+
+    /**
+     * Publishes an SMS message directly to a phone number.
+     */
+    suspend fun publishSms(request: SnsSmsRequest): PublishResponse
+
+    /**
+     * Confirms an HTTP(S) endpoint subscription using the SNS confirmation token.
+     */
+    suspend fun confirmSubscription(
+        topicArn: String,
+        token: String,
+        authenticateOnUnsubscribe: Boolean = true,
+    ): ConfirmSubscriptionResponse
+
+    /**
+     * Confirms or re-confirms an HTTP(S) endpoint subscription from a parsed SNS
+     * confirmation message.
+     */
+    suspend fun confirmSubscription(
+        message: SnsHttpMessage,
+        authenticateOnUnsubscribe: Boolean = true,
+    ): ConfirmSubscriptionResponse
 }

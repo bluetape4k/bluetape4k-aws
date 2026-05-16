@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sns
 
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.sns.SnsAsyncClient
+import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
@@ -102,6 +103,45 @@ class SnsCoroutinesTemplate(
             request.messageGroupId?.let(it::messageGroupId)
             request.messageDeduplicationId?.let(it::messageDeduplicationId)
         }.await()
+
+    override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
+        snsAsyncClient.publish {
+            it.phoneNumber(request.phoneNumber)
+            it.message(request.message)
+            val attributes = request.toMessageAttributes()
+            if (attributes.isNotEmpty()) {
+                it.messageAttributes(attributes)
+            }
+        }.await()
+
+    override suspend fun confirmSubscription(
+        topicArn: String,
+        token: String,
+        authenticateOnUnsubscribe: Boolean,
+    ): ConfirmSubscriptionResponse {
+        topicArn.requireTopicArn()
+        require(token.isNotBlank()) { "token must not be blank." }
+
+        return snsAsyncClient.confirmSubscription {
+            it.topicArn(topicArn)
+            it.token(token)
+            it.authenticateOnUnsubscribe(authenticateOnUnsubscribe.toString())
+        }.await()
+    }
+
+    override suspend fun confirmSubscription(
+        message: SnsHttpMessage,
+        authenticateOnUnsubscribe: Boolean,
+    ): ConfirmSubscriptionResponse =
+        confirmSubscription(
+            topicArn = message.topicArn,
+            token = message.requireConfirmationToken(),
+            authenticateOnUnsubscribe = authenticateOnUnsubscribe,
+        )
+
+    private fun String.requireTopicArn() {
+        require(isNotBlank()) { "topicArn must not be blank." }
+    }
 
     private fun String.requireTopicName() {
         require(isNotBlank()) { "topicName must not be blank." }
