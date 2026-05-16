@@ -67,6 +67,45 @@ jobs:
       - uses: actions/checkout@v6
       - uses: gradle/actions/wrapper-validation@v6
 
+  validate-disabled-annotations:
+    name: Validate @Disabled annotation format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: validate-wrapper
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check @Disabled annotations follow '#NNN — <reason>' format
+        run: |
+          python3 - <<'PYEOF'
+          import sys, re
+          from pathlib import Path
+
+          # Required format: @Disabled("#NNN — <one-sentence reason>")
+          pattern = re.compile(r'@Disabled\("#[0-9]+ — .+"\)')
+          failed = []
+
+          for kt in Path('.').rglob('*.kt'):
+              for i, line in enumerate(kt.read_text(errors='replace').splitlines(), 1):
+                  if '@Disabled' not in line:
+                      continue
+                  if line.strip().startswith('//'):
+                      continue
+                  if not pattern.search(line):
+                      failed.append(f'{kt}:{i}: {line.strip()}')
+
+          if failed:
+              print('ERROR: @Disabled annotations missing required format:')
+              for entry in failed:
+                  print(f'  {entry}')
+              print()
+              print('Required: @Disabled("#NNN — <one-sentence reason>")')
+              print('See docs/disabled-tests.md for the annotation convention.')
+              sys.exit(1)
+
+          count = sum(1 for _ in Path('.').rglob('*.kt'))
+          print(f'OK: {count} Kotlin files checked — all @Disabled annotations properly formatted.')
+          PYEOF
+
   changes:
     name: Detect changed modules
     runs-on: ubuntu-latest
@@ -263,6 +302,7 @@ jobs:
     timeout-minutes: 10
     needs:
       - gitleaks
+      - validate-disabled-annotations
       - changes
       - build
       - test-aws

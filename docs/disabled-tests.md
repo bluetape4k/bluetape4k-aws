@@ -47,9 +47,8 @@ All `@Disabled` annotations must follow this exact format:
 @Disabled
 ```
 
-## Deferred: CI Format Validation
+## CI Format Validation
 
-A CI step that rejects `@Disabled` annotations missing an issue reference (`#NNN — `)
-is tracked in [#126](https://github.com/bluetape4k/bluetape4k-aws/issues/126) as a
-follow-up item. Until that step lands, the format is enforced by convention
-and PR review.
+The `validate-disabled-annotations` job in CI rejects any `@Disabled` annotation
+that does not match `@Disabled("#NNN — <reason>")`. PRs with non-conforming
+annotations will fail CI automatically.
