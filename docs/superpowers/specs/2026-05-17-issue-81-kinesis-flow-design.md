@@ -1,7 +1,7 @@
 # Design Spec — Kinesis Coroutine `Flow<Record>` Support
 <!-- Issue #81 | bluetape4k-aws aws-kotlin module -->
 
-**Status**: Draft v4 (post Phase 3 Codex + 6-tier advisor review)
+**Status**: Draft v5 (post Step 3-R P0/P1 fixes)
 **Author**: debop  
 **Date**: 2026-05-17  
 **Module**: `aws-kotlin`  
@@ -322,8 +322,8 @@ fun KinesisClient.recordFlow(
    - After `options.maxIteratorRetries` consecutive failures, an ERROR log including
      `streamName`, `shardId`, and retry count is emitted; then the exception propagates.
 
-4. **Throttle recovery** (`ProvisionedThroughputExceededException`, all `isRetryable=true`
-   exceptions share the same budget):
+4. **Throttle recovery** (`ProvisionedThroughputExceededException`, all exceptions where
+   `e.sdkErrorMetadata.isRetryable == true` share the same budget):
 
    **SDK retry layer**: The AWS Kotlin SDK applies its own retry strategy before any exception
    reaches this library's code. Flow-level retry operates **after** the SDK has exhausted its
@@ -382,8 +382,8 @@ fun KinesisClient.recordFlow(
 | `CancellationException` | Rethrown unconditionally (first catch). |
 | `ExpiredIteratorException` | WARN log on each attempt; recovered up to `maxIteratorRetries`; then ERROR log + propagates. |
 | `ProvisionedThroughputExceededException` | WARN log with backoff delay; exponential backoff up to `maxThrottleRetries`; then ERROR log + propagates. |
-| Other `KinesisException` with `isRetryable=true` | Same as throttle (shared budget `maxThrottleRetries`). |
-| Other `KinesisException` with `isRetryable=false` | Propagates immediately. |
+| Other `KinesisException` with `sdkErrorMetadata.isRetryable == true` | Same as throttle (shared budget `maxThrottleRetries`). |
+| Other `KinesisException` with `sdkErrorMetadata.isRetryable == false` | Propagates immediately (`if (!e.sdkErrorMetadata.isRetryable) throw e` guard inside the catch block). |
 | `nextShardIterator == null` | Not an error; Flow completes normally. |
 | `getShardIterator` returns null | `IllegalStateException` with `streamName` + `shardId` context (no sequence number). |
 
@@ -409,7 +409,7 @@ fun KinesisClient.recordFlow(
 
 - Multi-shard fan-out / `ListShards` auto-discovery (v2).
 - `Flow<GetRecordsResponse>` variant carrying `millisBehindLatest` for lag monitoring (v2).
-- DynamoDB Streams (separate follow-up issue — no AWS Kotlin SDK support).
+- DynamoDB Streams (separate follow-up issue — intentional v1 scope decision; SDK exists at `aws.sdk.kotlin:dynamodbstreams-jvm`, see §2.5).
 - Enhanced fan-out (`SubscribeToShard`) — different runtime model, separate design.
 - Metrics/tracing integration (v2) — WARN/ERROR logging at retry events is the v1 signal.
 
@@ -457,3 +457,5 @@ fun KinesisClient.recordFlow(
 | R3 | 6-tier Advisor (Opus) | Advisor | 0 | 2 | 4 | 1 | spec v3 |
 | R3 combined | — | Combined | 0 | 6 | 11 | 4 | spec v3 |
 | R3 → v4 | All P1 applied | DynamoDB Streams rationale; AtTimestamp ns precision; pollInterval enforcement; SDK/Flow retry layers; readObject; LocalStack take(N); jitter | 0 | 0 | — | — | spec v4 |
+| R4 | Step 3-R Phase 2 Critic (plan review) | Critic | 0 | 2 | 0 | 0 | plan v1 |
+| R4 → v5 | Spec §3.3/#4/§4/§6 fixes | `sdkErrorMetadata.isRetryable` accessor; DynamoDB Streams §6 clarification | 0 | 0 | — | — | spec v5 |
