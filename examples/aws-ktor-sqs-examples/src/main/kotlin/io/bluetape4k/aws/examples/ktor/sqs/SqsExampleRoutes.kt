@@ -3,8 +3,10 @@ package io.bluetape4k.aws.examples.ktor.sqs
 import io.bluetape4k.aws.ktor.sqs.SqsConsumer
 import io.bluetape4k.aws.ktor.sqs.sqsConsumer
 import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
@@ -29,6 +31,8 @@ fun Application.sqsExampleModule(
 ) {
     val received = CopyOnWriteArrayList<String>()
 
+    install(ContentNegotiation) { jackson() }
+
     install(SqsConsumer) {
         sqsAsyncClient = sqsClient
         this.queueUrl = queueUrl
@@ -50,8 +54,7 @@ fun Application.sqsExampleModule(
         }
 
         get("/sqs/messages/received") {
-            val json = received.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }
-            call.respondText(json)
+            call.respond(received.toList())
         }
 
         post("/sqs/queues/{name}") {

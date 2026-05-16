@@ -53,6 +53,7 @@ class SqsExampleRoutesLocalStackTest {
     @AfterAll
     fun tearDown() = runSuspendIO {
         sqsClient.deleteQueue { it.queueUrl(queueUrl) }.await()
+        sqsClient.close()
     }
 
     @Test
