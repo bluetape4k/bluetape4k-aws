@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
  * $ aws ses verify-email-identity --email-address sunghyouk.bae@gmail.com --profile localstack --endpoint-url=http://localhost:4566
  * ```
  */
-@Disabled("LocalStack에서 SES V2를 지원하지 않습니다.")
+@Disabled("#99 — LocalStack does not support SES V2; mock-based coverage tracked in issue #105")
 class SesV2ClientExtensionsTest: AbstractKotlinSesV2Test() {
 
     companion object: KLoggingChannel()

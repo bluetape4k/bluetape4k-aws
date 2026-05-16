@@ -67,7 +67,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
         }
     }
 
-    @Disabled("token은 SNS 구독 시에 클라이언트에 전송된다")
+    @Disabled("#100 — SNS subscription token is delivered out-of-band to subscriber endpoint; no emulator support")
     @Test
     @Order(3)
     fun `confirm subscription`() = runSuspendIO {
