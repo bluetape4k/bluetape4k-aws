@@ -6,6 +6,120 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 
 > AWS Java SDK v2 기반 모듈은 `bluetape4k-aws`를 사용하세요.
 
+## 아키텍처
+
+### Java SDK v2 vs Kotlin SDK 비교 다이어그램
+
+```mermaid
+flowchart LR
+    subgraph JAVA["bluetape4k-aws<br/>(Java SDK v2)"]
+        JA["DynamoDbAsyncClient<br/>.getItem(request)"]
+        JB[".thenApply { result }"]
+        JC["CompletableFuture.await()<br/>→ suspend 변환"]
+        JA --> JB --> JC
+    end
+
+    subgraph KOTLIN["bluetape4k-aws-kotlin<br/>(Kotlin SDK)"]
+        KA["DynamoDbClient<br/>.getItem { ... }"]
+        KB["native suspend<br/>변환 없이 바로 사용"]
+        KA --> KB
+    end
+
+    style JAVA fill:#dbeafe
+    style KOTLIN fill:#dcfce7
+```
+
+### 클라이언트 생성 패턴 다이어그램
+
+```mermaid
+flowchart TD
+    subgraph Factory["AwsClientFactory (bluetape4k DSL)"]
+        OF["xxxClientOf(endpointUrl, region)<br/>클라이언트 직접 생성<br/>(close() 필수)"]
+        WF["withXxxClient { }<br/>단발성 사용<br/>(close() 자동 호출)"]
+    end
+
+    subgraph Clients["AWS Kotlin SDK Clients"]
+        DDB["DynamoDbClient<br/>native suspend"]
+        S3["S3Client<br/>native suspend"]
+        SQS["SqsClient<br/>native suspend"]
+        SNS["SnsClient<br/>native suspend"]
+        CW["CloudWatchClient<br/>native suspend"]
+        KMS["KmsClient<br/>native suspend"]
+        KIN["KinesisClient<br/>native suspend"]
+        STS["StsClient<br/>native suspend"]
+    end
+
+    Factory --> Clients
+```
+
+### DSL 지원 서비스
+
+```mermaid
+flowchart TD
+    MOD["bluetape4k-aws-kotlin<br/>(Kotlin SDK 기반 단일 모듈)"]
+
+    subgraph DSL["bluetape4k DSL 제공"]
+        CW["metricDatum { }<br/>(CloudWatch)"]
+        CWL["inputLogEvent { }<br/>(CloudWatch Logs)"]
+        KIN["putRecordRequestOf()<br/>(Kinesis)"]
+        STS["stsClientOf()<br/>(STS)"]
+    end
+
+    subgraph NATIVE["Native suspend (래핑 불필요)"]
+        DDB["DynamoDbClient<br/>.getItem { }"]
+        S3["S3Client<br/>.putObject { }"]
+        SQS["SqsClient<br/>.sendMessage { }"]
+        SNS["SnsClient<br/>.publish { }"]
+    end
+
+    MOD --> DSL
+    MOD --> NATIVE
+```
+
+### 클라이언트 패턴 클래스 다이어그램
+
+```mermaid
+classDiagram
+    class DynamoDbClient {
+        +getItem(block) GetItemResponse
+        +putItem(block) PutItemResponse
+        +scan(block) ScanResponse
+        +query(block) QueryResponse
+        +close()
+    }
+    class SqsClient {
+        +sendMessage(block) SendMessageResponse
+        +receiveMessage(block) ReceiveMessageResponse
+        +deleteMessage(block) DeleteMessageResponse
+        +close()
+    }
+    class S3Client {
+        +getObject(block) GetObjectResponse
+        +putObject(block) PutObjectResponse
+        +listObjects(block) ListObjectsResponse
+        +close()
+    }
+    class CloudWatchClient {
+        +putMetricData(block) PutMetricDataResponse
+        +getMetricData(block) GetMetricDataResponse
+        +close()
+    }
+    class AwsClientFactory {
+        +dynamoDbClientOf(endpointUrl, region) DynamoDbClient
+        +withDynamoDbClient(block) T
+        +sqsClientOf(endpointUrl, region) SqsClient
+        +withSqsClient(block) T
+        +s3ClientOf(region) S3Client
+        +withS3Client(block) T
+    }
+
+    AwsClientFactory --> DynamoDbClient : creates
+    AwsClientFactory --> SqsClient : creates
+    AwsClientFactory --> S3Client : creates
+    AwsClientFactory --> CloudWatchClient : creates
+
+```
+
 ## 제공 서비스
 
 | 서비스                 | 주요 기능                                             |
@@ -28,30 +142,6 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 | Coroutines | `.await()` 변환 필요            | native `suspend` 기본 제공               |
 | DSL 지원     | 제한적                         | 풍부한 DSL 빌더                           |
 | 성능         | CRT/Netty NIO 선택            | CRT / OkHttp 선택                      |
-
-## 설치
-
-AWS Kotlin SDK 서비스는 `compileOnly`로 선언되어 있으므로, 사용할 서비스 SDK를 런타임 의존성으로 추가해야 합니다.
-`bluetape4k-aws-kotlin`은 공통 bluetape4k coroutine 유틸리티를 노출하지만, 사용하지 않는 AWS 서비스 클라이언트를
-소비자 애플리케이션에 강제로 올리지는 않습니다.
-
-```kotlin
-dependencies {
-    implementation("io.github.bluetape4k:bluetape4k-aws-kotlin:${bluetape4kVersion}")
-
-    // 사용할 서비스만 선택적으로 추가
-    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
-    // ... 필요한 서비스 추가
-}
-```
 
 ## 클라이언트 생성 패턴
 
@@ -183,95 +273,6 @@ suspend fun putRecord(client: KinesisClient, streamName: String, data: ByteArray
 }
 ```
 
-## 클라이언트 패턴 클래스 다이어그램
-
-```mermaid
-classDiagram
-    class DynamoDbClient {
-        +getItem(block) GetItemResponse
-        +putItem(block) PutItemResponse
-        +scan(block) ScanResponse
-        +query(block) QueryResponse
-        +close()
-    }
-    class SqsClient {
-        +sendMessage(block) SendMessageResponse
-        +receiveMessage(block) ReceiveMessageResponse
-        +deleteMessage(block) DeleteMessageResponse
-        +close()
-    }
-    class S3Client {
-        +getObject(block) GetObjectResponse
-        +putObject(block) PutObjectResponse
-        +listObjects(block) ListObjectsResponse
-        +close()
-    }
-    class CloudWatchClient {
-        +putMetricData(block) PutMetricDataResponse
-        +getMetricData(block) GetMetricDataResponse
-        +close()
-    }
-    class AwsClientFactory {
-        +dynamoDbClientOf(endpointUrl, region) DynamoDbClient
-        +withDynamoDbClient(block) T
-        +sqsClientOf(endpointUrl, region) SqsClient
-        +withSqsClient(block) T
-        +s3ClientOf(region) S3Client
-        +withS3Client(block) T
-    }
-
-    AwsClientFactory --> DynamoDbClient : creates
-    AwsClientFactory --> SqsClient : creates
-    AwsClientFactory --> S3Client : creates
-    AwsClientFactory --> CloudWatchClient : creates
-
-```
-
-## Java SDK v2 vs Kotlin SDK 비교 다이어그램
-
-```mermaid
-flowchart LR
-    subgraph JAVA["bluetape4k-aws<br/>(Java SDK v2)"]
-        JA["DynamoDbAsyncClient<br/>.getItem(request)"]
-        JB[".thenApply { result }"]
-        JC["CompletableFuture.await()<br/>→ suspend 변환"]
-        JA --> JB --> JC
-    end
-
-    subgraph KOTLIN["bluetape4k-aws-kotlin<br/>(Kotlin SDK)"]
-        KA["DynamoDbClient<br/>.getItem { ... }"]
-        KB["native suspend<br/>변환 없이 바로 사용"]
-        KA --> KB
-    end
-
-    style JAVA fill:#dbeafe
-    style KOTLIN fill:#dcfce7
-```
-
-## DSL 지원 서비스
-
-```mermaid
-flowchart TD
-    MOD["bluetape4k-aws-kotlin<br/>(Kotlin SDK 기반 단일 모듈)"]
-
-    subgraph DSL["bluetape4k DSL 제공"]
-        CW["metricDatum { }<br/>(CloudWatch)"]
-        CWL["inputLogEvent { }<br/>(CloudWatch Logs)"]
-        KIN["putRecordRequestOf()<br/>(Kinesis)"]
-        STS["stsClientOf()<br/>(STS)"]
-    end
-
-    subgraph NATIVE["Native suspend (래핑 불필요)"]
-        DDB["DynamoDbClient<br/>.getItem { }"]
-        S3["S3Client<br/>.putObject { }"]
-        SQS["SqsClient<br/>.sendMessage { }"]
-        SNS["SnsClient<br/>.publish { }"]
-    end
-
-    MOD --> DSL
-    MOD --> NATIVE
-```
-
 ## 테스트 환경
 
 통합 테스트는 Testcontainers 기반 LocalStack을 사용합니다. Gradle test 태스크는 sibling 모듈과의 일관성을 위해
@@ -300,4 +301,28 @@ abstract class AbstractAwsTest {
 
 ```bash
 ./gradlew :aws-kotlin:test
+```
+
+## 설치
+
+AWS Kotlin SDK 서비스는 `compileOnly`로 선언되어 있으므로, 사용할 서비스 SDK를 런타임 의존성으로 추가해야 합니다.
+`bluetape4k-aws-kotlin`은 공통 bluetape4k coroutine 유틸리티를 노출하지만, 사용하지 않는 AWS 서비스 클라이언트를
+소비자 애플리케이션에 강제로 올리지는 않습니다.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k:bluetape4k-aws-kotlin:${bluetape4kVersion}")
+
+    // 사용할 서비스만 선택적으로 추가
+    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
+    // ... 필요한 서비스 추가
+}
 ```
