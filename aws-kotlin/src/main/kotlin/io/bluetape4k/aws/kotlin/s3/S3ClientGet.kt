@@ -12,6 +12,7 @@ import aws.sdk.kotlin.services.s3.model.GetObjectRetentionResponse
 import aws.sdk.kotlin.services.s3.model.HeadObjectRequest
 import aws.sdk.kotlin.services.s3.presigners.presignGetObject
 import aws.smithy.kotlin.runtime.ServiceException
+import kotlinx.coroutines.CancellationException
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.decodeToString
 import aws.smithy.kotlin.runtime.content.toByteArray
@@ -52,12 +53,14 @@ suspend inline fun S3Client.existsObject(
     crossinline builder: HeadObjectRequest.Builder.() -> Unit = {},
 ): Boolean {
     val request = headObjectRequestOf(bucket, key, builder = builder)
-    return runCatching {
+    return try {
         headObject(request)
         true
-    }.recover { error ->
-        if (error.isMissingObjectError()) false else throw error
-    }.getOrThrow()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        if (e.isMissingObjectError()) false else throw e
+    }
 }
 
 /**
