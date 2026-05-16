@@ -16,6 +16,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.jackson.jackson
+import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -40,7 +41,7 @@ class DynamoDbExampleRoutesLocalStackTest {
         }
     }
 
-    private fun testModule(block: suspend io.ktor.server.testing.TestApplicationBuilder.() -> Unit) =
+    private fun testModule(block: suspend ApplicationTestBuilder.() -> Unit) =
         testApplication {
             application {
                 dynamoDbExampleModule(
