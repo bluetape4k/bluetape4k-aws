@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-16
+
 ### Added
 
 - Spring Boot SNS direct SMS publishing plus HTTP(S) endpoint payload parsing
@@ -61,22 +63,25 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Remote Environment refresh now keeps stable snapshots during reload and avoids
   refresh race regressions ([PR #86](https://github.com/bluetape4k/bluetape4k-aws/pull/86)).
+- Removed deprecated `S3Factory`, `SesFactory`, `SnsFactory`, and `SqsFactory`
+  objects before first public release; use `S3ClientFactory`, `SesClientFactory`,
+  `SnsClientFactory`, and `SqsClientFactory` respectively ([#98](https://github.com/bluetape4k/bluetape4k-aws/issues/98), [PR #113](https://github.com/bluetape4k/bluetape4k-aws/pull/113)).
+- `@Disabled` test annotations now include issue references and English rationale
+  for emulator-limited and out-of-band-protocol tests ([#99](https://github.com/bluetape4k/bluetape4k-aws/issues/99), [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100), [PR #114](https://github.com/bluetape4k/bluetape4k-aws/pull/114)).
 
-### Planned
+### 0.2.0 Roadmap
 
-- Exposed-first AWS database integration will use the `bluetape4k-exposed`
-  project as the database access surface, not standalone raw Exposed APIs
-  ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
-- Spring Boot and Ktor database adapters are tracked separately for
-  `bluetape4k-exposed` auto-configuration and `AwsExposedPlugin`
+The following items are deferred to 0.2.0 and tracked as open issues:
+
+- Exposed-first AWS database integration ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
+- Spring Boot and Ktor Exposed auto-configuration and `AwsExposedPlugin`
   ([#75](https://github.com/bluetape4k/bluetape4k-aws/issues/75),
   [#76](https://github.com/bluetape4k/bluetape4k-aws/issues/76)).
-- RDS IAM auth token support and Spring Boot/Ktor Exposed database examples are
-  planned after the shared database foundation
+- RDS IAM auth token provider and Exposed database examples
   ([#77](https://github.com/bluetape4k/bluetape4k-aws/issues/77),
   [#82](https://github.com/bluetape4k/bluetape4k-aws/issues/82)).
-- Remaining AWSpring comparison follow-ups are tracked for Spring Boot SES,
-  Kinesis/DynamoDB Streams coroutine `Flow` support, and documentation polish
-  ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7),
-  [#81](https://github.com/bluetape4k/bluetape4k-aws/issues/81),
-  [#71](https://github.com/bluetape4k/bluetape4k-aws/issues/71)).
+- Kinesis and DynamoDB Streams coroutine `Flow` support ([#81](https://github.com/bluetape4k/bluetape4k-aws/issues/81)).
+- Spring Boot SES sender ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7)).
+- Ktor integrations migration toward `:aws-kotlin` ([#85](https://github.com/bluetape4k/bluetape4k-aws/issues/85)).
+- LocalStack-compatible test strategy for SES V2 and SNS token flow ([#105](https://github.com/bluetape4k/bluetape4k-aws/issues/105)).
+- Disabled-test registry and CI release gate ([#106](https://github.com/bluetape4k/bluetape4k-aws/issues/106)).
