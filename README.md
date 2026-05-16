@@ -45,7 +45,8 @@ applications to adopt a single framework or dependency stack.
 | `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services (WIP — Coroutines-native, no awspring dependency) |
 | `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, and DynamoDB server repository plugin |
 | `aws-ktor-s3-examples` | not published | LocalStack-oriented examples for `S3KtorClient`; compiled and tested in Nightly |
-| `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled and tested in Nightly |
+| `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled, tested, and wired for Spring AOT |
+| `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, `@SqsListener`, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
 
 ---
 
@@ -118,7 +119,7 @@ flowchart LR
 
 - **JDK**: 21+
 - **Kotlin**: 2.3+
-- **Gradle**: 8.x
+- **Gradle**: 9.5+
 
 ---
 
@@ -536,10 +537,11 @@ class OrderTopic(
 ```
 
 SNS can publish to an SQS subscription when the queue policy allows
-`sqs:SendMessage` from the topic ARN. The full SQS-SNS application example is
-tracked separately in issue #13. `SnsHttpMessageParser` maps SNS HTTP JSON,
-checks the optional `x-amz-sns-message-type` header, and rejects non-HTTPS or
-non-SNS `SigningCertURL` hosts, but it does not validate SNS signatures.
+`sqs:SendMessage` from the topic ARN. The `aws-spring-boot-sqs-examples`
+module includes the LocalStack-oriented SQS/SNS fanout flow.
+`SnsHttpMessageParser` maps SNS HTTP JSON, checks the optional
+`x-amz-sns-message-type` header, and rejects non-HTTPS or non-SNS
+`SigningCertURL` hosts, but it does not validate SNS signatures.
 Validate the certificate chain, `Signature`, `SignatureVersion`, and expected
 `TopicArn` before processing notifications or confirming subscriptions.
 

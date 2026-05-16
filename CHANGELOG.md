@@ -9,8 +9,17 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Spring Boot SNS direct SMS publishing plus HTTP(S) endpoint payload parsing
+  and token-based subscription confirmation ([PR #95](https://github.com/bluetape4k/bluetape4k-aws/pull/95)).
+- Optional Spring Boot S3 transfer operations backed by AWS SDK v2
+  `S3TransferManager`, without forcing CRT dependencies on basic S3 users
+  ([PR #94](https://github.com/bluetape4k/bluetape4k-aws/pull/94)).
+- Spring Boot SQS/SNS fanout examples are wired for Spring AOT processing
+  alongside the existing Spring Boot S3 example ([PR #93](https://github.com/bluetape4k/bluetape4k-aws/pull/93)).
 - Ktor DynamoDB server plugin and repository facade built on `:aws-kotlin` and
-  the official AWS SDK for Kotlin.
+  the official AWS SDK for Kotlin ([PR #87](https://github.com/bluetape4k/bluetape4k-aws/pull/87)).
+- Secrets Manager and Parameter Store refresh support for remote Environment
+  sources ([PR #84](https://github.com/bluetape4k/bluetape4k-aws/pull/84)).
 - KMS field-level encryption and Spring Boot SQS/SNS fanout examples ([PR #73](https://github.com/bluetape4k/bluetape4k-aws/pull/73)).
 - Root README hero image plus refreshed project-purpose, feature, and architecture entrypoint documentation ([PR #68](https://github.com/bluetape4k/bluetape4k-aws/pull/68)).
 - Ktor SQS consumer runtime and server integration ([PR #60](https://github.com/bluetape4k/bluetape4k-aws/pull/60)).
@@ -28,6 +37,16 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Spring Boot SQS listener/template parity now includes FIFO metadata exposure,
+  explicit send request fields, and AOT-safe example coverage ([PR #93](https://github.com/bluetape4k/bluetape4k-aws/pull/93)).
+- Dependency baselines were refreshed for AWS SDK, Ktor 3.5, Gradle 9.5.1, and
+  SLF4J 2.0.18 ([PR #89](https://github.com/bluetape4k/bluetape4k-aws/pull/89),
+  [PR #90](https://github.com/bluetape4k/bluetape4k-aws/pull/90),
+  [PR #91](https://github.com/bluetape4k/bluetape4k-aws/pull/91),
+  [PR #92](https://github.com/bluetape4k/bluetape4k-aws/pull/92)).
+- GitHub Actions and Gradle Actions caching were refreshed, and the CI secret
+  scan installer was stabilized after the dependency update wave
+  ([PR #88](https://github.com/bluetape4k/bluetape4k-aws/pull/88)).
 - Standardized AWS modules on `bluetape4k-jackson3` and moved direct Jackson
   helper usage to `tools.jackson`.
 - Refreshed README workbench image and aligned license text on MIT ([PR #72](https://github.com/bluetape4k/bluetape4k-aws/pull/72), [PR #70](https://github.com/bluetape4k/bluetape4k-aws/pull/70)).
@@ -37,6 +56,11 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Refreshed WIP queue and review-gate metrics documentation ([PR #56](https://github.com/bluetape4k/bluetape4k-aws/pull/56), [PR #61](https://github.com/bluetape4k/bluetape4k-aws/pull/61)).
 - CI uses path filtering and retry configuration to reduce unnecessary test work and improve transient failure handling ([PR #23](https://github.com/bluetape4k/bluetape4k-aws/pull/23)).
 - Test code migrated from Kluent to `bluetape4k-assertions` ([PR #22](https://github.com/bluetape4k/bluetape4k-aws/pull/22)).
+
+### Fixed
+
+- Remote Environment refresh now keeps stable snapshots during reload and avoids
+  refresh race regressions ([PR #86](https://github.com/bluetape4k/bluetape4k-aws/pull/86)).
 
 ### Planned
 
@@ -51,10 +75,8 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   planned after the shared database foundation
   ([#77](https://github.com/bluetape4k/bluetape4k-aws/issues/77),
   [#82](https://github.com/bluetape4k/bluetape4k-aws/issues/82)).
-- AWSpring comparison follow-ups are tracked for S3 advanced transfer/config,
-  SQS parity hardening, SNS HTTP endpoint/SMS support, and Kinesis/DynamoDB
-  Streams coroutine `Flow` support
-  ([#78](https://github.com/bluetape4k/bluetape4k-aws/issues/78),
-  [#79](https://github.com/bluetape4k/bluetape4k-aws/issues/79),
-  [#80](https://github.com/bluetape4k/bluetape4k-aws/issues/80),
-  [#81](https://github.com/bluetape4k/bluetape4k-aws/issues/81)).
+- Remaining AWSpring comparison follow-ups are tracked for Spring Boot SES,
+  Kinesis/DynamoDB Streams coroutine `Flow` support, and documentation polish
+  ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7),
+  [#81](https://github.com/bluetape4k/bluetape4k-aws/issues/81),
+  [#71](https://github.com/bluetape4k/bluetape4k-aws/issues/71)).

@@ -1,6 +1,7 @@
 # Spring Cloud AWS Gap / Exposed WIP Plan
 
 Date: 2026-05-14
+Last updated: 2026-05-16
 
 ## Scope
 
@@ -38,15 +39,23 @@ hardening slice.
 - #13 closed: Spring Boot SQS/SNS example.
 - #15 closed / PR #54 merged: Ktor S3 example.
 - #59 closed: `@KmsEncrypted` field-level encryption.
-- PR #57 merged: Secrets Manager / Parameter Store loading.
+- #6 closed / PR #57, PR #84, PR #86 merged: Secrets Manager / Parameter
+  Store loading, refresh support, and refresh snapshot race fix.
+- #11 closed / PR #87 merged: Ktor DynamoDB server plugin and repository
+  facade on `:aws-kotlin`.
+- #78 closed / PR #94 merged: Spring Boot S3 transfer operations and advanced
+  transfer configuration.
+- #79 closed / PR #93 merged: Spring Boot SQS parity hardening and Spring Boot
+  example AOT wiring.
+- #80 closed / PR #95 merged: Spring Boot SNS SMS publishing and HTTP(S)
+  endpoint message parsing.
 
 ## State Sync Notes
 
-- #6 is still open in GitHub even though PR #57 merged remote-config loading.
-  Before starting new work from #6, verify whether only docs/reload parity
-  remains or whether the issue should be closed.
-- #71 remains open for README gaps around SNS, KMS, and remote-config features.
-  This should be handled before claiming the Spring Boot docs are current.
+- #71 remains open for README gaps around SNS, KMS, and remote-config features,
+  but the root and module README files now cover the core Spring Boot runtime
+  features. Treat #71 as residual documentation polish unless the issue is
+  narrowed or closed.
 
 ## Active Backlog
 
@@ -70,39 +79,27 @@ hardening slice.
 
 Recommended execution order:
 
-1. #6 state sync: close if PR #57 fully satisfies it, or narrow the remaining
-   work to reload/docs parity.
-2. #74 shared database foundation.
-3. #75 Spring Boot Exposed auto-configuration.
-4. #76 Ktor `AwsExposedPlugin`.
-5. #77 RDS IAM auth token provider.
-6. #82 examples.
+1. #74 shared database foundation.
+2. #75 Spring Boot Exposed auto-configuration.
+3. #76 Ktor `AwsExposedPlugin`.
+4. #77 RDS IAM auth token provider.
+5. #82 examples.
 
 ### Remaining adoption/examples
 
-- #7 `feat(aws-spring-boot): SES email sender`
-  - Spring Boot SES sender and coroutine template.
-- #11 `feat(aws-ktor): DynamoDB repository via Ktor server`
-  - Ktor DynamoDB server-side repository integration.
 - #14 `feat(examples): spring-boot-dynamodb`
   - Spring Boot 4 + DynamoDB example.
 - #16 `feat(examples): ktor-sqs`
   - Ktor + SQS example.
 - #17 `feat(examples): ktor-dynamodb`
-  - Ktor + DynamoDB example.
+  - Ktor + DynamoDB example; unblocked by PR #87.
 - #71 `docs(aws-spring-boot): README missing SNS / KMS / remote-config features`
-  - Documentation catch-up for already merged Spring Boot capabilities.
+  - Residual documentation polish for already merged Spring Boot capabilities.
 
 ### AWSpring gap hardening
 
-- #78 `feat(aws-spring-boot): S3 advanced transfer and config support`
-  - Optional S3TransferManager/CRT support, multipart transfer hardening, S3
-    config/property-source follow-up, and Access Grants evaluation.
-- #79 `feat(aws-spring-boot): SQS listener and template parity hardening`
-  - Batch operations, ack modes, visibility heartbeat, FIFO metadata, converter
-    and header mapping, lifecycle and metrics.
-- #80 `feat(aws-spring-boot): SNS HTTP endpoint and SMS support`
-  - SMS publish support and HTTP(S) notification endpoint handling.
+- #7 `feat(aws-spring-boot): SES email sender`
+  - Spring Boot SES sender and coroutine template.
 - #81 `feat(aws): Kinesis and DynamoDB Streams coroutine Flow support`
   - Coroutine Flow-based streaming alternative to Spring Integration/Kinesis
     binder style APIs.
