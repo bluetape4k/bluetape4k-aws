@@ -333,6 +333,7 @@ Tests:
 - [ ] **Iterator expiry Case A**: 1 record emitted, then `ExpiredIteratorException` → re-fetches with `AfterSequenceNumber(lastSeen)` → continues; verify `getShardIterator` called twice
 - [ ] **Iterator expiry Case B**: no record emitted, then `ExpiredIteratorException` → re-fetches with original position → continues; verify re-fetch uses original `KinesisStartingPosition` type
 - [ ] **Iterator expiry exhaustion**: `maxIteratorRetries` consecutive failures → `ExpiredIteratorException` propagates; verify `assertFailsWith<ExpiredIteratorException>`
+- [ ] **Recovery fetch throttled then succeeds**: after `ExpiredIteratorException` (1 record seen), next iteration's `fetchShardIterator` throws retryable `KinesisException` (first attempt), then succeeds on second attempt → verify `getShardIterator` called twice for recovery; verify `getRecords` uses iterator from second `getShardIterator` call; verify `currentPosition` used for recovery fetch is `AfterSequenceNumber(lastSeen)` not original position
 - [ ] **Retry counter reset**: successful `getRecords` after partial failures → counter resets to 0; next expiry starts fresh budget (simulate: 1 failure → 1 success → 1 failure; total should NOT exhaust budget if `maxIteratorRetries=1`)
 - [ ] **Throttle recovery**: `ProvisionedThroughputExceededException` (retryable) → jittered delay → continues; virtual time advances
 - [ ] **Throttle exhaustion**: `maxThrottleRetries` consecutive retryable failures → exception propagates; verify `assertFailsWith<ProvisionedThroughputExceededException>`
