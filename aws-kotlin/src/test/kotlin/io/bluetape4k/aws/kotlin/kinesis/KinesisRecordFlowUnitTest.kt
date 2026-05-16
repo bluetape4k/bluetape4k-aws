@@ -272,4 +272,17 @@ class KinesisRecordFlowUnitTest {
         val avgAttempt3 = (1..100).map { jitteredBackoff(3, opts).inWholeMilliseconds }.average()
         (avgAttempt3 > avgAttempt1).shouldBeTrue()
     }
+
+    @Test
+    fun `jitteredBackoff does not overflow at high attempt counts`() {
+        // Long shl overflow guard: baseMs shl shift must never wrap to negative.
+        // With attempt=31 (shift=30) and default options, 500 shl 30 = 537_395_200 > maxMs=30_000,
+        // so the guard either caps via overflow check or via coerceAtMost — result must be in [0, maxMs].
+        val opts = KinesisRecordFlowOptions()
+        repeat(60) { attempt ->
+            val backoff = jitteredBackoff(attempt + 1, opts)
+            (backoff >= 0.milliseconds).shouldBeTrue()
+            (backoff <= opts.maxThrottleBackoff).shouldBeTrue()
+        }
+    }
 }

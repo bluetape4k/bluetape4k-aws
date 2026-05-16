@@ -206,6 +206,12 @@ private suspend fun KinesisClient.fetchShardIterator(
 internal fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): Duration {
     val maxMs = options.maxThrottleBackoff.inWholeMilliseconds
     val baseMs = options.initialThrottleBackoff.inWholeMilliseconds
-    val cappedMs = (baseMs shl (attempt - 1).coerceAtMost(30)).coerceAtMost(maxMs)
+    val shift = (attempt - 1).coerceAtMost(30)
+    // Guard against Long overflow: if baseMs shl shift would exceed Long.MAX_VALUE, cap at maxMs directly.
+    val cappedMs = if (shift > 0 && baseMs > (Long.MAX_VALUE ushr shift)) {
+        maxMs
+    } else {
+        (baseMs shl shift).coerceAtMost(maxMs)
+    }
     return Random.Default.nextLong(0L, cappedMs + 1L).milliseconds
 }
