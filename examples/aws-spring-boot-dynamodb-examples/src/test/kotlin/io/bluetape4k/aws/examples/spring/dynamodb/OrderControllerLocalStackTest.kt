@@ -1,12 +1,16 @@
 package io.bluetape4k.aws.examples.spring.dynamodb
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
+import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
@@ -31,7 +35,7 @@ class OrderControllerLocalStackTest {
 
     companion object {
         @Suppress("DEPRECATION")
-        private val localStack: LocalStackServer by lazy {
+        val localStack: LocalStackServer by lazy {
             LocalStackServer.Launcher.getLocalStack("dynamodb")
         }
     }
@@ -74,16 +78,39 @@ class OrderControllerLocalStackTest {
                 found?.status shouldBeEqualTo order.status
 
                 val all = repository.scan().toList()
-                assert(all.any { it.id == order.id }) {
-                    "Expected scan to contain order ${order.id}"
-                }
+                all.any { it.id == order.id }.shouldBeTrue()
 
                 repository.deleteById(order.id)
 
-                val afterDelete = repository.findById(order.id)
-                assert(afterDelete == null) {
-                    "Expected order to be deleted but found: $afterDelete"
-                }
+                repository.findById(order.id).shouldBeNull()
+            }
+        }
+    }
+
+    @Test
+    fun `concurrent saves and findById are consistent`() {
+        contextRunner().run { context ->
+            val asyncClient = context.getBean(DynamoDbAsyncClient::class.java)
+            val enhancedClient = context.getBean(DynamoDbEnhancedAsyncClient::class.java)
+            val tableNameResolver = context.getBean(DynamoDbTableNameResolver::class.java)
+            val repository = OrderRepository(enhancedClient, tableNameResolver)
+
+            runSuspendIO {
+                createOrdersTable(asyncClient, tableNameResolver.resolve("orders"))
+
+                SuspendedJobTester()
+                    .workers(4)
+                    .rounds(3)
+                    .add {
+                        val order = Order(
+                            id = "order-${UUID.randomUUID()}",
+                            status = "CONCURRENT",
+                            description = "stress test",
+                        )
+                        repository.save(order)
+                        repository.findById(order.id)?.id shouldBeEqualTo order.id
+                    }
+                    .run()
             }
         }
     }
@@ -117,12 +144,9 @@ class OrderControllerLocalStackTest {
 
         val deadline = System.currentTimeMillis() + Duration.ofSeconds(30).toMillis()
         while (System.currentTimeMillis() < deadline) {
-            val status = client.describeTable { it.tableName(tableName) }
-                .await()
-                .table()
-                .tableStatus()
+            val status = client.describeTable { it.tableName(tableName) }.await().table().tableStatus()
             if (status == TableStatus.ACTIVE) return
-            kotlinx.coroutines.delay(500)
+            delay(500)
         }
         error("Table $tableName did not become ACTIVE within 30s")
     }
