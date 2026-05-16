@@ -133,7 +133,7 @@ classDiagram
 | **KMS**             | Encryption key management, data key generation          |
 | **CloudWatch**      | Metric publishing/querying, DSL (`metricDatum {}`)      |
 | **CloudWatch Logs** | Log event publishing, DSL (`inputLogEvent {}`)          |
-| **Kinesis**         | Stream record publishing, DSL (`putRecordRequestOf {}`) |
+| **Kinesis**         | Stream record publishing, `recordFlow {}` cold Flow per shard, DSL (`putRecordRequestOf {}`) |
 | **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)      |
 
 ## Java SDK v2 vs Kotlin SDK Comparison
@@ -274,6 +274,72 @@ suspend fun putRecord(client: KinesisClient, streamName: String, data: ByteArray
     )
 }
 ```
+
+### Kinesis — `recordFlow` (cold `Flow<Record>` per shard)
+
+`KinesisClient.recordFlow()` returns a cold `Flow<Record>` that continuously polls a single
+shard and emits each record. The flow terminates naturally when the shard is closed (resharding).
+
+```kotlin
+import aws.sdk.kotlin.services.kinesis.KinesisClient
+import io.bluetape4k.aws.kotlin.kinesis.KinesisStartingPosition
+import io.bluetape4k.aws.kotlin.kinesis.KinesisRecordFlowOptions
+import io.bluetape4k.aws.kotlin.kinesis.recordFlow
+import kotlinx.coroutines.flow.take
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+
+// Basic usage — read from the beginning of a shard
+kinesisClient.recordFlow(
+    streamName = "my-stream",
+    shardId    = "shardId-000000000000",
+    position   = KinesisStartingPosition.TrimHorizon,
+).collect { record ->
+    println(record.data!!.decodeToString())
+}
+
+// Resume from a saved checkpoint
+kinesisClient.recordFlow(
+    streamName = "my-stream",
+    shardId    = "shardId-000000000000",
+    position   = KinesisStartingPosition.AfterSequenceNumber(lastSequenceNumber),
+).collect { record -> /* ... */ }
+
+// Custom tuning
+val options = KinesisRecordFlowOptions(
+    batchLimit             = 500,
+    pollInterval           = 200.milliseconds,
+    emptyBackoff           = 2.seconds,
+    maxIteratorRetries     = 5,
+    initialThrottleBackoff = 500.milliseconds,
+    maxThrottleBackoff     = 30.seconds,
+    maxThrottleRetries     = 5,
+)
+kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
+    .take(1_000)
+    .collect { /* ... */ }
+```
+
+#### Starting positions
+
+| Position | Description |
+|---|---|
+| `TrimHorizon` | All records from the oldest available (default) |
+| `Latest` | Records written after the iterator is obtained. **Caution:** if the iterator expires before the first record is processed, the flow throws immediately rather than silently skipping records. |
+| `AtSequenceNumber(seq)` | The record with the given sequence number (inclusive) |
+| `AfterSequenceNumber(seq)` | Records after the given sequence number (exclusive) |
+| `AtTimestamp(instant)` | Records at or after the given `java.time.Instant` |
+
+#### Error handling
+
+| Error | Behaviour |
+|---|---|
+| Shard closed (`nextShardIterator == null`) | Flow completes normally |
+| `ExpiredIteratorException` | Re-fetches the iterator using the last seen sequence number; throws after `maxIteratorRetries` attempts |
+| `Latest` with no checkpoint + expiry | Throws immediately — re-fetching `Latest` would silently skip records |
+| Retryable `KinesisException` | Exponential jitter backoff; throws after `maxThrottleRetries` attempts |
+| Non-retryable `KinesisException` | Propagated immediately |
+| `CancellationException` | Propagated immediately |
 
 ## Test Environment
 

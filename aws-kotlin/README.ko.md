@@ -132,7 +132,7 @@ classDiagram
 | **KMS**             | 암호화 키 관리, 데이터 키 생성                                |
 | **CloudWatch**      | 메트릭 발행/조회, DSL(`metricDatum {}`)                  |
 | **CloudWatch Logs** | 로그 이벤트 전송, DSL(`inputLogEvent {}`)                |
-| **Kinesis**         | 스트림 레코드 전송, DSL(`putRecordRequestOf {}`)          |
+| **Kinesis**         | 스트림 레코드 전송, `recordFlow {}` 샤드별 cold Flow, DSL(`putRecordRequestOf {}`) |
 | **STS**             | AssumeRole, CallerIdentity, DSL(`stsClientOf {}`) |
 
 ## Java SDK v2 vs Kotlin SDK 비교
@@ -272,6 +272,72 @@ suspend fun putRecord(client: KinesisClient, streamName: String, data: ByteArray
     )
 }
 ```
+
+### Kinesis — `recordFlow` (샤드별 cold `Flow<Record>`)
+
+`KinesisClient.recordFlow()`는 단일 샤드를 지속적으로 폴링하여 각 레코드를 emit하는 cold `Flow<Record>`를 반환합니다.
+샤드가 닫히면(리샤딩) 플로우가 자연스럽게 완료됩니다.
+
+```kotlin
+import aws.sdk.kotlin.services.kinesis.KinesisClient
+import io.bluetape4k.aws.kotlin.kinesis.KinesisStartingPosition
+import io.bluetape4k.aws.kotlin.kinesis.KinesisRecordFlowOptions
+import io.bluetape4k.aws.kotlin.kinesis.recordFlow
+import kotlinx.coroutines.flow.take
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+
+// 기본 사용 — 샤드의 처음부터 읽기
+kinesisClient.recordFlow(
+    streamName = "my-stream",
+    shardId    = "shardId-000000000000",
+    position   = KinesisStartingPosition.TrimHorizon,
+).collect { record ->
+    println(record.data!!.decodeToString())
+}
+
+// 저장된 체크포인트에서 재개
+kinesisClient.recordFlow(
+    streamName = "my-stream",
+    shardId    = "shardId-000000000000",
+    position   = KinesisStartingPosition.AfterSequenceNumber(lastSequenceNumber),
+).collect { record -> /* ... */ }
+
+// 커스텀 옵션
+val options = KinesisRecordFlowOptions(
+    batchLimit             = 500,
+    pollInterval           = 200.milliseconds,
+    emptyBackoff           = 2.seconds,
+    maxIteratorRetries     = 5,
+    initialThrottleBackoff = 500.milliseconds,
+    maxThrottleBackoff     = 30.seconds,
+    maxThrottleRetries     = 5,
+)
+kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
+    .take(1_000)
+    .collect { /* ... */ }
+```
+
+#### 시작 위치 (Starting Position)
+
+| 위치 | 설명 |
+|---|---|
+| `TrimHorizon` | 샤드에서 가장 오래된 레코드부터 (기본값) |
+| `Latest` | 이터레이터 획득 이후에 작성된 레코드. **주의:** 첫 레코드 처리 전에 이터레이터가 만료되면 레코드를 무음 skip하는 대신 즉시 예외를 던집니다. |
+| `AtSequenceNumber(seq)` | 지정한 시퀀스 번호의 레코드 포함 (inclusive) |
+| `AfterSequenceNumber(seq)` | 지정한 시퀀스 번호 이후의 레코드 (exclusive) |
+| `AtTimestamp(instant)` | 지정한 `java.time.Instant` 이후의 레코드 |
+
+#### 오류 처리
+
+| 오류 | 동작 |
+|---|---|
+| 샤드 닫힘 (`nextShardIterator == null`) | 플로우 정상 완료 |
+| `ExpiredIteratorException` | 마지막 시퀀스 번호로 이터레이터 재획득; `maxIteratorRetries` 초과 시 예외 전파 |
+| `Latest` + 체크포인트 없음 + 만료 | 즉시 예외 — 재획득 시 레코드 skip 발생 방지 |
+| 재시도 가능 `KinesisException` | 지수 지터 백오프; `maxThrottleRetries` 초과 시 예외 전파 |
+| 재시도 불가 `KinesisException` | 즉시 예외 전파 |
+| `CancellationException` | 즉시 예외 전파 |
 
 ## 테스트 환경
 
