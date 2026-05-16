@@ -27,7 +27,7 @@
 | `AwsSigV4Plugin.kt` | `AwsCredentialsProvider`, `AwsV4HttpSigner` | 플러그인 내부 사용 | 높음 |
 | `S3KtorClient.kt` | `AwsCredentialsProvider`, `DefaultCredentialsProvider`, `AwsV4HttpSigner` | 생성자 파라미터, 팩토리 함수 | 높음 |
 | `SqsConsumerPluginConfig.kt` | `SqsAsyncClient` | 공개 프로퍼티 | 중간 |
-| `SqsConsumerRuntime.kt` | `SqsAsyncClient`, `Message`, `SendMessageResponse` | 공개 런타임 설정 | 중간 |
+| `SqsConsumerRuntime.kt` | `SqsAsyncClient`, `Message` (`SqsMessageContext.message`: L175), `SendMessageResponse` (`SqsMessageContext.send()` 반환: L196) | 공개 런타임 설정 | 중간 |
 | `SqsMessageConverter.kt` | `Message` | 인터페이스 파라미터, 공개 구현체 | 중간 |
 
 ### 2.2 AWS Kotlin SDK 이미 사용 중 (이관 불필요)
@@ -48,14 +48,22 @@
 
 **이관 가능성 평가**:
 
-AWS Kotlin SDK(Smithy Kotlin)는 서명 기능을 내부적으로만 사용한다.
-`aws.smithy.kotlin:aws-signing-default` 아티팩트가 존재하지만:
-- Smithy SDK 자체 HTTP 엔진 파이프라인에 통합되어 있음
-- Ktor `HttpClient`의 `Send` 훅에서 임의 HTTP 요청을 서명하기 위한 **공개 API가 없음**
-- `SdkHttpRequest` (Java SDK v2) → Smithy `HttpRequest` 변환 계층 없음
+AWS Kotlin SDK(Smithy Kotlin)는 `aws-signing-default` 아티팩트에서 `AwsSigner`와
+`DefaultAwsSigner`를 공개 타입으로 노출한다:
 
-**결론**: Java SDK v2 `http-auth-aws`는 현재 Ktor HTTP 플러그인에서 외부 AWS 서명에 사용할 수 있는
-유일한 안정적 공개 API다. Kotlin SDK에 동등한 공개 서명 API가 추가될 때까지 유지한다.
+```kotlin
+// aws.smithy.kotlin.runtime.auth.awssigning.AwsSigner (공개)
+suspend fun sign(request: HttpRequest, config: AwsSigningConfig): AwsSigningResult<HttpRequest>
+```
+
+그러나 **drop-in 대체는 불가능**하다:
+- Smithy의 `HttpRequest`는 Ktor `HttpRequestBuilder`와 타입이 다름 — 헤더/바디 어댑터 계층 별도 구현 필요
+- Ktor `Send` 파이프라인 훅과 Smithy 서명 파이프라인 사이에 공식 어댑터 없음
+- Ktor ↔ Smithy `HttpRequest` 변환 계층 구현 및 API 호환성 검증 비용이 큼
+
+**결론**: Java SDK v2 `http-auth-aws` (`AwsV4HttpSigner`)는 Ktor 플러그인에서 외부 AWS 서명에 바로
+사용할 수 있는 유일한 안정적 옵션이다. Smithy Kotlin SDK를 사용하려면 어댑터를 직접 구현해야 하므로
+현재 시점에서는 Java SDK v2를 유지한다.
 
 **후속**: AWS Kotlin SDK가 외부 HTTP 클라이언트용 공개 서명 API를 제공하면 이관 검토 (#85 0.2.0 리레이블).
 
@@ -95,7 +103,20 @@ AWS Kotlin SDK의 `SqsClient`는 native `suspend` 함수를 제공하며 `SqsAsy
 - `SqsMessageConverter` 인터페이스: `Message` 파라미터 타입 변경
 - 소비자 측은 모두 재컴파일 필요
 
-**결론**: 파괴적 변경이 크고 0.1.0 출시를 블록할 이유가 없다. 0.2.0에서 이관하며 마이그레이션 가이드 제공.
+**공개 노출 상세**:
+- `SqsConsumerPluginConfig.sqsClient`: `SqsAsyncClient` (공개 프로퍼티)
+- `SqsMessageContext.message`: `software.amazon.awssdk.services.sqs.model.Message` (핸들러가 직접 접근 가능, `SqsConsumerRuntime.kt:175`)
+- `SqsMessageContext.send()`: 반환 타입 `software.amazon.awssdk.services.sqs.model.SendMessageResponse` (`SqsConsumerRuntime.kt:196`)
+- `SqsMessageConverter` 인터페이스: `Message` 파라미터 타입
+
+**연기 사유 (릴리스 제약 명시)**:
+- `0.1.0-SNAPSHOT` 릴리스가 임박하며, SQS 이관은 위 4곳의 파괴적 API 변경을 수반한다.
+- SQS 이관을 0.1.0 내에 포함하면 API 안정성 보장 없이 출시하게 되므로, 마이그레이션 가이드와
+  함께 0.2.0에서 이관하는 것이 타당하다.
+- 이관 전 소비자는 Java SDK v2 `SqsAsyncClient`와 `Message` 타입을 직접 참조하므로
+  마이그레이션 가이드(`MIGRATION.md`) 제공이 선행 조건이다.
+
+**결론**: 0.1.0 릴리스 임박으로 인해 SQS 이관을 연기한다. 0.2.0에서 마이그레이션 가이드와 함께 이관한다.
 
 ---
 

@@ -30,16 +30,29 @@ DynamoDB Ktor integration was designed Kotlin-first from the start. No migration
 | SQS Consumer | Defer to 0.2.0 | Breaking API change; no urgency for 0.1.0 |
 | DynamoDB | Already migrated | No action needed |
 
-## Lesson: AWS Kotlin SDK Signing API Limitation
+## Lesson: AWS Kotlin SDK Signing API — Not Drop-in, But Not Absent
 
-The AWS Kotlin SDK (`aws.smithy.kotlin:aws-signing-default`) exposes signing
-functionality **only internally** within its own HTTP engine pipeline. There is
-no stable public API for signing arbitrary HTTP requests from an external client
-(like a Ktor plugin). Java SDK v2's `http-auth-aws` module (`AwsV4HttpSigner`)
-is the only stable, documented option for custom Ktor signing today.
+The AWS Kotlin SDK (`aws.smithy.kotlin:aws-signing-default`) **does** expose
+`AwsSigner` and `DefaultAwsSigner` as public types:
 
-Track the upstream Smithy Kotlin project for a future public signing API before
-planning SigV4 migration.
+```kotlin
+suspend fun sign(request: HttpRequest, config: AwsSigningConfig): AwsSigningResult<HttpRequest>
+```
+
+However, Smithy's `HttpRequest` is a different type from Ktor's
+`HttpRequestBuilder`. Using Smithy signing in a Ktor plugin requires a
+Ktor ↔ Smithy `HttpRequest`/body/header adapter layer — there is no official
+bridge, and building one adds meaningful integration cost.
+
+**Lesson**: Do not claim Smithy signing has "no public API". The correct claim
+is: "not drop-in for the current Ktor plugin; requires a Ktor ↔ Smithy
+`HttpRequest` adapter and API compatibility work."
+
+Java SDK v2's `http-auth-aws` module (`AwsV4HttpSigner`) remains the only
+out-of-the-box stable option for a Ktor-based SigV4 plugin today.
+
+Track the upstream Smithy Kotlin project for an official Ktor adapter or public
+signing bridge before planning SigV4 migration.
 
 ## Policy: New Integrations
 
