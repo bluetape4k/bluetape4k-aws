@@ -492,7 +492,11 @@ secret handling. Prefer `KmsOperations` in coroutine services.
 
 ```kotlin
 import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsType
 
 class OrderTopic(
     private val sns: SnsOperations,
@@ -506,12 +510,38 @@ class OrderTopic(
         )
         return response.messageId()
     }
+
+    suspend fun sendSms(phoneNumber: String, text: String): String =
+        sns.publishSms(
+            SnsSmsRequest(
+                phoneNumber = phoneNumber,
+                message = text,
+                smsType = SnsSmsType.TRANSACTIONAL,
+                senderId = "BLUETAPE",
+            )
+        ).messageId()
+
+    suspend fun handleHttpEndpoint(body: String, messageTypeHeader: String?) {
+        val message = SnsHttpMessageParser.parse(body, messageTypeHeader)
+        // Verify Signature, SigningCertURL, SignatureVersion, and expected TopicArn here.
+        when (message.type) {
+            SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION,
+            SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION -> sns.confirmSubscription(message)
+            SnsHttpMessageType.NOTIFICATION -> processNotification(message.message)
+        }
+    }
+
+    private fun processNotification(message: String) = Unit
 }
 ```
 
 SNS can publish to an SQS subscription when the queue policy allows
 `sqs:SendMessage` from the topic ARN. The full SQS-SNS application example is
-tracked separately in issue #13.
+tracked separately in issue #13. `SnsHttpMessageParser` maps SNS HTTP JSON,
+checks the optional `x-amz-sns-message-type` header, and rejects non-HTTPS or
+non-SNS `SigningCertURL` hosts, but it does not validate SNS signatures.
+Validate the certificate chain, `Signature`, `SignatureVersion`, and expected
+`TopicArn` before processing notifications or confirming subscriptions.
 
 ### S3 Upload — Coroutines (`aws` module)
 

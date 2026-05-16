@@ -15,6 +15,7 @@ flowchart LR
     end
     subgraph Module["aws-spring-boot"]
         S3OPS["S3Operations\n(S3CoroutinesTemplate)"]
+        SNSOPS["SnsOperations\n(SnsCoroutinesTemplate)"]
         SQSOPS["SqsOperations\n(SqsCoroutinesTemplate)"]
         DYN["CoroutinesDynamoDbRepository"]
         KMS["KmsOperations\n(KmsEncryptedFieldCodec)"]
@@ -24,21 +25,25 @@ flowchart LR
     end
     subgraph SDK["AWS SDK v2 (compileOnly)"]
         S3CLI["S3AsyncClient / S3Presigner"]
+        SNSCLI["SnsAsyncClient"]
         SQSCLI["SqsAsyncClient"]
         DYNCLI["DynamoDbEnhancedAsyncClient"]
     end
 
     BIZ --> S3OPS
+    BIZ --> SNSOPS
     BIZ --> SQSOPS
     BIZ --> DYN
     BIZ --> KMS
     BIZ --> ENV
     LISTENER --> BIZ
     AUTO -.creates.-> S3OPS
+    AUTO -.creates.-> SNSOPS
     AUTO -.creates.-> SQSOPS
     AUTO -.creates.-> LISTENER
     AUTO -.loads.-> ENV
     S3OPS --> S3CLI
+    SNSOPS --> SNSCLI
     SQSOPS --> SQSCLI
     DYN --> DYNCLI
     KMS --> KMSCLI["KmsAsyncClient"]
@@ -50,6 +55,9 @@ flowchart LR
 - **S3** — `S3CoroutinesTemplate` 로 버킷 존재 확인, 업로드/다운로드(바이트·문자열),
   삭제, 페이지 단위 조회(`listPage`/`listFlow`), Spring `Resource` 뷰, presigned
   GET/PUT URL 발급을 지원한다.
+- **SNS** — `SnsCoroutinesTemplate` 로 topic 생성/조회, topic publish, FIFO publish
+  필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
+  confirmation 을 지원한다.
 - **SQS** — `SqsCoroutinesTemplate` 로 큐 조회·생성, 송신, 수신, visibility 변경,
   cold `Flow<SqsReceivedMessage>` 스트림을 제공한다.
 - **SQS 리스너** — `@SqsListener` 어노테이션 기반의 Coroutine 메시지 리스너 컨테이너.
@@ -76,6 +84,7 @@ dependencies {
     // 런타임에서 사용할 AWS SDK v2 서비스만 선택적으로 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
@@ -115,6 +124,15 @@ bluetape4k:
       queues:
         orders:
           url: http://localhost:4566/000000000000/orders
+    sns:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      topics:
+        orders.fifo:
+          fifo: true
+          content-based-deduplication: true
+          fifo-throughput-scope: message-group
     dynamodb:
       enabled: true
       region: ap-northeast-2
@@ -154,6 +172,8 @@ bluetape4k:
 
 `endpoint-override` 를 지정하면 반드시 `region` 도 설정해야 한다. 각 Properties
 클래스의 `init` 블록에서 시작 시점에 강제한다.
+`sns.topics.<name>` 은 `SnsOperations.createConfiguredTopic("<name>")` 에서 사용하는
+topic 생성 기본값이다.
 `sqs.queues.<name>.url` 은 `@SqsListener(queue = "<name>")` 에서 논리 큐 이름을
 실제 URL로 바꾸는 alias 설정이다. `SqsOperations.getQueueUrl("<name>")` 은 여전히
 AWS SQS `GetQueueUrl` 요청을 수행한다.
@@ -242,6 +262,53 @@ class OrderQueue(private val sqs: SqsOperations) {
     }
 }
 ```
+
+### SNS — Publish, SMS, HTTP endpoint message
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
+import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsType
+
+class OrderNotifications(private val sns: SnsOperations) {
+    suspend fun publishOrder(topicArn: String, json: String) {
+        sns.publish(SnsPublishRequest(topicArn = topicArn, message = json))
+    }
+
+    suspend fun sendSms(phoneNumber: String, text: String) {
+        sns.publishSms(
+            SnsSmsRequest(
+                phoneNumber = phoneNumber,
+                message = text,
+                smsType = SnsSmsType.TRANSACTIONAL,
+                senderId = "BLUETAPE",
+            )
+        )
+    }
+
+    suspend fun handleHttpEndpoint(body: String, messageTypeHeader: String?) {
+        val message = SnsHttpMessageParser.parse(body, messageTypeHeader)
+        // 여기서 Signature, SigningCertURL, SignatureVersion, expected TopicArn 검증.
+        when (message.type) {
+            SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION,
+            SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION -> sns.confirmSubscription(message)
+            SnsHttpMessageType.NOTIFICATION -> processNotification(message.message)
+        }
+    }
+
+    private fun processNotification(message: String) = Unit
+}
+```
+
+SNS 는 queue policy 가 topic ARN 의 `sqs:SendMessage` 를 허용하면 SQS subscription 으로
+fanout 할 수 있다. `SnsHttpMessageParser` 는 SNS HTTP JSON 과 선택적
+`x-amz-sns-message-type` header 를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
+`SigningCertURL` 은 거부한다. Signature 검증은 수행하지 않으므로 notification 처리나
+subscription confirmation 전에 certificate chain, signature, signature version, 기대한
+`TopicArn` 을 검증해야 한다.
 
 ### SQS — `@SqsListener` 어노테이션
 

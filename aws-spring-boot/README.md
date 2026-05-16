@@ -15,6 +15,7 @@ flowchart LR
     end
     subgraph Module["aws-spring-boot"]
         S3OPS["S3Operations\n(S3CoroutinesTemplate)"]
+        SNSOPS["SnsOperations\n(SnsCoroutinesTemplate)"]
         SQSOPS["SqsOperations\n(SqsCoroutinesTemplate)"]
         DYN["CoroutinesDynamoDbRepository"]
         KMS["KmsOperations\n(KmsEncryptedFieldCodec)"]
@@ -24,21 +25,25 @@ flowchart LR
     end
     subgraph SDK["AWS SDK v2 (compileOnly)"]
         S3CLI["S3AsyncClient / S3Presigner"]
+        SNSCLI["SnsAsyncClient"]
         SQSCLI["SqsAsyncClient"]
         DYNCLI["DynamoDbEnhancedAsyncClient"]
     end
 
     BIZ --> S3OPS
+    BIZ --> SNSOPS
     BIZ --> SQSOPS
     BIZ --> DYN
     BIZ --> KMS
     BIZ --> ENV
     LISTENER --> BIZ
     AUTO -.creates.-> S3OPS
+    AUTO -.creates.-> SNSOPS
     AUTO -.creates.-> SQSOPS
     AUTO -.creates.-> LISTENER
     AUTO -.loads.-> ENV
     S3OPS --> S3CLI
+    SNSOPS --> SNSCLI
     SQSOPS --> SQSCLI
     DYN --> DYNCLI
     KMS --> KMSCLI["KmsAsyncClient"]
@@ -50,6 +55,9 @@ flowchart LR
 - **S3** — `S3CoroutinesTemplate` for bucket-existence, upload/download (bytes
   or text), delete, paginated listing (`listPage`/`listFlow`), Spring
   `Resource` view, and presigned GET/PUT URLs.
+- **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, topic publish,
+  FIFO publish fields, direct SMS publish options, and HTTP(S) notification
+  JSON parsing plus token-based subscription confirmation.
 - **SQS** — `SqsCoroutinesTemplate` for queue lookup/creation, send, receive,
   visibility change, and a cold `Flow<SqsReceivedMessage>` stream.
 - **SQS listener** — `@SqsListener` annotation drives a coroutine-based
@@ -77,6 +85,7 @@ dependencies {
     // Add only the AWS SDK v2 services you need at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
@@ -116,6 +125,15 @@ bluetape4k:
       queues:
         orders:
           url: http://localhost:4566/000000000000/orders
+    sns:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      topics:
+        orders.fifo:
+          fifo: true
+          content-based-deduplication: true
+          fifo-throughput-scope: message-group
     dynamodb:
       enabled: true
       region: ap-northeast-2
@@ -155,6 +173,8 @@ bluetape4k:
 
 `endpoint-override` requires `region` to be set. Each property class enforces
 this at startup via `require`.
+`sns.topics.<name>` configures topic creation defaults used by
+`SnsOperations.createConfiguredTopic("<name>")`.
 `sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a
 logical queue alias. `SqsOperations.getQueueUrl("<name>")` still performs an
 AWS SQS `GetQueueUrl` call.
@@ -244,6 +264,53 @@ class OrderQueue(private val sqs: SqsOperations) {
     }
 }
 ```
+
+### SNS — publish, SMS, and HTTP endpoint messages
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
+import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsRequest
+import io.bluetape4k.aws.spring.sns.SnsSmsType
+
+class OrderNotifications(private val sns: SnsOperations) {
+    suspend fun publishOrder(topicArn: String, json: String) {
+        sns.publish(SnsPublishRequest(topicArn = topicArn, message = json))
+    }
+
+    suspend fun sendSms(phoneNumber: String, text: String) {
+        sns.publishSms(
+            SnsSmsRequest(
+                phoneNumber = phoneNumber,
+                message = text,
+                smsType = SnsSmsType.TRANSACTIONAL,
+                senderId = "BLUETAPE",
+            )
+        )
+    }
+
+    suspend fun handleHttpEndpoint(body: String, messageTypeHeader: String?) {
+        val message = SnsHttpMessageParser.parse(body, messageTypeHeader)
+        // Verify Signature, SigningCertURL, SignatureVersion, and expected TopicArn here.
+        when (message.type) {
+            SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION,
+            SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION -> sns.confirmSubscription(message)
+            SnsHttpMessageType.NOTIFICATION -> processNotification(message.message)
+        }
+    }
+
+    private fun processNotification(message: String) = Unit
+}
+```
+
+SNS can publish to an SQS subscription when the queue policy allows
+`sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` maps SNS HTTP JSON,
+checks the optional `x-amz-sns-message-type` header, and rejects non-HTTPS or
+non-SNS `SigningCertURL` hosts. It does not validate SNS signatures; validate
+the certificate chain, signature, signature version, and expected `TopicArn`
+before processing notifications or confirming subscriptions.
 
 ### SQS — `@SqsListener` annotation
 
