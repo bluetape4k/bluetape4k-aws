@@ -10,6 +10,7 @@ import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
+import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
@@ -52,6 +53,18 @@ class SqsCoroutinesTemplate(
     ): SendMessageResponse =
         sqsAsyncClient.send(queueUrl, body, delaySeconds)
 
+    override suspend fun send(request: SqsSendRequest): SendMessageResponse =
+        sqsAsyncClient.sendMessage {
+            it.queueUrl(request.queueUrl)
+            it.messageBody(request.body)
+            request.delaySeconds?.let(it::delaySeconds)
+            request.messageGroupId?.let(it::messageGroupId)
+            request.messageDeduplicationId?.let(it::messageDeduplicationId)
+            if (request.messageAttributes.isNotEmpty()) {
+                it.messageAttributes(request.messageAttributes)
+            }
+        }.await()
+
     override suspend fun receive(
         queueUrl: String,
         maxMessages: Int,
@@ -66,6 +79,8 @@ class SqsCoroutinesTemplate(
             it.queueUrl(queueUrl)
             it.maxNumberOfMessages(maxMessages)
             it.waitTimeSeconds(waitTimeSeconds)
+            it.messageSystemAttributeNames(MessageSystemAttributeName.ALL)
+            it.messageAttributeNames("All")
             visibilityTimeoutSeconds?.let(it::visibilityTimeout)
         }.await()
 

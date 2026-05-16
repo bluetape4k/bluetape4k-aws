@@ -39,6 +39,7 @@ detekt = "1.23.8"  # https://mvnrepository.com/artifact/io.gitlab.arturbosch.det
 dependency-management = "1.1.7"  # https://mvnrepository.com/artifact/io.spring.gradle/dependency-management-plugin
 dokka = "2.2.0"  # https://mvnrepository.com/artifact/org.jetbrains.dokka/dokka-gradle-plugin
 kover = "0.9.8"  # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kover-gradle-plugin
+graalvm-native = "1.1.0"  # https://mvnrepository.com/artifact/org.graalvm.buildtools.native/org.graalvm.buildtools.native.gradle.plugin
 test-logger = "4.0.0"  # https://mvnrepository.com/artifact/com.adarshr/gradle-test-logger-plugin
 nmcp = "1.5.0"  # https://mvnrepository.com/artifact/com.gradleup.nmcp/nmcp
 
@@ -57,6 +58,7 @@ dependency-management = { id = "io.spring.dependency-management", version.ref = 
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 test-logger = { id = "com.adarshr.test-logger", version.ref = "test-logger" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+graalvm-native = { id = "org.graalvm.buildtools.native", version.ref = "graalvm-native" }
 nmcp = { id = "com.gradleup.nmcp", version.ref = "nmcp" }
 nmcp-aggregation = { id = "com.gradleup.nmcp.aggregation", version.ref = "nmcp" }
 

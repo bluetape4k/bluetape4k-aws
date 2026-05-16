@@ -93,3 +93,12 @@ fun handle(message: String) { ... }
 ```bash
 ./gradlew :aws-spring-boot-sqs-examples:test -Dbluetape4k.aws.emulator=localstack
 ```
+
+## AOT
+
+모든 Spring Boot 예제는 GraalVM Native Build Tools 를 통해 Spring AOT 태스크가
+생성되도록 구성합니다. 이 예제는 다음 명령으로 검증합니다.
+
+```bash
+./gradlew :aws-spring-boot-sqs-examples:processAot :aws-spring-boot-sqs-examples:processTestAot
+```

@@ -26,6 +26,7 @@ plugins {
     alias(libs.plugins.nmcp) apply false
 
     alias(libs.plugins.kover)
+    alias(libs.plugins.graalvm.native) apply false
 }
 
 val rootLibs = libs
@@ -86,6 +87,12 @@ subprojects {
 }
 
 subprojects {
+    if (name.startsWith("aws-spring-boot-") && name.endsWith("-examples")) {
+        pluginManager.withPlugin("org.springframework.boot") {
+            pluginManager.apply("org.graalvm.buildtools.native")
+        }
+    }
+
     // BOM 모듈은 java-platform 플러그인을 사용하므로 Java/Kotlin 설정을 건너뜁니다.
     if (name == "bluetape4k-aws-bom") return@subprojects
 

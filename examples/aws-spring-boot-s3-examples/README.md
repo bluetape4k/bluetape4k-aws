@@ -60,3 +60,12 @@ For real AWS S3, omit `endpoint-override` and let the AWS SDK resolve credential
 
 The test starts LocalStack with Testcontainers, creates a bucket, then verifies
 upload, download, list, presigned GET/PUT URL generation, and delete behavior.
+
+## AOT
+
+All Spring Boot examples are wired for Spring AOT through GraalVM Native Build
+Tools. Verify this example with:
+
+```bash
+./gradlew :aws-spring-boot-s3-examples:processAot :aws-spring-boot-s3-examples:processTestAot
+```
