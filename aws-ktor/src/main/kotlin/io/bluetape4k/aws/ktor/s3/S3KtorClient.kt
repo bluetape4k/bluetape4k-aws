@@ -47,14 +47,20 @@ private val MIN_PRESIGN_EXPIRY: Duration = Duration.ofSeconds(1)
 private val MAX_PRESIGN_EXPIRY: Duration = Duration.ofDays(7)
 
 /**
- * Ktor `HttpClient` 기반 S3 REST 클라이언트입니다.
+ * Ktor `HttpClient`-based S3 REST client.
  *
- * ## 동작/계약
+ * ## Behavior / Contract
  *
- * Ktor `HttpClient`와 [AwsSigV4Plugin]을 사용해 S3 REST API를 호출합니다. 객체 업로드,
- * 다운로드, 삭제, ListObjectsV2, multipart upload, presigned GET/PUT URL 생성을 제공하며
- * `endpointOverride`가 있으면 path-style URL을 사용합니다. 외부에서 주입한 `HttpClient`는
- * 닫지 않고, [s3KtorClientOf]로 생성한 내부 client만 [close]에서 닫습니다.
+ * Uses Ktor `HttpClient` and [AwsSigV4Plugin] to call the S3 REST API. Supports object upload,
+ * download, delete, ListObjectsV2, multipart upload, and presigned GET/PUT URL generation.
+ * Path-style URLs are used when `endpointOverride` is set; virtual-hosted URLs are used for
+ * DNS-safe buckets on the default AWS S3 endpoint.
+ *
+ * **Ownership semantics**: An externally injected `HttpClient` is never closed by this client.
+ * An `HttpClient` created by [s3KtorClientOf] is closed when `closeClient = true`. Similarly,
+ * an `AwsCredentialsProvider` created by [s3KtorClientOf] (i.e. when the caller omits
+ * `credentialsProvider`) is closed on [close] if it implements `AutoCloseable`. A
+ * caller-supplied provider is never closed by this client.
  *
  * ```kotlin
  * import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
@@ -67,9 +73,6 @@ private val MAX_PRESIGN_EXPIRY: Duration = Duration.ofDays(7)
  *     }
  * }
  * ```
- *
- * [endpointOverride]가 있으면 path-style URL을 사용하고, AWS S3 기본 endpoint에서는 DNS-safe bucket에
- * 한해 virtual-hosted URL을 사용합니다.
  */
 class S3KtorClient(
     private val httpClient: HttpClient,
@@ -79,6 +82,7 @@ class S3KtorClient(
     private val addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     private val signingClock: Clock? = null,
     private val closeClient: Boolean = false,
+    private val closeCredentialsProvider: Boolean = false,
     private val signer: AwsV4HttpSigner = AwsV4HttpSigner.create(),
 ): AutoCloseable {
 
@@ -314,8 +318,12 @@ class S3KtorClient(
         presign(HttpMethod.Put, objectUrl(bucket, key), expires)
 
     override fun close() {
-        if (closeClient) {
-            httpClient.close()
+        try {
+            if (closeClient) httpClient.close()
+        } finally {
+            if (closeCredentialsProvider && credentialsProvider is AutoCloseable) {
+                (credentialsProvider as AutoCloseable).close()
+            }
         }
     }
 
@@ -385,13 +393,18 @@ class S3KtorClient(
 }
 
 /**
- * 내부 Ktor CIO client를 생성해 S3 REST client를 만듭니다.
+ * Creates an S3 REST client backed by an internal Ktor CIO HTTP client.
  *
- * ## 동작/계약
+ * ## Behavior / Contract
  *
- * 생성된 `HttpClient`에는 S3용 SigV4 설정이 설치됩니다. S3 streaming body와 presigned URL
- * 호환성을 위해 payload signing, double URL encode, path normalization은 비활성화됩니다.
- * 반환된 [S3KtorClient]를 닫으면 내부 `HttpClient`도 함께 닫힙니다.
+ * The created `HttpClient` has S3-specific SigV4 configuration installed. Payload signing,
+ * double URL encoding, and path normalization are disabled for S3 streaming body and presigned
+ * URL compatibility. Closing the returned [S3KtorClient] also closes the internal `HttpClient`.
+ *
+ * **Credentials provider ownership**: when `credentialsProvider` is `null` (the default),
+ * this factory creates a [DefaultCredentialsProvider] and the returned client takes ownership —
+ * it will be closed when [S3KtorClient.close] is called. When a provider is supplied by the
+ * caller, the client does not close it; the caller retains ownership.
  *
  * ```kotlin
  * import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
@@ -411,33 +424,42 @@ class S3KtorClient(
  */
 fun s3KtorClientOf(
     region: String,
-    credentialsProvider: AwsCredentialsProvider = DefaultCredentialsProvider.builder().build(),
+    credentialsProvider: AwsCredentialsProvider? = null,
     endpointOverride: Url? = null,
     addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     signingClock: Clock? = null,
 ): S3KtorClient {
-    val client = HttpClient(CIO) {
-        install(AwsSigV4Plugin) {
-            this.region = region
-            service = S3_SERVICE
-            this.credentialsProvider = credentialsProvider
-            authLocation = AwsSigV4AuthLocation.Header
-            doubleUrlEncode = false
-            normalizePath = false
-            payloadSigningEnabled = false
-            this.signingClock = signingClock
-        }
-    }
+    val ownsProvider = credentialsProvider == null
+    val effectiveProvider = credentialsProvider ?: DefaultCredentialsProvider.builder().build()
 
-    return S3KtorClient(
-        httpClient = client,
-        region = region,
-        credentialsProvider = credentialsProvider,
-        endpointOverride = endpointOverride,
-        addressingStyle = addressingStyle,
-        signingClock = signingClock,
-        closeClient = true,
-    )
+    try {
+        val client = HttpClient(CIO) {
+            install(AwsSigV4Plugin) {
+                this.region = region
+                service = S3_SERVICE
+                this.credentialsProvider = effectiveProvider
+                authLocation = AwsSigV4AuthLocation.Header
+                doubleUrlEncode = false
+                normalizePath = false
+                payloadSigningEnabled = false
+                this.signingClock = signingClock
+            }
+        }
+
+        return S3KtorClient(
+            httpClient = client,
+            region = region,
+            credentialsProvider = effectiveProvider,
+            endpointOverride = endpointOverride,
+            addressingStyle = addressingStyle,
+            signingClock = signingClock,
+            closeClient = true,
+            closeCredentialsProvider = ownsProvider,
+        )
+    } catch (e: Throwable) {
+        if (ownsProvider && effectiveProvider is AutoCloseable) effectiveProvider.close()
+        throw e
+    }
 }
 
 private fun io.ktor.client.request.HttpRequestBuilder.applyPutHeaders(request: S3KtorPutObjectRequest) {
