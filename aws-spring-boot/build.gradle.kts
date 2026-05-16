@@ -28,6 +28,7 @@ dependencies {
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.kms)
     compileOnly(libs.aws2.s3)
+    compileOnly(libs.aws2.s3.transfer.manager)
     compileOnly(libs.aws2.secretsmanager)
     compileOnly(libs.aws2.sns)
     compileOnly(libs.aws2.sqs)

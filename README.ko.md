@@ -337,9 +337,12 @@ Encryptor --> App: plaintext bytes
 
 ```kotlin
 import io.bluetape4k.aws.spring.s3.S3Operations
+import io.bluetape4k.aws.spring.s3.S3TransferOperations
+import java.nio.file.Path
 
 class DocumentStorage(
     private val s3: S3Operations,
+    private val transfer: S3TransferOperations,
 ) {
     suspend fun save(bucket: String, key: String, contents: String) {
         s3.upload(bucket, key, contents, contentType = "text/plain")
@@ -347,8 +350,19 @@ class DocumentStorage(
 
     suspend fun read(bucket: String, key: String): String =
         s3.downloadText(bucket, key)
+
+    suspend fun saveLargeFile(bucket: String, key: String, source: Path) {
+        transfer.uploadFile(bucket, key, source)
+    }
 }
 ```
+
+`S3Operations` 는 작은/일반 객체 작업, resource, list, presigned URL 을 담당한다.
+`S3TransferOperations` 는 `software.amazon.awssdk:s3-transfer-manager` 가
+classpath 에 있을 때만 자동 구성되며, 대용량 파일, multipart transfer, transfer
+listener 용이다. CRT 기반 throughput 튜닝이 필요하면 AWS CRT runtime dependency 를
+추가하고 CRT-backed `S3AsyncClient` bean 을 제공한다. Spring auto-configuration 은
+그 client 를 재사용해 transfer manager 를 만든다.
 
 ### DynamoDB — Spring Boot Coroutine Repository
 
