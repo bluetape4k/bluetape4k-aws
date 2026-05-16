@@ -62,7 +62,7 @@ class SnsAsyncClientTest: AbstractSnsTest() {
         response.responseMetadata()
     }
 
-    @Disabled("token은 SMS 구독 시에 클라이언트에 전송된다고 한다")
+    @Disabled("#100 — SNS SMS token is delivered out-of-band to subscriber; no emulator support")
     @Test
     @Order(3)
     fun `confirm subscription`() = runSuspendIO {
