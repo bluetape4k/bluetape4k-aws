@@ -4,7 +4,7 @@
 **Branch**: `feat/81-kinesis-dynamodb-streams-flow`  
 **Date**: 2026-05-17  
 **Module**: `aws-kotlin`  
-**Plan version**: v2 (post Step 3-R Phase 2 Critic — P0+P1 applied)
+**Plan version**: v2.1 (post Step 3-R advisor follow-up — ExpiredIteratorException recovery fetch retry scope fix)
 
 DynamoDB Streams: intentionally deferred to follow-up issue. This PR: Kinesis only.
 
@@ -90,7 +90,7 @@ fun KinesisClient.recordFlow(
     position: KinesisStartingPosition = KinesisStartingPosition.TrimHorizon,
     options: KinesisRecordFlowOptions = KinesisRecordFlowOptions(),
 ): Flow<Record> = flow {
-    val currentPosition = position
+    var currentPosition = position   // var — updated on ExpiredIteratorException recovery
     var lastSeenSequenceNumber: String? = null
     var iteratorRetryCount = 0
     var throttleRetryCount = 0
@@ -146,10 +146,13 @@ fun KinesisClient.recordFlow(
                 "Shard iterator expired (attempt $iteratorRetryCount/${options.maxIteratorRetries}): " +
                 "stream=$streamName shard=$shardId"
             }
-            val recoveryPosition = lastSeenSequenceNumber
+            // Update currentPosition and reset shardIterator to null.
+            // Re-fetch happens in the NEXT iteration's null-check INSIDE the try block (retry scope),
+            // so retryable KinesisException from fetchShardIterator is handled by the KinesisException catch.
+            currentPosition = lastSeenSequenceNumber
                 ?.let { AfterSequenceNumber(it) }
                 ?: currentPosition
-            shardIterator = fetchShardIterator(streamName, shardId, recoveryPosition)
+            shardIterator = null
 
         } catch (e: KinesisException) {
             // Guard: non-retryable exceptions propagate immediately (P0 fix — no Kotlin guard clause syntax)
@@ -237,7 +240,9 @@ internal fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): D
 ```
 
 #### Checklist (T3):
+- [ ] `currentPosition` is `var` (not `val`) — updated in `ExpiredIteratorException` recovery without direct fetch
 - [ ] `shardIterator` initialized as `null`; initial `fetchShardIterator` inside `try {}` block (retry scope)
+- [ ] `ExpiredIteratorException` catch: sets `currentPosition = recoveryPosition; shardIterator = null` — no direct fetch call in catch block (fetch delegated to next iteration's null-check inside try, so KinesisException retry scope applies)
 - [ ] `getShardIterator` (via `fetchShardIterator`) called INSIDE `flow {}` lambda, not in `recordFlow` body
 - [ ] `lastSeenSequenceNumber` updated AFTER `emit(record)` returns
 - [ ] `CancellationException` rethrown as FIRST catch (before all retry logic)
@@ -474,3 +479,5 @@ After T3: run IDE diagnostics (`ide_diagnostics`) and fix all errors before proc
 | Phase 1 (6-tier Advisor) | Claude Code advisor | 0 | 3 | 2 | 0 | — |
 | Phase 2 Critic | Critic consolidation | 3 | 15 | — | — | plan v2 |
 | Phase 2 → plan v2 | All P0/P1 applied | catch guard syntax; sdkErrorMetadata; initial fetch retry scope; 9 constants; AbstractKotlinKinesisTest; runSuspendIO; withTimeout; byte-patch tamper test; TestCoroutineScheduler pattern; Non-retryable test; T8a/T8b split; T10/T11 added | 0 | 0 | — | — | plan v2 |
+| Advisor follow-up | Claude Code 6-tier advisor | 1 new P0: recovery `fetchShardIterator` in ExpiredIteratorException catch is outside retry scope (symmetric issue to initial fetch P0) | 1 | 0 | — | — | — |
+| Advisor → plan v2.1 | Recovery fetch retry scope fix | `val currentPosition` → `var currentPosition`; catch block: `currentPosition = recoveryPosition; shardIterator = null` (fetch delegated to next iteration's try-block null-check) | 0 | 0 | — | — | plan v2.1 |
