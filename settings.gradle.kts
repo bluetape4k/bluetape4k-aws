@@ -35,3 +35,6 @@ project(":aws-ktor-sqs-examples").projectDir = file("examples/aws-ktor-sqs-examp
 
 include("aws-ktor-dynamodb-examples")
 project(":aws-ktor-dynamodb-examples").projectDir = file("examples/aws-ktor-dynamodb-examples")
+
+include("aws-spring-boot-dynamodb-examples")
+project(":aws-spring-boot-dynamodb-examples").projectDir = file("examples/aws-spring-boot-dynamodb-examples")
