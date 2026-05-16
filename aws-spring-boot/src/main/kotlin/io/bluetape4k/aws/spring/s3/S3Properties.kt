@@ -16,6 +16,7 @@ data class S3Properties(
     val accelerateModeEnabled: Boolean = false,
     val chunkedEncodingEnabled: Boolean? = null,
     val presign: Presign = Presign(),
+    val transfer: Transfer = Transfer(),
 ) {
     init {
         require(endpointOverride == null || !region.isNullOrBlank()) {
@@ -26,4 +27,19 @@ data class S3Properties(
     data class Presign(
         val duration: Duration = Duration.ofMinutes(15),
     )
+
+    data class Transfer(
+        val enabled: Boolean = true,
+        val uploadDirectoryMaxDepth: Int? = null,
+        val transferDirectoryMaxConcurrency: Int? = null,
+    ) {
+        init {
+            require(uploadDirectoryMaxDepth == null || uploadDirectoryMaxDepth >= 0) {
+                "bluetape4k.aws.s3.transfer.uploadDirectoryMaxDepth must be greater than or equal to 0."
+            }
+            require(transferDirectoryMaxConcurrency == null || transferDirectoryMaxConcurrency > 0) {
+                "bluetape4k.aws.s3.transfer.transferDirectoryMaxConcurrency must be greater than 0."
+            }
+        }
+    }
 }

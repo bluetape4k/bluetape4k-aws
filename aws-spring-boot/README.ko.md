@@ -193,8 +193,13 @@ dot-separated key 로 매핑되고, 두 source 모두 `prefix` 를 앞에 붙인
 
 ```kotlin
 import io.bluetape4k.aws.spring.s3.S3Operations
+import io.bluetape4k.aws.spring.s3.S3TransferOperations
+import java.nio.file.Path
 
-class DocumentStorage(private val s3: S3Operations) {
+class DocumentStorage(
+    private val s3: S3Operations,
+    private val transfer: S3TransferOperations,
+) {
     suspend fun save(bucket: String, key: String, contents: String) {
         s3.upload(bucket, key, contents)
     }
@@ -204,8 +209,21 @@ class DocumentStorage(private val s3: S3Operations) {
 
     fun presignedUpload(bucket: String, key: String) =
         s3.presignPut(bucket, key, contentType = "application/json")
+
+    suspend fun saveLargeFile(bucket: String, key: String, source: Path) {
+        transfer.uploadFile(bucket, key, source)
+    }
 }
 ```
+
+`S3Operations` 는 upload/download, resource, list, presigned URL 을 위한 기본
+small-object API 다. `S3TransferOperations` 는
+`software.amazon.awssdk:s3-transfer-manager` 가 classpath 에 있고
+`bluetape4k.aws.s3.transfer.enabled=true`(기본값)일 때만 활성화된다. 내부에서는
+`aws` 모듈의 coroutine `S3TransferManager` 확장을 사용해 multipart file/byte
+transfer 를 수행한다. CRT-backed transfer 가 필요하면 CRT-backed `S3AsyncClient`
+bean 을 제공하면 된다. transfer manager auto-configuration 은 그 bean 을 재사용하므로
+기본 S3 사용자에게 CRT dependency 를 강제하지 않는다.
 
 ### SQS — 송수신
 

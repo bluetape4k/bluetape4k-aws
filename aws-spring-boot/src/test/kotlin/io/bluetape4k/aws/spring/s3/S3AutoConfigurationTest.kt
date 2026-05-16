@@ -5,15 +5,29 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
+import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.transfer.s3.S3TransferManager
+import software.amazon.awssdk.transfer.s3.model.CompletedDownload
+import software.amazon.awssdk.transfer.s3.model.CompletedFileDownload
+import software.amazon.awssdk.transfer.s3.model.CompletedFileUpload
+import software.amazon.awssdk.transfer.s3.model.CompletedUpload
+import software.amazon.awssdk.transfer.s3.model.DownloadFileRequest
+import software.amazon.awssdk.transfer.s3.model.DownloadRequest
+import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
+import software.amazon.awssdk.transfer.s3.model.UploadRequest
+import java.nio.file.Path
 
 class S3AutoConfigurationTest {
 
@@ -22,6 +36,7 @@ class S3AutoConfigurationTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 S3AutoConfiguration::class.java,
+                S3TransferAutoConfiguration::class.java,
             )
         )
         .withPropertyValues("bluetape4k.aws.s3.region=us-east-1")
@@ -35,6 +50,9 @@ class S3AutoConfigurationTest {
             context.getBeansOfType(S3Properties::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 1
         }
     }
 
@@ -47,6 +65,8 @@ class S3AutoConfigurationTest {
                 context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(S3Presigner::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -58,6 +78,62 @@ class S3AutoConfigurationTest {
                 context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
                 context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 0
                 context.getBean(S3Operations::class.java) shouldBeSameInstanceAs NoopS3Operations
+            }
+    }
+
+    @Test
+    fun `transfer manager backs off when transfer disabled`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.s3.transfer.enabled=false")
+            .run { context ->
+                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `custom S3TransferOperations bean backs off transfer template`() {
+        contextRunner
+            .withBean(S3TransferOperations::class.java, { NoopS3TransferOperations })
+            .run { context ->
+                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 0
+                context.getBean(S3TransferOperations::class.java) shouldBeSameInstanceAs NoopS3TransferOperations
+            }
+    }
+
+    @Test
+    fun `custom S3TransferManager bean is adapted to transfer operations`() {
+        contextRunner
+            .withBean(S3TransferManager::class.java, { mockk(relaxed = true) })
+            .run { context ->
+                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `transfer operations back off when transfer disabled even with custom transfer manager`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.s3.transfer.enabled=false")
+            .withBean(S3TransferManager::class.java, { mockk(relaxed = true) })
+            .run { context ->
+                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `basic S3 operations remain available without transfer manager classes`() {
+        contextRunner
+            .withClassLoader(FilteredClassLoader("software.amazon.awssdk.transfer.s3"))
+            .run { context ->
+                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -77,4 +153,37 @@ class S3AutoConfigurationTest {
                 messages shouldContain "region is required"
             }
     }
+}
+
+private object NoopS3TransferOperations: S3TransferOperations {
+    override suspend fun upload(
+        bucket: String,
+        key: String,
+        bytes: ByteArray,
+        configure: UploadRequest.Builder.() -> Unit,
+    ): CompletedUpload =
+        throw UnsupportedOperationException("NoopS3TransferOperations does not upload objects.")
+
+    override suspend fun uploadFile(
+        bucket: String,
+        key: String,
+        source: Path,
+        configure: UploadFileRequest.Builder.() -> Unit,
+    ): CompletedFileUpload =
+        throw UnsupportedOperationException("NoopS3TransferOperations does not upload files.")
+
+    override suspend fun downloadBytes(
+        bucket: String,
+        key: String,
+        configure: DownloadRequest.UntypedBuilder.() -> Unit,
+    ): CompletedDownload<ResponseBytes<GetObjectResponse>> =
+        throw UnsupportedOperationException("NoopS3TransferOperations does not download objects.")
+
+    override suspend fun downloadFile(
+        bucket: String,
+        key: String,
+        destination: Path,
+        configure: DownloadFileRequest.Builder.() -> Unit,
+    ): CompletedFileDownload =
+        throw UnsupportedOperationException("NoopS3TransferOperations does not download files.")
 }

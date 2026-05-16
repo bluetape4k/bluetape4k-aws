@@ -195,8 +195,13 @@ both source types. `@SecretsValue` and `@ParameterStoreValue` use normal Spring
 
 ```kotlin
 import io.bluetape4k.aws.spring.s3.S3Operations
+import io.bluetape4k.aws.spring.s3.S3TransferOperations
+import java.nio.file.Path
 
-class DocumentStorage(private val s3: S3Operations) {
+class DocumentStorage(
+    private val s3: S3Operations,
+    private val transfer: S3TransferOperations,
+) {
     suspend fun save(bucket: String, key: String, contents: String) {
         s3.upload(bucket, key, contents)
     }
@@ -206,8 +211,21 @@ class DocumentStorage(private val s3: S3Operations) {
 
     fun presignedUpload(bucket: String, key: String) =
         s3.presignPut(bucket, key, contentType = "application/json")
+
+    suspend fun saveLargeFile(bucket: String, key: String, source: Path) {
+        transfer.uploadFile(bucket, key, source)
+    }
 }
 ```
+
+`S3Operations` is the default small-object API for upload/download, resources,
+listing, and presigned URLs. `S3TransferOperations` is available only when
+`software.amazon.awssdk:s3-transfer-manager` is on the classpath and
+`bluetape4k.aws.s3.transfer.enabled=true` (default). It delegates to the `aws`
+module's coroutine `S3TransferManager` extensions for multipart file and byte
+transfers. To use CRT-backed transfers, provide a CRT-backed `S3AsyncClient`
+bean; the transfer manager auto-configuration reuses it instead of forcing CRT
+dependencies on basic S3 users.
 
 ### SQS — send and receive
 

@@ -12,11 +12,14 @@ import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.s3.S3Client
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.UUID
 
 class S3CoroutinesTemplateLocalStackTest {
@@ -33,6 +36,7 @@ class S3CoroutinesTemplateLocalStackTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 S3AutoConfiguration::class.java,
+                S3TransferAutoConfiguration::class.java,
             )
         )
         .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
@@ -83,6 +87,47 @@ class S3CoroutinesTemplateLocalStackTest {
 
                 operations.delete(bucketName, key)
                 operations.listPage(bucketName, prefix = "docs/", maxKeys = 10).objects.shouldBeEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `upload and download files through S3TransferOperations`(
+        @TempDir tempDir: Path,
+    ) {
+        contextRunner().run { context ->
+            val s3Client = context.getBean(S3Client::class.java)
+            val transferOperations = context.getBean(S3TransferOperations::class.java)
+            val transferBucketName = "spring-s3-transfer-${UUID.randomUUID()}"
+            s3Client.createBucket { it.bucket(transferBucketName) }
+
+            runSuspendIO {
+                val key = "large/report.txt"
+                val contents = "hello transfer manager"
+                val source = tempDir.resolve("report.txt")
+                val destination = tempDir.resolve("downloaded-report.txt")
+                Files.writeString(source, contents, StandardCharsets.UTF_8)
+
+                val upload = transferOperations.uploadFile(transferBucketName, key, source)
+                upload.response().sdkHttpResponse().isSuccessful.shouldBeTrue()
+
+                val inlineKey = "inline/data.bin"
+                val inlineUpload = transferOperations.upload(
+                    bucket = transferBucketName,
+                    key = inlineKey,
+                    bytes = contents.toByteArray(StandardCharsets.UTF_8),
+                )
+                inlineUpload.response().eTag().isNullOrBlank() shouldBeEqualTo false
+                transferOperations.downloadBytes(transferBucketName, inlineKey)
+                    .result()
+                    .asUtf8String() shouldBeEqualTo contents
+
+                val download = transferOperations.downloadFile(transferBucketName, key, destination)
+                download.response().sdkHttpResponse().isSuccessful.shouldBeTrue()
+                Files.readString(destination, StandardCharsets.UTF_8) shouldBeEqualTo contents
+
+                val bytes = transferOperations.downloadBytes(transferBucketName, key)
+                bytes.result().asUtf8String() shouldBeEqualTo contents
             }
         }
     }
