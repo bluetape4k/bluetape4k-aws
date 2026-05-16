@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
+import java.io.Serializable
 import java.util.UUID
 
 @RestController
@@ -46,4 +47,8 @@ class OrderController(private val repository: OrderRepository) {
 data class OrderRequest(
     val status: String = "NEW",
     val description: String = "",
-)
+) : Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}

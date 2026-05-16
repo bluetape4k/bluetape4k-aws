@@ -17,6 +17,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.http.MediaType
+import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.expectBody
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -112,6 +115,48 @@ class OrderControllerLocalStackTest {
                     }
                     .run()
             }
+        }
+    }
+
+    @Test
+    fun `controller HTTP layer - POST findById and DELETE via WebTestClient`() {
+        contextRunner().run { context ->
+            val asyncClient = context.getBean(DynamoDbAsyncClient::class.java)
+            val enhancedClient = context.getBean(DynamoDbEnhancedAsyncClient::class.java)
+            val tableNameResolver = context.getBean(DynamoDbTableNameResolver::class.java)
+            val repository = OrderRepository(enhancedClient, tableNameResolver)
+            val controller = OrderController(repository)
+
+            runSuspendIO {
+                createOrdersTable(asyncClient, tableNameResolver.resolve("orders"))
+            }
+
+            val webClient = WebTestClient.bindToController(controller).build()
+
+            val created = webClient.post().uri("/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(OrderRequest(status = "HTTP_TEST", description = "web layer test"))
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody<Order>()
+                .returnResult()
+                .responseBody!!
+
+            created.status shouldBeEqualTo "HTTP_TEST"
+
+            webClient.get().uri("/orders/${created.id}")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody<Order>()
+                .value { it.id shouldBeEqualTo created.id }
+
+            webClient.delete().uri("/orders/${created.id}")
+                .exchange()
+                .expectStatus().isNoContent
+
+            webClient.get().uri("/orders/${created.id}")
+                .exchange()
+                .expectStatus().isNotFound
         }
     }
 
