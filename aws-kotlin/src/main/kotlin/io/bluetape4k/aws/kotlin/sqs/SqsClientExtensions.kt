@@ -114,7 +114,7 @@ suspend inline fun SqsClient.existsQueue(queueName: String): Boolean =
         getQueueUrl(queueName)?.isNotBlank() ?: false
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Throwable) {
+    } catch (e: Exception) {
         if (e.isMissingQueueError()) false else throw e
     }
 

@@ -81,15 +81,18 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.batchWriteItems(
 ): List<BatchWriteResult> = batchWriteItems(T::class.java, table, items, chunkSize)
 
 /**
- * 테이블이 존재하는지 확인합니다.
+ * Returns `true` if the named table exists, `false` if it does not.
+ *
+ * Only [ResourceNotFoundException] is normalized to `false`; all other exceptions
+ * (auth failures, network errors, etc.) propagate to the caller.
  *
  * ```kotlin
  * val exists = enhancedClient.existsTable("orders")
  * check(exists is Boolean)
  * ```
  *
- * @param tableName 확인할 테이블 이름
- * @return 존재 여부
+ * @param tableName table name to check
+ * @return `true` if the table exists, `false` if [ResourceNotFoundException] is thrown
  */
 fun DynamoDbEnhancedClient.existsTable(tableName: String): Boolean =
     try {

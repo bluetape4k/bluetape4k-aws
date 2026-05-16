@@ -58,7 +58,7 @@ suspend inline fun S3Client.existsObject(
         true
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Throwable) {
+    } catch (e: Exception) {
         if (e.isMissingObjectError()) false else throw e
     }
 }

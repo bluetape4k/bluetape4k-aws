@@ -39,7 +39,7 @@ suspend inline fun S3Client.existsBucket(
         true
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Throwable) {
+    } catch (e: Exception) {
         if (e.isMissingBucketError()) false else throw e
     }
 }
