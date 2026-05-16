@@ -9,8 +9,10 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 /**
@@ -30,6 +32,11 @@ class SnsConfirmSubscriptionMockTest {
     }
 
     private val client = mockk<SnsClient>()
+
+    @BeforeEach
+    fun setup() {
+        clearMocks(client)
+    }
 
     @Test
     fun `confirmSubscription returns subscriptionArn when token is valid`() = runSuspendIO {

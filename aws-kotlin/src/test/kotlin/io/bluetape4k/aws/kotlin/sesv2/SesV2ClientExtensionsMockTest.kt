@@ -12,12 +12,14 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 /**
@@ -31,6 +33,11 @@ class SesV2ClientExtensionsMockTest {
     companion object: KLoggingChannel()
 
     private val client = mockk<SesV2Client>()
+
+    @BeforeEach
+    fun setup() {
+        clearMocks(client)
+    }
 
     @Test
     fun `send delegates to sendEmail`() = runSuspendIO {
