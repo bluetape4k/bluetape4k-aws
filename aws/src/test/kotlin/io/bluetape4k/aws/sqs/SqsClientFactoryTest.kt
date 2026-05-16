@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 class SqsClientFactoryTest: AbstractSqsTest() {
 
     @Test
-    fun `SqsFactory Sync create는 queue를 생성하고 삭제할 수 있다`() {
+    fun `SqsClientFactory Sync create는 queue를 생성하고 삭제할 수 있다`() {
         val sync = SqsClientFactory.Sync.create(
             endpointOverride = localStackServer.endpoint,
             region = localStackServer.region(),
@@ -24,7 +24,7 @@ class SqsClientFactoryTest: AbstractSqsTest() {
     }
 
     @Test
-    fun `SqsFactory Async create는 queue를 생성하고 삭제할 수 있다`() = runSuspendIO {
+    fun `SqsClientFactory Async create는 queue를 생성하고 삭제할 수 있다`() = runSuspendIO {
         val async = SqsClientFactory.Async.create(
             endpointOverride = localStackServer.endpoint,
             region = localStackServer.region(),
