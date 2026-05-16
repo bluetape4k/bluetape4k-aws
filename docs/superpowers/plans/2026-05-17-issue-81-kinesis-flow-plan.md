@@ -4,7 +4,7 @@
 **Branch**: `feat/81-kinesis-dynamodb-streams-flow`  
 **Date**: 2026-05-17  
 **Module**: `aws-kotlin`  
-**Plan version**: v2.1 (post Step 3-R advisor follow-up — ExpiredIteratorException recovery fetch retry scope fix)
+**Plan version**: v2.2 (post Step 3-R Codex Phase 3 — Latest+no checkpoint fail-fast guard)
 
 DynamoDB Streams: intentionally deferred to follow-up issue. This PR: Kinesis only.
 
@@ -142,6 +142,16 @@ fun KinesisClient.recordFlow(
                 }
                 throw e
             }
+            // Fail-fast for Latest with no checkpoint: re-fetching Latest silently skips records
+            // written between original iterator creation and recovery (5-min TTL window).
+            val lastSeen = lastSeenSequenceNumber
+            if (lastSeen == null && currentPosition is KinesisStartingPosition.Latest) {
+                log.error {
+                    "Iterator expired for Latest position with no checkpoint: " +
+                    "stream=$streamName shard=$shardId — cannot recover without data loss"
+                }
+                throw e
+            }
             log.warn {
                 "Shard iterator expired (attempt $iteratorRetryCount/${options.maxIteratorRetries}): " +
                 "stream=$streamName shard=$shardId"
@@ -149,7 +159,7 @@ fun KinesisClient.recordFlow(
             // Update currentPosition and reset shardIterator to null.
             // Re-fetch happens in the NEXT iteration's null-check INSIDE the try block (retry scope),
             // so retryable KinesisException from fetchShardIterator is handled by the KinesisException catch.
-            currentPosition = lastSeenSequenceNumber
+            currentPosition = lastSeen
                 ?.let { AfterSequenceNumber(it) }
                 ?: currentPosition
             shardIterator = null
@@ -241,6 +251,7 @@ internal fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): D
 
 #### Checklist (T3):
 - [ ] `currentPosition` is `var` (not `val`) — updated in `ExpiredIteratorException` recovery without direct fetch
+- [ ] `ExpiredIteratorException` catch: fail-fast guard — if `lastSeenSequenceNumber == null && currentPosition is Latest`, throw immediately (prevents silent data loss from re-fetching `Latest` at recovery time)
 - [ ] `shardIterator` initialized as `null`; initial `fetchShardIterator` inside `try {}` block (retry scope)
 - [ ] `ExpiredIteratorException` catch: sets `currentPosition = recoveryPosition; shardIterator = null` — no direct fetch call in catch block (fetch delegated to next iteration's null-check inside try, so KinesisException retry scope applies)
 - [ ] `getShardIterator` (via `fetchShardIterator`) called INSIDE `flow {}` lambda, not in `recordFlow` body
@@ -332,6 +343,7 @@ Tests:
 - [ ] **Cancellation during delay**: coroutine cancelled while in `delay()` → stops cleanly, no exception leaks
 - [ ] **Iterator expiry Case A**: 1 record emitted, then `ExpiredIteratorException` → re-fetches with `AfterSequenceNumber(lastSeen)` → continues; verify `getShardIterator` called twice
 - [ ] **Iterator expiry Case B**: no record emitted, then `ExpiredIteratorException` → re-fetches with original position → continues; verify re-fetch uses original `KinesisStartingPosition` type
+- [ ] **Latest + no checkpoint + expiry**: start with `Latest`, no record emitted yet (`lastSeenSequenceNumber == null`), then `ExpiredIteratorException` → throws immediately (no retry, no data loss via re-fetch); verify `assertFailsWith<ExpiredIteratorException>`
 - [ ] **Iterator expiry exhaustion**: `maxIteratorRetries` consecutive failures → `ExpiredIteratorException` propagates; verify `assertFailsWith<ExpiredIteratorException>`
 - [ ] **Recovery fetch throttled then succeeds**: after `ExpiredIteratorException` (1 record seen), next iteration's `fetchShardIterator` throws retryable `KinesisException` (first attempt), then succeeds on second attempt → verify `getShardIterator` called twice for recovery; verify `getRecords` uses iterator from second `getShardIterator` call; verify `currentPosition` used for recovery fetch is `AfterSequenceNumber(lastSeen)` not original position
 - [ ] **Retry counter reset**: successful `getRecords` after partial failures → counter resets to 0; next expiry starts fresh budget (simulate: 1 failure → 1 success → 1 failure; total should NOT exhaust budget if `maxIteratorRetries=1`)
@@ -482,3 +494,5 @@ After T3: run IDE diagnostics (`ide_diagnostics`) and fix all errors before proc
 | Phase 2 → plan v2 | All P0/P1 applied | catch guard syntax; sdkErrorMetadata; initial fetch retry scope; 9 constants; AbstractKotlinKinesisTest; runSuspendIO; withTimeout; byte-patch tamper test; TestCoroutineScheduler pattern; Non-retryable test; T8a/T8b split; T10/T11 added | 0 | 0 | — | — | plan v2 |
 | Advisor follow-up | Claude Code 6-tier advisor | 1 new P0: recovery `fetchShardIterator` in ExpiredIteratorException catch is outside retry scope (symmetric issue to initial fetch P0) | 1 | 0 | — | — | — |
 | Advisor → plan v2.1 | Recovery fetch retry scope fix | `val currentPosition` → `var currentPosition`; catch block: `currentPosition = recoveryPosition; shardIterator = null` (fetch delegated to next iteration's try-block null-check) | 0 | 0 | — | — | plan v2.1 |
+| Codex Phase 3 | Independent reviewer (gpt-5.5) | P0: 0; P1: 1 — `Latest` + no checkpoint + ExpiredIteratorException → silent data loss via re-fetch (5-min TTL window) | 0 | 1 | — | — | — |
+| Codex P1 → plan v2.2 | Fail-fast guard for Latest+no checkpoint | catch block: `if (lastSeen == null && currentPosition is Latest) throw e`; spec §3.3 error matrix updated; Latest KDoc updated; T3/T6 checklists updated | 0 | 0 | — | — | plan v2.2 |

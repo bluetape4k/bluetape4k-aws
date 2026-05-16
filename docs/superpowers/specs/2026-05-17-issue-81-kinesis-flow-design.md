@@ -1,7 +1,7 @@
 # Design Spec — Kinesis Coroutine `Flow<Record>` Support
 <!-- Issue #81 | bluetape4k-aws aws-kotlin module -->
 
-**Status**: Draft v5 (post Step 3-R P0/P1 fixes)
+**Status**: Draft v6 (post Codex Phase 3 — Latest+no checkpoint fail-fast guard)
 **Author**: debop  
 **Date**: 2026-05-17  
 **Module**: `aws-kotlin`  
@@ -148,9 +148,11 @@ sealed interface KinesisStartingPosition : java.io.Serializable {
      * Starts reading from the newest record (records written after the iterator was obtained).
      *
      * ## Behavior / Contract
-     * On iterator-expiry recovery with no prior emitted record (Case B), recovery re-fetches
-     * using `Latest` at recovery time. Records produced between the original fetch and recovery
-     * are permanently skipped — this is the documented AWS `LATEST` semantics.
+     * On iterator-expiry recovery with no prior checkpoint (`lastSeenSequenceNumber == null`),
+     * the Flow throws `ExpiredIteratorException` immediately rather than re-fetching with `Latest`.
+     * Re-fetching `Latest` at recovery time would silently skip records produced between the
+     * original iterator creation and the recovery point (AWS LATEST semantics move forward in time).
+     * Callers must handle this exception and restart the flow if silent data loss is unacceptable.
      */
     data object Latest : KinesisStartingPosition {
         private const val serialVersionUID: Long = 1L
@@ -380,7 +382,7 @@ fun KinesisClient.recordFlow(
 | Exception | Behaviour |
 |---|---|
 | `CancellationException` | Rethrown unconditionally (first catch). |
-| `ExpiredIteratorException` | WARN log on each attempt; recovered up to `maxIteratorRetries`; then ERROR log + propagates. |
+| `ExpiredIteratorException` | WARN log on each attempt; recovered up to `maxIteratorRetries`; then ERROR log + propagates. **Special case**: if `lastSeenSequenceNumber == null` AND `currentPosition is Latest`, throw immediately without retry — re-fetching `Latest` would silently skip records written between original iterator creation and refetch (5-min TTL window). |
 | `ProvisionedThroughputExceededException` | WARN log with backoff delay; exponential backoff up to `maxThrottleRetries`; then ERROR log + propagates. |
 | Other `KinesisException` with `sdkErrorMetadata.isRetryable == true` | Same as throttle (shared budget `maxThrottleRetries`). |
 | Other `KinesisException` with `sdkErrorMetadata.isRetryable == false` | Propagates immediately (`if (!e.sdkErrorMetadata.isRetryable) throw e` guard inside the catch block). |
@@ -459,3 +461,5 @@ fun KinesisClient.recordFlow(
 | R3 → v4 | All P1 applied | DynamoDB Streams rationale; AtTimestamp ns precision; pollInterval enforcement; SDK/Flow retry layers; readObject; LocalStack take(N); jitter | 0 | 0 | — | — | spec v4 |
 | R4 | Step 3-R Phase 2 Critic (plan review) | Critic | 0 | 2 | 0 | 0 | plan v1 |
 | R4 → v5 | Spec §3.3/#4/§4/§6 fixes | `sdkErrorMetadata.isRetryable` accessor; DynamoDB Streams §6 clarification | 0 | 0 | — | — | spec v5 |
+| R5 | Codex Phase 3 (plan v2.1 review) | Codex gpt-5.5 | 0 | 1 | 0 | 0 | plan v2.1 |
+| R5 → v6 | Latest+no checkpoint fail-fast | §3.3 ExpiredIteratorException row; Latest KDoc; plan v2.2 T3/T6 checklists | 0 | 0 | — | — | spec v6 |
