@@ -17,6 +17,8 @@ Spring Boot 4, and Ktor 3.
 | `aws-ktor/` | WIP | Ktor 3 client/server integration |
 | `bom/` | stable | `bluetape4k-aws-bom` consumer BOM |
 | `examples/aws-ktor-s3-examples/` | example | LocalStack-oriented Ktor S3 examples; not published |
+| `examples/aws-spring-boot-s3-examples/` | example | Spring Boot 4 S3 WebFlux examples with AOT tasks; not published |
+| `examples/aws-spring-boot-sqs-examples/` | example | Spring Boot 4 SQS/SNS fanout examples with AOT tasks; not published |
 
 Integration tests use LocalStack via Testcontainers. Use
 `-Dbluetape4k.aws.emulator=localstack|floci`; default is `localstack`.
@@ -34,8 +36,11 @@ as part of the completion checklist, not an optional follow-up.
 ./gradlew build -x test --parallel
 ./gradlew :aws:test
 ./gradlew :aws-kotlin:test
+./gradlew :aws-spring-boot:test
 ./gradlew :aws:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
 ./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
+./gradlew :aws-spring-boot-s3-examples:processAot :aws-spring-boot-s3-examples:processTestAot
+./gradlew :aws-spring-boot-sqs-examples:processAot :aws-spring-boot-sqs-examples:processTestAot
 ./gradlew build
 ./gradlew detekt
 ./gradlew publishBluetapeAwsPublicationToCentralPortal

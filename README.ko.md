@@ -38,7 +38,8 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정 (개발 중 — Coroutines 네이티브, awspring 미사용) |
 | `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin, coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin |
 | `aws-ktor-s3-examples` | 배포 안 함 | `S3KtorClient`용 LocalStack 중심 예제. Nightly에서 컴파일 및 테스트 |
-| `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`용 Spring Boot 4 WebFlux 예제. Nightly에서 컴파일 및 테스트 |
+| `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`용 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
+| `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, `@SqsListener`, LocalStack SNS subscription fanout 을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 
 ---
 
@@ -111,7 +112,7 @@ flowchart LR
 
 - **JDK**: 21 이상
 - **Kotlin**: 2.3 이상
-- **Gradle**: 8.x
+- **Gradle**: 9.5 이상
 
 ---
 
@@ -531,11 +532,12 @@ class OrderTopic(
 ```
 
 SNS 는 queue policy 가 topic ARN 의 `sqs:SendMessage` 를 허용하면 SQS subscription 으로
-fanout 할 수 있습니다. 전체 SQS-SNS application 예제는 issue #13에서 별도로 추적합니다.
-`SnsHttpMessageParser` 는 SNS HTTP JSON 과 선택적 `x-amz-sns-message-type` header 를
-매핑하고, HTTPS가 아니거나 SNS host가 아닌 `SigningCertURL` 은 거부합니다. 다만
-signature 검증은 수행하지 않습니다. Notification 처리나 subscription confirmation 전에
-certificate chain, `Signature`, `SignatureVersion`, 기대한 `TopicArn` 을 검증하세요.
+fanout 할 수 있습니다. `aws-spring-boot-sqs-examples` 모듈은 LocalStack 중심 SQS/SNS
+fanout 흐름을 포함합니다. `SnsHttpMessageParser` 는 SNS HTTP JSON 과 선택적
+`x-amz-sns-message-type` header 를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
+`SigningCertURL` 은 거부합니다. 다만 signature 검증은 수행하지 않습니다. Notification
+처리나 subscription confirmation 전에 certificate chain, `Signature`,
+`SignatureVersion`, 기대한 `TopicArn` 을 검증하세요.
 
 ### S3 업로드 — Coroutines (`aws` 모듈)
 
