@@ -3,7 +3,6 @@ package io.bluetape4k.aws.spring.parameterstore
 import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.parameterPathPropertyKey
 import io.bluetape4k.logging.KLogging
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException
@@ -34,7 +33,6 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
 
     private fun buildClient(properties: ParameterStoreProperties): SsmClient =
         SsmClient.builder()
-            .credentialsProvider(DefaultCredentialsProvider.builder().build())
             .apply {
                 properties.region?.let { region(Region.of(it)) }
                 properties.endpointOverride?.let { endpointOverride(it) }
@@ -84,7 +82,11 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
         error: RuntimeException,
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
-            log.warn("Skipping Parameter Store source '${source.propertySourceName}'.", error)
+            log.warn(
+                "Skipping Parameter Store source '${source.propertySourceName}'" +
+                    " [path=${source.path}, region=${properties.region}, endpoint=${properties.endpointOverride}].",
+                error,
+            )
             return null
         }
         throw error
