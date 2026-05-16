@@ -121,8 +121,17 @@ same design pattern established here and is tracked in a dedicated follow-up iss
 ### 3.1 `KinesisStartingPosition` (new file)
 
 This sealed interface is **intentionally exhaustive**: it maps 1:1 to the five `ShardIteratorType`
-enum values in the AWS SDK. If AWS adds a new iterator type, a new variant must be added here
-and a minor version bump is required — a `when` without `else` will correctly fail to compile.
+enum values in the AWS SDK. Adding a new variant is a **source-breaking change** for downstream
+`when` expressions without an `else` branch — this requires a **major version bump** under strict
+SemVer. Downstream callers who want forward compatibility across minor versions should add an
+`else -> error("unsupported")` branch. If AWS adds a new iterator type, this library will add a
+new variant in a major release.
+
+**Resharding / child-shard note**: When a shard reaches its end due to resharding (split or merge),
+`GetRecords` returns `nextShardIterator == null` and child shard IDs are available on the response.
+v1 does **not** follow child shards — the Flow completes normally at `nextShardIterator == null`.
+Callers who need multi-shard fan-out must call `ListShards` and create one `recordFlow` per shard.
+This is documented in the KDoc and README.
 
 ```kotlin
 sealed interface KinesisStartingPosition : java.io.Serializable {
@@ -300,10 +309,13 @@ fun KinesisClient.recordFlow(
 3. **Iterator expiry recovery** (`ExpiredIteratorException`):
    - **Case A** — at least one record was emitted (`lastSeenSequenceNumber != null`): re-fetch
      via `AfterSequenceNumber(lastSeenSequenceNumber)`. Within a single `collect {}` call, **no
-     record is emitted twice** (at-most-once re-emission per session). A new `collect {}` starts
-     fresh from the original position — callers must persist checkpoints externally for
-     cross-session at-most-once semantics.
+     record is emitted twice** (within a single collection session, each record is emitted at
+     most once). A new `collect {}` starts fresh from the original position — callers must
+     persist checkpoints externally for cross-session deduplication.
    - **Case B** — no record emitted yet: re-fetch using the original `KinesisStartingPosition`.
+   - **`lastSeenSequenceNumber` update timing**: Updated **after `emit(record)` returns** (i.e.
+     after the collector has accepted the record). If `emit` throws `CancellationException`, the
+     update must NOT happen. Unit test: verify that a cancelled emit does not advance the checkpoint.
    - Both retry counters (`iteratorRetryCount`, `throttleRetryCount`) **reset to zero** after
      every successful `getRecords` call. `maxIteratorRetries` therefore limits **consecutive**
      failures, not total lifetime failures.
@@ -322,7 +334,9 @@ fun KinesisClient.recordFlow(
 
    **Flow-level retry**: Exponential backoff with full jitter:
    `delay = random(0, min(initialThrottleBackoff × 2^attempt, maxThrottleBackoff))`.
-   Full jitter prevents thundering-herd when multiple consumers retry simultaneously.
+   Use saturating arithmetic (`coerceAtMost(maxThrottleBackoff)`) before the jitter call to
+   prevent `Duration` overflow when `attempt` is large. Full jitter prevents thundering-herd
+   when multiple consumers retry simultaneously.
    A WARN log is emitted on each retry attempt with the attempt count and delay. After
    `options.maxThrottleRetries` consecutive throttle failures at the Flow level, the exception
    propagates with an ERROR log including `streamName`, `shardId`, attempt count, and last
