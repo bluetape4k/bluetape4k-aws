@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":aws-ktor"))
+    implementation(project(":bluetape4k-aws-ktor"))
 
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.cio)

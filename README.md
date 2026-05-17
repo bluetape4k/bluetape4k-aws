@@ -40,10 +40,10 @@ applications to adopt a single framework or dependency stack.
 
 | Module | Artifact | Description |
 |---|---|---|
-| `aws` | `io.github.bluetape4k.aws:aws` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
-| `aws-kotlin` | `io.github.bluetape4k.aws:aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
-| `aws-spring-boot` | `io.github.bluetape4k.aws:aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB, KMS, Secrets Manager, and Parameter Store |
-| `aws-ktor` | `io.github.bluetape4k.aws:aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, and DynamoDB server repository plugin |
+| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
+| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, and DynamoDB server repository plugin |
 | `aws-ktor-s3-examples` | not published | LocalStack-oriented examples for `S3KtorClient`; compiled and tested in Nightly |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, `@SqsListener`, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
@@ -57,10 +57,14 @@ applications to adopt a single framework or dependency stack.
 ```mermaid
 graph TD
     subgraph Repo["bluetape4k-aws"]
-        AWS["aws\n(Java SDK v2)"]
-        KOTLIN["aws-kotlin\n(Kotlin SDK)"]
-        SPRING["aws-spring-boot\n(Spring Boot 4)"]
-        KTOR["aws-ktor\n(Ktor 3)"]
+        AWS["bluetape4k-aws-java
+(Java SDK v2)"]
+        KOTLIN["bluetape4k-aws-kotlin
+(Kotlin SDK)"]
+        SPRING["bluetape4k-aws-spring-boot
+(Spring Boot 4)"]
+        KTOR["bluetape4k-aws-ktor
+(Ktor 3)"]
     end
 
     subgraph SDKs["AWS SDKs (compileOnly)"]
@@ -90,7 +94,7 @@ graph TD
     KOTLINSDK --> Services
 ```
 
-### Three-Tier API (`aws` module — Java SDK v2)
+### Three-Tier API (`bluetape4k-aws-java` module — Java SDK v2)
 
 ```mermaid
 flowchart LR
@@ -102,7 +106,7 @@ flowchart LR
     ASYNC -->|".await() extension"| CORO
 ```
 
-### Native Suspend (`aws-kotlin` module — Kotlin SDK)
+### Native Suspend (`bluetape4k-aws-kotlin` module — Kotlin SDK)
 
 ```mermaid
 flowchart LR
@@ -128,11 +132,11 @@ flowchart LR
 AWS service SDKs are declared as `compileOnly` in this library. Add only the service dependencies
 you need at runtime.
 
-### Using `aws` (Java SDK v2 wrappers)
+### Using `bluetape4k-aws-java` (Java SDK v2 wrappers)
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:aws:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.1.0-SNAPSHOT")
 
     // Add the AWS Java SDK v2 services you use
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -158,11 +162,11 @@ dependencies {
 > }
 > ```
 
-### Using `aws-kotlin` (Kotlin SDK wrappers)
+### Using `bluetape4k-aws-kotlin` (Kotlin SDK wrappers)
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:aws-kotlin:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.1.0-SNAPSHOT")
 
     // Add the AWS Kotlin SDK services you use
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -176,11 +180,11 @@ dependencies {
 }
 ```
 
-### Using `aws-spring-boot` (Spring Boot 4 auto-configuration)
+### Using `bluetape4k-aws-spring-boot` (Spring Boot 4 auto-configuration)
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:aws-spring-boot:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.1.0-SNAPSHOT")
 
     // Add the AWS Java SDK v2 services you use at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))

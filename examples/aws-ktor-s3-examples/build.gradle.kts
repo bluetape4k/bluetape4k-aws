@@ -1,5 +1,5 @@
 dependencies {
-    implementation(project(":aws-ktor"))
+    implementation(project(":bluetape4k-aws-ktor"))
 
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.server.core)

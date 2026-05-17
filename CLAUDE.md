@@ -26,10 +26,10 @@ Integration tests use LocalStack via Testcontainers. Use
 
 ```bash
 ./gradlew build -x test --parallel
-./gradlew :aws:test
-./gradlew :aws-kotlin:test
-./gradlew :aws:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
-./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-java:test
+./gradlew :bluetape4k-aws-kotlin:test
+./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
 ./gradlew build
 ./gradlew detekt
 ./gradlew publishBluetapeAwsPublicationToCentralPortal
@@ -38,10 +38,10 @@ Integration tests use LocalStack via Testcontainers. Use
 
 ## AWS Rules
 
-- AWS service SDK dependencies are `compileOnly` in `aws` and `aws-kotlin`.
+- AWS service SDK dependencies are `compileOnly` in `bluetape4k-aws-java` and `bluetape4k-aws-kotlin`.
   Consumers must add the runtime service dependencies they use.
-- In `aws`, wrap `CompletableFuture` with `.await()` for coroutine APIs.
-- In `aws-kotlin`, call native AWS Kotlin SDK suspend APIs directly.
+- In `bluetape4k-aws-java`, wrap `CompletableFuture` with `.await()` for coroutine APIs.
+- In `bluetape4k-aws-kotlin`, call native AWS Kotlin SDK suspend APIs directly.
 - Wrap blocking AWS calls in `withContext(Dispatchers.IO)`.
 - AWS Kotlin SDK clients own connection pools and threads. Use `withXxxClient`
   for short-lived clients and explicit `close()` for application-scoped clients.
