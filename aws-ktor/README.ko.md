@@ -32,7 +32,7 @@ engine, AWS service client는 가능한 한 `compileOnly` 로 둡니다. 애플�
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:aws-ktor:${bluetape4kAwsVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-ktor:${bluetape4kAwsVersion}")
 
     // SigV4/S3 client 사용 시
     implementation("io.ktor:ktor-client-cio")

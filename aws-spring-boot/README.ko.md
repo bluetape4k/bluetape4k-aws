@@ -79,7 +79,7 @@ flowchart LR
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:aws-spring-boot:${bluetape4kAwsVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:${bluetape4kAwsVersion}")
 
     // 런타임에서 사용할 AWS SDK v2 서비스만 선택적으로 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))

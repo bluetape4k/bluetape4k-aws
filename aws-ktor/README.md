@@ -33,7 +33,7 @@ Applications must add the runtime pieces they actually use.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:aws-ktor:${bluetape4kAwsVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-ktor:${bluetape4kAwsVersion}")
 
     // SigV4/S3 client usage
     implementation("io.ktor:ktor-client-cio")
