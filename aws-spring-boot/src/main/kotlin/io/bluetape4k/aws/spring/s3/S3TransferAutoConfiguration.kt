@@ -9,6 +9,30 @@ import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.transfer.s3.S3TransferManager
 
+/**
+ * Auto-configures [S3TransferManager] and [S3TransferTemplate] beans for high-throughput S3 transfers.
+ *
+ * ## Behavior / Contract
+ *
+ * - Activates when `software.amazon.awssdk.transfer.s3.S3TransferManager` is on the classpath
+ *   and `bluetape4k.aws.s3.enabled=true` (default: true).
+ * - Requires an existing [S3AsyncClient] bean, supplied by [S3AutoConfiguration].
+ * - [S3TransferManager] bean is only created when neither [S3TransferManager] nor
+ *   [S3TransferOperations] is already present in the context.
+ * - [S3TransferTemplate] bean is only created when [S3TransferOperations] is absent and
+ *   [S3TransferManager] is present.
+ * - Both beans can be disabled individually via `bluetape4k.aws.s3.transfer.enabled=false`.
+ *
+ * ## Usage
+ *
+ * ```kotlin
+ * @Service
+ * class FileUploadService(private val transferTemplate: S3TransferTemplate) {
+ *     suspend fun upload(bucket: String, key: String, file: Path): CompletedUpload =
+ *         transferTemplate.upload(bucket, key, file)
+ * }
+ * ```
+ */
 @AutoConfiguration(after = [S3AutoConfiguration::class])
 @ConditionalOnClass(
     name = [
