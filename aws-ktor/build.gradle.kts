@@ -4,8 +4,8 @@ configurations {
 
 dependencies {
     // bluetape4k-aws modules
-    api(project(":aws"))
-    api(project(":aws-kotlin"))
+    api(project(":bluetape4k-aws-java"))
+    api(project(":bluetape4k-aws-kotlin"))
 
     // bluetape4k artifacts
     api(libs.bluetape4k.io)

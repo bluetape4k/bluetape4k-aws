@@ -23,8 +23,8 @@ dependencyManagement {
 
 dependencies {
     // bluetape4k-aws modules
-    api(project(":aws"))
-    compileOnly(project(":aws-kotlin"))
+    api(project(":bluetape4k-aws-java"))
+    compileOnly(project(":bluetape4k-aws-kotlin"))
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.kms)
     compileOnly(libs.aws2.s3)

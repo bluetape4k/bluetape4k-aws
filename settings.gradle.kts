@@ -12,11 +12,15 @@ pluginManagement {
 rootProject.name = "bluetape4k-aws"
 
 include(
-    "aws",
-    "aws-kotlin",
-    "aws-spring-boot",
-    "aws-ktor",
+    "bluetape4k-aws-java",
+    "bluetape4k-aws-kotlin",
+    "bluetape4k-aws-spring-boot",
+    "bluetape4k-aws-ktor",
 )
+project(":bluetape4k-aws-java").projectDir = file("aws")
+project(":bluetape4k-aws-kotlin").projectDir = file("aws-kotlin")
+project(":bluetape4k-aws-spring-boot").projectDir = file("aws-spring-boot")
+project(":bluetape4k-aws-ktor").projectDir = file("aws-ktor")
 
 include("bluetape4k-aws-bom")
 project(":bluetape4k-aws-bom").projectDir = file("bom")

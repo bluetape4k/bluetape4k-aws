@@ -80,7 +80,7 @@ flowchart LR
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:aws-spring-boot:${bluetape4kAwsVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:${bluetape4kAwsVersion}")
 
     // Add only the AWS SDK v2 services you need at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))

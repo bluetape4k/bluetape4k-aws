@@ -34,11 +34,11 @@ as part of the completion checklist, not an optional follow-up.
 
 ```bash
 ./gradlew build -x test --parallel
-./gradlew :aws:test
-./gradlew :aws-kotlin:test
-./gradlew :aws-spring-boot:test
-./gradlew :aws:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
-./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-java:test
+./gradlew :bluetape4k-aws-kotlin:test
+./gradlew :bluetape4k-aws-spring-boot:test
+./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
 ./gradlew :aws-spring-boot-s3-examples:processAot :aws-spring-boot-s3-examples:processTestAot
 ./gradlew :aws-spring-boot-sqs-examples:processAot :aws-spring-boot-sqs-examples:processTestAot
 ./gradlew build
@@ -49,10 +49,10 @@ as part of the completion checklist, not an optional follow-up.
 
 ## AWS-Specific Rules
 
-- AWS service SDK dependencies are declared as `compileOnly` in both `aws` and
-  `aws-kotlin`. Consumers must add the runtime service dependencies they use.
-- In `aws`, wrap `CompletableFuture` with `.await()`.
-- In `aws-kotlin`, use native AWS Kotlin SDK suspend APIs directly.
+- AWS service SDK dependencies are declared as `compileOnly` in both `bluetape4k-aws-java` and
+  `bluetape4k-aws-kotlin`. Consumers must add the runtime service dependencies they use.
+- In `bluetape4k-aws-java`, wrap `CompletableFuture` with `.await()`.
+- In `bluetape4k-aws-kotlin`, use native AWS Kotlin SDK suspend APIs directly.
 - Wrap blocking AWS calls in `withContext(Dispatchers.IO)`.
 - AWS Kotlin SDK clients hold connection pools and threads; always close them.
   Use `withXxxClient { }` for short-lived clients and explicit `close()` for

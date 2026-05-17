@@ -12,7 +12,7 @@ dependencyManagement {
 }
 
 dependencies {
-    implementation(project(":aws-spring-boot"))
+    implementation(project(":bluetape4k-aws-spring-boot"))
 
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.aws2.s3)

@@ -97,7 +97,7 @@ jobs:
       - name: Test aws
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :aws:test --no-daemon && break
+            ./gradlew :bluetape4k-aws-java:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -108,7 +108,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :aws:koverXmlReport --no-daemon
+        run: ./gradlew :bluetape4k-aws-java:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -152,7 +152,7 @@ jobs:
       - name: Test aws-kotlin
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :aws-kotlin:test --no-daemon && break
+            ./gradlew :bluetape4k-aws-kotlin:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -163,7 +163,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :aws-kotlin:koverXmlReport --no-daemon
+        run: ./gradlew :bluetape4k-aws-kotlin:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -205,7 +205,7 @@ jobs:
       - name: Test aws-spring-boot
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :aws-spring-boot:test --no-daemon && break
+            ./gradlew :bluetape4k-aws-spring-boot:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -216,7 +216,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :aws-spring-boot:koverXmlReport --no-daemon
+        run: ./gradlew :bluetape4k-aws-spring-boot:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -260,7 +260,7 @@ jobs:
       - name: Test aws-ktor
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :aws-ktor:test --no-daemon && break
+            ./gradlew :bluetape4k-aws-ktor:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -271,7 +271,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :aws-ktor:koverXmlReport --no-daemon
+        run: ./gradlew :bluetape4k-aws-ktor:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
