@@ -1,8 +1,8 @@
 # WIP - bluetape4k-aws
 
-📅 Snapshot: 2026-05-16 KST (0.1.0 release preparation)
+📅 Snapshot: 2026-05-18 KST
 🎯 Scope: open GitHub issues assigned to `debop`, created on or after 2026-01-01.
-📬 Open count: 18 issues (12 pre-existing + 6 new from 0.1.0 release prep).
+📬 Open count: 19 issues (18 pre-existing + 1 new from 2026-05-18 audit).
 
 ## ✅ Recently Completed
 
@@ -71,6 +71,7 @@ integration (#74 → #75/#76 → #77 → #82), then streaming (#81) and Ktor mig
 | 🟠 P2 | [#85](https://github.com/bluetape4k/bluetape4k-aws/issues/85) Migrate existing Ktor integrations toward `:aws-kotlin` | M | Audit after DynamoDB Kotlin-first path stable. |
 | 🟠 P2 | [#104](https://github.com/bluetape4k/bluetape4k-aws/issues/104) Remove deprecated XxxFactory classes | S | Finish deprecation cycle started in #98. |
 | 🟠 P2 | [#105](https://github.com/bluetape4k/bluetape4k-aws/issues/105) LocalStack-compatible test strategy for SES V2 / SNS token | M | Mock-based coverage for #99/#100 disabled tests. |
+| 🟠 P2 | [#145](https://github.com/bluetape4k/bluetape4k-aws/issues/145) S3 listObjectsV2 auto-pagination Flow extension | M | SDK v2 `listObjectsV2` caps at 1000 objects; add `Flow<S3Object>` extension using SDK paginator; after #59 KMS work. |
 | 🟠 P2 | [#106](https://github.com/bluetape4k/bluetape4k-aws/issues/106) Disabled-test registry and CI release gate | M | Enforce @Disabled issue-link rule in CI. |
 | 🟡 P3 | [#14](https://github.com/bluetape4k/bluetape4k-aws/issues/14) Spring Boot DynamoDB example | M | Must satisfy Spring Boot AOT. |
 | 🟡 P3 | [#16](https://github.com/bluetape4k/bluetape4k-aws/issues/16) Ktor SQS example | M | Exercise consumer and publish paths. |
@@ -98,6 +99,11 @@ integration (#74 → #75/#76 → #77 → #82), then streaming (#81) and Ktor mig
 
 #87 Ktor DynamoDB Kotlin-first path
   -> #85 Existing Ktor aws-kotlin migration audit
+
+#59 @KmsEncrypted field-level encryption
+  -> #145 S3 listObjectsV2 auto-pagination Flow extension (P2)
+       -> implement listAllObjects() using SDK v2 paginator
+       -> after #59 KMS work; both are aws-coroutine API additions
 ```
 
 ## 🚧 WIP Limits
