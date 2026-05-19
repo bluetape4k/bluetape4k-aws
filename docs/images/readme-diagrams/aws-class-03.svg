@@ -51,7 +51,8 @@
   <rect class="card" x="0" y="0" width="340" height="144" rx="5" fill="#FFF3D9" stroke="#D6A441"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#D6A441"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="57" text-anchor="middle">DynamoDbEnhancedCoroutinesExt</text>
+  <text class="smallLabel" x="170" y="47" text-anchor="middle">DynamoDbAsyncTable</text>
+<text class="smallLabel" x="170" y="68" text-anchor="middle">Extensions</text>
   <text class="mono" x="18" y="108">+getItem(partitionValue) T?</text>
 <text class="mono" x="18" y="132">+scanAll() Flow~T~</text>
 </g>
@@ -84,9 +85,10 @@
   <rect class="card" x="0" y="0" width="340" height="144" rx="5" fill="#F7F1E7" stroke="#B88A44"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#B88A44"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="57" text-anchor="middle">SqsCoroutinesExt</text>
+  <text class="smallLabel" x="170" y="47" text-anchor="middle">SqsAsyncClient</text>
+<text class="smallLabel" x="170" y="68" text-anchor="middle">CoroutinesExtensions</text>
   <text class="mono" x="18" y="108">+send(queueUrl, messageBody) SendMessageResponse</text>
-<text class="mono" x="18" y="132">+receiveMessages(queueUrl, maxResults) ReceiveMess.</text>
+<text class="mono" x="18" y="132">+receiveMessages(queueUrl, maxResults)</text>
 </g>
 <rect x="409" y="249" width="116" height="26" rx="13" fill="#ffffff" opacity="0.94"/>
 <text class="small" x="467" y="267" text-anchor="middle">wraps (async)</text>
