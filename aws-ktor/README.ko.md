@@ -133,26 +133,7 @@ val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", ex
 runtime은 `ApplicationStarted` 이벤트에서 시작하고 `ApplicationStopping` 이벤트에서
 중지하며, publish가 필요하면 `application.sqsConsumer()` 로 접근할 수 있습니다.
 
-```mermaid
-sequenceDiagram
-    participant App as Ktor Application
-    participant Plugin as SqsConsumer Plugin
-    participant Runtime as SqsConsumerRuntime
-    participant SQS as Amazon SQS
-
-    App->>Plugin: install(SqsConsumer)
-    Plugin->>Runtime: config로 runtime 생성
-    App-->>Plugin: ApplicationStarted
-    Plugin->>Runtime: start()
-    loop poller coroutines
-        Runtime->>SQS: receiveMessage(long poll)
-        SQS-->>Runtime: messages
-        Runtime->>Runtime: convert and invoke handler
-        Runtime->>SQS: deleteMessage on success
-    end
-    App-->>Plugin: ApplicationStopping
-    Plugin->>Runtime: stop and drain handlers
-```
+![SQS Consumer And Publisher diagram](../docs/images/readme-diagrams/aws-ktor-sequence-01.png)
 
 ```kotlin
 import io.bluetape4k.aws.ktor.sqs.SqsConsumer
