@@ -8,16 +8,7 @@
 
 ## 아키텍처
 
-```mermaid
-flowchart LR
-    HTTP["WebFlux controller\n/s3/documents"]
-    OPS["S3Operations\nS3CoroutinesTemplate"]
-    AUTO["S3AutoConfiguration"]
-    S3["AWS S3 또는 LocalStack"]
-
-    AUTO --> OPS
-    HTTP --> OPS --> S3
-```
+![Architecture diagram](../../docs/images/readme-diagrams/examples-aws-spring-boot-s3-examples-architecture-01.png)
 
 ## API
 

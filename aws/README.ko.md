@@ -8,87 +8,15 @@ AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, SES, SNS, SQ
 
 ### 3단계 API 패턴 다이어그램
 
-```mermaid
-flowchart LR
-    subgraph "AWS Java SDK v2 기반 3단계 API"
-        direction TB
-        SYNC["1. Sync (Blocking)\nDynamoDbClient\n.getItem(request)"]
-        ASYNC["2. Async (CompletableFuture)\nDynamoDbAsyncClient\n.getItem(request)\n.thenApply { }"]
-        CORO["3. Coroutines (suspend)\nclient.getItem(partitionValue)\n= CompletableFuture.await()"]
-    end
-
-    SYNC -->|"비동기화"| ASYNC
-    ASYNC -->|"코루틴 래핑\n(.await())"| CORO
-```
+![3 API diagram](../docs/images/readme-diagrams/aws-architecture-01.png)
 
 ### 서비스별 지원 현황
 
-```mermaid
-flowchart TD
-    MOD["bluetape4k-aws\n(단일 통합 모듈)"]
-
-    subgraph 서비스["AWS 서비스 (compileOnly 선언)"]
-        DDB["DynamoDB\n+ Enhanced Client"]
-        S3["S3\n+ TransferManager"]
-        SES["SES"]
-        SNS["SNS"]
-        SQS["SQS"]
-        KMS["KMS"]
-        CW["CloudWatch\n+ Logs"]
-        KIN["Kinesis"]
-        STS["STS"]
-    end
-
-    subgraph 확장["각 서비스별 Coroutines 확장"]
-        EXT["XxxAsyncClientCoroutinesExtensions.kt\ngetItem(...)\nsend(...)\n..."]
-    end
-
-    MOD --> 서비스
-    서비스 --> 확장
-```
+![Service diagram](../docs/images/readme-diagrams/aws-architecture-02.png)
 
 ### 3단계 API 패턴 클래스 다이어그램
 
-```mermaid
-classDiagram
-    class DynamoDbClient {
-        +getItem(request) GetItemResponse
-        +putItem(request) PutItemResponse
-        +scan(request) ScanResponse
-        +query(request) QueryResponse
-    }
-    class DynamoDbAsyncClient {
-        +getItem(request) CompletableFuture
-        +putItem(request) CompletableFuture
-        +scan(request) CompletableFuture
-    }
-    class DynamoDbEnhancedCoroutinesExt {
-        +getItem(partitionValue) T?
-        +scanAll() Flow~T~
-    }
-    class S3Client {
-        +getObject(request) ResponseInputStream
-        +putObject(request) PutObjectResponse
-    }
-    class S3AsyncClient {
-        +getObject(request) CompletableFuture
-        +putObject(request) CompletableFuture
-    }
-    class SqsAsyncClient {
-        +sendMessage(request) CompletableFuture
-        +receiveMessage(request) CompletableFuture
-        +deleteMessage(request) CompletableFuture
-    }
-    class SqsCoroutinesExt {
-        +send(queueUrl, messageBody) SendMessageResponse
-        +receiveMessages(queueUrl, maxResults) ReceiveMessageResponse
-    }
-
-    DynamoDbClient --> DynamoDbAsyncClient : wraps (async)
-    DynamoDbAsyncClient --> DynamoDbEnhancedCoroutinesExt : .await() extension
-    S3Client --> S3AsyncClient : wraps (async)
-    SqsAsyncClient --> SqsCoroutinesExt : .await() extension
-```
+![3 API diagram](../docs/images/readme-diagrams/aws-class-03.png)
 
 ## 제공 서비스
 
