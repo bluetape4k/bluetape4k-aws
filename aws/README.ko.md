@@ -8,15 +8,15 @@ AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, SES, SNS, SQ
 
 ### 3단계 API 패턴 다이어그램
 
-![3Component API Component Diagram 1](../docs/images/readme-diagrams/aws-ko-diagram-01.svg)
+![3Component API Component Diagram 1](../docs/images/readme-diagrams/aws-ko-diagram-01.png)
 
 ### 서비스별 지원 현황
 
-![ServiceComponent Support Component 2](../docs/images/readme-diagrams/aws-ko-diagram-02.svg)
+![ServiceComponent Support Component 2](../docs/images/readme-diagrams/aws-ko-diagram-02.png)
 
 ### 3단계 API 패턴 클래스 다이어그램
 
-![3Component API Component Component Diagram 3](../docs/images/readme-diagrams/aws-ko-diagram-03.svg)
+![3Component API Component Component Diagram 3](../docs/images/readme-diagrams/aws-ko-diagram-03.png)
 
 ## 제공 서비스
 

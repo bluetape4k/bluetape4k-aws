@@ -8,7 +8,7 @@ templates, a SQS listener container, and remote Environment sources, with no
 
 ## Architecture
 
-![Architecture 1](../docs/images/readme-diagrams/aws-spring-boot-diagram-01.svg)
+![Architecture 1](../docs/images/readme-diagrams/aws-spring-boot-diagram-01.png)
 
 ## Core Features
 

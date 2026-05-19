@@ -135,7 +135,7 @@ the Nightly workflow.
 runtime starts on `ApplicationStarted`, stops on `ApplicationStopping`, and is
 also available through `application.sqsConsumer()` for publishing.
 
-![SQS Consumer And Publisher 1](../docs/images/readme-diagrams/aws-ktor-diagram-01.svg)
+![SQS Consumer And Publisher 1](../docs/images/readme-diagrams/aws-ktor-diagram-01.png)
 
 ```kotlin
 import io.bluetape4k.aws.ktor.sqs.SqsConsumer

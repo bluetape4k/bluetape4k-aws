@@ -133,7 +133,7 @@ val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", ex
 runtime은 `ApplicationStarted` 이벤트에서 시작하고 `ApplicationStopping` 이벤트에서
 중지하며, publish가 필요하면 `application.sqsConsumer()` 로 접근할 수 있습니다.
 
-![SQS Consumer And Publisher 1](../docs/images/readme-diagrams/aws-ktor-ko-diagram-01.svg)
+![SQS Consumer And Publisher 1](../docs/images/readme-diagrams/aws-ktor-ko-diagram-01.png)
 
 ```kotlin
 import io.bluetape4k.aws.ktor.sqs.SqsConsumer

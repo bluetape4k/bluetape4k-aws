@@ -12,19 +12,19 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 
 ### Java SDK v2 vs Kotlin SDK Comparison
 
-![Java SDK v2 vs Kotlin SDK Comparison 1](../docs/images/readme-diagrams/aws-kotlin-diagram-01.svg)
+![Java SDK v2 vs Kotlin SDK Comparison 1](../docs/images/readme-diagrams/aws-kotlin-diagram-01.png)
 
 ### Client Creation Pattern
 
-![Client Creation Pattern 2](../docs/images/readme-diagrams/aws-kotlin-diagram-02.svg)
+![Client Creation Pattern 2](../docs/images/readme-diagrams/aws-kotlin-diagram-02.png)
 
 ### DSL-Supported Services
 
-![DSL-Supported Services 3](../docs/images/readme-diagrams/aws-kotlin-diagram-03.svg)
+![DSL-Supported Services 3](../docs/images/readme-diagrams/aws-kotlin-diagram-03.png)
 
 ### Client Pattern Class Diagram
 
-![Client Pattern Class Diagram 4](../docs/images/readme-diagrams/aws-kotlin-diagram-04.svg)
+![Client Pattern Class Diagram 4](../docs/images/readme-diagrams/aws-kotlin-diagram-04.png)
 
 ## Supported Services
 

@@ -8,7 +8,7 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
 
 ## Architecture
 
-![Architecture 1](../docs/images/readme-diagrams/aws-spring-boot-ko-diagram-01.svg)
+![Architecture 1](../docs/images/readme-diagrams/aws-spring-boot-ko-diagram-01.png)
 
 ## 주요 기능
 

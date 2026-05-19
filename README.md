@@ -54,15 +54,15 @@ applications to adopt a single framework or dependency stack.
 
 ### Overview
 
-![Overview 1](docs/images/readme-diagrams/root-readme-en-diagram-01.svg)
+![Overview 1](docs/images/readme-diagrams/root-readme-en-diagram-01.png)
 
 ### Three-Tier API (`bluetape4k-aws-java` module — Java SDK v2)
 
-![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) 2](docs/images/readme-diagrams/root-readme-en-diagram-02.svg)
+![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) 2](docs/images/readme-diagrams/root-readme-en-diagram-02.png)
 
 ### Native Suspend (`bluetape4k-aws-kotlin` module — Kotlin SDK)
 
-![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) 3](docs/images/readme-diagrams/root-readme-en-diagram-03.svg)
+![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) 3](docs/images/readme-diagrams/root-readme-en-diagram-03.png)
 
 ---
 

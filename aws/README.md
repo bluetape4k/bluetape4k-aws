@@ -8,15 +8,15 @@ A unified integration module built on AWS Java SDK v2. Provides async/non-blocki
 
 ### Three-Tier API Flow
 
-![Three-Tier API Flow 1](../docs/images/readme-diagrams/aws-diagram-01.svg)
+![Three-Tier API Flow 1](../docs/images/readme-diagrams/aws-diagram-01.png)
 
 ### Service Support Overview
 
-![Service Support Overview 2](../docs/images/readme-diagrams/aws-diagram-02.svg)
+![Service Support Overview 2](../docs/images/readme-diagrams/aws-diagram-02.png)
 
 ### Three-Tier API Class Diagram
 
-![Three-Tier API Class Diagram 3](../docs/images/readme-diagrams/aws-diagram-03.svg)
+![Three-Tier API Class Diagram 3](../docs/images/readme-diagrams/aws-diagram-03.png)
 
 ## Supported Services
 

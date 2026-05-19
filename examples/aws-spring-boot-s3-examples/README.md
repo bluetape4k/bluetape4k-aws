@@ -8,7 +8,7 @@ interface with upload, download, object listing, delete, and presigned URL APIs.
 
 ## Architecture
 
-![Architecture 1](../../docs/images/readme-diagrams/examples-aws-spring-boot-s3-examples-diagram-01.svg)
+![Architecture 1](../../docs/images/readme-diagrams/examples-aws-spring-boot-s3-examples-diagram-01.png)
 
 ## API
 

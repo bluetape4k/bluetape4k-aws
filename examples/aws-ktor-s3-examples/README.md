@@ -8,7 +8,7 @@ stream download, object listing, delete, and presigned URL endpoints.
 
 ## Architecture
 
-![Architecture 1](../../docs/images/readme-diagrams/examples-aws-ktor-s3-examples-diagram-01.svg)
+![Architecture 1](../../docs/images/readme-diagrams/examples-aws-ktor-s3-examples-diagram-01.png)
 
 ## Client Example
 

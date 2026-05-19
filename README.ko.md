@@ -47,15 +47,15 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ### 전체 구조
 
-![Component Component 1](docs/images/readme-diagrams/root-readme-ko-diagram-01.svg)
+![Component Component 1](docs/images/readme-diagrams/root-readme-ko-diagram-01.png)
 
 ### 3단계 API (`aws` 모듈 — Java SDK v2)
 
-![3Component API (aws Component — Java SDK v2) 2](docs/images/readme-diagrams/root-readme-ko-diagram-02.svg)
+![3Component API (aws Component — Java SDK v2) 2](docs/images/readme-diagrams/root-readme-ko-diagram-02.png)
 
 ### 네이티브 Suspend (`aws-kotlin` 모듈 — Kotlin SDK)
 
-![Component Suspend (aws-kotlin Component — Kotlin SDK) 3](docs/images/readme-diagrams/root-readme-ko-diagram-03.svg)
+![Component Suspend (aws-kotlin Component — Kotlin SDK) 3](docs/images/readme-diagrams/root-readme-ko-diagram-03.png)
 
 ---
 
