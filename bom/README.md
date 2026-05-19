@@ -8,21 +8,7 @@ individual versions.
 
 ## Architecture
 
-```mermaid
-graph TB
-    Consumer[Consumer Project]
-    BOM[bluetape4k-aws-bom<br/>java-platform]
-    AWS[aws<br/>AWS SDK v2 wrappers]
-    AWSK[aws-kotlin<br/>AWS Kotlin SDK]
-    AWSKtor[aws-ktor<br/>Ktor 3 integration]
-    AWSSB[aws-spring-boot<br/>Spring Boot 4 starters]
-
-    Consumer -->|platform import| BOM
-    BOM -.->|version constraints| AWS
-    BOM -.->|version constraints| AWSK
-    BOM -.->|version constraints| AWSKtor
-    BOM -.->|version constraints| AWSSB
-```
+![Architecture 1](../docs/images/readme-diagrams/bom-diagram-01.svg)
 
 The BOM is a Gradle `java-platform` that publishes only `<dependencyManagement>` constraints — no runtime classes. Consumers import it via `dependencyManagement` (Spring) or Gradle `platform()`.
 

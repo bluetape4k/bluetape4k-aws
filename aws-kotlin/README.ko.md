@@ -10,115 +10,19 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 
 ### Java SDK v2 vs Kotlin SDK 비교 다이어그램
 
-```mermaid
-flowchart LR
-    subgraph JAVA["bluetape4k-aws<br/>(Java SDK v2)"]
-        JA["DynamoDbAsyncClient<br/>.getItem(request)"]
-        JB[".thenApply { result }"]
-        JC["CompletableFuture.await()<br/>→ suspend 변환"]
-        JA --> JB --> JC
-    end
-
-    subgraph KOTLIN["bluetape4k-aws-kotlin<br/>(Kotlin SDK)"]
-        KA["DynamoDbClient<br/>.getItem { ... }"]
-        KB["native suspend<br/>변환 없이 바로 사용"]
-        KA --> KB
-    end
-
-    style JAVA fill:#dbeafe
-    style KOTLIN fill:#dcfce7
-```
+![Java SDK v2 vs Kotlin SDK Component Diagram 1](../docs/images/readme-diagrams/aws-kotlin-ko-diagram-01.svg)
 
 ### 클라이언트 생성 패턴 다이어그램
 
-```mermaid
-flowchart TD
-    subgraph Factory["AwsClientFactory (bluetape4k DSL)"]
-        OF["xxxClientOf(endpointUrl, region)<br/>클라이언트 직접 생성<br/>(close() 필수)"]
-        WF["withXxxClient { }<br/>단발성 사용<br/>(close() 자동 호출)"]
-    end
-
-    subgraph Clients["AWS Kotlin SDK Clients"]
-        DDB["DynamoDbClient<br/>native suspend"]
-        S3["S3Client<br/>native suspend"]
-        SQS["SqsClient<br/>native suspend"]
-        SNS["SnsClient<br/>native suspend"]
-        CW["CloudWatchClient<br/>native suspend"]
-        KMS["KmsClient<br/>native suspend"]
-        KIN["KinesisClient<br/>native suspend"]
-        STS["StsClient<br/>native suspend"]
-    end
-
-    Factory --> Clients
-```
+![Client Component Component Diagram 2](../docs/images/readme-diagrams/aws-kotlin-ko-diagram-02.svg)
 
 ### DSL 지원 서비스
 
-```mermaid
-flowchart TD
-    MOD["bluetape4k-aws-kotlin<br/>(Kotlin SDK 기반 단일 모듈)"]
-
-    subgraph DSL["bluetape4k DSL 제공"]
-        CW["metricDatum { }<br/>(CloudWatch)"]
-        CWL["inputLogEvent { }<br/>(CloudWatch Logs)"]
-        KIN["putRecordRequestOf()<br/>(Kinesis)"]
-        STS["stsClientOf()<br/>(STS)"]
-    end
-
-    subgraph NATIVE["Native suspend (래핑 불필요)"]
-        DDB["DynamoDbClient<br/>.getItem { }"]
-        S3["S3Client<br/>.putObject { }"]
-        SQS["SqsClient<br/>.sendMessage { }"]
-        SNS["SnsClient<br/>.publish { }"]
-    end
-
-    MOD --> DSL
-    MOD --> NATIVE
-```
+![DSL Support Service 3](../docs/images/readme-diagrams/aws-kotlin-ko-diagram-03.svg)
 
 ### 클라이언트 패턴 클래스 다이어그램
 
-```mermaid
-classDiagram
-    class DynamoDbClient {
-        +getItem(block) GetItemResponse
-        +putItem(block) PutItemResponse
-        +scan(block) ScanResponse
-        +query(block) QueryResponse
-        +close()
-    }
-    class SqsClient {
-        +sendMessage(block) SendMessageResponse
-        +receiveMessage(block) ReceiveMessageResponse
-        +deleteMessage(block) DeleteMessageResponse
-        +close()
-    }
-    class S3Client {
-        +getObject(block) GetObjectResponse
-        +putObject(block) PutObjectResponse
-        +listObjects(block) ListObjectsResponse
-        +close()
-    }
-    class CloudWatchClient {
-        +putMetricData(block) PutMetricDataResponse
-        +getMetricData(block) GetMetricDataResponse
-        +close()
-    }
-    class AwsClientFactory {
-        +dynamoDbClientOf(endpointUrl, region) DynamoDbClient
-        +withDynamoDbClient(block) T
-        +sqsClientOf(endpointUrl, region) SqsClient
-        +withSqsClient(block) T
-        +s3ClientOf(region) S3Client
-        +withS3Client(block) T
-    }
-
-    AwsClientFactory --> DynamoDbClient : creates
-    AwsClientFactory --> SqsClient : creates
-    AwsClientFactory --> S3Client : creates
-    AwsClientFactory --> CloudWatchClient : creates
-
-```
+![Client Component Component Diagram 4](../docs/images/readme-diagrams/aws-kotlin-ko-diagram-04.svg)
 
 ## 제공 서비스
 

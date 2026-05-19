@@ -8,47 +8,7 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph App["Spring Boot Application"]
-        BIZ["Business Code"]
-    end
-    subgraph Module["aws-spring-boot"]
-        S3OPS["S3Operations\n(S3CoroutinesTemplate)"]
-        SNSOPS["SnsOperations\n(SnsCoroutinesTemplate)"]
-        SQSOPS["SqsOperations\n(SqsCoroutinesTemplate)"]
-        DYN["CoroutinesDynamoDbRepository"]
-        KMS["KmsOperations\n(KmsEncryptedFieldCodec)"]
-        ENV["Secrets / Parameter Store\nEnvironment sources"]
-        LISTENER["SqsMessageListenerContainer\n(@SqsListener)"]
-        AUTO["AutoConfiguration +\nEnvironmentPostProcessor"]
-    end
-    subgraph SDK["AWS SDK v2 (compileOnly)"]
-        S3CLI["S3AsyncClient / S3Presigner"]
-        SNSCLI["SnsAsyncClient"]
-        SQSCLI["SqsAsyncClient"]
-        DYNCLI["DynamoDbEnhancedAsyncClient"]
-    end
-
-    BIZ --> S3OPS
-    BIZ --> SNSOPS
-    BIZ --> SQSOPS
-    BIZ --> DYN
-    BIZ --> KMS
-    BIZ --> ENV
-    LISTENER --> BIZ
-    AUTO -.creates.-> S3OPS
-    AUTO -.creates.-> SNSOPS
-    AUTO -.creates.-> SQSOPS
-    AUTO -.creates.-> LISTENER
-    AUTO -.loads.-> ENV
-    S3OPS --> S3CLI
-    SNSOPS --> SNSCLI
-    SQSOPS --> SQSCLI
-    DYN --> DYNCLI
-    KMS --> KMSCLI["KmsAsyncClient"]
-    ENV --> SECCLI["SecretsManagerClient / SsmClient"]
-```
+![Architecture 1](../docs/images/readme-diagrams/aws-spring-boot-ko-diagram-01.svg)
 
 ## 주요 기능
 

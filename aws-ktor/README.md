@@ -135,26 +135,7 @@ the Nightly workflow.
 runtime starts on `ApplicationStarted`, stops on `ApplicationStopping`, and is
 also available through `application.sqsConsumer()` for publishing.
 
-```mermaid
-sequenceDiagram
-    participant App as Ktor Application
-    participant Plugin as SqsConsumer Plugin
-    participant Runtime as SqsConsumerRuntime
-    participant SQS as Amazon SQS
-
-    App->>Plugin: install(SqsConsumer)
-    Plugin->>Runtime: build runtime from config
-    App-->>Plugin: ApplicationStarted
-    Plugin->>Runtime: start()
-    loop poller coroutines
-        Runtime->>SQS: receiveMessage(long poll)
-        SQS-->>Runtime: messages
-        Runtime->>Runtime: convert and invoke handler
-        Runtime->>SQS: deleteMessage on success
-    end
-    App-->>Plugin: ApplicationStopping
-    Plugin->>Runtime: stop and drain handlers
-```
+![SQS Consumer And Publisher 1](../docs/images/readme-diagrams/aws-ktor-diagram-01.svg)
 
 ```kotlin
 import io.bluetape4k.aws.ktor.sqs.SqsConsumer

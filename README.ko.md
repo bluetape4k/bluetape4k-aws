@@ -47,68 +47,15 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ### 전체 구조
 
-```mermaid
-graph TD
-    subgraph Repo["bluetape4k-aws"]
-        AWS["bluetape4k-aws-java
-(Java SDK v2)"]
-        KOTLIN["bluetape4k-aws-kotlin
-(Kotlin SDK)"]
-        SPRING["bluetape4k-aws-spring-boot
-(Spring Boot 4)"]
-        KTOR["bluetape4k-aws-ktor
-(Ktor 3)"]
-    end
-
-    subgraph SDKs["AWS SDK (compileOnly)"]
-        JAVASDK["AWS Java SDK v2\nsoftware.amazon.awssdk"]
-        KOTLINSDK["AWS Kotlin SDK\naws.sdk.kotlin"]
-    end
-
-    subgraph Services["지원 서비스"]
-        S3["S3"]
-        DDB["DynamoDB"]
-        SQS["SQS"]
-        SNS["SNS"]
-        KMS["KMS"]
-        CW["CloudWatch / Logs"]
-        KIN["Kinesis"]
-        STS["STS"]
-        SES["SES / SESv2"]
-    end
-
-    AWS --> JAVASDK
-    KOTLIN --> KOTLINSDK
-    SPRING --> AWS
-    SPRING -.-> KOTLIN
-    KTOR --> AWS
-    KTOR -.-> KOTLIN
-    JAVASDK --> Services
-    KOTLINSDK --> Services
-```
+![Component Component 1](docs/images/readme-diagrams/root-readme-ko-diagram-01.svg)
 
 ### 3단계 API (`aws` 모듈 — Java SDK v2)
 
-```mermaid
-flowchart LR
-    SYNC["1. 동기 (Blocking)\nDynamoDbClient\n.getItem(request)"]
-    ASYNC["2. 비동기 (CompletableFuture)\nDynamoDbAsyncClient\n.getItem(request)"]
-    CORO["3. Coroutines (suspend)\nclient.getItemSuspend { }\n= CompletableFuture.await()"]
-
-    SYNC -->|"비동기화"| ASYNC
-    ASYNC -->|".await() 확장"| CORO
-```
+![3Component API (aws Component — Java SDK v2) 2](docs/images/readme-diagrams/root-readme-ko-diagram-02.svg)
 
 ### 네이티브 Suspend (`aws-kotlin` 모듈 — Kotlin SDK)
 
-```mermaid
-flowchart LR
-    DSL["bluetape4k DSL\ndynamoDbClientOf()\nwithDynamoDbClient { }"]
-    CLIENT["DynamoDbClient\n(AWS Kotlin SDK)"]
-    SUSPEND["네이티브 suspend\nclient.getItem { }\n.await() 변환 불필요"]
-
-    DSL --> CLIENT --> SUSPEND
-```
+![Component Suspend (aws-kotlin Component — Kotlin SDK) 3](docs/images/readme-diagrams/root-readme-ko-diagram-03.svg)
 
 ---
 
