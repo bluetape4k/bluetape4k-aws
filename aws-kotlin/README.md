@@ -12,114 +12,19 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 
 ### Java SDK v2 vs Kotlin SDK Comparison
 
-```mermaid
-flowchart LR
-    subgraph JAVA["bluetape4k-aws\n(Java SDK v2)"]
-        JA["DynamoDbAsyncClient\n.getItem(request)"]
-        JB[".thenApply { result }"]
-        JC["CompletableFuture.await()\n→ suspend conversion"]
-        JA --> JB --> JC
-    end
-
-    subgraph KOTLIN["bluetape4k-aws-kotlin\n(Kotlin SDK)"]
-        KA["DynamoDbClient\n.getItem { ... }"]
-        KB["native suspend\nuse directly without conversion"]
-        KA --> KB
-    end
-
-    style JAVA fill:#dbeafe
-    style KOTLIN fill:#dcfce7
-```
+![Java SDK v2 vs Kotlin SDK Comparison 1](../docs/images/readme-diagrams/aws-kotlin-diagram-01.svg)
 
 ### Client Creation Pattern
 
-```mermaid
-flowchart TD
-    subgraph Factory["AwsClientFactory (bluetape4k DSL)"]
-        OF["xxxClientOf(endpointUrl, region)\nDirect client creation\n(must call close())"]
-        WF["withXxxClient { }\nOne-shot usage\n(close() auto-called)"]
-    end
-
-    subgraph Clients["AWS Kotlin SDK Clients"]
-        DDB["DynamoDbClient\nnative suspend"]
-        S3["S3Client\nnative suspend"]
-        SQS["SqsClient\nnative suspend"]
-        SNS["SnsClient\nnative suspend"]
-        CW["CloudWatchClient\nnative suspend"]
-        KMS["KmsClient\nnative suspend"]
-        KIN["KinesisClient\nnative suspend"]
-        STS["StsClient\nnative suspend"]
-    end
-
-    Factory --> Clients
-```
+![Client Creation Pattern 2](../docs/images/readme-diagrams/aws-kotlin-diagram-02.svg)
 
 ### DSL-Supported Services
 
-```mermaid
-flowchart TD
-    MOD["bluetape4k-aws-kotlin\n(single module based on Kotlin SDK)"]
-
-    subgraph DSL["bluetape4k DSL Provided"]
-        CW["metricDatum { }\n(CloudWatch)"]
-        CWL["inputLogEvent { }\n(CloudWatch Logs)"]
-        KIN["putRecordRequestOf()\n(Kinesis)"]
-        STS["stsClientOf()\n(STS)"]
-    end
-
-    subgraph NATIVE["Native suspend (no wrapping needed)"]
-        DDB["DynamoDbClient\n.getItem { }"]
-        S3["S3Client\n.putObject { }"]
-        SQS["SqsClient\n.sendMessage { }"]
-        SNS["SnsClient\n.publish { }"]
-    end
-
-    MOD --> DSL
-    MOD --> NATIVE
-```
+![DSL-Supported Services 3](../docs/images/readme-diagrams/aws-kotlin-diagram-03.svg)
 
 ### Client Pattern Class Diagram
 
-```mermaid
-classDiagram
-    class DynamoDbClient {
-        +getItem(block) GetItemResponse
-        +putItem(block) PutItemResponse
-        +scan(block) ScanResponse
-        +query(block) QueryResponse
-        +close()
-    }
-    class SqsClient {
-        +sendMessage(block) SendMessageResponse
-        +receiveMessage(block) ReceiveMessageResponse
-        +deleteMessage(block) DeleteMessageResponse
-        +close()
-    }
-    class S3Client {
-        +getObject(block) GetObjectResponse
-        +putObject(block) PutObjectResponse
-        +listObjects(block) ListObjectsResponse
-        +close()
-    }
-    class CloudWatchClient {
-        +putMetricData(block) PutMetricDataResponse
-        +getMetricData(block) GetMetricDataResponse
-        +close()
-    }
-    class AwsClientFactory {
-        +dynamoDbClientOf(endpointUrl, region) DynamoDbClient
-        +withDynamoDbClient(block) T
-        +sqsClientOf(endpointUrl, region) SqsClient
-        +withSqsClient(block) T
-        +s3ClientOf(region) S3Client
-        +withS3Client(block) T
-    }
-
-    AwsClientFactory --> DynamoDbClient : creates
-    AwsClientFactory --> SqsClient : creates
-    AwsClientFactory --> S3Client : creates
-    AwsClientFactory --> CloudWatchClient : creates
-```
+![Client Pattern Class Diagram 4](../docs/images/readme-diagrams/aws-kotlin-diagram-04.svg)
 
 ## Supported Services
 

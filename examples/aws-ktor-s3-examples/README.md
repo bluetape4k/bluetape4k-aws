@@ -8,16 +8,7 @@ stream download, object listing, delete, and presigned URL endpoints.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    ROUTES["Ktor routes\n/s3/*"]
-    CLIENT["S3KtorClient"]
-    SIG["AwsSigV4Plugin"]
-    S3["AWS S3 or LocalStack"]
-
-    ROUTES --> CLIENT
-    CLIENT --> SIG --> S3
-```
+![Architecture 1](../../docs/images/readme-diagrams/examples-aws-ktor-s3-examples-diagram-01.svg)
 
 ## Client Example
 

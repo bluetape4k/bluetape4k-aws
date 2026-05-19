@@ -8,16 +8,7 @@ interface with upload, download, object listing, delete, and presigned URL APIs.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    HTTP["WebFlux controller\n/s3/documents"]
-    OPS["S3Operations\nS3CoroutinesTemplate"]
-    AUTO["S3AutoConfiguration"]
-    S3["AWS S3 or LocalStack"]
-
-    AUTO --> OPS
-    HTTP --> OPS --> S3
-```
+![Architecture 1](../../docs/images/readme-diagrams/examples-aws-spring-boot-s3-examples-diagram-01.svg)
 
 ## API
 

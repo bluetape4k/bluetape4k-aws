@@ -54,68 +54,15 @@ applications to adopt a single framework or dependency stack.
 
 ### Overview
 
-```mermaid
-graph TD
-    subgraph Repo["bluetape4k-aws"]
-        AWS["bluetape4k-aws-java
-(Java SDK v2)"]
-        KOTLIN["bluetape4k-aws-kotlin
-(Kotlin SDK)"]
-        SPRING["bluetape4k-aws-spring-boot
-(Spring Boot 4)"]
-        KTOR["bluetape4k-aws-ktor
-(Ktor 3)"]
-    end
-
-    subgraph SDKs["AWS SDKs (compileOnly)"]
-        JAVASDK["AWS Java SDK v2\nsoftware.amazon.awssdk"]
-        KOTLINSDK["AWS Kotlin SDK\naws.sdk.kotlin"]
-    end
-
-    subgraph Services["Supported Services"]
-        S3["S3"]
-        DDB["DynamoDB"]
-        SQS["SQS"]
-        SNS["SNS"]
-        KMS["KMS"]
-        CW["CloudWatch / Logs"]
-        KIN["Kinesis"]
-        STS["STS"]
-        SES["SES / SESv2"]
-    end
-
-    AWS --> JAVASDK
-    KOTLIN --> KOTLINSDK
-    SPRING --> AWS
-    SPRING -.-> KOTLIN
-    KTOR --> AWS
-    KTOR -.-> KOTLIN
-    JAVASDK --> Services
-    KOTLINSDK --> Services
-```
+![Overview 1](docs/images/readme-diagrams/root-readme-en-diagram-01.svg)
 
 ### Three-Tier API (`bluetape4k-aws-java` module — Java SDK v2)
 
-```mermaid
-flowchart LR
-    SYNC["1. Sync (Blocking)\nDynamoDbClient\n.getItem(request)"]
-    ASYNC["2. Async (CompletableFuture)\nDynamoDbAsyncClient\n.getItem(request)"]
-    CORO["3. Coroutines (suspend)\nclient.getItemSuspend { }\n= CompletableFuture.await()"]
-
-    SYNC -->|"make async"| ASYNC
-    ASYNC -->|".await() extension"| CORO
-```
+![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) 2](docs/images/readme-diagrams/root-readme-en-diagram-02.svg)
 
 ### Native Suspend (`bluetape4k-aws-kotlin` module — Kotlin SDK)
 
-```mermaid
-flowchart LR
-    DSL["bluetape4k DSL\ndynamoDbClientOf()\nwithDynamoDbClient { }"]
-    CLIENT["DynamoDbClient\n(AWS Kotlin SDK)"]
-    SUSPEND["native suspend\nclient.getItem { }\nNo .await() needed"]
-
-    DSL --> CLIENT --> SUSPEND
-```
+![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) 3](docs/images/readme-diagrams/root-readme-en-diagram-03.svg)
 
 ---
 
