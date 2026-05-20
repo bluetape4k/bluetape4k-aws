@@ -36,6 +36,16 @@ applications to adopt a single framework or dependency stack.
 - **Local integration testing** — LocalStack/FLOCI emulator wiring through
   Testcontainers and Nightly examples.
 
+<!-- README_VISUAL_OVERVIEW:START -->
+## Overview Diagram
+
+![Bluetape4k AWS overview diagram](docs/assets/readme-diagrams/root-readme-overview-01.png)
+
+## Module Composition Chart
+
+![Bluetape4k AWS module composition chart](docs/assets/readme-charts/root-readme-module-chart-01.png)
+<!-- README_VISUAL_OVERVIEW:END -->
+
 ## Modules
 
 | Module | Artifact | Description |
@@ -47,6 +57,14 @@ applications to adopt a single framework or dependency stack.
 | `aws-ktor-s3-examples` | not published | LocalStack-oriented examples for `S3KtorClient`; compiled and tested in Nightly |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, `@SqsListener`, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
+
+### Component Map
+
+![AWS component map diagram](docs/assets/readme-diagrams/bluetape4k-aws-components-04.png)
+
+### Service Coverage Chart
+
+![AWS service coverage chart](docs/assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
 
 ---
 
@@ -496,7 +514,7 @@ module includes the LocalStack-oriented SQS/SNS fanout flow.
 Validate the certificate chain, `Signature`, `SignatureVersion`, and expected
 `TopicArn` before processing notifications or confirming subscriptions.
 
-### S3 Upload — Coroutines (`aws` module)
+### S3 Upload — Coroutines (`aws-java` module)
 
 ```kotlin
 import io.bluetape4k.aws.s3.coroutines.*
@@ -510,7 +528,7 @@ suspend fun uploadObject(bucket: String, key: String, bytes: ByteArray) =
     }
 ```
 
-### SQS Send / Receive — Coroutines (`aws` module)
+### SQS Send / Receive — Coroutines (`aws-java` module)
 
 ```kotlin
 import io.bluetape4k.aws.sqs.coroutines.*
@@ -526,7 +544,7 @@ suspend fun receiveMessages(client: SqsAsyncClient, queueUrl: String) =
     }.messages()
 ```
 
-### DynamoDB — Native Suspend (`aws-kotlin` module)
+### DynamoDB — Native Suspend (`bluetape4k-aws-kotlin` module)
 
 ```kotlin
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
@@ -542,7 +560,7 @@ suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
     }
 ```
 
-### CloudWatch Metrics — DSL (`aws-kotlin` module)
+### CloudWatch Metrics — DSL (`bluetape4k-aws-kotlin` module)
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.cloudwatch.*
@@ -573,12 +591,12 @@ automatically via Testcontainers.
 
 ```bash
 # Run with LocalStack (default)
-./gradlew :aws:test
-./gradlew :aws-kotlin:test
+./gradlew :bluetape4k-aws-java:test
+./gradlew :bluetape4k-aws-kotlin:test
 
 # Run with Floci emulator
-./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
-./gradlew :aws-kotlin:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=floci
 ```
 
 ---

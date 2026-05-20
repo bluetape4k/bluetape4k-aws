@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1754" height="1044" viewBox="0 0 1754 1044" role="img" aria-label="Client Pattern Class Diagram">
 <defs>
   <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#1f2937" flood-opacity="0.10"/></filter>
-  <marker id="openArrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 10 5 L 1 9" fill="none" stroke="#758297" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
-  <marker id="inherit" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M 0 1 L 12 6 L 0 11 Z" fill="#ffffff" stroke="#758297" stroke-width="1.8"/></marker>
+  <marker id="openArrow" markerWidth="10" markerHeight="8" refX="8.5" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 8.5 4 L 1 7" fill="none" stroke="#758297" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="inherit" markerWidth="11" markerHeight="10" refX="9.5" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 1 L 9.5 5 L 0.5 9 Z" fill="#ffffff" stroke="#758297" stroke-width="1.7"/></marker>
   <style>
     .canvas{fill:#f7f9fc}.frame{fill:#fff;stroke:#d8e0ea;stroke-width:1.5}
     .title{font-family:"Architects Daughter","Comic Sans MS","Comic Sans",cursive;font-size:43px;font-weight:400;fill:#102033}
@@ -24,13 +24,24 @@
 <rect class="frame" x="32" y="28" width="1690" height="988" rx="28"/>
 <text class="title" x="66" y="82">Client Pattern Class Diagram</text>
 <text class="subtitle" x="70" y="118">UML classes from the original Mermaid source</text>
-<path class="line" d="M262 172 C262 288.5 672 288.5 672 405"/>
-<path class="line" d="M262 172 C262 278 1492 278 1492 384"/>
-<path class="line" d="M262 468 C262 523 877 523 877 578"/>
-<path class="line" d="M262 172 C262 288.5 1082 288.5 1082 405"/>
+<path class="line" d="M672 180 L672 112 L1082 112 L1082 397"/>
+<path class="line" d="M672 180 L672 122 L1492 122 L1492 376"/>
+<path class="line" d="M672 460 L672 515 L877 515 L877 586"/>
+<path class="line" d="M672 180 L672 507 L262 507 L262 397"/>
 <g transform="translate(92,180)">
-  <rect class="card" x="0" y="0" width="340" height="280" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <rect class="card" x="0" y="0" width="340" height="217" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#5B8DEF"/>
+  <text class="small" x="170" y="26" text-anchor="middle"></text>
+  <text class="label" x="170" y="61" text-anchor="middle">DynamoDbClient</text>
+  <text class="mono" x="18" y="108">+getItem(block) GetItemResponse</text>
+<text class="mono" x="18" y="129">+putItem(block) PutItemResponse</text>
+<text class="mono" x="18" y="150">+scan(block) ScanResponse</text>
+<text class="mono" x="18" y="171">+query(block) QueryResponse</text>
+<text class="mono" x="18" y="192">+close()</text>
+</g>
+<g transform="translate(502,180)">
+  <rect class="card" x="0" y="0" width="340" height="280" rx="5" fill="#EAF7EF" stroke="#58A978"/>
+  <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#58A978"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
   <text class="label" x="170" y="61" text-anchor="middle">AwsClientFactory</text>
   <text class="mono" x="18" y="108">+dynamoDbClientOf(endpointUrl, region)</text>
@@ -42,26 +53,15 @@
 <text class="mono" x="18" y="234">+s3ClientOf(region) S3Client</text>
 <text class="mono" x="18" y="255">+withS3Client(block) T</text>
 </g>
-<g transform="translate(502,180)">
-  <rect class="card" x="0" y="0" width="340" height="217" rx="5" fill="#EAF7EF" stroke="#58A978"/>
-  <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#58A978"/>
+<g transform="translate(912,180)">
+  <rect class="card" x="0" y="0" width="340" height="217" rx="5" fill="#FFF3D9" stroke="#D6A441"/>
+  <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#D6A441"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
   <text class="label" x="170" y="61" text-anchor="middle">CloudWatchClient</text>
   <text class="mono" x="18" y="108">+putMetricData(block)</text>
 <text class="mono" x="18" y="129">PutMetricDataResponse</text>
 <text class="mono" x="18" y="150">+getMetricData(block)</text>
 <text class="mono" x="18" y="171">GetMetricDataResponse</text>
-<text class="mono" x="18" y="192">+close()</text>
-</g>
-<g transform="translate(912,180)">
-  <rect class="card" x="0" y="0" width="340" height="217" rx="5" fill="#FFF3D9" stroke="#D6A441"/>
-  <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#D6A441"/>
-  <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="61" text-anchor="middle">DynamoDbClient</text>
-  <text class="mono" x="18" y="108">+getItem(block) GetItemResponse</text>
-<text class="mono" x="18" y="129">+putItem(block) PutItemResponse</text>
-<text class="mono" x="18" y="150">+scan(block) ScanResponse</text>
-<text class="mono" x="18" y="171">+query(block) QueryResponse</text>
 <text class="mono" x="18" y="192">+close()</text>
 </g>
 <g transform="translate(1322,180)">

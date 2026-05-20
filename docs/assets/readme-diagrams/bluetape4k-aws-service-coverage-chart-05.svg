@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">bluetape4k AWS service coverage chart</title>
+  <desc id="desc">Pastel matrix chart comparing service coverage across aws-java, aws-kotlin, aws-spring-boot, and aws-ktor modules.</desc>
+  <defs>
+    <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#8FA3B8" flood-opacity="0.16"/>
+    </filter>
+    <style>
+      .title { font-family: 'Architects Daughter', 'Comic Sans MS', 'Arial', sans-serif; font-size: 34px; fill: #2F4054; }
+      .axis { font-family: 'Architects Daughter', 'Comic Sans MS', 'Arial', sans-serif; font-size: 22px; fill: #2F4054; }
+      .label { font-family: 'Comic Sans MS', 'Segoe UI', 'Arial', sans-serif; font-size: 17px; fill: #314256; }
+      .small { font-family: 'Comic Sans MS', 'Segoe UI', 'Arial', sans-serif; font-size: 14px; fill: #52657A; }
+      .frame { fill: #FFFFFF; stroke: #D6E0EA; stroke-width: 2; rx: 18; filter: url(#shadow); }
+      .header { fill: #F7FAFC; stroke: #E2EAF2; stroke-width: 1.5; rx: 10; }
+      .cell { stroke: #D6E0EA; stroke-width: 1; rx: 8; }
+      .dot { stroke: #FFFFFF; stroke-width: 3; filter: url(#shadow); }
+    </style>
+  </defs>
+
+  <rect width="1200" height="720" fill="#F3F7FB"/>
+  <rect class="frame" x="34" y="28" width="1132" height="664"/>
+  <text class="title" x="70" y="78">AWS service coverage by module</text>
+  <text class="small" x="72" y="108">Derived from the Part 4-2 deck: SDK v2 wrappers, Kotlin SDK helpers, Spring Boot operations, and Ktor runtime integrations.</text>
+
+  <g transform="translate(78,150)">
+    <rect class="header" x="0" y="0" width="1044" height="70"/>
+    <text class="axis" x="24" y="43">Service</text>
+    <text class="axis" x="260" y="43">aws-java</text>
+    <text class="axis" x="456" y="43">aws-kotlin</text>
+    <text class="axis" x="666" y="43">aws-spring-boot</text>
+    <text class="axis" x="902" y="43">aws-ktor</text>
+
+    <g transform="translate(0,88)">
+      <rect class="cell" x="0" y="0" width="1044" height="46" fill="#FFFFFF"/>
+      <text class="label" x="24" y="30">S3</text>
+      <circle class="dot" cx="304" cy="23" r="16" fill="#9FC7EA"/>
+      <circle class="dot" cx="504" cy="23" r="16" fill="#A7DDBB"/>
+      <circle class="dot" cx="744" cy="23" r="16" fill="#E8C679"/>
+      <circle class="dot" cx="944" cy="23" r="16" fill="#C8ABE7"/>
+    </g>
+    <g transform="translate(0,142)">
+      <rect class="cell" x="0" y="0" width="1044" height="46" fill="#F9FBFE"/>
+      <text class="label" x="24" y="30">DynamoDB</text>
+      <circle class="dot" cx="304" cy="23" r="16" fill="#9FC7EA"/>
+      <circle class="dot" cx="504" cy="23" r="16" fill="#A7DDBB"/>
+      <circle class="dot" cx="744" cy="23" r="16" fill="#E8C679"/>
+      <circle class="dot" cx="944" cy="23" r="11" fill="#D6E0EA"/>
+    </g>
+    <g transform="translate(0,196)">
+      <rect class="cell" x="0" y="0" width="1044" height="46" fill="#FFFFFF"/>
+      <text class="label" x="24" y="30">SQS</text>
+      <circle class="dot" cx="304" cy="23" r="16" fill="#9FC7EA"/>
+      <circle class="dot" cx="504" cy="23" r="16" fill="#A7DDBB"/>
+      <circle class="dot" cx="744" cy="23" r="16" fill="#E8C679"/>
+      <circle class="dot" cx="944" cy="23" r="16" fill="#C8ABE7"/>
+    </g>
+    <g transform="translate(0,250)">
+      <rect class="cell" x="0" y="0" width="1044" height="46" fill="#F9FBFE"/>
+      <text class="label" x="24" y="30">SNS / SES</text>
+      <circle class="dot" cx="304" cy="23" r="16" fill="#9FC7EA"/>
+      <circle class="dot" cx="504" cy="23" r="16" fill="#A7DDBB"/>
+      <circle class="dot" cx="744" cy="23" r="13" fill="#E8C679"/>
+      <circle class="dot" cx="944" cy="23" r="8" fill="#D6E0EA"/>
+    </g>
+    <g transform="translate(0,304)">
+      <rect class="cell" x="0" y="0" width="1044" height="46" fill="#FFFFFF"/>
+      <text class="label" x="24" y="30">KMS / STS</text>
+      <circle class="dot" cx="304" cy="23" r="16" fill="#9FC7EA"/>
+      <circle class="dot" cx="504" cy="23" r="16" fill="#A7DDBB"/>
+      <circle class="dot" cx="744" cy="23" r="16" fill="#E8C679"/>
+      <circle class="dot" cx="944" cy="23" r="8" fill="#D6E0EA"/>
+    </g>
+    <g transform="translate(0,358)">
+      <rect class="cell" x="0" y="0" width="1044" height="46" fill="#F9FBFE"/>
+      <text class="label" x="24" y="30">CloudWatch / Logs</text>
+      <circle class="dot" cx="304" cy="23" r="16" fill="#9FC7EA"/>
+      <circle class="dot" cx="504" cy="23" r="16" fill="#A7DDBB"/>
+      <circle class="dot" cx="744" cy="23" r="10" fill="#D6E0EA"/>
+      <circle class="dot" cx="944" cy="23" r="8" fill="#D6E0EA"/>
+    </g>
+    <g transform="translate(0,412)">
+      <rect class="cell" x="0" y="0" width="1044" height="46" fill="#FFFFFF"/>
+      <text class="label" x="24" y="30">Kinesis</text>
+      <circle class="dot" cx="304" cy="23" r="16" fill="#9FC7EA"/>
+      <circle class="dot" cx="504" cy="23" r="16" fill="#A7DDBB"/>
+      <circle class="dot" cx="744" cy="23" r="8" fill="#D6E0EA"/>
+      <circle class="dot" cx="944" cy="23" r="8" fill="#D6E0EA"/>
+    </g>
+  </g>
+
+  <g transform="translate(180,642)">
+    <circle class="dot" cx="0" cy="0" r="12" fill="#9FC7EA"/>
+    <text class="small" x="22" y="5">SDK wrapper</text>
+    <circle class="dot" cx="150" cy="0" r="12" fill="#A7DDBB"/>
+    <text class="small" x="172" y="5">native suspend helper</text>
+    <circle class="dot" cx="370" cy="0" r="12" fill="#E8C679"/>
+    <text class="small" x="392" y="5">Spring operation</text>
+    <circle class="dot" cx="570" cy="0" r="12" fill="#C8ABE7"/>
+    <text class="small" x="592" y="5">Ktor integration</text>
+    <circle class="dot" cx="775" cy="0" r="9" fill="#D6E0EA"/>
+    <text class="small" x="795" y="5">not primary surface</text>
+  </g>
+</svg>
