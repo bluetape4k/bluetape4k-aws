@@ -8,7 +8,7 @@ server route 예제를 포함합니다.
 
 ## 아키텍처
 
-![Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.png)
+![aws ktor s3 examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.png)
 
 ## 클라이언트 예제
 

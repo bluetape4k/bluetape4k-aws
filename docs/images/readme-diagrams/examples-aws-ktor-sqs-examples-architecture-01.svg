@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="520" viewBox="0 0 1320 520" role="img" aria-label="Ktor SQS Consumer Flow">
+<defs>
+  <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#1f2937" flood-opacity="0.10"/></filter>
+  <marker id="arrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#758297"/></marker>
+  <style>
+    .canvas{fill:#f7f9fc}.frame{fill:#fff;stroke:#d8e0ea;stroke-width:1.5}
+    .title{font-family:"Architects Daughter","Comic Sans MS","Comic Sans",cursive;font-size:43px;font-weight:400;fill:#102033}
+    .subtitle{font-family:"Comic Sans MS","Comic Sans","Comic Neue",Arial,sans-serif;font-size:15px;font-weight:400;fill:#536273}
+    .label{font-family:"Architects Daughter","Comic Sans MS","Comic Sans",cursive;font-size:25px;font-weight:400;fill:#102033}
+    .smallLabel{font-family:"Architects Daughter","Comic Sans MS","Comic Sans",cursive;font-size:21px;font-weight:400;fill:#102033}
+    .small{font-family:"Comic Sans MS","Comic Sans","Comic Neue",Arial,sans-serif;font-size:13px;font-weight:400;fill:#536273}
+    .mono{font-family:"Comic Sans MS","Comic Sans","Comic Neue",Arial,sans-serif;font-size:13px;font-weight:400;fill:#102033}
+    .card{stroke-width:2.1;filter:url(#shadow)}.line{stroke:#758297;stroke-width:2.1;fill:none;marker-end:url(#arrow)}
+    .dashed{stroke:#758297;stroke-width:2.1;stroke-dasharray:7 6;fill:none;marker-end:url(#arrow)}
+  </style>
+</defs>
+<rect class="canvas" width="1320" height="520"/>
+<rect class="frame" x="32" y="28" width="1256" height="464" rx="28"/>
+<text class="title" x="66" y="82">Ktor SQS Consumer Flow</text>
+<text class="subtitle" x="70" y="118">Source-verified routes send, consume, inspect, create, and delete SQS queues</text>
+<path class="line" d="M304 250 C334 250 354 250 384 250"/>
+<path class="line" d="M600 250 C630 250 650 250 680 250"/>
+<path class="line" d="M896 250 C926 250 946 250 976 250"/>
+<path class="dashed" d="M790 326 C790 374 530 374 530 326"/>
+<g transform="translate(72,176)">
+  <rect class="card" x="0" y="0" width="232" height="148" rx="16" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="smallLabel" x="116" y="44" text-anchor="middle">Ktor Client</text>
+  <text class="small" x="116" y="78" text-anchor="middle">POST /sqs/messages</text>
+  <text class="small" x="116" y="104" text-anchor="middle">GET /sqs/messages/received</text>
+</g>
+<g transform="translate(384,176)">
+  <rect class="card" x="0" y="0" width="216" height="148" rx="16" fill="#EAF7ED" stroke="#67A878"/>
+  <text class="smallLabel" x="108" y="44" text-anchor="middle">Ktor Routes</text>
+  <text class="small" x="108" y="78" text-anchor="middle">queue management</text>
+  <text class="small" x="108" y="104" text-anchor="middle">attribute lookup</text>
+</g>
+<g transform="translate(680,176)">
+  <rect class="card" x="0" y="0" width="216" height="148" rx="16" fill="#FFF4DE" stroke="#D99A33"/>
+  <text class="smallLabel" x="108" y="44" text-anchor="middle">SqsConsumer</text>
+  <text class="small" x="108" y="78" text-anchor="middle">coroutines = 2</text>
+  <text class="small" x="108" y="104" text-anchor="middle">onMessage String</text>
+</g>
+<g transform="translate(976,176)">
+  <rect class="card" x="0" y="0" width="244" height="148" rx="16" fill="#FDECEF" stroke="#DC6B82"/>
+  <text class="smallLabel" x="122" y="44" text-anchor="middle">Amazon SQS</text>
+  <text class="small" x="122" y="78" text-anchor="middle">configured queue URL</text>
+  <text class="small" x="122" y="104" text-anchor="middle">created queues</text>
+</g>
+<g transform="translate(310,386)">
+  <rect class="card" x="0" y="0" width="700" height="58" rx="14" fill="#EEF2FF" stroke="#8B8FD8"/>
+  <text class="mono" x="350" y="36" text-anchor="middle">Consumed message bodies are stored in a CopyOnWriteArrayList for inspection</text>
+</g>
+</svg>

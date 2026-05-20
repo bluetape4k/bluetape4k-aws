@@ -8,7 +8,7 @@
 
 ## 아키텍처
 
-![Architecture diagram](../../docs/images/readme-diagrams/examples-aws-spring-boot-s3-examples-architecture-01.png)
+![aws spring boot s3 examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-spring-boot-s3-examples-architecture-01.png)
 
 ## API
 
