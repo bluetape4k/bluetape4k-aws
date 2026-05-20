@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Bluetape4k AWS component map</title>
+  <desc id="desc">Pastel component diagram showing application entry points, bluetape4k AWS modules, AWS SDK layers, service coverage, and local test emulators.</desc>
+  <defs>
+    <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#8FA3B8" flood-opacity="0.18"/>
+    </filter>
+    <marker id="arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <path d="M 0 0 L 9 3.5 L 0 7 z" fill="#6B7C8F"/>
+    </marker>
+    <style>
+      .title { font-family: 'Architects Daughter', 'Comic Sans MS', 'Arial', sans-serif; font-size: 34px; fill: #2F4054; }
+      .section { font-family: 'Architects Daughter', 'Comic Sans MS', 'Arial', sans-serif; font-size: 23px; fill: #2F4054; }
+      .label { font-family: 'Comic Sans MS', 'Segoe UI', 'Arial', sans-serif; font-size: 18px; fill: #314256; }
+      .small { font-family: 'Comic Sans MS', 'Segoe UI', 'Arial', sans-serif; font-size: 15px; fill: #52657A; }
+      .tiny { font-family: 'Comic Sans MS', 'Segoe UI', 'Arial', sans-serif; font-size: 13px; fill: #60758A; }
+      .frame { fill: #FFFFFF; stroke: #D6E0EA; stroke-width: 2; rx: 18; filter: url(#shadow); }
+      .lane { fill: #F7FAFC; stroke: #E2EAF2; stroke-width: 1.5; rx: 14; }
+      .card { stroke-width: 2; rx: 12; filter: url(#shadow); }
+      .line { stroke: #6B7C8F; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
+      .thin { stroke: #A4B4C5; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1200" height="720" fill="#F3F7FB"/>
+  <rect class="frame" x="34" y="28" width="1132" height="664"/>
+  <text class="title" x="70" y="78">Bluetape4k AWS component map</text>
+  <text class="small" x="72" y="108">Java SDK v2 bridge + native suspend Kotlin SDK + Spring Boot/Ktor integration</text>
+
+  <rect class="lane" x="70" y="142" width="240" height="438"/>
+  <rect class="lane" x="350" y="142" width="300" height="438"/>
+  <rect class="lane" x="690" y="142" width="205" height="438"/>
+  <rect class="lane" x="935" y="142" width="160" height="438"/>
+
+  <text class="section" x="100" y="182">Application code</text>
+  <text class="section" x="384" y="182">Bluetape4k modules</text>
+  <text class="section" x="720" y="182">AWS SDK layer</text>
+  <text class="section" x="962" y="182">Services</text>
+
+  <rect class="card" x="96" y="218" width="188" height="70" fill="#E4F0FF" stroke="#A7C8F2"/>
+  <text class="label" x="126" y="252">Kotlin service</text>
+  <text class="tiny" x="125" y="274">coroutines / Flow</text>
+
+  <rect class="card" x="96" y="322" width="188" height="70" fill="#EAF8EA" stroke="#A9DDB0"/>
+  <text class="label" x="125" y="356">Spring Boot 4</text>
+  <text class="tiny" x="131" y="378">templates / listeners</text>
+
+  <rect class="card" x="96" y="426" width="188" height="70" fill="#FFF0D7" stroke="#E8C077"/>
+  <text class="label" x="145" y="460">Ktor 3</text>
+  <text class="tiny" x="128" y="482">plugins / clients</text>
+
+  <rect class="card" x="382" y="212" width="236" height="76" fill="#E6F3FF" stroke="#9FC7EA"/>
+  <text class="label" x="420" y="245">aws-java</text>
+  <text class="tiny" x="410" y="268">Sync, async, suspend adapters</text>
+
+  <rect class="card" x="382" y="312" width="236" height="76" fill="#E9F8EF" stroke="#A7DDBB"/>
+  <text class="label" x="420" y="345">aws-kotlin</text>
+  <text class="tiny" x="410" y="368">Native suspend DSL helpers</text>
+
+  <rect class="card" x="382" y="412" width="236" height="76" fill="#FFF4DA" stroke="#E8C679"/>
+  <text class="label" x="420" y="445">aws-spring-boot</text>
+  <text class="tiny" x="410" y="468">Auto-configured operations</text>
+
+  <rect class="card" x="382" y="512" width="236" height="52" fill="#F5EAFE" stroke="#C8ABE7"/>
+  <text class="label" x="420" y="545">aws-ktor</text>
+
+  <rect class="card" x="718" y="225" width="150" height="90" fill="#F5F8FC" stroke="#CAD6E3"/>
+  <text class="label" x="742" y="258">Java SDK v2</text>
+  <text class="tiny" x="740" y="282">Async clients</text>
+
+  <rect class="card" x="718" y="388" width="150" height="90" fill="#F5F8FC" stroke="#CAD6E3"/>
+  <text class="label" x="738" y="421">AWS Kotlin</text>
+  <text class="tiny" x="748" y="445">SDK clients</text>
+
+  <g>
+    <rect class="card" x="955" y="214" width="120" height="42" fill="#E4F0FF" stroke="#A7C8F2"/>
+    <text class="small" x="994" y="240">S3</text>
+    <rect class="card" x="955" y="268" width="120" height="42" fill="#E9F8EF" stroke="#A7DDBB"/>
+    <text class="small" x="978" y="294">DynamoDB</text>
+    <rect class="card" x="955" y="322" width="120" height="42" fill="#FFF0D7" stroke="#E8C077"/>
+    <text class="small" x="992" y="348">SQS</text>
+    <rect class="card" x="955" y="376" width="120" height="42" fill="#FFE7EE" stroke="#E8AFC0"/>
+    <text class="small" x="992" y="402">SNS</text>
+    <rect class="card" x="955" y="430" width="120" height="42" fill="#E9FAF8" stroke="#9DD8D0"/>
+    <text class="small" x="992" y="456">KMS</text>
+    <rect class="card" x="955" y="484" width="120" height="58" fill="#F5EAFE" stroke="#C8ABE7"/>
+    <text class="small" x="976" y="508">CloudWatch</text>
+    <text class="tiny" x="983" y="528">STS, SES, Kinesis</text>
+  </g>
+
+  <path class="line" d="M 284 242 C 322 242, 338 236, 382 236"/>
+  <path class="line" d="M 284 264 C 324 264, 338 350, 382 350"/>
+  <path class="line" d="M 284 346 C 322 346, 338 264, 382 264"/>
+  <path class="line" d="M 284 368 C 320 368, 338 450, 382 450"/>
+  <path class="line" d="M 284 450 C 322 450, 338 364, 382 364"/>
+  <path class="line" d="M 284 472 C 320 472, 338 538, 382 538"/>
+  <path class="thin" d="M 618 250 C 664 250, 676 270, 718 270"/>
+  <path class="thin" d="M 618 350 C 664 350, 676 433, 718 433"/>
+  <path class="thin" d="M 618 450 C 664 450, 676 270, 718 270"/>
+  <path class="thin" d="M 618 538 C 664 538, 676 433, 718 433"/>
+  <path class="line" d="M 868 270 C 900 270, 914 304, 955 304"/>
+  <path class="line" d="M 868 433 C 900 433, 914 448, 955 448"/>
+
+  <rect x="88" y="610" width="1024" height="44" rx="12" fill="#F7FAFC" stroke="#D6E0EA"/>
+  <text class="small" x="116" y="638">Local verification path: Testcontainers LocalStack / FLOCI emulator mirrors the service clients used in runtime modules.</text>
+</svg>

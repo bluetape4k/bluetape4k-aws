@@ -29,17 +29,35 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 - **Ktor 3 통합** — SigV4 signing, coroutine S3 client, SQS consumer runtime, DynamoDB server repository, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 LocalStack/FLOCI emulator와 Nightly 예제 검증
 
+<!-- README_VISUAL_OVERVIEW:START -->
+## Overview Diagram
+
+![Bluetape4k AWS overview diagram](docs/assets/readme-diagrams/root-readme-overview-01.png)
+
+## Module Composition Chart
+
+![Bluetape4k AWS module composition chart](docs/assets/readme-charts/root-readme-module-chart-01.png)
+<!-- README_VISUAL_OVERVIEW:END -->
+
 ## 모듈
 
 | 모듈 | 아티팩트 | 설명 |
 |---|---|---|
-| `aws` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장 제공 |
-| `aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
-| `aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, DynamoDB, KMS, Secrets Manager, Parameter Store 지원 |
-| `aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin |
+| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장 제공 |
+| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, DynamoDB, KMS, Secrets Manager, Parameter Store 지원 |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin |
 | `aws-ktor-s3-examples` | 배포 안 함 | `S3KtorClient`용 LocalStack 중심 예제. Nightly에서 컴파일 및 테스트 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`용 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 | `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, `@SqsListener`, LocalStack SNS subscription fanout 을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
+
+### 구성요소 맵
+
+![AWS component map diagram](docs/assets/readme-diagrams/bluetape4k-aws-components-04.png)
+
+### 서비스 커버리지 차트
+
+![AWS service coverage chart](docs/assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
 
 ---
 
@@ -49,13 +67,13 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ![aws Architecture diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-01.png)
 
-### 3단계 API (`aws` 모듈 — Java SDK v2)
+### 3단계 API (`bluetape4k-aws-java` 모듈 — Java SDK v2)
 
-![3 API (aws — Java SDK v2) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-02.png)
+![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-02.png)
 
-### 네이티브 Suspend (`aws-kotlin` 모듈 — Kotlin SDK)
+### 네이티브 Suspend (`bluetape4k-aws-kotlin` 모듈 — Kotlin SDK)
 
-![Suspend (aws-kotlin — Kotlin SDK) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-03.png)
+![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-03.png)
 
 ---
 
@@ -72,7 +90,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 이 라이브러리는 AWS 서비스 SDK를 `compileOnly`로 선언합니다. 실제로 사용하는 서비스의
 런타임 의존성은 직접 추가해야 합니다.
 
-### `aws` 사용 (Java SDK v2 래퍼)
+### `bluetape4k-aws-java` 사용 (Java SDK v2 래퍼)
 
 ```kotlin
 dependencies {
@@ -102,7 +120,7 @@ dependencies {
 > }
 > ```
 
-### `aws-kotlin` 사용 (Kotlin SDK 래퍼)
+### `bluetape4k-aws-kotlin` 사용 (Kotlin SDK 래퍼)
 
 ```kotlin
 dependencies {
@@ -120,7 +138,7 @@ dependencies {
 }
 ```
 
-### `aws-spring-boot` 사용 (Spring Boot 4 자동설정)
+### `bluetape4k-aws-spring-boot` 사용 (Spring Boot 4 자동설정)
 
 ```kotlin
 dependencies {
@@ -490,7 +508,7 @@ fanout 흐름을 포함합니다. `SnsHttpMessageParser` 는 SNS HTTP JSON 과 �
 처리나 subscription confirmation 전에 certificate chain, `Signature`,
 `SignatureVersion`, 기대한 `TopicArn` 을 검증하세요.
 
-### S3 업로드 — Coroutines (`aws` 모듈)
+### S3 업로드 — Coroutines (`aws-java` 모듈)
 
 ```kotlin
 import io.bluetape4k.aws.s3.coroutines.*
@@ -504,7 +522,7 @@ suspend fun uploadObject(bucket: String, key: String, bytes: ByteArray) =
     }
 ```
 
-### SQS 송수신 — Coroutines (`aws` 모듈)
+### SQS 송수신 — Coroutines (`aws-java` 모듈)
 
 ```kotlin
 import io.bluetape4k.aws.sqs.coroutines.*
@@ -520,7 +538,7 @@ suspend fun receiveMessages(client: SqsAsyncClient, queueUrl: String) =
     }.messages()
 ```
 
-### DynamoDB — 네이티브 Suspend (`aws-kotlin` 모듈)
+### DynamoDB — 네이티브 Suspend (`bluetape4k-aws-kotlin` 모듈)
 
 ```kotlin
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
@@ -536,7 +554,7 @@ suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
     }
 ```
 
-### CloudWatch 메트릭 — DSL (`aws-kotlin` 모듈)
+### CloudWatch 메트릭 — DSL (`bluetape4k-aws-kotlin` 모듈)
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.cloudwatch.*
@@ -567,12 +585,12 @@ suspend fun publishMetric(namespace: String, value: Double) {
 
 ```bash
 # LocalStack으로 실행 (기본값)
-./gradlew :aws:test
-./gradlew :aws-kotlin:test
+./gradlew :bluetape4k-aws-java:test
+./gradlew :bluetape4k-aws-kotlin:test
 
 # Floci 에뮬레이터로 실행
-./gradlew :aws:test -Dbluetape4k.aws.emulator=floci
-./gradlew :aws-kotlin:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=floci
 ```
 
 ---
