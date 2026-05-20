@@ -14,15 +14,15 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 
 ### 클라이언트 생성 패턴 다이어그램
 
-![Client Create diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-02.png)
+![aws kotlin Architecture 2 diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-02.png)
 
 ### DSL 지원 서비스
 
-![DSL Service diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-03.png)
+![DSL diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-03.png)
 
 ### 클라이언트 패턴 클래스 다이어그램
 
-![Client diagram](../docs/images/readme-diagrams/aws-kotlin-class-04.png)
+![aws kotlin Class Structure 4 diagram](../docs/images/readme-diagrams/aws-kotlin-class-04.png)
 
 ## 제공 서비스
 

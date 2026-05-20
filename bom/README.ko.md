@@ -7,7 +7,7 @@
 
 ## Architecture
 
-![Architecture diagram](../docs/images/readme-diagrams/bom-architecture-01.png)
+![bom Architecture diagram](../docs/images/readme-diagrams/bom-architecture-01.png)
 
 BOM은 Gradle `java-platform` 으로 `<dependencyManagement>` constraint 만 게시하며 런타임 클래스는 포함하지 않는다.
 소비자는 `dependencyManagement` (Spring) 또는 Gradle `platform()` 으로 import 한다.

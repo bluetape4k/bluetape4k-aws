@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1754" height="958" viewBox="0 0 1754 958" role="img" aria-label="Client Pattern Class Diagram">
+<svg xmlns="http://www.w3.org/2000/svg" width="1754" height="1044" viewBox="0 0 1754 1044" role="img" aria-label="Client Pattern Class Diagram">
 <defs>
   <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#1f2937" flood-opacity="0.10"/></filter>
   <marker id="openArrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 10 5 L 1 9" fill="none" stroke="#758297" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
@@ -20,64 +20,70 @@
     .implLine{stroke:#758297;stroke-width:2.2;stroke-dasharray:8 7;fill:none;marker-end:url(#inherit)}
   </style>
 </defs>
-<rect class="canvas" width="1754" height="958"/>
-<rect class="frame" x="32" y="28" width="1690" height="902" rx="28"/>
+<rect class="canvas" width="1754" height="1044"/>
+<rect class="frame" x="32" y="28" width="1690" height="988" rx="28"/>
 <text class="title" x="66" y="82">Client Pattern Class Diagram</text>
 <text class="subtitle" x="70" y="118">UML classes from the original Mermaid source</text>
-<path class="line" d="M262 172 C262 264 672 264 672 356"/>
-<path class="line" d="M262 172 C262 276 1492 276 1492 380"/>
-<path class="line" d="M262 428 C262 483 877 483 877 538"/>
-<path class="line" d="M262 172 C262 288 1082 288 1082 404"/>
+<path class="line" d="M262 172 C262 288.5 672 288.5 672 405"/>
+<path class="line" d="M262 172 C262 278 1492 278 1492 384"/>
+<path class="line" d="M262 468 C262 523 877 523 877 578"/>
+<path class="line" d="M262 172 C262 288.5 1082 288.5 1082 405"/>
 <g transform="translate(92,180)">
-  <rect class="card" x="0" y="0" width="340" height="240" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <rect class="card" x="0" y="0" width="340" height="280" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#5B8DEF"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="57" text-anchor="middle">AwsClientFactory</text>
-  <text class="mono" x="18" y="108">+dynamoDbClientOf(endpointUrl, region) DynamoDbCli.</text>
-<text class="mono" x="18" y="132">+withDynamoDbClient(block) T</text>
-<text class="mono" x="18" y="156">+sqsClientOf(endpointUrl, region) SqsClient</text>
-<text class="mono" x="18" y="180">+withSqsClient(block) T</text>
-<text class="mono" x="18" y="204">+s3ClientOf(region) S3Client</text>
-<text class="mono" x="18" y="228">+withS3Client(block) T</text>
+  <text class="label" x="170" y="61" text-anchor="middle">AwsClientFactory</text>
+  <text class="mono" x="18" y="108">+dynamoDbClientOf(endpointUrl, region)</text>
+<text class="mono" x="18" y="129">DynamoDbClient</text>
+<text class="mono" x="18" y="150">+withDynamoDbClient(block) T</text>
+<text class="mono" x="18" y="171">+sqsClientOf(endpointUrl, region)</text>
+<text class="mono" x="18" y="192">SqsClient</text>
+<text class="mono" x="18" y="213">+withSqsClient(block) T</text>
+<text class="mono" x="18" y="234">+s3ClientOf(region) S3Client</text>
+<text class="mono" x="18" y="255">+withS3Client(block) T</text>
 </g>
 <g transform="translate(502,180)">
-  <rect class="card" x="0" y="0" width="340" height="168" rx="5" fill="#EAF7EF" stroke="#58A978"/>
+  <rect class="card" x="0" y="0" width="340" height="217" rx="5" fill="#EAF7EF" stroke="#58A978"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#58A978"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="57" text-anchor="middle">CloudWatchClient</text>
-  <text class="mono" x="18" y="108">+putMetricData(block) PutMetricDataResponse</text>
-<text class="mono" x="18" y="132">+getMetricData(block) GetMetricDataResponse</text>
-<text class="mono" x="18" y="156">+close()</text>
+  <text class="label" x="170" y="61" text-anchor="middle">CloudWatchClient</text>
+  <text class="mono" x="18" y="108">+putMetricData(block)</text>
+<text class="mono" x="18" y="129">PutMetricDataResponse</text>
+<text class="mono" x="18" y="150">+getMetricData(block)</text>
+<text class="mono" x="18" y="171">GetMetricDataResponse</text>
+<text class="mono" x="18" y="192">+close()</text>
 </g>
 <g transform="translate(912,180)">
-  <rect class="card" x="0" y="0" width="340" height="216" rx="5" fill="#FFF3D9" stroke="#D6A441"/>
+  <rect class="card" x="0" y="0" width="340" height="217" rx="5" fill="#FFF3D9" stroke="#D6A441"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#D6A441"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="57" text-anchor="middle">DynamoDbClient</text>
+  <text class="label" x="170" y="61" text-anchor="middle">DynamoDbClient</text>
   <text class="mono" x="18" y="108">+getItem(block) GetItemResponse</text>
-<text class="mono" x="18" y="132">+putItem(block) PutItemResponse</text>
-<text class="mono" x="18" y="156">+scan(block) ScanResponse</text>
-<text class="mono" x="18" y="180">+query(block) QueryResponse</text>
-<text class="mono" x="18" y="204">+close()</text>
+<text class="mono" x="18" y="129">+putItem(block) PutItemResponse</text>
+<text class="mono" x="18" y="150">+scan(block) ScanResponse</text>
+<text class="mono" x="18" y="171">+query(block) QueryResponse</text>
+<text class="mono" x="18" y="192">+close()</text>
 </g>
 <g transform="translate(1322,180)">
-  <rect class="card" x="0" y="0" width="340" height="192" rx="5" fill="#FDECEF" stroke="#DC6B82"/>
+  <rect class="card" x="0" y="0" width="340" height="196" rx="5" fill="#FDECEF" stroke="#DC6B82"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#DC6B82"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="57" text-anchor="middle">S3Client</text>
+  <text class="label" x="170" y="61" text-anchor="middle">S3Client</text>
   <text class="mono" x="18" y="108">+getObject(block) GetObjectResponse</text>
-<text class="mono" x="18" y="132">+putObject(block) PutObjectResponse</text>
-<text class="mono" x="18" y="156">+listObjects(block) ListObjectsResponse</text>
-<text class="mono" x="18" y="180">+close()</text>
+<text class="mono" x="18" y="129">+putObject(block) PutObjectResponse</text>
+<text class="mono" x="18" y="150">+listObjects(block) ListObjectsResponse</text>
+<text class="mono" x="18" y="171">+close()</text>
 </g>
-<g transform="translate(707,546)">
-  <rect class="card" x="0" y="0" width="340" height="192" rx="5" fill="#E9F7F6" stroke="#45A7A1"/>
+<g transform="translate(707,586)">
+  <rect class="card" x="0" y="0" width="340" height="238" rx="5" fill="#E9F7F6" stroke="#45A7A1"/>
   <line class="compartment" x1="0" y1="78" x2="340" y2="78" stroke="#45A7A1"/>
   <text class="small" x="170" y="26" text-anchor="middle"></text>
-  <text class="label" x="170" y="57" text-anchor="middle">SqsClient</text>
+  <text class="label" x="170" y="61" text-anchor="middle">SqsClient</text>
   <text class="mono" x="18" y="108">+sendMessage(block) SendMessageResponse</text>
-<text class="mono" x="18" y="132">+receiveMessage(block) ReceiveMessageResponse</text>
-<text class="mono" x="18" y="156">+deleteMessage(block) DeleteMessageResponse</text>
-<text class="mono" x="18" y="180">+close()</text>
+<text class="mono" x="18" y="129">+receiveMessage(block)</text>
+<text class="mono" x="18" y="150">ReceiveMessageResponse</text>
+<text class="mono" x="18" y="171">+deleteMessage(block)</text>
+<text class="mono" x="18" y="192">DeleteMessageResponse</text>
+<text class="mono" x="18" y="213">+close()</text>
 </g>
 </svg>

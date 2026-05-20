@@ -24,8 +24,8 @@
 <rect class="frame" x="32" y="28" width="1246" height="374" rx="28"/>
 <text class="title" x="66" y="82">Three-Tier API Flow</text>
 <text class="subtitle" x="70" y="118">Architecture nodes and edges from the original Mermaid source</text>
-<path class="line" d="M496 220 C496 220 814 220 814 220"/>
-<path class="line" d="M178 220 C178 220 496 220 496 220"/>
+<path class="line" d="M636 220 C636 220 674 220 674 220"/>
+<path class="line" d="M318 220 C318 220 356 220 356 220"/>
 <g transform="translate(48,170)">
   <rect class="card" x="0" y="0" width="260" height="100" rx="14" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="smallLabel" x="130" y="21" text-anchor="middle">1. Sync (Blocking)</text>
@@ -40,14 +40,12 @@
 </g>
 <g transform="translate(684,170)">
   <rect class="card" x="0" y="0" width="260" height="100" rx="14" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="smallLabel" x="130" y="21" text-anchor="middle">3. Coroutines (suspend)</text>
-<text class="smallLabel" x="130" y="47" text-anchor="middle">client.get</text>
-<text class="smallLabel" x="130" y="73" text-anchor="middle">Item(partition Value) =</text>
+  <text class="smallLabel" x="130" y="21" text-anchor="middle">3. Coroutines</text>
+<text class="smallLabel" x="130" y="47" text-anchor="middle">(suspend) client.get</text>
+<text class="smallLabel" x="130" y="73" text-anchor="middle">Item(partition</text>
 </g>
 <g transform="translate(1002,170)">
   <rect class="card" x="0" y="0" width="260" height="100" rx="14" fill="#FDECEF" stroke="#DC6B82"/>
   <text class="smallLabel" x="130" y="45" text-anchor="middle">.await(</text>
 </g>
-<text class="small" x="337" y="212" text-anchor="middle">make async</text>
-<text class="small" x="655" y="212" text-anchor="middle">coroutine wrappin.</text>
 </svg>

@@ -12,7 +12,7 @@ AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, SES, SNS, SQ
 
 ### 서비스별 지원 현황
 
-![Service diagram](../docs/images/readme-diagrams/aws-architecture-02.png)
+![aws Architecture 2 diagram](../docs/images/readme-diagrams/aws-architecture-02.png)
 
 ### 3단계 API 패턴 클래스 다이어그램
 

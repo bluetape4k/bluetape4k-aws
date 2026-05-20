@@ -8,7 +8,7 @@ individual versions.
 
 ## Architecture
 
-![Architecture diagram](../docs/images/readme-diagrams/bom-architecture-01.png)
+![bom Architecture diagram](../docs/images/readme-diagrams/bom-architecture-01.png)
 
 The BOM is a Gradle `java-platform` that publishes only `<dependencyManagement>` constraints — no runtime classes. Consumers import it via `dependencyManagement` (Spring) or Gradle `platform()`.
 

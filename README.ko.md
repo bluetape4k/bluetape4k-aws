@@ -47,15 +47,15 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ### 전체 구조
 
-![Structure diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-01.png)
+![aws Architecture diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-01.png)
 
 ### 3단계 API (`aws` 모듈 — Java SDK v2)
 
-![3 API (`aws` Module — Java SDK v2) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-02.png)
+![3 API (aws — Java SDK v2) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-02.png)
 
 ### 네이티브 Suspend (`aws-kotlin` 모듈 — Kotlin SDK)
 
-![Suspend (`aws-kotlin` Module — Kotlin SDK) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-03.png)
+![Suspend (aws-kotlin — Kotlin SDK) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-03.png)
 
 ---
 
