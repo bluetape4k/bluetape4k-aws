@@ -51,4 +51,10 @@ Integration tests use LocalStack via Testcontainers. Use
 - Keep `README.md` and `README.ko.md` structurally aligned.
 - Store shared README images under `docs/assets/` and reference them with the
   same relative path from both locales.
+- Store reusable repository guidance, release rules, checklists, and other
+  durable operating documents under `docs/`, not `.omx/`.
+- For release work, check the workspace governance docs first:
+  `../.github/docs/release/central-portal-release-runbook.md`,
+  `../.github/docs/release/pre-release-checklist.md`, and
+  `../.github/docs/governance/version-and-release-train.md`.
 - Keep this file and other agent-facing guidance in English.
