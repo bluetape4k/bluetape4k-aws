@@ -18,6 +18,8 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
 - **SNS** — `SnsCoroutinesTemplate` 로 topic 생성/조회, topic publish, FIFO publish
   필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
   confirmation 을 지원한다.
+- **SES** — `SesCoroutinesMailSender` 로 simple, template, raw, attachment,
+  custom-header email send 를 지원하고, 선택적 Spring `JavaMailSender` adapter 를 제공한다.
 - **SQS** — `SqsCoroutinesTemplate` 로 큐 조회·생성, 송신, 수신, visibility 변경,
   cold `Flow<SqsReceivedMessage>` 스트림을 제공한다.
 - **SQS 리스너** — `@SqsListener` 어노테이션 기반의 Coroutine 메시지 리스너 컨테이너.
@@ -50,12 +52,16 @@ dependencies {
     // 런타임에서 사용할 AWS SDK v2 서비스만 선택적으로 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
+
+    // Spring JavaMailSender adapter 를 사용할 때만 필요
+    implementation("org.eclipse.angus:angus-mail")
 }
 ```
 
@@ -99,6 +105,14 @@ bluetape4k:
           fifo: true
           content-based-deduplication: true
           fifo-throughput-scope: message-group
+    ses:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      default-from: no-reply@example.com
+      configuration-set-name: app-prod
+      java-mail-sender:
+        enabled: true
     dynamodb:
       enabled: true
       region: ap-northeast-2
@@ -285,6 +299,67 @@ class OrderQueue(private val sqs: SqsOperations) {
     }
 }
 ```
+
+### SES — Simple, Template, Raw, JavaMail 발송
+
+```kotlin
+import io.bluetape4k.aws.spring.ses.SesEmailAddressSet
+import io.bluetape4k.aws.spring.ses.SesEmailAttachment
+import io.bluetape4k.aws.spring.ses.SesEmailBody
+import io.bluetape4k.aws.spring.ses.SesEmailRequest
+import io.bluetape4k.aws.spring.ses.SesOperations
+import io.bluetape4k.aws.spring.ses.SesTemplateEmailRequest
+import org.springframework.mail.SimpleMailMessage
+import org.springframework.mail.javamail.JavaMailSender
+
+class OrderEmail(
+    private val ses: SesOperations,
+    private val javaMailSender: JavaMailSender,
+) {
+    suspend fun sendReceipt(orderId: String, pdf: ByteArray) {
+        ses.sendEmail(
+            SesEmailRequest(
+                destination = SesEmailAddressSet(to = listOf("customer@example.com")),
+                subject = "Receipt $orderId",
+                body = SesEmailBody(html = "<p>Your receipt is attached.</p>"),
+                headers = mapOf("X-Order-Id" to orderId),
+                attachments = listOf(
+                    SesEmailAttachment(
+                        fileName = "receipt-$orderId.pdf",
+                        content = pdf,
+                        contentType = "application/pdf",
+                    )
+                ),
+            )
+        )
+    }
+
+    suspend fun sendWelcomeTemplate() {
+        ses.sendTemplateEmail(
+            SesTemplateEmailRequest(
+                destination = SesEmailAddressSet(to = listOf("customer@example.com")),
+                templateName = "welcome",
+                templateData = """{"name":"Bluetape"}""",
+            )
+        )
+    }
+
+    fun sendWithSpringMail() {
+        javaMailSender.send(
+            SimpleMailMessage().apply {
+                setTo("customer@example.com")
+                subject = "Hello"
+                text = "Welcome."
+            }
+        )
+    }
+}
+```
+
+`SesOperations` 는 convenience request 에 `bluetape4k.aws.ses.default-from` 과
+`configuration-set-name` 기본값을 적용한다. 하위 수준 `send(SendEmailRequest)` 는
+AWS SDK request 를 그대로 전송한다. JavaMail adapter 는 Spring `JavaMailSender`,
+Jakarta Mail, Angus Mail provider 가 런타임 classpath 에 있을 때만 등록된다.
 
 ### SNS — Publish, SMS, HTTP endpoint message
 

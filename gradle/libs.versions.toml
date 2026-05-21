@@ -125,7 +125,10 @@ spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-s
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
+spring-context-support = { module = "org.springframework:spring-context-support" }
 spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
+jakarta-mail-api = { module = "jakarta.mail:jakarta.mail-api" }
+angus-mail = { module = "org.eclipse.angus:angus-mail" }
 
 # Spring Cloud AWS
 spring-cloud-aws-bom = { module = "io.awspring.cloud:spring-cloud-aws-dependencies", version.ref = "spring-cloud-aws" }
