@@ -18,6 +18,9 @@ templates, a SQS listener container, and remote Environment sources, with no
 - **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, topic publish,
   FIFO publish fields, direct SMS publish options, and HTTP(S) notification
   JSON parsing plus token-based subscription confirmation.
+- **SES** — `SesCoroutinesMailSender` for simple, templated, raw, attachment,
+  and custom-header email sends, plus an optional Spring `JavaMailSender`
+  adapter.
 - **SQS** — `SqsCoroutinesTemplate` for queue lookup/creation, send, receive,
   visibility change, and a cold `Flow<SqsReceivedMessage>` stream.
 - **SQS listener** — `@SqsListener` annotation drives a coroutine-based
@@ -52,12 +55,16 @@ dependencies {
     // Add only the AWS SDK v2 services you need at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
+
+    // Required only when using the Spring JavaMailSender adapter.
+    implementation("org.eclipse.angus:angus-mail")
 }
 ```
 
@@ -101,6 +108,14 @@ bluetape4k:
           fifo: true
           content-based-deduplication: true
           fifo-throughput-scope: message-group
+    ses:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      default-from: no-reply@example.com
+      configuration-set-name: app-prod
+      java-mail-sender:
+        enabled: true
     dynamodb:
       enabled: true
       region: ap-northeast-2
@@ -288,6 +303,68 @@ class OrderQueue(private val sqs: SqsOperations) {
     }
 }
 ```
+
+### SES — simple, template, raw, and JavaMail sends
+
+```kotlin
+import io.bluetape4k.aws.spring.ses.SesEmailAddressSet
+import io.bluetape4k.aws.spring.ses.SesEmailAttachment
+import io.bluetape4k.aws.spring.ses.SesEmailBody
+import io.bluetape4k.aws.spring.ses.SesEmailRequest
+import io.bluetape4k.aws.spring.ses.SesOperations
+import io.bluetape4k.aws.spring.ses.SesTemplateEmailRequest
+import org.springframework.mail.SimpleMailMessage
+import org.springframework.mail.javamail.JavaMailSender
+
+class OrderEmail(
+    private val ses: SesOperations,
+    private val javaMailSender: JavaMailSender,
+) {
+    suspend fun sendReceipt(orderId: String, pdf: ByteArray) {
+        ses.sendEmail(
+            SesEmailRequest(
+                destination = SesEmailAddressSet(to = listOf("customer@example.com")),
+                subject = "Receipt $orderId",
+                body = SesEmailBody(html = "<p>Your receipt is attached.</p>"),
+                headers = mapOf("X-Order-Id" to orderId),
+                attachments = listOf(
+                    SesEmailAttachment(
+                        fileName = "receipt-$orderId.pdf",
+                        content = pdf,
+                        contentType = "application/pdf",
+                    )
+                ),
+            )
+        )
+    }
+
+    suspend fun sendWelcomeTemplate() {
+        ses.sendTemplateEmail(
+            SesTemplateEmailRequest(
+                destination = SesEmailAddressSet(to = listOf("customer@example.com")),
+                templateName = "welcome",
+                templateData = """{"name":"Bluetape"}""",
+            )
+        )
+    }
+
+    fun sendWithSpringMail() {
+        javaMailSender.send(
+            SimpleMailMessage().apply {
+                setTo("customer@example.com")
+                subject = "Hello"
+                text = "Welcome."
+            }
+        )
+    }
+}
+```
+
+`SesOperations` applies `bluetape4k.aws.ses.default-from` and
+`configuration-set-name` to convenience requests. The lower-level
+`send(SendEmailRequest)` method sends the AWS SDK request as-is. The JavaMail
+adapter is registered only when Spring `JavaMailSender`, Jakarta Mail, and an
+Angus Mail provider are on the runtime classpath.
 
 ### SNS — publish, SMS, and HTTP endpoint messages
 

@@ -31,6 +31,7 @@ dependencies {
     compileOnly(libs.aws2.s3)
     compileOnly(libs.aws2.s3.transfer.manager)
     compileOnly(libs.aws2.secretsmanager)
+    compileOnly(libs.aws2.sesv2)
     compileOnly(libs.aws2.sns)
     compileOnly(libs.aws2.sqs)
     compileOnly(libs.aws2.ssm)
@@ -46,13 +47,17 @@ dependencies {
     testImplementation(libs.aws2.kms)
     testImplementation(libs.aws2.s3)
     testImplementation(libs.aws2.secretsmanager)
+    testImplementation(libs.aws2.sesv2)
     testImplementation(libs.aws2.sns)
     testImplementation(libs.aws2.sqs)
     testImplementation(libs.aws2.ssm)
 
     // Spring Boot (autoconfigure only — no runtime dep)
     compileOnly(libs.spring.boot.autoconfigure)
+    compileOnly(libs.spring.context.support)
     compileOnly(libs.spring.security.crypto)
+    compileOnly(libs.jakarta.mail.api)
+    compileOnly(libs.angus.mail)
     annotationProcessor(libs.spring.boot.configuration.processor)
 
     // Coroutines
@@ -63,7 +68,10 @@ dependencies {
 
     // Test
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.context.support)
     testImplementation(libs.spring.security.crypto)
+    testImplementation(libs.jakarta.mail.api)
+    testImplementation(libs.angus.mail)
     testImplementation(libs.h2.v2)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
