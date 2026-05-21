@@ -7,7 +7,8 @@ Ktor 3 integration for bluetape4k AWS modules. It provides a Ktor
 client built on that plugin, and a server-side SQS consumer/publisher runtime
 that follows the Ktor application lifecycle. It also provides a Ktor server
 plugin and repository facade for DynamoDB using `:aws-kotlin` and the official
-AWS SDK for Kotlin.
+AWS SDK for Kotlin, plus a Ktor server plugin for AWS-backed Exposed JDBC
+database registries.
 
 ## Features
 
@@ -24,6 +25,8 @@ AWS SDK for Kotlin.
   forwarding.
 - `DynamoDbKtorPlugin` for Ktor server applications that need an AWS Kotlin SDK
   DynamoDB client, explicit table auto-creation, and repository-style access.
+- `AwsExposedPlugin` for Ktor server applications that need shared Exposed JDBC
+  databases loaded from local properties or AWS config-source descriptors.
 
 ## Dependency
 
@@ -45,6 +48,11 @@ dependencies {
     // DynamoDB Ktor server usage
     implementation("io.ktor:ktor-server-core")
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
+
+    // AWS-backed Exposed Ktor server usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:${bluetape4kAwsVersion}")
+    runtimeOnly("com.h2database:h2") // or the production JDBC driver
 }
 ```
 
@@ -243,6 +251,73 @@ suspend fun Application.findOrder(id: String): Order? =
 The repository intentionally uses explicit `DynamoItemMapper` and
 `DynamoItemReader` functions. It does not depend on the AWS Kotlin DynamoDB
 Mapper because that mapper is still a Developer Preview API.
+
+## AWS Exposed Server Plugin
+
+`AwsExposedPlugin` installs one `AwsExposedKtorRuntime` into the Ktor
+application lifecycle. Startup creates a shared `AwsExposedDatabaseRegistry`
+from `bluetape4k-aws-exposed`; shutdown closes it once. Route code can use the
+runtime, a default or named handle, an Exposed `Database`, or a suspend
+transaction helper.
+
+```kotlin
+import io.bluetape4k.aws.ktor.exposed.AwsExposedPlugin
+import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import org.jetbrains.exposed.v1.jdbc.selectAll
+
+fun Application.module() {
+    install(AwsExposedPlugin) {
+        defaultDatabase {
+            url = "jdbc:postgresql://localhost:5432/orders"
+            driverClassName = "org.postgresql.Driver"
+            username = "orders"
+            password = "change-me"
+            pool {
+                maximumPoolSize = 8
+                minimumIdle = 1
+            }
+        }
+        database("analytics") {
+            url = "jdbc:postgresql://localhost:5432/analytics"
+            driverClassName = "org.postgresql.Driver"
+            username = "analytics"
+        }
+    }
+
+    routing {
+        get("/orders/count") {
+            val count = call.awsExposedTransaction {
+                Orders.selectAll().count()
+            }
+            call.respondText(count.toString())
+        }
+    }
+}
+```
+
+For remote configuration, the plugin preserves AWS source descriptors and lets
+an `AwsDatabaseSettingsResolver` supply final JDBC values. This keeps Ktor
+integration separate from concrete Secrets Manager or Parameter Store loading
+policy.
+
+```kotlin
+install(AwsExposedPlugin) {
+    settingsResolver = mySecretsManagerResolver
+    defaultDatabase {
+        secretSource("/prod/app/database") {
+            prefix = "db"
+        }
+    }
+}
+```
+
+Password values are represented by `AwsSecretString` after configuration and
+render as redacted in generated diagnostics.
 
 ### SQS Consumer Options
 
