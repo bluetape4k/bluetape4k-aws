@@ -2,6 +2,12 @@ package io.bluetape4k.aws.exposed
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import java.io.PrintWriter
+import java.sql.Connection
+import java.sql.DriverManager
+import java.sql.SQLException
+import java.util.Properties
+import java.util.logging.Logger
 import javax.sql.DataSource
 
 /**
@@ -28,10 +34,30 @@ object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory {
         properties: AwsDatabaseConnectionProperties,
     ): HikariDataSource {
         val config = HikariConfig().apply {
-            jdbcUrl = properties.url
-            properties.driverClassName?.let { driverClassName = it }
-            properties.username?.let { username = it }
-            properties.password?.let { password = it.reveal() }
+            when (properties.authenticationMode) {
+                AwsDatabaseAuthenticationMode.STATIC_PASSWORD -> {
+                    jdbcUrl = properties.url
+                    properties.driverClassName?.let { driverClassName = it }
+                    properties.username?.let { username = it }
+                    properties.password?.let { password = it.reveal() }
+
+                    properties.dataSourceProperties.forEach { (key, value) ->
+                        addDataSourceProperty(key, value)
+                    }
+                }
+                AwsDatabaseAuthenticationMode.RDS_IAM -> {
+                    dataSource = RdsIamRefreshingDataSource(
+                        url = properties.url,
+                        driverClassName = properties.driverClassName,
+                        username = requireNotNull(properties.rdsIam).effectiveUsername(properties.username),
+                        dataSourceProperties = properties.dataSourceProperties,
+                        passwordProvider = AwsDatabasePasswordProviders.rdsIam(
+                            properties = properties,
+                            tokenGenerator = AwsSdkRdsIamAuthTokenGenerator(),
+                        ),
+                    )
+                }
+            }
 
             poolName = properties.pool.poolName ?: defaultPoolName(databaseName)
             maximumPoolSize = properties.pool.maximumPoolSize
@@ -39,14 +65,66 @@ object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory {
             connectionTimeout = properties.pool.connectionTimeoutMillis
             idleTimeout = properties.pool.idleTimeoutMillis
             maxLifetime = properties.pool.maxLifetimeMillis
-
-            properties.dataSourceProperties.forEach { (key, value) ->
-                addDataSourceProperty(key, value)
-            }
         }
         return HikariDataSource(config)
     }
 
     private fun defaultPoolName(databaseName: String): String =
         "bluetape4k-aws-exposed-$databaseName"
+}
+
+internal class RdsIamRefreshingDataSource(
+    private val url: String,
+    driverClassName: String?,
+    private val username: String,
+    private val dataSourceProperties: Map<String, String>,
+    private val passwordProvider: AwsDatabasePasswordProvider,
+): DataSource {
+
+    init {
+        driverClassName?.let { Class.forName(it) }
+    }
+
+    override fun getConnection(): Connection {
+        val connectionProperties = Properties().apply {
+            dataSourceProperties.forEach { (key, value) -> setProperty(key, value) }
+            setProperty("user", username)
+            setProperty(
+                "password",
+                requireNotNull(passwordProvider.currentPassword()) {
+                    "RDS IAM password provider returned null."
+                }.reveal(),
+            )
+        }
+        return DriverManager.getConnection(url, connectionProperties)
+    }
+
+    override fun getConnection(
+        username: String?,
+        password: String?,
+    ): Connection =
+        throw SQLException("RDS IAM data source does not accept caller-supplied credentials.")
+
+    override fun getLogWriter(): PrintWriter? = DriverManager.getLogWriter()
+
+    override fun setLogWriter(out: PrintWriter?) {
+        DriverManager.setLogWriter(out)
+    }
+
+    override fun setLoginTimeout(seconds: Int) {
+        DriverManager.setLoginTimeout(seconds)
+    }
+
+    override fun getLoginTimeout(): Int = DriverManager.getLoginTimeout()
+
+    override fun getParentLogger(): Logger = Logger.getGlobal()
+
+    override fun <T: Any?> unwrap(iface: Class<T>): T {
+        if (iface.isInstance(this)) {
+            return iface.cast(this)
+        }
+        throw SQLException("Not a wrapper for ${iface.name}.")
+    }
+
+    override fun isWrapperFor(iface: Class<*>): Boolean = iface.isInstance(this)
 }
