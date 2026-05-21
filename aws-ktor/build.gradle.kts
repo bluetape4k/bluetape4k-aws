@@ -6,6 +6,7 @@ dependencies {
     // bluetape4k-aws modules
     api(project(":bluetape4k-aws-java"))
     api(project(":bluetape4k-aws-kotlin"))
+    compileOnly(project(":bluetape4k-aws-exposed"))
 
     // bluetape4k artifacts
     api(libs.bluetape4k.io)
@@ -13,6 +14,7 @@ dependencies {
     compileOnly(libs.bluetape4k.jackson3)
     testImplementation(libs.bluetape4k.junit5)
     testImplementation(libs.bluetape4k.testcontainers)
+    testImplementation(project(":bluetape4k-aws-exposed"))
 
     // Ktor client
     api(libs.aws2.auth)
@@ -31,6 +33,7 @@ dependencies {
     // Test
     testImplementation(libs.aws2.sqs)
     testImplementation(libs.aws.kotlin.dynamodb)
+    testImplementation(libs.h2.v2)
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.testcontainers.localstack)

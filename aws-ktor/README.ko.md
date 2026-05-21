@@ -6,7 +6,9 @@ bluetape4k AWS 모듈을 위한 Ktor 3 통합 모듈입니다. Ktor `HttpClient`
 AWS HTTP 요청에 Signature Version 4 서명을 적용하는 플러그인, 그 위에 구축한
 coroutine 친화적 S3 REST client, Ktor lifecycle에 맞춰 동작하는 server-side SQS
 consumer/publisher runtime을 제공합니다. 또한 `:aws-kotlin` 과 공식 AWS SDK for
-Kotlin을 사용하는 DynamoDB Ktor server plugin과 repository facade를 제공합니다.
+Kotlin을 사용하는 DynamoDB Ktor server plugin, repository facade, 그리고
+AWS-backed Exposed JDBC database registry를 Ktor lifecycle에 연결하는 server
+plugin을 제공합니다.
 
 ## 기능
 
@@ -23,6 +25,8 @@ Kotlin을 사용하는 DynamoDB Ktor server plugin과 repository facade를 제�
   `ApplicationPlugin`.
 - AWS Kotlin SDK DynamoDB client, 명시적 table auto-create, repository-style
   접근을 제공하는 `DynamoDbKtorPlugin`.
+- local property 또는 AWS config-source descriptor에서 로드한 Exposed JDBC
+  database registry를 공유하는 `AwsExposedPlugin`.
 
 ## 의존성
 
@@ -44,6 +48,11 @@ dependencies {
     // DynamoDB Ktor server 사용 시
     implementation("io.ktor:ktor-server-core")
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
+
+    // AWS-backed Exposed Ktor server 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:${bluetape4kAwsVersion}")
+    runtimeOnly("com.h2database:h2") // 또는 운영 JDBC driver
 }
 ```
 
@@ -240,6 +249,72 @@ suspend fun Application.findOrder(id: String): Order? =
 Repository는 명시적인 `DynamoItemMapper` 와 `DynamoItemReader` 함수를 사용합니다.
 AWS Kotlin DynamoDB Mapper는 아직 Developer Preview API이므로 기본 구현으로
 사용하지 않습니다.
+
+## AWS Exposed Server Plugin
+
+`AwsExposedPlugin` 은 `AwsExposedKtorRuntime` 하나를 Ktor application lifecycle에
+설치합니다. startup에서는 `bluetape4k-aws-exposed` 의
+`AwsExposedDatabaseRegistry` 를 만들고, shutdown에서는 registry를 한 번만 닫습니다.
+Route code는 runtime, default/named handle, Exposed `Database`, suspend
+transaction helper를 사용할 수 있습니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.exposed.AwsExposedPlugin
+import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import org.jetbrains.exposed.v1.jdbc.selectAll
+
+fun Application.module() {
+    install(AwsExposedPlugin) {
+        defaultDatabase {
+            url = "jdbc:postgresql://localhost:5432/orders"
+            driverClassName = "org.postgresql.Driver"
+            username = "orders"
+            password = "change-me"
+            pool {
+                maximumPoolSize = 8
+                minimumIdle = 1
+            }
+        }
+        database("analytics") {
+            url = "jdbc:postgresql://localhost:5432/analytics"
+            driverClassName = "org.postgresql.Driver"
+            username = "analytics"
+        }
+    }
+
+    routing {
+        get("/orders/count") {
+            val count = call.awsExposedTransaction {
+                Orders.selectAll().count()
+            }
+            call.respondText(count.toString())
+        }
+    }
+}
+```
+
+원격 설정은 AWS source descriptor를 보존하고, `AwsDatabaseSettingsResolver` 가 최종
+JDBC 값을 제공하게 구성합니다. 이렇게 하면 Ktor 통합과 Secrets Manager 또는
+Parameter Store 로딩 정책을 분리할 수 있습니다.
+
+```kotlin
+install(AwsExposedPlugin) {
+    settingsResolver = mySecretsManagerResolver
+    defaultDatabase {
+        secretSource("/prod/app/database") {
+            prefix = "db"
+        }
+    }
+}
+```
+
+설정 이후 password 값은 `AwsSecretString` 으로 보관되며 generated diagnostics에는
+redacted 문자열로 표시됩니다.
 
 ### SQS Consumer 옵션
 
