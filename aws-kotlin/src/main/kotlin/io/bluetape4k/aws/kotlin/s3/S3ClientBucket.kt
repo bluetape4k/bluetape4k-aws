@@ -3,18 +3,26 @@ package io.bluetape4k.aws.kotlin.s3
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.createBucket
 import aws.sdk.kotlin.services.s3.listObjectsV2
+import aws.sdk.kotlin.services.s3.listObjectVersions
 import aws.sdk.kotlin.services.s3.model.CreateBucketRequest
 import aws.sdk.kotlin.services.s3.model.CreateBucketResponse
 import aws.sdk.kotlin.services.s3.model.DeleteBucketRequest
 import aws.sdk.kotlin.services.s3.model.DeleteBucketResponse
+import aws.sdk.kotlin.services.s3.model.DeleteMarkerEntry
+import aws.sdk.kotlin.services.s3.model.DeleteObjectsResponse
 import aws.sdk.kotlin.services.s3.model.HeadBucketRequest
+import aws.sdk.kotlin.services.s3.model.ObjectIdentifier
+import aws.sdk.kotlin.services.s3.model.ObjectVersion
 import aws.smithy.kotlin.runtime.ServiceException
-import kotlinx.coroutines.CancellationException
 import aws.smithy.kotlin.runtime.http.response.statusCode
 import io.bluetape4k.aws.kotlin.s3.model.deleteBucketRequestOf
+import io.bluetape4k.aws.kotlin.s3.model.deleteOf
+import io.bluetape4k.aws.kotlin.s3.model.deleteObjectsRequestOf
 import io.bluetape4k.aws.kotlin.s3.model.headBucketRequestOf
+import io.bluetape4k.aws.kotlin.s3.model.objectIdentifierOf
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
+import kotlinx.coroutines.CancellationException
 
 /**
  * [bucket]의 버킷이 존재하는지 확인합니다.
@@ -95,10 +103,14 @@ suspend inline fun S3Client.ensureBucketExists(
 
 
 /**
- * [bucket] 버킷의 모든 Object를 삭제하고, Bucket도 삭제합니다.
+ * Deletes all current objects, object versions, delete markers, then deletes [bucket].
  *
- * @param bucket 삭제할 버킷 이름
- * @return [DeleteBucketResponse] 인스턴스
+ * Versioned and versioning-suspended buckets require deleting each object
+ * version and delete marker by `versionId`; deleting only current object keys can
+ * leave the bucket non-empty.
+ *
+ * @param bucket bucket name to delete
+ * @return [DeleteBucketResponse] returned by S3
  */
 suspend inline fun S3Client.forceDeleteBucket(
     bucket: String,
@@ -106,19 +118,82 @@ suspend inline fun S3Client.forceDeleteBucket(
 ): DeleteBucketResponse {
     bucket.requireNotBlank("bucket")
 
+    deleteAllObjectVersions(bucket)
+    deleteAllCurrentObjects(bucket)
+    deleteAllObjectVersions(bucket)
+
+    // 버킷 삭제
+    log.debug { "버킷을 삭제합니다. bucket=$bucket" }
+    return deleteBucket(deleteBucketRequestOf(bucket, builder = builder))
+}
+
+@PublishedApi
+internal suspend fun S3Client.deleteAllCurrentObjects(bucket: String) {
     // 버킷 내 모든 Object 삭제 (listObjectsV2는 최대 1000개만 반환하므로, 모든 Object를 삭제하기 위해 반복)
     log.debug { "버킷의 모든 Object를 삭제합니다. bucket=$bucket" }
     do {
         val keys = listObjectsV2 { this.bucket = bucket }.contents?.mapNotNull { it.key } ?: emptyList()
 
         if (keys.isNotEmpty()) {
-            deleteAll(bucket, keys)
+            deleteAll(bucket, keys).throwIfDeleteFailed(bucket)
         }
     } while (keys.isNotEmpty())
+}
 
-    // 버킷 삭제
-    log.debug { "버킷을 삭제합니다. bucket=$bucket" }
-    return deleteBucket(deleteBucketRequestOf(bucket, builder = builder))
+@PublishedApi
+internal suspend fun S3Client.deleteAllObjectVersions(bucket: String) {
+    var keyMarker: String? = null
+    var versionIdMarker: String? = null
+
+    do {
+        val response = listObjectVersions {
+            this.bucket = bucket
+            this.keyMarker = keyMarker
+            this.versionIdMarker = versionIdMarker
+        }
+
+        val identifiers = buildList {
+            response.versions.orEmpty().forEach { addObjectVersion(it) }
+            response.deleteMarkers.orEmpty().forEach { addDeleteMarker(it) }
+        }
+
+        if (identifiers.isNotEmpty()) {
+            log.debug { "Delete object versions and delete markers in bucket=$bucket, size=${identifiers.size}" }
+            deleteObjects(deleteObjectsRequestOf(bucket, deleteOf(identifiers, quiet = true)))
+                .throwIfDeleteFailed(bucket)
+        }
+
+        val isTruncated = response.isTruncated == true
+        check(!isTruncated || response.nextKeyMarker != null || response.nextVersionIdMarker != null) {
+            "S3 listObjectVersions response for bucket=$bucket was truncated without pagination markers"
+        }
+        keyMarker = response.nextKeyMarker
+        versionIdMarker = response.nextVersionIdMarker
+    } while (isTruncated)
+}
+
+private fun MutableList<ObjectIdentifier>.addObjectVersion(version: ObjectVersion) {
+    addVersionedIdentifier(version.key, version.versionId)
+}
+
+private fun MutableList<ObjectIdentifier>.addDeleteMarker(deleteMarker: DeleteMarkerEntry) {
+    addVersionedIdentifier(deleteMarker.key, deleteMarker.versionId)
+}
+
+private fun MutableList<ObjectIdentifier>.addVersionedIdentifier(key: String?, versionId: String?) {
+    if (!key.isNullOrBlank()) {
+        add(objectIdentifierOf(key, versionId))
+    }
+}
+
+private fun DeleteObjectsResponse.throwIfDeleteFailed(bucket: String) {
+    val errors = errors.orEmpty()
+    check(errors.isEmpty()) {
+        val details = errors.joinToString { error ->
+            "key=${error.key}, versionId=${error.versionId}, code=${error.code}, message=${error.message}"
+        }
+        "Failed to delete S3 objects in bucket=$bucket: $details"
+    }
 }
 
 @PublishedApi
