@@ -33,6 +33,10 @@ templates, a SQS listener container, and remote Environment sources, with no
 - **Secrets Manager / Parameter Store** — startup Environment sources for
   remote secrets and parameters, optional lazy refresh, and composed
   `@SecretsValue` / `@ParameterStoreValue` annotations over Spring `@Value`.
+- **Exposed databases** — auto-configures an AWS-backed
+  `AwsExposedDatabaseRegistry`, default Exposed `Database`, and default
+  `DataSource` from explicit properties or remote Environment values loaded
+  from Secrets Manager / Parameter Store.
 - **No awspring runtime dependency** — AWS SDK v2 services are `compileOnly`;
   the consumer adds only the services they actually use.
 
@@ -41,6 +45,9 @@ templates, a SQS listener container, and remote Environment sources, with no
 ```kotlin
 dependencies {
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:${bluetape4kAwsVersion}")
+
+    // Required only for AWS-backed Exposed database auto-configuration.
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:${bluetape4kAwsVersion}")
 
     // Add only the AWS SDK v2 services you need at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -67,7 +74,7 @@ bluetape4k:
     s3:
       enabled: true
       region: ap-northeast-2
-      endpoint-override: http://localhost:4566   # LocalStack
+      endpoint-override: http://localhost:4566   # local AWS emulator
       path-style-access-enabled: true
       presign:
         duration: PT15M
@@ -129,6 +136,22 @@ bluetape4k:
           prefix: app
           recursive: true
           with-decryption: true
+    exposed:
+      enabled: true
+      default-database:
+        url: jdbc:postgresql://localhost:5432/orders
+        driver-class-name: org.postgresql.Driver
+        username: order_app
+        password: ${app.db.password}
+        pool:
+          maximum-pool-size: 10
+          minimum-idle: 1
+      named-databases:
+        analytics:
+          url: jdbc:postgresql://localhost:5432/analytics
+          driver-class-name: org.postgresql.Driver
+          username: analytics_app
+          password: ${app.analytics.password}
 ```
 
 `endpoint-override` requires `region` to be set. Each property class enforces
@@ -144,6 +167,9 @@ is set, the property source reloads lazily on property access after the interval
 has elapsed; failed reloads keep the previous values. When multiple remote
 sources define the same key, the earlier configured source has higher Spring
 property-source precedence.
+`bluetape4k.aws.exposed.default-database.url` activates the Exposed registry.
+If the URL is absent, the Exposed auto-configuration contributes only property
+binding and does not create a registry or database pool.
 
 ## Usage Examples
 
@@ -170,6 +196,44 @@ JSON secrets are flattened with dot notation. Parameter names under the
 configured path are mapped to dot-separated keys, and `prefix` is prepended to
 both source types. `@SecretsValue` and `@ParameterStoreValue` use normal Spring
 `@Value` placeholder syntax.
+
+### Exposed — AWS-backed database registry
+
+```kotlin
+import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import javax.sql.DataSource
+
+class OrderQueryService(
+    private val database: Database,
+    private val dataSource: DataSource,
+    private val registry: AwsExposedDatabaseRegistry,
+) {
+    fun countOrders(): Long =
+        transaction(database) {
+            // Use bluetape4k-exposed repositories or Exposed DSL here.
+            // Orders is your Exposed Table object.
+            Orders.selectAll().count()
+        }
+
+    fun analyticsDatabase(): Database =
+        registry.get("analytics").database
+
+    fun defaultDataSource(): DataSource =
+        dataSource
+}
+```
+
+The Spring adapter creates the registry through `bluetape4k-aws-exposed` and
+aliases the default handle as a Spring `DataSource` and Exposed `Database` when
+the application has not already supplied those beans. Named databases are
+available through `AwsExposedDatabaseRegistry`. To load database credentials
+from Secrets Manager or Parameter Store, configure those Environment sources
+with a `prefix` such as `bluetape4k.aws.exposed.default-database`; the resolved
+keys bind before the registry is created. Pool lifecycle is owned by the
+registry, so the alias beans do not close the pool separately.
 
 ### S3 — coroutine-friendly template
 
@@ -385,9 +449,9 @@ single short `String` needs a stable persistence or serialization boundary.
 
 ## Testing
 
-LocalStack-based integration tests are provided under `src/test/...`. They run
-opt-in via:
+Local AWS emulator integration tests are provided under `src/test/...`. They
+default to Floci and can be switched with `-Dbluetape4k.aws.emulator=...`:
 
 ```bash
-./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=localstack
+./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
 ```
