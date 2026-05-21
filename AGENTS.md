@@ -30,6 +30,14 @@ For non-trivial GitHub issue work, add or update a durable lesson under
 `docs/lessons/YYYY-MM-DD-{slug}.md` before publishing the PR. Treat the lesson
 as part of the completion checklist, not an optional follow-up.
 
+Store reusable repository guidance, release rules, checklists, and other
+durable operating documents under `docs/`, not `.omx/`. Treat `.omx/` as
+transient runtime state and local artifacts only.
+For release work, check the workspace governance docs first:
+`../.github/docs/release/central-portal-release-runbook.md`,
+`../.github/docs/release/pre-release-checklist.md`, and
+`../.github/docs/governance/version-and-release-train.md`.
+
 ## Commands
 
 ```bash
