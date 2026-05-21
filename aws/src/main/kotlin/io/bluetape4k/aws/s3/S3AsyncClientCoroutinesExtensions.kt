@@ -1,6 +1,9 @@
 package io.bluetape4k.aws.s3
 
 import io.bluetape4k.aws.s3.model.MoveObjectResult
+import io.bluetape4k.support.requireNotBlank
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -12,6 +15,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
+import software.amazon.awssdk.services.s3.model.S3Object
 import java.io.File
 import java.nio.charset.Charset
 import java.nio.file.Path
@@ -233,6 +237,50 @@ suspend inline fun S3AsyncClient.putAsFile(
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
     putAsFileAsync(bucket, key, path, builder).await()
+
+/**
+ * Returns a cold [Flow] that emits every [S3Object] in [bucket].
+ *
+ * The flow calls `ListObjectsV2` lazily when collected and follows
+ * `nextContinuationToken` until S3 reports that the result is no longer
+ * truncated. Use [prefix] to restrict the emitted objects to a key prefix.
+ *
+ * @param bucket bucket name to list
+ * @param prefix optional key prefix filter
+ * @return cold [Flow] of all listed [S3Object] values
+ *
+ * Example:
+ * ```kotlin
+ * s3AsyncClient.listAllObjects("demo-bucket", prefix = "logs/")
+ *     .collect { println(it.key()) }
+ * ```
+ */
+fun S3AsyncClient.listAllObjects(
+    bucket: String,
+    prefix: String? = null,
+): Flow<S3Object> {
+    bucket.requireNotBlank("bucket")
+
+    return flow {
+        var continuationToken: String? = null
+
+        do {
+            val response = listObjectsV2 { builder ->
+                builder.bucket(bucket)
+                prefix?.let(builder::prefix)
+                continuationToken?.let(builder::continuationToken)
+            }.await()
+
+            response.contents().orEmpty().forEach { emit(it) }
+
+            val isTruncated = response.isTruncated == true
+            continuationToken = response.nextContinuationToken()
+            check(!isTruncated || !continuationToken.isNullOrBlank()) {
+                "S3 ListObjectsV2 response for bucket=$bucket was truncated without nextContinuationToken"
+            }
+        } while (isTruncated)
+    }
+}
 
 /**
  * [software.amazon.awssdk.services.s3.model.S3Object]를 Move 합니다.
