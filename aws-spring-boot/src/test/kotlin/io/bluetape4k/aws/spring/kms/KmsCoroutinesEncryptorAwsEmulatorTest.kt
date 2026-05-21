@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
@@ -8,7 +6,7 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
@@ -19,11 +17,11 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 
-class KmsCoroutinesEncryptorLocalStackTest {
+class KmsCoroutinesEncryptorAwsEmulatorTest {
 
     companion object {
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("kms")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("kms")
         }
     }
 
@@ -36,11 +34,11 @@ class KmsCoroutinesEncryptorLocalStackTest {
                 KmsTextEncryptorAutoConfiguration::class.java,
             )
         )
-        .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+        .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
         .withPropertyValues(
-            "bluetape4k.aws.kms.region=${localStack.regionName}",
-            "bluetape4k.aws.kms.endpoint-override=${localStack.awsEndpoint}",
-            "bluetape4k.aws.kms.encryption-context.service=kms-localstack-test",
+            "bluetape4k.aws.kms.region=${awsEmulator.regionName}",
+            "bluetape4k.aws.kms.endpoint-override=${awsEmulator.awsEndpoint}",
+            "bluetape4k.aws.kms.encryption-context.service=kms-emulator-test",
             "bluetape4k.aws.kms.data-key-cache.ttl=PT10M",
             "bluetape4k.aws.kms.data-key-cache.max-size=8",
         )
@@ -131,7 +129,7 @@ class KmsCoroutinesEncryptorLocalStackTest {
                 val keySpecificCodec = KmsEncryptedFieldCodec(
                     kmsOperations = context.getBean(KmsOperations::class.java),
                     keyId = keyId,
-                    encryptionContext = mapOf("service" to "kms-localstack-test"),
+                    encryptionContext = mapOf("service" to "kms-emulator-test"),
                 )
 
                 val ciphertext = keySpecificCodec.encrypt("field secret value", annotation)

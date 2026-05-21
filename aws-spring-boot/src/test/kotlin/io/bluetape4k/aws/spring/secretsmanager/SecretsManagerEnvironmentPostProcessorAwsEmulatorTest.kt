@@ -1,10 +1,8 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.secretsmanager
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterAll
@@ -18,11 +16,11 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import java.time.Duration
 import java.util.UUID
 
-class SecretsManagerEnvironmentPostProcessorLocalStackTest {
+class SecretsManagerEnvironmentPostProcessorAwsEmulatorTest {
 
     companion object {
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("secretsmanager")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("secretsmanager")
         }
         private var systemProperties: AutoCloseable? = null
         private var previousAccessKeyId: String? = null
@@ -31,7 +29,7 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
         @JvmStatic
         @BeforeAll
         fun beforeAll() {
-            systemProperties = localStack.registerSystemProperties()
+            systemProperties = awsEmulator.registerSystemProperties()
             previousAccessKeyId = System.getProperty("aws.accessKeyId")
             previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
             System.setProperty("aws.accessKeyId", "test")
@@ -66,8 +64,8 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
         }
 
         val environment = environmentOf(
-            "bluetape4k.aws.secrets-manager.region" to localStack.regionName,
-            "bluetape4k.aws.secrets-manager.endpoint-override" to localStack.awsEndpoint.toString(),
+            "bluetape4k.aws.secrets-manager.region" to awsEmulator.regionName,
+            "bluetape4k.aws.secrets-manager.endpoint-override" to awsEmulator.awsEndpoint.toString(),
             "bluetape4k.aws.secrets-manager.sources[0].name" to "app-secret",
             "bluetape4k.aws.secrets-manager.sources[0].secret-id" to secretId,
             "bluetape4k.aws.secrets-manager.sources[0].prefix" to "app",
@@ -82,7 +80,7 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
 
     @Test
     fun `skip lookup when no secret sources are configured`() {
-        val environment = environmentOf("bluetape4k.aws.secrets-manager.region" to localStack.regionName)
+        val environment = environmentOf("bluetape4k.aws.secrets-manager.region" to awsEmulator.regionName)
 
         SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
@@ -100,8 +98,8 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
         }
 
         val environment = environmentOf(
-            "bluetape4k.aws.secrets-manager.region" to localStack.regionName,
-            "bluetape4k.aws.secrets-manager.endpoint-override" to localStack.awsEndpoint.toString(),
+            "bluetape4k.aws.secrets-manager.region" to awsEmulator.regionName,
+            "bluetape4k.aws.secrets-manager.endpoint-override" to awsEmulator.awsEndpoint.toString(),
             "bluetape4k.aws.secrets-manager.refresh-interval" to "10ms",
             "bluetape4k.aws.secrets-manager.sources[0].name" to "app-secret",
             "bluetape4k.aws.secrets-manager.sources[0].secret-id" to secretId,
@@ -125,9 +123,9 @@ class SecretsManagerEnvironmentPostProcessorLocalStackTest {
 
     private fun secretsManagerClient(): SecretsManagerClient =
         SecretsManagerClient.builder()
-            .credentialsProvider(localStack.getCredentialProvider())
-            .region(Region.of(localStack.regionName))
-            .endpointOverride(localStack.awsEndpoint)
+            .credentialsProvider(awsEmulator.getCredentialProvider())
+            .region(Region.of(awsEmulator.regionName))
+            .endpointOverride(awsEmulator.awsEndpoint)
             .build()
 
     private fun environmentOf(vararg values: Pair<String, Any>): StandardEnvironment =

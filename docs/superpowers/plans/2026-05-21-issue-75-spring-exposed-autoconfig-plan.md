@@ -22,8 +22,8 @@ Implement the Spring Boot adapter for `:bluetape4k-aws-exposed` inside
    - Guard registry creation with
      `bluetape4k.aws.exposed.default-database.url` so classpath presence alone
      does not fail application startup.
-   - Add an `AwsSecretString` converter only if Binder tests prove a converter
-     is required.
+   - Bind Spring-local connection DTOs and convert passwords to
+     `AwsSecretString` before creating framework-neutral properties.
    - Add `AwsExposedDefaultDatabaseAutoConfiguration` for default handle,
      `DataSource`, and Exposed `Database` aliases.
    - Register both auto-configuration phases in `AutoConfiguration.imports`.
@@ -56,9 +56,9 @@ Implement the Spring Boot adapter for `:bluetape4k-aws-exposed` inside
 
 ## Risks
 
-- Spring configuration binding for `AwsSecretString` may need a converter. The
-  first implementation should prove binder behavior with tests and add a narrow
-  converter only if required.
+- Spring configuration binding should not target `AwsSecretString` directly.
+  Keep the Spring property model bindable and convert to the common model after
+  binding.
 - Registry creation calls a suspend factory from Spring bean initialization. Use
   a tightly scoped `runBlocking(Dispatchers.IO)` boundary and keep cancellation
   concerns out of long-running loops.
@@ -74,7 +74,7 @@ reported exhausted local usage credits. Artifact:
 | Priority | Area | Finding | Required plan edit |
 |---|---|---|---|
 | P1 | Startup | Plan did not prevent classpath-only startup failure when no default DB URL exists. | Added registry URL guard and absent-URL no-op test task. |
-| P2 | Binding | `AwsSecretString` value-class binding may fail silently if not tested. | Added binder test and converter fallback task. |
+| P2 | Binding | `AwsSecretString` value-class binding may fail silently if not tested. | Use Spring-local DTOs, convert to `AwsSecretString`, and test redaction plus reveal behavior. |
 | P2 | Lifecycle | Alias beans for handle-derived `DataSource`/`Database` must not own pool close. | Plan keeps registry as lifecycle owner and uses no-destroy aliases. |
 
 Convergence: P0 = 0, P1 = 0 after adding the URL guard and no-config test.

@@ -1,10 +1,8 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.parameterstore
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterAll
@@ -19,11 +17,11 @@ import software.amazon.awssdk.services.ssm.model.ParameterType
 import java.time.Duration
 import java.util.UUID
 
-class ParameterStoreEnvironmentPostProcessorLocalStackTest {
+class ParameterStoreEnvironmentPostProcessorAwsEmulatorTest {
 
     companion object {
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("ssm")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("ssm")
         }
         private var systemProperties: AutoCloseable? = null
         private var previousAccessKeyId: String? = null
@@ -32,7 +30,7 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
         @JvmStatic
         @BeforeAll
         fun beforeAll() {
-            systemProperties = localStack.registerSystemProperties()
+            systemProperties = awsEmulator.registerSystemProperties()
             previousAccessKeyId = System.getProperty("aws.accessKeyId")
             previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
             System.setProperty("aws.accessKeyId", "test")
@@ -73,8 +71,8 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
         }
 
         val environment = environmentOf(
-            "bluetape4k.aws.parameter-store.region" to localStack.regionName,
-            "bluetape4k.aws.parameter-store.endpoint-override" to localStack.awsEndpoint.toString(),
+            "bluetape4k.aws.parameter-store.region" to awsEmulator.regionName,
+            "bluetape4k.aws.parameter-store.endpoint-override" to awsEmulator.awsEndpoint.toString(),
             "bluetape4k.aws.parameter-store.sources[0].name" to "app-parameters",
             "bluetape4k.aws.parameter-store.sources[0].path" to rootPath,
             "bluetape4k.aws.parameter-store.sources[0].prefix" to "app",
@@ -89,7 +87,7 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
 
     @Test
     fun `skip lookup when no parameter sources are configured`() {
-        val environment = environmentOf("bluetape4k.aws.parameter-store.region" to localStack.regionName)
+        val environment = environmentOf("bluetape4k.aws.parameter-store.region" to awsEmulator.regionName)
 
         ParameterStoreEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
@@ -108,8 +106,8 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
         }
 
         val environment = environmentOf(
-            "bluetape4k.aws.parameter-store.region" to localStack.regionName,
-            "bluetape4k.aws.parameter-store.endpoint-override" to localStack.awsEndpoint.toString(),
+            "bluetape4k.aws.parameter-store.region" to awsEmulator.regionName,
+            "bluetape4k.aws.parameter-store.endpoint-override" to awsEmulator.awsEndpoint.toString(),
             "bluetape4k.aws.parameter-store.refresh-interval" to "10ms",
             "bluetape4k.aws.parameter-store.sources[0].name" to "app-parameters",
             "bluetape4k.aws.parameter-store.sources[0].path" to rootPath,
@@ -135,9 +133,9 @@ class ParameterStoreEnvironmentPostProcessorLocalStackTest {
 
     private fun ssmClient(): SsmClient =
         SsmClient.builder()
-            .credentialsProvider(localStack.getCredentialProvider())
-            .region(Region.of(localStack.regionName))
-            .endpointOverride(localStack.awsEndpoint)
+            .credentialsProvider(awsEmulator.getCredentialProvider())
+            .region(Region.of(awsEmulator.regionName))
+            .endpointOverride(awsEmulator.awsEndpoint)
             .build()
 
     private fun environmentOf(vararg values: Pair<String, Any>): StandardEnvironment =

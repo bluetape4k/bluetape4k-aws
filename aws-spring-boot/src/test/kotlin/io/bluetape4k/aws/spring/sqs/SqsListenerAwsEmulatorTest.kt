@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
@@ -9,7 +7,7 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldContainAll
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
@@ -26,11 +24,11 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-class SqsListenerLocalStackTest {
+class SqsListenerAwsEmulatorTest {
 
     companion object {
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("sqs")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("sqs")
         }
     }
 
@@ -47,10 +45,10 @@ class SqsListenerLocalStackTest {
                 )
             )
             .withUserConfiguration(userConfiguration)
-            .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+            .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
             .withPropertyValues(
-                "bluetape4k.aws.sqs.region=${localStack.regionName}",
-                "bluetape4k.aws.sqs.endpoint-override=${localStack.awsEndpoint}",
+                "bluetape4k.aws.sqs.region=${awsEmulator.regionName}",
+                "bluetape4k.aws.sqs.endpoint-override=${awsEmulator.awsEndpoint}",
                 "bluetape4k.aws.sqs.listener.max-messages=1",
                 "bluetape4k.aws.sqs.listener.wait-time-seconds=1",
                 "bluetape4k.aws.sqs.listener.stop-timeout-millis=5000",

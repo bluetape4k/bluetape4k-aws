@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
@@ -8,7 +6,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
@@ -22,11 +20,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
 
-class S3CoroutinesTemplateLocalStackTest {
+class S3CoroutinesTemplateAwsEmulatorTest {
 
     companion object {
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("s3")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("s3")
         }
         private val bucketName: String = "spring-s3-${UUID.randomUUID()}"
     }
@@ -39,10 +37,10 @@ class S3CoroutinesTemplateLocalStackTest {
                 S3TransferAutoConfiguration::class.java,
             )
         )
-        .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+        .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
         .withPropertyValues(
-            "bluetape4k.aws.s3.region=${localStack.regionName}",
-            "bluetape4k.aws.s3.endpoint-override=${localStack.awsEndpoint}",
+            "bluetape4k.aws.s3.region=${awsEmulator.regionName}",
+            "bluetape4k.aws.s3.endpoint-override=${awsEmulator.awsEndpoint}",
             "bluetape4k.aws.s3.path-style-access-enabled=true",
             "bluetape4k.aws.s3.presign.duration=PT10M",
         )

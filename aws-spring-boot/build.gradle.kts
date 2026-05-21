@@ -24,6 +24,7 @@ dependencyManagement {
 dependencies {
     // bluetape4k-aws modules
     api(project(":bluetape4k-aws-java"))
+    compileOnly(project(":bluetape4k-aws-exposed"))
     compileOnly(project(":bluetape4k-aws-kotlin"))
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.kms)
@@ -40,6 +41,7 @@ dependencies {
     compileOnly(libs.bluetape4k.jackson3)
     testImplementation(libs.bluetape4k.junit5)
     testImplementation(libs.bluetape4k.testcontainers)
+    testImplementation(project(":bluetape4k-aws-exposed"))
     testImplementation(libs.aws2.dynamodb.enhanced)
     testImplementation(libs.aws2.kms)
     testImplementation(libs.aws2.s3)
@@ -62,11 +64,12 @@ dependencies {
     // Test
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.security.crypto)
+    testImplementation(libs.h2.v2)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
     testImplementation(libs.awaitility.kotlin)
 }
 
 tasks.test {
-    systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "localstack"))
+    systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
 }

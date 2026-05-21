@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.dynamodb
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
@@ -8,7 +6,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContainAll
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.flow.toList
@@ -39,14 +37,14 @@ import software.amazon.awssdk.services.dynamodb.model.TableStatus
 import java.time.Duration
 import java.util.UUID
 
-class DynamoDbRepositoryLocalStackTest {
+class DynamoDbRepositoryAwsEmulatorTest {
 
     companion object {
         private const val TABLE_NAME = "orders"
         private const val TABLE_PREFIX = "spring-dynamodb-"
         private const val CUSTOMER_INDEX = "customer-createdAt-index"
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("dynamodb")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("dynamodb")
         }
     }
 
@@ -58,10 +56,10 @@ class DynamoDbRepositoryLocalStackTest {
                     DynamoDbAutoConfiguration::class.java,
                 )
             )
-            .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+            .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
             .withPropertyValues(
-                "bluetape4k.aws.dynamodb.region=${localStack.regionName}",
-                "bluetape4k.aws.dynamodb.endpoint-override=${localStack.awsEndpoint}",
+                "bluetape4k.aws.dynamodb.region=${awsEmulator.regionName}",
+                "bluetape4k.aws.dynamodb.endpoint-override=${awsEmulator.awsEndpoint}",
                 "bluetape4k.aws.dynamodb.table-prefix=$TABLE_PREFIX",
             )
 

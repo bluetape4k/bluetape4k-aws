@@ -32,6 +32,9 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
 - **Secrets Manager / Parameter Store** — 원격 secret/parameter 를 시작 시점에
   Spring Environment 로 로드하고, 선택적 lazy refresh 및 Spring `@Value` 기반의
   `@SecretsValue` / `@ParameterStoreValue` 조합 어노테이션을 제공한다.
+- **Exposed 데이터베이스** — 명시적 속성 또는 Secrets Manager / Parameter Store 로
+  로드한 Environment 값으로 AWS-backed `AwsExposedDatabaseRegistry`, 기본 Exposed
+  `Database`, 기본 `DataSource` 를 자동 설정한다.
 - **awspring 런타임 의존성 없음** — AWS SDK v2 서비스는 모두 `compileOnly` 로
   선언되어 있어, 사용자는 실제로 쓰는 서비스만 골라 추가할 수 있다.
 
@@ -40,6 +43,9 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
 ```kotlin
 dependencies {
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:${bluetape4kAwsVersion}")
+
+    // AWS-backed Exposed 데이터베이스 자동 설정을 사용할 때만 추가
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:${bluetape4kAwsVersion}")
 
     // 런타임에서 사용할 AWS SDK v2 서비스만 선택적으로 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -66,7 +72,7 @@ bluetape4k:
     s3:
       enabled: true
       region: ap-northeast-2
-      endpoint-override: http://localhost:4566   # LocalStack
+      endpoint-override: http://localhost:4566   # local AWS emulator
       path-style-access-enabled: true
       presign:
         duration: PT15M
@@ -128,6 +134,22 @@ bluetape4k:
           prefix: app
           recursive: true
           with-decryption: true
+    exposed:
+      enabled: true
+      default-database:
+        url: jdbc:postgresql://localhost:5432/orders
+        driver-class-name: org.postgresql.Driver
+        username: order_app
+        password: ${app.db.password}
+        pool:
+          maximum-pool-size: 10
+          minimum-idle: 1
+      named-databases:
+        analytics:
+          url: jdbc:postgresql://localhost:5432/analytics
+          driver-class-name: org.postgresql.Driver
+          username: analytics_app
+          password: ${app.analytics.password}
 ```
 
 `endpoint-override` 를 지정하면 반드시 `region` 도 설정해야 한다. 각 Properties
@@ -142,6 +164,9 @@ binding 전에 로드된다. `refresh-interval` 을 설정하면 interval 이 �
 접근 시점에 lazy reload 하며, reload 실패 시에는 이전 값을 유지한다. 여러 원격
 source 가 같은 key 를 제공하면 먼저 설정된 source 가 더 높은 Spring property-source
 우선순위를 가진다.
+`bluetape4k.aws.exposed.default-database.url` 이 있을 때 Exposed registry 가
+활성화된다. URL 이 없으면 Exposed auto-configuration 은 property binding 만 제공하고
+registry 나 database pool 은 만들지 않는다.
 
 ## 사용 예제
 
@@ -168,6 +193,44 @@ JSON secret 은 dot notation 으로 flatten 된다. 설정한 path 아래의 par
 dot-separated key 로 매핑되고, 두 source 모두 `prefix` 를 앞에 붙인다.
 `@SecretsValue` 와 `@ParameterStoreValue` 는 일반 Spring `@Value` placeholder 문법을
 사용한다.
+
+### Exposed — AWS-backed database registry
+
+```kotlin
+import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import javax.sql.DataSource
+
+class OrderQueryService(
+    private val database: Database,
+    private val dataSource: DataSource,
+    private val registry: AwsExposedDatabaseRegistry,
+) {
+    fun countOrders(): Long =
+        transaction(database) {
+            // 여기서 bluetape4k-exposed repository 또는 Exposed DSL 을 사용한다.
+            // Orders 는 애플리케이션의 Exposed Table object 다.
+            Orders.selectAll().count()
+        }
+
+    fun analyticsDatabase(): Database =
+        registry.get("analytics").database
+
+    fun defaultDataSource(): DataSource =
+        dataSource
+}
+```
+
+Spring adapter 는 `bluetape4k-aws-exposed` 를 통해 registry 를 만들고, 애플리케이션이
+직접 제공한 bean 이 없을 때 default handle 을 Spring `DataSource` 와 Exposed
+`Database` 로 노출한다. Named database 는 `AwsExposedDatabaseRegistry` 로 조회한다.
+Secrets Manager 나 Parameter Store 의 값을 데이터베이스 설정으로 사용하려면 source 의
+`prefix` 를 `bluetape4k.aws.exposed.default-database` 처럼 지정하면 된다. 원격에서
+로드된 key 는 registry 생성 전에 Spring Environment 로 들어와 동일한 설정 prefix 에
+binding 된다. Pool lifecycle 은 registry 가 소유하므로 alias bean 은 pool 을 별도로
+닫지 않는다.
 
 ### S3 — Coroutines 템플릿
 
@@ -382,8 +445,9 @@ Ciphertext 문자열은 `b4k-kms:v1:` prefix 를 사용한다. 잘못된 ciphert
 
 ## 테스트
 
-`src/test/...` 에 LocalStack 기반 통합 테스트가 포함되어 있다. opt-in 으로 실행:
+`src/test/...` 에 로컬 AWS emulator 기반 통합 테스트가 포함되어 있다. 기본값은
+Floci 이며 `-Dbluetape4k.aws.emulator=...` 로 전환할 수 있다:
 
 ```bash
-./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=localstack
+./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
 ```

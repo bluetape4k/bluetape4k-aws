@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
@@ -10,7 +8,7 @@ import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.first
 import org.junit.jupiter.api.Test
@@ -21,11 +19,11 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.util.UUID
 
-class SqsCoroutinesTemplateLocalStackTest {
+class SqsCoroutinesTemplateAwsEmulatorTest {
 
     companion object {
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("sqs")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("sqs")
         }
     }
 
@@ -36,10 +34,10 @@ class SqsCoroutinesTemplateLocalStackTest {
                 SqsAutoConfiguration::class.java,
             )
         )
-        .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+        .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
         .withPropertyValues(
-            "bluetape4k.aws.sqs.region=${localStack.regionName}",
-            "bluetape4k.aws.sqs.endpoint-override=${localStack.awsEndpoint}",
+            "bluetape4k.aws.sqs.region=${awsEmulator.regionName}",
+            "bluetape4k.aws.sqs.endpoint-override=${awsEmulator.awsEndpoint}",
             "bluetape4k.aws.sqs.listener.enabled=false",
         )
 

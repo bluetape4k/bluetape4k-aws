@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
@@ -10,7 +8,7 @@ import io.bluetape4k.assertions.shouldEndWith
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
@@ -22,11 +20,11 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.util.UUID
 
-class SnsCoroutinesTemplateLocalStackTest {
+class SnsCoroutinesTemplateAwsEmulatorTest {
 
     companion object {
-        private val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("sns", "sqs")
+        private val awsEmulator by lazy {
+            AwsSpringBootTestEmulator.get("sns", "sqs")
         }
     }
 
@@ -37,10 +35,10 @@ class SnsCoroutinesTemplateLocalStackTest {
                 SnsAutoConfiguration::class.java,
             )
         )
-        .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+        .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
         .withPropertyValues(
-            "bluetape4k.aws.sns.region=${localStack.regionName}",
-            "bluetape4k.aws.sns.endpoint-override=${localStack.awsEndpoint}",
+            "bluetape4k.aws.sns.region=${awsEmulator.regionName}",
+            "bluetape4k.aws.sns.endpoint-override=${awsEmulator.awsEndpoint}",
         )
 
     @Test
@@ -131,7 +129,7 @@ class SnsCoroutinesTemplateLocalStackTest {
                 runSuspendIO {
                     operations.publish(
                         SnsPublishRequest(
-                            topicArn = "arn:aws:sns:${localStack.regionName}:000000000000:missing",
+                            topicArn = "arn:aws:sns:${awsEmulator.regionName}:000000000000:missing",
                             message = "missing",
                         )
                     )
@@ -159,7 +157,7 @@ class SnsCoroutinesTemplateLocalStackTest {
                             it.attributeNames(QueueAttributeName.QUEUE_ARN)
                         }.await().attributes()[QueueAttributeName.QUEUE_ARN]
                     ) {
-                        "QueueArn attribute must be returned by LocalStack."
+                        "QueueArn attribute must be returned by the AWS emulator."
                     }
 
                     val policy = queuePolicy(queueArn = queueArn, topicArn = topicArn)
@@ -196,9 +194,9 @@ class SnsCoroutinesTemplateLocalStackTest {
 
     private fun sqsAsyncClient(): SqsAsyncClient =
         SqsAsyncClient.builder()
-            .credentialsProvider(localStack.getCredentialProvider())
-            .region(Region.of(localStack.regionName))
-            .endpointOverride(localStack.awsEndpoint)
+            .credentialsProvider(awsEmulator.getCredentialProvider())
+            .region(Region.of(awsEmulator.regionName))
+            .endpointOverride(awsEmulator.awsEndpoint)
             .build()
 
     private fun queuePolicy(queueArn: String, topicArn: String): String =
