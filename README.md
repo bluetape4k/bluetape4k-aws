@@ -54,7 +54,10 @@ applications to adopt a single framework or dependency stack.
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, and DynamoDB server repository plugin |
+| `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by LocalStack/FLOCI |
 | `aws-ktor-s3-examples` | not published | LocalStack-oriented examples for `S3KtorClient`; compiled and tested in Nightly |
+| `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example with local emulator wiring |
+| `aws-spring-boot-dynamodb-examples` | not published | Spring Boot 4 DynamoDB repository examples for coroutine service flows |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, `@SqsListener`, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
 
