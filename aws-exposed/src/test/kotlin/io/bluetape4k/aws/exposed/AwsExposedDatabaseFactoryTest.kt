@@ -2,8 +2,9 @@ package io.bluetape4k.aws.exposed
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import kotlinx.coroutines.test.runTest
 import org.jetbrains.exposed.v1.core.Table
@@ -27,12 +28,12 @@ class AwsExposedDatabaseFactoryTest {
     fun `secret string redacts generated connection output`() {
         val properties = AwsDatabaseConnectionProperties(
             url = "jdbc:h2:mem:redacted",
-            password = AwsSecretString.of("tiger"),
+            password = awsSecretStringOf("tiger"),
         )
 
         properties.password?.reveal() shouldBeEqualTo "tiger"
         properties.password.toString() shouldBeEqualTo AwsSecretString.REDACTED
-        properties.toString().contains("tiger").shouldBeFalse()
+        properties.toString() shouldNotContain "tiger"
     }
 
     @Test
@@ -97,7 +98,7 @@ class AwsExposedDatabaseFactoryTest {
             )
         }
 
-        defaultDataSource.closed shouldBeEqualTo true
+        defaultDataSource.closed.shouldBeTrue()
     }
 
     @Test
