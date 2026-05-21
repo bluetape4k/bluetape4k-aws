@@ -183,6 +183,61 @@ jobs:
           retention-days: 14
 
   # ── 4. aws-spring-boot 모듈 ───────────────────────────────────────────────
+  test-aws-exposed:
+    name: Test / aws-exposed
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
+          cache-provider: basic
+          cache-read-only: true
+
+      - name: Test aws-exposed
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew :bluetape4k-aws-exposed:test --no-daemon && break
+            echo "Attempt $attempt failed"
+            [ $attempt -lt 3 ] && sleep 10 || exit 1
+          done
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+
+      - name: Generate Kover XML report
+        if: always()
+        run: ./gradlew :bluetape4k-aws-exposed:koverXmlReport --no-daemon
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-aws-exposed
+          path: '**/build/test-results/test/*.xml'
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-aws-exposed
+          path: '**/build/reports/kover/'
+          retention-days: 14
+
+  # ── 5. aws-spring-boot 모듈 ───────────────────────────────────────────────
   test-aws-spring-boot:
     name: Test / aws-spring-boot
     runs-on: ubuntu-latest
@@ -235,7 +290,7 @@ jobs:
           path: '**/build/reports/kover/'
           retention-days: 14
 
-  # ── 5. aws-ktor 모듈 (LocalStack) ────────────────────────────────────────
+  # ── 6. aws-ktor 모듈 (LocalStack) ────────────────────────────────────────
   test-aws-ktor:
     name: Test / aws-ktor (LocalStack)
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
@@ -290,7 +345,7 @@ jobs:
           path: '**/build/reports/kover/'
           retention-days: 14
 
-  # ── 6. 예제 모듈 ─────────────────────────────────────────────────────────
+  # ── 7. 예제 모듈 ─────────────────────────────────────────────────────────
   test-examples:
     name: Test / Examples
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
@@ -354,7 +409,7 @@ jobs:
           path: '**/build/test-results/test/*.xml'
           retention-days: 14
 
-  # ── 7. 커버리지 집계 ──────────────────────────────────────────────────────
+  # ── 8. 커버리지 집계 ──────────────────────────────────────────────────────
   coverage-report:
     name: Coverage Report
 
@@ -363,6 +418,7 @@ jobs:
     needs:
       - test-aws
       - test-aws-kotlin
+      - test-aws-exposed
       - test-aws-spring-boot
       - test-aws-ktor
       - test-examples
@@ -384,7 +440,7 @@ jobs:
           path: coverage-artifacts/
           retention-days: 30
 
-  # ── 8. 결과 집계 ──────────────────────────────────────────────────────────
+  # ── 9. 결과 집계 ──────────────────────────────────────────────────────────
   nightly-status:
     name: Nightly Status
     runs-on: ubuntu-latest
@@ -393,6 +449,7 @@ jobs:
       - build
       - test-aws
       - test-aws-kotlin
+      - test-aws-exposed
       - test-aws-spring-boot
       - test-aws-ktor
       - test-examples

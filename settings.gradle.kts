@@ -14,11 +14,13 @@ rootProject.name = "bluetape4k-aws"
 include(
     "bluetape4k-aws-java",
     "bluetape4k-aws-kotlin",
+    "bluetape4k-aws-exposed",
     "bluetape4k-aws-spring-boot",
     "bluetape4k-aws-ktor",
 )
 project(":bluetape4k-aws-java").projectDir = file("aws")
 project(":bluetape4k-aws-kotlin").projectDir = file("aws-kotlin")
+project(":bluetape4k-aws-exposed").projectDir = file("aws-exposed")
 project(":bluetape4k-aws-spring-boot").projectDir = file("aws-spring-boot")
 project(":bluetape4k-aws-ktor").projectDir = file("aws-ktor")
 
