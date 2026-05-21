@@ -65,13 +65,20 @@ suspend fun saveAndLoad(table: DynamoDbAsyncTable<UserDocument>, user: UserDocum
 
 ```kotlin
 import io.bluetape4k.aws.s3.getAsString
+import io.bluetape4k.aws.s3.listAllObjects
 import io.bluetape4k.aws.s3.putAsString
+import kotlinx.coroutines.flow.toList
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
 suspend fun writeThenRead(client: S3AsyncClient, bucket: String, key: String): String {
     client.putAsString(bucket, key, "hello")
     return client.getAsString(bucket, key)
 }
+
+suspend fun listLogKeys(client: S3AsyncClient, bucket: String): List<String> =
+    client.listAllObjects(bucket, prefix = "logs/")
+        .toList()
+        .mapNotNull { it.key() }
 ```
 
 ### SQS Coroutine Extensions
