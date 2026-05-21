@@ -47,7 +47,10 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, DynamoDB, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin |
+| `aws-ktor-dynamodb-examples` | 배포 안 함 | LocalStack/FLOCI 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | `S3KtorClient`용 LocalStack 중심 예제. Nightly에서 컴파일 및 테스트 |
+| `aws-ktor-sqs-examples` | 배포 안 함 | 로컬 emulator wiring을 포함한 Ktor 3 SQS consumer/runtime 예제 |
+| `aws-spring-boot-dynamodb-examples` | 배포 안 함 | Coroutine service flow용 Spring Boot 4 DynamoDB repository 예제 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`용 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 | `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, `@SqsListener`, LocalStack SNS subscription fanout 을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 

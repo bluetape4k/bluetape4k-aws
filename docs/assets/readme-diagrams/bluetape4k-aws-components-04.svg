@@ -5,8 +5,8 @@
     <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%">
       <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#8FA3B8" flood-opacity="0.18"/>
     </filter>
-    <marker id="arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
-      <path d="M 0 0 L 9 3.5 L 0 7 z" fill="#6B7C8F"/>
+    <marker id="arrow" markerWidth="6" markerHeight="5" refX="5.5" refY="2.5" orient="auto">
+      <path d="M 0 0 L 6 2.5 L 0 5 z" fill="#6B7C8F"/>
     </marker>
     <style>
       .title { font-family: 'Architects Daughter', 'Comic Sans MS', 'Arial', sans-serif; font-size: 34px; fill: #2F4054; }
@@ -88,18 +88,18 @@
     <text class="tiny" x="983" y="528">STS, SES, Kinesis</text>
   </g>
 
-  <path class="line" d="M 284 242 C 322 242, 338 236, 382 236"/>
-  <path class="line" d="M 284 264 C 324 264, 338 350, 382 350"/>
-  <path class="line" d="M 284 346 C 322 346, 338 264, 382 264"/>
-  <path class="line" d="M 284 368 C 320 368, 338 450, 382 450"/>
-  <path class="line" d="M 284 450 C 322 450, 338 364, 382 364"/>
-  <path class="line" d="M 284 472 C 320 472, 338 538, 382 538"/>
-  <path class="thin" d="M 618 250 C 664 250, 676 270, 718 270"/>
-  <path class="thin" d="M 618 350 C 664 350, 676 433, 718 433"/>
-  <path class="thin" d="M 618 450 C 664 450, 676 270, 718 270"/>
-  <path class="thin" d="M 618 538 C 664 538, 676 433, 718 433"/>
-  <path class="line" d="M 868 270 C 900 270, 914 304, 955 304"/>
-  <path class="line" d="M 868 433 C 900 433, 914 448, 955 448"/>
+  <path class="line" d="M 284 242 H 322 V 236 H 382"/>
+  <path class="line" d="M 284 264 H 336 V 350 H 382"/>
+  <path class="line" d="M 284 346 H 326 V 264 H 382"/>
+  <path class="line" d="M 284 368 H 342 V 450 H 382"/>
+  <path class="line" d="M 284 450 H 330 V 364 H 382"/>
+  <path class="line" d="M 284 472 H 346 V 538 H 382"/>
+  <path class="thin" d="M 618 250 H 674 V 270 H 718"/>
+  <path class="thin" d="M 618 350 H 690 V 433 H 718"/>
+  <path class="thin" d="M 618 450 H 678 V 270 H 718"/>
+  <path class="thin" d="M 618 538 H 694 V 433 H 718"/>
+  <path class="line" d="M 868 270 H 914 V 304 H 955"/>
+  <path class="line" d="M 868 433 H 914 V 448 H 955"/>
 
   <rect x="88" y="610" width="1024" height="44" rx="12" fill="#F7FAFC" stroke="#D6E0EA"/>
   <text class="small" x="116" y="638">Local verification path: Testcontainers LocalStack / FLOCI emulator mirrors the service clients used in runtime modules.</text>
