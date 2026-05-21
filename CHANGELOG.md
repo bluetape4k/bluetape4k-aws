@@ -7,6 +7,12 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `aws-exposed` RDS IAM authentication token provider for Hikari-backed Exposed
+  databases, including refresh-aware token caching and AWS SDK Java v2
+  `RdsUtilities` integration ([#77](https://github.com/bluetape4k/bluetape4k-aws/issues/77)).
+
 ## [0.1.0] - 2026-05-16
 
 ### Added

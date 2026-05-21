@@ -29,7 +29,9 @@ data class AwsDatabaseProperties(
  * JDBC connection settings for one AWS-backed Exposed database.
  *
  * [password] is wrapped in [AwsSecretString] so generated diagnostics and data
- * class `toString()` output do not reveal the secret value.
+ * class `toString()` output do not reveal the secret value. Use
+ * [authenticationMode] and [rdsIam] when the JDBC password must be generated as
+ * an Amazon RDS IAM authentication token.
  */
 data class AwsDatabaseConnectionProperties(
     val url: String = "",
@@ -41,11 +43,23 @@ data class AwsDatabaseConnectionProperties(
     val metadata: Map<String, String> = emptyMap(),
     val secretSource: AwsDatabaseConfigSource? = null,
     val parameterSource: AwsDatabaseConfigSource? = null,
+    val authenticationMode: AwsDatabaseAuthenticationMode = AwsDatabaseAuthenticationMode.STATIC_PASSWORD,
+    val rdsIam: AwsRdsIamAuthenticationProperties? = null,
 ): Serializable {
 
     init {
         driverClassName?.requireNotBlank("driverClassName")
         username?.requireNotBlank("username")
+        when (authenticationMode) {
+            AwsDatabaseAuthenticationMode.STATIC_PASSWORD -> {
+                require(rdsIam == null) { "rdsIam must be null when authenticationMode is STATIC_PASSWORD." }
+            }
+            AwsDatabaseAuthenticationMode.RDS_IAM -> {
+                require(password == null) { "password must be null when authenticationMode is RDS_IAM." }
+                val iam = requireNotNull(rdsIam) { "rdsIam must be configured when authenticationMode is RDS_IAM." }
+                iam.effectiveUsername(username)
+            }
+        }
         dataSourceProperties.keys.forEach { it.requireNotBlank("dataSourceProperties key") }
         metadata.keys.forEach { it.requireNotBlank("metadata key") }
     }

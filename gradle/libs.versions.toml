@@ -157,6 +157,7 @@ aws2-secretsmanager = { module = "software.amazon.awssdk:secretsmanager", versio
 aws2-sns = { module = "software.amazon.awssdk:sns", version.ref = "aws2" }
 aws2-sqs = { module = "software.amazon.awssdk:sqs", version.ref = "aws2" }
 aws2-ssm = { module = "software.amazon.awssdk:ssm", version.ref = "aws2" }
+aws2-rds = { module = "software.amazon.awssdk:rds", version.ref = "aws2" }
 aws2-kms = { module = "software.amazon.awssdk:kms", version.ref = "aws2" }
 aws2-cloudwatch = { module = "software.amazon.awssdk:cloudwatch", version.ref = "aws2" }
 aws2-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "aws2" }
