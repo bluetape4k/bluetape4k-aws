@@ -1,5 +1,6 @@
 dependencies {
     api(platform(libs.exposed.bom))
+    api(platform(libs.bluetape4k.exposed.bom))
     api(libs.exposed.core)
     api(libs.exposed.jdbc)
     api(libs.bluetape4k.exposed.jdbc)

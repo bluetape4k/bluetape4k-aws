@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":bluetape4k-aws-spring-boot"))
 
     implementation(platform(libs.exposed.bom))
+    implementation(platform(libs.bluetape4k.exposed.bom))
     implementation(libs.bluetape4k.exposed.jdbc)
     implementation(libs.exposed.jdbc)
     implementation(libs.spring.boot.starter.web)
