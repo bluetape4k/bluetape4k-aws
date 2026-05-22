@@ -33,6 +33,9 @@ project(":aws-ktor-s3-examples").projectDir = file("examples/aws-ktor-s3-example
 include("aws-spring-boot-s3-examples")
 project(":aws-spring-boot-s3-examples").projectDir = file("examples/aws-spring-boot-s3-examples")
 
+include("aws-spring-boot-exposed-examples")
+project(":aws-spring-boot-exposed-examples").projectDir = file("examples/aws-spring-boot-exposed-examples")
+
 include("aws-spring-boot-sqs-examples")
 project(":aws-spring-boot-sqs-examples").projectDir = file("examples/aws-spring-boot-sqs-examples")
 
@@ -41,6 +44,9 @@ project(":aws-ktor-sqs-examples").projectDir = file("examples/aws-ktor-sqs-examp
 
 include("aws-ktor-dynamodb-examples")
 project(":aws-ktor-dynamodb-examples").projectDir = file("examples/aws-ktor-dynamodb-examples")
+
+include("aws-ktor-exposed-examples")
+project(":aws-ktor-exposed-examples").projectDir = file("examples/aws-ktor-exposed-examples")
 
 include("aws-spring-boot-dynamodb-examples")
 project(":aws-spring-boot-dynamodb-examples").projectDir = file("examples/aws-spring-boot-dynamodb-examples")
