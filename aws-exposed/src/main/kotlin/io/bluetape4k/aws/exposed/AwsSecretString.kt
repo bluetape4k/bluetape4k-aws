@@ -2,6 +2,8 @@ package io.bluetape4k.aws.exposed
 
 import io.bluetape4k.aws.exposed.AwsSecretString.Companion.REDACTED
 import io.bluetape4k.support.requireNotBlank
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.io.Serializable
 
 /**
@@ -9,9 +11,11 @@ import java.io.Serializable
  *
  * Use [reveal] only at the boundary that must pass the secret to a JDBC driver
  * or connection pool. Diagnostic output always returns [REDACTED].
+ * Java-serialized bytes contain the raw secret and must stay inside trusted
+ * process or storage boundaries. [hashCode] intentionally returns a redacted
+ * constant, so avoid using this type as a key in large hashed collections.
  */
-@JvmInline
-value class AwsSecretString(private val value: String): Serializable {
+class AwsSecretString(private val value: String): Serializable {
 
     init {
         value.requireNotBlank("value")
@@ -22,10 +26,20 @@ value class AwsSecretString(private val value: String): Serializable {
      */
     fun reveal(): String = value
 
+    private fun readResolve(): Any = AwsSecretString(value)
+
     override fun toString(): String = REDACTED
 
+    override fun equals(other: Any?): Boolean =
+        this === other || other is AwsSecretString && MessageDigest.isEqual(
+            value.toByteArray(StandardCharsets.UTF_8),
+            other.value.toByteArray(StandardCharsets.UTF_8),
+        )
+
+    override fun hashCode(): Int = REDACTED.hashCode()
+
     companion object {
-        private const val serialVersionUID: Long = 5414882260345112140L
+        private const val serialVersionUID: Long = 202605220168169L
 
         /**
          * Redacted marker used by [toString].

@@ -74,7 +74,7 @@ reported exhausted local usage credits. Artifact:
 | Priority | Area | Finding | Required plan edit |
 |---|---|---|---|
 | P1 | Startup | Plan did not prevent classpath-only startup failure when no default DB URL exists. | Added registry URL guard and absent-URL no-op test task. |
-| P2 | Binding | `AwsSecretString` value-class binding may fail silently if not tested. | Use Spring-local DTOs, convert to `AwsSecretString`, and test redaction plus reveal behavior. |
+| P2 | Binding | `AwsSecretString` value-class binding may fail silently if not tested. | Use Spring-local DTOs, convert to `AwsSecretString`, and test redaction plus reveal behavior. Superseded on 2026-05-22: `AwsSecretString` is now a regular serializable class so Java deserialization can re-run validation through `readResolve`. |
 | P2 | Lifecycle | Alias beans for handle-derived `DataSource`/`Database` must not own pool close. | Plan keeps registry as lifecycle owner and uses no-destroy aliases. |
 
 Convergence: P0 = 0, P1 = 0 after adding the URL guard and no-config test.

@@ -16,6 +16,8 @@ AWS 기반 데이터베이스 설정과 Exposed JDBC를 연결하는 공통 기�
 
 이 모듈은 AWS 값을 직접 조회하지 않습니다. Spring Boot와 Ktor adapter가 AWS 설정을
 해결한 뒤 최종 JDBC 설정을 이 foundation에 전달합니다.
+`AwsSecretString`은 진단 출력을 redaction하지만 Java serialization byte에는 raw secret이
+포함되므로 신뢰된 process 또는 storage boundary 안에서만 다뤄야 합니다.
 
 ## 의존성
 

@@ -17,6 +17,9 @@ Shared Exposed JDBC foundation for AWS-backed database configuration.
 
 This module does not fetch AWS values by itself. Spring Boot and Ktor adapters
 resolve AWS configuration and pass the final JDBC settings to this foundation.
+`AwsSecretString` redacts diagnostic output, but Java-serialized bytes still
+contain the raw secret and must stay inside trusted process or storage
+boundaries.
 
 ## Dependency
 

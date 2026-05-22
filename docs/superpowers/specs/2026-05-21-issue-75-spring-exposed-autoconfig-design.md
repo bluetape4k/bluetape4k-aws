@@ -129,7 +129,7 @@ exhausted. Artifact: `.omx/artifacts/claude-issue-75-spec-review-20260521.md`.
 | Priority | Finding | Decision |
 |---|---|---|
 | P1 | Registry creation would fail startup when `aws-exposed` is on the classpath but no default database URL is configured. | Accepted: registry bean requires `bluetape4k.aws.exposed.default-database.url`, and tests must cover the absent-URL no-op path. |
-| P2 | Binding `AwsSecretString` may require a Spring converter depending on Binder value-class support. | Resolved by Spring-local bindable DTOs that convert to `AwsSecretString`; tests cover redaction and reveal behavior. |
+| P2 | Binding `AwsSecretString` may require a Spring converter depending on Binder value-class support. | Resolved by Spring-local bindable DTOs that convert to `AwsSecretString`; tests cover redaction and reveal behavior. Superseded on 2026-05-22: `AwsSecretString` is now a regular serializable class so Java deserialization can re-run validation through `readResolve`. |
 | P2 | Dynamic named `Database` beans would be convenient but expands bean-registration complexity. | Rejected for #75: named handles remain available through `AwsExposedDatabaseRegistry`. |
 
 Convergence: P0 = 0, P1 = 0 after the default URL activation condition was

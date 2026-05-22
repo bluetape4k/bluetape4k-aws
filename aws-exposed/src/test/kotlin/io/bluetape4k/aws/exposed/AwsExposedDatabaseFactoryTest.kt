@@ -15,6 +15,10 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.SQLException
@@ -34,6 +38,35 @@ class AwsExposedDatabaseFactoryTest {
         properties.password?.reveal() shouldBeEqualTo "tiger"
         properties.password.toString() shouldBeEqualTo AwsSecretString.REDACTED
         properties.toString() shouldNotContain "tiger"
+    }
+
+    @Test
+    fun `secret string serialization round-trip preserves redaction`() {
+        val original = AwsSecretString.of("super-secret")
+        val bytes = serialize(original)
+
+        val deserialized = ObjectInputStream(ByteArrayInputStream(bytes)).use { input ->
+            input.readObject()
+        } as AwsSecretString
+
+        deserialized.toString() shouldBeEqualTo AwsSecretString.REDACTED
+        deserialized.reveal() shouldBeEqualTo "super-secret"
+        deserialized shouldBeEqualTo original
+    }
+
+    @Test
+    fun `secret string serialization rejects blank deserialized value`() {
+        val bytes = serialize(AwsSecretString.of("z"))
+        val markerIndexes = bytes.indices.filter { bytes[it] == 'z'.code.toByte() }
+        markerIndexes.size shouldBeEqualTo 1
+        // Preserve the Java serialization envelope while mutating the one-byte payload.
+        bytes[markerIndexes.single()] = ' '.code.toByte()
+
+        assertFailsWith<IllegalArgumentException> {
+            ObjectInputStream(ByteArrayInputStream(bytes)).use { input ->
+                input.readObject()
+            }
+        }
     }
 
     @Test
@@ -129,6 +162,13 @@ class AwsExposedDatabaseFactoryTest {
 
     private fun h2Url(databaseName: String): String =
         "jdbc:h2:mem:$databaseName;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+
+    private fun serialize(value: AwsSecretString): ByteArray =
+        ByteArrayOutputStream().also {
+            ObjectOutputStream(it).use { output ->
+                output.writeObject(value)
+            }
+        }.toByteArray()
 
     private fun verifyCreateRead(
         handle: AwsExposedDatabaseHandle,

@@ -70,6 +70,8 @@ class AwsExposedAutoConfiguration {
         properties: AwsExposedProperties,
         factory: AwsExposedDatabaseFactory,
     ): AwsExposedDatabaseRegistry =
+        // Spring @Bean factory methods are synchronous; registry creation is suspend
+        // and may initialize blocking JDBC pools during one-time context startup.
         runBlocking(Dispatchers.IO) {
             factory.createRegistry(properties.toDatabaseProperties())
         }
