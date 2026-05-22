@@ -7,6 +7,25 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-22
+
+### Added
+
+- Added a Flow-based `S3AsyncClient.listAllObjects(...)` helper that follows
+  `ListObjectsV2` continuation tokens until all matching S3 objects are emitted
+  ([#145](https://github.com/bluetape4k/bluetape4k-aws/issues/145)).
+
+### Changed
+
+- Aligned the release line with `bluetape4k-bom` 1.9.0 so the patch release
+  consumes the latest core bluetape4k artifacts.
+
+### Fixed
+
+- Made `S3Client.forceDeleteBucket()` version-aware so versioned and
+  versioning-suspended buckets delete object versions and delete markers before
+  bucket deletion ([#147](https://github.com/bluetape4k/bluetape4k-aws/issues/147)).
+
 ## [0.1.0] - 2026-05-16
 
 ### Added
