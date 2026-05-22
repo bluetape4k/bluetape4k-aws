@@ -386,20 +386,22 @@ jobs:
 
           printf 'Running example test tasks:\n'
           printf '  %s\n' "${tasks[@]}"
-          ./gradlew "${tasks[@]}" --no-daemon
+          ./gradlew "${tasks[@]}" --no-daemon --max-workers=1
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
-      - name: Test example modules
+      - name: Test Exposed database example modules
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :aws-ktor-s3-examples:test --no-daemon --continue && break
+            ./gradlew :aws-ktor-s3-examples:test :aws-spring-boot-exposed-examples:test :aws-ktor-exposed-examples:test --no-daemon --continue --max-workers=1 && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
 
       - name: Upload test results
         if: always()
