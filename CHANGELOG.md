@@ -7,11 +7,44 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-22
+
 ### Added
 
+- `aws-exposed` foundation module for shared Exposed database registry,
+  settings, and AWS-backed credential/property resolution ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
+- Spring Boot Exposed database auto-configuration for AWS-backed JDBC
+  integrations ([#75](https://github.com/bluetape4k/bluetape4k-aws/issues/75)).
+- Ktor `AwsExposedPlugin` lifecycle integration for AWS-backed Exposed
+  databases ([#76](https://github.com/bluetape4k/bluetape4k-aws/issues/76)).
 - `aws-exposed` RDS IAM authentication token provider for Hikari-backed Exposed
   databases, including refresh-aware token caching and AWS SDK Java v2
   `RdsUtilities` integration ([#77](https://github.com/bluetape4k/bluetape4k-aws/issues/77)).
+- Spring Boot and Ktor Exposed AWS database example modules ([#82](https://github.com/bluetape4k/bluetape4k-aws/issues/82)).
+- Spring Boot SES email sender support ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7)).
+
+### Changed
+
+- Prepared the 0.2.0 release line to consume `io.github.bluetape4k:bluetape4k-bom:1.9.0` and `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.9.0`.
+- Imported `bluetape4k-exposed-bom` for Exposed helper artifacts instead of pinning direct Exposed helper versions.
+
+### Fixed
+
+- Hardened secret redaction across AWS Exposed serialization paths.
+
+## [0.1.1] - 2026-05-22
+
+### Added
+
+- Added S3 async and AWS Kotlin SDK object listing Flow helpers that automatically traverse `ListObjectsV2` pagination ([#145](https://github.com/bluetape4k/bluetape4k-aws/issues/145)).
+
+### Changed
+
+- Prepared the 0.1.1 patch release line to consume `io.github.bluetape4k:bluetape4k-bom:1.9.0`.
+
+### Fixed
+
+- Fixed `forceDeleteBucket` so versioned S3 buckets remove object versions and delete markers before bucket deletion ([#147](https://github.com/bluetape4k/bluetape4k-aws/issues/147)).
 
 ## [0.1.0] - 2026-05-16
 
@@ -77,7 +110,7 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### 0.2.0 Roadmap
 
-The following items are deferred to 0.2.0 and tracked as open issues:
+At the 0.1.0 release, the following items were deferred to the 0.2.0 line:
 
 - Exposed-first AWS database integration ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
 - Spring Boot and Ktor Exposed auto-configuration and `AwsExposedPlugin`
