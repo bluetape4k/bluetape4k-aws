@@ -19,10 +19,12 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
@@ -89,6 +91,7 @@ internal class BackoffState(
  */
 data class SqsConsumerRuntimeConfig(
     val sqsAsyncClient: SqsAsyncClient,
+    val ownsClient: Boolean = false,
     val queueUrl: String? = null,
     val queueName: String? = null,
     val coroutines: Int = 1,
@@ -204,7 +207,7 @@ class SqsMessageContext internal constructor(
  * - [start] is idempotent and launches [SqsConsumerRuntimeConfig.coroutines] pollers.
  * - [stop] stops new receives, waits for in-flight handlers up to
  *   [SqsConsumerRuntimeConfig.shutdownTimeout], then cancels remaining handlers.
- * - [SqsAsyncClient] is injected and not closed by this runtime.
+ * - [SqsAsyncClient] is closed only when it was created by the plugin.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SqsConsumerRuntime(
@@ -222,6 +225,7 @@ class SqsConsumerRuntime(
     private val pollerJobs = CopyOnWriteArrayList<Job>()
     private val handlerJobs = ConcurrentHashMap.newKeySet<Job>()
     private val handlerPermitReleases = ConcurrentHashMap<Job, AtomicBoolean>()
+    private val ownedClientClosed = AtomicBoolean(false)
     private val queueUrlMutex = Mutex()
     private val handlerPermits = Semaphore(config.coroutines * config.maxMessages)
 
@@ -255,6 +259,7 @@ class SqsConsumerRuntime(
     /** Stops pollers and drains in-flight handlers according to the shutdown contract. */
     suspend fun stop() {
         if (!lifecycleState.compareAndSet(LifecycleState.RUNNING, LifecycleState.STOPPING)) {
+            closeOwnedClient()
             return
         }
 
@@ -285,7 +290,23 @@ class SqsConsumerRuntime(
             }
             scope = null
         } finally {
-            lifecycleState.set(LifecycleState.STOPPED)
+            try {
+                closeOwnedClient()
+            } finally {
+                lifecycleState.set(LifecycleState.STOPPED)
+            }
+        }
+    }
+
+    private suspend fun closeOwnedClient() {
+        if (!config.ownsClient || !ownedClientClosed.compareAndSet(false, true)) {
+            return
+        }
+
+        withContext(Dispatchers.IO) {
+            runInterruptible {
+                config.sqsAsyncClient.close()
+            }
         }
     }
 

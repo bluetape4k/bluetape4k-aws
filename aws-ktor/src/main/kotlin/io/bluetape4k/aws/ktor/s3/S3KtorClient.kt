@@ -2,6 +2,8 @@ package io.bluetape4k.aws.ktor.s3
 
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKtorHttpClientCustomizer
 import io.bluetape4k.support.requireNotBlank
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -428,6 +430,7 @@ fun s3KtorClientOf(
     endpointOverride: Url? = null,
     addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     signingClock: Clock? = null,
+    httpClientCustomizers: Iterable<AwsKtorHttpClientCustomizer> = emptyList(),
 ): S3KtorClient {
     val ownsProvider = credentialsProvider == null
     val effectiveProvider = credentialsProvider ?: DefaultCredentialsProvider.builder().build()
@@ -444,6 +447,7 @@ fun s3KtorClientOf(
                 payloadSigningEnabled = false
                 this.signingClock = signingClock
             }
+            httpClientCustomizers.forEach { it.customize(this) }
         }
 
         return S3KtorClient(
@@ -461,6 +465,32 @@ fun s3KtorClientOf(
         throw e
     }
 }
+
+/**
+ * Creates an S3 REST client by inheriting shared [AwsKtorDefaults].
+ *
+ * Service-specific arguments override shared defaults. The caller must provide
+ * either [region] or [AwsKtorDefaults.region].
+ */
+fun s3KtorClientOf(
+    defaults: AwsKtorDefaults,
+    region: String? = null,
+    credentialsProvider: AwsCredentialsProvider? = null,
+    endpointOverride: Url? = null,
+    addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
+    signingClock: Clock? = null,
+    httpClientCustomizers: Iterable<AwsKtorHttpClientCustomizer> = emptyList(),
+): S3KtorClient =
+    s3KtorClientOf(
+        region = requireNotNull(region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }) {
+            "region must be configured."
+        },
+        credentialsProvider = credentialsProvider ?: defaults.javaCredentialsProvider,
+        endpointOverride = endpointOverride ?: defaults.endpointOverride,
+        addressingStyle = addressingStyle,
+        signingClock = signingClock ?: defaults.signingClock,
+        httpClientCustomizers = defaults.httpClientCustomizers + httpClientCustomizers,
+    )
 
 private fun io.ktor.client.request.HttpRequestBuilder.applyPutHeaders(request: S3KtorPutObjectRequest) {
     request.contentType?.let { contentType(ContentType.parse(it)) }

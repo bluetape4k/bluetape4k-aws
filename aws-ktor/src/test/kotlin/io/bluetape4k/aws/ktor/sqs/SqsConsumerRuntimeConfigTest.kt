@@ -2,7 +2,13 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKtorSqsAsyncClientCustomizer
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.ktor.http.Url
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -63,7 +69,60 @@ class SqsConsumerRuntimeConfigTest {
         StringOrByteArraySqsMessageConverter.convert(message, Message::class) shouldBeEqualTo message
     }
 
+    @Test
+    fun `shared AWS defaults create plugin owned SQS client`() {
+        val config = SqsConsumerPluginConfig().apply {
+            queueName = "orders"
+            onMessage<String> {}
+        }.toRuntimeConfig(
+            AwsKtorDefaults(
+                region = "ap-northeast-2",
+                endpointOverride = Url("http://localhost:4566"),
+            )
+        )
+
+        config.ownsClient shouldBeEqualTo true
+        config.queueName shouldBeEqualTo "orders"
+
+        config.sqsAsyncClient.close()
+    }
+
+    @Test
+    fun `service SQS customizer runs after shared customizer`() {
+        val order = mutableListOf<String>()
+        val config = SqsConsumerPluginConfig().apply {
+            queueName = "orders"
+            sqsAsyncClient { order += "service" }
+            onMessage<String> {}
+        }.toRuntimeConfig(
+            AwsKtorDefaults(
+                region = "ap-northeast-2",
+                sqsAsyncClientCustomizers = listOf(AwsKtorSqsAsyncClientCustomizer { order += "shared" }),
+            )
+        )
+
+        order shouldBeEqualTo listOf("shared", "service")
+
+        config.sqsAsyncClient.close()
+    }
+
+    @Test
+    fun `runtime closes plugin owned SQS client once`() = runSuspendIO {
+        val client = mockk<SqsAsyncClient>(relaxed = true)
+        every { client.close() } returns Unit
+        val runtime = SqsConsumerRuntime(
+            runtimeConfig(client = client, ownsClient = true)
+        )
+
+        runtime.stop()
+        runtime.stop()
+
+        verify(exactly = 1) { client.close() }
+    }
+
     private fun runtimeConfig(
+        client: SqsAsyncClient = this.client,
+        ownsClient: Boolean = false,
         queueUrl: String? = "https://sqs.local/source",
         queueName: String? = null,
         coroutines: Int = 1,
@@ -75,6 +134,7 @@ class SqsConsumerRuntimeConfigTest {
     ): SqsConsumerRuntimeConfig =
         SqsConsumerRuntimeConfig(
             sqsAsyncClient = client,
+            ownsClient = ownsClient,
             queueUrl = queueUrl,
             queueName = queueName,
             coroutines = coroutines,

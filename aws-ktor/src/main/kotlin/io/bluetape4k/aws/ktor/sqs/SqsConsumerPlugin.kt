@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.aws.ktor.awsKtorDefaults
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.ApplicationStopping
@@ -27,7 +28,7 @@ val SqsConsumer: ApplicationPlugin<SqsConsumerPluginConfig> = createApplicationP
     name = "SqsConsumer",
     createConfiguration = ::SqsConsumerPluginConfig,
 ) {
-    val runtime = SqsConsumerRuntime(pluginConfig.toRuntimeConfig())
+    val runtime = SqsConsumerRuntime(pluginConfig.toRuntimeConfig(application.awsKtorDefaults()))
     application.attributes.put(SqsConsumerRuntimeKey, runtime)
 
     on(MonitoringEvent(ApplicationStarted)) {

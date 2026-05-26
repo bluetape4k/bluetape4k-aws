@@ -4,6 +4,9 @@ import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKtorDynamoDbClientCustomizer
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -77,6 +80,34 @@ class DynamoDbKtorRuntimeConfigTest {
         runtime.stop()
 
         verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `shared AWS defaults create plugin owned DynamoDB client`() {
+        val runtimeConfig = DynamoDbKtorPluginConfig().toRuntimeConfig(
+            AwsKtorDefaults(region = "ap-northeast-2")
+        )
+
+        runtimeConfig.ownsClient shouldBeEqualTo true
+
+        runtimeConfig.dynamoDbClient.close()
+    }
+
+    @Test
+    fun `service DynamoDB customizer runs after shared customizer`() {
+        val order = mutableListOf<String>()
+        val runtimeConfig = DynamoDbKtorPluginConfig().apply {
+            client { order += "service" }
+        }.toRuntimeConfig(
+            AwsKtorDefaults(
+                region = "ap-northeast-2",
+                dynamoDbClientCustomizers = listOf(AwsKtorDynamoDbClientCustomizer { order += "shared" }),
+            )
+        )
+
+        order shouldBeEqualTo listOf("shared", "service")
+
+        runtimeConfig.dynamoDbClient.close()
     }
 
     private val keySchema: List<KeySchemaElement> = listOf(partitionKeyOf("id"))

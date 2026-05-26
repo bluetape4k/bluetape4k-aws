@@ -10,8 +10,13 @@ plugin and repository facade for DynamoDB using `:aws-kotlin` and the official
 AWS SDK for Kotlin, plus a Ktor server plugin for AWS-backed Exposed JDBC
 database registries.
 
+![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
+
 ## Features
 
+- `AwsKtorCore` for optional application-level AWS defaults: region, endpoint
+  override, Java/Kotlin credentials providers, signing clock, and client
+  customizers.
 - `AwsSigV4Plugin` for Ktor `HttpClient`.
 - AWS SDK Java v2 `AwsCredentialsProvider` integration, including static,
   default, profile, and session providers.
@@ -57,6 +62,42 @@ dependencies {
 ```
 
 ## Usage
+
+### Shared AWS Defaults
+
+Install `AwsKtorCore` once when multiple Ktor integrations should inherit the
+same AWS region, local endpoint, credentials, signing clock, or client
+customizers. Service-specific configuration still wins over shared defaults.
+
+```kotlin
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.sqs.SqsConsumer
+import io.ktor.http.Url
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        endpointOverride = Url("http://localhost:4566")
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+    }
+
+    install(SqsConsumer) {
+        queueName = "orders"
+        onMessage<String> { body -> processOrder(body) }
+    }
+}
+```
+
+`S3KtorClient`, `SqsConsumer`, and `DynamoDbKtorPlugin` can inherit shared
+defaults. Set a service-local `region`, `endpointOverride` / `endpointUrl`, or
+credentials provider when one integration needs a different target. For
+EKS/IRSA or other web-identity deployments, supply the appropriate AWS SDK
+credentials provider in `AwsKtorCore`; keep `software.amazon.awssdk:sts` or
+`aws.sdk.kotlin:sts` on the application runtime classpath when that provider
+requires STS.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
@@ -134,6 +175,17 @@ val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", ex
 use Kotlin `use { ... }` when the client is short-lived. Presigned URL expiry
 must be between 1 second and 7 days.
 
+To inherit application defaults outside a server plugin, pass the installed
+defaults explicitly:
+
+```kotlin
+import io.bluetape4k.aws.ktor.awsKtorDefaults
+import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
+import io.ktor.server.application.Application
+
+fun Application.s3Client() = s3KtorClientOf(defaults = awsKtorDefaults())
+```
+
 Runnable examples live in `examples/aws-ktor-s3-examples` and are included in
 the Nightly workflow.
 
@@ -157,7 +209,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 fun Application.module() {
     val sqs = SqsAsyncClient.builder()
         .region(Region.AP_NORTHEAST_2)
-        .credentialsProvider(DefaultCredentialsProvider.create())
+        .credentialsProvider(DefaultCredentialsProvider.builder().build())
         .build()
 
     install(SqsConsumer) {
@@ -181,7 +233,9 @@ suspend fun Application.publishOrder(json: String) {
 ```
 
 The application owns the injected `SqsAsyncClient`; the plugin never closes it.
-Close the client when the application scope ends.
+Close the client when the application scope ends. When no client is injected,
+`SqsConsumer` can create a plugin-owned client from `AwsKtorCore` or
+service-local settings and closes that client on `ApplicationStopping`.
 
 ## DynamoDB Server Plugin
 
@@ -190,6 +244,8 @@ application lifecycle and exposes it through `application.dynamoDb()`. The
 plugin can use an injected application-owned client or create one from
 `region`, `endpointUrl`, and credentials. Injected clients are not closed by the
 plugin; plugin-created clients are closed on `ApplicationStopping`.
+When `AwsKtorCore` is installed, omitted `region`, `endpointUrl`, credentials,
+HTTP engine, and DynamoDB customizers inherit from shared defaults.
 
 Table creation is explicit. Set `autoCreateTables = true` and register table
 definitions with `table { }` when local development or tests should create
