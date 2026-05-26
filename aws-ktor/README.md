@@ -305,6 +305,44 @@ suspend fun Application.publishOrder(json: String) {
 }
 ```
 
+For explicit acknowledgement flows, opt out of automatic delete and use
+`ack()` / `nack()` inside the handler. Interceptors run around receive, invoke,
+ack, and nack hooks. Observers emit lightweight events that can be bridged to
+Micrometer, OpenTelemetry, or logs without adding a metrics dependency to this
+module.
+
+```kotlin
+import io.bluetape4k.aws.ktor.sqs.SqsConsumerObservation
+import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
+import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
+
+install(SqsConsumer) {
+    sqsAsyncClient = sqs
+    queueName = "orders"
+    deleteOnSuccess = false
+    conversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure
+    failureVisibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 5)
+
+    observer { observation: SqsConsumerObservation ->
+        meterRegistry.counter(
+            "aws.sqs.consumer",
+            "operation", observation.operation,
+            "outcome", observation.outcome,
+        ).increment()
+    }
+
+    onMessage<String> { body ->
+        if (shouldRetryLater(body)) {
+            nack(timeoutSeconds = 30)
+            return@onMessage
+        }
+
+        processOrder(body)
+        ack()
+    }
+}
+```
+
 The application owns the injected `SqsAsyncClient`; the plugin never closes it.
 Close the client when the application scope ends. When no client is injected,
 `SqsConsumer` can create a plugin-owned client from `AwsKtorCore` or
@@ -458,25 +496,37 @@ render as redacted in generated diagnostics.
 | `waitTimeSeconds` | `20` | Long-poll wait time, validated as `0..20`. |
 | `visibilityTimeoutSeconds` | `null` | Optional receive visibility timeout. Required when visibility heartbeat is enabled. |
 | `deleteOnSuccess` | `true` | Deletes the source message after the handler completes. |
-| `failureVisibilityTimeoutSeconds` | `null` | Changes visibility after handler failure. Use `0` for immediate redelivery. |
-| `deadLetterQueueUrl` / `deadLetterQueueName` | `null` | Optional manual DLQ forwarding. Mutually exclusive with `failureVisibilityTimeoutSeconds`. |
+| `conversionFailurePolicy` | `HandleAsFailure` | Chooses whether conversion failures use the failure path, delete the message, or leave it for redelivery. |
+| `failureVisibilityTimeoutSeconds` | `null` | Changes visibility after conversion or handler failure. Use `0` for immediate redelivery. Mutually exclusive with `failureVisibilityStrategy`. |
+| `failureVisibilityStrategy` | `null` | Calculates failure visibility from message context, including `ApproximateReceiveCount`. Mutually exclusive with fixed failure visibility and manual DLQ forwarding. |
+| `deadLetterQueueUrl` / `deadLetterQueueName` | `null` | Optional manual DLQ forwarding. Mutually exclusive with fixed or strategy-based failure visibility. |
 | `pollBackoff` | `250ms -> 5s` | Exponential receive-loop backoff for transient SQS errors. |
 | `visibilityHeartbeatSeconds` | `null` | Periodically extends message visibility while the handler is running. |
 | `shutdownTimeout` | `30s` | Time to drain in-flight handlers before cancellation. |
+| `interceptor(...)` | none | Registers receive, invoke, ack, and nack lifecycle hooks. |
+| `observer(...)` | none | Registers lightweight runtime observation events for metrics or tracing bridges. |
 
 ### Failure And Shutdown Semantics
 
 On success, the runtime deletes the message unless the handler already called
-`SqsMessageContext.delete()`. On `CancellationException`, cancellation is
+`SqsMessageContext.delete()` or `SqsMessageContext.ack()`. Set
+`deleteOnSuccess = false` for manual acknowledgement and call `ack()` or
+`nack(timeoutSeconds)` explicitly. On `CancellationException`, cancellation is
 rethrown and the message is not acknowledged.
 
-For other handler failures, precedence is:
+For conversion failures, `conversionFailurePolicy` decides whether the runtime
+uses the same failure path as handler exceptions, deletes the source message, or
+leaves it untouched for SQS redelivery.
+
+For conversion or handler failures routed to the failure path, precedence is:
 
 1. If manual DLQ forwarding is configured, send the original body and message
    attributes to the DLQ, add `bluetape4k-*` original/error metadata within
    the SQS 10 message-attribute limit, then delete the source message.
-2. Else if `failureVisibilityTimeoutSeconds` is configured, change visibility.
-3. Else leave the message for normal SQS redelivery or native redrive policy.
+2. Else if `failureVisibilityStrategy` is configured, calculate and change
+   visibility from the failure context.
+3. Else if `failureVisibilityTimeoutSeconds` is configured, change visibility.
+4. Else leave the message for normal SQS redelivery or native redrive policy.
 
 Manual DLQ forwarding is not an atomic SQS transaction. Prefer native SQS
 redrive policies when operationally possible; use manual forwarding when the

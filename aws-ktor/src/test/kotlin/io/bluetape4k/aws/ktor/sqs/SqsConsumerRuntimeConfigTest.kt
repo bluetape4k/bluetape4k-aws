@@ -55,6 +55,46 @@ class SqsConsumerRuntimeConfigTest {
                 failureVisibilityTimeoutSeconds = 0,
             )
         }
+
+        assertFailsWith<IllegalArgumentException> {
+            runtimeConfig(
+                deadLetterQueueUrl = "https://sqs.local/dlq",
+                failureVisibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 0),
+            )
+        }
+    }
+
+    @Test
+    fun `fixed failure visibility and strategy are mutually exclusive`() {
+        assertFailsWith<IllegalArgumentException> {
+            runtimeConfig(
+                failureVisibilityTimeoutSeconds = 0,
+                failureVisibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 1),
+            )
+        }
+    }
+
+    @Test
+    fun `linear failure visibility strategy uses receive count`() {
+        val strategy = SqsLinearFailureVisibilityStrategy(
+            baseTimeoutSeconds = 3,
+            maxTimeoutSeconds = 10,
+            jitterRatio = 0.0,
+        )
+        val message = Message.builder()
+            .messageId("message-1")
+            .receiptHandle("receipt-1")
+            .body("body")
+            .attributesWithStrings(mapOf("ApproximateReceiveCount" to Int.MAX_VALUE.toString()))
+            .build()
+        val context = SqsConsumerFailureContext(
+            queueUrl = "https://sqs.local/source",
+            message = message,
+            cause = IllegalStateException("boom"),
+            phase = SqsConsumerFailurePhase.Handler,
+        )
+
+        strategy.visibilityTimeoutSeconds(context) shouldBeEqualTo 10
     }
 
     @Test
@@ -131,6 +171,7 @@ class SqsConsumerRuntimeConfigTest {
         shutdownTimeout: Duration = Duration.ofSeconds(30),
         deadLetterQueueUrl: String? = null,
         failureVisibilityTimeoutSeconds: Int? = null,
+        failureVisibilityStrategy: SqsFailureVisibilityStrategy? = null,
     ): SqsConsumerRuntimeConfig =
         SqsConsumerRuntimeConfig(
             sqsAsyncClient = client,
@@ -143,6 +184,7 @@ class SqsConsumerRuntimeConfigTest {
             shutdownTimeout = shutdownTimeout,
             deadLetterQueueUrl = deadLetterQueueUrl,
             failureVisibilityTimeoutSeconds = failureVisibilityTimeoutSeconds,
+            failureVisibilityStrategy = failureVisibilityStrategy,
             messageType = String::class,
             messageHandler = {},
         )

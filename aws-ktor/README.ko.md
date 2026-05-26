@@ -299,6 +299,43 @@ suspend fun Application.publishOrder(json: String) {
 }
 ```
 
+명시적 ack 흐름이 필요하면 자동 삭제를 끄고 handler 안에서 `ack()` / `nack()` 을
+사용합니다. Interceptor는 receive, invoke, ack, nack hook 전후에 실행됩니다. Observer는
+이 모듈에 metrics 의존성을 추가하지 않고도 Micrometer, OpenTelemetry, log로 연결할 수
+있는 lightweight event를 내보냅니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.sqs.SqsConsumerObservation
+import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
+import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
+
+install(SqsConsumer) {
+    sqsAsyncClient = sqs
+    queueName = "orders"
+    deleteOnSuccess = false
+    conversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure
+    failureVisibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 5)
+
+    observer { observation: SqsConsumerObservation ->
+        meterRegistry.counter(
+            "aws.sqs.consumer",
+            "operation", observation.operation,
+            "outcome", observation.outcome,
+        ).increment()
+    }
+
+    onMessage<String> { body ->
+        if (shouldRetryLater(body)) {
+            nack(timeoutSeconds = 30)
+            return@onMessage
+        }
+
+        processOrder(body)
+        ack()
+    }
+}
+```
+
 주입한 `SqsAsyncClient` 는 애플리케이션이 소유합니다. 플러그인은 client를 닫지
 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
 `SqsConsumer`가 `AwsKtorCore` 또는 서비스 로컬 설정으로 plugin-owned client를 만들 수
@@ -450,25 +487,36 @@ redacted 문자열로 표시됩니다.
 | `waitTimeSeconds` | `20` | long-poll 대기 시간이며 `0..20` 범위로 검증합니다. |
 | `visibilityTimeoutSeconds` | `null` | receive visibility timeout입니다. visibility heartbeat를 켜려면 필요합니다. |
 | `deleteOnSuccess` | `true` | handler가 정상 종료되면 source message를 삭제합니다. |
-| `failureVisibilityTimeoutSeconds` | `null` | handler 실패 후 visibility를 변경합니다. 즉시 재전송하려면 `0`을 사용합니다. |
-| `deadLetterQueueUrl` / `deadLetterQueueName` | `null` | 선택적 manual DLQ forwarding입니다. `failureVisibilityTimeoutSeconds` 와 동시에 사용할 수 없습니다. |
+| `conversionFailurePolicy` | `HandleAsFailure` | 변환 실패를 failure path로 보낼지, message를 삭제할지, redelivery에 맡길지 선택합니다. |
+| `failureVisibilityTimeoutSeconds` | `null` | 변환 또는 handler 실패 후 visibility를 변경합니다. 즉시 재전송하려면 `0`을 사용합니다. `failureVisibilityStrategy` 와 동시에 사용할 수 없습니다. |
+| `failureVisibilityStrategy` | `null` | `ApproximateReceiveCount` 를 포함한 message context로 실패 visibility를 계산합니다. fixed failure visibility 및 manual DLQ forwarding과 동시에 사용할 수 없습니다. |
+| `deadLetterQueueUrl` / `deadLetterQueueName` | `null` | 선택적 manual DLQ forwarding입니다. fixed 또는 strategy 기반 failure visibility와 동시에 사용할 수 없습니다. |
 | `pollBackoff` | `250ms -> 5s` | transient SQS receive 오류에 대한 exponential backoff입니다. |
 | `visibilityHeartbeatSeconds` | `null` | handler 실행 중 message visibility를 주기적으로 연장합니다. |
 | `shutdownTimeout` | `30s` | shutdown 시 in-flight handler를 기다릴 시간입니다. |
+| `interceptor(...)` | 없음 | receive, invoke, ack, nack lifecycle hook을 등록합니다. |
+| `observer(...)` | 없음 | metrics 또는 tracing bridge를 위한 lightweight runtime observation event를 등록합니다. |
 
 ### 실패와 Shutdown 의미
 
-성공 시 runtime은 handler가 이미 `SqsMessageContext.delete()` 를 호출하지 않았다면
-message를 삭제합니다. `CancellationException` 은 그대로 다시 던지며 message를 ack하지
-않습니다.
+성공 시 runtime은 handler가 이미 `SqsMessageContext.delete()` 또는
+`SqsMessageContext.ack()` 을 호출하지 않았다면 message를 삭제합니다.
+`deleteOnSuccess = false` 를 설정하면 manual acknowledgement 모드가 되며 handler에서
+`ack()` 또는 `nack(timeoutSeconds)` 를 명시적으로 호출합니다. `CancellationException`
+은 그대로 다시 던지며 message를 ack하지 않습니다.
 
-handler 실패 시 우선순위는 다음과 같습니다.
+변환 실패는 `conversionFailurePolicy` 에 따라 handler 예외와 같은 failure path로 보내거나,
+source message를 삭제하거나, 아무 처리 없이 SQS redelivery에 맡깁니다.
+
+failure path로 들어간 변환 또는 handler 실패의 우선순위는 다음과 같습니다.
 
 1. Manual DLQ가 설정되어 있으면 원본 body와 message attributes를 DLQ로 전송하고
    SQS message attribute 10개 제한 안에서 `bluetape4k-*` 원본/error metadata를 추가한 뒤
    source message를 삭제합니다.
-2. 아니면 `failureVisibilityTimeoutSeconds` 가 설정되어 있을 때 visibility를 변경합니다.
-3. 아니면 message를 그대로 두어 SQS 기본 redelivery 또는 native redrive policy에 맡깁니다.
+2. 아니면 `failureVisibilityStrategy` 가 설정되어 있을 때 failure context로 visibility를
+   계산해 변경합니다.
+3. 아니면 `failureVisibilityTimeoutSeconds` 가 설정되어 있을 때 visibility를 변경합니다.
+4. 아니면 message를 그대로 두어 SQS 기본 redelivery 또는 native redrive policy에 맡깁니다.
 
 Manual DLQ forwarding은 SQS의 atomic transaction이 아닙니다. 운영에서 가능하면 native
 SQS redrive policy를 우선 사용하고, 실패 message를 handler에서 보강해야 할 때만 manual
