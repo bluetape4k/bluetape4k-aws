@@ -1,11 +1,13 @@
 package io.bluetape4k.aws.examples.ktor.s3
 
 import io.bluetape4k.aws.ktor.s3.S3KtorClient
+import io.bluetape4k.aws.ktor.s3.S3KtorListObjectsRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondText
@@ -53,6 +55,21 @@ fun Route.s3DocumentRoutes(
     s3: S3KtorClient,
     bucket: String,
 ) {
+    put("/s3/detected-objects/{key...}") {
+        val key = call.s3KeyParameter()
+        val bytes = call.receive<ByteArray>()
+        val response = s3.putObjectDetectingContentType(
+            bucket = bucket,
+            key = key,
+            bytes = bytes,
+            metadata = mapOf("source" to "ktor-route"),
+        )
+        call.respondText(
+            text = """{"bucket":${bucket.jsonString()},"key":${key.jsonString()},"eTag":${response.eTag.jsonOrNull()}}""",
+            contentType = ContentType.Application.Json,
+        )
+    }
+
     put("/s3/objects/{key...}") {
         val key = call.s3KeyParameter()
         val bytes = call.receive<ByteArray>()
@@ -81,7 +98,7 @@ fun Route.s3DocumentRoutes(
     get("/s3/objects") {
         val prefix = call.request.queryParameters["prefix"]
         val page = s3.listObjectsV2(
-            io.bluetape4k.aws.ktor.s3.S3KtorListObjectsRequest(
+            S3KtorListObjectsRequest(
                 bucket = bucket,
                 prefix = prefix,
                 maxKeys = 100,
@@ -93,6 +110,26 @@ fun Route.s3DocumentRoutes(
             },
             contentType = ContentType.Application.Json,
         )
+    }
+
+    put("/s3/config/{key...}") {
+        val key = call.s3KeyParameter()
+        val text = call.receiveText()
+        val response = s3.putConfigObject(
+            bucket = bucket,
+            key = key,
+            text = text,
+            metadata = mapOf("source" to "ktor-route"),
+        )
+        call.respondText(
+            text = """{"bucket":${bucket.jsonString()},"key":${key.jsonString()},"eTag":${response.eTag.jsonOrNull()}}""",
+            contentType = ContentType.Application.Json,
+        )
+    }
+
+    get("/s3/config/{key...}") {
+        val config = s3.getConfigObject(bucket = bucket, key = call.s3KeyParameter())
+        call.respondText(config.text, ContentType.parse(config.contentType ?: "text/plain; charset=utf-8"))
     }
 
     get("/s3/presigned-get/{key...}") {

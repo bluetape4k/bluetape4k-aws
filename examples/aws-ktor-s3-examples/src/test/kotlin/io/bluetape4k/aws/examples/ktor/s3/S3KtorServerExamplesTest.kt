@@ -38,6 +38,14 @@ class S3KtorServerExamplesTest {
             client.get("/s3/objects/docs/hello.txt").bodyAsText() shouldBeEqualTo "hello ktor s3"
             client.get("/s3/objects/docs/hello.txt/stream").bodyAsText() shouldBeEqualTo "hello ktor s3"
             client.get("/s3/objects?prefix=docs/").status shouldBeEqualTo HttpStatusCode.OK
+            client.put("/s3/detected-objects/docs/data.json") {
+                setBody("""{"enabled":true}""")
+            }.status shouldBeEqualTo HttpStatusCode.OK
+            client.put("/s3/config/config/application.conf") {
+                setBody("ktor { deployment { port = 8080 } }")
+            }.status shouldBeEqualTo HttpStatusCode.OK
+            client.get("/s3/config/config/application.conf")
+                .bodyAsText() shouldBeEqualTo "ktor { deployment { port = 8080 } }"
             client.get("/s3/presigned-get/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm") shouldBeEqualTo true
             client.get("/s3/presigned-put/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm") shouldBeEqualTo true
             client.delete("/s3/objects/docs/hello.txt").status shouldBeEqualTo HttpStatusCode.NoContent
@@ -49,11 +57,13 @@ class S3KtorServerExamplesTest {
     private fun s3ClientWithMockEngine(): S3KtorClient {
         val engine = MockEngine { request ->
             when (request.method.value) {
-                "PUT" -> respond(
-                    content = "",
-                    status = HttpStatusCode.OK,
-                    headers = headersOf(HttpHeaders.ETag, "\"demo-etag\""),
-                )
+                "PUT" -> {
+                    respond(
+                        content = "",
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ETag, "\"demo-etag\""),
+                    )
+                }
 
                 "GET" -> {
                     if (request.url.parameters["list-type"] == "2") {
@@ -72,6 +82,12 @@ class S3KtorServerExamplesTest {
                                 </ListBucketResult>
                             """.trimIndent(),
                             status = HttpStatusCode.OK,
+                        )
+                    } else if (request.url.encodedPath.endsWith("/config/application.conf")) {
+                        respond(
+                            content = "ktor { deployment { port = 8080 } }",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, "text/plain; charset=utf-8"),
                         )
                     } else {
                         respond(

@@ -1,11 +1,12 @@
 package io.bluetape4k.aws.examples.ktor.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.junit5.coroutines.runSuspendIO
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
-import kotlin.test.Test
+import org.junit.jupiter.api.Test
 
 class S3KtorExamplesTest {
 
@@ -31,5 +32,15 @@ class S3KtorExamplesTest {
         } finally {
             s3.close()
         }
+    }
+
+    @Test
+    fun `in-memory data key provider decrypts generated demo key`() = runSuspendIO {
+        val provider = InMemoryS3DataKeyProvider()
+
+        val dataKey = provider.generateDataKey(mapOf("tenant" to "demo"))
+        val decrypted = provider.decryptDataKey(dataKey.encryptedKey, mapOf("tenant" to "demo"))
+
+        decrypted shouldBeEqualTo dataKey.plaintextKey
     }
 }
