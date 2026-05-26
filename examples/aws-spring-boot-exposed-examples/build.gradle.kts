@@ -1,6 +1,16 @@
 plugins {
     alias(libs.plugins.kotlin.spring)
     alias(libs.plugins.spring.boot)
+    alias(bt4k.plugins.exposed.plugin)
+}
+
+exposed {
+    migrations {
+        tablesPackage = "io.bluetape4k.aws.examples.spring.exposed"
+        databaseUrl = "jdbc:h2:mem:aws-spring-boot-exposed-examples-migrations;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+        databaseUser = "sa"
+        databasePassword = ""
+    }
 }
 
 dependencyManagement {

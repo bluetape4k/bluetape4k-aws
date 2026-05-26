@@ -1,3 +1,16 @@
+plugins {
+    alias(bt4k.plugins.exposed.plugin)
+}
+
+exposed {
+    migrations {
+        tablesPackage = "io.bluetape4k.aws.examples.ktor.exposed"
+        databaseUrl = "jdbc:h2:mem:aws-ktor-exposed-examples-migrations;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+        databaseUser = "sa"
+        databasePassword = ""
+    }
+}
+
 dependencies {
     implementation(project(":bluetape4k-aws-exposed"))
     implementation(project(":bluetape4k-aws-ktor"))
