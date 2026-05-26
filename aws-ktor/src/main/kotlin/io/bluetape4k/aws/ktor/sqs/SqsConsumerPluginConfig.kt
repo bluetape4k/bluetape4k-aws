@@ -87,6 +87,14 @@ class SqsConsumerPluginConfig {
     /** Converter used to deserialize AWS SQS messages for [onMessage] handlers. */
     var converter: SqsMessageConverter = StringOrByteArraySqsMessageConverter
 
+    /** Policy used when conversion fails before the handler is invoked. */
+    var conversionFailurePolicy: SqsConversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure
+
+    /** Optional strategy for choosing visibility after conversion or handler failure. */
+    var failureVisibilityStrategy: SqsFailureVisibilityStrategy? = null
+
+    private val interceptors = mutableListOf<SqsConsumerInterceptor>()
+    private val observers = mutableListOf<SqsConsumerObserver>()
     private var messageType: KClass<out Any>? = null
     private var messageHandler: (suspend SqsMessageContext.(Any) -> Unit)? = null
     private val clientCustomizers = mutableListOf<AwsKtorSqsAsyncClientCustomizer>()
@@ -96,6 +104,20 @@ class SqsConsumerPluginConfig {
      */
     fun sqsAsyncClient(customizer: AwsKtorSqsAsyncClientCustomizer) {
         clientCustomizers += customizer
+    }
+
+    /**
+     * Adds a runtime interceptor for receive, invoke, ack, and nack hooks.
+     */
+    fun interceptor(interceptor: SqsConsumerInterceptor) {
+        interceptors += interceptor
+    }
+
+    /**
+     * Adds an observer that can bridge runtime events to Micrometer or tracing.
+     */
+    fun observer(observer: SqsConsumerObserver) {
+        observers += observer
     }
 
     /**
@@ -146,6 +168,10 @@ class SqsConsumerPluginConfig {
             visibilityHeartbeatSeconds = visibilityHeartbeatSeconds,
             dispatcher = dispatcher,
             converter = converter,
+            conversionFailurePolicy = conversionFailurePolicy,
+            failureVisibilityStrategy = failureVisibilityStrategy,
+            interceptors = interceptors.toList(),
+            observers = observers.toList(),
             messageType = type,
             messageHandler = handler,
         )

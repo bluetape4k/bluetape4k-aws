@@ -2,6 +2,10 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requirePositiveNumber
+import java.io.Serializable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
@@ -55,15 +59,19 @@ data class SqsPollBackoff(
     val initialDelay: Duration = Duration.ofMillis(250),
     val maxDelay: Duration = Duration.ofSeconds(5),
     val multiplier: Double = 2.0,
-) {
+): Serializable {
     init {
-        require(!initialDelay.isZero && !initialDelay.isNegative) { "initialDelay must be positive." }
-        require(!maxDelay.isZero && !maxDelay.isNegative) { "maxDelay must be positive." }
-        require(maxDelay >= initialDelay) { "maxDelay must be greater than or equal to initialDelay." }
-        require(multiplier >= 1.0) { "multiplier must be at least 1.0." }
+        initialDelay.toNanos().requirePositiveNumber("initialDelay")
+        maxDelay.toNanos().requirePositiveNumber("maxDelay")
+        maxDelay.toNanos().requireGe(initialDelay.toNanos(), "maxDelay")
+        multiplier.requireGe(1.0, "multiplier")
     }
 
     internal fun newState(): BackoffState = BackoffState(this)
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 }
 
 internal class BackoffState(
@@ -107,35 +115,34 @@ data class SqsConsumerRuntimeConfig(
     val visibilityHeartbeatSeconds: Int? = null,
     val dispatcher: CoroutineDispatcher? = null,
     val converter: SqsMessageConverter = StringOrByteArraySqsMessageConverter,
+    val conversionFailurePolicy: SqsConversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure,
+    val failureVisibilityStrategy: SqsFailureVisibilityStrategy? = null,
+    val interceptors: List<SqsConsumerInterceptor> = emptyList(),
+    val observers: List<SqsConsumerObserver> = emptyList(),
     val messageType: KClass<out Any>,
     val messageHandler: suspend SqsMessageContext.(Any) -> Unit,
 ) {
     init {
         validateQueue(queueUrl, queueName, "queueUrl", "queueName")
-        require(coroutines >= 1) { "coroutines must be at least 1." }
-        require(maxMessages in MIN_MESSAGE_COUNT..MAX_MESSAGE_COUNT) {
-            "maxMessages must be between $MIN_MESSAGE_COUNT and $MAX_MESSAGE_COUNT."
-        }
-        require(waitTimeSeconds in MIN_WAIT_TIME_SECONDS..MAX_WAIT_TIME_SECONDS) {
-            "waitTimeSeconds must be between $MIN_WAIT_TIME_SECONDS and $MAX_WAIT_TIME_SECONDS."
-        }
+        coroutines.requirePositiveNumber("coroutines")
+        maxMessages.requireInRange(MIN_MESSAGE_COUNT, MAX_MESSAGE_COUNT, "maxMessages")
+        waitTimeSeconds.requireInRange(MIN_WAIT_TIME_SECONDS, MAX_WAIT_TIME_SECONDS, "waitTimeSeconds")
         visibilityTimeoutSeconds?.let {
-            require(it in 1..MAX_VISIBILITY_SECONDS) { "visibilityTimeoutSeconds must be between 1 and $MAX_VISIBILITY_SECONDS." }
+            it.requireInRange(1, MAX_VISIBILITY_SECONDS, "visibilityTimeoutSeconds")
         }
         failureVisibilityTimeoutSeconds?.let {
-            require(it in 0..MAX_VISIBILITY_SECONDS) {
-                "failureVisibilityTimeoutSeconds must be between 0 and $MAX_VISIBILITY_SECONDS."
-            }
+            it.requireInRange(0, MAX_VISIBILITY_SECONDS, "failureVisibilityTimeoutSeconds")
         }
         validateDeadLetterQueue()
-        require(!shutdownTimeout.isZero && !shutdownTimeout.isNegative) { "shutdownTimeout must be positive." }
+        shutdownTimeout.toNanos().requirePositiveNumber("shutdownTimeout")
         visibilityHeartbeatSeconds?.let { heartbeat ->
             val visibility = requireNotNull(visibilityTimeoutSeconds) {
                 "visibilityHeartbeatSeconds requires visibilityTimeoutSeconds."
             }
-            require(heartbeat in 1 until visibility) {
-                "visibilityHeartbeatSeconds must be positive and lower than visibilityTimeoutSeconds."
-            }
+            heartbeat.requireInRange(1, visibility - 1, "visibilityHeartbeatSeconds")
+        }
+        require(failureVisibilityTimeoutSeconds == null || failureVisibilityStrategy == null) {
+            "failureVisibilityTimeoutSeconds and failureVisibilityStrategy are mutually exclusive."
         }
     }
 
@@ -149,6 +156,9 @@ data class SqsConsumerRuntimeConfig(
         validateQueue(deadLetterQueueUrl, deadLetterQueueName, "deadLetterQueueUrl", "deadLetterQueueName")
         require(failureVisibilityTimeoutSeconds == null) {
             "Manual dead-letter forwarding and failureVisibilityTimeoutSeconds are mutually exclusive."
+        }
+        require(failureVisibilityStrategy == null) {
+            "Manual dead-letter forwarding and failureVisibilityStrategy are mutually exclusive."
         }
     }
 
@@ -182,13 +192,22 @@ class SqsMessageContext internal constructor(
 
     /** Deletes the current message from the source queue. */
     suspend fun delete() {
-        runtime.delete(queueUrl, message.receiptHandle())
-        deleted = true
+        ack()
+    }
+
+    /** Acknowledges the current message by deleting it from the source queue. */
+    suspend fun ack() {
+        runtime.ack(this)
     }
 
     /** Changes the visibility timeout for the current message. */
     suspend fun changeVisibility(timeoutSeconds: Int) {
         runtime.changeVisibility(queueUrl, message.receiptHandle(), timeoutSeconds)
+    }
+
+    /** Negatively acknowledges the current message by changing its visibility timeout. */
+    suspend fun nack(timeoutSeconds: Int = 0) {
+        runtime.nack(this, timeoutSeconds)
     }
 
     /** Publishes a message to the source queue or to [targetQueueUrl] when provided. */
@@ -336,10 +355,27 @@ class SqsConsumerRuntime(
         }.await()
     }
 
-    internal suspend fun changeVisibility(queueUrl: String, receiptHandle: String, timeoutSeconds: Int) {
-        require(timeoutSeconds in 0..MAX_VISIBILITY_SECONDS) {
-            "timeoutSeconds must be between 0 and $MAX_VISIBILITY_SECONDS."
+    internal suspend fun ack(context: SqsMessageContext) {
+        if (context.deleted) {
+            return
         }
+        config.interceptors.forEach { it.beforeAck(context) }
+        val startedAt = System.nanoTime()
+        try {
+            delete(context.queueUrl, context.message.receiptHandle())
+            context.deleted = true
+            config.interceptors.forEach { it.afterAck(context) }
+            observe("ack", "success", context, startedAt)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            observe("ack", "failure", context, startedAt, mapOf("exception" to e::class.qualifiedName.orEmpty()))
+            throw e
+        }
+    }
+
+    internal suspend fun changeVisibility(queueUrl: String, receiptHandle: String, timeoutSeconds: Int) {
+        timeoutSeconds.requireInRange(0, MAX_VISIBILITY_SECONDS, "timeoutSeconds")
         config.sqsAsyncClient.changeMessageVisibility {
             it.queueUrl(queueUrl)
             it.receiptHandle(receiptHandle)
@@ -347,14 +383,41 @@ class SqsConsumerRuntime(
         }.await()
     }
 
+    internal suspend fun nack(context: SqsMessageContext, timeoutSeconds: Int) {
+        config.interceptors.forEach { it.beforeNack(context, timeoutSeconds) }
+        val startedAt = System.nanoTime()
+        try {
+            changeVisibility(context.queueUrl, context.message.receiptHandle(), timeoutSeconds)
+            config.interceptors.forEach { it.afterNack(context, timeoutSeconds) }
+            observe("nack", "success", context, startedAt, mapOf("visibility_timeout" to timeoutSeconds.toString()))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            observe(
+                operation = "nack",
+                outcome = "failure",
+                context = context,
+                startedAt = startedAt,
+                tags = mapOf(
+                    "visibility_timeout" to timeoutSeconds.toString(),
+                    "exception" to e::class.qualifiedName.orEmpty(),
+                ),
+            )
+            throw e
+        }
+    }
+
     private suspend fun pollLoop() {
         val backoff = config.pollBackoff.newState()
 
         while (isRunning && currentCoroutineContext().isActive) {
             var permits = 0
+            var queueUrl: String? = null
             try {
-                val queueUrl = resolveQueueUrl()
+                queueUrl = resolveQueueUrl()
                 permits = acquireHandlerPermits()
+                config.interceptors.forEach { it.beforeReceive(queueUrl) }
+                val startedAt = System.nanoTime()
                 val response = config.sqsAsyncClient.receiveMessage {
                     it.queueUrl(queueUrl)
                     it.maxNumberOfMessages(permits)
@@ -372,6 +435,14 @@ class SqsConsumerRuntime(
                 }
 
                 val messages = response.messages().orEmpty()
+                config.interceptors.forEach { it.afterReceive(queueUrl, messages) }
+                observe(
+                    operation = "receive",
+                    outcome = "success",
+                    queueUrl = queueUrl,
+                    startedAt = startedAt,
+                    tags = mapOf("message_count" to messages.size.toString()),
+                )
                 repeat(permits - messages.size) { handlerPermits.release() }
                 messages.forEach { message ->
                     launchHandler(queueUrl, message)
@@ -383,6 +454,16 @@ class SqsConsumerRuntime(
             } catch (e: Exception) {
                 repeat(permits) { handlerPermits.release() }
                 val retryDelay = backoff.next()
+                config.interceptors.forEach { it.receiveFailed(queueUrl, e, retryDelay) }
+                observe(
+                    operation = "receive",
+                    outcome = "failure",
+                    queueUrl = queueUrl,
+                    tags = mapOf(
+                        "exception" to e::class.qualifiedName.orEmpty(),
+                        "retry_delay_ms" to retryDelay.toMillis().toString(),
+                    ),
+                )
                 log.warn(e) {
                     "SQS receive loop failed. Retrying after ${retryDelay.toMillis()} ms."
                 }
@@ -445,21 +526,35 @@ class SqsConsumerRuntime(
     private suspend fun handleMessage(queueUrl: String, message: Message) {
         val context = SqsMessageContext(this, queueUrl, message)
         val heartbeat = startVisibilityHeartbeat(context)
+        val startedAt = System.nanoTime()
         try {
-            try {
-                val payload = convert(message)
-                config.messageHandler(context, payload)
-                currentCoroutineContext().ensureActive()
+            val payload = try {
+                convert(message)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                handleFailure(queueUrl, message, e)
+                handleConversionFailure(queueUrl, message, context, e)
+                return
+            }
+
+            try {
+                config.interceptors.forEach { it.beforeInvoke(context) }
+                config.messageHandler(context, payload)
+                currentCoroutineContext().ensureActive()
+                config.interceptors.forEach { it.afterInvoke(context) }
+                observe("invoke", "success", context, startedAt)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                config.interceptors.forEach { it.invokeFailed(context, e) }
+                observe("invoke", "failure", context, startedAt, mapOf("exception" to e::class.qualifiedName.orEmpty()))
+                handleFailure(queueUrl, message, e, SqsConsumerFailurePhase.Handler)
                 return
             }
 
             if (config.deleteOnSuccess && !context.deleted) {
                 try {
-                    delete(queueUrl, message.receiptHandle())
+                    ack(context)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -501,15 +596,43 @@ class SqsConsumerRuntime(
         }
     }
 
-    private suspend fun handleFailure(queueUrl: String, message: Message, cause: Exception) {
+    private suspend fun handleConversionFailure(
+        queueUrl: String,
+        message: Message,
+        context: SqsMessageContext,
+        cause: Exception,
+    ) {
+        observe("convert", "failure", context, tags = mapOf("exception" to cause::class.qualifiedName.orEmpty()))
+        when (config.conversionFailurePolicy) {
+            SqsConversionFailurePolicy.HandleAsFailure ->
+                handleFailure(queueUrl, message, cause, SqsConsumerFailurePhase.Conversion)
+
+            SqsConversionFailurePolicy.Delete ->
+                ack(context)
+
+            SqsConversionFailurePolicy.Ignore -> Unit
+        }
+    }
+
+    private suspend fun handleFailure(
+        queueUrl: String,
+        message: Message,
+        cause: Exception,
+        phase: SqsConsumerFailurePhase,
+    ) {
         when {
             config.hasManualDeadLetterQueue -> {
                 forwardToDeadLetterQueue(queueUrl, message, cause)
                 delete(queueUrl, message.receiptHandle())
             }
 
-            config.failureVisibilityTimeoutSeconds != null -> {
-                changeVisibility(queueUrl, message.receiptHandle(), config.failureVisibilityTimeoutSeconds)
+            else -> {
+                val failureContext = SqsConsumerFailureContext(queueUrl, message, cause, phase)
+                val timeoutSeconds = config.failureVisibilityStrategy?.visibilityTimeoutSeconds(failureContext)
+                    ?: config.failureVisibilityTimeoutSeconds
+                timeoutSeconds?.let {
+                    changeVisibility(queueUrl, message.receiptHandle(), it)
+                }
             }
         }
     }
@@ -570,4 +693,53 @@ class SqsConsumerRuntime(
             .dataType("String")
             .stringValue(value)
             .build()
+
+    private fun observe(
+        operation: String,
+        outcome: String,
+        context: SqsMessageContext,
+        startedAt: Long? = null,
+        tags: Map<String, String> = emptyMap(),
+    ) {
+        observe(operation, outcome, context.queueUrl, context.message.messageId(), startedAt, tags)
+    }
+
+    private fun observe(
+        operation: String,
+        outcome: String,
+        queueUrl: String? = null,
+        startedAt: Long? = null,
+        tags: Map<String, String> = emptyMap(),
+    ) {
+        observe(operation, outcome, queueUrl, null, startedAt, tags)
+    }
+
+    private fun observe(
+        operation: String,
+        outcome: String,
+        queueUrl: String?,
+        messageId: String?,
+        startedAt: Long?,
+        tags: Map<String, String>,
+    ) {
+        if (config.observers.isEmpty()) {
+            return
+        }
+
+        val duration = startedAt?.let { Duration.ofNanos(System.nanoTime() - it) }
+        val observation = SqsConsumerObservation(
+            operation = operation,
+            outcome = outcome,
+            queueUrl = queueUrl,
+            messageId = messageId,
+            duration = duration,
+            tags = tags,
+        )
+        config.observers.forEach { observer ->
+            runCatching { observer.observe(observation) }
+                .onFailure { e ->
+                    log.warn(e) { "SQS consumer observer failed." }
+                }
+        }
+    }
 }
