@@ -1,6 +1,14 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
+import io.bluetape4k.aws.spring.applyAwsDefaults
+import io.bluetape4k.aws.spring.applyGlobalCustomizers
+import io.bluetape4k.aws.spring.applyServiceCustomizers
+import io.bluetape4k.aws.spring.resolveClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -12,7 +20,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder
 import software.amazon.awssdk.services.s3.S3Client
@@ -37,39 +44,52 @@ class S3AutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun s3Client(
+        awsProperties: ObjectProvider<AwsProperties>,
         properties: S3Properties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
         httpClient: ObjectProvider<SdkHttpClient>,
+        globalCustomizers: ObjectProvider<AwsSyncClientCustomizer>,
+        serviceCustomizers: ObjectProvider<AwsClientCustomizer<S3ClientBuilder>>,
     ): S3Client =
         S3Client.builder()
-            .applyCommon(properties, resolveCredentialsProvider(credentialsProvider))
+            .applyCommon(resolveAwsProperties(awsProperties), properties, resolveCredentialsProvider(credentialsProvider))
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
             }
+            .also { it.applyGlobalCustomizers("s3", globalCustomizers) }
+            .applyServiceCustomizers(serviceCustomizers)
             .build()
 
     @Bean
     @ConditionalOnMissingBean
     fun s3AsyncClient(
+        awsProperties: ObjectProvider<AwsProperties>,
         properties: S3Properties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
         httpClient: ObjectProvider<SdkAsyncHttpClient>,
+        globalCustomizers: ObjectProvider<AwsAsyncClientCustomizer>,
+        serviceCustomizers: ObjectProvider<AwsClientCustomizer<S3AsyncClientBuilder>>,
     ): S3AsyncClient =
         S3AsyncClient.builder()
-            .applyCommon(properties, resolveCredentialsProvider(credentialsProvider))
+            .applyCommon(resolveAwsProperties(awsProperties), properties, resolveCredentialsProvider(credentialsProvider))
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
             }
+            .also { it.applyGlobalCustomizers("s3", globalCustomizers) }
+            .applyServiceCustomizers(serviceCustomizers)
             .build()
 
     @Bean
     @ConditionalOnMissingBean
     fun s3Presigner(
+        awsProperties: ObjectProvider<AwsProperties>,
         properties: S3Properties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
+        serviceCustomizers: ObjectProvider<AwsClientCustomizer<S3Presigner.Builder>>,
     ): S3Presigner =
         S3Presigner.builder()
-            .applyCommon(properties, resolveCredentialsProvider(credentialsProvider))
+            .applyCommon(resolveAwsProperties(awsProperties), properties, resolveCredentialsProvider(credentialsProvider))
+            .applyServiceCustomizers(serviceCustomizers)
             .build()
 
     @Bean
@@ -87,33 +107,38 @@ class S3AutoConfiguration {
     ): AwsCredentialsProvider =
         provider.getIfAvailable { DefaultCredentialsProvider.builder().build() }
 
+    private fun resolveAwsProperties(provider: ObjectProvider<AwsProperties>): AwsProperties =
+        provider.getIfAvailable { AwsProperties() }
+
     private fun S3ClientBuilder.applyCommon(
+        awsProperties: AwsProperties,
         properties: S3Properties,
         credentialsProvider: AwsCredentialsProvider,
     ): S3ClientBuilder =
         credentialsProvider(credentialsProvider).apply {
-            properties.region?.let { region(Region.of(it)) }
-            properties.endpointOverride?.let { endpointOverride(it) }
+            applyAwsDefaults(awsProperties.resolveClientDefaults(properties.region, properties.endpointOverride))
             serviceConfiguration(s3Configuration(properties))
         }
 
     private fun S3AsyncClientBuilder.applyCommon(
+        awsProperties: AwsProperties,
         properties: S3Properties,
         credentialsProvider: AwsCredentialsProvider,
     ): S3AsyncClientBuilder =
         credentialsProvider(credentialsProvider).apply {
-            properties.region?.let { region(Region.of(it)) }
-            properties.endpointOverride?.let { endpointOverride(it) }
+            applyAwsDefaults(awsProperties.resolveClientDefaults(properties.region, properties.endpointOverride))
             serviceConfiguration(s3Configuration(properties))
         }
 
     private fun S3Presigner.Builder.applyCommon(
+        awsProperties: AwsProperties,
         properties: S3Properties,
         credentialsProvider: AwsCredentialsProvider,
     ): S3Presigner.Builder =
         credentialsProvider(credentialsProvider).apply {
-            properties.region?.let { region(Region.of(it)) }
-            properties.endpointOverride?.let { endpointOverride(it) }
+            val defaults = awsProperties.resolveClientDefaults(properties.region, properties.endpointOverride)
+            defaults.region?.let { region(it) }
+            defaults.endpointOverride?.let { endpointOverride(it) }
             serviceConfiguration(s3Configuration(properties))
         }
 

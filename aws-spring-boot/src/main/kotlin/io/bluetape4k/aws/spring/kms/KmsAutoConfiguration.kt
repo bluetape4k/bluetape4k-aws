@@ -1,6 +1,13 @@
 package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.applyAwsDefaults
+import io.bluetape4k.aws.spring.applyGlobalCustomizers
+import io.bluetape4k.aws.spring.applyServiceCustomizers
+import io.bluetape4k.aws.spring.resolveClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -11,8 +18,8 @@ import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.kms.KmsAsyncClient
+import software.amazon.awssdk.services.kms.KmsAsyncClientBuilder
 
 /**
  * Spring Boot auto-configuration for AWS KMS.
@@ -31,17 +38,23 @@ class KmsAutoConfiguration {
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
     fun kmsAsyncClient(
+        awsProperties: ObjectProvider<AwsProperties>,
         properties: KmsProperties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
         httpClient: ObjectProvider<SdkAsyncHttpClient>,
+        globalCustomizers: ObjectProvider<AwsAsyncClientCustomizer>,
+        serviceCustomizers: ObjectProvider<AwsClientCustomizer<KmsAsyncClientBuilder>>,
     ): KmsAsyncClient =
         KmsAsyncClient.builder()
             .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
+            .applyAwsDefaults(
+                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+            )
             .apply {
-                properties.region?.let { region(Region.of(it)) }
-                properties.endpointOverride?.let { endpointOverride(it) }
                 httpClient.getIfAvailable()?.let { httpClient(it) }
             }
+            .also { it.applyGlobalCustomizers("kms", globalCustomizers) }
+            .applyServiceCustomizers(serviceCustomizers)
             .build()
 
     @Bean
@@ -69,4 +82,7 @@ class KmsAutoConfiguration {
         provider: ObjectProvider<AwsCredentialsProvider>,
     ): AwsCredentialsProvider =
         provider.getIfAvailable { DefaultCredentialsProvider.builder().build() }
+
+    private fun resolveAwsProperties(provider: ObjectProvider<AwsProperties>): AwsProperties =
+        provider.getIfAvailable { AwsProperties() }
 }

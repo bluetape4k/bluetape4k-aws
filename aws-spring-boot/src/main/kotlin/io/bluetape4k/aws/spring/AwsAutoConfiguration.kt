@@ -2,19 +2,45 @@ package io.bluetape4k.aws.spring
 
 import io.bluetape4k.logging.KLogging
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 
 /**
- * bluetape4k-aws Spring Boot 자동 설정.
- * AWS SDK v2 공통 빈 등록.
+ * Spring Boot auto-configuration for shared AWS SDK v2 support.
  */
 @AutoConfiguration
+@ConditionalOnProperty(prefix = "bluetape4k.aws", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(AwsProperties::class)
 class AwsAutoConfiguration {
 
     companion object: KLogging()
+
+    @Bean
+    @ConditionalOnClass(name = ["software.amazon.awssdk.services.sts.StsClient"])
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.credentials.web-identity",
+        name = ["enabled"],
+        havingValue = "true",
+    )
+    @ConditionalOnMissingBean(AwsCredentialsProvider::class)
+    fun webIdentityAwsCredentialsProvider(properties: AwsProperties): AwsCredentialsProvider {
+        log.debug("Registering WebIdentityTokenFileCredentialsProvider")
+        val webIdentity = properties.credentials.webIdentity
+
+        return WebIdentityTokenFileCredentialsProvider.builder()
+            .apply {
+                webIdentity.roleArn?.takeIf { it.isNotBlank() }?.let { roleArn(it) }
+                webIdentity.roleSessionName?.takeIf { it.isNotBlank() }?.let { roleSessionName(it) }
+                webIdentity.tokenFile?.let { webIdentityTokenFile(it) }
+            }
+            .build()
+    }
 
     @Bean
     @ConditionalOnMissingBean

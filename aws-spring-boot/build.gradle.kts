@@ -34,6 +34,7 @@ dependencies {
     compileOnly(libs.aws2.sesv2)
     compileOnly(libs.aws2.sns)
     compileOnly(libs.aws2.sqs)
+    compileOnly(libs.aws2.sts)
     compileOnly(libs.aws2.ssm)
 
     // bluetape4k artifacts
@@ -50,6 +51,7 @@ dependencies {
     testImplementation(libs.aws2.sesv2)
     testImplementation(libs.aws2.sns)
     testImplementation(libs.aws2.sqs)
+    testImplementation(libs.aws2.sts)
     testImplementation(libs.aws2.ssm)
 
     // Spring Boot (autoconfigure only — no runtime dep)

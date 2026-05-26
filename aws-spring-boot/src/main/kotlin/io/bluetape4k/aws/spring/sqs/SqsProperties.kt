@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.io.Serializable
 import java.net.URI
 
 /**
@@ -13,13 +14,7 @@ data class SqsProperties(
     val endpointOverride: URI? = null,
     val listener: Listener = Listener(),
     val queues: Map<String, Queue> = emptyMap(),
-) {
-    init {
-        require(endpointOverride == null || !region.isNullOrBlank()) {
-            "bluetape4k.aws.sqs.region is required when endpointOverride is configured."
-        }
-    }
-
+) : Serializable {
     data class Listener(
         val enabled: Boolean = true,
         val autoStartup: Boolean = true,
@@ -30,7 +25,7 @@ data class SqsProperties(
         val errorVisibilityTimeoutSeconds: Int? = null,
         val concurrency: Int = 1,
         val stopTimeoutMillis: Long = 25_000,
-    ) {
+    ) : Serializable {
         init {
             require(maxMessages in 1..10) { "maxMessages must be between 1 and 10." }
             require(waitTimeSeconds in 0..20) { "waitTimeSeconds must be between 0 and 20." }
@@ -39,21 +34,37 @@ data class SqsProperties(
             require(concurrency >= 1) { "concurrency must be greater than or equal to 1." }
             require(stopTimeoutMillis >= 1) { "stopTimeoutMillis must be greater than or equal to 1." }
         }
+
+        companion object {
+            private const val serialVersionUID: Long = -3742913463973215849L
+        }
     }
 
     data class Queue(
         val url: String? = null,
         val redrivePolicy: RedrivePolicy? = null,
-    )
+    ) : Serializable {
+        companion object {
+            private const val serialVersionUID: Long = -493034477206069305L
+        }
+    }
 
     data class RedrivePolicy(
         val deadLetterTargetArn: String,
         val maxReceiveCount: Int,
-    ) {
+    ) : Serializable {
         init {
             require(deadLetterTargetArn.isNotBlank()) { "deadLetterTargetArn must not be blank." }
             require(maxReceiveCount >= 1) { "maxReceiveCount must be greater than or equal to 1." }
         }
+
+        companion object {
+            private const val serialVersionUID: Long = -1600650120598269377L
+        }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = -5777975012777169878L
     }
 }
 

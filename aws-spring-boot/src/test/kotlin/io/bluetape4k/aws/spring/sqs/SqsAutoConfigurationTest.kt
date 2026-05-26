@@ -1,6 +1,9 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsClientCustomizationContext
+import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
@@ -12,7 +15,10 @@ import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
+import software.amazon.awssdk.awscore.client.builder.AwsAsyncClientBuilder
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
 
 class SqsAutoConfigurationTest {
 
@@ -62,7 +68,12 @@ class SqsAutoConfigurationTest {
     @Test
     fun `endpoint override requires region`() {
         ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(SqsAutoConfiguration::class.java))
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsAutoConfiguration::class.java,
+                    SqsAutoConfiguration::class.java,
+                )
+            )
             .withPropertyValues("bluetape4k.aws.sqs.endpoint-override=http://localhost:4566")
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
@@ -70,6 +81,37 @@ class SqsAutoConfigurationTest {
                     .mapNotNull { it.message }
                     .joinToString("\n")
                 messages shouldContain "region is required"
+            }
+    }
+
+    @Test
+    fun `shared defaults provide SQS region and endpoint override`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsAutoConfiguration::class.java,
+                    SqsAutoConfiguration::class.java,
+                )
+            )
+            .withPropertyValues(
+                "bluetape4k.aws.region=us-west-2",
+                "bluetape4k.aws.sqs.endpoint-override=http://localhost:4566",
+            )
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `global and SQS async customizers are applied in order`() {
+        SqsCustomizerConfig.calls.clear()
+
+        contextRunner
+            .withUserConfiguration(SqsCustomizerConfig::class.java)
+            .run { context ->
+                context.getBean(SqsAsyncClient::class.java).shouldNotBeNull()
+                SqsCustomizerConfig.calls shouldBeEqualTo listOf("global:sqs", "sqs")
             }
     }
 
@@ -194,5 +236,33 @@ class SqsAutoConfigurationTest {
     internal class UnsupportedListener {
         @SqsListener("queue")
         fun handle() = Unit
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class SqsCustomizerConfig {
+        @Bean
+        fun globalAsyncCustomizer(): AwsAsyncClientCustomizer =
+            RecordingAsyncCustomizer("global")
+
+        @Bean
+        fun sqsClientCustomizer(): AwsClientCustomizer<SqsAsyncClientBuilder> =
+            AwsClientCustomizer { calls += "sqs" }
+
+        private class RecordingAsyncCustomizer(
+            private val name: String,
+        ): AwsAsyncClientCustomizer, Ordered {
+            override fun customize(
+                context: AwsClientCustomizationContext,
+                builder: AwsAsyncClientBuilder<*, *>,
+            ) {
+                calls += "$name:${context.serviceName}"
+            }
+
+            override fun getOrder(): Int = 0
+        }
+
+        companion object {
+            val calls: MutableList<String> = mutableListOf()
+        }
     }
 }
