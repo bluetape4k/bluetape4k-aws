@@ -1,42 +1,36 @@
 # WIP - bluetape4k-aws
 
-Snapshot: 2026-05-22 KST
+Snapshot: 2026-05-26 KST
 Scope: open GitHub issues assigned to `debop`.
-Open count: 0 issues.
-
-## Refresh Notes
-
-Verified with `gh` on 2026-05-22 KST.
-
-- The 0.1.1 patch release lane closed S3 pagination and versioned bucket force-delete work.
-- The 0.2.0 feature lane closed the AWS Exposed foundation, framework adapters,
-  examples, RDS IAM auth, and SES sender work.
-- No assigned open issues remain in this repository at this snapshot.
+Open count: 5 issues.
 
 ## Current Direction
 
-The 0.1.x patch lane and 0.2.0 API/foundation lane are closed. The next queue
-should be selected from new issues after the 0.2.0 release is visible on Maven
-Central and downstream repositories have consumed it.
+The `0.2.2` patch work is clear. Active implementation work has moved to the
+`0.3.0` AWS integration line, with DynamoDB, LocalStack, Ktor, and Exposed
+configuration follow-ups queued.
 
-## Priority Queue
+## Active Queue
 
-| Priority | Issue | Difficulty | Notes |
-|---|---|---:|---|
-| - | - | - | No assigned open issues. |
+| Priority | Issue | Milestone | Notes |
+|---|---|---|---|
+| P1 | [#180](https://github.com/bluetape4k/bluetape4k-aws/issues/180) wire aws-exposed settings through Spring Boot Secrets Manager and Parameter Store | 0.3.0 | Spring Boot Exposed configuration integration. |
+| P1 | [#181](https://github.com/bluetape4k/bluetape4k-aws/issues/181) add Ktor AWS database settings plugin for exposed integration | 0.3.0 | Ktor counterpart to #180. |
+| P2 | [#179](https://github.com/bluetape4k/bluetape4k-aws/issues/179) add aws-ktor DynamoDB integration | 0.3.0 | New Ktor DynamoDB integration surface. |
+| P2 | [#182](https://github.com/bluetape4k/bluetape4k-aws/issues/182) stabilize SNS-to-SQS fanout LocalStack coverage | 0.3.0 | Test hardening for LocalStack fanout. |
+| P2 | [#183](https://github.com/bluetape4k/bluetape4k-aws/issues/183) share DynamoDB Local Testcontainers launcher across AWS and downstream repos | 0.3.0 | Cross-repo test infrastructure reuse. |
 
-## Dependency Map
+## Open PRs
 
-No active dependency map remains. Preserve the completed ordering as release
-history:
+| PR | Branch | Notes |
+|---|---|---|
+| [#185](https://github.com/bluetape4k/bluetape4k-aws/pull/185) build: consume projects 1.9.2 BOM | `release/projects-1.9.2-bom` | Still open; no milestone set. |
 
-```text
-#145 -> #147 -> 0.1.1 patch release
-#74 -> #75/#76 -> #77 -> #82, plus #7 -> 0.2.0 feature release
-```
+## Recently Completed
 
-## WIP Limits
+- [#186](https://github.com/bluetape4k/bluetape4k-aws/issues/186) / [PR #187](https://github.com/bluetape4k/bluetape4k-aws/pull/187) adopted the JetBrains Exposed Gradle plugin through `catalog/2026-05-26-00`.
 
-| Lane | Limit | Current next |
-|---|---:|---|
-| Repository maintenance | 1 | Wait for new assigned issues after the 0.2.0 release. |
+## Refresh Notes
+
+- Verified with `gh` on 2026-05-26 KST.
+- Keep `bluetape4k-*` issue and resolving PR milestones aligned.
