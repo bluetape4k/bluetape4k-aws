@@ -3,9 +3,10 @@ package io.bluetape4k.aws.examples.ktor.sqs
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.sqs.SqsClientFactory
+import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -15,29 +16,30 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SqsExampleRoutesLocalStackTest {
+@Execution(ExecutionMode.SAME_THREAD)
+class SqsExampleRoutesFlociTest {
 
     companion object {
-        @Suppress("DEPRECATION")
-        val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("sqs")
-        }
+        val floci: FlociServer by lazy { FlociServer.Launcher.floci }
 
         val sqsClient: SqsAsyncClient by lazy {
             SqsClientFactory.Async.create(
-                endpointOverride = localStack.awsEndpoint,
-                region = Region.of(localStack.regionName),
-                credentialsProvider = localStack.getCredentialProvider(),
+                endpointOverride = floci.awsEndpoint,
+                region = Region.of(floci.regionName),
+                credentialsProvider = floci.getCredentialProvider(),
             )
         }
     }
@@ -46,7 +48,7 @@ class SqsExampleRoutesLocalStackTest {
 
     @BeforeAll
     fun setUp() = runSuspendIO {
-        queueUrl = sqsClient.createQueue { it.queueName("ktor-sqs-example-${UUID.randomUUID()}") }
+        queueUrl = sqsClient.createQueue { it.queueName("ktor-sqs-example-${Base58.randomString(8)}") }
             .await().queueUrl()
     }
 
@@ -62,7 +64,7 @@ class SqsExampleRoutesLocalStackTest {
 
         val response = client.post("/sqs/messages") {
             contentType(ContentType.Text.Plain)
-            setBody("hello-${UUID.randomUUID()}")
+            setBody("hello-${Base58.randomString(8)}")
         }
         response.status shouldBeEqualTo HttpStatusCode.OK
         response.bodyAsText().contains("messageId").shouldBeTrue()
@@ -81,7 +83,7 @@ class SqsExampleRoutesLocalStackTest {
     fun `create queue route creates a new queue`() = testApplication {
         application { sqsExampleModule(sqsClient, queueUrl) }
 
-        val queueName = "ktor-sqs-created-${UUID.randomUUID()}"
+        val queueName = "ktor-sqs-created-${Base58.randomString(8)}"
         val response = client.post("/sqs/queues/$queueName")
         response.status shouldBeEqualTo HttpStatusCode.OK
         response.bodyAsText().contains("queueUrl").shouldBeTrue()
@@ -97,9 +99,50 @@ class SqsExampleRoutesLocalStackTest {
             .add {
                 client.post("/sqs/messages") {
                     contentType(ContentType.Text.Plain)
-                    setBody("concurrent-${UUID.randomUUID()}")
+                    setBody("concurrent-${Base58.randomString(8)}")
                 }.status shouldBeEqualTo HttpStatusCode.OK
             }
             .run()
+    }
+
+    @Test
+    fun `advanced consumer routes expose manual ack retry interceptor and observer events`() = testApplication {
+        val advancedQueueUrl = sqsClient.createQueue {
+            it.queueName("ktor-sqs-advanced-${Base58.randomString(8)}")
+        }.await().queueUrl()
+        application { sqsExampleModule(sqsClient, advancedQueueUrl) }
+
+        try {
+            val normalBody = "manual-ack:${Base58.randomString(8)}"
+            val retryBody = "retry-once:${Base58.randomString(8)}"
+            client.post("/sqs/messages") {
+                contentType(ContentType.Text.Plain)
+                setBody(normalBody)
+            }.status shouldBeEqualTo HttpStatusCode.OK
+            client.post("/sqs/messages") {
+                contentType(ContentType.Text.Plain)
+                setBody(retryBody)
+            }.status shouldBeEqualTo HttpStatusCode.OK
+
+            withTimeout(15_000) {
+                while (true) {
+                    val received = client.get("/sqs/messages/received").bodyAsText()
+                    val lifecycleEvents = client.get("/sqs/messages/lifecycle-events").bodyAsText()
+                    val observations = client.get("/sqs/messages/observations").bodyAsText()
+                    if (
+                        received.contains(normalBody) &&
+                        lifecycleEvents.contains("afterNack") &&
+                        lifecycleEvents.contains("afterAck") &&
+                        observations.contains("\"operation\":\"nack\"") &&
+                        observations.contains("\"operation\":\"ack\"")
+                    ) {
+                        break
+                    }
+                    delay(100)
+                }
+            }
+        } finally {
+            sqsClient.deleteQueue { it.queueUrl(advancedQueueUrl) }.await()
+        }
     }
 }

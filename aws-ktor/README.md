@@ -188,8 +188,10 @@ import io.ktor.server.application.Application
 fun Application.s3Client() = s3KtorClientOf(defaults = awsKtorDefaults())
 ```
 
-Runnable examples live in `examples/aws-ktor-s3-examples` and are included in
-the Nightly workflow.
+Runnable S3 examples live in
+[`examples/aws-ktor-s3-examples`](../examples/aws-ktor-s3-examples) and include
+basic object routes plus content-type detection, config object, presigned URL,
+and client-side encryption scenarios.
 
 ### Advanced S3 Helpers
 
@@ -347,6 +349,11 @@ The application owns the injected `SqsAsyncClient`; the plugin never closes it.
 Close the client when the application scope ends. When no client is injected,
 `SqsConsumer` can create a plugin-owned client from `AwsKtorCore` or
 service-local settings and closes that client on `ApplicationStopping`.
+
+Runnable SQS examples live in
+[`examples/aws-ktor-sqs-examples`](../examples/aws-ktor-sqs-examples) and cover
+Floci-backed publishing, manual ack/nack, retry-once redelivery,
+interceptors, and observer summaries.
 
 ## DynamoDB Server Plugin
 

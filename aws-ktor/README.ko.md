@@ -185,8 +185,10 @@ import io.ktor.server.application.Application
 fun Application.s3Client() = s3KtorClientOf(defaults = awsKtorDefaults())
 ```
 
-실행 가능한 예제는 `examples/aws-ktor-s3-examples`에 있으며 Nightly workflow에
-포함됩니다.
+실행 가능한 S3 예제는
+[`examples/aws-ktor-s3-examples`](../examples/aws-ktor-s3-examples)에 있으며 기본
+object route, content-type 감지, config object, presigned URL, client-side
+encryption 시나리오를 포함합니다.
 
 ### 고급 S3 Helper
 
@@ -340,6 +342,11 @@ install(SqsConsumer) {
 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
 `SqsConsumer`가 `AwsKtorCore` 또는 서비스 로컬 설정으로 plugin-owned client를 만들 수
 있고, 이 client는 `ApplicationStopping` 시 닫힙니다.
+
+실행 가능한 SQS 예제는
+[`examples/aws-ktor-sqs-examples`](../examples/aws-ktor-sqs-examples)에 있으며
+Floci 기반 publish, manual ack/nack, retry-once redelivery, interceptor,
+observer summary를 다룹니다.
 
 ## DynamoDB Server Plugin
 
