@@ -10,8 +10,12 @@ Kotlin을 사용하는 DynamoDB Ktor server plugin, repository facade, 그리고
 AWS-backed Exposed JDBC database registry를 Ktor lifecycle에 연결하는 server
 plugin을 제공합니다.
 
+![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
+
 ## 기능
 
+- region, endpoint override, Java/Kotlin credentials provider, signing clock,
+  client customizer를 애플리케이션 수준에서 공유하는 선택적 `AwsKtorCore`.
 - Ktor `HttpClient`용 `AwsSigV4Plugin`.
 - Static, Default, Profile, Session provider를 포함한 AWS SDK Java v2
   `AwsCredentialsProvider` 연동.
@@ -57,6 +61,41 @@ dependencies {
 ```
 
 ## 사용법
+
+### 공유 AWS 기본값
+
+여러 Ktor 통합이 같은 AWS region, local endpoint, credentials, signing clock,
+client customizer를 공유해야 한다면 `AwsKtorCore`를 한 번 설치합니다. 서비스별
+설정은 항상 공유 기본값보다 우선합니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.sqs.SqsConsumer
+import io.ktor.http.Url
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        endpointOverride = Url("http://localhost:4566")
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+    }
+
+    install(SqsConsumer) {
+        queueName = "orders"
+        onMessage<String> { body -> processOrder(body) }
+    }
+}
+```
+
+`S3KtorClient`, `SqsConsumer`, `DynamoDbKtorPlugin`은 공유 기본값을 상속할 수
+있습니다. 특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`,
+`endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. EKS/IRSA 같은
+web identity 배포에서는 적절한 AWS SDK credentials provider를 `AwsKtorCore`에 직접
+주입하고, 해당 provider가 STS를 요구한다면 애플리케이션 runtime classpath에
+`software.amazon.awssdk:sts` 또는 `aws.sdk.kotlin:sts`를 추가합니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
@@ -133,6 +172,17 @@ val download = s3.presignGetObject(bucket = "demo-bucket", key = "hello.txt", ex
 `close()` 또는 Kotlin `use { ... }` 로 닫습니다. Presigned URL 만료 시간은 1초 이상
 7일 이하여야 합니다.
 
+Server plugin 밖에서 애플리케이션 기본값을 상속하려면 설치된 defaults를 명시적으로
+전달합니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.awsKtorDefaults
+import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
+import io.ktor.server.application.Application
+
+fun Application.s3Client() = s3KtorClientOf(defaults = awsKtorDefaults())
+```
+
 실행 가능한 예제는 `examples/aws-ktor-s3-examples`에 있으며 Nightly workflow에
 포함됩니다.
 
@@ -156,7 +206,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 fun Application.module() {
     val sqs = SqsAsyncClient.builder()
         .region(Region.AP_NORTHEAST_2)
-        .credentialsProvider(DefaultCredentialsProvider.create())
+        .credentialsProvider(DefaultCredentialsProvider.builder().build())
         .build()
 
     install(SqsConsumer) {
@@ -180,7 +230,9 @@ suspend fun Application.publishOrder(json: String) {
 ```
 
 주입한 `SqsAsyncClient` 는 애플리케이션이 소유합니다. 플러그인은 client를 닫지
-않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다.
+않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
+`SqsConsumer`가 `AwsKtorCore` 또는 서비스 로컬 설정으로 plugin-owned client를 만들 수
+있고, 이 client는 `ApplicationStopping` 시 닫힙니다.
 
 ## DynamoDB Server Plugin
 
@@ -189,6 +241,8 @@ lifecycle에 설치하고 `application.dynamoDb()` 로 노출합니다. 플러�
 애플리케이션이 주입한 client를 사용할 수도 있고 `region`, `endpointUrl`,
 credentials로 직접 만들 수도 있습니다. 주입한 client는 플러그인이 닫지 않으며,
 플러그인이 만든 client만 `ApplicationStopping` 에서 닫습니다.
+`AwsKtorCore`가 설치되어 있으면 생략한 `region`, `endpointUrl`, credentials, HTTP
+engine, DynamoDB customizer는 공유 기본값에서 상속됩니다.
 
 테이블 생성은 명시적입니다. 로컬 개발이나 테스트에서 누락된 테이블을 만들고 싶을 때
 `autoCreateTables = true` 를 설정하고 `table { }` 정의를 등록합니다. 이미 존재하는

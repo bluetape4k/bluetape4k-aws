@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.dynamodb
 
+import io.bluetape4k.aws.ktor.awsKtorDefaults
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.ApplicationStarted
@@ -28,7 +29,7 @@ val DynamoDbKtorPlugin: ApplicationPlugin<DynamoDbKtorPluginConfig> = createAppl
     name = "DynamoDbKtorPlugin",
     createConfiguration = ::DynamoDbKtorPluginConfig,
 ) {
-    val runtime = DynamoDbKtorRuntime(pluginConfig.toRuntimeConfig())
+    val runtime = DynamoDbKtorRuntime(pluginConfig.toRuntimeConfig(application.awsKtorDefaults()))
     application.attributes.put(DynamoDbKtorRuntimeKey, runtime)
 
     on(MonitoringEvent(ApplicationStarted)) {

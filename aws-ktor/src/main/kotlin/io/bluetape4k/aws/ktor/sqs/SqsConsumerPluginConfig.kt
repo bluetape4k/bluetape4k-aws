@@ -1,7 +1,12 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKtorSqsAsyncClientCustomizer
 import kotlinx.coroutines.CoroutineDispatcher
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import java.net.URI
 import java.time.Duration
 import kotlin.reflect.KClass
 
@@ -27,6 +32,15 @@ class SqsConsumerPluginConfig {
 
     /** AWS SDK v2 async SQS client owned by the application. */
     var sqsAsyncClient: SqsAsyncClient? = null
+
+    /** Optional SQS region used when the plugin creates the client. */
+    var region: String? = null
+
+    /** Optional SQS endpoint override used when the plugin creates the client. */
+    var endpointOverride: URI? = null
+
+    /** Optional credentials provider used when the plugin creates the client. */
+    var credentialsProvider: AwsCredentialsProvider? = null
 
     /** Queue URL to consume from. Mutually exclusive with [queueName]. */
     var queueUrl: String? = null
@@ -75,6 +89,14 @@ class SqsConsumerPluginConfig {
 
     private var messageType: KClass<out Any>? = null
     private var messageHandler: (suspend SqsMessageContext.(Any) -> Unit)? = null
+    private val clientCustomizers = mutableListOf<AwsKtorSqsAsyncClientCustomizer>()
+
+    /**
+     * Adds SQS async client builder customization for plugin-created clients.
+     */
+    fun sqsAsyncClient(customizer: AwsKtorSqsAsyncClientCustomizer) {
+        clientCustomizers += customizer
+    }
 
     /**
      * Registers the only message handler for this plugin instance.
@@ -100,13 +122,15 @@ class SqsConsumerPluginConfig {
         }
     }
 
-    internal fun toRuntimeConfig(): SqsConsumerRuntimeConfig {
-        val client = requireNotNull(sqsAsyncClient) { "sqsAsyncClient must be configured." }
+    internal fun toRuntimeConfig(defaults: AwsKtorDefaults = AwsKtorDefaults()): SqsConsumerRuntimeConfig {
+        val injectedClient = sqsAsyncClient
+        val client = injectedClient ?: createSqsAsyncClient(defaults)
         val type = requireNotNull(messageType) { "onMessage handler must be configured." }
         val handler = requireNotNull(messageHandler) { "onMessage handler must be configured." }
 
         return SqsConsumerRuntimeConfig(
             sqsAsyncClient = client,
+            ownsClient = injectedClient == null,
             queueUrl = queueUrl,
             queueName = queueName,
             coroutines = coroutines,
@@ -125,5 +149,22 @@ class SqsConsumerPluginConfig {
             messageType = type,
             messageHandler = handler,
         )
+    }
+
+    private fun createSqsAsyncClient(defaults: AwsKtorDefaults): SqsAsyncClient {
+        val effectiveRegion = region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }
+        val effectiveEndpoint = endpointOverride ?: defaults.javaEndpointOverride
+        require(effectiveEndpoint == null || !effectiveRegion.isNullOrBlank()) {
+            "region must be configured when endpointOverride is configured."
+        }
+
+        val builder = SqsAsyncClient.builder()
+        effectiveRegion?.let { builder.region(Region.of(it)) }
+        (credentialsProvider ?: defaults.javaCredentialsProvider)?.let(builder::credentialsProvider)
+        effectiveEndpoint?.let(builder::endpointOverride)
+        defaults.sqsAsyncClientCustomizers.forEach { it.customize(builder) }
+        clientCustomizers.forEach { it.customize(builder) }
+
+        return builder.build()
     }
 }

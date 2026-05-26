@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -276,6 +277,28 @@ class S3KtorClientTest {
         assertFailsWith<IllegalArgumentException> {
             s3.presignPutObject("demo-bucket", "logs/app.txt", Duration.ofDays(7).plusSeconds(1))
         }
+
+        s3.close()
+    }
+
+    @Test
+    fun `shared AWS defaults provide S3 region endpoint credentials and signing clock`() {
+        val credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("akid", "secret"))
+        val s3 = s3KtorClientOf(
+            defaults = AwsKtorDefaults(
+                region = "ap-northeast-2",
+                endpointOverride = Url("http://localhost:4566"),
+                javaCredentialsProvider = credentialsProvider,
+                signingClock = FIXED_CLOCK,
+            ),
+            addressingStyle = S3KtorAddressingStyle.Path,
+        )
+
+        val presigned = s3.presignGetObject("demo-bucket", "logs/app.txt", Duration.ofMinutes(15))
+
+        presigned.url.host shouldBeEqualTo "localhost"
+        presigned.url.encodedPath shouldBeEqualTo "/demo-bucket/logs/app.txt"
+        presigned.url.parameters["X-Amz-Date"] shouldBeEqualTo "20260510T010203Z"
 
         s3.close()
     }

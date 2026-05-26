@@ -1,0 +1,37 @@
+digraph AwsKtorArchitecture {
+  graph [rankdir=TB, bgcolor="transparent", nodesep=0.55, ranksep=0.75]
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.14,0.08"]
+  edge [color="#64748b", penwidth=1.8, arrowsize=0.8]
+
+  app [label="Ktor Application", fillcolor="#e8f3ff", color="#5b8def"]
+  core [label="AwsKtorCore\nshared defaults", fillcolor="#eaf7ef", color="#58a978"]
+  defaults [label="AwsKtorDefaults\nregion endpoint credentials clock", fillcolor="#f7fbef", color="#80a857"]
+
+  sigv4 [label="AwsSigV4Plugin", fillcolor="#eef2ff", color="#8b7cf6"]
+  s3 [label="S3KtorClient", fillcolor="#fff3d9", color="#d6a441"]
+  sqs [label="SqsConsumer", fillcolor="#fdecef", color="#dc6b82"]
+  dynamo [label="DynamoDbKtorPlugin", fillcolor="#e8f7f6", color="#4ca6a8"]
+  exposed [label="AwsExposedPlugin", fillcolor="#f3e8ff", color="#a36ad6"]
+
+  java [label="AWS SDK Java v2\nSQS credentials", fillcolor="#f8fafc", color="#94a3b8"]
+  kotlin [label="AWS SDK for Kotlin\nDynamoDB client", fillcolor="#f8fafc", color="#94a3b8"]
+  jdbc [label="AWS-backed Exposed\nJDBC registry", fillcolor="#f8fafc", color="#94a3b8"]
+
+  aws [label="AWS / LocalStack\nS3 SQS DynamoDB RDS", shape=cylinder, fillcolor="#fff7ed", color="#f59e0b"]
+
+  app -> core
+  core -> defaults
+  defaults -> sigv4
+  defaults -> s3
+  defaults -> sqs
+  defaults -> dynamo
+  defaults -> exposed
+  s3 -> sigv4
+  sqs -> java
+  dynamo -> kotlin
+  exposed -> jdbc
+  sigv4 -> aws
+  java -> aws
+  kotlin -> aws
+  jdbc -> aws
+}

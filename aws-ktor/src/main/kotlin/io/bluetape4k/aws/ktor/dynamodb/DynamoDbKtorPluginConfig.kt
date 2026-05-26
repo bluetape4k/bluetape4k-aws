@@ -7,6 +7,7 @@ import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.kotlin.http.HttpClientEngineProvider
 import kotlin.time.Duration
@@ -79,19 +80,24 @@ class DynamoDbKtorPluginConfig {
         )
     }
 
-    internal fun toRuntimeConfig(): DynamoDbKtorRuntimeConfig {
+    internal fun toRuntimeConfig(defaults: AwsKtorDefaults = AwsKtorDefaults()): DynamoDbKtorRuntimeConfig {
         require(tableReadyTimeout.isPositive()) { "tableReadyTimeout must be positive." }
         require(closeTimeout.isPositive()) { "closeTimeout must be positive." }
 
         val injectedClient = dynamoDbClient
+        val effectiveEndpointUrl = endpointUrl ?: defaults.endpointOverride?.let { Url.parse(it.toString()) }
+        val effectiveRegion = region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }
         val client = injectedClient ?: dynamoDbClientOf(
-            endpointUrl = endpointUrl,
-            region = requireNotNull(region?.takeIf { it.isNotBlank() }) {
+            endpointUrl = effectiveEndpointUrl,
+            region = requireNotNull(effectiveRegion) {
                 "region must be configured when dynamoDbClient is not provided."
             },
-            credentialsProvider = credentialsProvider,
-            httpClient = httpClient ?: HttpClientEngineProvider.defaultHttpEngine,
-            builder = clientBuilder,
+            credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
+            httpClient = httpClient ?: defaults.kotlinHttpClient ?: HttpClientEngineProvider.defaultHttpEngine,
+            builder = {
+                defaults.dynamoDbClientCustomizers.forEach { it.customize(this) }
+                clientBuilder()
+            },
         )
 
         return DynamoDbKtorRuntimeConfig(
