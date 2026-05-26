@@ -23,7 +23,9 @@ plugin을 제공합니다.
 - region, service, path normalization, URL encoding, payload signing, clock
   주입 옵션.
 - PutObject, GetObject, DeleteObject, ListObjectsV2, multipart upload,
-  presigned GET/PUT URL을 지원하는 `S3KtorClient`.
+  presigned GET/PUT URL, content-type 감지, server-side encryption header,
+  client-side envelope encryption, S3 기반 Ktor config object 로딩을 지원하는
+  `S3KtorClient`.
 - Coroutine 기반 SQS polling, publishing, graceful shutdown, retry visibility
   제어, 선택적 manual DLQ forwarding을 제공하는 `SqsConsumer` Ktor
   `ApplicationPlugin`.
@@ -185,6 +187,74 @@ fun Application.s3Client() = s3KtorClientOf(defaults = awsKtorDefaults())
 
 실행 가능한 예제는 `examples/aws-ktor-s3-examples`에 있으며 Nightly workflow에
 포함됩니다.
+
+### 고급 S3 Helper
+
+`S3KtorClient` 는 추가 AWS service client를 필수 의존성으로 만들지 않고 고급 object
+workflow를 opt-in helper로 제공합니다.
+
+- `putObjectDetectingContentType(...)` 는 object key와 payload로 content type을
+  감지하고 실패하면 `application/octet-stream`을 사용합니다.
+- `putEncryptedObject(...)`, `createEncryptedMultipartUpload(...)` 는 SSE-S3,
+  SSE-KMS, DSSE-KMS, bucket key, SSE-C용 S3 server-side encryption header를
+  생성합니다.
+- `S3KtorClientSideEncryption` 은 업로드 전에 로컬 AES-GCM envelope encryption을
+  수행하고 encrypted data key와 nonce를 S3 metadata에 저장합니다.
+- `putConfigObject(...)`, `getConfigObject(...)` 는 Spring `Environment`나 특정 Ktor
+  `ApplicationConfig` parser에 결합하지 않고 S3에서 text config 파일을 저장/로드합니다.
+
+![Advanced S3 helper architecture](../docs/images/readme-diagrams/aws-ktor-s3-advanced-architecture-01.png)
+
+#### 시나리오: 안전한 Config Bootstrap
+
+Ktor service는 S3에서 runtime config를 bootstrap한 뒤 민감한 object를 server-side 또는
+client-side encryption으로 저장할 수 있습니다.
+
+1. `putConfigObject(...)` 로 `application.conf` 또는 tenant override를 저장합니다.
+2. 시작 시 `getConfigObject(...)` 로 text를 로드하고 application-owned config layer에서
+   파싱합니다.
+3. `putObjectDetectingContentType(...)` 로 사용자/tenant payload를 업로드합니다.
+4. S3가 at-rest encryption을 담당해야 하면 `putEncryptedObject(...)` 로 SSE-S3/SSE-KMS
+   header를 추가합니다.
+5. Payload가 process를 떠나기 전에 암호화되어야 하면 `S3KtorClientSideEncryption` 을
+   사용합니다.
+
+![Advanced S3 upload/load sequence](../docs/images/readme-diagrams/aws-ktor-s3-advanced-sequence-01.png)
+
+```kotlin
+import io.bluetape4k.aws.ktor.s3.S3KtorServerSideEncryption
+
+suspend fun uploadSecureConfig(s3: S3KtorClient) {
+    s3.putConfigObject(
+        bucket = "demo-bucket",
+        key = "config/application.conf",
+        text = "ktor { deployment { port = 8080 } }",
+        metadata = mapOf("source" to "s3"),
+    )
+
+    s3.putEncryptedObject(
+        bucket = "demo-bucket",
+        key = "secure/report.txt",
+        bytes = "secret".encodeToByteArray(),
+        encryption = S3KtorServerSideEncryption.Kms(
+            keyId = "alias/app",
+            encryptionContext = mapOf("tenant" to "demo"),
+            bucketKeyEnabled = true,
+        ),
+    )
+}
+```
+
+Client-side encryption은 KMS에 직접 의존하지 않고 `S3KtorDataKeyProvider` 를
+주입받습니다. 운영 provider는 AWS KMS `GenerateDataKey` 와 `Decrypt` 를 감싸면 되고,
+테스트나 로컬 도구는 in-memory provider를 사용할 수 있습니다. Plaintext data key는
+process-local로만 다루고 provider 경계 밖에 저장하지 마세요.
+
+S3 Access Grants와 S3 Vector API는 기본 API 표면에 강제로 포함하지 않습니다. Access
+Grants는 애플리케이션이 이미 사용하는 AWS SDK component로 vended S3 credentials를 얻은
+뒤 그 credentials provider로 `S3KtorClient` 를 생성합니다. S3 Vector는 service API를
+runtime hard dependency 없이 감싸도 될 만큼 안정화되기 전까지 공식 service SDK를 직접
+사용하세요.
 
 ## SQS Consumer And Publisher
 

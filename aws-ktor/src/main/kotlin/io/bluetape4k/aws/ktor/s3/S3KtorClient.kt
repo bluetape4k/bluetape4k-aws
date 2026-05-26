@@ -39,6 +39,8 @@ import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner
 import software.amazon.awssdk.http.auth.spi.signer.HttpSigner
 import software.amazon.awssdk.http.auth.spi.signer.SignedRequest
 import java.net.URI
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 
@@ -108,6 +110,53 @@ class S3KtorClient(
         putObject(
             request = S3KtorPutObjectRequest(bucket, key, contentType, metadata, headers),
             body = ByteArrayContent(bytes, contentType?.let(ContentType::parse)),
+        )
+
+    /**
+     * Stores [bytes] while detecting content type from [key] and the payload.
+     *
+     * Use this helper for object names where the caller has no trusted HTTP
+     * `Content-Type` header. Detection falls back to `application/octet-stream`.
+     */
+    suspend fun putObjectDetectingContentType(
+        bucket: String,
+        key: String,
+        bytes: ByteArray,
+        detector: S3KtorContentTypeDetector = S3KtorContentTypes.Default,
+        metadata: Map<String, String> = emptyMap(),
+        headers: Map<String, String> = emptyMap(),
+    ): S3KtorPutObjectResponse =
+        putObject(
+            bucket = bucket,
+            key = key,
+            bytes = bytes,
+            contentType = S3KtorContentTypes.orFallback(detector.detect(key, bytes)),
+            metadata = metadata,
+            headers = headers,
+        )
+
+    /**
+     * Stores [bytes] with S3 server-side encryption request headers.
+     *
+     * This helper only renders S3 request headers. Client-side envelope
+     * encryption is provided by [S3KtorClientSideEncryption].
+     */
+    suspend fun putEncryptedObject(
+        bucket: String,
+        key: String,
+        bytes: ByteArray,
+        encryption: S3KtorServerSideEncryption,
+        contentType: String? = null,
+        metadata: Map<String, String> = emptyMap(),
+        headers: Map<String, String> = emptyMap(),
+    ): S3KtorPutObjectResponse =
+        putObject(
+            bucket = bucket,
+            key = key,
+            bytes = bytes,
+            contentType = contentType,
+            metadata = metadata,
+            headers = headers + encryption.headers(),
         )
 
     /**
@@ -229,6 +278,25 @@ class S3KtorClient(
     }
 
     /**
+     * Starts multipart upload with S3 server-side encryption request headers.
+     */
+    suspend fun createEncryptedMultipartUpload(
+        bucket: String,
+        key: String,
+        encryption: S3KtorServerSideEncryption,
+        contentType: String? = null,
+        metadata: Map<String, String> = emptyMap(),
+        headers: Map<String, String> = emptyMap(),
+    ): S3KtorMultipartUpload =
+        createMultipartUpload(
+            bucket = bucket,
+            key = key,
+            contentType = contentType,
+            metadata = metadata,
+            headers = headers + encryption.headers(),
+        )
+
+    /**
      * Multipart upload part를 byte array로 업로드합니다.
      */
     suspend fun uploadPart(
@@ -318,6 +386,52 @@ class S3KtorClient(
      */
     fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Put, objectUrl(bucket, key), expires)
+
+    /**
+     * Loads a text configuration file from S3 without coupling it to a Ktor
+     * `ApplicationConfig` implementation.
+     */
+    suspend fun getConfigObject(
+        bucket: String,
+        key: String,
+        charset: Charset = StandardCharsets.UTF_8,
+    ): S3KtorConfigObject {
+        val response = getObject(bucket, key)
+        return S3KtorConfigObject(
+            bucket = bucket,
+            key = key,
+            text = response.bytes.toString(charset),
+            charset = charset,
+            contentType = response.contentType,
+            metadata = response.metadata,
+        )
+    }
+
+    /**
+     * Stores a text configuration file in S3.
+     */
+    suspend fun putConfigObject(
+        bucket: String,
+        key: String,
+        text: String,
+        charset: Charset = StandardCharsets.UTF_8,
+        contentType: String? = null,
+        metadata: Map<String, String> = emptyMap(),
+        headers: Map<String, String> = emptyMap(),
+    ): S3KtorPutObjectResponse {
+        val bytes = text.toByteArray(charset)
+        val resolvedContentType = contentType
+            ?: S3KtorContentTypes.orFallback(S3KtorContentTypes.Default.detect(key, bytes), "text/plain; charset=${charset.name()}")
+
+        return putObject(
+            bucket = bucket,
+            key = key,
+            bytes = bytes,
+            contentType = resolvedContentType,
+            metadata = metadata,
+            headers = headers,
+        )
+    }
 
     override fun close() {
         try {

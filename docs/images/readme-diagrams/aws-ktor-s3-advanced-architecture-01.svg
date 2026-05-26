@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="760" viewBox="0 0 1160 760" role="img" aria-labelledby="title desc">
+  <title id="title">AWS Ktor Advanced S3 Helpers</title>
+  <desc id="desc">Optional S3 production helpers over the existing SigV4 REST client</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#4f6f9f"/></marker>
+    <marker id="arrow-green" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#2f8f83"/></marker>
+    <marker id="arrow-purple" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#8064c9"/></marker>
+    <marker id="arrow-orange" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#c57b21"/></marker>
+    <style>
+      .canvas { fill:#fbfdff; }
+      .frame { fill:white; stroke:#d8e2ef; stroke-width:1.2; rx:18; }
+      .title { font-family:'Architects Daughter','Comic Sans MS',cursive; font-size:28px; fill:#263445; }
+      .subtitle { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:13px; fill:#667085; }
+      .band { fill:#f8fafc; stroke:#d8e2ef; stroke-width:1; rx:14; }
+      .bandLabel { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:12px; fill:#64748b; font-weight:700; }
+      .cardText { font-family:'Architects Daughter','Comic Sans MS',cursive; font-size:18px; fill:#233143; }
+      .cardDetail { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:11px; fill:#516173; }
+      .noteText { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:12px; fill:#475569; }
+      .label { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:11px; fill:#475569; }
+      .pill { fill:white; stroke:#d9e2ef; stroke-width:.8; rx:8; }
+      .lineBlue { fill:none; stroke:#4f6f9f; stroke-width:2.2; marker-end:url(#arrow-blue); }
+      .lineGreen { fill:none; stroke:#2f8f83; stroke-width:2.2; marker-end:url(#arrow-green); }
+      .linePurple { fill:none; stroke:#8064c9; stroke-width:2.2; marker-end:url(#arrow-purple); }
+      .lineOrange { fill:none; stroke:#c57b21; stroke-width:2.2; marker-end:url(#arrow-orange); }
+      .soft { stroke-width:1.7; opacity:.82; }
+    </style>
+  </defs>
+  <rect class="canvas" x="0" y="0" width="1160" height="760"/>
+  <rect class="frame" x="14" y="14" width="1132" height="732"/>
+  <text class="title" x="36" y="48">AWS Ktor Advanced S3 Helpers</text>
+  <text class="subtitle" x="38" y="71">Optional S3 production helpers over the existing SigV4 REST client</text>
+  <rect class="band" x="48" y="98" width="1064" height="110"/>
+  <text class="bandLabel" x="66" y="122">APPLICATION LAYER</text>
+  <rect x="110" y="130" width="220" height="54" rx="12" fill="#e8f3ff" stroke="#5b8def" stroke-width="1.4"/>
+  <text class="cardText" x="220.0" y="149.0" text-anchor="middle">Ktor Application</text>
+  <text class="cardDetail" x="220.0" y="173.0" text-anchor="middle">routes, jobs, config bootstrap</text>
+  <rect x="470" y="130" width="220" height="54" rx="12" fill="#fff3d9" stroke="#d6a441" stroke-width="1.4"/>
+  <text class="cardText" x="580.0" y="149.0" text-anchor="middle">S3KtorClient</text>
+  <text class="cardDetail" x="580.0" y="173.0" text-anchor="middle">REST object operations</text>
+  <rect x="830" y="130" width="220" height="54" rx="12" fill="#eef2ff" stroke="#8b7cf6" stroke-width="1.4"/>
+  <text class="cardText" x="940.0" y="149.0" text-anchor="middle">AwsSigV4Plugin</text>
+  <text class="cardDetail" x="940.0" y="173.0" text-anchor="middle">header/query signing</text>
+  <rect class="band" x="48" y="250" width="1064" height="240"/>
+  <text class="bandLabel" x="66" y="274">OPT-IN HELPERS</text>
+  <rect x="92" y="315" width="210" height="70" rx="12" fill="#e8f7f6" stroke="#4ca6a8" stroke-width="1.4"/>
+  <text class="cardText" x="197.0" y="342.0" text-anchor="middle">Content Type</text>
+  <text class="cardDetail" x="197.0" y="366.0" text-anchor="middle">extension + stream sniffing</text>
+  <rect x="332" y="315" width="210" height="70" rx="12" fill="#fdecef" stroke="#dc6b82" stroke-width="1.4"/>
+  <text class="cardText" x="437.0" y="342.0" text-anchor="middle">SSE Headers</text>
+  <text class="cardDetail" x="437.0" y="366.0" text-anchor="middle">SSE-S3 / KMS / SSE-C</text>
+  <rect x="572" y="315" width="210" height="70" rx="12" fill="#eef2ff" stroke="#8b7cf6" stroke-width="1.4"/>
+  <text class="cardText" x="677.0" y="342.0" text-anchor="middle">Envelope Encryption</text>
+  <text class="cardDetail" x="677.0" y="366.0" text-anchor="middle">AES-GCM ciphertext</text>
+  <rect x="812" y="315" width="210" height="70" rx="12" fill="#f7fbef" stroke="#80a857" stroke-width="1.4"/>
+  <text class="cardText" x="917.0" y="342.0" text-anchor="middle">Config Objects</text>
+  <text class="cardDetail" x="917.0" y="366.0" text-anchor="middle">S3 text config files</text>
+  <rect x="572" y="420" width="210" height="54" rx="12" fill="#f3e8ff" stroke="#a36ad6" stroke-width="1.4"/>
+  <text class="cardText" x="677.0" y="439.0" text-anchor="middle">Data Key Provider</text>
+  <text class="cardDetail" x="677.0" y="463.0" text-anchor="middle">KMS or app-owned</text>
+  <rect class="band" x="48" y="538" width="1064" height="142"/>
+  <text class="bandLabel" x="66" y="562">EXTERNAL SERVICES</text>
+  <path d="M170,606 C170,588 420,588 420,606 L420,638 C420,656 170,656 170,638 Z" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.4"/>
+  <path d="M170,606 C170,624 420,624 420,606" fill="none" stroke="#f59e0b" stroke-width="1.1"/>
+  <text class="cardText" x="295.0" y="620.0" text-anchor="middle">AWS S3</text>
+  <text class="cardDetail" x="295.0" y="639.0" text-anchor="middle">Floci / LocalStack / AWS</text>
+  <rect x="680" y="590" width="250" height="64" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.4"/>
+  <text class="cardText" x="805.0" y="614.0" text-anchor="middle">Application-owned SDKs</text>
+  <text class="cardDetail" x="805.0" y="638.0" text-anchor="middle">Access Grants / S3 Vector / KMS</text>
+  <path class="lineBlue" d="M330 157 H470"/>
+  <path class="lineBlue" d="M690 157 H830"/>
+  <path class="lineGreen soft" d="M580 184 V232 H197 V315"/>
+  <path class="lineGreen soft" d="M580 184 V232 H437 V315"/>
+  <path class="linePurple soft" d="M580 184 V232 H677 V315"/>
+  <path class="lineGreen soft" d="M580 184 V232 H917 V315"/>
+  <path class="linePurple" d="M677 385 V420"/>
+  <path class="lineOrange" d="M940 184 V222 H295 V590"/>
+  <path class="linePurple" d="M677 474 V542 H805 V590"/>
+  <rect class="pill" x="706" y="524" width="198" height="24"/>
+  <text class="label" x="805" y="541" text-anchor="middle">optional dependency boundary</text>
+</svg>
