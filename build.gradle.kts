@@ -27,6 +27,7 @@ plugins {
 
     alias(libs.plugins.kover)
     alias(libs.plugins.graalvm.native) apply false
+    alias(bt4k.plugins.exposed.plugin) apply false
 }
 
 val rootLibs = libs
