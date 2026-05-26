@@ -31,6 +31,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 
     // Test
+    testImplementation(libs.aws2.s3)
     testImplementation(libs.aws2.sqs)
     testImplementation(libs.aws.kotlin.dynamodb)
     testImplementation(libs.h2.v2)

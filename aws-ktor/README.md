@@ -24,7 +24,9 @@ database registries.
 - Deterministic signing options for region, service, path normalization, URL
   encoding, payload signing, and clock injection.
 - `S3KtorClient` for S3 PutObject, GetObject, DeleteObject, ListObjectsV2,
-  multipart upload, and presigned GET/PUT URLs.
+  multipart upload, presigned GET/PUT URLs, content-type detection,
+  server-side encryption headers, client-side envelope encryption, and S3-backed
+  Ktor config object loading.
 - `SqsConsumer` Ktor `ApplicationPlugin` for coroutine SQS polling, publishing,
   graceful shutdown, retry visibility control, and optional manual DLQ
   forwarding.
@@ -188,6 +190,77 @@ fun Application.s3Client() = s3KtorClientOf(defaults = awsKtorDefaults())
 
 Runnable examples live in `examples/aws-ktor-s3-examples` and are included in
 the Nightly workflow.
+
+### Advanced S3 Helpers
+
+`S3KtorClient` includes opt-in helpers for advanced object workflows without
+adding mandatory AWS service clients:
+
+- `putObjectDetectingContentType(...)` detects a content type from the object
+  key and payload, then falls back to `application/octet-stream`.
+- `putEncryptedObject(...)` and `createEncryptedMultipartUpload(...)` render
+  S3 server-side encryption headers for SSE-S3, SSE-KMS, DSSE-KMS, bucket keys,
+  and SSE-C.
+- `S3KtorClientSideEncryption` performs local AES-GCM envelope encryption before
+  upload and stores the encrypted data key and nonce in S3 metadata.
+- `putConfigObject(...)` and `getConfigObject(...)` store and load text config
+  files from S3 without coupling them to Spring `Environment` or a specific
+  Ktor `ApplicationConfig` parser.
+
+![Advanced S3 helper architecture](../docs/images/readme-diagrams/aws-ktor-s3-advanced-architecture-01.png)
+
+#### Scenario: Secure Config Bootstrap
+
+A Ktor service can bootstrap runtime configuration from S3, then write sensitive
+objects with server-side or client-side encryption:
+
+1. Store `application.conf` or tenant overrides with `putConfigObject(...)`.
+2. Load the text at startup with `getConfigObject(...)` and parse it in the
+   application-owned config layer.
+3. Upload user or tenant payloads with `putObjectDetectingContentType(...)`.
+4. Add SSE-S3/SSE-KMS headers with `putEncryptedObject(...)` when S3 should own
+   encryption at rest.
+5. Use `S3KtorClientSideEncryption` when payloads must be encrypted before they
+   leave the process.
+
+![Advanced S3 upload/load sequence](../docs/images/readme-diagrams/aws-ktor-s3-advanced-sequence-01.png)
+
+```kotlin
+import io.bluetape4k.aws.ktor.s3.S3KtorServerSideEncryption
+
+suspend fun uploadSecureConfig(s3: S3KtorClient) {
+    s3.putConfigObject(
+        bucket = "demo-bucket",
+        key = "config/application.conf",
+        text = "ktor { deployment { port = 8080 } }",
+        metadata = mapOf("source" to "s3"),
+    )
+
+    s3.putEncryptedObject(
+        bucket = "demo-bucket",
+        key = "secure/report.txt",
+        bytes = "secret".encodeToByteArray(),
+        encryption = S3KtorServerSideEncryption.Kms(
+            keyId = "alias/app",
+            encryptionContext = mapOf("tenant" to "demo"),
+            bucketKeyEnabled = true,
+        ),
+    )
+}
+```
+
+Client-side encryption intentionally depends on an injected
+`S3KtorDataKeyProvider` instead of directly depending on KMS. A production
+provider can wrap AWS KMS `GenerateDataKey` and `Decrypt`; tests or local tools
+can use an in-memory provider. Keep plaintext data keys process-local and do
+not persist them outside the provider boundary.
+
+S3 Access Grants and S3 Vector APIs are not pulled into the default API surface.
+For Access Grants, obtain the vended S3 credentials through the AWS SDK
+component your application already uses, then build `S3KtorClient` with that
+credentials provider. For S3 Vector, use the official service SDK directly
+until the service API is stable enough to wrap without a hard runtime
+dependency.
 
 ## SQS Consumer And Publisher
 

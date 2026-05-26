@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
@@ -27,6 +28,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.Base64
 
 class S3KtorClientTest {
 
@@ -58,6 +60,133 @@ class S3KtorClientTest {
         captured.headers["x-amz-meta-source"] shouldBeEqualTo "ktor"
         captured.headers[HttpHeaders.Authorization].orEmpty() shouldContain "AWS4-HMAC-SHA256"
         response.eTag shouldBeEqualTo "\"etag-1\""
+
+        s3.close()
+    }
+
+    @Test
+    fun `PutObjectDetectingContentType resolves content type from key`() = runSuspendIO {
+        lateinit var captured: HttpRequestData
+        val s3 = s3Client(
+            capture = { captured = it },
+            response = { respond("") },
+        )
+
+        s3.putObjectDetectingContentType(
+            bucket = "demo-bucket",
+            key = "docs/app.json",
+            bytes = """{"status":"ok"}""".encodeToByteArray(),
+        )
+
+        captured.body.contentType.toString() shouldBeEqualTo "application/json"
+
+        s3.close()
+    }
+
+    @Test
+    fun `server-side KMS encryption helper renders S3 headers`() = runSuspendIO {
+        lateinit var captured: HttpRequestData
+        val s3 = s3Client(
+            capture = { captured = it },
+            response = { respond("") },
+        )
+
+        s3.putEncryptedObject(
+            bucket = "demo-bucket",
+            key = "secure/report.txt",
+            bytes = "secret".encodeToByteArray(),
+            encryption = S3KtorServerSideEncryption.Kms(
+                keyId = "alias/demo",
+                encryptionContext = mapOf("tenant" to "demo"),
+                bucketKeyEnabled = true,
+            ),
+        )
+
+        captured.headers["x-amz-server-side-encryption"] shouldBeEqualTo "aws:kms"
+        captured.headers["x-amz-server-side-encryption-aws-kms-key-id"] shouldBeEqualTo "alias/demo"
+        captured.headers["x-amz-server-side-encryption-bucket-key-enabled"] shouldBeEqualTo "true"
+        String(
+            Base64.getDecoder().decode(captured.headers["x-amz-server-side-encryption-context"]),
+        ) shouldBeEqualTo """{"tenant":"demo"}"""
+
+        s3.close()
+    }
+
+    @Test
+    fun `config object helper stores and loads text config`() = runSuspendIO {
+        val captured = mutableListOf<HttpRequestData>()
+        val s3 = s3Client(
+            capture = { captured += it },
+            response = { request ->
+                when (request.method) {
+                    HttpMethod.Put -> respond("")
+                    HttpMethod.Get -> respond(
+                        content = "ktor { deployment { port = 8080 } }",
+                        headers = headersOf(
+                            HttpHeaders.ContentType to listOf("application/hocon"),
+                            "x-amz-meta-source" to listOf("s3"),
+                        ),
+                    )
+                    else -> respond("unexpected request", HttpStatusCode.BadRequest)
+                }
+            },
+        )
+
+        s3.putConfigObject(
+            bucket = "demo-bucket",
+            key = "config/application.conf",
+            text = "ktor { deployment { port = 8080 } }",
+            metadata = mapOf("source" to "s3"),
+        )
+        val config = s3.getConfigObject("demo-bucket", "config/application.conf")
+
+        captured[0].body.contentType.toString() shouldBeEqualTo "text/plain; charset=UTF-8"
+        config.text shouldBeEqualTo "ktor { deployment { port = 8080 } }"
+        config.contentType shouldBeEqualTo "application/hocon"
+        config.metadata["source"] shouldBeEqualTo "s3"
+
+        s3.close()
+    }
+
+    @Test
+    fun `client-side envelope encryption uploads ciphertext and restores plaintext`() = runSuspendIO {
+        val storedObjects = mutableMapOf<String, Pair<ByteArray, Headers>>()
+        val s3 = s3Client(
+            response = { request ->
+                val objectKey = request.url.encodedPath
+                when (request.method) {
+                    HttpMethod.Put -> {
+                        storedObjects[objectKey] = request.body.toByteArray() to request.headers
+                        respond("")
+                    }
+                    HttpMethod.Get -> {
+                        val (bytes, headers) = requireNotNull(storedObjects[objectKey])
+                        respond(content = bytes, headers = headers)
+                    }
+                    else -> respond("unexpected request", HttpStatusCode.BadRequest)
+                }
+            },
+        )
+        val encryption = S3KtorClientSideEncryption(InMemoryDataKeyProvider())
+        val plaintext = "client side secret".encodeToByteArray()
+
+        encryption.putEncryptedObject(
+            s3 = s3,
+            bucket = "demo-bucket",
+            key = "secure/client.txt",
+            plaintext = plaintext,
+            encryptionContext = mapOf("purpose" to "test"),
+        )
+        val stored = storedObjects.getValue("/demo-bucket/secure/client.txt")
+        val decrypted = encryption.getEncryptedObjectBytes(
+            s3 = s3,
+            bucket = "demo-bucket",
+            key = "secure/client.txt",
+            encryptionContext = mapOf("purpose" to "test"),
+        )
+
+        stored.first.decodeToString() shouldNotBeEqualTo plaintext.decodeToString()
+        decrypted.decodeToString() shouldBeEqualTo plaintext.decodeToString()
 
         s3.close()
     }
@@ -343,4 +472,24 @@ class S3KtorClientTest {
     private companion object {
         private val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2026-05-10T01:02:03Z"), ZoneOffset.UTC)
     }
+}
+
+private suspend fun io.ktor.http.content.OutgoingContent.toByteArray(): ByteArray =
+    when (this) {
+        is io.ktor.http.content.OutgoingContent.ByteArrayContent -> bytes()
+        else -> error("Unsupported test content: ${this::class.qualifiedName}")
+    }
+
+private class InMemoryDataKeyProvider: S3KtorDataKeyProvider {
+    private val key = ByteArray(32) { index -> index.toByte() }
+
+    override suspend fun generateDataKey(encryptionContext: Map<String, String>): S3KtorDataKey =
+        S3KtorDataKey(
+            plaintextKey = key,
+            encryptedKey = key.reversedArray(),
+            keyId = "in-memory",
+        )
+
+    override suspend fun decryptDataKey(encryptedDataKey: ByteArray, encryptionContext: Map<String, String>): ByteArray =
+        encryptedDataKey.reversedArray()
 }

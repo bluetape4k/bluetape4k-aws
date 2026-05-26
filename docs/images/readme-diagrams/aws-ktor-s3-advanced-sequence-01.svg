@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="700" viewBox="0 0 1180 700" role="img" aria-labelledby="title desc">
+  <title id="title">Advanced S3 Upload / Load Sequence</title>
+  <desc id="desc">Content detection, optional encryption, SigV4 signing, and S3 config retrieval</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#4f6f9f"/></marker>
+    <marker id="arrow-green" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#2f8f83"/></marker>
+    <marker id="arrow-purple" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#8064c9"/></marker>
+    <marker id="arrow-orange" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#c57b21"/></marker>
+    <style>
+      .canvas { fill:#fbfdff; }
+      .frame { fill:white; stroke:#d8e2ef; stroke-width:1.2; rx:18; }
+      .title { font-family:'Architects Daughter','Comic Sans MS',cursive; font-size:28px; fill:#263445; }
+      .subtitle { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:13px; fill:#667085; }
+      .band { fill:#f8fafc; stroke:#d8e2ef; stroke-width:1; rx:14; }
+      .bandLabel { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:12px; fill:#64748b; font-weight:700; }
+      .cardText { font-family:'Architects Daughter','Comic Sans MS',cursive; font-size:17px; fill:#233143; }
+      .cardDetail { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:11px; fill:#516173; }
+      .noteText { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:12px; fill:#475569; }
+      .label { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:11px; fill:#475569; }
+      .pill { fill:white; stroke:#d9e2ef; stroke-width:.8; rx:8; }
+      .lineBlue { fill:none; stroke:#4f6f9f; stroke-width:2.2; marker-end:url(#arrow-blue); }
+      .lineGreen { fill:none; stroke:#2f8f83; stroke-width:2.2; marker-end:url(#arrow-green); }
+      .linePurple { fill:none; stroke:#8064c9; stroke-width:2.2; marker-end:url(#arrow-purple); }
+      .lineOrange { fill:none; stroke:#c57b21; stroke-width:2.2; marker-end:url(#arrow-orange); }
+      .soft { stroke-width:1.7; opacity:.82; }
+    </style>
+  </defs>
+  <rect class="canvas" x="0" y="0" width="1180" height="700"/>
+  <rect class="frame" x="14" y="14" width="1152" height="672"/>
+  <text class="title" x="36" y="48">Advanced S3 Upload / Load Sequence</text>
+  <text class="subtitle" x="38" y="71">Content detection, optional encryption, SigV4 signing, and S3 config retrieval</text>
+  <rect x="20" y="110" width="140" height="58" rx="12" fill="#e8f3ff" stroke="#5b8def" stroke-width="1.4"/>
+  <text class="cardText" x="90.0" y="145.0" text-anchor="middle">Ktor App</text>
+  <line x1="90" y1="168" x2="90" y2="620" stroke="#d4dde9" stroke-width="1.2" stroke-dasharray="5 6"/>
+  <rect x="200" y="110" width="140" height="58" rx="12" fill="#fff3d9" stroke="#d6a441" stroke-width="1.4"/>
+  <text class="cardText" x="270.0" y="145.0" text-anchor="middle">S3KtorClient</text>
+  <line x1="270" y1="168" x2="270" y2="620" stroke="#d4dde9" stroke-width="1.2" stroke-dasharray="5 6"/>
+  <rect x="384" y="110" width="172" height="58" rx="12" fill="#eef2ff" stroke="#8b7cf6" stroke-width="1.4"/>
+  <text class="cardText" x="470.0" y="145.0" text-anchor="middle">Envelope
+Encryptor</text>
+  <line x1="470" y1="168" x2="470" y2="620" stroke="#d4dde9" stroke-width="1.2" stroke-dasharray="5 6"/>
+  <rect x="584" y="110" width="172" height="58" rx="12" fill="#f3e8ff" stroke="#a36ad6" stroke-width="1.4"/>
+  <text class="cardText" x="670.0" y="145.0" text-anchor="middle">Data Key
+Provider</text>
+  <line x1="670" y1="168" x2="670" y2="620" stroke="#d4dde9" stroke-width="1.2" stroke-dasharray="5 6"/>
+  <rect x="792" y="110" width="156" height="58" rx="12" fill="#e8f7f6" stroke="#4ca6a8" stroke-width="1.4"/>
+  <text class="cardText" x="870.0" y="145.0" text-anchor="middle">AwsSigV4
+Plugin</text>
+  <line x1="870" y1="168" x2="870" y2="620" stroke="#d4dde9" stroke-width="1.2" stroke-dasharray="5 6"/>
+  <rect x="980" y="110" width="140" height="58" rx="12" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.4"/>
+  <text class="cardText" x="1050.0" y="145.0" text-anchor="middle">S3 Bucket</text>
+  <line x1="1050" y1="168" x2="1050" y2="620" stroke="#d4dde9" stroke-width="1.2" stroke-dasharray="5 6"/>
+  <path class="lineBlue" d="M90 210 H270"/>
+  <rect class="pill" x="88.0" y="184" width="184" height="21"/>
+  <text class="label" x="180.0" y="199" text-anchor="middle">putConfigObject / putEncryptedObject</text>
+  <path class="linePurple" d="M270 252 H470"/>
+  <rect class="pill" x="278.0" y="226" width="184" height="21"/>
+  <text class="label" x="370.0" y="241" text-anchor="middle">encrypt payload when requested</text>
+  <path class="linePurple" d="M470 292 H670"/>
+  <rect class="pill" x="478.0" y="266" width="184" height="21"/>
+  <text class="label" x="570.0" y="281" text-anchor="middle">generate data key</text>
+  <path class="linePurple" d="M670 332 H470"/>
+  <rect class="pill" x="478.0" y="306" width="184" height="21"/>
+  <text class="label" x="570.0" y="321" text-anchor="middle">plaintext + encrypted key</text>
+  <path class="linePurple" d="M470 374 H270"/>
+  <rect class="pill" x="278.0" y="348" width="184" height="21"/>
+  <text class="label" x="370.0" y="363" text-anchor="middle">ciphertext + metadata</text>
+  <path class="lineGreen" d="M270 416 H870"/>
+  <rect class="pill" x="478.0" y="390" width="184" height="21"/>
+  <text class="label" x="570.0" y="405" text-anchor="middle">sign REST request</text>
+  <path class="lineOrange" d="M870 456 H1050"/>
+  <rect class="pill" x="868.0" y="430" width="184" height="21"/>
+  <text class="label" x="960.0" y="445" text-anchor="middle">PutObject to S3</text>
+  <path class="lineBlue" d="M90 508 H270"/>
+  <rect class="pill" x="88.0" y="482" width="184" height="21"/>
+  <text class="label" x="180.0" y="497" text-anchor="middle">getConfigObject / getEncryptedObject</text>
+  <path class="lineGreen" d="M270 548 H870"/>
+  <rect class="pill" x="478.0" y="522" width="184" height="21"/>
+  <text class="label" x="570.0" y="537" text-anchor="middle">sign GetObject</text>
+  <path class="lineOrange" d="M870 588 H1050"/>
+  <rect class="pill" x="868.0" y="562" width="184" height="21"/>
+  <text class="label" x="960.0" y="577" text-anchor="middle">GetObject, decrypt if needed</text>
+  <rect x="120" y="638" width="940" height="34" rx="12" fill="#f8fafc" stroke="#d8e2ef"/>
+  <text class="noteText" x="590" y="660" text-anchor="middle">Access Grants and S3 Vector remain application-owned SDK boundaries, not default S3KtorClient dependencies.</text>
+</svg>
