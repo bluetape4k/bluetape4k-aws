@@ -58,6 +58,7 @@ dependencies {
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:sts") // optional web-identity credentials support
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
@@ -78,10 +79,19 @@ dependencies {
 ```yaml
 bluetape4k:
   aws:
+    enabled: true
+    region: ap-northeast-2
+    endpoint-override: http://localhost:4566   # shared local AWS emulator default
+    credentials:
+      web-identity:
+        enabled: false                          # requires software.amazon.awssdk:sts
+        role-arn: arn:aws:iam::123456789012:role/order-api
+        role-session-name: order-api
+        token-file: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
     s3:
       enabled: true
-      region: ap-northeast-2
-      endpoint-override: http://localhost:4566   # local AWS emulator
+      region: ap-northeast-2                   # overrides the shared default
+      endpoint-override: http://localhost:4566 # overrides the shared default
       path-style-access-enabled: true
       presign:
         duration: PT15M
@@ -169,8 +179,19 @@ bluetape4k:
           password: ${app.analytics.password}
 ```
 
-`endpoint-override` requires `region` to be set. Each property class enforces
-this at startup via `require`.
+`bluetape4k.aws.region` and `bluetape4k.aws.endpoint-override` are shared
+defaults for auto-configured AWS SDK v2 clients. Service-specific properties
+such as `bluetape4k.aws.s3.region` or `bluetape4k.aws.sqs.endpoint-override`
+override the shared defaults. Any effective `endpoint-override` requires an
+effective region.
+`bluetape4k.aws.credentials.web-identity.enabled=true` registers an opt-in
+`WebIdentityTokenFileCredentialsProvider` when `software.amazon.awssdk:sts` is
+on the runtime classpath. Otherwise the module falls back to the default AWS SDK
+credentials provider chain.
+Applications can customize generated AWS SDK v2 builders by registering ordered
+`AwsSyncClientCustomizer`, `AwsAsyncClientCustomizer`, or typed
+`AwsClientCustomizer<S3ClientBuilder>` / `AwsClientCustomizer<SqsAsyncClientBuilder>`
+beans.
 `sns.topics.<name>` configures topic creation defaults used by
 `SnsOperations.createConfiguredTopic("<name>")`.
 `sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a

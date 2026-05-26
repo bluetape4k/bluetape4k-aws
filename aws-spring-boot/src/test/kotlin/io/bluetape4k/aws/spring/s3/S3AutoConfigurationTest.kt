@@ -1,7 +1,11 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizationContext
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
@@ -10,12 +14,17 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder
 import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.S3ClientBuilder
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.transfer.s3.S3TransferManager
@@ -140,7 +149,12 @@ class S3AutoConfigurationTest {
     @Test
     fun `endpoint override requires region`() {
         ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(S3AutoConfiguration::class.java))
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsAutoConfiguration::class.java,
+                    S3AutoConfiguration::class.java,
+                )
+            )
             .withBean(AwsCredentialsProvider::class.java, {
                 StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
             })
@@ -152,6 +166,66 @@ class S3AutoConfigurationTest {
                     .joinToString("\n")
                 messages shouldContain "region is required"
             }
+    }
+
+    @Test
+    fun `shared defaults provide S3 region and endpoint override`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsAutoConfiguration::class.java,
+                    S3AutoConfiguration::class.java,
+                )
+            )
+            .withPropertyValues(
+                "bluetape4k.aws.region=us-west-2",
+                "bluetape4k.aws.s3.endpoint-override=http://localhost:4566",
+            )
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(S3Client::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `global and S3 sync customizers are applied in order`() {
+        S3CustomizerConfig.calls.clear()
+
+        contextRunner
+            .withUserConfiguration(S3CustomizerConfig::class.java)
+            .run { context ->
+                context.getBean(S3Client::class.java).shouldNotBeNull()
+                S3CustomizerConfig.calls shouldBeEqualTo listOf("global:s3", "s3")
+            }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class S3CustomizerConfig {
+        @Bean
+        fun globalSyncCustomizer(): AwsSyncClientCustomizer =
+            RecordingSyncCustomizer("global")
+
+        @Bean
+        fun s3ClientCustomizer(): AwsClientCustomizer<S3ClientBuilder> =
+            AwsClientCustomizer { calls += "s3" }
+
+        private class RecordingSyncCustomizer(
+            private val name: String,
+        ): AwsSyncClientCustomizer, Ordered {
+            override fun customize(
+                context: AwsClientCustomizationContext,
+                builder: AwsSyncClientBuilder<*, *>,
+            ) {
+                calls += "$name:${context.serviceName}"
+            }
+
+            override fun getOrder(): Int = 0
+        }
+
+        companion object {
+            val calls: MutableList<String> = mutableListOf()
+        }
     }
 }
 

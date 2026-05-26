@@ -55,6 +55,7 @@ dependencies {
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:sts") // 선택적 web-identity credentials 지원
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
@@ -75,10 +76,19 @@ dependencies {
 ```yaml
 bluetape4k:
   aws:
+    enabled: true
+    region: ap-northeast-2
+    endpoint-override: http://localhost:4566   # 공유 local AWS emulator 기본값
+    credentials:
+      web-identity:
+        enabled: false                          # software.amazon.awssdk:sts 필요
+        role-arn: arn:aws:iam::123456789012:role/order-api
+        role-session-name: order-api
+        token-file: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
     s3:
       enabled: true
-      region: ap-northeast-2
-      endpoint-override: http://localhost:4566   # local AWS emulator
+      region: ap-northeast-2                   # 공유 기본값보다 우선
+      endpoint-override: http://localhost:4566 # 공유 기본값보다 우선
       path-style-access-enabled: true
       presign:
         duration: PT15M
@@ -166,8 +176,19 @@ bluetape4k:
           password: ${app.analytics.password}
 ```
 
-`endpoint-override` 를 지정하면 반드시 `region` 도 설정해야 한다. 각 Properties
-클래스의 `init` 블록에서 시작 시점에 강제한다.
+`bluetape4k.aws.region` 과 `bluetape4k.aws.endpoint-override` 는 자동 설정되는
+AWS SDK v2 client 의 공유 기본값이다. `bluetape4k.aws.s3.region` 이나
+`bluetape4k.aws.sqs.endpoint-override` 같은 서비스별 속성이 공유 기본값보다
+우선한다. 실제로 적용되는 `endpoint-override` 가 있으면 실제 적용 region 도
+필요하다.
+`bluetape4k.aws.credentials.web-identity.enabled=true` 는 런타임 classpath 에
+`software.amazon.awssdk:sts` 가 있을 때 선택적으로
+`WebIdentityTokenFileCredentialsProvider` 를 등록한다. 조건이 맞지 않으면 AWS SDK
+기본 credentials provider chain 을 사용한다.
+생성되는 AWS SDK v2 builder 를 조정하려면 ordered `AwsSyncClientCustomizer`,
+`AwsAsyncClientCustomizer`, 또는 typed
+`AwsClientCustomizer<S3ClientBuilder>` / `AwsClientCustomizer<SqsAsyncClientBuilder>`
+bean 을 등록한다.
 `sns.topics.<name>` 은 `SnsOperations.createConfiguredTopic("<name>")` 에서 사용하는
 topic 생성 기본값이다.
 `sqs.queues.<name>.url` 은 `@SqsListener(queue = "<name>")` 에서 논리 큐 이름을

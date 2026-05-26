@@ -1,6 +1,13 @@
 package io.bluetape4k.aws.spring.ses
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.applyAwsDefaults
+import io.bluetape4k.aws.spring.applyGlobalCustomizers
+import io.bluetape4k.aws.spring.applyServiceCustomizers
+import io.bluetape4k.aws.spring.resolveClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -11,8 +18,8 @@ import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
+import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
 
 /**
  * Spring Boot 4 auto-configuration for AWS SES.
@@ -36,17 +43,23 @@ class SesAutoConfiguration {
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
     fun sesV2AsyncClient(
+        awsProperties: ObjectProvider<AwsProperties>,
         properties: SesProperties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
         httpClient: ObjectProvider<SdkAsyncHttpClient>,
+        globalCustomizers: ObjectProvider<AwsAsyncClientCustomizer>,
+        serviceCustomizers: ObjectProvider<AwsClientCustomizer<SesV2AsyncClientBuilder>>,
     ): SesV2AsyncClient =
         SesV2AsyncClient.builder()
             .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
+            .applyAwsDefaults(
+                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+            )
             .apply {
-                properties.region?.let { region(Region.of(it)) }
-                properties.endpointOverride?.let { endpointOverride(it) }
                 httpClient.getIfAvailable()?.let { httpClient(it) }
             }
+            .also { it.applyGlobalCustomizers("ses", globalCustomizers) }
+            .applyServiceCustomizers(serviceCustomizers)
             .build()
 
     @Bean
@@ -61,4 +74,7 @@ class SesAutoConfiguration {
         provider: ObjectProvider<AwsCredentialsProvider>,
     ): AwsCredentialsProvider =
         provider.getIfAvailable { DefaultCredentialsProvider.builder().build() }
+
+    private fun resolveAwsProperties(provider: ObjectProvider<AwsProperties>): AwsProperties =
+        provider.getIfAvailable { AwsProperties() }
 }
