@@ -1,12 +1,12 @@
 # Spring Cloud AWS Gap / Exposed WIP Plan
 
 Date: 2026-05-14
-Last updated: 2026-05-16
+Last updated: 2026-05-26
 
 ## Scope
 
 Track the feature backlog derived from comparing `bluetape4k-aws` with
-Spring Cloud AWS 4.0.0 and from the follow-up decision to make JDBC/database
+Spring Cloud AWS 4.x and from the follow-up decision to make JDBC/database
 support Exposed-first for both Spring Boot and Ktor.
 
 ## Direction
@@ -52,30 +52,89 @@ hardening slice.
 
 ## State Sync Notes
 
-- #71 remains open for README gaps around SNS, KMS, and remote-config features,
-  but the root and module README files now cover the core Spring Boot runtime
-  features. Treat #71 as residual documentation polish unless the issue is
-  narrowed or closed.
+- #71 is closed; README coverage for SNS, KMS, and remote-config features is no
+  longer tracked as active WIP.
+- New AWSpring-parity epics were created after the 2026-05-26 AWSpring 4.x gap
+  pass:
+  - #204 `[Epic] AWSpring-parity Spring Boot integrations`
+  - #205 `[Epic] AWSpring-parity Ktor integrations`
+- 0.3.0 is intentionally narrowed to S3/SQS production hardening plus the
+  minimum shared configuration foundation needed to keep S3/SQS implementations
+  consistent.
+- DynamoDB, Exposed/database, CloudWatch/Logs, IMDS, and DAX work stays in
+  Backlog unless a later release planning pass explicitly pulls it forward.
+
+## 0.3.0 Scope: S3/SQS Production Hardening
+
+### Keep in 0.3.0
+
+- #190 `feat(aws-spring-boot): add shared AWS core properties and client customizers`
+  - Foundation for Spring Boot S3/SQS region, endpoint, credential, and client
+    customization consistency.
+- #197 `feat(aws-ktor): add shared AWS defaults and client customizer hooks`
+  - Foundation for Ktor S3/SQS plugin defaults, client ownership, and lifecycle
+    consistency.
+- #193 `feat(aws-spring-boot): add advanced SQS listener conversion, ack, retry, and observability`
+  - Spring Boot SQS production controls: conversion, acknowledgement, retry,
+    interceptors, and metrics/observability.
+- #199 `feat(aws-ktor): add advanced SQS conversion, manual ack, retry, and observability`
+  - Ktor SQS consumer runtime production controls.
+- #192 `feat(aws-spring-boot): add advanced S3 encryption, config reload, access grants, and vector support`
+  - 0.3.0 slice is S3 encryption plus config reload. Access Grants and S3
+    Vector may be split or deferred if they expand release scope.
+- #203 `feat(aws-ktor): add advanced S3 encryption, access grants, vector, and config helpers`
+  - 0.3.0 slice is S3 encryption plus content-type/config helpers. Access
+    Grants and S3 Vector may be split or deferred if they expand release scope.
+- #182 `test: stabilize SNS-to-SQS fanout LocalStack coverage`
+  - Regression/stability support for the SQS hardening train.
+- #206 `feat(examples): add Spring Boot AWSpring-parity examples`
+  - Stretch scope for 0.3.0: Spring Boot S3/SQS examples only.
+- #207 `feat(examples): add Ktor advanced AWS integration examples`
+  - Stretch scope for 0.3.0: Ktor S3/SQS examples only.
+
+### Move / Keep in Backlog
+
+- #179 `feat: add aws-ktor DynamoDB integration`
+- #180 `feat: wire aws-exposed settings through Spring Boot Secrets Manager and Parameter Store`
+- #181 `feat: add Ktor AWS database settings plugin for exposed integration`
+- #183 `test: share DynamoDB Local Testcontainers launcher across AWS and downstream repos`
+- #191 `feat(aws-spring-boot): add optional DynamoDB DAX client integration`
+- #194 `feat(aws-spring-boot): add CloudWatch and CloudWatch Logs auto-configuration`
+- #196 `feat(aws-spring-boot): add optional EC2 Instance Metadata Service integration`
+- #200 `feat(aws-ktor): add optional EC2 Instance Metadata Service helpers`
+- #201 `feat(aws-ktor): add CloudWatch and CloudWatch Logs plugins`
+
+### Recommended 0.3.0 Execution Order
+
+1. Foundation PR train: #190, #197.
+2. SQS PR train: #193, #199, then #182 as regression coverage.
+3. S3 PR train: #192 and #203 with the narrowed 0.3.0 slices.
+4. Example PR train: #206 and #207 only after the related S3/SQS APIs are
+   usable.
 
 ## Active Backlog
 
 ### Exposed-first AWS database integration
 
-- #74 `feat(aws): Exposed-first AWS database integration foundation`
+- #74 `feat(aws): Exposed-first AWS database integration foundation` (closed)
   - Shared database properties, secret/config loading contract,
     `bluetape4k-exposed` database factory, and named database registry.
-- #75 `feat(aws-spring-boot): Exposed database auto-configuration`
+- #75 `feat(aws-spring-boot): Exposed database auto-configuration` (closed)
   - Spring Boot 4 auto-configuration for `bluetape4k-exposed` databases backed
     by AWS config/secrets.
-- #76 `feat(aws-ktor): AwsExposedPlugin for AWS-backed Exposed databases`
+- #76 `feat(aws-ktor): AwsExposedPlugin for AWS-backed Exposed databases` (closed)
   - Ktor server plugin, application attributes, and `bluetape4k-exposed`
     suspend transaction helper.
-- #77 `feat(aws): RDS IAM auth token provider for Exposed integrations`
+- #77 `feat(aws): RDS IAM auth token provider for Exposed integrations` (closed)
   - IAM token password provider for `bluetape4k-exposed` database creation
     paths.
-- #82 `feat(examples): Spring Boot and Ktor Exposed AWS database examples`
+- #82 `feat(examples): Spring Boot and Ktor Exposed AWS database examples` (closed)
   - Adoption examples using `bluetape4k-exposed`, Testcontainers PostgreSQL,
     and local/mock AWS config.
+- #180 `feat: wire aws-exposed settings through Spring Boot Secrets Manager and Parameter Store`
+  - Backlog after 0.3.0 scope narrowing.
+- #181 `feat: add Ktor AWS database settings plugin for exposed integration`
+  - Backlog after 0.3.0 scope narrowing.
 
 Recommended execution order:
 
@@ -87,22 +146,24 @@ Recommended execution order:
 
 ### Remaining adoption/examples
 
-- #14 `feat(examples): spring-boot-dynamodb`
+- #14 `feat(examples): spring-boot-dynamodb` (closed)
   - Spring Boot 4 + DynamoDB example.
-- #16 `feat(examples): ktor-sqs`
+- #16 `feat(examples): ktor-sqs` (closed)
   - Ktor + SQS example.
-- #17 `feat(examples): ktor-dynamodb`
+- #17 `feat(examples): ktor-dynamodb` (closed)
   - Ktor + DynamoDB example; unblocked by PR #87.
-- #71 `docs(aws-spring-boot): README missing SNS / KMS / remote-config features`
-  - Residual documentation polish for already merged Spring Boot capabilities.
+- #206 and #207 track the next S3/SQS-focused examples, with non-S3/SQS
+  examples deferred to follow-ups.
 
 ### AWSpring gap hardening
 
-- #7 `feat(aws-spring-boot): SES email sender`
+- #7 `feat(aws-spring-boot): SES email sender` (closed)
   - Spring Boot SES sender and coroutine template.
-- #81 `feat(aws): Kinesis and DynamoDB Streams coroutine Flow support`
+- #81 `feat(aws): Kinesis and DynamoDB Streams coroutine Flow support` (closed)
   - Coroutine Flow-based streaming alternative to Spring Integration/Kinesis
     binder style APIs.
+- #204 and #205 are the current parent epics for the remaining AWSpring-parity
+  backlog.
 
 ## Lower Priority / Explicitly Deferred
 
