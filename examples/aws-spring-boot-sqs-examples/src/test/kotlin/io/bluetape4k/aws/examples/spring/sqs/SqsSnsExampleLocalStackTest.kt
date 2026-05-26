@@ -6,6 +6,7 @@ import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsAutoConfiguration
 import io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration
 import io.bluetape4k.aws.spring.sqs.SqsOperations
+import io.bluetape4k.codec.Base58
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.delay
@@ -15,7 +16,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import java.util.UUID
 
 class SqsSnsExampleLocalStackTest {
 
@@ -59,41 +59,46 @@ class SqsSnsExampleLocalStackTest {
                     val receivedOrderStore = context.getBean(ReceivedOrderStore::class.java)
 
                     runTest {
-                        val queueName = "example-rest-${UUID.randomUUID()}"
+                        val queueName = "example-rest-${Base58.randomString(8)}"
                         val queue = controller.createQueue(queueName)
                         assertThat(queue.queueArn).contains(queueName)
 
-                        val sent = controller.send(queue.queueUrl, SendQueueMessageRequest("rest-message"))
+                        val restMessage = "rest-message-${Base58.randomString(8)}"
+                        val sent = controller.send(queue.queueUrl, SendQueueMessageRequest(restMessage))
                         assertThat(sent.messageId).isNotBlank()
                         assertThat(controller.receive(queue.queueUrl, deleteAfterReceive = true).map { it.body })
-                            .contains("rest-message")
+                            .contains(restMessage)
 
-                        service.send(listenerQueueUrl, SendQueueMessageRequest("listener-message"))
-                        waitUntil { receivedOrderStore.recent().contains("listener-message") }
+                        val listenerMessage = "listener-message-${Base58.randomString(8)}"
+                        service.send(listenerQueueUrl, SendQueueMessageRequest(listenerMessage))
+                        waitUntil("listener receives $listenerMessage") {
+                            receivedOrderStore.recent().contains(listenerMessage)
+                        }
 
                         val fanout = controller.createFanout(
                             FanoutSetupRequest(
-                                topicName = "example-topic-${UUID.randomUUID()}",
-                                queueName = "example-fanout-${UUID.randomUUID()}",
+                                topicName = "example-topic-${Base58.randomString(8)}",
+                                queueName = "example-fanout-${Base58.randomString(8)}",
                             )
                         )
+                        val fanoutMessage = "fanout-message-${Base58.randomString(8)}"
                         val published = controller.publish(
                             PublishTopicMessageRequest(
                                 topicArn = fanout.topicArn,
                                 subject = "fanout",
-                                message = "fanout-message",
+                                message = fanoutMessage,
                             )
                         )
                         assertThat(published.messageId).isNotBlank()
-                        waitUntil {
+                        waitUntil("fanout delivers $fanoutMessage to ${fanout.queueUrl}") {
                             service.receive(fanout.queueUrl, deleteAfterReceive = true)
-                                .any { it.body.contains("fanout-message") }
+                                .any { it.body.contains(fanoutMessage) }
                         }
 
                         val dlq = controller.createDlqPair(
                             DlqSetupRequest(
-                                queueName = "example-source-${UUID.randomUUID()}",
-                                dlqName = "example-dlq-${UUID.randomUUID()}",
+                                queueName = "example-source-${Base58.randomString(8)}",
+                                dlqName = "example-dlq-${Base58.randomString(8)}",
                                 maxReceiveCount = 2,
                             )
                         )
@@ -107,16 +112,16 @@ class SqsSnsExampleLocalStackTest {
     private fun createQueue(operations: SqsOperations, prefix: String): String {
         lateinit var queueUrl: String
         runTest {
-            queueUrl = operations.createQueue("$prefix-${UUID.randomUUID()}")
+            queueUrl = operations.createQueue("$prefix-${Base58.randomString(8)}")
         }
         return queueUrl
     }
 
-    private suspend fun waitUntil(predicate: suspend () -> Boolean) {
+    private suspend fun waitUntil(description: String, predicate: suspend () -> Boolean) {
         repeat(60) {
             if (predicate()) return
             delay(500)
         }
-        check(predicate()) { "Condition was not met before timeout." }
+        check(predicate()) { "Condition was not met before timeout: $description." }
     }
 }
