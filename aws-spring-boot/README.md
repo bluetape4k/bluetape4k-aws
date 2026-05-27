@@ -33,8 +33,8 @@ templates, a SQS listener container, and remote Environment sources, with no
 - **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
   generation, optional Spring Security `TextEncryptor`, and explicit
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
-- **Secrets Manager / Parameter Store** — startup Environment sources for
-  remote secrets and parameters, optional lazy refresh, and composed
+- **S3 / Secrets Manager / Parameter Store config** — startup Environment sources for
+  S3 objects, remote secrets, and parameters, optional lazy refresh, and composed
   `@SecretsValue` / `@ParameterStoreValue` annotations over Spring `@Value`.
 - **Exposed databases** — auto-configures an AWS-backed
   `AwsExposedDatabaseRegistry`, default Exposed `Database`, and default
@@ -95,6 +95,23 @@ bluetape4k:
       path-style-access-enabled: true
       presign:
         duration: PT15M
+      config:
+        enabled: true
+        region: ap-northeast-2
+        endpoint-override: http://localhost:4566
+        path-style-access-enabled: true
+        refresh-interval: 30s
+        sources:
+          - name: app-s3-config
+            bucket: order-config
+            key: application.properties
+            prefix: app
+            format: properties
+      client-side-encryption:
+        enabled: true
+        key-id: alias/app-s3
+        encryption-context:
+          service: order-api
     sqs:
       enabled: true
       region: ap-northeast-2
@@ -197,19 +214,21 @@ beans.
 `sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a
 logical queue alias. `SqsOperations.getQueueUrl("<name>")` still performs an
 AWS SQS `GetQueueUrl` call.
-Secrets Manager and Parameter Store sources are loaded by
-`EnvironmentPostProcessor` before normal bean binding. When `refresh-interval`
-is set, the property source reloads lazily on property access after the interval
-has elapsed; failed reloads keep the previous values. When multiple remote
-sources define the same key, the earlier configured source has higher Spring
-property-source precedence.
+S3 config, Secrets Manager, and Parameter Store sources are loaded by
+`EnvironmentPostProcessor` before normal bean binding. S3 config sources load
+single objects in `properties`, `yaml`, or `json` format; `auto` format detects
+the parser from the object key extension and defaults to `properties`. When
+`refresh-interval` is set, the property source reloads lazily on property access
+after the interval has elapsed; failed reloads keep the previous values. When
+multiple remote sources define the same key, the earlier configured source has
+higher Spring property-source precedence.
 `bluetape4k.aws.exposed.default-database.url` activates the Exposed registry.
 If the URL is absent, the Exposed auto-configuration contributes only property
 binding and does not create a registry or database pool.
 
 ## Usage Examples
 
-### Secrets Manager / Parameter Store — Environment values
+### S3 / Secrets Manager / Parameter Store — Environment values
 
 ```kotlin
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreValue
@@ -232,6 +251,9 @@ JSON secrets are flattened with dot notation. Parameter names under the
 configured path are mapped to dot-separated keys, and `prefix` is prepended to
 both source types. `@SecretsValue` and `@ParameterStoreValue` use normal Spring
 `@Value` placeholder syntax.
+S3 config JSON objects are flattened the same way; S3 `.properties` and YAML
+objects are loaded through Spring Boot property-source loaders and then receive
+the configured `prefix`.
 
 ### Exposed — AWS-backed database registry
 
@@ -274,6 +296,7 @@ registry, so the alias beans do not close the pool separately.
 ### S3 — coroutine-friendly template
 
 ```kotlin
+import io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
 import io.bluetape4k.aws.spring.s3.S3TransferOperations
 import java.nio.file.Path
@@ -281,6 +304,7 @@ import java.nio.file.Path
 class DocumentStorage(
     private val s3: S3Operations,
     private val transfer: S3TransferOperations,
+    private val encryptedS3: S3ClientSideEncryptionOperations,
 ) {
     suspend fun save(bucket: String, key: String, contents: String) {
         s3.upload(bucket, key, contents)
@@ -295,6 +319,15 @@ class DocumentStorage(
     suspend fun saveLargeFile(bucket: String, key: String, source: Path) {
         transfer.uploadFile(bucket, key, source)
     }
+
+    suspend fun saveSecret(bucket: String, key: String, contents: String) {
+        encryptedS3.uploadEncrypted(
+            bucket = bucket,
+            key = key,
+            bytes = contents.encodeToByteArray(),
+            contentType = "text/plain",
+        )
+    }
 }
 ```
 
@@ -306,6 +339,14 @@ module's coroutine `S3TransferManager` extensions for multipart file and byte
 transfers. To use CRT-backed transfers, provide a CRT-backed `S3AsyncClient`
 bean; the transfer manager auto-configuration reuses it instead of forcing CRT
 dependencies on basic S3 users.
+
+`S3ClientSideEncryptionOperations` is available when
+`bluetape4k.aws.s3.client-side-encryption.enabled=true` and a `KmsOperations`
+bean is present. It generates an AWS KMS data key, encrypts object bytes locally
+with AES-GCM, and stores the encrypted data key and nonce in S3 metadata. This
+helper is for byte-array objects; it does not support multipart or streaming
+client-side encryption, and the metadata format is not AWS Encryption SDK
+compatible.
 
 ### SQS — send and receive
 

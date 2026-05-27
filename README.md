@@ -196,6 +196,22 @@ bluetape4k:
       path-style-access-enabled: true
       presign:
         duration: PT15M
+      config:
+        region: ap-northeast-2
+        endpoint-override: http://localhost:4566
+        path-style-access-enabled: true
+        refresh-interval: 30s
+        sources:
+          - name: app-s3-config
+            bucket: order-config
+            key: application.properties
+            prefix: app
+            format: properties
+      client-side-encryption:
+        enabled: true
+        key-id: alias/app-s3
+        encryption-context:
+          service: order-api
     dynamodb:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566

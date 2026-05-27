@@ -6,7 +6,7 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * S3 자동 설정 속성.
+ * Configuration properties for Spring Boot S3 support.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.s3")
 data class S3Properties(
@@ -18,6 +18,7 @@ data class S3Properties(
     val chunkedEncodingEnabled: Boolean? = null,
     val presign: Presign = Presign(),
     val transfer: Transfer = Transfer(),
+    val clientSideEncryption: ClientSideEncryption = ClientSideEncryption(),
 ) : Serializable {
     data class Presign(
         val duration: Duration = Duration.ofMinutes(15),
@@ -43,6 +44,29 @@ data class S3Properties(
 
         companion object {
             private const val serialVersionUID: Long = 3189014737041398681L
+        }
+    }
+
+    /**
+     * Client-side envelope encryption settings for S3 object payloads.
+     */
+    data class ClientSideEncryption(
+        val enabled: Boolean = false,
+        val keyId: String? = null,
+        val encryptionContext: Map<String, String> = emptyMap(),
+        val useDataKeyCache: Boolean = true,
+    ) : Serializable {
+        init {
+            require(keyId == null || keyId.isNotBlank()) {
+                "bluetape4k.aws.s3.client-side-encryption.keyId must not be blank."
+            }
+            require(encryptionContext.keys.none { it.isBlank() }) {
+                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank."
+            }
+        }
+
+        companion object {
+            private const val serialVersionUID: Long = -2600404936788080311L
         }
     }
 

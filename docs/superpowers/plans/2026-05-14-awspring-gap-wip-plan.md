@@ -80,8 +80,10 @@ hardening slice.
 - #199 `feat(aws-ktor): add advanced SQS conversion, manual ack, retry, and observability`
   - Ktor SQS consumer runtime production controls.
 - #192 `feat(aws-spring-boot): add advanced S3 encryption, config reload, access grants, and vector support`
-  - 0.3.0 slice is S3 encryption plus config reload. Access Grants and S3
-    Vector may be split or deferred if they expand release scope.
+  - 0.3.0 slice is implemented as S3 Environment config import/reload plus
+    KMS-backed byte-array client-side encryption. Access Grants and S3 Vector
+    are deferred because they would add optional SDK/client surfaces beyond the
+    production-hardening slice.
 - #203 `feat(aws-ktor): add advanced S3 encryption, access grants, vector, and config helpers`
   - 0.3.0 slice is S3 encryption plus content-type/config helpers. Access
     Grants and S3 Vector may be split or deferred if they expand release scope.
