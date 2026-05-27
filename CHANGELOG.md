@@ -7,6 +7,39 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-27
+
+### Added
+
+- Shared Spring Boot AWS core properties and client customizer foundation for
+  S3 and SQS production integrations ([#190](https://github.com/bluetape4k/bluetape4k-aws/issues/190)).
+- Advanced Spring Boot S3 support for encryption, config reload, access grants,
+  vector operations, and content helpers ([#192](https://github.com/bluetape4k/bluetape4k-aws/issues/192)).
+- Advanced Spring Boot SQS support for typed conversion, manual acknowledgement,
+  retry policies, listener interceptors, and observability hooks
+  ([#193](https://github.com/bluetape4k/bluetape4k-aws/issues/193)).
+- Shared Ktor AWS defaults and client customizer hooks
+  ([#197](https://github.com/bluetape4k/bluetape4k-aws/issues/197)).
+- Advanced Ktor S3 and SQS integrations plus runnable advanced examples
+  ([#199](https://github.com/bluetape4k/bluetape4k-aws/issues/199),
+  [#203](https://github.com/bluetape4k/bluetape4k-aws/issues/203),
+  [#207](https://github.com/bluetape4k/bluetape4k-aws/issues/207)).
+- Spring Boot S3 and SQS AWSpring-parity example scenarios
+  ([#206](https://github.com/bluetape4k/bluetape4k-aws/issues/206)).
+
+### Changed
+
+- Prepared the 0.3.0 release line to consume
+  `io.github.bluetape4k:bluetape4k-bom:1.9.2` and
+  `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.9.2`.
+- Refreshed README architecture, flow, and sequence diagrams across AWS Java,
+  AWS Kotlin, AWS Ktor, AWS Spring Boot, AWS Exposed, and examples.
+
+### Fixed
+
+- Stabilized SNS-to-SQS fanout LocalStack coverage
+  ([#182](https://github.com/bluetape4k/bluetape4k-aws/issues/182)).
+
 ## [0.2.0] - 2026-05-22
 
 ### Added
