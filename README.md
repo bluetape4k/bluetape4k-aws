@@ -107,7 +107,7 @@ you need at runtime.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.2.2")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.3.0")
 
     // Add the AWS Java SDK v2 services you use
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -137,7 +137,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.2.2")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.3.0")
 
     // Add the AWS Kotlin SDK services you use
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -155,7 +155,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.2.2")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.3.0")
 
     // Add the AWS Java SDK v2 services you use at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
