@@ -31,8 +31,8 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
 - **KMS** — `KmsOperations` 로 coroutine 암호화/복호화와 data key 생성을
   제공하고, 선택적 Spring Security `TextEncryptor`, `String` 필드용 명시적
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` 를 지원한다.
-- **Secrets Manager / Parameter Store** — 원격 secret/parameter 를 시작 시점에
-  Spring Environment 로 로드하고, 선택적 lazy refresh 및 Spring `@Value` 기반의
+- **S3 / Secrets Manager / Parameter Store config** — S3 object, 원격 secret/parameter 를
+  시작 시점에 Spring Environment 로 로드하고, 선택적 lazy refresh 및 Spring `@Value` 기반의
   `@SecretsValue` / `@ParameterStoreValue` 조합 어노테이션을 제공한다.
 - **Exposed 데이터베이스** — 명시적 속성 또는 Secrets Manager / Parameter Store 로
   로드한 Environment 값으로 AWS-backed `AwsExposedDatabaseRegistry`, 기본 Exposed
@@ -92,6 +92,23 @@ bluetape4k:
       path-style-access-enabled: true
       presign:
         duration: PT15M
+      config:
+        enabled: true
+        region: ap-northeast-2
+        endpoint-override: http://localhost:4566
+        path-style-access-enabled: true
+        refresh-interval: 30s
+        sources:
+          - name: app-s3-config
+            bucket: order-config
+            key: application.properties
+            prefix: app
+            format: properties
+      client-side-encryption:
+        enabled: true
+        key-id: alias/app-s3
+        encryption-context:
+          service: order-api
     sqs:
       enabled: true
       region: ap-northeast-2
@@ -194,18 +211,20 @@ topic 생성 기본값이다.
 `sqs.queues.<name>.url` 은 `@SqsListener(queue = "<name>")` 에서 논리 큐 이름을
 실제 URL로 바꾸는 alias 설정이다. `SqsOperations.getQueueUrl("<name>")` 은 여전히
 AWS SQS `GetQueueUrl` 요청을 수행한다.
-Secrets Manager 와 Parameter Store source 는 `EnvironmentPostProcessor` 로 일반 bean
-binding 전에 로드된다. `refresh-interval` 을 설정하면 interval 이 지난 뒤 property
-접근 시점에 lazy reload 하며, reload 실패 시에는 이전 값을 유지한다. 여러 원격
-source 가 같은 key 를 제공하면 먼저 설정된 source 가 더 높은 Spring property-source
-우선순위를 가진다.
+S3 config, Secrets Manager, Parameter Store source 는 `EnvironmentPostProcessor` 로
+일반 bean binding 전에 로드된다. S3 config source 는 단일 object 를 `properties`,
+`yaml`, `json` 형식으로 읽는다. `auto` 형식은 object key 확장자로 parser 를 고르고,
+알 수 없으면 `properties` 로 처리한다. `refresh-interval` 을 설정하면 interval 이
+지난 뒤 property 접근 시점에 lazy reload 하며, reload 실패 시에는 이전 값을 유지한다.
+여러 원격 source 가 같은 key 를 제공하면 먼저 설정된 source 가 더 높은 Spring
+property-source 우선순위를 가진다.
 `bluetape4k.aws.exposed.default-database.url` 이 있을 때 Exposed registry 가
 활성화된다. URL 이 없으면 Exposed auto-configuration 은 property binding 만 제공하고
 registry 나 database pool 은 만들지 않는다.
 
 ## 사용 예제
 
-### Secrets Manager / Parameter Store — Environment 값
+### S3 / Secrets Manager / Parameter Store — Environment 값
 
 ```kotlin
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreValue
@@ -228,6 +247,8 @@ JSON secret 은 dot notation 으로 flatten 된다. 설정한 path 아래의 par
 dot-separated key 로 매핑되고, 두 source 모두 `prefix` 를 앞에 붙인다.
 `@SecretsValue` 와 `@ParameterStoreValue` 는 일반 Spring `@Value` placeholder 문법을
 사용한다.
+S3 config JSON object 도 같은 방식으로 flatten 된다. S3 `.properties` 와 YAML object 는
+Spring Boot property-source loader 로 읽은 뒤 설정된 `prefix` 를 앞에 붙인다.
 
 ### Exposed — AWS-backed database registry
 
@@ -270,6 +291,7 @@ binding 된다. Pool lifecycle 은 registry 가 소유하므로 alias bean 은 p
 ### S3 — Coroutines 템플릿
 
 ```kotlin
+import io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
 import io.bluetape4k.aws.spring.s3.S3TransferOperations
 import java.nio.file.Path
@@ -277,6 +299,7 @@ import java.nio.file.Path
 class DocumentStorage(
     private val s3: S3Operations,
     private val transfer: S3TransferOperations,
+    private val encryptedS3: S3ClientSideEncryptionOperations,
 ) {
     suspend fun save(bucket: String, key: String, contents: String) {
         s3.upload(bucket, key, contents)
@@ -291,6 +314,15 @@ class DocumentStorage(
     suspend fun saveLargeFile(bucket: String, key: String, source: Path) {
         transfer.uploadFile(bucket, key, source)
     }
+
+    suspend fun saveSecret(bucket: String, key: String, contents: String) {
+        encryptedS3.uploadEncrypted(
+            bucket = bucket,
+            key = key,
+            bytes = contents.encodeToByteArray(),
+            contentType = "text/plain",
+        )
+    }
 }
 ```
 
@@ -302,6 +334,13 @@ small-object API 다. `S3TransferOperations` 는
 transfer 를 수행한다. CRT-backed transfer 가 필요하면 CRT-backed `S3AsyncClient`
 bean 을 제공하면 된다. transfer manager auto-configuration 은 그 bean 을 재사용하므로
 기본 S3 사용자에게 CRT dependency 를 강제하지 않는다.
+
+`S3ClientSideEncryptionOperations` 는
+`bluetape4k.aws.s3.client-side-encryption.enabled=true` 이고 `KmsOperations`
+bean 이 있을 때 활성화된다. AWS KMS data key 를 생성하고 object byte 를 로컬에서
+AES-GCM 으로 암호화한 뒤 encrypted data key 와 nonce 를 S3 metadata 에 저장한다.
+이 helper 는 byte-array object 용이다. multipart 또는 streaming client-side
+encryption 은 지원하지 않으며, metadata format 은 AWS Encryption SDK 와 호환되지 않는다.
 
 ### SQS — 송수신
 

@@ -4,6 +4,8 @@ import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizationContext
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
+import io.bluetape4k.aws.spring.kms.KmsDataKey
+import io.bluetape4k.aws.spring.kms.KmsOperations
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
@@ -22,6 +24,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder
 import software.amazon.awssdk.core.ResponseBytes
+import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.S3ClientBuilder
@@ -87,6 +90,27 @@ class S3AutoConfigurationTest {
                 context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
                 context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 0
                 context.getBean(S3Operations::class.java) shouldBeSameInstanceAs NoopS3Operations
+            }
+    }
+
+    @Test
+    fun `client side encryption operations are opt in and require KMS operations`() {
+        contextRunner.run { context ->
+            context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 0
+        }
+
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.s3.client-side-encryption.enabled=true")
+            .run { context ->
+                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 0
+            }
+
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.s3.client-side-encryption.enabled=true")
+            .withBean(KmsOperations::class.java, { FixedKmsOperations })
+            .run { context ->
+                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3ClientSideEncryptionTemplate::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -227,6 +251,38 @@ class S3AutoConfigurationTest {
             val calls: MutableList<String> = mutableListOf()
         }
     }
+}
+
+private object FixedKmsOperations: KmsOperations {
+    private val plaintextKey = ByteArray(32) { (it + 1).toByte() }
+    private val encryptedKey = "encrypted-data-key".encodeToByteArray()
+
+    override suspend fun encrypt(
+        plaintext: ByteArray,
+        keyId: String?,
+        encryptionContext: Map<String, String>,
+    ): ByteArray =
+        plaintext.copyOf()
+
+    override suspend fun decrypt(
+        ciphertext: ByteArray,
+        keyId: String?,
+        encryptionContext: Map<String, String>,
+    ): ByteArray =
+        plaintextKey.copyOf()
+
+    override suspend fun generateDataKey(
+        keyId: String?,
+        keySpec: DataKeySpec?,
+        numberOfBytes: Int?,
+        encryptionContext: Map<String, String>,
+        useCache: Boolean,
+    ): KmsDataKey =
+        KmsDataKey(
+            keyId = keyId ?: "test-key",
+            plaintext = plaintextKey,
+            encryptedDataKey = encryptedKey,
+        )
 }
 
 private object NoopS3TransferOperations: S3TransferOperations {

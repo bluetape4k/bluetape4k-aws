@@ -5,12 +5,14 @@ import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
+import io.bluetape4k.aws.spring.kms.KmsOperations
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
 import io.bluetape4k.aws.spring.resolveClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -101,6 +103,21 @@ class S3AutoConfiguration {
         properties: S3Properties,
     ): S3CoroutinesTemplate =
         S3CoroutinesTemplate(s3AsyncClient, s3Client, s3Presigner, properties)
+
+    @Bean
+    @ConditionalOnBean(KmsOperations::class)
+    @ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.s3.client-side-encryption",
+        name = ["enabled"],
+        havingValue = "true",
+    )
+    fun s3ClientSideEncryptionOperations(
+        s3AsyncClient: S3AsyncClient,
+        kmsOperations: KmsOperations,
+        properties: S3Properties,
+    ): S3ClientSideEncryptionOperations =
+        S3ClientSideEncryptionTemplate(s3AsyncClient, kmsOperations, properties)
 
     private fun resolveCredentialsProvider(
         provider: ObjectProvider<AwsCredentialsProvider>,
