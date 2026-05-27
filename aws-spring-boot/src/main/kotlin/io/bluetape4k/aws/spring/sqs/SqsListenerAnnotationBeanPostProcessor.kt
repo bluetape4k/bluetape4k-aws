@@ -16,6 +16,8 @@ class SqsListenerAnnotationBeanPostProcessor(
     private val properties: SqsProperties,
     private val operations: SqsOperations,
     private val registry: SqsMessageListenerContainerRegistry,
+    private val messageConverter: SqsMessageConverter,
+    private val interceptors: List<SqsListenerInterceptor>,
 ): BeanPostProcessor {
 
     @Throws(BeansException::class)
@@ -54,9 +56,10 @@ class SqsListenerAnnotationBeanPostProcessor(
             phase = effective.phase,
             concurrency = effective.concurrency,
             stopTimeoutMillis = effective.stopTimeoutMillis,
+            retry = effective.retry,
         )
-        val invoker = SqsListenerMethodInvoker(bean, AopUtils.selectInvocableMethod(method, bean.javaClass))
-        registry.register(id, SqsMessageListenerContainer(endpoint, operations, invoker))
+        val invoker = SqsListenerMethodInvoker(bean, AopUtils.selectInvocableMethod(method, bean.javaClass), messageConverter)
+        registry.register(id, SqsMessageListenerContainer(endpoint, operations, invoker, interceptors))
     }
 
     private fun resolveValue(value: String, name: String): String {

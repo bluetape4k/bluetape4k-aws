@@ -8,27 +8,31 @@ import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.valueParameters
 import kotlin.reflect.jvm.kotlinFunction
 import kotlin.reflect.jvm.jvmErasure
-import software.amazon.awssdk.services.sqs.model.Message
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
+import software.amazon.awssdk.services.sqs.model.Message
 
 internal class SqsListenerMethodInvoker(
     private val bean: Any,
     private val method: Method,
+    private val messageConverter: SqsMessageConverter,
 ) {
     private val kotlinFunction: KFunction<*>? = method.kotlinFunction
-    private val parameterKind: ParameterKind = ParameterKind.from(method, kotlinFunction)
+    private val parameterPlan: ParameterPlan = ParameterPlan.from(method, kotlinFunction)
     private val suspendFunction: Boolean = kotlinFunction?.isSuspend == true
 
-    suspend fun invoke(message: SqsReceivedMessage) {
-        val argument = parameterKind.argument(message)
+    val manualAcknowledgement: Boolean
+        get() = parameterPlan.manualAcknowledgement
+
+    suspend fun invoke(message: SqsReceivedMessage, acknowledgement: SqsAcknowledgement) {
+        val arguments = parameterPlan.arguments(message, acknowledgement, messageConverter)
         try {
             withContext(Dispatchers.IO) {
                 if (suspendFunction) {
-                    requireNotNull(kotlinFunction).callSuspend(bean, argument)
+                    requireNotNull(kotlinFunction).callSuspend(bean, *arguments)
                 } else {
                     method.isAccessible = true
-                    method.invoke(bean, argument)
+                    method.invoke(bean, *arguments)
                 }
             }
         } catch (e: InvocationTargetException) {
@@ -42,43 +46,79 @@ internal class SqsListenerMethodInvoker(
         }
     }
 
-    private enum class ParameterKind {
-        BODY,
-        MESSAGE,
-        RECEIVED;
+    private data class ParameterPlan(
+        val parameters: List<Parameter>,
+    ) {
+        val manualAcknowledgement: Boolean =
+            parameters.any { it == Parameter.ACKNOWLEDGEMENT }
 
-        fun argument(message: SqsReceivedMessage): Any =
+        fun arguments(
+            message: SqsReceivedMessage,
+            acknowledgement: SqsAcknowledgement,
+            converter: SqsMessageConverter,
+        ): Array<Any> =
+            parameters.map { it.argument(message, acknowledgement, converter) }.toTypedArray()
+
+        companion object {
+            fun from(method: Method, kotlinFunction: KFunction<*>?): ParameterPlan {
+                val parameterTypes = parameterTypes(method, kotlinFunction)
+                require(parameterTypes.isNotEmpty()) {
+                    "@SqsListener method must have at least one parameter: ${method.toGenericString()}"
+                }
+                require(parameterTypes.size <= 2) {
+                    "@SqsListener method supports at most two parameters: ${method.toGenericString()}"
+                }
+
+                val parameters = parameterTypes.map { Parameter.from(it) }
+                require(parameters.count { it == Parameter.ACKNOWLEDGEMENT } <= 1) {
+                    "@SqsListener method supports at most one SqsAcknowledgement parameter: ${method.toGenericString()}"
+                }
+                require(parameters.count { it != Parameter.ACKNOWLEDGEMENT } <= 1) {
+                    "@SqsListener method supports at most one message payload parameter: ${method.toGenericString()}"
+                }
+                return ParameterPlan(parameters)
+            }
+
+            private fun parameterTypes(method: Method, kotlinFunction: KFunction<*>?): List<Class<*>> =
+                if (kotlinFunction?.isSuspend == true) {
+                    kotlinFunction.valueParameters.map { it.type.jvmErasure.java }
+                } else {
+                    method.parameterTypes.toList()
+                }
+        }
+    }
+
+    private sealed class Parameter {
+        data object Body: Parameter()
+        data object AwsMessage: Parameter()
+        data object ReceivedMessage: Parameter()
+        data object Acknowledgement: Parameter()
+        data class Converted(val targetType: Class<*>): Parameter()
+
+        fun argument(
+            message: SqsReceivedMessage,
+            acknowledgement: SqsAcknowledgement,
+            converter: SqsMessageConverter,
+        ): Any =
             when (this) {
-                BODY     -> message.body
-                MESSAGE  -> message.message
-                RECEIVED -> message
+                Body            -> message.body
+                AwsMessage      -> message.message
+                ReceivedMessage -> message
+                Acknowledgement -> acknowledgement
+                is Converted    -> converter.convert(message, targetType)
             }
 
         companion object {
-            fun from(method: Method, kotlinFunction: KFunction<*>?): ParameterKind {
-                val parameterType = if (kotlinFunction?.isSuspend == true) {
-                    val parameters = kotlinFunction.valueParameters
-                    require(parameters.size == 1) {
-                        "@SqsListener method must have exactly one parameter: ${method.toGenericString()}"
-                    }
-                    parameters.single().type.jvmErasure.java
-                } else {
-                    val parameters = method.parameterTypes
-                    require(parameters.size == 1) {
-                        "@SqsListener method must have exactly one parameter: ${method.toGenericString()}"
-                    }
-                    parameters.single()
-                }
+            val ACKNOWLEDGEMENT: Parameter = Acknowledgement
 
-                return when (parameterType) {
-                    String::class.java -> BODY
-                    Message::class.java -> MESSAGE
-                    SqsReceivedMessage::class.java -> RECEIVED
-                    else -> throw IllegalArgumentException(
-                        "Unsupported @SqsListener parameter type: ${parameterType.name} on ${method.toGenericString()}"
-                    )
+            fun from(parameterType: Class<*>): Parameter =
+                when (parameterType) {
+                    String::class.java -> Body
+                    Message::class.java -> AwsMessage
+                    SqsReceivedMessage::class.java -> ReceivedMessage
+                    SqsAcknowledgement::class.java -> Acknowledgement
+                    else -> Converted(parameterType)
                 }
             }
         }
-    }
 }

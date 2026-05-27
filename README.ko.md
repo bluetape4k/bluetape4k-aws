@@ -217,6 +217,12 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+        retry:
+          max-attempts: 2
+          initial-backoff: 100ms
+          max-backoff: 2s
+          multiplier: 2.0
+          jitter-ratio: 0.2
     secrets-manager:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -344,7 +350,10 @@ Parameter Store의 `/config/app/db/password`는 `path: /config/app`,
 
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsListener
+import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
 import io.bluetape4k.aws.spring.sqs.SqsOperations
+
+data class OrderEvent(val id: String, val total: Long)
 
 class OrderQueue(
     private val sqs: SqsOperations,
@@ -358,8 +367,20 @@ class OrderQueue(
         // 실패한 메시지는 자동 삭제되지 않으므로 핸들러는 idempotent하게 작성합니다.
         process(body)
     }
+
+    @SqsListener("\${orders-json.queue-url}")
+    suspend fun handle(event: OrderEvent, acknowledgement: SqsAcknowledgement) {
+        process(event)
+        acknowledgement.acknowledge()
+    }
 }
 ```
+
+Typed listener payload 는 `SqsMessageConverter` 로 활성화된다. Jackson 3
+`ObjectMapper` bean 이 있으면 converter 가 자동 등록된다. `SqsAcknowledgement` 를
+선언하면 manual acknowledgement 모드가 된다. Listener retry, backoff, jitter,
+`SqsListenerInterceptor` hook 으로 운영 환경의 redelivery 와 observability 흐름을
+구성할 수 있다.
 
 ### KMS — Spring Boot Coroutines Encryptor
 

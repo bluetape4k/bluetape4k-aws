@@ -123,6 +123,12 @@ bluetape4k:
         error-visibility-timeout-seconds: 0
         concurrency: 2
         stop-timeout-millis: 25000
+        retry:
+          max-attempts: 2
+          initial-backoff: 100ms
+          max-backoff: 2s
+          multiplier: 2.0
+          jitter-ratio: 0.2
       queues:
         orders:
           url: http://localhost:4566/000000000000/orders
@@ -479,8 +485,11 @@ before processing notifications or confirming subscriptions.
 
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsListener
+import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
 import org.springframework.stereotype.Component
+
+data class OrderEvent(val id: String, val total: Long)
 
 @Component
 class OrderListener {
@@ -488,18 +497,33 @@ class OrderListener {
     suspend fun onMessage(message: SqsReceivedMessage) {
         // process; throw to re-deliver
     }
+
+    @SqsListener(queue = "orders-json")
+    suspend fun onTypedMessage(event: OrderEvent, acknowledgement: SqsAcknowledgement) {
+        process(event)
+        acknowledgement.acknowledge()
+    }
 }
 ```
 
-Listener method may receive `String`, AWS SDK `Message`, or `SqsReceivedMessage`.
+Listener method may receive `String`, AWS SDK `Message`, `SqsReceivedMessage`,
+or a typed payload when a `SqsMessageConverter` bean is present. A Jackson 3
+converter is auto-registered when `tools.jackson.databind.ObjectMapper` is
+available. Declaring `SqsAcknowledgement` switches the listener to manual
+acknowledgement, so the container does not delete the message unless the handler
+calls `acknowledge()`.
 SpEL is not supported in `queue`; `${...}` placeholders are.
 If `bluetape4k.aws.sqs.queues.orders.url` is configured, `queue = "orders"`
 uses that URL directly.
 Listener acknowledgement is delete-on-success: the container deletes the message
 only after the listener method returns normally. If the listener throws, the
 message is not deleted; when `error-visibility-timeout-seconds` is configured,
-the container changes visibility so retry timing is explicit. `stop-timeout-millis`
-bounds container shutdown after poller cancellation.
+the container changes visibility so retry timing is explicit. `listener.retry`
+adds in-process retry attempts with linear/exponential backoff and optional
+jitter before the final failure path. Register `SqsListenerInterceptor` beans to
+observe receive, handler, ack/nack, and failure phases with Micrometer or a
+logging/tracing library. `stop-timeout-millis` bounds container shutdown after
+poller cancellation.
 
 FIFO queue metadata is preserved in `SqsReceivedMessage` when messages are
 received. Use `SqsSendRequest` to publish FIFO messages with group and

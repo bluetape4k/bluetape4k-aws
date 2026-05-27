@@ -120,6 +120,12 @@ bluetape4k:
         error-visibility-timeout-seconds: 0
         concurrency: 2
         stop-timeout-millis: 25000
+        retry:
+          max-attempts: 2
+          initial-backoff: 100ms
+          max-backoff: 2s
+          multiplier: 2.0
+          jitter-ratio: 0.2
       queues:
         orders:
           url: http://localhost:4566/000000000000/orders
@@ -472,8 +478,11 @@ subscription confirmation 전에 certificate chain, signature, signature version
 
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsListener
+import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
 import org.springframework.stereotype.Component
+
+data class OrderEvent(val id: String, val total: Long)
 
 @Component
 class OrderListener {
@@ -481,18 +490,29 @@ class OrderListener {
     suspend fun onMessage(message: SqsReceivedMessage) {
         // 처리. 예외 throw 시 재배달.
     }
+
+    @SqsListener(queue = "orders-json")
+    suspend fun onTypedMessage(event: OrderEvent, acknowledgement: SqsAcknowledgement) {
+        process(event)
+        acknowledgement.acknowledge()
+    }
 }
 ```
 
-리스너 메서드는 `String`, AWS SDK `Message`, `SqsReceivedMessage` 중 하나를
-인자로 받을 수 있다. `queue` 에는 SpEL 을 지원하지 않으며 `${...}` 플레이스홀더는
-지원한다.
+리스너 메서드는 `String`, AWS SDK `Message`, `SqsReceivedMessage`, 또는
+`SqsMessageConverter` bean 이 있을 때 typed payload 를 인자로 받을 수 있다. Jackson 3
+`ObjectMapper` 가 있으면 converter 가 자동 등록된다. `SqsAcknowledgement` 를 선언하면
+manual acknowledgement 모드가 되어 handler 가 `acknowledge()` 를 호출할 때만 메시지를
+삭제한다. `queue` 에는 SpEL 을 지원하지 않으며 `${...}` 플레이스홀더는 지원한다.
 `bluetape4k.aws.sqs.queues.orders.url` 을 설정하면 `queue = "orders"` 는 해당 URL을
 직접 사용한다.
 리스너 ack 는 성공 시 삭제 방식이다. 리스너 메서드가 정상 반환된 뒤에만 메시지를
 삭제하고, 예외가 발생하면 삭제하지 않는다. `error-visibility-timeout-seconds` 를
 설정하면 실패 메시지의 visibility 를 명시적으로 바꿔 재시도 타이밍을 제어한다.
-`stop-timeout-millis` 는 poller 취소 후 컨테이너 종료 대기 시간을 제한한다.
+`listener.retry` 는 최종 실패 처리 전에 in-process retry 를 수행하며 linear/exponential
+backoff 와 optional jitter 를 지원한다. `SqsListenerInterceptor` bean 을 등록하면
+receive, handler, ack/nack, failure 단계를 Micrometer나 logging/tracing library로
+관찰할 수 있다. `stop-timeout-millis` 는 poller 취소 후 컨테이너 종료 대기 시간을 제한한다.
 
 FIFO 큐 메타데이터는 수신 시 `SqsReceivedMessage` 에 유지된다. FIFO 메시지는
 `SqsSendRequest` 로 group/deduplication ID 를 지정해 발송한다.

@@ -11,4 +11,5 @@ internal data class SqsListenerEndpoint(
     val phase: Int,
     val concurrency: Int,
     val stopTimeoutMillis: Long,
+    val retry: SqsProperties.Retry,
 )

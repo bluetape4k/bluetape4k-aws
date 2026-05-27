@@ -75,8 +75,10 @@ hardening slice.
   - Foundation for Ktor S3/SQS plugin defaults, client ownership, and lifecycle
     consistency.
 - #193 `feat(aws-spring-boot): add advanced SQS listener conversion, ack, retry, and observability`
-  - Spring Boot SQS production controls: conversion, acknowledgement, retry,
-    interceptors, and metrics/observability.
+  - Spring Boot SQS production controls implemented as typed conversion,
+    manual acknowledgement, retry/backoff, and interceptor-based observability
+    hooks. Direct Micrometer auto-instrumentation can remain a follow-up over
+    the interceptor contract.
 - #199 `feat(aws-ktor): add advanced SQS conversion, manual ack, retry, and observability`
   - Ktor SQS consumer runtime production controls.
 - #192 `feat(aws-spring-boot): add advanced S3 encryption, config reload, access grants, and vector support`

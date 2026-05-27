@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sqs
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
+import java.time.Duration
 
 /**
  * SQS 자동 설정 속성.
@@ -25,6 +26,7 @@ data class SqsProperties(
         val errorVisibilityTimeoutSeconds: Int? = null,
         val concurrency: Int = 1,
         val stopTimeoutMillis: Long = 25_000,
+        val retry: Retry = Retry(),
     ) : Serializable {
         init {
             require(maxMessages in 1..10) { "maxMessages must be between 1 and 10." }
@@ -37,6 +39,31 @@ data class SqsProperties(
 
         companion object {
             private const val serialVersionUID: Long = -3742913463973215849L
+        }
+    }
+
+    /**
+     * In-process listener retry policy before the final SQS failure path.
+     */
+    data class Retry(
+        val maxAttempts: Int = 1,
+        val initialBackoff: Duration = Duration.ZERO,
+        val maxBackoff: Duration? = null,
+        val multiplier: Double = 2.0,
+        val jitterRatio: Double = 0.0,
+    ) : Serializable {
+        init {
+            require(maxAttempts >= 1) { "maxAttempts must be greater than or equal to 1." }
+            require(!initialBackoff.isNegative) { "initialBackoff must not be negative." }
+            maxBackoff?.let {
+                require(!it.isNegative) { "maxBackoff must not be negative." }
+            }
+            require(multiplier >= 1.0) { "multiplier must be greater than or equal to 1.0." }
+            require(jitterRatio in 0.0..1.0) { "jitterRatio must be between 0.0 and 1.0." }
+        }
+
+        companion object {
+            private const val serialVersionUID: Long = 7867091222466790232L
         }
     }
 

@@ -8,6 +8,7 @@ import io.bluetape4k.assertions.shouldContainAll
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.codec.Base58
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
@@ -17,8 +18,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import tools.jackson.databind.ObjectMapper
 import java.time.Duration
-import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -42,6 +43,7 @@ class SqsListenerAwsEmulatorTest {
                 AutoConfigurations.of(
                     AwsAutoConfiguration::class.java,
                     SqsAutoConfiguration::class.java,
+                    SqsJacksonMessageConverterAutoConfiguration::class.java,
                 )
             )
             .withUserConfiguration(userConfiguration)
@@ -59,7 +61,7 @@ class SqsListenerAwsEmulatorTest {
     private fun createQueue(operations: SqsOperations, prefix: String): String {
         lateinit var queueUrl: String
         runSuspendIO {
-            queueUrl = operations.createQueue("$prefix-${UUID.randomUUID()}")
+            queueUrl = operations.createQueue("$prefix-${Base58.randomString(8)}")
         }
         return queueUrl
     }
@@ -190,6 +192,79 @@ class SqsListenerAwsEmulatorTest {
         }
     }
 
+    @Test
+    fun `listener converts JSON payload with Jackson converter`() {
+        val bootstrap = contextRunner(queueUrl = "bootstrap", NoListenerConfig::class.java)
+            .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
+
+        bootstrap.run { bootstrapContext ->
+            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-json")
+
+            contextRunner(queueUrl, JsonListenerConfig::class.java).run { context ->
+                val operations = context.getBean(SqsOperations::class.java)
+                val listener = context.getBean(JsonListener::class.java)
+
+                runSuspendIO { operations.send(queueUrl, """{"id":"order-1","amount":42}""") }
+
+                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                    listener.payloads.map { it.id } shouldContain "order-1"
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `manual acknowledgement deletes message only when listener acknowledges`() {
+        val bootstrap = contextRunner(queueUrl = "bootstrap", NoListenerConfig::class.java)
+            .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
+
+        bootstrap.run { bootstrapContext ->
+            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-manual-ack")
+
+            contextRunner(queueUrl, ManualAckListenerConfig::class.java).run { context ->
+                val operations = context.getBean(SqsOperations::class.java)
+                val listener = context.getBean(ManualAckListener::class.java)
+
+                runSuspendIO { operations.send(queueUrl, "manual-ack-ok") }
+
+                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                    listener.bodies shouldContain "manual-ack-ok"
+                }
+                runSuspendIO {
+                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                        operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `listener retries before failing visibility handling`() {
+        val bootstrap = contextRunner(queueUrl = "bootstrap", NoListenerConfig::class.java)
+            .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
+
+        bootstrap.run { bootstrapContext ->
+            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-retry")
+
+            contextRunner(
+                queueUrl,
+                RetryListenerConfig::class.java,
+                "bluetape4k.aws.sqs.listener.retry.max-attempts=2",
+            ).run { context ->
+                val operations = context.getBean(SqsOperations::class.java)
+                val listener = context.getBean(RetryListener::class.java)
+
+                runSuspendIO { operations.send(queueUrl, "retry-ok") }
+
+                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                    listener.bodies shouldContain "retry-ok"
+                    listener.attempts.get() shouldBeGreaterOrEqualTo 2
+                }
+            }
+        }
+    }
+
     @Configuration(proxyBeanMethods = false)
     internal class NoListenerConfig
 
@@ -204,6 +279,68 @@ class SqsListenerAwsEmulatorTest {
 
         @SqsListener("\${test.queue-url}")
         fun handle(body: String) {
+            bodies += body
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class JsonListenerConfig {
+        @Bean
+        fun objectMapper(): ObjectMapper = ObjectMapper()
+
+        @Bean
+        fun listener(): JsonListener = JsonListener()
+    }
+
+    internal class OrderPayload : java.io.Serializable {
+        var id: String = ""
+        var amount: Int = 0
+
+        companion object {
+            private const val serialVersionUID: Long = -8185867051860667321L
+        }
+    }
+
+    internal class JsonListener {
+        val payloads: MutableList<OrderPayload> = CopyOnWriteArrayList()
+
+        @SqsListener("\${test.queue-url}")
+        fun handle(payload: OrderPayload) {
+            payloads += payload
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class ManualAckListenerConfig {
+        @Bean
+        fun listener(): ManualAckListener = ManualAckListener()
+    }
+
+    internal class ManualAckListener {
+        val bodies: MutableList<String> = CopyOnWriteArrayList()
+
+        @SqsListener("\${test.queue-url}")
+        suspend fun handle(body: String, acknowledgement: SqsAcknowledgement) {
+            bodies += body
+            acknowledgement.acknowledge()
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class RetryListenerConfig {
+        @Bean
+        fun listener(): RetryListener = RetryListener()
+    }
+
+    internal class RetryListener {
+        val attempts = AtomicInteger()
+        val bodies: MutableList<String> = CopyOnWriteArrayList()
+
+        @SqsListener("\${test.queue-url}")
+        fun handle(body: String) {
+            if (attempts.incrementAndGet() == 1) {
+                error("retry once")
+            }
             bodies += body
         }
     }
