@@ -48,4 +48,12 @@ class SqsSnsExampleController(
     @GetMapping("/listener/messages")
     fun listenerMessages(): List<String> =
         receivedOrderStore.recent()
+
+    @GetMapping("/listener/orders")
+    fun typedListenerOrders(): List<OrderPayload> =
+        receivedOrderStore.recentTyped()
+
+    @GetMapping("/listener/events")
+    fun listenerEvents(): List<ListenerEvent> =
+        receivedOrderStore.events()
 }

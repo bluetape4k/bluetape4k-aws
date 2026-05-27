@@ -16,6 +16,7 @@ dependencies {
 
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.aws2.s3)
+    implementation(libs.aws2.kms)
     implementation(libs.aws2.auth)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)

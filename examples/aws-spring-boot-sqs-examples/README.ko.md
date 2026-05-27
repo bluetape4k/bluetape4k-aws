@@ -4,7 +4,8 @@
 
 `aws-spring-boot` 의 SQS/SNS 지원을 보여주는 Spring Boot 4 실행 예제다.
 LocalStack 을 개발 환경으로 사용하며 REST 발송, `@SqsListener` 수신, SNS → SQS
-팬아웃, DLQ redrive 설정을 포함한다.
+팬아웃, DLQ redrive 설정을 포함한다. 또한 typed payload 변환, manual acknowledgement,
+listener retry/backoff, interceptor event 예제도 함께 제공한다.
 
 ## 아키텍처
 
@@ -35,6 +36,9 @@ bluetape4k:
       listener:
         max-messages: 1
         wait-time-seconds: 1
+        retry:
+          max-attempts: 2
+          initial-backoff: PT0S
       queues:
         orders:
           url: http://localhost:4566/000000000000/orders
@@ -46,6 +50,8 @@ example:
   aws:
     sqs:
       listener-queue: orders
+      typed-listener-queue: typed-orders
+      retry-listener-queue: retry-orders
 ```
 
 `example.aws.sqs.listener-queue` 는 다음 listener 에서 사용한다.
@@ -54,6 +60,12 @@ example:
 @SqsListener(queue = "\${example.aws.sqs.listener-queue:orders}")
 fun handle(message: String) { ... }
 ```
+
+예제에는 JSON을 `OrderPayload`로 받는 typed listener와
+`SqsAcknowledgement.acknowledge()`를 직접 호출하는 manual-ack listener가 포함됩니다.
+retry listener는 첫 처리에서 실패하고 두 번째 in-process attempt에서 성공합니다.
+`RecordingSqsListenerInterceptor`는 listener 처리와 acknowledgement event를 기록하므로,
+애플리케이션에서는 같은 hook을 metrics 또는 tracing tag로 확장할 수 있습니다.
 
 ## REST API
 
@@ -66,6 +78,8 @@ fun handle(message: String) { ... }
 | `POST` | `/spring/sqs/topics/messages` | SNS 메시지 publish |
 | `POST` | `/spring/sqs/dlq` | DLQ redrive policy 가 있는 source queue 생성 |
 | `GET` | `/spring/sqs/listener/messages` | listener 가 처리한 메시지 조회 |
+| `GET` | `/spring/sqs/listener/orders` | manual-ack listener가 처리한 typed JSON order 조회 |
+| `GET` | `/spring/sqs/listener/events` | listener 처리 전후 interceptor event 조회 |
 
 ## Fanout 요청
 

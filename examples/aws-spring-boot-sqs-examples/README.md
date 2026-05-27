@@ -4,7 +4,9 @@
 
 Runnable Spring Boot 4 example for `aws-spring-boot` SQS and SNS support. It
 uses LocalStack for development and shows REST publishing, `@SqsListener`
-consumption, SNS to SQS fanout, and DLQ redrive setup.
+consumption, typed listener payload conversion, manual acknowledgement,
+listener retry/backoff, interceptor events, SNS to SQS fanout, and DLQ redrive
+setup.
 
 ## Architecture
 
@@ -35,6 +37,9 @@ bluetape4k:
       listener:
         max-messages: 1
         wait-time-seconds: 1
+        retry:
+          max-attempts: 2
+          initial-backoff: PT0S
       queues:
         orders:
           url: http://localhost:4566/000000000000/orders
@@ -46,6 +51,8 @@ example:
   aws:
     sqs:
       listener-queue: orders
+      typed-listener-queue: typed-orders
+      retry-listener-queue: retry-orders
 ```
 
 `example.aws.sqs.listener-queue` is consumed by:
@@ -54,6 +61,12 @@ example:
 @SqsListener(queue = "\${example.aws.sqs.listener-queue:orders}")
 fun handle(message: String) { ... }
 ```
+
+The example also includes a typed listener that receives JSON into
+`OrderPayload` and calls `SqsAcknowledgement.acknowledge()` manually, plus a
+retry listener that fails once and succeeds on the second in-process attempt.
+`RecordingSqsListenerInterceptor` captures listener and acknowledgement events
+so applications can adapt the same hook for metrics or tracing tags.
 
 ## REST API
 
@@ -66,6 +79,8 @@ fun handle(message: String) { ... }
 | `POST` | `/spring/sqs/topics/messages` | Publish an SNS message. |
 | `POST` | `/spring/sqs/dlq` | Create a source queue with a DLQ redrive policy. |
 | `GET` | `/spring/sqs/listener/messages` | Read messages handled by the listener. |
+| `GET` | `/spring/sqs/listener/orders` | Read typed JSON orders handled by the manual-ack listener. |
+| `GET` | `/spring/sqs/listener/events` | Read interceptor events captured around listener processing. |
 
 ## Fanout Request
 

@@ -60,8 +60,8 @@ applications to adopt a single framework or dependency stack.
 | `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |
 | `aws-ktor-exposed-examples` | not published | Ktor 3 `AwsExposedPlugin` example with PostgreSQL Testcontainers and route-level Exposed transactions |
 | `aws-spring-boot-dynamodb-examples` | not published | Spring Boot 4 DynamoDB repository examples for coroutine service flows |
-| `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled, tested, and wired for Spring AOT |
-| `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, `@SqsListener`, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
+| `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`, presigned URLs, and optional KMS-backed client-side encryption; compiled, tested, and wired for Spring AOT |
+| `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor events, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-exposed-examples` | not published | Spring Boot 4 MVC/Exposed example backed by `AwsExposedAutoConfiguration` and PostgreSQL Testcontainers |
 
 ### Component Map
