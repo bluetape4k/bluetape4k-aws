@@ -19,6 +19,7 @@ import org.springframework.core.Ordered
 import software.amazon.awssdk.awscore.client.builder.AwsAsyncClientBuilder
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
+import tools.jackson.databind.ObjectMapper
 
 class SqsAutoConfigurationTest {
 
@@ -27,6 +28,7 @@ class SqsAutoConfigurationTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 SqsAutoConfiguration::class.java,
+                SqsJacksonMessageConverterAutoConfiguration::class.java,
             )
         )
         .withPropertyValues("bluetape4k.aws.sqs.region=us-east-1")
@@ -40,6 +42,7 @@ class SqsAutoConfigurationTest {
             context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(SqsMessageListenerContainerRegistry::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(SqsListenerAnnotationBeanPostProcessor::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SqsMessageConverter::class.java).size shouldBeEqualTo 0
         }
     }
 
@@ -150,6 +153,30 @@ class SqsAutoConfigurationTest {
     }
 
     @Test
+    fun `invalid listener retry properties fail binding`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.listener.retry.max-attempts=0")
+            .run { context ->
+                context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "maxAttempts"
+            }
+    }
+
+    @Test
+    fun `Jackson message converter registers when ObjectMapper is available`() {
+        contextRunner
+            .withBean(ObjectMapper::class.java, { ObjectMapper() })
+            .run { context ->
+                context.getBeansOfType(SqsMessageConverter::class.java).size shouldBeEqualTo 1
+                context.getBean(SqsMessageConverter::class.java)
+                    .javaClass shouldBeEqualTo JacksonSqsMessageConverter::class.java
+            }
+    }
+
+    @Test
     fun `SpEL queue value fails fast`() {
         contextRunner
             .withUserConfiguration(SpelListenerConfig::class.java)
@@ -184,7 +211,7 @@ class SqsAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                messages shouldContain "@SqsListener method must have exactly one parameter"
+                messages shouldContain "@SqsListener method must have at least one parameter"
             }
     }
 

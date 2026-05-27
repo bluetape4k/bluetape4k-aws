@@ -223,6 +223,12 @@ bluetape4k:
         max-messages: 10
         wait-time-seconds: 20
         concurrency: 2
+        retry:
+          max-attempts: 2
+          initial-backoff: 100ms
+          max-backoff: 2s
+          multiplier: 2.0
+          jitter-ratio: 0.2
     secrets-manager:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -351,7 +357,10 @@ with `prefix: app`, the properties become `app.db.username` and
 
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsListener
+import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
 import io.bluetape4k.aws.spring.sqs.SqsOperations
+
+data class OrderEvent(val id: String, val total: Long)
 
 class OrderQueue(
     private val sqs: SqsOperations,
@@ -365,8 +374,20 @@ class OrderQueue(
         // Make handlers idempotent; failed messages are not deleted automatically.
         process(body)
     }
+
+    @SqsListener("\${orders-json.queue-url}")
+    suspend fun handle(event: OrderEvent, acknowledgement: SqsAcknowledgement) {
+        process(event)
+        acknowledgement.acknowledge()
+    }
 }
 ```
+
+Typed listener payloads are enabled by a `SqsMessageConverter`; a Jackson 3
+converter is auto-registered when an `ObjectMapper` bean is present. Declaring
+`SqsAcknowledgement` switches the listener to manual acknowledgement. Listener
+retry, backoff, jitter, and `SqsListenerInterceptor` hooks cover production
+redelivery and observability scenarios.
 
 ### KMS — Spring Boot Coroutines Encryptor
 

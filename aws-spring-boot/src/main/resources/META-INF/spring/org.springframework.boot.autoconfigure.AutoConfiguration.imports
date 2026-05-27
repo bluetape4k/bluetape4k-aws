@@ -11,3 +11,4 @@ io.bluetape4k.aws.spring.ses.SesAutoConfiguration
 io.bluetape4k.aws.spring.ses.SesJavaMailSenderAutoConfiguration
 io.bluetape4k.aws.spring.sns.SnsAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration
+io.bluetape4k.aws.spring.sqs.SqsJacksonMessageConverterAutoConfiguration

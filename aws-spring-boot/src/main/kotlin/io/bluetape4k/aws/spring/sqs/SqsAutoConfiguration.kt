@@ -78,8 +78,17 @@ class SqsAutoConfiguration {
         properties: SqsProperties,
         operations: SqsOperations,
         registry: SqsMessageListenerContainerRegistry,
+        messageConverter: ObjectProvider<SqsMessageConverter>,
+        interceptors: ObjectProvider<SqsListenerInterceptor>,
     ): SqsListenerAnnotationBeanPostProcessor =
-        SqsListenerAnnotationBeanPostProcessor(environment, properties, operations, registry)
+        SqsListenerAnnotationBeanPostProcessor(
+            environment = environment,
+            properties = properties,
+            operations = operations,
+            registry = registry,
+            messageConverter = messageConverter.getIfAvailable { NoopSqsMessageConverter },
+            interceptors = interceptors.orderedStream().toList(),
+        )
 
     private fun resolveCredentialsProvider(
         provider: ObjectProvider<AwsCredentialsProvider>,
