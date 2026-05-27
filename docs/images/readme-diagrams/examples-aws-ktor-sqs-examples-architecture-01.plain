@@ -1,15 +1,15 @@
-graph 1 17.558 1.5868
-node client 0.8275 0.90278 1.655 0.5 "HTTP client or test" rounded,filled box #38bdf8 #e0f2fe
-node routes 3.3471 0.90278 1.9675 0.71125 "Ktor queue routes\nsend, create, delete,\nattributes, inspect state" rounded,filled box #22c55e #dcfce7
-node plugin 10.546 0.27778 1.8425 0.53417 "SqsConsumer plugin\npolling coroutines" rounded,filled box #f59e0b #fef3c7
-node hooks 13.154 0.36111 1.9571 0.71125 "Advanced hooks\nmanual ack/nack,\ninterceptors, observers" rounded,filled box #a855f7 #f3e8ff
-node store 16.2 0.90278 2.7175 0.71125 "In-memory inspection\nreceived bodies, lifecycle events,\nobservation summaries" rounded,filled box #ef4444 #fee2e2
-node sqs 7.2694 0.38889 2.0717 0.73448 "Floci-backed SQS\nthrough SqsAsyncClient" rounded,filled cylinder #f97316 #fff7ed
-edge client routes 4 1.6595 0.90278 1.6595 0.90278 2.2226 0.90278 2.2226 0.90278 solid #64748b
-edge routes store 4 4.3343 1.0073 4.3343 1.0073 14.699 1.0073 14.699 1.0073 "read inspection" 10.546 1.5087 solid #64748b
-edge routes sqs 4 4.3369 0.65164 4.3369 0.65164 6.0963 0.65164 6.0963 0.65164 "publish and manage" 5.2822 0.75868 solid #64748b
-edge plugin hooks 4 11.473 0.27778 11.473 0.27778 12.037 0.27778 12.037 0.27778 solid #64748b
-edge plugin sqs 4 9.6202 0.19605 9.6202 0.19605 8.4439 0.19605 8.4439 0.19605 "long poll" 8.965 0.078125 solid #64748b
-edge hooks store 4 14.139 0.63194 14.139 0.63194 14.7 0.63194 14.7 0.63194 solid #64748b
-edge sqs plugin 4 8.3107 0.37046 8.3107 0.37046 9.4826 0.37046 9.4826 0.37046 messages 8.965 0.74479 solid #64748b
+graph 1 18.215 1.7688
+node client 0.88479 1.0327 1.7696 0.5 "HTTP client or test" rounded,filled box #38bdf8 #e0f2fe
+node routes 3.5294 1.0327 2.1029 0.89875 "Ktor queue routes\nsend, create, delete,\nattributes, inspect state" rounded,filled box #22c55e #dcfce7
+node plugin 10.9 0.37993 1.78 0.65917 "SqsConsumer plugin\npolling coroutines" rounded,filled box #f59e0b #fef3c7
+node hooks 13.581 0.44937 2.1654 0.89875 "Advanced hooks\nmanual ack/nack,\ninterceptors, observers" rounded,filled box #a855f7 #f3e8ff
+node store 16.793 1.0327 2.8425 0.89875 "In-memory inspection\nreceived bodies, lifecycle events,\nobservation summaries" rounded,filled box #ef4444 #fee2e2
+node sqs 7.6236 0.46326 2.0717 0.90635 "Floci-backed SQS\nthrough SqsAsyncClient" rounded,filled cylinder #f97316 #fff7ed
+edge client routes 4 1.7764 1.0327 1.7764 1.0327 2.3366 1.0327 2.3366 1.0327 solid #64748b
+edge routes store 4 4.5868 1.1993 4.5868 1.1993 15.234 1.1993 15.234 1.1993 "read inspection" 10.9 1.6855 solid #64748b
+edge routes sqs 4 4.5837 0.74989 4.5837 0.74989 6.4478 0.74989 6.4478 0.74989 "publish and manage" 5.5843 0.87993 solid #64748b
+edge plugin hooks 4 11.797 0.37993 11.797 0.37993 12.359 0.37993 12.359 0.37993 solid #64748b
+edge plugin sqs 4 10.005 0.27007 10.005 0.27007 8.7986 0.27007 8.7986 0.27007 "long poll" 9.3348 0.1716 solid #64748b
+edge hooks store 4 14.669 0.74104 14.669 0.74104 15.23 0.74104 15.23 0.74104 solid #64748b
+edge sqs plugin 4 8.6648 0.48979 8.6648 0.48979 9.8693 0.48979 9.8693 0.48979 messages 9.3348 0.85215 solid #64748b
 stop

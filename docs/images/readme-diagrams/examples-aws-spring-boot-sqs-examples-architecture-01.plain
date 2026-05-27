@@ -1,15 +1,15 @@
-graph 1 15.063 1.5064
-node client 0.8275 0.73931 1.655 0.5 "HTTP client or test" rounded,filled box #38bdf8 #e0f2fe
-node api 3.8523 0.73931 2.9779 0.53417 "Spring WebFlux API\nqueue, message, fanout, DLQ routes" rounded,filled box #22c55e #dcfce7
-node ops 7.476 1.2393 2.8529 0.53417 "SqsOperations and SnsOperations\ncoroutine templates" rounded,filled box #f59e0b #fef3c7
-node listener 13.944 0.73931 2.2383 0.53417 "@SqsListener container\nreceives configured queue" rounded,filled box #a855f7 #f3e8ff
-node fanout 7.476 0.26708 2.4883 0.53417 "SNS to SQS fanout\nqueue policy and subscription" rounded,filled box #ef4444 #fee2e2
-node localstack 10.558 0.73931 1.8946 0.73448 "LocalStack SQS/SNS\nor AWS endpoints" rounded,filled cylinder #f97316 #fff7ed
-edge client api 4 1.658 0.73931 1.658 0.73931 2.2255 0.73931 2.2255 0.73931 solid #64748b
-edge api ops 7 5.3441 0.8262 5.7823 0.8262 6.1465 0.8262 6.1465 0.8262 6.1465 0.8262 6.1465 0.84019 6.1465 0.84019 solid #64748b
-edge api fanout 7 5.3435 0.68019 6.344 0.68019 7.4799 0.68019 7.4799 0.68019 7.4799 0.68019 7.4799 0.6662 7.4799 0.6662 solid #64748b
-edge ops localstack 4 8.9088 1.0394 8.9088 1.0394 9.4685 1.0394 9.4685 1.0394 solid #64748b
-edge listener localstack 4 12.821 0.65028 12.821 0.65028 11.644 0.65028 11.644 0.65028 poll 12.165 0.4841 solid #64748b
-edge fanout localstack 4 8.7252 0.45312 8.7252 0.45312 9.4698 0.45312 9.4698 0.45312 solid #64748b
-edge localstack listener 4 11.51 0.82833 11.51 0.82833 12.684 0.82833 12.684 0.82833 messages 12.165 1.1508 solid #64748b
+graph 1 15.365 1.7564
+node client 0.88479 0.87125 1.7696 0.5 "HTTP client or test" rounded,filled box #38bdf8 #e0f2fe
+node api 4.0085 0.87125 3.0613 0.65917 "Spring WebFlux API\nqueue, message, fanout, DLQ routes" rounded,filled box #22c55e #dcfce7
+node ops 7.6687 1.4268 2.8425 0.65917 "SqsOperations and SnsOperations\ncoroutine templates" rounded,filled box #f59e0b #fef3c7
+node listener 14.189 0.87125 2.3529 0.65917 "@SqsListener container\nreceives configured queue" rounded,filled box #a855f7 #f3e8ff
+node fanout 7.6687 0.32958 2.5092 0.65917 "SNS to SQS fanout\nqueue policy and subscription" rounded,filled box #ef4444 #fee2e2
+node localstack 10.766 0.87125 1.9363 0.90635 "LocalStack SQS/SNS\nor AWS endpoints" rounded,filled cylinder #f97316 #fff7ed
+edge client api 4 1.7758 0.87125 1.7758 0.87125 2.337 0.87125 2.337 0.87125 solid #64748b
+edge api ops 4 5.5449 1.149 5.5449 1.149 6.1057 1.149 6.1057 1.149 solid #64748b
+edge api fanout 4 5.5449 0.60042 5.5449 0.60042 6.2723 0.60042 6.2723 0.60042 solid #64748b
+edge ops localstack 4 9.0952 1.2108 9.0952 1.2108 9.6585 1.2108 9.6585 1.2108 solid #64748b
+edge listener localstack 4 13.006 0.76139 13.006 0.76139 11.875 0.76139 11.875 0.76139 poll 12.373 0.62125 solid #64748b
+edge fanout localstack 4 8.9287 0.53862 8.9287 0.53862 9.657 0.53862 9.657 0.53862 solid #64748b
+edge localstack listener 4 11.738 0.98111 11.738 0.98111 12.872 0.98111 12.872 0.98111 messages 12.373 1.3018 solid #64748b
 stop
