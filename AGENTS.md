@@ -65,3 +65,13 @@ For release work, check the workspace governance docs first:
 - AWS Kotlin SDK clients hold connection pools and threads; always close them.
   Use `withXxxClient { }` for short-lived clients and explicit `close()` for
   application-scoped clients.
+
+## Cross-Repo Lesson Guards
+
+- Before issue, PR, workflow, release, or module-registration work, query GNO
+  for this repo in both `bluetape4k-github` and `bluetape4k-docs`.
+- When adding, moving, renaming, or removing a module, update README locale
+  sets, CI path filters/jobs, Nightly or examples coverage, coverage artifacts,
+  and any BOM/catalog constraints in the same branch.
+- Keep Kover/Codecov as visibility unless an explicit policy decision requires
+  a hard gate. Run Testcontainers-backed AWS emulator checks sequentially.
