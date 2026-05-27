@@ -5,13 +5,13 @@
   <marker id="inherit" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M 0 1 L 12 6 L 0 11 Z" fill="#ffffff" stroke="#758297" stroke-width="1.8"/></marker>
   <style>
     .canvas{fill:#f7f9fc}.frame{fill:#fff;stroke:#d8e0ea;stroke-width:1.5}
-    .title{font-family:"Architects Daughter","Comic Sans MS","Comic Sans",cursive;font-size:43px;font-weight:400;fill:#102033}
-    .subtitle{font-family:"Comic Sans MS","Comic Sans","Comic Neue",Arial,sans-serif;font-size:15px;font-weight:400;fill:#536273}
-    .label{font-family:"Architects Daughter","Comic Sans MS","Comic Sans",cursive;font-size:25px;font-weight:400;fill:#102033}
-    .smallLabel{font-family:"Architects Daughter","Comic Sans MS","Comic Sans",cursive;font-size:21px;font-weight:400;fill:#102033}
-    .mono{font-family:"Comic Sans MS","Comic Sans","Comic Neue",Arial,sans-serif;font-size:12px;font-weight:400;fill:#102033}
-    .small{font-family:"Comic Sans MS","Comic Sans","Comic Neue",Arial,sans-serif;font-size:12px;font-weight:400;fill:#536273}
-    .strong{font-family:"Comic Sans MS","Comic Sans","Comic Neue",Arial,sans-serif;font-size:13px;font-weight:400;fill:#102033}
+    .title{font-family:"Architects Daughter",cursive;font-size:43px;font-weight:400;fill:#102033}
+    .subtitle{font-family:"Comic Mono",monospace;font-size:15px;font-weight:400;fill:#536273}
+    .label{font-family:"Architects Daughter",cursive;font-size:25px;font-weight:400;fill:#102033}
+    .smallLabel{font-family:"Architects Daughter",cursive;font-size:21px;font-weight:400;fill:#102033}
+    .mono{font-family:"Comic Mono",monospace;font-size:12px;font-weight:400;fill:#102033}
+    .small{font-family:"Comic Mono",monospace;font-size:12px;font-weight:400;fill:#536273}
+    .strong{font-family:"Comic Mono",monospace;font-size:13px;font-weight:400;fill:#102033}
     .card{stroke-width:2.1;filter:url(#shadow)}.compartment{stroke-width:1.5;fill:none}
     .line{stroke:#758297;stroke-width:2.1;fill:none;marker-end:url(#openArrow)}
     .plainLine{stroke:#758297;stroke-width:2.1;fill:none}
