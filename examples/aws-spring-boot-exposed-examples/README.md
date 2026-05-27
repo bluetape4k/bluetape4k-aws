@@ -6,6 +6,10 @@ Spring Boot 4 MVC examples for the `aws-spring-boot` and `bluetape4k-aws-exposed
 auto-configuration path. The module uses PostgreSQL through Testcontainers and
 does not require AWS credentials for local tests.
 
+## Architecture
+
+![aws spring boot exposed examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-spring-boot-exposed-examples-architecture-01.png)
+
 ## API
 
 | Method | Path | Description |

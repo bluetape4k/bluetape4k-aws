@@ -1,0 +1,12 @@
+graph 1 7.4206 4.9902
+node apps 1.6348 4.7231 3.2696 0.53417 "Application code\nKotlin service, Ktor app, Spring Boot app" rounded,filled box #38bdf8 #e0f2fe
+node facade 2.9126 3.3382 3.8425 0.53417 "bluetape4k AWS APIs\ncoroutine adapters, templates, plugins, registries" rounded,filled box #f59e0b #fef3c7
+node sdk 3.1903 1.9534 3.0821 0.53417 "AWS SDKs\nJava SDK v2 and AWS SDK for Kotlin" rounded,filled box #22c55e #dcfce7
+node infra 4.4403 0.48898 3.5925 0.97797 "AWS services or local emulators\nS3, SQS, SNS, DynamoDB, KMS, SES,\nCloudWatch, Kinesis, STS, JDBC databases" rounded,filled cylinder #f97316 #fff7ed
+node tests 5.5931 4.7231 3.655 0.53417 "Verification examples\nLocalStack, Floci, PostgreSQL Testcontainers" rounded,filled box #a855f7 #f3e8ff
+edge apps facade 4 2.1305 4.4495 2.1305 4.4495 2.1305 3.747 2.1305 3.747 solid #64748b
+edge facade sdk 4 3.1903 3.0646 3.1903 3.0646 3.1903 2.3621 3.1903 2.3621 solid #64748b
+edge sdk infra 4 3.6877 1.6848 3.6877 1.6848 3.6877 1.1167 3.6877 1.1167 solid #64748b
+edge tests facade 4 4.2997 4.4495 4.2997 4.4495 4.2997 3.747 4.2997 3.747 exercise 4.0844 4.0307 dashed #64748b
+edge tests infra 4 5.5352 4.4518 5.5352 4.4518 5.5352 1.1125 5.5352 1.1125 emulate 5.8327 2.6458 dashed #64748b
+stop

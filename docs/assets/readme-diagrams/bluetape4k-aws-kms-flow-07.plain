@@ -1,0 +1,16 @@
+graph 1 5.8842 6.8775
+node request 2.989 6.6105 2.6862 0.53417 "Application calls KmsOperations\nwith plaintext or ciphertext" rounded,filled box #38bdf8 #e0f2fe
+node defaults 2.989 5.3818 2.0092 0.53417 "Apply configured key id\nand encryption context" rounded,filled box #22c55e #dcfce7
+node cache 2.989 4.1532 2.5404 0.53417 "Use DataKeyCache only for\nenvelope-encryption data keys" rounded,filled box #64748b #f1f5f9
+node encrypt 1.4056 2.9246 2.8112 0.53417 "Encrypt path\nKMS Encrypt or GenerateDataKey" rounded,filled box #f59e0b #fef3c7
+node decrypt 4.5723 2.9246 2.6237 0.53417 "Decrypt path\nKMS Decrypt with same context" rounded,filled box #ef4444 #fee2e2
+node response 2.989 0.26708 2.5925 0.53417 "Return ciphertext, plaintext,\nor encrypted data key metadata" rounded,filled box #a855f7 #f3e8ff
+node kms 2.989 1.5959 2.8842 0.73448 "AWS KMS\nsmall secrets and key management" rounded,filled cylinder #f97316 #fff7ed
+edge request defaults 4 2.989 6.3378 2.989 6.3378 2.989 5.7894 2.989 5.7894 solid #64748b
+edge defaults cache 4 2.989 5.1092 2.989 5.1092 2.989 4.5608 2.989 4.5608 solid #64748b
+edge cache encrypt 4 2.265 3.8806 2.265 3.8806 2.265 3.3322 2.265 3.3322 solid #64748b
+edge cache decrypt 4 3.7598 3.8806 3.7598 3.8806 3.7598 3.3322 3.7598 3.3322 solid #64748b
+edge encrypt kms 4 2.1791 2.6557 2.1791 2.6557 2.1791 2.1007 2.1791 2.1007 solid #64748b
+edge decrypt kms 4 3.8457 2.6557 3.8457 2.6557 3.8457 2.1007 3.8457 2.1007 solid #64748b
+edge kms response 4 2.989 1.2222 2.989 1.2222 2.989 0.67678 2.989 0.67678 solid #64748b
+stop

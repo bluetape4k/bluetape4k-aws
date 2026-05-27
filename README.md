@@ -33,7 +33,7 @@ applications to adopt a single framework or dependency stack.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
   consumer runtime, DynamoDB server repository support, and Ktor server/client
   examples.
-- **Local integration testing** — LocalStack/FLOCI emulator wiring through
+- **Local integration testing** — LocalStack/Floci emulator wiring through
   Testcontainers and Nightly examples.
 
 <!-- README_VISUAL_OVERVIEW:START -->
@@ -55,12 +55,14 @@ applications to adopt a single framework or dependency stack.
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, pluggable settings resolution, Hikari-backed Exposed `Database` creation, and default/named database registry support |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, and DynamoDB server repository plugin |
-| `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by LocalStack/FLOCI |
-| `aws-ktor-s3-examples` | not published | LocalStack-oriented examples for `S3KtorClient`; compiled and tested in Nightly |
-| `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example with local emulator wiring |
+| `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by LocalStack |
+| `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
+| `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |
+| `aws-ktor-exposed-examples` | not published | Ktor 3 `AwsExposedPlugin` example with PostgreSQL Testcontainers and route-level Exposed transactions |
 | `aws-spring-boot-dynamodb-examples` | not published | Spring Boot 4 DynamoDB repository examples for coroutine service flows |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, `@SqsListener`, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
+| `aws-spring-boot-exposed-examples` | not published | Spring Boot 4 MVC/Exposed example backed by `AwsExposedAutoConfiguration` and PostgreSQL Testcontainers |
 
 ### Component Map
 
@@ -105,7 +107,7 @@ you need at runtime.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.2.2")
 
     // Add the AWS Java SDK v2 services you use
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -135,7 +137,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.2.2")
 
     // Add the AWS Kotlin SDK services you use
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -153,7 +155,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.2.2")
 
     // Add the AWS Java SDK v2 services you use at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -240,74 +242,11 @@ small.
 
 #### KMS Spring Boot Components
 
-```plantuml
-@startuml
-skinparam componentStyle rectangle
-skinparam shadowing false
-
-package "Application" {
-  component "Service" as Service
-  component "TextEncryptor\n(optional)" as TextEncryptor
-}
-
-package "aws-spring-boot" {
-  component "KmsAutoConfiguration" as Auto
-  component "KmsProperties" as Props
-  component "KmsOperations" as Ops
-  component "KmsCoroutinesEncryptor" as Encryptor
-  component "DataKeyCache" as Cache
-  component "KmsTextEncryptor" as Adapter
-}
-
-package "AWS SDK v2" {
-  component "KmsAsyncClient" as Client
-}
-
-cloud "AWS KMS\nor LocalStack" as Kms
-
-Auto --> Props
-Auto --> Client
-Auto --> Cache
-Auto --> Encryptor
-Ops <|.. Encryptor
-TextEncryptor <|.. Adapter
-Adapter --> Ops
-Service --> Ops
-Service --> TextEncryptor
-Encryptor --> Client
-Encryptor --> Cache
-Client --> Kms
-@enduml
-```
+![KMS Spring Boot components](docs/assets/readme-diagrams/bluetape4k-aws-kms-components-06.png)
 
 #### KMS Encrypt / Decrypt Flow
 
-```plantuml
-@startuml
-skinparam shadowing false
-actor App
-participant "KmsOperations" as Ops
-participant "KmsCoroutinesEncryptor" as Encryptor
-participant "KmsAsyncClient" as Client
-participant "AWS KMS" as Kms
-
-App -> Ops: encrypt(plaintext, keyId?, context?)
-Ops -> Encryptor: apply default key and context
-Encryptor -> Client: Encrypt
-Client -> Kms: encrypt request
-Kms --> Client: ciphertextBlob
-Client --> Encryptor: EncryptResponse
-Encryptor --> App: ciphertext bytes
-
-App -> Ops: decrypt(ciphertext, keyId?, context?)
-Ops -> Encryptor: apply default context
-Encryptor -> Client: Decrypt
-Client -> Kms: decrypt request
-Kms --> Client: plaintext
-Client --> Encryptor: DecryptResponse
-Encryptor --> App: plaintext bytes
-@enduml
-```
+![KMS encrypt and decrypt flow](docs/assets/readme-diagrams/bluetape4k-aws-kms-flow-07.png)
 
 ---
 
@@ -590,18 +529,20 @@ suspend fun publishMetric(namespace: String, value: Double) {
 
 ## Test Environment
 
-Integration tests use **LocalStack** (default) or **Floci** as a local AWS emulator, started
-automatically via Testcontainers.
+Integration tests use Testcontainers-backed emulators. Java/Kotlin SDK wrapper
+tests and most example modules default to **LocalStack**; `aws-spring-boot` and
+`aws-ktor-sqs-examples` default to **Floci**. Override the emulator per test task
+with `-Dbluetape4k.aws.emulator=...` when the module supports both.
 
 ```bash
-# Run with LocalStack (default)
+# LocalStack-backed modules
 ./gradlew :bluetape4k-aws-java:test
 ./gradlew :bluetape4k-aws-kotlin:test
 ./gradlew :bluetape4k-aws-exposed:test
 
-# Run with Floci emulator
-./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
-./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=floci
+# Floci-backed defaults
+./gradlew :bluetape4k-aws-spring-boot:test
+./gradlew :aws-ktor-sqs-examples:test
 ```
 
 ---

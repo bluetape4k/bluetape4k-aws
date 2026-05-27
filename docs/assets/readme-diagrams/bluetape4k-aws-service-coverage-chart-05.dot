@@ -1,0 +1,20 @@
+digraph Bluetape4kAwsServiceCoverage {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.60, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.12,0.08", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.4, arrowsize=0.7]
+
+  services [label="Service families\nS3, SQS, SNS, DynamoDB,\nKMS, SES/SESv2, Secrets,\nParameter Store, CloudWatch,\nKinesis, STS", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  java [label="aws-java\nbroad Java SDK v2 wrappers\nsync, async, suspend adapters", fillcolor="#e0f2fe", color="#38bdf8"]
+  kotlin [label="aws-kotlin\nnative suspend helpers\nDSL builders and models", fillcolor="#dcfce7", color="#22c55e"]
+  spring [label="aws-spring-boot\noperations and auto-config\nS3, SQS, SNS, DynamoDB,\nKMS, SES, env sources, Exposed", fillcolor="#fef3c7", color="#f59e0b"]
+  ktor [label="aws-ktor\nruntime integrations\nSigV4, S3 REST, SQS consumer,\nDynamoDB plugin, Exposed plugin", fillcolor="#fee2e2", color="#ef4444"]
+  examples [label="examples\nKtor and Spring Boot smoke paths\nS3, SQS/SNS, DynamoDB, Exposed", fillcolor="#f3e8ff", color="#a855f7"]
+
+  services -> java [label="SDK v2"]
+  services -> kotlin [label="Kotlin SDK"]
+  services -> spring [label="Boot 4"]
+  services -> ktor [label="Ktor 3"]
+  spring -> examples
+  ktor -> examples
+}

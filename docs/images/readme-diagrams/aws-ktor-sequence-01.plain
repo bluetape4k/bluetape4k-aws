@@ -1,0 +1,20 @@
+graph 1 6.3397 9.4539
+node install 4.2181 9.2039 2.7487 0.5 "1. Ktor app installs SqsConsumer" rounded,filled box #38bdf8 #e0f2fe
+node defaults 4.2181 8.0063 2.7071 0.53417 "2. Resolve AwsKtorCore defaults\nor service-local SQS config" rounded,filled box #22c55e #dcfce7
+node runtime 4.2181 6.7916 2.7904 0.53417 "3. Build SqsConsumerRuntime\nclient, converters, handlers, hooks" rounded,filled box #f59e0b #fef3c7
+node start 4.2181 5.5768 2.53 0.53417 "4. ApplicationStarted launches\npoller coroutines" rounded,filled box #a855f7 #f3e8ff
+node receive 4.2181 4.3792 3.2487 0.5 "5. Long poll SQS and convert messages" rounded,filled box #ef4444 #fee2e2
+node handle 2.9542 3.1816 2.8946 0.53417 "6. Run interceptors, invoke handler,\nrecord observer event" rounded,filled box #94a3b8 #f8fafc
+node ack 2.3015 1.8245 3.2071 0.53417 "7. ack deletes message\nnack changes visibility or DLQ-forwards" rounded,filled box #f97316 #fff7ed
+node stop 1.5515 0.36724 3.1029 0.53417 "8. ApplicationStopping cancels pollers\nand drains active handlers" rounded,filled box #64748b #f1f5f9
+node sqs 4.8431 0.36724 1.6967 0.73448 "Amazon SQS\nor Floci/LocalStack" rounded,filled cylinder #f97316 #fff7ed
+edge install defaults 4 4.2181 8.9499 4.2181 8.9499 4.2181 8.4123 4.2181 8.4123 solid #64748b
+edge defaults runtime 4 4.2181 7.7367 4.2181 7.7367 4.2181 7.2003 4.2181 7.2003 solid #64748b
+edge runtime start 4 4.2181 6.522 4.2181 6.522 4.2181 5.9856 4.2181 5.9856 solid #64748b
+edge start receive 4 4.2181 5.3051 4.2181 5.3051 4.2181 4.7692 4.2181 4.7692 solid #64748b
+edge receive handle 4 3.4976 4.1252 3.4976 4.1252 3.4976 3.5875 3.4976 3.5875 solid #64748b
+edge receive sqs 4 5.0465 4.1282 5.0465 4.1282 5.0465 0.87165 5.0465 0.87165 ReceiveMessage 5.8136 2.503 solid #64748b
+edge handle ack 4 2.706 2.9134 2.706 2.9134 2.706 2.2324 2.706 2.2324 solid #64748b
+edge ack stop 4 1.9004 1.5572 1.9004 1.5572 1.9004 0.77346 1.9004 0.77346 solid #64748b
+edge ack sqs 7 3.504 1.5534 3.504 1.2151 3.504 0.68056 3.504 0.68056 3.504 0.68056 3.8555 0.68056 3.8555 0.68056 "DeleteMessage or ChangeMessageVisibility" 3.64 1.1459 solid #64748b
+stop

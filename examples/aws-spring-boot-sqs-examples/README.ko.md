@@ -6,6 +6,10 @@
 LocalStack 을 개발 환경으로 사용하며 REST 발송, `@SqsListener` 수신, SNS → SQS
 팬아웃, DLQ redrive 설정을 포함한다.
 
+## 아키텍처
+
+![aws spring boot sqs examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-spring-boot-sqs-examples-architecture-01.png)
+
 ## 의존성 형태
 
 ```kotlin

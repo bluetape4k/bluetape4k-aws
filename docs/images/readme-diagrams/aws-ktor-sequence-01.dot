@@ -1,0 +1,19 @@
+digraph AwsKtorSqsSequence {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.65, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  install [label="1. Ktor app installs SqsConsumer", fillcolor="#e0f2fe", color="#38bdf8"]
+  defaults [label="2. Resolve AwsKtorCore defaults\nor service-local SQS config", fillcolor="#dcfce7", color="#22c55e"]
+  runtime [label="3. Build SqsConsumerRuntime\nclient, converters, handlers, hooks", fillcolor="#fef3c7", color="#f59e0b"]
+  start [label="4. ApplicationStarted launches\npoller coroutines", fillcolor="#f3e8ff", color="#a855f7"]
+  receive [label="5. Long poll SQS and convert messages", fillcolor="#fee2e2", color="#ef4444"]
+  handle [label="6. Run interceptors, invoke handler,\nrecord observer event", fillcolor="#f8fafc", color="#94a3b8"]
+  ack [label="7. ack deletes message\nnack changes visibility or DLQ-forwards", fillcolor="#fff7ed", color="#f97316"]
+  stop [label="8. ApplicationStopping cancels pollers\nand drains active handlers", fillcolor="#f1f5f9", color="#64748b"]
+  sqs [label="Amazon SQS\nor Floci/LocalStack", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  install -> defaults -> runtime -> start -> receive -> handle -> ack -> stop
+  receive -> sqs [label="ReceiveMessage"]
+  ack -> sqs [label="DeleteMessage or ChangeMessageVisibility"]
+}

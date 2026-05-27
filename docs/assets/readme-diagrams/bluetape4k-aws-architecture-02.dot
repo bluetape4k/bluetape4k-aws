@@ -1,0 +1,20 @@
+digraph Bluetape4kAwsJavaArchitecture {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  app [label="Application code", fillcolor="#e0f2fe", color="#38bdf8"]
+  sync [label="Sync extensions\nrequest builders and helpers", fillcolor="#f8fafc", color="#94a3b8"]
+  async [label="Async extensions\nCompletableFuture helpers", fillcolor="#e0f2fe", color="#38bdf8"]
+  suspend [label="Coroutine extensions\nsuspend wrappers", fillcolor="#dcfce7", color="#22c55e"]
+  clients [label="AWS Java SDK v2 clients\nS3AsyncClient, SqsAsyncClient,\nDynamoDbEnhancedAsyncClient, etc.", fillcolor="#fef3c7", color="#f59e0b"]
+  aws [label="AWS services\nor LocalStack/Floci", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  app -> sync
+  app -> async
+  app -> suspend
+  sync -> clients
+  async -> clients
+  suspend -> clients
+  clients -> aws
+}

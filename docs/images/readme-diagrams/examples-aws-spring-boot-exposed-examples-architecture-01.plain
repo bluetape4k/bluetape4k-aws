@@ -1,0 +1,14 @@
+graph 1 15.664 1.6175
+node client 0.8275 1.3504 1.655 0.5 "HTTP client or test" rounded,filled box #38bdf8 #e0f2fe
+node controller 3.696 1.3504 1.4258 0.53417 "OrderController\nMVC endpoints" rounded,filled box #22c55e #dcfce7
+node service 7.7538 1.0865 2.2279 0.53417 "OrderService\nowns Exposed transaction" rounded,filled box #f59e0b #fef3c7
+node repo 11.348 1.0865 2.28 0.53417 "OrderRepository\nassumes active transaction" rounded,filled box #a855f7 #f3e8ff
+node autoconfig 3.696 0.26708 2.6654 0.53417 "AwsExposedAutoConfiguration\nDataSource, Database, Registry" rounded,filled box #ef4444 #fee2e2
+node pg 14.43 0.40597 2.4675 0.73448 "PostgreSQL Testcontainer\nor production JDBC database" rounded,filled cylinder #f97316 #fff7ed
+edge client controller 4 1.6611 1.3504 1.6611 1.3504 2.8415 1.3504 2.8415 1.3504 solid #64748b
+edge controller service 4 4.4122 1.2185 4.4122 1.2185 6.4999 1.2185 6.4999 1.2185 solid #64748b
+edge service repo 4 8.8714 1.0865 8.8714 1.0865 10.071 1.0865 10.071 1.0865 solid #64748b
+edge repo pg 7 11.344 0.81486 11.344 0.7279 11.344 0.65369 11.344 0.65369 11.344 0.65369 13.057 0.65369 13.057 0.65369 solid #64748b
+edge autoconfig service 7 4.7194 0.53754 4.7194 0.72881 4.7194 0.95139 4.7194 0.95139 4.7194 0.95139 6.5012 0.95139 6.5012 0.95139 "Database bean" 5.8343 0.97021 solid #64748b
+edge autoconfig pg 4 5.0338 0.28645 5.0338 0.28645 13.056 0.28645 13.056 0.28645 "Hikari pool" 9.5379 0.22021 solid #64748b
+stop

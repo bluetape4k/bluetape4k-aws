@@ -1,5 +1,5 @@
 digraph AwsKtorS3AdvancedArchitecture {
-  graph [rankdir=TB, bgcolor="transparent", nodesep=0.55, ranksep=0.75]
+  graph [rankdir=TB, bgcolor="#ffffff", nodesep=0.55, ranksep=0.75]
   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.14,0.08"]
   edge [color="#64748b", penwidth=1.8, arrowsize=0.8]
 
@@ -9,7 +9,7 @@ digraph AwsKtorS3AdvancedArchitecture {
   sse [label="Server-side Encryption Headers", fillcolor="#fdecef", color="#dc6b82"]
   cse [label="Client-side Envelope Encryption", fillcolor="#eef2ff", color="#8b7cf6"]
   datakey [label="S3KtorDataKeyProvider", fillcolor="#f3e8ff", color="#a36ad6"]
-  config [label="S3 Config Object Helpers", fillcolor="#f7fbef", color="#80a857"]
+  config [label="S3 Config Data Helpers", fillcolor="#f7fbef", color="#80a857"]
   sigv4 [label="AwsSigV4Plugin", fillcolor="#eef2ff", color="#8b7cf6"]
   s3 [label="AWS S3 / Floci / LocalStack", shape=cylinder, fillcolor="#fff7ed", color="#f59e0b"]
   optional [label="Application-owned SDKs\nAccess Grants / S3 Vector / KMS", fillcolor="#f8fafc", color="#94a3b8"]

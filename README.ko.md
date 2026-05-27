@@ -27,7 +27,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 - **서비스 범위** — DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener, auto-configuration 제공
 - **Ktor 3 통합** — SigV4 signing, coroutine S3 client, SQS consumer runtime, DynamoDB server repository, Ktor server/client 예제
-- **로컬 통합 테스트** — Testcontainers 기반 LocalStack/FLOCI emulator와 Nightly 예제 검증
+- **로컬 통합 테스트** — Testcontainers 기반 LocalStack/Floci emulator와 Nightly 예제 검증
 
 <!-- README_VISUAL_OVERVIEW:START -->
 ## Overview Diagram
@@ -48,12 +48,14 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, pluggable settings resolver, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, DynamoDB, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin |
-| `aws-ktor-dynamodb-examples` | 배포 안 함 | LocalStack/FLOCI 기반 Ktor 3 DynamoDB server repository 예제 |
-| `aws-ktor-s3-examples` | 배포 안 함 | `S3KtorClient`용 LocalStack 중심 예제. Nightly에서 컴파일 및 테스트 |
-| `aws-ktor-sqs-examples` | 배포 안 함 | 로컬 emulator wiring을 포함한 Ktor 3 SQS consumer/runtime 예제 |
+| `aws-ktor-dynamodb-examples` | 배포 안 함 | LocalStack 기반 Ktor 3 DynamoDB server repository 예제 |
+| `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
+| `aws-ktor-sqs-examples` | 배포 안 함 | Floci 기반 Ktor 3 SQS consumer/runtime 예제. Manual ack/nack, retry-once redelivery, interceptor, observer event 포함 |
+| `aws-ktor-exposed-examples` | 배포 안 함 | PostgreSQL Testcontainers와 route-level Exposed transaction을 사용하는 Ktor 3 `AwsExposedPlugin` 예제 |
 | `aws-spring-boot-dynamodb-examples` | 배포 안 함 | Coroutine service flow용 Spring Boot 4 DynamoDB repository 예제 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`용 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 | `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, `@SqsListener`, LocalStack SNS subscription fanout 을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
+| `aws-spring-boot-exposed-examples` | 배포 안 함 | `AwsExposedAutoConfiguration`과 PostgreSQL Testcontainers를 사용하는 Spring Boot 4 MVC/Exposed 예제 |
 
 ### 구성요소 맵
 
@@ -98,7 +100,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.2.2")
 
     // 사용할 AWS Java SDK v2 서비스 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -128,7 +130,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.2.2")
 
     // 사용할 AWS Kotlin SDK 서비스 추가
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -146,7 +148,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.2.2")
 
     // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -234,74 +236,11 @@ token, credential, 설정 secret처럼 짧은 값은 `KmsOperations.encrypt`를 
 
 #### KMS Spring Boot 구성요소
 
-```plantuml
-@startuml
-skinparam componentStyle rectangle
-skinparam shadowing false
-
-package "Application" {
-  component "Service" as Service
-  component "TextEncryptor\n(optional)" as TextEncryptor
-}
-
-package "aws-spring-boot" {
-  component "KmsAutoConfiguration" as Auto
-  component "KmsProperties" as Props
-  component "KmsOperations" as Ops
-  component "KmsCoroutinesEncryptor" as Encryptor
-  component "DataKeyCache" as Cache
-  component "KmsTextEncryptor" as Adapter
-}
-
-package "AWS SDK v2" {
-  component "KmsAsyncClient" as Client
-}
-
-cloud "AWS KMS\nor LocalStack" as Kms
-
-Auto --> Props
-Auto --> Client
-Auto --> Cache
-Auto --> Encryptor
-Ops <|.. Encryptor
-TextEncryptor <|.. Adapter
-Adapter --> Ops
-Service --> Ops
-Service --> TextEncryptor
-Encryptor --> Client
-Encryptor --> Cache
-Client --> Kms
-@enduml
-```
+![KMS Spring Boot components](docs/assets/readme-diagrams/bluetape4k-aws-kms-components-06.png)
 
 #### KMS 암호화 / 복호화 흐름
 
-```plantuml
-@startuml
-skinparam shadowing false
-actor App
-participant "KmsOperations" as Ops
-participant "KmsCoroutinesEncryptor" as Encryptor
-participant "KmsAsyncClient" as Client
-participant "AWS KMS" as Kms
-
-App -> Ops: encrypt(plaintext, keyId?, context?)
-Ops -> Encryptor: 기본 key와 context 적용
-Encryptor -> Client: Encrypt
-Client -> Kms: encrypt request
-Kms --> Client: ciphertextBlob
-Client --> Encryptor: EncryptResponse
-Encryptor --> App: ciphertext bytes
-
-App -> Ops: decrypt(ciphertext, keyId?, context?)
-Ops -> Encryptor: 기본 context 적용
-Encryptor -> Client: Decrypt
-Client -> Kms: decrypt request
-Kms --> Client: plaintext
-Client --> Encryptor: DecryptResponse
-Encryptor --> App: plaintext bytes
-@enduml
-```
+![KMS encrypt and decrypt flow](docs/assets/readme-diagrams/bluetape4k-aws-kms-flow-07.png)
 
 ---
 
@@ -584,18 +523,20 @@ suspend fun publishMetric(namespace: String, value: Double) {
 
 ## 테스트 환경
 
-통합 테스트는 Testcontainers를 통해 자동으로 시작되는 **LocalStack** (기본값) 또는
-**Floci** 를 로컬 AWS 에뮬레이터로 사용합니다.
+통합 테스트는 Testcontainers 기반 emulator를 사용합니다. Java/Kotlin SDK wrapper
+테스트와 대부분의 예제 모듈은 **LocalStack** 을 기본값으로 사용하고,
+`aws-spring-boot` 및 `aws-ktor-sqs-examples` 는 **Floci** 를 기본값으로 사용합니다.
+모듈이 둘 다 지원하는 경우 `-Dbluetape4k.aws.emulator=...` 로 전환할 수 있습니다.
 
 ```bash
-# LocalStack으로 실행 (기본값)
+# LocalStack 기반 모듈
 ./gradlew :bluetape4k-aws-java:test
 ./gradlew :bluetape4k-aws-kotlin:test
 ./gradlew :bluetape4k-aws-exposed:test
 
-# Floci 에뮬레이터로 실행
-./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
-./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=floci
+# Floci 기본값 모듈
+./gradlew :bluetape4k-aws-spring-boot:test
+./gradlew :aws-ktor-sqs-examples:test
 ```
 
 ---
