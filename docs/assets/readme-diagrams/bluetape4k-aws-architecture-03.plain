@@ -1,0 +1,14 @@
+graph 1 10.776 2.4786
+node app 0.93167 1.7254 1.8633 0.5 "Coroutine application" rounded,filled box #38bdf8 #e0f2fe
+node builders 3.8697 2.2115 2.5196 0.53417 "DSL builders\nrequests, models, wait helpers" rounded,filled box #22c55e #dcfce7
+node suspend 3.8697 1.2393 2.6237 0.53417 "Native suspend calls\nwithXClient and service helpers" rounded,filled box #f59e0b #fef3c7
+node http 3.8697 0.26708 2.4571 0.53417 "HTTP engine support\nCRT or OkHttp where needed" rounded,filled box #a855f7 #f3e8ff
+node clients 7.2243 1.2393 2.6967 0.71125 "AWS SDK for Kotlin clients\nDynamoDB, S3, SQS, SNS,\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #94a3b8 #f8fafc
+node aws 10.022 1.2393 1.5092 0.73448 "AWS services\nor local emulator" rounded,filled cylinder #f97316 #fff7ed
+edge app builders 7 0.92903 1.9821 0.92903 2.1055 0.92903 2.227 0.92903 2.227 0.92903 2.227 2.4698 2.227 2.4698 2.227 solid #64748b
+edge app suspend 7 0.92903 1.4687 0.92903 1.3453 0.92903 1.2238 0.92903 1.2238 0.92903 1.2238 2.4185 1.2238 2.4185 1.2238 solid #64748b
+edge builders clients 7 5.1318 2.2115 6.0817 2.2115 7.2207 2.2115 7.2207 2.2115 7.2207 2.2115 7.2207 1.737 7.2207 1.737 solid #64748b
+edge suspend clients 4 5.1859 1.2393 5.1859 1.2393 5.7376 1.2393 5.7376 1.2393 solid #64748b
+edge http clients 7 5.1032 0.26708 6.0587 0.26708 7.2207 0.26708 7.2207 0.26708 7.2207 0.26708 7.2207 0.74159 7.2207 0.74159 solid #64748b
+edge clients aws 4 8.5779 1.2393 8.5779 1.2393 9.1276 1.2393 9.1276 1.2393 solid #64748b
+stop

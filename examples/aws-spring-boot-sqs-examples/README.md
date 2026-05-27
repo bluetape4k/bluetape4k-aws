@@ -6,6 +6,10 @@ Runnable Spring Boot 4 example for `aws-spring-boot` SQS and SNS support. It
 uses LocalStack for development and shows REST publishing, `@SqsListener`
 consumption, SNS to SQS fanout, and DLQ redrive setup.
 
+## Architecture
+
+![aws spring boot sqs examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-spring-boot-sqs-examples-architecture-01.png)
+
 ## Dependency Shape
 
 ```kotlin

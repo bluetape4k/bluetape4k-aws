@@ -1,80 +1,153 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="760" viewBox="0 0 1160 760" role="img" aria-labelledby="title desc">
-  <title id="title">AWS Ktor Advanced S3 Helpers</title>
-  <desc id="desc">Optional S3 production helpers over the existing SigV4 REST client</desc>
-  <defs>
-    <marker id="arrow-blue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#4f6f9f"/></marker>
-    <marker id="arrow-green" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#2f8f83"/></marker>
-    <marker id="arrow-purple" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#8064c9"/></marker>
-    <marker id="arrow-orange" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#c57b21"/></marker>
-    <style>
-      .canvas { fill:#fbfdff; }
-      .frame { fill:white; stroke:#d8e2ef; stroke-width:1.2; rx:18; }
-      .title { font-family:'Architects Daughter','Comic Sans MS',cursive; font-size:28px; fill:#263445; }
-      .subtitle { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:13px; fill:#667085; }
-      .band { fill:#f8fafc; stroke:#d8e2ef; stroke-width:1; rx:14; }
-      .bandLabel { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:12px; fill:#64748b; font-weight:700; }
-      .cardText { font-family:'Architects Daughter','Comic Sans MS',cursive; font-size:18px; fill:#233143; }
-      .cardDetail { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:11px; fill:#516173; }
-      .noteText { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:12px; fill:#475569; }
-      .label { font-family:'Comic Mono','Comic Sans MS',monospace; font-size:11px; fill:#475569; }
-      .pill { fill:white; stroke:#d9e2ef; stroke-width:.8; rx:8; }
-      .lineBlue { fill:none; stroke:#4f6f9f; stroke-width:2.2; marker-end:url(#arrow-blue); }
-      .lineGreen { fill:none; stroke:#2f8f83; stroke-width:2.2; marker-end:url(#arrow-green); }
-      .linePurple { fill:none; stroke:#8064c9; stroke-width:2.2; marker-end:url(#arrow-purple); }
-      .lineOrange { fill:none; stroke:#c57b21; stroke-width:2.2; marker-end:url(#arrow-orange); }
-      .soft { stroke-width:1.7; opacity:.82; }
-    </style>
-  </defs>
-  <rect class="canvas" x="0" y="0" width="1160" height="760"/>
-  <rect class="frame" x="14" y="14" width="1132" height="732"/>
-  <text class="title" x="36" y="48">AWS Ktor Advanced S3 Helpers</text>
-  <text class="subtitle" x="38" y="71">Optional S3 production helpers over the existing SigV4 REST client</text>
-  <rect class="band" x="48" y="98" width="1064" height="110"/>
-  <text class="bandLabel" x="66" y="122">APPLICATION LAYER</text>
-  <rect x="110" y="130" width="220" height="54" rx="12" fill="#e8f3ff" stroke="#5b8def" stroke-width="1.4"/>
-  <text class="cardText" x="220.0" y="149.0" text-anchor="middle">Ktor Application</text>
-  <text class="cardDetail" x="220.0" y="173.0" text-anchor="middle">routes, jobs, config bootstrap</text>
-  <rect x="470" y="130" width="220" height="54" rx="12" fill="#fff3d9" stroke="#d6a441" stroke-width="1.4"/>
-  <text class="cardText" x="580.0" y="149.0" text-anchor="middle">S3KtorClient</text>
-  <text class="cardDetail" x="580.0" y="173.0" text-anchor="middle">REST object operations</text>
-  <rect x="830" y="130" width="220" height="54" rx="12" fill="#eef2ff" stroke="#8b7cf6" stroke-width="1.4"/>
-  <text class="cardText" x="940.0" y="149.0" text-anchor="middle">AwsSigV4Plugin</text>
-  <text class="cardDetail" x="940.0" y="173.0" text-anchor="middle">header/query signing</text>
-  <rect class="band" x="48" y="250" width="1064" height="240"/>
-  <text class="bandLabel" x="66" y="274">OPT-IN HELPERS</text>
-  <rect x="92" y="315" width="210" height="70" rx="12" fill="#e8f7f6" stroke="#4ca6a8" stroke-width="1.4"/>
-  <text class="cardText" x="197.0" y="342.0" text-anchor="middle">Content Type</text>
-  <text class="cardDetail" x="197.0" y="366.0" text-anchor="middle">extension + stream sniffing</text>
-  <rect x="332" y="315" width="210" height="70" rx="12" fill="#fdecef" stroke="#dc6b82" stroke-width="1.4"/>
-  <text class="cardText" x="437.0" y="342.0" text-anchor="middle">SSE Headers</text>
-  <text class="cardDetail" x="437.0" y="366.0" text-anchor="middle">SSE-S3 / KMS / SSE-C</text>
-  <rect x="572" y="315" width="210" height="70" rx="12" fill="#eef2ff" stroke="#8b7cf6" stroke-width="1.4"/>
-  <text class="cardText" x="677.0" y="342.0" text-anchor="middle">Envelope Encryption</text>
-  <text class="cardDetail" x="677.0" y="366.0" text-anchor="middle">AES-GCM ciphertext</text>
-  <rect x="812" y="315" width="210" height="70" rx="12" fill="#f7fbef" stroke="#80a857" stroke-width="1.4"/>
-  <text class="cardText" x="917.0" y="342.0" text-anchor="middle">Config Objects</text>
-  <text class="cardDetail" x="917.0" y="366.0" text-anchor="middle">S3 text config files</text>
-  <rect x="572" y="420" width="210" height="54" rx="12" fill="#f3e8ff" stroke="#a36ad6" stroke-width="1.4"/>
-  <text class="cardText" x="677.0" y="439.0" text-anchor="middle">Data Key Provider</text>
-  <text class="cardDetail" x="677.0" y="463.0" text-anchor="middle">KMS or app-owned</text>
-  <rect class="band" x="48" y="538" width="1064" height="142"/>
-  <text class="bandLabel" x="66" y="562">EXTERNAL SERVICES</text>
-  <path d="M170,606 C170,588 420,588 420,606 L420,638 C420,656 170,656 170,638 Z" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.4"/>
-  <path d="M170,606 C170,624 420,624 420,606" fill="none" stroke="#f59e0b" stroke-width="1.1"/>
-  <text class="cardText" x="295.0" y="620.0" text-anchor="middle">AWS S3</text>
-  <text class="cardDetail" x="295.0" y="639.0" text-anchor="middle">Floci / LocalStack / AWS</text>
-  <rect x="680" y="590" width="250" height="64" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.4"/>
-  <text class="cardText" x="805.0" y="614.0" text-anchor="middle">Application-owned SDKs</text>
-  <text class="cardDetail" x="805.0" y="638.0" text-anchor="middle">Access Grants / S3 Vector / KMS</text>
-  <path class="lineBlue" d="M330 157 H470"/>
-  <path class="lineBlue" d="M690 157 H830"/>
-  <path class="lineGreen soft" d="M580 184 V232 H197 V315"/>
-  <path class="lineGreen soft" d="M580 184 V232 H437 V315"/>
-  <path class="linePurple soft" d="M580 184 V232 H677 V315"/>
-  <path class="lineGreen soft" d="M580 184 V232 H917 V315"/>
-  <path class="linePurple" d="M677 385 V420"/>
-  <path class="lineOrange" d="M940 184 V222 H295 V590"/>
-  <path class="linePurple" d="M677 474 V542 H805 V590"/>
-  <rect class="pill" x="706" y="524" width="198" height="24"/>
-  <text class="label" x="805" y="541" text-anchor="middle">optional dependency boundary</text>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 15.0.0 (20260523.1842)
+ -->
+<!-- Title: AwsKtorS3AdvancedArchitecture Pages: 1 -->
+<svg width="993pt" height="405pt"
+ viewBox="0.00 0.00 993.00 405.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 401.02)">
+<title>AwsKtorS3AdvancedArchitecture</title>
+<polygon fill="#ffffff" stroke="none" points="-4,4 -4,-401.02 988.65,-401.02 988.65,4 -4,4"/>
+<!-- app -->
+<g id="node1" class="node">
+<title>app</title>
+<path fill="#e8f3ff" stroke="#5b8def" d="M545.78,-397.02C545.78,-397.02 465.62,-397.02 465.62,-397.02 459.62,-397.02 453.62,-391.02 453.62,-385.02 453.62,-385.02 453.62,-373.02 453.62,-373.02 453.62,-367.02 459.62,-361.02 465.62,-361.02 465.62,-361.02 545.78,-361.02 545.78,-361.02 551.78,-361.02 557.78,-367.02 557.78,-373.02 557.78,-373.02 557.78,-385.02 557.78,-385.02 557.78,-391.02 551.78,-397.02 545.78,-397.02"/>
+<text xml:space="preserve" text-anchor="middle" x="505.7" y="-374" font-family="Helvetica,sans-Serif" font-size="12.00">Ktor Application</text>
+</g>
+<!-- client -->
+<g id="node2" class="node">
+<title>client</title>
+<path fill="#fff3d9" stroke="#d6a441" d="M537.91,-307.02C537.91,-307.02 473.5,-307.02 473.5,-307.02 467.5,-307.02 461.5,-301.02 461.5,-295.02 461.5,-295.02 461.5,-283.02 461.5,-283.02 461.5,-277.02 467.5,-271.02 473.5,-271.02 473.5,-271.02 537.91,-271.02 537.91,-271.02 543.91,-271.02 549.91,-277.02 549.91,-283.02 549.91,-283.02 549.91,-295.02 549.91,-295.02 549.91,-301.02 543.91,-307.02 537.91,-307.02"/>
+<text xml:space="preserve" text-anchor="middle" x="505.7" y="-284" font-family="Helvetica,sans-Serif" font-size="12.00">S3KtorClient</text>
+</g>
+<!-- app&#45;&gt;client -->
+<g id="edge1" class="edge">
+<title>app&#45;&gt;client</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M505.7,-360.63C505.7,-348.46 505.7,-331.93 505.7,-317.93"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="508.51,-318.09 505.71,-310.09 502.91,-318.09 508.51,-318.09"/>
+</g>
+<!-- detector -->
+<g id="node3" class="node">
+<title>detector</title>
+<path fill="#e8f7f6" stroke="#4ca6a8" d="M127.41,-217.02C127.41,-217.02 12,-217.02 12,-217.02 6,-217.02 0,-211.02 0,-205.02 0,-205.02 0,-193.02 0,-193.02 0,-187.02 6,-181.02 12,-181.02 12,-181.02 127.41,-181.02 127.41,-181.02 133.41,-181.02 139.41,-187.02 139.41,-193.02 139.41,-193.02 139.41,-205.02 139.41,-205.02 139.41,-211.02 133.41,-217.02 127.41,-217.02"/>
+<text xml:space="preserve" text-anchor="middle" x="69.7" y="-193.99" font-family="Helvetica,sans-Serif" font-size="12.00">Content Type Detector</text>
+</g>
+<!-- client&#45;&gt;detector -->
+<g id="edge2" class="edge">
+<title>client&#45;&gt;detector</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M461.33,-280.82C388.02,-267.4 241.96,-238.18 150.22,-218.8"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="150.93,-216.09 142.53,-217.17 149.77,-221.57 150.93,-216.09"/>
+</g>
+<!-- sse -->
+<g id="node4" class="node">
+<title>sse</title>
+<path fill="#fdecef" stroke="#dc6b82" d="M357.91,-217.02C357.91,-217.02 191.5,-217.02 191.5,-217.02 185.5,-217.02 179.5,-211.02 179.5,-205.02 179.5,-205.02 179.5,-193.02 179.5,-193.02 179.5,-187.02 185.5,-181.02 191.5,-181.02 191.5,-181.02 357.91,-181.02 357.91,-181.02 363.91,-181.02 369.91,-187.02 369.91,-193.02 369.91,-193.02 369.91,-205.02 369.91,-205.02 369.91,-211.02 363.91,-217.02 357.91,-217.02"/>
+<text xml:space="preserve" text-anchor="middle" x="274.7" y="-193.99" font-family="Helvetica,sans-Serif" font-size="12.00">Server&#45;side Encryption Headers</text>
+</g>
+<!-- client&#45;&gt;sse -->
+<g id="edge3" class="edge">
+<title>client&#45;&gt;sse</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M461.16,-275.22C419.61,-261.13 358.82,-238.24 317.78,-221.41"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="319.03,-218.9 310.57,-218.42 316.89,-224.07 319.03,-218.9"/>
+</g>
+<!-- cse -->
+<g id="node5" class="node">
+<title>cse</title>
+<path fill="#eef2ff" stroke="#8b7cf6" d="M589.66,-217.02C589.66,-217.02 421.75,-217.02 421.75,-217.02 415.75,-217.02 409.75,-211.02 409.75,-205.02 409.75,-205.02 409.75,-193.02 409.75,-193.02 409.75,-187.02 415.75,-181.02 421.75,-181.02 421.75,-181.02 589.66,-181.02 589.66,-181.02 595.66,-181.02 601.66,-187.02 601.66,-193.02 601.66,-193.02 601.66,-205.02 601.66,-205.02 601.66,-211.02 595.66,-217.02 589.66,-217.02"/>
+<text xml:space="preserve" text-anchor="middle" x="505.7" y="-193.99" font-family="Helvetica,sans-Serif" font-size="12.00">Client&#45;side Envelope Encryption</text>
+</g>
+<!-- client&#45;&gt;cse -->
+<g id="edge4" class="edge">
+<title>client&#45;&gt;cse</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M505.7,-270.63C505.7,-258.46 505.7,-241.93 505.7,-227.93"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="508.51,-228.09 505.71,-220.09 502.91,-228.09 508.51,-228.09"/>
+</g>
+<!-- config -->
+<g id="node7" class="node">
+<title>config</title>
+<path fill="#f7fbef" stroke="#80a857" d="M776.16,-217.02C776.16,-217.02 653.25,-217.02 653.25,-217.02 647.25,-217.02 641.25,-211.02 641.25,-205.02 641.25,-205.02 641.25,-193.02 641.25,-193.02 641.25,-187.02 647.25,-181.02 653.25,-181.02 653.25,-181.02 776.16,-181.02 776.16,-181.02 782.16,-181.02 788.16,-187.02 788.16,-193.02 788.16,-193.02 788.16,-205.02 788.16,-205.02 788.16,-211.02 782.16,-217.02 776.16,-217.02"/>
+<text xml:space="preserve" text-anchor="middle" x="714.7" y="-193.99" font-family="Helvetica,sans-Serif" font-size="12.00">S3 Config Data Helpers</text>
+</g>
+<!-- client&#45;&gt;config -->
+<g id="edge6" class="edge">
+<title>client&#45;&gt;config</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M534.77,-270.63C565.14,-256.41 612.76,-236.25 651.61,-221.1"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="652.28,-223.85 658.74,-218.35 650.26,-218.62 652.28,-223.85"/>
+</g>
+<!-- sigv4 -->
+<g id="node8" class="node">
+<title>sigv4</title>
+<path fill="#eef2ff" stroke="#8b7cf6" d="M926.78,-217.02C926.78,-217.02 840.62,-217.02 840.62,-217.02 834.62,-217.02 828.62,-211.02 828.62,-205.02 828.62,-205.02 828.62,-193.02 828.62,-193.02 828.62,-187.02 834.62,-181.02 840.62,-181.02 840.62,-181.02 926.78,-181.02 926.78,-181.02 932.78,-181.02 938.78,-187.02 938.78,-193.02 938.78,-193.02 938.78,-205.02 938.78,-205.02 938.78,-211.02 932.78,-217.02 926.78,-217.02"/>
+<text xml:space="preserve" text-anchor="middle" x="883.7" y="-193.99" font-family="Helvetica,sans-Serif" font-size="12.00">AwsSigV4Plugin</text>
+</g>
+<!-- client&#45;&gt;sigv4 -->
+<g id="edge7" class="edge">
+<title>client&#45;&gt;sigv4</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M550.18,-277.67C616.48,-262.23 741.65,-233.09 818.37,-215.23"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="818.59,-218.05 825.74,-213.51 817.32,-212.6 818.59,-218.05"/>
+</g>
+<!-- detector&#45;&gt;client -->
+<g id="edge9" class="edge">
+<title>detector&#45;&gt;client</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M139.82,-212.02C226.65,-228.41 371.97,-257.71 451.04,-274.75"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="450.2,-277.43 458.62,-276.39 451.39,-271.96 450.2,-277.43"/>
+</g>
+<!-- sse&#45;&gt;client -->
+<g id="edge10" class="edge">
+<title>sse&#45;&gt;client</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M332.78,-217.48C373.2,-231.59 425.81,-251.53 462.59,-266.61"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="461.07,-269.01 469.53,-269.49 463.21,-263.84 461.07,-269.01"/>
+</g>
+<!-- datakey -->
+<g id="node6" class="node">
+<title>datakey</title>
+<path fill="#f3e8ff" stroke="#a36ad6" d="M642.91,-127.02C642.91,-127.02 518.5,-127.02 518.5,-127.02 512.5,-127.02 506.5,-121.02 506.5,-115.02 506.5,-115.02 506.5,-103.02 506.5,-103.02 506.5,-97.02 512.5,-91.02 518.5,-91.02 518.5,-91.02 642.91,-91.02 642.91,-91.02 648.91,-91.02 654.91,-97.02 654.91,-103.02 654.91,-103.02 654.91,-115.02 654.91,-115.02 654.91,-121.02 648.91,-127.02 642.91,-127.02"/>
+<text xml:space="preserve" text-anchor="middle" x="580.7" y="-103.99" font-family="Helvetica,sans-Serif" font-size="12.00">S3KtorDataKeyProvider</text>
+</g>
+<!-- cse&#45;&gt;datakey -->
+<g id="edge5" class="edge">
+<title>cse&#45;&gt;datakey</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M520.52,-180.63C531.51,-167.74 546.67,-149.95 559.02,-135.46"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="561.09,-137.35 564.15,-129.44 556.83,-133.72 561.09,-137.35"/>
+</g>
+<!-- optional -->
+<g id="node10" class="node">
+<title>optional</title>
+<path fill="#f8fafc" stroke="#94a3b8" d="M837.03,-37.02C837.03,-37.02 668.37,-37.02 668.37,-37.02 662.37,-37.02 656.37,-31.02 656.37,-25.02 656.37,-25.02 656.37,-12 656.37,-12 656.37,-6 662.37,0 668.37,0 668.37,0 837.03,0 837.03,0 843.03,0 849.03,-6 849.03,-12 849.03,-12 849.03,-25.02 849.03,-25.02 849.03,-31.02 843.03,-37.02 837.03,-37.02"/>
+<text xml:space="preserve" text-anchor="middle" x="752.7" y="-19.86" font-family="Helvetica,sans-Serif" font-size="12.00">Application&#45;owned SDKs</text>
+<text xml:space="preserve" text-anchor="middle" x="752.7" y="-7.11" font-family="Helvetica,sans-Serif" font-size="12.00">Access Grants / S3 Vector / KMS</text>
+</g>
+<!-- datakey&#45;&gt;optional -->
+<g id="edge12" class="edge">
+<title>datakey&#45;&gt;optional</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M614.69,-90.53C641.63,-76.67 679.49,-57.19 708.74,-42.13"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="709.65,-44.81 715.49,-38.66 707.09,-39.83 709.65,-44.81"/>
+</g>
+<!-- config&#45;&gt;client -->
+<g id="edge11" class="edge">
+<title>config&#45;&gt;client</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M685.45,-217.5C652.81,-232.77 600.39,-254.85 560.3,-270.22"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="559.43,-267.56 552.94,-273.01 561.41,-272.8 559.43,-267.56"/>
+</g>
+<!-- s3 -->
+<g id="node9" class="node">
+<title>s3</title>
+<path fill="#fff7ed" stroke="#f59e0b" d="M939.03,-123.75C939.03,-125.55 901.24,-127.02 854.7,-127.02 808.17,-127.02 770.37,-125.55 770.37,-123.75 770.37,-123.75 770.37,-94.29 770.37,-94.29 770.37,-92.49 808.17,-91.02 854.7,-91.02 901.24,-91.02 939.03,-92.49 939.03,-94.29 939.03,-94.29 939.03,-123.75 939.03,-123.75"/>
+<path fill="none" stroke="#f59e0b" d="M939.03,-123.75C939.03,-121.94 901.24,-120.47 854.7,-120.47 808.17,-120.47 770.37,-121.94 770.37,-123.75"/>
+<text xml:space="preserve" text-anchor="middle" x="854.7" y="-103.99" font-family="Helvetica,sans-Serif" font-size="12.00">AWS S3 / Floci / LocalStack</text>
+</g>
+<!-- sigv4&#45;&gt;s3 -->
+<g id="edge8" class="edge">
+<title>sigv4&#45;&gt;s3</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M877.98,-180.63C873.92,-168.34 868.41,-151.61 863.77,-137.51"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="866.44,-136.68 861.28,-129.96 861.12,-138.43 866.44,-136.68"/>
+</g>
+<!-- optional&#45;&gt;client -->
+<g id="edge13" class="edge">
+<title>optional&#45;&gt;client</title>
+<path fill="none" stroke="#64748b" stroke-width="1.8" d="M849.44,-28.65C890.1,-37.83 933.69,-55.85 958.7,-91.02 991.17,-136.65 995.11,-174.47 958.7,-217.02 908.06,-276.22 670.04,-286.4 560.78,-287.91"/>
+<polygon fill="#64748b" stroke="#64748b" stroke-width="1.8" points="561,-285.11 553.03,-288 561.06,-290.71 561,-285.11"/>
+</g>
+</g>
 </svg>

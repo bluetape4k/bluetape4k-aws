@@ -1,0 +1,24 @@
+graph 1 12.63 3.0168
+node app 1.1452 0.92507 2.2904 0.71125 "Application code\nKotlin services, Ktor routes,\nSpring components" rounded,filled box #38bdf8 #e0f2fe
+node sigv4 4.4825 2.6612 2.6237 0.71125 "SigV4 and client defaults\nAwsKtorCore, AwsSigV4Plugin,\nclient factories" rounded,filled box #f59e0b #fef3c7
+node java 8.101 1.5084 2.8529 0.71125 "Java SDK v2 layer\nDynamoDB enhanced, S3 transfer,\nSQS/SNS/KMS/SES/STSes" rounded,filled box #38bdf8 #e0f2fe
+node kotlin 8.101 2.5778 2.7071 0.53417 "AWS Kotlin SDK layer\nnative suspend clients and DSLs" rounded,filled box #22c55e #dcfce7
+node exposed 8.101 0.35563 2.5717 0.71125 "Exposed foundation\nsettings resolver, Hikari factory,\nregistry, RDS IAM auth" rounded,filled box #a855f7 #f3e8ff
+node spring 4.4825 0.35563 2.5717 0.71125 "Spring Boot operations\nS3, SQS listener, SNS,\nDynamoDB, KMS, env sources" rounded,filled box #f59e0b #fef3c7
+node ktor 4.4825 1.5084 2.8842 0.71125 "Ktor runtime\nS3 REST client, SQS consumer,\nDynamoDB plugin, Exposed plugin" rounded,filled box #ef4444 #fee2e2
+node services 11.454 1.5084 2.3529 1.2215 "AWS or emulator\nS3, SQS, SNS, DynamoDB,\nKMS, SES, CloudWatch,\nKinesis, STS, JDBC stores" rounded,filled cylinder #f97316 #fff7ed
+edge app sigv4 7 1.1443 1.2848 1.1443 1.7933 1.1443 2.6612 1.1443 2.6612 1.1443 2.6612 3.0323 2.6612 3.0323 2.6612 solid #64748b
+edge app exposed 7 2.2971 0.80446 4.1708 0.80446 7.6721 0.80446 7.6721 0.80446 7.6721 0.80446 7.6721 0.79581 7.6721 0.79581 solid #64748b
+edge app spring 4 2.2937 0.64035 2.2937 0.64035 3.0588 0.64035 3.0588 0.64035 solid #64748b
+edge app ktor 4 2.2937 1.2167 2.2937 1.2167 2.9014 1.2167 2.9014 1.2167 solid #64748b
+edge sigv4 java 10 5.8012 2.4443 6.0827 2.4443 6.2971 2.4443 6.2971 2.4443 6.2971 2.4443 6.2971 1.6269 6.2971 1.6269 6.2971 1.6269 6.5352 1.6269 6.5352 1.6269 solid #64748b
+edge sigv4 kotlin 4 5.7991 2.7114 5.7991 2.7114 6.6072 2.7114 6.6072 2.7114 solid #64748b
+edge java services 4 9.5327 1.5084 9.5327 1.5084 10.139 1.5084 10.139 1.5084 solid #64748b
+edge kotlin services 7 9.4583 2.5778 10.387 2.5778 11.45 2.5778 11.45 2.5778 11.45 2.5778 11.45 2.26 11.45 2.26 solid #64748b
+edge exposed services 7 8.5332 0.71786 8.5332 0.87563 8.5332 1.0252 8.5332 1.0252 8.5332 1.0252 10.139 1.0252 10.139 1.0252 solid #64748b
+edge spring java 7 5.7704 0.53344 6.2777 0.53344 6.7415 0.53344 6.7415 0.53344 6.7415 0.53344 6.7415 1.0152 6.7415 1.0152 solid #64748b
+edge spring exposed 4 5.7736 0.17781 5.7736 0.17781 6.6748 0.17781 6.6748 0.17781 solid #64748b
+edge ktor java 4 5.9282 1.3899 5.9282 1.3899 6.5337 1.3899 6.5337 1.3899 solid #64748b
+edge ktor kotlin 7 5.8526 1.8705 5.8526 2.1807 5.8526 2.5778 5.8526 2.5778 5.8526 2.5778 6.6056 2.5778 6.6056 2.5778 solid #64748b
+edge ktor exposed 7 5.8526 1.15 5.8526 0.81158 5.8526 0.35563 5.8526 0.35563 5.8526 0.35563 6.677 0.35563 6.677 0.35563 solid #64748b
+stop

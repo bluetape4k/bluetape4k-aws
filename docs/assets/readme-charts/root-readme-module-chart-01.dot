@@ -1,0 +1,29 @@
+digraph RootReadmeModuleChart {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.65, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  bom [label="BOM\nbluetape4k-aws-bom", fillcolor="#f1f5f9", color="#64748b"]
+
+  java [label="aws-java\nJava SDK v2 wrappers\nsync, async, suspend adapters", fillcolor="#e0f2fe", color="#38bdf8"]
+  kotlin [label="aws-kotlin\nAWS Kotlin SDK helpers\nnative suspend DSL", fillcolor="#dcfce7", color="#22c55e"]
+  exposed [label="aws-exposed\nHikari + Exposed JDBC\nsettings resolver and registry", fillcolor="#f3e8ff", color="#a855f7"]
+  spring [label="aws-spring-boot\nBoot 4 auto-config\nS3, SQS, SNS, DynamoDB, KMS, env sources", fillcolor="#fef3c7", color="#f59e0b"]
+  ktor [label="aws-ktor\nKtor 3 integration\nSigV4, S3, SQS, DynamoDB, Exposed", fillcolor="#fee2e2", color="#ef4444"]
+
+  ex1 [label="Ktor examples\nS3, SQS, DynamoDB, Exposed", fillcolor="#fff7ed", color="#f97316"]
+  ex2 [label="Spring Boot examples\nS3, SQS/SNS, DynamoDB, Exposed", fillcolor="#ecfdf5", color="#10b981"]
+
+  bom -> java [style=dashed]
+  bom -> kotlin [style=dashed]
+  bom -> exposed [style=dashed]
+  bom -> spring [style=dashed]
+  bom -> ktor [style=dashed]
+  exposed -> spring
+  exposed -> ktor
+  java -> spring
+  java -> ktor
+  kotlin -> ktor
+  spring -> ex2
+  ktor -> ex1
+}

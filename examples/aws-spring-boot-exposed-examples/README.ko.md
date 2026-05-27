@@ -6,6 +6,10 @@
 Spring Boot 4 MVC 예제입니다. 로컬 테스트는 Testcontainers PostgreSQL을 사용하며
 AWS credential이 필요하지 않습니다.
 
+## 아키텍처
+
+![aws spring boot exposed examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-spring-boot-exposed-examples-architecture-01.png)
+
 ## API
 
 | Method | Path | 설명 |

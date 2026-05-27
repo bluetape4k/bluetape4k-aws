@@ -1,0 +1,16 @@
+digraph RootReadmeOverview {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.16,0.10", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.7, arrowsize=0.8]
+
+  apps [label="Kotlin application surfaces\nplain services, Spring Boot 4, Ktor 3", fillcolor="#e0f2fe", color="#38bdf8"]
+  bom [label="BOM\nversion alignment", fillcolor="#f1f5f9", color="#64748b"]
+  modules [label="Runtime modules\naws-java, aws-kotlin, aws-exposed,\naws-spring-boot, aws-ktor", fillcolor="#dcfce7", color="#22c55e"]
+  integrations [label="Framework integrations\nSpring operations and listeners,\nKtor SigV4, S3, SQS, DynamoDB, Exposed", fillcolor="#fef3c7", color="#f59e0b"]
+  examples [label="Runnable examples\nKtor: S3, SQS, DynamoDB, Exposed\nSpring Boot: S3, SQS/SNS, DynamoDB, Exposed", fillcolor="#f3e8ff", color="#a855f7"]
+  verification [label="Local verification\nLocalStack, Floci,\nPostgreSQL Testcontainers", shape=cylinder, fillcolor="#fefce8", color="#eab308"]
+  services [label="AWS service surface\nS3, SQS, SNS, DynamoDB, KMS,\nSES, CloudWatch, Kinesis, STS", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  apps -> bom -> modules -> integrations -> examples -> verification -> services
+  modules -> services [style=dashed]
+}

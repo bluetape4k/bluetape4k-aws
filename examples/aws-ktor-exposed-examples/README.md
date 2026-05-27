@@ -7,6 +7,10 @@ Ktor 3 examples for `aws-ktor` and `bluetape4k-aws-exposed`. The module installs
 order routes backed by PostgreSQL. Local tests use Testcontainers and do not
 require AWS credentials.
 
+## Architecture
+
+![aws ktor exposed examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)
+
 ## Routes
 
 | Method | Path | Description |

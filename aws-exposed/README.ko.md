@@ -23,7 +23,7 @@ AWS 기반 데이터베이스 설정과 Exposed JDBC를 연결하는 공통 기�
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:0.1.0-SNAPSHOT")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:0.2.2")
 }
 ```
 

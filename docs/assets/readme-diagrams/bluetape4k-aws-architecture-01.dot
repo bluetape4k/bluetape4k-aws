@@ -1,0 +1,17 @@
+digraph Bluetape4kAwsArchitecture {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.50, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  apps [label="Application code\nKotlin service, Ktor app, Spring Boot app", fillcolor="#e0f2fe", color="#38bdf8"]
+  facade [label="bluetape4k AWS APIs\ncoroutine adapters, templates, plugins, registries", fillcolor="#fef3c7", color="#f59e0b"]
+  sdk [label="AWS SDKs\nJava SDK v2 and AWS SDK for Kotlin", fillcolor="#dcfce7", color="#22c55e"]
+  infra [label="AWS services or local emulators\nS3, SQS, SNS, DynamoDB, KMS, SES,\nCloudWatch, Kinesis, STS, JDBC databases", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+  tests [label="Verification examples\nLocalStack, Floci, PostgreSQL Testcontainers", fillcolor="#f3e8ff", color="#a855f7"]
+
+  apps -> facade
+  facade -> sdk
+  sdk -> infra
+  tests -> facade [style=dashed, label="exercise"]
+  tests -> infra [style=dashed, label="emulate"]
+}

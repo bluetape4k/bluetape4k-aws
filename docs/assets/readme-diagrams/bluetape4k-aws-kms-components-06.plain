@@ -1,0 +1,19 @@
+graph 1 14.298 2.4231
+node service 0.84312 1.6838 1.6863 0.5 "Application service" rounded,filled box #38bdf8 #e0f2fe
+node text 3.3957 2.156 1.4779 0.53417 "TextEncryptor\noptional adapter" rounded,filled box #a855f7 #f3e8ff
+node auto 3.3957 0.26708 2.03 0.53417 "KmsAutoConfiguration\nproperties, client, cache" rounded,filled box #f59e0b #fef3c7
+node ops 5.8181 1.2115 1.4258 0.53417 "KmsOperations\ncoroutine API" rounded,filled box #22c55e #dcfce7
+node encryptor 8.3706 1.2115 2.2904 0.53417 "KmsCoroutinesEncryptor\nEncrypt, Decrypt, data keys" rounded,filled box #ef4444 #fee2e2
+node cache 11.262 0.26708 2.1029 0.53417 "DataKeyCache\nshort-lived plaintext keys" rounded,filled box #64748b #f1f5f9
+node client 11.262 1.2393 1.5092 0.53417 "KmsAsyncClient\nAWS SDK v2" rounded,filled box #94a3b8 #f8fafc
+node kms 13.653 1.2393 1.2904 0.73448 "AWS KMS\nor LocalStack" rounded,filled cylinder #f97316 #fff7ed
+edge service text 7 1.693 1.7477 2.4354 1.7477 3.3953 1.7477 3.3953 1.7477 3.3953 1.7477 3.3953 1.7615 3.3953 1.7615 solid #64748b
+edge service ops 7 1.6892 1.5565 3.0505 1.5565 5.5758 1.5565 5.5758 1.5565 5.5758 1.5565 5.5758 1.5492 5.5758 1.5492 solid #64748b
+edge text ops 7 4.1384 2.156 4.9273 2.156 6.0619 2.156 6.0619 2.156 6.0619 2.156 6.0619 1.6204 6.0619 1.6204 solid #64748b
+edge auto ops 7 4.2703 0.53873 4.2703 0.8107 4.2703 1.1891 4.2703 1.1891 4.2703 1.1891 4.9628 1.1891 4.9628 1.1891 solid #64748b
+edge auto cache 4 4.416 0.26708 4.416 0.26708 10.07 0.26708 10.07 0.26708 solid #64748b
+edge ops encryptor 4 6.5359 1.2115 6.5359 1.2115 7.083 1.2115 7.083 1.2115 solid #64748b
+edge encryptor cache 7 9.5184 1.141 9.9569 1.141 10.354 1.141 10.354 1.141 10.354 1.141 10.354 0.67451 10.354 0.67451 solid #64748b
+edge encryptor client 4 9.5216 1.3098 9.5216 1.3098 10.365 1.3098 10.365 1.3098 solid #64748b
+edge client kms 4 12.018 1.2393 12.018 1.2393 12.866 1.2393 12.866 1.2393 solid #64748b
+stop

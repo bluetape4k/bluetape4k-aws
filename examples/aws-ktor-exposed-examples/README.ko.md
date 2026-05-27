@@ -7,6 +7,10 @@
 PostgreSQL 기반 주문 route를 제공합니다. 로컬 테스트는 Testcontainers를 사용하며
 AWS credential이 필요하지 않습니다.
 
+## 아키텍처
+
+![aws ktor exposed examples Architecture diagram](../../docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)
+
 ## Routes
 
 | Method | Path | 설명 |
