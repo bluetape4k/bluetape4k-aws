@@ -7,6 +7,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils
 import org.springframework.core.env.Environment
 import org.springframework.util.ReflectionUtils
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 /**
  * `@SqsListener` 메서드를 찾아 리스너 컨테이너로 등록하는 BeanPostProcessor.
@@ -28,6 +29,9 @@ class SqsListenerAnnotationBeanPostProcessor(
 
         val targetClass = AopUtils.getTargetClass(bean)
         ReflectionUtils.doWithMethods(targetClass) { method ->
+            if (method.isSynthetic || method.isBridge || Modifier.isStatic(method.modifiers)) {
+                return@doWithMethods
+            }
             val listener = AnnotatedElementUtils.findMergedAnnotation(method, SqsListener::class.java)
             if (listener != null) {
                 registerListener(bean, beanName, method, listener)

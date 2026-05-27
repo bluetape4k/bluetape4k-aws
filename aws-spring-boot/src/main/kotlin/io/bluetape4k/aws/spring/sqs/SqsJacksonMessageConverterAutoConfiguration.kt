@@ -11,7 +11,10 @@ import tools.jackson.databind.ObjectMapper
 /**
  * Registers the Jackson-backed SQS message converter when Jackson 3 is present.
  */
-@AutoConfiguration(after = [SqsAutoConfiguration::class])
+@AutoConfiguration(
+    before = [SqsAutoConfiguration::class],
+    afterName = ["org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration"],
+)
 @ConditionalOnClass(name = ["tools.jackson.databind.ObjectMapper"])
 @ConditionalOnProperty(prefix = "bluetape4k.aws.sqs", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class SqsJacksonMessageConverterAutoConfiguration {

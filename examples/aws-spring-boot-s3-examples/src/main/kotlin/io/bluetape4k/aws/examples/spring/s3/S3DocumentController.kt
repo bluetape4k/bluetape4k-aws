@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.examples.spring.s3
 
+import io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -34,6 +36,7 @@ import java.net.URL
 @RequestMapping("/s3/documents")
 class S3DocumentController(
     private val s3: S3Operations,
+    private val encryptedS3Provider: ObjectProvider<S3ClientSideEncryptionOperations>,
 ) {
 
     @PutMapping(consumes = [MediaType.APPLICATION_OCTET_STREAM_VALUE])
@@ -51,6 +54,29 @@ class S3DocumentController(
         )
     }
 
+    @PutMapping("/encrypted", consumes = [MediaType.APPLICATION_OCTET_STREAM_VALUE])
+    suspend fun uploadEncrypted(
+        @RequestParam bucket: String,
+        @RequestParam key: String,
+        @RequestParam(required = false) tenant: String?,
+        @RequestBody bytes: ByteArray,
+        @RequestHeader(HttpHeaders.CONTENT_TYPE, required = false) contentType: String?,
+    ): S3DocumentUploadResponse {
+        val response = encryptedS3().uploadEncrypted(
+            bucket = bucket,
+            key = key,
+            bytes = bytes,
+            contentType = contentType,
+            metadata = tenant?.let { mapOf("tenant" to it) }.orEmpty(),
+            encryptionContext = tenant?.let { mapOf("tenant" to it) }.orEmpty(),
+        )
+        return S3DocumentUploadResponse(
+            bucket = bucket,
+            key = key,
+            eTag = response.eTag(),
+        )
+    }
+
     @GetMapping
     suspend fun download(
         @RequestParam bucket: String,
@@ -59,6 +85,22 @@ class S3DocumentController(
         ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(s3.downloadBytes(bucket, key))
+
+    @GetMapping("/encrypted")
+    suspend fun downloadEncrypted(
+        @RequestParam bucket: String,
+        @RequestParam key: String,
+        @RequestParam(required = false) tenant: String?,
+    ): ResponseEntity<ByteArray> =
+        ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(
+                encryptedS3().downloadEncryptedBytes(
+                    bucket = bucket,
+                    key = key,
+                    encryptionContext = tenant?.let { mapOf("tenant" to it) }.orEmpty(),
+                )
+            )
 
     @GetMapping("/objects")
     fun listObjects(
@@ -90,6 +132,11 @@ class S3DocumentController(
     ) {
         s3.delete(bucket, key)
     }
+
+    private fun encryptedS3(): S3ClientSideEncryptionOperations =
+        requireNotNull(encryptedS3Provider.getIfAvailable()) {
+            "S3 client-side encryption is not configured. Enable bluetape4k.aws.s3.client-side-encryption and provide KmsOperations."
+        }
 }
 
 /**
