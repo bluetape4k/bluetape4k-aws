@@ -1,0 +1,16 @@
+graph 1 16.44 1.7286
+node config 1.2806 0.85736 2.5612 0.89875 "Configured source\nstatic, Secrets Manager,\nParameter Store, or adapter" rounded,filled box #38bdf8 #e0f2fe
+node properties 4.6648 0.85736 2.9571 0.65917 "AwsDatabaseConnectionProperties\nURL, driver, username, pool" rounded,filled box #22c55e #dcfce7
+node secret 8.0021 1.399 1.8425 0.65917 "AwsSecretString\nredacted diagnostics" rounded,filled box #a855f7 #f3e8ff
+node auth 8.0021 0.32958 2.4675 0.65917 "Authentication mode\nstatic password or RDS IAM" rounded,filled box #fb7185 #fee2e2
+node hikari 10.725 0.85736 1.7279 0.65917 "HikariDataSource\nphysical JDBC pool" rounded,filled box #f59e0b #fef3c7
+node exposed 13.302 0.85736 2.1758 0.65917 "Exposed Database handle\nregistered by name" rounded,filled box #06b6d4 #ecfeff
+node database 15.727 0.85736 1.4258 0.57693 "JDBC database" rounded,filled cylinder #f97316 #fff7ed
+edge config properties 4 2.5649 0.85736 2.5649 0.85736 3.0472 0.85736 3.0472 0.85736 solid #64748b
+edge properties secret 4 6.148 1.1282 6.148 1.1282 6.9387 1.1282 6.9387 1.1282 solid #64748b
+edge properties auth 4 6.148 0.59347 6.148 0.59347 6.6273 0.59347 6.6273 0.59347 solid #64748b
+edge secret hikari 4 8.9277 1.1282 8.9277 1.1282 9.7212 1.1282 9.7212 1.1282 solid #64748b
+edge auth hikari 4 9.2399 0.59347 9.2399 0.59347 9.72 0.59347 9.72 0.59347 solid #64748b
+edge hikari exposed 4 11.594 0.85736 11.594 0.85736 12.072 0.85736 12.072 0.85736 solid #64748b
+edge exposed database 4 14.394 0.85736 14.394 0.85736 14.874 0.85736 14.874 0.85736 solid #64748b
+stop

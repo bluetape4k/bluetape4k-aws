@@ -1,0 +1,16 @@
+graph 1 14.24 3.2462
+node app 0.77542 0.60736 1.5508 0.5 "Coroutine scope" rounded,filled box #38bdf8 #e0f2fe
+node block 3.7863 1.4546 2.3529 0.65917 "withS3Client / withSqsClient\nsafe use block" rounded,filled box #22c55e #dcfce7
+node dsl 7.5316 1.6629 2.7279 0.89875 "Request DSL\nputObjectRequestOf,\nreceiveMessageRequestOf, etc." rounded,filled box #a855f7 #f3e8ff
+node client 10.714 2.3712 1.6654 0.65917 "AWS Kotlin client\nsuspend operation" rounded,filled box #f59e0b #fef3c7
+node aws 13.533 2.3712 1.4154 0.90635 "AWS service\nor LocalStack" rounded,filled cylinder #f97316 #fff7ed
+node close 7.5316 0.32958 2.4675 0.65917 "close safely\nuseSafe handles cancellation" rounded,filled box #fb7185 #fee2e2
+edge app block 7 0.78194 0.86156 0.78194 1.1111 0.78194 1.4546 0.78194 1.4546 0.78194 1.4546 2.4675 1.4546 2.4675 1.4546 enter 2.0803 1.1768 solid #64748b
+edge block dsl 4 4.9662 1.4989 4.9662 1.4989 6.0257 1.4989 6.0257 1.4989 build 5.5652 1.8157 solid #64748b
+edge block close 7 3.7819 1.1209 3.7819 0.86619 3.7819 0.55856 3.7819 0.55856 3.7819 0.55856 6.1577 0.55856 6.1577 0.55856 finally 5.5652 1.0935 solid #64748b
+edge dsl client 7 8.899 1.9799 9.7612 1.9799 10.712 1.9799 10.712 1.9799 10.712 1.9799 10.712 1.986 10.712 1.986 call 9.3886 2.2185 solid #64748b
+edge client block 7 9.8782 2.4066 8.0343 2.4066 3.7819 2.4066 3.7819 2.4066 3.7819 2.4066 3.7819 1.9232 3.7819 1.9232 result 7.5316 3.1629 solid #64748b
+edge client aws 4 11.552 2.4811 11.552 2.4811 12.686 2.4811 12.686 2.4811 request 12.186 2.8157 solid #64748b
+edge aws client 4 12.821 2.2614 12.821 2.2614 11.686 2.2614 11.686 2.2614 response 12.186 2.0935 solid #64748b
+edge close app 4 6.2924 0.45796 6.2924 0.45796 1.6895 0.45796 1.6895 0.45796 return 3.7863 0.28792 solid #64748b
+stop

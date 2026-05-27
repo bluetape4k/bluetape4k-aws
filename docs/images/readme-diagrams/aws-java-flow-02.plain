@@ -1,0 +1,14 @@
+graph 1 16.097 1.3939
+node caller 1.0515 0.38514 2.1029 0.65917 "Caller\nservice operation intent" rounded,filled box #38bdf8 #e0f2fe
+node builder 3.8158 0.92681 2.1758 0.89875 "bluetape4k request DSL\nbucket/key, table/key,\nmessage, metric, key id" rounded,filled box #22c55e #dcfce7
+node client 6.3875 0.92681 1.7175 0.65917 "AWS SDK v2 client\nsync or async" rounded,filled box #f59e0b #fef3c7
+node future 12.369 0.87125 1.7279 0.65917 "CompletableFuture\nnon-blocking result" rounded,filled box #a855f7 #f3e8ff
+node suspend 14.977 0.32958 2.2383 0.65917 "Coroutine wrapper\nawait(), Flow, suspend API" rounded,filled box #06b6d4 #ecfeff
+node service 9.3758 0.94069 3.0092 0.90635 "AWS service\nS3 / SQS / DynamoDB / KMS / etc." rounded,filled cylinder #f97316 #fff7ed
+edge caller builder 4 2.1084 0.59608 2.1084 0.59608 2.5871 0.59608 2.5871 0.59608 solid #64748b
+edge builder client 4 4.9102 0.92681 4.9102 0.92681 5.3881 0.92681 5.3881 0.92681 solid #64748b
+edge client service 4 7.2518 0.92681 7.2518 0.92681 7.7301 0.92681 7.7301 0.92681 solid #64748b
+edge future suspend 4 13.238 0.60042 13.238 0.60042 13.717 0.60042 13.717 0.60042 solid #64748b
+edge suspend caller 4 13.856 0.26649 13.856 0.26649 2.2451 0.26649 2.2451 0.26649 solid #64748b
+edge service future 4 10.886 0.87125 10.886 0.87125 11.364 0.87125 11.364 0.87125 solid #64748b
+stop

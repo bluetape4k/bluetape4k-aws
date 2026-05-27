@@ -1,0 +1,21 @@
+digraph AwsExposedFlow {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.42, ranksep=0.62, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  config [label="Configured source\nstatic, Secrets Manager,\nParameter Store, or adapter", fillcolor="#e0f2fe", color="#38bdf8"]
+  properties [label="AwsDatabaseConnectionProperties\nURL, driver, username, pool", fillcolor="#dcfce7", color="#22c55e"]
+  secret [label="AwsSecretString\nredacted diagnostics", fillcolor="#f3e8ff", color="#a855f7"]
+  auth [label="Authentication mode\nstatic password or RDS IAM", fillcolor="#fee2e2", color="#fb7185"]
+  hikari [label="HikariDataSource\nphysical JDBC pool", fillcolor="#fef3c7", color="#f59e0b"]
+  exposed [label="Exposed Database handle\nregistered by name", fillcolor="#ecfeff", color="#06b6d4"]
+  database [label="JDBC database", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  config -> properties
+  properties -> secret
+  properties -> auth
+  secret -> hikari
+  auth -> hikari
+  hikari -> exposed
+  exposed -> database
+}

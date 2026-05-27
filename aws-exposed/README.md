@@ -21,6 +21,20 @@ resolve AWS configuration and pass the final JDBC settings to this foundation.
 contain the raw secret and must stay inside trusted process or storage
 boundaries.
 
+## Architecture
+
+### Module Architecture
+
+![AWS Exposed architecture diagram](../docs/images/readme-diagrams/aws-exposed-architecture-01.png)
+
+### Configuration Flow
+
+![AWS Exposed configuration flow diagram](../docs/images/readme-diagrams/aws-exposed-flow-02.png)
+
+### Database Handle Sequence
+
+![AWS Exposed database handle sequence diagram](../docs/images/readme-diagrams/aws-exposed-sequence-03.png)
+
 ## Dependency
 
 ```kotlin

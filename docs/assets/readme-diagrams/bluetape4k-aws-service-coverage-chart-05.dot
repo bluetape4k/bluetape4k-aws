@@ -1,7 +1,7 @@
 digraph Bluetape4kAwsServiceCoverage {
   graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.60, splines=ortho]
-  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.12,0.08", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.4, arrowsize=0.7]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.12,0.08", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.4, arrowsize=0.7]
 
   services [label="Service families\nS3, SQS, SNS, DynamoDB,\nKMS, SES/SESv2, Secrets,\nParameter Store, CloudWatch,\nKinesis, STS", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
 

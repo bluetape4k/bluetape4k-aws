@@ -22,7 +22,7 @@ The BOM is a Gradle `java-platform` that publishes only `<dependencyManagement>`
 
 | Module | Description |
 |--------|-------------|
-| `bluetape4k-aws` | Core AWS SDK v2 wrappers with Coroutines support |
+| `bluetape4k-aws-java` | Core AWS SDK v2 wrappers with Coroutines support |
 | `bluetape4k-aws-kotlin` | AWS Kotlin SDK extensions |
 | `bluetape4k-aws-ktor` | Ktor 3 integration helpers |
 | `bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration |
@@ -43,7 +43,7 @@ dependencyManagement {
 }
 
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws")            // version omitted
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")       // version omitted
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot") // version omitted
 }
 ```
@@ -53,7 +53,7 @@ dependencies {
 ```kotlin
 dependencies {
     implementation(platform("io.github.bluetape4k.aws:bluetape4k-aws-bom:<version>"))
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
 }
 ```
 

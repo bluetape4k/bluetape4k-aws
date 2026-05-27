@@ -1,0 +1,18 @@
+graph 1 24.491 1.9407
+node adapter 0.93687 1.0518 1.8738 0.5 "Framework adapter" rounded,filled box #38bdf8 #e0f2fe
+node resolver 4.3019 1.0518 2.4467 0.65917 "Settings resolver\noptional AWS-backed lookup" rounded,filled box #a855f7 #f3e8ff
+node factory 8.667 1.0518 2.5612 0.5 AwsExposedDatabaseFactory rounded,filled box #f59e0b #fef3c7
+node iam 12.98 1.5796 2.1967 0.65917 "RDS IAM helper\noptional token generation" rounded,filled box #fb7185 #fee2e2
+node hikari 12.98 0.32958 1.6133 0.5 HikariDataSource rounded,filled box #22c55e #dcfce7
+node registry 17.064 0.32958 2.3946 0.65917 "Database registry\nAwsExposedDatabaseHandle" rounded,filled box #06b6d4 #ecfeff
+node app 20.481 0.32958 2.1758 0.5 "Repository / transaction" rounded,filled box #94a3b8 #f8fafc
+node db 23.778 0.32958 1.4258 0.57693 "JDBC database" rounded,filled cylinder #f97316 #fff7ed
+edge adapter resolver 4 1.8787 1.0518 1.8787 1.0518 2.941 1.0518 2.941 1.0518 resolve 2.4762 1.1351 solid #64748b
+edge resolver factory 4 5.5295 1.0518 5.5295 1.0518 7.2445 1.0518 7.2445 1.0518 "connection props" 6.4558 1.1351 solid #64748b
+edge factory iam 7 9.9504 1.0259 10.916 1.0259 12.075 1.0259 12.075 1.0259 12.075 1.0259 12.075 1.109 12.075 1.109 "when RDS_IAM" 10.915 1.8574 solid #64748b
+edge factory hikari 7 9.9544 0.91385 11.225 0.91385 12.977 0.91385 12.977 0.91385 12.977 0.91385 12.977 0.71646 12.977 0.71646 "create pool" 10.915 0.41292 solid #64748b
+edge iam factory 7 11.977 1.2449 11.977 1.1833 11.977 1.138 11.977 1.138 11.977 1.138 10.087 1.138 10.087 1.138 "token as password" 10.915 1.1351 solid #64748b
+edge hikari registry 4 13.792 0.32958 13.792 0.32958 15.727 0.32958 15.727 0.32958 "register handle" 14.972 0.41292 solid #64748b
+edge registry app 4 18.264 0.32958 18.264 0.32958 19.251 0.32958 19.251 0.32958 lookup 18.827 0.41292 solid #64748b
+edge app db 4 21.574 0.32958 21.574 0.32958 22.926 0.32958 22.926 0.32958 transaction 22.317 0.41292 solid #64748b
+stop
