@@ -1,15 +1,15 @@
-graph 1 10.807 2.4786
-node app 0.75979 1.2393 1.5196 0.5 "Application code" rounded,filled box #38bdf8 #e0f2fe
-node sync 3.4061 2.2115 2.3842 0.53417 "Sync extensions\nrequest builders and helpers" rounded,filled box #94a3b8 #f8fafc
-node async 3.4061 1.2393 2.3008 0.53417 "Async extensions\nCompletableFuture helpers" rounded,filled box #38bdf8 #e0f2fe
-node suspend 3.4061 0.26708 1.8529 0.53417 "Coroutine extensions\nsuspend wrappers" rounded,filled box #22c55e #dcfce7
-node clients 6.8545 1.2393 3.1237 0.71125 "AWS Java SDK v2 clients\nS3AsyncClient, SqsAsyncClient,\nDynamoDbEnhancedAsyncClient, etc." rounded,filled box #f59e0b #fef3c7
-node aws 9.9592 1.2393 1.6967 0.73448 "AWS services\nor LocalStack/Floci" rounded,filled cylinder #f97316 #fff7ed
-edge app sync 7 0.76583 1.4947 0.76583 1.7828 0.76583 2.2115 0.76583 2.2115 0.76583 2.2115 2.0739 2.2115 2.0739 2.2115 solid #64748b
-edge app async 4 1.5252 1.2393 1.5252 1.2393 2.1177 1.2393 2.1177 1.2393 solid #64748b
-edge app suspend 7 0.76583 0.98387 0.76583 0.69581 0.76583 0.26708 0.76583 0.26708 0.76583 0.26708 2.3395 0.26708 2.3395 0.26708 solid #64748b
-edge sync clients 7 4.6007 2.2115 5.5951 2.2115 6.8492 2.2115 6.8492 2.2115 6.8492 2.2115 6.8492 1.737 6.8492 1.737 solid #64748b
-edge async clients 4 4.5592 1.2393 4.5592 1.2393 5.1558 1.2393 5.1558 1.2393 solid #64748b
-edge suspend clients 7 4.3379 0.26708 5.3575 0.26708 6.8492 0.26708 6.8492 0.26708 6.8492 0.26708 6.8492 0.74159 6.8492 0.74159 solid #64748b
-edge clients aws 4 8.4205 1.2393 8.4205 1.2393 8.9713 1.2393 8.9713 1.2393 solid #64748b
+graph 1 10.932 2.8536
+node app 0.75458 1.4268 1.5092 0.5 "Application code" rounded,filled box #38bdf8 #e0f2fe
+node sync 3.4374 2.524 2.4675 0.65917 "Sync extensions\nrequest builders and helpers" rounded,filled box #94a3b8 #f8fafc
+node async 3.4374 1.4268 2.3633 0.65917 "Async extensions\nCompletableFuture helpers" rounded,filled box #38bdf8 #e0f2fe
+node suspend 3.4374 0.32958 1.8633 0.65917 "Coroutine extensions\nsuspend wrappers" rounded,filled box #22c55e #dcfce7
+node clients 6.8753 1.4268 3.0196 0.89875 "AWS Java SDK v2 clients\nS3AsyncClient, SqsAsyncClient,\nDynamoDbEnhancedAsyncClient, etc." rounded,filled box #f59e0b #fef3c7
+node aws 10.006 1.4268 1.8529 0.90635 "AWS services\nor LocalStack/Floci" rounded,filled cylinder #f97316 #fff7ed
+edge app sync 7 0.75194 1.6813 0.75194 2.0054 0.75194 2.524 0.75194 2.524 0.75194 2.524 2.0611 2.524 2.0611 2.524 solid #64748b
+edge app async 4 1.5126 1.4268 1.5126 1.4268 2.1141 1.4268 2.1141 1.4268 solid #64748b
+edge app suspend 7 0.75194 1.1723 0.75194 0.84819 0.75194 0.32958 0.75194 0.32958 0.75194 0.32958 2.3662 0.32958 2.3662 0.32958 solid #64748b
+edge sync clients 7 3.4325 2.1909 3.4325 2.0073 3.4325 1.8163 3.4325 1.8163 3.4325 1.8163 5.2246 1.8163 5.2246 1.8163 solid #64748b
+edge async clients 4 4.6253 1.4268 4.6253 1.4268 5.2242 1.4268 5.2242 1.4268 solid #64748b
+edge suspend clients 7 3.4325 0.66273 3.4325 0.8463 3.4325 1.0373 3.4325 1.0373 3.4325 1.0373 5.2246 1.0373 5.2246 1.0373 solid #64748b
+edge clients aws 4 8.3903 1.4268 8.3903 1.4268 8.9405 1.4268 8.9405 1.4268 solid #64748b
 stop

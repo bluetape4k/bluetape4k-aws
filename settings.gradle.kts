@@ -66,7 +66,7 @@ include(
     "bluetape4k-aws-spring-boot",
     "bluetape4k-aws-ktor",
 )
-project(":bluetape4k-aws-java").projectDir = file("aws")
+project(":bluetape4k-aws-java").projectDir = file("aws-java")
 project(":bluetape4k-aws-kotlin").projectDir = file("aws-kotlin")
 project(":bluetape4k-aws-exposed").projectDir = file("aws-exposed")
 project(":bluetape4k-aws-spring-boot").projectDir = file("aws-spring-boot")

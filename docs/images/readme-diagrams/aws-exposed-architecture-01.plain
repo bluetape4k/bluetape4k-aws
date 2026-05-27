@@ -1,0 +1,18 @@
+graph 1 10.204 7.6744
+node adapter 3.3206 7.3448 2.6862 0.65917 "Spring Boot or Ktor adapter\nresolves final database settings" rounded,filled box #38bdf8 #e0f2fe
+node props 1.4317 5.9912 2.8633 0.65917 "AwsDatabaseProperties\ndefault + named database configs" rounded,filled box #22c55e #dcfce7
+node resolver 5.2094 5.9912 3.7071 0.65917 "AwsDatabaseSettingsResolver\nSecrets Manager / Parameter Store bridge" rounded,filled box #a855f7 #f3e8ff
+node factory 5.2094 4.6376 2.5612 0.65917 "AwsExposedDatabaseFactory\nHikari + Exposed Database" rounded,filled box #f59e0b #fef3c7
+node registry 5.2094 3.284 2.5612 0.65917 "AwsExposedDatabaseRegistry\ndefault and named handles" rounded,filled box #06b6d4 #ecfeff
+node iam 8.8761 5.9912 2.655 0.65917 "RDS IAM token support\nRdsUtilities password substitute" rounded,filled box #fb7185 #fee2e2
+node exposed 5.2094 1.9304 2.8008 0.65917 "bluetape4k-exposed repositories\nor Exposed DSL" rounded,filled box #94a3b8 #f8fafc
+node db 5.2094 0.45318 2.3842 0.90635 "JDBC database\nPostgreSQL, RDS, H2 tests" rounded,filled cylinder #f97316 #fff7ed
+edge adapter props 4 2.4204 7.0102 2.4204 7.0102 2.4204 6.4624 2.4204 6.4624 solid #64748b
+edge adapter resolver 4 4.0098 7.0102 4.0098 7.0102 4.0098 6.4624 4.0098 6.4624 solid #64748b
+edge props factory 7 1.4317 5.6569 1.4317 5.2565 1.4317 4.6389 1.4317 4.6389 1.4317 4.6389 3.7895 4.6389 3.7895 4.6389 solid #64748b
+edge resolver factory 4 5.2094 5.6566 5.2094 5.6566 5.2094 5.1087 5.2094 5.1087 solid #64748b
+edge factory registry 4 5.2094 4.303 5.2094 4.303 5.2094 3.7551 5.2094 3.7551 solid #64748b
+edge registry exposed 4 5.2094 2.9494 5.2094 2.9494 5.2094 2.4015 5.2094 2.4015 solid #64748b
+edge iam factory 7 8.8761 5.6569 8.8761 5.2565 8.8761 4.6389 8.8761 4.6389 8.8761 4.6389 6.6276 4.6389 6.6276 4.6389 solid #64748b
+edge exposed db 4 5.2094 1.5952 5.2094 1.5952 5.2094 1.0459 5.2094 1.0459 solid #64748b
+stop

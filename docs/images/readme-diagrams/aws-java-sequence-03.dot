@@ -1,0 +1,18 @@
+digraph AwsJavaSequence {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  coroutine [label="Coroutine caller", fillcolor="#e0f2fe", color="#38bdf8"]
+  extension [label="bluetape4k extension\nputAsString(), receiveMessages(),\nfindByKey(), encryptRequestOf()", fillcolor="#dcfce7", color="#22c55e"]
+  asyncClient [label="AWS async client\nCompletableFuture API", fillcolor="#fef3c7", color="#f59e0b"]
+  awaiter [label="kotlinx.coroutines\nfuture.await()", fillcolor="#f3e8ff", color="#a855f7"]
+  aws [label="AWS service\nor emulator", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  coroutine -> extension [label="suspend call"]
+  extension -> asyncClient [label="build request"]
+  asyncClient -> aws [label="send"]
+  aws -> asyncClient [label="response"]
+  asyncClient -> awaiter [label="future"]
+  awaiter -> coroutine [label="resume"]
+}

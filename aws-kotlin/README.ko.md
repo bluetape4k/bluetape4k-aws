@@ -4,25 +4,21 @@
 
 AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 기본 제공하여 `.await()` 변환 없이 Coroutines 환경에서 바로 사용할 수 있습니다.
 
-> AWS Java SDK v2 기반 모듈은 `bluetape4k-aws`를 사용하세요.
+> AWS Java SDK v2 기반 모듈은 `bluetape4k-aws-java`를 사용하세요.
 
 ## 아키텍처
 
-### Java SDK v2 vs Kotlin SDK 비교 다이어그램
+### Architecture
 
 ![Java SDK v2 vs Kotlin SDK diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-01.png)
 
-### 클라이언트 생성 패턴 다이어그램
+### Operation Flow
 
-![aws kotlin Architecture 2 diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-02.png)
+![AWS Kotlin operation flow diagram](../docs/images/readme-diagrams/aws-kotlin-flow-02.png)
 
-### DSL 지원 서비스
+### Client Lifecycle Sequence
 
-![DSL diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-03.png)
-
-### 클라이언트 패턴 클래스 다이어그램
-
-![aws kotlin Class Structure 4 diagram](../docs/images/readme-diagrams/aws-kotlin-class-04.png)
+![AWS Kotlin client lifecycle sequence diagram](../docs/images/readme-diagrams/aws-kotlin-sequence-03.png)
 
 ## 제공 서비스
 
@@ -41,7 +37,7 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 
 ## Java SDK v2 vs Kotlin SDK 비교
 
-| 항목         | `bluetape4k-aws` (Java SDK) | `bluetape4k-aws-kotlin` (Kotlin SDK) |
+| 항목         | `bluetape4k-aws-java` (Java SDK) | `bluetape4k-aws-kotlin` (Kotlin SDK) |
 |------------|-----------------------------|--------------------------------------|
 | Coroutines | `.await()` 변환 필요            | native `suspend` 기본 제공               |
 | DSL 지원     | 제한적                         | 풍부한 DSL 빌더                           |
@@ -270,7 +266,7 @@ abstract class AbstractAwsTest {
 모듈 테스트 실행:
 
 ```bash
-./gradlew :aws-kotlin:test
+./gradlew :bluetape4k-aws-kotlin:test
 ```
 
 ## 설치

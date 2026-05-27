@@ -22,7 +22,7 @@ BOM은 Gradle `java-platform` 으로 `<dependencyManagement>` constraint 만 게
 
 | 모듈 | 설명 |
 |------|------|
-| `bluetape4k-aws` | AWS SDK v2 래퍼 (Coroutines 지원) |
+| `bluetape4k-aws-java` | AWS SDK v2 래퍼 (Coroutines 지원) |
 | `bluetape4k-aws-kotlin` | AWS Kotlin SDK 확장 |
 | `bluetape4k-aws-ktor` | Ktor 3 연동 헬퍼 |
 | `bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration |
@@ -43,7 +43,7 @@ dependencyManagement {
 }
 
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws")            // 버전 생략
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")       // 버전 생략
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot") // 버전 생략
 }
 ```
@@ -53,7 +53,7 @@ dependencies {
 ```kotlin
 dependencies {
     implementation(platform("io.github.bluetape4k.aws:bluetape4k-aws-bom:<version>"))
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
 }
 ```
 

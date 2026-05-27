@@ -1,0 +1,23 @@
+digraph AwsExposedArchitecture {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  adapter [label="Spring Boot or Ktor adapter\nresolves final database settings", fillcolor="#e0f2fe", color="#38bdf8"]
+  props [label="AwsDatabaseProperties\ndefault + named database configs", fillcolor="#dcfce7", color="#22c55e"]
+  resolver [label="AwsDatabaseSettingsResolver\nSecrets Manager / Parameter Store bridge", fillcolor="#f3e8ff", color="#a855f7"]
+  factory [label="AwsExposedDatabaseFactory\nHikari + Exposed Database", fillcolor="#fef3c7", color="#f59e0b"]
+  registry [label="AwsExposedDatabaseRegistry\ndefault and named handles", fillcolor="#ecfeff", color="#06b6d4"]
+  iam [label="RDS IAM token support\nRdsUtilities password substitute", fillcolor="#fee2e2", color="#fb7185"]
+  exposed [label="bluetape4k-exposed repositories\nor Exposed DSL", fillcolor="#f8fafc", color="#94a3b8"]
+  db [label="JDBC database\nPostgreSQL, RDS, H2 tests", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  adapter -> props
+  adapter -> resolver
+  props -> factory
+  resolver -> factory
+  iam -> factory
+  factory -> registry
+  registry -> exposed
+  exposed -> db
+}

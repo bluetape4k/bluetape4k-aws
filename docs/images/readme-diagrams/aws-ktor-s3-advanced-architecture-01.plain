@@ -1,25 +1,25 @@
-graph 1 13.676 5.5142
-node app 7.0237 5.2642 1.4467 0.5 "Ktor Application" rounded,filled box #5b8def #e8f3ff
-node client 7.0237 4.0142 1.2279 0.5 S3KtorClient rounded,filled box #d6a441 #fff3d9
-node detector 0.96812 2.7642 1.9363 0.5 "Content Type Detector" rounded,filled box #4ca6a8 #e8f7f6
-node sse 3.8153 2.7642 2.6446 0.5 "Server-side Encryption Headers" rounded,filled box #dc6b82 #fdecef
-node cse 7.0237 2.7642 2.6654 0.5 "Client-side Envelope Encryption" rounded,filled box #8b7cf6 #eef2ff
-node datakey 8.0653 1.5142 2.0612 0.5 S3KtorDataKeyProvider rounded,filled box #a36ad6 #f3e8ff
-node config 9.9265 2.7642 2.0404 0.5 "S3 Config Data Helpers" rounded,filled box #80a857 #f7fbef
-node sigv4 12.274 2.7642 1.53 0.5 AwsSigV4Plugin rounded,filled box #8b7cf6 #eef2ff
-node s3 11.871 1.5142 2.3425 0.5 "AWS S3 / Floci / LocalStack" rounded,filled cylinder #f59e0b #fff7ed
-node optional 10.454 0.25708 2.6758 0.51417 "Application-owned SDKs\nAccess Grants / S3 Vector / KMS" rounded,filled box #94a3b8 #f8fafc
-edge app client 4 7.0237 5.0088 7.0237 4.8397 7.0237 4.6102 7.0237 4.4157 solid #64748b
-edge client detector 4 6.4074 3.9003 5.3892 3.7139 3.3605 3.308 2.0864 3.0389 solid #64748b
-edge client sse 4 6.4051 3.8226 5.828 3.6268 4.9836 3.3089 4.4136 3.0752 solid #64748b
-edge client cse 4 7.0237 3.7588 7.0237 3.5897 7.0237 3.3602 7.0237 3.1657 solid #64748b
-edge client config 4 7.4273 3.7588 7.8491 3.5613 8.5106 3.2812 9.0501 3.0709 solid #64748b
-edge client sigv4 4 7.6414 3.8565 8.5623 3.6421 10.301 3.2374 11.366 2.9893 solid #64748b
-edge detector client 4 1.942 2.9447 3.1479 3.1723 5.1663 3.5793 6.2645 3.8159 solid #64748b
-edge sse client 4 4.6219 3.0205 5.1834 3.2166 5.9141 3.4935 6.4248 3.7029 solid #64748b
-edge cse datakey 4 7.2295 2.5088 7.3821 2.3297 7.5926 2.0827 7.7642 1.8814 solid #64748b
-edge datakey optional 4 8.5373 1.2574 8.9115 1.0648 9.4373 0.79427 9.8436 0.5852 solid #64748b
-edge config client 4 9.5202 3.0208 9.0668 3.2329 8.3388 3.5396 7.7819 3.7531 solid #64748b
-edge sigv4 s3 4 12.194 2.5088 12.138 2.3381 12.061 2.1056 11.997 1.9099 solid #64748b
-edge optional client 10 11.798 0.39788 12.363 0.52537 12.968 0.77574 13.315 1.2642 13.766 1.8979 13.821 2.4231 13.315 3.0142 12.612 3.8364 9.3062 3.9778 7.7887 3.9988 solid #64748b
+graph 1 13.886 5.6886
+node app 7.2824 5.4386 1.4883 0.5 "Ktor Application" rounded,filled box #5b8def #e8f3ff
+node client 7.2824 4.1886 1.2279 0.5 S3KtorClient rounded,filled box #d6a441 #fff3d9
+node detector 1.0462 2.9386 2.0925 0.5 "Content Type Detector" rounded,filled box #4ca6a8 #e8f7f6
+node sse 4.0324 2.9386 2.7592 0.5 "Server-side Encryption Headers" rounded,filled box #dc6b82 #fdecef
+node cse 7.2824 2.9386 2.6342 0.5 "Client-side Envelope Encryption" rounded,filled box #8b7cf6 #eef2ff
+node datakey 8.1851 1.6639 2.1133 0.5 S3KtorDataKeyProvider rounded,filled box #a36ad6 #f3e8ff
+node config 10.199 2.9386 2.0821 0.5 "S3 Config Data Helpers" rounded,filled box #80a857 #f7fbef
+node sigv4 12.518 2.9386 1.4363 0.5 AwsSigV4Plugin rounded,filled box #8b7cf6 #eef2ff
+node s3 11.977 1.6639 2.5404 0.54943 "AWS S3 / Floci / LocalStack" rounded,filled cylinder #f59e0b #fff7ed
+node optional 10.685 0.31958 2.9779 0.63917 "Application-owned SDKs\nAccess Grants / S3 Vector / KMS" rounded,filled box #94a3b8 #f8fafc
+edge app client 4 7.2824 5.1832 7.2824 5.0142 7.2824 4.7846 7.2824 4.5901 solid #64748b
+edge client detector 4 6.6629 4.0768 5.6306 3.893 3.5602 3.4909 2.2395 3.2208 solid #64748b
+edge client sse 4 6.6616 3.9983 6.0783 3.8029 5.2216 3.4845 4.6423 3.2502 solid #64748b
+edge client cse 4 7.2824 3.9332 7.2824 3.7642 7.2824 3.5346 7.2824 3.3401 solid #64748b
+edge client config 4 7.6887 3.9332 8.1128 3.7357 8.7775 3.4556 9.3193 3.2453 solid #64748b
+edge client sigv4 7 7.8999 4.0316 8.7248 3.8403 10.232 3.4902 11.518 3.1886 11.564 3.178 11.61 3.1671 11.657 3.1561 solid #64748b
+edge detector client 4 2.0969 3.1287 3.3517 3.3598 5.4106 3.7633 6.5221 3.9958 solid #64748b
+edge sse client 4 4.8472 3.195 5.4153 3.391 6.1555 3.6679 6.6734 3.8773 solid #64748b
+edge cse datakey 4 7.4564 2.6843 7.5901 2.4997 7.7766 2.242 7.9275 2.0336 solid #64748b
+edge datakey optional 4 8.6437 1.4085 9.0129 1.2141 9.5385 0.93728 9.964 0.71323 solid #64748b
+edge config client 4 9.7935 3.1936 9.3371 3.4062 8.6013 3.7147 8.0402 3.9288 solid #64748b
+edge sigv4 s3 4 12.414 2.6843 12.339 2.5118 12.236 2.2754 12.149 2.0751 solid #64748b
+edge optional client 10 12.177 0.53705 12.689 0.68621 13.209 0.94401 13.518 1.3892 13.975 2.046 14.038 2.5805 13.518 3.1886 12.823 4.0032 9.553 4.1487 8.0462 4.172 solid #64748b
 stop

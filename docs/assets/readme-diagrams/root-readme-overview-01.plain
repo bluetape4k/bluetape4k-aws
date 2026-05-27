@@ -1,16 +1,16 @@
-graph 1 4.9259 9.4797
-node apps 3.4482 9.2026 2.9554 0.55417 "Kotlin application surfaces\nplain services, Spring Boot 4, Ktor 3" rounded,filled box #38bdf8 #e0f2fe
-node bom 3.4482 7.954 1.6325 0.55417 "BOM\nversion alignment" rounded,filled box #64748b #f1f5f9
-node modules 3.4482 6.6168 2.9346 0.73125 "Runtime modules\naws-java, aws-kotlin, aws-exposed,\naws-spring-boot, aws-ktor" rounded,filled box #22c55e #dcfce7
-node integrations 2.1149 5.1911 3.5387 0.73125 "Framework integrations\nSpring operations and listeners,\nKtor SigV4, S3, SQS, DynamoDB, Exposed" rounded,filled box #f59e0b #fef3c7
-node examples 2.0038 3.7655 4.0075 0.73125 "Runnable examples\nKtor: S3, SQS, DynamoDB, Exposed\nSpring Boot: S3, SQS/SNS, DynamoDB, Exposed" rounded,filled box #a855f7 #f3e8ff
-node verification 2.4204 2.2026 2.3408 1.0055 "Local verification\nLocalStack, Floci,\nPostgreSQL Testcontainers" rounded,filled cylinder #eab308 #fefce8
-node services 3.3371 0.50273 2.8408 1.0055 "AWS service surface\nS3, SQS, SNS, DynamoDB, KMS,\nSES, CloudWatch, Kinesis, STS" rounded,filled cylinder #f97316 #fff7ed
-edge apps bom 4 3.4482 8.9193 3.4482 8.9193 3.4482 8.383 3.4482 8.383 solid #64748b
-edge bom modules 4 3.4482 7.6704 3.4482 7.6704 3.4482 7.1333 3.4482 7.1333 solid #64748b
-edge modules integrations 4 2.9326 6.246 2.9326 6.246 2.9326 5.707 2.9326 5.707 solid #64748b
-edge modules services 4 4.3825 6.2481 4.3825 6.2481 4.3825 1.1384 4.3825 1.1384 dashed #64748b
-edge integrations examples 4 2.1149 4.8203 2.1149 4.8203 2.1149 4.2813 2.1149 4.2813 solid #64748b
-edge examples verification 4 2.4204 3.3951 2.4204 3.3951 2.4204 2.8591 2.4204 2.8591 solid #64748b
-edge verification services 4 2.7538 1.6972 2.7538 1.6972 2.7538 1.156 2.7538 1.156 solid #64748b
+graph 1 4.9537 10.808
+node apps 3.3926 10.468 3.1221 0.67917 "Kotlin application surfaces\nplain services, Spring Boot 4, Ktor 3" rounded,filled box #38bdf8 #e0f2fe
+node bom 3.3926 9.0946 1.6012 0.67917 "BOM\nversion alignment" rounded,filled box #64748b #f1f5f9
+node modules 3.3926 7.6012 2.9033 0.91875 "Runtime modules\naws-java, aws-kotlin, aws-exposed,\naws-spring-boot, aws-ktor" rounded,filled box #22c55e #dcfce7
+node integrations 2.0732 5.988 3.4762 0.91875 "Framework integrations\nSpring operations and listeners,\nKtor SigV4, S3, SQS, DynamoDB, Exposed" rounded,filled box #f59e0b #fef3c7
+node examples 1.9621 4.3748 3.9242 0.91875 "Runnable examples\nKtor: S3, SQS, DynamoDB, Exposed\nSpring Boot: S3, SQS/SNS, DynamoDB, Exposed" rounded,filled box #a855f7 #f3e8ff
+node verification 2.3232 2.5894 2.4762 1.2633 "Local verification\nLocalStack, Floci,\nPostgreSQL Testcontainers" rounded,filled cylinder #eab308 #fefce8
+node services 3.2815 0.63164 2.695 1.2633 "AWS service surface\nS3, SQS, SNS, DynamoDB, KMS,\nSES, CloudWatch, Kinesis, STS" rounded,filled cylinder #f97316 #fff7ed
+edge apps bom 4 3.3926 10.125 3.3926 10.125 3.3926 9.5849 3.3926 9.5849 solid #64748b
+edge bom modules 4 3.3926 8.7482 3.3926 8.7482 3.3926 8.2114 3.3926 8.2114 solid #64748b
+edge modules integrations 4 2.8761 7.1389 2.8761 7.1389 2.8761 6.5972 2.8761 6.5972 solid #64748b
+edge modules services 4 4.2766 7.1385 4.2766 7.1385 4.2766 1.3915 4.2766 1.3915 dashed #64748b
+edge integrations examples 4 2.0732 5.5257 2.0732 5.5257 2.0732 4.984 2.0732 4.984 solid #64748b
+edge examples verification 4 2.3232 3.9104 2.3232 3.9104 2.3232 3.3731 2.3232 3.3731 solid #64748b
+edge verification services 4 2.7477 1.9537 2.7477 1.9537 2.7477 1.4109 2.7477 1.4109 solid #64748b
 stop

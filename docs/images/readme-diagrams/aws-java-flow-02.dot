@@ -1,0 +1,19 @@
+digraph AwsJavaFlow {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.42, ranksep=0.62, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  caller [label="Caller\nservice operation intent", fillcolor="#e0f2fe", color="#38bdf8"]
+  builder [label="bluetape4k request DSL\nbucket/key, table/key,\nmessage, metric, key id", fillcolor="#dcfce7", color="#22c55e"]
+  client [label="AWS SDK v2 client\nsync or async", fillcolor="#fef3c7", color="#f59e0b"]
+  future [label="CompletableFuture\nnon-blocking result", fillcolor="#f3e8ff", color="#a855f7"]
+  suspend [label="Coroutine wrapper\nawait(), Flow, suspend API", fillcolor="#ecfeff", color="#06b6d4"]
+  service [label="AWS service\nS3 / SQS / DynamoDB / KMS / etc.", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  caller -> builder
+  builder -> client
+  client -> service
+  service -> future
+  future -> suspend
+  suspend -> caller
+}

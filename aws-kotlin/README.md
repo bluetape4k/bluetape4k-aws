@@ -6,25 +6,21 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 `suspend` functions out of the box, so you can use it directly in coroutine environments without any
 `.await()` conversion.
 
-> For the AWS Java SDK v2 based module, use `bluetape4k-aws`.
+> For the AWS Java SDK v2 based module, use `bluetape4k-aws-java`.
 
 ## Architecture
 
-### Java SDK v2 vs Kotlin SDK Comparison
+### Architecture
 
-![Java SDK v2 vs Kotlin SDK Comparison diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-01.png)
+![AWS Kotlin architecture diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-01.png)
 
-### Client Creation Pattern
+### Operation Flow
 
-![Client Creation Pattern diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-02.png)
+![AWS Kotlin operation flow diagram](../docs/images/readme-diagrams/aws-kotlin-flow-02.png)
 
-### DSL-Supported Services
+### Client Lifecycle Sequence
 
-![DSL-Supported Services diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-03.png)
-
-### Client Pattern Class Diagram
-
-![Client Pattern Class Diagram diagram](../docs/images/readme-diagrams/aws-kotlin-class-04.png)
+![AWS Kotlin client lifecycle sequence diagram](../docs/images/readme-diagrams/aws-kotlin-sequence-03.png)
 
 ## Supported Services
 
@@ -43,7 +39,7 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 
 ## Java SDK v2 vs Kotlin SDK Comparison
 
-| Aspect      | `bluetape4k-aws` (Java SDK)    | `bluetape4k-aws-kotlin` (Kotlin SDK) |
+| Aspect      | `bluetape4k-aws-java` (Java SDK) | `bluetape4k-aws-kotlin` (Kotlin SDK) |
 |-------------|--------------------------------|--------------------------------------|
 | Coroutines  | requires `.await()` conversion | native `suspend` built in            |
 | DSL support | limited                        | rich DSL builders                    |
@@ -274,7 +270,7 @@ abstract class AbstractAwsTest {
 Run module tests:
 
 ```bash
-./gradlew :aws-kotlin:test
+./gradlew :bluetape4k-aws-kotlin:test
 ```
 
 ## Adding the Dependency

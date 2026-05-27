@@ -1,4 +1,4 @@
-# Module bluetape4k-aws
+# Module bluetape4k-aws-java
 
 [English](./README.md) | 한국어
 
@@ -6,17 +6,17 @@ AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, SES, SNS, SQ
 
 ## 아키텍처
 
-### 3단계 API 패턴 다이어그램
+### Architecture
 
-![3 API diagram](../docs/images/readme-diagrams/aws-architecture-01.png)
+![AWS Java architecture diagram](../docs/images/readme-diagrams/aws-java-architecture-01.png)
 
-### 서비스별 지원 현황
+### Operation Flow
 
-![aws Architecture 2 diagram](../docs/images/readme-diagrams/aws-architecture-02.png)
+![AWS Java operation flow diagram](../docs/images/readme-diagrams/aws-java-flow-02.png)
 
-### 3단계 API 패턴 클래스 다이어그램
+### Coroutine Sequence
 
-![3 API diagram](../docs/images/readme-diagrams/aws-class-03.png)
+![AWS Java coroutine sequence diagram](../docs/images/readme-diagrams/aws-java-sequence-03.png)
 
 ## 제공 서비스
 
@@ -169,10 +169,10 @@ abstract class AbstractAwsTest {
 }
 ```
 
-`aws` 모듈 테스트 실행:
+`bluetape4k-aws-java` 모듈 테스트 실행:
 
 ```bash
-./gradlew :aws:test
+./gradlew :bluetape4k-aws-java:test
 ```
 
 ## 설치
@@ -181,7 +181,7 @@ AWS SDK 서비스와 코루틴 헬퍼는 `compileOnly`로 선언되어 있으므
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k:bluetape4k-aws:${bluetape4kVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:${bluetape4kVersion}")
 
     // 공개 코루틴 확장과 Flow 어댑터 사용 시 필요
     implementation("io.github.bluetape4k:bluetape4k-coroutines:${bluetape4kVersion}")

@@ -1,0 +1,13 @@
+graph 1 12.474 2.4167
+node coroutine 0.75979 0.40278 1.5196 0.5 "Coroutine caller" rounded,filled box #38bdf8 #e0f2fe
+node extension 4.5155 1.2639 2.8529 0.89875 "bluetape4k extension\nputAsString(), receiveMessages(),\nfindByKey(), encryptRequestOf()" rounded,filled box #22c55e #dcfce7
+node asyncClient 8.5941 1.4722 2.0196 0.65917 "AWS async client\nCompletableFuture API" rounded,filled box #f59e0b #fef3c7
+node awaiter 11.678 0.47222 1.5925 0.65917 "kotlinx.coroutines\nfuture.await()" rounded,filled box #a855f7 #f3e8ff
+node aws 11.678 1.8611 1.28 0.90635 "AWS service\nor emulator" rounded,filled cylinder #f97316 #fff7ed
+edge coroutine extension 7 0.76583 0.65648 0.76583 0.91049 0.76583 1.2639 0.76583 1.2639 0.76583 1.2639 2.9515 1.2639 2.9515 1.2639 "suspend call" 2.3043 1.0694 solid #64748b
+edge extension asyncClient 4 5.9477 1.428 5.9477 1.428 7.4464 1.428 7.4464 1.428 "build request" 6.7631 1.3889 solid #64748b
+edge asyncClient awaiter 7 9.6044 1.2753 10.248 1.2753 10.96 1.2753 10.96 1.2753 10.96 1.2753 10.96 0.94384 10.96 0.94384 future 10.243 0.88889 solid #64748b
+edge asyncClient aws 4 9.6081 1.5392 9.6081 1.5392 10.896 1.5392 10.896 1.5392 send 10.243 1.6111 solid #64748b
+edge awaiter coroutine 4 10.875 0.40278 10.875 0.40278 1.6593 0.40278 1.6593 0.40278 resume 6.7631 0.083333 solid #64748b
+edge aws asyncClient 4 11.031 1.6705 11.031 1.6705 9.7457 1.6705 9.7457 1.6705 response 10.243 2.3333 solid #64748b
+stop

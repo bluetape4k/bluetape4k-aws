@@ -1,0 +1,19 @@
+digraph AwsKotlinFlow {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.42, ranksep=0.62, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  caller [label="Suspend caller", fillcolor="#e0f2fe", color="#38bdf8"]
+  lifecycle [label="withXxxClient\nor xxxClientOf", fillcolor="#dcfce7", color="#22c55e"]
+  request [label="bluetape4k DSL\nmodel + request builders", fillcolor="#f3e8ff", color="#a855f7"]
+  client [label="AWS Kotlin client\nnative suspend API", fillcolor="#fef3c7", color="#f59e0b"]
+  stream [label="Flow / paged results\nrecordFlow, list, receive", fillcolor="#ecfeff", color="#06b6d4"]
+  service [label="AWS service\nor emulator", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  caller -> lifecycle
+  lifecycle -> request
+  request -> client
+  client -> service
+  service -> stream
+  stream -> caller
+}

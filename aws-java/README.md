@@ -1,4 +1,4 @@
-# Module bluetape4k-aws
+# Module bluetape4k-aws-java
 
 English | [한국어](./README.ko.md)
 
@@ -6,17 +6,17 @@ A unified integration module built on AWS Java SDK v2. Provides async/non-blocki
 
 ## Architecture
 
-### Three-Tier API Flow
+### Architecture
 
-![Three-Tier API Flow diagram](../docs/images/readme-diagrams/aws-architecture-01.png)
+![AWS Java architecture diagram](../docs/images/readme-diagrams/aws-java-architecture-01.png)
 
-### Service Support Overview
+### Operation Flow
 
-![Service Support Overview diagram](../docs/images/readme-diagrams/aws-architecture-02.png)
+![AWS Java operation flow diagram](../docs/images/readme-diagrams/aws-java-flow-02.png)
 
-### Three-Tier API Class Diagram
+### Coroutine Sequence
 
-![Three-Tier API Class Diagram diagram](../docs/images/readme-diagrams/aws-class-03.png)
+![AWS Java coroutine sequence diagram](../docs/images/readme-diagrams/aws-java-sequence-03.png)
 
 ## Supported Services
 
@@ -171,10 +171,10 @@ abstract class AbstractAwsTest {
 }
 ```
 
-Run the `aws` module tests:
+Run the `bluetape4k-aws-java` module tests:
 
 ```bash
-./gradlew :aws:test
+./gradlew :bluetape4k-aws-java:test
 ```
 
 ## Adding the Dependency
@@ -184,7 +184,7 @@ dependencies, so consumers add the runtime dependencies for the APIs they use.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k:bluetape4k-aws:${bluetape4kVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:${bluetape4kVersion}")
 
     // Coroutine extensions and Flow adapters used by public APIs
     implementation("io.github.bluetape4k:bluetape4k-coroutines:${bluetape4kVersion}")

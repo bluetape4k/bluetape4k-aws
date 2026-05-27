@@ -1,20 +1,20 @@
-graph 1 6.3397 9.4539
-node install 4.2181 9.2039 2.7487 0.5 "1. Ktor app installs SqsConsumer" rounded,filled box #38bdf8 #e0f2fe
-node defaults 4.2181 8.0063 2.7071 0.53417 "2. Resolve AwsKtorCore defaults\nor service-local SQS config" rounded,filled box #22c55e #dcfce7
-node runtime 4.2181 6.7916 2.7904 0.53417 "3. Build SqsConsumerRuntime\nclient, converters, handlers, hooks" rounded,filled box #f59e0b #fef3c7
-node start 4.2181 5.5768 2.53 0.53417 "4. ApplicationStarted launches\npoller coroutines" rounded,filled box #a855f7 #f3e8ff
-node receive 4.2181 4.3792 3.2487 0.5 "5. Long poll SQS and convert messages" rounded,filled box #ef4444 #fee2e2
-node handle 2.9542 3.1816 2.8946 0.53417 "6. Run interceptors, invoke handler,\nrecord observer event" rounded,filled box #94a3b8 #f8fafc
-node ack 2.3015 1.8245 3.2071 0.53417 "7. ack deletes message\nnack changes visibility or DLQ-forwards" rounded,filled box #f97316 #fff7ed
-node stop 1.5515 0.36724 3.1029 0.53417 "8. ApplicationStopping cancels pollers\nand drains active handlers" rounded,filled box #64748b #f1f5f9
-node sqs 4.8431 0.36724 1.6967 0.73448 "Amazon SQS\nor Floci/LocalStack" rounded,filled cylinder #f97316 #fff7ed
-edge install defaults 4 4.2181 8.9499 4.2181 8.9499 4.2181 8.4123 4.2181 8.4123 solid #64748b
-edge defaults runtime 4 4.2181 7.7367 4.2181 7.7367 4.2181 7.2003 4.2181 7.2003 solid #64748b
-edge runtime start 4 4.2181 6.522 4.2181 6.522 4.2181 5.9856 4.2181 5.9856 solid #64748b
-edge start receive 4 4.2181 5.3051 4.2181 5.3051 4.2181 4.7692 4.2181 4.7692 solid #64748b
-edge receive handle 4 3.4976 4.1252 3.4976 4.1252 3.4976 3.5875 3.4976 3.5875 solid #64748b
-edge receive sqs 4 5.0465 4.1282 5.0465 4.1282 5.0465 0.87165 5.0465 0.87165 ReceiveMessage 5.8136 2.503 solid #64748b
-edge handle ack 4 2.706 2.9134 2.706 2.9134 2.706 2.2324 2.706 2.2324 solid #64748b
-edge ack stop 4 1.9004 1.5572 1.9004 1.5572 1.9004 0.77346 1.9004 0.77346 solid #64748b
-edge ack sqs 7 3.504 1.5534 3.504 1.2151 3.504 0.68056 3.504 0.68056 3.504 0.68056 3.8555 0.68056 3.8555 0.68056 "DeleteMessage or ChangeMessageVisibility" 3.64 1.1459 solid #64748b
+graph 1 6.5549 10.272
+node install 4.7147 10.022 2.7175 0.5 "1. Ktor app installs SqsConsumer" rounded,filled box #38bdf8 #e0f2fe
+node defaults 4.7147 8.7615 2.8737 0.65917 "2. Resolve AwsKtorCore defaults\nor service-local SQS config" rounded,filled box #22c55e #dcfce7
+node runtime 4.7147 7.4218 2.9362 0.65917 "3. Build SqsConsumerRuntime\nclient, converters, handlers, hooks" rounded,filled box #f59e0b #fef3c7
+node start 4.7147 6.082 2.5612 0.65917 "4. ApplicationStarted launches\npoller coroutines" rounded,filled box #a855f7 #f3e8ff
+node receive 4.7147 4.8219 3.3321 0.5 "5. Long poll SQS and convert messages" rounded,filled box #ef4444 #fee2e2
+node handle 3.0897 3.5618 3.0092 0.65917 "6. Run interceptors, invoke handler,\nrecord observer event" rounded,filled box #94a3b8 #f8fafc
+node ack 2.3119 2.0693 3.3946 0.65917 "7. ack deletes message\nnack changes visibility or DLQ-forwards" rounded,filled box #f97316 #fff7ed
+node stop 1.5619 0.45318 3.1237 0.65917 "8. ApplicationStopping cancels pollers\nand drains active handlers" rounded,filled box #64748b #f1f5f9
+node sqs 5.0063 0.45318 1.8529 0.90635 "Amazon SQS\nor Floci/LocalStack" rounded,filled cylinder #f97316 #fff7ed
+edge install defaults 4 4.7147 9.7666 4.7147 9.7666 4.7147 9.2331 4.7147 9.2331 solid #64748b
+edge defaults runtime 4 4.7147 8.4303 4.7147 8.4303 4.7147 7.8895 4.7147 7.8895 solid #64748b
+edge runtime start 4 4.7147 7.0906 4.7147 7.0906 4.7147 6.5497 4.7147 6.5497 solid #64748b
+edge start receive 4 4.7147 5.751 4.7147 5.751 4.7147 5.2109 4.7147 5.2109 solid #64748b
+edge receive handle 4 3.8214 4.5669 3.8214 4.5669 3.8214 4.0334 3.8214 4.0334 solid #64748b
+edge receive sqs 4 5.2635 4.5681 5.2635 4.5681 5.2635 1.0469 5.2635 1.0469 ReceiveMessage 6.0445 2.8155 solid #64748b
+edge handle ack 4 2.7971 3.2268 2.7971 3.2268 2.7971 2.5388 2.7971 2.5388 solid #64748b
+edge ack stop 4 1.8692 1.7344 1.8692 1.7344 1.8692 0.9233 1.8692 0.9233 solid #64748b
+edge ack sqs 7 3.5665 1.7353 3.5665 1.3735 3.5665 0.84722 3.5665 0.84722 3.5665 0.84722 3.9384 0.84722 3.9384 0.84722 "DeleteMessage or ChangeMessageVisibility" 3.7702 1.323 solid #64748b
 stop

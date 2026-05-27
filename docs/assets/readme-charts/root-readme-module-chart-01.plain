@@ -1,22 +1,22 @@
-graph 1 8.6203 4.4492
-node bom 4.7858 4.1821 1.8321 0.53417 "BOM\nbluetape4k-aws-bom" rounded,filled box #64748b #f1f5f9
-node java 4.7858 2.9066 2.5508 0.71125 "aws-java\nJava SDK v2 wrappers\nsync, async, suspend adapters" rounded,filled box #38bdf8 #e0f2fe
-node kotlin 7.5636 2.9066 2.1133 0.71125 "aws-kotlin\nAWS Kotlin SDK helpers\nnative suspend DSL" rounded,filled box #22c55e #dcfce7
-node exposed 1.8692 2.9066 2.3946 0.71125 "aws-exposed\nHikari + Exposed JDBC\nsettings resolver and registry" rounded,filled box #a855f7 #f3e8ff
-node spring 1.8692 1.5426 3.7383 0.71125 "aws-spring-boot\nBoot 4 auto-config\nS3, SQS, SNS, DynamoDB, KMS, env sources" rounded,filled box #f59e0b #fef3c7
-node ktor 6.6608 1.5426 3.155 0.71125 "aws-ktor\nKtor 3 integration\nSigV4, S3, SQS, DynamoDB, Exposed" rounded,filled box #ef4444 #fee2e2
-node ex1 6.6608 0.26708 2.6133 0.53417 "Ktor examples\nS3, SQS, DynamoDB, Exposed" rounded,filled box #f97316 #fff7ed
-node ex2 1.8692 0.26708 3.0092 0.53417 "Spring Boot examples\nS3, SQS/SNS, DynamoDB, Exposed" rounded,filled box #10b981 #ecfdf5
-edge bom java 4 4.7858 3.9116 4.7858 3.9116 4.7858 3.4044 4.7858 3.4044 dashed #64748b
-edge bom kotlin 7 5.7069 4.2778 6.5155 4.2778 7.5636 4.2778 7.5636 4.2778 7.5636 4.2778 7.5636 3.4026 7.5636 3.4026 dashed #64748b
-edge bom exposed 7 3.863 4.2778 3.0085 4.2778 1.8692 4.2778 1.8692 4.2778 1.8692 4.2778 1.8692 3.4026 1.8692 3.4026 dashed #64748b
-edge bom spring 7 3.8631 4.0972 3.5549 4.0972 3.2884 4.0972 3.2884 4.0972 3.2884 4.0972 3.2884 2.0389 3.2884 2.0389 dashed #64748b
-edge bom ktor 7 5.7048 4.0972 6.015 4.0972 6.2841 4.0972 6.2841 4.0972 6.2841 4.0972 6.2841 2.0389 6.2841 2.0389 dashed #64748b
-edge java spring 4 3.6244 2.5446 3.6244 2.5446 3.6244 2.0372 3.6244 2.0372 solid #64748b
-edge java ktor 4 5.7353 2.5446 5.7353 2.5446 5.7353 2.0372 5.7353 2.0372 solid #64748b
-edge kotlin ktor 4 7.3726 2.5446 7.3726 2.5446 7.3726 2.0372 7.3726 2.0372 solid #64748b
-edge exposed spring 4 1.4701 2.5446 1.4701 2.5446 1.4701 2.0372 1.4701 2.0372 solid #64748b
-edge exposed ktor 10 2.2683 2.5444 2.2683 2.3802 2.2683 2.2222 2.2683 2.2222 2.2683 2.2222 5.4093 2.2222 5.4093 2.2222 5.4093 2.2222 5.4093 2.038 5.4093 2.038 solid #64748b
-edge spring ex2 4 1.8692 1.1805 1.8692 1.1805 1.8692 0.6765 1.8692 0.6765 solid #64748b
-edge ktor ex1 4 6.6608 1.1805 6.6608 1.1805 6.6608 0.6765 6.6608 0.6765 solid #64748b
+graph 1 8.7557 5.0742
+node bom 4.8796 4.7446 1.8529 0.65917 "BOM\nbluetape4k-aws-bom" rounded,filled box #64748b #f1f5f9
+node java 4.8796 3.3128 2.6237 0.89875 "aws-java\nJava SDK v2 wrappers\nsync, async, suspend adapters" rounded,filled box #38bdf8 #e0f2fe
+node kotlin 7.699 3.3128 2.1133 0.89875 "aws-kotlin\nAWS Kotlin SDK helpers\nnative suspend DSL" rounded,filled box #22c55e #dcfce7
+node exposed 1.8379 3.3128 2.5821 0.89875 "aws-exposed\nHikari + Exposed JDBC\nsettings resolver and registry" rounded,filled box #a855f7 #f3e8ff
+node spring 1.8379 1.7613 3.6758 0.89875 "aws-spring-boot\nBoot 4 auto-config\nS3, SQS, SNS, DynamoDB, KMS, env sources" rounded,filled box #f59e0b #fef3c7
+node ktor 6.6574 1.7613 3.0196 0.89875 "aws-ktor\nKtor 3 integration\nSigV4, S3, SQS, DynamoDB, Exposed" rounded,filled box #ef4444 #fee2e2
+node ex1 6.6574 0.32958 2.4987 0.65917 "Ktor examples\nS3, SQS, DynamoDB, Exposed" rounded,filled box #f97316 #fff7ed
+node ex2 1.8379 0.32958 2.8842 0.65917 "Spring Boot examples\nS3, SQS/SNS, DynamoDB, Exposed" rounded,filled box #10b981 #ecfdf5
+edge bom java 4 4.8796 4.4089 4.8796 4.4089 4.8796 3.9014 4.8796 3.9014 dashed #64748b
+edge bom kotlin 7 5.8106 4.8611 6.6318 4.8611 7.699 4.8611 7.699 4.8611 7.699 4.8611 7.699 3.9047 7.699 3.9047 dashed #64748b
+edge bom exposed 7 3.9463 4.8611 3.0522 4.8611 1.8379 4.8611 1.8379 4.8611 1.8379 4.8611 1.8379 3.9047 1.8379 3.9047 dashed #64748b
+edge bom spring 7 3.9491 4.6389 3.6285 4.6389 3.3483 4.6389 3.3483 4.6389 3.3483 4.6389 3.3483 2.353 3.3483 2.353 dashed #64748b
+edge bom ktor 7 5.8093 4.6389 6.1331 4.6389 6.4169 4.6389 6.4169 4.6389 6.4169 4.6389 6.4169 2.353 6.4169 2.353 dashed #64748b
+edge java spring 4 3.6218 2.8599 3.6218 2.8599 3.6218 2.3532 3.6218 2.3532 solid #64748b
+edge java ktor 4 5.8435 2.8599 5.8435 2.8599 5.8435 2.3532 5.8435 2.3532 solid #64748b
+edge kotlin ktor 4 7.4048 2.8599 7.4048 2.8599 7.4048 2.3532 7.4048 2.3532 solid #64748b
+edge exposed spring 4 1.4076 2.8599 1.4076 2.8599 1.4076 2.3532 1.4076 2.3532 solid #64748b
+edge exposed ktor 10 2.2683 2.8598 2.2683 2.6919 2.2683 2.5417 2.2683 2.5417 2.2683 2.5417 5.4955 2.5417 5.4955 2.5417 5.4955 2.5417 5.4955 2.3509 5.4955 2.3509 solid #64748b
+edge spring ex2 4 1.8379 1.3083 1.8379 1.3083 1.8379 0.79735 1.8379 0.79735 solid #64748b
+edge ktor ex1 4 6.6574 1.3083 6.6574 1.3083 6.6574 0.79735 6.6574 0.79735 solid #64748b
 stop

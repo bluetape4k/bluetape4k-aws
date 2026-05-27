@@ -1,0 +1,23 @@
+digraph AwsExposedSequence {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  adapter [label="Framework adapter", fillcolor="#e0f2fe", color="#38bdf8"]
+  resolver [label="Settings resolver\noptional AWS-backed lookup", fillcolor="#f3e8ff", color="#a855f7"]
+  factory [label="AwsExposedDatabaseFactory", fillcolor="#fef3c7", color="#f59e0b"]
+  iam [label="RDS IAM helper\noptional token generation", fillcolor="#fee2e2", color="#fb7185"]
+  hikari [label="HikariDataSource", fillcolor="#dcfce7", color="#22c55e"]
+  registry [label="Database registry\nAwsExposedDatabaseHandle", fillcolor="#ecfeff", color="#06b6d4"]
+  app [label="Repository / transaction", fillcolor="#f8fafc", color="#94a3b8"]
+  db [label="JDBC database", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+
+  adapter -> resolver [label="resolve"]
+  resolver -> factory [label="connection props"]
+  factory -> iam [label="when RDS_IAM"]
+  iam -> factory [label="token as password"]
+  factory -> hikari [label="create pool"]
+  hikari -> registry [label="register handle"]
+  registry -> app [label="lookup"]
+  app -> db [label="transaction"]
+}

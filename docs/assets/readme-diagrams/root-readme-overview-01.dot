@@ -1,7 +1,7 @@
 digraph RootReadmeOverview {
   graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.70, splines=ortho]
-  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, margin="0.16,0.10", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Helvetica", fontsize=10, color="#64748b", penwidth=1.7, arrowsize=0.8]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.16,0.10", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.7, arrowsize=0.8]
 
   apps [label="Kotlin application surfaces\nplain services, Spring Boot 4, Ktor 3", fillcolor="#e0f2fe", color="#38bdf8"]
   bom [label="BOM\nversion alignment", fillcolor="#f1f5f9", color="#64748b"]

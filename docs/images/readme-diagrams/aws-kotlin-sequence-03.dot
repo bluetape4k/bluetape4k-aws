@@ -1,0 +1,21 @@
+digraph AwsKotlinSequence {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  app [label="Coroutine scope", fillcolor="#e0f2fe", color="#38bdf8"]
+  block [label="withS3Client / withSqsClient\nsafe use block", fillcolor="#dcfce7", color="#22c55e"]
+  dsl [label="Request DSL\nputObjectRequestOf,\nreceiveMessageRequestOf, etc.", fillcolor="#f3e8ff", color="#a855f7"]
+  client [label="AWS Kotlin client\nsuspend operation", fillcolor="#fef3c7", color="#f59e0b"]
+  aws [label="AWS service\nor LocalStack", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+  close [label="close safely\nuseSafe handles cancellation", fillcolor="#fee2e2", color="#fb7185"]
+
+  app -> block [label="enter"]
+  block -> dsl [label="build"]
+  dsl -> client [label="call"]
+  client -> aws [label="request"]
+  aws -> client [label="response"]
+  client -> block [label="result"]
+  block -> close [label="finally"]
+  close -> app [label="return"]
+}
