@@ -1,0 +1,14 @@
+digraph bom_architecture_01 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+  source [label="bluetape4k-aws-bom\nGradle java-platform", fillcolor="#F4F7FA", color="#8CA0B3"]
+  constraints [label="Dependency constraints\naws-java, aws-kotlin\naws-spring-boot, aws-ktor", fillcolor="#FFF3D9", color="#D6A441"]
+  publish [label="Published Maven BOM\ndependencyManagement only", fillcolor="#E8F3FF", color="#5B8DEF"]
+  import [label="Consumer import\nGradle platform() or Maven import", fillcolor="#EAF7EF", color="#58A978"]
+  modules [label="Versionless dependencies\nchoose runtime modules\nversions stay aligned", fillcolor="#E9F7F6", color="#45A7A1"]
+  source -> constraints
+  constraints -> publish
+  publish -> import
+  import -> modules
+}

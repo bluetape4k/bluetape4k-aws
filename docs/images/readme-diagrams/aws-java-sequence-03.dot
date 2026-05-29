@@ -1,18 +1,16 @@
-digraph AwsJavaSequence {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph aws_java_sequence_03 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-
-  coroutine [label="Coroutine caller", fillcolor="#e0f2fe", color="#38bdf8"]
-  extension [label="bluetape4k extension\nputAsString(), receiveMessages(),\nfindByKey(), encryptRequestOf()", fillcolor="#dcfce7", color="#22c55e"]
-  asyncClient [label="AWS async client\nCompletableFuture API", fillcolor="#fef3c7", color="#f59e0b"]
-  awaiter [label="kotlinx.coroutines\nfuture.await()", fillcolor="#f3e8ff", color="#a855f7"]
-  aws [label="AWS service\nor emulator", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
-  coroutine -> extension [label="suspend call"]
-  extension -> asyncClient [label="build request"]
-  asyncClient -> aws [label="send"]
-  aws -> asyncClient [label="response"]
-  asyncClient -> awaiter [label="future"]
-  awaiter -> coroutine [label="resume"]
+  caller [label="Suspend caller\nrepository or service", fillcolor="#E8F3FF", color="#5B8DEF"]
+  adapter [label="Coroutine extension\nbuild request and call async client", fillcolor="#F1ECFF", color="#8A72D6"]
+  sdk [label="AWS async client\nreturns CompletableFuture", fillcolor="#F4F7FA", color="#8CA0B3"]
+  future [label="Future completes\nsuccess or exception", fillcolor="#EAF7EF", color="#58A978"]
+  resume [label="Coroutine resumes\nresponse, Flow item, or failure", fillcolor="#E9F7F6", color="#45A7A1"]
+  close [label="Caller owns client lifecycle\nclose application-scoped clients", fillcolor="#FFF0E3", color="#F47B36"]
+  caller -> adapter [label="suspend call"]
+  adapter -> sdk [label="async request"]
+  sdk -> future
+  future -> resume [label="await"]
+  resume -> close
 }

@@ -1,47 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1310" height="430" viewBox="0 0 1310 430" role="img" aria-label="aws spring boot s3 examples Architecture">
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="860" viewBox="0 0 1120 860" role="img" aria-label="Spring Boot S3 example">
 <defs>
-  <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#1f2937" flood-opacity="0.10"/></filter>
-  <marker id="openArrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 10 5 L 1 9" fill="none" stroke="#758297" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
-  <marker id="inherit" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M 0 1 L 12 6 L 0 11 Z" fill="#ffffff" stroke="#758297" stroke-width="1.8"/></marker>
-  <style>
-    .canvas{fill:#f7f9fc}.frame{fill:#fff;stroke:#d8e0ea;stroke-width:1.5}
-    .title{font-family:"Architects Daughter",cursive;font-size:43px;font-weight:400;fill:#102033}
-    .subtitle{font-family:"Comic Mono",monospace;font-size:15px;font-weight:400;fill:#536273}
-    .label{font-family:"Architects Daughter",cursive;font-size:25px;font-weight:400;fill:#102033}
-    .smallLabel{font-family:"Architects Daughter",cursive;font-size:21px;font-weight:400;fill:#102033}
-    .mono{font-family:"Comic Mono",monospace;font-size:12px;font-weight:400;fill:#102033}
-    .small{font-family:"Comic Mono",monospace;font-size:12px;font-weight:400;fill:#536273}
-    .strong{font-family:"Comic Mono",monospace;font-size:13px;font-weight:400;fill:#102033}
-    .card{stroke-width:2.1;filter:url(#shadow)}.compartment{stroke-width:1.5;fill:none}
-    .line{stroke:#758297;stroke-width:2.1;fill:none;marker-end:url(#openArrow)}
-    .plainLine{stroke:#758297;stroke-width:2.1;fill:none}
-    .dashed{stroke:#758297;stroke-width:2.1;stroke-dasharray:7 6;fill:none;marker-end:url(#openArrow)}
-    .inheritLine{stroke:#758297;stroke-width:2.2;fill:none;marker-end:url(#inherit)}
-    .implLine{stroke:#758297;stroke-width:2.2;stroke-dasharray:8 7;fill:none;marker-end:url(#inherit)}
-  </style>
+  <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#66758A"/></marker>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
 </defs>
-<rect class="canvas" width="1310" height="430"/>
-<rect class="frame" x="32" y="28" width="1246" height="374" rx="28"/>
-<text class="title" x="66" y="82">aws spring boot s3 examples Architecture</text>
-<text class="subtitle" x="70" y="118">Architecture nodes and edges from the original Mermaid source</text>
-<path class="line" d="M318 220 C318 220 356 220 356 220"/>
-<path class="line" d="M674 220 C674 220 636 220 636 220"/>
-<g transform="translate(48,170)">
-  <rect class="card" x="0" y="0" width="260" height="100" rx="14" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="smallLabel" x="130" y="33" text-anchor="middle">WebFlux controller</text>
-<text class="smallLabel" x="130" y="59" text-anchor="middle">/s3/documents</text>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:34px;fill:#102033}
+  .subtitle,.detail,.footer-detail{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;fill:#526274}
+  .subtitle{font-size:14px}
+  .card-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:20px;fill:#102033}
+  .detail{font-size:13px}
+  .chip{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:10px;fill:#243447}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.2;marker-end:url(#arrow)}
+  .edge-label{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:11px;fill:#344456}
+  .label-bg{fill:#FFFFFF;stroke:#D9E2EC}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-size:11px;fill:#DDE7F2}
+</style>
+<rect x="26" y="26" width="1068" height="808" rx="14" class="frame"/>
+<text class="title" x="54" y="72">Spring Boot S3 example</text>
+<text class="subtitle" x="56" y="102">WebFlux routes use S3 operations and optional client-side encryption through KMS-backed metadata.</text>
+<rect x="985" y="54" width="71" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="1020.5" y="70" text-anchor="middle">Boot 4</text>
+<rect x="897" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="931" y="70" text-anchor="middle">S3</text>
+<rect x="771.5" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="805.5" y="70" text-anchor="middle">KMS</text>
+<g><g><path class="edge" d="M312 219 L351 219 L351 208 L390 208" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 208 L719 208 L719 208 L758 208" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 260 L535 326 L535 326 L535 392" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 440 L719 440 L719 440 L758 440" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 260 L903 430 L735 430 L735 600" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 440 L680 540 L590 540 L590 639" stroke="#66758A"/></g></g>
+<g id="client">
+  <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="192" y="216" text-anchor="middle">HTTP client / test</text>
+  <text class="detail" x="192" y="240" text-anchor="middle">document route calls</text>
 </g>
-<g transform="translate(366,170)">
-  <rect class="card" x="0" y="0" width="260" height="100" rx="14" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="smallLabel" x="130" y="33" text-anchor="middle">S3Operations</text>
-<text class="smallLabel" x="130" y="59" text-anchor="middle">S3CoroutinesTemplate</text>
+<g id="controller">
+  <rect class="card" x="390" y="156" width="290" height="104" rx="10" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="535" y="196.5" text-anchor="middle">S3DocumentController</text>
+  <text class="detail" x="535" y="220.5" text-anchor="middle">upload, download, list</text>
+<text class="detail" x="535" y="237.5" text-anchor="middle">presigned URL, delete</text>
 </g>
-<g transform="translate(684,170)">
-  <rect class="card" x="0" y="0" width="260" height="100" rx="14" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="smallLabel" x="130" y="45" text-anchor="middle">S3AutoConfiguration</text>
+<g id="ops">
+  <rect class="card" x="758" y="156" width="290" height="104" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="card-title" x="903" y="196.5" text-anchor="middle">S3Operations</text>
+  <text class="detail" x="903" y="220.5" text-anchor="middle">S3CoroutinesTemplate</text>
+<text class="detail" x="903" y="237.5" text-anchor="middle">transfer and presign</text>
 </g>
-<g transform="translate(1002,170)">
-  <rect class="card" x="0" y="0" width="260" height="100" rx="14" fill="#FDECEF" stroke="#DC6B82"/>
-  <text class="smallLabel" x="130" y="45" text-anchor="middle">AWS S3 or LocalStack</text>
+<g id="encrypt">
+  <rect class="card" x="390" y="392" width="290" height="96" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
+  <text class="card-title" x="535" y="428.5" text-anchor="middle">Encryption routes</text>
+  <text class="detail" x="535" y="452.5" text-anchor="middle">client-side envelope</text>
+<text class="detail" x="535" y="469.5" text-anchor="middle">tenant context</text>
 </g>
+<g id="kms">
+  <rect class="card" x="758" y="392" width="290" height="96" rx="10" fill="#FDECEF" stroke="#DC6B82"/>
+  <text class="card-title" x="903" y="437" text-anchor="middle">KmsOperations</text>
+  <text class="detail" x="903" y="461" text-anchor="middle">data key metadata</text>
+</g>
+<g id="s3">
+  <path d="M590 620 C590 596,880 596,880 620 L880 658 C880 682,590 682,590 658 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
+  <ellipse cx="735" cy="620" rx="145" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
+  <text class="card-title" x="735" y="638.5" text-anchor="middle">S3 endpoint</text>
+  <text class="detail" x="735" y="662.5" text-anchor="middle">LocalStack or AWS</text>
+</g>
+<rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
+<text class="footer-title" x="72" y="785">Example role</text>
+<text class="footer-detail" x="72" y="805">Show upload/download APIs, presigned URLs, object listing, and envelope encryption extension points.</text>
 </svg>

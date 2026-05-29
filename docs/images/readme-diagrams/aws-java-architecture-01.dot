@@ -1,25 +1,21 @@
-digraph AwsJavaArchitecture {
+digraph aws_java_architecture_01 {
   graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-
-  app [label="Application code\nblocking, async, or suspend call sites", fillcolor="#e0f2fe", color="#38bdf8"]
-  factories [label="Client factories\nservice-specific Sync and Async builders", fillcolor="#fef3c7", color="#f59e0b"]
-  requestDsl [label="Request DSL helpers\nmodel builders and typed shortcuts", fillcolor="#dcfce7", color="#22c55e"]
-  coroutine [label="Coroutine adapters\nCompletableFuture.await + Flow bridges", fillcolor="#f3e8ff", color="#a855f7"]
-  batch [label="DynamoDB batch/repository helpers\nEnhanced Async table integration", fillcolor="#fee2e2", color="#fb7185"]
-  sdk [label="AWS Java SDK v2 clients\nS3, SQS, SNS, DynamoDB,\nKMS, CloudWatch, Kinesis, STS", fillcolor="#f8fafc", color="#94a3b8"]
-  runtime [label="HTTP + credentials runtime\nCRT, Netty NIO, Apache, provider chain", fillcolor="#ecfeff", color="#06b6d4"]
-  aws [label="AWS services\nor LocalStack / Floci", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
+  app [label="Application code\nblocking, async, or suspend call sites", fillcolor="#E8F3FF", color="#5B8DEF"]
+  factories [label="Client factories\nservice-specific sync\nand async builders", fillcolor="#FFF3D9", color="#D6A441"]
+  dsl [label="Request DSL helpers\nmodel builders\ntyped shortcuts", fillcolor="#EAF7EF", color="#58A978"]
+  coroutine [label="Coroutine adapters\nCompletableFuture.await\nFlow bridges", fillcolor="#F1ECFF", color="#8A72D6"]
+  batch [label="DynamoDB helpers\nbatch and repository\nEnhanced Async tables", fillcolor="#FDECEF", color="#DC6B82"]
+  sdk [label="AWS Java SDK v2 clients\nS3, SQS, SNS, DynamoDB\nKMS, CloudWatch, Kinesis, STS", fillcolor="#F4F7FA", color="#8CA0B3"]
+  aws [label="AWS services\nor LocalStack / Floci", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
   app -> factories
-  app -> requestDsl
+  app -> dsl
   app -> coroutine
   app -> batch
   factories -> sdk
-  requestDsl -> sdk
+  dsl -> sdk
   coroutine -> sdk
   batch -> sdk
-  runtime -> sdk
   sdk -> aws
 }

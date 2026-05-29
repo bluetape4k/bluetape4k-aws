@@ -1,20 +1,15 @@
-graph 1 14.999 5.2068
-node app 5.3657 4.8772 2.0925 0.65917 "Coroutine application\nnative suspend call sites" rounded,filled box #38bdf8 #e0f2fe
-node scoped 1.1296 3.5236 2.2592 0.65917 "withXxxClient blocks\nauto-close client lifecycle" rounded,filled box #22c55e #dcfce7
-node direct 3.7962 3.5236 2.0925 0.65917 "xxxClientOf factories\nlong-lived client creation" rounded,filled box #f59e0b #fef3c7
-node dsl 6.9351 3.5236 3.2071 0.65917 "Kotlin DSL builders\nrequests, attributes, records, metrics" rounded,filled box #a855f7 #f3e8ff
-node flows 10.56 3.5236 3.0821 0.65917 "Flow helpers\nKinesis recordFlow and paged reads" rounded,filled box #06b6d4 #ecfeff
-node clients 6.9351 2.0502 2.6029 0.89875 "AWS SDK for Kotlin clients\nDynamoDB, S3, SQS, SNS,\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #94a3b8 #f8fafc
-node engines 13.796 3.5236 2.405 0.65917 "HTTP engines\nCRT, default engine, OkHttp" rounded,filled box #fb7185 #fee2e2
-node aws 6.9351 0.45318 1.6029 0.90635 "AWS services\nor local emulator" rounded,filled cylinder #f97316 #fff7ed
-edge app scoped 7 4.3131 4.875 3.0585 4.875 1.1296 4.875 1.1296 4.875 1.1296 4.875 1.1296 3.9933 1.1296 3.9933 solid #64748b
-edge app direct 4 4.581 4.5426 4.581 4.5426 4.581 3.9947 4.581 3.9947 solid #64748b
-edge app dsl 4 5.8718 4.5426 5.8718 4.5426 5.8718 3.9947 5.8718 3.9947 solid #64748b
-edge app flows 7 6.4169 4.875 7.9347 4.875 10.56 4.875 10.56 4.875 10.56 4.875 10.56 3.9933 10.56 3.9933 solid #64748b
-edge scoped clients 7 1.1296 3.1877 1.1296 2.713 1.1296 1.9028 1.1296 1.9028 1.1296 1.9028 5.4929 1.9028 5.4929 1.9028 solid #64748b
-edge direct clients 7 3.7962 3.1882 3.7962 2.7944 3.7962 2.1944 3.7962 2.1944 3.7962 2.1944 5.4955 2.1944 5.4955 2.1944 solid #64748b
-edge dsl clients 4 6.9351 3.1892 6.9351 3.1892 6.9351 2.6418 6.9351 2.6418 solid #64748b
-edge flows clients 7 10.56 3.1882 10.56 2.7944 10.56 2.1944 10.56 2.1944 10.56 2.1944 8.3744 2.1944 8.3744 2.1944 solid #64748b
-edge clients aws 4 6.9351 1.5968 6.9351 1.5968 6.9351 1.0489 6.9351 1.0489 solid #64748b
-edge engines clients 7 13.796 3.1877 13.796 2.713 13.796 1.9028 13.796 1.9028 13.796 1.9028 8.3775 1.9028 8.3775 1.9028 solid #64748b
+graph 1 6.0265 5.4464
+node app 2.9056 5.1168 2.7175 0.65917 "Coroutine application\nservice code with suspend calls" rounded,filled box #5B8DEF #E8F3FF
+node builders 0.78062 3.6434 1.5613 0.89875 "DSL builders\nrequests, models\nwait helpers" rounded,filled box #D6A441 #FFF3D9
+node with 2.9056 3.6434 1.7279 0.65917 "withXClient helpers\ncreate, use, close" rounded,filled box #58A978 #EAF7EF
+node flows 5.1417 3.6434 1.7696 0.89875 "Flow helpers\nKinesis recordFlow\npaged reads" rounded,filled box #45A7A1 #E9F7F6
+node clients 2.9056 2.0502 2.6029 0.89875 "AWS SDK for Kotlin clients\nDynamoDB, S3, SQS, SNS\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #8CA0B3 #F4F7FA
+node aws 2.9056 0.45318 1.9779 0.90635 "AWS services\nor LocalStack / Floci" rounded,filled cylinder #F47B36 #FFF0E3
+edge app builders 7 1.8958 4.7859 1.8958 4.461 1.8958 4.0139 1.8958 4.0139 1.8958 4.0139 1.703 4.0139 1.703 4.0139 solid #64748b
+edge app with 4 2.9056 4.7824 2.9056 4.7824 2.9056 4.1121 2.9056 4.1121 solid #64748b
+edge app flows 7 4.0612 4.781 4.0612 4.4701 4.0612 4.0556 4.0612 4.0556 4.0612 4.0556 4.1187 4.0556 4.1187 4.0556 solid #64748b
+edge builders clients 7 1.5677 3.2361 1.6754 3.2361 1.75 3.2361 1.75 3.2361 1.75 3.2361 1.75 2.641 1.75 2.641 solid #64748b
+edge with clients 4 2.9056 3.3094 2.9056 3.3094 2.9056 2.6403 2.9056 2.6403 solid #64748b
+edge flows clients 7 4.2505 3.2778 4.0603 3.2778 3.9154 3.2778 3.9154 3.2778 3.9154 3.2778 3.9154 2.6395 3.9154 2.6395 solid #64748b
+edge clients aws 4 2.9056 1.5968 2.9056 1.5968 2.9056 1.0489 2.9056 1.0489 solid #64748b
 stop
