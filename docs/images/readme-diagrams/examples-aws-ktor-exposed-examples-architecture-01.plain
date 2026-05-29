@@ -1,14 +1,14 @@
-graph 1 15.768 1.8119
-node client 0.88479 1.4824 1.7696 0.5 "HTTP client or test" rounded,filled box #38bdf8 #e0f2fe
-node routes 3.4669 1.4824 1.9779 0.65917 "Ktor order routes\ncreate, read, list, 404" rounded,filled box #22c55e #dcfce7
-node tx 7.759 1.274 2.7383 0.65917 "call.awsExposedTransaction\nblocking JDBC on Dispatchers.IO" rounded,filled box #f59e0b #fef3c7
-node repo 11.567 1.274 1.8842 0.65917 "OrderRepository\nExposed queries only" rounded,filled box #a855f7 #f3e8ff
-node plugin 3.4669 0.32958 1.9571 0.65917 "AwsExposedPlugin\nregistry and lifecycle" rounded,filled box #ef4444 #fee2e2
-node pg 14.493 0.52403 2.5508 0.90635 "PostgreSQL Testcontainer\nor production JDBC database" rounded,filled cylinder #f97316 #fff7ed
-edge client routes 4 1.7734 1.4824 1.7734 1.4824 2.3391 1.4824 2.3391 1.4824 solid #64748b
-edge routes tx 4 4.4624 1.3782 4.4624 1.3782 6.2512 1.3782 6.2512 1.3782 solid #64748b
-edge tx repo 4 9.1337 1.274 9.1337 1.274 10.487 1.274 10.487 1.274 solid #64748b
-edge repo pg 7 11.574 0.94093 11.574 0.86279 11.574 0.80181 11.574 0.80181 11.574 0.80181 13.077 0.80181 13.077 0.80181 solid #64748b
-edge plugin tx 7 3.4625 0.66384 3.4625 0.85161 3.4625 1.0486 3.4625 1.0486 3.4625 1.0486 6.2521 1.0486 6.2521 1.0486 "provides database" 5.4228 1.0935 solid #64748b
-edge plugin pg 4 4.4502 0.36501 4.4502 0.36501 13.077 0.36501 13.077 0.36501 "Hikari pool" 9.8765 0.34347 solid #64748b
+graph 1 3.9015 7.1611
+node client 0.86396 6.8315 1.655 0.65917 "HTTP client / test\ncreate, read, list" rounded,filled box #5B8DEF #E8F3FF
+node routes 0.86396 5.3442 1.7279 0.89875 "Ktor order routes\nroute handlers\n404 behavior" rounded,filled box #58A978 #EAF7EF
+node tx 1.2667 3.5843 2.1029 0.89875 "awsExposedTransaction\nblocking JDBC\nDispatchers.IO" rounded,filled box #D6A441 #FFF3D9
+node repo 1.3501 1.9443 1.8842 0.65917 "OrderRepository\nExposed queries only" rounded,filled box #8A72D6 #F1ECFF
+node plugin 3.0584 5.3442 1.6863 0.89875 "AwsExposedPlugin\nregistry\ndatabase lifecycle" rounded,filled box #DC6B82 #FDECEF
+node pg 2.2112 0.45318 2.5508 0.90635 "PostgreSQL database\nTestcontainers or production" rounded,filled cylinder #F47B36 #FFF0E3
+edge client routes 4 0.86396 6.4977 0.86396 6.4977 0.86396 5.931 0.86396 5.931 solid #64748b
+edge routes tx 4 0.9716 4.891 0.9716 4.891 0.9716 4.1717 0.9716 4.1717 solid #64748b
+edge tx repo 4 1.3501 3.1318 1.3501 3.1318 1.3501 2.4114 1.3501 2.4114 solid #64748b
+edge repo pg 4 1.614 1.6096 1.614 1.6096 1.614 1.0468 1.614 1.0468 solid #64748b
+edge plugin tx 4 2.2667 4.891 2.2667 4.891 2.2667 4.1717 2.2667 4.1717 database 2.3084 4.4643 solid #64748b
+edge plugin pg 4 2.9024 4.8885 2.9024 4.8885 2.9024 1.0488 2.9024 1.0488 pool 3.2042 2.7044 solid #64748b
 stop

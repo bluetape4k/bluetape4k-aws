@@ -1,14 +1,14 @@
-graph 1 13.98 2.0793
-node client 0.88479 1.0049 1.7696 0.5 "HTTP client or test" rounded,filled box #38bdf8 #e0f2fe
-node routes 7.0524 1.6299 2.1967 0.89875 "Ktor S3 routes\nupload, download, stream,\nlist, delete, presign" rounded,filled box #22c55e #dcfce7
-node advanced 3.7238 0.44937 2.5196 0.89875 "Advanced routes\ncontent-type detection,\nconfig data, encryption demo" rounded,filled box #f59e0b #fef3c7
-node examples 7.0524 0.40771 2.7487 0.65917 "S3KtorExamples\nlocal client and scenario helpers" rounded,filled box #a855f7 #f3e8ff
-node s3client 9.9123 1.0188 1.5821 0.65917 "S3KtorClient\nSigV4 REST calls" rounded,filled box #ef4444 #fee2e2
-node s3 12.689 1.0188 2.5821 0.90635 "S3-compatible endpoint\nAWS S3, LocalStack, or Floci" rounded,filled cylinder #f97316 #fff7ed
-edge client routes 7 1.7746 1.0397 3.4817 1.0397 7.0493 1.0397 7.0493 1.0397 7.0493 1.0397 7.0493 1.0533 7.0493 1.0533 solid #64748b
-edge client advanced 4 1.7753 0.82684 1.7753 0.82684 2.3264 0.82684 2.3264 0.82684 solid #64748b
-edge routes s3client 4 8.154 1.2645 8.154 1.2645 8.9818 1.2645 8.9818 1.2645 solid #64748b
-edge advanced examples 4 4.987 0.40771 4.987 0.40771 5.5378 0.40771 5.5378 0.40771 solid #64748b
-edge examples s3client 7 8.2854 0.74276 8.2854 0.78734 8.2854 0.81802 8.2854 0.81802 8.2854 0.81802 8.9822 0.81802 8.9822 0.81802 solid #64748b
-edge s3client s3 4 10.708 1.0188 10.708 1.0188 11.259 1.0188 11.259 1.0188 solid #64748b
+graph 1 4.6064 6.8
+node client 2.2633 6.4704 2.1967 0.65917 "HTTP client / test\nobject and config routes" rounded,filled box #5B8DEF #E8F3FF
+node routes 1.0827 3.4038 2.1654 0.89875 "Ktor S3 routes\nupload, download, stream\nlist, delete, presign" rounded,filled box #58A978 #EAF7EF
+node advanced 3.3466 4.997 2.5196 0.89875 "Advanced routes\ncontent-type detection\nconfig data, encryption demo" rounded,filled box #D6A441 #FFF3D9
+node helpers 3.4438 3.4038 1.5717 0.89875 "S3KtorExamples\nlocal client\nscenario helpers" rounded,filled box #8A72D6 #F1ECFF
+node s3client 2.2633 1.9304 1.5821 0.65917 "S3KtorClient\nSigV4 REST calls" rounded,filled box #DC6B82 #FDECEF
+node s3 2.2633 0.45318 2.3321 0.90635 "S3-compatible endpoint\nAWS S3, LocalStack, Floci" rounded,filled cylinder #F47B36 #FFF0E3
+edge client routes 4 1.6259 6.1364 1.6259 6.1364 1.6259 3.992 1.6259 3.992 solid #64748b
+edge client advanced 4 2.7242 6.136 2.7242 6.136 2.7242 5.5886 2.7242 5.5886 solid #64748b
+edge routes s3client 4 1.8188 2.9497 1.8188 2.9497 1.8188 2.3994 1.8188 2.3994 solid #64748b
+edge advanced helpers 4 3.4438 4.5447 3.4438 4.5447 3.4438 3.9929 3.4438 3.9929 solid #64748b
+edge helpers s3client 4 2.8561 2.9497 2.8561 2.9497 2.8561 2.3994 2.8561 2.3994 solid #64748b
+edge s3client s3 4 2.2633 1.5952 2.2633 1.5952 2.2633 1.0459 2.2633 1.0459 solid #64748b
 stop

@@ -1,0 +1,15 @@
+digraph examples_aws_ktor_dynamodb_examples_architecture_01 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+  client [label="HTTP client / test\nCRUD route calls", fillcolor="#E8F3FF", color="#5B8DEF"]
+  routes [label="Ktor order routes\nPOST, GET, DELETE\nscan all orders", fillcolor="#EAF7EF", color="#58A978"]
+  plugin [label="DynamoDbKtorPlugin\nclient config\nauto-create orders table", fillcolor="#FFF3D9", color="#D6A441"]
+  repo [label="Coroutine repository\nOrder mapper\nDynamoDB enhanced calls", fillcolor="#F1ECFF", color="#8A72D6"]
+  ddb [label="DynamoDB endpoint\nLocalStack or AWS", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
+  client -> routes
+  routes -> plugin
+  routes -> repo
+  plugin -> ddb
+  repo -> ddb
+}

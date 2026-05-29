@@ -1,0 +1,14 @@
+graph 1 4.2053 5.4464
+node client 2.1556 5.1168 1.8946 0.65917 "HTTP client / test\ndocument route calls" rounded,filled box #5B8DEF #E8F3FF
+node controller 2.1556 3.6434 2.0092 0.89875 "S3DocumentController\nupload, download, list\npresigned URL, delete" rounded,filled box #58A978 #EAF7EF
+node ops 0.98896 2.0502 1.9779 0.89875 "S3Operations\nS3CoroutinesTemplate\ntransfer and presign" rounded,filled box #D6A441 #FFF3D9
+node encrypt 3.3362 2.0502 1.7383 0.89875 "Encryption routes\nclient-side envelope\ntenant context" rounded,filled box #8A72D6 #F1ECFF
+node kms 3.3362 0.45318 1.6863 0.65917 "KmsOperations\ndata key metadata" rounded,filled box #DC6B82 #FDECEF
+node s3 1.0445 0.45318 1.8425 0.90635 "S3 endpoint\nLocalStack or AWS" rounded,filled cylinder #F47B36 #FFF0E3
+edge client controller 4 2.1556 4.7824 2.1556 4.7824 2.1556 4.235 2.1556 4.235 solid #64748b
+edge controller ops 4 1.5645 3.1911 1.5645 3.1911 1.5645 2.6393 1.5645 2.6393 solid #64748b
+edge controller encrypt 4 2.8136 3.1911 2.8136 3.1911 2.8136 2.6393 2.8136 2.6393 solid #64748b
+edge ops s3 4 1.0445 1.5968 1.0445 1.5968 1.0445 1.0489 1.0445 1.0489 solid #64748b
+edge encrypt kms 4 3.6172 1.5968 3.6172 1.5968 3.6172 0.92147 3.6172 0.92147 solid #64748b
+edge encrypt s3 7 3.0551 1.5954 3.0551 1.2547 3.0551 0.84722 3.0551 0.84722 3.0551 0.84722 2.1031 0.84722 2.1031 0.84722 solid #64748b
+stop

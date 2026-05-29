@@ -1,13 +1,13 @@
-graph 1 12.474 2.4167
-node coroutine 0.75979 0.40278 1.5196 0.5 "Coroutine caller" rounded,filled box #38bdf8 #e0f2fe
-node extension 4.5155 1.2639 2.8529 0.89875 "bluetape4k extension\nputAsString(), receiveMessages(),\nfindByKey(), encryptRequestOf()" rounded,filled box #22c55e #dcfce7
-node asyncClient 8.5941 1.4722 2.0196 0.65917 "AWS async client\nCompletableFuture API" rounded,filled box #f59e0b #fef3c7
-node awaiter 11.678 0.47222 1.5925 0.65917 "kotlinx.coroutines\nfuture.await()" rounded,filled box #a855f7 #f3e8ff
-node aws 11.678 1.8611 1.28 0.90635 "AWS service\nor emulator" rounded,filled cylinder #f97316 #fff7ed
-edge coroutine extension 7 0.76583 0.65648 0.76583 0.91049 0.76583 1.2639 0.76583 1.2639 0.76583 1.2639 2.9515 1.2639 2.9515 1.2639 "suspend call" 2.3043 1.0694 solid #64748b
-edge extension asyncClient 4 5.9477 1.428 5.9477 1.428 7.4464 1.428 7.4464 1.428 "build request" 6.7631 1.3889 solid #64748b
-edge asyncClient awaiter 7 9.6044 1.2753 10.248 1.2753 10.96 1.2753 10.96 1.2753 10.96 1.2753 10.96 0.94384 10.96 0.94384 future 10.243 0.88889 solid #64748b
-edge asyncClient aws 4 9.6081 1.5392 9.6081 1.5392 10.896 1.5392 10.896 1.5392 send 10.243 1.6111 solid #64748b
-edge awaiter coroutine 4 10.875 0.40278 10.875 0.40278 1.6593 0.40278 1.6593 0.40278 resume 6.7631 0.083333 solid #64748b
-edge aws asyncClient 4 11.031 1.6705 11.031 1.6705 9.7457 1.6705 9.7457 1.6705 response 10.243 2.3333 solid #64748b
+graph 1 2.8425 7.955
+node caller 1.4212 7.6254 1.9883 0.65917 "Suspend caller\nrepository or service" rounded,filled box #5B8DEF #E8F3FF
+node adapter 1.4212 6.1051 2.8425 0.65917 "Coroutine extension\nbuild request and call async client" rounded,filled box #8A72D6 #F1ECFF
+node sdk 1.4212 4.5849 2.3842 0.65917 "AWS async client\nreturns CompletableFuture" rounded,filled box #8CA0B3 #F4F7FA
+node future 1.4212 3.2174 1.9571 0.65917 "Future completes\nsuccess or exception" rounded,filled box #58A978 #EAF7EF
+node resume 1.4212 1.6971 2.6862 0.65917 "Coroutine resumes\nresponse, Flow item, or failure" rounded,filled box #45A7A1 #E9F7F6
+node close 1.4212 0.32958 2.6654 0.65917 "Caller owns client lifecycle\nclose application-scoped clients" rounded,filled box #F47B36 #FFF0E3
+edge caller adapter 4 1.4212 7.2918 1.4212 7.2918 1.4212 6.5737 1.4212 6.5737 "suspend call" 1.8587 6.8653 solid #64748b
+edge adapter sdk 4 1.4212 5.7715 1.4212 5.7715 1.4212 5.0534 1.4212 5.0534 "async request" 1.8952 5.345 solid #64748b
+edge sdk future 4 1.4212 4.2503 1.4212 4.2503 1.4212 3.6889 1.4212 3.6889 solid #64748b
+edge future resume 4 1.4212 2.8837 1.4212 2.8837 1.4212 2.1656 1.4212 2.1656 await 1.6035 2.4572 solid #64748b
+edge resume close 4 1.4212 1.3626 1.4212 1.3626 1.4212 0.8011 1.4212 0.8011 solid #64748b
 stop

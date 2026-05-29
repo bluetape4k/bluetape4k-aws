@@ -1,14 +1,11 @@
-graph 1 16.097 1.3939
-node caller 1.0515 0.38514 2.1029 0.65917 "Caller\nservice operation intent" rounded,filled box #38bdf8 #e0f2fe
-node builder 3.8158 0.92681 2.1758 0.89875 "bluetape4k request DSL\nbucket/key, table/key,\nmessage, metric, key id" rounded,filled box #22c55e #dcfce7
-node client 6.3875 0.92681 1.7175 0.65917 "AWS SDK v2 client\nsync or async" rounded,filled box #f59e0b #fef3c7
-node future 12.369 0.87125 1.7279 0.65917 "CompletableFuture\nnon-blocking result" rounded,filled box #a855f7 #f3e8ff
-node suspend 14.977 0.32958 2.2383 0.65917 "Coroutine wrapper\nawait(), Flow, suspend API" rounded,filled box #06b6d4 #ecfeff
-node service 9.3758 0.94069 3.0092 0.90635 "AWS service\nS3 / SQS / DynamoDB / KMS / etc." rounded,filled cylinder #f97316 #fff7ed
-edge caller builder 4 2.1084 0.59608 2.1084 0.59608 2.5871 0.59608 2.5871 0.59608 solid #64748b
-edge builder client 4 4.9102 0.92681 4.9102 0.92681 5.3881 0.92681 5.3881 0.92681 solid #64748b
-edge client service 4 7.2518 0.92681 7.2518 0.92681 7.7301 0.92681 7.7301 0.92681 solid #64748b
-edge future suspend 4 13.238 0.60042 13.238 0.60042 13.717 0.60042 13.717 0.60042 solid #64748b
-edge suspend caller 4 13.856 0.26649 13.856 0.26649 2.2451 0.26649 2.2451 0.26649 solid #64748b
-edge service future 4 10.886 0.87125 10.886 0.87125 11.364 0.87125 11.364 0.87125 solid #64748b
+graph 1 2.655 6.0736
+node caller 1.3275 5.744 2.4258 0.65917 "Caller\nsync, async, or suspend API" rounded,filled box #5B8DEF #E8F3FF
+node builder 1.3275 4.3904 2.655 0.65917 "Request builder DSL\ntyped AWS model construction" rounded,filled box #D6A441 #FFF3D9
+node client 1.3275 3.0368 1.9467 0.65917 "AWS SDK v2 client\nservice operation call" rounded,filled box #8CA0B3 #F4F7FA
+node future 1.3275 1.6832 2.28 0.65917 "CompletableFuture result\nasync response boundary" rounded,filled box #58A978 #EAF7EF
+node suspend 1.3275 0.32958 2.2383 0.65917 "Coroutine wrapper\nawait(), Flow, suspend API" rounded,filled box #45A7A1 #E9F7F6
+edge caller builder 4 1.3275 5.4094 1.3275 5.4094 1.3275 4.8616 1.3275 4.8616 solid #64748b
+edge builder client 4 1.3275 4.0558 1.3275 4.0558 1.3275 3.5079 1.3275 3.5079 solid #64748b
+edge client future 4 1.3275 2.7022 1.3275 2.7022 1.3275 2.1543 1.3275 2.1543 solid #64748b
+edge future suspend 4 1.3275 1.3486 1.3275 1.3486 1.3275 0.80072 1.3275 0.80072 solid #64748b
 stop

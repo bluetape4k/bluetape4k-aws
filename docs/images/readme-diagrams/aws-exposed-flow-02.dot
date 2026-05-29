@@ -1,21 +1,16 @@
-digraph AwsExposedFlow {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.42, ranksep=0.62, splines=ortho]
+digraph aws_exposed_flow_02 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-
-  config [label="Configured source\nstatic, Secrets Manager,\nParameter Store, or adapter", fillcolor="#e0f2fe", color="#38bdf8"]
-  properties [label="AwsDatabaseConnectionProperties\nURL, driver, username, pool", fillcolor="#dcfce7", color="#22c55e"]
-  secret [label="AwsSecretString\nredacted diagnostics", fillcolor="#f3e8ff", color="#a855f7"]
-  auth [label="Authentication mode\nstatic password or RDS IAM", fillcolor="#fee2e2", color="#fb7185"]
-  hikari [label="HikariDataSource\nphysical JDBC pool", fillcolor="#fef3c7", color="#f59e0b"]
-  exposed [label="Exposed Database handle\nregistered by name", fillcolor="#ecfeff", color="#06b6d4"]
-  database [label="JDBC database", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
-  config -> properties
-  properties -> secret
-  properties -> auth
-  secret -> hikari
+  source [label="Configured source\nstatic, Secrets Manager\nParameter Store, or adapter", fillcolor="#E8F3FF", color="#5B8DEF"]
+  props [label="AwsDatabaseConnectionProperties\nURL, driver, username, pool", fillcolor="#EAF7EF", color="#58A978"]
+  secret [label="AwsSecretString\nredacted diagnostics", fillcolor="#F1ECFF", color="#8A72D6"]
+  auth [label="Authentication mode\nstatic password or RDS IAM", fillcolor="#FDECEF", color="#DC6B82"]
+  hikari [label="HikariDataSource\nphysical JDBC pool", fillcolor="#FFF3D9", color="#D6A441"]
+  handle [label="Exposed Database handle\nregistered by name", fillcolor="#E9F7F6", color="#45A7A1"]
+  source -> props
+  props -> secret
+  secret -> auth
   auth -> hikari
-  hikari -> exposed
-  exposed -> database
+  hikari -> handle
 }

@@ -1,20 +1,18 @@
-digraph SpringSqsExamplesArchitecture {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.70, splines=ortho]
+digraph examples_aws_spring_boot_sqs_examples_architecture_01 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-
-  client [label="HTTP client or test", fillcolor="#e0f2fe", color="#38bdf8"]
-  api [label="Spring WebFlux API\nqueue, message, fanout, DLQ routes", fillcolor="#dcfce7", color="#22c55e"]
-  ops [label="SqsOperations and SnsOperations\ncoroutine templates", fillcolor="#fef3c7", color="#f59e0b"]
-  listener [label="@SqsListener container\nreceives configured queue", fillcolor="#f3e8ff", color="#a855f7"]
-  fanout [label="SNS to SQS fanout\nqueue policy and subscription", fillcolor="#fee2e2", color="#ef4444"]
-  localstack [label="LocalStack SQS/SNS\nor AWS endpoints", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
+  client [label="HTTP client / test\nqueue and topic routes", fillcolor="#E8F3FF", color="#5B8DEF"]
+  api [label="Spring WebFlux API\nqueue, message\nfanout and DLQ routes", fillcolor="#EAF7EF", color="#58A978"]
+  ops [label="SQS / SNS operations\ncoroutine templates", fillcolor="#FFF3D9", color="#D6A441"]
+  listener [label="@SqsListener container\ntyped payloads\nmanual acknowledgement", fillcolor="#F1ECFF", color="#8A72D6"]
+  fanout [label="SNS to SQS fanout\npolicy, subscription\nDLQ redrive", fillcolor="#FDECEF", color="#DC6B82"]
+  localstack [label="LocalStack SQS/SNS\nor AWS endpoints", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
   client -> api
   api -> ops
   ops -> localstack
-  listener -> localstack [label="poll"]
   localstack -> listener [label="messages"]
+  listener -> api [label="events"]
   api -> fanout
   fanout -> localstack
 }

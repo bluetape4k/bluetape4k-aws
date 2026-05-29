@@ -1,0 +1,12 @@
+graph 1 4.9553 5.4464
+node client 2.4699 5.1168 1.655 0.65917 "HTTP client / test\nCRUD route calls" rounded,filled box #5B8DEF #E8F3FF
+node routes 2.4699 3.6434 1.8113 0.89875 "Ktor order routes\nPOST, GET, DELETE\nscan all orders" rounded,filled box #58A978 #EAF7EF
+node plugin 1.1087 2.0502 2.2175 0.89875 "DynamoDbKtorPlugin\nclient config\nauto-create orders table" rounded,filled box #D6A441 #FFF3D9
+node repo 3.831 2.0502 2.2487 0.89875 "Coroutine repository\nOrder mapper\nDynamoDB enhanced calls" rounded,filled box #8A72D6 #F1ECFF
+node ddb 2.4699 0.45318 1.8425 0.90635 "DynamoDB endpoint\nLocalStack or AWS" rounded,filled cylinder #F47B36 #FFF0E3
+edge client routes 4 2.4699 4.7824 2.4699 4.7824 2.4699 4.235 2.4699 4.235 solid #64748b
+edge routes plugin 4 1.8909 3.1911 1.8909 3.1911 1.8909 2.6393 1.8909 2.6393 solid #64748b
+edge routes repo 4 3.041 3.1911 3.041 3.1911 3.041 2.6393 3.041 2.6393 solid #64748b
+edge plugin ddb 4 1.8831 1.5968 1.8831 1.5968 1.8831 1.0378 1.8831 1.0378 solid #64748b
+edge repo ddb 4 3.0489 1.5968 3.0489 1.5968 3.0489 1.0378 3.0489 1.0378 solid #64748b
+stop

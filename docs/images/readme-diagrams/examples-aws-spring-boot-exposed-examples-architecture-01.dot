@@ -1,19 +1,17 @@
-digraph SpringExposedExamplesArchitecture {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.70, splines=ortho]
+digraph examples_aws_spring_boot_exposed_examples_architecture_01 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-
-  client [label="HTTP client or test", fillcolor="#e0f2fe", color="#38bdf8"]
-  controller [label="OrderController\nMVC endpoints", fillcolor="#dcfce7", color="#22c55e"]
-  service [label="OrderService\nowns Exposed transaction", fillcolor="#fef3c7", color="#f59e0b"]
-  repo [label="OrderRepository\nassumes active transaction", fillcolor="#f3e8ff", color="#a855f7"]
-  autoconfig [label="AwsExposedAutoConfiguration\nDataSource, Database, Registry", fillcolor="#fee2e2", color="#ef4444"]
-  pg [label="PostgreSQL Testcontainer\nor production JDBC database", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
+  client [label="HTTP client / test\norder route calls", fillcolor="#E8F3FF", color="#5B8DEF"]
+  controller [label="OrderController\nMVC endpoints", fillcolor="#EAF7EF", color="#58A978"]
+  service [label="OrderService\nowns Exposed transaction", fillcolor="#FFF3D9", color="#D6A441"]
+  repo [label="OrderRepository\nactive transaction required", fillcolor="#F1ECFF", color="#8A72D6"]
+  auto [label="AwsExposedAutoConfiguration\nDataSource, Database, Registry", fillcolor="#FDECEF", color="#DC6B82"]
+  pg [label="PostgreSQL database\nTestcontainers or production", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
   client -> controller
   controller -> service
   service -> repo
-  autoconfig -> service [label="Database bean"]
+  auto -> service [label="Database"]
   repo -> pg
-  autoconfig -> pg [label="Hikari pool"]
+  auto -> pg [label="pool"]
 }

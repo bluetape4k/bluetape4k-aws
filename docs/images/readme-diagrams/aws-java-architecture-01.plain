@@ -1,20 +1,18 @@
-graph 1 18.091 5.2068
-node app 7.2615 4.8772 3.1029 0.65917 "Application code\nblocking, async, or suspend call sites" rounded,filled box #38bdf8 #e0f2fe
-node factories 1.7338 3.5236 3.4675 0.65917 "Client factories\nservice-specific Sync and Async builders" rounded,filled box #f59e0b #fef3c7
-node requestDsl 5.4421 3.5236 2.9675 0.65917 "Request DSL helpers\nmodel builders and typed shortcuts" rounded,filled box #22c55e #dcfce7
-node coroutine 9.081 3.5236 3.3321 0.65917 "Coroutine adapters\nCompletableFuture.await + Flow bridges" rounded,filled box #a855f7 #f3e8ff
-node batch 12.789 3.5236 3.1029 0.65917 "DynamoDB batch/repository helpers\nEnhanced Async table integration" rounded,filled box #fb7185 #fee2e2
-node sdk 9.081 2.0502 2.6029 0.89875 "AWS Java SDK v2 clients\nS3, SQS, SNS, DynamoDB,\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #94a3b8 #f8fafc
-node runtime 16.456 3.5236 3.2696 0.65917 "HTTP + credentials runtime\nCRT, Netty NIO, Apache, provider chain" rounded,filled box #06b6d4 #ecfeff
-node aws 9.081 0.45318 1.9779 0.90635 "AWS services\nor LocalStack / Floci" rounded,filled cylinder #f97316 #fff7ed
-edge app factories 7 5.7033 4.875 4.0685 4.875 1.7338 4.875 1.7338 4.875 1.7338 4.875 1.7338 3.9933 1.7338 3.9933 solid #64748b
-edge app requestDsl 4 6.318 4.5426 6.318 4.5426 6.318 3.9947 6.318 3.9947 solid #64748b
-edge app coroutine 4 8.114 4.5426 8.114 4.5426 8.114 3.9947 8.114 3.9947 solid #64748b
-edge app batch 7 8.8197 4.875 10.455 4.875 12.789 4.875 12.789 4.875 12.789 4.875 12.789 3.9933 12.789 3.9933 solid #64748b
-edge factories sdk 7 1.7338 3.1877 1.7338 2.713 1.7338 1.9028 1.7338 1.9028 1.7338 1.9028 7.6402 1.9028 7.6402 1.9028 solid #64748b
-edge requestDsl sdk 7 5.4421 3.1882 5.4421 2.7944 5.4421 2.1944 5.4421 2.1944 5.4421 2.1944 7.6418 2.1944 7.6418 2.1944 solid #64748b
-edge coroutine sdk 4 9.081 3.1892 9.081 3.1892 9.081 2.6418 9.081 2.6418 solid #64748b
-edge batch sdk 7 12.789 3.1882 12.789 2.7944 12.789 2.1944 12.789 2.1944 12.789 2.1944 10.524 2.1944 10.524 2.1944 solid #64748b
-edge sdk aws 4 9.081 1.5968 9.081 1.5968 9.081 1.0489 9.081 1.0489 solid #64748b
-edge runtime sdk 7 16.456 3.1877 16.456 2.713 16.456 1.9028 16.456 1.9028 16.456 1.9028 10.522 1.9028 10.522 1.9028 solid #64748b
+graph 1 9.4935 5.4464
+node app 4.6452 5.1168 3.1029 0.65917 "Application code\nblocking, async, or suspend call sites" rounded,filled box #5B8DEF #E8F3FF
+node factories 0.97854 3.6434 1.9571 0.89875 "Client factories\nservice-specific sync\nand async builders" rounded,filled box #D6A441 #FFF3D9
+node dsl 3.3952 3.6434 1.9154 0.89875 "Request DSL helpers\nmodel builders\ntyped shortcuts" rounded,filled box #58A978 #EAF7EF
+node coroutine 5.9091 3.6434 2.1342 0.89875 "Coroutine adapters\nCompletableFuture.await\nFlow bridges" rounded,filled box #8A72D6 #F1ECFF
+node batch 8.4785 3.6434 2.03 0.89875 "DynamoDB helpers\nbatch and repository\nEnhanced Async tables" rounded,filled box #DC6B82 #FDECEF
+node sdk 4.6452 2.0502 2.6029 0.89875 "AWS Java SDK v2 clients\nS3, SQS, SNS, DynamoDB\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #8CA0B3 #F4F7FA
+node aws 4.6452 0.45318 1.9779 0.90635 "AWS services\nor LocalStack / Floci" rounded,filled cylinder #F47B36 #FFF0E3
+edge app factories 7 3.0902 5.1111 2.0909 5.1111 0.97854 5.1111 0.97854 5.1111 0.97854 5.1111 0.97854 4.2314 0.97854 4.2314 solid #64748b
+edge app dsl 4 3.7233 4.7824 3.7233 4.7824 3.7233 4.235 3.7233 4.235 solid #64748b
+edge app coroutine 4 5.5193 4.7824 5.5193 4.7824 5.5193 4.235 5.5193 4.235 solid #64748b
+edge app batch 7 6.1988 5.1111 7.2614 5.1111 8.4785 5.1111 8.4785 5.1111 8.4785 5.1111 8.4785 4.2314 8.4785 4.2314 solid #64748b
+edge factories sdk 7 0.97854 3.1884 0.97854 2.7192 0.97854 2.0556 0.97854 2.0556 0.97854 2.0556 3.2013 2.0556 3.2013 2.0556 solid #64748b
+edge dsl sdk 4 3.8483 3.1911 3.8483 3.1911 3.8483 2.6393 3.8483 2.6393 solid #64748b
+edge coroutine sdk 4 5.3943 3.1911 5.3943 3.1911 5.3943 2.6393 5.3943 2.6393 solid #64748b
+edge batch sdk 7 8.4785 3.1884 8.4785 2.7192 8.4785 2.0556 8.4785 2.0556 8.4785 2.0556 6.084 2.0556 6.084 2.0556 solid #64748b
+edge sdk aws 4 4.6452 1.5968 4.6452 1.5968 4.6452 1.0489 4.6452 1.0489 solid #64748b
 stop

@@ -1,0 +1,12 @@
+graph 1 5.1758 5.4464
+node client 1.1296 5.1168 1.655 0.65917 "HTTP client / test\norders API calls" rounded,filled box #5B8DEF #E8F3FF
+node api 1.1296 3.6434 2.2592 0.89875 "Spring WebFlux API\nOrderController\nPOST, GET, DELETE, scan" rounded,filled box #58A978 #EAF7EF
+node repo 2.2407 2.0502 1.9675 0.89875 "OrderRepository\nAbstractCoroutines\nDynamoDB repository" rounded,filled box #8A72D6 #F1ECFF
+node auto 3.9629 3.6434 2.4258 0.65917 "DynamoDbAutoConfiguration\nclient and table beans" rounded,filled box #D6A441 #FFF3D9
+node ddb 3.1018 0.45318 1.8425 0.90635 "DynamoDB endpoint\nLocalStack or AWS" rounded,filled cylinder #F47B36 #FFF0E3
+edge client api 4 1.1296 4.7824 1.1296 4.7824 1.1296 4.235 1.1296 4.235 solid #64748b
+edge api repo 4 1.7581 3.1911 1.7581 3.1911 1.7581 2.6393 1.7581 2.6393 solid #64748b
+edge repo ddb 4 2.7025 1.5968 2.7025 1.5968 2.7025 1.0489 2.7025 1.0489 solid #64748b
+edge auto repo 4 2.9872 3.3094 2.9872 3.3094 2.9872 2.6403 2.9872 2.6403 solid #64748b
+edge auto ddb 4 3.6237 3.308 3.6237 3.308 3.6237 1.0475 3.6237 1.0475 solid #64748b
+stop
