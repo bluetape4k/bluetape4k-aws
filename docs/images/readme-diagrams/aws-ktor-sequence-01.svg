@@ -29,12 +29,12 @@
 <text class="chip" x="787.5" y="70" text-anchor="middle">Poll</text>
 <rect x="669.5" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="703.5" y="70" text-anchor="middle">Ack</text>
-<g><g><path class="edge" d="M490 214 L490 240 L490 240 L490 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 348 L490 374 L490 374 L490 400" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 482 L490 508 L490 508 L490 534" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 616 L490 642 L490 642 L490 668" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 750 L490 776 L490 776 L490 802" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 884 L490 910 L490 910 L490 936" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M490 214 L490 246 L490 246 L490 266" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 348 L490 380 L490 380 L490 400" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 482 L490 514 L490 514 L490 534" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 616 L490 648 L490 648 L490 668" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 750 L490 782 L490 782 L490 802" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 884 L490 916 L490 916 L490 936" stroke="#66758A"/></g></g>
 <g id="install">
   <rect class="card" x="330" y="136" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="490" y="172" text-anchor="middle">Install SqsConsumer</text>
@@ -71,6 +71,6 @@
   <text class="detail" x="490" y="998" text-anchor="middle">delete or change visibility</text>
 </g>
 <rect class="footer" x="54" y="1056" width="872" height="54" rx="8"/>
-<text class="footer-title" x="72" y="1085">Lifecycle role</text>
-<text class="footer-detail" x="72" y="1105">Vertical steps keep listener startup, long polling, handler hooks, and shutdown behavior visible.</text>
+<text class="footer-title" x="72" y="1075" dominant-baseline="middle">Lifecycle role</text>
+<text class="footer-detail" x="72" y="1093" dominant-baseline="middle">Vertical steps keep listener startup, long polling, handler hooks, and shutdown behavior visible.</text>
 </svg>

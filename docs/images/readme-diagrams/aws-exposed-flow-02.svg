@@ -29,11 +29,11 @@
 <text class="chip" x="738.5" y="70" text-anchor="middle">Validate</text>
 <rect x="593.5" y="54" width="86" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
 <text class="chip" x="636.5" y="70" text-anchor="middle">Register</text>
-<g><g><path class="edge" d="M470 218 L470 242 L470 242 L470 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 348 L470 372 L470 372 L470 396" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 478 L470 502 L470 502 L470 526" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 608 L470 632 L470 632 L470 656" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 738 L470 762 L470 762 L470 786" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M470 218 L470 250 L470 250 L470 266" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 348 L470 380 L470 380 L470 396" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 478 L470 510 L470 510 L470 526" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 608 L470 640 L470 640 L470 656" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 738 L470 770 L470 770 L470 786" stroke="#66758A"/></g></g>
 <g id="source">
   <rect class="card" x="300" y="136" width="340" height="82" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="470" y="165.5" text-anchor="middle">Configured source</text>
@@ -66,6 +66,6 @@
   <text class="detail" x="470" y="848" text-anchor="middle">registered by name</text>
 </g>
 <rect class="footer" x="54" y="916" width="832" height="54" rx="8"/>
-<text class="footer-title" x="72" y="945">Flow role</text>
-<text class="footer-detail" x="72" y="965">A vertical flow makes static password, RDS IAM, Hikari, and registry handoff easy to scan.</text>
+<text class="footer-title" x="72" y="935" dominant-baseline="middle">Flow role</text>
+<text class="footer-detail" x="72" y="953" dominant-baseline="middle">A vertical flow makes static password, RDS IAM, Hikari, and registry handoff easy to scan.</text>
 </svg>

@@ -29,13 +29,13 @@
 <text class="chip" x="929.75" y="70" text-anchor="middle">Exposed</text>
 <rect x="773.5" y="54" width="101" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="824" y="70" text-anchor="middle">PostgreSQL</text>
-<g><g><path class="edge" d="M312 219 L351 219 L351 204 L390 204" stroke="#66758A"/></g>
-<g><path class="edge" d="M535 252 L535 306 L535 306 L535 360" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 408 L719 408 L719 408 L758 408" stroke="#66758A"/></g>
-<g><path class="edge" d="M758 204 L758 306 L680 306 L680 408" stroke="#66758A"/><rect class="label-bg" x="674.8" y="292" width="88.4" height="22" rx="11"/>
+<g><g><path class="edge" d="M312 219 L344 219 L344 204 L390 204" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 252 L535 284 L535 284 L535 360" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 408 L712 408 L712 408 L758 408" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 252 L903 284 L535 284 L535 360" stroke="#66758A"/><rect class="label-bg" x="674.8" y="292" width="88.4" height="22" rx="11"/>
 <text class="edge-label" x="719" y="308" text-anchor="middle">Database</text></g>
-<g><path class="edge" d="M903 456 L801 456 L801 592 L698 592" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 252 L903 422 L698 422 L698 592" stroke="#66758A" stroke-dasharray="8 8"/><rect class="label-bg" x="774.4" y="408" width="53.2" height="22" rx="11"/>
+<g><path class="edge" d="M903 456 L903 488 L698 488 L698 592" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 252 L903 284 L698 284 L698 592" stroke="#66758A" stroke-dasharray="8 8"/><rect class="label-bg" x="774.4" y="408" width="53.2" height="22" rx="11"/>
 <text class="edge-label" x="801" y="424" text-anchor="middle">pool</text></g></g>
 <g id="client">
   <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
@@ -68,6 +68,6 @@
   <text class="detail" x="698" y="652" text-anchor="middle">Testcontainers or production</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="785">Example role</text>
-<text class="footer-detail" x="72" y="805">Keep controller, service transaction ownership, repository, and database lifecycle boundaries visible.</text>
+<text class="footer-title" x="72" y="775" dominant-baseline="middle">Example role</text>
+<text class="footer-detail" x="72" y="793" dominant-baseline="middle">Keep controller, service transaction ownership, repository, and database lifecycle boundaries visible.</text>
 </svg>

@@ -29,16 +29,16 @@
 <text class="chip" x="1034.75" y="70" text-anchor="middle">Auto-config</text>
 <rect x="871" y="54" width="93.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
 <text class="chip" x="917.75" y="70" text-anchor="middle">Local AWS</text>
-<g><g><path class="edge" d="M620 214 L620 240 L620 240 L620 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 348 L620 374 L620 374 L620 400" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 482 L620 521 L220 521 L220 560" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 482 L620 521 L490 521 L490 560" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 482 L620 521 L760 521 L760 560" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 482 L620 521 L1030 521 L1030 560" stroke="#66758A"/></g>
-<g><path class="edge" d="M220 646 L220 683 L620 683 L620 720" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 646 L490 683 L620 683 L620 720" stroke="#66758A"/></g>
-<g><path class="edge" d="M760 646 L760 683 L620 683 L620 720" stroke="#66758A"/></g>
-<g><path class="edge" d="M1030 646 L1030 683 L620 683 L620 720" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M620 214 L620 246 L620 246 L620 266" stroke="#66758A"/></g>
+<g><path class="edge" d="M620 348 L620 380 L620 380 L620 400" stroke="#66758A"/></g>
+<g><path class="edge" d="M620 482 L620 514 L220 514 L220 560" stroke="#66758A"/></g>
+<g><path class="edge" d="M620 482 L620 514 L490 514 L490 560" stroke="#66758A"/></g>
+<g><path class="edge" d="M620 482 L620 514 L760 514 L760 560" stroke="#66758A"/></g>
+<g><path class="edge" d="M620 482 L620 514 L1030 514 L1030 560" stroke="#66758A"/></g>
+<g><path class="edge" d="M220 646 L220 678 L620 678 L620 720" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 646 L490 678 L620 678 L620 720" stroke="#66758A"/></g>
+<g><path class="edge" d="M760 646 L760 678 L620 678 L620 720" stroke="#66758A"/></g>
+<g><path class="edge" d="M1030 646 L1030 678 L620 678 L620 720" stroke="#66758A"/></g></g>
 <g id="app">
   <rect class="card" x="460" y="136" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="620" y="172" text-anchor="middle">Spring Boot application</text>
@@ -80,6 +80,6 @@
   <text class="detail" x="620" y="782" text-anchor="middle">LocalStack, Floci, RDS</text>
 </g>
 <rect class="footer" x="54" y="876" width="1132" height="54" rx="8"/>
-<text class="footer-title" x="72" y="905">Module role</text>
-<text class="footer-detail" x="72" y="925">Keep common AWS client defaults central while service auto-configurations expose focused operations.</text>
+<text class="footer-title" x="72" y="895" dominant-baseline="middle">Module role</text>
+<text class="footer-detail" x="72" y="913" dominant-baseline="middle">Keep common AWS client defaults central while service auto-configurations expose focused operations.</text>
 </svg>

@@ -29,12 +29,12 @@
 <text class="chip" x="935" y="70" text-anchor="middle">S3</text>
 <rect x="817" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="851" y="70" text-anchor="middle">KMS</text>
-<g><g><path class="edge" d="M312 219 L351 219 L351 208 L390 208" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 208 L719 208 L719 208 L758 208" stroke="#66758A"/></g>
-<g><path class="edge" d="M535 260 L535 326 L535 326 L535 392" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 440 L719 440 L719 440 L758 440" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 260 L903 430 L735 430 L735 600" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 440 L680 540 L590 540 L590 639" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M312 219 L344 219 L344 208 L390 208" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 208 L712 208 L712 208 L758 208" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 260 L535 292 L535 292 L535 392" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 440 L712 440 L712 440 L758 440" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 260 L903 292 L735 292 L735 600" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 488 L535 520 L735 520 L735 600" stroke="#66758A"/></g></g>
 <g id="client">
   <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="192" y="216" text-anchor="middle">HTTP client / test</text>
@@ -69,6 +69,6 @@
   <text class="detail" x="735" y="660" text-anchor="middle">LocalStack or AWS</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="785">Example role</text>
-<text class="footer-detail" x="72" y="805">Show upload/download APIs, presigned URLs, object listing, and envelope encryption extension points.</text>
+<text class="footer-title" x="72" y="775" dominant-baseline="middle">Example role</text>
+<text class="footer-detail" x="72" y="793" dominant-baseline="middle">Show upload/download APIs, presigned URLs, object listing, and envelope encryption extension points.</text>
 </svg>

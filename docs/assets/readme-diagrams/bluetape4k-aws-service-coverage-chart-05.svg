@@ -140,6 +140,6 @@
 <rect x="1034" y="368" width="52" height="32" rx="16" fill="#F4F7FA" stroke="#8CA0B3"/>
       <text class="detail" x="1060" y="388" text-anchor="middle">-</text>
 <rect class="footer" x="54" y="496" width="1072" height="54" rx="8"/>
-<text class="footer-title" x="72" y="525">Coverage role</text>
-<text class="footer-detail" x="72" y="545">Core wrappers cover the broad SDK surface; Spring Boot and Ktor add framework entry points.</text>
+<text class="footer-title" x="72" y="515" dominant-baseline="middle">Coverage role</text>
+<text class="footer-detail" x="72" y="533" dominant-baseline="middle">Core wrappers cover the broad SDK surface; Spring Boot and Ktor add framework entry points.</text>
 </svg>

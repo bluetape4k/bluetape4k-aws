@@ -29,11 +29,11 @@
 <text class="chip" x="929.75" y="70" text-anchor="middle">WebFlux</text>
 <rect x="788.5" y="54" width="86" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
 <text class="chip" x="831.5" y="70" text-anchor="middle">DynamoDB</text>
-<g><g><path class="edge" d="M312 219 L351 219 L351 224 L390 224" stroke="#66758A"/></g>
-<g><path class="edge" d="M535 272 L535 338 L535 338 L535 404" stroke="#66758A"/></g>
-<g><path class="edge" d="M758 224 L758 338 L680 338 L680 452" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 452 L719 452 L719 452 L758 452" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 272 L903 338 L903 338 L903 404" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M312 219 L344 219 L344 224 L390 224" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 272 L535 304 L535 304 L535 404" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 272 L903 304 L535 304 L535 404" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 452 L712 452 L712 452 L758 452" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 272 L903 304 L903 304 L903 404" stroke="#66758A"/></g></g>
 <g id="client">
   <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="192" y="216" text-anchor="middle">HTTP client / test</text>
@@ -62,6 +62,6 @@
   <text class="detail" x="903" y="473" text-anchor="middle">LocalStack or AWS</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="785">Example role</text>
-<text class="footer-detail" x="72" y="805">Show auto-configuration, repository mapping, CRUD API behavior, and Flow scan responses.</text>
+<text class="footer-title" x="72" y="775" dominant-baseline="middle">Example role</text>
+<text class="footer-detail" x="72" y="793" dominant-baseline="middle">Show auto-configuration, repository mapping, CRUD API behavior, and Flow scan responses.</text>
 </svg>

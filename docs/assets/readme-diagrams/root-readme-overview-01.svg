@@ -35,14 +35,14 @@
   <rect x="748" y="54" width="76" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
   <text class="chip" x="786" y="70" text-anchor="middle">Ktor 3</text>
 </g>
-<g><g><path class="edge" d="M560 220 L560 244 L560 244 L560 268" stroke="#66758A"/></g>
-<g><path class="edge" d="M560 342 L560 366 L560 366 L560 390" stroke="#66758A"/></g>
-<g><path class="edge" d="M310 436 L409 436 L409 595 L508 595" stroke="#66758A"/></g>
-<g><path class="edge" d="M810 436 L711 436 L711 595 L612 595" stroke="#66758A"/></g>
-<g><path class="edge" d="M303 650 L303 680 L350 680 L350 710" stroke="#66758A"/></g>
-<g><path class="edge" d="M612 595 L612 675 L490 675 L490 754" stroke="#66758A"/></g>
-<g><path class="edge" d="M560 482 L560 596 L780 596 L780 710" stroke="#66758A" stroke-dasharray="8 8"/></g>
-<g><path class="edge" d="M490 754 L560 754 L560 754 L630 754" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M560 220 L560 252 L560 252 L560 268" stroke="#66758A"/></g>
+<g><path class="edge" d="M560 342 L560 374 L560 374 L560 390" stroke="#66758A"/></g>
+<g><path class="edge" d="M560 482 L560 514 L303 514 L303 540" stroke="#66758A"/></g>
+<g><path class="edge" d="M560 482 L560 514 L817 514 L817 540" stroke="#66758A"/></g>
+<g><path class="edge" d="M303 650 L303 682 L350 682 L350 710" stroke="#66758A"/></g>
+<g><path class="edge" d="M817 650 L817 682 L350 682 L350 710" stroke="#66758A"/></g>
+<g><path class="edge" d="M560 482 L560 678 L780 678 L780 710" stroke="#66758A" stroke-dasharray="8 8"/></g>
+<g><path class="edge" d="M490 754 L522 754 L522 754 L630 754" stroke="#66758A"/></g></g>
 <g id="apps">
   <rect class="card" x="350" y="138" width="420" height="82" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="560" y="176" text-anchor="middle">Kotlin application surfaces</text>
@@ -83,6 +83,6 @@
 <text class="detail" x="780" y="782.5" text-anchor="middle">KMS, SES, CloudWatch, Kinesis, STS</text>
 </g>
 <rect class="footer" x="54" y="876" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="905">Repository role</text>
-<text class="footer-detail" x="72" y="925">One AWS integration stack with local emulator verification and published BOM alignment.</text>
+<text class="footer-title" x="72" y="895" dominant-baseline="middle">Repository role</text>
+<text class="footer-detail" x="72" y="913" dominant-baseline="middle">One AWS integration stack with local emulator verification and published BOM alignment.</text>
 </svg>

@@ -29,10 +29,10 @@
 <text class="chip" x="719.75" y="70" text-anchor="middle">Constraints</text>
 <rect x="556" y="54" width="93.5" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="602.75" y="70" text-anchor="middle">Consumers</text>
-<g><g><path class="edge" d="M470 218 L470 242 L470 242 L470 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 352 L470 376 L470 376 L470 400" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 482 L470 506 L470 506 L470 530" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 612 L470 636 L470 636 L470 660" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M470 218 L470 250 L470 250 L470 266" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 352 L470 384 L470 384 L470 400" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 482 L470 514 L470 514 L470 530" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 612 L470 644 L470 644 L470 660" stroke="#66758A"/></g></g>
 <g id="source">
   <rect class="card" x="300" y="136" width="340" height="82" rx="10" fill="#F4F7FA" stroke="#8CA0B3"/>
   <text class="card-title" x="470" y="174" text-anchor="middle">bluetape4k-aws-bom</text>
@@ -61,6 +61,6 @@
 <text class="detail" x="470" y="732.5" text-anchor="middle">versions stay aligned</text>
 </g>
 <rect class="footer" x="54" y="796" width="832" height="54" rx="8"/>
-<text class="footer-title" x="72" y="825">BOM role</text>
-<text class="footer-detail" x="72" y="845">A java-platform publishes dependency constraints only; applications still choose the modules they use.</text>
+<text class="footer-title" x="72" y="815" dominant-baseline="middle">BOM role</text>
+<text class="footer-detail" x="72" y="833" dominant-baseline="middle">A java-platform publishes dependency constraints only; applications still choose the modules they use.</text>
 </svg>

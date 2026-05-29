@@ -29,13 +29,13 @@
 <text class="chip" x="932.75" y="70" text-anchor="middle">Exposed</text>
 <rect x="776.5" y="54" width="101" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="827" y="70" text-anchor="middle">PostgreSQL</text>
-<g><g><path class="edge" d="M312 219 L351 219 L351 224 L390 224" stroke="#66758A"/></g>
-<g><path class="edge" d="M535 272 L535 338 L535 338 L535 404" stroke="#66758A"/></g>
-<g><path class="edge" d="M758 224 L758 338 L680 338 L680 452" stroke="#66758A"/><rect class="label-bg" x="674.8" y="324" width="88.4" height="22" rx="11"/>
+<g><g><path class="edge" d="M312 219 L344 219 L344 224 L390 224" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 272 L535 304 L535 304 L535 404" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 272 L903 304 L535 304 L535 404" stroke="#66758A"/><rect class="label-bg" x="674.8" y="324" width="88.4" height="22" rx="11"/>
 <text class="edge-label" x="719" y="340" text-anchor="middle">database</text></g>
-<g><path class="edge" d="M680 452 L719 452 L719 452 L758 452" stroke="#66758A"/></g>
-<g><path class="edge" d="M758 452 L758 541 L848 541 L848 629" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 272 L903 431 L698 431 L698 590" stroke="#66758A" stroke-dasharray="8 8"/><rect class="label-bg" x="774.4" y="417" width="53.2" height="22" rx="11"/>
+<g><path class="edge" d="M680 452 L712 452 L712 452 L758 452" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 500 L903 532 L698 532 L698 590" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 272 L903 304 L698 304 L698 590" stroke="#66758A" stroke-dasharray="8 8"/><rect class="label-bg" x="774.4" y="417" width="53.2" height="22" rx="11"/>
 <text class="edge-label" x="801" y="433" text-anchor="middle">pool</text></g></g>
 <g id="client">
   <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
@@ -71,6 +71,6 @@
   <text class="detail" x="698" y="650" text-anchor="middle">Testcontainers or production</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="785">Example role</text>
-<text class="footer-detail" x="72" y="805">Keep HTTP routes, transaction dispatch, repository queries, and database lifecycle separate.</text>
+<text class="footer-title" x="72" y="775" dominant-baseline="middle">Example role</text>
+<text class="footer-detail" x="72" y="793" dominant-baseline="middle">Keep HTTP routes, transaction dispatch, repository queries, and database lifecycle separate.</text>
 </svg>

@@ -29,12 +29,12 @@
 <text class="chip" x="938" y="70" text-anchor="middle">S3</text>
 <rect x="820" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="854" y="70" text-anchor="middle">SigV4</text>
-<g><g><path class="edge" d="M312 219 L351 219 L351 208 L390 208" stroke="#66758A"/></g>
-<g><path class="edge" d="M312 219 L312 302 L390 302 L390 384" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 208 L680 250 L758 250 L758 292" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 384 L680 338 L758 338 L758 292" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 340 L903 391 L903 391 L903 442" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 534 L903 572 L903 572 L903 610" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M312 219 L344 219 L344 208 L390 208" stroke="#66758A"/></g>
+<g><path class="edge" d="M192 262 L192 294 L535 294 L535 332" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 208 L712 208 L712 292 L758 292" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 384 L712 384 L712 292 L758 292" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 340 L903 372 L903 372 L903 442" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 534 L903 566 L903 566 L903 610" stroke="#66758A"/></g></g>
 <g id="client">
   <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="192" y="216" text-anchor="middle">HTTP client / test</text>
@@ -69,6 +69,6 @@
   <text class="detail" x="903" y="670" text-anchor="middle">AWS S3, LocalStack, Floci</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="785">Example role</text>
-<text class="footer-detail" x="72" y="805">Cover object routes, presigned URLs, config objects, content-type detection, and encryption demo paths.</text>
+<text class="footer-title" x="72" y="775" dominant-baseline="middle">Example role</text>
+<text class="footer-detail" x="72" y="793" dominant-baseline="middle">Cover object routes, presigned URLs, config objects, content-type detection, and encryption demo paths.</text>
 </svg>
