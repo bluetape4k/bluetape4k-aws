@@ -24,20 +24,20 @@
 <text class="title" x="54" y="72">Module composition</text>
 <text class="subtitle" x="56" y="102">Published modules align through the BOM; examples prove framework paths against local emulators.</text>
 <g>
-  <rect x="1116" y="54" width="72" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="chip" x="1152" y="70" text-anchor="middle">BOM</text>
+  <rect x="1102" y="54" width="72" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1138" y="70" text-anchor="middle">BOM</text>
 </g>
 <g>
-  <rect x="992" y="54" width="72" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="chip" x="1028" y="70" text-anchor="middle">Java</text>
+  <rect x="1014" y="54" width="72" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1050" y="70" text-anchor="middle">Java</text>
 </g>
 <g>
-  <rect x="860" y="54" width="76" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="chip" x="898" y="70" text-anchor="middle">Kotlin</text>
+  <rect x="922" y="54" width="76" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="chip" x="960" y="70" text-anchor="middle">Kotlin</text>
 </g>
 <g>
-  <rect x="728" y="54" width="92" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="chip" x="774" y="70" text-anchor="middle">Examples</text>
+  <rect x="814" y="54" width="92" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
+  <text class="chip" x="860" y="70" text-anchor="middle">Examples</text>
 </g>
 <g><g><path class="edge" d="M504 181 L504 252 L472 252 L472 323" stroke="#66758A"/></g>
 <g><path class="edge" d="M724 181 L724 252 L756 252 L756 323" stroke="#66758A"/></g>

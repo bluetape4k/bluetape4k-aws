@@ -23,15 +23,15 @@
 <rect x="26" y="26" width="1068" height="808" rx="14" class="frame"/>
 <text class="title" x="54" y="72">Ktor S3 example</text>
 <text class="subtitle" x="56" y="102">Ktor S3 routes and helper scenarios use SigV4 REST calls against S3-compatible endpoints.</text>
-<rect x="1000" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="chip" x="1034" y="70" text-anchor="middle">Ktor</text>
-<rect x="897" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="931" y="70" text-anchor="middle">S3</text>
-<rect x="756.5" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="790.5" y="70" text-anchor="middle">SigV4</text>
+<rect x="988" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="1022" y="70" text-anchor="middle">Ktor</text>
+<rect x="904" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="938" y="70" text-anchor="middle">S3</text>
+<rect x="820" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="854" y="70" text-anchor="middle">SigV4</text>
 <g><g><path class="edge" d="M312 219 L351 219 L351 208 L390 208" stroke="#66758A"/></g>
 <g><path class="edge" d="M312 219 L312 302 L390 302 L390 384" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 208 L680 348 L758 348 L758 488" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 208 L680 250 L758 250 L758 292" stroke="#66758A"/></g>
 <g><path class="edge" d="M680 384 L680 338 L758 338 L758 292" stroke="#66758A"/></g>
 <g><path class="edge" d="M903 340 L903 391 L903 391 L903 442" stroke="#66758A"/></g>
 <g><path class="edge" d="M903 534 L903 572 L903 572 L903 610" stroke="#66758A"/></g></g>
@@ -64,10 +64,9 @@
   <text class="detail" x="903" y="509" text-anchor="middle">SigV4 REST calls</text>
 </g>
 <g id="s3">
-  <path d="M758 630 C758 606,1048 606,1048 630 L1048 668 C1048 692,758 692,758 668 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="903" cy="630" rx="145" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="903" y="648.5" text-anchor="middle">S3-compatible endpoint</text>
-  <text class="detail" x="903" y="672.5" text-anchor="middle">AWS S3, LocalStack, Floci</text>
+  <rect class="card" x="758" y="610" width="290" height="78" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="903" y="646" text-anchor="middle">S3-compatible endpoint</text>
+  <text class="detail" x="903" y="670" text-anchor="middle">AWS S3, LocalStack, Floci</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
 <text class="footer-title" x="72" y="785">Example role</text>

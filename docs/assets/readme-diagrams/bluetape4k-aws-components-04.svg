@@ -24,16 +24,16 @@
 <text class="title" x="54" y="72">AWS component map</text>
 <text class="subtitle" x="56" y="102">Core SDK wrappers feed framework modules and examples without forcing one application stack.</text>
 <g>
-  <rect x="1158" y="54" width="72" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="chip" x="1194" y="70" text-anchor="middle">Core</text>
+  <rect x="1152" y="54" width="72" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1188" y="70" text-anchor="middle">Core</text>
 </g>
 <g>
-  <rect x="994" y="54" width="108" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="chip" x="1048" y="70" text-anchor="middle">Frameworks</text>
+  <rect x="1028" y="54" width="108" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1082" y="70" text-anchor="middle">Frameworks</text>
 </g>
 <g>
-  <rect x="894" y="54" width="92" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="chip" x="940" y="70" text-anchor="middle">Examples</text>
+  <rect x="920" y="54" width="92" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="chip" x="966" y="70" text-anchor="middle">Examples</text>
 </g>
 <g><g><path class="edge" d="M183.5 280 L266 280 L266 380 L348 380" stroke="#66758A"/></g>
 <g><path class="edge" d="M487.5 280 L584 280 L584 380 L680 380" stroke="#66758A"/></g>

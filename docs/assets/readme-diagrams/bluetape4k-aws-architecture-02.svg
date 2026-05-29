@@ -24,16 +24,16 @@
 <text class="title" x="54" y="72">Three-tier Java SDK API</text>
 <text class="subtitle" x="56" y="102">The Java SDK module exposes sync builders, async futures, and suspend wrappers over SDK v2 clients.</text>
 <g>
-  <rect x="1102" y="54" width="116" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="chip" x="1160" y="70" text-anchor="middle">Java SDK v2</text>
+  <rect x="1108" y="54" width="116" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1166" y="70" text-anchor="middle">Java SDK v2</text>
 </g>
 <g>
-  <rect x="938" y="54" width="164" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="chip" x="1020" y="70" text-anchor="middle">CompletableFuture</text>
+  <rect x="928" y="54" width="164" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1010" y="70" text-anchor="middle">CompletableFuture</text>
 </g>
 <g>
-  <rect x="878" y="54" width="108" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="chip" x="932" y="70" text-anchor="middle">Coroutines</text>
+  <rect x="804" y="54" width="108" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="chip" x="858" y="70" text-anchor="middle">Coroutines</text>
 </g>
 <g><g><path class="edge" d="M306 289 L306 240 L384 240 L384 191" stroke="#66758A"/></g>
 <g><path class="edge" d="M306 289 L345 289 L345 317 L384 317" stroke="#66758A"/></g>
@@ -69,10 +69,9 @@
 <text class="detail" x="893" y="336.5" text-anchor="middle">DynamoDbEnhancedAsyncClient</text>
 </g>
 <g id="aws">
-  <path d="M850 458 C850 434,1120 434,1120 458 L1120 502 C1120 526,850 526,850 502 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="985" cy="458" rx="135" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="985" y="480.5" text-anchor="middle">AWS services</text>
-  <text class="detail" x="985" y="503.5" text-anchor="middle">or LocalStack / Floci</text>
+  <rect class="card" x="850" y="438" width="270" height="84" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="985" y="477" text-anchor="middle">AWS services</text>
+  <text class="detail" x="985" y="500" text-anchor="middle">or LocalStack / Floci</text>
 </g>
 <rect class="footer" x="54" y="546" width="1172" height="54" rx="8"/>
 <text class="footer-title" x="72" y="575">API role</text>

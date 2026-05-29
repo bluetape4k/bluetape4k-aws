@@ -25,10 +25,10 @@
 <text class="subtitle" x="56" y="102">Framework adapters resolve AWS-backed settings, then the foundation creates Exposed database handles.</text>
 <rect x="890" y="54" width="86" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
 <text class="chip" x="933" y="70" text-anchor="middle">Resolver</text>
-<rect x="787" y="54" width="71" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="822.5" y="70" text-anchor="middle">Hikari</text>
-<rect x="654" y="54" width="86" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="chip" x="697" y="70" text-anchor="middle">Registry</text>
+<rect x="803" y="54" width="71" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="838.5" y="70" text-anchor="middle">Hikari</text>
+<rect x="701" y="54" width="86" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="chip" x="744" y="70" text-anchor="middle">Registry</text>
 <g><g><path class="edge" d="M330 181 L330 259 L430 259 L430 336" stroke="#66758A"/></g>
 <g><path class="edge" d="M710 181 L710 259 L610 259 L610 336" stroke="#66758A"/></g>
 <g><path class="edge" d="M430 336 L430 417 L330 417 L330 497" stroke="#66758A"/></g>
@@ -67,10 +67,9 @@
   <text class="detail" x="265" y="778" text-anchor="middle">transaction(handle.database)</text>
 </g>
 <g id="db">
-  <path d="M610 738 C610 714,890 714,890 738 L890 776 C890 800,610 800,610 776 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="750" cy="738" rx="140" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="750" y="756.5" text-anchor="middle">JDBC database</text>
-  <text class="detail" x="750" y="780.5" text-anchor="middle">PostgreSQL, RDS, H2 tests</text>
+  <rect class="card" x="610" y="718" width="280" height="78" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="750" y="754" text-anchor="middle">JDBC database</text>
+  <text class="detail" x="750" y="778" text-anchor="middle">PostgreSQL, RDS, H2 tests</text>
 </g>
 <rect class="footer" x="54" y="836" width="932" height="54" rx="8"/>
 <text class="footer-title" x="72" y="865">Module role</text>

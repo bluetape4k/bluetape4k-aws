@@ -1,40 +1,23 @@
-digraph AwsSpringBootArchitecture {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.50, ranksep=0.70, splines=ortho]
+digraph aws_spring_boot_architecture_01 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-
-  app [label="Spring Boot Application", fillcolor="#e0f2fe", color="#38bdf8"]
-  props [label="AwsProperties\nshared region, endpoint,\ncredentials, customizers", fillcolor="#dcfce7", color="#22c55e"]
-  auto [label="AwsAutoConfiguration\ncommon SDK client defaults", fillcolor="#f1f5f9", color="#64748b"]
-
-  s3 [label="S3AutoConfiguration\nS3Operations + TransferOperations", fillcolor="#fef3c7", color="#f59e0b"]
-  sqs [label="SqsAutoConfiguration\nSqsOperations + @SqsListener", fillcolor="#fee2e2", color="#ef4444"]
-  sns [label="SnsAutoConfiguration\nSnsOperations + HTTP parser", fillcolor="#fef3c7", color="#f59e0b"]
-  ddb [label="DynamoDbAutoConfiguration\nCoroutinesDynamoDbRepository", fillcolor="#ccfbf1", color="#14b8a6"]
-  kms [label="KmsAutoConfiguration\nKmsOperations + field codec", fillcolor="#f3e8ff", color="#a855f7"]
-  env [label="Environment post processors\nSecrets Manager + Parameter Store", fillcolor="#f8fafc", color="#94a3b8"]
-  exposed [label="AwsExposedAutoConfiguration\nDataSource + Exposed registry", fillcolor="#e0f2fe", color="#38bdf8"]
-
-  sdk [label="AWS SDK v2 clients\nS3, SQS, SNS, DynamoDB,\nKMS, SES, Secrets, SSM, STS", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-  db [label="JDBC database\nPostgreSQL, RDS, or local Testcontainer", shape=cylinder, fillcolor="#ecfdf5", color="#10b981"]
-  aws [label="AWS services\nor LocalStack/Floci", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
+  app [label="Spring Boot application\ncontrollers and services", fillcolor="#E8F3FF", color="#5B8DEF"]
+  props [label="AwsProperties\nregion, endpoint, credentials", fillcolor="#EAF7EF", color="#58A978"]
+  auto [label="AwsAutoConfiguration\ncommon SDK client defaults", fillcolor="#F4F7FA", color="#8CA0B3"]
+  s3 [label="S3AutoConfiguration\nS3Operations", fillcolor="#FFF3D9", color="#D6A441"]
+  sqs [label="SqsAutoConfiguration\nSqsOperations, listeners", fillcolor="#FDECEF", color="#DC6B82"]
+  ddb [label="DynamoDbAutoConfiguration\nrepository beans", fillcolor="#E9F7F6", color="#45A7A1"]
+  kms [label="KmsAutoConfiguration\nKmsOperations", fillcolor="#F1ECFF", color="#8A72D6"]
+  aws [label="AWS services\nLocalStack, Floci, RDS", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
   app -> props
   props -> auto
   auto -> s3
   auto -> sqs
-  auto -> sns
   auto -> ddb
   auto -> kms
-  auto -> env
-  auto -> exposed
-
-  s3 -> sdk
-  sqs -> sdk
-  sns -> sdk
-  ddb -> sdk
-  kms -> sdk
-  env -> sdk
-  exposed -> db
-  sdk -> aws
+  s3 -> aws
+  sqs -> aws
+  ddb -> aws
+  kms -> aws
 }

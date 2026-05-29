@@ -25,10 +25,10 @@
 <text class="subtitle" x="56" y="102">WebFlux routes use S3 operations and optional client-side encryption through KMS-backed metadata.</text>
 <rect x="985" y="54" width="71" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
 <text class="chip" x="1020.5" y="70" text-anchor="middle">Boot 4</text>
-<rect x="897" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="931" y="70" text-anchor="middle">S3</text>
-<rect x="771.5" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="805.5" y="70" text-anchor="middle">KMS</text>
+<rect x="901" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="935" y="70" text-anchor="middle">S3</text>
+<rect x="817" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="851" y="70" text-anchor="middle">KMS</text>
 <g><g><path class="edge" d="M312 219 L351 219 L351 208 L390 208" stroke="#66758A"/></g>
 <g><path class="edge" d="M680 208 L719 208 L719 208 L758 208" stroke="#66758A"/></g>
 <g><path class="edge" d="M535 260 L535 326 L535 326 L535 392" stroke="#66758A"/></g>
@@ -64,10 +64,9 @@
   <text class="detail" x="903" y="461" text-anchor="middle">data key metadata</text>
 </g>
 <g id="s3">
-  <path d="M590 620 C590 596,880 596,880 620 L880 658 C880 682,590 682,590 658 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="735" cy="620" rx="145" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="735" y="638.5" text-anchor="middle">S3 endpoint</text>
-  <text class="detail" x="735" y="662.5" text-anchor="middle">LocalStack or AWS</text>
+  <rect class="card" x="590" y="600" width="290" height="78" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="735" y="636" text-anchor="middle">S3 endpoint</text>
+  <text class="detail" x="735" y="660" text-anchor="middle">LocalStack or AWS</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
 <text class="footer-title" x="72" y="785">Example role</text>

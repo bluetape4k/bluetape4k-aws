@@ -23,12 +23,12 @@
 <rect x="26" y="26" width="1068" height="808" rx="14" class="frame"/>
 <text class="title" x="54" y="72">Ktor Exposed example</text>
 <text class="subtitle" x="56" y="102">Ktor route transactions run Exposed repositories through AwsExposedPlugin.</text>
-<rect x="1000" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="chip" x="1034" y="70" text-anchor="middle">Ktor</text>
-<rect x="859.5" y="54" width="78.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
-<text class="chip" x="898.75" y="70" text-anchor="middle">Exposed</text>
-<rect x="719" y="54" width="101" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="769.5" y="70" text-anchor="middle">PostgreSQL</text>
+<rect x="988" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="1022" y="70" text-anchor="middle">Ktor</text>
+<rect x="893.5" y="54" width="78.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
+<text class="chip" x="932.75" y="70" text-anchor="middle">Exposed</text>
+<rect x="776.5" y="54" width="101" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="827" y="70" text-anchor="middle">PostgreSQL</text>
 <g><g><path class="edge" d="M312 219 L351 219 L351 224 L390 224" stroke="#66758A"/></g>
 <g><path class="edge" d="M535 272 L535 338 L535 338 L535 404" stroke="#66758A"/></g>
 <g><path class="edge" d="M758 224 L758 338 L680 338 L680 452" stroke="#66758A"/><rect class="label-bg" x="674.8" y="324" width="88.4" height="22" rx="11"/>
@@ -66,10 +66,9 @@
 <text class="detail" x="903" y="253.5" text-anchor="middle">database lifecycle</text>
 </g>
 <g id="pg">
-  <path d="M548 610 C548 586,848 586,848 610 L848 648 C848 672,548 672,548 648 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="698" cy="610" rx="150" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="698" y="628.5" text-anchor="middle">PostgreSQL database</text>
-  <text class="detail" x="698" y="652.5" text-anchor="middle">Testcontainers or production</text>
+  <rect class="card" x="548" y="590" width="300" height="78" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="698" y="626" text-anchor="middle">PostgreSQL database</text>
+  <text class="detail" x="698" y="650" text-anchor="middle">Testcontainers or production</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
 <text class="footer-title" x="72" y="785">Example role</text>

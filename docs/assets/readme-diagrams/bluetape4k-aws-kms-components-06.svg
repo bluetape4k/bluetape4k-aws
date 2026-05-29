@@ -24,16 +24,16 @@
 <text class="title" x="54" y="72">KMS Spring Boot components</text>
 <text class="subtitle" x="56" y="102">Auto-configuration wires key management, operations, cache policy, and encryption clients.</text>
 <g>
-  <rect x="1186" y="54" width="72" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="chip" x="1222" y="70" text-anchor="middle">KMS</text>
+  <rect x="1172" y="54" width="72" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1208" y="70" text-anchor="middle">KMS</text>
 </g>
 <g>
-  <rect x="1046" y="54" width="76" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="chip" x="1084" y="70" text-anchor="middle">Boot 4</text>
+  <rect x="1080" y="54" width="76" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1118" y="70" text-anchor="middle">Boot 4</text>
 </g>
 <g>
-  <rect x="914" y="54" width="92" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="chip" x="960" y="70" text-anchor="middle">Envelope</text>
+  <rect x="972" y="54" width="92" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="chip" x="1018" y="70" text-anchor="middle">Envelope</text>
 </g>
 <g><g><path class="edge" d="M319 226 L353 226 L353 226 L386 226" stroke="#66758A"/></g>
 <g><path class="edge" d="M656 226 L690 226 L690 226 L724 226" stroke="#66758A"/></g>
@@ -71,10 +71,9 @@
 <text class="detail" x="642.5" y="458.5" text-anchor="middle">LocalStack endpoint</text>
 </g>
 <g id="aws">
-  <path d="M852 404 C852 380,1122 380,1122 404 L1122 456 C1122 480,852 480,852 456 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="987" cy="404" rx="135" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="987" y="430.5" text-anchor="middle">AWS KMS</text>
-  <text class="detail" x="987" y="453.5" text-anchor="middle">or LocalStack KMS</text>
+  <rect class="card" x="852" y="384" width="270" height="92" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="987" y="427" text-anchor="middle">AWS KMS</text>
+  <text class="detail" x="987" y="450" text-anchor="middle">or LocalStack KMS</text>
 </g>
 <rect class="footer" x="54" y="556" width="1192" height="54" rx="8"/>
 <text class="footer-title" x="72" y="585">KMS role</text>

@@ -1,21 +1,13 @@
-graph 1 14.825 3.1475
-node app 0.47417 1.7361 0.94833 0.5 "Ktor App" rounded,filled box #5b8def #e8f3ff
-node helper 5.3149 1.7361 1.49 0.63917 "S3KtorClient\nadvanced helper" rounded,filled box #d6a441 #fff3d9
-node cse 9.6451 2.4861 1.7817 0.5 "Envelope Encryptor" rounded,filled box #8b7cf6 #eef2ff
-node datakey 13.996 2.4861 1.6567 0.5 "Data Key Provider" rounded,filled box #a36ad6 #f3e8ff
-node sigv4 9.6451 0.43051 1.3962 0.5 AwsSigV4Plugin rounded,filled box #4ca6a8 #e8f7f6
-node s3 13.996 0.43051 1.0317 0.54943 "S3 bucket" rounded,filled cylinder #f59e0b #fff7ed
-edge app helper 10 0.95219 1.9058 1.0632 1.939 1.1824 1.9689 1.2956 1.9861 2.5819 2.1806 2.9301 2.1339 4.2226 1.9861 4.2895 1.9784 4.3583 1.9682 4.4272 1.9562 "putConfigObject / putEncryptedObject" 2.7591 2.2296 solid #64748b
-edge app helper 10 0.95275 1.6752 1.0648 1.663 1.1843 1.652 1.2956 1.6458 2.5945 1.5734 2.9228 1.5915 4.2226 1.6458 4.2867 1.6485 4.3528 1.652 4.4193 1.6562 "getConfigObject / getEncryptedObject" 2.7591 1.7604 solid #64748b
-edge helper app 10 4.6887 1.4113 4.5401 1.3475 4.379 1.2901 4.2226 1.2569 2.95 0.98688 2.5501 0.91269 1.2956 1.2569 1.1769 1.2894 1.058 1.3444 0.9494 1.4058 "text config or plaintext" 2.7591 1.3715 solid #64748b
-edge helper cse 7 5.5668 2.0608 5.7623 2.298 6.0624 2.6009 6.4071 2.7361 7.1302 3.0197 8.0133 2.9238 8.6724 2.7757 "encrypt payload (optional)" 7.4071 3.0329 solid #64748b
-edge helper cse 7 6.0639 1.9141 6.1785 1.9397 6.2958 1.9646 6.4071 1.9861 7.1398 2.1276 7.9722 2.2559 8.6076 2.3471 "decrypt when encrypted" 7.4071 2.4314 solid #64748b
-edge helper sigv4 7 5.9228 1.4117 6.0774 1.3355 6.246 1.2597 6.4071 1.2013 7.2011 0.91374 8.1441 0.70259 8.8045 0.57474 "sign REST request" 7.4071 1.3159 solid #64748b
-edge helper sigv4 7 5.4679 1.4137 5.6351 1.0721 5.9513 0.55156 6.4071 0.32634 7.1548 -0.043071 8.1235 0.052515 8.8032 0.19713 "sign GetObject" 7.4071 0.44092 solid #64748b
-edge cse helper 7 9.3385 2.2295 9.1044 2.0423 8.7584 1.8043 8.4071 1.7013 7.6886 1.4908 6.8346 1.5211 6.2086 1.5917 "ciphertext + metadata" 7.4071 1.8159 solid #64748b
-edge cse datakey 10 10.538 2.6877 10.654 2.7077 10.771 2.7247 10.883 2.7361 11.74 2.8227 11.964 2.8272 12.821 2.7361 12.888 2.7289 12.956 2.7196 13.026 2.7086 "generate data key" 11.852 2.9173 solid #64748b
-edge cse datakey 10 10.541 2.4132 10.656 2.406 10.772 2.3999 10.883 2.3958 11.744 2.3641 11.96 2.3624 12.821 2.3958 12.885 2.3983 12.951 2.4015 13.018 2.4054 "decrypt data key" 11.852 2.5104 solid #64748b
-edge datakey cse 10 13.707 2.2297 13.486 2.0427 13.158 1.8046 12.821 1.7013 11.997 1.4493 11.71 1.4592 10.883 1.7013 10.584 1.789 10.289 1.9746 10.063 2.1434 "plaintext + encrypted key" 11.852 1.8159 solid #64748b
-edge sigv4 s3 4 10.349 0.43051 11.17 0.43051 12.532 0.43051 13.334 0.43051 PutObject 11.852 0.54509 solid #64748b
-edge sigv4 s3 10 10.345 0.20472 10.519 0.15731 10.706 0.11438 10.883 0.09023 11.736 -0.026146 11.968 -0.032042 12.821 0.09023 12.991 0.11471 13.172 0.15844 13.339 0.20657 GetObject 11.852 0.20481 solid #64748b
+graph 1 2.6342 7.8966
+node app 1.3171 7.567 1.9258 0.65917 "Ktor app\nput/get config object" rounded,filled box #5B8DEF #E8F3FF
+node client 1.3171 6.1995 1.53 0.65917 "S3KtorClient\nadvanced helper" rounded,filled box #D6A441 #FFF3D9
+node crypto 1.3171 4.6793 2.2279 0.65917 "Envelope encryptor\noptional encrypt/decrypt" rounded,filled box #8A72D6 #F1ECFF
+node key 1.3171 3.3118 2.6342 0.65917 "Data key provider\ngenerate or decrypt data key" rounded,filled box #DC6B82 #FDECEF
+node sign 1.3171 1.9443 1.6863 0.65917 "AwsSigV4Plugin\nsign REST request" rounded,filled box #45A7A1 #E9F7F6
+node bucket 1.3171 0.45318 2.1133 0.90635 "S3 bucket\nPutObject or GetObject" rounded,filled cylinder #F47B36 #FFF0E3
+edge app client 4 1.3171 7.2325 1.3171 7.2325 1.3171 6.6711 1.3171 6.6711 solid #64748b
+edge client crypto 4 1.3171 5.8659 1.3171 5.8659 1.3171 5.1478 1.3171 5.1478 optional 1.6087 5.4394 solid #64748b
+edge crypto key 4 1.3171 4.3447 1.3171 4.3447 1.3171 3.7833 1.3171 3.7833 solid #64748b
+edge key sign 4 1.3171 2.9772 1.3171 2.9772 1.3171 2.4158 1.3171 2.4158 solid #64748b
+edge sign bucket 4 1.3171 1.6096 1.3171 1.6096 1.3171 1.0468 1.3171 1.0468 solid #64748b
 stop

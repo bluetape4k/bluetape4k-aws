@@ -13,5 +13,4 @@ digraph aws_kotlin_sequence_03 {
   client -> block
   block -> flow
   flow -> close
-  block -> close
 }

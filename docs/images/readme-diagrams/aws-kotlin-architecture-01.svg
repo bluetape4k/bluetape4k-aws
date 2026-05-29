@@ -25,10 +25,10 @@
 <text class="subtitle" x="56" y="102">Native suspend AWS Kotlin SDK clients sit behind builders, with-client helpers, and Flow utilities.</text>
 <rect x="1085" y="54" width="131" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="1150.5" y="70" text-anchor="middle">Native suspend</text>
-<rect x="1042" y="54" width="68" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="chip" x="1076" y="70" text-anchor="middle">Flow</text>
-<rect x="886.5" y="54" width="93.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="933.25" y="70" text-anchor="middle">Lifecycle</text>
+<rect x="1001" y="54" width="68" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="chip" x="1035" y="70" text-anchor="middle">Flow</text>
+<rect x="891.5" y="54" width="93.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="938.25" y="70" text-anchor="middle">Lifecycle</text>
 <g><g><path class="edge" d="M480 183 L480 269 L390 269 L390 355" stroke="#66758A"/></g>
 <g><path class="edge" d="M640 224 L640 267 L600 267 L600 310" stroke="#66758A"/></g>
 <g><path class="edge" d="M800 183 L800 269 L810 269 L810 355" stroke="#66758A"/></g>
@@ -65,10 +65,9 @@
 <text class="detail" x="640" y="576.5" text-anchor="middle">KMS, CloudWatch, Kinesis, STS</text>
 </g>
 <g id="aws">
-  <path d="M500 644 C500 620,780 620,780 644 L780 682 C780 706,500 706,500 682 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="640" cy="644" rx="140" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="640" y="662.5" text-anchor="middle">AWS services</text>
-  <text class="detail" x="640" y="686.5" text-anchor="middle">or LocalStack / Floci</text>
+  <rect class="card" x="500" y="624" width="280" height="78" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="640" y="660" text-anchor="middle">AWS services</text>
+  <text class="detail" x="640" y="684" text-anchor="middle">or LocalStack / Floci</text>
 </g>
 <rect class="footer" x="54" y="736" width="1172" height="54" rx="8"/>
 <text class="footer-title" x="72" y="765">Module role</text>

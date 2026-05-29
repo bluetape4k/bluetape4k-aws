@@ -1,29 +1,17 @@
-graph 1 8.5387 7.5464
-node app 2.9959 7.2964 1.4883 0.5 "Ktor Application" rounded,filled box #5b8def #e8f3ff
-node core 2.9959 5.9768 1.4883 0.63917 "AwsKtorCore\nshared defaults" rounded,filled box #58a978 #eaf7ef
-node defaults 2.9959 4.5876 2.8217 0.63917 "AwsKtorDefaults\nregion endpoint credentials clock" rounded,filled box #80a857 #f7fbef
-node sigv4 0.71813 1.9484 1.4363 0.5 AwsSigV4Plugin rounded,filled box #8b7cf6 #eef2ff
-node s3 1.1626 3.268 1.2279 0.5 S3KtorClient rounded,filled box #d6a441 #fff3d9
-node sqs 2.9959 3.268 1.3217 0.5 SqsConsumer rounded,filled box #dc6b82 #fdecef
-node dynamo 5.1209 3.268 1.8217 0.5 DynamoDbKtorPlugin rounded,filled box #4ca6a8 #e8f7f6
-node exposed 7.482 3.268 1.6342 0.5 AwsExposedPlugin rounded,filled box #a36ad6 #f3e8ff
-node java 2.8153 1.9484 1.655 0.63917 "AWS SDK Java v2\nSQS credentials" rounded,filled box #94a3b8 #f8fafc
-node kotlin 5.1209 1.9484 1.8321 0.63917 "AWS SDK for Kotlin\nDynamoDB client" rounded,filled box #94a3b8 #f8fafc
-node jdbc 7.5653 1.9484 1.9467 0.63917 "AWS-backed Exposed\nJDBC registry" rounded,filled box #94a3b8 #f8fafc
-node aws 3.9681 0.43943 2.1029 0.87885 "AWS / LocalStack\nS3 SQS DynamoDB RDS" rounded,filled cylinder #f59e0b #fff7ed
-edge app core 4 2.9959 7.0395 2.9959 6.8729 2.9959 6.6468 2.9959 6.4472 solid #64748b
-edge core defaults 4 2.9959 5.654 2.9959 5.4777 2.9959 5.2534 2.9959 5.0572 solid #64748b
-edge defaults sigv4 7 1.5786 4.3613 1.0815 4.2112 0.57296 3.9551 0.27368 3.518 0.027098 3.1579 0.24355 2.6619 0.45181 2.3275 solid #64748b
-edge defaults s3 4 2.5568 4.2643 2.2763 4.0666 1.9129 3.8106 1.6275 3.6095 solid #64748b
-edge defaults sqs 4 2.9959 4.2676 2.9959 4.0874 2.9959 3.858 2.9959 3.6658 solid #64748b
-edge defaults dynamo 4 3.5049 4.2643 3.8344 4.064 4.2625 3.8037 4.5953 3.6014 solid #64748b
-edge defaults exposed 4 4.0761 4.2627 4.8211 4.0481 5.8026 3.7655 6.5206 3.5588 solid #64748b
-edge sigv4 aws 4 1.2512 1.6916 1.708 1.4834 2.379 1.1776 2.9399 0.92193 solid #64748b
-edge s3 sigv4 4 1.079 3.0112 1.0144 2.8235 0.92386 2.5603 0.84962 2.3445 solid #64748b
-edge sqs java 4 2.9619 3.0112 2.9387 2.8446 2.9071 2.6185 2.8792 2.4189 solid #64748b
-edge dynamo kotlin 4 5.1209 3.0112 5.1209 2.8446 5.1209 2.6185 5.1209 2.4189 solid #64748b
-edge exposed jdbc 4 7.4977 3.0112 7.5084 2.8446 7.523 2.6185 7.5359 2.4189 solid #64748b
-edge java aws 4 3.057 1.624 3.1985 1.4422 3.3812 1.2075 3.5458 0.99601 solid #64748b
-edge kotlin aws 4 4.8792 1.624 4.7377 1.4422 4.5551 1.2075 4.3905 0.99601 solid #64748b
-edge jdbc aws 4 6.8069 1.6222 6.306 1.416 5.6413 1.1423 5.081 0.91155 solid #64748b
+graph 1 5.5387 6.5604
+node app 2.5584 6.2308 2.1342 0.65917 "Ktor application\nroutes, plugins, lifecycle" rounded,filled box #5B8DEF #E8F3FF
+node core 2.5584 4.8772 1.4883 0.65917 "AwsKtorCore\nshared defaults" rounded,filled box #58A978 #EAF7EF
+node defaults 2.5584 3.4038 1.6446 0.89875 "AwsKtorDefaults\nregion, endpoint\ncredentials, clock" rounded,filled box #D6A441 #FFF3D9
+node s3 0.69729 1.9304 1.3946 0.65917 "S3KtorClient\nobject helpers" rounded,filled box #D6A441 #FFF3D9
+node sqs 2.5584 1.9304 1.3425 0.65917 "SqsConsumer\npolling runtime" rounded,filled box #DC6B82 #FDECEF
+node ddb 4.6278 1.9304 1.8217 0.65917 "DynamoDbKtorPlugin\nKotlin SDK client" rounded,filled box #45A7A1 #E9F7F6
+node aws 2.5584 0.45318 2.1967 0.90635 "AWS / LocalStack\nS3, SQS, DynamoDB, RDS" rounded,filled cylinder #F47B36 #FFF0E3
+edge app core 4 2.5584 5.8962 2.5584 5.8962 2.5584 5.3483 2.5584 5.3483 solid #64748b
+edge core defaults 4 2.5584 4.5428 2.5584 4.5428 2.5584 3.9954 2.5584 3.9954 solid #64748b
+edge defaults s3 7 1.8116 2.9502 1.8116 2.554 1.8116 2.0417 1.8116 2.0417 1.8116 2.0417 1.5324 2.0417 1.5324 2.0417 solid #64748b
+edge defaults sqs 4 2.5584 2.9497 2.5584 2.9497 2.5584 2.3994 2.5584 2.3994 solid #64748b
+edge defaults ddb 7 3.3052 2.9502 3.3052 2.554 3.3052 2.0417 3.3052 2.0417 3.3052 2.0417 3.5771 2.0417 3.5771 2.0417 solid #64748b
+edge s3 aws 7 1.4012 1.8194 1.5242 1.8194 1.6137 1.8194 1.6137 1.8194 1.6137 1.8194 1.6137 1.0212 1.6137 1.0212 solid #64748b
+edge sqs aws 4 2.5584 1.5952 2.5584 1.5952 2.5584 1.0459 2.5584 1.0459 solid #64748b
+edge ddb aws 7 3.7146 1.8194 3.5896 1.8194 3.5031 1.8194 3.5031 1.8194 3.5031 1.8194 3.5031 1.0212 3.5031 1.0212 solid #64748b
 stop
