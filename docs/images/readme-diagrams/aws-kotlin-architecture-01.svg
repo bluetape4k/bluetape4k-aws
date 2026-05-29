@@ -29,12 +29,12 @@
 <text class="chip" x="1035" y="70" text-anchor="middle">Flow</text>
 <rect x="891.5" y="54" width="93.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
 <text class="chip" x="938.25" y="70" text-anchor="middle">Lifecycle</text>
-<g><g><path class="edge" d="M480 183 L480 269 L390 269 L390 355" stroke="#66758A"/></g>
-<g><path class="edge" d="M640 224 L640 267 L600 267 L600 310" stroke="#66758A"/></g>
-<g><path class="edge" d="M800 183 L800 269 L810 269 L810 355" stroke="#66758A"/></g>
-<g><path class="edge" d="M390 355 L390 451 L420 451 L420 547" stroke="#66758A"/></g>
-<g><path class="edge" d="M600 400 L600 450 L640 450 L640 500" stroke="#66758A"/></g>
-<g><path class="edge" d="M810 355 L810 451 L860 451 L860 547" stroke="#66758A"/></g>
+<g><g><path class="edge" d="M640 224 L640 256 L260 256 L260 310" stroke="#66758A"/></g>
+<g><path class="edge" d="M640 224 L640 256 L600 256 L600 310" stroke="#66758A"/></g>
+<g><path class="edge" d="M640 224 L640 256 L940 256 L940 310" stroke="#66758A"/></g>
+<g><path class="edge" d="M260 400 L260 432 L640 432 L640 500" stroke="#66758A"/></g>
+<g><path class="edge" d="M600 400 L600 432 L640 432 L640 500" stroke="#66758A"/></g>
+<g><path class="edge" d="M940 400 L940 432 L640 432 L640 500" stroke="#66758A"/></g>
 <g><path class="edge" d="M640 594 L640 609 L640 609 L640 624" stroke="#66758A"/></g></g>
 <g id="app">
   <rect class="card" x="480" y="142" width="320" height="82" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
@@ -70,6 +70,6 @@
   <text class="detail" x="640" y="684" text-anchor="middle">or LocalStack / Floci</text>
 </g>
 <rect class="footer" x="54" y="736" width="1172" height="54" rx="8"/>
-<text class="footer-title" x="72" y="765">Module role</text>
-<text class="footer-detail" x="72" y="785">Prefer native suspend APIs and explicit client lifecycle while keeping request DSLs concise.</text>
+<text class="footer-title" x="72" y="755" dominant-baseline="middle">Module role</text>
+<text class="footer-detail" x="72" y="773" dominant-baseline="middle">Prefer native suspend APIs and explicit client lifecycle while keeping request DSLs concise.</text>
 </svg>

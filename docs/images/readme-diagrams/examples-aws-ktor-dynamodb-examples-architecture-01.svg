@@ -29,11 +29,11 @@
 <text class="chip" x="929" y="70" text-anchor="middle">DynamoDB</text>
 <rect x="769" y="54" width="101" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="819.5" y="70" text-anchor="middle">LocalStack</text>
-<g><g><path class="edge" d="M312 219 L351 219 L351 224 L390 224" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 224 L719 224 L719 224 L758 224" stroke="#66758A"/></g>
-<g><path class="edge" d="M535 272 L535 338 L535 338 L535 404" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 272 L903 338 L903 338 L903 404" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 452 L719 452 L719 452 L758 452" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M312 219 L344 219 L344 224 L390 224" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 224 L712 224 L712 224 L758 224" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 272 L535 304 L535 304 L535 404" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 272 L903 304 L903 304 L903 404" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 452 L712 452 L712 452 L758 452" stroke="#66758A"/></g></g>
 <g id="client">
   <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="192" y="216" text-anchor="middle">HTTP client / test</text>
@@ -63,6 +63,6 @@
   <text class="detail" x="903" y="473" text-anchor="middle">LocalStack or AWS</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="785">Example role</text>
-<text class="footer-detail" x="72" y="805">Show CRUD routes, table creation, model mapping, and coroutine repository behavior in one runnable app.</text>
+<text class="footer-title" x="72" y="775" dominant-baseline="middle">Example role</text>
+<text class="footer-detail" x="72" y="793" dominant-baseline="middle">Show CRUD routes, table creation, model mapping, and coroutine repository behavior in one runnable app.</text>
 </svg>

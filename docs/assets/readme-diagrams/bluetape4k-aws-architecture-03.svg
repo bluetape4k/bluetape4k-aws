@@ -35,12 +35,12 @@
   <rect x="896" y="54" width="72" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
   <text class="chip" x="932" y="70" text-anchor="middle">DSL</text>
 </g>
-<g><g><path class="edge" d="M328 281 L328 236 L410 236 L410 191" stroke="#66758A"/></g>
-<g><path class="edge" d="M328 281 L369 281 L369 333 L410 333" stroke="#66758A"/></g>
-<g><path class="edge" d="M670 191 L670 250 L760 250 L760 308" stroke="#66758A"/></g>
-<g><path class="edge" d="M670 333 L715 333 L715 308 L760 308" stroke="#66758A"/></g>
-<g><path class="edge" d="M670 475 L670 392 L760 392 L760 308" stroke="#66758A"/></g>
-<g><path class="edge" d="M925 358 L925 398 L991 398 L991 438" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M328 281 L360 281 L360 191 L410 191" stroke="#66758A"/></g>
+<g><path class="edge" d="M328 281 L360 281 L360 333 L410 333" stroke="#66758A"/></g>
+<g><path class="edge" d="M540 232 L540 245 L925 245 L925 258" stroke="#66758A"/></g>
+<g><path class="edge" d="M670 333 L702 333 L702 308 L760 308" stroke="#66758A"/></g>
+<g><path class="edge" d="M540 434 L540 402 L925 402 L925 358" stroke="#66758A"/></g>
+<g><path class="edge" d="M925 358 L925 390 L991 390 L991 438" stroke="#66758A"/></g></g>
 <g id="app">
   <rect class="card" x="78" y="238" width="250" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="203" y="278" text-anchor="middle">Coroutine application</text>
@@ -73,6 +73,6 @@
   <text class="detail" x="991" y="500" text-anchor="middle">or LocalStack / Floci</text>
 </g>
 <rect class="footer" x="54" y="546" width="1172" height="54" rx="8"/>
-<text class="footer-title" x="72" y="575">API role</text>
-<text class="footer-detail" x="72" y="595">Native suspend clients avoid Java future bridging for Kotlin-first service integrations.</text>
+<text class="footer-title" x="72" y="565" dominant-baseline="middle">API role</text>
+<text class="footer-detail" x="72" y="583" dominant-baseline="middle">Native suspend clients avoid Java future bridging for Kotlin-first service integrations.</text>
 </svg>

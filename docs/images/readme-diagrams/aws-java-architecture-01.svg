@@ -29,14 +29,14 @@
 <text class="chip" x="1121" y="70" text-anchor="middle">Coroutines</text>
 <rect x="968.5" y="54" width="86" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
 <text class="chip" x="1011.5" y="70" text-anchor="middle">DynamoDB</text>
-<g><g><path class="edge" d="M520 184 L425 184 L425 356 L330 356" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 226 L600 226 L600 310 L520 310" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 226 L760 226 L760 310 L840 310" stroke="#66758A"/></g>
-<g><path class="edge" d="M840 184 L935 184 L935 356 L1030 356" stroke="#66758A"/></g>
-<g><path class="edge" d="M330 356 L330 452 L470 452 L470 547" stroke="#66758A"/></g>
-<g><path class="edge" d="M520 402 L600 402 L600 500 L680 500" stroke="#66758A"/></g>
-<g><path class="edge" d="M840 402 L760 402 L760 500 L680 500" stroke="#66758A"/></g>
-<g><path class="edge" d="M1030 356 L1030 452 L890 452 L890 547" stroke="#66758A"/></g>
+<g><g><path class="edge" d="M680 226 L680 258 L200 258 L200 310" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 226 L680 258 L520 258 L520 310" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 226 L680 258 L840 258 L840 310" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 226 L680 258 L1160 258 L1160 310" stroke="#66758A"/></g>
+<g><path class="edge" d="M200 402 L200 434 L680 434 L680 500" stroke="#66758A"/></g>
+<g><path class="edge" d="M520 402 L520 434 L680 434 L680 500" stroke="#66758A"/></g>
+<g><path class="edge" d="M840 402 L840 434 L680 434 L680 500" stroke="#66758A"/></g>
+<g><path class="edge" d="M1160 402 L1160 434 L680 434 L680 500" stroke="#66758A"/></g>
 <g><path class="edge" d="M680 594 L680 609 L680 609 L680 624" stroke="#66758A"/></g></g>
 <g id="app">
   <rect class="card" x="520" y="142" width="320" height="84" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
@@ -79,6 +79,6 @@
   <text class="detail" x="680" y="684" text-anchor="middle">or LocalStack / Floci</text>
 </g>
 <rect class="footer" x="54" y="736" width="1252" height="54" rx="8"/>
-<text class="footer-title" x="72" y="765">Module role</text>
-<text class="footer-detail" x="72" y="785">Expose Kotlin-friendly builders and suspend bridges while consumers choose concrete AWS SDK services.</text>
+<text class="footer-title" x="72" y="755" dominant-baseline="middle">Module role</text>
+<text class="footer-detail" x="72" y="773" dominant-baseline="middle">Expose Kotlin-friendly builders and suspend bridges while consumers choose concrete AWS SDK services.</text>
 </svg>

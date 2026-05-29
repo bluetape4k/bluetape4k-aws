@@ -29,13 +29,13 @@
 <text class="chip" x="958" y="70" text-anchor="middle">SigV4</text>
 <rect x="822" y="54" width="86" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
 <text class="chip" x="865" y="70" text-anchor="middle">Envelope</text>
-<g><g><path class="edge" d="M570 214 L570 240 L570 240 L570 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M570 348 L570 386 L206 386 L206 424" stroke="#66758A"/></g>
-<g><path class="edge" d="M570 348 L570 386 L570 386 L570 424" stroke="#66758A"/></g>
-<g><path class="edge" d="M570 348 L570 386 L934 386 L934 424" stroke="#66758A"/></g>
-<g><path class="edge" d="M570 510 L570 550 L570 550 L570 590" stroke="#66758A"/></g>
-<g><path class="edge" d="M934 510 L934 550 L570 550 L570 590" stroke="#66758A"/></g>
-<g><path class="edge" d="M570 672 L570 694 L570 694 L570 716" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M570 214 L570 246 L570 246 L570 266" stroke="#66758A"/></g>
+<g><path class="edge" d="M570 348 L570 380 L206 380 L206 424" stroke="#66758A"/></g>
+<g><path class="edge" d="M570 348 L570 380 L570 380 L570 424" stroke="#66758A"/></g>
+<g><path class="edge" d="M570 348 L570 380 L934 380 L934 424" stroke="#66758A"/></g>
+<g><path class="edge" d="M570 510 L570 542 L570 542 L570 590" stroke="#66758A"/></g>
+<g><path class="edge" d="M934 510 L934 542 L570 542 L570 590" stroke="#66758A"/></g>
+<g><path class="edge" d="M570 672 L570 704 L570 704 L570 716" stroke="#66758A"/></g></g>
 <g id="app">
   <rect class="card" x="410" y="136" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="570" y="172" text-anchor="middle">Ktor application</text>
@@ -72,6 +72,6 @@
   <text class="detail" x="570" y="776" text-anchor="middle">compatible endpoint</text>
 </g>
 <rect class="footer" x="54" y="856" width="1032" height="54" rx="8"/>
-<text class="footer-title" x="72" y="885">Advanced role</text>
-<text class="footer-detail" x="72" y="905">Separate request routing from optional helper concerns so applications choose only the pieces they need.</text>
+<text class="footer-title" x="72" y="875" dominant-baseline="middle">Advanced role</text>
+<text class="footer-detail" x="72" y="893" dominant-baseline="middle">Separate request routing from optional helper concerns so applications choose only the pieces they need.</text>
 </svg>

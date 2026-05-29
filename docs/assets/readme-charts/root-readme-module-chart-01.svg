@@ -39,14 +39,14 @@
   <rect x="814" y="54" width="92" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
   <text class="chip" x="860" y="70" text-anchor="middle">Examples</text>
 </g>
-<g><g><path class="edge" d="M504 181 L504 252 L472 252 L472 323" stroke="#66758A"/></g>
-<g><path class="edge" d="M724 181 L724 252 L756 252 L756 323" stroke="#66758A"/></g>
-<g><path class="edge" d="M472 323 L472 395 L492 395 L492 466" stroke="#66758A"/></g>
-<g><path class="edge" d="M976 323 L976 395 L912 395 L912 466" stroke="#66758A"/></g>
-<g><path class="edge" d="M252 323 L252 395 L317 395 L317 466" stroke="#66758A"/></g>
-<g><path class="edge" d="M614.5 512 L614.5 535 L614 535 L614 558" stroke="#66758A"/></g>
-<g><path class="edge" d="M912 466 L912 532 L826 532 L826 597" stroke="#66758A"/></g>
-<g><path class="edge" d="M317 466 L317 532 L402 532 L402 597" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M614 220 L614 252 L362 252 L362 280" stroke="#66758A"/></g>
+<g><path class="edge" d="M614 220 L614 252 L866 252 L866 280" stroke="#66758A"/></g>
+<g><path class="edge" d="M362 366 L362 398 L614.5 398 L614.5 420" stroke="#66758A"/></g>
+<g><path class="edge" d="M866 366 L866 398 L1034.5 398 L1034.5 420" stroke="#66758A"/></g>
+<g><path class="edge" d="M362 366 L362 398 L194.5 398 L194.5 420" stroke="#66758A"/></g>
+<g><path class="edge" d="M614.5 512 L614.5 544 L614 544 L614 558" stroke="#66758A"/></g>
+<g><path class="edge" d="M1034.5 512 L1034.5 544 L614 544 L614 558" stroke="#66758A"/></g>
+<g><path class="edge" d="M194.5 512 L194.5 544 L614 544 L614 558" stroke="#66758A"/></g></g>
 <g id="bom">
   <rect class="card" x="504" y="142" width="220" height="78" rx="10" fill="#F4F7FA" stroke="#8CA0B3"/>
   <text class="card-title" x="614" y="178" text-anchor="middle">AWS BOM</text>
@@ -88,6 +88,6 @@
   <text class="detail" x="614" y="617" text-anchor="middle">LocalStack, Floci, PostgreSQL Testcontainers</text>
 </g>
 <rect class="footer" x="54" y="656" width="1122" height="54" rx="8"/>
-<text class="footer-title" x="72" y="685">Module role</text>
-<text class="footer-detail" x="72" y="705">Consumers import the BOM, then choose core wrappers plus framework integrations.</text>
+<text class="footer-title" x="72" y="675" dominant-baseline="middle">Module role</text>
+<text class="footer-detail" x="72" y="693" dominant-baseline="middle">Consumers import the BOM, then choose core wrappers plus framework integrations.</text>
 </svg>

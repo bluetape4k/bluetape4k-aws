@@ -29,10 +29,10 @@
 <text class="chip" x="758" y="70" text-anchor="middle">Await</text>
 <rect x="640" y="54" width="68" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
 <text class="chip" x="674" y="70" text-anchor="middle">Emit</text>
-<g><g><path class="edge" d="M470 220 L470 245 L470 245 L470 270" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 352 L470 377 L470 377 L470 402" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 484 L470 509 L470 509 L470 534" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 616 L470 641 L470 641 L470 666" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M470 220 L470 252 L470 252 L470 270" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 352 L470 384 L470 384 L470 402" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 484 L470 516 L470 516 L470 534" stroke="#66758A"/></g>
+<g><path class="edge" d="M470 616 L470 648 L470 648 L470 666" stroke="#66758A"/></g></g>
 <g id="caller">
   <rect class="card" x="310" y="140" width="320" height="80" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="470" y="177" text-anchor="middle">Caller</text>
@@ -59,6 +59,6 @@
   <text class="detail" x="470" y="728" text-anchor="middle">await(), Flow, suspend API</text>
 </g>
 <rect class="footer" x="54" y="826" width="832" height="54" rx="8"/>
-<text class="footer-title" x="72" y="855">Flow role</text>
-<text class="footer-detail" x="72" y="875">The vertical path keeps request construction, SDK execution, and coroutine return semantics readable.</text>
+<text class="footer-title" x="72" y="845" dominant-baseline="middle">Flow role</text>
+<text class="footer-detail" x="72" y="863" dominant-baseline="middle">The vertical path keeps request construction, SDK execution, and coroutine return semantics readable.</text>
 </svg>

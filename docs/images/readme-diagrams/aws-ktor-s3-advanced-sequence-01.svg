@@ -29,12 +29,12 @@
 <text class="chip" x="782.25" y="70" text-anchor="middle">Encrypt</text>
 <rect x="659" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="693" y="70" text-anchor="middle">Sign</text>
-<g><g><path class="edge" d="M490 218 L490 244 L490 244 L490 270" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 352 L490 378 L490 378 L490 404" stroke="#66758A"/><rect class="label-bg" x="445.8" y="364" width="88.4" height="22" rx="11"/>
+<g><g><path class="edge" d="M490 218 L490 250 L490 250 L490 270" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 352 L490 384 L490 384 L490 404" stroke="#66758A"/><rect class="label-bg" x="445.8" y="364" width="88.4" height="22" rx="11"/>
 <text class="edge-label" x="490" y="380" text-anchor="middle">optional</text></g>
-<g><path class="edge" d="M490 486 L490 512 L490 512 L490 538" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 620 L490 646 L490 646 L490 672" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 754 L490 780 L490 780 L490 806" stroke="#66758A"/></g></g>
+<g><path class="edge" d="M490 486 L490 518 L490 518 L490 538" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 620 L490 652 L490 652 L490 672" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 754 L490 786 L490 786 L490 806" stroke="#66758A"/></g></g>
 <g id="app">
   <rect class="card" x="330" y="140" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="490" y="176" text-anchor="middle">Ktor app</text>
@@ -66,6 +66,6 @@
   <text class="detail" x="490" y="868" text-anchor="middle">PutObject or GetObject</text>
 </g>
 <rect class="footer" x="54" y="956" width="872" height="54" rx="8"/>
-<text class="footer-title" x="72" y="985">Sequence role</text>
-<text class="footer-detail" x="72" y="1005">A vertical sequence keeps optional encryption and signing paths readable at README width.</text>
+<text class="footer-title" x="72" y="975" dominant-baseline="middle">Sequence role</text>
+<text class="footer-detail" x="72" y="993" dominant-baseline="middle">A vertical sequence keeps optional encryption and signing paths readable at README width.</text>
 </svg>

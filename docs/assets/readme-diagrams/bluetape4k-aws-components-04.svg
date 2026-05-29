@@ -35,12 +35,12 @@
   <rect x="920" y="54" width="92" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
   <text class="chip" x="966" y="70" text-anchor="middle">Examples</text>
 </g>
-<g><g><path class="edge" d="M183.5 280 L266 280 L266 380 L348 380" stroke="#66758A"/></g>
-<g><path class="edge" d="M487.5 280 L584 280 L584 380 L680 380" stroke="#66758A"/></g>
-<g><path class="edge" d="M674 230 L674 333 L478 333 L478 436" stroke="#66758A"/></g>
-<g><path class="edge" d="M791.5 280 L736 280 L736 380 L680 380" stroke="#66758A"/></g>
-<g><path class="edge" d="M478 436 L680 436 L680 436 L882 436" stroke="#66758A"/></g>
-<g><path class="edge" d="M810 436 L846 436 L846 436 L882 436" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M183.5 280 L183.5 312 L348 312 L348 380" stroke="#66758A"/></g>
+<g><path class="edge" d="M487.5 280 L487.5 312 L680 312 L680 380" stroke="#66758A"/></g>
+<g><path class="edge" d="M791.5 280 L791.5 312 L348 312 L348 380" stroke="#66758A"/></g>
+<g><path class="edge" d="M791.5 280 L791.5 312 L680 312 L680 380" stroke="#66758A"/></g>
+<g><path class="edge" d="M348 492 L348 524 L1032 524 L1032 492" stroke="#66758A"/></g>
+<g><path class="edge" d="M810 436 L842 436 L842 436 L882 436" stroke="#66758A"/></g></g>
 <g id="java">
   <rect class="card" x="66" y="180" width="235" height="100" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="183.5" y="218.5" text-anchor="middle">aws-java</text>
@@ -78,6 +78,6 @@
 <text class="detail" x="1032" y="464.5" text-anchor="middle">LocalStack, Floci, PostgreSQL</text>
 </g>
 <rect class="footer" x="54" y="606" width="1172" height="54" rx="8"/>
-<text class="footer-title" x="72" y="635">Component role</text>
-<text class="footer-detail" x="72" y="655">Keep SDK wrappers small, place framework behavior in framework modules, verify with examples.</text>
+<text class="footer-title" x="72" y="625" dominant-baseline="middle">Component role</text>
+<text class="footer-detail" x="72" y="643" dominant-baseline="middle">Keep SDK wrappers small, place framework behavior in framework modules, verify with examples.</text>
 </svg>

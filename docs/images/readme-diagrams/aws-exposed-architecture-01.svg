@@ -29,13 +29,13 @@
 <text class="chip" x="838.5" y="70" text-anchor="middle">Hikari</text>
 <rect x="701" y="54" width="86" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
 <text class="chip" x="744" y="70" text-anchor="middle">Registry</text>
-<g><g><path class="edge" d="M330 181 L330 259 L430 259 L430 336" stroke="#66758A"/></g>
-<g><path class="edge" d="M710 181 L710 259 L610 259 L610 336" stroke="#66758A"/></g>
-<g><path class="edge" d="M430 336 L430 417 L330 417 L330 497" stroke="#66758A"/></g>
-<g><path class="edge" d="M610 336 L610 417 L710 417 L710 497" stroke="#66758A"/></g>
-<g><path class="edge" d="M520 542 L520 577 L520 577 L520 612" stroke="#66758A"/></g>
-<g><path class="edge" d="M330 656 L330 707 L430 707 L430 757" stroke="#66758A"/></g>
-<g><path class="edge" d="M430 757 L520 757 L520 757 L610 757" stroke="#66758A"/></g></g>
+<g><g><path class="edge" d="M520 222 L520 254 L265 254 L265 292" stroke="#66758A"/></g>
+<g><path class="edge" d="M520 222 L520 254 L775 254 L775 292" stroke="#66758A"/></g>
+<g><path class="edge" d="M265 380 L265 412 L520 412 L520 452" stroke="#66758A"/></g>
+<g><path class="edge" d="M775 380 L775 412 L520 412 L520 452" stroke="#66758A"/></g>
+<g><path class="edge" d="M520 542 L520 574 L520 574 L520 612" stroke="#66758A"/></g>
+<g><path class="edge" d="M520 700 L520 709 L265 709 L265 718" stroke="#66758A"/></g>
+<g><path class="edge" d="M430 757 L462 757 L462 757 L610 757" stroke="#66758A"/></g></g>
 <g id="adapter">
   <rect class="card" x="330" y="140" width="380" height="82" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="520" y="178" text-anchor="middle">Spring Boot or Ktor adapter</text>
@@ -72,6 +72,6 @@
   <text class="detail" x="750" y="778" text-anchor="middle">PostgreSQL, RDS, H2 tests</text>
 </g>
 <rect class="footer" x="54" y="836" width="932" height="54" rx="8"/>
-<text class="footer-title" x="72" y="865">Module role</text>
-<text class="footer-detail" x="72" y="885">The foundation does not fetch AWS values itself; adapters pass final JDBC settings in.</text>
+<text class="footer-title" x="72" y="855" dominant-baseline="middle">Module role</text>
+<text class="footer-detail" x="72" y="873" dominant-baseline="middle">The foundation does not fetch AWS values itself; adapters pass final JDBC settings in.</text>
 </svg>

@@ -29,14 +29,14 @@
 <text class="chip" x="938" y="70" text-anchor="middle">SQS</text>
 <rect x="794.5" y="54" width="93.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
 <text class="chip" x="841.25" y="70" text-anchor="middle">Telemetry</text>
-<g><g><path class="edge" d="M312 219 L351 219 L351 208 L390 208" stroke="#66758A"/></g>
-<g><path class="edge" d="M535 260 L535 426 L535 426 L535 592" stroke="#66758A"/><rect class="label-bg" x="495.2" y="412" width="79.60000000000001" height="22" rx="11"/>
-<text class="edge-label" x="535" y="428" text-anchor="middle">publish</text></g>
-<g><path class="edge" d="M535 592 L535 524 L535 524 L535 456" stroke="#66758A"/><rect class="label-bg" x="490.8" y="510" width="88.4" height="22" rx="11"/>
+<g><g><path class="edge" d="M312 219 L344 219 L344 208 L390 208" stroke="#66758A"/></g>
+<g><path class="edge" d="M535 260 L535 292 L340 292 L340 560 L535 560 L535 592" stroke="#66758A"/><rect class="label-bg" x="300.2" y="546" width="79.60000000000001" height="22" rx="11"/>
+<text class="edge-label" x="340" y="562" text-anchor="middle">publish</text></g>
+<g><path class="edge" d="M535 592 L535 560 L535 560 L535 456" stroke="#66758A"/><rect class="label-bg" x="490.8" y="510" width="88.4" height="22" rx="11"/>
 <text class="edge-label" x="535" y="526" text-anchor="middle">messages</text></g>
-<g><path class="edge" d="M680 408 L719 408 L719 408 L758 408" stroke="#66758A"/></g>
-<g><path class="edge" d="M903 360 L903 310 L903 310 L903 260" stroke="#66758A"/></g>
-<g><path class="edge" d="M680 208 L719 208 L719 208 L758 208" stroke="#66758A"/><rect class="label-bg" x="679.2" y="194" width="79.60000000000001" height="22" rx="11"/>
+<g><path class="edge" d="M680 408 L712 408 L712 408 L758 408" stroke="#66758A"/></g>
+<g><path class="edge" d="M903 360 L903 328 L903 328 L903 260" stroke="#66758A"/></g>
+<g><path class="edge" d="M680 208 L712 208 L712 208 L758 208" stroke="#66758A"/><rect class="label-bg" x="679.2" y="194" width="79.60000000000001" height="22" rx="11"/>
 <text class="edge-label" x="719" y="210" text-anchor="middle">inspect</text></g></g>
 <g id="client">
   <rect class="card" x="72" y="176" width="240" height="86" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
@@ -72,6 +72,6 @@
   <text class="detail" x="535" y="652" text-anchor="middle">through SqsAsyncClient</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
-<text class="footer-title" x="72" y="785">Example role</text>
-<text class="footer-detail" x="72" y="805">Show deterministic retry-once redelivery plus interceptor and observer surfaces for production telemetry.</text>
+<text class="footer-title" x="72" y="775" dominant-baseline="middle">Example role</text>
+<text class="footer-detail" x="72" y="793" dominant-baseline="middle">Show deterministic retry-once redelivery plus interceptor and observer surfaces for production telemetry.</text>
 </svg>

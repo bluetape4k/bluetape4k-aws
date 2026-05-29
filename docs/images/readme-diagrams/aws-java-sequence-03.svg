@@ -29,14 +29,14 @@
 <text class="chip" x="786" y="70" text-anchor="middle">Future</text>
 <rect x="663.5" y="54" width="71" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
 <text class="chip" x="699" y="70" text-anchor="middle">SDK v2</text>
-<g><g><path class="edge" d="M490 220 L490 246 L490 246 L490 272" stroke="#66758A"/><rect class="label-bg" x="428.2" y="232" width="123.60000000000001" height="22" rx="11"/>
+<g><g><path class="edge" d="M490 220 L490 252 L490 252 L490 272" stroke="#66758A"/><rect class="label-bg" x="428.2" y="232" width="123.60000000000001" height="22" rx="11"/>
 <text class="edge-label" x="490" y="248" text-anchor="middle">suspend call</text></g>
-<g><path class="edge" d="M490 350 L490 376 L490 376 L490 402" stroke="#66758A"/><rect class="label-bg" x="423.8" y="362" width="132.4" height="22" rx="11"/>
+<g><path class="edge" d="M490 350 L490 382 L490 382 L490 402" stroke="#66758A"/><rect class="label-bg" x="423.8" y="362" width="132.4" height="22" rx="11"/>
 <text class="edge-label" x="490" y="378" text-anchor="middle">async request</text></g>
-<g><path class="edge" d="M490 480 L490 506 L490 506 L490 532" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 610 L490 636 L490 636 L490 662" stroke="#66758A"/><rect class="label-bg" x="459" y="622" width="62" height="22" rx="11"/>
+<g><path class="edge" d="M490 480 L490 512 L490 512 L490 532" stroke="#66758A"/></g>
+<g><path class="edge" d="M490 610 L490 642 L490 642 L490 662" stroke="#66758A"/><rect class="label-bg" x="459" y="622" width="62" height="22" rx="11"/>
 <text class="edge-label" x="490" y="638" text-anchor="middle">await</text></g>
-<g><path class="edge" d="M490 740 L490 766 L490 766 L490 792" stroke="#66758A"/></g></g>
+<g><path class="edge" d="M490 740 L490 772 L490 772 L490 792" stroke="#66758A"/></g></g>
 <g id="caller">
   <rect class="card" x="330" y="142" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="490" y="178" text-anchor="middle">Suspend caller</text>
@@ -68,6 +68,6 @@
   <text class="detail" x="490" y="852" text-anchor="middle">close application-scoped clients</text>
 </g>
 <rect class="footer" x="54" y="926" width="872" height="54" rx="8"/>
-<text class="footer-title" x="72" y="955">Sequence role</text>
-<text class="footer-detail" x="72" y="975">Show the coroutine boundary as an ordered lifecycle instead of a compressed horizontal strip.</text>
+<text class="footer-title" x="72" y="945" dominant-baseline="middle">Sequence role</text>
+<text class="footer-detail" x="72" y="963" dominant-baseline="middle">Show the coroutine boundary as an ordered lifecycle instead of a compressed horizontal strip.</text>
 </svg>
