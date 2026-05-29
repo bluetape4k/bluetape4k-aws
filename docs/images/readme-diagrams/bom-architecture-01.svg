@@ -25,10 +25,10 @@
 <text class="subtitle" x="56" y="102">Consumers import one platform that aligns published AWS modules without runtime classes.</text>
 <rect x="790" y="54" width="86" height="24" rx="12" fill="#F4F7FA" stroke="#8CA0B3"/>
 <text class="chip" x="833" y="70" text-anchor="middle">Platform</text>
-<rect x="649.5" y="54" width="108.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="703.75" y="70" text-anchor="middle">Constraints</text>
-<rect x="546.5" y="54" width="93.5" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="593.25" y="70" text-anchor="middle">Consumers</text>
+<rect x="665.5" y="54" width="108.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="719.75" y="70" text-anchor="middle">Constraints</text>
+<rect x="556" y="54" width="93.5" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="602.75" y="70" text-anchor="middle">Consumers</text>
 <g><g><path class="edge" d="M470 218 L470 242 L470 242 L470 266" stroke="#66758A"/></g>
 <g><path class="edge" d="M470 352 L470 376 L470 376 L470 400" stroke="#66758A"/></g>
 <g><path class="edge" d="M470 482 L470 506 L470 506 L470 530" stroke="#66758A"/></g>

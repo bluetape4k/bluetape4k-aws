@@ -23,12 +23,12 @@
 <rect x="26" y="26" width="1068" height="808" rx="14" class="frame"/>
 <text class="title" x="54" y="72">Ktor SQS example</text>
 <text class="subtitle" x="56" y="102">Ktor queue routes and SqsConsumer demonstrate send, poll, ack/nack, and telemetry hooks.</text>
-<rect x="1000" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="chip" x="1034" y="70" text-anchor="middle">Ktor</text>
-<rect x="889.5" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="923.5" y="70" text-anchor="middle">SQS</text>
-<rect x="726.5" y="54" width="93.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
-<text class="chip" x="773.25" y="70" text-anchor="middle">Telemetry</text>
+<rect x="988" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="1022" y="70" text-anchor="middle">Ktor</text>
+<rect x="904" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="938" y="70" text-anchor="middle">SQS</text>
+<rect x="794.5" y="54" width="93.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
+<text class="chip" x="841.25" y="70" text-anchor="middle">Telemetry</text>
 <g><g><path class="edge" d="M312 219 L351 219 L351 208 L390 208" stroke="#66758A"/></g>
 <g><path class="edge" d="M535 260 L535 426 L535 426 L535 592" stroke="#66758A"/><rect class="label-bg" x="495.2" y="412" width="79.60000000000001" height="22" rx="11"/>
 <text class="edge-label" x="535" y="428" text-anchor="middle">publish</text></g>
@@ -67,10 +67,9 @@
 <text class="detail" x="903" y="237.5" text-anchor="middle">events and observations</text>
 </g>
 <g id="sqs">
-  <path d="M390 612 C390 588,680 588,680 612 L680 650 C680 674,390 674,390 650 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="535" cy="612" rx="145" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="535" y="630.5" text-anchor="middle">Floci-backed SQS</text>
-  <text class="detail" x="535" y="654.5" text-anchor="middle">through SqsAsyncClient</text>
+  <rect class="card" x="390" y="592" width="290" height="78" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="535" y="628" text-anchor="middle">Floci-backed SQS</text>
+  <text class="detail" x="535" y="652" text-anchor="middle">through SqsAsyncClient</text>
 </g>
 <rect class="footer" x="54" y="756" width="1012" height="54" rx="8"/>
 <text class="footer-title" x="72" y="785">Example role</text>

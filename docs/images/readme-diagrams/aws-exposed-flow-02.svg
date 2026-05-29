@@ -25,10 +25,10 @@
 <text class="subtitle" x="56" y="102">Configuration moves from adapter-provided settings to validated pools and named Exposed handles.</text>
 <rect x="797.5" y="54" width="78.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
 <text class="chip" x="836.75" y="70" text-anchor="middle">Resolve</text>
-<rect x="672" y="54" width="86" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="715" y="70" text-anchor="middle">Validate</text>
-<rect x="554" y="54" width="86" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="chip" x="597" y="70" text-anchor="middle">Register</text>
+<rect x="695.5" y="54" width="86" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="738.5" y="70" text-anchor="middle">Validate</text>
+<rect x="593.5" y="54" width="86" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="chip" x="636.5" y="70" text-anchor="middle">Register</text>
 <g><g><path class="edge" d="M470 218 L470 242 L470 242 L470 266" stroke="#66758A"/></g>
 <g><path class="edge" d="M470 348 L470 372 L470 372 L470 396" stroke="#66758A"/></g>
 <g><path class="edge" d="M470 478 L470 502 L470 502 L470 526" stroke="#66758A"/></g>

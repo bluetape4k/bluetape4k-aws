@@ -1,37 +1,20 @@
-digraph AwsKtorArchitecture {
-  graph [rankdir=TB, bgcolor="#ffffff", nodesep=0.55, ranksep=0.75]
-  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.08"]
-  edge [color="#64748b", penwidth=1.8, arrowsize=0.8]
-
-  app [label="Ktor Application", fillcolor="#e8f3ff", color="#5b8def"]
-  core [label="AwsKtorCore\nshared defaults", fillcolor="#eaf7ef", color="#58a978"]
-  defaults [label="AwsKtorDefaults\nregion endpoint credentials clock", fillcolor="#f7fbef", color="#80a857"]
-
-  sigv4 [label="AwsSigV4Plugin", fillcolor="#eef2ff", color="#8b7cf6"]
-  s3 [label="S3KtorClient", fillcolor="#fff3d9", color="#d6a441"]
-  sqs [label="SqsConsumer", fillcolor="#fdecef", color="#dc6b82"]
-  dynamo [label="DynamoDbKtorPlugin", fillcolor="#e8f7f6", color="#4ca6a8"]
-  exposed [label="AwsExposedPlugin", fillcolor="#f3e8ff", color="#a36ad6"]
-
-  java [label="AWS SDK Java v2\nSQS credentials", fillcolor="#f8fafc", color="#94a3b8"]
-  kotlin [label="AWS SDK for Kotlin\nDynamoDB client", fillcolor="#f8fafc", color="#94a3b8"]
-  jdbc [label="AWS-backed Exposed\nJDBC registry", fillcolor="#f8fafc", color="#94a3b8"]
-
-  aws [label="AWS / LocalStack\nS3 SQS DynamoDB RDS", shape=cylinder, fillcolor="#fff7ed", color="#f59e0b"]
-
+digraph aws_ktor_architecture_01 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+  app [label="Ktor application\nroutes, plugins, lifecycle", fillcolor="#E8F3FF", color="#5B8DEF"]
+  core [label="AwsKtorCore\nshared defaults", fillcolor="#EAF7EF", color="#58A978"]
+  defaults [label="AwsKtorDefaults\nregion, endpoint\ncredentials, clock", fillcolor="#FFF3D9", color="#D6A441"]
+  s3 [label="S3KtorClient\nobject helpers", fillcolor="#FFF3D9", color="#D6A441"]
+  sqs [label="SqsConsumer\npolling runtime", fillcolor="#FDECEF", color="#DC6B82"]
+  ddb [label="DynamoDbKtorPlugin\nKotlin SDK client", fillcolor="#E9F7F6", color="#45A7A1"]
+  aws [label="AWS / LocalStack\nS3, SQS, DynamoDB, RDS", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
   app -> core
   core -> defaults
-  defaults -> sigv4
   defaults -> s3
   defaults -> sqs
-  defaults -> dynamo
-  defaults -> exposed
-  s3 -> sigv4
-  sqs -> java
-  dynamo -> kotlin
-  exposed -> jdbc
-  sigv4 -> aws
-  java -> aws
-  kotlin -> aws
-  jdbc -> aws
+  defaults -> ddb
+  s3 -> aws
+  sqs -> aws
+  ddb -> aws
 }

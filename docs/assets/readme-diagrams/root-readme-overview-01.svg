@@ -24,16 +24,16 @@
 <text class="title" x="54" y="72">bluetape4k-aws overview</text>
 <text class="subtitle" x="56" y="102">Kotlin applications choose Java SDK adapters, native suspend helpers, or framework integrations.</text>
 <g>
-  <rect x="982" y="54" width="76" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="chip" x="1020" y="70" text-anchor="middle">Kotlin</text>
+  <rect x="988" y="54" width="76" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1026" y="70" text-anchor="middle">Kotlin</text>
 </g>
 <g>
-  <rect x="810" y="54" width="132" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="chip" x="876" y="70" text-anchor="middle">Spring Boot 4</text>
+  <rect x="840" y="54" width="132" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="906" y="70" text-anchor="middle">Spring Boot 4</text>
 </g>
 <g>
-  <rect x="750" y="54" width="76" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="chip" x="788" y="70" text-anchor="middle">Ktor 3</text>
+  <rect x="748" y="54" width="76" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="chip" x="786" y="70" text-anchor="middle">Ktor 3</text>
 </g>
 <g><g><path class="edge" d="M560 220 L560 244 L560 244 L560 268" stroke="#66758A"/></g>
 <g><path class="edge" d="M560 342 L560 366 L560 366 L560 390" stroke="#66758A"/></g>
@@ -77,11 +77,10 @@
   <text class="detail" x="350" y="774" text-anchor="middle">emulators + Testcontainers</text>
 </g>
 <g id="services">
-  <path d="M630 730 C630 706,930 706,930 730 L930 778 C930 802,630 802,630 778 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="780" cy="730" rx="150" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="780" y="746" text-anchor="middle">AWS service surface</text>
-  <text class="detail" x="780" y="769" text-anchor="middle">S3, SQS, SNS, DynamoDB</text>
-<text class="detail" x="780" y="786" text-anchor="middle">KMS, SES, CloudWatch, Kinesis, STS</text>
+  <rect class="card" x="630" y="710" width="300" height="88" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="780" y="742.5" text-anchor="middle">AWS service surface</text>
+  <text class="detail" x="780" y="765.5" text-anchor="middle">S3, SQS, SNS, DynamoDB</text>
+<text class="detail" x="780" y="782.5" text-anchor="middle">KMS, SES, CloudWatch, Kinesis, STS</text>
 </g>
 <rect class="footer" x="54" y="876" width="1012" height="54" rx="8"/>
 <text class="footer-title" x="72" y="905">Repository role</text>

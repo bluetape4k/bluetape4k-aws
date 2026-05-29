@@ -23,12 +23,12 @@
 <rect x="26" y="26" width="888" height="878" rx="14" class="frame"/>
 <text class="title" x="54" y="72">aws-kotlin operation flow</text>
 <text class="subtitle" x="56" y="102">Native suspend operations use SDK Kotlin clients directly, with Flow helpers for streaming reads.</text>
-<rect x="812.5" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="846.5" y="70" text-anchor="middle">Build</text>
-<rect x="679.5" y="54" width="78.5" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="718.75" y="70" text-anchor="middle">Suspend</text>
-<rect x="584" y="54" width="68" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="chip" x="618" y="70" text-anchor="middle">Flow</text>
+<rect x="808" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="842" y="70" text-anchor="middle">Build</text>
+<rect x="713.5" y="54" width="78.5" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="752.75" y="70" text-anchor="middle">Suspend</text>
+<rect x="629.5" y="54" width="68" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="chip" x="663.5" y="70" text-anchor="middle">Flow</text>
 <g><g><path class="edge" d="M470 220 L470 245 L470 245 L470 270" stroke="#66758A"/></g>
 <g><path class="edge" d="M470 352 L470 377 L470 377 L470 402" stroke="#66758A"/></g>
 <g><path class="edge" d="M470 484 L470 509 L470 509 L470 534" stroke="#66758A"/></g>

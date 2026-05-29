@@ -25,16 +25,15 @@
 <text class="subtitle" x="56" y="102">Short-lived clients should be created for a suspend block and closed automatically after use.</text>
 <rect x="845" y="54" width="71" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
 <text class="chip" x="880.5" y="70" text-anchor="middle">Create</text>
-<rect x="749.5" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="chip" x="783.5" y="70" text-anchor="middle">Use</text>
-<rect x="616.5" y="54" width="68" height="24" rx="12" fill="#FFF0E3" stroke="#F47B36"/>
-<text class="chip" x="650.5" y="70" text-anchor="middle">Close</text>
+<rect x="761" y="54" width="68" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="795" y="70" text-anchor="middle">Use</text>
+<rect x="677" y="54" width="68" height="24" rx="12" fill="#FFF0E3" stroke="#F47B36"/>
+<text class="chip" x="711" y="70" text-anchor="middle">Close</text>
 <g><g><path class="edge" d="M490 218 L490 244 L490 244 L490 270" stroke="#66758A"/></g>
 <g><path class="edge" d="M490 348 L490 374 L490 374 L490 400" stroke="#66758A"/></g>
 <g><path class="edge" d="M490 478 L490 504 L490 504 L490 530" stroke="#66758A"/></g>
 <g><path class="edge" d="M490 608 L490 634 L490 634 L490 660" stroke="#66758A" stroke-dasharray="8 8"/></g>
-<g><path class="edge" d="M490 738 L490 764 L490 764 L490 790" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 608 L490 699 L490 699 L490 790" stroke="#66758A"/></g></g>
+<g><path class="edge" d="M490 738 L490 764 L490 764 L490 790" stroke="#66758A"/></g></g>
 <g id="caller">
   <rect class="card" x="330" y="140" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
   <text class="card-title" x="490" y="176" text-anchor="middle">Coroutine caller</text>

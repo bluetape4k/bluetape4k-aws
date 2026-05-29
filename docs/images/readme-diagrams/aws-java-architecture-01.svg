@@ -25,10 +25,10 @@
 <text class="subtitle" x="56" y="102">Java SDK v2 clients stay underneath Kotlin builders, async futures, and coroutine adapters.</text>
 <rect x="1187.5" y="54" width="108.5" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
 <text class="chip" x="1241.75" y="70" text-anchor="middle">Java SDK v2</text>
-<rect x="1077" y="54" width="101" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
-<text class="chip" x="1127.5" y="70" text-anchor="middle">Coroutines</text>
-<rect x="974" y="54" width="86" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="1017" y="70" text-anchor="middle">DynamoDB</text>
+<rect x="1070.5" y="54" width="101" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
+<text class="chip" x="1121" y="70" text-anchor="middle">Coroutines</text>
+<rect x="968.5" y="54" width="86" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="1011.5" y="70" text-anchor="middle">DynamoDB</text>
 <g><g><path class="edge" d="M520 184 L425 184 L425 356 L330 356" stroke="#66758A"/></g>
 <g><path class="edge" d="M680 226 L600 226 L600 310 L520 310" stroke="#66758A"/></g>
 <g><path class="edge" d="M680 226 L760 226 L760 310 L840 310" stroke="#66758A"/></g>
@@ -74,10 +74,9 @@
 <text class="detail" x="680" y="576.5" text-anchor="middle">KMS, CloudWatch, Kinesis, STS</text>
 </g>
 <g id="aws">
-  <path d="M540 644 C540 620,820 620,820 644 L820 682 C820 706,540 706,540 682 Z" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <ellipse cx="680" cy="644" rx="140" ry="20" fill="#FFF0E3" stroke="#F47B36" stroke-width="2"/>
-  <text class="card-title" x="680" y="662.5" text-anchor="middle">AWS services</text>
-  <text class="detail" x="680" y="686.5" text-anchor="middle">or LocalStack / Floci</text>
+  <rect class="card" x="540" y="624" width="280" height="78" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="680" y="660" text-anchor="middle">AWS services</text>
+  <text class="detail" x="680" y="684" text-anchor="middle">or LocalStack / Floci</text>
 </g>
 <rect class="footer" x="54" y="736" width="1252" height="54" rx="8"/>
 <text class="footer-title" x="72" y="765">Module role</text>

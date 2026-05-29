@@ -25,10 +25,10 @@
 <text class="subtitle" x="56" y="102">Registry creation resolves settings, creates pools, registers handles, and closes in reverse order.</text>
 <rect x="837.5" y="54" width="78.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
 <text class="chip" x="876.75" y="70" text-anchor="middle">Resolve</text>
-<rect x="742" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="776" y="70" text-anchor="middle">Pool</text>
-<rect x="616.5" y="54" width="68" height="24" rx="12" fill="#FFF0E3" stroke="#F47B36"/>
-<text class="chip" x="650.5" y="70" text-anchor="middle">Close</text>
+<rect x="753.5" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="787.5" y="70" text-anchor="middle">Pool</text>
+<rect x="669.5" y="54" width="68" height="24" rx="12" fill="#FFF0E3" stroke="#F47B36"/>
+<text class="chip" x="703.5" y="70" text-anchor="middle">Close</text>
 <g><g><path class="edge" d="M490 218 L490 244 L490 244 L490 270" stroke="#66758A"/></g>
 <g><path class="edge" d="M490 348 L490 374 L490 374 L490 400" stroke="#66758A"/></g>
 <g><path class="edge" d="M490 478 L490 504 L490 504 L490 530" stroke="#66758A"/></g>

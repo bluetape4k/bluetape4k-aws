@@ -1,32 +1,20 @@
-graph 1 22.842 8.3314
-node app 11.211 8.0814 2.0404 0.5 "Spring Boot Application" rounded,filled box #38bdf8 #e0f2fe
-node props 11.211 6.6876 2.1342 0.89875 "AwsProperties\nshared region, endpoint,\ncredentials, customizers" rounded,filled box #22c55e #dcfce7
-node auto 11.211 5.2142 2.4258 0.65917 "AwsAutoConfiguration\ncommon SDK client defaults" rounded,filled box #64748b #f1f5f9
-node s3 1.5306 3.8606 3.0613 0.65917 "S3AutoConfiguration\nS3Operations + TransferOperations" rounded,filled box #f59e0b #fef3c7
-node sqs 4.9056 3.8606 2.6758 0.65917 "SqsAutoConfiguration\nSqsOperations + @SqsListener" rounded,filled box #ef4444 #fee2e2
-node sns 8.0445 3.8606 2.6029 0.65917 "SnsAutoConfiguration\nSnsOperations + HTTP parser" rounded,filled box #f59e0b #fef3c7
-node ddb 11.211 3.8606 2.7279 0.65917 "DynamoDbAutoConfiguration\nCoroutinesDynamoDbRepository" rounded,filled box #14b8a6 #ccfbf1
-node kms 14.322 3.8606 2.4987 0.65917 "KmsAutoConfiguration\nKmsOperations + field codec" rounded,filled box #a855f7 #f3e8ff
-node env 17.67 3.8606 3.1862 0.65917 "Environment post processors\nSecrets Manager + Parameter Store" rounded,filled box #94a3b8 #f8fafc
-node exposed 21.114 3.8606 2.7071 0.65917 "AwsExposedAutoConfiguration\nDataSource + Exposed registry" rounded,filled box #38bdf8 #e0f2fe
-node sdk 9.6278 2.2187 2.5925 1.2358 "AWS SDK v2 clients\nS3, SQS, SNS, DynamoDB,\nKMS, SES, Secrets, SSM, STS" rounded,filled cylinder #f97316 #fff7ed
-node db 21.114 2.2187 3.4571 0.90635 "JDBC database\nPostgreSQL, RDS, or local Testcontainer" rounded,filled cylinder #10b981 #ecfdf5
-node aws 9.6278 0.45318 1.8529 0.90635 "AWS services\nor LocalStack/Floci" rounded,filled cylinder #f97316 #fff7ed
-edge app props 4 11.211 7.8258 11.211 7.8258 11.211 7.2748 11.211 7.2748 solid #64748b
-edge props auto 4 11.211 6.2335 11.211 6.2335 11.211 5.6832 11.211 5.6832 solid #64748b
-edge auto s3 7 9.9949 5.375 7.3949 5.375 1.5306 5.375 1.5306 5.375 1.5306 5.375 1.5306 4.3324 1.5306 4.3324 solid #64748b
-edge auto sqs 7 9.9917 5.2083 8.1587 5.2083 4.9056 5.2083 4.9056 5.2083 4.9056 5.2083 4.9056 4.3295 4.9056 4.3295 solid #64748b
-edge auto sns 7 9.9914 5.0556 9.0993 5.0556 8.0445 5.0556 8.0445 5.0556 8.0445 5.0556 8.0445 4.3292 8.0445 4.3292 solid #64748b
-edge auto ddb 4 11.211 4.8796 11.211 4.8796 11.211 4.3317 11.211 4.3317 solid #64748b
-edge auto kms 7 12.427 5.0556 13.3 5.0556 14.322 5.0556 14.322 5.0556 14.322 5.0556 14.322 4.3292 14.322 4.3292 solid #64748b
-edge auto env 7 12.43 5.2083 14.301 5.2083 17.67 5.2083 17.67 5.2083 17.67 5.2083 17.67 4.3295 17.67 4.3295 solid #64748b
-edge auto exposed 7 12.43 5.375 15.077 5.375 21.114 5.375 21.114 5.375 21.114 5.375 21.114 4.3324 21.114 4.3324 solid #64748b
-edge s3 sdk 7 1.5306 3.5262 1.5306 2.994 1.5306 2.0139 1.5306 2.0139 1.5306 2.0139 8.1912 2.0139 8.1912 2.0139 solid #64748b
-edge sqs sdk 7 4.9056 3.5253 4.9056 3.1026 4.9056 2.4306 4.9056 2.4306 4.9056 2.4306 8.1893 2.4306 8.1893 2.4306 solid #64748b
-edge sns sdk 4 8.8388 3.5244 8.8388 3.5244 8.8388 2.969 8.8388 2.969 solid #64748b
-edge ddb sdk 4 10.386 3.5244 10.386 3.5244 10.386 2.969 10.386 2.969 solid #64748b
-edge kms sdk 7 14.322 3.5298 14.322 3.2114 14.322 2.7778 14.322 2.7778 14.322 2.7778 11.065 2.7778 11.065 2.7778 solid #64748b
-edge env sdk 7 17.67 3.5252 17.67 3.1894 17.67 2.7222 17.67 2.7222 17.67 2.7222 11.065 2.7222 11.065 2.7222 solid #64748b
-edge exposed db 4 21.114 3.5244 21.114 3.5244 21.114 2.8085 21.114 2.8085 solid #64748b
-edge sdk aws 4 9.6278 1.5962 9.6278 1.5962 9.6278 1.0449 9.6278 1.0449 solid #64748b
+graph 1 9.7835 6.3208
+node app 4.7494 5.9912 2.1758 0.65917 "Spring Boot application\ncontrollers and services" rounded,filled box #5B8DEF #E8F3FF
+node props 4.7494 4.6376 2.3842 0.65917 "AwsProperties\nregion, endpoint, credentials" rounded,filled box #58A978 #EAF7EF
+node auto 4.7494 3.284 2.4258 0.65917 "AwsAutoConfiguration\ncommon SDK client defaults" rounded,filled box #8CA0B3 #F4F7FA
+node s3 0.91604 1.9304 1.8321 0.65917 "S3AutoConfiguration\nS3Operations" rounded,filled box #D6A441 #FFF3D9
+node sqs 3.3744 1.9304 2.1133 0.65917 "SqsAutoConfiguration\nSqsOperations, listeners" rounded,filled box #DC6B82 #FDECEF
+node ddb 6.1244 1.9304 2.4258 0.65917 "DynamoDbAutoConfiguration\nrepository beans" rounded,filled box #45A7A1 #E9F7F6
+node kms 8.8049 1.9304 1.9571 0.65917 "KmsAutoConfiguration\nKmsOperations" rounded,filled box #8A72D6 #F1ECFF
+node aws 4.7494 0.45318 2.0404 0.90635 "AWS services\nLocalStack, Floci, RDS" rounded,filled cylinder #F47B36 #FFF0E3
+edge app props 4 4.7494 5.6566 4.7494 5.6566 4.7494 5.1087 4.7494 5.1087 solid #64748b
+edge props auto 4 4.7494 4.303 4.7494 4.303 4.7494 3.7551 4.7494 3.7551 solid #64748b
+edge auto s3 7 3.5312 3.2778 2.4088 3.2778 0.91604 3.2778 0.91604 3.2778 0.91604 3.2778 0.91604 2.3991 0.91604 2.3991 solid #64748b
+edge auto sqs 4 3.9837 2.9494 3.9837 2.9494 3.9837 2.4015 3.9837 2.4015 solid #64748b
+edge auto ddb 4 5.4369 2.9494 5.4369 2.9494 5.4369 2.4015 5.4369 2.4015 solid #64748b
+edge auto kms 7 5.9662 3.2778 7.1608 3.2778 8.8049 3.2778 8.8049 3.2778 8.8049 3.2778 8.8049 2.3991 8.8049 2.3991 solid #64748b
+edge s3 aws 7 0.91604 1.5964 0.91604 1.162 0.91604 0.45833 0.91604 0.45833 0.91604 0.45833 3.5914 0.45833 3.5914 0.45833 solid #64748b
+edge sqs aws 4 4.0801 1.5952 4.0801 1.5952 4.0801 1.0404 4.0801 1.0404 solid #64748b
+edge ddb aws 4 5.3405 1.5952 5.3405 1.5952 5.3405 1.0459 5.3405 1.0459 solid #64748b
+edge kms aws 7 8.8049 1.5964 8.8049 1.162 8.8049 0.45833 8.8049 0.45833 8.8049 0.45833 5.9085 0.45833 5.9085 0.45833 solid #64748b
 stop

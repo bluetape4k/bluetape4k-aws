@@ -10,7 +10,7 @@ digraph examples_aws_ktor_s3_examples_architecture_01 {
   s3 [label="S3-compatible endpoint\nAWS S3, LocalStack, Floci", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
   client -> routes
   client -> advanced
-  routes -> s3client
+  routes -> helpers
   advanced -> helpers
   helpers -> s3client
   s3client -> s3
