@@ -26,6 +26,9 @@ concurrency:
   group: publish-release
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 env:
   JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'temurin'
@@ -35,6 +38,7 @@ jobs:
   resolve-version:
     name: Resolve release version
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
       version: ${{ steps.resolve.outputs.version }}
       ref: ${{ steps.resolve.outputs.ref }}
