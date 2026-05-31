@@ -520,7 +520,7 @@ Latest integrated findings: P0 = 0, P1 = 0. Step 2-R is closed.
 ├──────────────────────────────────────┼────────┼──────────────────────────────────────────────────────────────┤
 │ Target repository confirmed          │ Done   │ Worktree is `feat/issue-7-ses-email-sender` in bluetape4k-aws. │
 ├──────────────────────────────────────┼────────┼──────────────────────────────────────────────────────────────┤
-│ Durable knowledge searched           │ Done   │ qmd found prior SNS/KMS/S3 Spring Boot design and lesson refs. │
+│ Durable knowledge searched           │ Done   │ GNO found prior SNS/KMS/S3 Spring Boot design and lesson refs. │
 ├──────────────────────────────────────┼────────┼──────────────────────────────────────────────────────────────┤
 │ Official API evidence checked        │ Done   │ AWS SES v2 API docs and Spring Boot auto-config docs checked. │
 ├──────────────────────────────────────┼────────┼──────────────────────────────────────────────────────────────┤
