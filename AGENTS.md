@@ -20,8 +20,12 @@ Spring Boot 4, and Ktor 3.
 | `examples/aws-spring-boot-s3-examples/` | example | Spring Boot 4 S3 WebFlux examples with AOT tasks; not published |
 | `examples/aws-spring-boot-sqs-examples/` | example | Spring Boot 4 SQS/SNS fanout examples with AOT tasks; not published |
 
-Integration tests use LocalStack via Testcontainers. Use
-`-Dbluetape4k.aws.emulator=localstack|floci`; default is `localstack`.
+AWS emulator migration policy is Floci-first. New or migrated emulator-aware
+tests should prefer `-Dbluetape4k.aws.emulator=floci`, keep `localstack` as an
+explicit fallback, and use `ministack` only as an evaluation/comparison backend
+until the target SDK smoke matrix passes repeatedly. Existing Java/Kotlin SDK
+wrapper tests may still default to LocalStack until they share the common
+emulator helper.
 
 Root README visual assets live under `docs/assets/` and should be shared by
 `README.md` and `README.ko.md` through the same relative path.
@@ -46,7 +50,8 @@ For release work, check the workspace governance docs first:
 ./gradlew :bluetape4k-aws-kotlin:test
 ./gradlew :bluetape4k-aws-spring-boot:test
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
-./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ./gradlew :aws-spring-boot-s3-examples:processAot :aws-spring-boot-s3-examples:processTestAot
 ./gradlew :aws-spring-boot-sqs-examples:processAot :aws-spring-boot-sqs-examples:processTestAot
 ./gradlew build

@@ -19,8 +19,12 @@ integration.
 | `bom/` | stable | `bluetape4k-aws-bom` consumer BOM |
 | `examples/aws-ktor-s3-examples/` | example | LocalStack-oriented Ktor S3 examples; not published |
 
-Integration tests use LocalStack via Testcontainers. Use
-`-Dbluetape4k.aws.emulator=localstack|floci`; default is `localstack`.
+AWS emulator migration policy is Floci-first. New or migrated emulator-aware
+tests should prefer `-Dbluetape4k.aws.emulator=floci`, keep `localstack` as an
+explicit fallback, and use `ministack` only as an evaluation/comparison backend
+until the target SDK smoke matrix passes repeatedly. Existing Java/Kotlin SDK
+wrapper tests may still default to LocalStack until they share the common
+emulator helper.
 
 ## Build Commands
 
@@ -29,7 +33,8 @@ Integration tests use LocalStack via Testcontainers. Use
 ./gradlew :bluetape4k-aws-java:test
 ./gradlew :bluetape4k-aws-kotlin:test
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.s3.S3ClientSupportTest"
-./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ./gradlew build
 ./gradlew detekt
 ./gradlew publishBluetapeAwsPublicationToCentralPortal

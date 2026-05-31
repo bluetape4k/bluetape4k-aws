@@ -616,5 +616,6 @@ Local AWS emulator integration tests are provided under `src/test/...`. They
 default to Floci and can be switched with `-Dbluetape4k.aws.emulator=...`:
 
 ```bash
-./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ```
