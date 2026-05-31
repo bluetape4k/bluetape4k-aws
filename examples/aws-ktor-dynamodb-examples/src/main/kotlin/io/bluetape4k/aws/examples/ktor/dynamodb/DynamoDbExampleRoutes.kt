@@ -10,6 +10,7 @@ import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.aws.ktor.dynamodb.DynamoDbKtorPlugin
 import io.bluetape4k.aws.ktor.dynamodb.dynamoDb
+import io.bluetape4k.ktor.core.requiredPathParameter
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
@@ -90,7 +91,7 @@ fun Application.dynamoDbExampleModule(
         }
 
         get("/dynamodb/orders/{id}") {
-            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val id = call.requiredPathParameter("id")
             val repo = call.application.dynamoDb().repository(ORDERS_TABLE, orderMapper, orderReader, orderKeyMapper)
             val order = repo.findById(id)
             if (order != null) {
@@ -101,7 +102,7 @@ fun Application.dynamoDbExampleModule(
         }
 
         delete("/dynamodb/orders/{id}") {
-            val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+            val id = call.requiredPathParameter("id")
             val repo = call.application.dynamoDb().repository(ORDERS_TABLE, orderMapper, orderReader, orderKeyMapper)
             repo.deleteById(id)
             call.respond(HttpStatusCode.NoContent)

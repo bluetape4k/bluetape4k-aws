@@ -100,6 +100,8 @@ bluetape4k-resilience4j = { module = "io.github.bluetape4k:bluetape4k-resilience
 bluetape4k-logging = { module = "io.github.bluetape4k:bluetape4k-logging" }
 bluetape4k-junit5 = { module = "io.github.bluetape4k:bluetape4k-junit5" }
 bluetape4k-testcontainers = { module = "io.github.bluetape4k:bluetape4k-testcontainers" }
+bluetape4k-ktor-core = { module = "io.github.bluetape4k:bluetape4k-ktor-core" }
+bluetape4k-ktor-testing = { module = "io.github.bluetape4k:bluetape4k-ktor-testing" }
 bluetape4k-exposed-jdbc = { module = "io.github.bluetape4k.exposed:bluetape4k-exposed-jdbc" }
 
 # Logging

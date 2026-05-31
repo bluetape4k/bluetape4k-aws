@@ -5,7 +5,9 @@ English | [한국어](./README.ko.md)
 Ktor 3 examples for `aws-ktor` and `bluetape4k-aws-exposed`. The module installs
 `AwsExposedPlugin`, creates an Exposed schema on application start, and exposes
 order routes backed by PostgreSQL. Local tests use Testcontainers and do not
-require AWS credentials.
+require AWS credentials. It uses `bluetape4k-ktor-core` for shared route
+parameter validation and `bluetape4k-ktor-testing` for common Ktor response
+assertions.
 
 ## Architecture
 

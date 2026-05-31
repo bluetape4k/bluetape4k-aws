@@ -10,6 +10,7 @@ import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.delete
@@ -63,7 +64,7 @@ class DynamoDbExampleRoutesLocalStackTest {
         jsonClient.post("/dynamodb/orders") {
             contentType(ContentType.Application.Json)
             setBody(order)
-        }.status shouldBeEqualTo HttpStatusCode.Created
+        } shouldHaveStatus HttpStatusCode.Created
 
         val found = jsonClient.get("/dynamodb/orders/${order.id}").body<Order>()
         found.id shouldBeEqualTo order.id
@@ -72,9 +73,9 @@ class DynamoDbExampleRoutesLocalStackTest {
         val orders = jsonClient.get("/dynamodb/orders").body<List<Order>>()
         orders.any { it.id == order.id }.shouldBeTrue()
 
-        jsonClient.delete("/dynamodb/orders/${order.id}").status shouldBeEqualTo HttpStatusCode.NoContent
+        jsonClient.delete("/dynamodb/orders/${order.id}") shouldHaveStatus HttpStatusCode.NoContent
 
-        jsonClient.get("/dynamodb/orders/${order.id}").status shouldBeEqualTo HttpStatusCode.NotFound
+        jsonClient.get("/dynamodb/orders/${order.id}") shouldHaveStatus HttpStatusCode.NotFound
     }
 
     @Test
@@ -93,7 +94,7 @@ class DynamoDbExampleRoutesLocalStackTest {
                 jsonClient.post("/dynamodb/orders") {
                     contentType(ContentType.Application.Json)
                     setBody(order)
-                }.status shouldBeEqualTo HttpStatusCode.Created
+                } shouldHaveStatus HttpStatusCode.Created
 
                 jsonClient.get("/dynamodb/orders/${order.id}").body<Order>().id shouldBeEqualTo order.id
             }

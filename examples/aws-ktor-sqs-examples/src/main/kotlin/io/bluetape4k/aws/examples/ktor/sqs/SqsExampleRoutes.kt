@@ -7,6 +7,7 @@ import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
 import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
 import io.bluetape4k.aws.ktor.sqs.SqsMessageContext
 import io.bluetape4k.aws.ktor.sqs.sqsConsumer
+import io.bluetape4k.ktor.core.requiredPathParameter
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
@@ -127,7 +128,7 @@ fun Application.sqsExampleModule(
         }
 
         post("/sqs/queues/{name}") {
-            val name = call.parameters["name"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+            val name = call.requiredPathParameter("name")
             val url = sqsClient.createQueue { it.queueName(name) }.await().queueUrl()
             call.respondText("""{"queueUrl":"$url"}""")
         }

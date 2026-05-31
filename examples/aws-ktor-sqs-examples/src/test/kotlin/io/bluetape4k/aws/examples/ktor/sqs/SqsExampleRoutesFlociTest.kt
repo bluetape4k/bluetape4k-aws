@@ -1,11 +1,11 @@
 package io.bluetape4k.aws.examples.ktor.sqs
 
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.sqs.SqsClientFactory
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.client.request.get
@@ -66,7 +66,7 @@ class SqsExampleRoutesFlociTest {
             contentType(ContentType.Text.Plain)
             setBody("hello-${Base58.randomString(8)}")
         }
-        response.status shouldBeEqualTo HttpStatusCode.OK
+        response shouldHaveStatus HttpStatusCode.OK
         response.bodyAsText().contains("messageId").shouldBeTrue()
     }
 
@@ -75,7 +75,7 @@ class SqsExampleRoutesFlociTest {
         application { sqsExampleModule(sqsClient, queueUrl) }
 
         val response = client.get("/sqs/queues/attributes?url=$queueUrl")
-        response.status shouldBeEqualTo HttpStatusCode.OK
+        response shouldHaveStatus HttpStatusCode.OK
         response.bodyAsText().contains("approximateMessageCount").shouldBeTrue()
     }
 
@@ -85,7 +85,7 @@ class SqsExampleRoutesFlociTest {
 
         val queueName = "ktor-sqs-created-${Base58.randomString(8)}"
         val response = client.post("/sqs/queues/$queueName")
-        response.status shouldBeEqualTo HttpStatusCode.OK
+        response shouldHaveStatus HttpStatusCode.OK
         response.bodyAsText().contains("queueUrl").shouldBeTrue()
     }
 
@@ -100,7 +100,7 @@ class SqsExampleRoutesFlociTest {
                 client.post("/sqs/messages") {
                     contentType(ContentType.Text.Plain)
                     setBody("concurrent-${Base58.randomString(8)}")
-                }.status shouldBeEqualTo HttpStatusCode.OK
+                } shouldHaveStatus HttpStatusCode.OK
             }
             .run()
     }
@@ -118,11 +118,11 @@ class SqsExampleRoutesFlociTest {
             client.post("/sqs/messages") {
                 contentType(ContentType.Text.Plain)
                 setBody(normalBody)
-            }.status shouldBeEqualTo HttpStatusCode.OK
+            } shouldHaveStatus HttpStatusCode.OK
             client.post("/sqs/messages") {
                 contentType(ContentType.Text.Plain)
                 setBody(retryBody)
-            }.status shouldBeEqualTo HttpStatusCode.OK
+            } shouldHaveStatus HttpStatusCode.OK
 
             withTimeout(15_000) {
                 while (true) {

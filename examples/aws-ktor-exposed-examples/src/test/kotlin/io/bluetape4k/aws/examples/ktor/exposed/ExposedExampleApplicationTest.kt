@@ -2,6 +2,7 @@ package io.bluetape4k.aws.examples.ktor.exposed
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -41,22 +42,22 @@ class ExposedExampleApplicationTest {
             contentType(ContentType.Application.Json)
             setBody(request)
         }
-        createResponse.status shouldBeEqualTo HttpStatusCode.Created
+        createResponse shouldHaveStatus HttpStatusCode.Created
         val created = createResponse.body<OrderRecord>()
         created.customerId shouldBeEqualTo request.customerId
         created.status shouldBeEqualTo request.status
 
         val readResponse = client.get("/exposed/orders/${created.id}")
-        readResponse.status shouldBeEqualTo HttpStatusCode.OK
+        readResponse shouldHaveStatus HttpStatusCode.OK
         readResponse.body<OrderRecord>() shouldBeEqualTo created
 
         val listResponse = client.get("/exposed/orders?customerId=${request.customerId}")
-        listResponse.status shouldBeEqualTo HttpStatusCode.OK
+        listResponse shouldHaveStatus HttpStatusCode.OK
         val listed = listResponse.body<List<OrderRecord>>()
         listed.map { it.id } shouldContain created.id
 
         val missingResponse = client.get("/exposed/orders/${Long.MAX_VALUE}")
-        missingResponse.status shouldBeEqualTo HttpStatusCode.NotFound
+        missingResponse shouldHaveStatus HttpStatusCode.NotFound
     }
 
     private companion object {

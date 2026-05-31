@@ -37,9 +37,10 @@ database registries.
 
 ## Dependency
 
-`aws-ktor` exposes Ktor client core and AWS auth APIs, but Ktor server, Ktor
-engines, and AWS service clients are declared as `compileOnly` where possible.
-Applications must add the runtime pieces they actually use.
+`aws-ktor` uses shared `bluetape4k-ktor-core` helpers for the common Ktor
+baseline and exposes Ktor client core plus AWS auth APIs. Ktor engines,
+Jackson content negotiation, and AWS service clients remain explicit
+application dependencies where runtime choice matters.
 
 ```kotlin
 dependencies {

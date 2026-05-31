@@ -2,6 +2,7 @@ package io.bluetape4k.aws.examples.ktor.exposed
 
 import io.bluetape4k.aws.ktor.exposed.AwsExposedPlugin
 import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
+import io.bluetape4k.ktor.core.requiredPathParameter
 import io.bluetape4k.support.requireNotBlank
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
@@ -84,7 +85,7 @@ fun Application.exposedExampleModule(database: ExampleDatabaseConfig) {
             }
 
             get("/{id}") {
-                val id = call.parameters["id"]?.toLongOrNull()
+                val id = call.requiredPathParameter("id").toLongOrNull()
                 if (id == null) {
                     call.respond(io.ktor.http.HttpStatusCode.BadRequest, "Invalid order id.")
                     return@get

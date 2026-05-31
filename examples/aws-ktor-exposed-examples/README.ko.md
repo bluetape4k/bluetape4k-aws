@@ -5,7 +5,9 @@
 `aws-ktor`와 `bluetape4k-aws-exposed`를 사용하는 Ktor 3 예제입니다.
 `AwsExposedPlugin`을 설치하고, application start 시점에 Exposed schema를 만든 뒤
 PostgreSQL 기반 주문 route를 제공합니다. 로컬 테스트는 Testcontainers를 사용하며
-AWS credential이 필요하지 않습니다.
+AWS credential이 필요하지 않습니다. Route parameter 검증에는
+`bluetape4k-ktor-core`, 공통 Ktor response assertion에는
+`bluetape4k-ktor-testing`을 사용합니다.
 
 ## 아키텍처
 
