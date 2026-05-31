@@ -3,13 +3,13 @@ package io.bluetape4k.aws.kotlin.kinesis
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
 import io.bluetape4k.junit5.faker.Fakers
 import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.testcontainers.aws.LocalStackServer
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 
 /**
  * AWS Kotlin SDK Kinesis 테스트를 위한 추상 기반 클래스.
  *
- * LocalStack을 사용하여 로컬 환경에서 AWS Kinesis API를 테스트합니다.
- * [LocalStackServer]를 통해 Kinesis 서비스 컨테이너를 자동으로 시작하고,
+ * Floci-first AWS emulator를 사용하여 로컬 환경에서 AWS Kinesis API를 테스트합니다.
+ * [AwsEmulatorServer]를 통해 Kinesis 서비스 컨테이너를 자동으로 시작하고,
  * 각 테스트에서 [withKinesisClient] 패턴으로 클라이언트를 생성합니다.
  *
  * 사용 예시:

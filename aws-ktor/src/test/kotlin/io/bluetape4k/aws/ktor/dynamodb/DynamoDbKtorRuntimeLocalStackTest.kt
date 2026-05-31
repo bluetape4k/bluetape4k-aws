@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.bluetape4k.aws.ktor.dynamodb
 
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
@@ -20,6 +22,9 @@ import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.aws.kotlin.dynamodb.waitForTableReady
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
+import io.bluetape4k.testcontainers.aws.FlociServer
+import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.flow.toList
@@ -31,18 +36,15 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbKtorRuntimeLocalStackTest {
 
-    @Suppress("DEPRECATION")
-    private val localStack: io.bluetape4k.testcontainers.aws.LocalStackServer by lazy {
-        io.bluetape4k.testcontainers.aws.LocalStackServer.Launcher.getLocalStack("dynamodb")
-    }
+    private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("dynamodb") }
 
     private val client: DynamoDbClient by lazy {
         dynamoDbClientOf(
-            endpointUrl = Url.parse(localStack.endpoint.toString()),
-            region = localStack.regionName,
+            endpointUrl = Url.parse(awsEmulator.awsEndpoint.toString()),
+            region = awsEmulator.regionName,
             credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = localStack.accessKey
-                secretAccessKey = localStack.secretKey
+                accessKeyId = awsEmulator.awsAccessKey
+                secretAccessKey = awsEmulator.awsSecretKey
             },
         )
     }
@@ -199,4 +201,11 @@ class DynamoDbKtorRuntimeLocalStackTest {
     private val keyMapper = DynamoItemMapper<String> { id ->
         mapOf("id" to AttributeValue.S(id))
     }
+
+    private fun awsEmulator(vararg services: String): AwsEmulatorServer =
+        when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
+            "floci" -> FlociServer.Launcher.floci
+            "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
+            else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+        }
 }

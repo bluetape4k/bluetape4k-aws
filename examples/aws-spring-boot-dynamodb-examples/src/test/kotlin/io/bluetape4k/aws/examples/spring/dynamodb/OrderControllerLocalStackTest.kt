@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.bluetape4k.aws.examples.spring.dynamodb
 
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -8,6 +10,8 @@ import io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
+import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.delay
@@ -37,10 +41,14 @@ import java.util.UUID
 class OrderControllerLocalStackTest {
 
     companion object {
-        @Suppress("DEPRECATION")
-        val localStack: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("dynamodb")
-        }
+        val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("dynamodb") }
+
+        private fun awsEmulator(vararg services: String): AwsEmulatorServer =
+            when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
+                "floci" -> FlociServer.Launcher.floci
+                "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
+                else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+            }
     }
 
     private fun contextRunner(): ApplicationContextRunner =
@@ -51,10 +59,10 @@ class OrderControllerLocalStackTest {
                     DynamoDbAutoConfiguration::class.java,
                 )
             )
-            .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+            .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
             .withPropertyValues(
-                "bluetape4k.aws.dynamodb.region=${localStack.regionName}",
-                "bluetape4k.aws.dynamodb.endpoint-override=${localStack.awsEndpoint}",
+                "bluetape4k.aws.dynamodb.region=${awsEmulator.regionName}",
+                "bluetape4k.aws.dynamodb.endpoint-override=${awsEmulator.awsEndpoint}",
             )
 
     @Test

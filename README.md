@@ -55,13 +55,13 @@ applications to adopt a single framework or dependency stack.
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, pluggable settings resolution, Hikari-backed Exposed `Database` creation, and default/named database registry support |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, and DynamoDB server repository plugin |
-| `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by LocalStack |
+| `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
 | `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |
 | `aws-ktor-exposed-examples` | not published | Ktor 3 `AwsExposedPlugin` example with PostgreSQL Testcontainers and route-level Exposed transactions |
 | `aws-spring-boot-dynamodb-examples` | not published | Spring Boot 4 DynamoDB repository examples for coroutine service flows |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`, presigned URLs, and optional KMS-backed client-side encryption; compiled, tested, and wired for Spring AOT |
-| `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor events, and LocalStack SNS subscriptions; compiled, tested, and wired for Spring AOT |
+| `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor events, and Floci-first SNS subscriptions; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-exposed-examples` | not published | Spring Boot 4 MVC/Exposed example backed by `AwsExposedAutoConfiguration` and PostgreSQL Testcontainers |
 
 ### Component Map
@@ -487,7 +487,7 @@ class OrderTopic(
 
 SNS can publish to an SQS subscription when the queue policy allows
 `sqs:SendMessage` from the topic ARN. The `aws-spring-boot-sqs-examples`
-module includes the LocalStack-oriented SQS/SNS fanout flow.
+module includes the emulator-backed SQS/SNS fanout flow.
 `SnsHttpMessageParser` maps SNS HTTP JSON, checks the optional
 `x-amz-sns-message-type` header, and rejects non-HTTPS or non-SNS
 `SigningCertURL` hosts, but it does not validate SNS signatures.
@@ -575,23 +575,29 @@ passes consistently.
 | Scope | Current default | Supported override | Policy |
 |---|---|---|---|
 | `bluetape4k-aws-spring-boot` | Floci | `floci`, `localstack`, `ministack` | Floci-first; use MiniStack only for comparison runs |
-| `aws-ktor-sqs-examples` | Floci | direct Floci fixture | Floci-first |
-| Java/Kotlin SDK wrapper tests | LocalStack | partial system property wiring | Keep as fallback until shared emulator helper migration |
-| Remaining Ktor/examples tests | LocalStack or direct fixture | module-specific | Migrate case-by-case after smoke proof |
+| Java/Kotlin SDK wrapper tests | Floci | `floci`, `localstack` | Floci-first; LocalStack verifies Floci coverage gaps |
+| Ktor and AWS example tests | Floci | `floci`, `localstack` where emulator-aware | Floci-first; LocalStack verifies Floci coverage gaps |
 
 Override the emulator per test task with `-Dbluetape4k.aws.emulator=...` when
 the module supports it. Do not change repository-wide defaults based on service
 count claims alone; prove the exact AWS SDK calls used by the module.
 
 ```bash
-# Existing LocalStack-backed modules
+# Core Floci-first modules
 ./gradlew :bluetape4k-aws-java:test
 ./gradlew :bluetape4k-aws-kotlin:test
-./gradlew :bluetape4k-aws-exposed:test
-
-# Floci-first modules
 ./gradlew :bluetape4k-aws-spring-boot:test
+./gradlew :bluetape4k-aws-ktor:test
+./gradlew :aws-ktor-dynamodb-examples:test
 ./gradlew :aws-ktor-sqs-examples:test
+./gradlew :aws-spring-boot-dynamodb-examples:test
+./gradlew :aws-spring-boot-s3-examples:test
+./gradlew :aws-spring-boot-sqs-examples:test
+
+# Explicit fallback for emulator coverage gaps
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=localstack
+./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=localstack
+./gradlew :bluetape4k-aws-ktor:test -Dbluetape4k.aws.emulator=localstack
 
 # Comparison-only smoke run, where supported
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack

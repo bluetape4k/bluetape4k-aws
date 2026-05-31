@@ -153,14 +153,14 @@ suspend fun putRecord(client: KinesisAsyncClient, streamName: String, data: Byte
 
 ## Test Environment
 
-Integration tests use `LocalStackServer` through the shared AWS test base.
+Integration tests default to Floci through the shared AWS test base. LocalStack
+remains available as an explicit fallback with
+`-Dbluetape4k.aws.emulator=localstack` for emulator coverage gaps.
 
 ```kotlin
 abstract class AbstractAwsTest {
     companion object {
-        val awsEmulator: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
-        }
+        val awsEmulator: AwsEmulatorServer by lazy { FlociServer.Launcher.floci }
     }
 
     fun buildS3Client(): S3Client = S3Client.builder()
@@ -175,6 +175,7 @@ Run the `bluetape4k-aws-java` module tests:
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=localstack
 ```
 
 ## Adding the Dependency

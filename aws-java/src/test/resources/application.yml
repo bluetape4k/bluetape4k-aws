@@ -3,8 +3,5 @@ aws:
     accessKey: testAccessKey
     secretKey: testSecretKey
     dynamodb:
-        protocol: http
-        host: localhost
-        port: ${testcontainers.localstack.port}
-        endpoint: ${aws.dynamodb.protocol}://${aws.dynamodb.host}:${aws.dynamodb.port}
+        endpoint: http://localhost:4566
         tablePrefix: local-

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -6,6 +8,9 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.sqs.SqsClientFactory
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
+import io.bluetape4k.testcontainers.aws.FlociServer
+import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
@@ -32,16 +37,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeLocalStackTest {
 
-    @Suppress("DEPRECATION")
-    private val localStack: io.bluetape4k.testcontainers.aws.LocalStackServer by lazy {
-        io.bluetape4k.testcontainers.aws.LocalStackServer.Launcher.getLocalStack("sqs")
-    }
+    private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("sqs") }
 
     private val sqs: SqsAsyncClient by lazy {
         SqsClientFactory.Async.create(
-            endpointOverride = localStack.awsEndpoint,
-            region = Region.of(localStack.regionName),
-            credentialsProvider = localStack.getCredentialProvider(),
+            endpointOverride = awsEmulator.awsEndpoint,
+            region = Region.of(awsEmulator.regionName),
+            credentialsProvider = awsEmulator.getCredentialProvider(),
         )
     }
 
@@ -246,4 +248,11 @@ class SqsConsumerRuntimeLocalStackTest {
             it.receiptHandle(message.receiptHandle())
         }.await()
     }
+
+    private fun awsEmulator(vararg services: String): AwsEmulatorServer =
+        when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
+            "floci" -> FlociServer.Launcher.floci
+            "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
+            else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+        }
 }

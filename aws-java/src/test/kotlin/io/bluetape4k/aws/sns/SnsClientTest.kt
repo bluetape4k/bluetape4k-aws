@@ -85,6 +85,8 @@ class SnsClientTest: AbstractSnsTest() {
     @Test
     @Order(5)
     fun `check opt out`() {
+        assumeFlociSupports("SNS CheckIfPhoneNumberIsOptedOut")
+
         val result = client.checkIfPhoneNumberIsOptedOut {
             it.phoneNumber(phoneNumber)
         }

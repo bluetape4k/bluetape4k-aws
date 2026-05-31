@@ -48,13 +48,13 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, pluggable settings resolver, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, DynamoDB, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin |
-| `aws-ktor-dynamodb-examples` | 배포 안 함 | LocalStack 기반 Ktor 3 DynamoDB server repository 예제 |
+| `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
 | `aws-ktor-sqs-examples` | 배포 안 함 | Floci 기반 Ktor 3 SQS consumer/runtime 예제. Manual ack/nack, retry-once redelivery, interceptor, observer event 포함 |
 | `aws-ktor-exposed-examples` | 배포 안 함 | PostgreSQL Testcontainers와 route-level Exposed transaction을 사용하는 Ktor 3 `AwsExposedPlugin` 예제 |
 | `aws-spring-boot-dynamodb-examples` | 배포 안 함 | Coroutine service flow용 Spring Boot 4 DynamoDB repository 예제 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`, presigned URL, 선택적 KMS 기반 client-side encryption을 다루는 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
-| `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor event, LocalStack SNS subscription fanout을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
+| `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor event, Floci-first SNS subscription fanout을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 | `aws-spring-boot-exposed-examples` | 배포 안 함 | `AwsExposedAutoConfiguration`과 PostgreSQL Testcontainers를 사용하는 Spring Boot 4 MVC/Exposed 예제 |
 
 ### 구성요소 맵
@@ -481,7 +481,7 @@ class OrderTopic(
 ```
 
 SNS 는 queue policy 가 topic ARN 의 `sqs:SendMessage` 를 허용하면 SQS subscription 으로
-fanout 할 수 있습니다. `aws-spring-boot-sqs-examples` 모듈은 LocalStack 중심 SQS/SNS
+fanout 할 수 있습니다. `aws-spring-boot-sqs-examples` 모듈은 emulator 기반 SQS/SNS
 fanout 흐름을 포함합니다. `SnsHttpMessageParser` 는 SNS HTTP JSON 과 선택적
 `x-amz-sns-message-type` header 를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
 `SigningCertURL` 은 거부합니다. 다만 signature 검증은 수행하지 않습니다. Notification
@@ -568,23 +568,29 @@ smoke matrix가 반복적으로 통과하기 전까지 coverage gap 검증 후�
 | 범위 | 현재 기본값 | 지원 override | 정책 |
 |---|---|---|---|
 | `bluetape4k-aws-spring-boot` | Floci | `floci`, `localstack`, `ministack` | Floci-first; MiniStack은 비교 실행 전용 |
-| `aws-ktor-sqs-examples` | Floci | 직접 Floci fixture | Floci-first |
-| Java/Kotlin SDK wrapper tests | LocalStack | 일부 system property wiring | 공통 emulator helper 전환 전까지 fallback 유지 |
-| 나머지 Ktor/examples tests | LocalStack 또는 직접 fixture | 모듈별 | smoke proof 후 case-by-case 전환 |
+| Java/Kotlin SDK wrapper tests | Floci | `floci`, `localstack` | Floci-first; Floci coverage gap은 LocalStack으로 검증 |
+| Ktor 및 AWS example tests | Floci | emulator-aware 모듈은 `floci`, `localstack` | Floci-first; Floci coverage gap은 LocalStack으로 검증 |
 
 모듈이 지원하는 경우 `-Dbluetape4k.aws.emulator=...` 로 전환할 수 있습니다. 지원
 서비스 수 주장만으로 repository-wide 기본값을 바꾸지 말고, 해당 모듈이 실제 사용하는
 AWS SDK 호출을 기준으로 검증해야 합니다.
 
 ```bash
-# 기존 LocalStack 기반 모듈
+# 핵심 Floci-first 모듈
 ./gradlew :bluetape4k-aws-java:test
 ./gradlew :bluetape4k-aws-kotlin:test
-./gradlew :bluetape4k-aws-exposed:test
-
-# Floci-first 모듈
 ./gradlew :bluetape4k-aws-spring-boot:test
+./gradlew :bluetape4k-aws-ktor:test
+./gradlew :aws-ktor-dynamodb-examples:test
 ./gradlew :aws-ktor-sqs-examples:test
+./gradlew :aws-spring-boot-dynamodb-examples:test
+./gradlew :aws-spring-boot-s3-examples:test
+./gradlew :aws-spring-boot-sqs-examples:test
+
+# emulator coverage gap 명시 fallback
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=localstack
+./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=localstack
+./gradlew :bluetape4k-aws-ktor:test -Dbluetape4k.aws.emulator=localstack
 
 # 지원 모듈의 비교 전용 smoke 실행
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack

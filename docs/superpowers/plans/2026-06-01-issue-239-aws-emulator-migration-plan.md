@@ -21,10 +21,10 @@ adoption signal must be the AWS SDK calls used by this repository.
 |---|---|---|---|
 | `bluetape4k-aws-spring-boot` | Floci | `floci`, `localstack`, `ministack` through `AwsSpringBootTestEmulator` | Use as the first smoke matrix target |
 | `aws-ktor-sqs-examples` | Floci | Direct Floci fixture | Keep Floci-first; factor only if reuse grows |
-| `bluetape4k-aws-java` | LocalStack | Gradle property exists, but tests use direct LocalStack base | Keep fallback until a shared emulator helper is introduced |
-| `bluetape4k-aws-kotlin` | LocalStack | Gradle property exists, but tests use direct LocalStack base | Keep fallback until a shared emulator helper is introduced |
-| `bluetape4k-aws-ktor` | Mixed direct fixtures | Module-specific | Migrate case-by-case after smoke proof |
-| Example modules | Mostly LocalStack, one Floci fixture | Module-specific | Do not churn examples before core smoke proof |
+| `bluetape4k-aws-java` | Floci | `floci`, `localstack` through the shared AWS test base | LocalStack covers Floci API gaps |
+| `bluetape4k-aws-kotlin` | Floci | `floci`, `localstack` through the shared AWS test base | LocalStack covers Floci API gaps |
+| `bluetape4k-aws-ktor` | Floci | `floci`, `localstack` for emulator-aware tests | LocalStack covers Floci API gaps |
+| Example modules | Floci where AWS-emulator-aware | `floci`, `localstack` for migrated examples | Continue avoiding churn in non-AWS-emulator examples |
 
 ## Smoke Matrix
 
@@ -45,8 +45,7 @@ Run Testcontainers-backed checks serially.
 2. Verify `bluetape4k-aws-spring-boot` with default Floci.
 3. Run the same module with MiniStack as comparison evidence.
 4. Keep LocalStack fallback available until gaps are documented and resolved.
-5. Only after repeated green smoke runs, consider migrating Java/Kotlin SDK base
-   tests to a shared emulator helper.
+5. Continue treating LocalStack as an explicit fallback for Floci API gaps.
 
 ## Verification Evidence
 

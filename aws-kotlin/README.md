@@ -244,16 +244,14 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 
 ## Test Environment
 
-Integration tests use LocalStack through Testcontainers. The Gradle test task still passes
-`-Dbluetape4k.aws.emulator=localstack` for consistency with sibling modules, but this module's
-test base creates `LocalStackServer` directly.
+Integration tests default to Floci through Testcontainers. LocalStack remains
+available as an explicit fallback with `-Dbluetape4k.aws.emulator=localstack`
+for emulator coverage gaps.
 
 ```kotlin
 abstract class AbstractAwsTest {
     companion object {
-        val awsEmulator: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
-        }
+        val awsEmulator: AwsEmulatorServer by lazy { FlociServer.Launcher.floci }
     }
 
     suspend fun buildSqsClient(): SqsClient = SqsClient {
@@ -271,6 +269,7 @@ Run module tests:
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test
+./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=localstack
 ```
 
 ## Adding the Dependency

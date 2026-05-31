@@ -12,6 +12,8 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
+import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.delay
@@ -27,6 +29,14 @@ class SqsSnsExampleLocalStackTest {
         private val localStack: LocalStackServer by lazy {
             LocalStackServer.Launcher.getLocalStack("sns", "sqs")
         }
+
+        private val awsEmulator: AwsEmulatorServer by lazy {
+            when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
+                "floci" -> FlociServer.Launcher.floci
+                "localstack" -> localStack
+                else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+            }
+        }
     }
 
     private fun contextRunner(vararg properties: String): ApplicationContextRunner =
@@ -40,17 +50,17 @@ class SqsSnsExampleLocalStackTest {
                     JacksonAutoConfiguration::class.java,
                 )
             )
-            .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+            .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
             .withPropertyValues(
-                "bluetape4k.aws.sqs.region=${localStack.regionName}",
-                "bluetape4k.aws.sqs.endpoint-override=${localStack.awsEndpoint}",
+                "bluetape4k.aws.sqs.region=${awsEmulator.regionName}",
+                "bluetape4k.aws.sqs.endpoint-override=${awsEmulator.awsEndpoint}",
                 "bluetape4k.aws.sqs.listener.max-messages=1",
                 "bluetape4k.aws.sqs.listener.wait-time-seconds=1",
                 "bluetape4k.aws.sqs.listener.stop-timeout-millis=5000",
                 "bluetape4k.aws.sqs.listener.retry.max-attempts=2",
                 "bluetape4k.aws.sqs.listener.retry.initial-backoff=PT0S",
-                "bluetape4k.aws.sns.region=${localStack.regionName}",
-                "bluetape4k.aws.sns.endpoint-override=${localStack.awsEndpoint}",
+                "bluetape4k.aws.sns.region=${awsEmulator.regionName}",
+                "bluetape4k.aws.sns.endpoint-override=${awsEmulator.awsEndpoint}",
                 *properties,
             )
 

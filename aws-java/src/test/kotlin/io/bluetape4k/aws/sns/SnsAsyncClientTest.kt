@@ -87,6 +87,8 @@ class SnsAsyncClientTest: AbstractSnsTest() {
     @Test
     @Order(5)
     fun `check opt out`() = runSuspendIO {
+        assumeFlociSupports("SNS CheckIfPhoneNumberIsOptedOut")
+
         val result = asyncClient.checkIfPhoneNumberIsOptedOut {
             it.phoneNumber(phoneNumber)
         }.await()
