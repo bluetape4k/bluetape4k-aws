@@ -560,20 +560,34 @@ suspend fun publishMetric(namespace: String, value: Double) {
 
 ## 테스트 환경
 
-통합 테스트는 Testcontainers 기반 emulator를 사용합니다. Java/Kotlin SDK wrapper
-테스트와 대부분의 예제 모듈은 **LocalStack** 을 기본값으로 사용하고,
-`aws-spring-boot` 및 `aws-ktor-sqs-examples` 는 **Floci** 를 기본값으로 사용합니다.
-모듈이 둘 다 지원하는 경우 `-Dbluetape4k.aws.emulator=...` 로 전환할 수 있습니다.
+통합 테스트는 Testcontainers 기반 AWS emulator를 사용합니다. 전환 정책은
+**Floci-first** 입니다. 새로 작성하거나 마이그레이션하는 emulator-aware 테스트는
+Floci를 우선하고, LocalStack은 명시적 fallback으로 유지하며, MiniStack은 동일한 SDK
+smoke matrix가 반복적으로 통과하기 전까지 coverage gap 검증 후보로만 둡니다.
+
+| 범위 | 현재 기본값 | 지원 override | 정책 |
+|---|---|---|---|
+| `bluetape4k-aws-spring-boot` | Floci | `floci`, `localstack`, `ministack` | Floci-first; MiniStack은 비교 실행 전용 |
+| `aws-ktor-sqs-examples` | Floci | 직접 Floci fixture | Floci-first |
+| Java/Kotlin SDK wrapper tests | LocalStack | 일부 system property wiring | 공통 emulator helper 전환 전까지 fallback 유지 |
+| 나머지 Ktor/examples tests | LocalStack 또는 직접 fixture | 모듈별 | smoke proof 후 case-by-case 전환 |
+
+모듈이 지원하는 경우 `-Dbluetape4k.aws.emulator=...` 로 전환할 수 있습니다. 지원
+서비스 수 주장만으로 repository-wide 기본값을 바꾸지 말고, 해당 모듈이 실제 사용하는
+AWS SDK 호출을 기준으로 검증해야 합니다.
 
 ```bash
-# LocalStack 기반 모듈
+# 기존 LocalStack 기반 모듈
 ./gradlew :bluetape4k-aws-java:test
 ./gradlew :bluetape4k-aws-kotlin:test
 ./gradlew :bluetape4k-aws-exposed:test
 
-# Floci 기본값 모듈
+# Floci-first 모듈
 ./gradlew :bluetape4k-aws-spring-boot:test
 ./gradlew :aws-ktor-sqs-examples:test
+
+# 지원 모듈의 비교 전용 smoke 실행
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ```
 
 ---

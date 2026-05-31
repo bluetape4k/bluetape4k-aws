@@ -604,5 +604,6 @@ Ciphertext 문자열은 `b4k-kms:v1:` prefix 를 사용한다. 잘못된 ciphert
 Floci 이며 `-Dbluetape4k.aws.emulator=...` 로 전환할 수 있다:
 
 ```bash
-./gradlew :aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ```

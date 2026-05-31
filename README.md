@@ -566,20 +566,35 @@ suspend fun publishMetric(namespace: String, value: Double) {
 
 ## Test Environment
 
-Integration tests use Testcontainers-backed emulators. Java/Kotlin SDK wrapper
-tests and most example modules default to **LocalStack**; `aws-spring-boot` and
-`aws-ktor-sqs-examples` default to **Floci**. Override the emulator per test task
-with `-Dbluetape4k.aws.emulator=...` when the module supports both.
+Integration tests use Testcontainers-backed AWS emulators. The migration policy
+is **Floci-first**: new or migrated emulator-aware tests should prefer Floci,
+keep LocalStack as an explicit fallback, and treat MiniStack as an
+evaluation-only candidate for coverage gaps until the same SDK smoke matrix
+passes consistently.
+
+| Scope | Current default | Supported override | Policy |
+|---|---|---|---|
+| `bluetape4k-aws-spring-boot` | Floci | `floci`, `localstack`, `ministack` | Floci-first; use MiniStack only for comparison runs |
+| `aws-ktor-sqs-examples` | Floci | direct Floci fixture | Floci-first |
+| Java/Kotlin SDK wrapper tests | LocalStack | partial system property wiring | Keep as fallback until shared emulator helper migration |
+| Remaining Ktor/examples tests | LocalStack or direct fixture | module-specific | Migrate case-by-case after smoke proof |
+
+Override the emulator per test task with `-Dbluetape4k.aws.emulator=...` when
+the module supports it. Do not change repository-wide defaults based on service
+count claims alone; prove the exact AWS SDK calls used by the module.
 
 ```bash
-# LocalStack-backed modules
+# Existing LocalStack-backed modules
 ./gradlew :bluetape4k-aws-java:test
 ./gradlew :bluetape4k-aws-kotlin:test
 ./gradlew :bluetape4k-aws-exposed:test
 
-# Floci-backed defaults
+# Floci-first modules
 ./gradlew :bluetape4k-aws-spring-boot:test
 ./gradlew :aws-ktor-sqs-examples:test
+
+# Comparison-only smoke run, where supported
+./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ```
 
 ---
