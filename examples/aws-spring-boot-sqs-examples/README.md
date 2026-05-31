@@ -110,6 +110,7 @@ queue with `RedrivePolicy`.
 ## Test
 
 ```bash
+./gradlew :aws-spring-boot-sqs-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test -Dbluetape4k.aws.emulator=localstack
 ```
 

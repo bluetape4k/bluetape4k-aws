@@ -109,6 +109,7 @@ retry listener는 첫 처리에서 실패하고 두 번째 in-process attempt에
 ## 테스트
 
 ```bash
+./gradlew :aws-spring-boot-sqs-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test -Dbluetape4k.aws.emulator=localstack
 ```
 

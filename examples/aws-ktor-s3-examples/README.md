@@ -3,7 +3,7 @@
 English | [한국어](./README.ko.md)
 
 Ktor 3 examples for the `aws-ktor` S3 REST client. The module includes a
-LocalStack-oriented client helper and server routes that expose upload, download,
+Emulator-oriented client helper and server routes that expose upload, download,
 stream download, object listing, delete, presigned URL, content-type detection,
 and S3-backed config object endpoints.
 

@@ -17,8 +17,8 @@ class AwsCredentialsProviderConfig {
     @Primary
     fun defaultCredentials(
         @Value($$"${aws.accessKey:accessKey}") accessKey: String,
-        @Value($$"${aws.securityKey:securityKey") securityKey: String,
+        @Value($$"${aws.secretKey:secretKey}") secretKey: String,
     ): AwsCredentialsProvider {
-        return staticCredentialsProviderOf(accessKey, securityKey)
+        return staticCredentialsProviderOf(accessKey, secretKey)
     }
 }

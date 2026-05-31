@@ -241,15 +241,13 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 
 ## 테스트 환경
 
-통합 테스트는 Testcontainers 기반 LocalStack을 사용합니다. Gradle test 태스크는 sibling 모듈과의 일관성을 위해
-`-Dbluetape4k.aws.emulator=localstack` 값을 전달하지만, 이 모듈의 테스트 베이스는 `LocalStackServer`를 직접 생성합니다.
+통합 테스트는 Testcontainers 기반 Floci를 기본 emulator로 사용합니다. Floci coverage
+gap은 `-Dbluetape4k.aws.emulator=localstack` 로 명시 실행해 LocalStack에서 검증합니다.
 
 ```kotlin
 abstract class AbstractAwsTest {
     companion object {
-        val awsEmulator: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
-        }
+        val awsEmulator: AwsEmulatorServer by lazy { FlociServer.Launcher.floci }
     }
 
     suspend fun buildSqsClient(): SqsClient = SqsClient {
@@ -267,6 +265,7 @@ abstract class AbstractAwsTest {
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test
+./gradlew :bluetape4k-aws-kotlin:test -Dbluetape4k.aws.emulator=localstack
 ```
 
 ## 설치

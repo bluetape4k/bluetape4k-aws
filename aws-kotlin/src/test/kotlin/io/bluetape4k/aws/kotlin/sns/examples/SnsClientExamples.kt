@@ -121,6 +121,8 @@ class SnsClientExamples: AbstractKotlinSnsTest() {
     @Test
     @Order(5)
     fun `check opt out status for phone number`() = runSuspendIO {
+        assumeFlociSupports("SNS CheckIfPhoneNumberIsOptedOut")
+
         withSnsClient(
             localStackServer.endpointUrl,
             localStackServer.region,

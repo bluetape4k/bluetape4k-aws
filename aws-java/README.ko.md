@@ -151,14 +151,13 @@ suspend fun putRecord(client: KinesisAsyncClient, streamName: String, data: Byte
 
 ## 테스트 환경
 
-공유 AWS 테스트 베이스에서 `LocalStackServer`를 사용해 통합 테스트를 실행합니다.
+공유 AWS 테스트 베이스에서 Floci를 기본 emulator로 사용합니다. Floci coverage gap은
+`-Dbluetape4k.aws.emulator=localstack` 로 명시 실행해 LocalStack에서 검증합니다.
 
 ```kotlin
 abstract class AbstractAwsTest {
     companion object {
-        val awsEmulator: LocalStackServer by lazy {
-            LocalStackServer.Launcher.getLocalStack("s3", "sqs", "dynamodb")
-        }
+        val awsEmulator: AwsEmulatorServer by lazy { FlociServer.Launcher.floci }
     }
 
     fun buildS3Client(): S3Client = S3Client.builder()
@@ -173,6 +172,7 @@ abstract class AbstractAwsTest {
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test
+./gradlew :bluetape4k-aws-java:test -Dbluetape4k.aws.emulator=localstack
 ```
 
 ## 설치

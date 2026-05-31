@@ -107,6 +107,8 @@ class KmsAsyncClientTest: AbstractKmsTest() {
     @Test
     @Order(5)
     fun `키 비활성화`() = runSuspendIO {
+        assumeFlociSupports("KMS DisableKey")
+
         val request = disableKeyRequestOf(keyId)
 
         val response = asyncClient.disableKey(request).await()
@@ -116,6 +118,8 @@ class KmsAsyncClientTest: AbstractKmsTest() {
     @Test
     @Order(6)
     fun `키 활성화`() = runSuspendIO {
+        assumeFlociSupports("KMS EnableKey")
+
         val request = enableKeyRequestOf(keyId)
         val response = asyncClient.enableKey(request).await()
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
@@ -124,6 +128,8 @@ class KmsAsyncClientTest: AbstractKmsTest() {
     @Test
     @Order(7)
     fun `Grant 생성`() = runSuspendIO {
+        assumeFlociSupports("KMS CreateGrant")
+
         val request = createGrantRequestOf(
             keyId = keyId,
             granteePrincipal = granteePrincipal,
@@ -139,6 +145,8 @@ class KmsAsyncClientTest: AbstractKmsTest() {
     @Test
     @Order(8)
     fun `Grant 목록 조회`() = runSuspendIO {
+        assumeFlociSupports("KMS ListGrants")
+
         val listResp = asyncClient.listGrants {
             it.keyId(keyId)
             it.limit(15)
@@ -157,6 +165,8 @@ class KmsAsyncClientTest: AbstractKmsTest() {
     @Test
     @Order(9)
     fun `Grant 취소`() = runSuspendIO {
+        assumeFlociSupports("KMS RevokeGrant")
+
         val request = revokeGrantRequestOf(keyId, grantId)
         val response = asyncClient.revokeGrant(request).await()
 

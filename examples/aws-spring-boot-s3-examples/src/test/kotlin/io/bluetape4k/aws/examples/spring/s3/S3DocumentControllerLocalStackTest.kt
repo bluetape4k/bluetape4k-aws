@@ -12,11 +12,11 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
+import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -28,20 +28,17 @@ import java.util.UUID
 class S3DocumentControllerLocalStackTest {
 
     companion object {
-        private val localStack: LocalStackServer = LocalStackServer().withServices("s3")
+        @Suppress("DEPRECATION")
+        private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("s3") }
+
         private val bucketName: String = "spring-example-${UUID.randomUUID()}"
 
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            localStack.start()
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            localStack.stop()
-        }
+        private fun awsEmulator(vararg services: String): AwsEmulatorServer =
+            when (val emulator = System.getProperty("bluetape4k.aws.emulator", "floci").trim().lowercase()) {
+                "floci" -> FlociServer.Launcher.floci
+                "localstack" -> LocalStackServer.Launcher.getLocalStack(*services)
+                else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+            }
     }
 
     private fun contextRunner(): ApplicationContextRunner = ApplicationContextRunner()
@@ -51,11 +48,11 @@ class S3DocumentControllerLocalStackTest {
                 S3AutoConfiguration::class.java,
             )
         )
-        .withBean(AwsCredentialsProvider::class.java, { localStack.getCredentialProvider() })
+        .withBean(AwsCredentialsProvider::class.java, { awsEmulator.getCredentialProvider() })
         .withBean(KmsOperations::class.java, { FixedS3KmsOperations })
         .withPropertyValues(
-            "bluetape4k.aws.s3.region=${localStack.regionName}",
-            "bluetape4k.aws.s3.endpoint-override=${localStack.awsEndpoint}",
+            "bluetape4k.aws.s3.region=${awsEmulator.regionName}",
+            "bluetape4k.aws.s3.endpoint-override=${awsEmulator.awsEndpoint}",
             "bluetape4k.aws.s3.path-style-access-enabled=true",
             "bluetape4k.aws.s3.presign.duration=PT10M",
             "bluetape4k.aws.s3.client-side-encryption.enabled=true",
@@ -63,7 +60,7 @@ class S3DocumentControllerLocalStackTest {
         )
 
     @Test
-    fun `controller uploads downloads lists and presigns through LocalStack S3`() {
+    fun `controller uploads downloads lists and presigns through AWS emulator S3`() {
         contextRunner().run { context ->
             val s3Client = context.getBean(S3Client::class.java)
             s3Client.createBucket { it.bucket(bucketName) }

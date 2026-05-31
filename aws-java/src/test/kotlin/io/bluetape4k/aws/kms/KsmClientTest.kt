@@ -105,6 +105,8 @@ class KsmClientTest: AbstractKmsTest() {
     @Test
     @Order(5)
     fun `키 비활성화`() {
+        assumeFlociSupports("KMS DisableKey")
+
         val request = disableKeyRequestOf(keyId)
 
         val response = client.disableKey(request)
@@ -114,6 +116,8 @@ class KsmClientTest: AbstractKmsTest() {
     @Test
     @Order(6)
     fun `키 활성화`() {
+        assumeFlociSupports("KMS EnableKey")
+
         val request = enableKeyRequestOf(keyId)
         val response = client.enableKey(request)
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
@@ -122,6 +126,8 @@ class KsmClientTest: AbstractKmsTest() {
     @Test
     @Order(7)
     fun `Grant 생성`() {
+        assumeFlociSupports("KMS CreateGrant")
+
         val request = createGrantRequestOf(
             keyId = keyId,
             granteePrincipal = this.granteePrincipal,
@@ -137,6 +143,8 @@ class KsmClientTest: AbstractKmsTest() {
     @Test
     @Order(8)
     fun `Grant 목록 조회`() {
+        assumeFlociSupports("KMS ListGrants")
+
         val listResp = client.listGrants {
             it.keyId(keyId)
             it.limit(15)
@@ -154,6 +162,8 @@ class KsmClientTest: AbstractKmsTest() {
     @Test
     @Order(9)
     fun `Grant 취소`() {
+        assumeFlociSupports("KMS RevokeGrant")
+
         val request = revokeGrantRequestOf(keyId, grantId)
         val response = client.revokeGrant(request)
 

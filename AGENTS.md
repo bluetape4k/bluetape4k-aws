@@ -16,16 +16,16 @@ Spring Boot 4, and Ktor 3.
 | `aws-spring-boot/` | WIP | Spring Boot 4 auto-configuration without awspring |
 | `aws-ktor/` | WIP | Ktor 3 client/server integration |
 | `bom/` | stable | `bluetape4k-aws-bom` consumer BOM |
-| `examples/aws-ktor-s3-examples/` | example | LocalStack-oriented Ktor S3 examples; not published |
+| `examples/aws-ktor-s3-examples/` | example | Emulator-oriented Ktor S3 examples; not published |
 | `examples/aws-spring-boot-s3-examples/` | example | Spring Boot 4 S3 WebFlux examples with AOT tasks; not published |
 | `examples/aws-spring-boot-sqs-examples/` | example | Spring Boot 4 SQS/SNS fanout examples with AOT tasks; not published |
 
 AWS emulator migration policy is Floci-first. New or migrated emulator-aware
 tests should prefer `-Dbluetape4k.aws.emulator=floci`, keep `localstack` as an
 explicit fallback, and use `ministack` only as an evaluation/comparison backend
-until the target SDK smoke matrix passes repeatedly. Existing Java/Kotlin SDK
-wrapper tests may still default to LocalStack until they share the common
-emulator helper.
+until the target SDK smoke matrix passes repeatedly. Java/Kotlin SDK wrapper
+tests default to Floci through their shared AWS test bases; LocalStack remains
+the explicit fallback for Floci API coverage gaps.
 
 Root README visual assets live under `docs/assets/` and should be shared by
 `README.md` and `README.ko.md` through the same relative path.

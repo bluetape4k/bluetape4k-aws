@@ -125,6 +125,8 @@ class KmsClientTest: AbstractKmsTest() {
     @Test
     @Order(5)
     fun `키 비활성화`() = runSuspendIO {
+        assumeFlociSupports("KMS DisableKey")
+
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -140,6 +142,8 @@ class KmsClientTest: AbstractKmsTest() {
     @Test
     @Order(6)
     fun `키 활성화`() = runSuspendIO {
+        assumeFlociSupports("KMS EnableKey")
+
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -155,6 +159,8 @@ class KmsClientTest: AbstractKmsTest() {
     @Test
     @Order(7)
     fun `Grant 생성`() = runSuspendIO {
+        assumeFlociSupports("KMS CreateGrant")
+
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -174,6 +180,8 @@ class KmsClientTest: AbstractKmsTest() {
     @Test
     @Order(8)
     fun `Grant 목록 조회`() = runSuspendIO {
+        assumeFlociSupports("KMS ListGrants")
+
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
@@ -196,6 +204,8 @@ class KmsClientTest: AbstractKmsTest() {
     @Test
     @Order(9)
     fun `Grant 취소`() = runSuspendIO {
+        assumeFlociSupports("KMS RevokeGrant")
+
         withKmsClient(
             localStackServer.endpointUrl,
             localStackServer.region,
