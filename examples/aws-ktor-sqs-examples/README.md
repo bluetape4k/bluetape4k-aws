@@ -5,7 +5,9 @@ English | [한국어](./README.ko.md)
 Ktor 3 examples for the `aws-ktor` SQS consumer plugin. The module installs
 `SqsConsumer`, sends messages through `SqsAsyncClient`, records consumed
 messages in memory, and exposes queue management routes. It also demonstrates
-manual ack/nack, retry-once redelivery, interceptors, and observer events.
+manual ack/nack, retry-once redelivery, interceptors, and observer events. It
+uses `bluetape4k-ktor-core` for shared route parameter validation and
+`bluetape4k-ktor-testing` for common Ktor response assertions.
 
 ## Architecture
 

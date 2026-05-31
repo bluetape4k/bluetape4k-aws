@@ -5,7 +5,9 @@
 `aws-ktor` SQS consumer 플러그인을 사용하는 Ktor 3 예제입니다.
 `SqsConsumer`를 설치하고, `SqsAsyncClient`로 메시지를 전송하며, 수신한 메시지를
 메모리에 기록하고 queue 관리 route를 제공합니다. Manual ack/nack, retry-once
-redelivery, interceptor, observer event도 함께 보여줍니다.
+redelivery, interceptor, observer event도 함께 보여줍니다. Route parameter 검증에는
+`bluetape4k-ktor-core`, 공통 Ktor response assertion에는
+`bluetape4k-ktor-testing`을 사용합니다.
 
 ## 아키텍처
 

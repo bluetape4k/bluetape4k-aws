@@ -18,18 +18,20 @@ dependencies {
     implementation(platform(libs.exposed.bom))
     implementation(platform(libs.bluetape4k.exposed.bom))
     implementation(libs.bluetape4k.exposed.jdbc)
+    implementation(libs.bluetape4k.ktor.core)
     implementation(libs.exposed.jdbc)
+    // Direct Ktor artifacts remain intentional: the example runs on CIO and uses Jackson DTO binding.
     implementation(libs.ktor.serialization.jackson)
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.content.negotiation)
-    implementation(libs.ktor.server.core)
     implementation(libs.kotlinx.coroutines.core)
 
     runtimeOnly(libs.postgresql.driver)
 
     testImplementation(libs.bluetape4k.junit5)
+    testImplementation(libs.bluetape4k.ktor.testing)
     testImplementation(libs.bluetape4k.testcontainers)
+    // Jackson remains intentional because the example DTOs are Jackson-serialized Exposed records.
     testImplementation(libs.ktor.client.content.negotiation)
-    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.testcontainers.postgresql)
 }

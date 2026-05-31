@@ -11,17 +11,19 @@ dependencies {
     // bluetape4k artifacts
     api(libs.bluetape4k.io)
     api(libs.bluetape4k.coroutines)
+    api(libs.bluetape4k.ktor.core)
     compileOnly(libs.bluetape4k.jackson3)
     testImplementation(libs.bluetape4k.junit5)
+    testImplementation(libs.bluetape4k.ktor.testing)
     testImplementation(libs.bluetape4k.testcontainers)
     testImplementation(project(":bluetape4k-aws-exposed"))
 
-    // Ktor client
+    // Ktor client and optional runtime integrations. Keep direct dependencies
+    // where aws-ktor exposes Ktor public types or needs a concrete engine.
     api(libs.aws2.auth)
     compileOnly(libs.aws2.sqs)
     compileOnly(libs.aws.kotlin.dynamodb)
     api(libs.ktor.client.core)
-    compileOnly(libs.ktor.server.core)
     compileOnly(libs.ktor.client.cio)
     compileOnly(libs.ktor.client.content.negotiation)
     compileOnly(libs.ktor.serialization.jackson)
@@ -35,8 +37,6 @@ dependencies {
     testImplementation(libs.aws2.sqs)
     testImplementation(libs.aws.kotlin.dynamodb)
     testImplementation(libs.h2.v2)
-    testImplementation(libs.ktor.client.mock)
-    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
     testImplementation(libs.awaitility.kotlin)

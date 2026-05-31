@@ -2,10 +2,12 @@
 
 [English](./README.md) | 한국어
 
-`aws-ktor` S3 REST client를 사용하는 Ktor 3 예제입니다. LocalStack용 client helper와
+`aws-ktor` S3 REST client를 사용하는 Ktor 3 예제입니다. Emulator 지향 client helper와
 업로드, 다운로드, streaming 다운로드, 객체 목록, 삭제, presigned URL 엔드포인트를 제공하는
 server route 예제를 포함합니다. Content-type 감지 업로드와 S3 기반 config object
-route도 함께 제공합니다.
+route도 함께 제공합니다. 테스트는 공통 Ktor response assertion에
+`bluetape4k-ktor-testing`을 사용하고, S3 request 검증을 위해 Ktor `MockEngine` 동작은
+명시적으로 유지합니다.
 
 ## 아키텍처
 

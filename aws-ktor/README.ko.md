@@ -36,9 +36,10 @@ plugin을 제공합니다.
 
 ## 의존성
 
-`aws-ktor` 는 Ktor client core와 AWS auth API를 노출하지만 Ktor server, Ktor
-engine, AWS service client는 가능한 한 `compileOnly` 로 둡니다. 애플리케이션은 실제
-실행에 사용할 runtime 구성요소를 직접 추가해야 합니다.
+`aws-ktor` 는 공통 Ktor baseline에 공유 `bluetape4k-ktor-core` helper를 사용하고,
+Ktor client core와 AWS auth API를 노출합니다. Ktor engine, Jackson content
+negotiation, AWS service client는 runtime 선택이 중요하므로 애플리케이션 의존성으로
+명시합니다.
 
 ```kotlin
 dependencies {

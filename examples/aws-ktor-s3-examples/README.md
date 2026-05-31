@@ -5,7 +5,9 @@ English | [한국어](./README.ko.md)
 Ktor 3 examples for the `aws-ktor` S3 REST client. The module includes a
 Emulator-oriented client helper and server routes that expose upload, download,
 stream download, object listing, delete, presigned URL, content-type detection,
-and S3-backed config object endpoints.
+and S3-backed config object endpoints. Tests use `bluetape4k-ktor-testing` for
+common Ktor response assertions while keeping the Ktor `MockEngine` behavior
+explicit for S3 request verification.
 
 ## Architecture
 

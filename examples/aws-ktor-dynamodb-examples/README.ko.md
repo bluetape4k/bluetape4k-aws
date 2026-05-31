@@ -4,7 +4,9 @@
 
 `aws-ktor` DynamoDB 플러그인을 사용하는 Ktor 3 예제입니다.
 `DynamoDbKtorPlugin`을 설치하고 `orders` 테이블을 자동 생성한 뒤,
-coroutine DynamoDB repository 기반 CRUD route를 제공합니다.
+coroutine DynamoDB repository 기반 CRUD route를 제공합니다. Route parameter
+검증에는 `bluetape4k-ktor-core`, 공통 Ktor response assertion에는
+`bluetape4k-ktor-testing`을 사용합니다.
 
 ## 아키텍처
 
@@ -37,7 +39,7 @@ data class Order(
 ## 설정
 
 `dynamoDbExampleModule`에 endpoint, region, credentials provider를 전달해
-설정합니다. 테스트는 LocalStack 값을 전달합니다.
+설정합니다. 테스트는 선택된 AWS emulator 값을 전달합니다.
 
 ```kotlin
 application {

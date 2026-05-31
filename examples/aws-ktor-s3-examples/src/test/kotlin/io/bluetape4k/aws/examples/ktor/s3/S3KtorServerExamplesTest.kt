@@ -3,6 +3,7 @@ package io.bluetape4k.aws.examples.ktor.s3
 import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
 import io.bluetape4k.aws.ktor.s3.S3KtorClient
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -33,22 +34,22 @@ class S3KtorServerExamplesTest {
             client.put("/s3/objects/docs/hello.txt") {
                 headers.append(HttpHeaders.ContentType, "text/plain")
                 setBody("hello ktor s3")
-            }.status shouldBeEqualTo HttpStatusCode.OK
+            } shouldHaveStatus HttpStatusCode.OK
 
             client.get("/s3/objects/docs/hello.txt").bodyAsText() shouldBeEqualTo "hello ktor s3"
             client.get("/s3/objects/docs/hello.txt/stream").bodyAsText() shouldBeEqualTo "hello ktor s3"
-            client.get("/s3/objects?prefix=docs/").status shouldBeEqualTo HttpStatusCode.OK
+            client.get("/s3/objects?prefix=docs/") shouldHaveStatus HttpStatusCode.OK
             client.put("/s3/detected-objects/docs/data.json") {
                 setBody("""{"enabled":true}""")
-            }.status shouldBeEqualTo HttpStatusCode.OK
+            } shouldHaveStatus HttpStatusCode.OK
             client.put("/s3/config/config/application.conf") {
                 setBody("ktor { deployment { port = 8080 } }")
-            }.status shouldBeEqualTo HttpStatusCode.OK
+            } shouldHaveStatus HttpStatusCode.OK
             client.get("/s3/config/config/application.conf")
                 .bodyAsText() shouldBeEqualTo "ktor { deployment { port = 8080 } }"
             client.get("/s3/presigned-get/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm") shouldBeEqualTo true
             client.get("/s3/presigned-put/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm") shouldBeEqualTo true
-            client.delete("/s3/objects/docs/hello.txt").status shouldBeEqualTo HttpStatusCode.NoContent
+            client.delete("/s3/objects/docs/hello.txt") shouldHaveStatus HttpStatusCode.NoContent
         } finally {
             s3.close()
         }
