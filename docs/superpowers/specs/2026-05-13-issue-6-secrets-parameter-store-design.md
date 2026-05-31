@@ -25,7 +25,7 @@ bean binding when users want remote values to participate in
 - AWS SDK Java v2 exposes SSM `SsmClient.getParameter` and
   `SsmClient.getParametersByPath`; SSM parameter values are read from
   `Parameter.value`.
-- qmd has no issue #6-specific prior design artifact; current implementation
+- GNO has no issue #6-specific prior design artifact; current implementation
   evidence comes from repo source plus official Spring/AWS documentation.
 
 ## Goals
