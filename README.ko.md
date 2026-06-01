@@ -100,7 +100,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.3.0")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.3.1")
 
     // 사용할 AWS Java SDK v2 서비스 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -130,7 +130,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.3.0")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.3.1")
 
     // 사용할 AWS Kotlin SDK 서비스 추가
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -148,7 +148,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.3.0")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.3.1")
 
     // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))

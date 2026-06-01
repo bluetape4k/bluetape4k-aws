@@ -7,6 +7,16 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-01
+
+### Changed
+
+- Updated `aws-exposed` to consume
+  `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.10.0`.
+- Changed the `bluetape4k-exposed-bom` platform import from API scope to
+  implementation scope so the AWS Exposed module does not export the BOM
+  platform to consumers.
+
 ## [0.3.0] - 2026-05-27
 
 ### Added
