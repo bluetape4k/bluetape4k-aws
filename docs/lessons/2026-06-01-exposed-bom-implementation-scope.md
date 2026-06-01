@@ -10,12 +10,16 @@ API dependency.
 ## Decision
 
 Keep `libs.bluetape4k.exposed.bom` on `implementation(platform(...))` in
-`aws-exposed` and align the catalog version to `1.10.0`.
+`aws-exposed`, align the catalog version to `1.10.0`, and give the concrete
+`bluetape4k-exposed-jdbc` API dependency an explicit catalog version.
 
 ## Outcome
 
 The module can compile and test against the promoted Exposed helper line while
-keeping the BOM platform out of API scope for consumers.
+keeping the BOM platform out of API scope for consumers. Versionless concrete
+API dependencies cannot rely on an implementation-scoped platform, so public
+artifacts that cross module boundaries must carry their own version or come
+from a consumer-visible platform.
 
 ## Verification
 
