@@ -16,6 +16,9 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Changed the `bluetape4k-exposed-bom` platform import from API scope to
   implementation scope so the AWS Exposed module does not export the BOM
   platform to consumers.
+- Kept the concrete `bluetape4k-exposed-jdbc` API dependency versioned directly
+  from the same catalog line so downstream modules do not rely on API-scoped BOM
+  propagation.
 
 ## [0.3.0] - 2026-05-27
 
