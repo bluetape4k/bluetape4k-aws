@@ -19,6 +19,8 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Kept the concrete `bluetape4k-exposed-jdbc` API dependency versioned directly
   from the same catalog line so downstream modules do not rely on API-scoped BOM
   propagation.
+- Updated the default bluetape4k dependencies catalog ref to
+  `catalog/2026-06-01-00` for release workflow alignment.
 
 ## [0.3.0] - 2026-05-27
 
