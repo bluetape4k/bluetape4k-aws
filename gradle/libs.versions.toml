@@ -10,7 +10,7 @@ kotlinx-coroutines = "1.11.0"  # https://mvnrepository.com/artifact/org.jetbrain
 kotlinx-atomicfu = "0.32.1"  # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/atomicfu
 
 # AWS SDK v2 (Java)
-aws2 = "2.44.12"  # https://mvnrepository.com/artifact/software.amazon.awssdk/bom
+aws2 = "2.46.0"  # https://mvnrepository.com/artifact/software.amazon.awssdk/bom
 aws2-crt = "0.45.4"  # https://mvnrepository.com/artifact/software.amazon.awssdk.crt/aws-crt
 
 # AWS Kotlin SDK
