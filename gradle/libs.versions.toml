@@ -90,18 +90,18 @@ kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "k
 # bluetape4k — consumed from Maven Central snapshots
 bluetape4k-bom = { module = "io.github.bluetape4k:bluetape4k-bom", version.ref = "bluetape4k" }
 bluetape4k-exposed-bom = { module = "io.github.bluetape4k.exposed:bluetape4k-exposed-bom", version.ref = "bluetape4k-exposed" }
-bluetape4k-core = { module = "io.github.bluetape4k:bluetape4k-core" }
-bluetape4k-io = { module = "io.github.bluetape4k:bluetape4k-io" }
-bluetape4k-netty = { module = "io.github.bluetape4k:bluetape4k-netty" }
-bluetape4k-coroutines = { module = "io.github.bluetape4k:bluetape4k-coroutines" }
-bluetape4k-jackson3 = { module = "io.github.bluetape4k:bluetape4k-jackson3" }
-bluetape4k-idgenerators = { module = "io.github.bluetape4k:bluetape4k-idgenerators" }
-bluetape4k-resilience4j = { module = "io.github.bluetape4k:bluetape4k-resilience4j" }
-bluetape4k-logging = { module = "io.github.bluetape4k:bluetape4k-logging" }
-bluetape4k-junit5 = { module = "io.github.bluetape4k:bluetape4k-junit5" }
-bluetape4k-testcontainers = { module = "io.github.bluetape4k:bluetape4k-testcontainers" }
-bluetape4k-ktor-core = { module = "io.github.bluetape4k:bluetape4k-ktor-core" }
-bluetape4k-ktor-testing = { module = "io.github.bluetape4k:bluetape4k-ktor-testing" }
+bluetape4k-core = { module = "io.github.bluetape4k:bluetape4k-core", version.ref = "bluetape4k" }
+bluetape4k-io = { module = "io.github.bluetape4k:bluetape4k-io", version.ref = "bluetape4k" }
+bluetape4k-netty = { module = "io.github.bluetape4k:bluetape4k-netty", version.ref = "bluetape4k" }
+bluetape4k-coroutines = { module = "io.github.bluetape4k:bluetape4k-coroutines", version.ref = "bluetape4k" }
+bluetape4k-jackson3 = { module = "io.github.bluetape4k:bluetape4k-jackson3", version.ref = "bluetape4k" }
+bluetape4k-idgenerators = { module = "io.github.bluetape4k:bluetape4k-idgenerators", version.ref = "bluetape4k" }
+bluetape4k-resilience4j = { module = "io.github.bluetape4k:bluetape4k-resilience4j", version.ref = "bluetape4k" }
+bluetape4k-logging = { module = "io.github.bluetape4k:bluetape4k-logging", version.ref = "bluetape4k" }
+bluetape4k-junit5 = { module = "io.github.bluetape4k:bluetape4k-junit5", version.ref = "bluetape4k" }
+bluetape4k-testcontainers = { module = "io.github.bluetape4k:bluetape4k-testcontainers", version.ref = "bluetape4k" }
+bluetape4k-ktor-core = { module = "io.github.bluetape4k:bluetape4k-ktor-core", version.ref = "bluetape4k" }
+bluetape4k-ktor-testing = { module = "io.github.bluetape4k:bluetape4k-ktor-testing", version.ref = "bluetape4k" }
 bluetape4k-exposed-jdbc = { module = "io.github.bluetape4k.exposed:bluetape4k-exposed-jdbc", version.ref = "bluetape4k-exposed" }
 
 # Logging
