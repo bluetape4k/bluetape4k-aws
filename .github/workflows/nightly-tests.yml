@@ -75,7 +75,7 @@ jobs:
   # ── 2. aws 모듈 (LocalStack) ──────────────────────────────────────────────
   test-aws:
     name: Test / aws (LocalStack)
-    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -130,7 +130,7 @@ jobs:
   # ── 3. aws-kotlin 모듈 (LocalStack) ──────────────────────────────────────
   test-aws-kotlin:
     name: Test / aws-kotlin (LocalStack)
-    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -185,7 +185,7 @@ jobs:
   # ── 4. aws-spring-boot 모듈 ───────────────────────────────────────────────
   test-aws-exposed:
     name: Test / aws-exposed
-    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -293,7 +293,7 @@ jobs:
   # ── 6. aws-ktor 모듈 (LocalStack) ────────────────────────────────────────
   test-aws-ktor:
     name: Test / aws-ktor (LocalStack)
-    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -348,7 +348,7 @@ jobs:
   # ── 7. 예제 모듈 ─────────────────────────────────────────────────────────
   test-examples:
     name: Test / Examples
-    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
+    if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -424,7 +424,7 @@ jobs:
       - test-aws-spring-boot
       - test-aws-ktor
       - test-examples
-    if: ${{ always() && ((github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full')) }}
+    if: ${{ always() && ((github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full')) }}
     steps:
       - name: Download all coverage artifacts
         uses: actions/download-artifact@v8
