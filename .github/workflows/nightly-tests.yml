@@ -57,12 +57,12 @@ jobs:
           cache-provider: basic
 
       - name: Build (compile only)
-        run: ./gradlew build -x test --parallel
+        run: ./gradlew --refresh-dependencies build -x test --parallel
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
       - name: Detekt static analysis
-        run: ./gradlew detekt --parallel
+        run: ./gradlew --refresh-dependencies detekt --parallel
 
       - name: Upload detekt report
         if: always()
@@ -97,7 +97,7 @@ jobs:
       - name: Test aws
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :bluetape4k-aws-java:test --no-daemon && break
+            ./gradlew --refresh-dependencies :bluetape4k-aws-java:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -108,7 +108,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :bluetape4k-aws-java:koverXmlReport --no-daemon
+        run: ./gradlew --refresh-dependencies :bluetape4k-aws-java:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -152,7 +152,7 @@ jobs:
       - name: Test aws-kotlin
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :bluetape4k-aws-kotlin:test --no-daemon && break
+            ./gradlew --refresh-dependencies :bluetape4k-aws-kotlin:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -163,7 +163,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :bluetape4k-aws-kotlin:koverXmlReport --no-daemon
+        run: ./gradlew --refresh-dependencies :bluetape4k-aws-kotlin:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -207,7 +207,7 @@ jobs:
       - name: Test aws-exposed
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :bluetape4k-aws-exposed:test --no-daemon && break
+            ./gradlew --refresh-dependencies :bluetape4k-aws-exposed:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -218,7 +218,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :bluetape4k-aws-exposed:koverXmlReport --no-daemon
+        run: ./gradlew --refresh-dependencies :bluetape4k-aws-exposed:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -260,7 +260,7 @@ jobs:
       - name: Test aws-spring-boot
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :bluetape4k-aws-spring-boot:test --no-daemon && break
+            ./gradlew --refresh-dependencies :bluetape4k-aws-spring-boot:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -271,7 +271,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :bluetape4k-aws-spring-boot:koverXmlReport --no-daemon
+        run: ./gradlew --refresh-dependencies :bluetape4k-aws-spring-boot:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -315,7 +315,7 @@ jobs:
       - name: Test aws-ktor
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :bluetape4k-aws-ktor:test --no-daemon && break
+            ./gradlew --refresh-dependencies :bluetape4k-aws-ktor:test --no-daemon && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
@@ -326,7 +326,7 @@ jobs:
 
       - name: Generate Kover XML report
         if: always()
-        run: ./gradlew :bluetape4k-aws-ktor:koverXmlReport --no-daemon
+        run: ./gradlew --refresh-dependencies :bluetape4k-aws-ktor:koverXmlReport --no-daemon
         continue-on-error: true
 
       - name: Upload test results
@@ -386,7 +386,7 @@ jobs:
 
           printf 'Running example test tasks:\n'
           printf '  %s\n' "${tasks[@]}"
-          ./gradlew "${tasks[@]}" --no-daemon --max-workers=1
+          ./gradlew --refresh-dependencies "${tasks[@]}" --no-daemon --max-workers=1
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -394,7 +394,7 @@ jobs:
       - name: Test Exposed database example modules
         run: |
           for attempt in 1 2 3; do
-            ./gradlew :aws-ktor-s3-examples:test :aws-spring-boot-exposed-examples:test :aws-ktor-exposed-examples:test --no-daemon --continue --max-workers=1 && break
+            ./gradlew --refresh-dependencies :aws-ktor-s3-examples:test :aws-spring-boot-exposed-examples:test :aws-ktor-exposed-examples:test --no-daemon --continue --max-workers=1 && break
             echo "Attempt $attempt failed"
             [ $attempt -lt 3 ] && sleep 10 || exit 1
           done
