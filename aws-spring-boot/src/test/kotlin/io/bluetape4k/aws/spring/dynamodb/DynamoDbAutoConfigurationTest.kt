@@ -155,12 +155,50 @@ class DynamoDbAutoConfigurationTest {
     }
 
     @Test
+    fun `DAX enabled rejects zero max concurrency`() {
+        contextRunner
+            .withTestAwsCredentials()
+            .withPropertyValues(
+                "bluetape4k.aws.dynamodb.dax.enabled=true",
+                "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
+                "bluetape4k.aws.dynamodb.dax.max-concurrency=0",
+            )
+            .run { context ->
+                (context.startupFailure != null).shouldBeTrue()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "dax.max-concurrency"
+            }
+    }
+
+    @Test
+    fun `DAX enabled rejects zero max pending connection acquires`() {
+        contextRunner
+            .withTestAwsCredentials()
+            .withPropertyValues(
+                "bluetape4k.aws.dynamodb.dax.enabled=true",
+                "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
+                "bluetape4k.aws.dynamodb.dax.max-pending-connection-acquires=0",
+            )
+            .run { context ->
+                (context.startupFailure != null).shouldBeTrue()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "dax.max-pending-connection-acquires"
+            }
+    }
+
+    @Test
     fun `DAX enabled registers DAX async client and enhanced client`() {
         contextRunner
             .withTestAwsCredentials()
             .withPropertyValues(
                 "bluetape4k.aws.dynamodb.dax.enabled=true",
                 "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
+                "bluetape4k.aws.dynamodb.dax.max-concurrency=1",
+                "bluetape4k.aws.dynamodb.dax.max-pending-connection-acquires=1",
             )
             .run { context ->
                 context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1

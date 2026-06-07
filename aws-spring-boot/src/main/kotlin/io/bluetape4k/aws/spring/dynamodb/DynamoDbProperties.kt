@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.dynamodb
 
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
@@ -76,12 +77,10 @@ data class DynamoDbDaxProperties(
         require(readRetries >= 0) {
             "$DYNAMODB_DAX_PROPERTIES_PREFIX.read-retries must be greater than or equal to 0."
         }
-        require(maxConcurrency >= 0) {
-            "$DYNAMODB_DAX_PROPERTIES_PREFIX.max-concurrency must be greater than or equal to 0."
-        }
-        require(maxPendingConnectionAcquires >= 0) {
-            "$DYNAMODB_DAX_PROPERTIES_PREFIX.max-pending-connection-acquires must be greater than or equal to 0."
-        }
+        maxConcurrency.requirePositiveNumber("$DYNAMODB_DAX_PROPERTIES_PREFIX.max-concurrency")
+        maxPendingConnectionAcquires.requirePositiveNumber(
+            "$DYNAMODB_DAX_PROPERTIES_PREFIX.max-pending-connection-acquires"
+        )
     }
 
     internal fun Duration.toMillisInt(propertyName: String): Int {
