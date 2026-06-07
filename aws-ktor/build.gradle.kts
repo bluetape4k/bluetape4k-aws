@@ -21,6 +21,7 @@ dependencies {
     // Ktor client and optional runtime integrations. Keep direct dependencies
     // where aws-ktor exposes Ktor public types or needs a concrete engine.
     api(libs.aws2.auth)
+    compileOnly(libs.aws2.imds)
     compileOnly(libs.aws2.sqs)
     compileOnly(libs.aws.kotlin.dynamodb)
     api(libs.ktor.client.core)
@@ -33,6 +34,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 
     // Test
+    testImplementation(libs.aws2.imds)
     testImplementation(libs.aws2.s3)
     testImplementation(libs.aws2.sqs)
     testImplementation(libs.aws.kotlin.dynamodb)

@@ -26,7 +26,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 - **Kotlin-first AWS 클라이언트** — Java SDK v2 coroutine adapter와 AWS Kotlin SDK DSL/헬퍼
 - **서비스 범위** — DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, STS, RDS IAM, Secrets Manager, Parameter Store
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener, auto-configuration 제공
-- **Ktor 3 통합** — SigV4 signing, coroutine S3 client, SQS consumer runtime, DynamoDB server repository, Ktor server/client 예제
+- **Ktor 3 통합** — SigV4 signing, coroutine S3 client, SQS consumer runtime, DynamoDB server repository, EC2 IMDS helper, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 LocalStack/Floci emulator와 Nightly 예제 검증
 
 <!-- README_VISUAL_OVERVIEW:START -->
@@ -47,7 +47,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
-| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
 | `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
 | `aws-ktor-sqs-examples` | 배포 안 함 | Floci 기반 Ktor 3 SQS consumer/runtime 예제. Manual ack/nack, retry-once redelivery, interceptor, observer event 포함 |
@@ -533,6 +533,34 @@ class PropertyProtector(
 
 `TextEncryptor`는 동기식 인터페이스이므로 짧은 관리 흐름이나 startup 시점 secret 처리에
 적합합니다. Coroutine service 안에서는 `KmsOperations`를 우선 사용하세요.
+
+### EC2 IMDS — Ktor Plugin
+
+```kotlin
+import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
+import io.bluetape4k.aws.ktor.imds.imds
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import java.time.Duration
+
+fun Application.module() {
+    install(ImdsKtorPlugin) {
+        requestTimeout = Duration.ofSeconds(1)
+    }
+}
+
+suspend fun Application.instanceSnapshot(): Map<String, String> =
+    mapOf(
+        "instanceId" to imds().instanceId(),
+        "region" to imds().region(),
+        "availabilityZone" to imds().availabilityZone(),
+    )
+```
+
+Ktor IMDS plugin을 사용할 때는 `software.amazon.awssdk:imds` 를 추가합니다. Plugin
+설치 시점에는 IMDS를 호출하지 않고, `ImdsKtorOperations` method를 호출할 때만
+metadata를 읽습니다. helper는 IAM role 이름만 노출하고 임시 credential document는
+노출하지 않습니다.
 
 ### SNS — Spring Boot Coroutines 템플릿
 
