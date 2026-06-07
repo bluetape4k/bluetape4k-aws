@@ -178,11 +178,13 @@ dependencies {
 
 Use this module when your application wants Spring-managed AWS clients and coroutine-friendly service
 helpers. The library includes `micrometer-core` because Micrometer is a Spring Boot observability
-baseline. It still does not pull every AWS SDK service at runtime; add only the AWS SDK modules
-you actually use. Add `software.amazon.awssdk:cloudwatch` and `software.amazon.awssdk:cloudwatchlogs`
-when using CloudWatch helpers. Add `software.amazon.awssdk:imds` when using EC2
-metadata helpers. For KMS, add `software.amazon.awssdk:kms`. Add
-`spring-security-crypto` only when you want to inject Spring Security's synchronous `TextEncryptor`.
+baseline. When a `MeterRegistry` bean exists, SQS/S3 operation timers and SQS listener phase
+timers are registered automatically with low-cardinality tags. It still does not pull every AWS SDK
+service at runtime; add only the AWS SDK modules you actually use. Add
+`software.amazon.awssdk:cloudwatch` and `software.amazon.awssdk:cloudwatchlogs` when using
+CloudWatch helpers. Add `software.amazon.awssdk:imds` when using EC2 metadata helpers. For KMS, add
+`software.amazon.awssdk:kms`. Add `spring-security-crypto` only when you want to inject Spring
+Security's synchronous `TextEncryptor`.
 
 ```yaml
 bluetape4k:
@@ -408,7 +410,10 @@ class OrderObservability(
 
 The Micrometer helper is registered only when a `MeterRegistry` bean exists. It
 publishes explicit snapshots through `CloudWatchOperations` and does not replace
-scheduled Micrometer registry publication.
+scheduled Micrometer registry publication. SQS/S3 Micrometer adapters also use
+the application `MeterRegistry` when present: SQS send/receive/listener phases
+and S3 upload/download/delete/list/presign operations are timed without adding
+queue URLs, message IDs, object keys, or receipt handles as default tags.
 
 ### EC2 IMDS — Spring Boot Metadata Operations
 

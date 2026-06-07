@@ -58,6 +58,9 @@ dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:imds")
 
+    // SQS/S3 Ktor helper용 선택적 Micrometer bridge
+    implementation("io.micrometer:micrometer-core")
+
     // DynamoDB Ktor server 사용 시
     implementation("io.ktor:ktor-server-core")
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -349,9 +352,9 @@ suspend fun Application.publishOrder(json: String) {
 있는 lightweight event를 내보냅니다.
 
 ```kotlin
-import io.bluetape4k.aws.ktor.sqs.SqsConsumerObservation
 import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
 import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
+import io.bluetape4k.aws.ktor.sqs.micrometer
 
 install(SqsConsumer) {
     sqsAsyncClient = sqs
@@ -359,14 +362,7 @@ install(SqsConsumer) {
     deleteOnSuccess = false
     conversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure
     failureVisibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 5)
-
-    observer { observation: SqsConsumerObservation ->
-        meterRegistry.counter(
-            "aws.sqs.consumer",
-            "operation", observation.operation,
-            "outcome", observation.outcome,
-        ).increment()
-    }
+    micrometer(meterRegistry)
 
     onMessage<String> { body ->
         if (shouldRetryLater(body)) {
@@ -380,6 +376,10 @@ install(SqsConsumer) {
 }
 ```
 
+Micrometer observer 는 send, receive, invoke, ack, nack, conversion failure,
+retry/failure event 를 `bluetape4k.aws.ktor.sqs.operation` timer 로 기록합니다. 기본
+tag 에 queue URL, message ID, receipt handle 은 넣지 않습니다.
+
 주입한 `SqsAsyncClient` 는 애플리케이션이 소유합니다. 플러그인은 client를 닫지
 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
 `SqsConsumer`가 `AwsKtorCore` 또는 서비스 로컬 설정으로 plugin-owned client를 만들 수
@@ -389,6 +389,27 @@ install(SqsConsumer) {
 [`examples/aws-ktor-sqs-examples`](../examples/aws-ktor-sqs-examples)에 있으며
 Floci 기반 publish, manual ack/nack, retry-once redelivery, interceptor,
 observer summary를 다룹니다.
+
+### Micrometer S3 Wrapper
+
+Ktor service 가 모든 `aws-ktor` 사용자에게 Micrometer 를 강제하지 않으면서
+`S3KtorClient` 호출 주변에 operation timer 를 붙이고 싶을 때 `withMicrometer(...)` 를
+사용합니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.s3.S3KtorClient
+import io.bluetape4k.aws.ktor.s3.withMicrometer
+import io.micrometer.core.instrument.MeterRegistry
+
+suspend fun loadDocument(s3: S3KtorClient, meterRegistry: MeterRegistry): ByteArray {
+    val observedS3 = s3.withMicrometer(meterRegistry)
+    return observedS3.getObjectBytes("documents", "orders/latest.json")
+}
+```
+
+Wrapper 는 선택된 put/get/delete/list/presign operation 을
+`bluetape4k.aws.ktor.s3.operation` timer 로 기록합니다. Bucket tag 는 기본적으로 꺼져
+있고 object key 는 기본 tag 로 사용하지 않습니다.
 
 ## DynamoDB Server Plugin
 

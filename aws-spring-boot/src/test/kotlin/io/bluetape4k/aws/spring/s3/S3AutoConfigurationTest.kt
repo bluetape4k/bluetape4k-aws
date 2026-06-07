@@ -11,6 +11,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
@@ -48,6 +49,7 @@ class S3AutoConfigurationTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 S3AutoConfiguration::class.java,
+                S3MicrometerAutoConfiguration::class.java,
                 S3TransferAutoConfiguration::class.java,
             )
         )
@@ -66,6 +68,17 @@ class S3AutoConfigurationTest {
             context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 1
         }
+    }
+
+    @Test
+    fun `register Micrometer S3 operations when registry exists`() {
+        contextRunner
+            .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
+            .run { context ->
+                context.getBean(S3Operations::class.java).javaClass shouldBeEqualTo MicrometerS3Operations::class.java
+                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 2
+                context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            }
     }
 
     @Test

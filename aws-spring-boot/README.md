@@ -679,6 +679,13 @@ observability baseline. It still does not auto-configure
 want scheduled registry-level publication. The built-in helper is an explicit
 snapshot publisher over the current `MeterRegistry`.
 
+When a `MeterRegistry` bean exists, the module also registers low-cardinality
+SQS/S3 operation timers automatically. SQS instrumentation covers send,
+receive, listener handler, acknowledgement, and failure phases. S3
+instrumentation covers upload, download, delete, list, resource, and presign
+operations. Queue URLs, message IDs, receipt handles, object keys, and raw
+exception messages are not default tags.
+
 ### EC2 IMDS — Metadata Operations
 
 ```kotlin

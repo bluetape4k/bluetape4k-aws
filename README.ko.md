@@ -170,12 +170,13 @@ dependencies {
 
 이 모듈은 Spring이 관리하는 AWS client와 coroutine 친화적인 서비스 helper가 필요할 때
 사용합니다. 이 모듈은 Spring Boot 관측성 baseline 에 맞춰 `micrometer-core` 를
-포함합니다. 모든 AWS SDK 서비스를 런타임으로 끌고 오지 않으므로 실제로 쓰는 서비스
-SDK만 직접 추가해야 합니다. CloudWatch helper 를 쓰려면 `software.amazon.awssdk:cloudwatch` 와
-`software.amazon.awssdk:cloudwatchlogs` 를 추가합니다. EC2 metadata helper 를 쓰려면
-`software.amazon.awssdk:imds` 를 추가합니다. KMS를 쓰려면
-`software.amazon.awssdk:kms`를 추가하고, Spring Security의 동기식 `TextEncryptor`를
-주입받고 싶을 때만 `spring-security-crypto`를 추가합니다.
+포함합니다. `MeterRegistry` bean 이 있으면 SQS/S3 operation timer 와 SQS listener phase
+timer 가 low-cardinality tag 로 자동 등록됩니다. 모든 AWS SDK 서비스를 런타임으로 끌고
+오지 않으므로 실제로 쓰는 서비스 SDK만 직접 추가해야 합니다. CloudWatch helper 를 쓰려면
+`software.amazon.awssdk:cloudwatch` 와 `software.amazon.awssdk:cloudwatchlogs` 를
+추가합니다. EC2 metadata helper 를 쓰려면 `software.amazon.awssdk:imds` 를 추가합니다.
+KMS를 쓰려면 `software.amazon.awssdk:kms`를 추가하고, Spring Security의 동기식
+`TextEncryptor`를 주입받고 싶을 때만 `spring-security-crypto`를 추가합니다.
 
 ```yaml
 bluetape4k:
@@ -400,7 +401,10 @@ class OrderObservability(
 
 Micrometer helper 는 `MeterRegistry` bean 이 있을 때만 등록됩니다. 이 helper 는
 `CloudWatchOperations` 로 명시적인 snapshot 을 publish 하며, scheduled Micrometer
-registry publication 을 대체하지 않습니다.
+registry publication 을 대체하지 않습니다. SQS/S3 Micrometer adapter 도 application
+`MeterRegistry` 가 있을 때 동작하며 SQS send/receive/listener phase 와 S3
+upload/download/delete/list/presign operation 을 측정합니다. 기본 tag 에 queue URL,
+message ID, object key, receipt handle 은 넣지 않습니다.
 
 ### EC2 IMDS — Spring Boot Metadata Operations
 

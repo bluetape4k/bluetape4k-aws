@@ -9,6 +9,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -28,6 +29,7 @@ class SqsAutoConfigurationTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 SqsAutoConfiguration::class.java,
+                SqsMicrometerAutoConfiguration::class.java,
                 SqsJacksonMessageConverterAutoConfiguration::class.java,
             )
         )
@@ -44,6 +46,18 @@ class SqsAutoConfigurationTest {
             context.getBeansOfType(SqsListenerAnnotationBeanPostProcessor::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(SqsMessageConverter::class.java).size shouldBeEqualTo 0
         }
+    }
+
+    @Test
+    fun `register Micrometer SQS adapters when registry exists`() {
+        contextRunner
+            .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
+            .run { context ->
+                context.getBean(SqsOperations::class.java).javaClass shouldBeEqualTo MicrometerSqsOperations::class.java
+                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 2
+                context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 1
+            }
     }
 
     @Test
