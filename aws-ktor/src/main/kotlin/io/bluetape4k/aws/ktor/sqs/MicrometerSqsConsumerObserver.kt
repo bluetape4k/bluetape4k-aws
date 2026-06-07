@@ -26,10 +26,10 @@ class MicrometerSqsConsumerObserver(
 
     private fun tags(observation: SqsConsumerObservation): Tags =
         KtorMicrometerSupport.tags(
-            service = "sqs",
+            service = KtorMicrometerSupport.SERVICE_SQS,
             operation = observation.operation,
             outcome = observation.outcome,
-            exception = observation.tags["exception"] ?: "none",
+            exception = observation.tags[KtorSqsObservationTags.EXCEPTION] ?: KtorMicrometerSupport.EXCEPTION_NONE,
             extras = listOf(KtorMicrometerSupport.queueNameTag(observation.queueUrl)),
         )
 

@@ -48,6 +48,27 @@ private const val MAX_WAIT_TIME_SECONDS = 20
 private const val MAX_VISIBILITY_SECONDS = 43_200
 private const val MAX_MESSAGE_ATTRIBUTES = 10
 
+internal object KtorSqsObservationOperations {
+    const val SEND: String = "send"
+    const val RECEIVE: String = "receive"
+    const val INVOKE: String = "invoke"
+    const val ACK: String = "ack"
+    const val NACK: String = "nack"
+    const val CONVERT: String = "convert"
+}
+
+internal object KtorSqsObservationOutcomes {
+    const val SUCCESS: String = "success"
+    const val FAILURE: String = "failure"
+}
+
+internal object KtorSqsObservationTags {
+    const val EXCEPTION: String = "exception"
+    const val MESSAGE_COUNT: String = "message_count"
+    const val RETRY_DELAY_MS: String = "retry_delay_ms"
+    const val VISIBILITY_TIMEOUT: String = "visibility_timeout"
+}
+
 /**
  * Backoff policy for receive-loop failures.
  *
@@ -349,12 +370,12 @@ class SqsConsumerRuntime(
                 it.messageBody(messageBody)
                 delaySeconds?.let(it::delaySeconds)
             }.await()
-            observe("send", "success", queueUrl, startedAt)
+            observe(KtorSqsObservationOperations.SEND, KtorSqsObservationOutcomes.SUCCESS, queueUrl, startedAt)
             response
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            observe("send", "failure", queueUrl, startedAt, mapOf("exception" to e::class.qualifiedName.orEmpty()))
+            observeFailure(KtorSqsObservationOperations.SEND, queueUrl, startedAt, e)
             throw e
         }
     }
@@ -376,11 +397,11 @@ class SqsConsumerRuntime(
             delete(context.queueUrl, context.message.receiptHandle())
             context.deleted = true
             config.interceptors.forEach { it.afterAck(context) }
-            observe("ack", "success", context, startedAt)
+            observe(KtorSqsObservationOperations.ACK, KtorSqsObservationOutcomes.SUCCESS, context, startedAt)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            observe("ack", "failure", context, startedAt, mapOf("exception" to e::class.qualifiedName.orEmpty()))
+            observeFailure(KtorSqsObservationOperations.ACK, context, startedAt, e)
             throw e
         }
     }
@@ -400,18 +421,24 @@ class SqsConsumerRuntime(
         try {
             changeVisibility(context.queueUrl, context.message.receiptHandle(), timeoutSeconds)
             config.interceptors.forEach { it.afterNack(context, timeoutSeconds) }
-            observe("nack", "success", context, startedAt, mapOf("visibility_timeout" to timeoutSeconds.toString()))
+            observe(
+                KtorSqsObservationOperations.NACK,
+                KtorSqsObservationOutcomes.SUCCESS,
+                context,
+                startedAt,
+                mapOf(KtorSqsObservationTags.VISIBILITY_TIMEOUT to timeoutSeconds.toString()),
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             observe(
-                operation = "nack",
-                outcome = "failure",
+                operation = KtorSqsObservationOperations.NACK,
+                outcome = KtorSqsObservationOutcomes.FAILURE,
                 context = context,
                 startedAt = startedAt,
                 tags = mapOf(
-                    "visibility_timeout" to timeoutSeconds.toString(),
-                    "exception" to e::class.qualifiedName.orEmpty(),
+                    KtorSqsObservationTags.VISIBILITY_TIMEOUT to timeoutSeconds.toString(),
+                    KtorSqsObservationTags.EXCEPTION to e::class.qualifiedName.orEmpty(),
                 ),
             )
             throw e
@@ -448,11 +475,11 @@ class SqsConsumerRuntime(
                 val messages = response.messages().orEmpty()
                 config.interceptors.forEach { it.afterReceive(queueUrl, messages) }
                 observe(
-                    operation = "receive",
-                    outcome = "success",
+                    operation = KtorSqsObservationOperations.RECEIVE,
+                    outcome = KtorSqsObservationOutcomes.SUCCESS,
                     queueUrl = queueUrl,
                     startedAt = startedAt,
-                    tags = mapOf("message_count" to messages.size.toString()),
+                    tags = mapOf(KtorSqsObservationTags.MESSAGE_COUNT to messages.size.toString()),
                 )
                 repeat(permits - messages.size) { handlerPermits.release() }
                 messages.forEach { message ->
@@ -467,12 +494,12 @@ class SqsConsumerRuntime(
                 val retryDelay = backoff.next()
                 config.interceptors.forEach { it.receiveFailed(queueUrl, e, retryDelay) }
                 observe(
-                    operation = "receive",
-                    outcome = "failure",
+                    operation = KtorSqsObservationOperations.RECEIVE,
+                    outcome = KtorSqsObservationOutcomes.FAILURE,
                     queueUrl = queueUrl,
                     tags = mapOf(
-                        "exception" to e::class.qualifiedName.orEmpty(),
-                        "retry_delay_ms" to retryDelay.toMillis().toString(),
+                        KtorSqsObservationTags.EXCEPTION to e::class.qualifiedName.orEmpty(),
+                        KtorSqsObservationTags.RETRY_DELAY_MS to retryDelay.toMillis().toString(),
                     ),
                 )
                 log.warn(e) {
@@ -553,12 +580,12 @@ class SqsConsumerRuntime(
                 config.messageHandler(context, payload)
                 currentCoroutineContext().ensureActive()
                 config.interceptors.forEach { it.afterInvoke(context) }
-                observe("invoke", "success", context, startedAt)
+                observe(KtorSqsObservationOperations.INVOKE, KtorSqsObservationOutcomes.SUCCESS, context, startedAt)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 config.interceptors.forEach { it.invokeFailed(context, e) }
-                observe("invoke", "failure", context, startedAt, mapOf("exception" to e::class.qualifiedName.orEmpty()))
+                observeFailure(KtorSqsObservationOperations.INVOKE, context, startedAt, e)
                 handleFailure(queueUrl, message, e, SqsConsumerFailurePhase.Handler)
                 return
             }
@@ -613,7 +640,7 @@ class SqsConsumerRuntime(
         context: SqsMessageContext,
         cause: Exception,
     ) {
-        observe("convert", "failure", context, tags = mapOf("exception" to cause::class.qualifiedName.orEmpty()))
+        observeFailure(KtorSqsObservationOperations.CONVERT, context, cause = cause)
         when (config.conversionFailurePolicy) {
             SqsConversionFailurePolicy.HandleAsFailure ->
                 handleFailure(queueUrl, message, cause, SqsConsumerFailurePhase.Conversion)
@@ -752,5 +779,35 @@ class SqsConsumerRuntime(
                     log.warn(e) { "SQS consumer observer failed." }
                 }
         }
+    }
+
+    private fun observeFailure(
+        operation: String,
+        context: SqsMessageContext,
+        startedAt: Long? = null,
+        cause: Throwable,
+    ) {
+        observe(
+            operation = operation,
+            outcome = KtorSqsObservationOutcomes.FAILURE,
+            context = context,
+            startedAt = startedAt,
+            tags = mapOf(KtorSqsObservationTags.EXCEPTION to cause::class.qualifiedName.orEmpty()),
+        )
+    }
+
+    private fun observeFailure(
+        operation: String,
+        queueUrl: String?,
+        startedAt: Long? = null,
+        cause: Throwable,
+    ) {
+        observe(
+            operation = operation,
+            outcome = KtorSqsObservationOutcomes.FAILURE,
+            queueUrl = queueUrl,
+            startedAt = startedAt,
+            tags = mapOf(KtorSqsObservationTags.EXCEPTION to cause::class.qualifiedName.orEmpty()),
+        )
     }
 }

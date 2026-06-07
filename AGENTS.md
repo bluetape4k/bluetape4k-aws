@@ -75,6 +75,8 @@ For release work, check the workspace governance docs first:
 
 - Before issue, PR, workflow, release, or module-registration work, query GNO
   for this repo in both `bluetape4k-github` and `bluetape4k-docs`.
+- Before merging after CI turns green, re-read PR reviews and review threads;
+  unresolved or newer user review comments reopen the merge gate.
 - When adding, moving, renaming, or removing a module, update README locale
   sets, CI path filters/jobs, Nightly or examples coverage, coverage artifacts,
   and any BOM/catalog constraints in the same branch.

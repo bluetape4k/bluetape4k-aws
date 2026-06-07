@@ -9,26 +9,43 @@ import java.time.Duration
 
 internal object KtorMicrometerSupport {
 
+    const val SERVICE_S3: String = "s3"
+    const val SERVICE_SQS: String = "sqs"
+
+    const val TAG_SERVICE: String = "service"
+    const val TAG_OPERATION: String = "operation"
+    const val TAG_OUTCOME: String = "outcome"
+    const val TAG_EXCEPTION: String = "exception"
+    const val TAG_QUEUE_NAME: String = "queue.name"
+    const val TAG_BUCKET: String = "bucket"
+
+    const val OUTCOME_SUCCESS: String = "success"
+    const val OUTCOME_CANCELLED: String = "cancelled"
+    const val OUTCOME_FAILURE: String = "failure"
+
+    const val EXCEPTION_NONE: String = "none"
+    const val UNKNOWN: String = "unknown"
+
     fun tags(
         service: String,
         operation: String,
         outcome: String,
-        exception: String = "none",
+        exception: String = EXCEPTION_NONE,
         extras: Iterable<Tag> = emptyList(),
     ): Tags =
         Tags.of(
-            "service", service,
-            "operation", operation,
-            "outcome", outcome,
-            "exception", exception.ifBlank { "unknown" }.substringAfterLast('.'),
+            TAG_SERVICE, service,
+            TAG_OPERATION, operation,
+            TAG_OUTCOME, outcome,
+            TAG_EXCEPTION, exception.ifBlank { UNKNOWN }.substringAfterLast('.'),
         ).and(extras)
 
     fun queueNameTag(queueUrl: String?): Tag =
-        Tag.of("queue.name", queueName(queueUrl))
+        Tag.of(TAG_QUEUE_NAME, queueName(queueUrl))
 
     fun bucketTag(bucket: String, includeBucketTag: Boolean): Iterable<Tag> =
         if (includeBucketTag) {
-            listOf(Tag.of("bucket", bucket.ifBlank { "unknown" }))
+            listOf(Tag.of(TAG_BUCKET, bucket.ifBlank { UNKNOWN }))
         } else {
             emptyList()
         }
@@ -49,13 +66,13 @@ internal object KtorMicrometerSupport {
         val startedAt = System.nanoTime()
         return try {
             val result = block()
-            record(meterRegistry, meterName, tagFactory("success", "none"), durationSince(startedAt))
+            record(meterRegistry, meterName, tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE), durationSince(startedAt))
             result
         } catch (e: CancellationException) {
-            record(meterRegistry, meterName, tagFactory("cancelled", e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(meterRegistry, meterName, tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
             throw e
         } catch (e: Exception) {
-            record(meterRegistry, meterName, tagFactory("failure", e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(meterRegistry, meterName, tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
             throw e
         }
     }
@@ -69,13 +86,13 @@ internal object KtorMicrometerSupport {
         val startedAt = System.nanoTime()
         return try {
             val result = block()
-            record(meterRegistry, meterName, tagFactory("success", "none"), durationSince(startedAt))
+            record(meterRegistry, meterName, tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE), durationSince(startedAt))
             result
         } catch (e: CancellationException) {
-            record(meterRegistry, meterName, tagFactory("cancelled", e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(meterRegistry, meterName, tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
             throw e
         } catch (e: Exception) {
-            record(meterRegistry, meterName, tagFactory("failure", e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(meterRegistry, meterName, tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
             throw e
         }
     }
@@ -87,5 +104,5 @@ internal object KtorMicrometerSupport {
         queueUrl
             ?.substringAfterLast('/')
             ?.takeIf { it.isNotBlank() && it != queueUrl }
-            ?: "unknown"
+            ?: UNKNOWN
 }

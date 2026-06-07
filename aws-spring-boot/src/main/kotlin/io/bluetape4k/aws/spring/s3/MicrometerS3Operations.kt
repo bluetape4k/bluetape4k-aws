@@ -24,7 +24,7 @@ class MicrometerS3Operations(
 ): S3Operations {
 
     override suspend fun existsBucket(bucket: String): Boolean =
-        record("exists_bucket", bucket) {
+        record(OPERATION_EXISTS_BUCKET, bucket) {
             delegate.existsBucket(bucket)
         }
 
@@ -34,7 +34,7 @@ class MicrometerS3Operations(
         bytes: ByteArray,
         contentType: String?,
     ): PutObjectResponse =
-        record("upload", bucket) {
+        record(OPERATION_UPLOAD, bucket) {
             delegate.upload(bucket, key, bytes, contentType)
         }
 
@@ -45,22 +45,22 @@ class MicrometerS3Operations(
         charset: Charset,
         contentType: String?,
     ): PutObjectResponse =
-        record("upload", bucket) {
+        record(OPERATION_UPLOAD, bucket) {
             delegate.upload(bucket, key, contents, charset, contentType)
         }
 
     override suspend fun downloadBytes(bucket: String, key: String): ByteArray =
-        record("download", bucket) {
+        record(OPERATION_DOWNLOAD, bucket) {
             delegate.downloadBytes(bucket, key)
         }
 
     override suspend fun downloadText(bucket: String, key: String, charset: Charset): String =
-        record("download", bucket) {
+        record(OPERATION_DOWNLOAD, bucket) {
             delegate.downloadText(bucket, key, charset)
         }
 
     override suspend fun delete(bucket: String, key: String): DeleteObjectResponse =
-        record("delete", bucket) {
+        record(OPERATION_DELETE, bucket) {
             delegate.delete(bucket, key)
         }
 
@@ -70,28 +70,28 @@ class MicrometerS3Operations(
         maxKeys: Int,
         continuationToken: String?,
     ): S3ListPage =
-        record("list", bucket) {
+        record(OPERATION_LIST, bucket) {
             delegate.listPage(bucket, prefix, maxKeys, continuationToken)
         }
 
     override fun listFlow(bucket: String, prefix: String?, pageSize: Int): Flow<S3Object> = flow {
-        record("list_flow", bucket) {
+        record(OPERATION_LIST_FLOW, bucket) {
             delegate.listFlow(bucket, prefix, pageSize).collect { emit(it) }
         }
     }
 
     override fun resource(bucket: String, key: String): S3Resource =
-        recordBlocking("resource", bucket) {
+        recordBlocking(OPERATION_RESOURCE, bucket) {
             delegate.resource(bucket, key)
         }
 
     override fun presignGet(bucket: String, key: String, duration: Duration?): URL =
-        recordBlocking("presign_get", bucket) {
+        recordBlocking(OPERATION_PRESIGN_GET, bucket) {
             delegate.presignGet(bucket, key, duration)
         }
 
     override fun presignPut(bucket: String, key: String, duration: Duration?, contentType: String?): URL =
-        recordBlocking("presign_put", bucket) {
+        recordBlocking(OPERATION_PRESIGN_PUT, bucket) {
             delegate.presignPut(bucket, key, duration, contentType)
         }
 
@@ -107,7 +107,7 @@ class MicrometerS3Operations(
 
     private fun tags(operation: String, outcome: String, bucket: String, exception: Throwable?): Tags =
         AwsMicrometerSupport.tags(
-            service = "s3",
+            service = AwsMicrometerSupport.SERVICE_S3,
             operation = operation,
             outcome = outcome,
             exception = exception,
@@ -116,5 +116,14 @@ class MicrometerS3Operations(
 
     companion object {
         const val DEFAULT_METER_NAME: String = "bluetape4k.aws.s3.operation"
+        const val OPERATION_EXISTS_BUCKET: String = "exists_bucket"
+        const val OPERATION_UPLOAD: String = "upload"
+        const val OPERATION_DOWNLOAD: String = "download"
+        const val OPERATION_DELETE: String = "delete"
+        const val OPERATION_LIST: String = "list"
+        const val OPERATION_LIST_FLOW: String = "list_flow"
+        const val OPERATION_RESOURCE: String = "resource"
+        const val OPERATION_PRESIGN_GET: String = "presign_get"
+        const val OPERATION_PRESIGN_PUT: String = "presign_put"
     }
 }

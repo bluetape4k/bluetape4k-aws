@@ -58,6 +58,8 @@ the explicit fallback for Floci API coverage gaps.
   same relative path from both locales.
 - Store reusable repository guidance, release rules, checklists, and other
   durable operating documents under `docs/`, not `.omx/`.
+- Before merging after CI turns green, re-read PR reviews and review threads;
+  unresolved or newer user review comments reopen the merge gate.
 - For release work, check the workspace governance docs first:
   `../.github/docs/release/central-portal-release-runbook.md`,
   `../.github/docs/release/pre-release-checklist.md`, and
