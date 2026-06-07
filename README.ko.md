@@ -46,7 +46,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장 제공 |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 DAX를 포함한 DynamoDB, KMS, Secrets Manager, Parameter Store 지원 |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
 | `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
@@ -153,6 +153,8 @@ dependencies {
     // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:cloudwatch")
+    implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:secretsmanager")
@@ -166,10 +168,12 @@ dependencies {
 ```
 
 이 모듈은 Spring이 관리하는 AWS client와 coroutine 친화적인 서비스 helper가 필요할 때
-사용합니다. 모든 AWS SDK 서비스를 런타임으로 끌고 오지 않으므로 실제로 쓰는 서비스
-SDK만 직접 추가해야 합니다. KMS를 쓰려면 `software.amazon.awssdk:kms`를 추가하고,
-Spring Security의 동기식 `TextEncryptor`를 주입받고 싶을 때만 `spring-security-crypto`를
-추가합니다.
+사용합니다. 이 모듈은 Spring Boot 관측성 baseline 에 맞춰 `micrometer-core` 를
+포함합니다. 모든 AWS SDK 서비스를 런타임으로 끌고 오지 않으므로 실제로 쓰는 서비스
+SDK만 직접 추가해야 합니다. CloudWatch helper 를 쓰려면 `software.amazon.awssdk:cloudwatch` 와
+`software.amazon.awssdk:cloudwatchlogs` 를 추가합니다. KMS를 쓰려면
+`software.amazon.awssdk:kms`를 추가하고, Spring Security의 동기식 `TextEncryptor`를
+주입받고 싶을 때만 `spring-security-crypto`를 추가합니다.
 
 ```yaml
 bluetape4k:
@@ -210,6 +214,17 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    cloudwatch:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      namespace: OrderApi
+      micrometer:
+        enabled: true
+    cloudwatch-logs:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      log-group-name: /aws/app/order-api
+      log-stream-name: local
     sqs:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -349,6 +364,35 @@ DAX를 활성화해도 repository 진입점은 `DynamoDbEnhancedAsyncClient`로 
 내부 `DynamoDbAsyncClient`가 DAX client로 구성됩니다. DAX는 실제 AWS DAX cluster용
 기능입니다. LocalStack, Floci, DynamoDB Local은 emulator/test 경로이며 DAX cache
 consistency 또는 latency 동작을 모델링하지 않습니다.
+
+### CloudWatch — Spring Boot Metrics와 Logs
+
+```kotlin
+import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
+import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchLogsOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchMeterPublishingOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchOperations
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+
+class OrderObservability(
+    private val cloudWatch: CloudWatchOperations,
+    private val cloudWatchLogs: CloudWatchLogsOperations,
+    private val meters: CloudWatchMeterPublishingOperations,
+) {
+    suspend fun processed(orderId: String) {
+        cloudWatch.putMetricDatum(metricDatumOf("OrderProcessed", 1.0, StandardUnit.COUNT))
+        cloudWatchLogs.putLogEvents(
+            listOf(inputLogEventOf(System.currentTimeMillis(), "processed order=$orderId"))
+        )
+        meters.publishMeter("orders.processed")
+    }
+}
+```
+
+Micrometer helper 는 `MeterRegistry` bean 이 있을 때만 등록됩니다. 이 helper 는
+`CloudWatchOperations` 로 명시적인 snapshot 을 publish 하며, scheduled Micrometer
+registry publication 을 대체하지 않습니다.
 
 ### Secrets Manager와 Parameter Store — Environment Source
 

@@ -53,7 +53,7 @@ applications to adopt a single framework or dependency stack.
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, SQS consumer runtime, DynamoDB server repository plugin, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
@@ -160,6 +160,8 @@ dependencies {
     // Add the AWS Java SDK v2 services you use at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:cloudwatch")
+    implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:secretsmanager")
@@ -173,9 +175,11 @@ dependencies {
 ```
 
 Use this module when your application wants Spring-managed AWS clients and coroutine-friendly service
-helpers. The library does not pull every AWS SDK service at runtime; add only the AWS SDK modules
-you actually use. For KMS, add `software.amazon.awssdk:kms`. Add `spring-security-crypto` only when
-you want to inject Spring Security's synchronous `TextEncryptor`.
+helpers. The library includes `micrometer-core` because Micrometer is a Spring Boot observability
+baseline. It still does not pull every AWS SDK service at runtime; add only the AWS SDK modules
+you actually use. Add `software.amazon.awssdk:cloudwatch` and `software.amazon.awssdk:cloudwatchlogs`
+when using CloudWatch helpers. For KMS, add `software.amazon.awssdk:kms`. Add
+`spring-security-crypto` only when you want to inject Spring Security's synchronous `TextEncryptor`.
 
 ```yaml
 bluetape4k:
@@ -216,6 +220,17 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    cloudwatch:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      namespace: OrderApi
+      micrometer:
+        enabled: true
+    cloudwatch-logs:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      log-group-name: /aws/app/order-api
+      log-stream-name: local
     sqs:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -356,6 +371,35 @@ When DAX is enabled, `DynamoDbEnhancedAsyncClient` is still the repository entry
 point, but it is backed by the DAX `DynamoDbAsyncClient`. Use DAX only with real
 AWS DAX clusters; LocalStack, Floci, and DynamoDB Local remain emulator/test
 paths and do not model DAX cache consistency or latency behavior.
+
+### CloudWatch — Spring Boot Metrics and Logs
+
+```kotlin
+import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
+import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchLogsOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchMeterPublishingOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchOperations
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+
+class OrderObservability(
+    private val cloudWatch: CloudWatchOperations,
+    private val cloudWatchLogs: CloudWatchLogsOperations,
+    private val meters: CloudWatchMeterPublishingOperations,
+) {
+    suspend fun processed(orderId: String) {
+        cloudWatch.putMetricDatum(metricDatumOf("OrderProcessed", 1.0, StandardUnit.COUNT))
+        cloudWatchLogs.putLogEvents(
+            listOf(inputLogEventOf(System.currentTimeMillis(), "processed order=$orderId"))
+        )
+        meters.publishMeter("orders.processed")
+    }
+}
+```
+
+The Micrometer helper is registered only when a `MeterRegistry` bean exists. It
+publishes explicit snapshots through `CloudWatchOperations` and does not replace
+scheduled Micrometer registry publication.
 
 ### Secrets Manager and Parameter Store — Environment Sources
 

@@ -3,8 +3,8 @@
 [English](README.md) | [한국어](README.ko.md)
 
 Spring Boot 4 auto-configuration for AWS Java SDK v2. Provides coroutine-first
-templates, a SQS listener container, and remote Environment sources, with no
-`awspring` runtime dependency.
+templates, a SQS listener container, CloudWatch metric/log helpers, and remote
+Environment sources, with no `awspring` runtime dependency.
 
 ## Architecture
 
@@ -31,6 +31,10 @@ templates, a SQS listener container, and remote Environment sources, with no
   `scan`/`query`/`queryIndex` `Flow` results. Logical table names are resolved
   through `DynamoDbTableNameResolver` (default applies `tablePrefix`), and the
   async client can optionally be backed by DynamoDB Accelerator (DAX).
+- **CloudWatch / CloudWatch Logs** — `CloudWatchCoroutinesTemplate` and
+  `CloudWatchLogsCoroutinesTemplate` for coroutine metric/log publishing, plus
+  an opt-in `CloudWatchMeterPublishingOperations` helper that reads the
+  application `MeterRegistry` when Micrometer is present.
 - **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
   generation, optional Spring Security `TextEncryptor`, and explicit
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
@@ -61,6 +65,8 @@ dependencies {
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:sts") // optional web-identity credentials support
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:cloudwatch")
+    implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
@@ -155,6 +161,21 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    cloudwatch:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      namespace: OrderApi
+      batch-size: 1000
+      micrometer:
+        enabled: true
+    cloudwatch-logs:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      log-group-name: /aws/app/order-api
+      log-stream-name: local
+      batch-size: 10000
     kms:
       enabled: true
       region: ap-northeast-2
@@ -221,6 +242,12 @@ beans.
 `sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a
 logical queue alias. `SqsOperations.getQueueUrl("<name>")` still performs an
 AWS SQS `GetQueueUrl` call.
+`cloudwatch.namespace` is used by default-namespace metric publishing methods.
+The Micrometer helper is registered only when an application `MeterRegistry`
+bean exists; it reads meter snapshots on explicit method calls and does not
+replace the active registry.
+`cloudwatch-logs.log-group-name` and `cloudwatch-logs.log-stream-name` are used
+by default log-event publishing methods.
 S3 config, Secrets Manager, and Parameter Store sources are loaded by
 `EnvironmentPostProcessor` before normal bean binding. S3 config sources load
 single objects in `properties`, `yaml`, or `json` format; `auto` format detects
@@ -603,6 +630,40 @@ base classes continue to be used unchanged. DAX is a real AWS cluster cache, not
 an emulator feature. Keep LocalStack, Floci, and DynamoDB Local tests on the
 normal DynamoDB client path and document any DAX cache-consistency assumptions
 at the application boundary.
+
+### CloudWatch — Metrics, Logs, and Micrometer
+
+```kotlin
+import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
+import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchLogsOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchMeterPublishingOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchOperations
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+
+class OrderObservability(
+    private val cloudWatch: CloudWatchOperations,
+    private val cloudWatchLogs: CloudWatchLogsOperations,
+    private val meters: CloudWatchMeterPublishingOperations,
+) {
+    suspend fun publishOrderProcessed(orderId: String) {
+        cloudWatch.putMetricDatum(
+            metricDatumOf("OrderProcessed", 1.0, StandardUnit.COUNT)
+        )
+        cloudWatchLogs.putLogEvents(
+            listOf(inputLogEventOf(System.currentTimeMillis(), "processed order=$orderId"))
+        )
+        meters.publishMeter("orders.processed")
+    }
+}
+```
+
+`bluetape4k-aws-spring-boot` includes `micrometer-core` as a normal dependency
+because Spring Boot applications already treat Micrometer as part of the
+observability baseline. It still does not auto-configure
+`micrometer-registry-cloudwatch`; add that registry in the application if you
+want scheduled registry-level publication. The built-in helper is an explicit
+snapshot publisher over the current `MeterRegistry`.
 
 ### KMS — explicit field encryption
 

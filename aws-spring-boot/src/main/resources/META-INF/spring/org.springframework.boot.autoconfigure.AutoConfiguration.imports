@@ -1,4 +1,6 @@
 io.bluetape4k.aws.spring.AwsAutoConfiguration
+io.bluetape4k.aws.spring.cloudwatch.CloudWatchAutoConfiguration
+io.bluetape4k.aws.spring.cloudwatch.CloudWatchLogsAutoConfiguration
 io.bluetape4k.aws.spring.dynamodb.DynamoDbDaxAutoConfiguration
 io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
 io.bluetape4k.aws.spring.exposed.AwsExposedAutoConfiguration
