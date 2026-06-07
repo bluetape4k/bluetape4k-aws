@@ -22,8 +22,9 @@ Address the review in a separate follow-up PR:
 ## Outcome
 
 Ktor and Spring Boot Micrometer code now shares stable constants instead of
-inline strings across the support and adapter layers. Tests use the same
-constants for metric lookup assertions.
+inline strings across the support and adapter layers. Contract-style tests query
+Micrometer meters with test-side expected tag names and values so public metric
+label drift fails even when production constants are renamed.
 
 ## Verification
 

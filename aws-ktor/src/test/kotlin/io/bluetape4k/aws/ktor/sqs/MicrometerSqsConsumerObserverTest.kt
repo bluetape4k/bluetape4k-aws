@@ -1,6 +1,6 @@
 package io.bluetape4k.aws.ktor.sqs
 
-import io.bluetape4k.aws.ktor.observability.KtorMicrometerSupport
+import io.bluetape4k.aws.ktor.observability.KtorMetricContract
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -35,9 +35,9 @@ class MicrometerSqsConsumerObserverTest {
         )
 
         val timer = registry.find(MicrometerSqsConsumerObserver.DEFAULT_METER_NAME)
-            .tag(KtorMicrometerSupport.TAG_OPERATION, KtorSqsObservationOperations.RECEIVE)
-            .tag(KtorMicrometerSupport.TAG_OUTCOME, KtorSqsObservationOutcomes.SUCCESS)
-            .tag(KtorMicrometerSupport.TAG_QUEUE_NAME, "orders")
+            .tag(KtorMetricContract.TAG_OPERATION, KtorMetricContract.OPERATION_RECEIVE)
+            .tag(KtorMetricContract.TAG_OUTCOME, KtorMetricContract.OUTCOME_SUCCESS)
+            .tag(KtorMetricContract.TAG_QUEUE_NAME, "orders")
             .timer()
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L

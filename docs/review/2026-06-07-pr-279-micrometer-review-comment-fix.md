@@ -36,7 +36,9 @@ No blocking findings after the follow-up change.
 - The Ktor SQS runtime observer producer now uses constants for operations,
   outcomes, and observer tags so the Micrometer bridge is not the only cleaned
   layer.
-- Public metric names and emitted tag values are unchanged.
+- Public metric names and emitted tag values are unchanged and are covered by
+  test-side contract constants that are deliberately independent from
+  production constants.
 - No new dependency or public runtime behavior change was introduced.
 
 ## Verification
@@ -48,6 +50,13 @@ No blocking findings after the follow-up change.
 - `./gradlew :bluetape4k-aws-ktor:test :bluetape4k-aws-spring-boot:test`
   passed: 85 Ktor tests and 195 Spring Boot tests.
 - `git diff --check` passed.
+
+Additional review follow-up:
+
+- `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.s3.MicrometerS3KtorClientTest' --tests 'io.bluetape4k.aws.ktor.sqs.MicrometerSqsConsumerObserverTest' --tests 'io.bluetape4k.aws.ktor.sqs.SqsConsumerRuntimeAdvancedTest' :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.s3.MicrometerS3OperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsOperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsListenerInterceptorTest'`
+  passed: 7 Ktor tests and 3 Spring Boot tests.
+- Contract tests now query Micrometer meters with expected external tag names
+  and values from test-side contract objects, not production constants.
 
 ## Gate
 

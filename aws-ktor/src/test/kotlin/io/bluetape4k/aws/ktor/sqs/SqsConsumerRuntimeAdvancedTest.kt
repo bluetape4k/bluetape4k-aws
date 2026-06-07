@@ -180,9 +180,11 @@ class SqsConsumerRuntimeAdvancedTest {
 
             await.atMost(Duration.ofSeconds(5)).untilAsserted {
                 visibilityTimeouts shouldBeEqualTo listOf(7)
-                observations.map { it.operation } shouldContain "invoke"
+                observations.map { it.operation } shouldContain KtorSqsObservationOperations.INVOKE
             }
-            observations.first { it.operation == "invoke" }.outcome shouldBeEqualTo "failure"
+            observations
+                .first { it.operation == KtorSqsObservationOperations.INVOKE }
+                .outcome shouldBeEqualTo KtorSqsObservationOutcomes.FAILURE
         } finally {
             runtime.stop()
         }
