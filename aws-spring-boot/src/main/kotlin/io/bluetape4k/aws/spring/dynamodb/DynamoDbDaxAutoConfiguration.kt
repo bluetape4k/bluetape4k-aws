@@ -31,8 +31,8 @@ import software.amazon.dax.Configuration
     before = [DynamoDbAutoConfiguration::class],
 )
 @ConditionalOnClass(name = ["software.amazon.dax.ClusterDaxAsyncClient"])
-@ConditionalOnProperty(prefix = "bluetape4k.aws.dynamodb", name = ["enabled"], havingValue = "true", matchIfMissing = true)
-@ConditionalOnProperty(prefix = "bluetape4k.aws.dynamodb.dax", name = ["enabled"], havingValue = "true")
+@ConditionalOnProperty(prefix = DYNAMODB_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = DYNAMODB_DAX_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true")
 @EnableConfigurationProperties(DynamoDbProperties::class)
 class DynamoDbDaxAutoConfiguration {
 
@@ -60,17 +60,17 @@ class DynamoDbDaxAutoConfiguration {
                 .url(url.toString())
                 .region(region)
                 .credentialsProvider(resolveDynamoDbCredentialsProvider(credentialsProvider))
-                .connectTimeoutMillis(connectTimeout.toMillisInt("bluetape4k.aws.dynamodb.dax.connect-timeout"))
-                .requestTimeoutMillis(requestTimeout.toMillisInt("bluetape4k.aws.dynamodb.dax.request-timeout"))
-                .idleTimeoutMillis(idleTimeout.toMillisInt("bluetape4k.aws.dynamodb.dax.idle-timeout"))
-                .connectionTtlMillis(connectionTtl.toMillisInt("bluetape4k.aws.dynamodb.dax.connection-ttl"))
+                .connectTimeoutMillis(connectTimeout.toMillisInt("$DYNAMODB_DAX_PROPERTIES_PREFIX.connect-timeout"))
+                .requestTimeoutMillis(requestTimeout.toMillisInt("$DYNAMODB_DAX_PROPERTIES_PREFIX.request-timeout"))
+                .idleTimeoutMillis(idleTimeout.toMillisInt("$DYNAMODB_DAX_PROPERTIES_PREFIX.idle-timeout"))
+                .connectionTtlMillis(connectionTtl.toMillisInt("$DYNAMODB_DAX_PROPERTIES_PREFIX.connection-ttl"))
                 .writeRetries(writeRetries)
                 .readRetries(readRetries)
                 .clusterUpdateIntervalMillis(
-                    clusterUpdateInterval.toMillisInt("bluetape4k.aws.dynamodb.dax.cluster-update-interval")
+                    clusterUpdateInterval.toMillisInt("$DYNAMODB_DAX_PROPERTIES_PREFIX.cluster-update-interval")
                 )
                 .endpointRefreshTimeoutMillis(
-                    endpointRefreshTimeout.toMillisInt("bluetape4k.aws.dynamodb.dax.endpoint-refresh-timeout")
+                    endpointRefreshTimeout.toMillisInt("$DYNAMODB_DAX_PROPERTIES_PREFIX.endpoint-refresh-timeout")
                 )
                 .maxConcurrency(maxConcurrency)
                 .maxPendingConnectionAcquires(maxPendingConnectionAcquires)

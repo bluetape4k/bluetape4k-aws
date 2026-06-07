@@ -6,10 +6,13 @@ import java.io.Serializable
 import java.net.URI
 import java.time.Duration
 
+internal const val DYNAMODB_PROPERTIES_PREFIX: String = "bluetape4k.aws.dynamodb"
+internal const val DYNAMODB_DAX_PROPERTIES_PREFIX: String = "$DYNAMODB_PROPERTIES_PREFIX.dax"
+
 /**
  * DynamoDB 자동 설정 속성.
  */
-@ConfigurationProperties(prefix = "bluetape4k.aws.dynamodb")
+@ConfigurationProperties(prefix = DYNAMODB_PROPERTIES_PREFIX)
 data class DynamoDbProperties(
     val enabled: Boolean = true,
     val region: String? = null,
@@ -56,28 +59,28 @@ data class DynamoDbDaxProperties(
 
     internal fun validateEnabled() {
         require(url != null) {
-            "bluetape4k.aws.dynamodb.dax.url is required when DAX is enabled."
+            "$DYNAMODB_DAX_PROPERTIES_PREFIX.url is required when DAX is enabled."
         }
-        region?.requireNotBlank("bluetape4k.aws.dynamodb.dax.region")
+        region?.requireNotBlank("$DYNAMODB_DAX_PROPERTIES_PREFIX.region")
 
-        requireNonNegative(connectTimeout, "bluetape4k.aws.dynamodb.dax.connect-timeout")
-        requireNonNegative(requestTimeout, "bluetape4k.aws.dynamodb.dax.request-timeout")
-        requireNonNegative(idleTimeout, "bluetape4k.aws.dynamodb.dax.idle-timeout")
-        requireNonNegative(connectionTtl, "bluetape4k.aws.dynamodb.dax.connection-ttl")
-        requireNonNegative(clusterUpdateInterval, "bluetape4k.aws.dynamodb.dax.cluster-update-interval")
-        requireNonNegative(endpointRefreshTimeout, "bluetape4k.aws.dynamodb.dax.endpoint-refresh-timeout")
+        requireNonNegative(connectTimeout, "$DYNAMODB_DAX_PROPERTIES_PREFIX.connect-timeout")
+        requireNonNegative(requestTimeout, "$DYNAMODB_DAX_PROPERTIES_PREFIX.request-timeout")
+        requireNonNegative(idleTimeout, "$DYNAMODB_DAX_PROPERTIES_PREFIX.idle-timeout")
+        requireNonNegative(connectionTtl, "$DYNAMODB_DAX_PROPERTIES_PREFIX.connection-ttl")
+        requireNonNegative(clusterUpdateInterval, "$DYNAMODB_DAX_PROPERTIES_PREFIX.cluster-update-interval")
+        requireNonNegative(endpointRefreshTimeout, "$DYNAMODB_DAX_PROPERTIES_PREFIX.endpoint-refresh-timeout")
 
         require(writeRetries >= 0) {
-            "bluetape4k.aws.dynamodb.dax.write-retries must be greater than or equal to 0."
+            "$DYNAMODB_DAX_PROPERTIES_PREFIX.write-retries must be greater than or equal to 0."
         }
         require(readRetries >= 0) {
-            "bluetape4k.aws.dynamodb.dax.read-retries must be greater than or equal to 0."
+            "$DYNAMODB_DAX_PROPERTIES_PREFIX.read-retries must be greater than or equal to 0."
         }
         require(maxConcurrency >= 0) {
-            "bluetape4k.aws.dynamodb.dax.max-concurrency must be greater than or equal to 0."
+            "$DYNAMODB_DAX_PROPERTIES_PREFIX.max-concurrency must be greater than or equal to 0."
         }
         require(maxPendingConnectionAcquires >= 0) {
-            "bluetape4k.aws.dynamodb.dax.max-pending-connection-acquires must be greater than or equal to 0."
+            "$DYNAMODB_DAX_PROPERTIES_PREFIX.max-pending-connection-acquires must be greater than or equal to 0."
         }
     }
 
