@@ -59,6 +59,9 @@ dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:imds")
 
+    // Optional Micrometer bridge for SQS/S3 Ktor helpers
+    implementation("io.micrometer:micrometer-core")
+
     // DynamoDB Ktor server usage
     implementation("io.ktor:ktor-server-core")
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -356,9 +359,9 @@ Micrometer, OpenTelemetry, or logs without adding a metrics dependency to this
 module.
 
 ```kotlin
-import io.bluetape4k.aws.ktor.sqs.SqsConsumerObservation
 import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
 import io.bluetape4k.aws.ktor.sqs.SqsFixedFailureVisibilityStrategy
+import io.bluetape4k.aws.ktor.sqs.micrometer
 
 install(SqsConsumer) {
     sqsAsyncClient = sqs
@@ -366,14 +369,7 @@ install(SqsConsumer) {
     deleteOnSuccess = false
     conversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure
     failureVisibilityStrategy = SqsFixedFailureVisibilityStrategy(timeoutSeconds = 5)
-
-    observer { observation: SqsConsumerObservation ->
-        meterRegistry.counter(
-            "aws.sqs.consumer",
-            "operation", observation.operation,
-            "outcome", observation.outcome,
-        ).increment()
-    }
+    micrometer(meterRegistry)
 
     onMessage<String> { body ->
         if (shouldRetryLater(body)) {
@@ -387,6 +383,10 @@ install(SqsConsumer) {
 }
 ```
 
+The Micrometer observer records `bluetape4k.aws.ktor.sqs.operation` timers for
+send, receive, invoke, ack, nack, conversion failure, and retry/failure events.
+Default tags avoid queue URLs, message IDs, and receipt handles.
+
 The application owns the injected `SqsAsyncClient`; the plugin never closes it.
 Close the client when the application scope ends. When no client is injected,
 `SqsConsumer` can create a plugin-owned client from `AwsKtorCore` or
@@ -396,6 +396,27 @@ Runnable SQS examples live in
 [`examples/aws-ktor-sqs-examples`](../examples/aws-ktor-sqs-examples) and cover
 Floci-backed publishing, manual ack/nack, retry-once redelivery,
 interceptors, and observer summaries.
+
+### Micrometer S3 Wrapper
+
+Use `withMicrometer(...)` when a Ktor service wants operation timers around
+selected `S3KtorClient` calls without making Micrometer mandatory for every
+`aws-ktor` user.
+
+```kotlin
+import io.bluetape4k.aws.ktor.s3.S3KtorClient
+import io.bluetape4k.aws.ktor.s3.withMicrometer
+import io.micrometer.core.instrument.MeterRegistry
+
+suspend fun loadDocument(s3: S3KtorClient, meterRegistry: MeterRegistry): ByteArray {
+    val observedS3 = s3.withMicrometer(meterRegistry)
+    return observedS3.getObjectBytes("documents", "orders/latest.json")
+}
+```
+
+The wrapper records `bluetape4k.aws.ktor.s3.operation` timers for selected
+put/get/delete/list/presign operations. Bucket tags are disabled by default and
+object keys are never default tags.
 
 ## DynamoDB Server Plugin
 

@@ -341,12 +341,23 @@ class SqsConsumerRuntime(
         messageBody: String,
         queueUrl: String,
         delaySeconds: Int? = null,
-    ): SendMessageResponse =
-        config.sqsAsyncClient.sendMessage {
-            it.queueUrl(queueUrl)
-            it.messageBody(messageBody)
-            delaySeconds?.let(it::delaySeconds)
-        }.await()
+    ): SendMessageResponse {
+        val startedAt = System.nanoTime()
+        return try {
+            val response = config.sqsAsyncClient.sendMessage {
+                it.queueUrl(queueUrl)
+                it.messageBody(messageBody)
+                delaySeconds?.let(it::delaySeconds)
+            }.await()
+            observe("send", "success", queueUrl, startedAt)
+            response
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            observe("send", "failure", queueUrl, startedAt, mapOf("exception" to e::class.qualifiedName.orEmpty()))
+            throw e
+        }
+    }
 
     internal suspend fun delete(queueUrl: String, receiptHandle: String) {
         config.sqsAsyncClient.deleteMessage {

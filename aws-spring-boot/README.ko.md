@@ -664,6 +664,12 @@ scheduled publishing 이 필요하면 애플리케이션에서 해당 registry �
 helper 는 현재 `MeterRegistry` 를 읽어 명시적으로 한 번 publish 하는 snapshot
 publisher 이다.
 
+`MeterRegistry` bean 이 있으면 low-cardinality SQS/S3 operation timer 도 자동으로
+등록됩니다. SQS instrumentation 은 send, receive, listener handler, acknowledgement,
+failure phase 를 다룹니다. S3 instrumentation 은 upload, download, delete, list,
+resource, presign operation 을 다룹니다. Queue URL, message ID, receipt handle,
+object key, raw exception message 는 기본 tag 로 사용하지 않습니다.
+
 ### EC2 IMDS — Metadata Operations
 
 ```kotlin
