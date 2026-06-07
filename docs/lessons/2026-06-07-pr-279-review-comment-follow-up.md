@@ -37,3 +37,11 @@ constants for metric lookup assertions.
 Before merging any PR after CI turns green, re-read PR reviews and review
 threads. Any unresolved or newer user review comment reopens the merge gate, even
 if the user had previously said to merge.
+
+Do not leave repeated magic strings in production code or tests. Metric names,
+tag keys, tag values, operation names, outcome names, queue/bucket fallbacks, and
+other externally observed literals must be promoted to named constants, enums,
+property references, or another type-safe representation near the owning
+boundary. Keep only one-off literals inline when the literal is genuinely local,
+self-explanatory, and not part of a public contract; record that exception in the
+review evidence if it is non-obvious.
