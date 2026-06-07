@@ -12,6 +12,7 @@ kotlinx-atomicfu = "0.32.1"  # https://mvnrepository.com/artifact/org.jetbrains.
 # AWS SDK v2 (Java)
 aws2 = "2.46.0"  # https://mvnrepository.com/artifact/software.amazon.awssdk/bom
 aws2-crt = "0.45.4"  # https://mvnrepository.com/artifact/software.amazon.awssdk.crt/aws-crt
+dax-client = "2.0.9"  # https://mvnrepository.com/artifact/software.amazon.dax/amazon-dax-client
 
 # AWS Kotlin SDK
 aws-kotlin = "1.6.80"  # https://mvnrepository.com/artifact/aws.sdk.kotlin/aws-core
@@ -172,6 +173,7 @@ aws2-sts = { module = "software.amazon.awssdk:sts", version.ref = "aws2" }
 aws2-ec2 = { module = "software.amazon.awssdk:ec2", version.ref = "aws2" }
 aws2-utils = { module = "software.amazon.awssdk:utils", version.ref = "aws2" }
 aws2-test-utils = { module = "software.amazon.awssdk:test-utils", version.ref = "aws2" }
+aws-dax-client = { module = "software.amazon.dax:amazon-dax-client", version.ref = "dax-client" }
 
 # AWS Kotlin SDK
 aws-kotlin-aws-core = { module = "aws.sdk.kotlin:aws-core", version.ref = "aws-kotlin" }

@@ -27,7 +27,8 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` 추상 베이스가
   `DynamoDbAsyncTable` 위에서 `save`/`findById`/`update`/`delete` 와
   `scan`/`query`/`queryIndex` 의 `Flow` 결과를 제공한다. 논리 테이블 이름은
-  `DynamoDbTableNameResolver`(기본 구현은 `tablePrefix` 적용)로 해석된다.
+  `DynamoDbTableNameResolver`(기본 구현은 `tablePrefix` 적용)로 해석되며,
+  async client 는 선택적으로 DynamoDB Accelerator(DAX)로 구성할 수 있다.
 - **KMS** — `KmsOperations` 로 coroutine 암호화/복호화와 data key 생성을
   제공하고, 선택적 Spring Security `TextEncryptor`, `String` 필드용 명시적
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` 를 지원한다.
@@ -562,6 +563,33 @@ class OrderRepository(
 
 `aws-spring-boot` 은 DynamoDB 테이블을 자동 생성하지 않는다. 마이그레이션,
 배포 자동화, 또는 테스트 셋업에서 명시적으로 테이블을 만들어야 한다.
+
+DynamoDB Accelerator(DAX)는 사용하는 애플리케이션에 DAX runtime dependency가 있을
+때만 활성화한다.
+
+```kotlin
+runtimeOnly("software.amazon.dax:amazon-dax-client:2.0.9")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    dynamodb:
+      region: us-east-1
+      dax:
+        enabled: true
+        url: dax://orders-cache.abc123.dax-clusters.us-east-1.amazonaws.com
+        connect-timeout: 1s
+        request-timeout: 1s
+        read-retries: 2
+        write-retries: 2
+```
+
+DAX가 활성화되면 auto-configuration 은 DAX-backed `DynamoDbAsyncClient` 를
+제공하고 기존 `DynamoDbEnhancedAsyncClient` 와 repository base class 는 그대로
+사용된다. DAX는 실제 AWS cluster cache 이며 emulator 기능이 아니다. LocalStack,
+Floci, DynamoDB Local 테스트는 일반 DynamoDB client 경로를 유지하고, DAX cache
+consistency 가정은 애플리케이션 boundary 에 문서화한다.
 
 ### KMS — 명시적 필드 암호화
 
