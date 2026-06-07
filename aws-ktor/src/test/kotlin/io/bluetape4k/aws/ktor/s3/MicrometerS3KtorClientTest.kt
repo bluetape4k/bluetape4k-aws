@@ -1,6 +1,6 @@
 package io.bluetape4k.aws.ktor.s3
 
-import io.bluetape4k.aws.ktor.observability.KtorMicrometerSupport
+import io.bluetape4k.aws.ktor.observability.KtorMetricContract
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -23,9 +23,9 @@ class MicrometerS3KtorClientTest {
         client.getObjectBytes("documents", "hello.txt")
 
         val timer = registry.find(MicrometerS3KtorClient.DEFAULT_METER_NAME)
-            .tag(KtorMicrometerSupport.TAG_OPERATION, MicrometerS3KtorClient.OPERATION_GET_OBJECT)
-            .tag(KtorMicrometerSupport.TAG_OUTCOME, KtorMicrometerSupport.OUTCOME_SUCCESS)
-            .tag(KtorMicrometerSupport.TAG_BUCKET, "documents")
+            .tag(KtorMetricContract.TAG_OPERATION, KtorMetricContract.OPERATION_GET_OBJECT)
+            .tag(KtorMetricContract.TAG_OUTCOME, KtorMetricContract.OUTCOME_SUCCESS)
+            .tag(KtorMetricContract.TAG_BUCKET, "documents")
             .timer()
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L

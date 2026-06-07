@@ -1,6 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.observability.AwsMicrometerSupport
+import io.bluetape4k.aws.spring.observability.AwsMetricContract
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -26,9 +26,9 @@ class MicrometerSqsOperationsTest {
         operations.send("https://sqs.ap-northeast-2.amazonaws.com/000000000000/orders", "body")
 
         val timer = registry.find(MicrometerSqsOperations.DEFAULT_METER_NAME)
-            .tag(AwsMicrometerSupport.TAG_OPERATION, MicrometerSqsOperations.OPERATION_SEND)
-            .tag(AwsMicrometerSupport.TAG_OUTCOME, AwsMicrometerSupport.OUTCOME_SUCCESS)
-            .tag(AwsMicrometerSupport.TAG_QUEUE_NAME, "orders")
+            .tag(AwsMetricContract.TAG_OPERATION, AwsMetricContract.OPERATION_SEND)
+            .tag(AwsMetricContract.TAG_OUTCOME, AwsMetricContract.OUTCOME_SUCCESS)
+            .tag(AwsMetricContract.TAG_QUEUE_NAME, "orders")
             .timer()
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L
