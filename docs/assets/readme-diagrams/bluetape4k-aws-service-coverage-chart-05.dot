@@ -1,20 +1,68 @@
-digraph Bluetape4kAwsServiceCoverage {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.60, splines=ortho]
-  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.12,0.08", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.4, arrowsize=0.7]
-
-  services [label="Service families\nS3, SQS, SNS, DynamoDB,\nKMS, SES/SESv2, Secrets,\nParameter Store, CloudWatch,\nKinesis, STS", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
-  java [label="aws-java\nbroad Java SDK v2 wrappers\nsync, async, suspend adapters", fillcolor="#e0f2fe", color="#38bdf8"]
-  kotlin [label="aws-kotlin\nnative suspend helpers\nDSL builders and models", fillcolor="#dcfce7", color="#22c55e"]
-  spring [label="aws-spring-boot\noperations and auto-config\nS3, SQS, SNS, DynamoDB,\nKMS, SES, env sources, Exposed", fillcolor="#fef3c7", color="#f59e0b"]
-  ktor [label="aws-ktor\nruntime integrations\nSigV4, S3 REST, SQS consumer,\nDynamoDB plugin, Exposed plugin", fillcolor="#fee2e2", color="#ef4444"]
-  examples [label="examples\nKtor and Spring Boot smoke paths\nS3, SQS/SNS, DynamoDB, Exposed", fillcolor="#f3e8ff", color="#a855f7"]
-
-  services -> java [label="SDK v2"]
-  services -> kotlin [label="Kotlin SDK"]
-  services -> spring [label="Boot 4"]
-  services -> ktor [label="Ktor 3"]
-  spring -> examples
-  ktor -> examples
+digraph G {
+  graph [rankdir=TB, splines=ortho, nodesep=0.65, ranksep=0.85, bgcolor="transparent", label="AWS service coverage", labelloc=t];
+  node [shape=box, style="rounded,filled", fontname="Arial", margin="0.12,0.08"];
+  edge [penwidth=2.0, arrowsize=0.8, fontname="Arial"];
+  row0 [label="aws-java", fillcolor="#FFFFFF", color="#000000"];
+  row1 [label="aws-kotlin", fillcolor="#FFFFFF", color="#000000"];
+  row2 [label="aws-exposed", fillcolor="#FFFFFF", color="#000000"];
+  row3 [label="aws-spring-boot", fillcolor="#FFFFFF", color="#000000"];
+  row4 [label="aws-ktor", fillcolor="#FFFFFF", color="#000000"];
+  row5 [label="examples", fillcolor="#FFFFFF", color="#000000"];
+  svc0 [label="DynamoDB", fillcolor="#FFFFFF", color="#000000"];
+  svc1 [label="S3", fillcolor="#FFFFFF", color="#000000"];
+  svc2 [label="SES/v2", fillcolor="#FFFFFF", color="#000000"];
+  svc3 [label="SNS", fillcolor="#FFFFFF", color="#000000"];
+  svc4 [label="SQS", fillcolor="#FFFFFF", color="#000000"];
+  svc5 [label="KMS", fillcolor="#FFFFFF", color="#000000"];
+  svc6 [label="CloudWatch + Logs", fillcolor="#FFFFFF", color="#000000"];
+  svc7 [label="Kinesis", fillcolor="#FFFFFF", color="#000000"];
+  svc8 [label="STS", fillcolor="#FFFFFF", color="#000000"];
+  svc9 [label="RDS IAM", fillcolor="#FFFFFF", color="#000000"];
+  svc10 [label="Secrets Manager", fillcolor="#FFFFFF", color="#000000"];
+  svc11 [label="Parameter Store", fillcolor="#FFFFFF", color="#000000"];
+  row0 -> svc0 [color="#58A978", xlabel="covers"];
+  row0 -> svc1 [color="#58A978", xlabel="covers"];
+  row0 -> svc2 [color="#58A978", xlabel="covers"];
+  row0 -> svc3 [color="#58A978", xlabel="covers"];
+  row0 -> svc4 [color="#58A978", xlabel="covers"];
+  row0 -> svc5 [color="#58A978", xlabel="covers"];
+  row0 -> svc6 [color="#58A978", xlabel="covers"];
+  row0 -> svc7 [color="#58A978", xlabel="covers"];
+  row0 -> svc8 [color="#58A978", xlabel="covers"];
+  row1 -> svc0 [color="#58A978", xlabel="covers"];
+  row1 -> svc1 [color="#58A978", xlabel="covers"];
+  row1 -> svc2 [color="#58A978", xlabel="covers"];
+  row1 -> svc3 [color="#58A978", xlabel="covers"];
+  row1 -> svc4 [color="#58A978", xlabel="covers"];
+  row1 -> svc5 [color="#58A978", xlabel="covers"];
+  row1 -> svc6 [color="#58A978", xlabel="covers"];
+  row1 -> svc7 [color="#58A978", xlabel="covers"];
+  row1 -> svc8 [color="#58A978", xlabel="covers"];
+  row2 -> svc9 [color="#58A978", xlabel="covers"];
+  row2 -> svc10 [color="#58A978", xlabel="covers"];
+  row2 -> svc11 [color="#58A978", xlabel="covers"];
+  row3 -> svc0 [color="#58A978", xlabel="covers"];
+  row3 -> svc1 [color="#58A978", xlabel="covers"];
+  row3 -> svc2 [color="#58A978", xlabel="covers"];
+  row3 -> svc3 [color="#58A978", xlabel="covers"];
+  row3 -> svc4 [color="#58A978", xlabel="covers"];
+  row3 -> svc5 [color="#58A978", xlabel="covers"];
+  row3 -> svc8 [color="#58A978", xlabel="covers"];
+  row3 -> svc9 [color="#58A978", xlabel="covers"];
+  row3 -> svc10 [color="#58A978", xlabel="covers"];
+  row3 -> svc11 [color="#58A978", xlabel="covers"];
+  row4 -> svc0 [color="#58A978", xlabel="covers"];
+  row4 -> svc1 [color="#58A978", xlabel="covers"];
+  row4 -> svc4 [color="#58A978", xlabel="covers"];
+  row4 -> svc5 [color="#58A978", xlabel="covers"];
+  row4 -> svc9 [color="#58A978", xlabel="covers"];
+  row4 -> svc10 [color="#58A978", xlabel="covers"];
+  row4 -> svc11 [color="#58A978", xlabel="covers"];
+  row5 -> svc0 [color="#58A978", xlabel="covers"];
+  row5 -> svc1 [color="#58A978", xlabel="covers"];
+  row5 -> svc4 [color="#58A978", xlabel="covers"];
+  row5 -> svc5 [color="#58A978", xlabel="covers"];
+  row5 -> svc9 [color="#58A978", xlabel="covers"];
+  row5 -> svc10 [color="#58A978", xlabel="covers"];
+  row5 -> svc11 [color="#58A978", xlabel="covers"];
 }

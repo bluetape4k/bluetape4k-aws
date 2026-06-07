@@ -27,7 +27,7 @@ applications to adopt a single framework or dependency stack.
 - **Kotlin-first AWS clients** — coroutine adapters for Java SDK v2 plus native
   AWS Kotlin SDK helpers and DSL builders.
 - **Service coverage** — DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch,
-  CloudWatch Logs, Kinesis, and STS.
+  CloudWatch Logs, Kinesis, STS, RDS IAM, Secrets Manager, and Parameter Store.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
   listeners, and auto-configuration without awspring.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
@@ -52,9 +52,9 @@ applications to adopt a single framework or dependency stack.
 |---|---|---|
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
-| `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, pluggable settings resolution, Hikari-backed Exposed `Database` creation, and default/named database registry support |
+| `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB, KMS, Secrets Manager, and Parameter Store |
-| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client, SQS consumer runtime, DynamoDB server repository plugin, and shared `bluetape4k-ktor-core` baseline helpers |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, SQS consumer runtime, DynamoDB server repository plugin, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
 | `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |

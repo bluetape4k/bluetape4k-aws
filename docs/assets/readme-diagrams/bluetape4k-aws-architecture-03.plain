@@ -1,14 +1,24 @@
-graph 1 10.818 2.8536
-node app 0.92646 1.9685 1.8529 0.5 "Coroutine application" rounded,filled box #38bdf8 #e0f2fe
-node builders 3.8853 2.524 2.5925 0.65917 "DSL builders\nrequests, models, wait helpers" rounded,filled box #22c55e #dcfce7
-node suspend 3.8853 1.4268 2.6758 0.65917 "Native suspend calls\nwithXClient and service helpers" rounded,filled box #f59e0b #fef3c7
-node http 3.8853 0.32958 2.6237 0.65917 "HTTP engine support\nCRT or OkHttp where needed" rounded,filled box #a855f7 #f3e8ff
-node clients 7.2191 1.4268 2.6029 0.89875 "AWS SDK for Kotlin clients\nDynamoDB, S3, SQS, SNS,\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #94a3b8 #f8fafc
-node aws 10.016 1.4268 1.6029 0.90635 "AWS services\nor local emulator" rounded,filled cylinder #f97316 #fff7ed
-edge app builders 7 0.92903 2.2191 0.92903 2.3711 0.92903 2.536 0.92903 2.536 0.92903 2.536 2.4486 2.536 2.4486 2.536 solid #64748b
-edge app suspend 7 0.92903 1.7144 0.92903 1.5661 0.92903 1.4078 0.92903 1.4078 0.92903 1.4078 2.4055 1.4078 2.4055 1.4078 solid #64748b
-edge builders clients 7 3.8874 2.1909 3.8874 2.0073 3.8874 1.8163 3.8874 1.8163 3.8874 1.8163 5.7762 1.8163 5.7762 1.8163 solid #64748b
-edge suspend clients 4 5.2269 1.4268 5.2269 1.4268 5.7771 1.4268 5.7771 1.4268 solid #64748b
-edge http clients 7 3.8874 0.66273 3.8874 0.8463 3.8874 1.0373 3.8874 1.0373 3.8874 1.0373 5.7762 1.0373 5.7762 1.0373 solid #64748b
-edge clients aws 4 8.5236 1.4268 8.5236 1.4268 9.073 1.4268 9.073 1.4268 solid #64748b
+graph 1 8.2869 4.8819
+node coroutine_app 2.12 4.2917 2.0004 0.5 "Coroutine application" rounded,filled box #5B8DEF #E8F3FF
+node ktor_runtime 4.4533 4.2917 1.2712 0.5 "Ktor runtime" rounded,filled box #5B8DEF #E8F3FF
+node examples 7.5783 4.2917 1.0733 0.5 Examples rounded,filled box #8A72D6 #F1ECFF
+node dsl 1.0367 2.9444 2.0733 0.5 "Suspend request DSL" rounded,filled box #D6A441 #FFF3D9
+node clients 3.4256 2.9444 1.3858 0.5 "Client helpers" rounded,filled box #58A978 #EAF7EF
+node flows 7.5783 2.9444 1.4171 0.5 "Flow adapters" rounded,filled box #58A978 #EAF7EF
+node engines 5.495 2.9444 1.4379 0.5 "HTTP engines" rounded,filled box #8A72D6 #F1ECFF
+node smithy 2.7311 1.5972 1.9067 0.5 "AWS SDK for Kotlin" rounded,filled box #8CA0B3 #F4F7FA
+node java_bridge 6.1756 1.5972 1.6462 0.5 "Java SDK bridge" rounded,filled box #8CA0B3 #F4F7FA
+node services 2.7311 0.25 1.3754 0.5 "Data services" rounded,filled box #F47B36 #FFF0E3
+node ops 6.1756 0.25 1.3337 0.5 "Ops services" rounded,filled box #F47B36 #FFF0E3
+edge coroutine_app dsl 4 1.5966 4.0383 1.5966 4.0383 1.5966 3.3544 1.5966 3.3544 solid #5B8DEF
+edge coroutine_app clients 4 2.9264 4.0383 2.9264 4.0383 2.9264 3.3544 2.9264 3.3544 solid #58A978
+edge ktor_runtime clients 4 3.9681 4.0383 3.9681 4.0383 3.9681 3.3544 3.9681 3.3544 solid #5B8DEF
+edge ktor_runtime engines 4 4.9325 4.0383 4.9325 4.0383 4.9325 3.3544 4.9325 3.3544 solid #8A72D6
+edge examples flows 4 7.5783 4.0383 7.5783 4.0383 7.5783 3.3544 7.5783 3.3544 solid #8A72D6
+edge dsl smithy 4 1.9256 2.691 1.9256 2.691 1.9256 2.0072 1.9256 2.0072 solid #D6A441
+edge clients smithy 4 3.2085 2.691 3.2085 2.691 3.2085 2.0072 3.2085 2.0072 solid #58A978
+edge flows java_bridge 4 6.9342 2.691 6.9342 2.691 6.9342 2.0072 6.9342 2.0072 solid #58A978
+edge engines java_bridge 4 5.7832 2.691 5.7832 2.691 5.7832 2.0072 5.7832 2.0072 solid #8A72D6
+edge smithy services 4 2.7311 1.3438 2.7311 1.3438 2.7311 0.66 2.7311 0.66 solid #8CA0B3
+edge java_bridge ops 4 6.1756 1.3438 6.1756 1.3438 6.1756 0.66 6.1756 0.66 solid #8CA0B3
 stop
