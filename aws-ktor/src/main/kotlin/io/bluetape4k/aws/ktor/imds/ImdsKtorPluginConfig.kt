@@ -58,9 +58,10 @@ class ImdsKtorPluginConfig {
         if (!enabled) {
             return null
         }
-        validate()
 
         imdsOperations?.let { return ImdsKtorRuntime(it) }
+
+        validate()
 
         val injectedClient = ec2MetadataAsyncClient
         val client = injectedClient ?: createEc2MetadataAsyncClient()
@@ -111,4 +112,3 @@ class ImdsKtorPluginConfig {
 fun interface ImdsKtorClientCustomizer {
     fun customize(builder: Ec2MetadataAsyncClient.Builder)
 }
-

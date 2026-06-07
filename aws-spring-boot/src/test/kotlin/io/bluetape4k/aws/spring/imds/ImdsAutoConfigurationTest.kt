@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import software.amazon.awssdk.imds.EndpointMode
 import java.time.Duration
@@ -20,6 +21,7 @@ import java.time.Duration
 class ImdsAutoConfigurationTest {
 
     private val customClient = mockk<Ec2MetadataAsyncClient>(relaxed = true)
+    private val customHttpClient = mockk<SdkAsyncHttpClient>(relaxed = true)
     private val customOperations = mockk<ImdsOperations>(relaxed = true)
 
     private val contextRunner = ApplicationContextRunner()
@@ -32,7 +34,7 @@ class ImdsAutoConfigurationTest {
 
     @BeforeEach
     fun resetMocks() {
-        clearMocks(customClient, customOperations)
+        clearMocks(customClient, customHttpClient, customOperations)
     }
 
     @Test
@@ -63,6 +65,27 @@ class ImdsAutoConfigurationTest {
                 context.getBean(Ec2MetadataAsyncClient::class.java) shouldBeSameInstanceAs customClient
                 context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 1
                 verify(exactly = 0) { customClient.get(any()) }
+            }
+    }
+
+    @Test
+    fun `provided async HTTP client keeps IMDS auto configuration active when Netty is absent`() {
+        contextRunner
+            .withClassLoader(FilteredClassLoader("software.amazon.awssdk.http.nio.netty"))
+            .withBean(SdkAsyncHttpClient::class.java, { customHttpClient })
+            .run { context ->
+                context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `IMDS auto configuration backs off when async HTTP client API is absent`() {
+        contextRunner
+            .withClassLoader(FilteredClassLoader("software.amazon.awssdk.http.async"))
+            .run { context ->
+                context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 0
             }
     }
 

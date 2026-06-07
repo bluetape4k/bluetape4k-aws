@@ -44,6 +44,37 @@ class ImdsKtorPluginTest {
     }
 
     @Test
+    fun `plugin install accepts injected operations with invalid client only settings`() = testApplication {
+        application {
+            install(ImdsKtorPlugin) {
+                imdsOperations = operations
+                tokenTtl = Duration.ZERO
+                requestTimeout = Duration.ZERO
+                retries = -1
+            }
+        }
+
+        startApplication()
+
+        application.imds() shouldBeSameInstanceAs operations
+        application.attributes[ImdsKtorRuntimeKey].operations shouldBeSameInstanceAs operations
+    }
+
+    @Test
+    fun `injected operations bypass client only validation`() {
+        val runtime = ImdsKtorPluginConfig().apply {
+            imdsOperations = operations
+            tokenTtl = Duration.ZERO
+            requestTimeout = Duration.ZERO
+            retries = -1
+        }.toRuntime()
+        requireNotNull(runtime)
+
+        runtime.operations shouldBeSameInstanceAs operations
+        runtime.stop()
+    }
+
+    @Test
     fun `plugin does not store operations when disabled`() = testApplication {
         application {
             install(ImdsKtorPlugin) {

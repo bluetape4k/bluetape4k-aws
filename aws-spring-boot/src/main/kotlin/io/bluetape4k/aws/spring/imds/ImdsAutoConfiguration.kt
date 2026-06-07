@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.imds
 
+import io.bluetape4k.aws.http.SdkAsyncHttpClientProvider
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import org.springframework.beans.factory.ObjectProvider
@@ -10,7 +11,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
-import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
 
@@ -21,7 +21,6 @@ import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.async.SdkAsyncHttpClient",
-        "software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient",
         "software.amazon.awssdk.imds.Ec2MetadataAsyncClient",
     ]
 )
@@ -42,12 +41,7 @@ class ImdsAutoConfiguration {
             .apply {
                 properties.endpoint?.let { endpoint(it) }
                     ?: properties.endpointMode?.let { endpointMode(it) }
-                val sharedHttpClient = httpClient.getIfAvailable()
-                if (sharedHttpClient != null) {
-                    httpClient(sharedHttpClient)
-                } else {
-                    httpClient(NettyNioAsyncHttpClient.builder())
-                }
+                httpClient(httpClient.getIfAvailable() ?: SdkAsyncHttpClientProvider.defaultHttpClient)
                 customizers.orderedStream().forEach { it.customize(this) }
             }
             .build()
