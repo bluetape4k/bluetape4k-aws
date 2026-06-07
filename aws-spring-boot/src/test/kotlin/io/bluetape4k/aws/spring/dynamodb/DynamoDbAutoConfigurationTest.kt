@@ -5,7 +5,9 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.mockk.clearMocks
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -19,6 +21,9 @@ import software.amazon.dax.ClusterDaxAsyncClient
 
 class DynamoDbAutoConfigurationTest {
 
+    private val customClient = mockk<DynamoDbAsyncClient>(relaxed = true)
+    private val customEnhancedClient = mockk<DynamoDbEnhancedAsyncClient>(relaxed = true)
+
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
             AutoConfigurations.of(
@@ -28,6 +33,11 @@ class DynamoDbAutoConfigurationTest {
             )
         )
         .withPropertyValues("bluetape4k.aws.dynamodb.region=us-east-1")
+
+    @BeforeEach
+    fun resetMocks() {
+        clearMocks(customClient, customEnhancedClient)
+    }
 
     @Test
     fun `register DynamoDB clients properties and resolver`() {
@@ -53,8 +63,6 @@ class DynamoDbAutoConfigurationTest {
 
     @Test
     fun `custom DynamoDB async client backs off default client`() {
-        val customClient = mockk<DynamoDbAsyncClient>(relaxed = true)
-
         contextRunner
             .withBean(DynamoDbAsyncClient::class.java, { customClient })
             .run { context ->
@@ -66,8 +74,6 @@ class DynamoDbAutoConfigurationTest {
 
     @Test
     fun `custom DynamoDB async client backs off DAX client`() {
-        val customClient = mockk<DynamoDbAsyncClient>(relaxed = true)
-
         contextRunner
             .withBean(DynamoDbAsyncClient::class.java, { customClient })
             .withPropertyValues(
@@ -83,8 +89,6 @@ class DynamoDbAutoConfigurationTest {
 
     @Test
     fun `custom enhanced client backs off default enhanced client`() {
-        val customEnhancedClient = mockk<DynamoDbEnhancedAsyncClient>(relaxed = true)
-
         contextRunner
             .withBean(DynamoDbEnhancedAsyncClient::class.java, { customEnhancedClient })
             .run { context ->

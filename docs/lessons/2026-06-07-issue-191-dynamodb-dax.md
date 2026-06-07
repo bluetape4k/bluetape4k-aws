@@ -40,3 +40,8 @@ Do not reuse AWS SDK `DynamoDbAsyncClientBuilder` customizers for DAX directly;
 `ClusterDaxAsyncClient` uses its own `software.amazon.dax.Configuration`
 builder. Keep live DAX cluster validation separate from emulator-backed
 LocalStack, Floci, and DynamoDB Local tests.
+
+When adding a README-visible feature, update the related README diagram asset in
+the same PR. For auto-configuration tests, keep reusable MockK collaborators as
+class fields and clear them in `@BeforeEach` when the test class already has
+multiple custom-bean backoff scenarios.

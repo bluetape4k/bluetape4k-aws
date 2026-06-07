@@ -51,6 +51,30 @@ Reviewed the implementation diff against:
   - `gno embed --collection bluetape4k-wiki`: `Embedded 1 chunks`
   - `gno search "DynamoDB DAX Spring Boot bluetape4k" -c bluetape4k-wiki -n 5`: new research note returned as first result
 
+## PR Feedback Follow-up
+
+Reviewed PR comments added after the first CI pass:
+
+- Package-level property prefix constants now cover
+  `bluetape4k.aws.dynamodb` and `bluetape4k.aws.dynamodb.dax`.
+- `DynamoDbAutoConfigurationTest` now reuses class-level MockK instances and
+  clears them in `@BeforeEach`.
+- `aws-spring-boot` architecture diagram now includes the optional DAX
+  auto-configuration path and DAX service target.
+
+Follow-up validation:
+
+- `xmllint --noout docs/images/readme-diagrams/aws-spring-boot-architecture-01.svg docs/images/readme-diagrams/aws-spring-boot-architecture-01-sketch.svg`
+  - passed
+- `rsvg-convert -w 1240 -h 1100 docs/images/readme-diagrams/aws-spring-boot-architecture-01.svg -o docs/images/readme-diagrams/aws-spring-boot-architecture-01.png`
+  - passed
+- Rendered PNG inspection:
+  - passed; DAX card, DAX route, card text, footer, and outer margins are readable at README scale.
+- `./gradlew :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.dynamodb.*'`
+  - `13 passing`
+- `git diff --check`
+  - passed
+
 ## Gate Verdict
 
 PASS.
