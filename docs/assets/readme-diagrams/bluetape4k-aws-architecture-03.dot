@@ -1,19 +1,27 @@
-digraph Bluetape4kAwsKotlinArchitecture {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.70, splines=ortho]
-  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-
-  app [label="Coroutine application", fillcolor="#e0f2fe", color="#38bdf8"]
-  builders [label="DSL builders\nrequests, models, wait helpers", fillcolor="#dcfce7", color="#22c55e"]
-  suspend [label="Native suspend calls\nwithXClient and service helpers", fillcolor="#fef3c7", color="#f59e0b"]
-  http [label="HTTP engine support\nCRT or OkHttp where needed", fillcolor="#f3e8ff", color="#a855f7"]
-  clients [label="AWS SDK for Kotlin clients\nDynamoDB, S3, SQS, SNS,\nKMS, CloudWatch, Kinesis, STS", fillcolor="#f8fafc", color="#94a3b8"]
-  aws [label="AWS services\nor local emulator", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
-
-  app -> builders
-  app -> suspend
-  suspend -> clients
-  builders -> clients
-  http -> clients
-  clients -> aws
+digraph G {
+  graph [rankdir=TB, splines=ortho, nodesep=0.65, ranksep=0.85, bgcolor="transparent", label="Kotlin SDK architecture", labelloc=t];
+  node [shape=box, style="rounded,filled", fontname="Arial", margin="0.12,0.08"];
+  edge [penwidth=2.0, arrowsize=0.8, fontname="Arial"];
+  coroutine_app [label="Coroutine application", fillcolor="#E8F3FF", color="#5B8DEF"];
+  ktor_runtime [label="Ktor runtime", fillcolor="#E8F3FF", color="#5B8DEF"];
+  examples [label="Examples", fillcolor="#F1ECFF", color="#8A72D6"];
+  dsl [label="Suspend request DSL", fillcolor="#FFF3D9", color="#D6A441"];
+  clients [label="Client helpers", fillcolor="#EAF7EF", color="#58A978"];
+  flows [label="Flow adapters", fillcolor="#EAF7EF", color="#58A978"];
+  engines [label="HTTP engines", fillcolor="#F1ECFF", color="#8A72D6"];
+  smithy [label="AWS SDK for Kotlin", fillcolor="#F4F7FA", color="#8CA0B3"];
+  java_bridge [label="Java SDK bridge", fillcolor="#F4F7FA", color="#8CA0B3"];
+  services [label="Data services", fillcolor="#FFF0E3", color="#F47B36"];
+  ops [label="Ops services", fillcolor="#FFF0E3", color="#F47B36"];
+  coroutine_app -> dsl [color="#5B8DEF", xlabel="build"];
+  coroutine_app -> clients [color="#58A978", xlabel="call"];
+  ktor_runtime -> clients [color="#5B8DEF", xlabel="plugin"];
+  ktor_runtime -> engines [color="#8A72D6", xlabel="transport"];
+  examples -> flows [color="#8A72D6", xlabel="exercise"];
+  dsl -> smithy [color="#D6A441", xlabel="requests"];
+  clients -> smithy [color="#58A978", xlabel="suspend"];
+  flows -> java_bridge [color="#58A978", xlabel="stream"];
+  engines -> java_bridge [color="#8A72D6", xlabel="sign"];
+  smithy -> services [color="#8CA0B3", xlabel="service calls"];
+  java_bridge -> ops [color="#8CA0B3", xlabel="support calls"];
 }

@@ -1,15 +1,23 @@
-graph 1 10.932 2.8536
-node app 0.75458 1.4268 1.5092 0.5 "Application code" rounded,filled box #38bdf8 #e0f2fe
-node sync 3.4374 2.524 2.4675 0.65917 "Sync extensions\nrequest builders and helpers" rounded,filled box #94a3b8 #f8fafc
-node async 3.4374 1.4268 2.3633 0.65917 "Async extensions\nCompletableFuture helpers" rounded,filled box #38bdf8 #e0f2fe
-node suspend 3.4374 0.32958 1.8633 0.65917 "Coroutine extensions\nsuspend wrappers" rounded,filled box #22c55e #dcfce7
-node clients 6.8753 1.4268 3.0196 0.89875 "AWS Java SDK v2 clients\nS3AsyncClient, SqsAsyncClient,\nDynamoDbEnhancedAsyncClient, etc." rounded,filled box #f59e0b #fef3c7
-node aws 10.006 1.4268 1.8529 0.90635 "AWS services\nor LocalStack/Floci" rounded,filled cylinder #f97316 #fff7ed
-edge app sync 7 0.75194 1.6813 0.75194 2.0054 0.75194 2.524 0.75194 2.524 0.75194 2.524 2.0611 2.524 2.0611 2.524 solid #64748b
-edge app async 4 1.5126 1.4268 1.5126 1.4268 2.1141 1.4268 2.1141 1.4268 solid #64748b
-edge app suspend 7 0.75194 1.1723 0.75194 0.84819 0.75194 0.32958 0.75194 0.32958 0.75194 0.32958 2.3662 0.32958 2.3662 0.32958 solid #64748b
-edge sync clients 7 3.4325 2.1909 3.4325 2.0073 3.4325 1.8163 3.4325 1.8163 3.4325 1.8163 5.2246 1.8163 5.2246 1.8163 solid #64748b
-edge async clients 4 4.6253 1.4268 4.6253 1.4268 5.2242 1.4268 5.2242 1.4268 solid #64748b
-edge suspend clients 7 3.4325 0.66273 3.4325 0.8463 3.4325 1.0373 3.4325 1.0373 3.4325 1.0373 5.2246 1.0373 5.2246 1.0373 solid #64748b
-edge clients aws 4 8.3903 1.4268 8.3903 1.4268 8.9405 1.4268 8.9405 1.4268 solid #64748b
+graph 1 9.0974 4.8819
+node app 1.1875 4.2917 1.615 0.5 "Application code" rounded,filled box #5B8DEF #E8F3FF
+node repo 4.5764 4.2917 2.3754 0.5 "Repository and templates" rounded,filled box #5B8DEF #E8F3FF
+node auto 8.1181 4.2917 1.9587 0.5 "Spring/Ktor adapters" rounded,filled box #5B8DEF #E8F3FF
+node models 1.1875 2.9444 1.4692 0.5 "Model builders" rounded,filled box #D6A441 #FFF3D9
+node extensions 3.4097 2.9444 1.6671 0.5 "Client extensions" rounded,filled box #D6A441 #FFF3D9
+node coroutines 5.8125 2.9444 1.8337 0.5 "Coroutine adapters" rounded,filled box #58A978 #EAF7EF
+node factories 8.1181 2.9444 1.4796 0.5 "Client factories" rounded,filled box #8A72D6 #F1ECFF
+node sdk 2.7986 1.5972 1.9067 0.5 "Java SDK v2 clients" rounded,filled box #8CA0B3 #F4F7FA
+node transfer 6.4097 1.5972 1.9483 0.5 "Transfer and waiters" rounded,filled box #8CA0B3 #F4F7FA
+node aws 2.7986 0.25 1.7608 0.5 "AWS service APIs" rounded,filled box #F47B36 #FFF0E3
+node observability 6.4097 0.25 2.115 0.5 "Security and telemetry" rounded,filled box #F47B36 #FFF0E3
+edge app models 4 1.1875 4.0383 1.1875 4.0383 1.1875 3.3544 1.1875 3.3544 solid #5B8DEF
+edge repo extensions 4 3.816 4.0383 3.816 4.0383 3.816 3.3544 3.816 3.3544 solid #5B8DEF
+edge repo coroutines 4 5.3299 4.0383 5.3299 4.0383 5.3299 3.3544 5.3299 3.3544 solid #58A978
+edge auto factories 4 8.1181 4.0383 8.1181 4.0383 8.1181 3.3544 8.1181 3.3544 solid #8A72D6
+edge models sdk 7 1.926 2.9444 2.1247 2.9444 2.2856 2.9444 2.2856 2.9444 2.2856 2.9444 2.2856 2.0038 2.2856 2.0038 solid #D6A441
+edge extensions sdk 4 3.1641 2.691 3.1641 2.691 3.1641 2.0072 3.1641 2.0072 solid #D6A441
+edge coroutines transfer 4 6.0825 2.691 6.0825 2.691 6.0825 2.0072 6.0825 2.0072 solid #58A978
+edge factories transfer 7 7.3744 2.9444 7.3041 2.9444 7.2585 2.9444 7.2585 2.9444 7.2585 2.9444 7.2585 2.0038 7.2585 2.0038 solid #8A72D6
+edge sdk aws 4 2.7986 1.3438 2.7986 1.3438 2.7986 0.66 2.7986 0.66 solid #8CA0B3
+edge transfer observability 4 6.4097 1.3438 6.4097 1.3438 6.4097 0.66 6.4097 0.66 solid #8CA0B3
 stop
