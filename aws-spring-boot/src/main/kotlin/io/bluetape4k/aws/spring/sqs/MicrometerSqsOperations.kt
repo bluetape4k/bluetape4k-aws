@@ -91,7 +91,7 @@ class MicrometerSqsOperations(
         queueUrl: String? = null,
         block: suspend () -> T,
     ): T =
-        AwsMicrometerSupport.recordSuspend(meterRegistry, meterName, { outcome, exception ->
+        AwsMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
             tags(operation, outcome, queueUrl, exception)
         }, block)
 

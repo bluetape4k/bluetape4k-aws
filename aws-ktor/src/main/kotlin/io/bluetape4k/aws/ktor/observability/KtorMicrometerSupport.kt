@@ -57,48 +57,75 @@ internal object KtorMicrometerSupport {
             .record(duration)
     }
 
-    suspend fun <T> recordSuspend(
+    suspend inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        tagFactory: (String, String) -> Tags,
-        block: suspend () -> T,
+        crossinline tagFactory: (String, String) -> Tags,
+        crossinline block: suspend () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {
             val result = block()
-            record(meterRegistry, meterName, tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE), durationSince(startedAt))
+            record(
+                meterRegistry,
+                meterName,
+                tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE),
+                Duration.ofNanos(System.nanoTime() - startedAt),
+            )
             result
         } catch (e: CancellationException) {
-            record(meterRegistry, meterName, tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(
+                meterRegistry,
+                meterName,
+                tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()),
+                Duration.ofNanos(System.nanoTime() - startedAt),
+            )
             throw e
         } catch (e: Exception) {
-            record(meterRegistry, meterName, tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(
+                meterRegistry,
+                meterName,
+                tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()),
+                Duration.ofNanos(System.nanoTime() - startedAt),
+            )
             throw e
         }
     }
 
-    fun <T> recordBlocking(
+    inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        tagFactory: (String, String) -> Tags,
-        block: () -> T,
+        crossinline tagFactory: (String, String) -> Tags,
+        crossinline block: () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {
             val result = block()
-            record(meterRegistry, meterName, tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE), durationSince(startedAt))
+            record(
+                meterRegistry,
+                meterName,
+                tagFactory(OUTCOME_SUCCESS, EXCEPTION_NONE),
+                Duration.ofNanos(System.nanoTime() - startedAt),
+            )
             result
         } catch (e: CancellationException) {
-            record(meterRegistry, meterName, tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(
+                meterRegistry,
+                meterName,
+                tagFactory(OUTCOME_CANCELLED, e::class.qualifiedName.orEmpty()),
+                Duration.ofNanos(System.nanoTime() - startedAt),
+            )
             throw e
         } catch (e: Exception) {
-            record(meterRegistry, meterName, tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()), durationSince(startedAt))
+            record(
+                meterRegistry,
+                meterName,
+                tagFactory(OUTCOME_FAILURE, e::class.qualifiedName.orEmpty()),
+                Duration.ofNanos(System.nanoTime() - startedAt),
+            )
             throw e
         }
     }
-
-    private fun durationSince(startedAt: Long): Duration =
-        Duration.ofNanos(System.nanoTime() - startedAt)
 
     private fun queueName(queueUrl: String?): String =
         queueUrl

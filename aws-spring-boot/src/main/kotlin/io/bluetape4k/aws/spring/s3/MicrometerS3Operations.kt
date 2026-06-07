@@ -96,12 +96,12 @@ class MicrometerS3Operations(
         }
 
     private suspend fun <T> record(operation: String, bucket: String, block: suspend () -> T): T =
-        AwsMicrometerSupport.recordSuspend(meterRegistry, meterName, { outcome, exception ->
+        AwsMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
             tags(operation, outcome, bucket, exception)
         }, block)
 
     private fun <T> recordBlocking(operation: String, bucket: String, block: () -> T): T =
-        AwsMicrometerSupport.recordBlocking(meterRegistry, meterName, { outcome, exception ->
+        AwsMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
             tags(operation, outcome, bucket, exception)
         }, block)
 

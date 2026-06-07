@@ -61,11 +61,11 @@ internal object AwsMicrometerSupport {
             .record(Duration.ofNanos(System.nanoTime() - startedAt))
     }
 
-    suspend fun <T> recordSuspend(
+    suspend inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        tagFactory: (String, Throwable?) -> Tags,
-        block: suspend () -> T,
+        crossinline tagFactory: (String, Throwable?) -> Tags,
+        crossinline block: suspend () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {
@@ -81,11 +81,11 @@ internal object AwsMicrometerSupport {
         }
     }
 
-    fun <T> recordBlocking(
+    inline fun <T> record(
         meterRegistry: MeterRegistry,
         meterName: String,
-        tagFactory: (String, Throwable?) -> Tags,
-        block: () -> T,
+        crossinline tagFactory: (String, Throwable?) -> Tags,
+        crossinline block: () -> T,
     ): T {
         val startedAt = System.nanoTime()
         return try {
