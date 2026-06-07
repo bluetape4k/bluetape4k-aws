@@ -3,8 +3,9 @@
 [English](README.md) | [한국어](README.ko.md)
 
 Spring Boot 4 auto-configuration for AWS Java SDK v2. Provides coroutine-first
-templates, a SQS listener container, CloudWatch metric/log helpers, and remote
-Environment sources, with no `awspring` runtime dependency.
+templates, a SQS listener container, CloudWatch metric/log helpers, EC2 IMDS
+metadata operations, and remote Environment sources, with no `awspring` runtime
+dependency.
 
 ## Architecture
 
@@ -35,6 +36,8 @@ Environment sources, with no `awspring` runtime dependency.
   `CloudWatchLogsCoroutinesTemplate` for coroutine metric/log publishing, plus
   an opt-in `CloudWatchMeterPublishingOperations` helper that reads the
   application `MeterRegistry` when Micrometer is present.
+- **EC2 IMDS** — `ImdsOperations` wraps AWS SDK v2 IMDS calls with coroutine
+  methods and per-operation timeouts for EC2 instance metadata reads.
 - **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
   generation, optional Spring Security `TextEncryptor`, and explicit
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
@@ -67,6 +70,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+    implementation("software.amazon.awssdk:imds")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
@@ -176,6 +180,12 @@ bluetape4k:
       log-group-name: /aws/app/order-api
       log-stream-name: local
       batch-size: 10000
+    imds:
+      enabled: true
+      endpoint-mode: ipv4
+      token-ttl: PT6H
+      request-timeout: 1s
+      retries: 0
     kms:
       enabled: true
       region: ap-northeast-2
@@ -248,6 +258,10 @@ bean exists; it reads meter snapshots on explicit method calls and does not
 replace the active registry.
 `cloudwatch-logs.log-group-name` and `cloudwatch-logs.log-stream-name` are used
 by default log-event publishing methods.
+`imds.request-timeout` bounds each metadata operation. IMDS bean creation never
+calls the metadata endpoint, so non-EC2 environments do not pay a startup
+probe cost. Keep credential retrieval on the AWS SDK default provider chain or
+STS web identity; `ImdsOperations` exposes safe metadata helpers only.
 S3 config, Secrets Manager, and Parameter Store sources are loaded by
 `EnvironmentPostProcessor` before normal bean binding. S3 config sources load
 single objects in `properties`, `yaml`, or `json` format; `auto` format detects
@@ -664,6 +678,34 @@ observability baseline. It still does not auto-configure
 `micrometer-registry-cloudwatch`; add that registry in the application if you
 want scheduled registry-level publication. The built-in helper is an explicit
 snapshot publisher over the current `MeterRegistry`.
+
+### EC2 IMDS — Metadata Operations
+
+```kotlin
+import io.bluetape4k.aws.spring.imds.ImdsOperations
+
+class InstanceMetadataReporter(
+    private val imds: ImdsOperations,
+) {
+    suspend fun snapshot(): Map<String, String> =
+        mapOf(
+            "instanceId" to imds.instanceId(),
+            "instanceType" to imds.instanceType(),
+            "region" to imds.region(),
+            "availabilityZone" to imds.availabilityZone(),
+        )
+
+    suspend fun roleNames(): List<String> =
+        imds.iamRoleNames()
+}
+```
+
+`ImdsOperations` delegates to AWS SDK v2 `Ec2MetadataAsyncClient` and wraps each
+call in the configured timeout. It is passive during Spring startup and should
+be used only by EC2-hosted applications that need instance metadata. It does not
+expose IAM role credential documents; applications should keep credentials on
+`DefaultCredentialsProvider`, STS web identity, or another explicit AWS SDK
+credentials provider.
 
 ### KMS — explicit field encryption
 

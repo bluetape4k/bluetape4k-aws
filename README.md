@@ -27,7 +27,8 @@ applications to adopt a single framework or dependency stack.
 - **Kotlin-first AWS clients** — coroutine adapters for Java SDK v2 plus native
   AWS Kotlin SDK helpers and DSL builders.
 - **Service coverage** — DynamoDB, S3, SES/SESv2, SNS, SQS, KMS, CloudWatch,
-  CloudWatch Logs, Kinesis, STS, RDS IAM, Secrets Manager, and Parameter Store.
+  CloudWatch Logs, EC2 IMDS, Kinesis, STS, RDS IAM, Secrets Manager, and
+  Parameter Store.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
   listeners, and auto-configuration without awspring.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
@@ -53,7 +54,7 @@ applications to adopt a single framework or dependency stack.
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, SQS consumer runtime, DynamoDB server repository plugin, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
@@ -162,6 +163,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+    implementation("software.amazon.awssdk:imds")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:secretsmanager")
@@ -178,7 +180,8 @@ Use this module when your application wants Spring-managed AWS clients and corou
 helpers. The library includes `micrometer-core` because Micrometer is a Spring Boot observability
 baseline. It still does not pull every AWS SDK service at runtime; add only the AWS SDK modules
 you actually use. Add `software.amazon.awssdk:cloudwatch` and `software.amazon.awssdk:cloudwatchlogs`
-when using CloudWatch helpers. For KMS, add `software.amazon.awssdk:kms`. Add
+when using CloudWatch helpers. Add `software.amazon.awssdk:imds` when using EC2
+metadata helpers. For KMS, add `software.amazon.awssdk:kms`. Add
 `spring-security-crypto` only when you want to inject Spring Security's synchronous `TextEncryptor`.
 
 ```yaml
@@ -231,6 +234,12 @@ bluetape4k:
       endpoint-override: http://localhost:4566
       log-group-name: /aws/app/order-api
       log-stream-name: local
+    imds:
+      enabled: true
+      endpoint-mode: ipv4
+      token-ttl: PT6H
+      request-timeout: 1s
+      retries: 0
     sqs:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
@@ -400,6 +409,30 @@ class OrderObservability(
 The Micrometer helper is registered only when a `MeterRegistry` bean exists. It
 publishes explicit snapshots through `CloudWatchOperations` and does not replace
 scheduled Micrometer registry publication.
+
+### EC2 IMDS — Spring Boot Metadata Operations
+
+```kotlin
+import io.bluetape4k.aws.spring.imds.ImdsOperations
+
+class InstanceMetadataReporter(
+    private val imds: ImdsOperations,
+) {
+    suspend fun describe(): String {
+        val instanceId = imds.instanceId()
+        val region = imds.region()
+        val zone = imds.availabilityZone()
+
+        return "$instanceId in $region/$zone"
+    }
+}
+```
+
+`ImdsOperations` is passive during Spring startup and calls IMDS only when an
+operation is invoked. Each call is bounded by `bluetape4k.aws.imds.request-timeout`.
+Use it for EC2 instance metadata, not as a replacement for `DefaultCredentialsProvider`
+or EKS/IRSA web identity credentials. The helper exposes IAM role names only and
+does not expose temporary credential documents.
 
 ### Secrets Manager and Parameter Store — Environment Sources
 
