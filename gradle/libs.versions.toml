@@ -169,6 +169,7 @@ aws2-rds = { module = "software.amazon.awssdk:rds", version.ref = "aws2" }
 aws2-kms = { module = "software.amazon.awssdk:kms", version.ref = "aws2" }
 aws2-cloudwatch = { module = "software.amazon.awssdk:cloudwatch", version.ref = "aws2" }
 aws2-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "aws2" }
+aws2-imds = { module = "software.amazon.awssdk:imds", version.ref = "aws2" }
 aws2-kinesis = { module = "software.amazon.awssdk:kinesis", version.ref = "aws2" }
 aws2-sts = { module = "software.amazon.awssdk:sts", version.ref = "aws2" }
 aws2-ec2 = { module = "software.amazon.awssdk:ec2", version.ref = "aws2" }

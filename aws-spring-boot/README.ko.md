@@ -1,10 +1,10 @@
 # Module bluetape4k-aws-spring-boot
 
-한국어 | [English](README.md)
+[English](README.md) | 한국어
 
 AWS Java SDK v2 를 위한 Spring Boot 4 자동 설정 모듈. Coroutines 우선 템플릿과
-SQS 리스너 컨테이너, CloudWatch metric/log helper, 원격 Environment source 를
-제공하며, `awspring` 런타임 의존성은 사용하지 않는다.
+SQS 리스너 컨테이너, CloudWatch metric/log helper, EC2 IMDS metadata operation,
+원격 Environment source 를 제공하며, `awspring` 런타임 의존성은 사용하지 않는다.
 
 ## Architecture
 
@@ -33,6 +33,8 @@ SQS 리스너 컨테이너, CloudWatch metric/log helper, 원격 Environment sou
   `CloudWatchLogsCoroutinesTemplate` 로 coroutine metric/log publishing 을 제공하고,
   Micrometer가 있을 때 application `MeterRegistry` 를 읽는 선택적
   `CloudWatchMeterPublishingOperations` helper 를 제공한다.
+- **EC2 IMDS** — `ImdsOperations` 가 AWS SDK v2 IMDS 호출을 coroutine method 와
+  operation timeout 으로 감싸 EC2 instance metadata 조회를 제공한다.
 - **KMS** — `KmsOperations` 로 coroutine 암호화/복호화와 data key 생성을
   제공하고, 선택적 Spring Security `TextEncryptor`, `String` 필드용 명시적
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` 를 지원한다.
@@ -64,6 +66,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+    implementation("software.amazon.awssdk:imds")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
@@ -173,6 +176,12 @@ bluetape4k:
       log-group-name: /aws/app/order-api
       log-stream-name: local
       batch-size: 10000
+    imds:
+      enabled: true
+      endpoint-mode: ipv4
+      token-ttl: PT6H
+      request-timeout: 1s
+      retries: 0
     kms:
       enabled: true
       region: ap-northeast-2
@@ -244,6 +253,10 @@ Micrometer helper 는 application `MeterRegistry` bean 이 있을 때만 등록�
 명시적 method 호출 시점에 meter snapshot 을 읽고 활성 registry 를 대체하지 않는다.
 `cloudwatch-logs.log-group-name` 과 `cloudwatch-logs.log-stream-name` 은 기본 log-event
 publishing method 에서 사용된다.
+`imds.request-timeout` 은 각 metadata operation 을 제한한다. IMDS bean 생성은 metadata
+endpoint 를 호출하지 않으므로 EC2가 아닌 환경에서도 startup probe 비용이 없다.
+credential 조회는 AWS SDK default provider chain 또는 STS web identity 에 맡기고,
+`ImdsOperations` 는 안전한 metadata helper 만 노출한다.
 S3 config, Secrets Manager, Parameter Store source 는 `EnvironmentPostProcessor` 로
 일반 bean binding 전에 로드된다. S3 config source 는 단일 object 를 `properties`,
 `yaml`, `json` 형식으로 읽는다. `auto` 형식은 object key 확장자로 parser 를 고르고,
@@ -650,6 +663,33 @@ class OrderObservability(
 scheduled publishing 이 필요하면 애플리케이션에서 해당 registry 를 추가한다. 내장
 helper 는 현재 `MeterRegistry` 를 읽어 명시적으로 한 번 publish 하는 snapshot
 publisher 이다.
+
+### EC2 IMDS — Metadata Operations
+
+```kotlin
+import io.bluetape4k.aws.spring.imds.ImdsOperations
+
+class InstanceMetadataReporter(
+    private val imds: ImdsOperations,
+) {
+    suspend fun snapshot(): Map<String, String> =
+        mapOf(
+            "instanceId" to imds.instanceId(),
+            "instanceType" to imds.instanceType(),
+            "region" to imds.region(),
+            "availabilityZone" to imds.availabilityZone(),
+        )
+
+    suspend fun roleNames(): List<String> =
+        imds.iamRoleNames()
+}
+```
+
+`ImdsOperations` 는 AWS SDK v2 `Ec2MetadataAsyncClient` 로 위임하고 각 호출을 설정된
+timeout 으로 감싼다. Spring startup 중에는 수동적이며, EC2에서 실행되는 애플리케이션의
+instance metadata 조회 용도로만 사용한다. IAM role credential document 는 노출하지
+않는다. 애플리케이션 credential 은 `DefaultCredentialsProvider`, STS web identity,
+또는 명시적 AWS SDK credentials provider 에 맡긴다.
 
 ### KMS — 명시적 필드 암호화
 
