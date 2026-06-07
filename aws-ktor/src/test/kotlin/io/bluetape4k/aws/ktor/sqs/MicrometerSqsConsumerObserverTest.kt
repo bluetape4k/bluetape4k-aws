@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.aws.ktor.observability.KtorMicrometerSupport
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -26,17 +27,17 @@ class MicrometerSqsConsumerObserverTest {
 
         observer.observe(
             SqsConsumerObservation(
-                operation = "receive",
-                outcome = "success",
+                operation = KtorSqsObservationOperations.RECEIVE,
+                outcome = KtorSqsObservationOutcomes.SUCCESS,
                 queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/000000000000/orders",
                 duration = Duration.ofMillis(3),
             )
         )
 
         val timer = registry.find(MicrometerSqsConsumerObserver.DEFAULT_METER_NAME)
-            .tag("operation", "receive")
-            .tag("outcome", "success")
-            .tag("queue.name", "orders")
+            .tag(KtorMicrometerSupport.TAG_OPERATION, KtorSqsObservationOperations.RECEIVE)
+            .tag(KtorMicrometerSupport.TAG_OUTCOME, KtorSqsObservationOutcomes.SUCCESS)
+            .tag(KtorMicrometerSupport.TAG_QUEUE_NAME, "orders")
             .timer()
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L
@@ -60,7 +61,7 @@ class MicrometerSqsConsumerObserverTest {
 
         runtime.send("hello", "https://sqs.ap-northeast-2.amazonaws.com/000000000000/orders")
 
-        observations.single().operation shouldBeEqualTo "send"
-        observations.single().outcome shouldBeEqualTo "success"
+        observations.single().operation shouldBeEqualTo KtorSqsObservationOperations.SEND
+        observations.single().outcome shouldBeEqualTo KtorSqsObservationOutcomes.SUCCESS
     }
 }

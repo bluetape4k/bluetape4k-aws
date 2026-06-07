@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.aws.spring.observability.AwsMicrometerSupport
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -29,11 +30,11 @@ class MicrometerSqsListenerInterceptorTest {
         interceptor.afterAcknowledgement(context, SqsAcknowledgementAction.ACK, null)
 
         val timer = registry.find(MicrometerSqsListenerInterceptor.DEFAULT_METER_NAME)
-            .tag("operation", "acknowledgement")
-            .tag("outcome", "success")
-            .tag("listener.id", "orders-listener")
-            .tag("queue.name", "orders")
-            .tag("ack.action", "ack")
+            .tag(AwsMicrometerSupport.TAG_OPERATION, MicrometerSqsListenerInterceptor.OPERATION_ACKNOWLEDGEMENT)
+            .tag(AwsMicrometerSupport.TAG_OUTCOME, AwsMicrometerSupport.OUTCOME_SUCCESS)
+            .tag(AwsMicrometerSupport.TAG_LISTENER_ID, "orders-listener")
+            .tag(AwsMicrometerSupport.TAG_QUEUE_NAME, "orders")
+            .tag(MicrometerSqsListenerInterceptor.TAG_ACK_ACTION, "ack")
             .timer()
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L

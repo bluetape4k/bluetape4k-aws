@@ -34,12 +34,12 @@ class MicrometerSqsListenerInterceptor(
             meterRegistry = meterRegistry,
             meterName = meterName,
             tags = tags(
-                operation = "receive",
-                outcome = if (error == null) "success" else "failure",
+                operation = OPERATION_RECEIVE,
+                outcome = outcome(error),
                 listenerId = listenerId,
                 queueUrl = queueUrl,
                 exception = error,
-                extras = listOf(Tag.of("message.count", messages.size.toString())),
+                extras = listOf(Tag.of(TAG_MESSAGE_COUNT, messages.size.toString())),
             ),
             startedAt = startedAt,
         )
@@ -56,8 +56,8 @@ class MicrometerSqsListenerInterceptor(
             meterRegistry = meterRegistry,
             meterName = meterName,
             tags = tags(
-                operation = "handle",
-                outcome = if (error == null) "success" else "failure",
+                operation = OPERATION_HANDLE,
+                outcome = outcome(error),
                 listenerId = context.listenerId,
                 queueUrl = context.queueUrl,
                 exception = error,
@@ -84,12 +84,12 @@ class MicrometerSqsListenerInterceptor(
             meterRegistry = meterRegistry,
             meterName = meterName,
             tags = tags(
-                operation = "acknowledgement",
-                outcome = if (error == null) "success" else "failure",
+                operation = OPERATION_ACKNOWLEDGEMENT,
+                outcome = outcome(error),
                 listenerId = context.listenerId,
                 queueUrl = context.queueUrl,
                 exception = error,
-                extras = listOf(Tag.of("ack.action", action.name.lowercase())),
+                extras = listOf(Tag.of(TAG_ACK_ACTION, action.name.lowercase())),
             ),
             startedAt = startedAt,
         )
@@ -104,7 +104,7 @@ class MicrometerSqsListenerInterceptor(
         extras: Iterable<Tag> = emptyList(),
     ): Tags =
         AwsMicrometerSupport.tags(
-            service = "sqs",
+            service = AwsMicrometerSupport.SERVICE_SQS,
             operation = operation,
             outcome = outcome,
             exception = exception,
@@ -113,6 +113,13 @@ class MicrometerSqsListenerInterceptor(
                 AwsMicrometerSupport.queueNameTag(queueUrl),
             ) + extras,
         )
+
+    private fun outcome(error: Throwable?): String =
+        if (error == null) {
+            AwsMicrometerSupport.OUTCOME_SUCCESS
+        } else {
+            AwsMicrometerSupport.OUTCOME_FAILURE
+        }
 
     private fun receiveKey(listenerId: String, queueUrl: String): String =
         "$listenerId:$queueUrl"
@@ -125,5 +132,10 @@ class MicrometerSqsListenerInterceptor(
 
     companion object {
         const val DEFAULT_METER_NAME: String = "bluetape4k.aws.sqs.listener"
+        const val OPERATION_RECEIVE: String = "receive"
+        const val OPERATION_HANDLE: String = "handle"
+        const val OPERATION_ACKNOWLEDGEMENT: String = "acknowledgement"
+        const val TAG_MESSAGE_COUNT: String = "message.count"
+        const val TAG_ACK_ACTION: String = "ack.action"
     }
 }

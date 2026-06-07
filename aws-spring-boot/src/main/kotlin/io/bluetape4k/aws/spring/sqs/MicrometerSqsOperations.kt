@@ -24,7 +24,7 @@ class MicrometerSqsOperations(
 ): SqsOperations {
 
     override suspend fun getQueueUrl(queueName: String): String =
-        record("get_queue_url") {
+        record(OPERATION_GET_QUEUE_URL) {
             delegate.getQueueUrl(queueName)
         }
 
@@ -32,22 +32,22 @@ class MicrometerSqsOperations(
         queueName: String,
         attributes: Map<QueueAttributeName, String>,
     ): String =
-        record("create_queue") {
+        record(OPERATION_CREATE_QUEUE) {
             delegate.createQueue(queueName, attributes)
         }
 
     override suspend fun createConfiguredQueue(queueName: String): String =
-        record("create_configured_queue") {
+        record(OPERATION_CREATE_CONFIGURED_QUEUE) {
             delegate.createConfiguredQueue(queueName)
         }
 
     override suspend fun send(queueUrl: String, body: String, delaySeconds: Int?): SendMessageResponse =
-        record("send", queueUrl) {
+        record(OPERATION_SEND, queueUrl) {
             delegate.send(queueUrl, body, delaySeconds)
         }
 
     override suspend fun send(request: SqsSendRequest): SendMessageResponse =
-        record("send", request.queueUrl) {
+        record(OPERATION_SEND, request.queueUrl) {
             delegate.send(request)
         }
 
@@ -57,12 +57,12 @@ class MicrometerSqsOperations(
         waitTimeSeconds: Int,
         visibilityTimeoutSeconds: Int?,
     ): List<SqsReceivedMessage> =
-        record("receive", queueUrl) {
+        record(OPERATION_RECEIVE, queueUrl) {
             delegate.receive(queueUrl, maxMessages, waitTimeSeconds, visibilityTimeoutSeconds)
         }
 
     override suspend fun delete(queueUrl: String, receiptHandle: String): DeleteMessageResponse =
-        record("delete", queueUrl) {
+        record(OPERATION_DELETE, queueUrl) {
             delegate.delete(queueUrl, receiptHandle)
         }
 
@@ -71,7 +71,7 @@ class MicrometerSqsOperations(
         receiptHandle: String,
         timeoutSeconds: Int,
     ): ChangeMessageVisibilityResponse =
-        record("change_visibility", queueUrl) {
+        record(OPERATION_CHANGE_VISIBILITY, queueUrl) {
             delegate.changeVisibility(queueUrl, receiptHandle, timeoutSeconds)
         }
 
@@ -81,7 +81,7 @@ class MicrometerSqsOperations(
         waitTimeSeconds: Int,
         visibilityTimeoutSeconds: Int?,
     ): Flow<SqsReceivedMessage> = flow {
-        record("receive_flow", queueUrl) {
+        record(OPERATION_RECEIVE_FLOW, queueUrl) {
             delegate.receiveFlow(queueUrl, maxMessages, waitTimeSeconds, visibilityTimeoutSeconds).collect { emit(it) }
         }
     }
@@ -97,7 +97,7 @@ class MicrometerSqsOperations(
 
     private fun tags(operation: String, outcome: String, queueUrl: String?, exception: Throwable?): Tags =
         AwsMicrometerSupport.tags(
-            service = "sqs",
+            service = AwsMicrometerSupport.SERVICE_SQS,
             operation = operation,
             outcome = outcome,
             exception = exception,
@@ -106,5 +106,13 @@ class MicrometerSqsOperations(
 
     companion object {
         const val DEFAULT_METER_NAME: String = "bluetape4k.aws.sqs.operation"
+        const val OPERATION_GET_QUEUE_URL: String = "get_queue_url"
+        const val OPERATION_CREATE_QUEUE: String = "create_queue"
+        const val OPERATION_CREATE_CONFIGURED_QUEUE: String = "create_configured_queue"
+        const val OPERATION_SEND: String = "send"
+        const val OPERATION_RECEIVE: String = "receive"
+        const val OPERATION_DELETE: String = "delete"
+        const val OPERATION_CHANGE_VISIBILITY: String = "change_visibility"
+        const val OPERATION_RECEIVE_FLOW: String = "receive_flow"
     }
 }
