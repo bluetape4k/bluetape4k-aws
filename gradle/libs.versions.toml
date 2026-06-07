@@ -133,6 +133,7 @@ spring-context-support = { module = "org.springframework:spring-context-support"
 spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
 jakarta-mail-api = { module = "jakarta.mail:jakarta.mail-api" }
 angus-mail = { module = "org.eclipse.angus:angus-mail" }
+micrometer-core = { module = "io.micrometer:micrometer-core" }
 
 # Spring Cloud AWS
 spring-cloud-aws-bom = { module = "io.awspring.cloud:spring-cloud-aws-dependencies", version.ref = "spring-cloud-aws" }

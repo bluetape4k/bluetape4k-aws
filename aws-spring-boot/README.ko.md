@@ -3,8 +3,8 @@
 한국어 | [English](README.md)
 
 AWS Java SDK v2 를 위한 Spring Boot 4 자동 설정 모듈. Coroutines 우선 템플릿과
-SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awspring` 런타임
-의존성은 사용하지 않는다.
+SQS 리스너 컨테이너, CloudWatch metric/log helper, 원격 Environment source 를
+제공하며, `awspring` 런타임 의존성은 사용하지 않는다.
 
 ## Architecture
 
@@ -29,6 +29,10 @@ SQS 리스너 컨테이너, 원격 Environment source 를 제공하며, `awsprin
   `scan`/`query`/`queryIndex` 의 `Flow` 결과를 제공한다. 논리 테이블 이름은
   `DynamoDbTableNameResolver`(기본 구현은 `tablePrefix` 적용)로 해석되며,
   async client 는 선택적으로 DynamoDB Accelerator(DAX)로 구성할 수 있다.
+- **CloudWatch / CloudWatch Logs** — `CloudWatchCoroutinesTemplate` 과
+  `CloudWatchLogsCoroutinesTemplate` 로 coroutine metric/log publishing 을 제공하고,
+  Micrometer가 있을 때 application `MeterRegistry` 를 읽는 선택적
+  `CloudWatchMeterPublishingOperations` helper 를 제공한다.
 - **KMS** — `KmsOperations` 로 coroutine 암호화/복호화와 data key 생성을
   제공하고, 선택적 Spring Security `TextEncryptor`, `String` 필드용 명시적
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` 를 지원한다.
@@ -58,6 +62,8 @@ dependencies {
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:sts") // 선택적 web-identity credentials 지원
     implementation("software.amazon.awssdk:dynamodb-enhanced")
+    implementation("software.amazon.awssdk:cloudwatch")
+    implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
@@ -152,6 +158,21 @@ bluetape4k:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
       table-prefix: local-
+    cloudwatch:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      namespace: OrderApi
+      batch-size: 1000
+      micrometer:
+        enabled: true
+    cloudwatch-logs:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      log-group-name: /aws/app/order-api
+      log-stream-name: local
+      batch-size: 10000
     kms:
       enabled: true
       region: ap-northeast-2
@@ -218,6 +239,11 @@ topic 생성 기본값이다.
 `sqs.queues.<name>.url` 은 `@SqsListener(queue = "<name>")` 에서 논리 큐 이름을
 실제 URL로 바꾸는 alias 설정이다. `SqsOperations.getQueueUrl("<name>")` 은 여전히
 AWS SQS `GetQueueUrl` 요청을 수행한다.
+`cloudwatch.namespace` 는 기본 namespace metric publishing method 에서 사용된다.
+Micrometer helper 는 application `MeterRegistry` bean 이 있을 때만 등록되며,
+명시적 method 호출 시점에 meter snapshot 을 읽고 활성 registry 를 대체하지 않는다.
+`cloudwatch-logs.log-group-name` 과 `cloudwatch-logs.log-stream-name` 은 기본 log-event
+publishing method 에서 사용된다.
 S3 config, Secrets Manager, Parameter Store source 는 `EnvironmentPostProcessor` 로
 일반 bean binding 전에 로드된다. S3 config source 는 단일 object 를 `properties`,
 `yaml`, `json` 형식으로 읽는다. `auto` 형식은 object key 확장자로 parser 를 고르고,
@@ -590,6 +616,40 @@ DAX가 활성화되면 auto-configuration 은 DAX-backed `DynamoDbAsyncClient` �
 사용된다. DAX는 실제 AWS cluster cache 이며 emulator 기능이 아니다. LocalStack,
 Floci, DynamoDB Local 테스트는 일반 DynamoDB client 경로를 유지하고, DAX cache
 consistency 가정은 애플리케이션 boundary 에 문서화한다.
+
+### CloudWatch — Metrics, Logs, Micrometer
+
+```kotlin
+import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
+import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchLogsOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchMeterPublishingOperations
+import io.bluetape4k.aws.spring.cloudwatch.CloudWatchOperations
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+
+class OrderObservability(
+    private val cloudWatch: CloudWatchOperations,
+    private val cloudWatchLogs: CloudWatchLogsOperations,
+    private val meters: CloudWatchMeterPublishingOperations,
+) {
+    suspend fun publishOrderProcessed(orderId: String) {
+        cloudWatch.putMetricDatum(
+            metricDatumOf("OrderProcessed", 1.0, StandardUnit.COUNT)
+        )
+        cloudWatchLogs.putLogEvents(
+            listOf(inputLogEventOf(System.currentTimeMillis(), "processed order=$orderId"))
+        )
+        meters.publishMeter("orders.processed")
+    }
+}
+```
+
+`bluetape4k-aws-spring-boot` 는 Spring Boot 애플리케이션의 관측성 baseline 에 맞춰
+`micrometer-core` 를 일반 의존성으로 포함한다. 단,
+`micrometer-registry-cloudwatch` 를 자동 설정하지는 않는다. registry 수준의
+scheduled publishing 이 필요하면 애플리케이션에서 해당 registry 를 추가한다. 내장
+helper 는 현재 `MeterRegistry` 를 읽어 명시적으로 한 번 publish 하는 snapshot
+publisher 이다.
 
 ### KMS — 명시적 필드 암호화
 

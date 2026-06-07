@@ -1,5 +1,5 @@
 digraph aws_spring_boot_architecture_01 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.44, ranksep=0.72, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
   app [label="Spring Boot application\ncontrollers and services", fillcolor="#E8F3FF", color="#5B8DEF"]
@@ -9,17 +9,20 @@ digraph aws_spring_boot_architecture_01 {
   sqs [label="SqsAutoConfiguration\nSqsOperations, listeners", fillcolor="#FDECEF", color="#DC6B82"]
   dax [label="DynamoDB DAX\nDynamoDbDaxAutoConfiguration", fillcolor="#DDF8F6", color="#2F9E96"]
   ddb [label="DynamoDB auto-config\nenhanced client and repositories", fillcolor="#E9F7F6", color="#45A7A1"]
+  cw [label="CloudWatch auto-config\nmetrics, logs, Micrometer", fillcolor="#EAF2FF", color="#4F83D1"]
   kms [label="KmsAutoConfiguration\nKmsOperations", fillcolor="#F1ECFF", color="#8A72D6"]
-  aws [label="AWS services\nDAX, LocalStack, Floci, RDS", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
+  aws [label="AWS services\nCloudWatch, Logs, DAX, LocalStack, Floci, RDS", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
   app -> props
   props -> auto
   auto -> s3
   auto -> sqs
   auto -> dax [label="DAX enabled", color="#2F9E96", fontcolor="#2F9E96"]
   dax -> ddb [label="DAX-backed client", color="#2F9E96", fontcolor="#2F9E96"]
+  auto -> cw [label="metrics/logs", color="#4F83D1", fontcolor="#4F83D1"]
   auto -> kms
   s3 -> aws
   sqs -> aws
   ddb -> aws
+  cw -> aws [label="publish", color="#4F83D1", fontcolor="#4F83D1"]
   kms -> aws
 }

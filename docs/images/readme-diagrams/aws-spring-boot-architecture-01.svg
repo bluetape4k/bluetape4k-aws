@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="1100" viewBox="0 0 1240 1100" role="img" aria-label="aws-spring-boot architecture">
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120" role="img" aria-label="aws-spring-boot architecture">
 <defs>
   <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#66758A"/></marker>
   <marker id="arrow-dax" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#2F9E96"/></marker>
+  <marker id="arrow-cw" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#4F83D1"/></marker>
   <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
 </defs>
 <style>
@@ -13,80 +14,105 @@
   .card-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:20px;fill:#102033}
   .detail{font-size:13px}
   .chip{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:10px;fill:#243447}
+  .layer{fill:#F8FAFD;stroke:#E1E8F0;stroke-width:1.2;stroke-dasharray:6 7}
+  .layer-label{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:11px;fill:#6B7B8D;letter-spacing:0.5px}
   .card{stroke-width:2;filter:url(#shadow)}
   .edge{fill:none;stroke-width:2.2;marker-end:url(#arrow)}
-  .edge-label{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:11px;fill:#344456}
-  .label-bg{fill:#FFFFFF;stroke:#D9E2EC}
+  .edge-dax{fill:none;stroke:#2F9E96;stroke-width:2.2;marker-end:url(#arrow-dax)}
+  .edge-cw{fill:none;stroke:#4F83D1;stroke-width:2.2;marker-end:url(#arrow-cw)}
   .footer{fill:#0E2238;stroke:#0E2238}
   .footer-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:16px;fill:#FFFFFF}
   .footer-detail{font-size:11px;fill:#DDE7F2}
 </style>
-<rect x="26" y="26" width="1188" height="1048" rx="14" class="frame"/>
+<rect x="26" y="26" width="1388" height="1068" rx="14" class="frame"/>
 <text class="title" x="54" y="72">aws-spring-boot architecture</text>
 <text class="subtitle" x="56" y="102">Spring Boot auto-configurations share AWS defaults, publish operations beans, and support local services.</text>
-<rect x="1105" y="54" width="71" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="chip" x="1140.5" y="70" text-anchor="middle">Boot 4</text>
-<rect x="980.5" y="54" width="108.5" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="1034.75" y="70" text-anchor="middle">Auto-config</text>
-<rect x="871" y="54" width="93.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="917.75" y="70" text-anchor="middle">Local AWS</text>
-<g><g><path class="edge" d="M620 214 L620 246 L620 246 L620 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 348 L620 380 L620 380 L620 400" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 482 L620 514 L220 514 L220 560" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 482 L620 514 L490 514 L490 560" stroke="#66758A"/></g>
-<g><path class="edge" d="M620 482 L620 514 L760 514 L760 560" stroke="#2F9E96" marker-end="url(#arrow-dax)"/></g>
-<g><path class="edge" d="M620 482 L620 514 L1030 514 L1030 560" stroke="#66758A"/></g>
-<g><path class="edge" d="M760 646 L760 690" stroke="#2F9E96" marker-end="url(#arrow-dax)"/></g>
-<g><path class="edge" d="M220 646 L220 812 L620 812 L620 850" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 646 L490 812 L620 812 L620 850" stroke="#66758A"/></g>
-<g><path class="edge" d="M760 776 L760 812 L620 812 L620 850" stroke="#2F9E96" marker-end="url(#arrow-dax)"/></g>
-<g><path class="edge" d="M1030 646 L1030 812 L620 812 L620 850" stroke="#66758A"/></g></g>
+<rect x="1305" y="54" width="71" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="1340.5" y="70" text-anchor="middle">Boot 4</text>
+<rect x="1180.5" y="54" width="108.5" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="1234.75" y="70" text-anchor="middle">Auto-config</text>
+<rect x="1071" y="54" width="93.5" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="1117.75" y="70" text-anchor="middle">Local AWS</text>
+
+<g id="layers">
+  <rect class="layer" x="54" y="124" width="1332" height="108" rx="10"/>
+  <text class="layer-label" x="74" y="148">APPLICATION LAYER</text>
+  <rect class="layer" x="54" y="252" width="1332" height="248" rx="10"/>
+  <text class="layer-label" x="74" y="276">SHARED AWS DEFAULTS LAYER</text>
+  <rect class="layer" x="54" y="532" width="1332" height="264" rx="10"/>
+  <text class="layer-label" x="74" y="552">SERVICE LAYER</text>
+  <rect class="layer" x="54" y="836" width="1332" height="112" rx="10"/>
+  <text class="layer-label" x="74" y="860">AWS SERVICE BOUNDARY</text>
+</g>
+
+<g id="routes">
+  <path class="edge" d="M720 214 L720 266" stroke="#66758A"/>
+  <path class="edge" d="M720 348 L720 400" stroke="#66758A"/>
+  <path class="edge" d="M720 482 L720 514 L198 514 L198 560" stroke="#66758A"/>
+  <path class="edge" d="M720 482 L720 514 L453 514 L453 560" stroke="#66758A"/>
+  <path class="edge-dax" d="M720 482 L720 514 L708 514 L708 560"/>
+  <path class="edge-cw" d="M720 482 L720 514 L963 514 L963 560"/>
+  <path class="edge" d="M720 482 L720 514 L1218 514 L1218 560" stroke="#66758A"/>
+  <path class="edge-dax" d="M708 646 L708 690"/>
+  <path class="edge" d="M198 646 L198 814 L720 814 L720 850" stroke="#66758A"/>
+  <path class="edge" d="M453 646 L453 814 L720 814 L720 850" stroke="#66758A"/>
+  <path class="edge-dax" d="M708 776 L708 814 L720 814 L720 850"/>
+  <path class="edge-cw" d="M963 646 L963 814 L720 814 L720 850"/>
+  <path class="edge" d="M1218 646 L1218 814 L720 814 L720 850" stroke="#66758A"/>
+</g>
+
 <g id="app">
-  <rect class="card" x="460" y="136" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="620" y="172" text-anchor="middle">Spring Boot application</text>
-  <text class="detail" x="620" y="196" text-anchor="middle">controllers and services</text>
+  <rect class="card" x="560" y="136" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="720" y="172" text-anchor="middle">Spring Boot application</text>
+  <text class="detail" x="720" y="196" text-anchor="middle">controllers and services</text>
 </g>
 <g id="props">
-  <rect class="card" x="460" y="266" width="320" height="82" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="620" y="304" text-anchor="middle">AwsProperties</text>
-  <text class="detail" x="620" y="328" text-anchor="middle">region, endpoint, credentials</text>
+  <rect class="card" x="560" y="266" width="320" height="82" rx="10" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="720" y="304" text-anchor="middle">AwsProperties</text>
+  <text class="detail" x="720" y="328" text-anchor="middle">region, endpoint, credentials</text>
 </g>
 <g id="auto">
-  <rect class="card" x="460" y="400" width="320" height="82" rx="10" fill="#F4F7FA" stroke="#8CA0B3"/>
-  <text class="card-title" x="620" y="438" text-anchor="middle">AwsAutoConfiguration</text>
-  <text class="detail" x="620" y="462" text-anchor="middle">common SDK client defaults</text>
+  <rect class="card" x="560" y="400" width="320" height="82" rx="10" fill="#F4F7FA" stroke="#8CA0B3"/>
+  <text class="card-title" x="720" y="438" text-anchor="middle">AwsAutoConfiguration</text>
+  <text class="detail" x="720" y="462" text-anchor="middle">common SDK client defaults</text>
 </g>
 <g id="s3">
-  <rect class="card" x="90" y="560" width="260" height="86" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="card-title" x="220" y="600" text-anchor="middle">S3AutoConfiguration</text>
-  <text class="detail" x="220" y="624" text-anchor="middle">S3Operations</text>
+  <rect class="card" x="80" y="560" width="235" height="86" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="card-title" x="197.5" y="600" text-anchor="middle">S3AutoConfiguration</text>
+  <text class="detail" x="197.5" y="624" text-anchor="middle">S3Operations</text>
 </g>
 <g id="sqs">
-  <rect class="card" x="360" y="560" width="260" height="86" rx="10" fill="#FDECEF" stroke="#DC6B82"/>
-  <text class="card-title" x="490" y="600" text-anchor="middle">SqsAutoConfiguration</text>
-  <text class="detail" x="490" y="624" text-anchor="middle">SqsOperations, listeners</text>
+  <rect class="card" x="335" y="560" width="235" height="86" rx="10" fill="#FDECEF" stroke="#DC6B82"/>
+  <text class="card-title" x="452.5" y="600" text-anchor="middle">SqsAutoConfiguration</text>
+  <text class="detail" x="452.5" y="624" text-anchor="middle">SqsOperations, listeners</text>
 </g>
 <g id="dax">
-  <rect class="card" x="630" y="560" width="260" height="86" rx="10" fill="#DDF8F6" stroke="#2F9E96"/>
-  <text class="card-title" x="760" y="596" text-anchor="middle">DynamoDB DAX</text>
-  <text class="detail" x="760" y="620" text-anchor="middle">DynamoDbDaxAutoConfiguration</text>
+  <rect class="card" x="590" y="560" width="235" height="86" rx="10" fill="#DDF8F6" stroke="#2F9E96"/>
+  <text class="card-title" x="707.5" y="596" text-anchor="middle">DynamoDB DAX</text>
+  <text class="detail" x="707.5" y="620" text-anchor="middle">DynamoDbDaxAutoConfig</text>
+</g>
+<g id="cw">
+  <rect class="card" x="845" y="560" width="235" height="86" rx="10" fill="#EAF2FF" stroke="#4F83D1"/>
+  <text class="card-title" x="962.5" y="594" text-anchor="middle">CloudWatch</text>
+  <text class="detail" x="962.5" y="616" text-anchor="middle">metrics, logs</text>
+  <text class="detail" x="962.5" y="633" text-anchor="middle">Micrometer snapshots</text>
 </g>
 <g id="kms">
-  <rect class="card" x="900" y="560" width="260" height="86" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="card-title" x="1030" y="600" text-anchor="middle">KmsAutoConfiguration</text>
-  <text class="detail" x="1030" y="624" text-anchor="middle">KmsOperations</text>
+  <rect class="card" x="1100" y="560" width="235" height="86" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
+  <text class="card-title" x="1217.5" y="600" text-anchor="middle">KmsAutoConfiguration</text>
+  <text class="detail" x="1217.5" y="624" text-anchor="middle">KmsOperations</text>
 </g>
 <g id="ddb">
-  <rect class="card" x="630" y="690" width="260" height="86" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="760" y="726" text-anchor="middle">DynamoDB auto-config</text>
-  <text class="detail" x="760" y="750" text-anchor="middle">enhanced client + repositories</text>
+  <rect class="card" x="590" y="690" width="235" height="86" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="707.5" y="726" text-anchor="middle">DynamoDB auto-config</text>
+  <text class="detail" x="707.5" y="750" text-anchor="middle">enhanced repositories</text>
 </g>
 <g id="aws">
-  <rect class="card" x="460" y="850" width="320" height="82" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
-  <text class="card-title" x="620" y="888" text-anchor="middle">AWS services</text>
-  <text class="detail" x="620" y="912" text-anchor="middle">DAX, LocalStack, Floci, RDS</text>
+  <rect class="card" x="510" y="850" width="420" height="82" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="720" y="888" text-anchor="middle">AWS services</text>
+  <text class="detail" x="720" y="912" text-anchor="middle">CloudWatch, Logs, DAX, LocalStack, Floci, RDS</text>
 </g>
-<rect class="footer" x="54" y="996" width="1132" height="54" rx="8"/>
-<text class="footer-title" x="72" y="1015" dominant-baseline="middle">Module role</text>
-<text class="footer-detail" x="72" y="1033" dominant-baseline="middle">Keep common AWS client defaults central while service auto-configurations expose focused operations.</text>
+<rect class="footer" x="54" y="1000" width="1332" height="54" rx="8"/>
+<text class="footer-title" x="72" y="1019" dominant-baseline="middle">Module role</text>
+<text class="footer-detail" x="72" y="1037" dominant-baseline="middle">Keep common AWS client defaults central while service auto-configurations expose focused operations.</text>
 </svg>
