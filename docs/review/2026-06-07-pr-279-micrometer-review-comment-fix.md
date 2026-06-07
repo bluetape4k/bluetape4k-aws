@@ -27,6 +27,12 @@ No blocking findings after the follow-up change.
   object or operation class.
 - `MicrometerS3KtorClient` now calls operation-specific record helper methods
   such as `putObjectRecord` and `getObjectRecord`, matching the review request.
+- Ktor and Spring Boot Micrometer support now expose inline `record` overloads
+  for suspend and blocking lambdas instead of separate `recordSuspend` and
+  `recordBlocking` support helpers.
+- Decorator-local blocking helpers keep the `recordBlocking` name where needed
+  to avoid Kotlin overload ambiguity between `() -> T` and `suspend () -> T`
+  call sites inside suspend functions.
 - The Ktor SQS runtime observer producer now uses constants for operations,
   outcomes, and observer tags so the Micrometer bridge is not the only cleaned
   layer.

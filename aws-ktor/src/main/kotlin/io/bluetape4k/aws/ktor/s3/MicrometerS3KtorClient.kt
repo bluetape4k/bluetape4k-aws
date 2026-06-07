@@ -71,7 +71,7 @@ class MicrometerS3KtorClient(
     }
 
     private suspend fun <T> record(operation: String, bucket: String, block: suspend () -> T): T =
-        KtorMicrometerSupport.recordSuspend(meterRegistry, meterName, { outcome, exception ->
+        KtorMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
             tags(operation, outcome, bucket, exception)
         }, block)
 
@@ -88,7 +88,7 @@ class MicrometerS3KtorClient(
         record(OPERATION_LIST_OBJECTS_V2, bucket, block)
 
     private fun <T> recordBlocking(operation: String, bucket: String, block: () -> T): T =
-        KtorMicrometerSupport.recordBlocking(meterRegistry, meterName, { outcome, exception ->
+        KtorMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
             tags(operation, outcome, bucket, exception)
         }, block)
 
