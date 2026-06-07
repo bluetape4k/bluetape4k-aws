@@ -8,7 +8,7 @@ coroutine 친화적 S3 REST client, Ktor lifecycle에 맞춰 동작하는 server
 consumer/publisher runtime을 제공합니다. 또한 `:aws-kotlin` 과 공식 AWS SDK for
 Kotlin을 사용하는 DynamoDB Ktor server plugin, repository facade, 그리고
 AWS-backed Exposed JDBC database registry를 Ktor lifecycle에 연결하는 server
-plugin을 제공합니다.
+plugin과 선택적 EC2 IMDS metadata operation을 제공합니다.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -33,6 +33,8 @@ plugin을 제공합니다.
   접근을 제공하는 `DynamoDbKtorPlugin`.
 - local property 또는 AWS config-source descriptor에서 로드한 Exposed JDBC
   database registry를 공유하는 `AwsExposedPlugin`.
+- credential 전략으로 IMDS를 사용하지 않고 EC2 metadata만 제한적으로 읽는
+  `ImdsKtorPlugin`.
 
 ## 의존성
 
@@ -51,6 +53,10 @@ dependencies {
     // SQS consumer/publisher 사용 시
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:sqs")
+
+    // EC2 IMDS metadata 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:imds")
 
     // DynamoDB Ktor server 사용 시
     implementation("io.ktor:ktor-server-core")
@@ -119,6 +125,41 @@ val response = client.get("https://example.execute-api.ap-northeast-2.amazonaws.
 ```
 
 애플리케이션이 직접 만든 `HttpClient` 는 애플리케이션 scope 종료 시 닫아야 합니다.
+
+## EC2 IMDS Plugin
+
+`ImdsKtorPlugin` 은 EC2에서 실행되는 Ktor 애플리케이션이 instance metadata를 읽어야 할
+때만 사용합니다. Plugin 설치는 operations facade만 만들거나 저장하며 metadata endpoint를
+호출하지 않습니다. 각 operation은 `requestTimeout` 으로 제한됩니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
+import io.bluetape4k.aws.ktor.imds.imds
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import java.time.Duration
+
+fun Application.module() {
+    install(ImdsKtorPlugin) {
+        requestTimeout = Duration.ofSeconds(1)
+    }
+}
+
+suspend fun Application.instanceSnapshot(): Map<String, String> =
+    mapOf(
+        "instanceId" to imds().instanceId(),
+        "instanceType" to imds().instanceType(),
+        "region" to imds().region(),
+        "availabilityZone" to imds().availabilityZone(),
+    )
+```
+
+테스트나 custom metadata routing 이 필요할 때만 `endpoint` 를 명시합니다. 그 외에는
+설정된 `endpointMode` 를 사용합니다. IMDS는 일반 AWS service endpoint가 아니므로
+`AwsKtorCore.endpointOverride` 를 자동 상속하지 않습니다. Credential 조회는
+`DefaultCredentialsProvider`, STS web identity, 또는 명시적 AWS SDK credentials
+provider에 맡겨야 합니다. `ImdsKtorOperations` 는 IAM role 이름만 노출하고 임시
+credential document는 노출하지 않습니다.
 
 ## Payload 서명
 

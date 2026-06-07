@@ -32,8 +32,8 @@ applications to adopt a single framework or dependency stack.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
   listeners, and auto-configuration without awspring.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
-  consumer runtime, DynamoDB server repository support, and Ktor server/client
-  examples.
+  consumer runtime, DynamoDB server repository support, EC2 IMDS helpers, and
+  Ktor server/client examples.
 - **Local integration testing** — LocalStack/Floci emulator wiring through
   Testcontainers and Nightly examples.
 
@@ -55,7 +55,7 @@ applications to adopt a single framework or dependency stack.
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
-| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, SQS consumer runtime, DynamoDB server repository plugin, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
 | `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |
@@ -433,6 +433,34 @@ operation is invoked. Each call is bounded by `bluetape4k.aws.imds.request-timeo
 Use it for EC2 instance metadata, not as a replacement for `DefaultCredentialsProvider`
 or EKS/IRSA web identity credentials. The helper exposes IAM role names only and
 does not expose temporary credential documents.
+
+### EC2 IMDS — Ktor Plugin
+
+```kotlin
+import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
+import io.bluetape4k.aws.ktor.imds.imds
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import java.time.Duration
+
+fun Application.module() {
+    install(ImdsKtorPlugin) {
+        requestTimeout = Duration.ofSeconds(1)
+    }
+}
+
+suspend fun Application.instanceSnapshot(): Map<String, String> =
+    mapOf(
+        "instanceId" to imds().instanceId(),
+        "region" to imds().region(),
+        "availabilityZone" to imds().availabilityZone(),
+    )
+```
+
+Add `software.amazon.awssdk:imds` when using the Ktor IMDS plugin. Installing
+the plugin does not call IMDS; metadata is read only when `ImdsKtorOperations`
+methods are invoked. The helper exposes IAM role names only and does not expose
+temporary credential documents.
 
 ### Secrets Manager and Parameter Store — Environment Sources
 

@@ -8,7 +8,7 @@ client built on that plugin, and a server-side SQS consumer/publisher runtime
 that follows the Ktor application lifecycle. It also provides a Ktor server
 plugin and repository facade for DynamoDB using `:aws-kotlin` and the official
 AWS SDK for Kotlin, plus a Ktor server plugin for AWS-backed Exposed JDBC
-database registries.
+database registries, and optional EC2 IMDS metadata operations.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -34,6 +34,8 @@ database registries.
   DynamoDB client, explicit table auto-creation, and repository-style access.
 - `AwsExposedPlugin` for Ktor server applications that need shared Exposed JDBC
   databases loaded from local properties or AWS config-source descriptors.
+- `ImdsKtorPlugin` for EC2-hosted Ktor applications that need bounded metadata
+  reads without using IMDS as the credential strategy.
 
 ## Dependency
 
@@ -52,6 +54,10 @@ dependencies {
     // SQS consumer/publisher usage
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:sqs")
+
+    // EC2 IMDS metadata usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:imds")
 
     // DynamoDB Ktor server usage
     implementation("io.ktor:ktor-server-core")
@@ -121,6 +127,41 @@ val response = client.get("https://example.execute-api.ap-northeast-2.amazonaws.
 ```
 
 Close application-owned `HttpClient` instances when the application scope ends.
+
+## EC2 IMDS Plugin
+
+Use `ImdsKtorPlugin` only for EC2-hosted applications that need instance
+metadata. Installing the plugin creates or stores an operations facade but does
+not call the metadata endpoint. Each operation is bounded by `requestTimeout`.
+
+```kotlin
+import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
+import io.bluetape4k.aws.ktor.imds.imds
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import java.time.Duration
+
+fun Application.module() {
+    install(ImdsKtorPlugin) {
+        requestTimeout = Duration.ofSeconds(1)
+    }
+}
+
+suspend fun Application.instanceSnapshot(): Map<String, String> =
+    mapOf(
+        "instanceId" to imds().instanceId(),
+        "instanceType" to imds().instanceType(),
+        "region" to imds().region(),
+        "availabilityZone" to imds().availabilityZone(),
+    )
+```
+
+For tests or custom metadata routing, set `endpoint` explicitly. Otherwise the
+plugin uses the configured `endpointMode`. `AwsKtorCore.endpointOverride` is not
+inherited automatically because IMDS is not a normal AWS service endpoint.
+Credential lookup should stay on `DefaultCredentialsProvider`, STS web identity,
+or another explicit AWS SDK credentials provider. `ImdsKtorOperations` exposes
+IAM role names only and does not expose temporary credential documents.
 
 ## Payload Signing
 
