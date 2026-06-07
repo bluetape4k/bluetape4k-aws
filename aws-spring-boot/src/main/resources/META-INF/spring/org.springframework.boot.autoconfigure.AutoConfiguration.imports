@@ -1,4 +1,5 @@
 io.bluetape4k.aws.spring.AwsAutoConfiguration
+io.bluetape4k.aws.spring.dynamodb.DynamoDbDaxAutoConfiguration
 io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
 io.bluetape4k.aws.spring.exposed.AwsExposedAutoConfiguration
 io.bluetape4k.aws.spring.exposed.AwsExposedDefaultDatabaseAutoConfiguration

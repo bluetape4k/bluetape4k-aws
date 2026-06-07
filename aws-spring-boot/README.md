@@ -29,7 +29,8 @@ templates, a SQS listener container, and remote Environment sources, with no
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` abstract base over
   `DynamoDbAsyncTable` with `save`/`findById`/`update`/`delete`, plus
   `scan`/`query`/`queryIndex` `Flow` results. Logical table names are resolved
-  through `DynamoDbTableNameResolver` (default applies `tablePrefix`).
+  through `DynamoDbTableNameResolver` (default applies `tablePrefix`), and the
+  async client can optionally be backed by DynamoDB Accelerator (DAX).
 - **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
   generation, optional Spring Security `TextEncryptor`, and explicit
   `@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
@@ -574,6 +575,34 @@ class OrderRepository(
 
 `aws-spring-boot` does not create DynamoDB tables. Use migrations,
 deployment automation, or explicit test setup to provision tables.
+
+Enable DynamoDB Accelerator (DAX) only when the application also carries the DAX
+runtime dependency:
+
+```kotlin
+runtimeOnly("software.amazon.dax:amazon-dax-client:2.0.9")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    dynamodb:
+      region: us-east-1
+      dax:
+        enabled: true
+        url: dax://orders-cache.abc123.dax-clusters.us-east-1.amazonaws.com
+        connect-timeout: 1s
+        request-timeout: 1s
+        read-retries: 2
+        write-retries: 2
+```
+
+When DAX is active, the auto-configuration contributes a DAX-backed
+`DynamoDbAsyncClient`; the existing `DynamoDbEnhancedAsyncClient` and repository
+base classes continue to be used unchanged. DAX is a real AWS cluster cache, not
+an emulator feature. Keep LocalStack, Floci, and DynamoDB Local tests on the
+normal DynamoDB client path and document any DAX cache-consistency assumptions
+at the application boundary.
 
 ### KMS — explicit field encryption
 

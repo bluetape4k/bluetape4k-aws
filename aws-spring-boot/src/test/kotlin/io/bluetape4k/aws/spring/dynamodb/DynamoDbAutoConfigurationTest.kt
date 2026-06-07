@@ -15,6 +15,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
+import software.amazon.dax.ClusterDaxAsyncClient
 
 class DynamoDbAutoConfigurationTest {
 
@@ -22,6 +23,7 @@ class DynamoDbAutoConfigurationTest {
         .withConfiguration(
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
+                DynamoDbDaxAutoConfiguration::class.java,
                 DynamoDbAutoConfiguration::class.java,
             )
         )
@@ -31,6 +33,7 @@ class DynamoDbAutoConfigurationTest {
     fun `register DynamoDB clients properties and resolver`() {
         contextRunner.run { context ->
             context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
+            (context.getBean(DynamoDbAsyncClient::class.java) !is ClusterDaxAsyncClient).shouldBeTrue()
             context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(DynamoDbProperties::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(DynamoDbTableNameResolver::class.java).size shouldBeEqualTo 1
@@ -54,6 +57,23 @@ class DynamoDbAutoConfigurationTest {
 
         contextRunner
             .withBean(DynamoDbAsyncClient::class.java, { customClient })
+            .run { context ->
+                context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBean(DynamoDbAsyncClient::class.java) shouldBeSameInstanceAs customClient
+                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `custom DynamoDB async client backs off DAX client`() {
+        val customClient = mockk<DynamoDbAsyncClient>(relaxed = true)
+
+        contextRunner
+            .withBean(DynamoDbAsyncClient::class.java, { customClient })
+            .withPropertyValues(
+                "bluetape4k.aws.dynamodb.dax.enabled=true",
+                "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
+            )
             .run { context ->
                 context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
                 context.getBean(DynamoDbAsyncClient::class.java) shouldBeSameInstanceAs customClient
@@ -103,6 +123,49 @@ class DynamoDbAutoConfigurationTest {
     }
 
     @Test
+    fun `DAX classpath absence keeps default DynamoDB client path`() {
+        contextRunner
+            .withClassLoader(FilteredClassLoader("software.amazon.dax"))
+            .withPropertyValues(
+                "bluetape4k.aws.dynamodb.dax.enabled=true",
+                "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
+            )
+            .run { context ->
+                context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
+                (context.getBean(DynamoDbAsyncClient::class.java) !is ClusterDaxAsyncClient).shouldBeTrue()
+            }
+    }
+
+    @Test
+    fun `DAX enabled requires URL`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.dynamodb.dax.enabled=true")
+            .run { context ->
+                (context.startupFailure != null).shouldBeTrue()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "dax.url is required"
+            }
+    }
+
+    @Test
+    fun `DAX enabled registers DAX async client and enhanced client`() {
+        contextRunner
+            .withTestAwsCredentials()
+            .withPropertyValues(
+                "bluetape4k.aws.dynamodb.dax.enabled=true",
+                "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
+            )
+            .run { context ->
+                context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
+                (context.getBean(DynamoDbAsyncClient::class.java) is ClusterDaxAsyncClient).shouldBeTrue()
+                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
     fun `table prefix binds and resolver applies it`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.dynamodb.table-prefix=test-")
@@ -121,4 +184,9 @@ class DynamoDbAutoConfigurationTest {
                 context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).isEmpty().shouldBeTrue()
             }
     }
+
+    private fun ApplicationContextRunner.withTestAwsCredentials(): ApplicationContextRunner =
+        withBean(AwsCredentialsProvider::class.java, {
+            StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
+        })
 }

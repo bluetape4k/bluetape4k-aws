@@ -16,7 +16,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -48,9 +47,12 @@ class DynamoDbAutoConfiguration {
         serviceCustomizers: ObjectProvider<AwsClientCustomizer<DynamoDbAsyncClientBuilder>>,
     ): DynamoDbAsyncClient =
         DynamoDbAsyncClient.builder()
-            .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
+            .credentialsProvider(resolveDynamoDbCredentialsProvider(credentialsProvider))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveDynamoDbAwsProperties(awsProperties).resolveClientDefaults(
+                    properties.region,
+                    properties.endpointOverride,
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
@@ -72,12 +74,4 @@ class DynamoDbAutoConfiguration {
     @ConditionalOnMissingBean
     fun dynamoDbTableNameResolver(properties: DynamoDbProperties): DynamoDbTableNameResolver =
         DefaultDynamoDbTableNameResolver(properties.tablePrefix)
-
-    private fun resolveCredentialsProvider(
-        provider: ObjectProvider<AwsCredentialsProvider>,
-    ): AwsCredentialsProvider =
-        provider.getIfAvailable { DefaultCredentialsProvider.builder().build() }
-
-    private fun resolveAwsProperties(provider: ObjectProvider<AwsProperties>): AwsProperties =
-        provider.getIfAvailable { AwsProperties() }
 }
