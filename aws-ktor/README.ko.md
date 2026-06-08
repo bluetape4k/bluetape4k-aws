@@ -346,6 +346,7 @@ fun Application.module() {
     install(AwsKtorCore) {
         region = "ap-northeast-2"
         javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        ktorCore()
     }
 
     install(S3AccessGrantsKtorPlugin)

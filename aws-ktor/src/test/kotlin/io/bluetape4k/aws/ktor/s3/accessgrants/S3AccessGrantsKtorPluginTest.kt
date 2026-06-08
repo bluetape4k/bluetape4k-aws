@@ -9,11 +9,17 @@ import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorS3ControlAsyncClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.mockk.clearMocks
 import io.mockk.mockk
 import io.mockk.verify
+import io.ktor.client.request.get
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
+import io.ktor.server.response.respond
 import io.ktor.server.application.install
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,6 +56,28 @@ class S3AccessGrantsKtorPluginTest {
         application.s3AccessGrants() shouldBeSameInstanceAs operations
         application.s3AccessGrantsOrNull() shouldBeSameInstanceAs operations
         application.attributes[S3AccessGrantsKtorRuntimeKey].operations shouldBeSameInstanceAs operations
+    }
+
+    @Test
+    fun `plugin operations are available from routes using bluetape4k Ktor core baseline`() = testApplication {
+        application {
+            install(AwsKtorCore) {
+                ktorCore()
+            }
+            install(S3AccessGrantsKtorPlugin) {
+                s3AccessGrantsOperations = operations
+            }
+            routing {
+                get("/access-grants/runtime") {
+                    call.application.s3AccessGrants() shouldBeSameInstanceAs operations
+                    call.respond(HttpStatusCode.NoContent)
+                }
+            }
+        }
+
+        startApplication()
+
+        client.get("/access-grants/runtime") shouldHaveStatus HttpStatusCode.NoContent
     }
 
     @Test

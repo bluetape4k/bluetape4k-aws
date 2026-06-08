@@ -20,12 +20,14 @@ The module now has:
 - `S3AccessGrantsKtorOperations` and `S3AccessGrantsKtorTemplate`.
 - Plugin config/runtime lifecycle with caller-owned operations, caller-owned
   clients, plugin-owned clients, disabled mode, and customizer ordering.
+- Route-level coverage that combines `AwsKtorCore.ktorCore()` with
+  `bluetape4k-ktor-testing` response assertions.
 - English/Korean README updates with a new Access Grants flow diagram.
 
 ## Verification
 
 - `./gradlew :bluetape4k-aws-ktor:compileKotlin :bluetape4k-aws-ktor:compileTestKotlin --no-daemon --max-workers=1` succeeded.
-- `./gradlew :bluetape4k-aws-ktor:test --tests '*AwsKtorCoreTest' --tests '*S3AccessGrants*' --rerun-tasks --no-daemon --max-workers=1` succeeded with 17 passing tests.
+- `./gradlew :bluetape4k-aws-ktor:test --tests '*AwsKtorCoreTest' --tests '*S3AccessGrants*' --rerun-tasks --no-daemon --max-workers=1` succeeded with 18 passing tests.
 - Diagram gate printed `badEndpointAngle=0`, `badBends=0`, `interiorCrossings=0`, `marginImbalance=0`, `titleGap=54`.
 - `xmllint --noout` passed for the SVG and sketch SVG.
 - Diagram grep found no `/Users/debop`, `Inter`, `Arial`, or `Helvetica`.
@@ -35,6 +37,7 @@ The module now has:
 ## Future Guard
 
 When adding AWS service-level Ktor plugins, keep raw AWS SDK administrative APIs
-outside the Ktor facade unless request-handling code needs them. README updates
-for public plugin behavior should include both localized prose and a matching
-diagram asset.
+outside the Ktor facade unless request-handling code needs them. Also check
+`bluetape4k-projects` Ktor modules first: examples should install the
+`bluetape4k-ktor-core` baseline when applicable, and route tests should reuse
+`bluetape4k-ktor-testing` assertions instead of raw status checks.
