@@ -12,6 +12,7 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.flow.toList
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
+import java.io.Serializable
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -171,7 +172,11 @@ class DynamoDbRepositoryAwsEmulatorTest {
     data class OrderId(
         val orderId: String,
         val createdAt: String,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     private class OrderRepository(
         enhancedClient: DynamoDbEnhancedAsyncClient,

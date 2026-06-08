@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.io.Serializable
 
 class ParameterStoreValueTest {
 
@@ -18,7 +19,11 @@ class ParameterStoreValueTest {
             }
     }
 
-    data class ParameterHolder(val value: String)
+    data class ParameterHolder(val value: String): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     @Configuration(proxyBeanMethods = false)
     private class ParameterStoreValueConfiguration {

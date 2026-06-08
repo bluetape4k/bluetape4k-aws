@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.dynamodb.query
 
+import java.io.Serializable
+
 /**
  * DynamoDB DSL 에서 SortKey 를 지원하기 위한 클래스
  *
@@ -14,7 +16,11 @@ package io.bluetape4k.aws.dynamodb.query
 data class SortKey(
     val sortKeyName: String = "sortKey",
     val comparisonOperator: DynamoComparator,
-): ComparableBuilder
+): ComparableBuilder, Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * SortKey 를 생성하기 위한 빌더 클래스
@@ -31,7 +37,7 @@ class SortKeyBuilder(val keyName: String = "sortKey") {
 
     /** 설정된 비교 연산자를 기반으로 [SortKey]를 생성합니다. */
     fun build(): SortKey {
-        // WHY: comparator 미설정 시 명확한 에러 메시지 제공 (!! 대신)
+        // WHY: comparator 미설정 시 명확한 에러 메시지 제공 (non-null assertion 대신)
         val cmp = checkNotNull(comparator) { "SortKeyBuilder: comparator must be set via 'eq', 'between', etc. before build()" }
         return SortKey(keyName, cmp)
     }

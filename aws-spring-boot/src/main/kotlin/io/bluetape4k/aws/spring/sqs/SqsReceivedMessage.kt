@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sqs
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
+import java.io.Serializable
 
 /**
  * 수신한 SQS 메시지와 큐 URL을 함께 보관하는 메시지 래퍼.
@@ -16,7 +17,7 @@ data class SqsReceivedMessage(
      * AWS SDK 원본 SQS 메시지.
      */
     val message: Message,
-) {
+): Serializable {
     /**
      * AWS SDK message ID.
      */
@@ -62,4 +63,8 @@ data class SqsReceivedMessage(
      */
     val approximateReceiveCount: Int? get() =
         attributes[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]?.toIntOrNull()
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 }

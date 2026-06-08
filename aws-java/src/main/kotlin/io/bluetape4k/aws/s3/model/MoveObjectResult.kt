@@ -2,6 +2,7 @@ package io.bluetape4k.aws.s3.model
 
 import software.amazon.awssdk.services.s3.model.CopyObjectResult
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
+import java.io.Serializable
 
 /**
  * S3 객체 이동 작업의 결과를 나타냅니다.
@@ -19,7 +20,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
 data class MoveObjectResult(
     val copyResult: CopyObjectResult,
     val deleteResponse: DeleteObjectResponse? = null,
-) {
+): Serializable {
     /**
      * 복사와 삭제가 모두 성공했는지 여부
      */
@@ -31,4 +32,8 @@ data class MoveObjectResult(
      */
     val isPartialSuccess: Boolean
         get() = copyResult.eTag()?.isNotBlank() == true && deleteResponse == null
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 }

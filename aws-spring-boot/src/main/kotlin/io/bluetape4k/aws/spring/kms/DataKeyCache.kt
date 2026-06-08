@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.kms
 
 import software.amazon.awssdk.services.kms.model.DataKeySpec
+import java.io.Serializable
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -19,13 +20,17 @@ data class KmsDataKeyCacheKey(
     val keySpec: DataKeySpec?,
     val numberOfBytes: Int?,
     val encryptionContext: Map<String, String>,
-) {
+): Serializable {
     init {
         require(keyId.isNotBlank()) { "keyId must not be blank." }
         require((keySpec == null) xor (numberOfBytes == null)) {
             "Exactly one of keySpec or numberOfBytes must be configured."
         }
         numberOfBytes?.let { require(it > 0) { "numberOfBytes must be greater than 0." } }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
@@ -68,7 +73,11 @@ class InMemoryDataKeyCache(
     private data class Entry(
         val value: KmsDataKey,
         val expiresAt: Instant,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     private val lock = ReentrantLock()
 

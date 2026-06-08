@@ -95,6 +95,7 @@ bluetape4k-core = { module = "io.github.bluetape4k:bluetape4k-core", version.ref
 bluetape4k-io = { module = "io.github.bluetape4k:bluetape4k-io", version.ref = "bluetape4k" }
 bluetape4k-netty = { module = "io.github.bluetape4k:bluetape4k-netty", version.ref = "bluetape4k" }
 bluetape4k-coroutines = { module = "io.github.bluetape4k:bluetape4k-coroutines", version.ref = "bluetape4k" }
+bluetape4k-jdbc = { module = "io.github.bluetape4k:bluetape4k-jdbc", version.ref = "bluetape4k" }
 bluetape4k-jackson3 = { module = "io.github.bluetape4k:bluetape4k-jackson3", version.ref = "bluetape4k" }
 bluetape4k-idgenerators = { module = "io.github.bluetape4k:bluetape4k-idgenerators", version.ref = "bluetape4k" }
 bluetape4k-resilience4j = { module = "io.github.bluetape4k:bluetape4k-resilience4j", version.ref = "bluetape4k" }

@@ -22,8 +22,8 @@ class PutItemTest {
 
         req.tableName shouldBeEqualTo "users"
         req.item.shouldNotBeNull()
-        req.item!!.size shouldBeEqualTo 2
-        req.item!!["id"] shouldBeEqualTo AttributeValue.S("u1")
+        req.item.shouldNotBeNull().size shouldBeEqualTo 2
+        req.item.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("u1")
     }
 
     @Test
@@ -32,8 +32,8 @@ class PutItemTest {
         val req = putItemRequestOf("users", item)
 
         req.tableName shouldBeEqualTo "users"
-        req.item!!["id"] shouldBeEqualTo AttributeValue.S("u2")
-        req.item!!["score"] shouldBeEqualTo AttributeValue.N("100")
+        req.item.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("u2")
+        req.item.shouldNotBeNull()["score"] shouldBeEqualTo AttributeValue.N("100")
     }
 
     @Test

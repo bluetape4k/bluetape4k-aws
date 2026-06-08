@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.io.Serializable
 import java.net.URI
 
 /**
@@ -28,7 +29,7 @@ data class SnsProperties(
     val region: String? = null,
     val endpointOverride: URI? = null,
     val topics: Map<String, Topic> = emptyMap(),
-) {
+): Serializable {
     init {
         require(endpointOverride == null || !region.isNullOrBlank()) {
             "bluetape4k.aws.sns.region is required when endpointOverride is configured."
@@ -43,5 +44,13 @@ data class SnsProperties(
         val contentBasedDeduplication: Boolean = true,
         val fifoThroughputScope: SnsFifoThroughputScope? = null,
         val attributes: Map<String, String> = emptyMap(),
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 }

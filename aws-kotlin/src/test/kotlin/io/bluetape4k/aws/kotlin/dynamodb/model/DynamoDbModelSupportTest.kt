@@ -31,8 +31,8 @@ class DynamoDbModelSupportTest {
 
         request.tableName shouldBeEqualTo "test-table"
         request.returnValues shouldBeEqualTo ReturnValue.AllOld
-        request.item!!["id"] shouldBeEqualTo AttributeValue.S("1")
-        request.item!!["age"] shouldBeEqualTo AttributeValue.N("10")
+        request.item.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("1")
+        request.item.shouldNotBeNull()["age"] shouldBeEqualTo AttributeValue.N("10")
     }
 
     @Test
@@ -77,7 +77,7 @@ class DynamoDbModelSupportTest {
 
         val request = batchWriteItemRequestOf(mapOf("test-table" to listOf(writeRequest)))
 
-        request.requestItems!!["test-table"]?.size shouldBeEqualTo 1
+        request.requestItems.shouldNotBeNull()["test-table"]?.size shouldBeEqualTo 1
     }
 
     @Test

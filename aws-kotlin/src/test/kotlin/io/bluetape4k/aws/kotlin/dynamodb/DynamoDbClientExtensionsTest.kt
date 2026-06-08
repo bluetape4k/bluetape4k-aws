@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.dynamodb
 
+import io.bluetape4k.assertions.shouldNotBeNull
 import aws.sdk.kotlin.services.dynamodb.model.TableClass
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.sortKeyOf
@@ -76,7 +77,7 @@ class DynamoDbClientExtensionsTest: AbstractKotlinDynamoDbTest() {
                 .buffer()
                 .mapNotNull { scan ->
                     if (scan.items?.isNotEmpty() == true) {
-                        scan.items!!.single()
+                        scan.items.shouldNotBeNull().single()
                     } else {
                         null
                     }

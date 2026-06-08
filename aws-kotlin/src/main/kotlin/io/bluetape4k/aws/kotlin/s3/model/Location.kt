@@ -30,6 +30,8 @@ data class Location(
 ): Serializable, Comparable<Location> {
 
     companion object: KLogging() {
+        private const val serialVersionUID: Long = 1L
+
         const val S3_PROTOCOL_SCHEME = "s3://"
         const val PATH_DELIMITER = "/"
         const val VERSION_DELIMITER = "^"

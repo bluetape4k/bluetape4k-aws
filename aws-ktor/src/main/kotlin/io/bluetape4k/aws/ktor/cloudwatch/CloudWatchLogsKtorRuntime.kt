@@ -18,7 +18,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
@@ -200,10 +199,8 @@ class CloudWatchLogsKtorRuntime(
     private suspend fun closeOwnedClient() {
         if (closed.compareAndSet(false, true)) {
             ownedClient?.let { client ->
-                withContext(Dispatchers.IO) {
-                    runInterruptible {
-                        client.close()
-                    }
+                runInterruptible(Dispatchers.IO) {
+                    client.close()
                 }
             }
         }

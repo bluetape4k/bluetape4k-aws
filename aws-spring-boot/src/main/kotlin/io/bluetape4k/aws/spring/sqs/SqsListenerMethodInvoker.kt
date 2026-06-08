@@ -2,15 +2,17 @@ package io.bluetape4k.aws.spring.sqs
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
-import kotlin.reflect.KFunction
-import kotlin.reflect.full.callSuspend
-import kotlin.reflect.full.valueParameters
-import kotlin.reflect.jvm.kotlinFunction
-import kotlin.reflect.jvm.jvmErasure
+import java.io.Serializable
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import software.amazon.awssdk.services.sqs.model.Message
+import kotlin.reflect.KFunction
+import kotlin.reflect.full.callSuspend
+import kotlin.reflect.full.valueParameters
+import kotlin.reflect.jvm.jvmErasure
+import kotlin.reflect.jvm.kotlinFunction
 
 internal class SqsListenerMethodInvoker(
     private val bean: Any,
@@ -27,10 +29,12 @@ internal class SqsListenerMethodInvoker(
     suspend fun invoke(message: SqsReceivedMessage, acknowledgement: SqsAcknowledgement) {
         val arguments = parameterPlan.arguments(message, acknowledgement, messageConverter)
         try {
-            withContext(Dispatchers.IO) {
-                if (suspendFunction) {
+            if (suspendFunction) {
+                withContext(Dispatchers.IO) {
                     requireNotNull(kotlinFunction).callSuspend(bean, *arguments)
-                } else {
+                }
+            } else {
+                runInterruptible(Dispatchers.IO) {
                     method.isAccessible = true
                     method.invoke(bean, *arguments)
                 }
@@ -48,7 +52,7 @@ internal class SqsListenerMethodInvoker(
 
     private data class ParameterPlan(
         val parameters: List<Parameter>,
-    ) {
+    ): Serializable {
         val manualAcknowledgement: Boolean =
             parameters.any { it == Parameter.ACKNOWLEDGEMENT }
 
@@ -84,16 +88,22 @@ internal class SqsListenerMethodInvoker(
                     kotlinFunction.valueParameters.map { it.type.jvmErasure.java }
                 } else {
                     method.parameterTypes.toList()
-                }
+            }
+
+            private const val serialVersionUID: Long = 1L
         }
     }
 
-    private sealed class Parameter {
+    private sealed class Parameter: Serializable {
         data object Body: Parameter()
         data object AwsMessage: Parameter()
         data object ReceivedMessage: Parameter()
         data object Acknowledgement: Parameter()
-        data class Converted(val targetType: Class<*>): Parameter()
+        data class Converted(val targetType: Class<*>): Parameter() {
+            companion object {
+                private const val serialVersionUID: Long = 1L
+            }
+        }
 
         fun argument(
             message: SqsReceivedMessage,

@@ -16,8 +16,8 @@ class SesV2DestinationTest {
         val dest = destinationOf("user1@example.com", "user2@example.com")
 
         dest.toAddresses.shouldNotBeNull()
-        dest.toAddresses!! shouldContain "user1@example.com"
-        dest.toAddresses!! shouldContain "user2@example.com"
+        dest.toAddresses.shouldNotBeNull() shouldContain "user1@example.com"
+        dest.toAddresses.shouldNotBeNull() shouldContain "user2@example.com"
     }
 
     @Test
@@ -28,9 +28,9 @@ class SesV2DestinationTest {
             bccAddresses = listOf("bcc@example.com")
         )
 
-        dest.toAddresses!! shouldContain "to@example.com"
-        dest.ccAddresses!! shouldContain "cc@example.com"
-        dest.bccAddresses!! shouldContain "bcc@example.com"
+        dest.toAddresses.shouldNotBeNull() shouldContain "to@example.com"
+        dest.ccAddresses.shouldNotBeNull() shouldContain "cc@example.com"
+        dest.bccAddresses.shouldNotBeNull() shouldContain "bcc@example.com"
     }
 
     @Test
@@ -54,6 +54,6 @@ class SesV2DestinationTest {
     @Test
     fun `destinationOf 단일 TO 주소를 설정할 수 있다`() {
         val dest = destinationOf("user@example.com")
-        dest.toAddresses!!.size shouldBeEqualTo 1
+        dest.toAddresses.shouldNotBeNull().size shouldBeEqualTo 1
     }
 }

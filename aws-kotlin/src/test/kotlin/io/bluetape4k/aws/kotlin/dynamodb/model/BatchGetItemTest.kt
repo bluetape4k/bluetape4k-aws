@@ -19,8 +19,8 @@ class BatchGetItemTest {
         val req = batchGetItemRequestOf(mapOf("users" to keysAndAttrs))
 
         req.requestItems.shouldNotBeNull()
-        req.requestItems!!.size shouldBeEqualTo 1
-        req.requestItems!!.containsKey("users") shouldBeEqualTo true
+        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 1
+        req.requestItems.shouldNotBeNull().containsKey("users") shouldBeEqualTo true
     }
 
     @Test
@@ -33,7 +33,7 @@ class BatchGetItemTest {
         }
         val req = batchGetItemRequestOf(mapOf("users" to userKeys, "orders" to orderKeys))
 
-        req.requestItems!!.size shouldBeEqualTo 2
+        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test

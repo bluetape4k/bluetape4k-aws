@@ -2,12 +2,12 @@ package io.bluetape4k.aws.dynamodb.query
 
 import io.bluetape4k.aws.dynamodb.model.Expression
 import io.bluetape4k.aws.dynamodb.model.toAttributeValue
+import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
 import software.amazon.awssdk.enhanced.dynamodb.Expression
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.io.Serializable
-import kotlin.random.Random
 
 /**
  * 필터 DSL을 AWS Enhanced Expression으로 변환하기 위한 중간 결과 객체입니다.
@@ -20,7 +20,11 @@ data class FilterRequestProperties(
     val expressionAttributeValues: MutableMap<String, AttributeValue>,
     val filterExpression: String,
     val expressionAttributeNames: MutableMap<String, String>,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * [FilterRequestProperties]를 AWS Enhanced Client의 [Expression]으로 변환합니다.
@@ -103,7 +107,6 @@ class ConcreteFilter(
 ): FilterQuery {
 
     companion object: KLogging() {
-        private const val source = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
         private val alphabets = ('a' until 'z') + ('A' until 'Z')
 
         private fun toExprAttrName(attributeName: String): String =
@@ -115,12 +118,8 @@ class ConcreteFilter(
         private fun generateExprAttrName(attributeName: String): String =
             attributeName.filter { it in alphabets } + nonce()
 
-        private fun nonce(length: Int = 5): String = buildString {
-            append("__")
-            repeat(length) {
-                append(source[Random.nextInt(0, source.length)])
-            }
-        }
+        private fun nonce(length: Int = 5): String =
+            "__" + Base58.randomString(length)
     }
 
     /**
@@ -193,7 +192,11 @@ class ConcreteFilter(
 data class FilterConnection(
     val value: FilterQuery,
     val connectionToLeft: FilterBooleanConnection? = null,
-): Serializable
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /** 조건 연결 연산자입니다. */
 enum class FilterBooleanConnection {
@@ -205,10 +208,18 @@ enum class FilterBooleanConnection {
 interface DynamoFunction: Serializable
 
 /** 속성 기반 필터 대상을 지정합니다. */
-data class Attribute(val attributeName: String): DynamoFunction
+data class Attribute(val attributeName: String): DynamoFunction {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /** `attribute_exists(name)` 필터 함수를 지정합니다. */
-data class AttributeExists(val attributeName: String): DynamoFunction
+data class AttributeExists(val attributeName: String): DynamoFunction {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /** 필터 DSL builder 공통 계약입니다. */
 @DynamoDslMarker

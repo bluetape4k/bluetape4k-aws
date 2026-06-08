@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.s3
 
+import io.bluetape4k.assertions.shouldNotBeNull
 import aws.sdk.kotlin.services.s3.listBuckets
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
 import io.bluetape4k.codec.Base58
@@ -51,9 +52,9 @@ abstract class AbstractKotlinS3Test: AbstractAwsTest() {
                 localStackServer.credentialsProvider,
             ) { client ->
                 log.info { "Delete all buckets ..." }
-                val buckets = client.listBuckets { }.buckets!!
+                val buckets = client.listBuckets { }.buckets.shouldNotBeNull()
                 buckets.forEach { bucket ->
-                    client.forceDeleteBucket(bucket.name!!)
+                    client.forceDeleteBucket(bucket.name.shouldNotBeNull())
                 }
 
                 listOf(BUCKET_NAME, BUCKET_NAME2).forEach { bucketName ->

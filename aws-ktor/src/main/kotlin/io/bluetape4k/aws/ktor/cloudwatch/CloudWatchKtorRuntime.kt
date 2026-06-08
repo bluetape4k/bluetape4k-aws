@@ -2,7 +2,6 @@ package io.bluetape4k.aws.ktor.cloudwatch
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -22,10 +21,8 @@ class CloudWatchKtorRuntime(
     suspend fun stop() {
         if (closed.compareAndSet(false, true)) {
             ownedClient?.let { client ->
-                withContext(Dispatchers.IO) {
-                    runInterruptible {
-                        client.close()
-                    }
+                runInterruptible(Dispatchers.IO) {
+                    client.close()
                 }
             }
         }

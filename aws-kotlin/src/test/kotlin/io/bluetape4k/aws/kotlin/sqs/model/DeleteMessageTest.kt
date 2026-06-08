@@ -71,7 +71,7 @@ class DeleteMessageTest {
 
         req.queueUrl shouldBeEqualTo queueUrl
         req.entries.shouldNotBeNull()
-        req.entries!!.size shouldBeEqualTo 2
+        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test
@@ -82,7 +82,7 @@ class DeleteMessageTest {
             deleteMessageBatchRequestEntryOf("id2", "rh2"),
         )
 
-        req.entries!!.size shouldBeEqualTo 2
+        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test

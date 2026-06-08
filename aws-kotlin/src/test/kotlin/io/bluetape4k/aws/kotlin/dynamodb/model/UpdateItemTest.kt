@@ -26,7 +26,7 @@ class UpdateItemTest {
         update.tableName shouldBeEqualTo "users"
         update.updateExpression shouldBeEqualTo "SET #n = :name"
         update.expressionAttributeValues.shouldNotBeNull()
-        update.expressionAttributeValues!![":name"] shouldBeEqualTo AttributeValue.S("Alice")
+        update.expressionAttributeValues.shouldNotBeNull()[":name"] shouldBeEqualTo AttributeValue.S("Alice")
     }
 
     @Test

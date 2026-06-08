@@ -14,6 +14,7 @@ import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.http.auth.aws.signer.AwsV4FamilyHttpSigner
 import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner
 import software.amazon.awssdk.http.auth.spi.signer.HttpSigner
+import java.io.Serializable
 import java.net.URI
 import java.time.Clock
 
@@ -58,7 +59,11 @@ private data class AwsSigV4Options(
     val payloadSigningEnabled: Boolean,
     val signingClock: Clock?,
     val signer: AwsV4HttpSigner,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 private fun AwsSigV4PluginConfig.toOptions(): AwsSigV4Options {
     region.requireNotBlank("region")

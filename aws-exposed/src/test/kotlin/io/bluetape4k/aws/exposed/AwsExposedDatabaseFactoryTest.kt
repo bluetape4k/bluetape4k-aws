@@ -70,6 +70,16 @@ class AwsExposedDatabaseFactoryTest {
     }
 
     @Test
+    fun `secret string factories reject blank value`() {
+        assertFailsWith<IllegalArgumentException> {
+            AwsSecretString.of(" ")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            awsSecretStringOf("\t")
+        }
+    }
+
+    @Test
     fun `factory creates H2 Exposed database`() = runTest {
         val handle = AwsExposedDatabaseFactory().create(
             properties = h2Properties("factory_creates_h2"),

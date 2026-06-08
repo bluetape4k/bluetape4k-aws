@@ -10,6 +10,7 @@ import io.github.resilience4j.kotlin.retry.executeSuspendFunction
 import io.github.resilience4j.retry.Retry
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
+import java.io.Serializable
 
 /**
  * AWS Kotlin SDK를 사용해 DynamoDB에 배치 작업(Put/Delete)을 수행하는 Executor입니다.
@@ -47,7 +48,11 @@ class DynamoDbBatchExecutor<T: Any>(
     data class TableItemTuple(
         val tableName: String,
         val writeRequest: WriteRequest,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     /**
      * 미처리 항목과 현재 시도 횟수를 보관하는 데이터 클래스입니다.
@@ -58,7 +63,11 @@ class DynamoDbBatchExecutor<T: Any>(
     data class RetryablePut(
         val attempt: Int,
         val items: List<TableItemTuple>,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     /**
      * 속성 맵 목록을 [tableName] 테이블에 Batch Put으로 저장합니다.

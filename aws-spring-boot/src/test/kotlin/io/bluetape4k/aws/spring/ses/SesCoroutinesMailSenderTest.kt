@@ -9,6 +9,7 @@ import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import java.io.Serializable
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
 import software.amazon.awssdk.services.sesv2.model.AttachmentContentDisposition
 import software.amazon.awssdk.services.sesv2.model.SendEmailRequest
@@ -136,5 +137,9 @@ class SesCoroutinesMailSenderTest {
     private data class SesClientFixture(
         val client: SesV2AsyncClient,
         val request: io.mockk.CapturingSlot<SendEmailRequest>,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 }

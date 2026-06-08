@@ -3,6 +3,7 @@ package io.bluetape4k.aws.ktor.s3
 import io.ktor.http.Headers
 import io.ktor.http.Url
 import io.ktor.utils.io.ByteReadChannel
+import java.io.Serializable
 import java.time.Instant
 
 /**
@@ -20,7 +21,11 @@ import java.time.Instant
 data class S3KtorObjectRef(
     val bucket: String,
     val key: String,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 PutObject 요청입니다.
@@ -45,7 +50,11 @@ data class S3KtorPutObjectRequest(
     val contentType: String? = null,
     val metadata: Map<String, String> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 PutObject 응답입니다.
@@ -64,7 +73,11 @@ data class S3KtorPutObjectResponse(
     val eTag: String?,
     val versionId: String?,
     val headers: Headers,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 GetObject 응답 body와 metadata입니다.
@@ -87,7 +100,7 @@ data class S3KtorGetObjectResponse(
     val contentLength: Long?,
     val metadata: Map<String, String>,
     val headers: Headers,
-) {
+) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -108,6 +121,10 @@ data class S3KtorGetObjectResponse(
         result = 31 * result + metadata.hashCode()
         result = 31 * result + headers.hashCode()
         return result
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
@@ -130,7 +147,11 @@ data class S3KtorStreamingObjectResponse(
     val contentLength: Long?,
     val metadata: Map<String, String>,
     val headers: Headers,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 DeleteObject 응답입니다.
@@ -148,7 +169,11 @@ data class S3KtorDeleteObjectResponse(
     val deleteMarker: Boolean?,
     val versionId: String?,
     val headers: Headers,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 ListObjectsV2 요청입니다.
@@ -174,7 +199,11 @@ data class S3KtorListObjectsRequest(
     val startAfter: String? = null,
     val maxKeys: Int? = null,
     val fetchOwner: Boolean? = null,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 객체 목록 항목입니다.
@@ -194,7 +223,11 @@ data class S3KtorObjectSummary(
     val size: Long?,
     val lastModified: Instant?,
     val storageClass: String?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 ListObjectsV2 응답입니다.
@@ -219,7 +252,11 @@ data class S3KtorListObjectsResponse(
     val nextContinuationToken: String?,
     val contents: List<S3KtorObjectSummary>,
     val commonPrefixes: List<String>,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * Multipart upload 시작 결과입니다.
@@ -236,7 +273,11 @@ data class S3KtorMultipartUpload(
     val bucket: String,
     val key: String,
     val uploadId: String,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * Multipart upload part 결과입니다.
@@ -253,7 +294,11 @@ data class S3KtorMultipartUpload(
 data class S3KtorCompletedPart(
     val partNumber: Int,
     val eTag: String,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * CompleteMultipartUpload 응답입니다.
@@ -273,7 +318,11 @@ data class S3KtorCompleteMultipartUploadResponse(
     val key: String?,
     val location: String?,
     val eTag: String?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * Presigned S3 요청 URL입니다.
@@ -296,4 +345,8 @@ data class S3KtorCompleteMultipartUploadResponse(
 data class S3KtorPresignedRequest(
     val method: String,
     val url: Url,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}

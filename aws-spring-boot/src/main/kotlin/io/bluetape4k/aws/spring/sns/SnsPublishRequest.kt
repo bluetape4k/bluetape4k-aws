@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
+import java.io.Serializable
 
 /**
  * Value object for an SNS publish request.
@@ -26,7 +27,7 @@ data class SnsPublishRequest(
     val messageAttributes: Map<String, MessageAttributeValue> = emptyMap(),
     val messageGroupId: String? = null,
     val messageDeduplicationId: String? = null,
-) {
+): Serializable {
     init {
         require(topicArn.isNotBlank()) { "topicArn must not be blank." }
         require(message.isNotBlank()) { "message must not be blank." }
@@ -44,5 +45,9 @@ data class SnsPublishRequest(
                 "messageGroupId and messageDeduplicationId are not allowed for standard topic."
             }
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }

@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Test
+import java.io.Serializable
 
 class DynamoItemMapperTest {
 
@@ -12,7 +13,11 @@ class DynamoItemMapperTest {
         val id: String,
         val name: String,
         val age: Int,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     private val testMapper = DynamoItemMapper<TestItem> { item ->
         mapOf(
@@ -66,8 +71,8 @@ class DynamoItemMapperTest {
 
         writeRequests shouldHaveSize 2
         writeRequests[0].putRequest.shouldNotBeNull()
-        writeRequests[0].putRequest!!.item["id"] shouldBeEqualTo AttributeValue.S("1")
-        writeRequests[1].putRequest!!.item["name"] shouldBeEqualTo AttributeValue.S("Bob")
+        writeRequests[0].putRequest.shouldNotBeNull().item["id"] shouldBeEqualTo AttributeValue.S("1")
+        writeRequests[1].putRequest.shouldNotBeNull().item["name"] shouldBeEqualTo AttributeValue.S("Bob")
     }
 
     @Test
@@ -87,8 +92,8 @@ class DynamoItemMapperTest {
 
         writeRequests shouldHaveSize 2
         writeRequests[0].deleteRequest.shouldNotBeNull()
-        writeRequests[0].deleteRequest!!.key["id"] shouldBeEqualTo AttributeValue.S("1")
-        writeRequests[1].deleteRequest!!.key["id"] shouldBeEqualTo AttributeValue.S("2")
+        writeRequests[0].deleteRequest.shouldNotBeNull().key["id"] shouldBeEqualTo AttributeValue.S("1")
+        writeRequests[1].deleteRequest.shouldNotBeNull().key["id"] shouldBeEqualTo AttributeValue.S("2")
     }
 
     @Test

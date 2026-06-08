@@ -56,7 +56,7 @@ class SnsClientExamples: AbstractKotlinSnsTest() {
                 this.attributes = mapOf("FifoTopic" to "true", "ContentBasedDeduplication" to "true")
             }
             response.topicArn.shouldNotBeNull().shouldNotBeEmpty()
-            testTopicArn = response.topicArn!!
+            testTopicArn = response.topicArn.shouldNotBeNull()
             log.debug { "topic name=$TOPIC_NAME_FIFO, topicArn=$testTopicArn" }
         }
     }
@@ -77,7 +77,7 @@ class SnsClientExamples: AbstractKotlinSnsTest() {
             }
 
             response.subscriptionArn.shouldNotBeNull().shouldNotBeEmpty()
-            testSubscriptionArn = response.subscriptionArn!!
+            testSubscriptionArn = response.subscriptionArn.shouldNotBeNull()
             log.debug { "subscriptionArn=$testSubscriptionArn" }
         }
     }
@@ -181,7 +181,7 @@ class SnsClientExamples: AbstractKotlinSnsTest() {
                 result.messageId.shouldNotBeNull().shouldNotBeEmpty()
                 log.debug { "result=$result" }
             }
-            response.successful!! shouldHaveSize messageSize
+            response.successful.shouldNotBeNull() shouldHaveSize messageSize
         }
     }
 

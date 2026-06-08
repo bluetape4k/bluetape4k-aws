@@ -3,7 +3,6 @@ package io.bluetape4k.aws.ktor.s3vectors
 import io.bluetape4k.aws.s3vectors.S3VectorsOperations
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -23,10 +22,8 @@ class S3VectorsKtorRuntime(
     suspend fun stop() {
         if (closed.compareAndSet(false, true)) {
             ownedClient?.let { client ->
-                withContext(Dispatchers.IO) {
-                    runInterruptible {
-                        client.close()
-                    }
+                runInterruptible(Dispatchers.IO) {
+                    client.close()
                 }
             }
         }

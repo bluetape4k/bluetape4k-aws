@@ -46,7 +46,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
             val response = client.createFifoTopic(TOPIC_NAME_FIFO)
 
             response.topicArn.shouldNotBeNull().shouldNotBeEmpty()
-            testTopicArn = response.topicArn!!
+            testTopicArn = response.topicArn.shouldNotBeNull()
             log.debug { "topic name=$TOPIC_NAME_FIFO, topicArn=$testTopicArn" }
         }
     }
@@ -62,7 +62,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
             val response = client.subscribe(testTopicArn, testPhoneNumber, "sms")
 
             response.subscriptionArn.shouldNotBeNull().shouldNotBeEmpty()
-            testSubscriptionArn = response.subscriptionArn!!
+            testSubscriptionArn = response.subscriptionArn.shouldNotBeNull()
             log.debug { "subscriptionArn=$testSubscriptionArn" }
         }
     }
@@ -166,7 +166,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
                 result.messageId.shouldNotBeNull().shouldNotBeEmpty()
                 log.debug { "result=$result" }
             }
-            response.successful!! shouldHaveSize messageSize
+            response.successful.shouldNotBeNull() shouldHaveSize messageSize
         }
     }
 

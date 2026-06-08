@@ -7,6 +7,7 @@ import org.springframework.core.env.ConfigurableEnvironment
 import org.springframework.core.env.EnumerablePropertySource
 import org.springframework.core.env.MapPropertySource
 import org.springframework.util.ClassUtils
+import java.io.Serializable
 import java.net.URI
 import java.time.Clock
 import java.time.Duration
@@ -20,7 +21,11 @@ internal data class AwsLoadedPropertySource(
     val name: String,
     val values: Map<String, Any>,
     val reload: () -> Map<String, Any>?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 internal fun requireRegionWhenEndpointOverride(
     endpointOverride: URI?,

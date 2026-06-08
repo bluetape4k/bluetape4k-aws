@@ -80,10 +80,13 @@ fun KinesisClient.recordFlow(
             if (shardIterator == null) {
                 shardIterator = fetchShardIterator(streamName, shardId, currentPosition)
             }
+            val currentShardIterator = requireNotNull(shardIterator) {
+                "shardIterator must be initialized before GetRecords."
+            }
 
             val response = getRecords {
                 limit = options.batchLimit
-                this.shardIterator = shardIterator!!
+                this.shardIterator = currentShardIterator
             }
 
             iteratorRetryCount = 0
@@ -96,7 +99,7 @@ fun KinesisClient.recordFlow(
 
             // nextShardIterator == null means the shard was closed (resharding)
             if (response.nextShardIterator == null) return@flow
-            shardIterator = response.nextShardIterator!!
+            shardIterator = response.nextShardIterator
 
             val pollDelay = if (response.records.isEmpty()) options.emptyBackoff else options.pollInterval
             delay(pollDelay)
