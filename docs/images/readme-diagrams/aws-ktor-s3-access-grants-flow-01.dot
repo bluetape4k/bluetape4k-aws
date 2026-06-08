@@ -1,0 +1,28 @@
+digraph aws_ktor_s3_access_grants_flow_01 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  app [label="Ktor application\nroutes/services", fillcolor="#E8F3FF", color="#5B8DEF"]
+  plugin [label="S3AccessGrantsKtorPlugin\nstores operations", fillcolor="#FFF3D9", color="#D6A441"]
+  defaults [label="AwsKtorCore\ndefaults/customizers", fillcolor="#E8F3FF", color="#5B8DEF"]
+  ops [label="S3AccessGrantsKtorOperations\nsuspend API", fillcolor="#E9F7F6", color="#45A7A1"]
+  template [label="S3AccessGrantsKtorTemplate\nawaits SDK futures", fillcolor="#FFF3D9", color="#D6A441"]
+  client [label="S3ControlAsyncClient\noptional SDK runtime", fillcolor="#F1ECFF", color="#8A72D6"]
+  data [label="Data access credentials\ngetDataAccess", fillcolor="#EAF7EF", color="#58A978"]
+  lists [label="Grant discovery\nlist* operations", fillcolor="#EAF7EF", color="#58A978"]
+  admin [label="Raw admin client\ncreate/update/delete", fillcolor="#FFF0E3", color="#F47B36"]
+  control [label="S3 Access Grants\ninstances, grants, locations", fillcolor="#EAF7EF", color="#58A978"]
+
+  app -> plugin [label="install", color="#66758A"]
+  defaults -> plugin [label="inherit", color="#66758A"]
+  plugin -> ops [label="register", color="#66758A"]
+  ops -> template [label="delegate", color="#2F9E62"]
+  template -> client [label="await", color="#2F9E62"]
+  client -> data [label="getDataAccess", color="#2F9E62"]
+  client -> lists [label="list*", color="#4C7FD9"]
+  client -> admin [label="raw SDK", color="#D79528", style="dashed"]
+  data -> control [label="", color="#2F9E62"]
+  lists -> control [label="", color="#4C7FD9"]
+  admin -> control [label="", color="#D79528", style="dashed"]
+}

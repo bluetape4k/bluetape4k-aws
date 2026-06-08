@@ -27,6 +27,8 @@ publishing을 위한 선택적 CloudWatch와 CloudWatch Logs server plugin을 �
   presigned GET/PUT URL, content-type 감지, server-side encryption header,
   client-side envelope encryption, S3 기반 Ktor config object 로딩을 지원하는
   `S3KtorClient`.
+- S3 Control 기반 Access Grants data access와 discovery operation을 선택적으로
+  설치하는 `S3AccessGrantsKtorPlugin`.
 - Coroutine 기반 SQS polling, publishing, graceful shutdown, retry visibility
   제어, 선택적 manual DLQ forwarding을 제공하는 `SqsConsumer` Ktor
   `ApplicationPlugin`.
@@ -53,6 +55,10 @@ dependencies {
 
     // SigV4/S3 client 사용 시
     implementation("io.ktor:ktor-client-cio")
+
+    // S3 Access Grants plugin 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:s3control")
 
     // SQS consumer/publisher 사용 시
     implementation("io.ktor:ktor-server-core")
@@ -311,11 +317,52 @@ Client-side encryption은 KMS에 직접 의존하지 않고 `S3KtorDataKeyProvid
 테스트나 로컬 도구는 in-memory provider를 사용할 수 있습니다. Plaintext data key는
 process-local로만 다루고 provider 경계 밖에 저장하지 마세요.
 
-S3 Access Grants와 S3 Vector API는 기본 API 표면에 강제로 포함하지 않습니다. Access
-Grants는 애플리케이션이 이미 사용하는 AWS SDK component로 vended S3 credentials를 얻은
-뒤 그 credentials provider로 `S3KtorClient` 를 생성합니다. S3 Vector는 service API를
-runtime hard dependency 없이 감싸도 될 만큼 안정화되기 전까지 공식 service SDK를 직접
-사용하세요.
+### S3 Access Grants
+
+`S3AccessGrantsKtorPlugin` 은 AWS SDK Java v2 `S3ControlAsyncClient` 기반 suspend
+operations facade를 설치합니다. Access Grants는 S3 Control boundary에 유지하고, object
+REST 호출은 `S3KtorClient` 에 남깁니다. Request 처리 중 필요한 data-access와 discovery
+호출은 `application.s3AccessGrants()` 로 사용합니다.
+
+![Ktor S3 Access Grants flow](../docs/images/readme-diagrams/aws-ktor-s3-access-grants-flow-01.png)
+
+Plugin은 caller-owned `S3AccessGrantsKtorOperations`, caller-owned
+`S3ControlAsyncClient`, 또는 `AwsKtorCore` 기본값과 service-specific customizer로 만든
+plugin-managed client를 사용할 수 있습니다. Administrative create, update, delete
+operation은 의도적으로 raw S3 Control client에 남겨 Ktor facade가 request handling에
+유용한 read/data-access path만 감싸도록 했습니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.s3.accessgrants.S3AccessGrantsKtorPlugin
+import io.bluetape4k.aws.ktor.s3.accessgrants.s3AccessGrants
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
+import software.amazon.awssdk.services.s3control.model.Permission
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+    }
+
+    install(S3AccessGrantsKtorPlugin)
+}
+
+suspend fun Application.readGrantedCredentials(accountId: String, target: String) =
+    s3AccessGrants().getDataAccess(
+        GetDataAccessRequest.builder()
+            .accountId(accountId)
+            .target(target)
+            .permission(Permission.READ)
+            .build(),
+    )
+```
+
+S3 Vector API는 기본 API 표면에 강제로 포함하지 않습니다. Service API를 runtime hard
+dependency 없이 감싸도 될 만큼 안정화되기 전까지 공식 service SDK를 직접 사용하세요.
 
 ## CloudWatch Metrics And Logs
 
