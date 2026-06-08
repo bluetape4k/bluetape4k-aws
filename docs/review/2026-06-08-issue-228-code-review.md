@@ -21,7 +21,7 @@ new README diagram assets.
 | 2. Behavior | PASS | Template methods delegate to S3 Control async APIs and `await()` responses. |
 | 3. Lifecycle | PASS | Plugin-created S3 Control clients close once; injected clients and operations remain application-owned. |
 | 4. Coroutine Safety | PASS | Async SDK futures are awaited; cancellation propagation is covered; close runs on IO through the established Ktor sync-event bridge. |
-| 5. Ecosystem Patterns | PASS | Reuses `AwsKtorCore` defaults/customizer pattern, bluetape4k assertions, `runSuspendIO`, and class-level MockK mocks. |
+| 5. Ecosystem Patterns | PASS | Reuses `AwsKtorCore` defaults/customizer pattern, `AwsKtorCore.ktorCore()` from the Ktor core baseline, `bluetape4k-ktor-testing.shouldHaveStatus`, bluetape4k assertions, `runSuspendIO`, and class-level MockK mocks. |
 | 6. Documentation | PASS | `README.md` and `README.ko.md` both document dependency, feature, usage, and the shared English-label PNG diagram. |
 | 7. Diagram Gate | PASS | Generator summary: `badEndpointAngle=0`, `badBends=0`, `interiorCrossings=0`, `marginImbalance=0`, `titleGap=54`; SVG parse and PNG inspection passed. |
 
@@ -30,6 +30,9 @@ new README diagram assets.
 - Access Grants remains separate from `S3KtorClient`, preserving object REST vs
   S3 Control boundaries.
 - Administrative create/update/delete calls are intentionally not wrapped.
+- `bluetape4k-projects` Ktor modules were checked; the applicable reuse points
+  for this change are `bluetape4k-ktor-core` via `AwsKtorCore.ktorCore()` and
+  `bluetape4k-ktor-testing` in route-level tests.
 - Native subagent verification was not used because the available spawn surface
   did not expose the required `agent_type` selector from the workspace contract.
 
