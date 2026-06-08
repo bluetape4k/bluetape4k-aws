@@ -1,0 +1,21 @@
+graph 1 7.8095 7.6813
+node app 2.791 7.2319 1.7071 0.89875 "Application service\nrequests access\nlists grants" rounded,filled box #5B8DEF #E8F3FF
+node ops 2.791 5.4165 2.3842 0.89875 "S3AccessGrantsOperations\ncoroutine API\nno CompletableFuture leak" rounded,filled box #45A7A1 #E9F7F6
+node auto 6.3466 3.601 2.9258 0.89875 "S3AccessGrantsAutoConfiguration\nenabled property gate\nclient beans" rounded,filled box #D6A441 #FFF3D9
+node template 2.791 3.601 3.0717 0.89875 "S3AccessGrantsCoroutinesTemplate\nawaits async client\nread/data-access path" rounded,filled box #D6A441 #FFF3D9
+node props 6.3466 5.4165 1.6133 0.89875 "Properties\nregion\nendpoint override" rounded,filled box #F47B36 #FFF0E3
+node sync 6.3466 1.9054 2.1446 0.65917 "S3ControlClient\nraw admin escape hatch" rounded,filled box #8A72D6 #F1ECFF
+node async 3.3327 1.9054 2.0092 0.65917 "S3ControlAsyncClient\nasync S3 Control calls" rounded,filled box #8A72D6 #F1ECFF
+node instance 6.3466 0.32958 2.1133 0.65917 "Access Grants instance\naccount-level boundary" rounded,filled box #58A978 #EAF7EF
+node grants 0.91604 0.32958 1.8321 0.65917 "Grants and locations\nlist/discover scope" rounded,filled box #58A978 #EAF7EF
+node credentials 3.4438 0.32958 2.1237 0.65917 "Data access credentials\ntemporary S3 access" rounded,filled box #58A978 #EAF7EF
+edge app ops 4 2.791 6.7785 2.791 6.7785 2.791 6.0061 2.791 6.0061 inject 3.0098 6.3242 solid #2F9E62
+edge ops template 4 2.791 4.963 2.791 4.963 2.791 4.1907 2.791 4.1907 solid #2F9E62
+edge auto sync 4 6.3466 3.1466 6.3466 3.1466 6.3466 2.373 6.3466 2.373 beans 6.5289 2.6933 solid #66758A
+edge auto async 7 5.079 3.1459 5.079 2.6429 5.079 1.9028 5.079 1.9028 5.079 1.9028 4.4792 1.9028 4.4792 1.9028 solid #66758A
+edge template async 4 3.3275 3.1466 3.3275 3.1466 3.3275 2.373 3.3275 2.373 await 3.4039 2.6933 solid #2F9E62
+edge props auto 4 6.3466 4.963 6.3466 4.963 6.3466 4.1907 6.3466 4.1907 binds 6.5289 4.5088 solid #66758A
+edge sync instance 4 6.3466 1.5712 6.3466 1.5712 6.3466 0.79899 6.3466 0.79899 admin 6.5289 1.1175 dashed #D79528
+edge async grants 7 2.3232 1.9028 1.9173 1.9028 1.5436 1.9028 1.5436 1.9028 1.5436 1.9028 1.5436 0.79892 1.5436 0.79892 "list*" 1.0983 1.1175 solid #4C7FD9
+edge async credentials 4 3.3596 1.5712 3.3596 1.5712 3.3596 0.79899 3.3596 0.79899 getDataAccess 3.9178 1.1175 solid #2F9E62
+stop

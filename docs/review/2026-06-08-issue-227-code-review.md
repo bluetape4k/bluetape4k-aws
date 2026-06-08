@@ -59,8 +59,10 @@ customizer ordering, and coroutine delegation for all exposed methods.
 ### Tier 7 - Documentation And Lessons
 
 PASS. `README.md` and `README.ko.md` document the opt-in property, runtime
-dependency, and Spring injection example. A durable lesson captures why Access
-Grants belongs to S3 Control rather than the default S3 operations API.
+dependency, Spring injection example, and S3 Access Grants component/flow
+diagrams. A durable lesson captures why Access Grants belongs to S3 Control
+rather than the default S3 operations API and records the diagram verification
+evidence.
 
 ## Evidence
 
@@ -74,6 +76,15 @@ Grants belongs to S3 Control rather than the default S3 operations API.
   passed with 14 tests.
 - `./gradlew :bluetape4k-aws-spring-boot:test --tests '*S3AutoConfigurationTest' --tests '*S3AccessGrants*' --no-daemon --max-workers=1`
   passed with 27 tests.
+- S3 Access Grants component diagram gate:
+  `nodes=10 routes=9 segments=28 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
+- S3 Access Grants flow diagram gate:
+  `nodes=12 routes=10 segments=30 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
+- Rendered PNGs were inspected directly and embedded in both README locales:
+  `bluetape4k-aws-s3-access-grants-components-08.png` and
+  `bluetape4k-aws-s3-access-grants-flow-09.png`.
+- New public SVG assets were checked for local path and UI-font drift:
+  no `/Users/debop`, `Inter`, `Arial`, or `Helvetica` matches.
 - `git diff --check` passed.
 
 ## Residual Risk

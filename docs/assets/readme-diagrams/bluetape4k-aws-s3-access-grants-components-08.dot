@@ -1,0 +1,26 @@
+digraph bluetape4k_aws_s3_access_grants_components_08 {
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+
+  app [label="Application service\nrequests access\nlists grants", fillcolor="#E8F3FF", color="#5B8DEF"]
+  ops [label="S3AccessGrantsOperations\ncoroutine API\nno CompletableFuture leak", fillcolor="#E9F7F6", color="#45A7A1"]
+  auto [label="S3AccessGrantsAutoConfiguration\nenabled property gate\nclient beans", fillcolor="#FFF3D9", color="#D6A441"]
+  template [label="S3AccessGrantsCoroutinesTemplate\nawaits async client\nread/data-access path", fillcolor="#FFF3D9", color="#D6A441"]
+  props [label="Properties\nregion\nendpoint override", fillcolor="#FFF0E3", color="#F47B36"]
+  sync [label="S3ControlClient\nraw admin escape hatch", fillcolor="#F1ECFF", color="#8A72D6"]
+  async [label="S3ControlAsyncClient\nasync S3 Control calls", fillcolor="#F1ECFF", color="#8A72D6"]
+  instance [label="Access Grants instance\naccount-level boundary", fillcolor="#EAF7EF", color="#58A978"]
+  grants [label="Grants and locations\nlist/discover scope", fillcolor="#EAF7EF", color="#58A978"]
+  credentials [label="Data access credentials\ntemporary S3 access", fillcolor="#EAF7EF", color="#58A978"]
+
+  app -> ops [label="inject", color="#2F9E62"]
+  ops -> template [label="", color="#2F9E62"]
+  auto -> sync [label="beans", color="#66758A"]
+  auto -> async [label="", color="#66758A"]
+  props -> auto [label="binds", color="#66758A"]
+  template -> async [label="await", color="#2F9E62"]
+  sync -> instance [label="admin", color="#D79528", style="dashed"]
+  async -> grants [label="list*", color="#4C7FD9"]
+  async -> credentials [label="getDataAccess", color="#2F9E62"]
+}
