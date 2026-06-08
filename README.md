@@ -34,8 +34,8 @@ applications to adopt a single framework or dependency stack.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
   consumer runtime, DynamoDB server repository support, EC2 IMDS helpers, and
   Ktor server/client examples.
-- **Local integration testing** — LocalStack/Floci emulator wiring through
-  Testcontainers and Nightly examples.
+- **Local integration testing** — Floci-first emulator wiring through
+  Testcontainers and explicit LocalStack fallback runs.
 
 <!-- README_VISUAL_OVERVIEW:START -->
 ## Overview Diagram
@@ -108,7 +108,7 @@ you need at runtime.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.3.1")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.4.0")
 
     // Add the AWS Java SDK v2 services you use
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
@@ -139,7 +139,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.3.1")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.4.0")
 
     // Add the AWS Kotlin SDK services you use
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
@@ -157,7 +157,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.3.1")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.4.0")
 
     // Add the AWS Java SDK v2 services you use at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
