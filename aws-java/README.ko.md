@@ -2,7 +2,7 @@
 
 [English](./README.md) | 한국어
 
-AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, SES, SNS, SQS, KMS, CloudWatch, Kinesis, STS 등 주요 AWS 서비스를 Async/Non-Blocking 방식 및 Kotlin Coroutines로 사용할 수 있도록 지원합니다.
+AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis, STS 등 주요 AWS 서비스를 Async/Non-Blocking 방식 및 Kotlin Coroutines로 사용할 수 있도록 지원합니다.
 
 ## 아키텍처
 
@@ -24,6 +24,7 @@ AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, SES, SNS, SQ
 |---------------------|---------------------------------------------------------|
 | **DynamoDB**        | 테이블 CRUD, Enhanced Client, Coroutines 확장                |
 | **S3**              | 객체 업로드/다운로드, TransferManager(대용량), Coroutines 확장        |
+| **S3 Vectors**      | 선택적 vector bucket/index 조회와 vector put/get/list/query facade |
 | **SES**             | 이메일 발송, Coroutines 확장                                   |
 | **SNS**             | 토픽 발행, SMS, 푸시 알림, Coroutines 확장                        |
 | **SQS**             | 메시지 발송/수신/삭제, Coroutines 확장                             |
@@ -78,6 +79,31 @@ suspend fun listLogKeys(client: S3AsyncClient, bucket: String): List<String> =
         .toList()
         .mapNotNull { it.key() }
 ```
+
+### S3 Vectors Coroutine Facade
+
+```kotlin
+import io.bluetape4k.aws.s3vectors.S3VectorsCoroutinesTemplate
+import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
+import software.amazon.awssdk.services.s3vectors.model.ListIndexesRequest
+
+class SemanticIndexReader(
+    client: S3VectorsAsyncClient,
+) {
+    private val s3Vectors = S3VectorsCoroutinesTemplate(client)
+
+    suspend fun listIndexes(vectorBucketName: String) =
+        s3Vectors.listIndexes(
+            ListIndexesRequest.builder()
+                .vectorBucketName(vectorBucketName)
+                .build()
+        )
+}
+```
+
+S3 Vectors는 별도 AWS SDK v2 `s3vectors` 서비스를 사용합니다. 이 모듈은 해당 의존성을
+선택으로 유지하고 discovery, put/get/list, query 작업용 작은 suspend facade만 제공합니다.
+파괴적 관리, tagging, policy 호출은 raw `S3VectorsAsyncClient` 로 그대로 사용할 수 있습니다.
 
 ### SQS Coroutine Extensions
 
@@ -194,6 +220,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
+    implementation("software.amazon.awssdk:s3vectors")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:kms")

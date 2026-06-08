@@ -29,6 +29,8 @@ publishing을 위한 선택적 CloudWatch와 CloudWatch Logs server plugin을 �
   `S3KtorClient`.
 - S3 Control 기반 Access Grants data access와 discovery operation을 선택적으로
   설치하는 `S3AccessGrantsKtorPlugin`.
+- S3 Vectors discovery, vector write/read, listing, query operation을 선택적으로
+  설치하는 `S3VectorsKtorPlugin`.
 - Coroutine 기반 SQS polling, publishing, graceful shutdown, retry visibility
   제어, 선택적 manual DLQ forwarding을 제공하는 `SqsConsumer` Ktor
   `ApplicationPlugin`.
@@ -59,6 +61,10 @@ dependencies {
     // S3 Access Grants plugin 사용 시
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:s3control")
+
+    // S3 Vectors plugin 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:s3vectors")
 
     // SQS consumer/publisher 사용 시
     implementation("io.ktor:ktor-server-core")
@@ -362,8 +368,42 @@ suspend fun Application.readGrantedCredentials(accountId: String, target: String
     )
 ```
 
-S3 Vector API는 기본 API 표면에 강제로 포함하지 않습니다. Service API를 runtime hard
-dependency 없이 감싸도 될 만큼 안정화되기 전까지 공식 service SDK를 직접 사용하세요.
+### S3 Vectors
+
+`S3VectorsKtorPlugin` 은 공유 `aws-java` coroutine `S3VectorsOperations` facade를
+Ktor 애플리케이션에 설치합니다. AWS가 vector 기능을 별도 `s3vectors` 서비스로 제공하므로
+기본 S3 object API에는 포함하지 않습니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.s3vectors.S3VectorsKtorPlugin
+import io.bluetape4k.aws.ktor.s3vectors.s3Vectors
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.services.s3vectors.model.ListIndexesRequest
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        ktorCore()
+    }
+
+    install(S3VectorsKtorPlugin)
+}
+
+suspend fun Application.listSemanticIndexes(vectorBucketName: String) =
+    s3Vectors().listIndexes(
+        ListIndexesRequest.builder()
+            .vectorBucketName(vectorBucketName)
+            .build(),
+    )
+```
+
+Plugin은 caller-owned `S3VectorsOperations`, caller-owned `S3VectorsAsyncClient`, 또는
+`AwsKtorCore` 기본값과 S3 Vectors customizer로 만든 plugin-owned client를 사용할 수
+있습니다. 이 plugin은 emulator-backed S3 Vectors 동작을 보장하지 않습니다.
 
 ## CloudWatch Metrics And Logs
 

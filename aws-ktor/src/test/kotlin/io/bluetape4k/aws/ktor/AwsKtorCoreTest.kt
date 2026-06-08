@@ -74,4 +74,21 @@ class AwsKtorCoreTest {
 
         application.awsKtorDefaults().s3ControlAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
     }
+
+    @Test
+    fun `core plugin stores S3 Vectors customizers`() = testApplication {
+        val customizer = AwsKtorS3VectorsAsyncClientCustomizer { builder ->
+            builder.overrideConfiguration { it.putHeader("x-test", "s3vectors") }
+        }
+
+        application {
+            install(AwsKtorCore) {
+                s3VectorsAsyncClient(customizer)
+            }
+        }
+
+        startApplication()
+
+        application.awsKtorDefaults().s3VectorsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
+    }
 }

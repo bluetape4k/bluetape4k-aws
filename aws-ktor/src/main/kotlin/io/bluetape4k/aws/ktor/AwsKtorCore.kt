@@ -17,6 +17,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClientBuilder
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
+import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClientBuilder
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
 import java.net.URI
 import java.time.Clock
@@ -45,6 +46,7 @@ class AwsKtorDefaults(
     cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer> = emptyList(),
     cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer> = emptyList(),
     s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer> = emptyList(),
+    s3VectorsAsyncClientCustomizers: List<AwsKtorS3VectorsAsyncClientCustomizer> = emptyList(),
     dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer> = emptyList(),
 ): AbstractValueObject() {
 
@@ -67,6 +69,10 @@ class AwsKtorDefaults(
     @Transient
     private val s3ControlAsyncClientCustomizersValue: List<AwsKtorS3ControlAsyncClientCustomizer>? =
         s3ControlAsyncClientCustomizers
+
+    @Transient
+    private val s3VectorsAsyncClientCustomizersValue: List<AwsKtorS3VectorsAsyncClientCustomizer>? =
+        s3VectorsAsyncClientCustomizers
 
     @Transient
     private val dynamoDbClientCustomizersValue: List<AwsKtorDynamoDbClientCustomizer>? = dynamoDbClientCustomizers
@@ -101,6 +107,10 @@ class AwsKtorDefaults(
     val s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer>
         get() = s3ControlAsyncClientCustomizersValue ?: emptyList()
 
+    /** Shared customizers for plugin-created AWS SDK Java v2 S3 Vectors async clients. */
+    val s3VectorsAsyncClientCustomizers: List<AwsKtorS3VectorsAsyncClientCustomizer>
+        get() = s3VectorsAsyncClientCustomizersValue ?: emptyList()
+
     /** Shared customizers for plugin-created AWS Kotlin SDK DynamoDB clients. */
     val dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer>
         get() = dynamoDbClientCustomizersValue ?: emptyList()
@@ -124,6 +134,7 @@ class AwsKtorDefaults(
             cloudWatchAsyncClientCustomizers == other.cloudWatchAsyncClientCustomizers &&
             cloudWatchLogsAsyncClientCustomizers == other.cloudWatchLogsAsyncClientCustomizers &&
             s3ControlAsyncClientCustomizers == other.s3ControlAsyncClientCustomizers &&
+            s3VectorsAsyncClientCustomizers == other.s3VectorsAsyncClientCustomizers &&
             dynamoDbClientCustomizers == other.dynamoDbClientCustomizers
 
     override fun hashCode(): Int {
@@ -138,6 +149,7 @@ class AwsKtorDefaults(
         result = 31 * result + cloudWatchAsyncClientCustomizers.hashCode()
         result = 31 * result + cloudWatchLogsAsyncClientCustomizers.hashCode()
         result = 31 * result + s3ControlAsyncClientCustomizers.hashCode()
+        result = 31 * result + s3VectorsAsyncClientCustomizers.hashCode()
         result = 31 * result + dynamoDbClientCustomizers.hashCode()
         return result
     }
@@ -155,6 +167,7 @@ class AwsKtorDefaults(
             .add("cloudWatchAsyncClientCustomizers", cloudWatchAsyncClientCustomizers)
             .add("cloudWatchLogsAsyncClientCustomizers", cloudWatchLogsAsyncClientCustomizers)
             .add("s3ControlAsyncClientCustomizers", s3ControlAsyncClientCustomizers)
+            .add("s3VectorsAsyncClientCustomizers", s3VectorsAsyncClientCustomizers)
             .add("dynamoDbClientCustomizers", dynamoDbClientCustomizers)
 
     companion object {
@@ -214,6 +227,7 @@ class AwsKtorCoreConfig {
     private val cloudWatchAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchAsyncClientCustomizer>()
     private val cloudWatchLogsAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
     private val s3ControlAsyncClientCustomizers = mutableListOf<AwsKtorS3ControlAsyncClientCustomizer>()
+    private val s3VectorsAsyncClientCustomizers = mutableListOf<AwsKtorS3VectorsAsyncClientCustomizer>()
     private val dynamoDbClientCustomizers = mutableListOf<AwsKtorDynamoDbClientCustomizer>()
 
     internal var ktorCoreConfig: Bluetape4kKtorCoreConfig? = null
@@ -266,6 +280,13 @@ class AwsKtorCoreConfig {
     }
 
     /**
+     * Adds a global S3 Vectors async client builder customizer.
+     */
+    fun s3VectorsAsyncClient(customizer: AwsKtorS3VectorsAsyncClientCustomizer) {
+        s3VectorsAsyncClientCustomizers += customizer
+    }
+
+    /**
      * Adds a global AWS Kotlin SDK DynamoDB client builder customizer.
      */
     fun dynamoDbClient(customizer: AwsKtorDynamoDbClientCustomizer) {
@@ -285,6 +306,7 @@ class AwsKtorCoreConfig {
             cloudWatchAsyncClientCustomizers = cloudWatchAsyncClientCustomizers.toList(),
             cloudWatchLogsAsyncClientCustomizers = cloudWatchLogsAsyncClientCustomizers.toList(),
             s3ControlAsyncClientCustomizers = s3ControlAsyncClientCustomizers.toList(),
+            s3VectorsAsyncClientCustomizers = s3VectorsAsyncClientCustomizers.toList(),
             dynamoDbClientCustomizers = dynamoDbClientCustomizers.toList(),
         )
 }
@@ -322,6 +344,13 @@ fun interface AwsKtorCloudWatchLogsAsyncClientCustomizer {
  */
 fun interface AwsKtorS3ControlAsyncClientCustomizer {
     fun customize(builder: S3ControlAsyncClientBuilder)
+}
+
+/**
+ * Customizes plugin-created AWS SDK Java v2 S3 Vectors async client builders.
+ */
+fun interface AwsKtorS3VectorsAsyncClientCustomizer {
+    fun customize(builder: S3VectorsAsyncClientBuilder)
 }
 
 /**
