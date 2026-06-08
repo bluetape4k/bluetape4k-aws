@@ -54,7 +54,7 @@ applications to adopt a single framework or dependency stack.
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
@@ -331,6 +331,49 @@ for large files, multipart transfers, and transfer listeners. For CRT-backed
 throughput tuning, add the AWS CRT runtime dependency and provide a CRT-backed
 `S3AsyncClient`; the Spring auto-configuration reuses that client for transfer
 manager construction.
+
+#### S3 Access Grants
+
+S3 Access Grants support is opt-in and uses the AWS SDK v2 S3 Control client.
+Applications that enable it must add the runtime service dependency:
+
+```kotlin
+runtimeOnly("software.amazon.awssdk:s3control")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    s3:
+      access-grants:
+        enabled: true
+        region: us-east-1
+```
+
+```kotlin
+import io.bluetape4k.aws.spring.s3.accessgrants.S3AccessGrantsOperations
+import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
+import software.amazon.awssdk.services.s3control.model.Permission
+
+class GrantedObjectAccess(
+    private val accessGrants: S3AccessGrantsOperations,
+) {
+    suspend fun readCredentials(accountId: String, target: String) =
+        accessGrants.getDataAccess(
+            GetDataAccessRequest.builder()
+                .accountId(accountId)
+                .target(target)
+                .permission(Permission.READ)
+                .build()
+        )
+}
+```
+
+`S3AccessGrantsOperations` covers the common read and data-access path:
+`getDataAccess`, `listCallerAccessGrants`, `listAccessGrants`,
+`listAccessGrantsInstances`, and `listAccessGrantsLocations`. Administrative
+create, update, and delete calls remain available through the raw
+`S3ControlClient` and `S3ControlAsyncClient` beans.
 
 ### DynamoDB — Spring Boot Coroutine Repository
 
