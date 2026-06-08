@@ -2,12 +2,15 @@ package io.bluetape4k.aws.ktor
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.ktor.testing.shouldHaveStatus
+import io.ktor.client.request.get
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -39,5 +42,19 @@ class AwsKtorCoreTest {
     @Test
     fun `application returns empty defaults when core plugin is absent`() = testApplication {
         application.awsKtorDefaults() shouldBeEqualTo AwsKtorDefaults()
+    }
+
+    @Test
+    fun `core plugin can install bluetape4k ktor baseline`() = testApplication {
+        application {
+            install(AwsKtorCore) {
+                ktorCore()
+            }
+        }
+
+        startApplication()
+
+        client.get("/healthz") shouldHaveStatus HttpStatusCode.OK
+        client.get("/readyz") shouldHaveStatus HttpStatusCode.OK
     }
 }

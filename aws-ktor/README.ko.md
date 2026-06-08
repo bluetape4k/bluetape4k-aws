@@ -8,7 +8,8 @@ coroutine 친화적 S3 REST client, Ktor lifecycle에 맞춰 동작하는 server
 consumer/publisher runtime을 제공합니다. 또한 `:aws-kotlin` 과 공식 AWS SDK for
 Kotlin을 사용하는 DynamoDB Ktor server plugin, repository facade, 그리고
 AWS-backed Exposed JDBC database registry를 Ktor lifecycle에 연결하는 server
-plugin과 선택적 EC2 IMDS metadata operation을 제공합니다.
+plugin과 선택적 EC2 IMDS metadata operation을 제공합니다. 또한 명시적 metric/log-event
+publishing을 위한 선택적 CloudWatch와 CloudWatch Logs server plugin을 제공합니다.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -35,6 +36,9 @@ plugin과 선택적 EC2 IMDS metadata operation을 제공합니다.
   database registry를 공유하는 `AwsExposedPlugin`.
 - credential 전략으로 IMDS를 사용하지 않고 EC2 metadata만 제한적으로 읽는
   `ImdsKtorPlugin`.
+- 명시적 CloudWatch metric publishing, CloudWatch Logs setup, buffered log-event
+  publishing, bounded shutdown flush를 제공하는 `CloudWatchKtorPlugin` 과
+  `CloudWatchLogsKtorPlugin`.
 
 ## 의존성
 
@@ -58,7 +62,12 @@ dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:imds")
 
-    // SQS/S3 Ktor helper용 선택적 Micrometer bridge
+    // CloudWatch metrics 및 CloudWatch Logs 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:cloudwatch")
+    implementation("software.amazon.awssdk:cloudwatchlogs")
+
+    // SQS/S3/CloudWatch Ktor helper용 선택적 Micrometer bridge
     implementation("io.micrometer:micrometer-core")
 
     // DynamoDB Ktor server 사용 시
@@ -79,6 +88,9 @@ dependencies {
 여러 Ktor 통합이 같은 AWS region, local endpoint, credentials, signing clock,
 client customizer를 공유해야 한다면 `AwsKtorCore`를 한 번 설치합니다. 서비스별
 설정은 항상 공유 기본값보다 우선합니다.
+애플리케이션이 JSON content negotiation, 표준 status pages, health/readiness route
+같은 공유 `bluetape4k-ktor-core` baseline도 함께 원한다면 `AwsKtorCore` 안에서
+`ktorCore()`를 호출합니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.AwsKtorCore
@@ -93,6 +105,7 @@ fun Application.module() {
         region = "ap-northeast-2"
         endpointOverride = Url("http://localhost:4566")
         javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        ktorCore()
     }
 
     install(SqsConsumer) {
@@ -102,9 +115,10 @@ fun Application.module() {
 }
 ```
 
-`S3KtorClient`, `SqsConsumer`, `DynamoDbKtorPlugin`은 공유 기본값을 상속할 수
-있습니다. 특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`,
-`endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. EKS/IRSA 같은
+`S3KtorClient`, `SqsConsumer`, `CloudWatchKtorPlugin`,
+`CloudWatchLogsKtorPlugin`, `DynamoDbKtorPlugin`은 공유 기본값을 상속할 수 있습니다.
+특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`, `endpointOverride` /
+`endpointUrl`, credentials provider를 설정합니다. EKS/IRSA 같은
 web identity 배포에서는 적절한 AWS SDK credentials provider를 `AwsKtorCore`에 직접
 주입하고, 해당 provider가 STS를 요구한다면 애플리케이션 runtime classpath에
 `software.amazon.awssdk:sts` 또는 `aws.sdk.kotlin:sts`를 추가합니다.
@@ -302,6 +316,71 @@ Grants는 애플리케이션이 이미 사용하는 AWS SDK component로 vended 
 뒤 그 credentials provider로 `S3KtorClient` 를 생성합니다. S3 Vector는 service API를
 runtime hard dependency 없이 감싸도 될 만큼 안정화되기 전까지 공식 service SDK를 직접
 사용하세요.
+
+## CloudWatch Metrics And Logs
+
+`CloudWatchKtorPlugin` 은 coroutine 기반 CloudWatch metric operation을 Ktor
+애플리케이션에 설치합니다. Plugin 설치는 operations facade만 저장하며,
+애플리케이션 코드가 `application.cloudWatch()` 를 호출하기 전에는 metric을 publish하지
+않습니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorPlugin
+import io.bluetape4k.aws.ktor.cloudwatch.cloudWatch
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+
+fun Application.module() {
+    install(CloudWatchKtorPlugin) {
+        namespace = "Orders/Ktor"
+        batchSize = 1000
+    }
+}
+
+suspend fun Application.publishLatency(millis: Double) {
+    cloudWatch().putMetricDatum(
+        MetricDatum.builder()
+            .metricName("order.latency")
+            .unit(StandardUnit.MILLISECONDS)
+            .value(millis)
+            .build()
+    )
+}
+```
+
+`CloudWatchLogsKtorPlugin` 은 CloudWatch Logs operation과 작은 buffered runtime을
+설치합니다. 애플리케이션 logging appender를 대체하지 않습니다. Runtime에 event를
+명시적으로 append하거나 `cloudWatchLogs()` operation을 직접 호출하세요. Buffered event는
+`ApplicationStopping` 에서 `shutdownFlushTimeout` 안에 flush됩니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchLogsKtorPlugin
+import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchLogsKtorRuntimeKey
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import java.time.Duration
+
+fun Application.module() {
+    install(CloudWatchLogsKtorPlugin) {
+        logGroupName = "/app/orders"
+        logStreamName = "ktor"
+        batchSize = 10000
+        flushInterval = Duration.ofSeconds(5)
+        shutdownFlushTimeout = Duration.ofSeconds(5)
+    }
+}
+
+suspend fun Application.publishAudit(message: String) {
+    attributes[CloudWatchLogsKtorRuntimeKey].append(message)
+}
+```
+
+서비스가 Micrometer snapshot을 한 번 CloudWatch로 publish하고 싶을 때는
+`CloudWatchKtorMeterPublishingTemplate` 을 사용합니다. 이 helper는 호출된 시점에만
+기존 `MeterRegistry` 를 읽으며 scheduled CloudWatch registry exporter를 등록하지
+않습니다.
 
 ## SQS Consumer And Publisher
 
@@ -546,6 +625,28 @@ install(AwsExposedPlugin) {
 
 설정 이후 password 값은 `AwsSecretString` 으로 보관되며 generated diagnostics에는
 redacted 문자열로 표시됩니다.
+
+### CloudWatch 옵션
+
+| 옵션 | 기본값 | 설명 |
+|---|---:|---|
+| `namespace` | `null` | namespace를 생략한 metric 호출에 사용할 기본 CloudWatch namespace입니다. |
+| `batchSize` | `1000` | CloudWatch metric batch size이며 `1..1000` 범위로 검증합니다. |
+| `cloudWatchAsyncClient` | `null` | 선택적 application-owned CloudWatch client입니다. 주입한 client는 plugin이 닫지 않습니다. |
+| `cloudWatchOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned operations facade입니다. |
+
+### CloudWatch Logs 옵션
+
+| 옵션 | 기본값 | 설명 |
+|---|---:|---|
+| `logGroupName` / `logStreamName` | `null` | buffered publishing과 default operation에 사용할 기본 log stream identity입니다. 두 값을 함께 설정해야 합니다. |
+| `batchSize` | `10000` | CloudWatch Logs event batch size이며 `1..10000` 범위로 검증합니다. |
+| `flushInterval` | `5s` | 명시적으로 append한 event의 periodic flush 주기입니다. Buffer가 비어 있으면 AWS를 호출하지 않습니다. |
+| `shutdownFlushTimeout` | `5s` | shutdown flush 제한 시간입니다. Flush가 timeout되어도 plugin-owned client는 닫습니다. |
+| `createLogGroupOnStart` | `false` | startup 시 log group을 생성할지 선택합니다. 기본값은 비활성입니다. |
+| `createLogStreamOnStart` | `false` | startup 시 log stream을 생성할지 선택합니다. 기본값은 비활성입니다. |
+| `cloudWatchLogsAsyncClient` | `null` | 선택적 application-owned CloudWatch Logs client입니다. 주입한 client는 plugin이 닫지 않습니다. |
+| `cloudWatchLogsOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned operations facade입니다. |
 
 ### SQS Consumer 옵션
 

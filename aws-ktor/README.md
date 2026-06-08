@@ -9,6 +9,8 @@ that follows the Ktor application lifecycle. It also provides a Ktor server
 plugin and repository facade for DynamoDB using `:aws-kotlin` and the official
 AWS SDK for Kotlin, plus a Ktor server plugin for AWS-backed Exposed JDBC
 database registries, and optional EC2 IMDS metadata operations.
+It also provides optional CloudWatch and CloudWatch Logs server plugins for
+explicit metric and log-event publishing.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -36,6 +38,9 @@ database registries, and optional EC2 IMDS metadata operations.
   databases loaded from local properties or AWS config-source descriptors.
 - `ImdsKtorPlugin` for EC2-hosted Ktor applications that need bounded metadata
   reads without using IMDS as the credential strategy.
+- `CloudWatchKtorPlugin` and `CloudWatchLogsKtorPlugin` for explicit
+  CloudWatch metric publishing, CloudWatch Logs setup, buffered log-event
+  publishing, and bounded shutdown flush.
 
 ## Dependency
 
@@ -59,7 +64,12 @@ dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:imds")
 
-    // Optional Micrometer bridge for SQS/S3 Ktor helpers
+    // CloudWatch metrics and CloudWatch Logs usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:cloudwatch")
+    implementation("software.amazon.awssdk:cloudwatchlogs")
+
+    // Optional Micrometer bridge for SQS/S3/CloudWatch Ktor helpers
     implementation("io.micrometer:micrometer-core")
 
     // DynamoDB Ktor server usage
@@ -80,6 +90,9 @@ dependencies {
 Install `AwsKtorCore` once when multiple Ktor integrations should inherit the
 same AWS region, local endpoint, credentials, signing clock, or client
 customizers. Service-specific configuration still wins over shared defaults.
+Call `ktorCore()` inside `AwsKtorCore` when the application also wants the
+shared `bluetape4k-ktor-core` baseline: JSON content negotiation, standard
+status pages, and health/readiness routes.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.AwsKtorCore
@@ -94,6 +107,7 @@ fun Application.module() {
         region = "ap-northeast-2"
         endpointOverride = Url("http://localhost:4566")
         javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        ktorCore()
     }
 
     install(SqsConsumer) {
@@ -103,7 +117,8 @@ fun Application.module() {
 }
 ```
 
-`S3KtorClient`, `SqsConsumer`, and `DynamoDbKtorPlugin` can inherit shared
+`S3KtorClient`, `SqsConsumer`, `CloudWatchKtorPlugin`,
+`CloudWatchLogsKtorPlugin`, and `DynamoDbKtorPlugin` can inherit shared
 defaults. Set a service-local `region`, `endpointOverride` / `endpointUrl`, or
 credentials provider when one integration needs a different target. For
 EKS/IRSA or other web-identity deployments, supply the appropriate AWS SDK
@@ -308,6 +323,71 @@ component your application already uses, then build `S3KtorClient` with that
 credentials provider. For S3 Vector, use the official service SDK directly
 until the service API is stable enough to wrap without a hard runtime
 dependency.
+
+## CloudWatch Metrics And Logs
+
+`CloudWatchKtorPlugin` installs coroutine CloudWatch metric operations into a
+Ktor application. Installing the plugin only stores the operations facade; it
+does not publish metrics until application code invokes `application.cloudWatch()`.
+
+```kotlin
+import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchKtorPlugin
+import io.bluetape4k.aws.ktor.cloudwatch.cloudWatch
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
+
+fun Application.module() {
+    install(CloudWatchKtorPlugin) {
+        namespace = "Orders/Ktor"
+        batchSize = 1000
+    }
+}
+
+suspend fun Application.publishLatency(millis: Double) {
+    cloudWatch().putMetricDatum(
+        MetricDatum.builder()
+            .metricName("order.latency")
+            .unit(StandardUnit.MILLISECONDS)
+            .value(millis)
+            .build()
+    )
+}
+```
+
+`CloudWatchLogsKtorPlugin` installs CloudWatch Logs operations and a small
+buffered runtime. It does not replace application logging appenders. Append
+events explicitly through the runtime, or call `cloudWatchLogs()` operations
+directly. Buffered events are flushed on `ApplicationStopping` within
+`shutdownFlushTimeout`.
+
+```kotlin
+import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchLogsKtorPlugin
+import io.bluetape4k.aws.ktor.cloudwatch.CloudWatchLogsKtorRuntimeKey
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import java.time.Duration
+
+fun Application.module() {
+    install(CloudWatchLogsKtorPlugin) {
+        logGroupName = "/app/orders"
+        logStreamName = "ktor"
+        batchSize = 10000
+        flushInterval = Duration.ofSeconds(5)
+        shutdownFlushTimeout = Duration.ofSeconds(5)
+    }
+}
+
+suspend fun Application.publishAudit(message: String) {
+    attributes[CloudWatchLogsKtorRuntimeKey].append(message)
+}
+```
+
+Use `CloudWatchKtorMeterPublishingTemplate` when a service wants to publish a
+one-time Micrometer snapshot to CloudWatch. This helper reads an existing
+`MeterRegistry` only when invoked and does not register a scheduled CloudWatch
+registry exporter.
 
 ## SQS Consumer And Publisher
 
@@ -555,6 +635,28 @@ install(AwsExposedPlugin) {
 
 Password values are represented by `AwsSecretString` after configuration and
 render as redacted in generated diagnostics.
+
+### CloudWatch Options
+
+| Option | Default | Description |
+|---|---:|---|
+| `namespace` | `null` | Default CloudWatch namespace for metric calls that omit a namespace. |
+| `batchSize` | `1000` | CloudWatch metric batch size, validated as `1..1000`. |
+| `cloudWatchAsyncClient` | `null` | Optional application-owned CloudWatch client. Injected clients are not closed by the plugin. |
+| `cloudWatchOperations` | `null` | Optional application-owned operations facade, useful for tests or custom wrappers. |
+
+### CloudWatch Logs Options
+
+| Option | Default | Description |
+|---|---:|---|
+| `logGroupName` / `logStreamName` | `null` | Default log stream identity for buffered publishing and default operations. Configure both together. |
+| `batchSize` | `10000` | CloudWatch Logs event batch size, validated as `1..10000`. |
+| `flushInterval` | `5s` | Periodic flush interval for explicitly appended events. Empty buffers do not call AWS. |
+| `shutdownFlushTimeout` | `5s` | Bounded shutdown flush timeout. Plugin-owned clients are closed even if flush times out. |
+| `createLogGroupOnStart` | `false` | Opt-in startup log group creation. Disabled by default. |
+| `createLogStreamOnStart` | `false` | Opt-in startup log stream creation. Disabled by default. |
+| `cloudWatchLogsAsyncClient` | `null` | Optional application-owned CloudWatch Logs client. Injected clients are not closed by the plugin. |
+| `cloudWatchLogsOperations` | `null` | Optional application-owned operations facade, useful for tests or custom wrappers. |
 
 ### SQS Consumer Options
 
