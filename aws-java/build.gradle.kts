@@ -8,6 +8,7 @@ configurations {
 
 dependencies {
     // bluetape4k artifacts (via BOM)
+    api(libs.bluetape4k.core)
     api(libs.bluetape4k.io)
     api(libs.bluetape4k.netty)
     api(libs.bluetape4k.idgenerators)

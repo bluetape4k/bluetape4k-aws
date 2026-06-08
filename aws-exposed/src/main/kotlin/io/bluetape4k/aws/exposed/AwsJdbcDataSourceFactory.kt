@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.exposed
 
-import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.bluetape4k.jdbc.hikari.hikariDataSourceOf
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.DriverManager
@@ -33,7 +33,7 @@ object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory {
         databaseName: String,
         properties: AwsDatabaseConnectionProperties,
     ): HikariDataSource {
-        val config = HikariConfig().apply {
+        return hikariDataSourceOf {
             when (properties.authenticationMode) {
                 AwsDatabaseAuthenticationMode.STATIC_PASSWORD -> {
                     jdbcUrl = properties.url
@@ -66,7 +66,6 @@ object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory {
             idleTimeout = properties.pool.idleTimeoutMillis
             maxLifetime = properties.pool.maxLifetimeMillis
         }
-        return HikariDataSource(config)
     }
 
     private fun defaultPoolName(databaseName: String): String =

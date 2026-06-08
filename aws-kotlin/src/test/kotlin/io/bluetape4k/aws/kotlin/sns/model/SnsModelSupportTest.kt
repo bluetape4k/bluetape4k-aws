@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.sns.model
 
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
@@ -57,7 +58,7 @@ class SnsModelSupportTest {
     fun `messageAttributeValueOf binary는 값을 설정한다`() {
         val value = messageAttributeValueOf("hello".toByteArray())
 
-        value.binaryValue!!.decodeToString() shouldBeEqualTo "hello"
+        value.binaryValue.shouldNotBeNull().decodeToString() shouldBeEqualTo "hello"
         value.dataType shouldBeEqualTo "Binary"
     }
 

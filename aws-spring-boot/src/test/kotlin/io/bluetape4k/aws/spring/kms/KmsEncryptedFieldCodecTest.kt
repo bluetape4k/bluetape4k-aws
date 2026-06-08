@@ -1,12 +1,13 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import software.amazon.awssdk.services.kms.model.DataKeySpec
+import java.io.Serializable
 
 class KmsEncryptedFieldCodecTest {
 
@@ -22,7 +23,9 @@ class KmsEncryptedFieldCodecTest {
         val encrypted = codec.encrypt("short secret", secretAnnotation)
 
         encrypted shouldNotBeEqualTo "short secret"
-        encrypted!!.startsWith(KmsEncryptedFieldCodec.CIPHERTEXT_PREFIX) shouldBeEqualTo true
+        requireNotNull(encrypted) {
+            "encrypted text must not be null."
+        }.startsWith(KmsEncryptedFieldCodec.CIPHERTEXT_PREFIX) shouldBeEqualTo true
         operations.lastEncryptKeyId shouldBeEqualTo "alias/customer-secret"
         operations.lastEncryptContext shouldBeEqualTo mapOf(
             "service" to "orders",
@@ -58,20 +61,18 @@ class KmsEncryptedFieldCodecTest {
 
     @Test
     fun `malformed ciphertext fails before KMS decrypt`() = runSuspendIO {
-        assertThrows<MalformedKmsCiphertextException> {
-            runSuspendIO { codec.decrypt("plain text", secretAnnotation) }
+        assertFailsWith<MalformedKmsCiphertextException> {
+            codec.decrypt("plain text", secretAnnotation)
         }
 
-        assertThrows<MalformedKmsCiphertextException> {
-            runSuspendIO {
-                codec.decrypt(KmsEncryptedFieldCodec.CIPHERTEXT_PREFIX + "not base64", secretAnnotation)
-            }
+        assertFailsWith<MalformedKmsCiphertextException> {
+            codec.decrypt(KmsEncryptedFieldCodec.CIPHERTEXT_PREFIX + "not base64", secretAnnotation)
         }
     }
 
     @Test
     fun `unsupported annotated field type fails fast`() {
-        val exception = assertThrows<UnsupportedKmsEncryptedFieldException> {
+        val exception = assertFailsWith<UnsupportedKmsEncryptedFieldException> {
             codec.validate(UnsupportedFixture::class.java)
         }
 
@@ -81,8 +82,8 @@ class KmsEncryptedFieldCodecTest {
 
     @Test
     fun `invalid encryption context entry fails fast`() = runSuspendIO {
-        val exception = assertThrows<KmsEncryptedFieldUsageException> {
-            runSuspendIO { codec.encrypt("value", invalidContextAnnotation) }
+        val exception = assertFailsWith<KmsEncryptedFieldUsageException> {
+            codec.encrypt("value", invalidContextAnnotation)
         }
 
         exception.message shouldBeEqualTo
@@ -91,8 +92,8 @@ class KmsEncryptedFieldCodecTest {
 
     @Test
     fun `duplicate encryption context names fail fast`() = runSuspendIO {
-        val exception = assertThrows<KmsEncryptedFieldUsageException> {
-            runSuspendIO { codec.encrypt("value", duplicateContextAnnotation) }
+        val exception = assertFailsWith<KmsEncryptedFieldUsageException> {
+            codec.encrypt("value", duplicateContextAnnotation)
         }
 
         exception.message shouldBeEqualTo
@@ -114,12 +115,20 @@ class KmsEncryptedFieldCodecTest {
 
         @field:KmsEncrypted(encryptionContext = ["field=first", "field=second"])
         val duplicateContext: String,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     private data class UnsupportedFixture(
         @field:KmsEncrypted
         val secret: Int,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     private companion object {
         val secretAnnotation: KmsEncrypted =

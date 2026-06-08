@@ -68,9 +68,9 @@ class StsClientTest: AbstractKotlinStsTest() {
 
             response.shouldNotBeNull()
             response.credentials.shouldNotBeNull()
-            response.credentials!!.accessKeyId.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials!!.secretAccessKey.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials!!.sessionToken.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials.shouldNotBeNull().accessKeyId.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials.shouldNotBeNull().secretAccessKey.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials.shouldNotBeNull().sessionToken.shouldNotBeNull().shouldNotBeBlank()
         }
     }
 
@@ -88,9 +88,9 @@ class StsClientTest: AbstractKotlinStsTest() {
 
             response.shouldNotBeNull()
             response.credentials.shouldNotBeNull()
-            response.credentials!!.accessKeyId.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials!!.secretAccessKey.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials!!.sessionToken.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials.shouldNotBeNull().accessKeyId.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials.shouldNotBeNull().secretAccessKey.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials.shouldNotBeNull().sessionToken.shouldNotBeNull().shouldNotBeBlank()
         }
     }
 

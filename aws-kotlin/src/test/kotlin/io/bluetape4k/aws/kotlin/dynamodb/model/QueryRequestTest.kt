@@ -31,8 +31,8 @@ class QueryRequestTest {
         )
 
         req.attributesToGet.shouldNotBeNull()
-        req.attributesToGet!! shouldContain "id"
-        req.attributesToGet!! shouldContain "email"
+        req.attributesToGet.shouldNotBeNull() shouldContain "id"
+        req.attributesToGet.shouldNotBeNull() shouldContain "email"
     }
 
     @Test
@@ -48,7 +48,7 @@ class QueryRequestTest {
 
         req.keyConditionExpression shouldBeEqualTo "id = :id"
         req.expressionAttributeValues.shouldNotBeNull()
-        req.expressionAttributeValues!![":id"] shouldBeEqualTo AttributeValue.S("u1")
+        req.expressionAttributeValues.shouldNotBeNull()[":id"] shouldBeEqualTo AttributeValue.S("u1")
     }
 
     @Test
@@ -60,7 +60,7 @@ class QueryRequestTest {
         )
 
         req.exclusiveStartKey.shouldNotBeNull()
-        req.exclusiveStartKey!!["id"] shouldBeEqualTo AttributeValue.S("u10")
+        req.exclusiveStartKey.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("u10")
     }
 
     @Test
@@ -72,7 +72,7 @@ class QueryRequestTest {
         )
 
         req.exclusiveStartKey.shouldNotBeNull()
-        req.exclusiveStartKey!!["id"] shouldBeEqualTo AttributeValue.S("u10")
+        req.exclusiveStartKey.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("u10")
     }
 
     @Test

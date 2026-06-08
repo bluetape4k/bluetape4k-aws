@@ -61,7 +61,7 @@ class ReceiveMessageTest {
         )
 
         req.messageAttributeNames.shouldNotBeNull()
-        req.messageAttributeNames!! shouldBeEqualTo listOf("All")
+        req.messageAttributeNames.shouldNotBeNull() shouldBeEqualTo listOf("All")
     }
 
     @Test

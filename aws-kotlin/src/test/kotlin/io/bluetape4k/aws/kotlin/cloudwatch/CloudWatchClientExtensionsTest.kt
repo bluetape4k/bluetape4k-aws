@@ -68,7 +68,7 @@ class CloudWatchClientExtensionsTest: AbstractKotlinCloudWatchTest() {
         ) { client ->
             val response = client.listMetrics(namespace = NAMESPACE)
             response.metrics.shouldNotBeNull().shouldNotBeEmpty()
-            response.metrics!!.forEach { metric ->
+            response.metrics.shouldNotBeNull().forEach { metric ->
                 log.debug { "metric: namespace=${metric.namespace}, name=${metric.metricName}" }
             }
         }
@@ -84,7 +84,7 @@ class CloudWatchClientExtensionsTest: AbstractKotlinCloudWatchTest() {
         ) { client ->
             val response = client.listMetrics(namespace = NAMESPACE, metricName = METRIC_NAME)
             response.metrics.shouldNotBeNull().shouldNotBeEmpty()
-            response.metrics!!.forEach { metric ->
+            response.metrics.shouldNotBeNull().forEach { metric ->
                 log.debug { "filtered metric: ${metric.metricName}" }
             }
         }

@@ -55,7 +55,7 @@ class MessageVisibilityTest {
 
         req.queueUrl shouldBeEqualTo queueUrl
         req.entries.shouldNotBeNull()
-        req.entries!!.size shouldBeEqualTo 2
+        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test
@@ -66,7 +66,7 @@ class MessageVisibilityTest {
             changeMessageVisibilityBatchRequestEntryOf("id2", "rh2", 60)
         )
 
-        req.entries!!.size shouldBeEqualTo 2
+        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test

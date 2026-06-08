@@ -62,7 +62,7 @@ class BasicExamples: AbstractKotlinS3Test() {
             val response = client.listBuckets { }
 
             response.buckets.shouldNotBeNull()
-            response.buckets!!.forEach {
+            response.buckets.shouldNotBeNull().forEach {
                 log.debug { "Bucket=${it.name}" }
             }
         }
@@ -95,7 +95,7 @@ class BasicExamples: AbstractKotlinS3Test() {
             objects.forEach {
                 log.debug { "Object info. key=${it.key}, size=${it.size}, owner=${it.owner}" }
             }
-            objects.map { it.key!! } shouldContainSame keys
+            objects.map { it.key.shouldNotBeNull() } shouldContainSame keys
 
             client.forceDeleteBucket(bucketName)
         }

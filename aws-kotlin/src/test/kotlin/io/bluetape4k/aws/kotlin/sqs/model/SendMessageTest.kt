@@ -45,7 +45,7 @@ class SendMessageTest {
         }
 
         req.messageAttributes.shouldNotBeNull()
-        req.messageAttributes!!["source"]?.stringValue shouldBeEqualTo "test"
+        req.messageAttributes.shouldNotBeNull()["source"]?.stringValue shouldBeEqualTo "test"
     }
 
     @Test
@@ -110,7 +110,7 @@ class SendMessageTest {
 
         req.queueUrl shouldBeEqualTo queueUrl
         req.entries.shouldNotBeNull()
-        req.entries!!.size shouldBeEqualTo 2
+        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test
@@ -121,7 +121,7 @@ class SendMessageTest {
             sendMessageBatchRequestEntryOf("id2", "World!")
         )
 
-        req.entries!!.size shouldBeEqualTo 2
+        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test

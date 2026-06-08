@@ -38,7 +38,7 @@ class MessageTest {
         val body = htmlBodyOf(html)
 
         body.html.shouldNotBeNull()
-        body.html!!.data shouldBeEqualTo "<h1>Hello</h1>"
+        body.html.shouldNotBeNull().data shouldBeEqualTo "<h1>Hello</h1>"
     }
 
     @Test
@@ -47,7 +47,7 @@ class MessageTest {
         val body = textBodyOf(text)
 
         body.text.shouldNotBeNull()
-        body.text!!.data shouldBeEqualTo "Hello, World!"
+        body.text.shouldNotBeNull().data shouldBeEqualTo "Hello, World!"
     }
 
     @Test
@@ -57,7 +57,7 @@ class MessageTest {
         val message = messageOf(subject, body)
 
         message.subject.shouldNotBeNull()
-        message.subject!!.data shouldBeEqualTo "Test Subject"
+        message.subject.shouldNotBeNull().data shouldBeEqualTo "Test Subject"
         message.body.shouldNotBeNull()
     }
 

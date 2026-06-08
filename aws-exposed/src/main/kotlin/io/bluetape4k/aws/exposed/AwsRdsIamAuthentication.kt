@@ -297,5 +297,9 @@ private class RefreshingRdsIamPasswordProvider(
     private data class CachedToken(
         val token: AwsSecretString,
         val refreshAt: Instant,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 }

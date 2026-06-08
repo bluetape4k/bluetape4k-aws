@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor.s3
 
 import org.w3c.dom.Element
 import java.io.ByteArrayInputStream
+import java.io.Serializable
 import java.time.Instant
 import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
@@ -125,4 +126,8 @@ internal data class ParsedS3Error(
     val message: String,
     val requestId: String?,
     val hostId: String?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}

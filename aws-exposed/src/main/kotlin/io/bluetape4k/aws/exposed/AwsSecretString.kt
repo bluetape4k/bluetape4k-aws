@@ -2,9 +2,9 @@ package io.bluetape4k.aws.exposed
 
 import io.bluetape4k.aws.exposed.AwsSecretString.Companion.REDACTED
 import io.bluetape4k.support.requireNotBlank
+import java.io.Serializable
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.io.Serializable
 
 /**
  * Redacted wrapper for secret text values.
@@ -15,18 +15,14 @@ import java.io.Serializable
  * process or storage boundaries. [hashCode] intentionally returns a redacted
  * constant, so avoid using this type as a key in large hashed collections.
  */
-class AwsSecretString(private val value: String): Serializable {
-
-    init {
-        value.requireNotBlank("value")
-    }
+class AwsSecretString private constructor(private val value: String): Serializable {
 
     /**
      * Returns the raw secret value for connection construction.
      */
     fun reveal(): String = value
 
-    private fun readResolve(): Any = AwsSecretString(value)
+    private fun readResolve(): Any = AwsSecretString.of(value)
 
     override fun toString(): String = REDACTED
 
@@ -49,8 +45,19 @@ class AwsSecretString(private val value: String): Serializable {
         /**
          * Creates a secret wrapper.
          */
-        fun of(value: String): AwsSecretString = AwsSecretString(value)
+        operator fun invoke(value: String): AwsSecretString {
+            value.requireNotBlank("value")
+            return AwsSecretString(value)
+        }
+
+        /**
+         * Creates a secret wrapper.
+         */
+        fun of(value: String): AwsSecretString = invoke(value)
     }
 }
 
-fun awsSecretStringOf(value: String): AwsSecretString = AwsSecretString(value)
+fun awsSecretStringOf(value: String): AwsSecretString {
+    value.requireNotBlank("value")
+    return AwsSecretString.of(value)
+}

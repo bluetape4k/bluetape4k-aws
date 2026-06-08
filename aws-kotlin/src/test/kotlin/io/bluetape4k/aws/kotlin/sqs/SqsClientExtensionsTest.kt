@@ -13,7 +13,6 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -40,7 +39,7 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
             val response = client.createQueue(QUEUE_NAME)
             log.debug { "Create queue response=$response" }
 
-            testQueueUrl = client.getQueueUrl(QUEUE_NAME) ?: fail("Queue URL not found")
+            testQueueUrl = client.getQueueUrl(QUEUE_NAME) ?: error("Queue URL not found")
 
             log.debug { "Queue URL=$testQueueUrl" }
             testQueueUrl shouldBeEqualTo response.queueUrl
@@ -57,10 +56,10 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
         ) { client ->
             val response = client.listQueues(QUEUE_PREFIX)
 
-            response.queueUrls!!.forEach {
+            response.queueUrls.shouldNotBeNull().forEach {
                 log.debug { "Queue URL=$it" }
             }
-            val queueUrls = response.queueUrls!!
+            val queueUrls = response.queueUrls.shouldNotBeNull()
             queueUrls shouldHaveSize 1
             queueUrls.first() shouldBeEqualTo testQueueUrl
         }
@@ -115,7 +114,7 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
             localStackServer.region,
             localStackServer.credentialsProvider,
         ) { client ->
-            val messages = client.receiveMessage(testQueueUrl, 3).messages!!
+            val messages = client.receiveMessage(testQueueUrl, 3).messages.shouldNotBeNull()
 
             messages shouldHaveSize 3
             messages.forEach {
@@ -132,7 +131,7 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
             localStackServer.region,
             localStackServer.credentialsProvider,
         ) { client ->
-            val messages = client.receiveMessage(testQueueUrl, 3).messages!!
+            val messages = client.receiveMessage(testQueueUrl, 3).messages.shouldNotBeNull()
 
             val responses = messages.map { msg ->
                 async {
@@ -156,7 +155,7 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
             localStackServer.region,
             localStackServer.credentialsProvider,
         ) { client ->
-            val messages = client.receiveMessage(testQueueUrl, 3).messages!!
+            val messages = client.receiveMessage(testQueueUrl, 3).messages.shouldNotBeNull()
 
             val responses = messages.map { msg ->
                 async {

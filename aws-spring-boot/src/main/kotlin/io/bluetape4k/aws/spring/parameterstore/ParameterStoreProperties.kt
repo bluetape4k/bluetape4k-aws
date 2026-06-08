@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.parameterstore
 import io.bluetape4k.aws.spring.env.requireOptionalName
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.io.Serializable
 import java.net.URI
 import java.time.Duration
 
@@ -23,7 +24,7 @@ data class ParameterStoreProperties(
     val failFast: Boolean = true,
     val refreshInterval: Duration? = null,
     val sources: List<Source> = emptyList(),
-) {
+): Serializable {
     init {
         requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.parameter-store")
         refreshInterval?.let {
@@ -41,7 +42,7 @@ data class ParameterStoreProperties(
         val recursive: Boolean = true,
         val withDecryption: Boolean = true,
         val optional: Boolean = false,
-    ) {
+    ): Serializable {
         init {
             requireOptionalName(name, "name")
             requireOptionalName(prefix, "prefix")
@@ -51,5 +52,13 @@ data class ParameterStoreProperties(
 
         val propertySourceName: String
             get() = "bluetape4k.aws.parameter-store.${name ?: path.trim('/').replace('/', '.')}"
+
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }

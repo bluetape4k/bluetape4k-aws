@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.dynamodb.examples.paginator
 
+import io.bluetape4k.assertions.shouldNotBeNull
 import aws.sdk.kotlin.services.dynamodb.createTable
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.ScalarAttributeType
@@ -127,7 +128,7 @@ class PaginatorTest: AbstractKotlinDynamoDbTest() {
                 .buffer()
                 .collect { scan ->
                     if (scan.items?.isNotEmpty() == true) {
-                        results.add(scan.items!!.single())
+                        results.add(scan.items.shouldNotBeNull().single())
                     }
                 }
 

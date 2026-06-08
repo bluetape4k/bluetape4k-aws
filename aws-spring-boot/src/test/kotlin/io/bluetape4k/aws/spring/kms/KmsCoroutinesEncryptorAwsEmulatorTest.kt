@@ -10,6 +10,7 @@ import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
+import java.io.Serializable
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.security.crypto.encrypt.TextEncryptor
@@ -143,5 +144,9 @@ class KmsCoroutinesEncryptorAwsEmulatorTest {
     private data class FieldEncryptionFixture(
         @field:KmsEncrypted(encryptionContext = ["purpose=field"])
         val secret: String,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 }

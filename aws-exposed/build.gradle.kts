@@ -5,6 +5,7 @@ dependencies {
     api(libs.exposed.jdbc)
     api(libs.bluetape4k.exposed.jdbc)
 
+    implementation(libs.bluetape4k.jdbc)
     implementation(libs.hikaricp)
 
     compileOnly(libs.aws2.rds)

@@ -9,7 +9,7 @@ import java.io.ObjectOutputStream
 import java.time.Instant
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
-import kotlin.test.assertFailsWith
+import io.bluetape4k.assertions.assertFailsWith
 
 class KinesisStartingPositionTest {
 

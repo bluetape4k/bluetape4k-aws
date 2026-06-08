@@ -31,8 +31,8 @@ class ScanRequestTest {
         )
 
         req.attributesToGet.shouldNotBeNull()
-        req.attributesToGet!! shouldContain "id"
-        req.attributesToGet!! shouldContain "name"
+        req.attributesToGet.shouldNotBeNull() shouldContain "id"
+        req.attributesToGet.shouldNotBeNull() shouldContain "name"
     }
 
     @Test
@@ -55,7 +55,7 @@ class ScanRequestTest {
         )
 
         req.exclusiveStartKey.shouldNotBeNull()
-        req.exclusiveStartKey!!["id"] shouldBeEqualTo AttributeValue.S("u10")
+        req.exclusiveStartKey.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("u10")
     }
 
     @Test
@@ -67,7 +67,7 @@ class ScanRequestTest {
         )
 
         req.exclusiveStartKey.shouldNotBeNull()
-        req.exclusiveStartKey!!["id"] shouldBeEqualTo AttributeValue.S("u10")
+        req.exclusiveStartKey.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("u10")
     }
 
     @Test

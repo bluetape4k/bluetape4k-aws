@@ -28,7 +28,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
@@ -142,7 +141,7 @@ data class SqsConsumerRuntimeConfig(
     val observers: List<SqsConsumerObserver> = emptyList(),
     val messageType: KClass<out Any>,
     val messageHandler: suspend SqsMessageContext.(Any) -> Unit,
-) {
+): Serializable {
     init {
         validateQueue(queueUrl, queueName, "queueUrl", "queueName")
         coroutines.requirePositiveNumber("coroutines")
@@ -192,6 +191,10 @@ data class SqsConsumerRuntimeConfig(
         require(url.isNullOrBlank() xor name.isNullOrBlank()) {
             "Exactly one of $urlLabel and $nameLabel must be configured."
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
@@ -343,10 +346,8 @@ class SqsConsumerRuntime(
             return
         }
 
-        withContext(Dispatchers.IO) {
-            runInterruptible {
-                config.sqsAsyncClient.close()
-            }
+        runInterruptible(Dispatchers.IO) {
+            config.sqsAsyncClient.close()
         }
     }
 

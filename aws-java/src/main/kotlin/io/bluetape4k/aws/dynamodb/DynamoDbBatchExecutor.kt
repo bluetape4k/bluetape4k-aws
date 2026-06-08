@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runInterruptible
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse
@@ -60,7 +60,11 @@ class DynamoDbBatchExecutor<T: Any>(
     data class TableItemTuple(
         val tableName: String,
         val writeRequest: WriteRequest,
-    ): Serializable
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     /**
      * 재시도 가능한 Batch 쓰기 작업의 상태를 보관하는 데이터 클래스입니다.
@@ -75,7 +79,11 @@ class DynamoDbBatchExecutor<T: Any>(
     data class RetryablePut(
         val attempt: Int,
         val items: List<TableItemTuple>,
-    ): Serializable
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     /**
      * [tableName] table에서 [items] 를 삭제하는 작업을 Batch로 수행합니다.
@@ -207,10 +215,8 @@ class DynamoDbBatchExecutor<T: Any>(
         val requestItems = writeList.groupBy({ it.tableName }, { it.writeRequest })
         val batchRequest = BatchWriteItemRequest { requestItems(requestItems) }
 
-        // WHY: DynamoDbClient.batchWriteItem은 blocking 호출이므로 Dispatchers.IO에서 실행.
-        // 클래스 CoroutineScope가 이미 Dispatchers.IO를 포함하지만,
-        // withContext로 명시적으로 보장하여 호출자의 디스패처에 의존하지 않음.
-        return withContext(Dispatchers.IO) {
+        // WHY: DynamoDbClient.batchWriteItem is blocking, so isolate it on Dispatchers.IO.
+        return runInterruptible(Dispatchers.IO) {
             dynamoDB.batchWriteItem(batchRequest)
         }
     }

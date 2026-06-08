@@ -28,7 +28,7 @@ class MessageAttributeValueTest {
         val attr = messageAttributeValueOf(listOf("a", "b", "c"))
 
         attr.stringListValues.shouldNotBeNull()
-        attr.stringListValues!! shouldBeEqualTo listOf("a", "b", "c")
+        attr.stringListValues.shouldNotBeNull() shouldBeEqualTo listOf("a", "b", "c")
     }
 
     @Test
@@ -45,7 +45,7 @@ class MessageAttributeValueTest {
         val attr = messageAttributeValueOf(values)
 
         attr.binaryListValues.shouldNotBeNull()
-        attr.binaryListValues!!.size shouldBeEqualTo 2
+        attr.binaryListValues.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test

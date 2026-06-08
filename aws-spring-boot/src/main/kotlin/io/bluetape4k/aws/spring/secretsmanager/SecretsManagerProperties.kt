@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.secretsmanager
 import io.bluetape4k.aws.spring.env.requireOptionalName
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.io.Serializable
 import java.net.URI
 import java.time.Duration
 
@@ -23,7 +24,7 @@ data class SecretsManagerProperties(
     val failFast: Boolean = true,
     val refreshInterval: Duration? = null,
     val sources: List<Source> = emptyList(),
-) {
+): Serializable {
     init {
         requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.secrets-manager")
         refreshInterval?.let {
@@ -40,7 +41,7 @@ data class SecretsManagerProperties(
         val prefix: String? = null,
         val optional: Boolean = false,
         val format: SecretFormat = SecretFormat.JSON,
-    ) {
+    ): Serializable {
         init {
             requireOptionalName(name, "name")
             requireOptionalName(prefix, "prefix")
@@ -49,5 +50,13 @@ data class SecretsManagerProperties(
 
         val propertySourceName: String
             get() = "bluetape4k.aws.secrets-manager.${name ?: secretId}"
+
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }

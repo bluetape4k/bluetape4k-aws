@@ -115,7 +115,7 @@ class KinesisClientExtensionsTest: AbstractKotlinKinesisTest() {
         ) { client ->
             val response = client.getShardIterator(STREAM_NAME, shardId, ShardIteratorType.TrimHorizon)
 
-            shardIterator = response.shardIterator!!
+            shardIterator = response.shardIterator.shouldNotBeNull()
             shardIterator.shouldNotBeEmpty()
             log.debug { "shardIterator=$shardIterator" }
         }

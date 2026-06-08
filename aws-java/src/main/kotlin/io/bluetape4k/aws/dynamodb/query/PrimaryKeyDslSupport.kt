@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.dynamodb.query
 
+import java.io.Serializable
+
 /**
  * DSL 에서 PrimaryKey 를 지원하기 위한 클래스
  *
@@ -11,7 +13,11 @@ package io.bluetape4k.aws.dynamodb.query
  * ```
  */
 @DynamoDslMarker
-data class PrimaryKey(val keyName: String = "primaryKey", val equals: Equals)
+data class PrimaryKey(val keyName: String = "primaryKey", val equals: Equals): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * PrimaryKey 를 생성하기 위한 빌더 클래스
@@ -29,7 +35,7 @@ class PrimaryKeyBuilder(val keyName: String = "primaryKey") {
 
     /** 설정된 비교자를 기반으로 [PrimaryKey]를 생성합니다. */
     fun build(): PrimaryKey {
-        // WHY: eq() 호출 없이 build() 시 명확한 에러 메시지 제공 (!! 대신)
+        // WHY: eq() 호출 없이 build() 시 명확한 에러 메시지 제공 (non-null assertion 대신)
         val cmp = checkNotNull(comparator) { "PrimaryKeyBuilder: comparator must be set via 'eq' before build()" }
         return PrimaryKey(keyName, cmp)
     }

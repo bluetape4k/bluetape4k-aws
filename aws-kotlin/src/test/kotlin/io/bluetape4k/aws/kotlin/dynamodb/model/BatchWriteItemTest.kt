@@ -22,8 +22,8 @@ class BatchWriteItemTest {
         val req = batchWriteItemRequestOf(mapOf("users" to listOf(writeReq)))
 
         req.requestItems.shouldNotBeNull()
-        req.requestItems!!.size shouldBeEqualTo 1
-        req.requestItems!!.containsKey("users") shouldBeEqualTo true
+        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 1
+        req.requestItems.shouldNotBeNull().containsKey("users") shouldBeEqualTo true
     }
 
     @Test
@@ -38,7 +38,7 @@ class BatchWriteItemTest {
             )
         )
 
-        req.requestItems!!.size shouldBeEqualTo 2
+        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 2
     }
 
     @Test

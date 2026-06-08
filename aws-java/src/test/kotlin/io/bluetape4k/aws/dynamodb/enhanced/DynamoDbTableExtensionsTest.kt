@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
+import java.io.Serializable
 import java.util.*
 
 class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
@@ -22,7 +23,11 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
         var id: String = "",
         var name: String = "",
         var age: Int = 0,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     @Test
     fun `getItem by partition key should return item`() = runSuspendIO {

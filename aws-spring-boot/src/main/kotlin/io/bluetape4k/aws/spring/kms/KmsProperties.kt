@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.kms
 import org.springframework.boot.context.properties.ConfigurationProperties
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec
+import java.io.Serializable
 import java.net.URI
 import java.time.Duration
 
@@ -36,7 +37,7 @@ data class KmsProperties(
     val dataKeyCache: DataKeyCache = DataKeyCache(),
     val fieldEncryption: FieldEncryption = FieldEncryption(),
     val textEncryptor: TextEncryptor = TextEncryptor(),
-) {
+): Serializable {
     init {
         require(endpointOverride == null || !region.isNullOrBlank()) {
             "bluetape4k.aws.kms.region is required when endpointOverride is configured."
@@ -46,26 +47,46 @@ data class KmsProperties(
 
     data class DataKey(
         val keySpec: DataKeySpec = DataKeySpec.AES_256,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     data class DataKeyCache(
         val enabled: Boolean = true,
         val maxSize: Int = 64,
         val ttl: Duration = Duration.ofMinutes(5),
-    ) {
+    ): Serializable {
         init {
             require(maxSize > 0) { "bluetape4k.aws.kms.data-key-cache.max-size must be greater than 0." }
             require(!ttl.isNegative && !ttl.isZero) {
                 "bluetape4k.aws.kms.data-key-cache.ttl must be greater than zero."
             }
         }
+
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
     }
 
     data class TextEncryptor(
         val enabled: Boolean = true,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     data class FieldEncryption(
         val enabled: Boolean = true,
-    )
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 }

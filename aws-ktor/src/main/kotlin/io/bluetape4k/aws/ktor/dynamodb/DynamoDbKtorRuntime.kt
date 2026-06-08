@@ -12,7 +12,6 @@ import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.warn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -63,11 +62,9 @@ class DynamoDbKtorRuntime(
         }
 
         val closed = withTimeoutOrNull(config.closeTimeout) {
-            withContext(Dispatchers.IO) {
-                runInterruptible {
+                runInterruptible(Dispatchers.IO) {
                     config.dynamoDbClient.close()
                 }
-            }
             true
         } ?: false
 

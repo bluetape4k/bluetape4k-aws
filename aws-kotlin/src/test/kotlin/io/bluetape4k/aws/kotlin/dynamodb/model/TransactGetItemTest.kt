@@ -21,8 +21,8 @@ class TransactGetItemTest {
         val item = transactGetItemOf(get)
 
         item.get.shouldNotBeNull()
-        item.get!!.tableName shouldBeEqualTo "users"
-        item.get!!.key["id"] shouldBeEqualTo AttributeValue.S("u1")
+        item.get.shouldNotBeNull().tableName shouldBeEqualTo "users"
+        item.get.shouldNotBeNull().key["id"] shouldBeEqualTo AttributeValue.S("u1")
     }
 
     @Test
@@ -32,7 +32,7 @@ class TransactGetItemTest {
         }
 
         item.get.shouldNotBeNull()
-        item.get!!.tableName shouldBeEqualTo "users"
+        item.get.shouldNotBeNull().tableName shouldBeEqualTo "users"
     }
 
     @Test
@@ -42,7 +42,7 @@ class TransactGetItemTest {
         }
 
         item.get.shouldNotBeNull()
-        item.get!!.projectionExpression shouldBeEqualTo "id, name, email"
+        item.get.shouldNotBeNull().projectionExpression shouldBeEqualTo "id, name, email"
     }
 
     @Test
@@ -55,7 +55,7 @@ class TransactGetItemTest {
         val req = transactGetItemsRequestOf(listOf(transactItem))
 
         req.transactItems.shouldNotBeNull()
-        req.transactItems!!.size shouldBeEqualTo 1
+        req.transactItems.shouldNotBeNull().size shouldBeEqualTo 1
     }
 
     @Test
