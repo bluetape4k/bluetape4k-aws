@@ -56,6 +56,7 @@ class Route:
     target: str
     points: tuple[tuple[float, float], ...]
     color: str
+    straight: bool = False
 
 
 def e(value: str) -> str:
@@ -93,7 +94,22 @@ def segment_intersects_rect(
         if top < y < bottom:
             return max(min(x1, x2), left) < min(max(x1, x2), right)
         return False
-    return True
+    dx = x2 - x1
+    dy = y2 - y1
+    p = (-dx, dx, -dy, dy)
+    q = (x1 - left, right - x1, y1 - top, bottom - y1)
+    u1, u2 = 0.0, 1.0
+    for pi, qi in zip(p, q):
+        if math.isclose(pi, 0.0):
+            if qi < 0:
+                return False
+            continue
+        ratio = qi / pi
+        if pi < 0:
+            u1 = max(u1, ratio)
+        else:
+            u2 = min(u2, ratio)
+    return u1 < u2 and u2 > 0 and u1 < 1
 
 
 def endpoint_side(point: tuple[float, float], box: Box) -> str | None:
@@ -120,6 +136,8 @@ def endpoint_bad(route: Route, boxes: dict[str, Box]) -> list[str]:
         side = endpoint_side(point, box)
         if side is None:
             errors.append(f"{route.id}:{box_id}:endpoint-not-on-boundary")
+            continue
+        if route.straight:
             continue
         horizontal = math.isclose(point[1], peer[1])
         vertical = math.isclose(point[0], peer[0])
@@ -153,7 +171,7 @@ def validate_geometry(
             segments += 1
             horizontal = math.isclose(a[1], b[1])
             vertical = math.isclose(a[0], b[0])
-            if not (horizontal or vertical):
+            if not route.straight and not (horizontal or vertical):
                 bad_bends.append(f"{route.id}:segment-{index}")
             for box_id, box in boxes.items():
                 if box_id in {route.source, route.target}:
@@ -284,14 +302,14 @@ def generate_components() -> dict[str, object]:
         "verify": "#D6A441",
     }
     routes = [
-        Route("java-spring", "java", "spring", ((370, 244), (485, 244), (485, 306), (590, 306)), colors["core"]),
-        Route("java-ktor", "java", "ktor", ((370, 267), (455, 267), (455, 505), (560, 505)), colors["core"]),
-        Route("kotlin-spring", "kotlin", "spring", ((415, 396), (515, 396), (515, 340), (590, 340)), colors["core"]),
-        Route("kotlin-ktor", "kotlin", "ktor", ((415, 427), (505, 427), (505, 540), (560, 540)), colors["core"]),
-        Route("exposed-spring", "exposed", "spring", ((415, 548), (480, 548), (480, 355), (590, 355)), colors["config"]),
-        Route("exposed-ktor", "exposed", "ktor", ((415, 590), (515, 590), (515, 570), (560, 570)), colors["config"]),
-        Route("spring-examples", "spring", "examples", ((940, 306), (1020, 306), (1020, 410), (1085, 410)), colors["verify"]),
-        Route("ktor-examples", "ktor", "examples", ((910, 540), (1020, 540), (1020, 455), (1085, 455)), colors["verify"]),
+        Route("java-spring", "java", "spring", ((370, 244), (590, 291)), colors["core"], straight=True),
+        Route("java-ktor", "java", "ktor", ((370, 267), (560, 505)), colors["core"], straight=True),
+        Route("kotlin-spring", "kotlin", "spring", ((415, 396), (590, 329)), colors["core"], straight=True),
+        Route("kotlin-ktor", "kotlin", "ktor", ((415, 427), (560, 535)), colors["core"], straight=True),
+        Route("exposed-spring", "exposed", "spring", ((415, 548), (590, 355)), colors["config"], straight=True),
+        Route("exposed-ktor", "exposed", "ktor", ((415, 590), (560, 570)), colors["config"], straight=True),
+        Route("spring-examples", "spring", "examples", ((940, 306), (1085, 410)), colors["verify"], straight=True),
+        Route("ktor-examples", "ktor", "examples", ((910, 540), (1085, 455)), colors["verify"], straight=True),
     ]
     validate_geometry(name, width, height, frame, 105, 185, boxes, routes, 60)
 
@@ -406,8 +424,33 @@ def generate_coverage() -> dict[str, object]:
 
     dot = '''digraph G {
   graph [rankdir=TB, bgcolor="transparent", margin=0.12, pad=0.35, label="AWS service coverage", labelloc=t, fontname="Architects Daughter", fontsize=24]
-  node [shape=plain, fontname="Comic Mono"]
-  coverage [label="badge matrix: modules x services, including S3 Vectors opt-in"]
+  node [shape=plain, fontname="Comic Mono", fontsize=10]
+  coverage [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" COLOR="#D9E2EC">
+      <TR>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">Module</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">DynamoDB</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">S3</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">S3 Vectors</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">SES/v2</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">SNS</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">SQS</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">KMS</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">CloudWatch</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">Kinesis</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">STS</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">RDS IAM</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">Secrets</FONT></TD>
+        <TD BGCOLOR="#F8FAFC"><FONT FACE="Architects Daughter" POINT-SIZE="14">Parameter</FONT></TD>
+      </TR>
+      <TR><TD BGCOLOR="#FFFFFF"><FONT COLOR="#102033">aws-java</FONT></TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#FFF3D9">opt-in</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD></TR>
+      <TR><TD BGCOLOR="#FFFFFF"><FONT COLOR="#102033">aws-kotlin</FONT></TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD></TR>
+      <TR><TD BGCOLOR="#FFFFFF"><FONT COLOR="#102033">aws-exposed</FONT></TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD></TR>
+      <TR><TD BGCOLOR="#FFFFFF"><FONT COLOR="#102033">aws-spring-boot</FONT></TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#FFF3D9">opt-in</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD></TR>
+      <TR><TD BGCOLOR="#FFFFFF"><FONT COLOR="#102033">aws-ktor</FONT></TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#FFF3D9">opt-in</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD></TR>
+      <TR><TD BGCOLOR="#FFFFFF"><FONT COLOR="#102033">examples</FONT></TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#F4F7FA">-</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD><TD BGCOLOR="#EAF7EF">yes</TD></TR>
+    </TABLE>
+  >]
 }
 '''
     write(OUT / f"{name}.dot", dot)
@@ -443,7 +486,7 @@ def generate_coverage() -> dict[str, object]:
         svg.append(f'<text class="tiny" x="{left + 24}" y="{y + 20:.1f}">{e(desc)}</text>')
         for col_index, status in enumerate(statuses):
             cx = left + module_w + 28 + col_w * col_index + col_w / 2
-            svg.append(coverage_badge(cx, y - 5, status))
+            svg.append(coverage_badge(cx, y + 9, status))
     svg.extend(
         [
             '<rect x="54" y="654" width="1792" height="58" rx="8" fill="#FFFFFF" stroke="#D9E2EC"/>',

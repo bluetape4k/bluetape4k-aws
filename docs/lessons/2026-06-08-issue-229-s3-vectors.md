@@ -37,6 +37,10 @@ adapter-specific operation interfaces.
   coverage chart through `tools/generate-root-readme-diagrams.py`, including
   DOT/plain/sketch evidence, final SVG/PNG assets, geometry-gate summaries,
   font scans, XML parsing, and rendered PNG inspection.
+- Diagram re-review changed the component map connectors from multi-segment
+  orthogonal routes to direct straight routes, centered service coverage badges
+  inside each matrix cell, and made the coverage sketch PNG render the actual
+  matrix instead of a placeholder label.
 
 ## Future Rule
 
@@ -48,3 +52,5 @@ For root README diagram updates, keep the existing card/badge decoration unless
 the user explicitly requests a redesign. Relationship-heavy component maps need
 free-style or layered placement, semantic connector colors, and generator-level
 geometry proof before PNG preview.
+If a reviewer asks for straight routes, validate them as explicit
+boundary-to-boundary connectors and still check non-endpoint card intersections.

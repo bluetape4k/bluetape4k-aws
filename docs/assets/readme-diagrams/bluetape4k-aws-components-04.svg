@@ -32,14 +32,14 @@
 <g><rect x="1230" y="54" width="116" height="24" rx="12" fill="#E9F7F6" stroke="#14B8A6"/><text class="chip" x="1288.0" y="66" text-anchor="middle" dominant-baseline="middle">config</text></g>
 <g><rect x="1360" y="54" width="86" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/><text class="chip" x="1403.0" y="66" text-anchor="middle" dominant-baseline="middle">verify</text></g>
 <g id="routes">
-<path class="edge" d="M 370.0 244.0 L 485.0 244.0 L 485.0 306.0 L 590.0 306.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
-<path class="edge" d="M 370.0 267.0 L 455.0 267.0 L 455.0 505.0 L 560.0 505.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
-<path class="edge" d="M 415.0 396.0 L 515.0 396.0 L 515.0 340.0 L 590.0 340.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
-<path class="edge" d="M 415.0 427.0 L 505.0 427.0 L 505.0 540.0 L 560.0 540.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
-<path class="edge" d="M 415.0 548.0 L 480.0 548.0 L 480.0 355.0 L 590.0 355.0" stroke="#14B8A6" marker-end="url(#arrow-config)"/>
-<path class="edge" d="M 415.0 590.0 L 515.0 590.0 L 515.0 570.0 L 560.0 570.0" stroke="#14B8A6" marker-end="url(#arrow-config)"/>
-<path class="edge" d="M 940.0 306.0 L 1020.0 306.0 L 1020.0 410.0 L 1085.0 410.0" stroke="#D6A441" marker-end="url(#arrow-verify)"/>
-<path class="edge" d="M 910.0 540.0 L 1020.0 540.0 L 1020.0 455.0 L 1085.0 455.0" stroke="#D6A441" marker-end="url(#arrow-verify)"/>
+<path class="edge" d="M 370.0 244.0 L 590.0 291.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
+<path class="edge" d="M 370.0 267.0 L 560.0 505.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
+<path class="edge" d="M 415.0 396.0 L 590.0 329.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
+<path class="edge" d="M 415.0 427.0 L 560.0 535.0" stroke="#3B82F6" marker-end="url(#arrow-core)"/>
+<path class="edge" d="M 415.0 548.0 L 590.0 355.0" stroke="#14B8A6" marker-end="url(#arrow-config)"/>
+<path class="edge" d="M 415.0 590.0 L 560.0 570.0" stroke="#14B8A6" marker-end="url(#arrow-config)"/>
+<path class="edge" d="M 940.0 306.0 L 1085.0 410.0" stroke="#D6A441" marker-end="url(#arrow-verify)"/>
+<path class="edge" d="M 910.0 540.0 L 1085.0 455.0" stroke="#D6A441" marker-end="url(#arrow-verify)"/>
 </g>
 <g id="java">
   <rect class="card" x="80" y="185" width="290" height="118" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
