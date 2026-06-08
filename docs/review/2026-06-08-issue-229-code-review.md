@@ -51,7 +51,7 @@ Reviewed optional S3 Vectors support across `aws-java`, `aws-spring-boot`,
 - Diagram generator:
   `python3 tools/generate-root-readme-diagrams.py`
   printed geometry summaries before final PNG rendering:
-  - `bluetape4k-aws-components-04`: `nodes=6`, `routes=8`, `segments=24`,
+  - `bluetape4k-aws-components-04`: `nodes=6`, `routes=8`, `segments=8`,
     `badEndpointAngle=0`, `badBends=0`, `interiorCrossings=0`,
     `laneClearance=0`, `titleGap=80`.
   - `bluetape4k-aws-service-coverage-chart-05`: `nodes=3`, `routes=0`,
@@ -67,10 +67,12 @@ Reviewed optional S3 Vectors support across `aws-java`, `aws-spring-boot`,
 - Visual inspection:
   `bluetape4k-aws-service-coverage-chart-05.png` was inspected after restoring
   the existing badge-matrix shape and widening the canvas for the S3 Vectors
-  column.
+  column. The `yes`/`-`/`opt-in` badges are centered inside each row cell.
+  `bluetape4k-aws-service-coverage-chart-05-sketch.png` was inspected after
+  replacing the placeholder sketch with a readable Graphviz matrix preview.
   `bluetape4k-aws-components-04.png` was inspected after switching to a
-  free-style component placement with semantic route colors for core, config,
-  and verification flows.
+  free-style component placement with straight boundary-to-boundary routes and
+  semantic route colors for core, config, and verification flows.
 
 ## Integration Evidence
 

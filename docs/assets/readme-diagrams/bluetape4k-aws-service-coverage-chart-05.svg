@@ -59,99 +59,99 @@
 <line x1="74" y1="209.0" x2="1826" y2="209.0" stroke="#E2E8F0"/>
 <text class="card-title" x="78" y="229.0">aws-java</text>
 <text class="tiny" x="78" y="249.0">Core Java SDK v2 helpers</text>
-<rect x="400.9" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="514.7" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="623.4" y="209.0" width="56" height="30" rx="15" fill="#FFF3D9" stroke="#D6A441"/><text class="detail" x="651.4" y="224.0" text-anchor="middle" dominant-baseline="middle">opt-in</text>
-<rect x="742.2" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="765.2" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="856.0" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="879.0" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="969.7" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1083.5" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1197.3" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1311.0" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1334.0" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1424.8" y="209.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1447.8" y="224.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1538.6" y="209.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1561.6" y="224.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1652.3" y="209.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1675.3" y="224.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1766.1" y="209.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1789.1" y="224.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="400.9" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="514.7" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="623.4" y="223.0" width="56" height="30" rx="15" fill="#FFF3D9" stroke="#D6A441"/><text class="detail" x="651.4" y="238.0" text-anchor="middle" dominant-baseline="middle">opt-in</text>
+<rect x="742.2" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="765.2" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="856.0" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="879.0" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="969.7" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1083.5" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1197.3" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1311.0" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1334.0" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1424.8" y="223.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1447.8" y="238.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1538.6" y="223.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1561.6" y="238.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1652.3" y="223.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1675.3" y="238.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1766.1" y="223.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1789.1" y="238.0" text-anchor="middle" dominant-baseline="middle">-</text>
 <line x1="74" y1="267.0" x2="1826" y2="267.0" stroke="#E2E8F0"/>
 <text class="card-title" x="78" y="287.0">aws-kotlin</text>
 <text class="tiny" x="78" y="307.0">Native suspend SDK helpers</text>
-<rect x="400.9" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="514.7" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="628.4" y="267.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="651.4" y="282.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="742.2" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="765.2" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="856.0" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="879.0" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="969.7" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1083.5" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1197.3" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1311.0" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1334.0" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1424.8" y="267.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1447.8" y="282.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1538.6" y="267.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1561.6" y="282.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1652.3" y="267.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1675.3" y="282.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1766.1" y="267.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1789.1" y="282.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="400.9" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="514.7" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="628.4" y="281.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="651.4" y="296.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="742.2" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="765.2" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="856.0" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="879.0" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="969.7" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1083.5" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1197.3" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1311.0" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1334.0" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1424.8" y="281.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1447.8" y="296.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1538.6" y="281.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1561.6" y="296.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1652.3" y="281.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1675.3" y="296.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1766.1" y="281.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1789.1" y="296.0" text-anchor="middle" dominant-baseline="middle">-</text>
 <line x1="74" y1="325.0" x2="1826" y2="325.0" stroke="#E2E8F0"/>
 <text class="card-title" x="78" y="345.0">aws-exposed</text>
 <text class="tiny" x="78" y="365.0">Database config and RDS IAM</text>
-<rect x="400.9" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="423.9" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="514.7" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="537.7" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="628.4" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="651.4" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="742.2" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="765.2" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="856.0" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="879.0" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="969.7" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="992.7" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1083.5" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1106.5" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1197.3" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1220.3" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1311.0" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1424.8" y="325.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1447.8" y="340.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1538.6" y="325.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="340.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1652.3" y="325.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="340.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1766.1" y="325.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="340.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="400.9" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="423.9" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="514.7" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="537.7" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="628.4" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="651.4" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="742.2" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="765.2" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="856.0" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="879.0" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="969.7" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="992.7" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1083.5" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1106.5" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1197.3" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1220.3" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1311.0" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1424.8" y="339.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1447.8" y="354.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1538.6" y="339.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="354.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1652.3" y="339.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="354.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1766.1" y="339.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="354.0" text-anchor="middle" dominant-baseline="middle">yes</text>
 <line x1="74" y1="383.0" x2="1826" y2="383.0" stroke="#E2E8F0"/>
 <text class="card-title" x="78" y="403.0">aws-spring-boot</text>
 <text class="tiny" x="78" y="423.0">Auto-config templates and property sources</text>
-<rect x="400.9" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="514.7" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="623.4" y="383.0" width="56" height="30" rx="15" fill="#FFF3D9" stroke="#D6A441"/><text class="detail" x="651.4" y="398.0" text-anchor="middle" dominant-baseline="middle">opt-in</text>
-<rect x="742.2" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="765.2" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="856.0" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="879.0" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="969.7" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1083.5" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1197.3" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1311.0" y="383.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="398.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1424.8" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1447.8" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1538.6" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1652.3" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1766.1" y="383.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="398.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="400.9" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="514.7" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="623.4" y="397.0" width="56" height="30" rx="15" fill="#FFF3D9" stroke="#D6A441"/><text class="detail" x="651.4" y="412.0" text-anchor="middle" dominant-baseline="middle">opt-in</text>
+<rect x="742.2" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="765.2" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="856.0" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="879.0" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="969.7" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1083.5" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1197.3" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1311.0" y="397.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="412.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1424.8" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1447.8" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1538.6" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1652.3" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1766.1" y="397.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="412.0" text-anchor="middle" dominant-baseline="middle">yes</text>
 <line x1="74" y1="441.0" x2="1826" y2="441.0" stroke="#E2E8F0"/>
 <text class="card-title" x="78" y="461.0">aws-ktor</text>
 <text class="tiny" x="78" y="481.0">Plugins, SigV4, S3/SQS/DynamoDB runtimes</text>
-<rect x="400.9" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="514.7" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="623.4" y="441.0" width="56" height="30" rx="15" fill="#FFF3D9" stroke="#D6A441"/><text class="detail" x="651.4" y="456.0" text-anchor="middle" dominant-baseline="middle">opt-in</text>
-<rect x="742.2" y="441.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="765.2" y="456.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="856.0" y="441.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="879.0" y="456.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="969.7" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1083.5" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1197.3" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1311.0" y="441.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="456.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1424.8" y="441.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1447.8" y="456.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1538.6" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1652.3" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1766.1" y="441.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="456.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="400.9" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="514.7" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="623.4" y="455.0" width="56" height="30" rx="15" fill="#FFF3D9" stroke="#D6A441"/><text class="detail" x="651.4" y="470.0" text-anchor="middle" dominant-baseline="middle">opt-in</text>
+<rect x="742.2" y="455.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="765.2" y="470.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="856.0" y="455.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="879.0" y="470.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="969.7" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1083.5" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1197.3" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1220.3" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1311.0" y="455.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="470.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1424.8" y="455.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1447.8" y="470.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1538.6" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1652.3" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1766.1" y="455.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="470.0" text-anchor="middle" dominant-baseline="middle">yes</text>
 <line x1="74" y1="499.0" x2="1826" y2="499.0" stroke="#E2E8F0"/>
 <text class="card-title" x="78" y="519.0">examples</text>
 <text class="tiny" x="78" y="539.0">Runnable Spring Boot and Ktor scenarios</text>
-<rect x="400.9" y="499.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="514.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="514.7" y="499.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="514.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="628.4" y="499.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="651.4" y="514.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="742.2" y="499.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="765.2" y="514.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="856.0" y="499.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="879.0" y="514.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="969.7" y="499.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="514.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1083.5" y="499.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="514.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1197.3" y="499.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1220.3" y="514.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1311.0" y="499.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="514.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1424.8" y="499.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1447.8" y="514.0" text-anchor="middle" dominant-baseline="middle">-</text>
-<rect x="1538.6" y="499.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="514.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1652.3" y="499.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="514.0" text-anchor="middle" dominant-baseline="middle">yes</text>
-<rect x="1766.1" y="499.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="514.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="400.9" y="513.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="423.9" y="528.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="514.7" y="513.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="537.7" y="528.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="628.4" y="513.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="651.4" y="528.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="742.2" y="513.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="765.2" y="528.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="856.0" y="513.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="879.0" y="528.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="969.7" y="513.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="992.7" y="528.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1083.5" y="513.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1106.5" y="528.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1197.3" y="513.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1220.3" y="528.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1311.0" y="513.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1334.0" y="528.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1424.8" y="513.0" width="46" height="30" rx="15" fill="#F4F7FA" stroke="#8CA0B3"/><text class="detail" x="1447.8" y="528.0" text-anchor="middle" dominant-baseline="middle">-</text>
+<rect x="1538.6" y="513.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1561.6" y="528.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1652.3" y="513.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1675.3" y="528.0" text-anchor="middle" dominant-baseline="middle">yes</text>
+<rect x="1766.1" y="513.0" width="46" height="30" rx="15" fill="#EAF7EF" stroke="#58A978"/><text class="detail" x="1789.1" y="528.0" text-anchor="middle" dominant-baseline="middle">yes</text>
 <rect x="54" y="654" width="1792" height="58" rx="8" fill="#FFFFFF" stroke="#D9E2EC"/>
 <text class="card-title" x="78" y="679">Latest additions</text>
 <text class="detail" x="78" y="700">S3 Vectors is opt-in for Java, Spring Boot, and Ktor while remaining a consumer-provided SDK dependency.</text>
