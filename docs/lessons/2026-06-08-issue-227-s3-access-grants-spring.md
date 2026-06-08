@@ -30,7 +30,8 @@ the S3 Control service module, `software.amazon.awssdk:s3control`.
 a coroutine template for `getDataAccess`, `listCallerAccessGrants`,
 `listAccessGrants`, `listAccessGrantsInstances`, and
 `listAccessGrantsLocations`. README English/Korean files document the runtime
-dependency, opt-in property, and Spring injection example.
+dependency, opt-in property, Spring injection example, and shared
+English-label component/flow diagrams.
 
 ## Verification
 
@@ -42,6 +43,14 @@ dependency, opt-in property, and Spring injection example.
   passed.
 - `./gradlew :bluetape4k-aws-spring-boot:test --tests '*S3AccessGrants*' --no-daemon --max-workers=1`
   passed with 14 focused tests.
+- S3 Access Grants component diagram gate:
+  `nodes=10 routes=9 segments=28 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
+- S3 Access Grants flow diagram gate:
+  `nodes=12 routes=10 segments=30 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
+- Rendered PNGs were inspected directly:
+  `docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png`
+  and
+  `docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png`.
 
 ## Future Guard
 
@@ -49,3 +58,8 @@ Do not fold S3 Access Grants into `S3Operations`; it belongs to S3 Control and
 requires a distinct optional runtime dependency. When adding more Access Grants
 methods, keep administrative operations explicit and preserve raw client escape
 hatches for account-management workflows.
+
+When adding a new README integration section, include related diagrams in the
+same PR before review. `bluetape4k-diagram` evidence must include geometry-gate
+counts, PNG inspection, README PNG embeds, and matching SVG/PNG/DOT/plain
+assets.

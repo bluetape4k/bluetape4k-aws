@@ -350,6 +350,10 @@ bluetape4k:
         region: us-east-1
 ```
 
+![S3 Access Grants components](docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)
+
+![S3 Access Grants flow](docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.s3.accessgrants.S3AccessGrantsOperations
 import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
