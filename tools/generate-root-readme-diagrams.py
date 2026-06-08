@@ -286,53 +286,84 @@ def chip(x: int, y: int, width: int, text: str, fill: str, stroke: str) -> str:
 
 def generate_components() -> dict[str, object]:
     name = "bluetape4k-aws-components-04"
-    width, height = 1500, 790
-    frame = Box("frame", 26, 26, 1448, 738)
+    width, height = 1600, 940
+    frame = Box("frame", 26, 26, 1548, 888)
     boxes = {
-        "java": Box("java", 80, 185, 290, 118),
-        "kotlin": Box("kotlin", 125, 350, 290, 118),
-        "exposed": Box("exposed", 80, 515, 335, 118),
-        "spring": Box("spring", 590, 240, 350, 132),
-        "ktor": Box("ktor", 560, 455, 350, 132),
-        "examples": Box("examples", 1085, 350, 335, 132),
+        "app": Box("app", 180, 160, 330, 88),
+        "examples": Box("examples", 1040, 160, 360, 88),
+        "spring": Box("spring", 160, 335, 340, 108),
+        "sigv4": Box("sigv4", 620, 335, 340, 108),
+        "ktor": Box("ktor", 1080, 335, 340, 108),
+        "java": Box("java", 160, 545, 340, 112),
+        "kotlin": Box("kotlin", 620, 545, 340, 112),
+        "exposed": Box("exposed", 1080, 545, 340, 112),
+        "services": Box("services", 150, 765, 760, 104),
+        "stores": Box("stores", 1030, 765, 390, 104),
     }
     colors = {
         "core": "#3B82F6",
         "config": "#14B8A6",
         "verify": "#D6A441",
+        "runtime": "#F97316",
     }
     routes = [
-        Route("java-spring", "java", "spring", ((370, 244), (590, 291)), colors["core"], straight=True),
-        Route("java-ktor", "java", "ktor", ((370, 267), (560, 505)), colors["core"], straight=True),
-        Route("kotlin-spring", "kotlin", "spring", ((415, 396), (590, 329)), colors["core"], straight=True),
-        Route("kotlin-ktor", "kotlin", "ktor", ((415, 427), (560, 535)), colors["core"], straight=True),
-        Route("exposed-spring", "exposed", "spring", ((415, 548), (590, 355)), colors["config"], straight=True),
-        Route("exposed-ktor", "exposed", "ktor", ((415, 590), (560, 570)), colors["config"], straight=True),
-        Route("spring-examples", "spring", "examples", ((940, 306), (1085, 410)), colors["verify"], straight=True),
-        Route("ktor-examples", "ktor", "examples", ((910, 540), (1085, 455)), colors["verify"], straight=True),
+        Route("app-spring", "app", "spring", ((310, 248), (310, 335)), colors["core"], straight=True),
+        Route("app-sigv4", "app", "sigv4", ((510, 230), (620, 360)), colors["core"], straight=True),
+        Route("spring-java", "spring", "java", ((330, 443), (330, 545)), colors["core"], straight=True),
+        Route("sigv4-java", "sigv4", "java", ((620, 405), (500, 575)), colors["core"], straight=True),
+        Route("sigv4-kotlin", "sigv4", "kotlin", ((790, 443), (790, 545)), colors["core"], straight=True),
+        Route("ktor-kotlin", "ktor", "kotlin", ((1080, 405), (960, 575)), colors["core"], straight=True),
+        Route("ktor-exposed", "ktor", "exposed", ((1250, 443), (1250, 545)), colors["config"], straight=True),
+        Route("spring-examples", "spring", "examples", ((500, 350), (1040, 205)), colors["verify"], straight=True),
+        Route("ktor-examples", "ktor", "examples", ((1120, 335), (1120, 248)), colors["verify"], straight=True),
+        Route("java-services", "java", "services", ((340, 657), (340, 765)), colors["runtime"], straight=True),
+        Route("kotlin-services", "kotlin", "services", ((790, 657), (720, 765)), colors["runtime"], straight=True),
+        Route("exposed-stores", "exposed", "stores", ((1250, 657), (1250, 765)), colors["runtime"], straight=True),
     ]
-    validate_geometry(name, width, height, frame, 105, 185, boxes, routes, 60)
+    validate_geometry(name, width, height, frame, 105, 160, boxes, routes, 55)
 
     dot = '''digraph Bluetape4kAwsComponents {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.8, ranksep=1.1, splines=ortho]
+  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=line, compound=true]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
   edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75]
 
-  java [label="aws-java\\nJava SDK v2 wrappers\\nS3 Vectors opt-in", fillcolor="#E8F3FF", color="#5B8DEF"]
-  kotlin [label="aws-kotlin\\nnative suspend clients\\nDSL helpers", fillcolor="#EAF7EF", color="#58A978"]
-  exposed [label="aws-exposed\\ndatabase registry\\nRDS IAM and config", fillcolor="#E9F7F6", color="#45A7A1"]
-  spring [label="aws-spring-boot\\nauto-configuration\\nS3 Vectors + messaging", fillcolor="#FFF3D9", color="#D6A441"]
-  ktor [label="aws-ktor\\nSigV4 plugin and runtimes\\nS3 Vectors + queues", fillcolor="#F1ECFF", color="#8A72D6"]
-  examples [label="examples\\nKtor + Spring Boot\\nFloci and LocalStack", fillcolor="#FDECEF", color="#DC6B82"]
+  subgraph cluster_entry {
+    label="Application and examples"; color="#DBEAFE"; style="rounded"
+    app [label="Application code\\nKotlin services, Ktor routes, Spring components", fillcolor="#E8F3FF", color="#5B8DEF"]
+    examples [label="examples\\nKtor + Spring Boot, Floci, LocalStack, PostgreSQL", fillcolor="#FDECEF", color="#DC6B82"]
+  }
+  subgraph cluster_framework {
+    label="Framework adapters"; color="#FEF3C7"; style="rounded"
+    spring [label="aws-spring-boot\\nauto-configuration, S3 Vectors, messaging", fillcolor="#FFF3D9", color="#D6A441"]
+    ktor [label="aws-ktor\\nSigV4 plugin, S3 Vectors, queues, DynamoDB", fillcolor="#F1ECFF", color="#8A72D6"]
+    sigv4 [label="SigV4 and client defaults\\nAwsKtorCore, factories, customizers", fillcolor="#FFF7ED", color="#F97316"]
+  }
+  subgraph cluster_foundation {
+    label="Shared foundations"; color="#DCFCE7"; style="rounded"
+    java [label="aws-java\\nJava SDK v2 wrappers, S3 Vectors opt-in", fillcolor="#E8F3FF", color="#5B8DEF"]
+    kotlin [label="aws-kotlin\\nnative suspend clients and DSL helpers", fillcolor="#EAF7EF", color="#58A978"]
+    exposed [label="aws-exposed\\ndatabase registry, RDS IAM, config paths", fillcolor="#E9F7F6", color="#45A7A1"]
+  }
+  subgraph cluster_runtime {
+    label="Runtime targets"; color="#FED7AA"; style="rounded"
+    services [label="AWS or emulator services\\nS3, S3 Vectors, SQS, SNS, DynamoDB, KMS, SES, CloudWatch, Kinesis, STS", shape=cylinder, fillcolor="#FFF7ED", color="#F97316"]
+    stores [label="JDBC stores and managed config\\nRDS IAM, Secrets Manager, Parameter Store, PostgreSQL", shape=cylinder, fillcolor="#F8FAFC", color="#64748B"]
+  }
 
-  java -> spring [color="#3B82F6", xlabel="core wrappers"]
-  java -> ktor [color="#3B82F6", xlabel="core wrappers"]
-  kotlin -> spring [color="#3B82F6", xlabel="core wrappers"]
-  kotlin -> ktor [color="#3B82F6", xlabel="core wrappers"]
-  exposed -> spring [color="#14B8A6", xlabel="config bridge"]
-  exposed -> ktor [color="#14B8A6", xlabel="config bridge"]
-  spring -> examples [color="#D6A441", xlabel="validated by"]
-  ktor -> examples [color="#D6A441", xlabel="validated by"]
+  app -> spring [color="#3B82F6"]
+  app -> ktor [color="#3B82F6"]
+  spring -> java [color="#3B82F6"]
+  spring -> exposed [color="#14B8A6"]
+  ktor -> java [color="#3B82F6"]
+  ktor -> kotlin [color="#3B82F6"]
+  ktor -> exposed [color="#14B8A6"]
+  sigv4 -> java [color="#3B82F6"]
+  sigv4 -> kotlin [color="#3B82F6"]
+  spring -> examples [color="#D6A441"]
+  ktor -> examples [color="#D6A441"]
+  java -> services [color="#F97316"]
+  kotlin -> services [color="#F97316"]
+  exposed -> stores [color="#F97316"]
 }
 '''
     write(OUT / f"{name}.dot", dot)
@@ -342,10 +373,19 @@ def generate_components() -> dict[str, object]:
         markers(colors),
         f'<rect x="{frame.x}" y="{frame.y}" width="{frame.w}" height="{frame.h}" rx="14" class="frame"/>',
         '<text class="title" x="54" y="72">AWS component map</text>',
-        '<text class="subtitle" x="56" y="104">Core SDK wrappers feed framework modules and examples without forcing one application stack.</text>',
-        chip(1095, 54, 120, "core flow", "#E8F3FF", colors["core"]),
-        chip(1230, 54, 116, "config", "#E9F7F6", colors["config"]),
-        chip(1360, 54, 86, "verify", "#FFF3D9", colors["verify"]),
+        '<text class="subtitle" x="56" y="104">Layered view from application entrypoints through framework adapters, shared foundations, and runtime targets.</text>',
+        chip(1100, 54, 120, "core flow", "#E8F3FF", colors["core"]),
+        chip(1235, 54, 116, "config", "#E9F7F6", colors["config"]),
+        chip(1365, 54, 86, "verify", "#FFF3D9", colors["verify"]),
+        chip(1465, 54, 86, "runtime", "#FFF7ED", colors["runtime"]),
+        '<rect x="54" y="135" width="1492" height="135" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>',
+        '<text class="chip" x="74" y="160">Application and examples</text>',
+        '<rect x="54" y="300" width="1492" height="165" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>',
+        '<text class="chip" x="74" y="325">Framework adapters</text>',
+        '<rect x="54" y="510" width="1492" height="170" rx="10" fill="#F0FDF4" stroke="#BBF7D0"/>',
+        '<text class="chip" x="74" y="535">Shared foundations</text>',
+        '<rect x="54" y="730" width="1492" height="160" rx="10" fill="#FFF7ED" stroke="#FED7AA"/>',
+        '<text class="chip" x="74" y="755">Runtime targets</text>',
         '<g id="routes">',
     ]
     marker_name = {value: key for key, value in colors.items()}
@@ -357,15 +397,16 @@ def generate_components() -> dict[str, object]:
     svg.extend(
         [
             "</g>",
+            card(boxes["app"], "Application code", ["Kotlin services and Ktor routes", "Spring components"], "#E8F3FF", "#5B8DEF"),
+            card(boxes["examples"], "examples", ["Ktor + Spring Boot", "Floci, LocalStack, PostgreSQL"], "#FDECEF", "#DC6B82"),
+            card(boxes["spring"], "aws-spring-boot", ["auto-configuration", "S3 Vectors, SQS/SNS/KMS", "property sources"], "#FFF3D9", "#D6A441"),
+            card(boxes["ktor"], "aws-ktor", ["SigV4 plugin", "S3 Vectors and SQS runtimes", "DynamoDB and Exposed adapters"], "#F1ECFF", "#8A72D6"),
+            card(boxes["sigv4"], "SigV4 and defaults", ["AwsKtorCore", "client factories", "customizers"], "#FFF7ED", "#F97316"),
             card(boxes["java"], "aws-java", ["Java SDK v2 wrappers", "CompletableFuture.await", "S3 Vectors opt-in"], "#E8F3FF", "#5B8DEF"),
             card(boxes["kotlin"], "aws-kotlin", ["native suspend clients", "DSL helpers"], "#EAF7EF", "#58A978"),
             card(boxes["exposed"], "aws-exposed", ["database registry", "RDS IAM auth", "Secrets and Parameter paths"], "#E9F7F6", "#45A7A1"),
-            card(boxes["spring"], "aws-spring-boot", ["auto-configuration", "S3 Vectors, SQS/SNS/KMS", "property sources"], "#FFF3D9", "#D6A441"),
-            card(boxes["ktor"], "aws-ktor", ["SigV4 plugin", "S3 Vectors and SQS runtimes", "DynamoDB and Exposed adapters"], "#F1ECFF", "#8A72D6"),
-            card(boxes["examples"], "examples", ["Ktor + Spring Boot", "Floci, LocalStack, PostgreSQL", "consumer scenario checks"], "#FDECEF", "#DC6B82"),
-            '<rect class="footer" x="54" y="690" width="1392" height="54" rx="8"/>',
-            '<text class="footer-title" x="72" y="713" dominant-baseline="middle">Component role</text>',
-            '<text class="footer-detail" x="72" y="733" dominant-baseline="middle">Keep SDK wrappers small, place framework behavior in framework modules, verify with examples and emulator-backed scenarios.</text>',
+            card(boxes["services"], "AWS or emulator services", ["S3, S3 Vectors, SQS/SNS", "DynamoDB, KMS, SES", "CloudWatch, Kinesis, STS"], "#FFF7ED", "#F97316"),
+            card(boxes["stores"], "JDBC stores and config", ["RDS IAM, Secrets Manager", "Parameter Store, PostgreSQL"], "#F8FAFC", "#64748B"),
             "</svg>",
         ]
     )
