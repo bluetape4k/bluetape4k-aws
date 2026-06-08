@@ -55,7 +55,9 @@ val S3VectorsKtorPlugin: ApplicationPlugin<S3VectorsKtorPluginConfig> = createAp
  * @throws IllegalStateException when [S3VectorsKtorPlugin] is absent or disabled.
  */
 fun Application.s3Vectors(): S3VectorsOperations =
-    s3VectorsOrNull() ?: throw IllegalStateException("S3VectorsKtorPlugin is not installed or is disabled.")
+    checkNotNull(s3VectorsOrNull()) {
+        "S3VectorsKtorPlugin is not installed or is disabled."
+    }
 
 /**
  * Returns S3 Vectors operations installed by [S3VectorsKtorPlugin], or null when absent or disabled.
