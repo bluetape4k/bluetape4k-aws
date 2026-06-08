@@ -41,6 +41,11 @@ adapter-specific operation interfaces.
   orthogonal routes to direct straight routes, centered service coverage badges
   inside each matrix cell, and made the coverage sketch PNG render the actual
   matrix instead of a placeholder label.
+- Later diagram review restored the previously visible runtime targets as a
+  layered component map. The final component diagram now separates
+  application/examples, framework adapters, shared foundations, and runtime
+  targets, including AWS or emulator services plus JDBC stores and managed
+  configuration.
 
 ## Future Rule
 
@@ -54,3 +59,6 @@ free-style or layered placement, semantic connector colors, and generator-level
 geometry proof before PNG preview.
 If a reviewer asks for straight routes, validate them as explicit
 boundary-to-boundary connectors and still check non-endpoint card intersections.
+If prior runtime or database targets were part of the reviewed architecture
+story, preserve them in a layered layout instead of replacing them with a
+module-only map.

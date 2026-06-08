@@ -51,15 +51,15 @@ Reviewed optional S3 Vectors support across `aws-java`, `aws-spring-boot`,
 - Diagram generator:
   `python3 tools/generate-root-readme-diagrams.py`
   printed geometry summaries before final PNG rendering:
-  - `bluetape4k-aws-components-04`: `nodes=6`, `routes=8`, `segments=8`,
+  - `bluetape4k-aws-components-04`: `nodes=10`, `routes=12`, `segments=12`,
     `badEndpointAngle=0`, `badBends=0`, `interiorCrossings=0`,
-    `laneClearance=0`, `titleGap=80`.
+    `laneClearance=0`, `titleGap=55`.
   - `bluetape4k-aws-service-coverage-chart-05`: `nodes=3`, `routes=0`,
     `segments=0`, `badEndpointAngle=0`, `badBends=0`,
     `interiorCrossings=0`, `laneClearance=0`, `titleGap=40`.
 - SVG/XML and PNG checks:
   `xmllint --noout` passed for final and sketch SVG assets; `file` confirmed
-  final PNG dimensions `1500x790` and `1900x820`.
+  final PNG dimensions `1600x940` and `1900x820`.
 - GNO diagram evidence:
   `gno query "bluetape4k-aws README diagram component map service coverage routing font"`
   was checked in both `bluetape4k-docs` and `bluetape4k-github`; relevant
@@ -70,9 +70,12 @@ Reviewed optional S3 Vectors support across `aws-java`, `aws-spring-boot`,
   column. The `yes`/`-`/`opt-in` badges are centered inside each row cell.
   `bluetape4k-aws-service-coverage-chart-05-sketch.png` was inspected after
   replacing the placeholder sketch with a readable Graphviz matrix preview.
-  `bluetape4k-aws-components-04.png` was inspected after switching to a
-  free-style component placement with straight boundary-to-boundary routes and
-  semantic route colors for core, config, and verification flows.
+  `bluetape4k-aws-components-04.png` and
+  `bluetape4k-aws-components-04-sketch.png` were inspected after switching to a
+  layered component map with straight boundary-to-boundary routes and semantic
+  route colors for core, config, verification, and runtime flows. The diagram
+  restores AWS or emulator services plus JDBC stores and managed configuration
+  in the runtime layer.
 
 ## Integration Evidence
 
