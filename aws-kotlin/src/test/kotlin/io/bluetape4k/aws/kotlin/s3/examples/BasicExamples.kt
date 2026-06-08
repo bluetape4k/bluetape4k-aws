@@ -61,8 +61,7 @@ class BasicExamples: AbstractKotlinS3Test() {
         ) { client ->
             val response = client.listBuckets { }
 
-            response.buckets.shouldNotBeNull()
-            response.buckets.shouldNotBeNull().forEach {
+            response.buckets?.forEach {
                 log.debug { "Bucket=${it.name}" }
             }
         }

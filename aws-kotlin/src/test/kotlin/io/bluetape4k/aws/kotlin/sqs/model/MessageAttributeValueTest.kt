@@ -1,8 +1,9 @@
 package io.bluetape4k.aws.kotlin.sqs.model
 
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class MessageAttributeValueTest {
@@ -27,8 +28,7 @@ class MessageAttributeValueTest {
     fun `messageAttributeValueOf String 목록으로 StringListValues를 설정한다`() {
         val attr = messageAttributeValueOf(listOf("a", "b", "c"))
 
-        attr.stringListValues.shouldNotBeNull()
-        attr.stringListValues.shouldNotBeNull() shouldBeEqualTo listOf("a", "b", "c")
+        attr.stringListValues shouldBeEqualTo listOf("a", "b", "c")
     }
 
     @Test
@@ -44,8 +44,7 @@ class MessageAttributeValueTest {
         val values = listOf(byteArrayOf(1), byteArrayOf(2))
         val attr = messageAttributeValueOf(values)
 
-        attr.binaryListValues.shouldNotBeNull()
-        attr.binaryListValues.shouldNotBeNull().size shouldBeEqualTo 2
+        attr.binaryListValues shouldHaveSize 2
     }
 
     @Test

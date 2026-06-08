@@ -4,7 +4,7 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.Get
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
@@ -20,9 +20,8 @@ class TransactGetItemTest {
         }
         val item = transactGetItemOf(get)
 
-        item.get.shouldNotBeNull()
-        item.get.shouldNotBeNull().tableName shouldBeEqualTo "users"
-        item.get.shouldNotBeNull().key["id"] shouldBeEqualTo AttributeValue.S("u1")
+        item.get?.tableName shouldBeEqualTo "users"
+        item.get?.key?.get("id") shouldBeEqualTo AttributeValue.S("u1")
     }
 
     @Test
@@ -31,8 +30,7 @@ class TransactGetItemTest {
             projectionExpression = "id, name"
         }
 
-        item.get.shouldNotBeNull()
-        item.get.shouldNotBeNull().tableName shouldBeEqualTo "users"
+        item.get?.tableName shouldBeEqualTo "users"
     }
 
     @Test
@@ -41,8 +39,7 @@ class TransactGetItemTest {
             projectionExpression = "id, name, email"
         }
 
-        item.get.shouldNotBeNull()
-        item.get.shouldNotBeNull().projectionExpression shouldBeEqualTo "id, name, email"
+        item.get?.projectionExpression shouldBeEqualTo "id, name, email"
     }
 
     @Test
@@ -54,8 +51,7 @@ class TransactGetItemTest {
         val transactItem = transactGetItemOf(get)
         val req = transactGetItemsRequestOf(listOf(transactItem))
 
-        req.transactItems.shouldNotBeNull()
-        req.transactItems.shouldNotBeNull().size shouldBeEqualTo 1
+        req.transactItems shouldHaveSize 1
     }
 
     @Test

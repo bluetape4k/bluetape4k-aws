@@ -4,6 +4,7 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.KeysAndAttributes
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
@@ -18,8 +19,7 @@ class BatchGetItemTest {
         val keysAndAttrs = KeysAndAttributes { this.keys = keys }
         val req = batchGetItemRequestOf(mapOf("users" to keysAndAttrs))
 
-        req.requestItems.shouldNotBeNull()
-        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 1
+        req.requestItems shouldHaveSize 1
         req.requestItems.shouldNotBeNull().containsKey("users") shouldBeEqualTo true
     }
 
@@ -33,7 +33,7 @@ class BatchGetItemTest {
         }
         val req = batchGetItemRequestOf(mapOf("users" to userKeys, "orders" to orderKeys))
 
-        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 2
+        req.requestItems shouldHaveSize 2
     }
 
     @Test

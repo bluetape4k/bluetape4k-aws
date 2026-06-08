@@ -76,11 +76,7 @@ class DynamoDbClientExtensionsTest: AbstractKotlinDynamoDbTest() {
                 )
                 .buffer()
                 .mapNotNull { scan ->
-                    if (scan.items?.isNotEmpty() == true) {
-                        scan.items.shouldNotBeNull().single()
-                    } else {
-                        null
-                    }
+                    scan.items?.single()
                 }
                 .toList()
 

@@ -8,6 +8,7 @@ import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withTimeout
@@ -66,15 +67,9 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
                     val desc = client.describeStream(STREAM_NAME)
                     val status = desc.streamDescription?.streamStatus
                     if (status == StreamStatus.Active) {
-                        val streamDescription = requireNotNull(desc.streamDescription) {
-                            "streamDescription must be present when stream is ACTIVE."
-                        }
-                        val shards = requireNotNull(streamDescription.shards) {
-                            "shards must be present when stream is ACTIVE."
-                        }
-                        shardId = requireNotNull(shards.first().shardId) {
-                            "shardId must be present when stream is ACTIVE."
-                        }
+                        val streamDescription = desc.streamDescription.requireNotNull("streamDescription")
+                        val shards = streamDescription.shards.requireNotNull("shards")
+                        shardId = shards.first().shardId.requireNotNull("shardId")
                         log.debug { "Stream ACTIVE, shardId=$shardId" }
                     }
                     status == StreamStatus.Active
@@ -124,7 +119,7 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
             log.debug { "TrimHorizon collected ${collected.size} records" }
 
             collected.forEachIndexed { i, record ->
-                val payload = requireNotNull(record.data) { "record data must not be null." }.decodeToString()
+                val payload = record.data.requireNotNull("record data").decodeToString()
                 log.debug { "  record[$i] seq=${record.sequenceNumber} payload=$payload" }
                 payload shouldBeEqualTo "record-payload-$i"
             }
@@ -153,7 +148,7 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
 
             collected.size shouldBeEqualTo expectedCount
             // First collected record must come after the skipped one
-            requireNotNull(collected[0].data) { "record data must not be null." }.decodeToString() shouldBeEqualTo
+            collected[0].data.requireNotNull("record data").decodeToString() shouldBeEqualTo
                 "record-payload-1"
             log.debug { "AfterSequenceNumber collected ${collected.size} records (skipped 1)" }
         }
@@ -180,7 +175,7 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
             }
 
             collected.size shouldBeEqualTo expectedCount
-            requireNotNull(collected[0].data) { "record data must not be null." }.decodeToString() shouldBeEqualTo
+            collected[0].data.requireNotNull("record data").decodeToString() shouldBeEqualTo
                 "record-payload-2"
             log.debug { "AtSequenceNumber collected ${collected.size} records starting from index 2" }
         }

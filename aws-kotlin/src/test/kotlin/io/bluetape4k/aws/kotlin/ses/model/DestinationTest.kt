@@ -3,6 +3,7 @@ package io.bluetape4k.aws.kotlin.ses.model
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
@@ -64,6 +65,6 @@ class DestinationTest {
             // additional settings
         }
         dest.shouldNotBeNull()
-        dest.toAddresses.shouldNotBeNull().size shouldBeEqualTo 1
+        dest.toAddresses shouldHaveSize 1
     }
 }

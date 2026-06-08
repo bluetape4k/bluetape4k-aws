@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.kotlin.cloudwatch
 
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.cloudwatch.model.cloudwatchlogs.inputLogEventOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -74,8 +74,9 @@ class CloudWatchLogsClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             localStackServer.credentialsProvider,
         ) { client ->
             val response = client.describeLogGroups(logGroupNamePrefix = "/bluetape4k")
-            response.logGroups.shouldNotBeNull().shouldNotBeEmpty()
-            response.logGroups.shouldNotBeNull().forEach { group ->
+            val logGroups = response.logGroups.shouldNotBeNull()
+            logGroups.shouldNotBeEmpty()
+            logGroups.forEach { group ->
                 log.debug { "logGroup: ${group.logGroupName}" }
             }
         }
@@ -90,8 +91,9 @@ class CloudWatchLogsClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             localStackServer.credentialsProvider,
         ) { client ->
             val response = client.describeLogStreams(LOG_GROUP_NAME)
-            response.logStreams.shouldNotBeNull().shouldNotBeEmpty()
-            response.logStreams.shouldNotBeNull().forEach { stream ->
+            val logStreams = response.logStreams.shouldNotBeNull()
+            logStreams.shouldNotBeEmpty()
+            logStreams.forEach { stream ->
                 log.debug { "logStream: ${stream.logStreamName}" }
             }
         }

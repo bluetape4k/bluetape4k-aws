@@ -5,6 +5,7 @@ import aws.sdk.kotlin.services.dynamodb.model.PutRequest
 import aws.sdk.kotlin.services.dynamodb.model.WriteRequest
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
@@ -21,8 +22,7 @@ class BatchWriteItemTest {
         val writeReq = WriteRequest { putRequest = putReq }
         val req = batchWriteItemRequestOf(mapOf("users" to listOf(writeReq)))
 
-        req.requestItems.shouldNotBeNull()
-        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 1
+        req.requestItems shouldHaveSize 1
         req.requestItems.shouldNotBeNull().containsKey("users") shouldBeEqualTo true
     }
 
@@ -38,7 +38,7 @@ class BatchWriteItemTest {
             )
         )
 
-        req.requestItems.shouldNotBeNull().size shouldBeEqualTo 2
+        req.requestItems shouldHaveSize 2
     }
 
     @Test

@@ -2,7 +2,7 @@ package io.bluetape4k.aws.kotlin.sqs.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
@@ -54,8 +54,7 @@ class MessageVisibilityTest {
         val req = changeMessageVisibilityBatchRequestOf(queueUrl = queueUrl, entries = entries)
 
         req.queueUrl shouldBeEqualTo queueUrl
-        req.entries.shouldNotBeNull()
-        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
+        req.entries shouldHaveSize 2
     }
 
     @Test
@@ -66,7 +65,7 @@ class MessageVisibilityTest {
             changeMessageVisibilityBatchRequestEntryOf("id2", "rh2", 60)
         )
 
-        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
+        req.entries shouldHaveSize 2
     }
 
     @Test

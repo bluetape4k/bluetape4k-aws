@@ -1,12 +1,14 @@
 package io.bluetape4k.aws.kotlin.dynamodb.examples.paginator
 
-import io.bluetape4k.assertions.shouldNotBeNull
 import aws.sdk.kotlin.services.dynamodb.createTable
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.ScalarAttributeType
 import aws.sdk.kotlin.services.dynamodb.model.TableClass
 import aws.sdk.kotlin.services.dynamodb.paginators.scanPaginated
 import aws.sdk.kotlin.services.dynamodb.putItem
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.kotlin.dynamodb.AbstractKotlinDynamoDbTest
 import io.bluetape4k.aws.kotlin.dynamodb.deleteTableIfExists
 import io.bluetape4k.aws.kotlin.dynamodb.existsTable
@@ -21,9 +23,6 @@ import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.flow.buffer
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldHaveSize
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -127,9 +126,7 @@ class PaginatorTest: AbstractKotlinDynamoDbTest() {
                 }
                 .buffer()
                 .collect { scan ->
-                    if (scan.items?.isNotEmpty() == true) {
-                        results.add(scan.items.shouldNotBeNull().single())
-                    }
+                    scan.items?.single()?.let(results::add)
                 }
 
             results.forEach { entry ->

@@ -33,17 +33,15 @@ class QueryRequestBuilderDSL {
      * `tableName`, `primaryKey`가 누락되면 예외가 발생합니다.
      */
     fun build(): QueryRequest {
-        tableName.requireNotBlank("tableName")
-        primaryKey.requireNotNull("primaryKey")
+        val table = tableName.requireNotBlank("tableName")
+        val pk = primaryKey.requireNotNull("primaryKey")
 
-        val request = QueryRequest.builder().tableName(tableName)
-        // WHY: requireNotNull 위에서 이미 null이면 예외를 던지므로 non-null assertion 대신 안전한 캐스트 사용
-        val pk = checkNotNull(primaryKey) { "primaryKey must not be null" }
+        val request = QueryRequest.builder().tableName(table)
 
-        if (sortKey == null) {
+        val sk = sortKey
+        if (sk == null) {
             request.keyConditions(mapOf(pk.keyName to pk.equals.toCondition()))
         } else {
-            val sk = checkNotNull(sortKey) { "sortKey must not be null" }
             request.keyConditions(
                 mapOf(
                     pk.keyName to pk.equals.toCondition(),

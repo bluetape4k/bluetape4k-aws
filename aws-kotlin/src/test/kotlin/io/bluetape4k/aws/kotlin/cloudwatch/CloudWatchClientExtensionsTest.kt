@@ -1,13 +1,13 @@
 package io.bluetape4k.aws.kotlin.cloudwatch
 
 import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.cloudwatch.model.metricDatumOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -67,8 +67,9 @@ class CloudWatchClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             localStackServer.credentialsProvider,
         ) { client ->
             val response = client.listMetrics(namespace = NAMESPACE)
-            response.metrics.shouldNotBeNull().shouldNotBeEmpty()
-            response.metrics.shouldNotBeNull().forEach { metric ->
+            val metrics = response.metrics.shouldNotBeNull()
+            metrics.shouldNotBeEmpty()
+            metrics.forEach { metric ->
                 log.debug { "metric: namespace=${metric.namespace}, name=${metric.metricName}" }
             }
         }
@@ -83,8 +84,9 @@ class CloudWatchClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             localStackServer.credentialsProvider,
         ) { client ->
             val response = client.listMetrics(namespace = NAMESPACE, metricName = METRIC_NAME)
-            response.metrics.shouldNotBeNull().shouldNotBeEmpty()
-            response.metrics.shouldNotBeNull().forEach { metric ->
+            val metrics = response.metrics.shouldNotBeNull()
+            metrics.shouldNotBeEmpty()
+            metrics.forEach { metric ->
                 log.debug { "filtered metric: ${metric.metricName}" }
             }
         }
