@@ -2,9 +2,11 @@ package io.bluetape4k.aws.s3vectors
 
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
 import software.amazon.awssdk.services.s3vectors.model.QueryVectorsRequest
@@ -13,9 +15,15 @@ import java.util.concurrent.CompletableFuture
 
 class S3VectorsAsyncClientCoroutinesExtensionsTest {
 
+    private val client = mockk<S3VectorsAsyncClient>()
+
+    @BeforeEach
+    fun clearS3VectorsClient() {
+        clearMocks(client)
+    }
+
     @Test
     fun `queryVectorsSuspend awaits async client future`() = runSuspendIO {
-        val client = mockk<S3VectorsAsyncClient>()
         val request = QueryVectorsRequest.builder().vectorBucketName("vectors").indexName("semantic").build()
         val response = QueryVectorsResponse.builder().build()
         every { client.queryVectors(request) } returns CompletableFuture.completedFuture(response)

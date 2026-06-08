@@ -1,29 +1,21 @@
 digraph Bluetape4kAwsComponents {
-  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.45, ranksep=0.75, splines=ortho]
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.8, ranksep=1.1, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75]
 
-  app [label="Application code\nKotlin services, Ktor routes,\nSpring components", fillcolor="#e0f2fe", color="#38bdf8"]
-  sigv4 [label="SigV4 and client defaults\nAwsKtorCore, AwsSigV4Plugin,\nclient factories", fillcolor="#fef3c7", color="#f59e0b"]
-  java [label="Java SDK v2 layer\nDynamoDB enhanced, S3 transfer,\nS3 Vectors, SQS/SNS/KMS/SES/STS", fillcolor="#e0f2fe", color="#38bdf8"]
-  kotlin [label="AWS Kotlin SDK layer\nnative suspend clients and DSLs", fillcolor="#dcfce7", color="#22c55e"]
-  exposed [label="Exposed foundation\nsettings resolver, Hikari factory,\nregistry, RDS IAM auth", fillcolor="#f3e8ff", color="#a855f7"]
-  spring [label="Spring Boot operations\nS3, S3 Vectors, SQS listener,\nSNS, DynamoDB, KMS, env sources", fillcolor="#fef3c7", color="#f59e0b"]
-  ktor [label="Ktor runtime\nS3 REST client, S3 Vectors,\nSQS consumer, DynamoDB, Exposed", fillcolor="#fee2e2", color="#ef4444"]
-  services [label="AWS or emulator\nS3, S3 Vectors, SQS, SNS,\nDynamoDB, KMS, SES, CloudWatch,\nKinesis, STS, JDBC stores", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+  java [label="aws-java\nJava SDK v2 wrappers\nS3 Vectors opt-in", fillcolor="#E8F3FF", color="#5B8DEF"]
+  kotlin [label="aws-kotlin\nnative suspend clients\nDSL helpers", fillcolor="#EAF7EF", color="#58A978"]
+  exposed [label="aws-exposed\ndatabase registry\nRDS IAM and config", fillcolor="#E9F7F6", color="#45A7A1"]
+  spring [label="aws-spring-boot\nauto-configuration\nS3 Vectors + messaging", fillcolor="#FFF3D9", color="#D6A441"]
+  ktor [label="aws-ktor\nSigV4 plugin and runtimes\nS3 Vectors + queues", fillcolor="#F1ECFF", color="#8A72D6"]
+  examples [label="examples\nKtor + Spring Boot\nFloci and LocalStack", fillcolor="#FDECEF", color="#DC6B82"]
 
-  app -> sigv4
-  app -> spring
-  app -> ktor
-  app -> exposed
-  sigv4 -> java
-  sigv4 -> kotlin
-  spring -> java
-  spring -> exposed
-  ktor -> java
-  ktor -> kotlin
-  ktor -> exposed
-  java -> services
-  kotlin -> services
-  exposed -> services
+  java -> spring [color="#3B82F6", xlabel="core wrappers"]
+  java -> ktor [color="#3B82F6", xlabel="core wrappers"]
+  kotlin -> spring [color="#3B82F6", xlabel="core wrappers"]
+  kotlin -> ktor [color="#3B82F6", xlabel="core wrappers"]
+  exposed -> spring [color="#14B8A6", xlabel="config bridge"]
+  exposed -> ktor [color="#14B8A6", xlabel="config bridge"]
+  spring -> examples [color="#D6A441", xlabel="validated by"]
+  ktor -> examples [color="#D6A441", xlabel="validated by"]
 }

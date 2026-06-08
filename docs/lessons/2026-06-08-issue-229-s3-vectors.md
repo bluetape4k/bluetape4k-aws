@@ -22,6 +22,10 @@ adapter-specific operation interfaces.
 - Ktor activation requires explicit `S3VectorsKtorPlugin` installation.
 - README diagrams and service coverage prose must reflect S3 Vectors as
   optional and must not imply emulator support.
+- README diagram revisions must preserve the existing pastel card/badge
+  decoration language. When route density or labels crowd, enlarge the canvas
+  and use semantic route colors instead of collapsing the image into a
+  different visual shape.
 
 ## Verification
 
@@ -29,9 +33,18 @@ adapter-specific operation interfaces.
 - `javap` confirmed `S3VectorsAsyncClient` operation names before API wrapping.
 - Focused Gradle compile/test runs covered `aws-java`, `aws-spring-boot`, and
   `aws-ktor` S3 Vectors paths.
+- PR review follow-up regenerated the root README component map and service
+  coverage chart through `tools/generate-root-readme-diagrams.py`, including
+  DOT/plain/sketch evidence, final SVG/PNG assets, geometry-gate summaries,
+  font scans, XML parsing, and rendered PNG inspection.
 
 ## Future Rule
 
 When AWS introduces a new service-specific SDK artifact, start with an optional
 facade in the lowest shared module, reuse it in framework adapters, and document
 runtime dependency ownership clearly in all README locale files.
+
+For root README diagram updates, keep the existing card/badge decoration unless
+the user explicitly requests a redesign. Relationship-heavy component maps need
+free-style or layered placement, semantic connector colors, and generator-level
+geometry proof before PNG preview.
