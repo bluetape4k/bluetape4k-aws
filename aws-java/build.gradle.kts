@@ -26,6 +26,7 @@ dependencies {
     // AWS SDK v2 Services (compileOnly — consumer adds runtime deps)
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.s3)
+    compileOnly(libs.aws2.s3vectors)
     compileOnly(libs.aws2.s3.transfer.manager)
     compileOnly(libs.aws2.aws.crt)
     compileOnly(libs.aws2.ses)
@@ -47,6 +48,7 @@ dependencies {
 
     // Test
     testImplementation(libs.aws2.ec2)
+    testImplementation(libs.aws2.s3vectors)
     testImplementation(libs.aws2.test.utils)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)

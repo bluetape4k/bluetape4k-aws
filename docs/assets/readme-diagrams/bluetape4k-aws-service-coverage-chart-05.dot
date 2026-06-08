@@ -1,68 +1,76 @@
 digraph G {
-  graph [rankdir=TB, splines=ortho, nodesep=0.65, ranksep=0.85, bgcolor="transparent", label="AWS service coverage", labelloc=t];
-  node [shape=box, style="rounded,filled", fontname="Arial", margin="0.12,0.08"];
-  edge [penwidth=2.0, arrowsize=0.8, fontname="Arial"];
-  row0 [label="aws-java", fillcolor="#FFFFFF", color="#000000"];
-  row1 [label="aws-kotlin", fillcolor="#FFFFFF", color="#000000"];
-  row2 [label="aws-exposed", fillcolor="#FFFFFF", color="#000000"];
-  row3 [label="aws-spring-boot", fillcolor="#FFFFFF", color="#000000"];
-  row4 [label="aws-ktor", fillcolor="#FFFFFF", color="#000000"];
-  row5 [label="examples", fillcolor="#FFFFFF", color="#000000"];
-  svc0 [label="DynamoDB", fillcolor="#FFFFFF", color="#000000"];
-  svc1 [label="S3", fillcolor="#FFFFFF", color="#000000"];
-  svc2 [label="SES/v2", fillcolor="#FFFFFF", color="#000000"];
-  svc3 [label="SNS", fillcolor="#FFFFFF", color="#000000"];
-  svc4 [label="SQS", fillcolor="#FFFFFF", color="#000000"];
-  svc5 [label="KMS", fillcolor="#FFFFFF", color="#000000"];
-  svc6 [label="CloudWatch + Logs", fillcolor="#FFFFFF", color="#000000"];
-  svc7 [label="Kinesis", fillcolor="#FFFFFF", color="#000000"];
-  svc8 [label="STS", fillcolor="#FFFFFF", color="#000000"];
-  svc9 [label="RDS IAM", fillcolor="#FFFFFF", color="#000000"];
-  svc10 [label="Secrets Manager", fillcolor="#FFFFFF", color="#000000"];
-  svc11 [label="Parameter Store", fillcolor="#FFFFFF", color="#000000"];
-  row0 -> svc0 [color="#58A978", xlabel="covers"];
-  row0 -> svc1 [color="#58A978", xlabel="covers"];
-  row0 -> svc2 [color="#58A978", xlabel="covers"];
-  row0 -> svc3 [color="#58A978", xlabel="covers"];
-  row0 -> svc4 [color="#58A978", xlabel="covers"];
-  row0 -> svc5 [color="#58A978", xlabel="covers"];
-  row0 -> svc6 [color="#58A978", xlabel="covers"];
-  row0 -> svc7 [color="#58A978", xlabel="covers"];
-  row0 -> svc8 [color="#58A978", xlabel="covers"];
-  row1 -> svc0 [color="#58A978", xlabel="covers"];
-  row1 -> svc1 [color="#58A978", xlabel="covers"];
-  row1 -> svc2 [color="#58A978", xlabel="covers"];
-  row1 -> svc3 [color="#58A978", xlabel="covers"];
-  row1 -> svc4 [color="#58A978", xlabel="covers"];
-  row1 -> svc5 [color="#58A978", xlabel="covers"];
-  row1 -> svc6 [color="#58A978", xlabel="covers"];
-  row1 -> svc7 [color="#58A978", xlabel="covers"];
-  row1 -> svc8 [color="#58A978", xlabel="covers"];
-  row2 -> svc9 [color="#58A978", xlabel="covers"];
-  row2 -> svc10 [color="#58A978", xlabel="covers"];
-  row2 -> svc11 [color="#58A978", xlabel="covers"];
-  row3 -> svc0 [color="#58A978", xlabel="covers"];
-  row3 -> svc1 [color="#58A978", xlabel="covers"];
-  row3 -> svc2 [color="#58A978", xlabel="covers"];
-  row3 -> svc3 [color="#58A978", xlabel="covers"];
-  row3 -> svc4 [color="#58A978", xlabel="covers"];
-  row3 -> svc5 [color="#58A978", xlabel="covers"];
-  row3 -> svc8 [color="#58A978", xlabel="covers"];
-  row3 -> svc9 [color="#58A978", xlabel="covers"];
-  row3 -> svc10 [color="#58A978", xlabel="covers"];
-  row3 -> svc11 [color="#58A978", xlabel="covers"];
-  row4 -> svc0 [color="#58A978", xlabel="covers"];
-  row4 -> svc1 [color="#58A978", xlabel="covers"];
-  row4 -> svc4 [color="#58A978", xlabel="covers"];
-  row4 -> svc5 [color="#58A978", xlabel="covers"];
-  row4 -> svc9 [color="#58A978", xlabel="covers"];
-  row4 -> svc10 [color="#58A978", xlabel="covers"];
-  row4 -> svc11 [color="#58A978", xlabel="covers"];
-  row5 -> svc0 [color="#58A978", xlabel="covers"];
-  row5 -> svc1 [color="#58A978", xlabel="covers"];
-  row5 -> svc4 [color="#58A978", xlabel="covers"];
-  row5 -> svc5 [color="#58A978", xlabel="covers"];
-  row5 -> svc9 [color="#58A978", xlabel="covers"];
-  row5 -> svc10 [color="#58A978", xlabel="covers"];
-  row5 -> svc11 [color="#58A978", xlabel="covers"];
+  graph [
+    rankdir=TB,
+    bgcolor="transparent",
+    margin=0.12,
+    pad=0.35,
+    label="AWS service coverage",
+    labelloc=t,
+    fontname="Architects Daughter",
+    fontsize=24
+  ];
+  node [shape=plain, fontname="Comic Mono"];
+
+  coverage [label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="8" COLOR="#94a3b8">
+      <TR>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">Module</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">DynamoDB</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">S3</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">S3 Vectors</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">SES/v2</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">SNS</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">SQS</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">KMS</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">CloudWatch</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">Kinesis</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">STS</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">RDS IAM</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">Secrets</FONT></TD>
+        <TD BGCOLOR="#dbeafe"><FONT FACE="Architects Daughter" POINT-SIZE="15">Parameter</FONT></TD>
+      </TR>
+      <TR>
+        <TD BGCOLOR="#f8fafc"><FONT FACE="Architects Daughter" POINT-SIZE="14">aws-java</FONT></TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fef3c7">opt-in</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD>
+      </TR>
+      <TR>
+        <TD BGCOLOR="#f8fafc"><FONT FACE="Architects Daughter" POINT-SIZE="14">aws-kotlin</FONT></TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD>
+      </TR>
+      <TR>
+        <TD BGCOLOR="#f8fafc"><FONT FACE="Architects Daughter" POINT-SIZE="14">aws-exposed</FONT></TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+      </TR>
+      <TR>
+        <TD BGCOLOR="#f8fafc"><FONT FACE="Architects Daughter" POINT-SIZE="14">aws-spring-boot</FONT></TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fef3c7">opt-in</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+      </TR>
+      <TR>
+        <TD BGCOLOR="#f8fafc"><FONT FACE="Architects Daughter" POINT-SIZE="14">aws-ktor</FONT></TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fef3c7">opt-in</TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#dcfce7">yes</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+      </TR>
+      <TR>
+        <TD BGCOLOR="#f8fafc"><FONT FACE="Architects Daughter" POINT-SIZE="14">examples</FONT></TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#dcfce7">yes</TD>
+        <TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#fee2e2">-</TD>
+        <TD BGCOLOR="#fee2e2">-</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD><TD BGCOLOR="#dcfce7">yes</TD>
+      </TR>
+    </TABLE>
+  >];
 }

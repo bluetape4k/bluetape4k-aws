@@ -16,6 +16,8 @@ dependency.
 - **S3** — `S3CoroutinesTemplate` for bucket-existence, upload/download (bytes
   or text), delete, paginated listing (`listPage`/`listFlow`), Spring
   `Resource` view, and presigned GET/PUT URLs.
+- **S3 Vectors** — optional `S3VectorsOperations` for vector bucket/index
+  discovery and vector put/get/list/query calls.
 - **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, topic publish,
   FIFO publish fields, direct SMS publish options, and HTTP(S) notification
   JSON parsing plus token-based subscription confirmation.
@@ -63,6 +65,7 @@ dependencies {
     // Add only the AWS SDK v2 services you need at runtime.
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:s3vectors")
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
@@ -123,6 +126,10 @@ bluetape4k:
         key-id: alias/app-s3
         encryption-context:
           service: order-api
+    s3-vectors:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
     sqs:
       enabled: true
       region: ap-northeast-2
@@ -395,6 +402,41 @@ with AES-GCM, and stores the encrypted data key and nonce in S3 metadata. This
 helper is for byte-array objects; it does not support multipart or streaming
 client-side encryption, and the metadata format is not AWS Encryption SDK
 compatible.
+
+### S3 Vectors — Spring Boot operations
+
+S3 Vectors support is disabled by default and uses the separate AWS SDK v2
+`s3vectors` service. Applications that enable it must add the runtime service
+dependency:
+
+```kotlin
+runtimeOnly("software.amazon.awssdk:s3vectors")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    s3-vectors:
+      enabled: true
+      region: us-east-1
+```
+
+```kotlin
+import io.bluetape4k.aws.s3vectors.S3VectorsOperations
+import software.amazon.awssdk.services.s3vectors.model.QueryVectorsRequest
+
+class SemanticSearch(
+    private val s3Vectors: S3VectorsOperations,
+) {
+    suspend fun query(request: QueryVectorsRequest) =
+        s3Vectors.queryVectors(request)
+}
+```
+
+The auto-configuration contributes `S3VectorsAsyncClient` and
+`S3VectorsOperations` only when `bluetape4k.aws.s3-vectors.enabled=true` and the
+`s3vectors` SDK is present. It does not imply LocalStack, Floci, or Ministack
+S3 Vectors behavior.
 
 ### SQS — send and receive
 

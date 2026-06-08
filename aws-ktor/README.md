@@ -31,6 +31,8 @@ explicit metric and log-event publishing.
   Ktor config object loading.
 - `S3AccessGrantsKtorPlugin` for optional S3 Control-backed Access Grants data
   access and discovery operations.
+- `S3VectorsKtorPlugin` for optional S3 Vectors discovery, vector write/read,
+  listing, and query operations.
 - `SqsConsumer` Ktor `ApplicationPlugin` for coroutine SQS polling, publishing,
   graceful shutdown, retry visibility control, and optional manual DLQ
   forwarding.
@@ -61,6 +63,10 @@ dependencies {
     // S3 Access Grants plugin usage
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:s3control")
+
+    // S3 Vectors plugin usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:s3vectors")
 
     // SQS consumer/publisher usage
     implementation("io.ktor:ktor-server-core")
@@ -368,9 +374,44 @@ suspend fun Application.readGrantedCredentials(accountId: String, target: String
     )
 ```
 
-S3 Vector APIs are not pulled into the default API surface. Use the official
-service SDK directly until the service API is stable enough to wrap without a
-hard runtime dependency.
+### S3 Vectors
+
+`S3VectorsKtorPlugin` installs the shared `aws-java` coroutine
+`S3VectorsOperations` facade into a Ktor application. It keeps S3 Vectors out of
+the default S3 object API because AWS exposes vectors through the separate
+`s3vectors` service.
+
+```kotlin
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.s3vectors.S3VectorsKtorPlugin
+import io.bluetape4k.aws.ktor.s3vectors.s3Vectors
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.services.s3vectors.model.ListIndexesRequest
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        ktorCore()
+    }
+
+    install(S3VectorsKtorPlugin)
+}
+
+suspend fun Application.listSemanticIndexes(vectorBucketName: String) =
+    s3Vectors().listIndexes(
+        ListIndexesRequest.builder()
+            .vectorBucketName(vectorBucketName)
+            .build(),
+    )
+```
+
+The plugin can use a caller-owned `S3VectorsOperations`, a caller-owned
+`S3VectorsAsyncClient`, or a plugin-owned client built from `AwsKtorCore`
+defaults plus S3 Vectors customizers. It does not claim emulator-backed S3
+Vectors behavior.
 
 ## CloudWatch Metrics And Logs
 

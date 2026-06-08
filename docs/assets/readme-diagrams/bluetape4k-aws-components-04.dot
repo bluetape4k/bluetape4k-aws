@@ -5,12 +5,12 @@ digraph Bluetape4kAwsComponents {
 
   app [label="Application code\nKotlin services, Ktor routes,\nSpring components", fillcolor="#e0f2fe", color="#38bdf8"]
   sigv4 [label="SigV4 and client defaults\nAwsKtorCore, AwsSigV4Plugin,\nclient factories", fillcolor="#fef3c7", color="#f59e0b"]
-  java [label="Java SDK v2 layer\nDynamoDB enhanced, S3 transfer,\nSQS/SNS/KMS/SES/STS", fillcolor="#e0f2fe", color="#38bdf8"]
+  java [label="Java SDK v2 layer\nDynamoDB enhanced, S3 transfer,\nS3 Vectors, SQS/SNS/KMS/SES/STS", fillcolor="#e0f2fe", color="#38bdf8"]
   kotlin [label="AWS Kotlin SDK layer\nnative suspend clients and DSLs", fillcolor="#dcfce7", color="#22c55e"]
   exposed [label="Exposed foundation\nsettings resolver, Hikari factory,\nregistry, RDS IAM auth", fillcolor="#f3e8ff", color="#a855f7"]
-  spring [label="Spring Boot operations\nS3, SQS listener, SNS,\nDynamoDB, KMS, env sources", fillcolor="#fef3c7", color="#f59e0b"]
-  ktor [label="Ktor runtime\nS3 REST client, SQS consumer,\nDynamoDB plugin, Exposed plugin", fillcolor="#fee2e2", color="#ef4444"]
-  services [label="AWS or emulator\nS3, SQS, SNS, DynamoDB,\nKMS, SES, CloudWatch,\nKinesis, STS, JDBC stores", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
+  spring [label="Spring Boot operations\nS3, S3 Vectors, SQS listener,\nSNS, DynamoDB, KMS, env sources", fillcolor="#fef3c7", color="#f59e0b"]
+  ktor [label="Ktor runtime\nS3 REST client, S3 Vectors,\nSQS consumer, DynamoDB, Exposed", fillcolor="#fee2e2", color="#ef4444"]
+  services [label="AWS or emulator\nS3, S3 Vectors, SQS, SNS,\nDynamoDB, KMS, SES, CloudWatch,\nKinesis, STS, JDBC stores", shape=cylinder, fillcolor="#fff7ed", color="#f97316"]
 
   app -> sigv4
   app -> spring

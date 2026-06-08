@@ -2,7 +2,7 @@
 
 English | [한국어](./README.ko.md)
 
-A unified integration module built on AWS Java SDK v2. Provides async/non-blocking and Kotlin Coroutines support for major AWS services including DynamoDB, S3, SES, SNS, SQS, KMS, CloudWatch, Kinesis, and STS.
+A unified integration module built on AWS Java SDK v2. Provides async/non-blocking and Kotlin Coroutines support for major AWS services including DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis, and STS.
 
 ## Architecture
 
@@ -24,6 +24,7 @@ A unified integration module built on AWS Java SDK v2. Provides async/non-blocki
 |---------------------|------------------------------------------------------------------------------|
 | **DynamoDB**        | Table CRUD, Enhanced Client, Coroutines extensions                           |
 | **S3**              | Object upload/download, TransferManager (large files), Coroutines extensions |
+| **S3 Vectors**      | Optional vector bucket/index discovery and vector put/get/list/query facade  |
 | **SES**             | Email sending, Coroutines extensions                                         |
 | **SNS**             | Topic publishing, SMS, push notifications, Coroutines extensions             |
 | **SQS**             | Message send/receive/delete, Coroutines extensions                           |
@@ -80,6 +81,32 @@ suspend fun listLogKeys(client: S3AsyncClient, bucket: String): List<String> =
         .toList()
         .mapNotNull { it.key() }
 ```
+
+### S3 Vectors Coroutine Facade
+
+```kotlin
+import io.bluetape4k.aws.s3vectors.S3VectorsCoroutinesTemplate
+import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
+import software.amazon.awssdk.services.s3vectors.model.ListIndexesRequest
+
+class SemanticIndexReader(
+    client: S3VectorsAsyncClient,
+) {
+    private val s3Vectors = S3VectorsCoroutinesTemplate(client)
+
+    suspend fun listIndexes(vectorBucketName: String) =
+        s3Vectors.listIndexes(
+            ListIndexesRequest.builder()
+                .vectorBucketName(vectorBucketName)
+                .build()
+        )
+}
+```
+
+S3 Vectors uses the separate AWS SDK v2 `s3vectors` service. This module keeps
+the dependency optional and exposes a small suspend facade for discovery,
+put/get/list, and query operations. Destructive administration, tagging, and
+policy calls remain available through the raw `S3VectorsAsyncClient`.
 
 ### SQS Coroutine Extensions
 
@@ -198,6 +225,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
+    implementation("software.amazon.awssdk:s3vectors")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:kms")

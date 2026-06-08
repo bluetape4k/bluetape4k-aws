@@ -159,6 +159,7 @@ aws2-aws-crt = { module = "software.amazon.awssdk.crt:aws-crt", version.ref = "a
 aws2-dynamodb-enhanced = { module = "software.amazon.awssdk:dynamodb-enhanced", version.ref = "aws2" }
 aws2-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws2" }
 aws2-s3control = { module = "software.amazon.awssdk:s3control", version.ref = "aws2" }
+aws2-s3vectors = { module = "software.amazon.awssdk:s3vectors", version.ref = "aws2" }
 aws2-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-manager", version.ref = "aws2" }
 aws2-ses = { module = "software.amazon.awssdk:ses", version.ref = "aws2" }
 aws2-sesv2 = { module = "software.amazon.awssdk:sesv2", version.ref = "aws2" }

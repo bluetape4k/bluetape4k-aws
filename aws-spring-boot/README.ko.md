@@ -15,6 +15,8 @@ SQS 리스너 컨테이너, CloudWatch metric/log helper, EC2 IMDS metadata oper
 - **S3** — `S3CoroutinesTemplate` 로 버킷 존재 확인, 업로드/다운로드(바이트·문자열),
   삭제, 페이지 단위 조회(`listPage`/`listFlow`), Spring `Resource` 뷰, presigned
   GET/PUT URL 발급을 지원한다.
+- **S3 Vectors** — 선택적 `S3VectorsOperations` 로 vector bucket/index 조회와
+  vector put/get/list/query 호출을 지원한다.
 - **SNS** — `SnsCoroutinesTemplate` 로 topic 생성/조회, topic publish, FIFO publish
   필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
   confirmation 을 지원한다.
@@ -59,6 +61,7 @@ dependencies {
     // 런타임에서 사용할 AWS SDK v2 서비스만 선택적으로 추가
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:s3vectors")
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
@@ -119,6 +122,10 @@ bluetape4k:
         key-id: alias/app-s3
         encryption-context:
           service: order-api
+    s3-vectors:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
     sqs:
       enabled: true
       region: ap-northeast-2
@@ -387,6 +394,39 @@ bean 이 있을 때 활성화된다. AWS KMS data key 를 생성하고 object by
 AES-GCM 으로 암호화한 뒤 encrypted data key 와 nonce 를 S3 metadata 에 저장한다.
 이 helper 는 byte-array object 용이다. multipart 또는 streaming client-side
 encryption 은 지원하지 않으며, metadata format 은 AWS Encryption SDK 와 호환되지 않는다.
+
+### S3 Vectors — Spring Boot operations
+
+S3 Vectors 지원은 기본적으로 비활성화되어 있고 별도 AWS SDK v2 `s3vectors` 서비스를
+사용합니다. 활성화하는 애플리케이션은 runtime service dependency를 추가해야 합니다.
+
+```kotlin
+runtimeOnly("software.amazon.awssdk:s3vectors")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    s3-vectors:
+      enabled: true
+      region: us-east-1
+```
+
+```kotlin
+import io.bluetape4k.aws.s3vectors.S3VectorsOperations
+import software.amazon.awssdk.services.s3vectors.model.QueryVectorsRequest
+
+class SemanticSearch(
+    private val s3Vectors: S3VectorsOperations,
+) {
+    suspend fun query(request: QueryVectorsRequest) =
+        s3Vectors.queryVectors(request)
+}
+```
+
+자동설정은 `bluetape4k.aws.s3-vectors.enabled=true` 이고 `s3vectors` SDK가 있을 때만
+`S3VectorsAsyncClient` 와 `S3VectorsOperations` 를 등록합니다. 이 설정은 LocalStack,
+Floci, Ministack 의 S3 Vectors 동작을 보장하지 않습니다.
 
 ### SQS — 송수신
 
