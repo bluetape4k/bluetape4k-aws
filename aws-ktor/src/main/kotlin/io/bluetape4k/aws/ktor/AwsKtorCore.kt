@@ -4,6 +4,8 @@ import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import io.bluetape4k.AbstractValueObject
 import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.ktor.core.Bluetape4kKtorCoreConfig
+import io.bluetape4k.ktor.core.installBluetape4kKtorCore
 import io.ktor.client.HttpClientConfig
 import io.ktor.http.Url
 import io.ktor.server.application.Application
@@ -12,6 +14,8 @@ import io.ktor.server.application.createApplicationPlugin
 import io.ktor.util.AttributeKey
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClientBuilder
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
 import java.net.URI
 import java.time.Clock
@@ -37,6 +41,8 @@ class AwsKtorDefaults(
     @Transient val kotlinHttpClient: HttpClientEngine? = null,
     httpClientCustomizers: List<AwsKtorHttpClientCustomizer> = emptyList(),
     sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer> = emptyList(),
+    cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer> = emptyList(),
+    cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer> = emptyList(),
     dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer> = emptyList(),
 ): AbstractValueObject() {
 
@@ -47,6 +53,14 @@ class AwsKtorDefaults(
 
     @Transient
     private val sqsAsyncClientCustomizersValue: List<AwsKtorSqsAsyncClientCustomizer>? = sqsAsyncClientCustomizers
+
+    @Transient
+    private val cloudWatchAsyncClientCustomizersValue: List<AwsKtorCloudWatchAsyncClientCustomizer>? =
+        cloudWatchAsyncClientCustomizers
+
+    @Transient
+    private val cloudWatchLogsAsyncClientCustomizersValue: List<AwsKtorCloudWatchLogsAsyncClientCustomizer>? =
+        cloudWatchLogsAsyncClientCustomizers
 
     @Transient
     private val dynamoDbClientCustomizersValue: List<AwsKtorDynamoDbClientCustomizer>? = dynamoDbClientCustomizers
@@ -69,6 +83,14 @@ class AwsKtorDefaults(
     val sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer>
         get() = sqsAsyncClientCustomizersValue ?: emptyList()
 
+    /** Shared customizers for plugin-created AWS SDK Java v2 CloudWatch async clients. */
+    val cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer>
+        get() = cloudWatchAsyncClientCustomizersValue ?: emptyList()
+
+    /** Shared customizers for plugin-created AWS SDK Java v2 CloudWatch Logs async clients. */
+    val cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer>
+        get() = cloudWatchLogsAsyncClientCustomizersValue ?: emptyList()
+
     /** Shared customizers for plugin-created AWS Kotlin SDK DynamoDB clients. */
     val dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer>
         get() = dynamoDbClientCustomizersValue ?: emptyList()
@@ -89,6 +111,8 @@ class AwsKtorDefaults(
             kotlinHttpClient == other.kotlinHttpClient &&
             httpClientCustomizers == other.httpClientCustomizers &&
             sqsAsyncClientCustomizers == other.sqsAsyncClientCustomizers &&
+            cloudWatchAsyncClientCustomizers == other.cloudWatchAsyncClientCustomizers &&
+            cloudWatchLogsAsyncClientCustomizers == other.cloudWatchLogsAsyncClientCustomizers &&
             dynamoDbClientCustomizers == other.dynamoDbClientCustomizers
 
     override fun hashCode(): Int {
@@ -100,6 +124,8 @@ class AwsKtorDefaults(
         result = 31 * result + (kotlinHttpClient?.hashCode() ?: 0)
         result = 31 * result + httpClientCustomizers.hashCode()
         result = 31 * result + sqsAsyncClientCustomizers.hashCode()
+        result = 31 * result + cloudWatchAsyncClientCustomizers.hashCode()
+        result = 31 * result + cloudWatchLogsAsyncClientCustomizers.hashCode()
         result = 31 * result + dynamoDbClientCustomizers.hashCode()
         return result
     }
@@ -114,6 +140,8 @@ class AwsKtorDefaults(
             .add("kotlinHttpClient", kotlinHttpClient)
             .add("httpClientCustomizers", httpClientCustomizers)
             .add("sqsAsyncClientCustomizers", sqsAsyncClientCustomizers)
+            .add("cloudWatchAsyncClientCustomizers", cloudWatchAsyncClientCustomizers)
+            .add("cloudWatchLogsAsyncClientCustomizers", cloudWatchLogsAsyncClientCustomizers)
             .add("dynamoDbClientCustomizers", dynamoDbClientCustomizers)
 
     companion object {
@@ -128,6 +156,9 @@ val AwsKtorCore: ApplicationPlugin<AwsKtorCoreConfig> = createApplicationPlugin(
     name = "AwsKtorCore",
     createConfiguration = ::AwsKtorCoreConfig,
 ) {
+    pluginConfig.ktorCoreConfig?.let { config ->
+        application.installBluetape4kKtorCore(config)
+    }
     application.attributes.put(AwsKtorDefaultsKey, pluginConfig.toDefaults())
 }
 
@@ -167,7 +198,23 @@ class AwsKtorCoreConfig {
 
     private val httpClientCustomizers = mutableListOf<AwsKtorHttpClientCustomizer>()
     private val sqsAsyncClientCustomizers = mutableListOf<AwsKtorSqsAsyncClientCustomizer>()
+    private val cloudWatchAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchAsyncClientCustomizer>()
+    private val cloudWatchLogsAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
     private val dynamoDbClientCustomizers = mutableListOf<AwsKtorDynamoDbClientCustomizer>()
+
+    internal var ktorCoreConfig: Bluetape4kKtorCoreConfig? = null
+        private set
+
+    /**
+     * Installs the shared bluetape4k Ktor baseline together with [AwsKtorCore].
+     *
+     * The baseline remains opt-in so existing AWS-only applications do not get
+     * content negotiation, status pages, or health routes unless they request
+     * the shared bluetape4k Ktor server defaults explicitly.
+     */
+    fun ktorCore(config: Bluetape4kKtorCoreConfig = Bluetape4kKtorCoreConfig()) {
+        ktorCoreConfig = config
+    }
 
     /**
      * Adds a global Ktor [io.ktor.client.HttpClient] customizer for plugin-created clients.
@@ -181,6 +228,20 @@ class AwsKtorCoreConfig {
      */
     fun sqsAsyncClient(customizer: AwsKtorSqsAsyncClientCustomizer) {
         sqsAsyncClientCustomizers += customizer
+    }
+
+    /**
+     * Adds a global CloudWatch async client builder customizer.
+     */
+    fun cloudWatchAsyncClient(customizer: AwsKtorCloudWatchAsyncClientCustomizer) {
+        cloudWatchAsyncClientCustomizers += customizer
+    }
+
+    /**
+     * Adds a global CloudWatch Logs async client builder customizer.
+     */
+    fun cloudWatchLogsAsyncClient(customizer: AwsKtorCloudWatchLogsAsyncClientCustomizer) {
+        cloudWatchLogsAsyncClientCustomizers += customizer
     }
 
     /**
@@ -200,6 +261,8 @@ class AwsKtorCoreConfig {
             kotlinHttpClient = kotlinHttpClient,
             httpClientCustomizers = httpClientCustomizers.toList(),
             sqsAsyncClientCustomizers = sqsAsyncClientCustomizers.toList(),
+            cloudWatchAsyncClientCustomizers = cloudWatchAsyncClientCustomizers.toList(),
+            cloudWatchLogsAsyncClientCustomizers = cloudWatchLogsAsyncClientCustomizers.toList(),
             dynamoDbClientCustomizers = dynamoDbClientCustomizers.toList(),
         )
 }
@@ -216,6 +279,20 @@ fun interface AwsKtorHttpClientCustomizer {
  */
 fun interface AwsKtorSqsAsyncClientCustomizer {
     fun customize(builder: SqsAsyncClientBuilder)
+}
+
+/**
+ * Customizes plugin-created AWS SDK Java v2 CloudWatch async client builders.
+ */
+fun interface AwsKtorCloudWatchAsyncClientCustomizer {
+    fun customize(builder: CloudWatchAsyncClientBuilder)
+}
+
+/**
+ * Customizes plugin-created AWS SDK Java v2 CloudWatch Logs async client builders.
+ */
+fun interface AwsKtorCloudWatchLogsAsyncClientCustomizer {
+    fun customize(builder: CloudWatchLogsAsyncClientBuilder)
 }
 
 /**

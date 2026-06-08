@@ -1,0 +1,60 @@
+package io.bluetape4k.aws.ktor.cloudwatch
+
+import io.bluetape4k.aws.cloudwatch.listMetrics
+import io.bluetape4k.aws.cloudwatch.putMetricData
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireNotBlank
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
+import software.amazon.awssdk.services.cloudwatch.model.DimensionFilter
+import software.amazon.awssdk.services.cloudwatch.model.ListMetricsResponse
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
+
+internal const val CLOUDWATCH_MIN_BATCH_SIZE = 1
+internal const val CLOUDWATCH_MAX_BATCH_SIZE = 1000
+
+/**
+ * Default [CloudWatchKtorOperations] implementation backed by [CloudWatchAsyncClient].
+ *
+ * ## Contract
+ *
+ * Metric data is split by [batchSize]. Empty metric lists are no-ops and do not
+ * call AWS.
+ */
+class CloudWatchKtorTemplate(
+    private val cloudWatchAsyncClient: CloudWatchAsyncClient,
+    private val namespace: String? = null,
+    private val batchSize: Int = CLOUDWATCH_MAX_BATCH_SIZE,
+): CloudWatchKtorOperations {
+
+    init {
+        batchSize.requireInRange(CLOUDWATCH_MIN_BATCH_SIZE, CLOUDWATCH_MAX_BATCH_SIZE, "batchSize")
+    }
+
+    override suspend fun putMetricData(metricData: List<MetricDatum>): List<PutMetricDataResponse> =
+        putMetricData(defaultNamespace(), metricData)
+
+    override suspend fun putMetricData(
+        namespace: String,
+        metricData: List<MetricDatum>,
+    ): List<PutMetricDataResponse> {
+        namespace.requireNotBlank("namespace")
+        if (metricData.isEmpty()) {
+            return emptyList()
+        }
+
+        return metricData.chunked(batchSize).map { batch ->
+            cloudWatchAsyncClient.putMetricData(namespace, batch)
+        }
+    }
+
+    override suspend fun listMetrics(
+        namespace: String?,
+        metricName: String?,
+        dimensions: List<DimensionFilter>?,
+    ): ListMetricsResponse =
+        cloudWatchAsyncClient.listMetrics(namespace, metricName, dimensions)
+
+    private fun defaultNamespace(): String =
+        namespace?.takeIf { it.isNotBlank() } ?: throw IllegalArgumentException("namespace must be configured.")
+}
