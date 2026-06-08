@@ -59,7 +59,6 @@ class PutRecordTest {
             partitionKey = "pk",
             data = ByteArray(0)
         )
-        req.data.shouldNotBeNull()
-        req.data.shouldNotBeNull().size shouldBeEqualTo 0
+        req.data?.size shouldBeEqualTo 0
     }
 }

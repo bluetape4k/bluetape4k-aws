@@ -2,7 +2,7 @@ package io.bluetape4k.aws.kotlin.sqs.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
@@ -44,8 +44,7 @@ class SendMessageTest {
             messageAttributes = mapOf("source" to messageAttributeValueOf("test"))
         }
 
-        req.messageAttributes.shouldNotBeNull()
-        req.messageAttributes.shouldNotBeNull()["source"]?.stringValue shouldBeEqualTo "test"
+        req.messageAttributes?.get("source")?.stringValue shouldBeEqualTo "test"
     }
 
     @Test
@@ -109,8 +108,7 @@ class SendMessageTest {
         val req = sendMessageBatchRequestOf(queueUrl = queueUrl, entries = entries)
 
         req.queueUrl shouldBeEqualTo queueUrl
-        req.entries.shouldNotBeNull()
-        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
+        req.entries shouldHaveSize 2
     }
 
     @Test
@@ -121,7 +119,7 @@ class SendMessageTest {
             sendMessageBatchRequestEntryOf("id2", "World!")
         )
 
-        req.entries.shouldNotBeNull().size shouldBeEqualTo 2
+        req.entries shouldHaveSize 2
     }
 
     @Test

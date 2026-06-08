@@ -4,6 +4,7 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.ReturnValue
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
@@ -21,8 +22,7 @@ class PutItemTest {
         val req = putItemRequestOf("users", item)
 
         req.tableName shouldBeEqualTo "users"
-        req.item.shouldNotBeNull()
-        req.item.shouldNotBeNull().size shouldBeEqualTo 2
+        req.item shouldHaveSize 2
         req.item.shouldNotBeNull()["id"] shouldBeEqualTo AttributeValue.S("u1")
     }
 

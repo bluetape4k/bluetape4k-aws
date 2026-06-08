@@ -56,7 +56,7 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
         ) { client ->
             val response = client.listQueues(QUEUE_PREFIX)
 
-            response.queueUrls.shouldNotBeNull().forEach {
+            response.queueUrls?.forEach {
                 log.debug { "Queue URL=$it" }
             }
             val queueUrls = response.queueUrls.shouldNotBeNull()

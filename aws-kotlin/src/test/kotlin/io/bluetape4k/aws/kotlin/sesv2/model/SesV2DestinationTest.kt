@@ -3,6 +3,7 @@ package io.bluetape4k.aws.kotlin.sesv2.model
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
@@ -54,6 +55,6 @@ class SesV2DestinationTest {
     @Test
     fun `destinationOf 단일 TO 주소를 설정할 수 있다`() {
         val dest = destinationOf("user@example.com")
-        dest.toAddresses.shouldNotBeNull().size shouldBeEqualTo 1
+        dest.toAddresses shouldHaveSize 1
     }
 }
