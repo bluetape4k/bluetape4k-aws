@@ -46,7 +46,7 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장 제공 |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
 | `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
@@ -322,6 +322,48 @@ classpath 에 있을 때만 자동 구성되며, 대용량 파일, multipart tra
 listener 용이다. CRT 기반 throughput 튜닝이 필요하면 AWS CRT runtime dependency 를
 추가하고 CRT-backed `S3AsyncClient` bean 을 제공한다. Spring auto-configuration 은
 그 client 를 재사용해 transfer manager 를 만든다.
+
+#### S3 Access Grants
+
+S3 Access Grants 지원은 opt-in이며 AWS SDK v2 S3 Control client를 사용합니다.
+활성화하는 애플리케이션은 runtime service dependency를 추가해야 합니다.
+
+```kotlin
+runtimeOnly("software.amazon.awssdk:s3control")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    s3:
+      access-grants:
+        enabled: true
+        region: us-east-1
+```
+
+```kotlin
+import io.bluetape4k.aws.spring.s3.accessgrants.S3AccessGrantsOperations
+import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
+import software.amazon.awssdk.services.s3control.model.Permission
+
+class GrantedObjectAccess(
+    private val accessGrants: S3AccessGrantsOperations,
+) {
+    suspend fun readCredentials(accountId: String, target: String) =
+        accessGrants.getDataAccess(
+            GetDataAccessRequest.builder()
+                .accountId(accountId)
+                .target(target)
+                .permission(Permission.READ)
+                .build()
+        )
+}
+```
+
+`S3AccessGrantsOperations` 는 일반적인 read/data-access 경로인 `getDataAccess`,
+`listCallerAccessGrants`, `listAccessGrants`, `listAccessGrantsInstances`,
+`listAccessGrantsLocations` 를 제공합니다. 관리용 create/update/delete 호출은 raw
+`S3ControlClient` 와 `S3ControlAsyncClient` bean 을 통해 그대로 사용할 수 있습니다.
 
 ### DynamoDB — Spring Boot Coroutine Repository
 
