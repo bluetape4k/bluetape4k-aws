@@ -29,6 +29,8 @@ explicit metric and log-event publishing.
   multipart upload, presigned GET/PUT URLs, content-type detection,
   server-side encryption headers, client-side envelope encryption, and S3-backed
   Ktor config object loading.
+- `S3AccessGrantsKtorPlugin` for optional S3 Control-backed Access Grants data
+  access and discovery operations.
 - `SqsConsumer` Ktor `ApplicationPlugin` for coroutine SQS polling, publishing,
   graceful shutdown, retry visibility control, and optional manual DLQ
   forwarding.
@@ -55,6 +57,10 @@ dependencies {
 
     // SigV4/S3 client usage
     implementation("io.ktor:ktor-client-cio")
+
+    // S3 Access Grants plugin usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:s3control")
 
     // SQS consumer/publisher usage
     implementation("io.ktor:ktor-server-core")
@@ -317,12 +323,53 @@ provider can wrap AWS KMS `GenerateDataKey` and `Decrypt`; tests or local tools
 can use an in-memory provider. Keep plaintext data keys process-local and do
 not persist them outside the provider boundary.
 
-S3 Access Grants and S3 Vector APIs are not pulled into the default API surface.
-For Access Grants, obtain the vended S3 credentials through the AWS SDK
-component your application already uses, then build `S3KtorClient` with that
-credentials provider. For S3 Vector, use the official service SDK directly
-until the service API is stable enough to wrap without a hard runtime
-dependency.
+### S3 Access Grants
+
+`S3AccessGrantsKtorPlugin` installs a suspend operations facade backed by AWS
+SDK Java v2 `S3ControlAsyncClient`. It keeps Access Grants in the S3 Control
+boundary: object REST calls stay in `S3KtorClient`, while data-access and
+discovery calls use `application.s3AccessGrants()`.
+
+![Ktor S3 Access Grants flow](../docs/images/readme-diagrams/aws-ktor-s3-access-grants-flow-01.png)
+
+The plugin can use caller-owned `S3AccessGrantsKtorOperations`, a caller-owned
+`S3ControlAsyncClient`, or a plugin-managed client created from `AwsKtorCore`
+defaults plus service-specific customizers. Administrative create, update, and
+delete operations intentionally remain on the raw S3 Control client so the Ktor
+facade only wraps read/data-access paths that are useful in request handling.
+
+```kotlin
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.s3.accessgrants.S3AccessGrantsKtorPlugin
+import io.bluetape4k.aws.ktor.s3.accessgrants.s3AccessGrants
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
+import software.amazon.awssdk.services.s3control.model.Permission
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+    }
+
+    install(S3AccessGrantsKtorPlugin)
+}
+
+suspend fun Application.readGrantedCredentials(accountId: String, target: String) =
+    s3AccessGrants().getDataAccess(
+        GetDataAccessRequest.builder()
+            .accountId(accountId)
+            .target(target)
+            .permission(Permission.READ)
+            .build(),
+    )
+```
+
+S3 Vector APIs are not pulled into the default API surface. Use the official
+service SDK directly until the service API is stable enough to wrap without a
+hard runtime dependency.
 
 ## CloudWatch Metrics And Logs
 

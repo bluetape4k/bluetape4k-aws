@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1420" height="840" viewBox="0 0 1420 840" role="img" aria-label="Ktor S3 Access Grants flow">
+<defs>
+  <marker id="arrow-setup" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 7 4 L 1 7 Z" fill="#66758A"/></marker>
+  <marker id="arrow-read" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 7 4 L 1 7 Z" fill="#2F9E62"/></marker>
+  <marker id="arrow-list" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 7 4 L 1 7 Z" fill="#4C7FD9"/></marker>
+  <marker id="arrow-admin" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 7 4 L 1 7 Z" fill="#D79528"/></marker>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.18"/></filter>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:34px;fill:#102033}
+  .subtitle,.detail,.footer-detail,.layer-detail{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;fill:#526274}
+  .subtitle{font-size:14px}
+  .layer{stroke-width:1.4;opacity:0.95}
+  .layer-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:18px;fill:#102033}
+  .layer-detail{font-size:11px}
+  .card-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:20px;fill:#102033}
+  .detail{font-size:12px}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .edge-label{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:11px;font-weight:700}
+  .label-bg{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1}
+  .legend-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:14px;fill:#102033}
+  .legend-text{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:10px;fill:#526274}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-size:11px;fill:#DDE7F2}
+</style>
+<rect x="26" y="26" width="1368" height="788" rx="14" class="frame"/>
+<text class="title" x="54" y="72">Ktor S3 Access Grants flow</text>
+<text class="subtitle" x="56" y="102">Optional S3 Control helpers keep Access Grants separate from object REST operations.</text>
+<g>
+  <rect class="layer" x="62.0" y="164.0" width="1296.0" height="92.0" rx="10" fill="#F6FAFF" stroke="#D7E8FF"/>
+  <text class="layer-title" x="84.0" y="200.0" dominant-baseline="middle">Application layer</text>
+  <text class="layer-detail" x="84.0" y="224.0" dominant-baseline="middle">plugin install</text>
+</g>
+<g>
+  <rect class="layer" x="62.0" y="280.0" width="1296.0" height="126.0" rx="10" fill="#FFF9EA" stroke="#F1D99B"/>
+  <text class="layer-title" x="84.0" y="333.0" dominant-baseline="middle">Ktor operations</text>
+  <text class="layer-detail" x="84.0" y="357.0" dominant-baseline="middle">facade and async client</text>
+</g>
+<g>
+  <rect class="layer" x="62.0" y="430.0" width="1296.0" height="132.0" rx="10" fill="#F6F1FF" stroke="#DDCEF7"/>
+  <text class="layer-title" x="84.0" y="486.0" dominant-baseline="middle">Access paths</text>
+  <text class="layer-detail" x="84.0" y="510.0" dominant-baseline="middle">read, list, admin</text>
+</g>
+<g>
+  <rect class="layer" x="62.0" y="586.0" width="1296.0" height="98.0" rx="10" fill="#F4FBF6" stroke="#CDEDD7"/>
+  <text class="layer-title" x="84.0" y="625.0" dominant-baseline="middle">AWS control plane</text>
+  <text class="layer-detail" x="84.0" y="649.0" dominant-baseline="middle">S3 Control Access Grants</text>
+</g>
+<g id="route-install"><path class="edge" d="M550.0 209.0 L600.0 209.0 L600.0 209.0 L650.0 209.0" stroke="#66758A" marker-end="url(#arrow-setup)"/><rect class="label-bg" x="562.0" y="177.0" width="76.0" height="24" rx="12"/><text class="edge-label" x="600.0" y="190.0" text-anchor="middle" dominant-baseline="middle" fill="#66758A">install</text></g>
+<g id="route-defaults"><path class="edge" d="M1040.0 209.0 L985.0 209.0 L985.0 209.0 L930.0 209.0" stroke="#66758A" marker-end="url(#arrow-setup)"/><rect class="label-bg" x="947.0" y="177.0" width="76.0" height="24" rx="12"/><text class="edge-label" x="985.0" y="190.0" text-anchor="middle" dominant-baseline="middle" fill="#66758A">inherit</text></g>
+<g id="route-publish"><path class="edge" d="M790.0 238.0 L790.0 260.0 L410.0 260.0 L410.0 312.0" stroke="#66758A" marker-end="url(#arrow-setup)"/><rect class="label-bg" x="561.2" y="247.0" width="77.6" height="24" rx="12"/><text class="edge-label" x="600.0" y="260.0" text-anchor="middle" dominant-baseline="middle" fill="#66758A">register</text></g>
+<g id="route-ops-template"><path class="edge" d="M560.0 344.0 L605.0 344.0 L605.0 344.0 L650.0 344.0" stroke="#2F9E62" marker-end="url(#arrow-read)"/><rect class="label-bg" x="566.2" y="311.0" width="77.6" height="24" rx="12"/><text class="edge-label" x="605.0" y="324.0" text-anchor="middle" dominant-baseline="middle" fill="#2F9E62">delegate</text></g>
+<g id="route-template-client"><path class="edge" d="M930.0 344.0 L985.0 344.0 L985.0 344.0 L1040.0 344.0" stroke="#2F9E62" marker-end="url(#arrow-read)"/><rect class="label-bg" x="947.0" y="311.0" width="76.0" height="24" rx="12"/><text class="edge-label" x="985.0" y="324.0" text-anchor="middle" dominant-baseline="middle" fill="#2F9E62">await</text></g>
+<g id="route-data"><path class="edge" d="M1170.0 376.0 L1170.0 414.0 L370.0 414.0 L370.0 464.0" stroke="#2F9E62" marker-end="url(#arrow-read)"/><rect class="label-bg" x="703.2" y="401.0" width="113.6" height="24" rx="12"/><text class="edge-label" x="760.0" y="414.0" text-anchor="middle" dominant-baseline="middle" fill="#2F9E62">getDataAccess</text></g>
+<g id="route-list"><path class="edge" d="M1170.0 376.0 L1170.0 438.0 L710.0 438.0 L710.0 464.0" stroke="#4C7FD9" marker-end="url(#arrow-list)"/><rect class="label-bg" x="882.0" y="425.0" width="76.0" height="24" rx="12"/><text class="edge-label" x="920.0" y="438.0" text-anchor="middle" dominant-baseline="middle" fill="#4C7FD9">list*</text></g>
+<g id="route-admin"><path class="edge" d="M1170.0 376.0 L1170.0 464.0" stroke="#D79528" marker-end="url(#arrow-admin)" stroke-dasharray="8 7"/><rect class="label-bg" x="1164.0" y="407.0" width="76.0" height="24" rx="12"/><text class="edge-label" x="1202.0" y="420.0" text-anchor="middle" dominant-baseline="middle" fill="#D79528">raw SDK</text></g>
+<g id="route-data-control"><path class="edge" d="M370.0 528.0 L370.0 568.0 L640.0 568.0 L640.0 610.0" stroke="#2F9E62" marker-end="url(#arrow-read)"/></g>
+<g id="route-list-control"><path class="edge" d="M710.0 528.0 L710.0 610.0" stroke="#4C7FD9" marker-end="url(#arrow-list)"/></g>
+<g id="route-admin-control"><path class="edge" d="M1070.0 528.0 L1070.0 568.0 L800.0 568.0 L800.0 610.0" stroke="#D79528" marker-end="url(#arrow-admin)" stroke-dasharray="8 7"/></g>
+<g id="app">
+  <rect class="card" x="300.0" y="180.0" width="250.0" height="58.0" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="425.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Ktor application</text>
+<text class="detail" x="425.0" y="219.0" text-anchor="middle" dominant-baseline="middle">routes/services</text>
+</g>
+<g id="plugin">
+  <rect class="card" x="650.0" y="180.0" width="280.0" height="58.0" rx="9" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="card-title" x="790.0" y="199.0" text-anchor="middle" dominant-baseline="middle">S3AccessGrantsKtorPlugin</text>
+<text class="detail" x="790.0" y="219.0" text-anchor="middle" dominant-baseline="middle">stores operations</text>
+</g>
+<g id="defaults">
+  <rect class="card" x="1040.0" y="180.0" width="230.0" height="58.0" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="1155.0" y="199.0" text-anchor="middle" dominant-baseline="middle">AwsKtorCore</text>
+<text class="detail" x="1155.0" y="219.0" text-anchor="middle" dominant-baseline="middle">defaults/customizers</text>
+</g>
+<g id="ops">
+  <rect class="card" x="260.0" y="312.0" width="300.0" height="64.0" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="410.0" y="334.0" text-anchor="middle" dominant-baseline="middle">S3AccessGrantsKtorOperations</text>
+<text class="detail" x="410.0" y="354.0" text-anchor="middle" dominant-baseline="middle">suspend API</text>
+</g>
+<g id="template">
+  <rect class="card" x="650.0" y="312.0" width="280.0" height="64.0" rx="9" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="card-title" x="790.0" y="334.0" text-anchor="middle" dominant-baseline="middle">S3AccessGrantsKtorTemplate</text>
+<text class="detail" x="790.0" y="354.0" text-anchor="middle" dominant-baseline="middle">awaits SDK futures</text>
+</g>
+<g id="client">
+  <rect class="card" x="1040.0" y="312.0" width="260.0" height="64.0" rx="9" fill="#F1ECFF" stroke="#8A72D6"/>
+  <text class="card-title" x="1170.0" y="334.0" text-anchor="middle" dominant-baseline="middle">S3ControlAsyncClient</text>
+<text class="detail" x="1170.0" y="354.0" text-anchor="middle" dominant-baseline="middle">optional SDK runtime</text>
+</g>
+<g id="data">
+  <rect class="card" x="240.0" y="464.0" width="260.0" height="64.0" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="370.0" y="486.0" text-anchor="middle" dominant-baseline="middle">Data access credentials</text>
+<text class="detail" x="370.0" y="506.0" text-anchor="middle" dominant-baseline="middle">getDataAccess</text>
+</g>
+<g id="lists">
+  <rect class="card" x="580.0" y="464.0" width="260.0" height="64.0" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="710.0" y="486.0" text-anchor="middle" dominant-baseline="middle">Grant discovery</text>
+<text class="detail" x="710.0" y="506.0" text-anchor="middle" dominant-baseline="middle">list* operations</text>
+</g>
+<g id="admin">
+  <rect class="card" x="940.0" y="464.0" width="260.0" height="64.0" rx="9" fill="#FFF0E3" stroke="#F47B36"/>
+  <text class="card-title" x="1070.0" y="486.0" text-anchor="middle" dominant-baseline="middle">Raw admin client</text>
+<text class="detail" x="1070.0" y="506.0" text-anchor="middle" dominant-baseline="middle">create/update/delete</text>
+</g>
+<g id="control">
+  <rect class="card" x="550.0" y="610.0" width="340.0" height="58.0" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="720.0" y="629.0" text-anchor="middle" dominant-baseline="middle">S3 Access Grants</text>
+<text class="detail" x="720.0" y="649.0" text-anchor="middle" dominant-baseline="middle">instances, grants, locations</text>
+</g>
+<g>
+  <text class="legend-title" x="940" y="718">Semantic routes</text>
+  <path class="edge" d="M940 740 L1000 740" stroke="#66758A" marker-end="url(#arrow-setup)"/><text class="legend-text" x="1012" y="740" dominant-baseline="middle">setup/defaults</text>
+  <path class="edge" d="M940 764 L1000 764" stroke="#2F9E62" marker-end="url(#arrow-read)"/><text class="legend-text" x="1012" y="764" dominant-baseline="middle">credential request</text>
+  <path class="edge" d="M1148 740 L1208 740" stroke="#4C7FD9" marker-end="url(#arrow-list)"/><text class="legend-text" x="1220" y="740" dominant-baseline="middle">list/discover</text>
+  <path class="edge" d="M1148 764 L1208 764" stroke="#D79528" stroke-dasharray="8 7" marker-end="url(#arrow-admin)"/><text class="legend-text" x="1220" y="764" dominant-baseline="middle">admin escape</text>
+</g>
+<rect class="footer" x="62" y="730" width="820" height="54" rx="8"/>
+<text class="footer-title" x="84" y="749" dominant-baseline="middle">Boundary</text>
+<text class="footer-detail" x="84" y="767" dominant-baseline="middle">Access Grants uses S3 Control; S3KtorClient stays focused on object REST operations.</text>
+</svg>

@@ -1,0 +1,23 @@
+graph 1 6.6862 9.9614
+node app 2.3258 9.6318 1.5196 0.65917 "Ktor application\nroutes/services" rounded,filled box #5B8DEF #E8F3FF
+node plugin 3.4508 8.056 2.3217 0.65917 "S3AccessGrantsKtorPlugin\nstores operations" rounded,filled box #D6A441 #FFF3D9
+node defaults 4.5897 9.6318 1.905 0.65917 "AwsKtorCore\ndefaults/customizers" rounded,filled box #5B8DEF #E8F3FF
+node ops 3.4508 6.4801 2.7383 0.65917 "S3AccessGrantsKtorOperations\nsuspend API" rounded,filled box #45A7A1 #E9F7F6
+node template 3.4508 4.9043 2.6029 0.65917 "S3AccessGrantsKtorTemplate\nawaits SDK futures" rounded,filled box #D6A441 #FFF3D9
+node client 3.4508 3.3285 1.9154 0.65917 "S3ControlAsyncClient\noptional SDK runtime" rounded,filled box #8A72D6 #F1ECFF
+node data 1.0619 1.7526 2.1237 0.65917 "Data access credentials\ngetDataAccess" rounded,filled box #58A978 #EAF7EF
+node lists 3.4508 1.7526 1.53 0.65917 "Grant discovery\nlist* operations" rounded,filled box #58A978 #EAF7EF
+node admin 5.7285 1.7526 1.9154 0.65917 "Raw admin client\ncreate/update/delete" rounded,filled box #F47B36 #FFF0E3
+node control 3.4508 0.32958 2.3112 0.65917 "S3 Access Grants\ninstances, grants, locations" rounded,filled box #58A978 #EAF7EF
+edge app plugin 4 2.6877 9.2976 2.6877 9.2976 2.6877 8.5254 2.6877 8.5254 install 2.581 8.8439 solid #66758A
+edge plugin ops 4 3.4508 7.7218 3.4508 7.7218 3.4508 6.9495 3.4508 6.9495 register 3.7424 7.2681 solid #66758A
+edge defaults plugin 4 4.1244 9.2976 4.1244 9.2976 4.1244 8.5254 4.1244 8.5254 inherit 4.8449 8.8439 solid #66758A
+edge ops template 4 3.4508 6.1459 3.4508 6.1459 3.4508 5.3737 3.4508 5.3737 delegate 3.7424 5.6922 solid #2F9E62
+edge template client 4 3.4508 4.5701 3.4508 4.5701 3.4508 3.7979 3.4508 3.7979 await 3.6331 4.1164 solid #2F9E62
+edge client data 7 2.5894 2.9955 2.5894 2.5626 2.5894 1.8611 2.5894 1.8611 2.5894 1.8611 2.2627 1.8611 2.2627 1.8611 getDataAccess 1.9525 2.5406 solid #2F9E62
+edge client lists 4 3.4508 2.9943 3.4508 2.9943 3.4508 2.222 3.4508 2.222 "list*" 3.6331 2.5406 solid #4C7FD9
+edge client admin 7 4.3121 2.9955 4.3121 2.5626 4.3121 1.8611 4.3121 1.8611 4.3121 1.8611 4.6285 1.8611 4.6285 1.8611 "raw SDK" 5.331 2.5406 dashed #D79528
+edge data control 7 2.1245 1.6389 2.2828 1.6389 2.3941 1.6389 2.3941 1.6389 2.3941 1.6389 2.3941 0.79568 2.3941 0.79568 solid #2F9E62
+edge lists control 4 3.4508 1.419 3.4508 1.419 3.4508 0.80177 3.4508 0.80177 solid #4C7FD9
+edge admin control 7 4.7664 1.6389 4.6151 1.6389 4.5074 1.6389 4.5074 1.6389 4.5074 1.6389 4.5074 0.79568 4.5074 0.79568 dashed #D79528
+stop

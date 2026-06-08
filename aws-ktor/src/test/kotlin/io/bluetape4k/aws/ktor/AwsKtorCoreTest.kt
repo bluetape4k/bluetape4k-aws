@@ -57,4 +57,21 @@ class AwsKtorCoreTest {
         client.get("/healthz") shouldHaveStatus HttpStatusCode.OK
         client.get("/readyz") shouldHaveStatus HttpStatusCode.OK
     }
+
+    @Test
+    fun `core plugin stores S3 Control customizers`() = testApplication {
+        val customizer = AwsKtorS3ControlAsyncClientCustomizer { builder ->
+            builder.overrideConfiguration { it.putHeader("x-test", "s3control") }
+        }
+
+        application {
+            install(AwsKtorCore) {
+                s3ControlAsyncClient(customizer)
+            }
+        }
+
+        startApplication()
+
+        application.awsKtorDefaults().s3ControlAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
+    }
 }
