@@ -281,7 +281,7 @@ AWS service client onto consumers that do not use that service.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k:bluetape4k-aws-kotlin:${bluetape4kVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:${bluetape4kVersion}")
 
     // Add only the services you need
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")

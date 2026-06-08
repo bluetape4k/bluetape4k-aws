@@ -276,7 +276,7 @@ AWS Kotlin SDK 서비스는 `compileOnly`로 선언되어 있으므로, 사용�
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k:bluetape4k-aws-kotlin:${bluetape4kVersion}")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:${bluetape4kVersion}")
 
     // 사용할 서비스만 선택적으로 추가
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")

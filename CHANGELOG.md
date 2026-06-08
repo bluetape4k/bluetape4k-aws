@@ -7,11 +7,70 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-08
+
+### Added
+
+- Added Ktor DynamoDB integration and emulator-backed Ktor DynamoDB examples
+  ([#179](https://github.com/bluetape4k/bluetape4k-aws/issues/179)).
+- Added optional Spring Boot DynamoDB Accelerator (DAX) client integration,
+  keeping emulator tests on the ordinary DynamoDB client path
+  ([#191](https://github.com/bluetape4k/bluetape4k-aws/issues/191)).
+- Added Spring Boot CloudWatch and CloudWatch Logs auto-configuration,
+  coroutine operation templates, and Micrometer snapshot publishing helpers
+  ([#194](https://github.com/bluetape4k/bluetape4k-aws/issues/194)).
+- Added Ktor CloudWatch and CloudWatch Logs plugins for explicit metric/log
+  publishing and buffered shutdown flushes
+  ([#201](https://github.com/bluetape4k/bluetape4k-aws/issues/201)).
+- Added EC2 Instance Metadata Service helpers for Spring Boot and Ktor without
+  using IMDS as a credential strategy
+  ([#196](https://github.com/bluetape4k/bluetape4k-aws/issues/196),
+  [#200](https://github.com/bluetape4k/bluetape4k-aws/issues/200)).
+- Added optional S3 Access Grants support for Spring Boot and Ktor through the
+  AWS SDK v2 S3 Control boundary
+  ([#227](https://github.com/bluetape4k/bluetape4k-aws/issues/227),
+  [#228](https://github.com/bluetape4k/bluetape4k-aws/issues/228)).
+- Added optional S3 Vectors support across the Java SDK facade, Spring Boot
+  auto-configuration, and Ktor plugin integration
+  ([#229](https://github.com/bluetape4k/bluetape4k-aws/issues/229)).
+- Added optional Micrometer observability adapters for SQS and S3 operation
+  timing without making metrics mandatory for every consumer
+  ([#230](https://github.com/bluetape4k/bluetape4k-aws/issues/230)).
+
 ### Changed
 
-- Opened the `0.4.0` development line after the `0.3.1` stable release.
-- Aligned local bluetape4k BOM refs to `bluetape4k-bom:1.11.0-SNAPSHOT`
-  and `bluetape4k-exposed-bom:1.11.0-SNAPSHOT`.
+- Opened the `0.4.0` development line after the `0.3.1` stable release and
+  aligned local bluetape4k BOM refs to `bluetape4k-bom:1.11.0-SNAPSHOT` and
+  `bluetape4k-exposed-bom:1.11.0-SNAPSHOT`.
+- Adopted shared `bluetape4k-ktor-*` modules in AWS Ktor integrations and
+  examples instead of carrying local Ktor helper duplicates
+  ([#244](https://github.com/bluetape4k/bluetape4k-aws/issues/244),
+  [#245](https://github.com/bluetape4k/bluetape4k-aws/issues/245)).
+- Moved AWS emulator-aware tests and examples to a Floci-first default while
+  preserving explicit LocalStack fallback runs for API coverage gaps
+  ([#239](https://github.com/bluetape4k/bluetape4k-aws/issues/239),
+  [#241](https://github.com/bluetape4k/bluetape4k-aws/issues/241)).
+- Refreshed the root README architecture, component, and service coverage
+  diagrams for the 0.4.0 service surface
+  ([#266](https://github.com/bluetape4k/bluetape4k-aws/pull/266),
+  [#291](https://github.com/bluetape4k/bluetape4k-aws/pull/291)).
+
+### Fixed
+
+- Closed final IMDS and DAX review gaps, including injected-operation
+  validation and DAX concurrency validation
+  ([#281](https://github.com/bluetape4k/bluetape4k-aws/issues/281),
+  [#282](https://github.com/bluetape4k/bluetape4k-aws/issues/282),
+  [#283](https://github.com/bluetape4k/bluetape4k-aws/issues/283)).
+- Hardened CI and Nightly snapshot dependency refresh behavior against Central
+  snapshot metadata and cache refresh failures
+  ([#251](https://github.com/bluetape4k/bluetape4k-aws/issues/251),
+  [#253](https://github.com/bluetape4k/bluetape4k-aws/issues/253),
+  [#255](https://github.com/bluetape4k/bluetape4k-aws/issues/255),
+  [#257](https://github.com/bluetape4k/bluetape4k-aws/issues/257),
+  [#259](https://github.com/bluetape4k/bluetape4k-aws/issues/259),
+  [#261](https://github.com/bluetape4k/bluetape4k-aws/issues/261),
+  [#263](https://github.com/bluetape4k/bluetape4k-aws/issues/263)).
 
 ## [0.3.1] - 2026-06-01
 
