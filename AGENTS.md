@@ -1,5 +1,9 @@
 # AGENTS.md - bluetape4k-aws
 
+This repository inherits the workspace guidance from `../AGENTS.md`.
+Read and follow the workspace root guide first. This file only adds
+AWS-specific layout, commands, domain rules, and local exceptions.
+
 AWS SDK v2 and AWS Kotlin SDK wrappers for bluetape4k. Supports coroutines,
 Spring Boot 4, and Ktor 3.
 
@@ -27,16 +31,10 @@ until the target SDK smoke matrix passes repeatedly. Java/Kotlin SDK wrapper
 tests default to Floci through their shared AWS test bases; LocalStack remains
 the explicit fallback for Floci API coverage gaps.
 
-Root README visual assets live under `docs/assets/` and should be shared by
-`README.md` and `README.ko.md` through the same relative path.
-
-For non-trivial GitHub issue work, add or update a durable lesson under
-`docs/lessons/YYYY-MM-DD-{slug}.md` before publishing the PR. Treat the lesson
-as part of the completion checklist, not an optional follow-up.
-
 Store reusable repository guidance, release rules, checklists, and other
 durable operating documents under `docs/`, not `.omx/`. Treat `.omx/` as
 transient runtime state and local artifacts only.
+
 For release work, check the workspace governance docs first:
 `../.github/docs/release/central-portal-release-runbook.md`,
 `../.github/docs/release/pre-release-checklist.md`, and
@@ -62,8 +60,9 @@ For release work, check the workspace governance docs first:
 
 ## AWS-Specific Rules
 
-- AWS service SDK dependencies are declared as `compileOnly` in both `bluetape4k-aws-java` and
-  `bluetape4k-aws-kotlin`. Consumers must add the runtime service dependencies they use.
+- AWS service SDK dependencies are declared as `compileOnly` in both
+  `bluetape4k-aws-java` and `bluetape4k-aws-kotlin`. Consumers must add the
+  runtime service dependencies they use.
 - In `bluetape4k-aws-java`, wrap `CompletableFuture` with `.await()`.
 - In `bluetape4k-aws-kotlin`, use native AWS Kotlin SDK suspend APIs directly.
 - Wrap blocking AWS calls in `withContext(Dispatchers.IO)`.
@@ -71,14 +70,8 @@ For release work, check the workspace governance docs first:
   Use `withXxxClient { }` for short-lived clients and explicit `close()` for
   application-scoped clients.
 
-## Cross-Repo Lesson Guards
+## Repo-Specific Guards
 
-- Before issue, PR, workflow, release, or module-registration work, query GNO
-  for this repo in both `bluetape4k-github` and `bluetape4k-docs`.
-- Before merging after CI turns green, re-read PR reviews and review threads;
-  unresolved or newer user review comments reopen the merge gate.
-- When adding, moving, renaming, or removing a module, update README locale
-  sets, CI path filters/jobs, Nightly or examples coverage, coverage artifacts,
-  and any BOM/catalog constraints in the same branch.
-- Keep Kover/Codecov as visibility unless an explicit policy decision requires
-  a hard gate. Run Testcontainers-backed AWS emulator checks sequentially.
+- Prefer local emulator/Testcontainers verification for S3, DynamoDB, SQS, SNS,
+  or other service integrations when available.
+- Run emulator-backed checks sequentially when Docker resources are shared.
