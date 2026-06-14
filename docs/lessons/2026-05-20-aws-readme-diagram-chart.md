@@ -9,7 +9,7 @@ table lacked a concise component map and service coverage chart.
 
 ## Decision
 
-Add two pastel README assets under `docs/assets/readme-diagrams/`:
+Add two pastel README assets under `docs/images/readme-diagrams/`:
 
 - `bluetape4k-aws-components-04.{svg,png}` for module/component composition.
 - `bluetape4k-aws-service-coverage-chart-05.{svg,png}` for service coverage by module.

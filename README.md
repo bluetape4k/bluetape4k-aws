@@ -40,11 +40,11 @@ applications to adopt a single framework or dependency stack.
 <!-- README_VISUAL_OVERVIEW:START -->
 ## Overview Diagram
 
-![Bluetape4k AWS overview diagram](docs/assets/readme-diagrams/root-readme-overview-01.png)
+![Bluetape4k AWS overview diagram](docs/images/readme-diagrams/root-readme-overview-01.png)
 
 ## Module Composition Chart
 
-![Bluetape4k AWS module composition chart](docs/assets/readme-charts/root-readme-module-chart-01.png)
+![Bluetape4k AWS module composition chart](docs/images/readme-diagrams/root-readme-module-chart-01.png)
 <!-- README_VISUAL_OVERVIEW:END -->
 
 ## Modules
@@ -67,11 +67,11 @@ applications to adopt a single framework or dependency stack.
 
 ### Component Map
 
-![AWS component map diagram](docs/assets/readme-diagrams/bluetape4k-aws-components-04.png)
+![AWS component map diagram](docs/images/readme-diagrams/bluetape4k-aws-components-04.png)
 
 ### Service Coverage Chart
 
-![AWS service coverage chart](docs/assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
+![AWS service coverage chart](docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
 
 ---
 
@@ -79,15 +79,15 @@ applications to adopt a single framework or dependency stack.
 
 ### Overview
 
-![Overview diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-01.png)
+![Overview diagram](docs/images/readme-diagrams/bluetape4k-aws-architecture-01.png)
 
 ### Three-Tier API (`bluetape4k-aws-java` module — Java SDK v2)
 
-![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-02.png)
+![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram](docs/images/readme-diagrams/bluetape4k-aws-architecture-02.png)
 
 ### Native Suspend (`bluetape4k-aws-kotlin` module — Kotlin SDK)
 
-![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-03.png)
+![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram](docs/images/readme-diagrams/bluetape4k-aws-architecture-03.png)
 
 ---
 
@@ -295,11 +295,11 @@ small.
 
 #### KMS Spring Boot Components
 
-![KMS Spring Boot components](docs/assets/readme-diagrams/bluetape4k-aws-kms-components-06.png)
+![KMS Spring Boot components](docs/images/readme-diagrams/bluetape4k-aws-kms-components-06.png)
 
 #### KMS Encrypt / Decrypt Flow
 
-![KMS encrypt and decrypt flow](docs/assets/readme-diagrams/bluetape4k-aws-kms-flow-07.png)
+![KMS encrypt and decrypt flow](docs/images/readme-diagrams/bluetape4k-aws-kms-flow-07.png)
 
 ---
 
@@ -355,9 +355,9 @@ bluetape4k:
         region: us-east-1
 ```
 
-![S3 Access Grants components](docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)
+![S3 Access Grants components](docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)
 
-![S3 Access Grants flow](docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)
+![S3 Access Grants flow](docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)
 
 ```kotlin
 import io.bluetape4k.aws.spring.s3.accessgrants.S3AccessGrantsOperations

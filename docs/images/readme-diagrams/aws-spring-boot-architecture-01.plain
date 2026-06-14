@@ -1,25 +1,11 @@
-graph 1 9.9501 8.6808
-node app 4.416 8.3512 2.1758 0.65917 "Spring Boot application\ncontrollers and services" rounded,filled box #5B8DEF #E8F3FF
-node props 4.416 6.9559 2.3842 0.65917 "AwsProperties\nregion, endpoint, credentials" rounded,filled box #58A978 #EAF7EF
-node auto 4.416 5.5607 2.4258 0.65917 "AwsAutoConfiguration\ncommon SDK client defaults" rounded,filled box #8CA0B3 #F4F7FA
-node s3 0.91604 2.9923 1.8321 0.65917 "S3AutoConfiguration\nS3Operations" rounded,filled box #D6A441 #FFF3D9
-node sqs 2.3883 1.972 2.1133 0.65917 "SqsAutoConfiguration\nSqsOperations, listeners" rounded,filled box #DC6B82 #FDECEF
-node dax 4.416 4.0126 2.6967 0.65917 "DynamoDB DAX\nDynamoDbDaxAutoConfiguration" rounded,filled box #2F9E96 #DDF8F6
-node ddb 5.2633 1.972 2.7487 0.65917 "DynamoDB auto-config\nenhanced client and repositories" rounded,filled box #45A7A1 #E9F7F6
-node cw 7.3327 4.0126 2.2592 0.65917 "CloudWatch auto-config\nmetrics, logs, Micrometer" rounded,filled box #4F83D1 #EAF2FF
-node kms 8.9716 2.9923 1.9571 0.65917 "KmsAutoConfiguration\nKmsOperations" rounded,filled box #8A72D6 #F1ECFF
-node aws 5.2633 0.45318 3.905 0.90635 "AWS services\nCloudWatch, Logs, DAX, LocalStack, Floci, RDS" rounded,filled cylinder #F47B36 #FFF0E3
-edge app props 4 4.416 8.017 4.416 8.017 4.416 7.4279 4.416 7.4279 solid #64748b
-edge props auto 4 4.416 6.6217 4.416 6.6217 4.416 6.0327 4.416 6.0327 solid #64748b
-edge auto s3 7 3.1968 5.6667 2.1867 5.6667 0.91604 5.6667 0.91604 5.6667 0.91604 5.6667 0.91604 3.4613 0.91604 3.4613 solid #64748b
-edge auto sqs 7 3.1988 5.4444 2.7966 5.4444 2.4499 5.4444 2.4499 5.4444 2.4499 5.4444 2.4499 2.4407 2.4499 2.4407 solid #64748b
-edge auto dax 4 4.416 5.2248 4.416 5.2248 4.416 4.4836 4.416 4.4836 "DAX enabled" 4.8171 4.7866 solid #2F9E96
-edge auto cw 7 5.6319 5.4444 6.4322 5.4444 7.3327 5.4444 7.3327 5.4444 7.3327 5.4444 7.3327 4.484 7.3327 4.484 "metrics/logs" 6.9785 4.7866 solid #4F83D1
-edge auto kms 7 5.631 5.6667 7.0501 5.6667 9.2062 5.6667 9.2062 5.6667 9.2062 5.6667 9.2062 3.4613 9.2062 3.4613 solid #64748b
-edge s3 aws 7 1.8359 3.0972 2.6356 3.0972 3.6669 3.0972 3.6669 3.0972 3.6669 3.0972 3.6669 1.0255 3.6669 1.0255 solid #64748b
-edge sqs aws 4 3.3778 1.6387 3.3778 1.6387 3.3778 1.014 3.3778 1.014 solid #64748b
-edge dax ddb 4 4.8266 3.6802 4.8266 3.6802 4.8266 2.44 4.8266 2.44 "DAX-backed client" 5.4525 2.9923 solid #2F9E96
-edge ddb aws 4 5.2633 1.6387 5.2633 1.6387 5.2633 1.0482 5.2633 1.0482 solid #64748b
-edge cw aws 4 6.8303 3.6777 6.8303 3.6777 6.8303 1.0243 6.8303 1.0243 publish 7.7824 1.972 solid #4F83D1
-edge kms aws 7 7.9916 2.8889 7.5064 2.8889 7.0231 2.8889 7.0231 2.8889 7.0231 2.8889 7.0231 1.0187 7.0231 1.0187 solid #64748b
+graph 1 9.62 2.3571
+node props 1.015 1.9077 2.03 0.89875 "AwsProperties\nglobal + service config\nendpoint/credentials" rounded,filled box #5B8DEF #E8F3FF
+node auto 3.6231 1.9077 1.6863 0.89875 "Auto-configuration\nconditional beans\nclient customizers" rounded,filled box #58A978 #EAF7EF
+node ops 6.2417 1.9077 2.0508 0.89875 "Operations/templates\nS3/SQS/SNS/KMS\nCloudWatch/DynamoDB" rounded,filled box #45A7A1 #E9F7F6
+node env 6.2417 0.44937 1.8946 0.89875 "Environment sources\nS3/Secrets/SSM\nrefresh optional" rounded,filled box #D6A441 #FFF3D9
+node aws 8.8185 1.1716 1.6029 0.89875 "AWS/emulator\nFloci/LocalStack\nreal AWS" rounded,filled box #F97316 #FFF7ED
+edge props auto 4 2.0346 1.9077 2.0346 1.9077 2.635 1.9077 2.635 1.9077 solid #3B82F6
+edge auto ops 4 4.4697 1.9077 4.4697 1.9077 5.0683 1.9077 5.0683 1.9077 solid #3B82F6
+edge ops aws 4 7.2712 1.5397 7.2712 1.5397 7.8708 1.5397 7.8708 1.5397 solid #3B82F6
+edge env aws 4 7.1939 0.81049 7.1939 0.81049 7.872 0.81049 7.872 0.81049 solid #3B82F6
 stop

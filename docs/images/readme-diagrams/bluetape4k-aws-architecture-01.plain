@@ -1,0 +1,20 @@
+graph 1 12.358 3.8154
+node app 0.79625 1.1716 1.5925 1.1383 "Kotlin applications\nSpring Boot 4\nKtor 3\nplain coroutines" rounded,filled box #5B8DEF #E8F3FF
+node spring 3.2065 1.9077 1.7279 0.89875 "aws-spring-boot\nauto-config\ntemplates/listeners" rounded,filled box #58A978 #EAF7EF
+node ktor 3.2065 0.44937 1.53 0.89875 "aws-ktor\nSigV4 plugin\nserver runtimes" rounded,filled box #8A72D6 #F1ECFF
+node java 5.8406 1.9077 2.0404 0.89875 "aws-java\nJava SDK v2\nfuture.await wrappers" rounded,filled box #45A7A1 #E9F7F6
+node exposed 5.8406 3.366 1.6342 0.89875 "aws-exposed\ndatabase registry\nRDS IAM + config" rounded,filled box #DC6B82 #FDECEF
+node kotlin 5.8406 0.44937 1.7488 0.89875 "aws-kotlin\nnative suspend SDK\nDSL helpers" rounded,filled box #D6A441 #FFF3D9
+node sdkdeps 8.5998 1.1855 1.9779 0.89875 "Consumer AWS SDKs\ncompileOnly services\nadd only what you use" rounded,filled box #F97316 #FFF7ED
+node aws 11.349 1.1855 2.0196 0.89875 "AWS or emulator\nS3, SQS, DynamoDB\nKMS, CloudWatch, STS" rounded,filled box #F97316 #FFF7ED
+node jdbc 8.5998 3.366 1.8217 0.89875 "JDBC stores\nPostgreSQL/H2\nSecrets/Parameter" rounded,filled box #64748B #F8FAFC
+edge app spring 4 1.5988 1.5995 1.5988 1.5995 2.195 1.5995 2.195 1.5995 solid #3B82F6
+edge app ktor 4 1.5988 0.75059 1.5988 0.75059 2.294 0.75059 2.294 0.75059 solid #3B82F6
+edge spring java 4 4.0763 1.9077 4.0763 1.9077 4.6742 1.9077 4.6742 1.9077 solid #3B82F6
+edge spring exposed 7 3.2056 2.3611 3.2056 2.7892 3.2056 3.366 3.2056 3.366 3.2056 3.366 4.8757 3.366 4.8757 3.366 solid #3B82F6
+edge ktor kotlin 4 3.9754 0.44937 3.9754 0.44937 4.8174 0.44937 4.8174 0.44937 solid #3B82F6
+edge java sdkdeps 4 6.8641 1.5466 6.8641 1.5466 7.4635 1.5466 7.4635 1.5466 solid #3B82F6
+edge exposed jdbc 4 6.661 3.366 6.661 3.366 7.544 3.366 7.544 3.366 solid #3B82F6
+edge kotlin sdkdeps 4 6.7212 0.81743 6.7212 0.81743 7.4658 0.81743 7.4658 0.81743 solid #3B82F6
+edge sdkdeps aws 4 9.5922 1.1855 9.5922 1.1855 10.193 1.1855 10.193 1.1855 solid #3B82F6
+stop

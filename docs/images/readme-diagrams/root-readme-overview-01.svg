@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="620" viewBox="0 0 1500 620" role="img" aria-label="Bluetape4k AWS overview">
+<metadata>{&quot;bestPractice&quot;: &quot;module-overview-projects&quot;, &quot;bestPracticesCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/catalog.yaml&quot;, &quot;evidence&quot;: [&quot;wiki best-practices catalog&quot;, &quot;repo README image references&quot;, &quot;current source package names&quot;], &quot;generator&quot;: &quot;tools/generate-root-readme-diagrams.py&quot;, &quot;graphvizEvidence&quot;: [&quot;root-readme-overview-01.dot&quot;, &quot;root-readme-overview-01.plain&quot;, &quot;root-readme-overview-01-graphviz.svg&quot;, &quot;root-readme-overview-01-graphviz.png&quot;], &quot;intent&quot;: &quot;Explain the repository boundary from app entrypoints to SDK wrappers and runtime targets.&quot;, &quot;rejectedPatternsCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/rejected/catalog.yaml&quot;, &quot;rejectedPatternsGuarded&quot;: [&quot;unclear-diagram-purpose&quot;, &quot;surface-redraw-without-source-model&quot;, &quot;text-overflow-or-bad-centering&quot;], &quot;sharedGenerator&quot;: &quot;/Users/debop/.codex/skills/bluetape4k-diagram/references/shared_diagram_generator.py&quot;, &quot;sources&quot;: [&quot;README.md&quot;, &quot;README.ko.md&quot;, &quot;settings.gradle.kts&quot;, &quot;AGENTS.md&quot;]}</metadata>
+<defs>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
+  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
+  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
+  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
+  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:14px}
+  .label{font-size:12px;fill:#344456}
+  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:10px}
+  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
+  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
+  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
+  .activation{stroke-width:1.4}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
+  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
+  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
+</style>
+
+<rect x="26" y="26" width="1448" height="568" rx="14" class="frame"/>
+<text class="title" x="54" y="72">Bluetape4k AWS overview</text>
+<text class="subtitle" x="56" y="104">Kotlin applications choose framework adapters while SDK foundations keep AWS service access coroutine-friendly.</text>
+<rect x="54.0" y="150" width="444.0" height="310" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="76.0" y="178">Application choices</text>
+<text class="tiny" x="76.0" y="202" fill="#2F6DE0">Pick a managed framework adapter or direct SDK layer</text>
+<rect x="76.0" y="228" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#5B8DEF"/>
+<text class="bar-label" x="92.0" y="252">Kotlin applications</text>
+<text class="tiny" x="92.0" y="272" fill="#2F6DE0">Spring Boot 4 / Ktor 3</text>
+<rect x="76.0" y="302" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#58A978"/>
+<text class="bar-label" x="92.0" y="326">aws-spring-boot</text>
+<text class="tiny" x="92.0" y="346" fill="#2F8B57">auto-config / templates/listeners</text>
+<rect x="76.0" y="376" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#8A72D6"/>
+<text class="bar-label" x="92.0" y="400">aws-ktor</text>
+<text class="tiny" x="92.0" y="420" fill="#7255C7">SigV4 plugin / server runtimes</text>
+<rect x="528.0" y="150" width="444.0" height="310" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="chip" x="550.0" y="178">Foundation modules</text>
+<text class="tiny" x="550.0" y="202" fill="#168E86">Coroutine-friendly SDK wrappers and Exposed database support</text>
+<rect x="550.0" y="228" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#45A7A1"/>
+<text class="bar-label" x="566.0" y="252">aws-java</text>
+<text class="tiny" x="566.0" y="272" fill="#168E86">Java SDK v2 / future.await wrappers</text>
+<rect x="550.0" y="302" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#D6A441"/>
+<text class="bar-label" x="566.0" y="326">aws-kotlin</text>
+<text class="tiny" x="566.0" y="346" fill="#B98518">native suspend SDK / DSL helpers</text>
+<rect x="550.0" y="376" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#DC6B82"/>
+<text class="bar-label" x="566.0" y="400">aws-exposed</text>
+<text class="tiny" x="566.0" y="420" fill="#C74E68">database registry / RDS IAM + config</text>
+<rect x="1002.0" y="150" width="444.0" height="310" rx="12" fill="#FFF7ED" stroke="#F97316"/>
+<text class="chip" x="1024.0" y="178">Runtime targets</text>
+<text class="tiny" x="1024.0" y="202" fill="#EA580C">AWS services, emulators, and JDBC stores stay external</text>
+<rect x="1024.0" y="228" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#F97316"/>
+<text class="bar-label" x="1040.0" y="252">AWS or emulator</text>
+<text class="tiny" x="1040.0" y="272" fill="#EA580C">S3, SQS, DynamoDB / KMS, CloudWatch, STS</text>
+<rect x="1024.0" y="302" width="398.0" height="58" rx="8" fill="#FFFFFF" stroke="#64748B"/>
+<text class="bar-label" x="1040.0" y="326">JDBC stores</text>
+<text class="tiny" x="1040.0" y="346" fill="#475569">PostgreSQL/H2 / Secrets/Parameter</text>
+<rect class="footer" x="54" y="526" width="1392" height="54" rx="8"/>
+<text class="footer-title" x="74" y="549" dominant-baseline="middle">Reader cue</text>
+<text class="footer-detail" x="74" y="569" dominant-baseline="middle">Use framework modules for managed apps; use aws-java/aws-kotlin directly for library-style clients.</text>
+</svg>

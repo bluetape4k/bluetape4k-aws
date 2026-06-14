@@ -1,12 +1,10 @@
-graph 1 4.9553 5.4464
-node client 2.4699 5.1168 1.655 0.65917 "HTTP client / test\nCRUD route calls" rounded,filled box #5B8DEF #E8F3FF
-node routes 2.4699 3.6434 1.8113 0.89875 "Ktor order routes\nPOST, GET, DELETE\nscan all orders" rounded,filled box #58A978 #EAF7EF
-node plugin 1.1087 2.0502 2.2175 0.89875 "DynamoDbKtorPlugin\nclient config\nauto-create orders table" rounded,filled box #D6A441 #FFF3D9
-node repo 3.831 2.0502 2.2487 0.89875 "Coroutine repository\nOrder mapper\nDynamoDB enhanced calls" rounded,filled box #8A72D6 #F1ECFF
-node ddb 2.4699 0.45318 1.8425 0.90635 "DynamoDB endpoint\nLocalStack or AWS" rounded,filled cylinder #F47B36 #FFF0E3
-edge client routes 4 2.4699 4.7824 2.4699 4.7824 2.4699 4.235 2.4699 4.235 solid #64748b
-edge routes plugin 4 1.8909 3.1911 1.8909 3.1911 1.8909 2.6393 1.8909 2.6393 solid #64748b
-edge routes repo 4 3.041 3.1911 3.041 3.1911 3.041 2.6393 3.041 2.6393 solid #64748b
-edge plugin ddb 4 1.8831 1.5968 1.8831 1.5968 1.8831 1.0378 1.8831 1.0378 solid #64748b
-edge repo ddb 4 3.0489 1.5968 3.0489 1.5968 3.0489 1.0378 3.0489 1.0378 solid #64748b
+graph 1 8.9846 1.5515
+node route 3.3471 1.1022 1.53 0.89875 "Ktor routes\nCRUD endpoints\nrepository flow" rounded,filled box #5B8DEF #E8F3FF
+node module 5.7729 1.1022 1.8217 0.89875 "DynamoDbKtorPlugin\nserver repository\ncoroutine handlers" rounded,filled box #58A978 #EAF7EF
+node service 8.2092 0.44937 1.5508 0.89875 "DynamoDB table\nFloci emulator\nlocal verification" rounded,filled box #F97316 #FFF7ED
+node tests 0.91604 0.44937 1.8321 0.89875 "Repository tests\ncompile + integration\nREADME scenario" rounded,filled box #45A7A1 #E9F7F6
+edge route module 4 4.1146 1.1022 4.1146 1.1022 4.7155 1.1022 4.7155 1.1022 solid #3B82F6
+edge module service 4 6.687 0.77576 6.687 0.77576 7.2876 0.77576 7.2876 0.77576 solid #3B82F6
+edge tests route 4 1.8351 0.77576 1.8351 0.77576 2.4354 0.77576 2.4354 0.77576 solid #3B82F6
+edge tests service 4 1.836 0.32639 1.836 0.32639 7.2889 0.32639 7.2889 0.32639 solid #3B82F6
 stop

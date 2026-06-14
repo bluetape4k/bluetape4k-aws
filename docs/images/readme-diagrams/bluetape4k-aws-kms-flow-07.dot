@@ -1,0 +1,14 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  field [label="Plain field\nString value\ndomain object", fillcolor="#E8F3FF", color="#5B8DEF"]
+  codec [label="KmsEncryptedFieldCodec\nserialize\nattach context", fillcolor="#EAF7EF", color="#58A978"]
+  encrypt [label="KmsOperations.encrypt\nsuspend call\ndata-key optional", fillcolor="#E9F7F6", color="#45A7A1"]
+  store [label="Stored ciphertext\nbase64 bytes\nsafe diagnostics", fillcolor="#FFF3D9", color="#D6A441"]
+  decrypt [label="KmsOperations.decrypt\nsame context\nrestore field", fillcolor="#F1ECFF", color="#8A72D6"]
+  field -> codec
+  codec -> encrypt
+  encrypt -> store
+  store -> decrypt
+}

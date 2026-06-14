@@ -1,11 +1,11 @@
-graph 1 2.655 6.0736
-node caller 1.3275 5.744 2.4258 0.65917 "Caller\nsync, async, or suspend API" rounded,filled box #5B8DEF #E8F3FF
-node builder 1.3275 4.3904 2.655 0.65917 "Request builder DSL\ntyped AWS model construction" rounded,filled box #D6A441 #FFF3D9
-node client 1.3275 3.0368 1.9467 0.65917 "AWS SDK v2 client\nservice operation call" rounded,filled box #8CA0B3 #F4F7FA
-node future 1.3275 1.6832 2.28 0.65917 "CompletableFuture result\nasync response boundary" rounded,filled box #58A978 #EAF7EF
-node suspend 1.3275 0.32958 2.2383 0.65917 "Coroutine wrapper\nawait(), Flow, suspend API" rounded,filled box #45A7A1 #E9F7F6
-edge caller builder 4 1.3275 5.4094 1.3275 5.4094 1.3275 4.8616 1.3275 4.8616 solid #64748b
-edge builder client 4 1.3275 4.0558 1.3275 4.0558 1.3275 3.5079 1.3275 3.5079 solid #64748b
-edge client future 4 1.3275 2.7022 1.3275 2.7022 1.3275 2.1543 1.3275 2.1543 solid #64748b
-edge future suspend 4 1.3275 1.3486 1.3275 1.3486 1.3275 0.80072 1.3275 0.80072 solid #64748b
+graph 1 10.785 0.89875
+node call 0.83271 0.44937 1.6654 0.89875 "Suspend extension\nservice helper\nKotlin caller" rounded,filled box #5B8DEF #E8F3FF
+node request 3.1596 0.44937 1.4883 0.89875 "Request DSL\ntyped builder\noverride config" rounded,filled box #58A978 #EAF7EF
+node async 5.5177 0.44937 1.7279 0.89875 "Async SDK call\nCompletableFuture\nnon-blocking" rounded,filled box #45A7A1 #E9F7F6
+node await 7.954 0.44937 1.6446 0.89875 "await()\nresume coroutine\nmap result" rounded,filled box #D6A441 #FFF3D9
+node result 10.156 0.44937 1.2592 0.89875 "Typed result\nmodel/Flow\ncaller-owned" rounded,filled box #8A72D6 #F1ECFF
+edge call request 4 1.6662 0.44937 1.6662 0.44937 2.2673 0.44937 2.2673 0.44937 solid #3B82F6
+edge request async 4 3.9057 0.44937 3.9057 0.44937 4.5068 0.44937 4.5068 0.44937 solid #3B82F6
+edge async await 4 6.3835 0.44937 6.3835 0.44937 6.9857 0.44937 6.9857 0.44937 solid #3B82F6
+edge await result 4 8.7801 0.44937 8.7801 0.44937 9.3827 0.44937 9.3827 0.44937 solid #3B82F6
 stop

@@ -1,13 +1,11 @@
-graph 1 2.9571 7.6668
-node source 1.4785 7.2174 2.5612 0.89875 "Configured source\nstatic, Secrets Manager\nParameter Store, or adapter" rounded,filled box #5B8DEF #E8F3FF
-node props 1.4785 5.744 2.9571 0.65917 "AwsDatabaseConnectionProperties\nURL, driver, username, pool" rounded,filled box #58A978 #EAF7EF
-node secret 1.4785 4.3904 1.8425 0.65917 "AwsSecretString\nredacted diagnostics" rounded,filled box #8A72D6 #F1ECFF
-node auth 1.4785 3.0368 2.4675 0.65917 "Authentication mode\nstatic password or RDS IAM" rounded,filled box #DC6B82 #FDECEF
-node hikari 1.4785 1.6832 1.7279 0.65917 "HikariDataSource\nphysical JDBC pool" rounded,filled box #D6A441 #FFF3D9
-node handle 1.4785 0.32958 2.1758 0.65917 "Exposed Database handle\nregistered by name" rounded,filled box #45A7A1 #E9F7F6
-edge source props 4 1.4785 6.7633 1.4785 6.7633 1.4785 6.213 1.4785 6.213 solid #64748b
-edge props secret 4 1.4785 5.4094 1.4785 5.4094 1.4785 4.8616 1.4785 4.8616 solid #64748b
-edge secret auth 4 1.4785 4.0558 1.4785 4.0558 1.4785 3.5079 1.4785 3.5079 solid #64748b
-edge auth hikari 4 1.4785 2.7022 1.4785 2.7022 1.4785 2.1543 1.4785 2.1543 solid #64748b
-edge hikari handle 4 1.4785 1.3486 1.4785 1.3486 1.4785 0.80072 1.4785 0.80072 solid #64748b
+graph 1 11.535 0.65917
+node raw 1.0046 0.32958 2.0092 0.65917 "Raw settings\nlocal or AWS-resolved" rounded,filled box #5B8DEF #E8F3FF
+node secret 3.6804 0.32958 1.8425 0.65917 "AwsSecretString\nredacted diagnostics" rounded,filled box #58A978 #EAF7EF
+node auth 6.1792 0.32958 1.655 0.65917 "RDS IAM token\noptional password" rounded,filled box #8A72D6 #F1ECFF
+node factory 8.5269 0.32958 1.5404 0.65917 "Factory create\nHikari + Exposed" rounded,filled box #45A7A1 #E9F7F6
+node handle 10.791 0.32958 1.4883 0.65917 "Database handle\nregistry stores" rounded,filled box #F97316 #FFF7ED
+edge raw secret 4 2.0124 0.32958 2.0124 0.32958 2.6109 0.32958 2.6109 0.32958 solid #3B82F6
+edge secret auth 4 4.6073 0.32958 4.6073 0.32958 5.2066 0.32958 5.2066 0.32958 solid #3B82F6
+edge auth factory 4 7.0135 0.32958 7.0135 0.32958 7.6082 0.32958 7.6082 0.32958 solid #3B82F6
+edge factory handle 4 9.2998 0.32958 9.2998 0.32958 9.8989 0.32958 9.8989 0.32958 solid #3B82F6
 stop

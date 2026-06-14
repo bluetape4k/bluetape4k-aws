@@ -1,16 +1,16 @@
-graph 1 6.6116 6.3208
-node app 3.4039 5.9912 1.9467 0.65917 "Ktor application\nobject route handlers" rounded,filled box #5B8DEF #E8F3FF
-node client 3.4039 4.6376 1.53 0.65917 "S3KtorClient\nadvanced helper" rounded,filled box #D6A441 #FFF3D9
-node detect 1.015 3.284 2.03 0.65917 "Content type detector\nmetadata inference" rounded,filled box #45A7A1 #E9F7F6
-node headers 3.4039 3.284 1.78 0.65917 "Encryption headers\nserver-side options" rounded,filled box #DC6B82 #FDECEF
-node envelope 5.6956 3.284 1.8321 0.65917 "Envelope encryption\nclient-side data key" rounded,filled box #8A72D6 #F1ECFF
-node sigv4 4.5428 1.9304 1.9467 0.65917 "AwsSigV4Plugin\nsigned REST requests" rounded,filled box #58A978 #EAF7EF
-node s3 4.5428 0.45318 2.5404 0.90635 "AWS S3 / Floci / LocalStack\ncompatible endpoint" rounded,filled cylinder #F47B36 #FFF0E3
-edge app client 4 3.4039 5.6566 3.4039 5.6566 3.4039 5.1087 3.4039 5.1087 solid #64748b
-edge client detect 7 2.6349 4.6389 1.9365 4.6389 1.015 4.6389 1.015 4.6389 1.015 4.6389 1.015 3.7546 1.015 3.7546 solid #64748b
-edge client headers 4 3.4039 4.303 3.4039 4.303 3.4039 3.7551 3.4039 3.7551 solid #64748b
-edge client envelope 7 4.1734 4.6389 4.8391 4.6389 5.6956 4.6389 5.6956 4.6389 5.6956 4.6389 5.6956 3.7546 5.6956 3.7546 solid #64748b
-edge headers sigv4 4 3.9317 2.9494 3.9317 2.9494 3.9317 2.4015 3.9317 2.4015 solid #64748b
-edge envelope sigv4 4 5.1478 2.9494 5.1478 2.9494 5.1478 2.4015 5.1478 2.4015 solid #64748b
-edge sigv4 s3 4 4.5428 1.5952 4.5428 1.5952 4.5428 1.0459 4.5428 1.0459 solid #64748b
+graph 1 9.3387 3.0793
+node metrics 1.0723 0.44937 2.1446 0.89875 "MicrometerS3KtorClient\nwraps delegate\noperation timers" rounded,filled box #45A7A1 #E9F7F6
+node client 3.7585 1.9077 1.4779 0.89875 "S3KtorClient\nobject API\npresigned URLs" rounded,filled box #5B8DEF #E8F3FF
+node encryption 1.0723 1.9077 1.905 0.89875 "Client-side encryption\nAES-GCM envelope\nDataKeyProvider" rounded,filled box #8A72D6 #F1ECFF
+node meter 3.7585 0.44937 1.7279 0.89875 "MeterRegistry\nlow-cardinality tags\ncaller supplied" rounded,filled box #64748B #F8FAFC
+node sigv4 6.1687 2.6299 1.5196 0.89875 "S3 SigV4 policy\nunsigned payload\nS3 path rules" rounded,filled box #58A978 #EAF7EF
+node headers 6.1687 1.1716 1.5925 0.89875 "SSE headers\nSSE-S3/SSE-KMS\nDSSE/SSE-C" rounded,filled box #D6A441 #FFF3D9
+node s3 8.5269 1.8938 1.6238 0.89875 "S3 endpoint\nAWS or emulator\nobject store" rounded,filled box #F97316 #FFF7ED
+edge metrics client 7 2.0887 0.90337 2.0887 1.2813 2.0887 1.7579 2.0887 1.7579 2.0887 1.7579 2.8744 1.7579 2.8744 1.7579 solid #3B82F6
+edge metrics meter 4 2.1494 0.44937 2.1494 0.44937 2.7497 0.44937 2.7497 0.44937 solid #3B82F6
+edge client sigv4 4 4.5014 2.2688 4.5014 2.2688 5.2614 2.2688 5.2614 2.2688 solid #3B82F6
+edge client headers 4 4.5014 1.5397 4.5014 1.5397 5.2236 1.5397 5.2236 1.5397 solid #3B82F6
+edge encryption client 4 2.0307 2.0575 2.0307 2.0575 2.8739 2.0575 2.8739 2.0575 solid #3B82F6
+edge sigv4 s3 4 6.9344 2.2619 6.9344 2.2619 7.5662 2.2619 7.5662 2.2619 solid #3B82F6
+edge headers s3 4 6.9671 1.5327 6.9671 1.5327 7.5672 1.5327 7.5672 1.5327 solid #3B82F6
 stop

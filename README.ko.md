@@ -32,11 +32,11 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 <!-- README_VISUAL_OVERVIEW:START -->
 ## Overview Diagram
 
-![Bluetape4k AWS overview diagram](docs/assets/readme-diagrams/root-readme-overview-01.png)
+![Bluetape4k AWS overview diagram](docs/images/readme-diagrams/root-readme-overview-01.png)
 
 ## Module Composition Chart
 
-![Bluetape4k AWS module composition chart](docs/assets/readme-charts/root-readme-module-chart-01.png)
+![Bluetape4k AWS module composition chart](docs/images/readme-diagrams/root-readme-module-chart-01.png)
 <!-- README_VISUAL_OVERVIEW:END -->
 
 ## 모듈
@@ -59,11 +59,11 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ### 구성요소 맵
 
-![AWS component map diagram](docs/assets/readme-diagrams/bluetape4k-aws-components-04.png)
+![AWS component map diagram](docs/images/readme-diagrams/bluetape4k-aws-components-04.png)
 
 ### 서비스 커버리지 차트
 
-![AWS service coverage chart](docs/assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
+![AWS service coverage chart](docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
 
 ---
 
@@ -71,15 +71,15 @@ Ktor 3 HTTP 통합을 하나의 선택지로 강제하지 않고 함께 제공�
 
 ### 전체 구조
 
-![aws Architecture diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-01.png)
+![aws Architecture diagram](docs/images/readme-diagrams/bluetape4k-aws-architecture-01.png)
 
 ### 3단계 API (`bluetape4k-aws-java` 모듈 — Java SDK v2)
 
-![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-02.png)
+![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram](docs/images/readme-diagrams/bluetape4k-aws-architecture-02.png)
 
 ### 네이티브 Suspend (`bluetape4k-aws-kotlin` 모듈 — Kotlin SDK)
 
-![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram](docs/assets/readme-diagrams/bluetape4k-aws-architecture-03.png)
+![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram](docs/images/readme-diagrams/bluetape4k-aws-architecture-03.png)
 
 ---
 
@@ -287,11 +287,11 @@ token, credential, 설정 secret처럼 짧은 값은 `KmsOperations.encrypt`를 
 
 #### KMS Spring Boot 구성요소
 
-![KMS Spring Boot components](docs/assets/readme-diagrams/bluetape4k-aws-kms-components-06.png)
+![KMS Spring Boot components](docs/images/readme-diagrams/bluetape4k-aws-kms-components-06.png)
 
 #### KMS 암호화 / 복호화 흐름
 
-![KMS encrypt and decrypt flow](docs/assets/readme-diagrams/bluetape4k-aws-kms-flow-07.png)
+![KMS encrypt and decrypt flow](docs/images/readme-diagrams/bluetape4k-aws-kms-flow-07.png)
 
 ---
 
@@ -346,9 +346,9 @@ bluetape4k:
         region: us-east-1
 ```
 
-![S3 Access Grants components](docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)
+![S3 Access Grants components](docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)
 
-![S3 Access Grants flow](docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)
+![S3 Access Grants flow](docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)
 
 ```kotlin
 import io.bluetape4k.aws.spring.s3.accessgrants.S3AccessGrantsOperations

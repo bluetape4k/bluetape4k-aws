@@ -1,14 +1,10 @@
-graph 1 5.1758 6.8
-node client 2.4994 6.4704 2.1967 0.65917 "HTTP client / test\nobject and config routes" rounded,filled box #5B8DEF #E8F3FF
-node routes 1.0827 4.997 2.1654 0.89875 "Ktor S3 routes\nupload, download, stream\nlist, delete, presign" rounded,filled box #58A978 #EAF7EF
-node advanced 3.916 4.997 2.5196 0.89875 "Advanced routes\ncontent-type detection\nconfig data, encryption demo" rounded,filled box #D6A441 #FFF3D9
-node helpers 2.4994 3.4038 1.5717 0.89875 "S3KtorExamples\nlocal client\nscenario helpers" rounded,filled box #8A72D6 #F1ECFF
-node s3client 2.4994 1.9304 1.5821 0.65917 "S3KtorClient\nSigV4 REST calls" rounded,filled box #DC6B82 #FDECEF
-node s3 2.4994 0.45318 2.3321 0.90635 "S3-compatible endpoint\nAWS S3, LocalStack, Floci" rounded,filled cylinder #F47B36 #FFF0E3
-edge client routes 4 1.7832 6.136 1.7832 6.136 1.7832 5.5886 1.7832 5.5886 solid #64748b
-edge client advanced 4 3.127 6.136 3.127 6.136 3.127 5.5886 3.127 5.5886 solid #64748b
-edge routes helpers 4 1.9395 4.5447 1.9395 4.5447 1.9395 3.9929 1.9395 3.9929 solid #64748b
-edge advanced helpers 4 2.9707 4.5447 2.9707 4.5447 2.9707 3.9929 2.9707 3.9929 solid #64748b
-edge helpers s3client 4 2.4994 2.9497 2.4994 2.9497 2.4994 2.3994 2.4994 2.3994 solid #64748b
-edge s3client s3 4 2.4994 1.5952 2.4994 1.5952 2.4994 1.0459 2.4994 1.0459 solid #64748b
+graph 1 9.1929 1.5515
+node route 3.4565 1.1022 1.7488 0.89875 "Ktor object routes\nupload/download\npresigned URL" rounded,filled box #5B8DEF #E8F3FF
+node module 5.8875 1.1022 1.6133 0.89875 "S3KtorClient\nobject API\nencryption option" rounded,filled box #58A978 #EAF7EF
+node service 8.3185 0.44937 1.7488 0.89875 "S3 object store\nLocalStack/Floci\nbucket verification" rounded,filled box #F97316 #FFF7ED
+node tests 0.91604 0.44937 1.8321 0.89875 "Object route tests\ncompile + integration\nREADME scenario" rounded,filled box #45A7A1 #E9F7F6
+edge route module 4 4.3341 1.1022 4.3341 1.1022 4.9339 1.1022 4.9339 1.1022 solid #3B82F6
+edge module service 4 6.697 0.77576 6.697 0.77576 7.2953 0.77576 7.2953 0.77576 solid #3B82F6
+edge tests route 4 1.8368 0.77576 1.8368 0.77576 2.435 0.77576 2.435 0.77576 solid #3B82F6
+edge tests service 4 1.8386 0.32639 1.8386 0.32639 7.3 0.32639 7.3 0.32639 solid #3B82F6
 stop

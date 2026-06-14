@@ -1,0 +1,23 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  app [label="Kotlin applications\nSpring Boot 4\nKtor 3\nplain coroutines", fillcolor="#E8F3FF", color="#5B8DEF"]
+  spring [label="aws-spring-boot\nauto-config\ntemplates/listeners", fillcolor="#EAF7EF", color="#58A978"]
+  ktor [label="aws-ktor\nSigV4 plugin\nserver runtimes", fillcolor="#F1ECFF", color="#8A72D6"]
+  java [label="aws-java\nJava SDK v2\nfuture.await wrappers", fillcolor="#E9F7F6", color="#45A7A1"]
+  exposed [label="aws-exposed\ndatabase registry\nRDS IAM + config", fillcolor="#FDECEF", color="#DC6B82"]
+  kotlin [label="aws-kotlin\nnative suspend SDK\nDSL helpers", fillcolor="#FFF3D9", color="#D6A441"]
+  sdkdeps [label="Consumer AWS SDKs\ncompileOnly services\nadd only what you use", fillcolor="#FFF7ED", color="#F97316"]
+  aws [label="AWS or emulator\nS3, SQS, DynamoDB\nKMS, CloudWatch, STS", fillcolor="#FFF7ED", color="#F97316"]
+  jdbc [label="JDBC stores\nPostgreSQL/H2\nSecrets/Parameter", fillcolor="#F8FAFC", color="#64748B"]
+  app -> spring
+  app -> ktor
+  spring -> java
+  spring -> exposed
+  ktor -> kotlin
+  java -> sdkdeps
+  kotlin -> sdkdeps
+  sdkdeps -> aws
+  exposed -> jdbc
+}

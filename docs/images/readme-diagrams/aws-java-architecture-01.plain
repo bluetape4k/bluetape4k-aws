@@ -1,18 +1,9 @@
-graph 1 9.4935 5.4464
-node app 4.6452 5.1168 3.1029 0.65917 "Application code\nblocking, async, or suspend call sites" rounded,filled box #5B8DEF #E8F3FF
-node factories 0.97854 3.6434 1.9571 0.89875 "Client factories\nservice-specific sync\nand async builders" rounded,filled box #D6A441 #FFF3D9
-node dsl 3.3952 3.6434 1.9154 0.89875 "Request DSL helpers\nmodel builders\ntyped shortcuts" rounded,filled box #58A978 #EAF7EF
-node coroutine 5.9091 3.6434 2.1342 0.89875 "Coroutine adapters\nCompletableFuture.await\nFlow bridges" rounded,filled box #8A72D6 #F1ECFF
-node batch 8.4785 3.6434 2.03 0.89875 "DynamoDB helpers\nbatch and repository\nEnhanced Async tables" rounded,filled box #DC6B82 #FDECEF
-node sdk 4.6452 2.0502 2.6029 0.89875 "AWS Java SDK v2 clients\nS3, SQS, SNS, DynamoDB\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #8CA0B3 #F4F7FA
-node aws 4.6452 0.45318 1.9779 0.90635 "AWS services\nor LocalStack / Floci" rounded,filled cylinder #F47B36 #FFF0E3
-edge app factories 7 3.0902 5.1111 2.0909 5.1111 0.97854 5.1111 0.97854 5.1111 0.97854 5.1111 0.97854 4.2314 0.97854 4.2314 solid #64748b
-edge app dsl 4 3.7233 4.7824 3.7233 4.7824 3.7233 4.235 3.7233 4.235 solid #64748b
-edge app coroutine 4 5.5193 4.7824 5.5193 4.7824 5.5193 4.235 5.5193 4.235 solid #64748b
-edge app batch 7 6.1988 5.1111 7.2614 5.1111 8.4785 5.1111 8.4785 5.1111 8.4785 5.1111 8.4785 4.2314 8.4785 4.2314 solid #64748b
-edge factories sdk 7 0.97854 3.1884 0.97854 2.7192 0.97854 2.0556 0.97854 2.0556 0.97854 2.0556 3.2013 2.0556 3.2013 2.0556 solid #64748b
-edge dsl sdk 4 3.8483 3.1911 3.8483 3.1911 3.8483 2.6393 3.8483 2.6393 solid #64748b
-edge coroutine sdk 4 5.3943 3.1911 5.3943 3.1911 5.3943 2.6393 5.3943 2.6393 solid #64748b
-edge batch sdk 7 8.4785 3.1884 8.4785 2.7192 8.4785 2.0556 8.4785 2.0556 8.4785 2.0556 6.084 2.0556 6.084 2.0556 solid #64748b
-edge sdk aws 4 4.6452 1.5968 4.6452 1.5968 4.6452 1.0489 4.6452 1.0489 solid #64748b
+graph 1 9.0679 0.89875
+node sync 0.73896 0.44937 1.4779 0.89875 "Sync support\nclient factories\nrequest DSLs" rounded,filled box #5B8DEF #E8F3FF
+node async 3.0919 0.44937 1.7279 0.89875 "Async support\nCompletableFuture\nSDK async clients" rounded,filled box #58A978 #EAF7EF
+node coroutines 5.5229 0.44937 1.6342 0.89875 "Coroutine facade\nawait wrappers\nFlow helpers" rounded,filled box #45A7A1 #E9F7F6
+node services 8.079 0.44937 1.9779 0.89875 "Service packages\nDynamoDB/S3/SQS\nKMS/CloudWatch/STS" rounded,filled box #F97316 #FFF7ED
+edge sync async 4 1.4834 0.44937 1.4834 0.44937 2.0829 0.44937 2.0829 0.44937 solid #3B82F6
+edge async coroutines 4 3.9627 0.44937 3.9627 0.44937 4.5609 0.44937 4.5609 0.44937 solid #3B82F6
+edge coroutines services 4 6.3457 0.44937 6.3457 0.44937 6.9414 0.44937 6.9414 0.44937 solid #3B82F6
 stop

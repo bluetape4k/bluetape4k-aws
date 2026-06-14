@@ -1,16 +1,11 @@
-graph 1 7.063 7.6744
-node adapter 3.3206 7.3448 2.6862 0.65917 "Spring Boot or Ktor adapter\nresolves final database settings" rounded,filled box #5B8DEF #E8F3FF
-node props 1.4317 5.9912 2.8633 0.65917 "AwsDatabaseProperties\ndefault + named database configs" rounded,filled box #58A978 #EAF7EF
-node resolver 5.2094 5.9912 3.7071 0.65917 "AwsDatabaseSettingsResolver\nSecrets Manager / Parameter Store bridge" rounded,filled box #8A72D6 #F1ECFF
-node factory 3.3206 4.6376 2.9779 0.65917 "AwsExposedDatabaseFactory\nresolve, validate, create Hikari pool" rounded,filled box #D6A441 #FFF3D9
-node registry 3.3206 3.284 2.5612 0.65917 "AwsExposedDatabaseRegistry\ndefault and named handles" rounded,filled box #45A7A1 #E9F7F6
-node repo 3.3206 1.9304 2.4362 0.65917 "Repositories / Exposed DSL\ntransaction(handle.database)" rounded,filled box #8CA0B3 #F4F7FA
-node db 3.3206 0.45318 2.3842 0.90635 "JDBC database\nPostgreSQL, RDS, H2 tests" rounded,filled cylinder #F47B36 #FFF0E3
-edge adapter props 4 2.4204 7.0102 2.4204 7.0102 2.4204 6.4624 2.4204 6.4624 solid #64748b
-edge adapter resolver 4 4.0098 7.0102 4.0098 7.0102 4.0098 6.4624 4.0098 6.4624 solid #64748b
-edge props factory 4 2.3475 5.6566 2.3475 5.6566 2.3475 5.1087 2.3475 5.1087 solid #64748b
-edge resolver factory 4 4.0827 5.6566 4.0827 5.6566 4.0827 5.1087 4.0827 5.1087 solid #64748b
-edge factory registry 4 3.3206 4.303 3.3206 4.303 3.3206 3.7551 3.3206 3.7551 solid #64748b
-edge registry repo 4 3.3206 2.9494 3.3206 2.9494 3.3206 2.4015 3.3206 2.4015 solid #64748b
-edge repo db 4 3.3206 1.5952 3.3206 1.5952 3.3206 1.0459 3.3206 1.0459 solid #64748b
+graph 1 9.3596 2.3571
+node sources 0.94729 1.9077 1.8946 0.89875 "AWS config sources\nSecrets Manager\nParameter Store" rounded,filled box #F97316 #FFF7ED
+node resolver 3.5867 1.9077 1.8842 0.89875 "Settings resolver\nframework-specific\nfinal JDBC settings" rounded,filled box #58A978 #EAF7EF
+node factory 6.1167 1.1716 1.6758 0.89875 "Database factory\nHikari DataSource\nExposed Database" rounded,filled box #5B8DEF #E8F3FF
+node registry 8.5321 1.1716 1.655 0.89875 "Database registry\ndefault + named\nhandles" rounded,filled box #45A7A1 #E9F7F6
+node rds 3.5867 0.44937 1.655 0.89875 "RDS IAM auth\ntoken password\nTLS caller config" rounded,filled box #8A72D6 #F1ECFF
+edge sources resolver 4 1.9002 1.9077 1.9002 1.9077 2.4976 1.9077 2.4976 1.9077 solid #3B82F6
+edge resolver factory 4 4.5323 1.5397 4.5323 1.5397 5.1301 1.5397 5.1301 1.5397 solid #3B82F6
+edge factory registry 4 6.9615 1.1716 6.9615 1.1716 7.558 1.1716 7.558 1.1716 solid #3B82F6
+edge rds factory 4 4.4186 0.81049 4.4186 0.81049 5.1336 0.81049 5.1336 0.81049 solid #3B82F6
 stop

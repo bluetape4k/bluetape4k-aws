@@ -1,16 +1,14 @@
-digraph aws_exposed_flow_02 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  source [label="Configured source\nstatic, Secrets Manager\nParameter Store, or adapter", fillcolor="#E8F3FF", color="#5B8DEF"]
-  props [label="AwsDatabaseConnectionProperties\nURL, driver, username, pool", fillcolor="#EAF7EF", color="#58A978"]
-  secret [label="AwsSecretString\nredacted diagnostics", fillcolor="#F1ECFF", color="#8A72D6"]
-  auth [label="Authentication mode\nstatic password or RDS IAM", fillcolor="#FDECEF", color="#DC6B82"]
-  hikari [label="HikariDataSource\nphysical JDBC pool", fillcolor="#FFF3D9", color="#D6A441"]
-  handle [label="Exposed Database handle\nregistered by name", fillcolor="#E9F7F6", color="#45A7A1"]
-  source -> props
-  props -> secret
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  raw [label="Raw settings\nlocal or AWS-resolved", fillcolor="#E8F3FF", color="#5B8DEF"]
+  secret [label="AwsSecretString\nredacted diagnostics", fillcolor="#EAF7EF", color="#58A978"]
+  auth [label="RDS IAM token\noptional password", fillcolor="#F1ECFF", color="#8A72D6"]
+  factory [label="Factory create\nHikari + Exposed", fillcolor="#E9F7F6", color="#45A7A1"]
+  handle [label="Database handle\nregistry stores", fillcolor="#FFF7ED", color="#F97316"]
+  raw -> secret
   secret -> auth
-  auth -> hikari
-  hikari -> handle
+  auth -> factory
+  factory -> handle
 }

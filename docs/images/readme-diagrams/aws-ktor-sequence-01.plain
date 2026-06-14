@@ -1,15 +1,11 @@
-graph 1 2.5612 8.7808
-node install 1.2806 8.4513 1.78 0.65917 "Install SqsConsumer\nKtor app plugin" rounded,filled box #5B8DEF #E8F3FF
-node defaults 1.2806 7.0976 2.1862 0.65917 "Resolve AWS defaults\nservice-local SQS config" rounded,filled box #58A978 #EAF7EF
-node runtime 1.2806 5.744 2.2071 0.65917 "Build runtime\nclient, converters, hooks" rounded,filled box #D6A441 #FFF3D9
-node pollers 1.2806 4.3904 1.655 0.65917 "Launch pollers\nApplicationStarted" rounded,filled box #8A72D6 #F1ECFF
-node poll 1.2806 3.0368 1.5404 0.65917 "Long poll SQS\nReceiveMessage" rounded,filled box #DC6B82 #FDECEF
-node handler 1.2806 1.6832 2.5612 0.65917 "Invoke handler\ninterceptors, observer event" rounded,filled box #8CA0B3 #F4F7FA
-node ack 1.2806 0.32958 2.1758 0.65917 "Ack / nack\ndelete or change visibility" rounded,filled box #F47B36 #FFF0E3
-edge install defaults 4 1.2806 8.1166 1.2806 8.1166 1.2806 7.5688 1.2806 7.5688 solid #64748b
-edge defaults runtime 4 1.2806 6.763 1.2806 6.763 1.2806 6.2152 1.2806 6.2152 solid #64748b
-edge runtime pollers 4 1.2806 5.4094 1.2806 5.4094 1.2806 4.8616 1.2806 4.8616 solid #64748b
-edge pollers poll 4 1.2806 4.0558 1.2806 4.0558 1.2806 3.5079 1.2806 3.5079 solid #64748b
-edge poll handler 4 1.2806 2.7022 1.2806 2.7022 1.2806 2.1543 1.2806 2.1543 solid #64748b
-edge handler ack 4 1.2806 1.3486 1.2806 1.3486 1.2806 0.80072 1.2806 0.80072 solid #64748b
+graph 1 8.495 0.65917
+node queue 0.55146 0.32958 1.1029 0.65917 "SQS queue\nmessage" rounded,filled box #F97316 #FFF7ED
+node consumer 2.8054 0.32958 1.905 0.65917 "SqsConsumerRuntime\npoll loop" rounded,filled box #58A978 #EAF7EF
+node handler 5.2833 0.32958 1.5508 0.65917 "Message handler\ntyped body" rounded,filled box #5B8DEF #E8F3FF
+node observer 7.6519 0.32958 1.6863 0.65917 "Observer/metrics\nack/nack events" rounded,filled box #45A7A1 #E9F7F6
+edge queue consumer 4 1.1086 0.21972 1.1086 0.21972 1.7046 0.21972 1.7046 0.21972 solid #3B82F6
+edge consumer queue 4 1.8495 0.43944 1.8495 0.43944 1.2462 0.43944 1.2462 0.43944 solid #3B82F6
+edge consumer handler 4 3.7634 0.21972 3.7634 0.21972 4.3621 0.21972 4.3621 0.21972 solid #3B82F6
+edge handler consumer 4 4.5061 0.43944 4.5061 0.43944 3.9049 0.43944 3.9049 0.43944 solid #3B82F6
+edge handler observer 4 6.0654 0.32958 6.0654 0.32958 6.6633 0.32958 6.6633 0.32958 solid #3B82F6
 stop

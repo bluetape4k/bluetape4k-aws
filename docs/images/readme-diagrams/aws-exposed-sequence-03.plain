@@ -1,13 +1,11 @@
-graph 1 2.8633 7.4272
-node adapter 1.4317 7.0976 1.8738 0.65917 "Framework adapter\nSpring Boot or Ktor" rounded,filled box #5B8DEF #E8F3FF
-node resolver 1.4317 5.744 2.4467 0.65917 "Settings resolver\noptional AWS-backed lookup" rounded,filled box #8A72D6 #F1ECFF
-node factory 1.4317 4.3904 2.8633 0.65917 "AwsExposedDatabaseFactory\ncreate default and named handles" rounded,filled box #D6A441 #FFF3D9
-node hikari 1.4317 3.0368 2.3425 0.65917 "HikariDataSource\nconnect Exposed Database" rounded,filled box #58A978 #EAF7EF
-node registry 1.4317 1.6832 2.6862 0.65917 "Database registry\nlookup default or named handle" rounded,filled box #45A7A1 #E9F7F6
-node close 1.4317 0.32958 2.1967 0.65917 "Close handles\nnamed first, then default" rounded,filled box #F47B36 #FFF0E3
-edge adapter resolver 4 1.4317 6.763 1.4317 6.763 1.4317 6.2152 1.4317 6.2152 solid #64748b
-edge resolver factory 4 1.4317 5.4094 1.4317 5.4094 1.4317 4.8616 1.4317 4.8616 solid #64748b
-edge factory hikari 4 1.4317 4.0558 1.4317 4.0558 1.4317 3.5079 1.4317 3.5079 solid #64748b
-edge hikari registry 4 1.4317 2.7022 1.4317 2.7022 1.4317 2.1543 1.4317 2.1543 solid #64748b
-edge registry close 4 1.4317 1.3486 1.4317 1.3486 1.4317 0.80072 1.4317 0.80072 solid #64748b
+graph 1 8.2971 1.2564
+node caller 0.53583 0.32958 1.0717 0.65917 "Application\nneeds DB" rounded,filled box #5B8DEF #E8F3FF
+node registry 2.6492 0.32958 1.655 0.65917 "Database registry\ndefault/named" rounded,filled box #58A978 #EAF7EF
+node factory 5.0594 0.92681 1.6654 0.65917 "Database factory\ncreate handle" rounded,filled box #45A7A1 #E9F7F6
+node db 7.4696 0.32958 1.655 0.65917 "Exposed Database\nJDBC handle" rounded,filled box #F97316 #FFF7ED
+edge caller registry 4 1.0746 0.21972 1.0746 0.21972 1.6735 0.21972 1.6735 0.21972 solid #3B82F6
+edge registry caller 4 1.82 0.43944 1.82 0.43944 1.2187 0.43944 1.2187 0.43944 solid #3B82F6
+edge registry factory 7 2.6443 0.66575 2.6443 0.81511 2.6443 0.95778 2.6443 0.95778 2.6443 0.95778 4.0795 0.95778 4.0795 0.95778 solid #3B82F6
+edge factory db 7 5.061 0.595 5.061 0.48879 5.061 0.39815 5.061 0.39815 5.061 0.39815 6.4987 0.39815 6.4987 0.39815 solid #3B82F6
+edge db registry 4 6.6354 0.19907 6.6354 0.19907 3.6232 0.19907 3.6232 0.19907 solid #3B82F6
 stop

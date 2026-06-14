@@ -1,16 +1,14 @@
-digraph aws_kotlin_sequence_03 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  caller [label="Coroutine caller\ncalls withS3Client / withKinesisClient", fillcolor="#E8F3FF", color="#5B8DEF"]
-  factory [label="clientOf builder\nendpoint, region, credentials, HTTP engine", fillcolor="#EAF7EF", color="#58A978"]
-  client [label="AWS Kotlin SDK client\nconnection pools and resources", fillcolor="#F4F7FA", color="#8CA0B3"]
-  block [label="Suspend block\nservice operation calls", fillcolor="#FFF3D9", color="#D6A441"]
-  flow [label="Optional Flow collection\nrecordFlow polls until completion", fillcolor="#E9F7F6", color="#45A7A1"]
-  close [label="useSafe closes client\nsuccess, failure, or cancellation", fillcolor="#FFF0E3", color="#F47B36"]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  caller [label="Coroutine caller\nscope", fillcolor="#E8F3FF", color="#5B8DEF"]
+  factory [label="Client factory\nregion/endpoint", fillcolor="#EAF7EF", color="#58A978"]
+  client [label="Kotlin SDK client\nsuspend ops", fillcolor="#E9F7F6", color="#45A7A1"]
+  service [label="AWS service\ntarget", fillcolor="#FFF7ED", color="#F97316"]
   caller -> factory
   factory -> client
-  client -> block
-  block -> flow
-  flow -> close
+  client -> service
+  service -> client
+  client -> caller
 }

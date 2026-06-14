@@ -1,0 +1,15 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  app [label="Application\ntenant/user request\nbucket policy context", fillcolor="#E8F3FF", color="#5B8DEF"]
+  spring [label="Spring Access Grants\noperations/template\nauto-config", fillcolor="#EAF7EF", color="#58A978"]
+  ktor [label="Ktor Access Grants\nplugin/runtime\ntemplate", fillcolor="#F1ECFF", color="#8A72D6"]
+  control [label="S3 Control\ngrant lookup\nsession scope", fillcolor="#FFF7ED", color="#F97316"]
+  s3 [label="S3 object access\nclient performs I/O\nscope enforced", fillcolor="#E9F7F6", color="#45A7A1"]
+  app -> spring
+  app -> ktor
+  spring -> control
+  ktor -> control
+  control -> s3
+}

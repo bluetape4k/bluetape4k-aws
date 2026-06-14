@@ -1,18 +1,14 @@
-digraph aws_ktor_sequence_01 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  install [label="Install SqsConsumer\nKtor app plugin", fillcolor="#E8F3FF", color="#5B8DEF"]
-  defaults [label="Resolve AWS defaults\nservice-local SQS config", fillcolor="#EAF7EF", color="#58A978"]
-  runtime [label="Build runtime\nclient, converters, hooks", fillcolor="#FFF3D9", color="#D6A441"]
-  pollers [label="Launch pollers\nApplicationStarted", fillcolor="#F1ECFF", color="#8A72D6"]
-  poll [label="Long poll SQS\nReceiveMessage", fillcolor="#FDECEF", color="#DC6B82"]
-  handler [label="Invoke handler\ninterceptors, observer event", fillcolor="#F4F7FA", color="#8CA0B3"]
-  ack [label="Ack / nack\ndelete or change visibility", fillcolor="#FFF0E3", color="#F47B36"]
-  install -> defaults
-  defaults -> runtime
-  runtime -> pollers
-  pollers -> poll
-  poll -> handler
-  handler -> ack
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  queue [label="SQS queue\nmessage", fillcolor="#FFF7ED", color="#F97316"]
+  consumer [label="SqsConsumerRuntime\npoll loop", fillcolor="#EAF7EF", color="#58A978"]
+  handler [label="Message handler\ntyped body", fillcolor="#E8F3FF", color="#5B8DEF"]
+  observer [label="Observer/metrics\nack/nack events", fillcolor="#E9F7F6", color="#45A7A1"]
+  queue -> consumer
+  consumer -> handler
+  handler -> observer
+  handler -> consumer
+  consumer -> queue
 }

@@ -1,16 +1,14 @@
-digraph aws_ktor_s3_advanced_sequence_01 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  app [label="Ktor app\nput/get config object", fillcolor="#E8F3FF", color="#5B8DEF"]
-  client [label="S3KtorClient\nadvanced helper", fillcolor="#FFF3D9", color="#D6A441"]
-  crypto [label="Envelope encryptor\noptional encrypt/decrypt", fillcolor="#F1ECFF", color="#8A72D6"]
-  key [label="Data key provider\ngenerate or decrypt data key", fillcolor="#FDECEF", color="#DC6B82"]
-  sign [label="AwsSigV4Plugin\nsign REST request", fillcolor="#E9F7F6", color="#45A7A1"]
-  bucket [label="S3 bucket\nPutObject or GetObject", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
-  app -> client
-  client -> crypto [label="optional"]
-  crypto -> key
-  key -> sign
-  sign -> bucket
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  caller [label="Ktor route\nrequest", fillcolor="#E8F3FF", color="#5B8DEF"]
+  client [label="S3KtorClient\nobject API", fillcolor="#EAF7EF", color="#58A978"]
+  signer [label="SigV4 plugin\nS3 policy", fillcolor="#E9F7F6", color="#45A7A1"]
+  s3 [label="S3 endpoint\nobject store", fillcolor="#FFF7ED", color="#F97316"]
+  caller -> client
+  client -> signer
+  signer -> s3
+  s3 -> client
+  client -> caller
 }

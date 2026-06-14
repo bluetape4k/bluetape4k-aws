@@ -1,14 +1,10 @@
-graph 1 4.7922 6.6819
-node client 0.8275 6.3523 1.655 0.65917 "HTTP client / test\norder route calls" rounded,filled box #5B8DEF #E8F3FF
-node controller 0.8275 4.9848 1.5508 0.65917 "OrderController\nMVC endpoints" rounded,filled box #58A978 #EAF7EF
-node service 1.5219 3.4645 2.28 0.65917 "OrderService\nowns Exposed transaction" rounded,filled box #D6A441 #FFF3D9
-node repo 1.5219 1.9443 2.3529 0.65917 "OrderRepository\nactive transaction required" rounded,filled box #8A72D6 #F1ECFF
-node auto 3.4386 4.9848 2.7071 0.65917 "AwsExposedAutoConfiguration\nDataSource, Database, Registry" rounded,filled box #DC6B82 #FDECEF
-node pg 2.4803 0.45318 2.5508 0.90635 "PostgreSQL database\nTestcontainers or production" rounded,filled cylinder #F47B36 #FFF0E3
-edge client controller 4 0.8275 6.0178 0.8275 6.0178 0.8275 5.4563 0.8275 5.4563 solid #64748b
-edge controller service 4 0.99243 4.6512 0.99243 4.6512 0.99243 3.9331 0.99243 3.9331 solid #64748b
-edge service repo 4 1.5219 3.1309 1.5219 3.1309 1.5219 2.4128 1.5219 2.4128 solid #64748b
-edge repo pg 4 1.9516 1.6096 1.9516 1.6096 1.9516 1.0468 1.9516 1.0468 solid #64748b
-edge auto service 4 2.3735 4.6512 2.3735 4.6512 2.3735 3.9331 2.3735 3.9331 Database 2.5497 4.2247 solid #64748b
-edge auto pg 4 3.227 4.6516 3.227 4.6516 3.227 1.0441 3.227 1.0441 pool 3.5844 2.7044 solid #64748b
+graph 1 9.8387 1.5515
+node route 3.3523 1.1022 1.5404 0.89875 "Spring MVC app\ncontrollers\nExposed service" rounded,filled box #5B8DEF #E8F3FF
+node module 6.1687 1.1022 2.5925 0.89875 "AwsExposedAutoConfiguration\nHikari + Exposed\ndatabase registry" rounded,filled box #58A978 #EAF7EF
+node service 9.0269 0.44937 1.6238 0.89875 "PostgreSQL\nTestcontainers\nJDBC verification" rounded,filled box #F97316 #FFF7ED
+node tests 0.91604 0.44937 1.8321 0.89875 "MVC tests\ncompile + integration\nREADME scenario" rounded,filled box #45A7A1 #E9F7F6
+edge route module 4 4.1294 1.1022 4.1294 1.1022 4.7278 1.1022 4.7278 1.1022 solid #3B82F6
+edge module service 4 7.4682 0.77576 7.4682 0.77576 8.0672 0.77576 8.0672 0.77576 solid #3B82F6
+edge tests route 4 1.8371 0.77576 1.8371 0.77576 2.4351 0.77576 2.4351 0.77576 solid #3B82F6
+edge tests service 4 1.8386 0.32639 1.8386 0.32639 8.0666 0.32639 8.0666 0.32639 solid #3B82F6
 stop

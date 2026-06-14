@@ -1,13 +1,11 @@
-graph 1 2.6342 7.8966
-node app 1.3171 7.567 1.9258 0.65917 "Ktor app\nput/get config object" rounded,filled box #5B8DEF #E8F3FF
-node client 1.3171 6.1995 1.53 0.65917 "S3KtorClient\nadvanced helper" rounded,filled box #D6A441 #FFF3D9
-node crypto 1.3171 4.6793 2.2279 0.65917 "Envelope encryptor\noptional encrypt/decrypt" rounded,filled box #8A72D6 #F1ECFF
-node key 1.3171 3.3118 2.6342 0.65917 "Data key provider\ngenerate or decrypt data key" rounded,filled box #DC6B82 #FDECEF
-node sign 1.3171 1.9443 1.6863 0.65917 "AwsSigV4Plugin\nsign REST request" rounded,filled box #45A7A1 #E9F7F6
-node bucket 1.3171 0.45318 2.1133 0.90635 "S3 bucket\nPutObject or GetObject" rounded,filled cylinder #F47B36 #FFF0E3
-edge app client 4 1.3171 7.2325 1.3171 7.2325 1.3171 6.6711 1.3171 6.6711 solid #64748b
-edge client crypto 4 1.3171 5.8659 1.3171 5.8659 1.3171 5.1478 1.3171 5.1478 optional 1.6087 5.4394 solid #64748b
-edge crypto key 4 1.3171 4.3447 1.3171 4.3447 1.3171 3.7833 1.3171 3.7833 solid #64748b
-edge key sign 4 1.3171 2.9772 1.3171 2.9772 1.3171 2.4158 1.3171 2.4158 solid #64748b
-edge sign bucket 4 1.3171 1.6096 1.3171 1.6096 1.3171 1.0468 1.3171 1.0468 solid #64748b
+graph 1 7.0158 1.2564
+node caller 0.56187 0.32958 1.1238 0.65917 "Ktor route\nrequest" rounded,filled box #5B8DEF #E8F3FF
+node client 2.4877 0.32958 1.2279 0.65917 "S3KtorClient\nobject API" rounded,filled box #58A978 #EAF7EF
+node signer 4.4344 0.92681 1.1654 0.65917 "SigV4 plugin\nS3 policy" rounded,filled box #45A7A1 #E9F7F6
+node s3 6.3915 0.32958 1.2488 0.65917 "S3 endpoint\nobject store" rounded,filled box #F97316 #FFF7ED
+edge caller client 4 1.1293 0.21972 1.1293 0.21972 1.7286 0.21972 1.7286 0.21972 solid #3B82F6
+edge client caller 4 1.8678 0.43944 1.8678 0.43944 1.2705 0.43944 1.2705 0.43944 solid #3B82F6
+edge client signer 7 3.1048 0.44792 3.6088 0.44792 4.2381 0.44792 4.2381 0.44792 4.2381 0.44792 4.2381 0.46255 4.2381 0.46255 solid #3B82F6
+edge signer s3 7 4.6269 0.59064 4.6269 0.44128 4.6269 0.29861 4.6269 0.29861 4.6269 0.29861 5.6224 0.29861 5.6224 0.29861 solid #3B82F6
+edge s3 client 4 5.7643 0.14931 5.7643 0.14931 3.2489 0.14931 3.2489 0.14931 solid #3B82F6
 stop

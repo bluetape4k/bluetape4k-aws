@@ -44,7 +44,7 @@ Reviewed optional S3 Vectors support across `aws-java`, `aws-spring-boot`,
   shutdown hook only. Existing hits are prior lifecycle, retry, parser, and
   observer patterns.
 - Forbidden README diagram font scan:
-  `rg -n "Arial|Helvetica|Inter" docs/assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg docs/assets/readme-diagrams/bluetape4k-aws-components-04.svg`
+  `rg -n "Arial|Helvetica|Inter" docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg docs/images/readme-diagrams/bluetape4k-aws-components-04.svg`
   returned no matches.
 - Font discovery:
   `fc-list` found `Architects Daughter` and `Comic Mono`.

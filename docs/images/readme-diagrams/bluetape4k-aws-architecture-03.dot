@@ -1,0 +1,14 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  builder [label="Client builders\nregion/endpoint\ncredentials", fillcolor="#E8F3FF", color="#5B8DEF"]
+  client [label="AWS Kotlin clients\nnative suspend\nconnection pools", fillcolor="#EAF7EF", color="#58A978"]
+  dsl [label="DSL helpers\nrequest builders\nmodel support", fillcolor="#E9F7F6", color="#45A7A1"]
+  close [label="Lifecycle boundary\nwithClient blocks\nexplicit close", fillcolor="#FDECEF", color="#DC6B82"]
+  aws [label="AWS services\nS3, DynamoDB, SQS\nSES, KMS, STS", fillcolor="#FFF7ED", color="#F97316"]
+  builder -> client
+  client -> dsl
+  dsl -> aws
+  client -> close
+}
