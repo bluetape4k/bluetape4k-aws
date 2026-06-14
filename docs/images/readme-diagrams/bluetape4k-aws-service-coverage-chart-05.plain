@@ -1,0 +1,13 @@
+graph 1 20.045 0.89875
+node dynamodb 1.1817 0.44937 2.3633 0.89875 "DynamoDB\njava / kotlin / spring / ktor\nKtor + Spring examples" rounded,filled box #5B8DEF #E8F3FF
+node s3 4.6908 0.44937 3.155 0.89875 "S3\njava / kotlin / spring / ktor\nAccess Grants + S3 Vectors optional" rounded,filled box #58A978 #EAF7EF
+node sqs_sns 8.4917 0.44937 2.9467 0.89875 "SQS/SNS\njava / kotlin / spring / ktor\nlistener/runtime + fanout examples" rounded,filled box #45A7A1 #E9F7F6
+node kms 11.86 0.44937 2.2904 0.89875 "KMS\njava / kotlin / spring\nKtor S3 encryption hooks" rounded,filled box #D6A441 #FFF3D9
+node cloudwatch 15.239 0.44937 2.9675 0.89875 "CloudWatch\njava / kotlin / spring / ktor\nmetrics/logs + Micrometer bridges" rounded,filled box #8A72D6 #F1ECFF
+node rds_iam 18.759 0.44937 2.5717 0.89875 "RDS IAM\naws-exposed foundation\nruntime RDS SDK dependency" rounded,filled box #DC6B82 #FDECEF
+edge dynamodb s3 4 2.3697 0.44937 2.3697 0.44937 2.97 0.44937 2.97 0.44937 invis #3B82F6
+edge s3 sqs_sns 4 6.2752 0.44937 6.2752 0.44937 6.8712 0.44937 6.8712 0.44937 invis #3B82F6
+edge sqs_sns kms 4 9.9692 0.44937 9.9692 0.44937 10.571 0.44937 10.571 0.44937 invis #3B82F6
+edge kms cloudwatch 4 13.009 0.44937 13.009 0.44937 13.611 0.44937 13.611 0.44937 invis #3B82F6
+edge cloudwatch rds_iam 4 16.727 0.44937 16.727 0.44937 17.324 0.44937 17.324 0.44937 invis #3B82F6
+stop

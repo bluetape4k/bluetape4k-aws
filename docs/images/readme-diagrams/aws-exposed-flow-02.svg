@@ -1,71 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="940" height="1020" viewBox="0 0 940 1020" role="img" aria-label="aws-exposed configuration flow">
+<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="370" viewBox="0 0 1460 370" role="img" aria-label="AWS Exposed configuration flow">
+<metadata>{&quot;bestPractice&quot;: &quot;flow-retry-workflow&quot;, &quot;bestPracticesCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/catalog.yaml&quot;, &quot;evidence&quot;: [&quot;wiki best-practices catalog&quot;, &quot;repo README image references&quot;, &quot;current source package names&quot;], &quot;generator&quot;: &quot;tools/generate-root-readme-diagrams.py&quot;, &quot;graphvizEvidence&quot;: [&quot;aws-exposed-flow-02.dot&quot;, &quot;aws-exposed-flow-02.plain&quot;, &quot;aws-exposed-flow-02-graphviz.svg&quot;, &quot;aws-exposed-flow-02-graphviz.png&quot;], &quot;intent&quot;: &quot;Resolved database settings are redacted, converted into Hikari configuration, and registered as Exposed handles.&quot;, &quot;rejectedPatternsCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/rejected/catalog.yaml&quot;, &quot;rejectedPatternsGuarded&quot;: [&quot;relationship-heavy-grid&quot;, &quot;unclear-diagram-purpose&quot;, &quot;surface-redraw-without-source-model&quot;, &quot;card-penetrating-connector&quot;, &quot;tangent-or-zero-degree-endpoint&quot;], &quot;sharedGenerator&quot;: &quot;/Users/debop/.codex/skills/bluetape4k-diagram/references/shared_diagram_generator.py&quot;, &quot;sources&quot;: [&quot;aws-exposed/README.md&quot;, &quot;aws-exposed/src/main/kotlin/io/bluetape4k/aws/exposed&quot;, &quot;aws-exposed/build.gradle.kts&quot;]}</metadata>
 <defs>
-  <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#66758A"/></marker>
   <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
 </defs>
 <style>
   svg{background:#F5F7FA}
   .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:34px;fill:#102033}
-  .subtitle,.detail,.footer-detail{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;fill:#526274}
+  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
+  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
+  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
+  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
+  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
   .subtitle{font-size:14px}
-  .card-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:20px;fill:#102033}
+  .label{font-size:12px;fill:#344456}
+  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
   .detail{font-size:13px}
-  .chip{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:10px;fill:#243447}
+  .tiny{font-size:10px}
+  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
   .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.2;marker-end:url(#arrow)}
-  .edge-label{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:11px;fill:#344456}
-  .label-bg{fill:#FFFFFF;stroke:#D9E2EC}
+  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
+  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
+  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
+  .activation{stroke-width:1.4}
   .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-size:11px;fill:#DDE7F2}
+  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
+  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
+  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
 </style>
-<rect x="26" y="26" width="888" height="968" rx="14" class="frame"/>
-<text class="title" x="54" y="72">aws-exposed configuration flow</text>
-<text class="subtitle" x="56" y="102">Configuration moves from adapter-provided settings to validated pools and named Exposed handles.</text>
-<rect x="797.5" y="54" width="78.5" height="24" rx="12" fill="#F1ECFF" stroke="#8A72D6"/>
-<text class="chip" x="836.75" y="70" text-anchor="middle">Resolve</text>
-<rect x="695.5" y="54" width="86" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="738.5" y="70" text-anchor="middle">Validate</text>
-<rect x="593.5" y="54" width="86" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="chip" x="636.5" y="70" text-anchor="middle">Register</text>
-<g><g><path class="edge" d="M470 218 L470 250 L470 250 L470 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 348 L470 380 L470 380 L470 396" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 478 L470 510 L470 510 L470 526" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 608 L470 640 L470 640 L470 656" stroke="#66758A"/></g>
-<g><path class="edge" d="M470 738 L470 770 L470 770 L470 786" stroke="#66758A"/></g></g>
-<g id="source">
-  <rect class="card" x="300" y="136" width="340" height="82" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="470" y="165.5" text-anchor="middle">Configured source</text>
-  <text class="detail" x="470" y="189.5" text-anchor="middle">static, Secrets Manager</text>
-<text class="detail" x="470" y="206.5" text-anchor="middle">Parameter Store, or adapter</text>
+
+<defs>
+  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
+  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
+  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
+  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
+  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
+</defs>
+<rect x="26" y="26" width="1408" height="318" rx="14" class="frame"/>
+<text class="title" x="54" y="72">AWS Exposed configuration flow</text>
+<text class="subtitle" x="56" y="104">Resolved database settings are redacted, converted into Hikari configuration, and registered as Exposed handles.</text>
+<g id="routes">
+<path class="edge" d="M 294.0 198.0 L 332.0 198.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+<path class="edge" d="M 572.0 198.0 L 610.0 198.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
+<path class="edge" d="M 850.0 198.0 L 888.0 198.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+<path class="edge" d="M 1128.0 198.0 L 1166.0 198.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
 </g>
-<g id="props">
-  <rect class="card" x="300" y="266" width="340" height="82" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="470" y="304" text-anchor="middle">AwsDatabaseConnectionProperties</text>
-  <text class="detail" x="470" y="328" text-anchor="middle">URL, driver, username, pool</text>
+<g id="raw">
+  <rect class="card" x="54.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="174.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Raw settings</text>
+  <text class="detail" x="174.0" y="219.0" text-anchor="middle" dominant-baseline="middle">local or AWS-resolved</text>
 </g>
 <g id="secret">
-  <rect class="card" x="300" y="396" width="340" height="82" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="card-title" x="470" y="434" text-anchor="middle">AwsSecretString</text>
-  <text class="detail" x="470" y="458" text-anchor="middle">redacted diagnostics</text>
+  <rect class="card" x="332.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="452.0" y="195.0" text-anchor="middle" dominant-baseline="middle">AwsSecretString</text>
+  <text class="detail" x="452.0" y="219.0" text-anchor="middle" dominant-baseline="middle">redacted diagnostics</text>
 </g>
 <g id="auth">
-  <rect class="card" x="300" y="526" width="340" height="82" rx="10" fill="#FDECEF" stroke="#DC6B82"/>
-  <text class="card-title" x="470" y="564" text-anchor="middle">Authentication mode</text>
-  <text class="detail" x="470" y="588" text-anchor="middle">static password or RDS IAM</text>
+  <rect class="card" x="610.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
+  <text class="card-title" x="730.0" y="195.0" text-anchor="middle" dominant-baseline="middle">RDS IAM token</text>
+  <text class="detail" x="730.0" y="219.0" text-anchor="middle" dominant-baseline="middle">optional password</text>
 </g>
-<g id="hikari">
-  <rect class="card" x="300" y="656" width="340" height="82" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="card-title" x="470" y="694" text-anchor="middle">HikariDataSource</text>
-  <text class="detail" x="470" y="718" text-anchor="middle">physical JDBC pool</text>
+<g id="factory">
+  <rect class="card" x="888.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="1008.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Factory create</text>
+  <text class="detail" x="1008.0" y="219.0" text-anchor="middle" dominant-baseline="middle">Hikari + Exposed</text>
 </g>
 <g id="handle">
-  <rect class="card" x="300" y="786" width="340" height="82" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="470" y="824" text-anchor="middle">Exposed Database handle</text>
-  <text class="detail" x="470" y="848" text-anchor="middle">registered by name</text>
+  <rect class="card" x="1166.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="1286.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Database handle</text>
+  <text class="detail" x="1286.0" y="219.0" text-anchor="middle" dominant-baseline="middle">registry stores</text>
 </g>
-<rect class="footer" x="54" y="916" width="832" height="54" rx="8"/>
-<text class="footer-title" x="72" y="935" dominant-baseline="middle">Flow role</text>
-<text class="footer-detail" x="72" y="953" dominant-baseline="middle">A vertical flow makes static password, RDS IAM, Hikari, and registry handoff easy to scan.</text>
+<rect class="footer" x="54" y="276" width="1352" height="54" rx="8"/>
+<text class="footer-title" x="74" y="299" dominant-baseline="middle">Outcome</text>
+<text class="footer-detail" x="74" y="319" dominant-baseline="middle">Serialized secrets must stay inside trusted process or storage boundaries.</text>
 </svg>

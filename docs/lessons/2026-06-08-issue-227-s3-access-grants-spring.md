@@ -48,9 +48,9 @@ English-label component/flow diagrams.
 - S3 Access Grants flow diagram gate:
   `nodes=12 routes=10 segments=30 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
 - Rendered PNGs were inspected directly:
-  `docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png`
+  `docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png`
   and
-  `docs/assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png`.
+  `docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png`.
 
 ## Future Guard
 

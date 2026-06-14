@@ -1,0 +1,17 @@
+graph 1 19.365 1.1383
+node app 0.79625 0.56917 1.5925 1.1383 "Kotlin applications\nSpring Boot 4\nKtor 3\nplain coroutines" rounded,filled box #5B8DEF #E8F3FF
+node spring 3.2065 0.56917 1.7279 0.89875 "aws-spring-boot\nauto-config\ntemplates/listeners" rounded,filled box #58A978 #EAF7EF
+node ktor 5.5854 0.56917 1.53 0.89875 "aws-ktor\nSigV4 plugin\nserver runtimes" rounded,filled box #8A72D6 #F1ECFF
+node java 8.1206 0.56917 2.0404 0.89875 "aws-java\nJava SDK v2\nfuture.await wrappers" rounded,filled box #45A7A1 #E9F7F6
+node kotlin 10.765 0.56917 1.7488 0.89875 "aws-kotlin\nnative suspend SDK\nDSL helpers" rounded,filled box #D6A441 #FFF3D9
+node exposed 13.207 0.56917 1.6342 0.89875 "aws-exposed\ndatabase registry\nRDS IAM + config" rounded,filled box #DC6B82 #FDECEF
+node aws 15.784 0.56917 2.0196 0.89875 "AWS or emulator\nS3, SQS, DynamoDB\nKMS, CloudWatch, STS" rounded,filled box #F97316 #FFF7ED
+node jdbc 18.454 0.56917 1.8217 0.89875 "JDBC stores\nPostgreSQL/H2\nSecrets/Parameter" rounded,filled box #64748B #F8FAFC
+edge app spring 4 1.5988 0.56917 1.5988 0.56917 2.195 0.56917 2.195 0.56917 invis #3B82F6
+edge spring ktor 4 4.072 0.56917 4.072 0.56917 4.673 0.56917 4.673 0.56917 invis #3B82F6
+edge ktor java 4 6.3529 0.56917 6.3529 0.56917 6.9516 0.56917 6.9516 0.56917 invis #3B82F6
+edge java kotlin 4 9.1469 0.56917 9.1469 0.56917 9.7436 0.56917 9.7436 0.56917 invis #3B82F6
+edge kotlin exposed 4 11.64 0.56917 11.64 0.56917 12.241 0.56917 12.241 0.56917 invis #3B82F6
+edge exposed aws 4 14.029 0.56917 14.029 0.56917 14.628 0.56917 14.628 0.56917 invis #3B82F6
+edge aws jdbc 4 16.797 0.56917 16.797 0.56917 17.396 0.56917 17.396 0.56917 invis #3B82F6
+stop

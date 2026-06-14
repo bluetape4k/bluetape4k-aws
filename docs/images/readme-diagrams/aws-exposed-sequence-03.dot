@@ -1,16 +1,14 @@
-digraph aws_exposed_sequence_03 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  adapter [label="Framework adapter\nSpring Boot or Ktor", fillcolor="#E8F3FF", color="#5B8DEF"]
-  resolver [label="Settings resolver\noptional AWS-backed lookup", fillcolor="#F1ECFF", color="#8A72D6"]
-  factory [label="AwsExposedDatabaseFactory\ncreate default and named handles", fillcolor="#FFF3D9", color="#D6A441"]
-  hikari [label="HikariDataSource\nconnect Exposed Database", fillcolor="#EAF7EF", color="#58A978"]
-  registry [label="Database registry\nlookup default or named handle", fillcolor="#E9F7F6", color="#45A7A1"]
-  close [label="Close handles\nnamed first, then default", fillcolor="#FFF0E3", color="#F47B36"]
-  adapter -> resolver
-  resolver -> factory
-  factory -> hikari
-  hikari -> registry
-  registry -> close
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  caller [label="Application\nneeds DB", fillcolor="#E8F3FF", color="#5B8DEF"]
+  registry [label="Database registry\ndefault/named", fillcolor="#EAF7EF", color="#58A978"]
+  factory [label="Database factory\ncreate handle", fillcolor="#E9F7F6", color="#45A7A1"]
+  db [label="Exposed Database\nJDBC handle", fillcolor="#FFF7ED", color="#F97316"]
+  caller -> registry
+  registry -> factory
+  factory -> db
+  db -> registry
+  registry -> caller
 }

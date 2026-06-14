@@ -1,11 +1,11 @@
-graph 1 2.9883 6.5528
-node source 1.4942 6.2232 1.8633 0.65917 "bluetape4k-aws-bom\nGradle java-platform" rounded,filled box #8CA0B3 #F4F7FA
-node constraints 1.4942 4.7498 2.2904 0.89875 "Dependency constraints\naws-java, aws-kotlin\naws-spring-boot, aws-ktor" rounded,filled box #D6A441 #FFF3D9
-node publish 1.4942 3.2764 2.4779 0.65917 "Published Maven BOM\ndependencyManagement only" rounded,filled box #5B8DEF #E8F3FF
-node import 1.4942 1.9228 2.9883 0.65917 "Consumer import\nGradle platform() or Maven import" rounded,filled box #58A978 #EAF7EF
-node modules 1.4942 0.44937 2.2175 0.89875 "Versionless dependencies\nchoose runtime modules\nversions stay aligned" rounded,filled box #45A7A1 #E9F7F6
-edge source constraints 4 1.4942 5.8889 1.4942 5.8889 1.4942 5.3414 1.4942 5.3414 solid #64748b
-edge constraints publish 4 1.4942 4.2957 1.4942 4.2957 1.4942 3.7454 1.4942 3.7454 solid #64748b
-edge publish import 4 1.4942 2.9418 1.4942 2.9418 1.4942 2.3939 1.4942 2.3939 solid #64748b
-edge import modules 4 1.4942 1.5884 1.4942 1.5884 1.4942 1.041 1.4942 1.041 solid #64748b
+graph 1 10.88 2.3571
+node platform 1.0515 1.1716 2.1029 0.89875 "Gradle java-platform\ndependency constraints\nno runtime code" rounded,filled box #5B8DEF #E8F3FF
+node filter 4.019 1.9077 2.3321 0.89875 "Published-module filter\nexcludes examples\nexcludes benchmark/demo" rounded,filled box #58A978 #EAF7EF
+node modules 6.9396 1.9077 2.0092 0.89875 "Managed AWS modules\njava/kotlin/exposed\nspring-boot/ktor" rounded,filled box #45A7A1 #E9F7F6
+node consumer 9.7873 1.9077 2.1862 0.89875 "Consumer build\nplatform()/Maven import\nversions omitted" rounded,filled box #D6A441 #FFF3D9
+node parent 4.019 0.44937 2.1967 0.89875 "bluetape4k-dependencies\naggregates sub-BOMs\nrelease train" rounded,filled box #F97316 #FFF7ED
+edge platform filter 4 2.106 1.5397 2.106 1.5397 2.7047 1.5397 2.7047 1.5397 solid #3B82F6
+edge platform parent 4 2.106 0.81049 2.106 0.81049 2.7756 0.81049 2.7756 0.81049 solid #3B82F6
+edge filter modules 4 5.1901 1.9077 5.1901 1.9077 5.7861 1.9077 5.7861 1.9077 solid #3B82F6
+edge modules consumer 4 7.9476 1.9077 7.9476 1.9077 8.5467 1.9077 8.5467 1.9077 solid #3B82F6
 stop

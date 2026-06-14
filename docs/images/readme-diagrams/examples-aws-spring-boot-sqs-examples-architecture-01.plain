@@ -1,15 +1,10 @@
-graph 1 5.4126 7.4007
-node client 3.3501 7.0711 2.0404 0.65917 "HTTP client / test\nqueue and topic routes" rounded,filled box #5B8DEF #E8F3FF
-node api 3.3501 5.5838 2.0717 0.89875 "Spring WebFlux API\nqueue, message\nfanout and DLQ routes" rounded,filled box #58A978 #EAF7EF
-node ops 0.98896 3.9767 1.9779 0.65917 "SQS / SNS operations\ncoroutine templates" rounded,filled box #D6A441 #FFF3D9
-node listener 4.114 0.44937 2.1862 0.89875 "@SqsListener container\ntyped payloads\nmanual acknowledgement" rounded,filled box #8A72D6 #F1ECFF
-node fanout 3.3501 3.9767 1.7696 0.89875 "SNS to SQS fanout\npolicy, subscription\nDLQ redrive" rounded,filled box #DC6B82 #FDECEF
-node localstack 3.2667 2.213 1.9363 0.90635 "LocalStack SQS/SNS\nor AWS endpoints" rounded,filled cylinder #F47B36 #FFF0E3
-edge client api 4 3.3501 6.7373 3.3501 6.7373 3.3501 6.1706 3.3501 6.1706 solid #64748b
-edge api ops 7 2.4149 5.1295 2.4149 4.6879 2.4149 4.0833 2.4149 4.0833 2.4149 4.0833 2.1189 4.0833 2.1189 4.0833 solid #64748b
-edge api fanout 4 3.3501 5.1276 3.3501 5.1276 3.3501 4.5642 3.3501 4.5642 solid #64748b
-edge ops localstack 7 1.9814 3.8611 2.1983 3.8611 2.3646 3.8611 2.3646 3.8611 2.3646 3.8611 2.3646 2.7774 2.3646 2.7774 solid #64748b
-edge listener api 4 4.3104 0.90502 4.3104 0.90502 4.3104 4.9935 4.3104 4.9935 events 5.1938 3.0968 solid #64748b
-edge fanout localstack 4 3.3501 3.5225 3.3501 3.5225 3.3501 2.8075 3.3501 2.8075 solid #64748b
-edge localstack listener 4 3.6278 1.7543 3.6278 1.7543 3.6278 1.0355 3.6278 1.0355 messages 3.9612 1.3293 solid #64748b
+graph 1 9.0054 1.5515
+node route 3.1804 1.1022 1.7175 0.89875 "Spring listener app\n@SqsListener\nSNS fanout" rounded,filled box #5B8DEF #E8F3FF
+node module 5.6687 1.1022 1.7592 0.89875 "SqsOperations\ntyped/manual ack\nretry interceptors" rounded,filled box #58A978 #EAF7EF
+node service 8.1519 0.44937 1.7071 0.89875 "SQS/SNS\nFloci subscriptions\nqueue fanout" rounded,filled box #F97316 #FFF7ED
+node tests 0.78583 0.44937 1.5717 0.89875 "Fanout tests\ncompile + AOT\nobserver events" rounded,filled box #45A7A1 #E9F7F6
+edge route module 4 4.0437 1.1022 4.0437 1.1022 4.6439 1.1022 4.6439 1.1022 solid #3B82F6
+edge module service 4 6.5547 0.77576 6.5547 0.77576 7.1534 0.77576 7.1534 0.77576 solid #3B82F6
+edge tests route 4 1.5765 0.77576 1.5765 0.77576 2.1743 0.77576 2.1743 0.77576 solid #3B82F6
+edge tests service 4 1.5776 0.32639 1.5776 0.32639 7.1547 0.32639 7.1547 0.32639 solid #3B82F6
 stop

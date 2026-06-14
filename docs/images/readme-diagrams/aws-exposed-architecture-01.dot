@@ -1,19 +1,14 @@
-digraph aws_exposed_architecture_01 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  adapter [label="Spring Boot or Ktor adapter\nresolves final database settings", fillcolor="#E8F3FF", color="#5B8DEF"]
-  props [label="AwsDatabaseProperties\ndefault + named database configs", fillcolor="#EAF7EF", color="#58A978"]
-  resolver [label="AwsDatabaseSettingsResolver\nSecrets Manager / Parameter Store bridge", fillcolor="#F1ECFF", color="#8A72D6"]
-  factory [label="AwsExposedDatabaseFactory\nresolve, validate, create Hikari pool", fillcolor="#FFF3D9", color="#D6A441"]
-  registry [label="AwsExposedDatabaseRegistry\ndefault and named handles", fillcolor="#E9F7F6", color="#45A7A1"]
-  repo [label="Repositories / Exposed DSL\ntransaction(handle.database)", fillcolor="#F4F7FA", color="#8CA0B3"]
-  db [label="JDBC database\nPostgreSQL, RDS, H2 tests", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
-  adapter -> props
-  adapter -> resolver
-  props -> factory
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  sources [label="AWS config sources\nSecrets Manager\nParameter Store", fillcolor="#FFF7ED", color="#F97316"]
+  resolver [label="Settings resolver\nframework-specific\nfinal JDBC settings", fillcolor="#EAF7EF", color="#58A978"]
+  factory [label="Database factory\nHikari DataSource\nExposed Database", fillcolor="#E8F3FF", color="#5B8DEF"]
+  registry [label="Database registry\ndefault + named\nhandles", fillcolor="#E9F7F6", color="#45A7A1"]
+  rds [label="RDS IAM auth\ntoken password\nTLS caller config", fillcolor="#F1ECFF", color="#8A72D6"]
+  sources -> resolver
   resolver -> factory
   factory -> registry
-  registry -> repo
-  repo -> db
+  rds -> factory
 }

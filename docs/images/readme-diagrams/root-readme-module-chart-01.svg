@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760" role="img" aria-label="Module composition">
+<metadata>{&quot;bestPractice&quot;: &quot;module-overview-projects&quot;, &quot;bestPracticesCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/catalog.yaml&quot;, &quot;evidence&quot;: [&quot;wiki best-practices catalog&quot;, &quot;repo README image references&quot;, &quot;current source package names&quot;], &quot;generator&quot;: &quot;tools/generate-root-readme-diagrams.py&quot;, &quot;graphvizEvidence&quot;: [&quot;root-readme-module-chart-01.dot&quot;, &quot;root-readme-module-chart-01.plain&quot;, &quot;root-readme-module-chart-01-graphviz.svg&quot;, &quot;root-readme-module-chart-01-graphviz.png&quot;], &quot;intent&quot;: &quot;Help README readers choose the right published module or example.&quot;, &quot;rejectedPatternsCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/rejected/catalog.yaml&quot;, &quot;rejectedPatternsGuarded&quot;: [&quot;unclear-diagram-purpose&quot;, &quot;surface-redraw-without-source-model&quot;, &quot;text-overflow-or-bad-centering&quot;], &quot;sharedGenerator&quot;: &quot;/Users/debop/.codex/skills/bluetape4k-diagram/references/shared_diagram_generator.py&quot;, &quot;sources&quot;: [&quot;README.md&quot;, &quot;README.ko.md&quot;, &quot;settings.gradle.kts&quot;, &quot;AGENTS.md&quot;]}</metadata>
+<defs>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
+  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
+  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
+  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
+  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:14px}
+  .label{font-size:12px;fill:#344456}
+  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:10px}
+  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
+  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
+  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
+  .activation{stroke-width:1.4}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
+  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
+  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
+</style>
+
+<rect x="26" y="26" width="1448" height="708" rx="14" class="frame"/>
+<text class="title" x="54" y="72">Module composition</text>
+<text class="subtitle" x="56" y="104">Module families by reader choice: SDK wrappers, framework adapters, database foundation, examples, and BOM.</text>
+<rect x="54.0" y="150.0" width="681.0" height="230.0" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="76.0" y="178.0">SDK wrappers</text>
+<text class="tiny" x="76.0" y="202.0" fill="#2F6DE0">Use directly from libraries or coroutine services</text>
+<rect x="76.0" y="228.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#5B8DEF"/>
+<text class="bar-label" x="92.0" y="252.0">aws-java</text>
+<text class="tiny" x="92.0" y="272.0" fill="#2F6DE0">Java SDK v2 wrappers / sync / async / coroutine tiers</text>
+<rect x="76.0" y="302.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#58A978"/>
+<text class="bar-label" x="92.0" y="326.0">aws-kotlin</text>
+<text class="tiny" x="92.0" y="346.0" fill="#2F8B57">AWS Kotlin SDK helpers / native suspend + DSL builders</text>
+<rect x="765.0" y="150.0" width="681.0" height="230.0" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="787.0" y="178.0">Framework adapters</text>
+<text class="tiny" x="787.0" y="202.0" fill="#2F8B57">Managed Spring Boot and Ktor entrypoints</text>
+<rect x="787.0" y="228.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#45A7A1"/>
+<text class="bar-label" x="803.0" y="252.0">aws-spring-boot</text>
+<text class="tiny" x="803.0" y="272.0" fill="#168E86">Spring Boot 4 adapter / auto-config / templates / listeners</text>
+<rect x="787.0" y="302.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#D6A441"/>
+<text class="bar-label" x="803.0" y="326.0">aws-ktor</text>
+<text class="tiny" x="803.0" y="346.0" fill="#B98518">Ktor 3 adapter / SigV4 / S3 / SQS / DynamoDB plugins</text>
+<rect x="54.0" y="410.0" width="681.0" height="230.0" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="chip" x="76.0" y="438.0">Database foundation</text>
+<text class="tiny" x="76.0" y="462.0" fill="#168E86">Shared Exposed JDBC configuration boundary</text>
+<rect x="76.0" y="488.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#8A72D6"/>
+<text class="bar-label" x="92.0" y="512.0">aws-exposed</text>
+<text class="tiny" x="92.0" y="532.0" fill="#7255C7">database foundation / RDS IAM + AWS-backed config descriptors</text>
+<rect x="765.0" y="410.0" width="681.0" height="230.0" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="787.0" y="438.0">Alignment and examples</text>
+<text class="tiny" x="787.0" y="462.0" fill="#B98518">Version constraints plus runnable scenarios</text>
+<rect x="787.0" y="488.0" width="308.5" height="58" rx="8" fill="#FFFFFF" stroke="#DC6B82"/>
+<text class="bar-label" x="803.0" y="512.0">bom</text>
+<text class="tiny" x="803.0" y="532.0" fill="#C74E68">version alignment / java-platform constraints only</text>
+<rect x="1115.5" y="488.0" width="308.5" height="58" rx="8" fill="#FFFFFF" stroke="#F97316"/>
+<text class="bar-label" x="1131.5" y="512.0">Ktor examples</text>
+<text class="tiny" x="1131.5" y="532.0" fill="#EA580C">not published / DynamoDB / S3 / SQS / Exposed</text>
+<rect x="787.0" y="562.0" width="308.5" height="58" rx="8" fill="#FFFFFF" stroke="#64748B"/>
+<text class="bar-label" x="803.0" y="586.0">Spring examples</text>
+<text class="tiny" x="803.0" y="606.0" fill="#475569">not published / DynamoDB / S3 / SQS / Exposed</text>
+<rect class="footer" x="54" y="666" width="1392" height="54" rx="8"/>
+<text class="footer-title" x="74" y="689" dominant-baseline="middle">Reader cue</text>
+<text class="footer-detail" x="74" y="709" dominant-baseline="middle">Rows summarize README module responsibilities; they are not performance or adoption metrics.</text>
+</svg>

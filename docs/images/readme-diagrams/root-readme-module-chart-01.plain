@@ -1,0 +1,17 @@
+graph 1 28.344 0.89875
+node aws_java 1.3171 0.44937 2.6342 0.89875 "aws-java\nJava SDK v2 wrappers\nsync / async / coroutine tiers" rounded,filled box #5B8DEF #E8F3FF
+node aws_kotlin 4.6596 0.44937 2.5508 0.89875 "aws-kotlin\nAWS Kotlin SDK helpers\nnative suspend + DSL builders" rounded,filled box #58A978 #EAF7EF
+node aws_spring_boot 8.1427 0.44937 2.9154 0.89875 "aws-spring-boot\nSpring Boot 4 adapter\nauto-config / templates / listeners" rounded,filled box #45A7A1 #E9F7F6
+node aws_ktor 11.928 0.44937 3.155 0.89875 "aws-ktor\nKtor 3 adapter\nSigV4 / S3 / SQS / DynamoDB plugins" rounded,filled box #D6A441 #FFF3D9
+node aws_exposed 16.073 0.44937 3.6342 0.89875 "aws-exposed\ndatabase foundation\nRDS IAM + AWS-backed config descriptors" rounded,filled box #8A72D6 #F1ECFF
+node bom 19.931 0.44937 2.5821 0.89875 "bom\nversion alignment\njava-platform constraints only" rounded,filled box #DC6B82 #FDECEF
+node ktor_examples 23.377 0.44937 2.8112 0.89875 "Ktor examples\nnot published\nDynamoDB / S3 / SQS / Exposed" rounded,filled box #F97316 #FFF7ED
+node spring_examples 26.939 0.44937 2.8112 0.89875 "Spring examples\nnot published\nDynamoDB / S3 / SQS / Exposed" rounded,filled box #64748B #F8FAFC
+edge aws_java aws_kotlin 4 2.6381 0.44937 2.6381 0.44937 3.2389 0.44937 3.2389 0.44937 invis #3B82F6
+edge aws_kotlin aws_spring_boot 4 5.9417 0.44937 5.9417 0.44937 6.5389 0.44937 6.5389 0.44937 invis #3B82F6
+edge aws_spring_boot aws_ktor 4 9.6062 0.44937 9.6062 0.44937 10.207 0.44937 10.207 0.44937 invis #3B82F6
+edge aws_ktor aws_exposed 4 13.507 0.44937 13.507 0.44937 14.11 0.44937 14.11 0.44937 invis #3B82F6
+edge aws_exposed bom 4 17.894 0.44937 17.894 0.44937 18.492 0.44937 18.492 0.44937 invis #3B82F6
+edge bom ktor_examples 4 21.224 0.44937 21.224 0.44937 21.825 0.44937 21.825 0.44937 invis #3B82F6
+edge ktor_examples spring_examples 4 24.785 0.44937 24.785 0.44937 25.388 0.44937 25.388 0.44937 invis #3B82F6
+stop

@@ -1,20 +1,17 @@
-digraph aws_ktor_architecture_01 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  app [label="Ktor application\nroutes, plugins, lifecycle", fillcolor="#E8F3FF", color="#5B8DEF"]
-  core [label="AwsKtorCore\nshared defaults", fillcolor="#EAF7EF", color="#58A978"]
-  defaults [label="AwsKtorDefaults\nregion, endpoint\ncredentials, clock", fillcolor="#FFF3D9", color="#D6A441"]
-  s3 [label="S3KtorClient\nobject helpers", fillcolor="#FFF3D9", color="#D6A441"]
-  sqs [label="SqsConsumer\npolling runtime", fillcolor="#FDECEF", color="#DC6B82"]
-  ddb [label="DynamoDbKtorPlugin\nKotlin SDK client", fillcolor="#E9F7F6", color="#45A7A1"]
-  aws [label="AWS / LocalStack\nS3, SQS, DynamoDB, RDS", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
-  app -> core
-  core -> defaults
-  defaults -> s3
-  defaults -> sqs
-  defaults -> ddb
-  s3 -> aws
-  sqs -> aws
-  ddb -> aws
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  core [label="AwsKtorCore\nshared defaults\nregion/endpoint", fillcolor="#E8F3FF", color="#5B8DEF"]
+  sigv4 [label="AwsSigV4Plugin\nHTTP client signing\npayload policy", fillcolor="#EAF7EF", color="#58A978"]
+  server [label="Service plugins\nSQS/DynamoDB/S3\nCloudWatch/IMDS", fillcolor="#F1ECFF", color="#8A72D6"]
+  exposed [label="AwsExposedPlugin\ndatabase registry\ntransactions", fillcolor="#E9F7F6", color="#45A7A1"]
+  aws [label="AWS or emulator\nS3/SQS/DynamoDB\nCloudWatch/STS", fillcolor="#FFF7ED", color="#F97316"]
+  jdbc [label="JDBC databases\nH2/PostgreSQL\nExposed handles", fillcolor="#F8FAFC", color="#64748B"]
+  core -> sigv4
+  core -> server
+  core -> exposed
+  sigv4 -> aws
+  server -> aws
+  exposed -> jdbc
 }

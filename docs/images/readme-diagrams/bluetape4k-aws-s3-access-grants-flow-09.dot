@@ -1,0 +1,14 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  request [label="Caller request\nidentity + S3 target\noperation intent", fillcolor="#E8F3FF", color="#5B8DEF"]
+  resolve [label="Resolve grant\nS3 Control\npermission check", fillcolor="#EAF7EF", color="#58A978"]
+  session [label="Scoped access\nlocation/session\ntemporary scope", fillcolor="#E9F7F6", color="#45A7A1"]
+  object [label="S3 operation\nread/write object\nleast privilege", fillcolor="#FFF7ED", color="#F97316"]
+  result [label="Response\nmetadata/body\nerrors mapped", fillcolor="#F1ECFF", color="#8A72D6"]
+  request -> resolve
+  resolve -> session
+  session -> object
+  object -> result
+}

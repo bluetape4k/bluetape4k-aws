@@ -1,76 +1,99 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="1160" viewBox="0 0 980 1160" role="img" aria-label="Ktor SQS consumer lifecycle">
+<svg xmlns="http://www.w3.org/2000/svg" width="1860" height="1055" viewBox="0 0 1860 1055" role="img" aria-label="SQS consumer and publisher">
+<metadata>{&quot;bestPractice&quot;: &quot;sequence-workflow-sample&quot;, &quot;bestPracticesCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/catalog.yaml&quot;, &quot;evidence&quot;: [&quot;wiki best-practices catalog&quot;, &quot;repo README image references&quot;, &quot;current source package names&quot;], &quot;generator&quot;: &quot;tools/generate-root-readme-diagrams.py&quot;, &quot;graphvizEvidence&quot;: [&quot;aws-ktor-sequence-01.dot&quot;, &quot;aws-ktor-sequence-01.plain&quot;, &quot;aws-ktor-sequence-01-graphviz.svg&quot;, &quot;aws-ktor-sequence-01-graphviz.png&quot;], &quot;intent&quot;: &quot;Ktor SQS runtime receives messages, invokes handlers, and acknowledges or retries according to observer events.&quot;, &quot;rejectedPatternsCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/rejected/catalog.yaml&quot;, &quot;rejectedPatternsGuarded&quot;: [&quot;unclear-diagram-purpose&quot;, &quot;surface-redraw-without-source-model&quot;, &quot;sequence-label-path-intersection&quot;, &quot;empty-sequence-branch&quot;], &quot;sharedGenerator&quot;: &quot;/Users/debop/.codex/skills/bluetape4k-diagram/references/shared_diagram_generator.py&quot;, &quot;sources&quot;: [&quot;aws-ktor/README.md&quot;, &quot;aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor&quot;, &quot;aws-ktor/build.gradle.kts&quot;]}</metadata>
 <defs>
-  <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M1,1 L8,4.5 L1,8 Z" fill="#66758A"/></marker>
   <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
 </defs>
 <style>
   svg{background:#F5F7FA}
   .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:34px;fill:#102033}
-  .subtitle,.detail,.footer-detail{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;fill:#526274}
+  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
+  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
+  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
+  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
+  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
   .subtitle{font-size:14px}
-  .card-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:20px;fill:#102033}
+  .label{font-size:12px;fill:#344456}
+  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
   .detail{font-size:13px}
-  .chip{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:10px;fill:#243447}
+  .tiny{font-size:10px}
+  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
   .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.2;marker-end:url(#arrow)}
-  .edge-label{font-family:"Comic Mono","SFMono-Regular",Menlo,monospace;font-size:11px;fill:#344456}
-  .label-bg{fill:#FFFFFF;stroke:#D9E2EC}
+  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
+  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
+  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
+  .activation{stroke-width:1.4}
   .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter","Comic Sans MS",cursive;font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-size:11px;fill:#DDE7F2}
+  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
+  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
+  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
 </style>
-<rect x="26" y="26" width="928" height="1108" rx="14" class="frame"/>
-<text class="title" x="54" y="72">Ktor SQS consumer lifecycle</text>
-<text class="subtitle" x="56" y="102">SqsConsumer installs defaults, launches pollers, handles messages, and drains during shutdown.</text>
-<rect x="837.5" y="54" width="78.5" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="chip" x="876.75" y="70" text-anchor="middle">Install</text>
-<rect x="753.5" y="54" width="68" height="24" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="787.5" y="70" text-anchor="middle">Poll</text>
-<rect x="669.5" y="54" width="68" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="703.5" y="70" text-anchor="middle">Ack</text>
-<g><g><path class="edge" d="M490 214 L490 246 L490 246 L490 266" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 348 L490 380 L490 380 L490 400" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 482 L490 514 L490 514 L490 534" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 616 L490 648 L490 648 L490 668" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 750 L490 782 L490 782 L490 802" stroke="#66758A"/></g>
-<g><path class="edge" d="M490 884 L490 916 L490 916 L490 936" stroke="#66758A"/></g></g>
-<g id="install">
-  <rect class="card" x="330" y="136" width="320" height="78" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="490" y="172" text-anchor="middle">Install SqsConsumer</text>
-  <text class="detail" x="490" y="196" text-anchor="middle">Ktor app plugin</text>
-</g>
-<g id="defaults">
-  <rect class="card" x="330" y="266" width="320" height="82" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="490" y="304" text-anchor="middle">Resolve AWS defaults</text>
-  <text class="detail" x="490" y="328" text-anchor="middle">service-local SQS config</text>
-</g>
-<g id="runtime">
-  <rect class="card" x="330" y="400" width="320" height="82" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="card-title" x="490" y="438" text-anchor="middle">Build runtime</text>
-  <text class="detail" x="490" y="462" text-anchor="middle">client, converters, hooks</text>
-</g>
-<g id="pollers">
-  <rect class="card" x="330" y="534" width="320" height="82" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="card-title" x="490" y="572" text-anchor="middle">Launch pollers</text>
-  <text class="detail" x="490" y="596" text-anchor="middle">ApplicationStarted</text>
-</g>
-<g id="poll">
-  <rect class="card" x="330" y="668" width="320" height="82" rx="10" fill="#FDECEF" stroke="#DC6B82"/>
-  <text class="card-title" x="490" y="706" text-anchor="middle">Long poll SQS</text>
-  <text class="detail" x="490" y="730" text-anchor="middle">ReceiveMessage</text>
-</g>
-<g id="handler">
-  <rect class="card" x="330" y="802" width="320" height="82" rx="10" fill="#F4F7FA" stroke="#8CA0B3"/>
-  <text class="card-title" x="490" y="840" text-anchor="middle">Invoke handler</text>
-  <text class="detail" x="490" y="864" text-anchor="middle">interceptors, observer event</text>
-</g>
-<g id="ack">
-  <rect class="card" x="330" y="936" width="320" height="82" rx="10" fill="#FFF0E3" stroke="#F47B36"/>
-  <text class="card-title" x="490" y="974" text-anchor="middle">Ack / nack</text>
-  <text class="detail" x="490" y="998" text-anchor="middle">delete or change visibility</text>
-</g>
-<rect class="footer" x="54" y="1056" width="872" height="54" rx="8"/>
-<text class="footer-title" x="72" y="1075" dominant-baseline="middle">Lifecycle role</text>
-<text class="footer-detail" x="72" y="1093" dominant-baseline="middle">Vertical steps keep listener startup, long polling, handler hooks, and shutdown behavior visible.</text>
+
+<defs>
+  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
+  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
+  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
+  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
+  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
+</defs>
+<rect x="32" y="28" width="1796" height="999" rx="30" class="frame"/>
+<text class="seqTitle" x="68" y="88">SQS consumer and publisher</text>
+<text class="seqSubtitle" x="72" y="124">Ktor SQS runtime receives messages, invokes handlers, and acknowledges or retries according to observer events.</text>
+<rect class="card" x="180.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#FFF7ED" stroke="#F97316"/>
+<text class="seqParticipantTitle" x="305.0" y="199.0" text-anchor="middle" dominant-baseline="middle">SQS queue</text>
+<text class="seqParticipantDetail" x="305.0" y="227.0" text-anchor="middle" dominant-baseline="middle">message</text>
+<line class="seq-line" x1="305.0" y1="248.0" x2="305.0" y2="900.0"/>
+<rect class="card" x="600.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#EAF7EF" stroke="#58A978"/>
+<text class="seqParticipantTitle" x="725.0" y="199.0" text-anchor="middle" dominant-baseline="middle">SqsConsumerRuntime</text>
+<text class="seqParticipantDetail" x="725.0" y="227.0" text-anchor="middle" dominant-baseline="middle">poll loop</text>
+<line class="seq-line" x1="725.0" y1="248.0" x2="725.0" y2="900.0"/>
+<rect class="card" x="1020.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="seqParticipantTitle" x="1145.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Message handler</text>
+<text class="seqParticipantDetail" x="1145.0" y="227.0" text-anchor="middle" dominant-baseline="middle">typed body</text>
+<line class="seq-line" x1="1145.0" y1="248.0" x2="1145.0" y2="900.0"/>
+<rect class="card" x="1440.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="seqParticipantTitle" x="1565.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Observer/metrics</text>
+<text class="seqParticipantDetail" x="1565.0" y="227.0" text-anchor="middle" dominant-baseline="middle">ack/nack events</text>
+<line class="seq-line" x1="1565.0" y1="248.0" x2="1565.0" y2="900.0"/>
+<rect class="activation" x="717.0" y="318.0" width="16" height="330.0" rx="5" fill="#EAF7EF" stroke="#58A978"/>
+<rect class="activation" x="1137.0" y="406.0" width="16" height="66.0" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
+<rect class="activation" x="1557.0" y="494.0" width="16" height="66.0" rx="5" fill="#E9F7F6" stroke="#45A7A1"/>
+<rect class="activation" x="297.0" y="670.0" width="16" height="66.0" rx="5" fill="#FFF7ED" stroke="#F97316"/>
+<rect class="altBox" x="820" y="480" width="780" height="226" rx="18"/>
+<rect class="labelPill" x="845" y="466" width="270" height="28" rx="7"/>
+<text class="detail" x="980" y="480" text-anchor="middle" dominant-baseline="middle">alt ack or retry outcome</text>
+<path class="seq" d="M 317.0 320.0 L 713.0 320.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+<rect class="labelPill" x="392.0" y="280.0" width="246" height="28" rx="7"/>
+<circle cx="411.0" cy="294.0" r="12" fill="#EA580C"/>
+<text class="numberBadge" x="411.0" y="295.0" text-anchor="middle" dominant-baseline="middle">1</text>
+<text class="label" x="525.0" y="294.0" text-anchor="middle" dominant-baseline="middle">poll receive batch</text>
+<path class="seq" d="M 737.0 408.0 L 1133.0 408.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+<rect class="labelPill" x="812.0" y="368.0" width="246" height="28" rx="7"/>
+<circle cx="831.0" cy="382.0" r="12" fill="#2F8B57"/>
+<text class="numberBadge" x="831.0" y="383.0" text-anchor="middle" dominant-baseline="middle">2</text>
+<text class="label" x="945.0" y="382.0" text-anchor="middle" dominant-baseline="middle">invoke handler</text>
+<path class="seq" d="M 1157.0 496.0 L 1553.0 496.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+<rect class="labelPill" x="1232.0" y="456.0" width="246" height="28" rx="7"/>
+<circle cx="1251.0" cy="470.0" r="12" fill="#168E86"/>
+<text class="numberBadge" x="1251.0" y="471.0" text-anchor="middle" dominant-baseline="middle">3</text>
+<text class="label" x="1365.0" y="470.0" text-anchor="middle" dominant-baseline="middle">publish observer event</text>
+<path class="seqReturn" d="M 1133.0 584.0 L 737.0 584.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
+<rect class="labelPill" x="812.0" y="544.0" width="246" height="28" rx="7"/>
+<circle cx="831.0" cy="558.0" r="12" fill="#7255C7"/>
+<text class="numberBadge" x="831.0" y="559.0" text-anchor="middle" dominant-baseline="middle">4</text>
+<text class="label" x="945.0" y="558.0" text-anchor="middle" dominant-baseline="middle">ack or retry result</text>
+<path class="seqReturn" d="M 713.0 672.0 L 317.0 672.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+<rect class="labelPill" x="392.0" y="632.0" width="246" height="28" rx="7"/>
+<circle cx="411.0" cy="646.0" r="12" fill="#EA580C"/>
+<text class="numberBadge" x="411.0" y="647.0" text-anchor="middle" dominant-baseline="middle">5</text>
+<text class="label" x="525.0" y="646.0" text-anchor="middle" dominant-baseline="middle">continue polling</text>
+<rect x="260" y="910" width="1340" height="42" rx="12" fill="#FFFFFF" stroke="#D6E3EF" stroke-width="1.6"/>
+<text class="detail" x="930.0" y="936" text-anchor="middle">Manual ack/nack keeps retry behavior visible.</text>
 </svg>

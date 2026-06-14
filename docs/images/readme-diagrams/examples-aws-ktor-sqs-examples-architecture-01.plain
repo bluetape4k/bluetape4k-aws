@@ -1,14 +1,10 @@
-graph 1 3.714 8.7682
-node client 1.1869 8.4386 1.655 0.65917 "HTTP client / test\nqueue route calls" rounded,filled box #5B8DEF #E8F3FF
-node routes 1.1869 6.9513 2.1029 0.89875 "Ktor queue routes\nsend, create, delete\nattributes, inspect state" rounded,filled box #58A978 #EAF7EF
-node plugin 2.673 3.5437 1.78 0.65917 "SqsConsumer plugin\npolling coroutines" rounded,filled box #D6A441 #FFF3D9
-node hooks 2.6313 2.0565 2.1654 0.89875 "Advanced hooks\nmanual ack/nack\ninterceptors, observers" rounded,filled box #8A72D6 #F1ECFF
-node store 1.0619 0.44937 2.1237 0.89875 "Inspection state\nreceived bodies\nevents and observations" rounded,filled box #DC6B82 #FDECEF
-node sqs 2.6174 5.1876 2.0717 0.90635 "Floci-backed SQS\nthrough SqsAsyncClient" rounded,filled cylinder #F47B36 #FFF0E3
-edge client routes 4 1.1869 8.1048 1.1869 8.1048 1.1869 7.5381 1.1869 7.5381 solid #64748b
-edge routes store 4 0.84201 6.4992 0.84201 6.4992 0.84201 1.0384 0.84201 1.0384 inspect 1.0393 3.5437 solid #64748b
-edge routes sqs 4 1.91 6.4971 1.91 6.4971 1.91 5.7699 1.91 5.7699 publish 2.331 6.0714 solid #64748b
-edge plugin hooks 4 2.673 3.21 2.673 3.21 2.673 2.6433 2.673 2.6433 solid #64748b
-edge hooks store 4 1.8362 1.6002 1.8362 1.6002 1.8362 1.0369 1.8362 1.0369 solid #64748b
-edge sqs plugin 4 2.673 4.7297 2.673 4.7297 2.673 4.015 2.673 4.015 messages 2.9369 4.3039 solid #64748b
+graph 1 9.2658 1.5515
+node route 3.2846 1.1022 1.9258 0.89875 "Ktor runtime app\nconsumer + publisher\nobserver hooks" rounded,filled box #5B8DEF #E8F3FF
+node module 5.95 1.1022 1.905 0.89875 "SqsConsumerRuntime\nmanual ack/nack\nretry-once" rounded,filled box #58A978 #EAF7EF
+node service 8.4592 0.44937 1.6133 0.89875 "SQS queue\nFloci emulator\nredelivery check" rounded,filled box #F97316 #FFF7ED
+node tests 0.78583 0.44937 1.5717 0.89875 "Consumer tests\ninterceptors\nobserver events" rounded,filled box #45A7A1 #E9F7F6
+edge route module 4 4.2544 1.1022 4.2544 1.1022 4.8523 1.1022 4.8523 1.1022 solid #3B82F6
+edge module service 4 6.9093 0.77576 6.9093 0.77576 7.5054 0.77576 7.5054 0.77576 solid #3B82F6
+edge tests route 4 1.5765 0.77576 1.5765 0.77576 2.1729 0.77576 2.1729 0.77576 solid #3B82F6
+edge tests service 4 1.5781 0.32639 1.5781 0.32639 7.5061 0.32639 7.5061 0.32639 solid #3B82F6
 stop

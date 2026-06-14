@@ -3,7 +3,7 @@
 ## Context
 
 README Mermaid diagrams were replaced with generated PNG embeds while keeping
-the source SVG files under `docs/assets/readme-diagrams` and
+the generated SVG and README-facing PNG files under
 `docs/images/readme-diagrams`.
 
 ## Decision

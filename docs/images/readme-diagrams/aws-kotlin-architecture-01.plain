@@ -1,15 +1,9 @@
-graph 1 6.0265 5.4464
-node app 2.9056 5.1168 2.7175 0.65917 "Coroutine application\nservice code with suspend calls" rounded,filled box #5B8DEF #E8F3FF
-node builders 0.78062 3.6434 1.5613 0.89875 "DSL builders\nrequests, models\nwait helpers" rounded,filled box #D6A441 #FFF3D9
-node with 2.9056 3.6434 1.7279 0.65917 "withXClient helpers\ncreate, use, close" rounded,filled box #58A978 #EAF7EF
-node flows 5.1417 3.6434 1.7696 0.89875 "Flow helpers\nKinesis recordFlow\npaged reads" rounded,filled box #45A7A1 #E9F7F6
-node clients 2.9056 2.0502 2.6029 0.89875 "AWS SDK for Kotlin clients\nDynamoDB, S3, SQS, SNS\nKMS, CloudWatch, Kinesis, STS" rounded,filled box #8CA0B3 #F4F7FA
-node aws 2.9056 0.45318 1.9779 0.90635 "AWS services\nor LocalStack / Floci" rounded,filled cylinder #F47B36 #FFF0E3
-edge app builders 7 1.8958 4.7859 1.8958 4.461 1.8958 4.0139 1.8958 4.0139 1.8958 4.0139 1.703 4.0139 1.703 4.0139 solid #64748b
-edge app with 4 2.9056 4.7824 2.9056 4.7824 2.9056 4.1121 2.9056 4.1121 solid #64748b
-edge app flows 7 4.0612 4.781 4.0612 4.4701 4.0612 4.0556 4.0612 4.0556 4.0612 4.0556 4.1187 4.0556 4.1187 4.0556 solid #64748b
-edge builders clients 7 1.5677 3.2361 1.6754 3.2361 1.75 3.2361 1.75 3.2361 1.75 3.2361 1.75 2.641 1.75 2.641 solid #64748b
-edge with clients 4 2.9056 3.3094 2.9056 3.3094 2.9056 2.6403 2.9056 2.6403 solid #64748b
-edge flows clients 7 4.2505 3.2778 4.0603 3.2778 3.9154 3.2778 3.9154 3.2778 3.9154 3.2778 3.9154 2.6395 3.9154 2.6395 solid #64748b
-edge clients aws 4 2.9056 1.5968 2.9056 1.5968 2.9056 1.0489 2.9056 1.0489 solid #64748b
+graph 1 8.4742 0.89875
+node config 0.71813 0.44937 1.4363 0.89875 "Client config\nregion/endpoint\ncredentials" rounded,filled box #5B8DEF #E8F3FF
+node client 2.9408 0.44937 1.5092 0.89875 "Kotlin SDK client\nnative suspend\ncloseable" rounded,filled box #58A978 #EAF7EF
+node helpers 5.2156 0.44937 1.5404 0.89875 "DSL helpers\nrequests/models\npagination" rounded,filled box #45A7A1 #E9F7F6
+node service 7.605 0.44937 1.7383 0.89875 "AWS service\nDynamoDB/S3/SQS\nKMS/SES/STS" rounded,filled box #F97316 #FFF7ED
+edge config client 4 1.4398 0.44937 1.4398 0.44937 2.0387 0.44937 2.0387 0.44937 solid #3B82F6
+edge client helpers 4 3.6983 0.44937 3.6983 0.44937 4.3 0.44937 4.3 0.44937 solid #3B82F6
+edge helpers service 4 5.9914 0.44937 5.9914 0.44937 6.5876 0.44937 6.5876 0.44937 solid #3B82F6
 stop

@@ -10,7 +10,7 @@ Parameter Store paths now exposed through `aws-exposed`, `aws-spring-boot`, and
 ## Decision
 
 Regenerate the root README service chart and architecture diagrams as shared
-English-label SVG/PNG assets under `docs/assets/readme-diagrams`. Architecture
+English-label SVG/PNG assets under `docs/images/readme-diagrams`. Architecture
 diagrams use explicit layer bands with a left label gutter and color-coded
 routes instead of Mermaid.
 

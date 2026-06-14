@@ -1,0 +1,16 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
+  node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  props [label="KmsProperties\nregion/endpoint\nkey and context", fillcolor="#E8F3FF", color="#5B8DEF"]
+  auto [label="KmsAutoConfiguration\nclient bean\noperations bean", fillcolor="#EAF7EF", color="#58A978"]
+  ops [label="KmsOperations\nencrypt/decrypt\ndata keys", fillcolor="#E9F7F6", color="#45A7A1"]
+  cache [label="DataKeyCache\nTTL + max size\nplaintext scoped", fillcolor="#FFF3D9", color="#D6A441"]
+  codec [label="Field codec\n@KmsEncrypted\nTextEncryptor adapter", fillcolor="#F1ECFF", color="#8A72D6"]
+  kms [label="AWS KMS\nkey material\nencryption context", fillcolor="#FFF7ED", color="#F97316"]
+  props -> auto
+  auto -> ops
+  ops -> cache
+  ops -> kms
+  codec -> ops
+}

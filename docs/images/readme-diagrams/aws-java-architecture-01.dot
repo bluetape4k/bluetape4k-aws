@@ -1,21 +1,12 @@
-digraph aws_java_architecture_01 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  app [label="Application code\nblocking, async, or suspend call sites", fillcolor="#E8F3FF", color="#5B8DEF"]
-  factories [label="Client factories\nservice-specific sync\nand async builders", fillcolor="#FFF3D9", color="#D6A441"]
-  dsl [label="Request DSL helpers\nmodel builders\ntyped shortcuts", fillcolor="#EAF7EF", color="#58A978"]
-  coroutine [label="Coroutine adapters\nCompletableFuture.await\nFlow bridges", fillcolor="#F1ECFF", color="#8A72D6"]
-  batch [label="DynamoDB helpers\nbatch and repository\nEnhanced Async tables", fillcolor="#FDECEF", color="#DC6B82"]
-  sdk [label="AWS Java SDK v2 clients\nS3, SQS, SNS, DynamoDB\nKMS, CloudWatch, Kinesis, STS", fillcolor="#F4F7FA", color="#8CA0B3"]
-  aws [label="AWS services\nor LocalStack / Floci", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
-  app -> factories
-  app -> dsl
-  app -> coroutine
-  app -> batch
-  factories -> sdk
-  dsl -> sdk
-  coroutine -> sdk
-  batch -> sdk
-  sdk -> aws
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  sync [label="Sync support\nclient factories\nrequest DSLs", fillcolor="#E8F3FF", color="#5B8DEF"]
+  async [label="Async support\nCompletableFuture\nSDK async clients", fillcolor="#EAF7EF", color="#58A978"]
+  coroutines [label="Coroutine facade\nawait wrappers\nFlow helpers", fillcolor="#E9F7F6", color="#45A7A1"]
+  services [label="Service packages\nDynamoDB/S3/SQS\nKMS/CloudWatch/STS", fillcolor="#FFF7ED", color="#F97316"]
+  sync -> async
+  async -> coroutines
+  coroutines -> services
 }

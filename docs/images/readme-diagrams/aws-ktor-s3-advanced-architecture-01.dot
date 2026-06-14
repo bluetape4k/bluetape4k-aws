@@ -1,19 +1,19 @@
-digraph aws_ktor_s3_advanced_architecture_01 {
-  graph [rankdir=TB, bgcolor="#ffffff", pad=0.35, nodesep=0.48, ranksep=0.70, splines=ortho]
+digraph G {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.55, ranksep=0.75, splines=ortho]
   node [shape=box, style="rounded,filled", fontname="Architects Daughter", fontsize=12, margin="0.14,0.09", color="#94a3b8", fillcolor="#f8fafc"]
-  edge [fontname="Comic Mono", fontsize=10, color="#64748b", penwidth=1.5, arrowsize=0.75]
-  app [label="Ktor application\nobject route handlers", fillcolor="#E8F3FF", color="#5B8DEF"]
-  client [label="S3KtorClient\nadvanced helper", fillcolor="#FFF3D9", color="#D6A441"]
-  detect [label="Content type detector\nmetadata inference", fillcolor="#E9F7F6", color="#45A7A1"]
-  headers [label="Encryption headers\nserver-side options", fillcolor="#FDECEF", color="#DC6B82"]
-  envelope [label="Envelope encryption\nclient-side data key", fillcolor="#F1ECFF", color="#8A72D6"]
-  sigv4 [label="AwsSigV4Plugin\nsigned REST requests", fillcolor="#EAF7EF", color="#58A978"]
-  s3 [label="AWS S3 / Floci / LocalStack\ncompatible endpoint", fillcolor="#FFF0E3", color="#F47B36", shape=cylinder]
-  app -> client
-  client -> detect
+  edge [fontname="Comic Mono", fontsize=10, penwidth=1.8, arrowsize=0.75, color="#3B82F6"]
+  metrics [label="MicrometerS3KtorClient\nwraps delegate\noperation timers", fillcolor="#E9F7F6", color="#45A7A1"]
+  client [label="S3KtorClient\nobject API\npresigned URLs", fillcolor="#E8F3FF", color="#5B8DEF"]
+  encryption [label="Client-side encryption\nAES-GCM envelope\nDataKeyProvider", fillcolor="#F1ECFF", color="#8A72D6"]
+  meter [label="MeterRegistry\nlow-cardinality tags\ncaller supplied", fillcolor="#F8FAFC", color="#64748B"]
+  sigv4 [label="S3 SigV4 policy\nunsigned payload\nS3 path rules", fillcolor="#EAF7EF", color="#58A978"]
+  headers [label="SSE headers\nSSE-S3/SSE-KMS\nDSSE/SSE-C", fillcolor="#FFF3D9", color="#D6A441"]
+  s3 [label="S3 endpoint\nAWS or emulator\nobject store", fillcolor="#FFF7ED", color="#F97316"]
+  metrics -> client
+  metrics -> meter
+  encryption -> client
+  client -> sigv4
   client -> headers
-  client -> envelope
-  headers -> sigv4
-  envelope -> sigv4
   sigv4 -> s3
+  headers -> s3
 }

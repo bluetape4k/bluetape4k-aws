@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760" role="img" aria-label="AWS component map">
+<metadata>{&quot;bestPractice&quot;: &quot;module-overview-projects&quot;, &quot;bestPracticesCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/catalog.yaml&quot;, &quot;evidence&quot;: [&quot;wiki best-practices catalog&quot;, &quot;repo README image references&quot;, &quot;current source package names&quot;], &quot;generator&quot;: &quot;tools/generate-root-readme-diagrams.py&quot;, &quot;graphvizEvidence&quot;: [&quot;bluetape4k-aws-components-04.dot&quot;, &quot;bluetape4k-aws-components-04.plain&quot;, &quot;bluetape4k-aws-components-04-graphviz.svg&quot;, &quot;bluetape4k-aws-components-04-graphviz.png&quot;], &quot;intent&quot;: &quot;Map current README module responsibilities without drawing every SDK call.&quot;, &quot;rejectedPatternsCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/rejected/catalog.yaml&quot;, &quot;rejectedPatternsGuarded&quot;: [&quot;unclear-diagram-purpose&quot;, &quot;surface-redraw-without-source-model&quot;, &quot;text-overflow-or-bad-centering&quot;], &quot;sharedGenerator&quot;: &quot;/Users/debop/.codex/skills/bluetape4k-diagram/references/shared_diagram_generator.py&quot;, &quot;sources&quot;: [&quot;README.md&quot;, &quot;README.ko.md&quot;, &quot;settings.gradle.kts&quot;, &quot;AGENTS.md&quot;]}</metadata>
+<defs>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
+  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
+  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
+  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
+  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:14px}
+  .label{font-size:12px;fill:#344456}
+  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:10px}
+  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
+  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
+  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
+  .activation{stroke-width:1.4}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
+  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
+  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
+</style>
+
+<rect x="26" y="26" width="1448" height="708" rx="14" class="frame"/>
+<text class="title" x="54" y="72">AWS component map</text>
+<text class="subtitle" x="56" y="104">README capability groups: framework entrypoints, service access, data/config, and operational integrations.</text>
+<rect x="54.0" y="150.0" width="681.0" height="230.0" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
+<text class="chip" x="76.0" y="178.0">Framework entrypoints</text>
+<text class="tiny" x="76.0" y="202.0" fill="#2F6DE0">README module responsibilities grouped by reader task</text>
+<rect x="76.0" y="228.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#58A978"/>
+<text class="bar-label" x="92.0" y="252.0">Spring Boot 4</text>
+<text class="tiny" x="92.0" y="272.0" fill="#2F8B57">auto-config / templates/listeners</text>
+<rect x="76.0" y="302.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#8A72D6"/>
+<text class="bar-label" x="92.0" y="326.0">Ktor 3 plugins</text>
+<text class="tiny" x="92.0" y="346.0" fill="#7255C7">SigV4 / S3/SQS/DynamoDB</text>
+<rect x="765.0" y="150.0" width="681.0" height="230.0" rx="12" fill="#EAF7EF" stroke="#58A978"/>
+<text class="chip" x="787.0" y="178.0">Service access</text>
+<text class="tiny" x="787.0" y="202.0" fill="#2F8B57">README module responsibilities grouped by reader task</text>
+<rect x="787.0" y="228.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#45A7A1"/>
+<text class="bar-label" x="803.0" y="252.0">Java SDK wrappers</text>
+<text class="tiny" x="803.0" y="272.0" fill="#168E86">sync/async / coroutine await</text>
+<rect x="787.0" y="302.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#D6A441"/>
+<text class="bar-label" x="803.0" y="326.0">Kotlin SDK helpers</text>
+<text class="tiny" x="803.0" y="346.0" fill="#B98518">native suspend / DSL builders</text>
+<rect x="54.0" y="410.0" width="681.0" height="230.0" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
+<text class="chip" x="76.0" y="438.0">Data and config</text>
+<text class="tiny" x="76.0" y="462.0" fill="#168E86">README module responsibilities grouped by reader task</text>
+<rect x="76.0" y="488.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#DC6B82"/>
+<text class="bar-label" x="92.0" y="512.0">Exposed + RDS IAM</text>
+<text class="tiny" x="92.0" y="532.0" fill="#C74E68">Hikari Database / registry handles</text>
+<rect x="76.0" y="562.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#64748B"/>
+<text class="bar-label" x="92.0" y="586.0">Secrets / Parameter</text>
+<text class="tiny" x="92.0" y="606.0" fill="#475569">source descriptors / externalized config</text>
+<rect x="765.0" y="410.0" width="681.0" height="230.0" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
+<text class="chip" x="787.0" y="438.0">Security and operations</text>
+<text class="tiny" x="787.0" y="462.0" fill="#B98518">README module responsibilities grouped by reader task</text>
+<rect x="787.0" y="488.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#5B8DEF"/>
+<text class="bar-label" x="803.0" y="512.0">KMS helpers</text>
+<text class="tiny" x="803.0" y="532.0" fill="#2F6DE0">small secrets / field codecs</text>
+<rect x="787.0" y="562.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#F97316"/>
+<text class="bar-label" x="803.0" y="586.0">CloudWatch + Micrometer</text>
+<text class="tiny" x="803.0" y="606.0" fill="#EA580C">logs/metrics / S3/SQS timers</text>
+<rect class="footer" x="54" y="666" width="1392" height="54" rx="8"/>
+<text class="footer-title" x="74" y="689" dominant-baseline="middle">Reader cue</text>
+<text class="footer-detail" x="74" y="709" dominant-baseline="middle">Use this as a capability map; detailed service-by-module coverage lives in the matrix below.</text>
+</svg>

@@ -1,13 +1,11 @@
-graph 1 2.8425 7.955
-node caller 1.4212 7.6254 1.9883 0.65917 "Suspend caller\nrepository or service" rounded,filled box #5B8DEF #E8F3FF
-node adapter 1.4212 6.1051 2.8425 0.65917 "Coroutine extension\nbuild request and call async client" rounded,filled box #8A72D6 #F1ECFF
-node sdk 1.4212 4.5849 2.3842 0.65917 "AWS async client\nreturns CompletableFuture" rounded,filled box #8CA0B3 #F4F7FA
-node future 1.4212 3.2174 1.9571 0.65917 "Future completes\nsuccess or exception" rounded,filled box #58A978 #EAF7EF
-node resume 1.4212 1.6971 2.6862 0.65917 "Coroutine resumes\nresponse, Flow item, or failure" rounded,filled box #45A7A1 #E9F7F6
-node close 1.4212 0.32958 2.6654 0.65917 "Caller owns client lifecycle\nclose application-scoped clients" rounded,filled box #F47B36 #FFF0E3
-edge caller adapter 4 1.4212 7.2918 1.4212 7.2918 1.4212 6.5737 1.4212 6.5737 "suspend call" 1.8587 6.8653 solid #64748b
-edge adapter sdk 4 1.4212 5.7715 1.4212 5.7715 1.4212 5.0534 1.4212 5.0534 "async request" 1.8952 5.345 solid #64748b
-edge sdk future 4 1.4212 4.2503 1.4212 4.2503 1.4212 3.6889 1.4212 3.6889 solid #64748b
-edge future resume 4 1.4212 2.8837 1.4212 2.8837 1.4212 2.1656 1.4212 2.1656 await 1.6035 2.4572 solid #64748b
-edge resume close 4 1.4212 1.3626 1.4212 1.3626 1.4212 0.8011 1.4212 0.8011 solid #64748b
+graph 1 8.7971 1.2564
+node caller 0.75979 0.32958 1.5196 0.65917 "Coroutine caller\nsuspend scope" rounded,filled box #5B8DEF #E8F3FF
+node extension 3.1075 0.92681 1.6758 0.65917 "Extension function\nrequest builder" rounded,filled box #58A978 #EAF7EF
+node client 5.5594 0.32958 1.7279 0.65917 "Async SDK client\nCompletableFuture" rounded,filled box #45A7A1 #E9F7F6
+node service 7.9852 0.32958 1.6238 0.65917 "AWS service\nemulator or AWS" rounded,filled box #F97316 #FFF7ED
+edge caller extension 7 0.75542 0.66575 0.75542 0.81511 0.75542 0.95778 0.75542 0.95778 0.75542 0.95778 2.123 0.95778 2.123 0.95778 solid #3B82F6
+edge extension client 7 3.1026 0.595 3.1026 0.48879 3.1026 0.39815 3.1026 0.39815 3.1026 0.39815 4.5512 0.39815 4.5512 0.39815 solid #3B82F6
+edge client caller 4 4.6902 0.19907 4.6902 0.19907 1.6656 0.19907 1.6656 0.19907 solid #3B82F6
+edge client service 4 6.4283 0.21972 6.4283 0.21972 7.0249 0.21972 7.0249 0.21972 solid #3B82F6
+edge service client 4 7.1707 0.43944 7.1707 0.43944 6.572 0.43944 6.572 0.43944 solid #3B82F6
 stop

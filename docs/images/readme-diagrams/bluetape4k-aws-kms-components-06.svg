@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1188" viewBox="0 0 1440 1188" role="img" aria-label="KMS Spring Boot components">
+<metadata>{&quot;bestPractice&quot;: &quot;architecture-aws-spring-boot&quot;, &quot;bestPracticesCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/catalog.yaml&quot;, &quot;evidence&quot;: [&quot;wiki best-practices catalog&quot;, &quot;repo README image references&quot;, &quot;current source package names&quot;], &quot;generator&quot;: &quot;tools/generate-root-readme-diagrams.py&quot;, &quot;graphvizEvidence&quot;: [&quot;bluetape4k-aws-kms-components-06.dot&quot;, &quot;bluetape4k-aws-kms-components-06.plain&quot;, &quot;bluetape4k-aws-kms-components-06-graphviz.svg&quot;, &quot;bluetape4k-aws-kms-components-06-graphviz.png&quot;], &quot;intent&quot;: &quot;Explain Spring Boot KMS feature boundaries.&quot;, &quot;rejectedPatternsCatalog&quot;: &quot;/Users/debop/work/bluetape4k/bluetape4k-wiki/docs/diagrams/best-practices/rejected/catalog.yaml&quot;, &quot;rejectedPatternsGuarded&quot;: [&quot;relationship-heavy-grid&quot;, &quot;unclear-diagram-purpose&quot;, &quot;surface-redraw-without-source-model&quot;, &quot;card-penetrating-connector&quot;, &quot;tangent-or-zero-degree-endpoint&quot;, &quot;layer-label-crowding&quot;, &quot;missing-or-subtle-decorator&quot;], &quot;sharedGenerator&quot;: &quot;/Users/debop/.codex/skills/bluetape4k-diagram/references/shared_diagram_generator.py&quot;, &quot;sources&quot;: [&quot;aws-spring-boot/README.md&quot;, &quot;aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring&quot;, &quot;aws-spring-boot/build.gradle.kts&quot;]}</metadata>
+<defs>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
+  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
+  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
+  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
+  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:14px}
+  .label{font-size:12px;fill:#344456}
+  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:10px}
+  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
+  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
+  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
+  .activation{stroke-width:1.4}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
+  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
+  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
+</style>
+
+<defs>
+  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
+  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
+  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
+  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
+  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
+</defs>
+<rect x="26" y="26" width="1388" height="1136" rx="14" class="frame"/>
+<text class="title" x="54" y="72">KMS Spring Boot components</text>
+<text class="subtitle" x="56" y="104">KMS auto-configuration separates client creation, coroutine operations, data-key cache, and field codecs.</text>
+<g><rect x="975" y="58" width="126" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/><text class="chip" x="1038.0" y="70" text-anchor="middle" dominant-baseline="middle">public API</text></g>
+<g><rect x="1120" y="58" width="126" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/><text class="chip" x="1183.0" y="70" text-anchor="middle" dominant-baseline="middle">adapter/config</text></g>
+<g><rect x="1265" y="58" width="126" height="24" rx="12" fill="#FFF7ED" stroke="#F97316"/><text class="chip" x="1328.0" y="70" text-anchor="middle" dominant-baseline="middle">runtime</text></g>
+<rect x="54" y="150" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
+<text class="chip" x="74" y="175">Configuration</text>
+<rect x="54" y="338" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
+<text class="chip" x="74" y="363">Auto-configuration</text>
+<rect x="54" y="526" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
+<text class="chip" x="74" y="551">Operations</text>
+<rect x="54" y="714" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
+<text class="chip" x="74" y="739">AWS service</text>
+<rect x="54" y="902" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
+<text class="chip" x="74" y="927">Application use</text>
+<g id="routes">
+<path class="edge" d="M 720.0 276.0 L 720.0 372.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+<path class="edge" d="M 635.0 464.0 L 635.0 560.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+<path class="edge" d="M 700.0 606.0 L 740.0 606.0" stroke="#B98518" marker-end="url(#arrow-amber)"/>
+<path class="edge" d="M 635.0 652.0 L 635.0 748.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+<path class="edge" d="M 550.0 936.0 L 550.0 652.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
+</g>
+<g id="props">
+  <rect class="card" x="570.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="720.0" y="218.0" text-anchor="middle" dominant-baseline="middle">KmsProperties</text>
+  <text class="detail" x="720.0" y="242.0" text-anchor="middle" dominant-baseline="middle">region/endpoint</text>
+  <text class="detail" x="720.0" y="260.0" text-anchor="middle" dominant-baseline="middle">key and context</text>
+</g>
+<g id="auto">
+  <rect class="card" x="570.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="720.0" y="406.0" text-anchor="middle" dominant-baseline="middle">KmsAutoConfiguration</text>
+  <text class="detail" x="720.0" y="430.0" text-anchor="middle" dominant-baseline="middle">client bean</text>
+  <text class="detail" x="720.0" y="448.0" text-anchor="middle" dominant-baseline="middle">operations bean</text>
+</g>
+<g id="ops">
+  <rect class="card" x="400.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="550.0" y="594.0" text-anchor="middle" dominant-baseline="middle">KmsOperations</text>
+  <text class="detail" x="550.0" y="618.0" text-anchor="middle" dominant-baseline="middle">encrypt/decrypt</text>
+  <text class="detail" x="550.0" y="636.0" text-anchor="middle" dominant-baseline="middle">data keys</text>
+</g>
+<g id="cache">
+  <rect class="card" x="740.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
+  <text class="card-title" x="890.0" y="594.0" text-anchor="middle" dominant-baseline="middle">DataKeyCache</text>
+  <text class="detail" x="890.0" y="618.0" text-anchor="middle" dominant-baseline="middle">TTL + max size</text>
+  <text class="detail" x="890.0" y="636.0" text-anchor="middle" dominant-baseline="middle">plaintext scoped</text>
+</g>
+<g id="codec">
+  <rect class="card" x="400.0" y="936.0" width="300.0" height="92.0" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
+  <text class="card-title" x="550.0" y="970.0" text-anchor="middle" dominant-baseline="middle">Field codec</text>
+  <text class="detail" x="550.0" y="994.0" text-anchor="middle" dominant-baseline="middle">@KmsEncrypted</text>
+  <text class="detail" x="550.0" y="1012.0" text-anchor="middle" dominant-baseline="middle">TextEncryptor adapter</text>
+</g>
+<g id="kms">
+  <rect class="card" x="570.0" y="748.0" width="300.0" height="92.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="720.0" y="782.0" text-anchor="middle" dominant-baseline="middle">AWS KMS</text>
+  <text class="detail" x="720.0" y="806.0" text-anchor="middle" dominant-baseline="middle">key material</text>
+  <text class="detail" x="720.0" y="824.0" text-anchor="middle" dominant-baseline="middle">encryption context</text>
+</g>
+<rect class="footer" x="54" y="1094" width="1332" height="54" rx="8"/>
+<text class="footer-title" x="74" y="1117" dominant-baseline="middle">Reader cue</text>
+<text class="footer-detail" x="74" y="1137" dominant-baseline="middle">The cache is optional and bounded; field encryption stays explicit.</text>
+</svg>
