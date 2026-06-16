@@ -3,9 +3,11 @@
 한국어 | [English](README.md)
 
 `aws-spring-boot` 의 SQS/SNS 지원을 보여주는 Spring Boot 4 실행 예제다.
-LocalStack 을 개발 환경으로 사용하며 REST 발송, `@SqsListener` 수신, SNS → SQS
-팬아웃, DLQ redrive 설정을 포함한다. 또한 typed payload 변환, manual acknowledgement,
-listener retry/backoff, interceptor event 예제도 함께 제공한다.
+저장소의 AWS emulator 설정을 개발 환경으로 사용하며 REST 발송,
+`@SqsListener` 수신, SNS → SQS 팬아웃, DLQ redrive 설정을 포함한다. 또한 typed
+payload 변환, manual acknowledgement, listener retry/backoff, interceptor event
+예제도 함께 제공한다. 컨트롤러는 얇게 두고, queue URL 해석, topic subscription,
+queue policy, redrive attribute 구성은 `SqsSnsExampleService`가 담당한다.
 
 ## 아키텍처
 
@@ -112,6 +114,9 @@ retry listener는 첫 처리에서 실패하고 두 번째 in-process attempt에
 ./gradlew :aws-spring-boot-sqs-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test -Dbluetape4k.aws.emulator=localstack
 ```
+
+기본 테스트 경로는 Floci를 사용한다. LocalStack fallback을 확인해야 할 때만
+`-Dbluetape4k.aws.emulator=localstack`을 지정한다.
 
 ## AOT
 
