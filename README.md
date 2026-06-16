@@ -340,7 +340,8 @@ manager construction.
 #### S3 Access Grants
 
 S3 Access Grants support is opt-in and uses the AWS SDK v2 S3 Control client.
-Applications that enable it must add the runtime service dependency:
+Applications that enable it must add the runtime service dependency; otherwise
+the auto-configuration backs off cleanly:
 
 ```kotlin
 runtimeOnly("software.amazon.awssdk:s3control")
@@ -381,8 +382,8 @@ class GrantedObjectAccess(
 `S3AccessGrantsOperations` covers the common read and data-access path:
 `getDataAccess`, `listCallerAccessGrants`, `listAccessGrants`,
 `listAccessGrantsInstances`, and `listAccessGrantsLocations`. Administrative
-create, update, and delete calls remain available through the raw
-`S3ControlClient` and `S3ControlAsyncClient` beans.
+create, update, and delete calls intentionally stay on the raw `S3ControlClient`
+and `S3ControlAsyncClient` beans so policy-changing operations remain explicit.
 
 ### DynamoDB — Spring Boot Coroutine Repository
 
