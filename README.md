@@ -550,6 +550,8 @@ Secrets Manager and SSM Parameter Store sources are loaded during Spring
 Environment post-processing, before normal `@ConfigurationProperties` binding.
 No remote lookup is performed unless at least one source is configured.
 
+![Secrets Manager and Parameter Store environment sources](docs/images/readme-diagrams/bluetape4k-aws-env-sources-components-16.png)
+
 ```kotlin
 import org.springframework.boot.context.properties.ConfigurationProperties
 
@@ -564,6 +566,10 @@ For a JSON secret such as `{"db":{"username":"scott","password":"tiger"}}`
 with `prefix: app`, the properties become `app.db.username` and
 `app.db.password`. For Parameter Store path `/config/app/db/password` with
 `path: /config/app` and `prefix: app`, the property becomes `app.db.password`.
+When `refresh-interval` is configured, the loaded property source refreshes on
+read and keeps the last good values if a refresh fails.
+
+![Secrets Manager and Parameter Store property key mapping](docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)
 
 ### SQS — Spring Boot Coroutines Template and Listener
 
