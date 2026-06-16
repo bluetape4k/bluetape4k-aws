@@ -6,17 +6,17 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 
 > AWS Java SDK v2 기반 모듈은 `bluetape4k-aws-java`를 사용하세요.
 
-## 아키텍처
+## 다이어그램
 
-### Architecture
+### 모듈 아키텍처
 
-![Java SDK v2 vs Kotlin SDK diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-01.png)
+![AWS Kotlin architecture diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-01.png)
 
-### Operation Flow
+### 작업 흐름
 
 ![AWS Kotlin operation flow diagram](../docs/images/readme-diagrams/aws-kotlin-flow-02.png)
 
-### Client Lifecycle Sequence
+### 클라이언트 생명주기 시퀀스
 
 ![AWS Kotlin client lifecycle sequence diagram](../docs/images/readme-diagrams/aws-kotlin-sequence-03.png)
 

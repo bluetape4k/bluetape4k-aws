@@ -1,82 +1,112 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="370" viewBox="0 0 1460 370" role="img" aria-label="AWS Kotlin operation flow">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-label="AWS Kotlin operation flow">
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#d97706"/>
+    </marker>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .lane{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .laneTitle{font-family:"Comic Mono";font-size:18px;font-weight:700;fill:#475569}
+      .step{fill:#ffffff;stroke-width:2.2;filter:url(#softShadow)}
+      .stepTitle{font-family:"Architects Daughter";font-size:24px;fill:#17233a}
+      .stepText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .note{fill:#ffffff;stroke-width:2}
+      .noteTitle{font-family:"Comic Mono";font-size:15px;font-weight:700;fill:#334155}
+      .route{fill:none;stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round}
+      .routeSmall{fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+      .routeText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1408" height="318" rx="14" class="frame"/>
-<text class="title" x="54" y="72">AWS Kotlin operation flow</text>
-<text class="subtitle" x="56" y="104">A suspend caller configures a Kotlin SDK client, runs a native suspend operation, and closes owned resources.</text>
-<g id="routes">
-<path class="edge" d="M 294.0 198.0 L 332.0 198.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 572.0 198.0 L 610.0 198.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<path class="edge" d="M 850.0 198.0 L 888.0 198.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<path class="edge" d="M 1128.0 198.0 L 1166.0 198.0" stroke="#C74E68" marker-end="url(#arrow-rose)"/>
-</g>
-<g id="scope">
-  <rect class="card" x="54.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="174.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Coroutine scope</text>
-  <text class="detail" x="174.0" y="219.0" text-anchor="middle" dominant-baseline="middle">caller owns job</text>
-</g>
-<g id="client">
-  <rect class="card" x="332.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="452.0" y="195.0" text-anchor="middle" dominant-baseline="middle">withXxxClient</text>
-  <text class="detail" x="452.0" y="219.0" text-anchor="middle" dominant-baseline="middle">create/configure</text>
-</g>
-<g id="request">
-  <rect class="card" x="610.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="730.0" y="195.0" text-anchor="middle" dominant-baseline="middle">DSL request</text>
-  <text class="detail" x="730.0" y="219.0" text-anchor="middle" dominant-baseline="middle">typed model</text>
-</g>
-<g id="service">
-  <rect class="card" x="888.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="1008.0" y="195.0" text-anchor="middle" dominant-baseline="middle">AWS call</text>
-  <text class="detail" x="1008.0" y="219.0" text-anchor="middle" dominant-baseline="middle">native suspend</text>
-</g>
-<g id="close">
-  <rect class="card" x="1166.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#FDECEF" stroke="#DC6B82"/>
-  <text class="card-title" x="1286.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Close client</text>
-  <text class="detail" x="1286.0" y="219.0" text-anchor="middle" dominant-baseline="middle">release pools</text>
-</g>
-<rect class="footer" x="54" y="276" width="1352" height="54" rx="8"/>
-<text class="footer-title" x="74" y="299" dominant-baseline="middle">Outcome</text>
-<text class="footer-detail" x="74" y="319" dominant-baseline="middle">Connection pools and threads must be released.</text>
+  <rect class="canvas" width="1600" height="1040"/>
+  <rect class="frame" x="42" y="36" width="1516" height="964" rx="24"/>
+  <text class="title" x="800" y="96" text-anchor="middle">AWS Kotlin Operation Flow</text>
+  <text class="subtitle" x="800" y="132" text-anchor="middle">Native SDK calls stay suspend-first; long-running shard reads are modeled as cold Flow pipelines.</text>
+
+  <g id="request">
+    <rect class="lane" x="92" y="178" width="1416" height="236" rx="18"/>
+    <text class="laneTitle" x="118" y="216">DIRECT SUSPEND REQUEST PATH</text>
+    <rect class="step" x="148" y="262" width="260" height="84" rx="16" stroke="#2563eb"/>
+    <text class="stepTitle" x="278" y="294" text-anchor="middle">caller coroutine</text>
+    <text class="stepText" x="278" y="320" text-anchor="middle">DynamoDB, S3, SQS, STS</text>
+
+    <rect class="step" x="498" y="262" width="260" height="84" rx="16" stroke="#059669"/>
+    <text class="stepTitle" x="628" y="294" text-anchor="middle">build request DSL</text>
+    <text class="stepText" x="628" y="320" text-anchor="middle">typed Kotlin model builders</text>
+
+    <rect class="step" x="848" y="262" width="260" height="84" rx="16" stroke="#d97706"/>
+    <text class="stepTitle" x="978" y="294" text-anchor="middle">AWS Kotlin client</text>
+    <text class="stepText" x="978" y="320" text-anchor="middle">native suspend SDK function</text>
+
+    <rect class="step" x="1198" y="262" width="260" height="84" rx="16" stroke="#7c3aed"/>
+    <text class="stepTitle" x="1328" y="294" text-anchor="middle">suspend result</text>
+    <text class="stepText" x="1328" y="320" text-anchor="middle">no CompletableFuture bridge</text>
+
+    <path class="route" d="M 408 304 L 498 304" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+    <path class="route" d="M 758 304 L 848 304" stroke="#059669" marker-end="url(#arrowGreen)"/>
+    <path class="route" d="M 1108 304 L 1198 304" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  </g>
+
+  <g id="flow">
+    <rect class="lane" x="92" y="468" width="1416" height="276" rx="18"/>
+    <text class="laneTitle" x="118" y="506">KINESIS RECORDFLOW PATH</text>
+    <rect class="step" x="132" y="552" width="244" height="84" rx="16" stroke="#2563eb"/>
+    <text class="stepTitle" x="254" y="584" text-anchor="middle">start cold Flow</text>
+    <text class="stepText" x="254" y="610" text-anchor="middle">stream, shard, position</text>
+
+    <rect class="step" x="452" y="552" width="244" height="84" rx="16" stroke="#059669"/>
+    <text class="stepTitle" x="574" y="584" text-anchor="middle">fetch iterator</text>
+    <text class="stepText" x="574" y="610" text-anchor="middle">TrimHorizon, Latest, checkpoint</text>
+
+    <rect class="step" x="772" y="552" width="244" height="84" rx="16" stroke="#d97706"/>
+    <text class="stepTitle" x="894" y="584" text-anchor="middle">poll records</text>
+    <text class="stepText" x="894" y="610" text-anchor="middle">batch limit and delay options</text>
+
+    <rect class="step" x="1092" y="552" width="244" height="84" rx="16" stroke="#7c3aed"/>
+    <text class="stepTitle" x="1214" y="584" text-anchor="middle">emit and checkpoint</text>
+    <text class="stepText" x="1214" y="610" text-anchor="middle">Record + last sequence number</text>
+
+    <path class="route" d="M 376 594 L 452 594" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+    <path class="route" d="M 696 594 L 772 594" stroke="#059669" marker-end="url(#arrowGreen)"/>
+    <path class="route" d="M 1016 594 L 1092 594" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+
+    <rect class="note" x="230" y="666" width="292" height="42" rx="14" stroke="#059669"/>
+    <text class="noteTitle" x="376" y="693" text-anchor="middle">CancellationException propagates</text>
+    <rect class="note" x="654" y="666" width="292" height="42" rx="14" stroke="#d97706"/>
+    <text class="noteTitle" x="800" y="693" text-anchor="middle">Expired iterator uses checkpoint</text>
+    <rect class="note" x="1078" y="666" width="292" height="42" rx="14" stroke="#7c3aed"/>
+    <text class="noteTitle" x="1224" y="693" text-anchor="middle">retryable errors back off</text>
+  </g>
+
+  <g id="lifecycle">
+    <rect class="lane" x="92" y="798" width="1416" height="116" rx="18"/>
+    <text class="laneTitle" x="118" y="836">CLIENT LIFECYCLE GUARD</text>
+    <rect class="note" x="220" y="858" width="300" height="38" rx="14" stroke="#2563eb"/>
+    <text class="noteTitle" x="370" y="882" text-anchor="middle">withXxxClient auto-closes</text>
+    <rect class="note" x="650" y="858" width="300" height="38" rx="14" stroke="#059669"/>
+    <text class="noteTitle" x="800" y="882" text-anchor="middle">direct client needs close()</text>
+    <rect class="note" x="1080" y="858" width="300" height="38" rx="14" stroke="#d97706"/>
+    <text class="noteTitle" x="1230" y="882" text-anchor="middle">shared engine closes separately</text>
+  </g>
+
+  <path class="routeSmall" d="M 800 414 L 800 468" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <text class="routeText" x="846" y="445">multi-record reads use Flow instead of a single suspend response</text>
+  <path class="routeSmall" d="M 800 744 L 800 798" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <text class="routeText" x="846" y="775">resource ownership remains visible at the API boundary</text>
+
+  <text class="footerText" x="800" y="956" text-anchor="middle">Reader contract: AWS Kotlin SDK calls are already suspend; bluetape4k adds lifecycle, DSL, and Flow correctness rules.</text>
 </svg>
