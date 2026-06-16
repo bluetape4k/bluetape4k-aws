@@ -2,12 +2,13 @@
 
 English | [한국어](./README.ko.md)
 
-Ktor 3 examples for the `aws-ktor` S3 REST client. The module includes a
-Emulator-oriented client helper and server routes that expose upload, download,
-stream download, object listing, delete, presigned URL, content-type detection,
-and S3-backed config object endpoints. Tests use `bluetape4k-ktor-testing` for
-common Ktor response assertions while keeping the Ktor `MockEngine` behavior
-explicit for S3 request verification.
+Ktor 3 examples for the `aws-ktor` S3 REST client. The module keeps two usage
+paths side by side: `S3KtorExamples` for copyable client scenarios, and
+`s3KtorExampleModule` for server routes that expose upload, download, streaming
+download, listing, delete, presigned URL, content-type detection, and S3-backed
+config object endpoints. Tests use `bluetape4k-ktor-testing` for response
+assertions while keeping the Ktor `MockEngine` behavior explicit for S3 request
+verification.
 
 ## Architecture
 
@@ -27,8 +28,9 @@ S3KtorExamples.localStackClient().use { s3 ->
 Use `S3KtorExamples.storeAndLoadConfig` to bootstrap a text Ktor config object
 from S3, `uploadWithDetectedContentType` when the inbound request has no trusted
 `Content-Type`, and `encryptAndDecryptText` to demonstrate client-side envelope
-encryption with an in-memory demo data-key provider. Production encryption
-providers should wrap KMS or another application-owned key service.
+encryption with an in-memory demo data-key provider. The provider is intentionally
+local-only; production encryption providers should wrap KMS or another
+application-owned key service.
 
 ## Server Routes
 
@@ -63,5 +65,6 @@ val s3 = s3KtorClientOf(
 ./gradlew :aws-ktor-s3-examples:test
 ```
 
-The tests verify presigned URL generation and Ktor route behavior through a
-Ktor `MockEngine`.
+The tests verify deterministic presigned URL generation, the in-memory data-key
+provider, and route behavior through a Ktor `MockEngine` that returns explicit S3
+responses.
