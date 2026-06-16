@@ -737,19 +737,52 @@ module includes the emulator-backed SQS/SNS fanout flow.
 Validate the certificate chain, `Signature`, `SignatureVersion`, and expected
 `TopicArn` before processing notifications or confirming subscriptions.
 
-### S3 Upload — Coroutines (`aws-java` module)
+### S3 Object IO — Coroutines (`aws-java` module)
+
+S3 coroutine support extends AWS SDK v2 `S3AsyncClient` and
+`S3TransferManager`. The object helpers cover bucket checks, typed get/put
+overloads, paged object listing as a cold `Flow`, and explicit move semantics.
+Transfer-manager helpers are available under `io.bluetape4k.aws.s3.transfer.*`
+for larger upload/download paths.
+
+![S3 coroutine support map](docs/images/readme-diagrams/bluetape4k-aws-s3-components-24.png)
 
 ```kotlin
-import io.bluetape4k.aws.s3.coroutines.*
+import io.bluetape4k.aws.s3.listAllObjects
+import io.bluetape4k.aws.s3.moveObjectAtomic
+import io.bluetape4k.aws.s3.putAsByteArray
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
 val s3: S3AsyncClient = S3AsyncClient.create()
 
 suspend fun uploadObject(bucket: String, key: String, bytes: ByteArray) =
-    s3.putObjectSuspend(bucket, key) {
-        it.contentLength(bytes.size.toLong())
+    s3.putAsByteArray(bucket, key, bytes) {
+        contentLength(bytes.size.toLong())
     }
+
+suspend fun listKeys(bucket: String, prefix: String): List<String> =
+    s3.listAllObjects(bucket, prefix)
+        .map { it.key() }
+        .toList()
+
+suspend fun archiveObject(bucket: String, key: String) =
+    s3.moveObjectAtomic(
+        srcBucketName = bucket,
+        srcKey = key,
+        destBucketName = bucket,
+        destKey = "archive/$key",
+    )
 ```
+
+![S3 coroutine operation flow](docs/images/readme-diagrams/bluetape4k-aws-s3-flow-25.png)
+
+`listAllObjects` starts S3 calls only when the returned `Flow` is collected. It
+continues through `nextContinuationToken` and fails fast if S3 reports a
+truncated page without a token. Normal move is copy-then-delete and can be
+partial; use `moveObjectAtomic` when a failed source delete should roll back the
+copied destination object.
 
 ### SQS Send / Receive — Coroutines (`aws-java` module)
 
