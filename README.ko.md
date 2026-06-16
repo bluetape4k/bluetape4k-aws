@@ -477,6 +477,11 @@ message ID, object key, receipt handle 은 넣지 않습니다.
 
 ### EC2 IMDS — Spring Boot Metadata Operations
 
+Spring Boot auto-configuration과 Ktor plugin은 모두 시작 시 IMDS를 호출하지 않는
+passive metadata facade를 준비합니다. 실제 조회는 operation이 호출될 때만 수행됩니다.
+
+![EC2 IMDS access surfaces](docs/images/readme-diagrams/bluetape4k-aws-imds-components-14.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.imds.ImdsOperations
 
@@ -493,11 +498,41 @@ class InstanceMetadataReporter(
 }
 ```
 
-`ImdsOperations` 는 Spring 시작 시점에는 IMDS 를 호출하지 않고, operation 이 호출될
-때만 조회합니다. 각 호출은 `bluetape4k.aws.imds.request-timeout` 으로 제한됩니다.
+`ImdsOperations`는 Spring 시작 시점에는 IMDS를 호출하지 않고, operation이 호출될
+때만 조회합니다. 각 호출은 `bluetape4k.aws.imds.request-timeout`으로 제한됩니다.
 EC2 instance metadata 조회에만 사용하고, `DefaultCredentialsProvider` 나 EKS/IRSA
-web identity credentials 를 대체하는 용도로 쓰지 않습니다. helper 는 IAM role 이름만
-노출하며 temporary credential document 는 노출하지 않습니다.
+web identity credentials를 대체하는 용도로 쓰지 않습니다. helper는 IAM role 이름만
+노출하며 temporary credential document는 노출하지 않습니다.
+
+### EC2 IMDS — Ktor Plugin
+
+```kotlin
+import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
+import io.bluetape4k.aws.ktor.imds.imds
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import java.time.Duration
+
+fun Application.module() {
+    install(ImdsKtorPlugin) {
+        requestTimeout = Duration.ofSeconds(1)
+    }
+}
+
+suspend fun Application.instanceSnapshot(): Map<String, String> =
+    mapOf(
+        "instanceId" to imds().instanceId(),
+        "region" to imds().region(),
+        "availabilityZone" to imds().availabilityZone(),
+    )
+```
+
+![EC2 IMDS metadata flow](docs/images/readme-diagrams/bluetape4k-aws-imds-flow-15.png)
+
+Ktor IMDS plugin을 사용할 때는 `software.amazon.awssdk:imds` 의존성을 추가합니다.
+plugin을 설치해도 IMDS는 호출하지 않습니다. metadata는 `ImdsKtorOperations` 메서드가
+호출될 때만 읽습니다. helper는 IAM role 이름만 노출하며 temporary credential
+document는 노출하지 않습니다.
 
 ### Secrets Manager와 Parameter Store — Environment Source
 
@@ -606,34 +641,6 @@ class PropertyProtector(
 
 `TextEncryptor`는 동기식 인터페이스이므로 짧은 관리 흐름이나 startup 시점 secret 처리에
 적합합니다. Coroutine service 안에서는 `KmsOperations`를 우선 사용하세요.
-
-### EC2 IMDS — Ktor Plugin
-
-```kotlin
-import io.bluetape4k.aws.ktor.imds.ImdsKtorPlugin
-import io.bluetape4k.aws.ktor.imds.imds
-import io.ktor.server.application.Application
-import io.ktor.server.application.install
-import java.time.Duration
-
-fun Application.module() {
-    install(ImdsKtorPlugin) {
-        requestTimeout = Duration.ofSeconds(1)
-    }
-}
-
-suspend fun Application.instanceSnapshot(): Map<String, String> =
-    mapOf(
-        "instanceId" to imds().instanceId(),
-        "region" to imds().region(),
-        "availabilityZone" to imds().availabilityZone(),
-    )
-```
-
-Ktor IMDS plugin을 사용할 때는 `software.amazon.awssdk:imds` 를 추가합니다. Plugin
-설치 시점에는 IMDS를 호출하지 않고, `ImdsKtorOperations` method를 호출할 때만
-metadata를 읽습니다. helper는 IAM role 이름만 노출하고 임시 credential document는
-노출하지 않습니다.
 
 ### SNS — Spring Boot Coroutines 템플릿
 

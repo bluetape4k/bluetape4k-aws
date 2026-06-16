@@ -486,6 +486,12 @@ queue URLs, message IDs, object keys, or receipt handles as default tags.
 
 ### EC2 IMDS — Spring Boot Metadata Operations
 
+Spring Boot auto-configuration and the Ktor plugin share the same passive
+metadata contract: setup creates a facade, and IMDS is contacted only when an
+operation is invoked.
+
+![EC2 IMDS access surfaces](docs/images/readme-diagrams/bluetape4k-aws-imds-components-14.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.imds.ImdsOperations
 
@@ -530,6 +536,8 @@ suspend fun Application.instanceSnapshot(): Map<String, String> =
         "availabilityZone" to imds().availabilityZone(),
     )
 ```
+
+![EC2 IMDS metadata flow](docs/images/readme-diagrams/bluetape4k-aws-imds-flow-15.png)
 
 Add `software.amazon.awssdk:imds` when using the Ktor IMDS plugin. Installing
 the plugin does not call IMDS; metadata is read only when `ImdsKtorOperations`
