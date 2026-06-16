@@ -6,7 +6,9 @@ Spring Boot 4 WebFlux examples for `aws-spring-boot` S3 auto-configuration.
 The module demonstrates `S3CoroutinesTemplate` through the `S3Operations`
 interface with upload, download, object listing, delete, and presigned URL APIs.
 It also includes an optional `S3ClientSideEncryptionOperations` route that
-stores encrypted payloads with KMS-backed envelope metadata.
+stores encrypted payloads with KMS-backed envelope metadata. The controller keeps
+the HTTP surface small and delegates object behavior to auto-configured
+operations beans.
 
 ## Architecture
 
@@ -60,9 +62,10 @@ module.
 ./gradlew :aws-spring-boot-s3-examples:test
 ```
 
-The test starts LocalStack with Testcontainers, creates a bucket, then verifies
-upload, download, list, presigned GET/PUT URL generation, delete behavior, and
-the client-side encryption helper with a deterministic test KMS implementation.
+The test starts the selected AWS emulator with Testcontainers, creates a bucket,
+then verifies upload, download, list, presigned GET/PUT URL generation, delete
+behavior, and the client-side encryption helper with a deterministic test KMS
+implementation.
 
 ## AOT
 
