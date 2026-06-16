@@ -1,130 +1,125 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1188" viewBox="0 0 1440 1188" role="img" aria-label="Repository architecture">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-label="Bluetape4k AWS architecture overview">
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#d97706"/>
+    </marker>
+    <marker id="arrowViolet" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#7c3aed"/>
+    </marker>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .band{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .bandTitle{font-family:"Comic Mono";font-size:18px;font-weight:700;fill:#475569}
+      .card{fill:#ffffff;stroke-width:2.2;filter:url(#softShadow)}
+      .cardTitle{font-family:"Architects Daughter";font-size:25px;fill:#17233a}
+      .cardText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .small{fill:#ffffff;stroke-width:2}
+      .smallTitle{font-family:"Architects Daughter";font-size:20px;fill:#17233a}
+      .smallText{font-family:"Comic Mono";font-size:12px;fill:#64748b}
+      .route{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+      .routeText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .pill{fill:#ffffff;stroke-width:2}
+      .pillText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1388" height="1136" rx="14" class="frame"/>
-<text class="title" x="54" y="72">Repository architecture</text>
-<text class="subtitle" x="56" y="104">Published modules sit above consumer-provided AWS SDK service dependencies and emulator-backed verification.</text>
-<g><rect x="975" y="58" width="126" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/><text class="chip" x="1038.0" y="70" text-anchor="middle" dominant-baseline="middle">public API</text></g>
-<g><rect x="1120" y="58" width="126" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/><text class="chip" x="1183.0" y="70" text-anchor="middle" dominant-baseline="middle">adapter/config</text></g>
-<g><rect x="1265" y="58" width="126" height="24" rx="12" fill="#FFF7ED" stroke="#F97316"/><text class="chip" x="1328.0" y="70" text-anchor="middle" dominant-baseline="middle">runtime</text></g>
-<rect x="54" y="150" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="175">Application entry</text>
-<rect x="54" y="338" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
-<text class="chip" x="74" y="363">Framework integration</text>
-<rect x="54" y="526" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="551">Published foundations</text>
-<rect x="54" y="714" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
-<text class="chip" x="74" y="739">Consumer-provided SDKs</text>
-<rect x="54" y="902" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="927">Runtime targets</text>
-<g id="routes">
-<path class="edge" d="M 610.0 276.0 L 610.0 372.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 830.0 276.0 L 830.0 372.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 445.0 464.0 L 445.0 560.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<path class="edge" d="M 610.0 464.0 L 610.0 560.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<path class="edge" d="M 995.0 464.0 L 995.0 560.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
-<path class="edge" d="M 390.0 652.0 L 390.0 700.0 L 720.0 700.0 L 720.0 748.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<path class="edge" d="M 1050.0 652.0 L 1050.0 700.0 L 720.0 700.0 L 720.0 748.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<path class="edge" d="M 637.5 840.0 L 637.5 936.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<path class="edge" d="M 832.0 652.0 L 832.0 722.0 L 1071.0 722.0 L 1071.0 982.0 L 1035.0 982.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-</g>
-<g id="app">
-  <rect class="card" x="570.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="720.0" y="209.0" text-anchor="middle" dominant-baseline="middle">Kotlin applications</text>
-  <text class="detail" x="720.0" y="233.0" text-anchor="middle" dominant-baseline="middle">Spring Boot 4</text>
-  <text class="detail" x="720.0" y="251.0" text-anchor="middle" dominant-baseline="middle">Ktor 3</text>
-  <text class="detail" x="720.0" y="269.0" text-anchor="middle" dominant-baseline="middle">plain coroutines</text>
-</g>
-<g id="spring">
-  <rect class="card" x="350.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="500.0" y="406.0" text-anchor="middle" dominant-baseline="middle">aws-spring-boot</text>
-  <text class="detail" x="500.0" y="430.0" text-anchor="middle" dominant-baseline="middle">auto-config</text>
-  <text class="detail" x="500.0" y="448.0" text-anchor="middle" dominant-baseline="middle">templates/listeners</text>
-</g>
-<g id="ktor">
-  <rect class="card" x="790.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="card-title" x="940.0" y="406.0" text-anchor="middle" dominant-baseline="middle">aws-ktor</text>
-  <text class="detail" x="940.0" y="430.0" text-anchor="middle" dominant-baseline="middle">SigV4 plugin</text>
-  <text class="detail" x="940.0" y="448.0" text-anchor="middle" dominant-baseline="middle">server runtimes</text>
-</g>
-<g id="java">
-  <rect class="card" x="240.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="390.0" y="594.0" text-anchor="middle" dominant-baseline="middle">aws-java</text>
-  <text class="detail" x="390.0" y="618.0" text-anchor="middle" dominant-baseline="middle">Java SDK v2</text>
-  <text class="detail" x="390.0" y="636.0" text-anchor="middle" dominant-baseline="middle">future.await wrappers</text>
-</g>
-<g id="exposed">
-  <rect class="card" x="570.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FDECEF" stroke="#DC6B82"/>
-  <text class="card-title" x="720.0" y="594.0" text-anchor="middle" dominant-baseline="middle">aws-exposed</text>
-  <text class="detail" x="720.0" y="618.0" text-anchor="middle" dominant-baseline="middle">database registry</text>
-  <text class="detail" x="720.0" y="636.0" text-anchor="middle" dominant-baseline="middle">RDS IAM + config</text>
-</g>
-<g id="kotlin">
-  <rect class="card" x="900.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="card-title" x="1050.0" y="594.0" text-anchor="middle" dominant-baseline="middle">aws-kotlin</text>
-  <text class="detail" x="1050.0" y="618.0" text-anchor="middle" dominant-baseline="middle">native suspend SDK</text>
-  <text class="detail" x="1050.0" y="636.0" text-anchor="middle" dominant-baseline="middle">DSL helpers</text>
-</g>
-<g id="sdkdeps">
-  <rect class="card" x="570.0" y="748.0" width="300.0" height="92.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="720.0" y="782.0" text-anchor="middle" dominant-baseline="middle">Consumer AWS SDKs</text>
-  <text class="detail" x="720.0" y="806.0" text-anchor="middle" dominant-baseline="middle">compileOnly services</text>
-  <text class="detail" x="720.0" y="824.0" text-anchor="middle" dominant-baseline="middle">add only what you use</text>
-</g>
-<g id="aws">
-  <rect class="card" x="405.0" y="936.0" width="300.0" height="92.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="555.0" y="970.0" text-anchor="middle" dominant-baseline="middle">AWS or emulator</text>
-  <text class="detail" x="555.0" y="994.0" text-anchor="middle" dominant-baseline="middle">S3, SQS, DynamoDB</text>
-  <text class="detail" x="555.0" y="1012.0" text-anchor="middle" dominant-baseline="middle">KMS, CloudWatch, STS</text>
-</g>
-<g id="jdbc">
-  <rect class="card" x="735.0" y="936.0" width="300.0" height="92.0" rx="10" fill="#F8FAFC" stroke="#64748B"/>
-  <text class="card-title" x="885.0" y="970.0" text-anchor="middle" dominant-baseline="middle">JDBC stores</text>
-  <text class="detail" x="885.0" y="994.0" text-anchor="middle" dominant-baseline="middle">PostgreSQL/H2</text>
-  <text class="detail" x="885.0" y="1012.0" text-anchor="middle" dominant-baseline="middle">Secrets/Parameter</text>
-</g>
-<rect class="footer" x="54" y="1094" width="1332" height="54" rx="8"/>
-<text class="footer-title" x="74" y="1117" dominant-baseline="middle">Reader cue</text>
-<text class="footer-detail" x="74" y="1137" dominant-baseline="middle">AWS service SDKs remain consumer-provided compileOnly dependencies; examples verify the same paths against Floci/LocalStack/MiniStack.</text>
+  <rect class="canvas" width="1600" height="1080"/>
+  <rect class="frame" x="42" y="36" width="1516" height="1004" rx="24"/>
+  <text class="title" x="800" y="96" text-anchor="middle">Bluetape4k AWS Architecture</text>
+  <text class="subtitle" x="800" y="132" text-anchor="middle">Application entry points choose a wrapper or adapter; AWS service SDKs stay consumer-provided runtime dependencies.</text>
+
+  <g id="application-entry">
+    <rect class="band" x="92" y="178" width="1416" height="154" rx="18"/>
+    <text class="bandTitle" x="118" y="216">APP ENTRY POINTS</text>
+    <rect class="card" x="164" y="238" width="330" height="72" rx="14" stroke="#2563eb"/>
+    <text class="cardTitle" x="329" y="266" text-anchor="middle">plain Kotlin services</text>
+    <text class="cardText" x="329" y="292" text-anchor="middle">coroutines or Java SDK async callers</text>
+    <rect class="card" x="636" y="238" width="330" height="72" rx="14" stroke="#059669"/>
+    <text class="cardTitle" x="801" y="266" text-anchor="middle">Spring Boot 4 apps</text>
+    <text class="cardText" x="801" y="292" text-anchor="middle">auto-config, templates, listeners</text>
+    <rect class="card" x="1108" y="238" width="330" height="72" rx="14" stroke="#7c3aed"/>
+    <text class="cardTitle" x="1273" y="266" text-anchor="middle">Ktor 3 services</text>
+    <text class="cardText" x="1273" y="292" text-anchor="middle">client signing, plugins, server runtimes</text>
+  </g>
+
+  <g id="module-surfaces">
+    <rect class="band" x="92" y="370" width="1416" height="244" rx="18"/>
+    <text class="bandTitle" x="118" y="408">PUBLISHED MODULE SURFACES</text>
+    <rect class="card" x="142" y="448" width="244" height="92" rx="16" stroke="#2563eb"/>
+    <text class="cardTitle" x="264" y="480" text-anchor="middle">aws-java</text>
+    <text class="cardText" x="264" y="506" text-anchor="middle">sync, async, await</text>
+    <text class="cardText" x="264" y="526" text-anchor="middle">Java SDK v2 services</text>
+    <rect class="card" x="410" y="448" width="244" height="92" rx="16" stroke="#059669"/>
+    <text class="cardTitle" x="532" y="480" text-anchor="middle">aws-kotlin</text>
+    <text class="cardText" x="532" y="506" text-anchor="middle">native suspend helpers</text>
+    <text class="cardText" x="532" y="526" text-anchor="middle">DSL and model helpers</text>
+    <rect class="card" x="678" y="448" width="244" height="92" rx="16" stroke="#d97706"/>
+    <text class="cardTitle" x="800" y="480" text-anchor="middle">aws-exposed</text>
+    <text class="cardText" x="800" y="506" text-anchor="middle">RDS IAM and Hikari</text>
+    <text class="cardText" x="800" y="526" text-anchor="middle">Secrets / Parameter sources</text>
+    <rect class="card" x="946" y="448" width="244" height="92" rx="16" stroke="#dc2626"/>
+    <text class="cardTitle" x="1068" y="480" text-anchor="middle">aws-spring-boot</text>
+    <text class="cardText" x="1068" y="506" text-anchor="middle">auto-config operations</text>
+    <text class="cardText" x="1068" y="526" text-anchor="middle">templates and listeners</text>
+    <rect class="card" x="1214" y="448" width="244" height="92" rx="16" stroke="#7c3aed"/>
+    <text class="cardTitle" x="1336" y="480" text-anchor="middle">aws-ktor</text>
+    <text class="cardText" x="1336" y="506" text-anchor="middle">SigV4, S3 REST, SQS</text>
+    <text class="cardText" x="1336" y="526" text-anchor="middle">DynamoDB server plugin</text>
+  </g>
+
+  <g id="dependency-boundary">
+    <rect class="band" x="92" y="652" width="1416" height="154" rx="18"/>
+    <text class="bandTitle" x="118" y="690">CONSUMER DEPENDENCY BOUNDARY</text>
+    <rect class="card" x="240" y="722" width="430" height="54" rx="16" stroke="#0ea5e9"/>
+    <text class="cardTitle" x="455" y="754" text-anchor="middle">compileOnly AWS service SDKs</text>
+    <rect class="card" x="930" y="722" width="430" height="54" rx="16" stroke="#0ea5e9"/>
+    <text class="cardTitle" x="1145" y="754" text-anchor="middle">application adds only used services</text>
+  </g>
+
+  <g id="runtime-targets">
+    <rect class="band" x="92" y="844" width="1416" height="124" rx="18"/>
+    <text class="bandTitle" x="118" y="882">AWS, DATABASE, AND LOCAL VERIFICATION TARGETS</text>
+    <rect class="pill" x="168" y="908" width="170" height="36" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="253" y="931" text-anchor="middle">S3 / S3 Vectors</text>
+    <rect class="pill" x="362" y="908" width="150" height="36" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="437" y="931" text-anchor="middle">SQS / SNS</text>
+    <rect class="pill" x="536" y="908" width="148" height="36" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="610" y="931" text-anchor="middle">DynamoDB</text>
+    <rect class="pill" x="708" y="908" width="178" height="36" rx="13" stroke="#059669"/>
+    <text class="pillText" x="797" y="931" text-anchor="middle">KMS / STS / IMDS</text>
+    <rect class="pill" x="910" y="908" width="180" height="36" rx="13" stroke="#059669"/>
+    <text class="pillText" x="1000" y="931" text-anchor="middle">CloudWatch Logs</text>
+    <rect class="pill" x="1114" y="908" width="178" height="36" rx="13" stroke="#d97706"/>
+    <text class="pillText" x="1203" y="931" text-anchor="middle">RDS / Secrets / SSM</text>
+    <rect class="pill" x="1316" y="908" width="132" height="36" rx="13" stroke="#7c3aed"/>
+    <text class="pillText" x="1382" y="931" text-anchor="middle">Floci tests</text>
+  </g>
+
+  <path class="route" d="M 329 310 L 264 448" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  <path class="route" d="M 329 310 C 430 360 492 390 532 448" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <path class="route" d="M 801 310 L 1068 448" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <path class="route" d="M 1273 310 L 1336 448" stroke="#7c3aed" marker-end="url(#arrowViolet)"/>
+  <text class="routeText" x="800" y="354" text-anchor="middle">choose the smallest surface that matches the application runtime</text>
+
+  <path class="route" d="M 800 614 L 800 652" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <text class="routeText" x="858" y="638">library modules do not force every AWS service SDK onto consumers</text>
+
+  <path class="route" d="M 800 806 L 800 844" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <text class="routeText" x="858" y="832">runtime verification targets</text>
+
+  <text class="footerText" x="800" y="1002" text-anchor="middle">BOM stays outside the runtime path; correctness is proven in Ktor and Spring examples against Floci-first emulators.</text>
 </svg>
