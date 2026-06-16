@@ -3,10 +3,11 @@
 [English](README.md) | [한국어](README.ko.md)
 
 Runnable Spring Boot 4 example for `aws-spring-boot` SQS and SNS support. It
-uses LocalStack for development and shows REST publishing, `@SqsListener`
-consumption, typed listener payload conversion, manual acknowledgement,
-listener retry/backoff, interceptor events, SNS to SQS fanout, and DLQ redrive
-setup.
+uses the repository's AWS emulator setup for development and shows REST
+publishing, `@SqsListener` consumption, typed listener payload conversion,
+manual acknowledgement, listener retry/backoff, interceptor events, SNS to SQS
+fanout, and DLQ redrive setup. The controller stays thin; `SqsSnsExampleService`
+owns queue URLs, topic subscriptions, queue policies, and redrive attributes.
 
 ## Architecture
 
@@ -113,6 +114,9 @@ queue with `RedrivePolicy`.
 ./gradlew :aws-spring-boot-sqs-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test -Dbluetape4k.aws.emulator=localstack
 ```
+
+The default test path uses Floci. Pass `-Dbluetape4k.aws.emulator=localstack`
+when you need the LocalStack fallback.
 
 ## AOT
 
