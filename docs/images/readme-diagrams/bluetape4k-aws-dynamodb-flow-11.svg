@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-label="DynamoDB coroutine repository operation flow">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
+    <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/>
+  </filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0"/>
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57"/>
+  </marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86"/>
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/>
+  </marker>
+  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569"/>
+  </marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}
+  .lane-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .lane-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:11px}
+  .chip{font-size:11px;fill:#243447}
+  .lane{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .soft-edge{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="708" rx="14" class="frame"/>
+<text class="title" x="54" y="74">DynamoDB repository flow</text>
+<text class="subtitle" x="56" y="106">Coroutine calls become Enhanced Client operations; scan and query stream pages as Kotlin Flow items.</text>
+
+<g>
+  <rect x="998" y="57" width="120" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1058" y="70.5" text-anchor="middle" dominant-baseline="middle">Coroutine</text>
+  <rect x="1132" y="57" width="120" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1192" y="70.5" text-anchor="middle" dominant-baseline="middle">Enhanced</text>
+  <rect x="1266" y="57" width="104" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="chip" x="1318" y="70.5" text-anchor="middle" dominant-baseline="middle">DynamoDB</text>
+</g>
+
+<g id="lanes">
+  <rect class="lane" x="70" y="150" width="1300" height="220" rx="12"/>
+  <text class="lane-title" x="96" y="188">Write / point-read path</text>
+  <text class="lane-detail" x="98" y="210">save, findById, existsById, deleteById, update</text>
+
+  <rect class="lane" x="70" y="414" width="1300" height="176" rx="12"/>
+  <text class="lane-title" x="96" y="452">Streaming read path</text>
+  <text class="lane-detail" x="98" y="474">scan, query, and queryIndex collect SDK pages and emit items as Flow</text>
+</g>
+
+<g id="write-path">
+  <rect class="card" x="110" y="248" width="190" height="78" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="205" y="278" text-anchor="middle">Repository call</text>
+  <text class="detail" x="205" y="302" text-anchor="middle">suspend function</text>
+
+  <rect class="card" x="360" y="248" width="190" height="78" rx="9" fill="#F3FBFA" stroke="#63B8B3"/>
+  <text class="card-title" x="455" y="278" text-anchor="middle">Key mapping</text>
+  <text class="detail" x="455" y="302" text-anchor="middle">keyFromId / item</text>
+
+  <rect class="card" x="610" y="248" width="210" height="78" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="715" y="278" text-anchor="middle">Enhanced table</text>
+  <text class="detail" x="715" y="302" text-anchor="middle">schema + table name</text>
+
+  <rect class="card" x="880" y="248" width="210" height="78" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="985" y="278" text-anchor="middle">Async client</text>
+  <text class="detail" x="985" y="302" text-anchor="middle">SDK or DAX backed</text>
+
+  <rect class="card" x="1150" y="248" width="170" height="78" rx="9" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="1235" y="278" text-anchor="middle">Table</text>
+  <text class="detail" x="1235" y="302" text-anchor="middle">existing AWS resource</text>
+</g>
+
+<g id="stream-path">
+  <rect class="card" x="176" y="500" width="220" height="66" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="286" y="526" text-anchor="middle">scan / query</text>
+  <text class="detail" x="286" y="548" text-anchor="middle">builder DSL</text>
+
+  <rect class="card" x="480" y="500" width="220" height="66" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="590" y="526" text-anchor="middle">SDK pages</text>
+  <text class="detail" x="590" y="548" text-anchor="middle">SdkPublisher&lt;Page&lt;T&gt;&gt;</text>
+
+  <rect class="card" x="784" y="500" width="220" height="66" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="894" y="526" text-anchor="middle">Flow items</text>
+  <text class="detail" x="894" y="548" text-anchor="middle">page.items emit</text>
+
+  <rect class="card" x="1088" y="500" width="220" height="66" rx="9" fill="#F3FBFA" stroke="#63B8B3"/>
+  <text class="card-title" x="1198" y="526" text-anchor="middle">Caller collects</text>
+  <text class="detail" x="1198" y="548" text-anchor="middle">backpressure friendly</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 300 287 L 360 287" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="edge" d="M 550 287 L 610 287" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+  <path class="edge" d="M 820 287 L 880 287" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+  <path class="edge" d="M 1090 287 L 1150 287" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+
+  <path class="edge" d="M 396 533 L 480 533" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="edge" d="M 700 533 L 784 533" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+  <path class="edge" d="M 1004 533 L 1088 533" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+
+  <path class="soft-edge" d="M 715 326 L 715 386 L 590 386 L 590 500" stroke="#475569" marker-end="url(#arrow-slate)"/>
+  <path class="soft-edge" d="M 985 326 L 985 386 L 1235 386 L 1235 326" stroke="#475569" marker-end="url(#arrow-slate)"/>
+</g>
+
+<g id="contracts">
+  <rect x="86" y="620" width="600" height="64" rx="10" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text class="card-title" x="110" y="650">Repository-owned details</text>
+  <text class="detail" x="452" y="648">keys</text>
+  <text class="detail" x="548" y="648">schema</text>
+  <text class="tiny" x="110" y="672">The base class does not infer composite keys or create tables for the application.</text>
+
+  <rect x="724" y="620" width="630" height="64" rx="10" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text class="card-title" x="748" y="650">DAX note</text>
+  <text class="detail" x="934" y="648">same repository API</text>
+  <text class="detail" x="1150" y="648">different backing client</text>
+  <text class="tiny" x="748" y="672">DAX is an AWS runtime cache path, not a LocalStack or DynamoDB Local behavior model.</text>
+</g>
+
+<rect class="footer" x="54" y="700" width="1332" height="34" rx="8"/>
+<text class="footer-title" x="74" y="720" dominant-baseline="middle">Outcome</text>
+<text class="footer-detail" x="176" y="720" dominant-baseline="middle">Application code sees coroutine repository methods while AWS SDK async operations stay underneath.</text>
+</svg>
