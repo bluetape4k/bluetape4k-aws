@@ -3,10 +3,11 @@
 English | [한국어](./README.ko.md)
 
 Ktor 3 examples for the `aws-ktor` SQS consumer plugin. The module installs
-`SqsConsumer`, sends messages through `SqsAsyncClient`, records consumed
-messages in memory, and exposes queue management routes. It also demonstrates
-manual ack/nack, retry-once redelivery, interceptors, and observer events. It
-uses `bluetape4k-ktor-core` for shared route parameter validation and
+`SqsConsumer`, publishes messages through `SqsAsyncClient`, records consumed
+messages in memory, and exposes queue management routes. The interesting part is
+the observable consumer contract: manual ack/nack, retry-once redelivery,
+interceptor events, and observer summaries are all visible through HTTP routes.
+It uses `bluetape4k-ktor-core` for shared route parameter validation and
 `bluetape4k-ktor-testing` for common Ktor response assertions.
 
 ## Architecture
@@ -32,8 +33,8 @@ install(SqsConsumer) {
 `onMessage<String>` appends consumed message bodies to an in-memory list so tests
 and sample clients can inspect listener output. Messages prefixed with
 `retry-once:` are nacked once with zero visibility timeout, then acknowledged on
-redelivery. This keeps the example deterministic while showing both manual
-`nack()` and `ack()` paths.
+redelivery. `deleteOnSuccess = false` makes the acknowledgement path explicit
+instead of hiding it behind automatic deletion.
 
 ## Advanced Consumer Telemetry
 
@@ -56,8 +57,9 @@ surface a production service would bridge to logs, Micrometer, or tracing.
 
 ## Configuration
 
-Tests create a Floci-backed `SqsAsyncClient` with `SqsClientFactory.Async` and
-pass the generated queue URL into the Ktor application:
+Tests create a Floci-backed `SqsAsyncClient` with `SqsClientFactory.Async`, create
+a queue with a random name, and pass the generated queue URL into the Ktor
+application:
 
 ```kotlin
 application { sqsExampleModule(sqsClient, queueUrl) }
@@ -68,3 +70,6 @@ application { sqsExampleModule(sqsClient, queueUrl) }
 ```bash
 ./gradlew :aws-ktor-sqs-examples:test
 ```
+
+The suite covers send, queue attributes, queue creation, concurrent sends with
+`SuspendedJobTester`, and the advanced ack/nack telemetry route.
