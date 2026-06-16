@@ -437,6 +437,12 @@ consistency 또는 latency 동작을 모델링하지 않습니다.
 
 ### CloudWatch — Spring Boot Metrics와 Logs
 
+CloudWatch metrics, CloudWatch Logs, Micrometer snapshot publishing은 각각 별도의
+operation API로 분리되어 있습니다. Micrometer helper는 애플리케이션 코드가 명시적으로
+snapshot publish를 요청할 때만 기존 registry를 읽습니다.
+
+![CloudWatch metrics and logs components](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.png)
+
 ```kotlin
 import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
 import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
@@ -460,11 +466,13 @@ class OrderObservability(
 }
 ```
 
-Micrometer helper 는 `MeterRegistry` bean 이 있을 때만 등록됩니다. 이 helper 는
-`CloudWatchOperations` 로 명시적인 snapshot 을 publish 하며, scheduled Micrometer
-registry publication 을 대체하지 않습니다. SQS/S3 Micrometer adapter 도 application
-`MeterRegistry` 가 있을 때 동작하며 SQS send/receive/listener phase 와 S3
-upload/download/delete/list/presign operation 을 측정합니다. 기본 tag 에 queue URL,
+![CloudWatch publish flow](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.png)
+
+Micrometer helper는 `MeterRegistry` bean 이 있을 때만 등록됩니다. 이 helper는
+`CloudWatchOperations` 를 통해 명시적으로 snapshot 을 publish 하며, scheduled
+Micrometer registry publication 을 대체하지 않습니다. SQS/S3 Micrometer adapter 도
+application `MeterRegistry` 가 있을 때 동작하며 SQS send/receive/listener phase 와
+S3 upload/download/delete/list/presign operation 을 측정합니다. 기본 tag 에 queue URL,
 message ID, object key, receipt handle 은 넣지 않습니다.
 
 ### EC2 IMDS — Spring Boot Metadata Operations

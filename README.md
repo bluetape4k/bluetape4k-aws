@@ -446,6 +446,12 @@ paths and do not model DAX cache consistency or latency behavior.
 
 ### CloudWatch — Spring Boot Metrics and Logs
 
+CloudWatch metrics, CloudWatch Logs, and Micrometer snapshot publishing use
+separate operation surfaces. The Micrometer helper reads an existing registry
+only when application code explicitly publishes a snapshot.
+
+![CloudWatch metrics and logs components](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.png)
+
 ```kotlin
 import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
 import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
@@ -468,6 +474,8 @@ class OrderObservability(
     }
 }
 ```
+
+![CloudWatch publish flow](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.png)
 
 The Micrometer helper is registered only when a `MeterRegistry` bean exists. It
 publishes explicit snapshots through `CloudWatchOperations` and does not replace
