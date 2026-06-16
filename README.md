@@ -617,6 +617,12 @@ redelivery and observability scenarios.
 
 ### KMS — Spring Boot Coroutines Encryptor
 
+KMS support is centered on `KmsOperations`. Auto-configuration registers the SDK
+client, coroutine encryptor, bounded data-key cache, explicit field encryption
+codec, and optional Spring Security `TextEncryptor` adapter.
+
+![KMS Spring Boot support map](docs/images/readme-diagrams/bluetape4k-aws-kms-components-20.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.kms.KmsOperations
 import java.util.Base64
@@ -641,6 +647,8 @@ class SecretVault(
     }
 }
 ```
+
+![KMS operations flow](docs/images/readme-diagrams/bluetape4k-aws-kms-flow-21.png)
 
 The encryption context is authenticated metadata. Use the same context for decrypt that you used for
 encrypt, and put stable identifiers such as `service`, `tenant`, or `purpose` in it. Do not put
