@@ -1,15 +1,13 @@
 # Module bluetape4k-aws-ktor
 
-[English](README.md) | [한국어](README.ko.md)
+[English](README.md) | 한국어
 
-bluetape4k AWS 모듈을 위한 Ktor 3 통합 모듈입니다. Ktor `HttpClient`의 outgoing
-AWS HTTP 요청에 Signature Version 4 서명을 적용하는 플러그인, 그 위에 구축한
-coroutine 친화적 S3 REST client, Ktor lifecycle에 맞춰 동작하는 server-side SQS
-consumer/publisher runtime을 제공합니다. 또한 `:aws-kotlin` 과 공식 AWS SDK for
-Kotlin을 사용하는 DynamoDB Ktor server plugin, repository facade, 그리고
-AWS-backed Exposed JDBC database registry를 Ktor lifecycle에 연결하는 server
-plugin과 선택적 EC2 IMDS metadata operation을 제공합니다. 또한 명시적 metric/log-event
-publishing을 위한 선택적 CloudWatch와 CloudWatch Logs server plugin을 제공합니다.
+bluetape4k AWS 모듈을 Ktor 3 애플리케이션에 붙이기 위한 통합 모듈입니다. Ktor
+`HttpClient` 요청에 AWS SigV4 서명을 적용하고, 그 경로 위에 coroutine 친화적인 S3
+REST client를 제공합니다. SQS, DynamoDB, AWS-backed Exposed registry, S3 Access
+Grants, S3 Vectors, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에 맞춰
+설치하되, credentials와 app-scoped client, route 설계의 소유권은 애플리케이션에
+남겨 둡니다.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -46,10 +44,9 @@ publishing을 위한 선택적 CloudWatch와 CloudWatch Logs server plugin을 �
 
 ## 의존성
 
-`aws-ktor` 는 공통 Ktor baseline에 공유 `bluetape4k-ktor-core` helper를 사용하고,
-Ktor client core와 AWS auth API를 노출합니다. Ktor engine, Jackson content
-negotiation, AWS service client는 runtime 선택이 중요하므로 애플리케이션 의존성으로
-명시합니다.
+`aws-ktor`는 공통 Ktor baseline에 `bluetape4k-ktor-core` helper를 사용하고, Ktor
+client core와 AWS auth API를 노출합니다. Ktor engine, Jackson content negotiation,
+AWS service client는 runtime 선택이 중요하므로 애플리케이션 의존성으로 명시합니다.
 
 ```kotlin
 dependencies {
@@ -263,33 +260,34 @@ encryption 시나리오를 포함합니다.
 
 ### 고급 S3 Helper
 
-`S3KtorClient` 는 추가 AWS service client를 필수 의존성으로 만들지 않고 고급 object
-workflow를 opt-in helper로 제공합니다.
+`S3KtorClient`는 고급 object workflow를 opt-in helper로 제공합니다. 이 helper들은 S3
+요청 구조를 만들어 줄 뿐, 추가 AWS service client를 runtime 필수 의존성으로 끌어오지
+않습니다.
 
-- `putObjectDetectingContentType(...)` 는 object key와 payload로 content type을
+- `putObjectDetectingContentType(...)`는 object key와 payload로 content type을
   감지하고 실패하면 `application/octet-stream`을 사용합니다.
-- `putEncryptedObject(...)`, `createEncryptedMultipartUpload(...)` 는 SSE-S3,
+- `putEncryptedObject(...)`, `createEncryptedMultipartUpload(...)`는 SSE-S3,
   SSE-KMS, DSSE-KMS, bucket key, SSE-C용 S3 server-side encryption header를
   생성합니다.
-- `S3KtorClientSideEncryption` 은 업로드 전에 로컬 AES-GCM envelope encryption을
+- `S3KtorClientSideEncryption`은 업로드 전에 로컬 AES-GCM envelope encryption을
   수행하고 encrypted data key와 nonce를 S3 metadata에 저장합니다.
-- `putConfigObject(...)`, `getConfigObject(...)` 는 Spring `Environment`나 특정 Ktor
+- `putConfigObject(...)`, `getConfigObject(...)`는 Spring `Environment`나 특정 Ktor
   `ApplicationConfig` parser에 결합하지 않고 S3에서 text config 파일을 저장/로드합니다.
 
 ![Advanced S3 helper architecture](../docs/images/readme-diagrams/aws-ktor-s3-advanced-architecture-01.png)
 
 #### 시나리오: 안전한 Config Bootstrap
 
-Ktor service는 S3에서 runtime config를 bootstrap한 뒤 민감한 object를 server-side 또는
-client-side encryption으로 저장할 수 있습니다.
+Ktor service는 S3에서 runtime config를 읽어 bootstrapping한 뒤, 민감한 object를
+server-side 또는 client-side encryption으로 저장할 수 있습니다.
 
-1. `putConfigObject(...)` 로 `application.conf` 또는 tenant override를 저장합니다.
-2. 시작 시 `getConfigObject(...)` 로 text를 로드하고 application-owned config layer에서
+1. `putConfigObject(...)`로 `application.conf` 또는 tenant override를 저장합니다.
+2. 시작 시 `getConfigObject(...)`로 text를 로드하고 application-owned config layer에서
    파싱합니다.
-3. `putObjectDetectingContentType(...)` 로 사용자/tenant payload를 업로드합니다.
-4. S3가 at-rest encryption을 담당해야 하면 `putEncryptedObject(...)` 로 SSE-S3/SSE-KMS
+3. `putObjectDetectingContentType(...)`로 사용자/tenant payload를 업로드합니다.
+4. S3가 at-rest encryption을 담당해야 하면 `putEncryptedObject(...)`로 SSE-S3/SSE-KMS
    header를 추가합니다.
-5. Payload가 process를 떠나기 전에 암호화되어야 하면 `S3KtorClientSideEncryption` 을
+5. Payload가 process를 떠나기 전에 암호화되어야 하면 `S3KtorClientSideEncryption`을
    사용합니다.
 
 ![Advanced S3 upload/load sequence](../docs/images/readme-diagrams/aws-ktor-s3-advanced-sequence-01.png)
@@ -318,25 +316,25 @@ suspend fun uploadSecureConfig(s3: S3KtorClient) {
 }
 ```
 
-Client-side encryption은 KMS에 직접 의존하지 않고 `S3KtorDataKeyProvider` 를
-주입받습니다. 운영 provider는 AWS KMS `GenerateDataKey` 와 `Decrypt` 를 감싸면 되고,
-테스트나 로컬 도구는 in-memory provider를 사용할 수 있습니다. Plaintext data key는
-process-local로만 다루고 provider 경계 밖에 저장하지 마세요.
+Client-side encryption은 KMS에 직접 의존하지 않고 `S3KtorDataKeyProvider`를
+주입받습니다. 운영 provider는 AWS KMS `GenerateDataKey`와 `Decrypt`를 감싸면 되고,
+테스트나 로컬 도구에서는 in-memory provider를 사용할 수 있습니다. Plaintext data key는
+process-local로만 다루고 provider 경계 밖에는 저장하지 마세요.
 
 ### S3 Access Grants
 
-`S3AccessGrantsKtorPlugin` 은 AWS SDK Java v2 `S3ControlAsyncClient` 기반 suspend
-operations facade를 설치합니다. Access Grants는 S3 Control boundary에 유지하고, object
-REST 호출은 `S3KtorClient` 에 남깁니다. Request 처리 중 필요한 data-access와 discovery
-호출은 `application.s3AccessGrants()` 로 사용합니다.
+`S3AccessGrantsKtorPlugin`은 AWS SDK Java v2 `S3ControlAsyncClient` 기반 suspend
+operations facade를 설치합니다. Access Grants는 S3 Control boundary에 두고, object
+REST 호출은 `S3KtorClient`에 남깁니다. Request 처리 중 필요한 data-access와 discovery
+호출만 `application.s3AccessGrants()`로 사용합니다.
 
 ![Ktor S3 Access Grants flow](../docs/images/readme-diagrams/aws-ktor-s3-access-grants-flow-01.png)
 
 Plugin은 caller-owned `S3AccessGrantsKtorOperations`, caller-owned
 `S3ControlAsyncClient`, 또는 `AwsKtorCore` 기본값과 service-specific customizer로 만든
 plugin-managed client를 사용할 수 있습니다. Administrative create, update, delete
-operation은 의도적으로 raw S3 Control client에 남겨 Ktor facade가 request handling에
-유용한 read/data-access path만 감싸도록 했습니다.
+operation은 raw S3 Control client에 남겨 두었습니다. Ktor facade는 request handling에
+유용한 read/data-access path만 감쌉니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.AwsKtorCore
@@ -472,9 +470,10 @@ suspend fun Application.publishAudit(message: String) {
 
 ## SQS Consumer And Publisher
 
-`SqsConsumer` 는 하나의 SQS consumer runtime을 Ktor 애플리케이션에 설치합니다.
-runtime은 `ApplicationStarted` 이벤트에서 시작하고 `ApplicationStopping` 이벤트에서
-중지하며, publish가 필요하면 `application.sqsConsumer()` 로 접근할 수 있습니다.
+`SqsConsumer`는 하나의 SQS consumer runtime을 Ktor 애플리케이션에 설치합니다.
+runtime은 `ApplicationStarted`에서 poller를 시작하고 `ApplicationStopping`에서
+in-flight handler를 drain합니다. publish가 필요하면 `application.sqsConsumer()`로 같은
+runtime에 접근합니다.
 
 ![SQS Consumer And Publisher diagram](../docs/images/readme-diagrams/aws-ktor-sequence-01.png)
 
@@ -513,10 +512,10 @@ suspend fun Application.publishOrder(json: String) {
 }
 ```
 
-명시적 ack 흐름이 필요하면 자동 삭제를 끄고 handler 안에서 `ack()` / `nack()` 을
+명시적 ack 흐름이 필요하면 자동 삭제를 끄고 handler 안에서 `ack()` / `nack()`을
 사용합니다. Interceptor는 receive, invoke, ack, nack hook 전후에 실행됩니다. Observer는
-이 모듈에 metrics 의존성을 추가하지 않고도 Micrometer, OpenTelemetry, log로 연결할 수
-있는 lightweight event를 내보냅니다.
+이 모듈에 metrics 의존성을 추가하지 않으면서 Micrometer, OpenTelemetry, log로 연결할
+수 있는 lightweight event를 내보냅니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.sqs.SqsConversionFailurePolicy
@@ -543,11 +542,11 @@ install(SqsConsumer) {
 }
 ```
 
-Micrometer observer 는 send, receive, invoke, ack, nack, conversion failure,
-retry/failure event 를 `bluetape4k.aws.ktor.sqs.operation` timer 로 기록합니다. 기본
-tag 에 queue URL, message ID, receipt handle 은 넣지 않습니다.
+Micrometer observer는 send, receive, invoke, ack, nack, conversion failure,
+retry/failure event를 `bluetape4k.aws.ktor.sqs.operation` timer로 기록합니다. 기본
+tag에는 queue URL, message ID, receipt handle을 넣지 않습니다.
 
-주입한 `SqsAsyncClient` 는 애플리케이션이 소유합니다. 플러그인은 client를 닫지
+주입한 `SqsAsyncClient`는 애플리케이션이 소유합니다. 플러그인은 client를 닫지
 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
 `SqsConsumer`가 `AwsKtorCore` 또는 서비스 로컬 설정으로 plugin-owned client를 만들 수
 있고, 이 client는 `ApplicationStopping` 시 닫힙니다.
@@ -559,8 +558,8 @@ observer summary를 다룹니다.
 
 ### Micrometer S3 Wrapper
 
-Ktor service 가 모든 `aws-ktor` 사용자에게 Micrometer 를 강제하지 않으면서
-`S3KtorClient` 호출 주변에 operation timer 를 붙이고 싶을 때 `withMicrometer(...)` 를
+Ktor service가 모든 `aws-ktor` 사용자에게 Micrometer를 강제하지 않으면서
+`S3KtorClient` 호출 주변에 operation timer를 붙이고 싶을 때 `withMicrometer(...)`를
 사용합니다.
 
 ```kotlin
@@ -574,9 +573,9 @@ suspend fun loadDocument(s3: S3KtorClient, meterRegistry: MeterRegistry): ByteAr
 }
 ```
 
-Wrapper 는 선택된 put/get/delete/list/presign operation 을
-`bluetape4k.aws.ktor.s3.operation` timer 로 기록합니다. Bucket tag 는 기본적으로 꺼져
-있고 object key 는 기본 tag 로 사용하지 않습니다.
+Wrapper는 선택된 put/get/delete/list/presign operation을
+`bluetape4k.aws.ktor.s3.operation` timer로 기록합니다. Bucket tag는 기본적으로 꺼져
+있고 object key는 기본 tag로 사용하지 않습니다.
 
 ## DynamoDB Server Plugin
 

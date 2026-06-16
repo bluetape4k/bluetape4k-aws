@@ -1,16 +1,13 @@
 # Module bluetape4k-aws-ktor
 
-[English](README.md) | [한국어](README.ko.md)
+English | [한국어](README.ko.md)
 
-Ktor 3 integration for bluetape4k AWS modules. It provides a Ktor
-`HttpClient` plugin for AWS Signature Version 4, a coroutine-friendly S3 REST
-client built on that plugin, and a server-side SQS consumer/publisher runtime
-that follows the Ktor application lifecycle. It also provides a Ktor server
-plugin and repository facade for DynamoDB using `:aws-kotlin` and the official
-AWS SDK for Kotlin, plus a Ktor server plugin for AWS-backed Exposed JDBC
-database registries, and optional EC2 IMDS metadata operations.
-It also provides optional CloudWatch and CloudWatch Logs server plugins for
-explicit metric and log-event publishing.
+Ktor 3 integration for bluetape4k AWS modules. It provides AWS SigV4 signing
+for Ktor `HttpClient`, a coroutine-friendly S3 REST client built on that
+signing path, and server-side plugins that bind SQS, DynamoDB, AWS-backed
+Exposed registries, S3 Access Grants, S3 Vectors, IMDS, CloudWatch, and
+CloudWatch Logs to the Ktor application lifecycle without taking ownership away
+from the application.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -267,8 +264,8 @@ and client-side encryption scenarios.
 
 ### Advanced S3 Helpers
 
-`S3KtorClient` includes opt-in helpers for advanced object workflows without
-adding mandatory AWS service clients:
+`S3KtorClient` includes opt-in helpers for advanced object workflows. They add
+S3 request structure without forcing extra AWS service clients into the runtime:
 
 - `putObjectDetectingContentType(...)` detects a content type from the object
   key and payload, then falls back to `application/octet-stream`.
@@ -481,8 +478,9 @@ registry exporter.
 ## SQS Consumer And Publisher
 
 `SqsConsumer` installs one SQS consumer runtime into a Ktor application. The
-runtime starts on `ApplicationStarted`, stops on `ApplicationStopping`, and is
-also available through `application.sqsConsumer()` for publishing.
+runtime starts pollers on `ApplicationStarted`, drains in-flight handlers on
+`ApplicationStopping`, and is also available through `application.sqsConsumer()`
+for publishing.
 
 ![SQS Consumer And Publisher diagram](../docs/images/readme-diagrams/aws-ktor-sequence-01.png)
 
