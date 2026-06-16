@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="780" viewBox="0 0 1400 780" role="img" aria-labelledby="title desc">
+<title id="title">SQS coroutine support map</title>
+<desc id="desc">SQS support wraps SqsAsyncClient with coroutine helpers for queue lookup, sending, batch sending, receiving, visibility changes, deletion, and validation guards.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}.frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}.subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .layer{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}.layer-title{font-family:"Architects Daughter";font-size:25px;fill:#102033}.layer-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:23px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-amber{fill:#FFF8E6;stroke:#F59E0B;stroke-width:2.2}.card-red{fill:#FEECEC;stroke:#DC2626;stroke-width:2.2}
+    .note{fill:#FFFFFF;stroke:#D8E2ED;stroke-width:1.4}.note-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}.note-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}.arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}.arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}.arrow-red{stroke:#DC2626;stroke-width:3;fill:none;marker-end:url(#arrow-red)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#DC2626"/></marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="780"/><rect class="frame" x="24" y="24" width="1352" height="732" rx="14"/>
+<text class="title" x="54" y="74">SQS coroutine support map</text>
+<text class="subtitle" x="54" y="108">The aws-java module turns SqsAsyncClient futures into suspend queue, message, and acknowledgement helpers.</text>
+<rect class="card-blue" x="894" y="62" width="118" height="24" rx="12" opacity="0.24"/><text class="legend" x="953" y="78" text-anchor="middle">Client</text>
+<rect class="card-green" x="1030" y="62" width="118" height="24" rx="12" opacity="0.24"/><text class="legend" x="1089" y="78" text-anchor="middle">Message</text>
+<rect class="card-orange" x="1166" y="62" width="148" height="24" rx="12" opacity="0.24"/><text class="legend" x="1240" y="78" text-anchor="middle">Ack / Guards</text>
+
+<rect class="layer" x="66" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="90" y="190">Client base</text><text class="layer-sub" x="90" y="216">AWS SDK v2 async SQS</text>
+<rect class="layer" x="392" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="416" y="190">Coroutine API</text><text class="layer-sub" x="416" y="216">await wrappers</text>
+<rect class="layer" x="718" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="742" y="190">Queue and messages</text><text class="layer-sub" x="742" y="216">lookup, send, receive</text>
+<rect class="layer" x="1044" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="1068" y="190">Ack and guards</text><text class="layer-sub" x="1068" y="216">visibility, delete, validate</text>
+
+<rect class="card-blue" x="96" y="254" width="232" height="92" rx="9"/><text class="card-title" x="212" y="286" text-anchor="middle">SqsAsyncClient</text><text class="card-text" x="212" y="314" text-anchor="middle">CompletableFuture API</text><text class="card-text" x="212" y="336" text-anchor="middle">send / receive / delete</text>
+<rect class="card-blue" x="96" y="406" width="232" height="92" rx="9"/><text class="card-title" x="212" y="438" text-anchor="middle">Client factory</text><text class="card-text" x="212" y="466" text-anchor="middle">endpoint + region</text><text class="card-text" x="212" y="488" text-anchor="middle">ShutdownQueue</text>
+
+<rect class="card-teal" x="422" y="254" width="232" height="92" rx="9"/><text class="card-title" x="538" y="286" text-anchor="middle">Suspend extensions</text><text class="card-text" x="538" y="314" text-anchor="middle">create, list, URL</text><text class="card-text" x="538" y="336" text-anchor="middle">send, receive, ack</text>
+<rect class="card-teal" x="422" y="406" width="232" height="92" rx="9"/><text class="card-title" x="538" y="438" text-anchor="middle">Async guard layer</text><text class="card-text" x="538" y="466" text-anchor="middle">blank queueUrl</text><text class="card-text" x="538" y="488" text-anchor="middle">range and batch checks</text>
+
+<rect class="card-green" x="748" y="238" width="232" height="82" rx="9"/><text class="card-title" x="864" y="270" text-anchor="middle">Queue lookup</text><text class="card-text" x="864" y="298" text-anchor="middle">create, list, get URL</text>
+<rect class="card-green" x="748" y="350" width="232" height="82" rx="9"/><text class="card-title" x="864" y="382" text-anchor="middle">Send messages</text><text class="card-text" x="864" y="410" text-anchor="middle">single + batch entries</text>
+<rect class="card-green" x="748" y="462" width="232" height="82" rx="9"/><text class="card-title" x="864" y="494" text-anchor="middle">Receive messages</text><text class="card-text" x="864" y="522" text-anchor="middle">1..10 messages</text>
+
+<rect class="card-orange" x="1074" y="254" width="232" height="92" rx="9"/><text class="card-title" x="1190" y="286" text-anchor="middle">Visibility</text><text class="card-text" x="1190" y="314" text-anchor="middle">receipt handle</text><text class="card-text" x="1190" y="336" text-anchor="middle">timeout change</text>
+<rect class="card-amber" x="1074" y="406" width="232" height="92" rx="9"/><text class="card-title" x="1190" y="438" text-anchor="middle">Delete messages</text><text class="card-text" x="1190" y="466" text-anchor="middle">single + batch</text><text class="card-text" x="1190" y="488" text-anchor="middle">delete queue</text>
+
+<path class="arrow-blue" d="M212 406 V346"/><path class="arrow-blue" d="M328 300 H422"/><path class="arrow-blue" d="M328 336 H374 V452 H422"/>
+<path class="arrow-green" d="M654 300 H748"/><path class="arrow-green" d="M654 452 H700 V391 H748"/><path class="arrow-green" d="M654 452 H700 V503 H748"/>
+<path class="arrow-orange" d="M980 503 H1026 V300 H1074"/><path class="arrow-orange" d="M980 503 H1026 V452 H1074"/>
+
+<rect class="note" x="86" y="620" width="590" height="58" rx="8"/><text class="note-title" x="110" y="648">Receive guard</text><text class="note-text" x="294" y="648">maxResults must be 1..10.</text><text class="note-text" x="110" y="668">Long-poll request builders also validate waitTimeSeconds as 0..20.</text>
+<rect class="note" x="724" y="620" width="590" height="58" rx="8"/><text class="note-title" x="748" y="648">Batch guard</text><text class="note-text" x="908" y="648">send, visibility, and delete batches reject empty entries.</text><text class="note-text" x="748" y="668">This fails before the SDK network call.</text>
+<rect class="footer" x="54" y="716" width="1292" height="32" rx="8"/><text class="footer-title" x="74" y="732" dominant-baseline="middle">Support</text><text class="footer-detail" x="166" y="732" dominant-baseline="middle">SQS coroutine helpers cover queue discovery, message send/receive, visibility extension, deletion, and preflight validation.</text>
+</svg>
