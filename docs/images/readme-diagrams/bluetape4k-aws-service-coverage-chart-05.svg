@@ -1,265 +1,226 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1880" height="889" viewBox="0 0 1880 889" role="img" aria-label="AWS service coverage">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1040" viewBox="0 0 1900 1040" role="img" aria-label="Bluetape4k AWS service support matrix">
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono","Comic Sans MS",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .matrix{fill:#ffffff;stroke:#cbd5e1;stroke-width:2;filter:url(#softShadow)}
+      .head{fill:#eff6ff;stroke:#cbd5e1;stroke-width:2}
+      .rowA{fill:#ffffff}
+      .rowB{fill:#fbfdff}
+      .line{stroke:#e2e8f0;stroke-width:1.6}
+      .strongLine{stroke:#cbd5e1;stroke-width:2}
+      .module{font-family:"Architects Daughter";font-size:24px;fill:#17233a}
+      .scope{font-family:"Comic Mono";font-size:12px;fill:#64748b}
+      .headText{font-family:"Comic Mono";font-size:12px;fill:#334155}
+      .sideHead{font-family:"Architects Daughter";font-size:22px;fill:#17233a}
+      .cellText{font-family:"Comic Mono";font-size:13px;font-weight:700}
+      .stable{fill:#dcfce7;stroke:#16a34a}
+      .optional{fill:#fff7ed;stroke:#d97706}
+      .example{fill:#f5f3ff;stroke:#7c3aed}
+      .empty{fill:#f8fafc;stroke:#cbd5e1}
+      .planned{fill:#eef2ff;stroke:#4f46e5;stroke-dasharray:5 4}
+      .legendTitle{font-family:"Architects Daughter";font-size:22px;fill:#17233a}
+      .legendText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .footer{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<rect x="26" y="26" width="1828" height="837" rx="14" class="frame"/>
-<text class="title" x="54" y="72">AWS service coverage</text>
-<text class="subtitle" x="56" y="104">Service support grouped by module scope, optional dependencies, and runnable examples.</text>
-<rect x="54" y="145" width="1772" height="460" rx="10" fill="#FFFFFF" stroke="#D9E2EC"/>
-<rect x="54" y="145" width="1772" height="72" rx="10" fill="#EEF6FF" stroke="#D9E2EC"/>
-<text class="chip" x="76" y="176">Module</text>
-<text class="tiny" x="76" y="198">README-backed service boundary</text>
-<line x1="384.0" y1="145" x2="384.0" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="439.46153846153845" y="187" text-anchor="middle" dominant-baseline="middle">DynamoDB</text>
-<line x1="494.9230769230769" y1="145" x2="494.9230769230769" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="550.3846153846154" y="187" text-anchor="middle" dominant-baseline="middle">S3</text>
-<line x1="605.8461538461538" y1="145" x2="605.8461538461538" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="661.3076923076923" y="187" text-anchor="middle" dominant-baseline="middle">S3 Vectors</text>
-<line x1="716.7692307692307" y1="145" x2="716.7692307692307" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="772.2307692307692" y="187" text-anchor="middle" dominant-baseline="middle">SES/v2</text>
-<line x1="827.6923076923076" y1="145" x2="827.6923076923076" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="883.1538461538461" y="187" text-anchor="middle" dominant-baseline="middle">SNS</text>
-<line x1="938.6153846153846" y1="145" x2="938.6153846153846" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="994.0769230769231" y="187" text-anchor="middle" dominant-baseline="middle">SQS</text>
-<line x1="1049.5384615384614" y1="145" x2="1049.5384615384614" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="1105.0" y="187" text-anchor="middle" dominant-baseline="middle">KMS</text>
-<line x1="1160.4615384615386" y1="145" x2="1160.4615384615386" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="1215.9230769230771" y="178" text-anchor="middle"><tspan x="1215.9230769230771" dy="0">CloudWatch</tspan><tspan x="1215.9230769230771" dy="18">+ Logs</tspan></text>
-<line x1="1271.3846153846152" y1="145" x2="1271.3846153846152" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="1326.8461538461538" y="187" text-anchor="middle" dominant-baseline="middle">Kinesis</text>
-<line x1="1382.3076923076924" y1="145" x2="1382.3076923076924" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="1437.769230769231" y="187" text-anchor="middle" dominant-baseline="middle">STS</text>
-<line x1="1493.2307692307693" y1="145" x2="1493.2307692307693" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="1548.6923076923078" y="187" text-anchor="middle" dominant-baseline="middle">RDS IAM</text>
-<line x1="1604.1538461538462" y1="145" x2="1604.1538461538462" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="1659.6153846153848" y="178" text-anchor="middle"><tspan x="1659.6153846153848" dy="0">Secrets</tspan><tspan x="1659.6153846153848" dy="18">Manager</tspan></text>
-<line x1="1715.076923076923" y1="145" x2="1715.076923076923" y2="605" stroke="#E2E8F0"/>
-<text class="tiny" x="1770.5384615384617" y="178" text-anchor="middle"><tspan x="1770.5384615384617" dy="0">Parameter</tspan><tspan x="1770.5384615384617" dy="18">Store</tspan></text>
-<line x1="384" y1="145" x2="384" y2="605" stroke="#CBD5E1"/>
-<rect x="54" y="217.0" width="1772" height="64.66666666666667" fill="#FFFFFF" stroke="none"/>
-<line x1="54" y1="217.0" x2="1826" y2="217.0" stroke="#E2E8F0"/>
-<text class="bar-label" x="76" y="245.0">aws-java</text>
-<text class="tiny" x="76" y="271.0">Core Java SDK v2 helpers</text>
-<rect x="407.46153846153845" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="439.46153846153845" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="518.3846153846154" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="550.3846153846154" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="622.3076923076923" y="232.33333333333334" width="78" height="34" rx="17" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="detail" x="661.3076923076923" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#B98518">opt-in</text>
-<rect x="740.2307692307692" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="772.2307692307692" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="851.1538461538461" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="883.1538461538461" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="962.0769230769231" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="994.0769230769231" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1073.0" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1105.0" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1183.9230769230771" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1215.9230769230771" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1294.8461538461538" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1326.8461538461538" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1405.769230769231" y="232.33333333333334" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1437.769230769231" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1527.6923076923078" y="232.33333333333334" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1548.6923076923078" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1638.6153846153848" y="232.33333333333334" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1659.6153846153848" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1749.5384615384617" y="232.33333333333334" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1770.5384615384617" y="249.33333333333334" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="54" y="281.6666666666667" width="1772" height="64.66666666666667" fill="#FBFDFF" stroke="none"/>
-<line x1="54" y1="281.6666666666667" x2="1826" y2="281.6666666666667" stroke="#E2E8F0"/>
-<text class="bar-label" x="76" y="309.6666666666667">aws-kotlin</text>
-<text class="tiny" x="76" y="335.6666666666667">Native suspend SDK helpers</text>
-<rect x="407.46153846153845" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="439.46153846153845" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="518.3846153846154" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="550.3846153846154" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="640.3076923076923" y="297.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="661.3076923076923" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="740.2307692307692" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="772.2307692307692" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="851.1538461538461" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="883.1538461538461" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="962.0769230769231" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="994.0769230769231" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1073.0" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1105.0" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1183.9230769230771" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1215.9230769230771" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1294.8461538461538" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1326.8461538461538" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1405.769230769231" y="297.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1437.769230769231" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1527.6923076923078" y="297.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1548.6923076923078" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1638.6153846153848" y="297.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1659.6153846153848" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1749.5384615384617" y="297.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1770.5384615384617" y="314.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="54" y="346.33333333333337" width="1772" height="64.66666666666667" fill="#FFFFFF" stroke="none"/>
-<line x1="54" y1="346.33333333333337" x2="1826" y2="346.33333333333337" stroke="#E2E8F0"/>
-<text class="bar-label" x="76" y="374.33333333333337">aws-exposed</text>
-<text class="tiny" x="76" y="400.33333333333337">Database config and RDS IAM</text>
-<rect x="418.46153846153845" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="439.46153846153845" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="529.3846153846154" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="550.3846153846154" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="640.3076923076923" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="661.3076923076923" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="751.2307692307692" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="772.2307692307692" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="862.1538461538461" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="883.1538461538461" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="973.0769230769231" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="994.0769230769231" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1084.0" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1105.0" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1194.9230769230771" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1215.9230769230771" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1305.8461538461538" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1326.8461538461538" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1416.769230769231" y="361.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1437.769230769231" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1516.6923076923078" y="361.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1548.6923076923078" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1627.6153846153848" y="361.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1659.6153846153848" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1738.5384615384617" y="361.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1770.5384615384617" y="378.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="54" y="411.0" width="1772" height="64.66666666666667" fill="#FBFDFF" stroke="none"/>
-<line x1="54" y1="411.0" x2="1826" y2="411.0" stroke="#E2E8F0"/>
-<text class="bar-label" x="76" y="439.0">aws-spring-boot</text>
-<text class="tiny" x="76" y="465.0">Auto-config templates and property sources</text>
-<rect x="407.46153846153845" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="439.46153846153845" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="518.3846153846154" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="550.3846153846154" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="622.3076923076923" y="426.3333333333333" width="78" height="34" rx="17" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="detail" x="661.3076923076923" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#B98518">opt-in</text>
-<rect x="740.2307692307692" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="772.2307692307692" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="851.1538461538461" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="883.1538461538461" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="962.0769230769231" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="994.0769230769231" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1073.0" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1105.0" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1183.9230769230771" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1215.9230769230771" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1305.8461538461538" y="426.3333333333333" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1326.8461538461538" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1405.769230769231" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1437.769230769231" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1516.6923076923078" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1548.6923076923078" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1627.6153846153848" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1659.6153846153848" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1738.5384615384617" y="426.3333333333333" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1770.5384615384617" y="443.3333333333333" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="54" y="475.6666666666667" width="1772" height="64.66666666666667" fill="#FFFFFF" stroke="none"/>
-<line x1="54" y1="475.6666666666667" x2="1826" y2="475.6666666666667" stroke="#E2E8F0"/>
-<text class="bar-label" x="76" y="503.6666666666667">aws-ktor</text>
-<text class="tiny" x="76" y="529.6666666666667">Plugins, SigV4, S3/SQS/DynamoDB runtimes</text>
-<rect x="407.46153846153845" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="439.46153846153845" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="518.3846153846154" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="550.3846153846154" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="622.3076923076923" y="491.0" width="78" height="34" rx="17" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="detail" x="661.3076923076923" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#B98518">opt-in</text>
-<rect x="751.2307692307692" y="491.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="772.2307692307692" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="862.1538461538461" y="491.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="883.1538461538461" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="962.0769230769231" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="994.0769230769231" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1073.0" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1105.0" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1183.9230769230771" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1215.9230769230771" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1305.8461538461538" y="491.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1326.8461538461538" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1416.769230769231" y="491.0" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1437.769230769231" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1516.6923076923078" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1548.6923076923078" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1627.6153846153848" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1659.6153846153848" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1738.5384615384617" y="491.0" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1770.5384615384617" y="508.0" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="54" y="540.3333333333334" width="1772" height="64.66666666666667" fill="#FBFDFF" stroke="none"/>
-<line x1="54" y1="540.3333333333334" x2="1826" y2="540.3333333333334" stroke="#E2E8F0"/>
-<text class="bar-label" x="76" y="568.3333333333334">examples</text>
-<text class="tiny" x="76" y="594.3333333333334">Runnable Spring Boot and Ktor scenarios</text>
-<rect x="407.46153846153845" y="555.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="439.46153846153845" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="518.3846153846154" y="555.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="550.3846153846154" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="640.3076923076923" y="555.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="661.3076923076923" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="751.2307692307692" y="555.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="772.2307692307692" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="862.1538461538461" y="555.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="883.1538461538461" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="962.0769230769231" y="555.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="994.0769230769231" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1073.0" y="555.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1105.0" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1194.9230769230771" y="555.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1215.9230769230771" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1305.8461538461538" y="555.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1326.8461538461538" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1416.769230769231" y="555.6666666666667" width="42" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="1437.769230769231" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<rect x="1516.6923076923078" y="555.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1548.6923076923078" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1627.6153846153848" y="555.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1659.6153846153848" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<rect x="1738.5384615384617" y="555.6666666666667" width="64" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="1770.5384615384617" y="572.6666666666667" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<line x1="54" y1="605" x2="1826" y2="605" stroke="#CBD5E1"/>
-<rect class="footer" x="54" y="622" width="1772" height="52" rx="8"/>
-<text class="footer-title" x="76" y="649" dominant-baseline="middle">Legend</text>
-<rect x="190" y="632" width="76" height="34" rx="17" fill="#EAF7EF" stroke="#58A978"/>
-<text class="detail" x="228" y="649" text-anchor="middle" dominant-baseline="middle" fill="#2F8B57">yes</text>
-<text class="tiny" x="278" y="649" dominant-baseline="middle">covered</text>
-<rect x="400" y="632" width="76" height="34" rx="17" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="detail" x="438" y="649" text-anchor="middle" dominant-baseline="middle" fill="#B98518">opt-in</text>
-<text class="tiny" x="488" y="649" dominant-baseline="middle">opt-in dependency</text>
-<rect x="610" y="632" width="76" height="34" rx="17" fill="#F8FAFC" stroke="#CBD5E1"/>
-<text class="detail" x="648" y="649" text-anchor="middle" dominant-baseline="middle" fill="#64748B">-</text>
-<text class="tiny" x="698" y="649" dominant-baseline="middle">not scoped</text>
-<text class="tiny" x="1804" y="649" text-anchor="end" dominant-baseline="middle">S3 Vectors is opt-in for Java, Spring Boot, and Ktor.</text>
-<rect class="footer" x="54" y="690" width="1772" height="54" rx="8"/>
-<text class="footer-title" x="76" y="713" dominant-baseline="middle">Coverage role</text>
-<text class="footer-detail" x="76" y="731" dominant-baseline="middle">Core SDK modules cover broad wrappers; framework modules expose the services they configure or operate directly.</text>
+  <rect class="canvas" width="1900" height="1040"/>
+  <rect class="frame" x="48" y="38" width="1804" height="964" rx="24"/>
+  <text class="title" x="950" y="96" text-anchor="middle">AWS Service Support Matrix</text>
+  <text class="subtitle" x="950" y="132" text-anchor="middle">Support status by module, based on current README installation guidance and build.gradle.kts service dependencies.</text>
+
+  <g id="matrix">
+    <rect class="matrix" x="78" y="176" width="1744" height="642" rx="22"/>
+    <rect class="head" x="78" y="176" width="1744" height="96" rx="22"/>
+    <text class="sideHead" x="118" y="232">Module</text>
+
+    <line class="strongLine" x1="358" y1="176" x2="358" y2="818"/>
+    <line class="line" x1="454" y1="176" x2="454" y2="818"/>
+    <line class="line" x1="550" y1="176" x2="550" y2="818"/>
+    <line class="line" x1="646" y1="176" x2="646" y2="818"/>
+    <line class="line" x1="742" y1="176" x2="742" y2="818"/>
+    <line class="line" x1="838" y1="176" x2="838" y2="818"/>
+    <line class="line" x1="934" y1="176" x2="934" y2="818"/>
+    <line class="line" x1="1030" y1="176" x2="1030" y2="818"/>
+    <line class="line" x1="1126" y1="176" x2="1126" y2="818"/>
+    <line class="line" x1="1222" y1="176" x2="1222" y2="818"/>
+    <line class="line" x1="1318" y1="176" x2="1318" y2="818"/>
+    <line class="line" x1="1414" y1="176" x2="1414" y2="818"/>
+    <line class="line" x1="1510" y1="176" x2="1510" y2="818"/>
+    <line class="line" x1="1606" y1="176" x2="1606" y2="818"/>
+    <line class="line" x1="1702" y1="176" x2="1702" y2="818"/>
+
+    <text class="headText" x="406" y="215" text-anchor="middle">DynamoDB</text>
+    <text class="headText" x="502" y="215" text-anchor="middle">S3</text>
+    <text class="headText" x="598" y="207" text-anchor="middle"><tspan x="598" dy="0">S3</tspan><tspan x="598" dy="17">Vectors</tspan></text>
+    <text class="headText" x="694" y="215" text-anchor="middle">SES/v2</text>
+    <text class="headText" x="790" y="215" text-anchor="middle">SNS</text>
+    <text class="headText" x="886" y="215" text-anchor="middle">SQS</text>
+    <text class="headText" x="982" y="215" text-anchor="middle">KMS</text>
+    <text class="headText" x="1078" y="207" text-anchor="middle"><tspan x="1078" dy="0">CloudWatch</tspan><tspan x="1078" dy="17">Logs</tspan></text>
+    <text class="headText" x="1174" y="215" text-anchor="middle">Kinesis</text>
+    <text class="headText" x="1270" y="215" text-anchor="middle">STS</text>
+    <text class="headText" x="1366" y="215" text-anchor="middle">RDS IAM</text>
+    <text class="headText" x="1462" y="207" text-anchor="middle"><tspan x="1462" dy="0">Secrets</tspan><tspan x="1462" dy="17">Manager</tspan></text>
+    <text class="headText" x="1558" y="207" text-anchor="middle"><tspan x="1558" dy="0">Parameter</tspan><tspan x="1558" dy="17">Store</tspan></text>
+    <text class="headText" x="1654" y="215" text-anchor="middle">IMDS</text>
+    <text class="headText" x="1750" y="207" text-anchor="middle"><tspan x="1750" dy="0">Access</tspan><tspan x="1750" dy="17">Grants</tspan></text>
+
+    <g id="row-aws-java">
+      <rect class="rowA" x="78" y="272" width="1744" height="91"/>
+      <line class="line" x1="78" y1="363" x2="1822" y2="363"/>
+      <text class="module" x="118" y="312">aws-java</text>
+      <text class="scope" x="118" y="338">Java SDK v2 wrappers</text>
+      <circle class="stable" cx="406" cy="318" r="20"/><text class="cellText" x="406" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="502" cy="318" r="20"/><text class="cellText" x="502" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="optional" cx="598" cy="318" r="20"/><text class="cellText" x="598" y="323" text-anchor="middle" fill="#9a3412">O</text>
+      <circle class="stable" cx="694" cy="318" r="20"/><text class="cellText" x="694" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="790" cy="318" r="20"/><text class="cellText" x="790" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="886" cy="318" r="20"/><text class="cellText" x="886" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="982" cy="318" r="20"/><text class="cellText" x="982" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1078" cy="318" r="20"/><text class="cellText" x="1078" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1174" cy="318" r="20"/><text class="cellText" x="1174" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1270" cy="318" r="20"/><text class="cellText" x="1270" y="323" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="1366" cy="318" r="18"/><text class="cellText" x="1366" y="323" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1462" cy="318" r="18"/><text class="cellText" x="1462" y="323" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1558" cy="318" r="18"/><text class="cellText" x="1558" y="323" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1654" cy="318" r="18"/><text class="cellText" x="1654" y="323" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1750" cy="318" r="18"/><text class="cellText" x="1750" y="323" text-anchor="middle" fill="#64748b">-</text>
+    </g>
+
+    <g id="row-aws-kotlin">
+      <rect class="rowB" x="78" y="363" width="1744" height="91"/>
+      <line class="line" x1="78" y1="454" x2="1822" y2="454"/>
+      <text class="module" x="118" y="403">aws-kotlin</text>
+      <text class="scope" x="118" y="429">AWS Kotlin SDK helpers</text>
+      <circle class="stable" cx="406" cy="409" r="20"/><text class="cellText" x="406" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="502" cy="409" r="20"/><text class="cellText" x="502" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="598" cy="409" r="18"/><text class="cellText" x="598" y="414" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="694" cy="409" r="20"/><text class="cellText" x="694" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="790" cy="409" r="20"/><text class="cellText" x="790" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="886" cy="409" r="20"/><text class="cellText" x="886" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="982" cy="409" r="20"/><text class="cellText" x="982" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1078" cy="409" r="20"/><text class="cellText" x="1078" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1174" cy="409" r="20"/><text class="cellText" x="1174" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1270" cy="409" r="20"/><text class="cellText" x="1270" y="414" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="1366" cy="409" r="18"/><text class="cellText" x="1366" y="414" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1462" cy="409" r="18"/><text class="cellText" x="1462" y="414" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1558" cy="409" r="18"/><text class="cellText" x="1558" y="414" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1654" cy="409" r="18"/><text class="cellText" x="1654" y="414" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1750" cy="409" r="18"/><text class="cellText" x="1750" y="414" text-anchor="middle" fill="#64748b">-</text>
+    </g>
+
+    <g id="row-aws-exposed">
+      <rect class="rowA" x="78" y="454" width="1744" height="91"/>
+      <line class="line" x1="78" y1="545" x2="1822" y2="545"/>
+      <text class="module" x="118" y="494">aws-exposed</text>
+      <text class="scope" x="118" y="520">database config foundation</text>
+      <circle class="empty" cx="406" cy="500" r="18"/><text class="cellText" x="406" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="502" cy="500" r="18"/><text class="cellText" x="502" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="598" cy="500" r="18"/><text class="cellText" x="598" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="694" cy="500" r="18"/><text class="cellText" x="694" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="790" cy="500" r="18"/><text class="cellText" x="790" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="886" cy="500" r="18"/><text class="cellText" x="886" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="982" cy="500" r="18"/><text class="cellText" x="982" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1078" cy="500" r="18"/><text class="cellText" x="1078" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1174" cy="500" r="18"/><text class="cellText" x="1174" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1270" cy="500" r="18"/><text class="cellText" x="1270" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="1366" cy="500" r="20"/><text class="cellText" x="1366" y="505" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1462" cy="500" r="20"/><text class="cellText" x="1462" y="505" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1558" cy="500" r="20"/><text class="cellText" x="1558" y="505" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="1654" cy="500" r="18"/><text class="cellText" x="1654" y="505" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1750" cy="500" r="18"/><text class="cellText" x="1750" y="505" text-anchor="middle" fill="#64748b">-</text>
+    </g>
+
+    <g id="row-aws-spring-boot">
+      <rect class="rowB" x="78" y="545" width="1744" height="91"/>
+      <line class="line" x1="78" y1="636" x2="1822" y2="636"/>
+      <text class="module" x="118" y="585">aws-spring-boot</text>
+      <text class="scope" x="118" y="611">auto-config and operations</text>
+      <circle class="stable" cx="406" cy="591" r="20"/><text class="cellText" x="406" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="502" cy="591" r="20"/><text class="cellText" x="502" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="optional" cx="598" cy="591" r="20"/><text class="cellText" x="598" y="596" text-anchor="middle" fill="#9a3412">O</text>
+      <circle class="stable" cx="694" cy="591" r="20"/><text class="cellText" x="694" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="790" cy="591" r="20"/><text class="cellText" x="790" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="886" cy="591" r="20"/><text class="cellText" x="886" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="982" cy="591" r="20"/><text class="cellText" x="982" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1078" cy="591" r="20"/><text class="cellText" x="1078" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="1174" cy="591" r="18"/><text class="cellText" x="1174" y="596" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="1270" cy="591" r="20"/><text class="cellText" x="1270" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="1366" cy="591" r="18"/><text class="cellText" x="1366" y="596" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="1462" cy="591" r="20"/><text class="cellText" x="1462" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1558" cy="591" r="20"/><text class="cellText" x="1558" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="1654" cy="591" r="20"/><text class="cellText" x="1654" y="596" text-anchor="middle" fill="#166534">S</text>
+      <circle class="optional" cx="1750" cy="591" r="20"/><text class="cellText" x="1750" y="596" text-anchor="middle" fill="#9a3412">O</text>
+    </g>
+
+    <g id="row-aws-ktor">
+      <rect class="rowA" x="78" y="636" width="1744" height="91"/>
+      <line class="line" x1="78" y1="727" x2="1822" y2="727"/>
+      <text class="module" x="118" y="676">aws-ktor</text>
+      <text class="scope" x="118" y="702">client/server plugins</text>
+      <circle class="stable" cx="406" cy="682" r="20"/><text class="cellText" x="406" y="687" text-anchor="middle" fill="#166534">S</text>
+      <circle class="stable" cx="502" cy="682" r="20"/><text class="cellText" x="502" y="687" text-anchor="middle" fill="#166534">S</text>
+      <circle class="optional" cx="598" cy="682" r="20"/><text class="cellText" x="598" y="687" text-anchor="middle" fill="#9a3412">O</text>
+      <circle class="empty" cx="694" cy="682" r="18"/><text class="cellText" x="694" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="790" cy="682" r="18"/><text class="cellText" x="790" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="886" cy="682" r="20"/><text class="cellText" x="886" y="687" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="982" cy="682" r="18"/><text class="cellText" x="982" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="1078" cy="682" r="20"/><text class="cellText" x="1078" y="687" text-anchor="middle" fill="#166534">S</text>
+      <circle class="empty" cx="1174" cy="682" r="18"/><text class="cellText" x="1174" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1270" cy="682" r="18"/><text class="cellText" x="1270" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1366" cy="682" r="18"/><text class="cellText" x="1366" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1462" cy="682" r="18"/><text class="cellText" x="1462" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1558" cy="682" r="18"/><text class="cellText" x="1558" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="1654" cy="682" r="20"/><text class="cellText" x="1654" y="687" text-anchor="middle" fill="#166534">S</text>
+      <circle class="optional" cx="1750" cy="682" r="20"/><text class="cellText" x="1750" y="687" text-anchor="middle" fill="#9a3412">O</text>
+    </g>
+
+    <g id="row-examples">
+      <rect class="rowB" x="78" y="727" width="1744" height="91"/>
+      <text class="module" x="118" y="767">examples</text>
+      <text class="scope" x="118" y="793">Ktor and Spring Boot apps</text>
+      <circle class="example" cx="406" cy="773" r="20"/><text class="cellText" x="406" y="778" text-anchor="middle" fill="#5b21b6">E</text>
+      <circle class="example" cx="502" cy="773" r="20"/><text class="cellText" x="502" y="778" text-anchor="middle" fill="#5b21b6">E</text>
+      <circle class="empty" cx="598" cy="773" r="18"/><text class="cellText" x="598" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="694" cy="773" r="18"/><text class="cellText" x="694" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="example" cx="790" cy="773" r="20"/><text class="cellText" x="790" y="778" text-anchor="middle" fill="#5b21b6">E</text>
+      <circle class="example" cx="886" cy="773" r="20"/><text class="cellText" x="886" y="778" text-anchor="middle" fill="#5b21b6">E</text>
+      <circle class="empty" cx="982" cy="773" r="18"/><text class="cellText" x="982" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1078" cy="773" r="18"/><text class="cellText" x="1078" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1174" cy="773" r="18"/><text class="cellText" x="1174" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1270" cy="773" r="18"/><text class="cellText" x="1270" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="example" cx="1366" cy="773" r="20"/><text class="cellText" x="1366" y="778" text-anchor="middle" fill="#5b21b6">E</text>
+      <circle class="empty" cx="1462" cy="773" r="18"/><text class="cellText" x="1462" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1558" cy="773" r="18"/><text class="cellText" x="1558" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1654" cy="773" r="18"/><text class="cellText" x="1654" y="778" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="empty" cx="1750" cy="773" r="18"/><text class="cellText" x="1750" y="778" text-anchor="middle" fill="#64748b">-</text>
+    </g>
+  </g>
+
+  <g id="legend">
+    <rect class="matrix" x="118" y="860" width="1664" height="82" rx="18"/>
+    <text class="legendTitle" x="154" y="910">Legend</text>
+    <circle class="stable" cx="324" cy="902" r="19"/><text class="cellText" x="324" y="907" text-anchor="middle" fill="#166534">S</text>
+    <text class="legendText" x="354" y="907">stable module support</text>
+    <circle class="optional" cx="604" cy="902" r="19"/><text class="cellText" x="604" y="907" text-anchor="middle" fill="#9a3412">O</text>
+    <text class="legendText" x="634" y="907">optional feature or SDK dependency</text>
+    <circle class="example" cx="974" cy="902" r="19"/><text class="cellText" x="974" y="907" text-anchor="middle" fill="#5b21b6">E</text>
+    <text class="legendText" x="1004" y="907">example coverage only</text>
+    <circle class="planned" cx="1240" cy="902" r="19"/><text class="cellText" x="1240" y="907" text-anchor="middle" fill="#3730a3">P</text>
+    <text class="legendText" x="1270" y="907">planned when backed by roadmap evidence</text>
+    <circle class="empty" cx="1620" cy="902" r="17"/><text class="cellText" x="1620" y="907" text-anchor="middle" fill="#64748b">-</text>
+    <text class="legendText" x="1650" y="907">not a module concern</text>
+  </g>
+
+  <rect class="footer" x="118" y="966" width="1664" height="30" rx="14"/>
+  <text class="footerText" x="950" y="986" text-anchor="middle">BOM is intentionally excluded from this matrix because it aligns dependency versions rather than implementing AWS service components.</text>
 </svg>

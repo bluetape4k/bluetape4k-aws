@@ -79,20 +79,16 @@
     <text class="bandNote" x="132" y="682">Add only the integration surface the application needs: database config, Spring Boot operations, or Ktor runtime plugins.</text>
 
     <g id="exposed-card">
-      <rect class="card" x="172" y="712" width="300" height="54" rx="14" stroke="#d97706"/>
-      <text class="cardTitle" x="322" y="744" text-anchor="middle">AWS Exposed</text>
+      <rect class="card" x="184" y="712" width="324" height="54" rx="14" stroke="#d97706"/>
+      <text class="cardTitle" x="346" y="744" text-anchor="middle">AWS Exposed</text>
     </g>
     <g id="spring-card">
-      <rect class="card" x="512" y="712" width="300" height="54" rx="14" stroke="#dc2626"/>
-      <text class="cardTitle" x="662" y="744" text-anchor="middle">Spring Boot 4</text>
+      <rect class="card" x="588" y="712" width="324" height="54" rx="14" stroke="#dc2626"/>
+      <text class="cardTitle" x="750" y="744" text-anchor="middle">Spring Boot 4</text>
     </g>
     <g id="ktor-card">
-      <rect class="card" x="852" y="712" width="300" height="54" rx="14" stroke="#7c3aed"/>
-      <text class="cardTitle" x="1002" y="744" text-anchor="middle">Ktor 3</text>
-    </g>
-    <g id="bom-card">
-      <rect class="card" x="1192" y="712" width="132" height="54" rx="14" stroke="#64748b"/>
-      <text class="cardTitle" x="1258" y="744" text-anchor="middle">BOM</text>
+      <rect class="card" x="992" y="712" width="324" height="54" rx="14" stroke="#7c3aed"/>
+      <text class="cardTitle" x="1154" y="744" text-anchor="middle">Ktor 3</text>
     </g>
   </g>
 
@@ -111,11 +107,10 @@
   <path class="route" d="M 1159 536 L 1159 608" stroke="#0891b2" marker-end="url(#arrowGreen)"/>
   <text class="routeText" x="750" y="586" text-anchor="middle">wire framework or data layer</text>
 
-  <path class="route" d="M 322 766 L 322 824" stroke="#d97706" marker-end="url(#arrowAmber)"/>
-  <path class="route" d="M 662 766 L 662 824" stroke="#d97706" marker-end="url(#arrowAmber)"/>
-  <path class="route" d="M 1002 766 L 1002 824" stroke="#7c3aed" marker-end="url(#arrowAmber)"/>
-  <path class="route" d="M 1258 766 L 1258 824" stroke="#64748b" marker-end="url(#arrowAmber)"/>
+  <path class="route" d="M 346 766 L 346 824" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <path class="route" d="M 750 766 L 750 824" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <path class="route" d="M 1154 766 L 1154 824" stroke="#7c3aed" marker-end="url(#arrowAmber)"/>
 
-  <rect class="footer" x="118" y="922" width="1264" height="40" rx="16"/>
-  <text class="footerText" x="750" y="947" text-anchor="middle">Start with a core SDK lane, add Exposed/Spring/Ktor only when needed, and validate with emulator-backed examples.</text>
+  <rect class="footer" x="118" y="914" width="1264" height="38" rx="16"/>
+  <text class="footerText" x="750" y="938" text-anchor="middle">Start with a core SDK lane, add Exposed/Spring/Ktor only when needed, and validate with emulator-backed examples.</text>
 </svg>
