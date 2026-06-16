@@ -4,7 +4,9 @@
 
 `aws-spring-boot`와 `bluetape4k-aws-exposed` 자동설정 경로를 보여주는
 Spring Boot 4 MVC 예제입니다. 로컬 테스트는 Testcontainers PostgreSQL을 사용하며
-AWS credential이 필요하지 않습니다.
+AWS credential이 필요하지 않습니다. 경계는 작고 명확하게 나눴습니다. Controller는
+HTTP status 동작을, service는 `transaction(database) { ... }` 경계를, repository는
+Exposed query를 맡습니다.
 
 ## 아키텍처
 
@@ -22,7 +24,8 @@ AWS credential이 필요하지 않습니다.
 
 `OrderController`는 `OrderService`에 위임하고, `OrderService`가
 `transaction(database) { ... }` 경계를 소유합니다. `OrderRepository`는 활성화된
-Exposed transaction 안에서만 호출됩니다.
+Exposed transaction 안에서만 호출됩니다. `OrderSchemaInitializer`는 자동설정된
+`Database` bean을 사용할 수 있게 된 뒤 `OrdersTable`을 생성합니다.
 
 ## 설정
 
@@ -57,4 +60,4 @@ bluetape4k:
 
 테스트는 공유 `PostgreSQLServer.Launcher.postgres` 컨테이너를 시작하고
 `AwsExposedDatabaseRegistry`, `DataSource`, Exposed `Database`, HTTP 생성/조회/목록/404
-동작을 검증합니다.
+동작을 random-port `SpringBootTest`로 검증합니다.
