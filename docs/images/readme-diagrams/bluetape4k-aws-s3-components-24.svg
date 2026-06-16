@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="780" viewBox="0 0 1400 780" role="img" aria-labelledby="title desc">
+<title id="title">S3 coroutine support map</title>
+<desc id="desc">S3 support wraps S3AsyncClient and S3TransferManager with coroutine APIs for bucket checks, object get and put, cold Flow listing, and move operations.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}.frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}.subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .layer{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}.layer-title{font-family:"Architects Daughter";font-size:25px;fill:#102033}.layer-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:23px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-amber{fill:#FFF8E6;stroke:#F59E0B;stroke-width:2.2}
+    .note{fill:#FFFFFF;stroke:#D8E2ED;stroke-width:1.4}.note-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}.note-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}.arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}.arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="780"/><rect class="frame" x="24" y="24" width="1352" height="732" rx="14"/>
+<text class="title" x="54" y="74">S3 coroutine support map</text>
+<text class="subtitle" x="54" y="108">The aws-java module adds suspend and Flow helpers on top of AWS SDK v2 S3 async clients.</text>
+<rect class="card-blue" x="886" y="62" width="118" height="24" rx="12" opacity="0.24"/><text class="legend" x="945" y="78" text-anchor="middle">SDK</text>
+<rect class="card-green" x="1022" y="62" width="118" height="24" rx="12" opacity="0.24"/><text class="legend" x="1081" y="78" text-anchor="middle">Object</text>
+<rect class="card-orange" x="1158" y="62" width="156" height="24" rx="12" opacity="0.24"/><text class="legend" x="1236" y="78" text-anchor="middle">Transfer / Move</text>
+
+<rect class="layer" x="66" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="90" y="190">Client base</text><text class="layer-sub" x="90" y="216">AWS SDK v2 async clients</text>
+<rect class="layer" x="392" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="416" y="190">Coroutine API</text><text class="layer-sub" x="416" y="216">await wrappers and builders</text>
+<rect class="layer" x="718" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="742" y="190">Object access</text><text class="layer-sub" x="742" y="216">get, put, list, transform</text>
+<rect class="layer" x="1044" y="150" width="292" height="438" rx="12"/><text class="layer-title" x="1068" y="190">Bulk and move</text><text class="layer-sub" x="1068" y="216">transfer manager and copy/delete</text>
+
+<rect class="card-blue" x="96" y="254" width="232" height="92" rx="9"/><text class="card-title" x="212" y="286" text-anchor="middle">S3AsyncClient</text><text class="card-text" x="212" y="314" text-anchor="middle">CompletableFuture API</text><text class="card-text" x="212" y="336" text-anchor="middle">head / get / put / copy</text>
+<rect class="card-blue" x="96" y="406" width="232" height="92" rx="9"/><text class="card-title" x="212" y="438" text-anchor="middle">S3TransferManager</text><text class="card-text" x="212" y="466" text-anchor="middle">CRT-backed large IO</text><text class="card-text" x="212" y="488" text-anchor="middle">upload and download</text>
+
+<rect class="card-teal" x="422" y="254" width="232" height="92" rx="9"/><text class="card-title" x="538" y="286" text-anchor="middle">Suspend extensions</text><text class="card-text" x="538" y="314" text-anchor="middle">await async calls</text><text class="card-text" x="538" y="336" text-anchor="middle">bucket checks included</text>
+<rect class="card-teal" x="422" y="406" width="232" height="92" rx="9"/><text class="card-title" x="538" y="438" text-anchor="middle">Body helpers</text><text class="card-text" x="538" y="466" text-anchor="middle">String / bytes / file</text><text class="card-text" x="538" y="488" text-anchor="middle">AsyncRequestBody</text>
+
+<rect class="card-green" x="748" y="238" width="232" height="82" rx="9"/><text class="card-title" x="864" y="270" text-anchor="middle">Get objects</text><text class="card-text" x="864" y="298" text-anchor="middle">bytes, text, or file</text>
+<rect class="card-green" x="748" y="350" width="232" height="82" rx="9"/><text class="card-title" x="864" y="382" text-anchor="middle">Put objects</text><text class="card-text" x="864" y="410" text-anchor="middle">body, bytes, text, file</text>
+<rect class="card-green" x="748" y="462" width="232" height="82" rx="9"/><text class="card-title" x="864" y="494" text-anchor="middle">List objects</text><text class="card-text" x="864" y="522" text-anchor="middle">cold Flow + pages</text>
+
+<rect class="card-orange" x="1074" y="254" width="232" height="92" rx="9"/><text class="card-title" x="1190" y="286" text-anchor="middle">Transfer helpers</text><text class="card-text" x="1190" y="314" text-anchor="middle">uploadByteArray</text><text class="card-text" x="1190" y="336" text-anchor="middle">downloadFile</text>
+<rect class="card-amber" x="1074" y="406" width="232" height="92" rx="9"/><text class="card-title" x="1190" y="438" text-anchor="middle">Move helpers</text><text class="card-text" x="1190" y="466" text-anchor="middle">copy then delete</text><text class="card-text" x="1190" y="488" text-anchor="middle">atomic rollback option</text>
+
+<path class="arrow-blue" d="M328 300 H422"/><path class="arrow-blue" d="M328 452 H422"/>
+<path class="arrow-green" d="M654 300 H748"/><path class="arrow-green" d="M654 452 H700 V391 H748"/><path class="arrow-green" d="M654 452 H700 V503 H748"/>
+<path class="arrow-orange" d="M328 452 H360 V556 H1320 V300 H1306"/><path class="arrow-orange" d="M980 503 H1026 V452 H1074"/>
+
+<rect class="note" x="86" y="620" width="590" height="58" rx="8"/><text class="note-title" x="110" y="648">Listing contract</text><text class="note-text" x="288" y="648">listAllObjects is a cold Flow.</text><text class="note-text" x="110" y="668">It follows continuation tokens and fails if a truncated page omits the next token.</text>
+<rect class="note" x="724" y="620" width="590" height="58" rx="8"/><text class="note-title" x="748" y="648">Move contract</text><text class="note-text" x="912" y="648">Normal move is copy then delete.</text><text class="note-text" x="748" y="668">Use the atomic variant when failed source deletion should trigger rollback.</text>
+<rect class="footer" x="54" y="716" width="1292" height="32" rx="8"/><text class="footer-title" x="74" y="732" dominant-baseline="middle">Support</text><text class="footer-detail" x="166" y="732" dominant-baseline="middle">S3 coroutine helpers cover object IO, paged listing as Flow, transfer-manager IO, and explicit move semantics.</text>
+</svg>

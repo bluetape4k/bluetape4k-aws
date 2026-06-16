@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+<title id="title">S3 coroutine operation flow</title>
+<desc id="desc">S3 coroutine helpers convert typed input into async SDK calls, await results, expose paged listing as Flow, and make move rollback behavior explicit.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}.frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}.subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .lane{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}.lane-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}.lane-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:22px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:12.5px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-amber{fill:#FFF8E6;stroke:#F59E0B;stroke-width:2.2}.card-red{fill:#FEECEC;stroke:#DC2626;stroke-width:2.2}
+    .note{fill:#FFFFFF;stroke:#D8E2ED;stroke-width:1.4}.note-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}.note-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}.arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}.arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}.arrow-red{stroke:#DC2626;stroke-width:3;fill:none;marker-end:url(#arrow-red)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#DC2626"/></marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="860"/><rect class="frame" x="24" y="24" width="1352" height="812" rx="14"/>
+<text class="title" x="54" y="74">S3 coroutine operation flow</text>
+<text class="subtitle" x="54" y="108">Suspend helpers keep AWS SDK behavior visible while removing CompletableFuture plumbing from application code.</text>
+<rect class="card-blue" x="866" y="62" width="108" height="24" rx="12" opacity="0.24"/><text class="legend" x="920" y="78" text-anchor="middle">Input</text>
+<rect class="card-green" x="994" y="62" width="108" height="24" rx="12" opacity="0.24"/><text class="legend" x="1048" y="78" text-anchor="middle">SDK</text>
+<rect class="card-orange" x="1122" y="62" width="108" height="24" rx="12" opacity="0.24"/><text class="legend" x="1176" y="78" text-anchor="middle">Result</text>
+<rect class="card-red" x="1250" y="62" width="86" height="24" rx="12" opacity="0.24"/><text class="legend" x="1293" y="78" text-anchor="middle">Failure</text>
+
+<rect class="lane" x="66" y="142" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="179">Object get / put</text><text class="lane-sub" x="92" y="195">typed overloads produce request bodies and await S3AsyncClient responses</text>
+<rect class="card-blue" x="194" y="202" width="198" height="48" rx="8"/><text class="card-title" x="293" y="222" text-anchor="middle">Typed content</text><text class="card-text" x="293" y="241" text-anchor="middle">String, bytes, file, Path</text>
+<rect class="card-teal" x="476" y="202" width="198" height="48" rx="8"/><text class="card-title" x="575" y="222" text-anchor="middle">Build request</text><text class="card-text" x="575" y="241" text-anchor="middle">bucket + key + builder</text>
+<rect class="card-green" x="758" y="202" width="198" height="48" rx="8"/><text class="card-title" x="857" y="222" text-anchor="middle">Async SDK call</text><text class="card-text" x="857" y="241" text-anchor="middle">putObject / getObject</text>
+<rect class="card-orange" x="1040" y="202" width="198" height="48" rx="8"/><text class="card-title" x="1139" y="222" text-anchor="middle">Suspend result</text><text class="card-text" x="1139" y="241" text-anchor="middle">eTag, bytes, text, file</text>
+<path class="arrow-blue" d="M392 226 H476"/><path class="arrow-teal" d="M674 226 H758"/><path class="arrow-green" d="M956 226 H1040"/>
+
+<rect class="lane" x="66" y="286" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="323">Paged listing Flow</text><text class="lane-sub" x="92" y="339">collection starts ListObjectsV2 calls and follows continuation tokens</text>
+<rect class="card-blue" x="194" y="346" width="198" height="48" rx="8"/><text class="card-title" x="293" y="366" text-anchor="middle">Collect Flow</text><text class="card-text" x="293" y="385" text-anchor="middle">cold until collected</text>
+<rect class="card-green" x="476" y="346" width="198" height="48" rx="8"/><text class="card-title" x="575" y="366" text-anchor="middle">List page</text><text class="card-text" x="575" y="385" text-anchor="middle">bucket + optional prefix</text>
+<rect class="card-teal" x="758" y="346" width="198" height="48" rx="8"/><text class="card-title" x="857" y="366" text-anchor="middle">Emit objects</text><text class="card-text" x="857" y="385" text-anchor="middle">contents().orEmpty()</text>
+<rect class="card-amber" x="1040" y="346" width="198" height="48" rx="8"/><text class="card-title" x="1139" y="366" text-anchor="middle">Next token</text><text class="card-text" x="1139" y="385" text-anchor="middle">loop while truncated</text>
+<path class="arrow-blue" d="M392 370 H476"/><path class="arrow-green" d="M674 370 H758"/><path class="arrow-teal" d="M956 370 H1040"/>
+
+<rect class="lane" x="66" y="430" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="467">Transfer manager IO</text><text class="lane-sub" x="92" y="483">large-object helpers wait on S3TransferManager completion futures</text>
+<rect class="card-blue" x="194" y="490" width="198" height="48" rx="8"/><text class="card-title" x="293" y="510" text-anchor="middle">Transfer request</text><text class="card-text" x="293" y="529" text-anchor="middle">upload or download</text>
+<rect class="card-teal" x="476" y="490" width="198" height="48" rx="8"/><text class="card-title" x="575" y="510" text-anchor="middle">CRT transfer</text><text class="card-text" x="575" y="529" text-anchor="middle">file or bytes path</text>
+<rect class="card-green" x="758" y="490" width="198" height="48" rx="8"/><text class="card-title" x="857" y="510" text-anchor="middle">CompletionFuture</text><text class="card-text" x="857" y="529" text-anchor="middle">await completion</text>
+<rect class="card-orange" x="1040" y="490" width="198" height="48" rx="8"/><text class="card-title" x="1139" y="510" text-anchor="middle">Completed IO</text><text class="card-text" x="1139" y="529" text-anchor="middle">upload or download result</text>
+<path class="arrow-blue" d="M392 514 H476"/><path class="arrow-teal" d="M674 514 H758"/><path class="arrow-green" d="M956 514 H1040"/>
+
+<rect class="lane" x="66" y="574" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="611">Move semantics</text><text class="lane-sub" x="92" y="627">normal move can be partial; atomic move rolls back the copied destination object</text>
+<rect class="card-green" x="194" y="634" width="198" height="48" rx="8"/><text class="card-title" x="293" y="654" text-anchor="middle">Copy object</text><text class="card-text" x="293" y="673" text-anchor="middle">source to destination</text>
+<rect class="card-orange" x="476" y="634" width="198" height="48" rx="8"/><text class="card-title" x="575" y="654" text-anchor="middle">Delete source</text><text class="card-text" x="575" y="673" text-anchor="middle">after copy eTag</text>
+<rect class="card-amber" x="758" y="634" width="198" height="48" rx="8"/><text class="card-title" x="857" y="654" text-anchor="middle">MoveObjectResult</text><text class="card-text" x="857" y="673" text-anchor="middle">success or partial</text>
+<rect class="card-red" x="1040" y="634" width="198" height="48" rx="8"/><text class="card-title" x="1139" y="654" text-anchor="middle">Atomic rollback</text><text class="card-text" x="1139" y="673" text-anchor="middle">delete copied object</text>
+<path class="arrow-green" d="M392 658 H476"/><path class="arrow-orange" d="M674 658 H758"/><path class="arrow-red" d="M956 658 H1040"/>
+
+<rect class="note" x="98" y="720" width="580" height="44" rx="8"/><text class="note-title" x="122" y="746" dominant-baseline="middle">Validation</text><text class="note-text" x="244" y="746" dominant-baseline="middle">bucket, key, and content length checks happen before SDK calls.</text>
+<rect class="note" x="722" y="720" width="580" height="44" rx="8"/><text class="note-title" x="746" y="746" dominant-baseline="middle">Failure mode</text><text class="note-text" x="912" y="746" dominant-baseline="middle">missing list tokens and rollback failures surface as exceptions.</text>
+<rect class="footer" x="54" y="796" width="1292" height="32" rx="8"/><text class="footer-title" x="74" y="812" dominant-baseline="middle">Outcome</text><text class="footer-detail" x="166" y="812" dominant-baseline="middle">Application code gets suspend and Flow APIs while S3 response, pagination, transfer, and move boundaries remain explicit.</text>
+</svg>

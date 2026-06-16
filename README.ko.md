@@ -727,19 +727,51 @@ fanout 흐름이 들어 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과
 처리나 subscription confirmation 전에 certificate chain, `Signature`,
 `SignatureVersion`, 기대한 `TopicArn`을 검증하세요.
 
-### S3 업로드 — Coroutines (`aws-java` 모듈)
+### S3 Object IO — Coroutines (`aws-java` 모듈)
+
+S3 coroutine 지원은 AWS SDK v2 `S3AsyncClient`와 `S3TransferManager`를 확장합니다.
+Object helper는 bucket 존재 확인, 타입별 get/put overload, cold `Flow` 기반 paged
+listing, 명시적인 move semantics를 제공합니다. 큰 upload/download 흐름에는
+`io.bluetape4k.aws.s3.transfer.*` 아래의 transfer-manager helper를 사용합니다.
+
+![S3 coroutine support map](docs/images/readme-diagrams/bluetape4k-aws-s3-components-24.png)
 
 ```kotlin
-import io.bluetape4k.aws.s3.coroutines.*
+import io.bluetape4k.aws.s3.listAllObjects
+import io.bluetape4k.aws.s3.moveObjectAtomic
+import io.bluetape4k.aws.s3.putAsByteArray
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
 val s3: S3AsyncClient = S3AsyncClient.create()
 
 suspend fun uploadObject(bucket: String, key: String, bytes: ByteArray) =
-    s3.putObjectSuspend(bucket, key) {
-        it.contentLength(bytes.size.toLong())
+    s3.putAsByteArray(bucket, key, bytes) {
+        contentLength(bytes.size.toLong())
     }
+
+suspend fun listKeys(bucket: String, prefix: String): List<String> =
+    s3.listAllObjects(bucket, prefix)
+        .map { it.key() }
+        .toList()
+
+suspend fun archiveObject(bucket: String, key: String) =
+    s3.moveObjectAtomic(
+        srcBucketName = bucket,
+        srcKey = key,
+        destBucketName = bucket,
+        destKey = "archive/$key",
+    )
 ```
+
+![S3 coroutine operation flow](docs/images/readme-diagrams/bluetape4k-aws-s3-flow-25.png)
+
+`listAllObjects`는 반환된 `Flow`를 collect할 때 S3 호출을 시작합니다.
+`nextContinuationToken`을 따라가며, S3가 truncated page라고 응답했는데 token이 없으면
+빠르게 실패합니다. 일반 move는 copy-then-delete라 부분 성공이 가능합니다. source 삭제에
+실패했을 때 복사된 destination object까지 되돌려야 한다면 `moveObjectAtomic`을
+사용하세요.
 
 ### SQS 송수신 — Coroutines (`aws-java` 모듈)
 
