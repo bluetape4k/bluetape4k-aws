@@ -1,9 +1,0 @@
-graph 1 8.4742 0.89875
-node config 0.71813 0.44937 1.4363 0.89875 "Client config\nregion/endpoint\ncredentials" rounded,filled box #5B8DEF #E8F3FF
-node client 2.9408 0.44937 1.5092 0.89875 "Kotlin SDK client\nnative suspend\ncloseable" rounded,filled box #58A978 #EAF7EF
-node helpers 5.2156 0.44937 1.5404 0.89875 "DSL helpers\nrequests/models\npagination" rounded,filled box #45A7A1 #E9F7F6
-node service 7.605 0.44937 1.7383 0.89875 "AWS service\nDynamoDB/S3/SQS\nKMS/SES/STS" rounded,filled box #F97316 #FFF7ED
-edge config client 4 1.4398 0.44937 1.4398 0.44937 2.0387 0.44937 2.0387 0.44937 solid #3B82F6
-edge client helpers 4 3.6983 0.44937 3.6983 0.44937 4.3 0.44937 4.3 0.44937 solid #3B82F6
-edge helpers service 4 5.9914 0.44937 5.9914 0.44937 6.5876 0.44937 6.5876 0.44937 solid #3B82F6
-stop
