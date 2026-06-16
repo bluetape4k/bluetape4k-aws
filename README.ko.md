@@ -378,6 +378,11 @@ raw `S3ControlClient` 와 `S3ControlAsyncClient` bean 에 남겨 정책을 바�
 
 ### DynamoDB — Spring Boot Coroutine Repository
 
+Spring Boot 통합은 async client와 table-name resolver를 구성합니다. 다만 repository는
+entity schema, key mapping, table lifecycle을 계속 소유합니다.
+
+![DynamoDB coroutine repository components](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-10.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.dynamodb.AbstractCoroutinesDynamoDbRepository
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
@@ -399,8 +404,11 @@ class OrderRepository(
 }
 ```
 
+![DynamoDB coroutine repository flow](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.png)
+
 `aws-spring-boot`는 DynamoDB 테이블을 자동 생성하지 않습니다. 테이블 생성은
-migration, 배포 자동화, 또는 테스트 setup에서 명시적으로 수행합니다.
+migration, 배포 자동화, 또는 테스트 setup에서 명시적으로 수행해 schema 변경이
+드러나게 합니다.
 
 DynamoDB Accelerator(DAX)는 선택 기능이며, 사용하는 애플리케이션에 DAX runtime
 dependency를 추가해야 합니다.

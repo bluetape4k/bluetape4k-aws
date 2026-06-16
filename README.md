@@ -387,6 +387,11 @@ and `S3ControlAsyncClient` beans so policy-changing operations remain explicit.
 
 ### DynamoDB — Spring Boot Coroutine Repository
 
+The Spring Boot integration wires the async clients and table-name resolver, but
+the repository still owns the entity schema, key mapping, and table lifecycle.
+
+![DynamoDB coroutine repository components](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-10.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.dynamodb.AbstractCoroutinesDynamoDbRepository
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
@@ -408,8 +413,11 @@ class OrderRepository(
 }
 ```
 
+![DynamoDB coroutine repository flow](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.png)
+
 `aws-spring-boot` does not create DynamoDB tables automatically. Create tables
-through migrations, deployment automation, or explicit test setup.
+through migrations, deployment automation, or explicit test setup so schema
+changes remain visible.
 
 DynamoDB Accelerator (DAX) is optional and requires the DAX runtime dependency
 in the consuming application:
