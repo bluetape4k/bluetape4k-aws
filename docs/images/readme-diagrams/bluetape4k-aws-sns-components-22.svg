@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+<title id="title">SNS Spring Boot support map</title>
+<desc id="desc">AWS SNS auto-configuration creates a coroutine operations API for topics, FIFO publishing, SMS publishing, and HTTP subscription confirmation helpers.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}.frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}.subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .layer{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}.layer-title{font-family:"Architects Daughter";font-size:25px;fill:#102033}.layer-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:14px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-amber{fill:#FFF8E6;stroke:#F59E0B;stroke-width:2.2}
+    .note{fill:#FFFFFF;stroke:#D8E2ED;stroke-width:1.4}.note-title{font-family:"Architects Daughter";font-size:22px;fill:#102033}.note-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}.arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}.arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="760"/><rect class="frame" x="24" y="24" width="1352" height="712" rx="14"/>
+<text class="title" x="54" y="74">SNS Spring Boot support map</text>
+<text class="subtitle" x="54" y="108">SNS support wraps the async SDK with coroutine topic, publish, SMS, and confirmation operations.</text>
+<rect class="card-blue" x="906" y="62" width="118" height="24" rx="12" opacity="0.24"/><text class="legend" x="965" y="78" text-anchor="middle">Core</text>
+<rect class="card-green" x="1042" y="62" width="118" height="24" rx="12" opacity="0.24"/><text class="legend" x="1101" y="78" text-anchor="middle">Topic</text>
+<rect class="card-orange" x="1178" y="62" width="136" height="24" rx="12" opacity="0.24"/><text class="legend" x="1246" y="78" text-anchor="middle">Endpoint</text>
+
+<rect class="layer" x="66" y="150" width="292" height="430" rx="12"/><text class="layer-title" x="90" y="190">Auto-config</text><text class="layer-sub" x="90" y="216">client, properties, defaults</text>
+<rect class="layer" x="392" y="150" width="292" height="430" rx="12"/><text class="layer-title" x="416" y="190">Operations API</text><text class="layer-sub" x="416" y="216">coroutine SNS contract</text>
+<rect class="layer" x="718" y="150" width="292" height="430" rx="12"/><text class="layer-title" x="742" y="190">Publishing</text><text class="layer-sub" x="742" y="216">topic, FIFO, SMS</text>
+<rect class="layer" x="1044" y="150" width="292" height="430" rx="12"/><text class="layer-title" x="1068" y="190">HTTP endpoint</text><text class="layer-sub" x="1068" y="216">parse and confirm</text>
+
+<rect class="card-blue" x="96" y="254" width="232" height="92" rx="9"/><text class="card-title" x="212" y="286" text-anchor="middle">SNS client</text><text class="card-text" x="212" y="314" text-anchor="middle">region + endpoint</text><text class="card-text" x="212" y="336" text-anchor="middle">customizers apply</text>
+<rect class="card-teal" x="96" y="402" width="232" height="92" rx="9"/><text class="card-title" x="212" y="434" text-anchor="middle">SNS properties</text><text class="card-text" x="212" y="462" text-anchor="middle">configured topics</text><text class="card-text" x="212" y="484" text-anchor="middle">FIFO attributes</text>
+
+<rect class="card-blue" x="422" y="254" width="232" height="92" rx="9"/><text class="card-title" x="538" y="286" text-anchor="middle">SnsOperations</text><text class="card-text" x="538" y="314" text-anchor="middle">create / find</text><text class="card-text" x="538" y="336" text-anchor="middle">publish / confirm</text>
+<rect class="card-blue" x="422" y="402" width="232" height="92" rx="9"/><text class="card-title" x="538" y="434" text-anchor="middle">Coroutine template</text><text class="card-text" x="538" y="462" text-anchor="middle">SnsAsyncClient.await()</text><text class="card-text" x="538" y="484" text-anchor="middle">AWS errors propagate</text>
+
+<rect class="card-green" x="748" y="254" width="232" height="92" rx="9"/><text class="card-title" x="864" y="286" text-anchor="middle">Topic publisher</text><text class="card-text" x="864" y="314" text-anchor="middle">subject + attributes</text><text class="card-text" x="864" y="336" text-anchor="middle">FIFO group required</text>
+<rect class="card-green" x="748" y="402" width="232" height="92" rx="9"/><text class="card-title" x="864" y="434" text-anchor="middle">SMS publisher</text><text class="card-text" x="864" y="462" text-anchor="middle">phone number</text><text class="card-text" x="864" y="484" text-anchor="middle">SNS SMS attributes</text>
+
+<rect class="card-orange" x="1074" y="254" width="232" height="92" rx="9"/><text class="card-title" x="1190" y="286" text-anchor="middle">HTTP parser</text><text class="card-text" x="1190" y="314" text-anchor="middle">SNS JSON fields</text><text class="card-text" x="1190" y="336" text-anchor="middle">safe cert URL checks</text>
+<rect class="card-amber" x="1074" y="402" width="232" height="92" rx="9"/><text class="card-title" x="1190" y="434" text-anchor="middle">Confirmation</text><text class="card-text" x="1190" y="462" text-anchor="middle">token + topic ARN</text><text class="card-text" x="1190" y="484" text-anchor="middle">caller verifies signature</text>
+
+<path class="arrow-blue" d="M328 300 H422"/><path class="arrow-teal" d="M328 448 H422"/>
+<path class="arrow-green" d="M654 300 H748"/><path class="arrow-green" d="M654 448 H748"/>
+<path class="arrow-orange" d="M980 300 H1074"/><path class="arrow-orange" d="M980 448 H1074"/>
+
+<rect class="note" x="86" y="610" width="590" height="58" rx="8"/><text class="note-title" x="110" y="638">Publish contract</text><text class="note-text" x="302" y="638">FIFO topic ARN requires messageGroupId.</text><text class="note-text" x="110" y="658">Standard topics reject FIFO-only fields; SMS maps explicit SNS attributes.</text>
+<rect class="note" x="724" y="610" width="590" height="58" rx="8"/><text class="note-title" x="748" y="638">Security boundary</text><text class="note-text" x="954" y="638">Parser validates shape and cert URL only.</text><text class="note-text" x="748" y="658">Callers must verify signature, certificate chain, and expected TopicArn.</text>
+<rect class="footer" x="54" y="696" width="1292" height="32" rx="8"/><text class="footer-title" x="74" y="712" dominant-baseline="middle">Support</text><text class="footer-detail" x="166" y="712" dominant-baseline="middle">SNS support covers standard/FIFO topics, direct SMS publish, HTTP message parsing, and explicit subscription confirmation.</text>
+</svg>
