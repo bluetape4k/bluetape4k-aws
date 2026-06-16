@@ -1,82 +1,100 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="370" viewBox="0 0 1460 370" role="img" aria-label="Ktor S3 Access Grants flow">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="940" viewBox="0 0 1500 940" role="img" aria-labelledby="title desc">
+  <title id="title">Ktor S3 Access Grants Flow</title>
+  <desc id="desc">Flow diagram for S3AccessGrantsKtorPlugin showing installation choices, runtime registration, request-time operations, S3 Control boundary, object REST separation, raw admin operations, and plugin-owned client shutdown.</desc>
+  <defs>
+    <marker id="blueArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563eb"/></marker>
+    <marker id="greenArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#059669"/></marker>
+    <marker id="orangeArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#d97706"/></marker>
+    <marker id="purpleArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#7c3aed"/></marker>
+    <marker id="slateArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#64748b"/></marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#shadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:15px;fill:#475569}
+      .lane{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .laneTitle{font-family:"Comic Mono";font-size:16px;font-weight:700;fill:#475569}
+      .card{fill:#ffffff;stroke-width:2.4;filter:url(#shadow)}
+      .cardTitle{font-family:"Architects Daughter";font-size:23px;fill:#17233a}
+      .cardText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .smallTitle{font-family:"Architects Daughter";font-size:20px;fill:#17233a}
+      .smallText{font-family:"Comic Mono";font-size:12px;fill:#475569}
+      .blue{stroke:#2563eb}
+      .green{stroke:#059669}
+      .orange{stroke:#d97706}
+      .purple{stroke:#7c3aed}
+      .slate{stroke:#64748b}
+      .blueLine{stroke:#2563eb;stroke-width:4;marker-end:url(#blueArrow);fill:none}
+      .greenLine{stroke:#059669;stroke-width:4;marker-end:url(#greenArrow);fill:none}
+      .orangeLine{stroke:#d97706;stroke-width:4;marker-end:url(#orangeArrow);fill:none}
+      .purpleLine{stroke:#7c3aed;stroke-width:4;marker-end:url(#purpleArrow);fill:none}
+      .slateLine{stroke:#64748b;stroke-width:3.5;marker-end:url(#slateArrow);fill:none}
+      .label{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footer{font-family:"Comic Mono";font-size:13px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1408" height="318" rx="14" class="frame"/>
-<text class="title" x="54" y="72">Ktor S3 Access Grants flow</text>
-<text class="subtitle" x="56" y="104">The Ktor plugin resolves Access Grants scope before object I/O proceeds through the S3 client.</text>
-<g id="routes">
-<path class="edge" d="M 294.0 198.0 L 332.0 198.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 572.0 198.0 L 610.0 198.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<path class="edge" d="M 850.0 198.0 L 888.0 198.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<path class="edge" d="M 1128.0 198.0 L 1166.0 198.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-</g>
-<g id="route">
-  <rect class="card" x="54.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="174.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Ktor route</text>
-  <text class="detail" x="174.0" y="219.0" text-anchor="middle" dominant-baseline="middle">identity + target</text>
-</g>
-<g id="plugin">
-  <rect class="card" x="332.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="452.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Access Grants plugin</text>
-  <text class="detail" x="452.0" y="219.0" text-anchor="middle" dominant-baseline="middle">configure runtime</text>
-</g>
-<g id="control">
-  <rect class="card" x="610.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="730.0" y="195.0" text-anchor="middle" dominant-baseline="middle">S3 Control lookup</text>
-  <text class="detail" x="730.0" y="219.0" text-anchor="middle" dominant-baseline="middle">grant/session</text>
-</g>
-<g id="client">
-  <rect class="card" x="888.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="1008.0" y="195.0" text-anchor="middle" dominant-baseline="middle">S3 client</text>
-  <text class="detail" x="1008.0" y="219.0" text-anchor="middle" dominant-baseline="middle">scoped object call</text>
-</g>
-<g id="response">
-  <rect class="card" x="1166.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="card-title" x="1286.0" y="195.0" text-anchor="middle" dominant-baseline="middle">HTTP response</text>
-  <text class="detail" x="1286.0" y="219.0" text-anchor="middle" dominant-baseline="middle">mapped result</text>
-</g>
-<rect class="footer" x="54" y="276" width="1352" height="54" rx="8"/>
-<text class="footer-title" x="74" y="299" dominant-baseline="middle">Outcome</text>
-<text class="footer-detail" x="74" y="319" dominant-baseline="middle">Grant lookup failure is reported before object transfer.</text>
+  <rect class="canvas" width="1500" height="940"/>
+  <rect class="frame" x="38" y="34" width="1424" height="872" rx="26"/>
+  <text class="title" x="750" y="92" text-anchor="middle">Ktor S3 Access Grants Flow</text>
+  <text class="subtitle" x="750" y="126" text-anchor="middle">The plugin registers a request-time S3 Control facade; object REST stays in S3KtorClient and admin mutations stay on the raw client.</text>
+
+  <rect class="lane" x="90" y="166" width="1320" height="146" rx="18"/>
+  <text class="laneTitle" x="118" y="202">INSTALL-TIME CHOICE</text>
+  <rect class="card blue" x="142" y="226" width="300" height="58" rx="14"/>
+  <text class="smallTitle" x="292" y="251" text-anchor="middle">Caller Operations</text>
+  <text class="smallText" x="292" y="272" text-anchor="middle">use as-is; app owns lifecycle</text>
+  <rect class="card green" x="600" y="226" width="300" height="58" rx="14"/>
+  <text class="smallTitle" x="750" y="251" text-anchor="middle">Caller S3Control Client</text>
+  <text class="smallText" x="750" y="272" text-anchor="middle">template facade; app closes client</text>
+  <rect class="card orange" x="1058" y="226" width="300" height="58" rx="14"/>
+  <text class="smallTitle" x="1208" y="251" text-anchor="middle">Plugin-Managed Client</text>
+  <text class="smallText" x="1208" y="272" text-anchor="middle">AwsKtorCore defaults + customizers</text>
+
+  <rect class="lane" x="90" y="358" width="1320" height="128" rx="18"/>
+  <text class="laneTitle" x="118" y="394">REGISTERED RUNTIME</text>
+  <rect class="card green" x="520" y="410" width="460" height="54" rx="14"/>
+  <text class="cardTitle" x="750" y="434" text-anchor="middle">S3AccessGrantsKtorRuntime</text>
+  <text class="cardText" x="750" y="456" text-anchor="middle">stores operations attributes; install itself does not call AWS</text>
+  <rect class="card slate" x="1030" y="410" width="300" height="54" rx="14"/>
+  <text class="smallTitle" x="1180" y="432" text-anchor="middle">Lifecycle Rule</text>
+  <text class="smallText" x="1180" y="453" text-anchor="middle">close only plugin-owned clients</text>
+
+  <rect class="lane" x="90" y="532" width="1320" height="146" rx="18"/>
+  <text class="laneTitle" x="118" y="568">REQUEST-TIME ACCESS GRANTS</text>
+  <rect class="card blue" x="142" y="598" width="300" height="54" rx="14"/>
+  <text class="smallTitle" x="292" y="621" text-anchor="middle">Ktor Handler</text>
+  <text class="smallText" x="292" y="642" text-anchor="middle">application.s3AccessGrants()</text>
+  <rect class="card green" x="600" y="598" width="300" height="54" rx="14"/>
+  <text class="smallTitle" x="750" y="621" text-anchor="middle">Operations Facade</text>
+  <text class="smallText" x="750" y="642" text-anchor="middle">getDataAccess + list calls</text>
+  <rect class="card orange" x="1058" y="598" width="300" height="54" rx="14"/>
+  <text class="smallTitle" x="1208" y="621" text-anchor="middle">S3 Control</text>
+  <text class="smallText" x="1208" y="642" text-anchor="middle">Access Grants boundary</text>
+
+  <rect class="lane" x="90" y="724" width="1320" height="100" rx="18"/>
+  <text class="laneTitle" x="118" y="760">OUTSIDE FACADE</text>
+  <rect class="card purple" x="170" y="776" width="460" height="42" rx="14"/>
+  <text class="cardText" x="400" y="802" text-anchor="middle">Object REST remains S3KtorClient -> S3</text>
+  <rect class="card slate" x="820" y="772" width="520" height="50" rx="14"/>
+  <text class="cardText" x="1080" y="792" text-anchor="middle">Admin create/update/delete remains</text>
+  <text class="cardText" x="1080" y="810" text-anchor="middle">on raw S3ControlAsyncClient</text>
+
+  <path class="blueLine" d="M 292 284 V 338 H 750 V 398"/>
+  <path class="greenLine" d="M 750 284 V 398"/>
+  <path class="orangeLine" d="M 1208 284 V 338 H 750 V 398"/>
+  <text class="label" x="785" y="326">enabled config creates exactly one runtime</text>
+
+  <path class="greenLine" d="M 750 464 V 586"/>
+  <text class="label" x="774" y="524">stored in Application attributes</text>
+  <path class="blueLine" d="M 442 625 H 588"/>
+  <text class="label" x="466" y="611">lookup</text>
+  <path class="greenLine" d="M 900 625 H 1046"/>
+  <text class="label" x="928" y="611">await SDK futures</text>
+  <path class="orangeLine" d="M 1208 652 V 700"/>
+  <text class="label" x="1228" y="698">getDataAccess / list*</text>
+
+  <text class="footer" x="100" y="878">Reader contract: install registers an operations facade; Access Grants request paths use S3 Control, while object I/O and administrative mutations remain separate.</text>
 </svg>

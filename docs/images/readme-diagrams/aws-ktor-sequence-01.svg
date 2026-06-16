@@ -1,98 +1,116 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1860" height="1055" viewBox="0 0 1860 1055" role="img" aria-label="SQS consumer and publisher">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1180" viewBox="0 0 1500 1180" role="img" aria-labelledby="title desc">
+  <title id="title">SQS Consumer And Publisher Sequence</title>
+  <desc id="desc">Sequence diagram for the Ktor SqsConsumer plugin showing lifecycle start and stop, publishing, polling, handler invocation, ack or nack outcome, observer and interceptor hooks, and client ownership.</desc>
+  <defs>
+    <marker id="blueArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563eb"/></marker>
+    <marker id="greenArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#059669"/></marker>
+    <marker id="orangeArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#d97706"/></marker>
+    <marker id="purpleArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#7c3aed"/></marker>
+    <marker id="slateArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#64748b"/></marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#shadow)}
+      .title{font-family:"Architects Daughter";font-size:46px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:15px;fill:#475569}
+      .participant{fill:#ffffff;stroke-width:2.4;filter:url(#shadow)}
+      .pTitle{font-family:"Architects Daughter";font-size:22px;fill:#17233a}
+      .pText{font-family:"Comic Mono";font-size:12px;fill:#475569}
+      .lifeline{stroke:#cbd5e1;stroke-width:2;stroke-dasharray:8 8}
+      .region{fill:#ffffff;fill-opacity:.58;stroke-width:2;stroke-dasharray:10 8}
+      .regionTitle{font-family:"Comic Mono";font-size:14px;font-weight:700;fill:#475569}
+      .msg{stroke-width:4;fill:none}
+      .return{stroke-width:3;stroke-dasharray:9 7;fill:none}
+      .blue{stroke:#2563eb}
+      .green{stroke:#059669}
+      .orange{stroke:#d97706}
+      .purple{stroke:#7c3aed}
+      .slate{stroke:#64748b}
+      .blueLine{stroke:#2563eb;marker-end:url(#blueArrow)}
+      .greenLine{stroke:#059669;marker-end:url(#greenArrow)}
+      .orangeLine{stroke:#d97706;marker-end:url(#orangeArrow)}
+      .purpleLine{stroke:#7c3aed;marker-end:url(#purpleArrow)}
+      .slateLine{stroke:#64748b;marker-end:url(#slateArrow)}
+      .label{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .note{fill:#f8fafc;stroke:#cbd5e1;stroke-width:1.8}
+      .noteText{font-family:"Comic Mono";font-size:12px;fill:#475569}
+      .footer{font-family:"Comic Mono";font-size:13px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="32" y="28" width="1796" height="999" rx="30" class="frame"/>
-<text class="seqTitle" x="68" y="88">SQS consumer and publisher</text>
-<text class="seqSubtitle" x="72" y="124">Ktor SQS runtime receives messages, invokes handlers, and acknowledges or retries according to observer events.</text>
-<rect class="card" x="180.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#FFF7ED" stroke="#F97316"/>
-<text class="seqParticipantTitle" x="305.0" y="199.0" text-anchor="middle" dominant-baseline="middle">SQS queue</text>
-<text class="seqParticipantDetail" x="305.0" y="227.0" text-anchor="middle" dominant-baseline="middle">message</text>
-<line class="seq-line" x1="305.0" y1="248.0" x2="305.0" y2="900.0"/>
-<rect class="card" x="600.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#EAF7EF" stroke="#58A978"/>
-<text class="seqParticipantTitle" x="725.0" y="199.0" text-anchor="middle" dominant-baseline="middle">SqsConsumerRuntime</text>
-<text class="seqParticipantDetail" x="725.0" y="227.0" text-anchor="middle" dominant-baseline="middle">poll loop</text>
-<line class="seq-line" x1="725.0" y1="248.0" x2="725.0" y2="900.0"/>
-<rect class="card" x="1020.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="seqParticipantTitle" x="1145.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Message handler</text>
-<text class="seqParticipantDetail" x="1145.0" y="227.0" text-anchor="middle" dominant-baseline="middle">typed body</text>
-<line class="seq-line" x1="1145.0" y1="248.0" x2="1145.0" y2="900.0"/>
-<rect class="card" x="1440.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="seqParticipantTitle" x="1565.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Observer/metrics</text>
-<text class="seqParticipantDetail" x="1565.0" y="227.0" text-anchor="middle" dominant-baseline="middle">ack/nack events</text>
-<line class="seq-line" x1="1565.0" y1="248.0" x2="1565.0" y2="900.0"/>
-<rect class="activation" x="717.0" y="318.0" width="16" height="330.0" rx="5" fill="#EAF7EF" stroke="#58A978"/>
-<rect class="activation" x="1137.0" y="406.0" width="16" height="66.0" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
-<rect class="activation" x="1557.0" y="494.0" width="16" height="66.0" rx="5" fill="#E9F7F6" stroke="#45A7A1"/>
-<rect class="activation" x="297.0" y="670.0" width="16" height="66.0" rx="5" fill="#FFF7ED" stroke="#F97316"/>
-<rect class="altBox" x="820" y="480" width="780" height="226" rx="18"/>
-<rect class="labelPill" x="845" y="466" width="270" height="28" rx="7"/>
-<text class="detail" x="980" y="480" text-anchor="middle" dominant-baseline="middle">alt ack or retry outcome</text>
-<path class="seq" d="M 317.0 320.0 L 713.0 320.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<rect class="labelPill" x="392.0" y="280.0" width="246" height="28" rx="7"/>
-<circle cx="411.0" cy="294.0" r="12" fill="#EA580C"/>
-<text class="numberBadge" x="411.0" y="295.0" text-anchor="middle" dominant-baseline="middle">1</text>
-<text class="label" x="525.0" y="294.0" text-anchor="middle" dominant-baseline="middle">poll receive batch</text>
-<path class="seq" d="M 737.0 408.0 L 1133.0 408.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<rect class="labelPill" x="812.0" y="368.0" width="246" height="28" rx="7"/>
-<circle cx="831.0" cy="382.0" r="12" fill="#2F8B57"/>
-<text class="numberBadge" x="831.0" y="383.0" text-anchor="middle" dominant-baseline="middle">2</text>
-<text class="label" x="945.0" y="382.0" text-anchor="middle" dominant-baseline="middle">invoke handler</text>
-<path class="seq" d="M 1157.0 496.0 L 1553.0 496.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<rect class="labelPill" x="1232.0" y="456.0" width="246" height="28" rx="7"/>
-<circle cx="1251.0" cy="470.0" r="12" fill="#168E86"/>
-<text class="numberBadge" x="1251.0" y="471.0" text-anchor="middle" dominant-baseline="middle">3</text>
-<text class="label" x="1365.0" y="470.0" text-anchor="middle" dominant-baseline="middle">publish observer event</text>
-<path class="seqReturn" d="M 1133.0 584.0 L 737.0 584.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
-<rect class="labelPill" x="812.0" y="544.0" width="246" height="28" rx="7"/>
-<circle cx="831.0" cy="558.0" r="12" fill="#7255C7"/>
-<text class="numberBadge" x="831.0" y="559.0" text-anchor="middle" dominant-baseline="middle">4</text>
-<text class="label" x="945.0" y="558.0" text-anchor="middle" dominant-baseline="middle">ack or retry result</text>
-<path class="seqReturn" d="M 713.0 672.0 L 317.0 672.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<rect class="labelPill" x="392.0" y="632.0" width="246" height="28" rx="7"/>
-<circle cx="411.0" cy="646.0" r="12" fill="#EA580C"/>
-<text class="numberBadge" x="411.0" y="647.0" text-anchor="middle" dominant-baseline="middle">5</text>
-<text class="label" x="525.0" y="646.0" text-anchor="middle" dominant-baseline="middle">continue polling</text>
-<rect x="260" y="910" width="1340" height="42" rx="12" fill="#FFFFFF" stroke="#D6E3EF" stroke-width="1.6"/>
-<text class="detail" x="930.0" y="936" text-anchor="middle">Manual ack/nack keeps retry behavior visible.</text>
+  <rect class="canvas" width="1500" height="1180"/>
+  <rect class="frame" x="38" y="34" width="1424" height="1108" rx="26"/>
+  <text class="title" x="750" y="92" text-anchor="middle">SQS Consumer And Publisher Sequence</text>
+  <text class="subtitle" x="750" y="126" text-anchor="middle">A single runtime starts pollers, exposes send, invokes handlers, and drains in-flight work before closing only plugin-owned clients.</text>
+
+  <rect class="participant blue" x="80" y="166" width="180" height="74" rx="14"/>
+  <text class="pTitle" x="170" y="195" text-anchor="middle">Ktor App</text>
+  <text class="pText" x="170" y="220" text-anchor="middle">lifecycle + routes</text>
+  <rect class="participant green" x="365" y="166" width="190" height="74" rx="14"/>
+  <text class="pTitle" x="460" y="195" text-anchor="middle">SqsConsumer</text>
+  <text class="pText" x="460" y="220" text-anchor="middle">runtime</text>
+  <rect class="participant orange" x="655" y="166" width="190" height="74" rx="14"/>
+  <text class="pTitle" x="750" y="195" text-anchor="middle">SqsAsyncClient</text>
+  <text class="pText" x="750" y="220" text-anchor="middle">AWS SDK v2</text>
+  <rect class="participant blue" x="950" y="166" width="180" height="74" rx="14"/>
+  <text class="pTitle" x="1040" y="195" text-anchor="middle">SQS Queue</text>
+  <text class="pText" x="1040" y="220" text-anchor="middle">messages</text>
+  <rect class="participant purple" x="1240" y="166" width="180" height="74" rx="14"/>
+  <text class="pTitle" x="1330" y="195" text-anchor="middle">Handler</text>
+  <text class="pText" x="1330" y="220" text-anchor="middle">onMessage</text>
+
+  <path class="lifeline" d="M 170 240 V 1060"/>
+  <path class="lifeline" d="M 460 240 V 1060"/>
+  <path class="lifeline" d="M 750 240 V 1060"/>
+  <path class="lifeline" d="M 1040 240 V 1060"/>
+  <path class="lifeline" d="M 1330 240 V 1060"/>
+
+  <rect class="region blue" x="92" y="278" width="1320" height="112" rx="16"/>
+  <text class="regionTitle" x="118" y="308">LIFECYCLE START</text>
+  <path class="msg blueLine" d="M 170 350 H 460"/>
+  <text class="label" x="230" y="334">ApplicationStarted</text>
+  <rect class="note" x="530" y="318" width="420" height="44" rx="12"/>
+  <text class="noteText" x="740" y="344" text-anchor="middle">start is idempotent; poller count = configured coroutines</text>
+
+  <rect class="region green" x="92" y="430" width="1320" height="144" rx="16"/>
+  <text class="regionTitle" x="118" y="460">PUBLISH PATH</text>
+  <path class="msg greenLine" d="M 170 508 H 460"/>
+  <text class="label" x="220" y="492">sqsConsumer().send(body)</text>
+  <path class="msg orangeLine" d="M 460 548 H 750"/>
+  <text class="label" x="535" y="532">sendMessage</text>
+  <path class="msg orangeLine" d="M 750 588 H 1040"/>
+  <text class="label" x="805" y="564">body + optional delay</text>
+
+  <rect class="region orange" x="92" y="616" width="1320" height="228" rx="16"/>
+  <text class="regionTitle" x="118" y="646">CONSUME LOOP</text>
+  <path class="msg orangeLine" d="M 460 700 H 750"/>
+  <text class="label" x="508" y="684">receiveMessage(maxMessages, waitTime)</text>
+  <path class="msg orangeLine" d="M 750 742 H 1040"/>
+  <text class="label" x="820" y="726">long poll</text>
+  <path class="return slate" d="M 1040 784 H 460"/>
+  <text class="label" x="690" y="772">messages</text>
+  <path class="msg purpleLine" d="M 460 826 H 1330"/>
+  <text class="label" x="660" y="810">convert payload, acquire permit, invoke handler</text>
+  <rect class="note" x="1020" y="650" width="330" height="50" rx="12"/>
+  <text class="noteText" x="1185" y="672" text-anchor="middle">interceptors wrap receive/invoke</text>
+  <text class="noteText" x="1185" y="692" text-anchor="middle">observers emit lightweight events</text>
+
+  <rect class="region purple" x="92" y="886" width="1320" height="136" rx="16"/>
+  <text class="regionTitle" x="118" y="916">ACK / NACK OUTCOME</text>
+  <path class="msg purpleLine" d="M 1330 962 H 460"/>
+  <text class="label" x="640" y="946">ack(), deleteOnSuccess, or nack(timeout)</text>
+  <path class="msg orangeLine" d="M 460 1002 H 750"/>
+  <text class="label" x="520" y="986">deleteMessage or changeVisibility</text>
+  <path class="msg orangeLine" d="M 750 1042 H 1040"/>
+  <text class="label" x="808" y="1018">remove or make visible later</text>
+
+  <rect class="region slate" x="92" y="1052" width="1320" height="76" rx="16"/>
+  <text class="regionTitle" x="118" y="1082">SHUTDOWN</text>
+  <path class="msg slateLine" d="M 170 1102 H 460"/>
+  <text class="label" x="230" y="1088">ApplicationStopping</text>
+  <rect class="note" x="540" y="1076" width="520" height="42" rx="12"/>
+  <text class="noteText" x="800" y="1102" text-anchor="middle">cancel pollers, drain handlers, close owned client only</text>
+
+  <text class="footer" x="92" y="1158">Reader contract: injected SqsAsyncClient remains application-owned; observers avoid queue URLs, message IDs, and receipt handles by default.</text>
 </svg>

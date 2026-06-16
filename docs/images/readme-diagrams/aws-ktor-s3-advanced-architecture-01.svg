@@ -1,111 +1,106 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="812" viewBox="0 0 1440 812" role="img" aria-label="Advanced S3 helper architecture">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="920" viewBox="0 0 1500 920" role="img" aria-labelledby="title desc">
+  <title id="title">Advanced S3 Helper Architecture</title>
+  <desc id="desc">Architecture of S3KtorClient advanced helpers for config objects, content-type detection, server-side encryption headers, presigned URLs, and client-side envelope encryption.</desc>
+  <defs>
+    <marker id="blueArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563eb"/></marker>
+    <marker id="greenArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#059669"/></marker>
+    <marker id="orangeArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#d97706"/></marker>
+    <marker id="purpleArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#7c3aed"/></marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#shadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:15px;fill:#475569}
+      .layer{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .layerTitle{font-family:"Comic Mono";font-size:17px;font-weight:700;fill:#475569}
+      .card{fill:#ffffff;stroke-width:2.3;filter:url(#shadow)}
+      .cardTitle{font-family:"Architects Daughter";font-size:22px;fill:#17233a}
+      .cardText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .wideTitle{font-family:"Architects Daughter";font-size:22px;fill:#17233a}
+      .blue{stroke:#2563eb}
+      .green{stroke:#059669}
+      .orange{stroke:#d97706}
+      .purple{stroke:#7c3aed}
+      .slate{stroke:#64748b}
+      .blueLine{stroke:#2563eb;stroke-width:4;marker-end:url(#blueArrow);fill:none}
+      .greenLine{stroke:#059669;stroke-width:4;marker-end:url(#greenArrow);fill:none}
+      .orangeLine{stroke:#d97706;stroke-width:4;marker-end:url(#orangeArrow);fill:none}
+      .purpleLine{stroke:#7c3aed;stroke-width:4;marker-end:url(#purpleArrow);fill:none}
+      .label{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footer{font-family:"Comic Mono";font-size:13px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1388" height="760" rx="14" class="frame"/>
-<text class="title" x="54" y="72">Advanced S3 helper architecture</text>
-<text class="subtitle" x="56" y="104">S3KtorClient combines SigV4 signing, object I/O, optional encryption helpers, and Micrometer timing.</text>
-<g><rect x="975" y="58" width="126" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/><text class="chip" x="1038.0" y="70" text-anchor="middle" dominant-baseline="middle">public API</text></g>
-<g><rect x="1120" y="58" width="126" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/><text class="chip" x="1183.0" y="70" text-anchor="middle" dominant-baseline="middle">adapter/config</text></g>
-<g><rect x="1265" y="58" width="126" height="24" rx="12" fill="#FFF7ED" stroke="#F97316"/><text class="chip" x="1328.0" y="70" text-anchor="middle" dominant-baseline="middle">runtime</text></g>
-<rect x="54" y="150" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="175">Optional wrappers</text>
-<rect x="54" y="338" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
-<text class="chip" x="74" y="363">Support boundary</text>
-<rect x="54" y="526" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="551">Runtime target</text>
-<g id="routes">
-<path class="edge" d="M 480.0 230.0 L 570.0 230.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<path class="edge" d="M 330.0 276.0 L 330.0 372.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<path class="edge" d="M 960.0 230.0 L 870.0 230.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
-<path class="edge" d="M 720.0 276.0 L 720.0 372.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<path class="edge" d="M 720.0 276.0 L 720.0 324.0 L 1110.0 324.0 L 1110.0 372.0" stroke="#B98518" marker-end="url(#arrow-amber)"/>
-<path class="edge" d="M 720.0 464.0 L 720.0 560.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<path class="edge" d="M 1110.0 464.0 L 1110.0 606.0 L 870.0 606.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-</g>
-<g id="metrics">
-  <rect class="card" x="180.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="330.0" y="218.0" text-anchor="middle" dominant-baseline="middle">MicrometerS3KtorClient</text>
-  <text class="detail" x="330.0" y="242.0" text-anchor="middle" dominant-baseline="middle">wraps delegate</text>
-  <text class="detail" x="330.0" y="260.0" text-anchor="middle" dominant-baseline="middle">operation timers</text>
-</g>
-<g id="client">
-  <rect class="card" x="570.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="720.0" y="218.0" text-anchor="middle" dominant-baseline="middle">S3KtorClient</text>
-  <text class="detail" x="720.0" y="242.0" text-anchor="middle" dominant-baseline="middle">object API</text>
-  <text class="detail" x="720.0" y="260.0" text-anchor="middle" dominant-baseline="middle">presigned URLs</text>
-</g>
-<g id="encryption">
-  <rect class="card" x="960.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="card-title" x="1110.0" y="218.0" text-anchor="middle" dominant-baseline="middle">Client-side encryption</text>
-  <text class="detail" x="1110.0" y="242.0" text-anchor="middle" dominant-baseline="middle">AES-GCM envelope</text>
-  <text class="detail" x="1110.0" y="260.0" text-anchor="middle" dominant-baseline="middle">DataKeyProvider</text>
-</g>
-<g id="meter">
-  <rect class="card" x="180.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#F8FAFC" stroke="#64748B"/>
-  <text class="card-title" x="330.0" y="406.0" text-anchor="middle" dominant-baseline="middle">MeterRegistry</text>
-  <text class="detail" x="330.0" y="430.0" text-anchor="middle" dominant-baseline="middle">low-cardinality tags</text>
-  <text class="detail" x="330.0" y="448.0" text-anchor="middle" dominant-baseline="middle">caller supplied</text>
-</g>
-<g id="sigv4">
-  <rect class="card" x="570.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="720.0" y="406.0" text-anchor="middle" dominant-baseline="middle">S3 SigV4 policy</text>
-  <text class="detail" x="720.0" y="430.0" text-anchor="middle" dominant-baseline="middle">unsigned payload</text>
-  <text class="detail" x="720.0" y="448.0" text-anchor="middle" dominant-baseline="middle">S3 path rules</text>
-</g>
-<g id="headers">
-  <rect class="card" x="960.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="card-title" x="1110.0" y="406.0" text-anchor="middle" dominant-baseline="middle">SSE headers</text>
-  <text class="detail" x="1110.0" y="430.0" text-anchor="middle" dominant-baseline="middle">SSE-S3/SSE-KMS</text>
-  <text class="detail" x="1110.0" y="448.0" text-anchor="middle" dominant-baseline="middle">DSSE/SSE-C</text>
-</g>
-<g id="s3">
-  <rect class="card" x="570.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="720.0" y="594.0" text-anchor="middle" dominant-baseline="middle">S3 endpoint</text>
-  <text class="detail" x="720.0" y="618.0" text-anchor="middle" dominant-baseline="middle">AWS or emulator</text>
-  <text class="detail" x="720.0" y="636.0" text-anchor="middle" dominant-baseline="middle">object store</text>
-</g>
-<rect class="footer" x="54" y="718" width="1332" height="54" rx="8"/>
-<text class="footer-title" x="74" y="741" dominant-baseline="middle">Reader cue</text>
-<text class="footer-detail" x="74" y="761" dominant-baseline="middle">Micrometer wraps S3KtorClient; client-side encryption uses a DataKeyProvider and delegates object I/O to S3KtorClient.</text>
+  <rect class="canvas" width="1500" height="920"/>
+  <rect class="frame" x="38" y="34" width="1424" height="852" rx="26"/>
+  <text class="title" x="750" y="92" text-anchor="middle">Advanced S3 Helper Architecture</text>
+  <text class="subtitle" x="750" y="126" text-anchor="middle">S3KtorClient keeps advanced object workflows opt-in: helpers render request details, while apps own config parsing and key-provider policy.</text>
+
+  <rect class="layer" x="80" y="168" width="1340" height="118" rx="18"/>
+  <text class="layerTitle" x="106" y="204">KTOR-OWNED WORKFLOW</text>
+  <rect class="card blue" x="125" y="218" width="255" height="52" rx="14"/>
+  <text class="cardText" x="252" y="249" text-anchor="middle">Config bootstrap text</text>
+  <rect class="card green" x="435" y="218" width="255" height="52" rx="14"/>
+  <text class="cardText" x="562" y="249" text-anchor="middle">Payload upload or presign</text>
+  <rect class="card orange" x="745" y="218" width="255" height="52" rx="14"/>
+  <text class="cardText" x="872" y="249" text-anchor="middle">S3-managed encryption</text>
+  <rect class="card purple" x="1055" y="218" width="300" height="52" rx="14"/>
+  <text class="cardText" x="1205" y="249" text-anchor="middle">Process-local envelope encryption</text>
+
+  <rect class="layer" x="80" y="330" width="1340" height="170" rx="18"/>
+  <text class="layerTitle" x="106" y="366">HELPERS</text>
+  <rect class="card blue" x="125" y="390" width="255" height="86" rx="14"/>
+  <text class="cardTitle" x="252" y="420" text-anchor="middle">Config Object</text>
+  <text class="cardText" x="252" y="446" text-anchor="middle">putConfigObject</text>
+  <text class="cardText" x="252" y="466" text-anchor="middle">getConfigObject</text>
+  <rect class="card green" x="435" y="390" width="255" height="86" rx="14"/>
+  <text class="cardTitle" x="562" y="420" text-anchor="middle">Object Helpers</text>
+  <text class="cardText" x="562" y="446" text-anchor="middle">content-type detector</text>
+  <text class="cardText" x="562" y="466" text-anchor="middle">presigned GET/PUT</text>
+  <rect class="card orange" x="745" y="390" width="255" height="86" rx="14"/>
+  <text class="cardTitle" x="872" y="420" text-anchor="middle">SSE Headers</text>
+  <text class="cardText" x="872" y="446" text-anchor="middle">SSE-S3, KMS, DSSE</text>
+  <text class="cardText" x="872" y="466" text-anchor="middle">bucket key, SSE-C</text>
+  <rect class="card purple" x="1055" y="390" width="300" height="86" rx="14"/>
+  <text class="cardTitle" x="1205" y="420" text-anchor="middle">Client-Side Helper</text>
+  <text class="cardText" x="1205" y="446" text-anchor="middle">AES-GCM ciphertext</text>
+  <text class="cardText" x="1205" y="466" text-anchor="middle">metadata carries key + nonce</text>
+
+  <rect class="layer" x="80" y="548" width="1340" height="164" rx="18"/>
+  <text class="layerTitle" x="106" y="584">DECISIONS</text>
+  <rect class="card blue" x="125" y="610" width="255" height="68" rx="14"/>
+  <text class="cardText" x="252" y="636" text-anchor="middle">loads text only</text>
+  <text class="cardText" x="252" y="656" text-anchor="middle">parser stays application-owned</text>
+  <rect class="card green" x="435" y="610" width="255" height="68" rx="14"/>
+  <text class="cardText" x="562" y="636" text-anchor="middle">fallback:</text>
+  <text class="cardText" x="562" y="656" text-anchor="middle">application/octet-stream</text>
+  <rect class="card orange" x="745" y="610" width="255" height="68" rx="14"/>
+  <text class="cardText" x="872" y="636" text-anchor="middle">renders headers only</text>
+  <text class="cardText" x="872" y="656" text-anchor="middle">no mandatory KMS client</text>
+  <rect class="card purple" x="1055" y="610" width="300" height="68" rx="14"/>
+  <text class="cardText" x="1205" y="636" text-anchor="middle">S3KtorDataKeyProvider</text>
+  <text class="cardText" x="1205" y="656" text-anchor="middle">KMS wrapper or in-memory test key</text>
+
+  <rect class="layer" x="80" y="748" width="1340" height="96" rx="18"/>
+  <text class="layerTitle" x="106" y="782">RUNTIME TARGET</text>
+  <rect class="card slate" x="330" y="786" width="840" height="42" rx="14"/>
+  <text class="wideTitle" x="750" y="812" text-anchor="middle">S3 object store: bytes, content type, metadata, SSE request headers</text>
+
+  <path class="blueLine" d="M 252 270 V 378"/>
+  <path class="greenLine" d="M 562 270 V 378"/>
+  <path class="orangeLine" d="M 872 270 V 378"/>
+  <path class="purpleLine" d="M 1205 270 V 378"/>
+  <path class="blueLine" d="M 252 476 V 598"/>
+  <path class="greenLine" d="M 562 476 V 598"/>
+  <path class="orangeLine" d="M 872 476 V 598"/>
+  <path class="purpleLine" d="M 1205 476 V 598"/>
+  <path class="blueLine" d="M 252 678 V 738 H 520 V 776"/>
+  <path class="greenLine" d="M 562 678 V 776"/>
+  <path class="orangeLine" d="M 872 678 V 776"/>
+  <path class="purpleLine" d="M 1205 678 V 738 H 980 V 776"/>
+
+  <text class="label" x="1018" y="728">provider boundary is outside S3KtorClient</text>
+  <text class="footer" x="100" y="868">Reader contract: these helpers add S3 request structure; they do not parse app config, create mandatory AWS service clients, or persist plaintext data keys.</text>
 </svg>
