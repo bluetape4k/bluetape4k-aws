@@ -8,9 +8,9 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 
 > For the AWS Java SDK v2 based module, use `bluetape4k-aws-java`.
 
-## Architecture
+## Diagrams
 
-### Architecture
+### Module Architecture
 
 ![AWS Kotlin architecture diagram](../docs/images/readme-diagrams/aws-kotlin-architecture-01.png)
 
