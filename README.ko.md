@@ -814,19 +814,49 @@ visibility, delete helper는 비어 있는 entry collection을 SQS로 보내기 
 
 ### DynamoDB — 네이티브 Suspend (`bluetape4k-aws-kotlin` 모듈)
 
+Kotlin DynamoDB 모듈은 AWS Kotlin SDK의 native suspend API를 그대로 사용하면서
+client lifecycle, table helper, request builder, `AttributeValue` 변환, scan
+pagination, batch write retry를 얇게 보강합니다. `withDynamoDbClient`는 suspend
+block 동안만 client를 열고 끝나면 닫습니다. Helper builder는 blank table name,
+blank region, empty item map 같은 입력을 SDK 호출 전에 먼저 거부합니다.
+
+![DynamoDB native suspend support map](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-28.png)
+
 ```kotlin
-import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import io.bluetape4k.aws.kotlin.dynamodb.*
+import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValueMap
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.toList
 
 // One-shot: 블록 종료 시 자동 close
-suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
+suspend fun writeAndScan(tableName: String) =
     withDynamoDbClient(region = "ap-northeast-2") { client ->
-        client.getItem {
-            this.tableName = tableName
-            this.key = key
-        }
+        client.putItem(tableName, mapOf("id" to "u1", "name" to "Alice"))
+
+        client.scanPaginated(tableName, exclusiveStartKey = emptyMap(), limit = 25)
+            .mapNotNull { it.items }
+            .toList()
     }
+
+data class User(val id: String, val name: String)
+
+val userMapper = DynamoItemMapper<User> { user ->
+    mapOf("id" to AttributeValue.S(user.id), "name" to AttributeValue.S(user.name))
+}
+
+val userReader = DynamoItemReader<User> { item ->
+    User(id = item.getValue("id").asS(), name = item.getValue("name").asS())
+}
+
+fun userAttributes(user: User) = mapOf("id" to user.id, "name" to user.name).toAttributeValueMap()
 ```
+
+![DynamoDB suspend item and batch flow](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.png)
+
+쓰기나 삭제가 DynamoDB의 `BatchWriteItem` 25개 제한을 넘을 수 있다면
+`DynamoDbBatchExecutor`를 사용하세요. 요청을 25개씩 나누고 Resilience4j retry를 적용한
+뒤, 응답의 `unprocessedItems`를 설정된 한도까지 재귀적으로 다시 보냅니다.
 
 ### CloudWatch 메트릭 — DSL (`bluetape4k-aws-kotlin` 모듈)
 

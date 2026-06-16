@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+<title id="title">DynamoDB suspend item and batch flow</title>
+<desc id="desc">DynamoDB suspend helpers create an AWS Kotlin SDK client, validate input, convert Kotlin values to AttributeValue maps, call table operations, stream scan pages, and retry unprocessed batch writes.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}.frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}.subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .lane{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}.lane-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}.lane-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-purple{fill:#F7ECFF;stroke:#C925D1;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-red{fill:#FEECEC;stroke:#DC2626;stroke-width:2.2}
+    .aws-icon{fill:#C925D1;fill-rule:evenodd}.note{fill:#FFFFFF;stroke:#D8E2ED;stroke-width:1.4}.note-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}.note-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}.arrow-purple{stroke:#A21CAF;stroke-width:3;fill:none;marker-end:url(#arrow-purple)}.arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}.arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}.arrow-red{stroke:#DC2626;stroke-width:3;fill:none;marker-end:url(#arrow-red)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
+  <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#A21CAF"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#DC2626"/></marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="860"/><rect class="frame" x="24" y="24" width="1352" height="812" rx="14"/>
+<text class="title" x="54" y="74">DynamoDB suspend item and batch flow</text>
+<text class="subtitle" x="54" y="108">Client lifecycle, AttributeValue conversion, scan Flow, and BatchWriteItem retry stay visible around SDK-native suspend calls.</text>
+<rect class="card-blue" x="852" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="903" y="78" text-anchor="middle">Client</text>
+<rect class="card-purple" x="974" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="1025" y="78" text-anchor="middle">DynamoDB</text>
+<rect class="card-orange" x="1096" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="1147" y="78" text-anchor="middle">Batch</text>
+<rect class="card-red" x="1218" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="1269" y="78" text-anchor="middle">Guard</text>
+
+<rect class="lane" x="66" y="142" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="179">Scoped client</text><text class="lane-sub" x="92" y="195">region is required; withDynamoDbClient closes the SDK client after the suspend block</text>
+<rect class="card-red" x="194" y="202" width="198" height="48" rx="8"/><text class="card-title" x="293" y="222" text-anchor="middle">Region guard</text><text class="card-text" x="293" y="241" text-anchor="middle">requireNotBlank</text>
+<rect class="card-blue" x="476" y="202" width="198" height="48" rx="8"/><text class="card-title" x="575" y="222" text-anchor="middle">Client factory</text><text class="card-text" x="575" y="241" text-anchor="middle">endpoint + credentials</text>
+<rect class="card-blue" x="758" y="202" width="198" height="48" rx="8"/><text class="card-title" x="857" y="222" text-anchor="middle">Suspend block</text><text class="card-text" x="857" y="241" text-anchor="middle">SDK-native calls</text>
+<rect class="card-blue" x="1040" y="202" width="198" height="48" rx="8"/><text class="card-title" x="1139" y="222" text-anchor="middle">Auto close</text><text class="card-text" x="1139" y="241" text-anchor="middle">useSafe boundary</text>
+<path class="arrow-red" d="M392 226 H476"/><path class="arrow-blue" d="M674 226 H758"/><path class="arrow-blue" d="M956 226 H1040"/>
+
+<rect class="lane" x="66" y="286" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="323">Put item</text><text class="lane-sub" x="92" y="339">Kotlin maps become DynamoDB AttributeValue maps before PutItem reaches the table</text>
+<rect class="card-green" x="194" y="346" width="198" height="48" rx="8"/><text class="card-title" x="293" y="366" text-anchor="middle">Kotlin item</text><text class="card-text" x="293" y="385" text-anchor="middle">Map&lt;String, Any?&gt;</text>
+<rect class="card-teal" x="476" y="346" width="198" height="48" rx="8"/><text class="card-title" x="575" y="366" text-anchor="middle">AttributeValue</text><text class="card-text" x="575" y="385" text-anchor="middle">S, N, Bool, L, M, Null</text>
+<rect class="card-purple" x="758" y="346" width="198" height="48" rx="8"/><g transform="translate(780 352) scale(0.62)"><path class="aws-icon" d="M30.1807 12.5992c0-2.816 2.292-5.108 5.109-5.108s5.109 2.292 5.109 5.108c0 2.817-2.292 5.109-5.109 5.109s-5.109-2.292-5.109-5.109zM28.1807 12.5992c0 3.92 3.189 7.109 7.109 7.109s7.109-3.189 7.109-7.109-3.189-7.108-7.109-7.108-7.109 3.188-7.109 7.108zM4.0007 43.8892h17.199V26.6902h-17.199v17.199zM2.0007 45.8892h21.199V24.6902h-21.199v21.199zM26.6907 43.8892h17.199V26.6902h-17.199v17.199zM24.6907 45.8892h21.199V24.6902h-21.199v21.199zM3.9997 21.1982h17.199V3.9992h-17.199v17.199zM1.9997 23.1992h21.199V2.0002h-21.199v21.199zM26.6907 21.1992h17.199V4.0002h-17.199v17.199zM24.6907 23.1982h21.199V1.9992h-21.199v21.199z"/></g><text class="card-title" x="880" y="366" text-anchor="middle">PutItem</text><text class="card-text" x="880" y="385" text-anchor="middle">tableName + item</text>
+<rect class="card-purple" x="1040" y="346" width="198" height="48" rx="8"/><g transform="translate(1062 352) scale(0.62)"><path class="aws-icon" d="M13.355 11.862h32.573V2H13.355v9.862zM15.355 9.862h28.572V4.001H15.355v5.861zM2 11.862h9.861V2H2v9.862zM4 9.862h5.862V4.001H4v5.861zM13.355 23.217h32.573v-9.861H13.355v9.861zM15.355 21.217h28.572v-5.861H15.355v5.861zM2 23.217h9.861v-9.861H2v9.861zM4 21.217h5.862v-5.861H4v5.861zM13.355 34.572h32.573v-9.861H13.355v9.861zM15.355 32.572h28.572V26.71H15.355v5.862zM2 34.572h9.861v-9.861H2v9.861zM4 32.572h5.862V26.71H4v5.862zM13.355 45.927h32.573v-9.861H13.355v9.861zM15.355 43.928h28.572v-5.862H15.355v5.862zM2 45.927h9.861v-9.861H2v9.861zM4 43.928h5.862v-5.862H4v5.862z"/></g><text class="card-title" x="1160" y="366" text-anchor="middle">Table</text><text class="card-text" x="1160" y="385" text-anchor="middle">stores item</text>
+<path class="arrow-green" d="M392 370 H476"/><path class="arrow-teal" d="M674 370 H758"/><path class="arrow-purple" d="M956 370 H1040"/>
+
+<rect class="lane" x="66" y="430" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="467">Scan pages as Flow</text><text class="lane-sub" x="92" y="483">scanPaginated wraps AWS Kotlin SDK paginators and lets callers collect pages with coroutine Flow operators</text>
+<rect class="card-purple" x="194" y="490" width="198" height="48" rx="8"/><text class="card-title" x="293" y="510" text-anchor="middle">Table scan</text><text class="card-text" x="293" y="529" text-anchor="middle">exclusiveStartKey</text>
+<rect class="card-teal" x="476" y="490" width="198" height="48" rx="8"/><text class="card-title" x="575" y="510" text-anchor="middle">Paginator</text><text class="card-text" x="575" y="529" text-anchor="middle">scanPaginated</text>
+<rect class="card-blue" x="758" y="490" width="198" height="48" rx="8"/><text class="card-title" x="857" y="510" text-anchor="middle">Flow pages</text><text class="card-text" x="857" y="529" text-anchor="middle">buffer, map, collect</text>
+<rect class="card-green" x="1040" y="490" width="198" height="48" rx="8"/><text class="card-title" x="1139" y="510" text-anchor="middle">Reader</text><text class="card-text" x="1139" y="529" text-anchor="middle">explicit domain object</text>
+<path class="arrow-purple" d="M392 514 H476"/><path class="arrow-teal" d="M674 514 H758"/><path class="arrow-blue" d="M956 514 H1040"/>
+
+<rect class="lane" x="66" y="574" width="1268" height="118" rx="12"/><text class="lane-title" x="92" y="611">Batch write retry</text><text class="lane-sub" x="92" y="627">putAll/deleteAll chunk requests at 25 items and retry unprocessed items up to the configured limit</text>
+<rect class="card-green" x="194" y="634" width="198" height="48" rx="8"/><text class="card-title" x="293" y="654" text-anchor="middle">Entities</text><text class="card-text" x="293" y="673" text-anchor="middle">mapper or key selector</text>
+<rect class="card-orange" x="476" y="634" width="198" height="48" rx="8"/><text class="card-title" x="575" y="654" text-anchor="middle">WriteRequests</text><text class="card-text" x="575" y="673" text-anchor="middle">put or delete</text>
+<rect class="card-orange" x="758" y="634" width="198" height="48" rx="8"/><text class="card-title" x="857" y="654" text-anchor="middle">BatchWriteItem</text><text class="card-text" x="857" y="673" text-anchor="middle">chunked by 25</text>
+<rect class="card-red" x="1040" y="634" width="198" height="48" rx="8"/><text class="card-title" x="1139" y="654" text-anchor="middle">Retry leftovers</text><text class="card-text" x="1139" y="673" text-anchor="middle">unprocessedItems</text>
+<path class="arrow-green" d="M392 658 H476"/><path class="arrow-orange" d="M674 658 H758"/><path class="arrow-orange" d="M956 658 H1040"/>
+
+<rect class="note" x="98" y="720" width="580" height="44" rx="8"/><text class="note-title" x="122" y="746" dominant-baseline="middle">Validation</text><text class="note-text" x="258" y="746" dominant-baseline="middle">Blank table names and empty PutItem maps fail before SDK calls.</text>
+<rect class="note" x="722" y="720" width="580" height="44" rx="8"/><text class="note-title" x="746" y="746" dominant-baseline="middle">Mapping</text><text class="note-text" x="866" y="746" dominant-baseline="middle">Explicit mapper and reader contracts; no hidden reflection mapper.</text>
+<rect class="footer" x="54" y="796" width="1292" height="32" rx="8"/><text class="footer-title" x="74" y="812" dominant-baseline="middle">Outcome</text><text class="footer-detail" x="166" y="812" dominant-baseline="middle">Application code keeps native suspend DynamoDB calls while conversion, streaming, and retry behavior remain visible.</text>
+</svg>

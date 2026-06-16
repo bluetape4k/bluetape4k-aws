@@ -826,19 +826,51 @@ the queue.
 
 ### DynamoDB — Native Suspend (`bluetape4k-aws-kotlin` module)
 
+The Kotlin DynamoDB module keeps the AWS Kotlin SDK surface intact and adds a
+thin support layer for client lifecycle, table helpers, request builders,
+`AttributeValue` conversion, scan pagination, and batch write retries.
+`withDynamoDbClient` creates a scoped client and closes it after the suspend
+block, while helper builders fail fast on blank table names, blank regions, and
+empty item maps.
+
+![DynamoDB native suspend support map](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-28.png)
+
 ```kotlin
-import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import io.bluetape4k.aws.kotlin.dynamodb.*
+import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValueMap
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.toList
 
 // One-shot: auto-close after the block
-suspend fun getItem(tableName: String, key: Map<String, AttributeValue>) =
+suspend fun writeAndScan(tableName: String) =
     withDynamoDbClient(region = "ap-northeast-2") { client ->
-        client.getItem {
-            this.tableName = tableName
-            this.key = key
-        }
+        client.putItem(tableName, mapOf("id" to "u1", "name" to "Alice"))
+
+        client.scanPaginated(tableName, exclusiveStartKey = emptyMap(), limit = 25)
+            .mapNotNull { it.items }
+            .toList()
     }
+
+data class User(val id: String, val name: String)
+
+val userMapper = DynamoItemMapper<User> { user ->
+    mapOf("id" to AttributeValue.S(user.id), "name" to AttributeValue.S(user.name))
+}
+
+val userReader = DynamoItemReader<User> { item ->
+    User(id = item.getValue("id").asS(), name = item.getValue("name").asS())
+}
+
+fun userAttributes(user: User) = mapOf("id" to user.id, "name" to user.name).toAttributeValueMap()
 ```
+
+![DynamoDB suspend item and batch flow](docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.png)
+
+Use `DynamoDbBatchExecutor` when writes or deletes may exceed DynamoDB's
+25-item `BatchWriteItem` limit. It chunks requests, applies a Resilience4j
+retry, and recursively retries `unprocessedItems` until they are accepted or the
+configured retry ceiling is reached.
 
 ### CloudWatch Metrics — DSL (`bluetape4k-aws-kotlin` module)
 
