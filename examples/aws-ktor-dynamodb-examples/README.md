@@ -3,10 +3,10 @@
 English | [한국어](./README.ko.md)
 
 Ktor 3 examples for the `aws-ktor` DynamoDB plugin. The module installs
-`DynamoDbKtorPlugin`, auto-creates an `orders` table, and exposes CRUD routes
-backed by a coroutine DynamoDB repository. It uses `bluetape4k-ktor-core` for
-shared route parameter validation and `bluetape4k-ktor-testing` for common
-Ktor response assertions.
+`DynamoDbKtorPlugin`, creates the `orders` table at startup, and exposes CRUD
+routes backed by a coroutine DynamoDB repository. It keeps the route code close
+to the plugin contract so developers can copy the table setup, mapper, reader,
+and test wiring into their own Ktor services.
 
 ## Architecture
 
@@ -24,8 +24,9 @@ data class Order(
 )
 ```
 
-`DynamoItemMapper` and `DynamoItemReader` map the Kotlin model to DynamoDB
-attributes. The plugin configures the table with `BillingMode.PayPerRequest`.
+`DynamoItemMapper` writes the Kotlin model as DynamoDB attributes, while
+`DynamoItemReader` restores the `Order` from the returned item map. The plugin
+configures the table with `BillingMode.PayPerRequest`.
 
 ## Server Routes
 
@@ -38,8 +39,9 @@ attributes. The plugin configures the table with `BillingMode.PayPerRequest`.
 
 ## Configuration
 
-The module is configured by calling `dynamoDbExampleModule` with an endpoint,
-region, and credentials provider. Tests pass the selected AWS emulator values:
+Configure the module by calling `dynamoDbExampleModule` with an endpoint, region,
+and credentials provider. The tests pass the selected AWS emulator values, so
+the same module runs against Floci or LocalStack:
 
 ```kotlin
 application {
