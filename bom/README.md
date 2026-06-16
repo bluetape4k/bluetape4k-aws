@@ -10,7 +10,7 @@ individual versions.
 
 ![bom Architecture diagram](../docs/images/readme-diagrams/bom-architecture-01.png)
 
-The BOM is a Gradle `java-platform` that publishes only `<dependencyManagement>` constraints — no runtime classes. Consumers import it via `dependencyManagement` (Spring) or Gradle `platform()`.
+The BOM is a Gradle `java-platform` that publishes only `<dependencyManagement>` constraints — no runtime classes. Consumers import it via `dependencyManagement` (Spring) or Gradle `platform()`. The diagram acts as the artifactId catalog for supported `io.github.bluetape4k.aws` modules.
 
 ## Core Features
 
@@ -24,6 +24,7 @@ The BOM is a Gradle `java-platform` that publishes only `<dependencyManagement>`
 |--------|-------------|
 | `bluetape4k-aws-java` | Core AWS SDK v2 wrappers with Coroutines support |
 | `bluetape4k-aws-kotlin` | AWS Kotlin SDK extensions |
+| `bluetape4k-aws-exposed` | Exposed/RDS IAM, Secrets Manager, Parameter Store, and Hikari helpers |
 | `bluetape4k-aws-ktor` | Ktor 3 integration helpers |
 | `bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration |
 

@@ -10,7 +10,8 @@
 ![bom Architecture diagram](../docs/images/readme-diagrams/bom-architecture-01.png)
 
 BOM은 Gradle `java-platform` 으로 `<dependencyManagement>` constraint 만 게시하며 런타임 클래스는 포함하지 않는다.
-소비자는 `dependencyManagement` (Spring) 또는 Gradle `platform()` 으로 import 한다.
+소비자는 `dependencyManagement` (Spring) 또는 Gradle `platform()` 으로 import 한다. 다이어그램은 지원하는
+`io.github.bluetape4k.aws` artifactId를 빠르게 확인하기 위한 카탈로그 역할을 한다.
 
 ## 핵심 기능
 
@@ -24,6 +25,7 @@ BOM은 Gradle `java-platform` 으로 `<dependencyManagement>` constraint 만 게
 |------|------|
 | `bluetape4k-aws-java` | AWS SDK v2 래퍼 (Coroutines 지원) |
 | `bluetape4k-aws-kotlin` | AWS Kotlin SDK 확장 |
+| `bluetape4k-aws-exposed` | Exposed/RDS IAM, Secrets Manager, Parameter Store, Hikari 헬퍼 |
 | `bluetape4k-aws-ktor` | Ktor 3 연동 헬퍼 |
 | `bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration |
 

@@ -1,96 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="812" viewBox="0 0 1440 812" role="img" aria-label="BOM architecture">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-label="bluetape4k AWS BOM managed artifact catalog">
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#059669"/>
+    </marker>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .band{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .bandTitle{font-family:"Comic Mono";font-size:18px;font-weight:700;fill:#475569}
+      .card{fill:#ffffff;stroke-width:2.2;filter:url(#softShadow)}
+      .cardTitle{font-family:"Architects Daughter";font-size:24px;fill:#17233a}
+      .artifact{font-family:"Comic Mono";font-size:15px;fill:#1f2937}
+      .cardText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .route{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+      .routeText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .pill{fill:#ffffff;stroke-width:2}
+      .pillText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1388" height="760" rx="14" class="frame"/>
-<text class="title" x="54" y="72">BOM architecture</text>
-<text class="subtitle" x="56" y="104">The java-platform BOM publishes constraints for published AWS modules; examples stay outside the BOM.</text>
-<g><rect x="975" y="58" width="126" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/><text class="chip" x="1038.0" y="70" text-anchor="middle" dominant-baseline="middle">public API</text></g>
-<g><rect x="1120" y="58" width="126" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/><text class="chip" x="1183.0" y="70" text-anchor="middle" dominant-baseline="middle">adapter/config</text></g>
-<g><rect x="1265" y="58" width="126" height="24" rx="12" fill="#FFF7ED" stroke="#F97316"/><text class="chip" x="1328.0" y="70" text-anchor="middle" dominant-baseline="middle">runtime</text></g>
-<rect x="54" y="150" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="175">BOM build</text>
-<rect x="54" y="338" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
-<text class="chip" x="74" y="363">Managed constraints</text>
-<rect x="54" y="526" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="551">Consumer choice</text>
-<g id="routes">
-<path class="edge" d="M 620.0 230.0 L 680.0 230.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 805.0 276.0 L 805.0 372.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<path class="edge" d="M 695.0 464.0 L 695.0 560.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<path class="edge" d="M 470.0 276.0 L 470.0 324.0 L 970.0 324.0 L 970.0 560.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-</g>
-<g id="platform">
-  <rect class="card" x="320.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="470.0" y="218.0" text-anchor="middle" dominant-baseline="middle">Gradle java-platform</text>
-  <text class="detail" x="470.0" y="242.0" text-anchor="middle" dominant-baseline="middle">dependency constraints</text>
-  <text class="detail" x="470.0" y="260.0" text-anchor="middle" dominant-baseline="middle">no runtime code</text>
-</g>
-<g id="filter">
-  <rect class="card" x="680.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="830.0" y="218.0" text-anchor="middle" dominant-baseline="middle">Published-module filter</text>
-  <text class="detail" x="830.0" y="242.0" text-anchor="middle" dominant-baseline="middle">excludes examples</text>
-  <text class="detail" x="830.0" y="260.0" text-anchor="middle" dominant-baseline="middle">excludes benchmark/demo</text>
-</g>
-<g id="modules">
-  <rect class="card" x="630.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="780.0" y="406.0" text-anchor="middle" dominant-baseline="middle">Managed AWS modules</text>
-  <text class="detail" x="780.0" y="430.0" text-anchor="middle" dominant-baseline="middle">java/kotlin/exposed</text>
-  <text class="detail" x="780.0" y="448.0" text-anchor="middle" dominant-baseline="middle">spring-boot/ktor</text>
-</g>
-<g id="consumer">
-  <rect class="card" x="460.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="card-title" x="610.0" y="594.0" text-anchor="middle" dominant-baseline="middle">Consumer build</text>
-  <text class="detail" x="610.0" y="618.0" text-anchor="middle" dominant-baseline="middle">platform()/Maven import</text>
-  <text class="detail" x="610.0" y="636.0" text-anchor="middle" dominant-baseline="middle">versions omitted</text>
-</g>
-<g id="parent">
-  <rect class="card" x="820.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="970.0" y="594.0" text-anchor="middle" dominant-baseline="middle">bluetape4k-dependencies</text>
-  <text class="detail" x="970.0" y="618.0" text-anchor="middle" dominant-baseline="middle">aggregates sub-BOMs</text>
-  <text class="detail" x="970.0" y="636.0" text-anchor="middle" dominant-baseline="middle">release train</text>
-</g>
-<rect class="footer" x="54" y="718" width="1332" height="54" rx="8"/>
-<text class="footer-title" x="74" y="741" dominant-baseline="middle">Reader cue</text>
-<text class="footer-detail" x="74" y="761" dominant-baseline="middle">The BOM manages published module versions only; it has no runtime classes or service configuration.</text>
+  <rect class="canvas" width="1600" height="1040"/>
+  <rect class="frame" x="42" y="36" width="1516" height="964" rx="24"/>
+  <text class="title" x="800" y="96" text-anchor="middle">bluetape4k-aws-bom Artifact Catalog</text>
+  <text class="subtitle" x="800" y="132" text-anchor="middle">Import one BOM, then declare supported AWS artifacts without repeating module versions.</text>
+
+  <g id="import">
+    <rect class="band" x="92" y="178" width="1416" height="150" rx="18"/>
+    <text class="bandTitle" x="118" y="216">DEVELOPER IMPORT</text>
+    <rect class="card" x="204" y="242" width="526" height="58" rx="16" stroke="#2563eb"/>
+    <text class="artifact" x="467" y="277" text-anchor="middle">io.github.bluetape4k.aws:bluetape4k-aws-bom</text>
+    <rect class="card" x="870" y="242" width="526" height="58" rx="16" stroke="#059669"/>
+    <text class="cardTitle" x="1133" y="277" text-anchor="middle">Gradle platform() or Maven import</text>
+  </g>
+
+  <g id="managed">
+    <rect class="band" x="92" y="382" width="1416" height="360" rx="18"/>
+    <text class="bandTitle" x="118" y="420">SUPPORTED ARTIFACT IDS MANAGED BY THE BOM</text>
+
+    <rect class="card" x="146" y="466" width="396" height="78" rx="16" stroke="#2563eb"/>
+    <text class="artifact" x="344" y="496" text-anchor="middle">bluetape4k-aws-java</text>
+    <text class="cardText" x="344" y="522" text-anchor="middle">AWS Java SDK v2 wrappers and coroutine helpers</text>
+
+    <rect class="card" x="602" y="466" width="396" height="78" rx="16" stroke="#059669"/>
+    <text class="artifact" x="800" y="496" text-anchor="middle">bluetape4k-aws-kotlin</text>
+    <text class="cardText" x="800" y="522" text-anchor="middle">AWS Kotlin SDK suspend APIs and DSL builders</text>
+
+    <rect class="card" x="1058" y="466" width="396" height="78" rx="16" stroke="#d97706"/>
+    <text class="artifact" x="1256" y="496" text-anchor="middle">bluetape4k-aws-exposed</text>
+    <text class="cardText" x="1256" y="522" text-anchor="middle">RDS IAM, Secrets, Parameter Store, Hikari config</text>
+
+    <rect class="card" x="374" y="596" width="396" height="78" rx="16" stroke="#dc2626"/>
+    <text class="artifact" x="572" y="626" text-anchor="middle">bluetape4k-aws-spring-boot</text>
+    <text class="cardText" x="572" y="652" text-anchor="middle">Spring Boot 4 auto-configuration and templates</text>
+
+    <rect class="card" x="830" y="596" width="396" height="78" rx="16" stroke="#7c3aed"/>
+    <text class="artifact" x="1028" y="626" text-anchor="middle">bluetape4k-aws-ktor</text>
+    <text class="cardText" x="1028" y="652" text-anchor="middle">Ktor 3 SigV4, S3, SQS, DynamoDB helpers</text>
+  </g>
+
+  <g id="excluded">
+    <rect class="band" x="92" y="796" width="1416" height="112" rx="18"/>
+    <text class="bandTitle" x="118" y="834">NOT MANAGED AS CONSUMER ARTIFACTS</text>
+    <rect class="pill" x="210" y="856" width="300" height="36" rx="13" stroke="#64748b"/>
+    <text class="pillText" x="360" y="879" text-anchor="middle">examples/*</text>
+    <rect class="pill" x="552" y="856" width="300" height="36" rx="13" stroke="#64748b"/>
+    <text class="pillText" x="702" y="879" text-anchor="middle">benchmark/*</text>
+    <rect class="pill" x="894" y="856" width="300" height="36" rx="13" stroke="#64748b"/>
+    <text class="pillText" x="1044" y="879" text-anchor="middle">demo / benchmark modules</text>
+  </g>
+
+  <path class="route" d="M 800 328 L 800 382" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  <text class="routeText" x="846" y="361">java-platform constraints align versions only</text>
+
+  <path class="route" d="M 800 742 L 800 796" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <text class="routeText" x="846" y="775">published libraries are included; examples stay outside</text>
+
+  <text class="footerText" x="800" y="946" text-anchor="middle">Reader contract: the BOM is dependency management only, but its README is the artifactId catalog for consumers.</text>
 </svg>
