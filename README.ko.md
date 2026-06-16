@@ -331,7 +331,8 @@ listener 용이다. CRT 기반 throughput 튜닝이 필요하면 AWS CRT runtime
 #### S3 Access Grants
 
 S3 Access Grants 지원은 opt-in이며 AWS SDK v2 S3 Control client를 사용합니다.
-활성화하는 애플리케이션은 runtime service dependency를 추가해야 합니다.
+활성화하는 애플리케이션은 runtime service dependency를 추가해야 합니다. 해당 의존성이
+없으면 auto-configuration 대상에서 제외됩니다.
 
 ```kotlin
 runtimeOnly("software.amazon.awssdk:s3control")
@@ -371,8 +372,9 @@ class GrantedObjectAccess(
 
 `S3AccessGrantsOperations` 는 일반적인 read/data-access 경로인 `getDataAccess`,
 `listCallerAccessGrants`, `listAccessGrants`, `listAccessGrantsInstances`,
-`listAccessGrantsLocations` 를 제공합니다. 관리용 create/update/delete 호출은 raw
-`S3ControlClient` 와 `S3ControlAsyncClient` bean 을 통해 그대로 사용할 수 있습니다.
+`listAccessGrantsLocations` 를 제공합니다. 관리용 create/update/delete 호출은 의도적으로
+raw `S3ControlClient` 와 `S3ControlAsyncClient` bean 에 남겨 정책을 바꾸는 작업이
+명시적으로 드러나게 합니다.
 
 ### DynamoDB — Spring Boot Coroutine Repository
 
