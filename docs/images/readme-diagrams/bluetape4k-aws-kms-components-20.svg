@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+<title id="title">KMS Spring Boot support map</title>
+<desc id="desc">AWS KMS auto-configuration creates a coroutine operations API, optional data-key cache, TextEncryptor adapter, and field encryption codec.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}
+    .frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}
+    .subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .layer{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}
+    .layer-title{font-family:"Architects Daughter";font-size:25px;fill:#102033}
+    .layer-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+    .card-text{font-family:"Comic Mono";font-size:14px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}
+    .card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}
+    .card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}
+    .card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}
+    .card-amber{fill:#FFF8E6;stroke:#F59E0B;stroke-width:2.2}
+    .note{fill:#FFFFFF;stroke:#D8E2ED;stroke-width:1.4}
+    .note-title{font-family:"Architects Daughter";font-size:22px;fill:#102033}
+    .note-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .footer{fill:#0E2238;stroke:#0E2238}
+    .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+    .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}
+    .arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}
+    .arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}
+    .arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/>
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/>
+  </marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/>
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/>
+  </marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="760"/>
+<rect class="frame" x="24" y="24" width="1352" height="712" rx="14"/>
+
+<text class="title" x="54" y="74">KMS Spring Boot support map</text>
+<text class="subtitle" x="54" y="108">KMS support exposes coroutine operations first, then optional adapters for synchronous text and field-level use cases.</text>
+
+<rect class="card-blue" x="922" y="62" width="118" height="24" rx="12" opacity="0.24"/>
+<text class="legend" x="981" y="78" text-anchor="middle">Core</text>
+<rect class="card-green" x="1058" y="62" width="118" height="24" rx="12" opacity="0.24"/>
+<text class="legend" x="1117" y="78" text-anchor="middle">Cache</text>
+<rect class="card-orange" x="1194" y="62" width="136" height="24" rx="12" opacity="0.24"/>
+<text class="legend" x="1262" y="78" text-anchor="middle">Adapters</text>
+
+<rect class="layer" x="66" y="150" width="292" height="430" rx="12"/>
+<text class="layer-title" x="90" y="190">Auto-config</text>
+<text class="layer-sub" x="90" y="216">properties, client, defaults</text>
+
+<rect class="layer" x="392" y="150" width="292" height="430" rx="12"/>
+<text class="layer-title" x="416" y="190">Operations API</text>
+<text class="layer-sub" x="416" y="216">coroutine KMS contract</text>
+
+<rect class="layer" x="718" y="150" width="292" height="430" rx="12"/>
+<text class="layer-title" x="742" y="190">Key material</text>
+<text class="layer-sub" x="742" y="216">data-key generation and cache</text>
+
+<rect class="layer" x="1044" y="150" width="292" height="430" rx="12"/>
+<text class="layer-title" x="1068" y="190">Application adapters</text>
+<text class="layer-sub" x="1068" y="216">Spring Security and field codec</text>
+
+<rect class="card-blue" x="96" y="254" width="232" height="92" rx="9"/>
+<text class="card-title" x="212" y="286" text-anchor="middle">KMS client</text>
+<text class="card-text" x="212" y="314" text-anchor="middle">region + endpoint</text>
+<text class="card-text" x="212" y="336" text-anchor="middle">AWS customizers apply</text>
+
+<rect class="card-teal" x="96" y="402" width="232" height="92" rx="9"/>
+<text class="card-title" x="212" y="434" text-anchor="middle">KMS properties</text>
+<text class="card-text" x="212" y="462" text-anchor="middle">key id + context</text>
+<text class="card-text" x="212" y="484" text-anchor="middle">algorithm + switches</text>
+
+<rect class="card-blue" x="422" y="254" width="232" height="92" rx="9"/>
+<text class="card-title" x="538" y="286" text-anchor="middle">KmsOperations</text>
+<text class="card-text" x="538" y="314" text-anchor="middle">encrypt / decrypt</text>
+<text class="card-text" x="538" y="336" text-anchor="middle">generateDataKey</text>
+
+<rect class="card-blue" x="422" y="402" width="232" height="92" rx="9"/>
+<text class="card-title" x="538" y="434" text-anchor="middle">Coroutine encryptor</text>
+<text class="card-text" x="538" y="462" text-anchor="middle">KmsAsyncClient.await()</text>
+<text class="card-text" x="538" y="484" text-anchor="middle">context merge</text>
+
+<rect class="card-green" x="748" y="254" width="232" height="92" rx="9"/>
+<text class="card-title" x="864" y="286" text-anchor="middle">Data key cache</text>
+<text class="card-text" x="864" y="314" text-anchor="middle">TTL + max size</text>
+<text class="card-text" x="864" y="336" text-anchor="middle">Noop when disabled</text>
+
+<rect class="card-green" x="748" y="402" width="232" height="92" rx="9"/>
+<text class="card-title" x="864" y="434" text-anchor="middle">KmsDataKey</text>
+<text class="card-text" x="864" y="462" text-anchor="middle">plaintext key</text>
+<text class="card-text" x="864" y="484" text-anchor="middle">encrypted data key</text>
+
+<rect class="card-orange" x="1074" y="254" width="232" height="92" rx="9"/>
+<text class="card-title" x="1190" y="286" text-anchor="middle">TextEncryptor</text>
+<text class="card-text" x="1190" y="314" text-anchor="middle">Base64 ciphertext</text>
+<text class="card-text" x="1190" y="336" text-anchor="middle">blocking adapter</text>
+
+<rect class="card-amber" x="1074" y="402" width="232" height="92" rx="9"/>
+<text class="card-title" x="1190" y="434" text-anchor="middle">Field codec</text>
+<text class="card-text" x="1190" y="462" text-anchor="middle">@KmsEncrypted String</text>
+<text class="card-text" x="1190" y="484" text-anchor="middle">b4k-kms:v1 prefix</text>
+
+<path class="arrow-blue" d="M328 300 H422"/>
+<path class="arrow-teal" d="M328 448 H422"/>
+<path class="arrow-blue" d="M654 300 H748"/>
+<path class="arrow-green" d="M654 448 H748"/>
+<path class="arrow-orange" d="M538 346 V370 H1190 V346"/>
+<path class="arrow-orange" d="M538 494 V526 H1190 V494"/>
+
+<rect class="note" x="86" y="610" width="590" height="58" rx="8"/>
+<text class="note-title" x="110" y="638">Context contract</text>
+<text class="note-text" x="350" y="638">Method context overrides defaults and must match decrypt.</text>
+<text class="note-text" x="110" y="658">Use stable identifiers such as service, tenant, or purpose; never store secrets in context.</text>
+
+<rect class="note" x="724" y="610" width="590" height="58" rx="8"/>
+<text class="note-title" x="748" y="638">Adapter boundary</text>
+<text class="note-text" x="982" y="638">KmsOperations remains the coroutine-first service API.</text>
+<text class="note-text" x="748" y="658">TextEncryptor blocks by contract; field codec is explicit and String-only.</text>
+
+<rect class="footer" x="54" y="696" width="1292" height="32" rx="8"/>
+<text class="footer-title" x="74" y="712" dominant-baseline="middle">Support</text>
+<text class="footer-detail" x="166" y="712" dominant-baseline="middle">KMS auto-configuration registers client, operations, data-key cache, TextEncryptor, and explicit field encryption helpers.</text>
+</svg>

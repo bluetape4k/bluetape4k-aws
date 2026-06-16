@@ -607,6 +607,12 @@ backoff, jitter, `SqsListenerInterceptor` hook으로 redelivery와 observability
 
 ### KMS — Spring Boot Coroutines Encryptor
 
+KMS 지원의 중심은 `KmsOperations`입니다. Auto-configuration은 SDK client,
+coroutine encryptor, 제한된 data-key cache, explicit field encryption codec,
+선택적 Spring Security `TextEncryptor` adapter를 등록합니다.
+
+![KMS Spring Boot support map](docs/images/readme-diagrams/bluetape4k-aws-kms-components-20.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.kms.KmsOperations
 import java.util.Base64
@@ -631,6 +637,8 @@ class SecretVault(
     }
 }
 ```
+
+![KMS operations flow](docs/images/readme-diagrams/bluetape4k-aws-kms-flow-21.png)
 
 encryption context는 인증되는 metadata입니다. 암호화할 때 사용한 context와 같은 값을
 복호화에도 전달해야 하며, `service`, `tenant`, `purpose`처럼 안정적인 식별자를 넣는

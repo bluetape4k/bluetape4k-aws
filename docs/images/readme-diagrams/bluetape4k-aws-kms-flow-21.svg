@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+<title id="title">KMS operations flow</title>
+<desc id="desc">KMS operations merge encryption context, call AWS KMS for encryption and decryption, and cache generated data keys when enabled.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}
+    .frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}
+    .subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .lane{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}
+    .lane-title{font-family:"Architects Daughter";font-size:25px;fill:#102033}
+    .lane-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:23px;fill:#102033}
+    .card-text{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}
+    .card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}
+    .card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}
+    .card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}
+    .card-amber{fill:#FFF8E6;stroke:#F59E0B;stroke-width:2.2}
+    .note{fill:#FFFFFF;stroke:#D8E2ED;stroke-width:1.4}
+    .note-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
+    .note-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .footer{fill:#0E2238;stroke:#0E2238}
+    .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+    .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}
+    .arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}
+    .arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}
+    .arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/>
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/>
+  </marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/>
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/>
+  </marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="760"/>
+<rect class="frame" x="24" y="24" width="1352" height="712" rx="14"/>
+
+<text class="title" x="54" y="74">KMS operations flow</text>
+<text class="subtitle" x="54" y="108">Encrypt and decrypt share the same context contract; data keys can be cached with bounded TTL and size.</text>
+
+<rect class="card-blue" x="906" y="62" width="118" height="24" rx="12" opacity="0.24"/>
+<text class="legend" x="965" y="78" text-anchor="middle">Encrypt</text>
+<rect class="card-teal" x="1042" y="62" width="118" height="24" rx="12" opacity="0.24"/>
+<text class="legend" x="1101" y="78" text-anchor="middle">Decrypt</text>
+<rect class="card-green" x="1178" y="62" width="136" height="24" rx="12" opacity="0.24"/>
+<text class="legend" x="1246" y="78" text-anchor="middle">Data keys</text>
+
+<rect class="lane" x="66" y="146" width="1268" height="134" rx="12"/>
+<text class="lane-title" x="92" y="184">Encrypt</text>
+<text class="lane-sub" x="92" y="204">key id comes from configuration or method argument</text>
+
+<rect class="card-blue" x="206" y="212" width="206" height="58" rx="8"/>
+<text class="card-title" x="309" y="235" text-anchor="middle">Plaintext bytes</text>
+<text class="card-text" x="309" y="257" text-anchor="middle">caller payload</text>
+
+<rect class="card-teal" x="492" y="212" width="206" height="58" rx="8"/>
+<text class="card-title" x="595" y="235" text-anchor="middle">Merge context</text>
+<text class="card-text" x="595" y="257" text-anchor="middle">defaults + method</text>
+
+<rect class="card-orange" x="778" y="212" width="206" height="58" rx="8"/>
+<text class="card-title" x="881" y="235" text-anchor="middle">KMS encrypt</text>
+<text class="card-text" x="881" y="257" text-anchor="middle">algorithm optional</text>
+
+<rect class="card-blue" x="1064" y="212" width="206" height="58" rx="8"/>
+<text class="card-title" x="1167" y="235" text-anchor="middle">Ciphertext</text>
+<text class="card-text" x="1167" y="257" text-anchor="middle">SDK bytes returned</text>
+
+<path class="arrow-blue" d="M412 241 H492"/>
+<path class="arrow-teal" d="M698 241 H778"/>
+<path class="arrow-orange" d="M984 241 H1064"/>
+
+<rect class="lane" x="66" y="310" width="1268" height="134" rx="12"/>
+<text class="lane-title" x="92" y="348">Decrypt</text>
+<text class="lane-sub" x="92" y="368">context must match the encrypt call</text>
+
+<rect class="card-blue" x="206" y="376" width="206" height="58" rx="8"/>
+<text class="card-title" x="309" y="399" text-anchor="middle">Ciphertext</text>
+<text class="card-text" x="309" y="421" text-anchor="middle">from encrypt or adapter</text>
+
+<rect class="card-teal" x="492" y="376" width="206" height="58" rx="8"/>
+<text class="card-title" x="595" y="399" text-anchor="middle">Merge context</text>
+<text class="card-text" x="595" y="421" text-anchor="middle">same context values</text>
+
+<rect class="card-orange" x="778" y="376" width="206" height="58" rx="8"/>
+<text class="card-title" x="881" y="399" text-anchor="middle">KMS decrypt</text>
+<text class="card-text" x="881" y="421" text-anchor="middle">optional key id</text>
+
+<rect class="card-teal" x="1064" y="376" width="206" height="58" rx="8"/>
+<text class="card-title" x="1167" y="399" text-anchor="middle">Plaintext bytes</text>
+<text class="card-text" x="1167" y="421" text-anchor="middle">caller decodes</text>
+
+<path class="arrow-blue" d="M412 405 H492"/>
+<path class="arrow-teal" d="M698 405 H778"/>
+<path class="arrow-orange" d="M984 405 H1064"/>
+
+<rect class="lane" x="66" y="474" width="1268" height="134" rx="12"/>
+<text class="lane-title" x="92" y="512">Generate data key</text>
+<text class="lane-sub" x="92" y="532">cache key includes key id, key shape, and sorted context</text>
+
+<rect class="card-green" x="206" y="540" width="206" height="58" rx="8"/>
+<text class="card-title" x="309" y="563" text-anchor="middle">Build cache key</text>
+<text class="card-text" x="309" y="585" text-anchor="middle">key + spec + context</text>
+
+<rect class="card-green" x="492" y="540" width="206" height="58" rx="8"/>
+<text class="card-title" x="595" y="563" text-anchor="middle">Cache lookup</text>
+<text class="card-text" x="595" y="585" text-anchor="middle">when useCache=true</text>
+
+<rect class="card-orange" x="778" y="540" width="206" height="58" rx="8"/>
+<text class="card-title" x="881" y="563" text-anchor="middle">KMS data key</text>
+<text class="card-text" x="881" y="585" text-anchor="middle">only on miss</text>
+
+<rect class="card-green" x="1064" y="540" width="206" height="58" rx="8"/>
+<text class="card-title" x="1167" y="563" text-anchor="middle">Return key pair</text>
+<text class="card-text" x="1167" y="585" text-anchor="middle">plain + encrypted</text>
+
+<path class="arrow-green" d="M412 569 H492"/>
+<path class="arrow-green" d="M698 569 H778"/>
+<path class="arrow-orange" d="M984 569 H1064"/>
+
+<rect class="note" x="98" y="636" width="580" height="44" rx="8"/>
+<text class="note-title" x="122" y="662" dominant-baseline="middle">Wrappers</text>
+<text class="note-text" x="246" y="662" dominant-baseline="middle">TextEncryptor Base64-wraps; field codec adds b4k-kms:v1.</text>
+
+<rect class="note" x="722" y="636" width="580" height="44" rx="8"/>
+<text class="note-title" x="746" y="662" dominant-baseline="middle">Cache safety</text>
+<text class="note-text" x="898" y="662" dominant-baseline="middle">Plaintext data keys use TTL/max-size, or Noop cache.</text>
+
+<rect class="footer" x="54" y="696" width="1292" height="32" rx="8"/>
+<text class="footer-title" x="74" y="712" dominant-baseline="middle">Outcome</text>
+<text class="footer-detail" x="166" y="712" dominant-baseline="middle">The caller controls key id and encryption context; adapters reuse KmsOperations instead of defining a separate KMS path.</text>
+</svg>
