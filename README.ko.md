@@ -666,6 +666,12 @@ class PropertyProtector(
 
 ### SNS — Spring Boot Coroutines 템플릿
 
+SNS 지원의 중심은 `SnsOperations`입니다. Standard/FIFO topic 생성, topic message
+publish, direct SMS publish, HTTP endpoint subscription confirmation을 제공합니다.
+HTTP endpoint는 애플리케이션이 신뢰 검증을 끝낸 뒤 confirmation을 호출해야 합니다.
+
+![SNS Spring Boot support map](docs/images/readme-diagrams/bluetape4k-aws-sns-components-22.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
@@ -711,13 +717,15 @@ class OrderTopic(
 }
 ```
 
-SNS 는 queue policy 가 topic ARN 의 `sqs:SendMessage` 를 허용하면 SQS subscription 으로
-fanout 할 수 있습니다. `aws-spring-boot-sqs-examples` 모듈은 emulator 기반 SQS/SNS
-fanout 흐름을 포함합니다. `SnsHttpMessageParser` 는 SNS HTTP JSON 과 선택적
-`x-amz-sns-message-type` header 를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
-`SigningCertURL` 은 거부합니다. 다만 signature 검증은 수행하지 않습니다. Notification
+![SNS publish and HTTP endpoint flow](docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)
+
+SNS는 queue policy가 topic ARN의 `sqs:SendMessage`를 허용하면 SQS subscription으로
+fanout할 수 있습니다. `aws-spring-boot-sqs-examples` 모듈에는 emulator 기반 SQS/SNS
+fanout 흐름이 들어 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과 선택적
+`x-amz-sns-message-type` header를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
+`SigningCertURL`은 거부합니다. 다만 signature 검증은 수행하지 않습니다. Notification
 처리나 subscription confirmation 전에 certificate chain, `Signature`,
-`SignatureVersion`, 기대한 `TopicArn` 을 검증하세요.
+`SignatureVersion`, 기대한 `TopicArn`을 검증하세요.
 
 ### S3 업로드 — Coroutines (`aws-java` 모듈)
 

@@ -672,7 +672,14 @@ class PropertyProtector(
 
 `TextEncryptor` is synchronous, so this adapter is best for short administrative flows or startup-time
 secret handling. Prefer `KmsOperations` in coroutine services.
+
 ### SNS — Spring Boot Coroutines Template
+
+SNS support centers on `SnsOperations`: create standard or FIFO topics, publish
+topic messages, publish direct SMS messages, and confirm HTTP endpoint
+subscriptions after the application verifies trust.
+
+![SNS Spring Boot support map](docs/images/readme-diagrams/bluetape4k-aws-sns-components-22.png)
 
 ```kotlin
 import io.bluetape4k.aws.spring.sns.SnsOperations
@@ -718,6 +725,8 @@ class OrderTopic(
     private fun processNotification(message: String) = Unit
 }
 ```
+
+![SNS publish and HTTP endpoint flow](docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)
 
 SNS can publish to an SQS subscription when the queue policy allows
 `sqs:SendMessage` from the topic ARN. The `aws-spring-boot-sqs-examples`
