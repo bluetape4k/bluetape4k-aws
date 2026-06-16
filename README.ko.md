@@ -540,6 +540,8 @@ Secrets Manager와 SSM Parameter Store source는 Spring Environment
 post-processing 단계에서 로드되므로 일반 `@ConfigurationProperties` 바인딩 전에
 사용할 수 있습니다. source가 하나 이상 설정된 경우에만 원격 조회를 수행합니다.
 
+![Secrets Manager and Parameter Store environment sources](docs/images/readme-diagrams/bluetape4k-aws-env-sources-components-16.png)
+
 ```kotlin
 import org.springframework.boot.context.properties.ConfigurationProperties
 
@@ -554,6 +556,10 @@ data class DatabaseSettings(
 secret을 로드하면 `app.db.username`, `app.db.password` 속성이 됩니다.
 Parameter Store의 `/config/app/db/password`는 `path: /config/app`,
 `prefix: app` 설정에서 `app.db.password` 속성이 됩니다.
+`refresh-interval`을 설정하면 property source는 읽기 시점에 갱신을 시도하고,
+refresh가 실패하면 마지막으로 성공한 값을 유지합니다.
+
+![Secrets Manager and Parameter Store property key mapping](docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)
 
 ### SQS — Spring Boot Coroutines Template과 Listener
 
