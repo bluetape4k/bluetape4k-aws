@@ -1,98 +1,110 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1860" height="1055" viewBox="0 0 1860 1055" role="img" aria-label="AWS Java coroutine sequence">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-label="AWS Java coroutine sequence">
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#d97706"/>
+    </marker>
+    <marker id="arrowReturn" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#64748b"/>
+    </marker>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .participant{fill:#ffffff;stroke-width:2.2;filter:url(#softShadow)}
+      .participantTitle{font-family:"Architects Daughter";font-size:22px;fill:#17233a}
+      .participantText{font-family:"Comic Mono";font-size:12px;fill:#475569}
+      .lifeline{stroke:#cbd5e1;stroke-width:2;stroke-dasharray:7 8}
+      .activation{fill:#ffffff;stroke:#94a3b8;stroke-width:1.6}
+      .message{fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+      .return{fill:none;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+      .msgText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .alt{fill:#f8fafc;fill-opacity:.70;stroke:#d97706;stroke-width:2;stroke-dasharray:9 8}
+      .altTitle{font-family:"Comic Mono";font-size:14px;font-weight:700;fill:#92400e}
+      .note{fill:#ffffff;stroke:#7c3aed;stroke-width:2}
+      .noteText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="32" y="28" width="1796" height="999" rx="30" class="frame"/>
-<text class="seqTitle" x="68" y="88">AWS Java coroutine sequence</text>
-<text class="seqSubtitle" x="72" y="124">Coroutine caller, extension, async client, and AWS service exchange one non-blocking request.</text>
-<rect class="card" x="180.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="seqParticipantTitle" x="305.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Coroutine caller</text>
-<text class="seqParticipantDetail" x="305.0" y="227.0" text-anchor="middle" dominant-baseline="middle">suspend scope</text>
-<line class="seq-line" x1="305.0" y1="248.0" x2="305.0" y2="900.0"/>
-<rect class="card" x="600.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#EAF7EF" stroke="#58A978"/>
-<text class="seqParticipantTitle" x="725.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Extension function</text>
-<text class="seqParticipantDetail" x="725.0" y="227.0" text-anchor="middle" dominant-baseline="middle">request builder</text>
-<line class="seq-line" x1="725.0" y1="248.0" x2="725.0" y2="900.0"/>
-<rect class="card" x="1020.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="seqParticipantTitle" x="1145.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Async SDK client</text>
-<text class="seqParticipantDetail" x="1145.0" y="227.0" text-anchor="middle" dominant-baseline="middle">CompletableFuture</text>
-<line class="seq-line" x1="1145.0" y1="248.0" x2="1145.0" y2="900.0"/>
-<rect class="card" x="1440.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#FFF7ED" stroke="#F97316"/>
-<text class="seqParticipantTitle" x="1565.0" y="199.0" text-anchor="middle" dominant-baseline="middle">AWS service</text>
-<text class="seqParticipantDetail" x="1565.0" y="227.0" text-anchor="middle" dominant-baseline="middle">emulator or AWS</text>
-<line class="seq-line" x1="1565.0" y1="248.0" x2="1565.0" y2="900.0"/>
-<rect class="activation" x="717.0" y="318.0" width="16" height="66.0" rx="5" fill="#EAF7EF" stroke="#58A978"/>
-<rect class="activation" x="1137.0" y="406.0" width="16" height="242.0" rx="5" fill="#E9F7F6" stroke="#45A7A1"/>
-<rect class="activation" x="1557.0" y="494.0" width="16" height="66.0" rx="5" fill="#FFF7ED" stroke="#F97316"/>
-<rect class="activation" x="297.0" y="670.0" width="16" height="66.0" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
-<rect class="altBox" x="820" y="480" width="780" height="226" rx="18"/>
-<rect class="labelPill" x="845" y="466" width="270" height="28" rx="7"/>
-<text class="detail" x="980" y="480" text-anchor="middle" dominant-baseline="middle">opt async operation completes</text>
-<path class="seq" d="M 317.0 320.0 L 713.0 320.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<rect class="labelPill" x="392.0" y="280.0" width="246" height="28" rx="7"/>
-<circle cx="411.0" cy="294.0" r="12" fill="#2F6DE0"/>
-<text class="numberBadge" x="411.0" y="295.0" text-anchor="middle" dominant-baseline="middle">1</text>
-<text class="label" x="525.0" y="294.0" text-anchor="middle" dominant-baseline="middle">call coroutine extension</text>
-<path class="seq" d="M 737.0 408.0 L 1133.0 408.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<rect class="labelPill" x="812.0" y="368.0" width="246" height="28" rx="7"/>
-<circle cx="831.0" cy="382.0" r="12" fill="#2F8B57"/>
-<text class="numberBadge" x="831.0" y="383.0" text-anchor="middle" dominant-baseline="middle">2</text>
-<text class="label" x="945.0" y="382.0" text-anchor="middle" dominant-baseline="middle">build AWS request</text>
-<path class="seq" d="M 1157.0 496.0 L 1553.0 496.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<rect class="labelPill" x="1232.0" y="456.0" width="246" height="28" rx="7"/>
-<circle cx="1251.0" cy="470.0" r="12" fill="#EA580C"/>
-<text class="numberBadge" x="1251.0" y="471.0" text-anchor="middle" dominant-baseline="middle">3</text>
-<text class="label" x="1365.0" y="470.0" text-anchor="middle" dominant-baseline="middle">await async SDK future</text>
-<path class="seqReturn" d="M 1553.0 584.0 L 1157.0 584.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<rect class="labelPill" x="1232.0" y="544.0" width="246" height="28" rx="7"/>
-<circle cx="1251.0" cy="558.0" r="12" fill="#168E86"/>
-<text class="numberBadge" x="1251.0" y="559.0" text-anchor="middle" dominant-baseline="middle">4</text>
-<text class="label" x="1365.0" y="558.0" text-anchor="middle" dominant-baseline="middle">complete future</text>
-<path class="seqReturn" d="M 1133.0 672.0 L 317.0 672.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
-<rect class="labelPill" x="602.0" y="632.0" width="246" height="28" rx="7"/>
-<circle cx="621.0" cy="646.0" r="12" fill="#7255C7"/>
-<text class="numberBadge" x="621.0" y="647.0" text-anchor="middle" dominant-baseline="middle">5</text>
-<text class="label" x="735.0" y="646.0" text-anchor="middle" dominant-baseline="middle">resume caller</text>
-<rect x="260" y="910" width="1340" height="42" rx="12" fill="#FFFFFF" stroke="#D6E3EF" stroke-width="1.6"/>
-<text class="detail" x="930.0" y="936" text-anchor="middle">Cancellation remains owned by the caller&#x27;s coroutine scope.</text>
+  <rect class="canvas" width="1600" height="1080"/>
+  <rect class="frame" x="42" y="36" width="1516" height="1004" rx="24"/>
+  <text class="title" x="800" y="96" text-anchor="middle">AWS Java Coroutine Sequence</text>
+  <text class="subtitle" x="800" y="132" text-anchor="middle">Representative SQS send path: suspend extension delegates to future-backed async code and resumes after await().</text>
+
+  <g id="participants">
+    <rect class="participant" x="110" y="186" width="220" height="72" rx="16" stroke="#2563eb"/>
+    <text class="participantTitle" x="220" y="214" text-anchor="middle">Caller</text>
+    <text class="participantText" x="220" y="238" text-anchor="middle">service coroutine</text>
+
+    <rect class="participant" x="388" y="186" width="220" height="72" rx="16" stroke="#059669"/>
+    <text class="participantTitle" x="498" y="214" text-anchor="middle">suspend API</text>
+    <text class="participantText" x="498" y="238" text-anchor="middle">SqsAsyncClient.send()</text>
+
+    <rect class="participant" x="666" y="186" width="220" height="72" rx="16" stroke="#d97706"/>
+    <text class="participantTitle" x="776" y="214" text-anchor="middle">async helper</text>
+    <text class="participantText" x="776" y="238" text-anchor="middle">sendAsync()</text>
+
+    <rect class="participant" x="944" y="186" width="220" height="72" rx="16" stroke="#7c3aed"/>
+    <text class="participantTitle" x="1054" y="214" text-anchor="middle">request DSL</text>
+    <text class="participantText" x="1054" y="238" text-anchor="middle">sendMessageRequestOf()</text>
+
+    <rect class="participant" x="1222" y="186" width="220" height="72" rx="16" stroke="#0ea5e9"/>
+    <text class="participantTitle" x="1332" y="214" text-anchor="middle">AWS SDK v2</text>
+    <text class="participantText" x="1332" y="238" text-anchor="middle">SqsAsyncClient</text>
+  </g>
+
+  <line class="lifeline" x1="220" y1="258" x2="220" y2="902"/>
+  <line class="lifeline" x1="498" y1="258" x2="498" y2="902"/>
+  <line class="lifeline" x1="776" y1="258" x2="776" y2="902"/>
+  <line class="lifeline" x1="1054" y1="258" x2="1054" y2="902"/>
+  <line class="lifeline" x1="1332" y1="258" x2="1332" y2="902"/>
+
+  <rect class="activation" x="490" y="316" width="16" height="458" rx="4"/>
+  <rect class="activation" x="768" y="384" width="16" height="302" rx="4"/>
+  <rect class="activation" x="1046" y="456" width="16" height="116" rx="4"/>
+  <rect class="activation" x="1324" y="646" width="16" height="72" rx="4"/>
+
+  <path class="message" d="M 220 324 L 490 324" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  <text class="msgText" x="246" y="306">send(queueUrl, body, delaySeconds)</text>
+
+  <path class="message" d="M 506 392 L 768 392" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <text class="msgText" x="526" y="374">delegate to sendAsync(...).await()</text>
+
+  <path class="message" d="M 784 464 L 1046 464" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <text class="msgText" x="804" y="446">build SendMessageRequest</text>
+
+  <rect class="alt" x="690" y="500" width="428" height="114" rx="14"/>
+  <text class="altTitle" x="712" y="526">preflight validation</text>
+  <text class="noteText" x="712" y="552">queueUrl.requireNotBlank()</text>
+  <text class="noteText" x="712" y="576">messageBody.requireNotBlank()</text>
+  <path class="return" d="M 1046 596 L 784 596" stroke="#64748b" marker-end="url(#arrowReturn)"/>
+  <text class="msgText" x="808" y="622">request object</text>
+
+  <path class="message" d="M 784 668 L 1324 668" stroke="#0ea5e9" marker-end="url(#arrowBlue)"/>
+  <text class="msgText" x="838" y="650">sendMessage(request)</text>
+
+  <path class="return" d="M 1324 724 L 784 724" stroke="#64748b" marker-end="url(#arrowReturn)"/>
+  <text class="msgText" x="1024" y="746">CompletableFuture&lt;SendMessageResponse&gt;</text>
+
+  <path class="return" d="M 768 786 L 506 786" stroke="#64748b" marker-end="url(#arrowReturn)"/>
+  <text class="msgText" x="548" y="808">future awaited without blocking caller thread</text>
+
+  <path class="return" d="M 490 848 L 220 848" stroke="#64748b" marker-end="url(#arrowReturn)"/>
+  <text class="msgText" x="252" y="870">resume with SendMessageResponse or exception</text>
+
+  <rect class="note" x="302" y="904" width="996" height="52" rx="16"/>
+  <text class="noteText" x="800" y="936" text-anchor="middle">Batch and receive paths keep the same shape; extra guards run before the AWS network call.</text>
+
+  <text class="footerText" x="800" y="986" text-anchor="middle">Reader contract: suspend APIs are thin adapters over async helpers; validation happens before SDK futures are created.</text>
 </svg>
