@@ -1,88 +1,144 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="640" viewBox="0 0 1440 640" role="img" aria-label="Ktor S3 example">
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-label="Ktor S3 example architecture">
 <defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
+    <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/>
+  </filter>
+  <marker id="arrow-blue" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#2F6DE0"/>
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#2F8B57"/>
+  </marker>
+  <marker id="arrow-teal" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#168E86"/>
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#EA580C"/>
+  </marker>
+  <marker id="arrow-slate" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#475569"/>
+  </marker>
 </defs>
 <style>
   svg{background:#F5F7FA}
   .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}
+  .layer-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .layer-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
   .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
+  .tiny{font-size:11px}
+  .chip{font-size:11px;fill:#243447}
+  .layer{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
   .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .soft-edge{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
   .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
 </style>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1388" height="588" rx="14" class="frame"/>
-<text class="title" x="54" y="72">Ktor S3 example</text>
-<text class="subtitle" x="56" y="104">Ktor routes exercise S3KtorClient object APIs, presigned URLs, config objects, and optional encryption.</text>
-<g><rect x="956" y="58" width="118" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/><text class="chip" x="1015.0" y="70" text-anchor="middle" dominant-baseline="middle">example app</text></g>
-<g><rect x="1090" y="58" width="118" height="24" rx="12" fill="#EAF7EF" stroke="#58A978"/><text class="chip" x="1149.0" y="70" text-anchor="middle" dominant-baseline="middle">library API</text></g>
-<g><rect x="1224" y="58" width="118" height="24" rx="12" fill="#FFF7ED" stroke="#F97316"/><text class="chip" x="1283.0" y="70" text-anchor="middle" dominant-baseline="middle">local target</text></g>
-<text class="chip" x="290" y="210" text-anchor="middle">trigger / route layer</text>
-<text class="chip" x="730" y="136" text-anchor="middle">bluetape4k API used by this example</text>
-<text class="chip" x="1150" y="210" text-anchor="middle">emulator or container target</text>
-<text class="chip" x="730" y="398" text-anchor="middle">verification proves the README scenario</text>
-<g id="routes">
-<path class="edge" d="M 430.0 298.0 L 505.0 298.0 L 505.0 218.0 L 580.0 218.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 880.0 218.0 L 935.0 218.0 L 935.0 298.0 L 1010.0 298.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<path class="edge" d="M 580.0 478.0 L 290.0 478.0 L 290.0 346.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<path class="edge" d="M 880.0 478.0 L 1150.0 478.0 L 1150.0 346.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+<rect x="26" y="26" width="1388" height="668" rx="14" class="frame"/>
+<text class="title" x="54" y="74">Ktor S3 example</text>
+<text class="subtitle" x="56" y="106">A runnable Ktor 3 sample for object routes, config objects, presigned URLs, content detection, and demo encryption.</text>
+
+<g>
+  <rect x="1008" y="57" width="112" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1064" y="70.5" text-anchor="middle" dominant-baseline="middle">routes</text>
+  <rect x="1134" y="57" width="128" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1198" y="70.5" text-anchor="middle" dominant-baseline="middle">S3 client</text>
+  <rect x="1276" y="57" width="94" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="chip" x="1323" y="70.5" text-anchor="middle" dominant-baseline="middle">target</text>
 </g>
-<g id="route">
-  <rect class="card" x="150.0" y="250.0" width="280.0" height="96.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="290.0" y="286.0" text-anchor="middle" dominant-baseline="middle">Ktor object routes</text>
-  <text class="detail" x="290.0" y="310.0" text-anchor="middle" dominant-baseline="middle">upload/download</text>
-  <text class="detail" x="290.0" y="328.0" text-anchor="middle" dominant-baseline="middle">presigned URL</text>
+
+<g id="layers">
+  <rect class="layer" x="70" y="142" width="300" height="392" rx="12"/>
+  <text class="layer-title" x="92" y="178">Ktor routes</text>
+  <text class="layer-detail" x="94" y="200">object, config, presign endpoints</text>
+
+  <rect class="layer" x="405" y="142" width="355" height="392" rx="12"/>
+  <text class="layer-title" x="427" y="178">Example helpers</text>
+  <text class="layer-detail" x="429" y="200">copyable client scenarios</text>
+
+  <rect class="layer" x="795" y="142" width="300" height="392" rx="12"/>
+  <text class="layer-title" x="817" y="178">aws-ktor S3 API</text>
+  <text class="layer-detail" x="819" y="200">S3KtorClient plus wrappers</text>
+
+  <rect class="layer" x="1130" y="142" width="240" height="392" rx="12"/>
+  <text class="layer-title" x="1152" y="178">S3 target</text>
+  <text class="layer-detail" x="1154" y="200">MockEngine or LocalStack</text>
 </g>
-<g id="module">
-  <rect class="card" x="580.0" y="170.0" width="300.0" height="96.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="730.0" y="206.0" text-anchor="middle" dominant-baseline="middle">S3KtorClient</text>
-  <text class="detail" x="730.0" y="230.0" text-anchor="middle" dominant-baseline="middle">object API</text>
-  <text class="detail" x="730.0" y="248.0" text-anchor="middle" dominant-baseline="middle">encryption option</text>
+
+<g id="cards">
+  <rect class="card" x="100" y="238" width="240" height="102" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="220" y="274" text-anchor="middle">Object routes</text>
+  <text class="detail" x="220" y="302" text-anchor="middle">PUT, GET, stream</text>
+  <text class="detail" x="220" y="322" text-anchor="middle">list and delete</text>
+
+  <rect class="card" x="100" y="380" width="240" height="102" rx="9" fill="#F0F6FF" stroke="#7AA3F5"/>
+  <text class="card-title" x="220" y="416" text-anchor="middle">Route tests</text>
+  <text class="detail" x="220" y="444" text-anchor="middle">Ktor client calls</text>
+  <text class="detail" x="220" y="464" text-anchor="middle">MockEngine S3</text>
+
+  <rect class="card" x="435" y="222" width="295" height="116" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="582.5" y="258" text-anchor="middle">S3KtorExamples</text>
+  <text class="detail" x="582.5" y="286" text-anchor="middle">LocalStack client</text>
+  <text class="detail" x="582.5" y="306" text-anchor="middle">upload and config</text>
+
+  <rect class="card" x="435" y="382" width="295" height="116" rx="9" fill="#EEF9F1" stroke="#75B989"/>
+  <text class="card-title" x="582.5" y="418" text-anchor="middle">Advanced flows</text>
+  <text class="detail" x="582.5" y="446" text-anchor="middle">detect content type</text>
+  <text class="detail" x="582.5" y="466" text-anchor="middle">demo encryption</text>
+
+  <rect class="card" x="825" y="222" width="240" height="116" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="945" y="258" text-anchor="middle">S3KtorClient</text>
+  <text class="detail" x="945" y="286" text-anchor="middle">object bytes</text>
+  <text class="detail" x="945" y="306" text-anchor="middle">stream, list, delete</text>
+
+  <rect class="card" x="825" y="382" width="240" height="116" rx="9" fill="#F3FBFA" stroke="#63B8B3"/>
+  <text class="card-title" x="945" y="418" text-anchor="middle">S3 helpers</text>
+  <text class="detail" x="945" y="446" text-anchor="middle">presign requests</text>
+  <text class="detail" x="945" y="466" text-anchor="middle">config and crypto</text>
+
+  <rect class="card" x="1160" y="260" width="180" height="128" rx="9" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="1250" y="296" text-anchor="middle">object store</text>
+  <text class="detail" x="1250" y="324" text-anchor="middle">demo-bucket</text>
+  <text class="detail" x="1250" y="344" text-anchor="middle">docs/ keys</text>
+  <text class="detail" x="1250" y="364" text-anchor="middle">config objects</text>
 </g>
-<g id="service">
-  <rect class="card" x="1010.0" y="250.0" width="280.0" height="96.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="1150.0" y="286.0" text-anchor="middle" dominant-baseline="middle">S3 object store</text>
-  <text class="detail" x="1150.0" y="310.0" text-anchor="middle" dominant-baseline="middle">LocalStack/Floci</text>
-  <text class="detail" x="1150.0" y="328.0" text-anchor="middle" dominant-baseline="middle">bucket verification</text>
+
+<g id="connections">
+  <path class="edge" d="M 340 289 L 435 289" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="edge" d="M 730 280 L 825 280" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+  <path class="edge" d="M 1065 280 L 1160 314" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+
+  <path class="soft-edge" d="M 582.5 338 L 582.5 382" stroke="#475569" marker-end="url(#arrow-slate)"/>
+  <path class="soft-edge" d="M 945 338 L 945 382" stroke="#475569" marker-end="url(#arrow-slate)"/>
+  <path class="soft-edge" d="M 340 431 L 435 440" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="soft-edge" d="M 730 440 L 825 440" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+  <path class="soft-edge" d="M 1065 440 L 1250 388" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
 </g>
-<g id="tests">
-  <rect class="card" x="580.0" y="430.0" width="300.0" height="96.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="730.0" y="466.0" text-anchor="middle" dominant-baseline="middle">Object route tests</text>
-  <text class="detail" x="730.0" y="490.0" text-anchor="middle" dominant-baseline="middle">compile + integration</text>
-  <text class="detail" x="730.0" y="508.0" text-anchor="middle" dominant-baseline="middle">README scenario</text>
+
+<g id="route-table">
+  <rect x="86" y="564" width="600" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text class="card-title" x="110" y="596">Route surface</text>
+  <text class="detail" x="294" y="594">objects</text>
+  <text class="detail" x="402" y="594">config</text>
+  <text class="detail" x="508" y="594">presign</text>
+  <text class="detail" x="616" y="594">detect</text>
+  <text class="tiny" x="110" y="620">Tailcard keys preserve slash-separated S3 object paths.</text>
+
+  <rect x="724" y="564" width="630" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text class="card-title" x="748" y="596">Verification</text>
+  <text class="detail" x="902" y="594">presign clock</text>
+  <text class="detail" x="1058" y="594">MockEngine XML</text>
+  <text class="detail" x="1218" y="594">route behavior</text>
+  <text class="tiny" x="748" y="620">Tests keep S3 request behavior explicit while using Ktor response assertions.</text>
 </g>
-<rect class="footer" x="54" y="558" width="1332" height="42" rx="8"/>
-<text class="footer-title" x="74" y="583" dominant-baseline="middle">Reader cue</text>
-<text class="footer-detail" x="194" y="583" dominant-baseline="middle">Examples are not published; they document runnable integration patterns.</text>
+
+<rect class="footer" x="54" y="652" width="1332" height="34" rx="8"/>
+<text class="footer-title" x="74" y="672" dominant-baseline="middle">Reader cue</text>
+<text class="footer-detail" x="190" y="672" dominant-baseline="middle">Use the route module for server integration and S3KtorExamples for copyable client-side scenarios.</text>
 </svg>
