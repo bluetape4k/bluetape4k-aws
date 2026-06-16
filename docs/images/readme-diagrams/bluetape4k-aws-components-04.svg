@@ -1,77 +1,148 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760" role="img" aria-label="AWS component map">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1040" viewBox="0 0 1500 1040" role="img" aria-label="Bluetape4k AWS component map">
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#d97706"/>
+    </marker>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono","Comic Sans MS",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .lane{stroke-width:2.4;filter:url(#softShadow)}
+      .laneTitle{font-family:"Architects Daughter";font-size:29px;fill:#17233a}
+      .laneNote{font-family:"Comic Mono";font-size:13px;fill:#64748b}
+      .card{fill:#ffffff;stroke-width:2}
+      .cardTitle{font-family:"Architects Daughter";font-size:22px;fill:#17233a}
+      .cardText{font-family:"Comic Mono";font-size:12.5px;fill:#475569}
+      .mini{fill:#ffffff;stroke-width:2}
+      .miniTitle{font-family:"Architects Daughter";font-size:19px;fill:#17233a}
+      .miniText{font-family:"Comic Mono";font-size:11.5px;fill:#475569}
+      .route{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+      .routeLabel{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footer{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<rect x="26" y="26" width="1448" height="708" rx="14" class="frame"/>
-<text class="title" x="54" y="72">AWS component map</text>
-<text class="subtitle" x="56" y="104">README capability groups: framework entrypoints, service access, data/config, and operational integrations.</text>
-<rect x="54.0" y="150.0" width="681.0" height="230.0" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="chip" x="76.0" y="178.0">Framework entrypoints</text>
-<text class="tiny" x="76.0" y="202.0" fill="#2F6DE0">README module responsibilities grouped by reader task</text>
-<rect x="76.0" y="228.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#58A978"/>
-<text class="bar-label" x="92.0" y="252.0">Spring Boot 4</text>
-<text class="tiny" x="92.0" y="272.0" fill="#2F8B57">auto-config / templates/listeners</text>
-<rect x="76.0" y="302.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#8A72D6"/>
-<text class="bar-label" x="92.0" y="326.0">Ktor 3 plugins</text>
-<text class="tiny" x="92.0" y="346.0" fill="#7255C7">SigV4 / S3/SQS/DynamoDB</text>
-<rect x="765.0" y="150.0" width="681.0" height="230.0" rx="12" fill="#EAF7EF" stroke="#58A978"/>
-<text class="chip" x="787.0" y="178.0">Service access</text>
-<text class="tiny" x="787.0" y="202.0" fill="#2F8B57">README module responsibilities grouped by reader task</text>
-<rect x="787.0" y="228.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#45A7A1"/>
-<text class="bar-label" x="803.0" y="252.0">Java SDK wrappers</text>
-<text class="tiny" x="803.0" y="272.0" fill="#168E86">sync/async / coroutine await</text>
-<rect x="787.0" y="302.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#D6A441"/>
-<text class="bar-label" x="803.0" y="326.0">Kotlin SDK helpers</text>
-<text class="tiny" x="803.0" y="346.0" fill="#B98518">native suspend / DSL builders</text>
-<rect x="54.0" y="410.0" width="681.0" height="230.0" rx="12" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="chip" x="76.0" y="438.0">Data and config</text>
-<text class="tiny" x="76.0" y="462.0" fill="#168E86">README module responsibilities grouped by reader task</text>
-<rect x="76.0" y="488.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#DC6B82"/>
-<text class="bar-label" x="92.0" y="512.0">Exposed + RDS IAM</text>
-<text class="tiny" x="92.0" y="532.0" fill="#C74E68">Hikari Database / registry handles</text>
-<rect x="76.0" y="562.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#64748B"/>
-<text class="bar-label" x="92.0" y="586.0">Secrets / Parameter</text>
-<text class="tiny" x="92.0" y="606.0" fill="#475569">source descriptors / externalized config</text>
-<rect x="765.0" y="410.0" width="681.0" height="230.0" rx="12" fill="#FFF3D9" stroke="#D6A441"/>
-<text class="chip" x="787.0" y="438.0">Security and operations</text>
-<text class="tiny" x="787.0" y="462.0" fill="#B98518">README module responsibilities grouped by reader task</text>
-<rect x="787.0" y="488.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#5B8DEF"/>
-<text class="bar-label" x="803.0" y="512.0">KMS helpers</text>
-<text class="tiny" x="803.0" y="532.0" fill="#2F6DE0">small secrets / field codecs</text>
-<rect x="787.0" y="562.0" width="635.0" height="58" rx="8" fill="#FFFFFF" stroke="#F97316"/>
-<text class="bar-label" x="803.0" y="586.0">CloudWatch + Micrometer</text>
-<text class="tiny" x="803.0" y="606.0" fill="#EA580C">logs/metrics / S3/SQS timers</text>
-<rect class="footer" x="54" y="666" width="1392" height="54" rx="8"/>
-<text class="footer-title" x="74" y="689" dominant-baseline="middle">Reader cue</text>
-<text class="footer-detail" x="74" y="709" dominant-baseline="middle">Use this as a capability map; detailed service-by-module coverage lives in the matrix below.</text>
+  <rect class="canvas" width="1500" height="1040"/>
+  <rect class="frame" x="48" y="38" width="1404" height="964" rx="24"/>
+
+  <text class="title" x="750" y="98" text-anchor="middle">Bluetape4k AWS Component Map</text>
+  <text class="subtitle" x="750" y="134" text-anchor="middle">The repository separates reusable AWS libraries from framework adapters and emulator-backed examples.</text>
+
+  <g id="sdk-lane">
+    <rect class="lane" x="92" y="178" width="420" height="602" rx="22" fill="#eff6ff" stroke="#93b4e6"/>
+    <text class="laneTitle" x="126" y="220">SDK foundation</text>
+    <text class="laneNote" x="126" y="248">Direct SDK wrappers for library and service code.</text>
+
+    <rect class="card" x="126" y="286" width="352" height="84" rx="16" stroke="#2563eb"/>
+    <text class="cardTitle" x="302" y="316" text-anchor="middle">bluetape4k-aws-java</text>
+    <text class="cardText" x="302" y="342" text-anchor="middle">AWS Java SDK v2 sync, async, await</text>
+
+    <rect class="card" x="126" y="398" width="352" height="84" rx="16" stroke="#059669"/>
+    <text class="cardTitle" x="302" y="428" text-anchor="middle">bluetape4k-aws-kotlin</text>
+    <text class="cardText" x="302" y="454" text-anchor="middle">native suspend clients and DSL builders</text>
+
+    <rect class="mini" x="126" y="540" width="164" height="84" rx="14" stroke="#0ea5e9"/>
+    <text class="miniTitle" x="208" y="569" text-anchor="middle">service SDKs</text>
+    <text class="miniText" x="208" y="594" text-anchor="middle">compileOnly in libraries</text>
+
+    <rect class="mini" x="314" y="540" width="164" height="84" rx="14" stroke="#0ea5e9"/>
+    <text class="miniTitle" x="396" y="569" text-anchor="middle">runtime deps</text>
+    <text class="miniText" x="396" y="594" text-anchor="middle">added by applications</text>
+  </g>
+
+  <g id="adapter-lane">
+    <rect class="lane" x="540" y="178" width="420" height="602" rx="22" fill="#ecfdf5" stroke="#8ed1bb"/>
+    <text class="laneTitle" x="574" y="220">Adapters and operations</text>
+    <text class="laneNote" x="574" y="248">Framework, data, security, and operations wiring.</text>
+
+    <rect class="card" x="574" y="286" width="352" height="84" rx="16" stroke="#d97706"/>
+    <text class="cardTitle" x="750" y="316" text-anchor="middle">bluetape4k-aws-exposed</text>
+    <text class="cardText" x="750" y="342" text-anchor="middle">RDS IAM, Hikari, registry, config sources</text>
+
+    <rect class="card" x="574" y="398" width="352" height="84" rx="16" stroke="#dc2626"/>
+    <text class="cardTitle" x="750" y="428" text-anchor="middle">bluetape4k-aws-spring-boot</text>
+    <text class="cardText" x="750" y="454" text-anchor="middle">auto-config, templates, listeners, AOT</text>
+
+    <rect class="card" x="574" y="510" width="352" height="84" rx="16" stroke="#7c3aed"/>
+    <text class="cardTitle" x="750" y="540" text-anchor="middle">bluetape4k-aws-ktor</text>
+    <text class="cardText" x="750" y="566" text-anchor="middle">SigV4, S3 REST, SQS, DynamoDB plugins</text>
+
+    <rect class="mini" x="574" y="640" width="164" height="84" rx="14" stroke="#0891b2"/>
+    <text class="miniTitle" x="656" y="669" text-anchor="middle">observability</text>
+    <text class="miniText" x="656" y="694" text-anchor="middle">CloudWatch, Micrometer</text>
+
+    <rect class="mini" x="762" y="640" width="164" height="84" rx="14" stroke="#0891b2"/>
+    <text class="miniTitle" x="844" y="669" text-anchor="middle">security</text>
+    <text class="miniText" x="844" y="694" text-anchor="middle">KMS, STS, Access Grants</text>
+  </g>
+
+  <g id="example-lane">
+    <rect class="lane" x="988" y="178" width="420" height="602" rx="22" fill="#f5f3ff" stroke="#b59ce8"/>
+    <text class="laneTitle" x="1022" y="220">Runnable examples</text>
+    <text class="laneNote" x="1022" y="248">Not published; validates real application wiring.</text>
+
+    <rect class="mini" x="1022" y="286" width="164" height="82" rx="14" stroke="#7c3aed"/>
+    <text class="miniTitle" x="1104" y="315" text-anchor="middle">Ktor S3</text>
+    <text class="miniText" x="1104" y="340" text-anchor="middle">routes and presign</text>
+
+    <rect class="mini" x="1210" y="286" width="164" height="82" rx="14" stroke="#7c3aed"/>
+    <text class="miniTitle" x="1292" y="315" text-anchor="middle">Ktor SQS</text>
+    <text class="miniText" x="1292" y="340" text-anchor="middle">consumer runtime</text>
+
+    <rect class="mini" x="1022" y="394" width="164" height="82" rx="14" stroke="#7c3aed"/>
+    <text class="miniTitle" x="1104" y="423" text-anchor="middle">Ktor DynamoDB</text>
+    <text class="miniText" x="1104" y="448" text-anchor="middle">server repository</text>
+
+    <rect class="mini" x="1210" y="394" width="164" height="82" rx="14" stroke="#7c3aed"/>
+    <text class="miniTitle" x="1292" y="423" text-anchor="middle">Ktor Exposed</text>
+    <text class="miniText" x="1292" y="448" text-anchor="middle">route transactions</text>
+
+    <rect class="mini" x="1022" y="520" width="164" height="82" rx="14" stroke="#dc2626"/>
+    <text class="miniTitle" x="1104" y="549" text-anchor="middle">Spring S3</text>
+    <text class="miniText" x="1104" y="574" text-anchor="middle">WebFlux and AOT</text>
+
+    <rect class="mini" x="1210" y="520" width="164" height="82" rx="14" stroke="#dc2626"/>
+    <text class="miniTitle" x="1292" y="549" text-anchor="middle">Spring SQS</text>
+    <text class="miniText" x="1292" y="574" text-anchor="middle">SNS fanout, listeners</text>
+
+    <rect class="mini" x="1022" y="628" width="164" height="82" rx="14" stroke="#dc2626"/>
+    <text class="miniTitle" x="1104" y="657" text-anchor="middle">Spring DynamoDB</text>
+    <text class="miniText" x="1104" y="682" text-anchor="middle">coroutine services</text>
+
+    <rect class="mini" x="1210" y="628" width="164" height="82" rx="14" stroke="#dc2626"/>
+    <text class="miniTitle" x="1292" y="657" text-anchor="middle">Spring Exposed</text>
+    <text class="miniText" x="1292" y="682" text-anchor="middle">MVC plus database</text>
+  </g>
+
+  <path class="route" d="M 512 330 L 540 330" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  <path class="route" d="M 512 442 L 540 442" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <path class="route" d="M 960 440 L 988 440" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <path class="route" d="M 960 552 L 988 552" stroke="#7c3aed" marker-end="url(#arrowAmber)"/>
+  <text class="routeLabel" x="526" y="304" text-anchor="middle">wrap</text>
+  <text class="routeLabel" x="974" y="414" text-anchor="middle">prove</text>
+
+  <g id="targets">
+    <rect class="lane" x="118" y="828" width="1264" height="104" rx="22" fill="#fff7ed" stroke="#e8c47b"/>
+    <text class="laneTitle" x="154" y="870">External AWS and local emulator targets</text>
+    <text class="laneNote" x="154" y="900">S3, S3 Vectors, SQS/SNS, DynamoDB, KMS, CloudWatch/Logs, Kinesis, STS, RDS IAM, Secrets Manager, Parameter Store, IMDS, Floci, and LocalStack fallback.</text>
+  </g>
+
+  <path class="route" d="M 302 624 C 302 792 750 782 750 828" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  <path class="route" d="M 750 724 L 750 828" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <path class="route" d="M 1198 710 C 1198 802 750 782 750 828" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+
+  <rect class="footer" x="118" y="956" width="1264" height="32" rx="14"/>
+  <text class="footerText" x="750" y="977" text-anchor="middle">Read left to right: reusable SDK wrappers, optional adapters, runnable examples, then verified AWS or emulator targets.</text>
 </svg>

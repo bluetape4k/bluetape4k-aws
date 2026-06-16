@@ -48,13 +48,9 @@
     <text class="rowTitle" x="450" y="379">aws-spring-boot</text>
     <text class="rowText" x="450" y="399">auto-config, templates, listeners</text>
 
-    <rect class="row" x="124" y="430" width="274" height="46" rx="14" stroke="#7c3aed"/>
+    <rect class="row" x="124" y="430" width="580" height="46" rx="14" stroke="#7c3aed"/>
     <text class="rowTitle" x="144" y="452">aws-ktor</text>
     <text class="rowText" x="144" y="470">Ktor plugins and runtimes</text>
-
-    <rect class="row" x="430" y="430" width="274" height="46" rx="14" stroke="#64748b"/>
-    <text class="rowTitle" x="450" y="452">aws-bom</text>
-    <text class="rowText" x="450" y="470">version alignment</text>
   </g>
 
   <g id="examples">
@@ -109,5 +105,5 @@
   </g>
 
   <rect class="footer" x="118" y="806" width="1264" height="44" rx="16"/>
-  <text class="footerText" x="750" y="833" text-anchor="middle">Published modules define reusable AWS boundaries; example modules verify S3, SQS/SNS, DynamoDB, Exposed, AOT, and Floci-first flows.</text>
+  <text class="footerText" x="750" y="833" text-anchor="middle">Published runtime modules define reusable AWS boundaries; the BOM remains dependency alignment, not component topology.</text>
 </svg>
