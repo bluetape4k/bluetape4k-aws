@@ -3,11 +3,11 @@
 [English](./README.md) | 한국어
 
 `aws-ktor`와 `bluetape4k-aws-exposed`를 사용하는 Ktor 3 예제입니다.
-`AwsExposedPlugin`을 설치하고, application start 시점에 Exposed schema를 만든 뒤
-PostgreSQL 기반 주문 route를 제공합니다. 로컬 테스트는 Testcontainers를 사용하며
-AWS credential이 필요하지 않습니다. Route parameter 검증에는
-`bluetape4k-ktor-core`, 공통 Ktor response assertion에는
-`bluetape4k-ktor-testing`을 사용합니다.
+`AwsExposedPlugin`을 설치하고 application start 시점에 Exposed schema를 만든 뒤,
+PostgreSQL 기반 주문 route를 제공합니다. 예제는 의도적으로 작게 유지했습니다.
+Route는 HTTP 의미를, repository는 Exposed query를, plugin은 database lifecycle과
+transaction dispatch를 맡습니다. 로컬 테스트는 Testcontainers를 사용하며 AWS
+credential이 필요하지 않습니다.
 
 ## 아키텍처
 
@@ -24,9 +24,10 @@ AWS credential이 필요하지 않습니다. Route parameter 검증에는
 ## 트랜잭션 경계
 
 Route는 repository를 `call.awsExposedTransaction { ... }` 안에서만 호출합니다.
-Repository는 Exposed query만 담고 Ktor plugin, database handle, connection lifecycle은
-소유하지 않습니다. `AwsExposedPlugin`은 route transaction을 기본값
-`Dispatchers.IO`인 `transactionContext`로 실행해 blocking JDBC 작업을 분리합니다.
+`OrderRepository`는 Exposed query만 담고 Ktor plugin, database handle,
+connection lifecycle은 소유하지 않습니다. `AwsExposedPlugin`은 route transaction을
+기본값 `Dispatchers.IO`인 `transactionContext`로 실행해 blocking JDBC 작업을
+분리합니다. 시작 hook도 같은 경계를 사용해 `OrdersTable`을 생성합니다.
 
 ## 설정
 
@@ -54,5 +55,6 @@ install(AwsExposedPlugin) {
 ./gradlew :aws-ktor-exposed-examples:test
 ```
 
-테스트는 공유 `PostgreSQLServer.Launcher.postgres` 컨테이너를 시작하고 route 수준의
-생성/조회/목록/404 동작을 검증합니다.
+테스트는 공유 `PostgreSQLServer.Launcher.postgres` 컨테이너를 시작하고, 해당 JDBC
+설정을 `ExampleDatabaseConfig`에 전달한 뒤 route 수준의 생성/조회/목록/404 동작을
+검증합니다.
