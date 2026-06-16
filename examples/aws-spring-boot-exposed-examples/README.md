@@ -4,7 +4,9 @@ English | [한국어](./README.ko.md)
 
 Spring Boot 4 MVC examples for the `aws-spring-boot` and `bluetape4k-aws-exposed`
 auto-configuration path. The module uses PostgreSQL through Testcontainers and
-does not require AWS credentials for local tests.
+does not require AWS credentials for local tests. It keeps the boundaries
+deliberately small: the controller owns HTTP status behavior, the service owns
+`transaction(database) { ... }`, and the repository owns Exposed queries.
 
 ## Architecture
 
@@ -22,8 +24,8 @@ does not require AWS credentials for local tests.
 
 `OrderController` delegates to `OrderService`; `OrderService` owns
 `transaction(database) { ... }`; `OrderRepository` assumes an active Exposed
-transaction. This keeps HTTP, transaction, and repository responsibilities
-separate.
+transaction. `OrderSchemaInitializer` creates `OrdersTable` after the
+auto-configured `Database` bean is available.
 
 ## Configuration
 
@@ -58,4 +60,5 @@ Store, environment variables, or another Spring configuration source.
 
 The test starts the shared `PostgreSQLServer.Launcher.postgres` container and
 verifies auto-configured `AwsExposedDatabaseRegistry`, `DataSource`, Exposed
-`Database`, and HTTP create/read/list/not-found behavior.
+`Database`, and HTTP create/read/list/not-found behavior through a random-port
+`SpringBootTest`.
