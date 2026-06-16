@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-label="CloudWatch metrics logs and meter publishing flow">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}.detail{font-size:13px}.tiny{font-size:11px}.chip{font-size:11px;fill:#243447}
+  .lane-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .lane-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .lane{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="708" rx="14" class="frame"/>
+<text class="title" x="54" y="74">CloudWatch publish flow</text>
+<text class="subtitle" x="56" y="106">The example publishes one custom metric, one log-event batch, and one explicit Micrometer snapshot.</text>
+
+<g>
+  <rect x="994" y="57" width="112" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1050" y="70.5" text-anchor="middle" dominant-baseline="middle">Metric</text>
+  <rect x="1120" y="57" width="112" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1176" y="70.5" text-anchor="middle" dominant-baseline="middle">Log</text>
+  <rect x="1246" y="57" width="124" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="chip" x="1308" y="70.5" text-anchor="middle" dominant-baseline="middle">Meter</text>
+</g>
+
+<g id="lanes">
+  <rect class="lane" x="70" y="150" width="1300" height="150" rx="12"/>
+  <text class="lane-title" x="96" y="188">Custom metric</text>
+  <text class="lane-detail" x="98" y="210">putMetricDatum uses the configured namespace unless a namespace is passed explicitly</text>
+  <rect class="lane" x="70" y="332" width="1300" height="150" rx="12"/>
+  <text class="lane-title" x="96" y="370">Log event batch</text>
+  <text class="lane-detail" x="98" y="392">putLogEvents uses the configured group and stream for default publishing</text>
+  <rect class="lane" x="70" y="514" width="1300" height="150" rx="12"/>
+  <text class="lane-title" x="96" y="552">Meter snapshot</text>
+  <text class="lane-detail" x="98" y="574">publishMeter reads the existing registry and sends finite measurements as metric data</text>
+</g>
+
+<g id="cards">
+  <rect class="card" x="152" y="222" width="210" height="58" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="257" y="246" text-anchor="middle">metricDatumOf</text>
+  <text class="detail" x="257" y="266" text-anchor="middle">OrderProcessed</text>
+  <rect class="card" x="472" y="222" width="210" height="58" rx="9" fill="#F3FBFA" stroke="#63B8B3"/>
+  <text class="card-title" x="577" y="246" text-anchor="middle">Metric ops</text>
+  <text class="detail" x="577" y="266" text-anchor="middle">batch size limit</text>
+  <rect class="card" x="792" y="222" width="210" height="58" rx="9" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="897" y="246" text-anchor="middle">CloudWatch</text>
+  <text class="detail" x="897" y="266" text-anchor="middle">custom metric</text>
+  <rect class="card" x="1112" y="222" width="180" height="58" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="1202" y="246" text-anchor="middle">Response</text>
+  <text class="detail" x="1202" y="266" text-anchor="middle">SDK result</text>
+
+  <rect class="card" x="152" y="404" width="210" height="58" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="257" y="428" text-anchor="middle">inputLogEventOf</text>
+  <text class="detail" x="257" y="448" text-anchor="middle">timestamp + message</text>
+  <rect class="card" x="472" y="404" width="210" height="58" rx="9" fill="#F3FBFA" stroke="#63B8B3"/>
+  <text class="card-title" x="577" y="428" text-anchor="middle">Logs ops</text>
+  <text class="detail" x="577" y="448" text-anchor="middle">batch size limit</text>
+  <rect class="card" x="792" y="404" width="210" height="58" rx="9" fill="#FFF4E6" stroke="#F59E0B"/>
+  <text class="card-title" x="897" y="428" text-anchor="middle">Logs stream</text>
+  <text class="detail" x="897" y="448" text-anchor="middle">event batch</text>
+  <rect class="card" x="1112" y="404" width="180" height="58" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="1202" y="428" text-anchor="middle">Response</text>
+  <text class="detail" x="1202" y="448" text-anchor="middle">SDK result</text>
+
+  <rect class="card" x="284" y="586" width="220" height="58" rx="9" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="394" y="610" text-anchor="middle">MeterRegistry</text>
+  <text class="detail" x="394" y="630" text-anchor="middle">measurements</text>
+  <rect class="card" x="610" y="586" width="220" height="58" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="720" y="610" text-anchor="middle">Metric data</text>
+  <text class="detail" x="720" y="630" text-anchor="middle">finite values</text>
+  <rect class="card" x="936" y="586" width="220" height="58" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="1046" y="610" text-anchor="middle">Metric ops</text>
+  <text class="detail" x="1046" y="630" text-anchor="middle">CloudWatch path</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 362 251 L 472 251" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="edge" d="M 682 251 L 792 251" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+  <path class="edge" d="M 1002 251 L 1112 251" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+  <path class="edge" d="M 362 433 L 472 433" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+  <path class="edge" d="M 682 433 L 792 433" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+  <path class="edge" d="M 1002 433 L 1112 433" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+  <path class="edge" d="M 504 615 L 610 615" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+  <path class="edge" d="M 830 615 L 936 615" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+</g>
+
+<rect class="footer" x="54" y="704" width="1332" height="30" rx="8"/>
+<text class="footer-title" x="74" y="721" dominant-baseline="middle">Outcome</text>
+<text class="footer-detail" x="176" y="721" dominant-baseline="middle">Publishing is explicit: no scheduled meter drain or implicit log-stream creation is hidden in the helper.</text>
+</svg>

@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-label="CloudWatch Spring Boot metrics and logs components">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
+    <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/>
+  </filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569"/></marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}
+  .layer-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .layer-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .detail{font-size:13px}.tiny{font-size:11px}.chip{font-size:11px;fill:#243447}
+  .layer{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .soft-edge{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="708" rx="14" class="frame"/>
+<text class="title" x="54" y="74">CloudWatch metrics and logs</text>
+<text class="subtitle" x="56" y="106">Spring Boot creates separate coroutine operations for CloudWatch metrics, CloudWatch Logs, and explicit Micrometer snapshots.</text>
+
+<g>
+  <rect x="944" y="57" width="122" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="chip" x="1005" y="70.5" text-anchor="middle" dominant-baseline="middle">Metrics</text>
+  <rect x="1082" y="57" width="122" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="chip" x="1143" y="70.5" text-anchor="middle" dominant-baseline="middle">Logs</text>
+  <rect x="1220" y="57" width="150" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="chip" x="1295" y="70.5" text-anchor="middle" dominant-baseline="middle">Micrometer pull</text>
+</g>
+
+<g id="layers">
+  <rect class="layer" x="70" y="142" width="290" height="410" rx="12"/>
+  <text class="layer-title" x="92" y="178">Activation</text>
+  <text class="layer-detail" x="94" y="200">SDK classes and properties</text>
+  <rect class="layer" x="395" y="142" width="330" height="410" rx="12"/>
+  <text class="layer-title" x="417" y="178">Client beans</text>
+  <text class="layer-detail" x="419" y="200">CloudWatch and Logs async clients</text>
+  <rect class="layer" x="760" y="142" width="310" height="410" rx="12"/>
+  <text class="layer-title" x="782" y="178">Application API</text>
+  <text class="layer-detail" x="784" y="200">Coroutine operations and meter publisher</text>
+  <rect class="layer" x="1105" y="142" width="265" height="410" rx="12"/>
+  <text class="layer-title" x="1127" y="178">AWS target</text>
+  <text class="layer-detail" x="1129" y="200">Custom metrics and log events</text>
+</g>
+
+<g id="cards">
+  <rect class="card" x="100" y="224" width="230" height="92" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="215" y="258" text-anchor="middle">CloudWatch config</text>
+  <text class="detail" x="215" y="284" text-anchor="middle">namespace + batch</text>
+  <text class="detail" x="215" y="304" text-anchor="middle">enabled by default</text>
+  <rect class="card" x="100" y="382" width="230" height="92" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="215" y="416" text-anchor="middle">Logs config</text>
+  <text class="detail" x="215" y="442" text-anchor="middle">group + stream</text>
+  <text class="detail" x="215" y="462" text-anchor="middle">separate prefix</text>
+
+  <rect class="card" x="425" y="224" width="270" height="92" rx="9" fill="#E8F3FF" stroke="#5B8DEF"/>
+  <text class="card-title" x="560" y="258" text-anchor="middle">CloudWatch client</text>
+  <text class="detail" x="560" y="284" text-anchor="middle">custom metric API</text>
+  <text class="detail" x="560" y="304" text-anchor="middle">backs off on custom bean</text>
+  <rect class="card" x="425" y="382" width="270" height="92" rx="9" fill="#EAF7EF" stroke="#58A978"/>
+  <text class="card-title" x="560" y="416" text-anchor="middle">Logs client</text>
+  <text class="detail" x="560" y="442" text-anchor="middle">log group / stream API</text>
+  <text class="detail" x="560" y="462" text-anchor="middle">independent auto-config</text>
+
+  <rect class="card" x="790" y="212" width="250" height="84" rx="9" fill="#E9F7F6" stroke="#45A7A1"/>
+  <text class="card-title" x="915" y="244" text-anchor="middle">Metric operations</text>
+  <text class="detail" x="915" y="270" text-anchor="middle">putMetricData / list</text>
+  <rect class="card" x="790" y="311" width="250" height="72" rx="9" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="915" y="339" text-anchor="middle">Meter publisher</text>
+  <text class="detail" x="915" y="363" text-anchor="middle">explicit snapshot push</text>
+  <rect class="card" x="790" y="398" width="250" height="84" rx="9" fill="#F3FBFA" stroke="#63B8B3"/>
+  <text class="card-title" x="915" y="430" text-anchor="middle">Log operations</text>
+  <text class="detail" x="915" y="456" text-anchor="middle">putLogEvents / describe</text>
+
+  <rect class="card" x="1140" y="224" width="200" height="92" rx="9" fill="#FFF7ED" stroke="#F97316"/>
+  <text class="card-title" x="1240" y="258" text-anchor="middle">CloudWatch</text>
+  <text class="detail" x="1240" y="284" text-anchor="middle">custom metrics</text>
+  <text class="detail" x="1240" y="304" text-anchor="middle">namespace scoped</text>
+  <rect class="card" x="1140" y="382" width="200" height="92" rx="9" fill="#FFF4E6" stroke="#F59E0B"/>
+  <text class="card-title" x="1240" y="416" text-anchor="middle">CloudWatch Logs</text>
+  <text class="detail" x="1240" y="442" text-anchor="middle">groups and streams</text>
+  <text class="detail" x="1240" y="462" text-anchor="middle">event batches</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 330 270 L 425 270" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="edge" d="M 330 428 L 425 428" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+  <path class="edge" d="M 695 270 L 790 254" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="edge" d="M 695 428 L 790 440" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
+  <path class="soft-edge" d="M 915 311 L 915 296" stroke="#475569" marker-end="url(#arrow-slate)"/>
+  <path class="edge" d="M 1040 254 L 1140 270" stroke="#168E86" marker-end="url(#arrow-teal)"/>
+  <path class="edge" d="M 1040 440 L 1140 428" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+</g>
+
+<g id="contracts">
+  <rect x="86" y="584" width="600" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text class="card-title" x="110" y="616">Default-name contract</text>
+  <text class="detail" x="418" y="614">namespace</text>
+  <text class="detail" x="560" y="614">group / stream</text>
+  <text class="tiny" x="110" y="640">Default publish methods require configured names; explicit-name methods can pass them per call.</text>
+  <rect x="724" y="584" width="630" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text class="card-title" x="748" y="616">Meter boundary</text>
+  <text class="detail" x="1002" y="614">existing registry</text>
+  <text class="detail" x="1192" y="614">manual publish</text>
+  <text class="tiny" x="748" y="640">The helper reads Micrometer meters only when application code invokes publish.</text>
+</g>
+
+<rect class="footer" x="54" y="690" width="1332" height="34" rx="8"/>
+<text class="footer-title" x="74" y="710" dominant-baseline="middle">Boundary</text>
+<text class="footer-detail" x="178" y="710" dominant-baseline="middle">Metrics, logs, and Micrometer snapshots share AWS defaults but stay separate operation surfaces.</text>
+</svg>
