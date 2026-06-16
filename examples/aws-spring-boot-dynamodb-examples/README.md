@@ -5,7 +5,8 @@ English | [한국어](./README.ko.md)
 Spring Boot 4 WebFlux examples for the `aws-spring-boot` DynamoDB
 auto-configuration. The module wires `DynamoDbAutoConfiguration`, exposes an
 `OrderRepository` based on `AbstractCoroutinesDynamoDbRepository`, and provides a
-small `/orders` REST API.
+small `/orders` REST API. It is a compact copy point for coroutine CRUD on top of
+the DynamoDB enhanced async client.
 
 ## Architecture
 
@@ -26,7 +27,9 @@ class Order {
 ```
 
 `OrderRepository` resolves the table name as `orders` and converts both item and
-id values to enhanced client `Key` instances.
+id values to enhanced client `Key` instances. Repository methods remain suspend
+or `Flow`-based, while the enhanced client and table name resolver come from
+Spring Boot auto-configuration.
 
 ## API
 
@@ -57,8 +60,10 @@ bluetape4k:
       enabled: true
 ```
 
-LocalStack tests provide `bluetape4k.aws.dynamodb.region` and
+LocalStack or Floci tests provide `bluetape4k.aws.dynamodb.region` and
 `bluetape4k.aws.dynamodb.endpoint-override` through `ApplicationContextRunner`.
+The runner also supplies emulator credentials as an `AwsCredentialsProvider`
+bean.
 
 ## Run
 
@@ -71,6 +76,9 @@ LocalStack tests provide `bluetape4k.aws.dynamodb.region` and
 ```bash
 ./gradlew :aws-spring-boot-dynamodb-examples:test
 ```
+
+The suite covers repository CRUD, scan, concurrent save/find operations through
+`SuspendedJobTester`, and the controller HTTP layer with `WebTestClient`.
 
 ## AOT
 
