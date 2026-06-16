@@ -3,11 +3,11 @@
 English | [한국어](./README.ko.md)
 
 Ktor 3 examples for `aws-ktor` and `bluetape4k-aws-exposed`. The module installs
-`AwsExposedPlugin`, creates an Exposed schema on application start, and exposes
-order routes backed by PostgreSQL. Local tests use Testcontainers and do not
-require AWS credentials. It uses `bluetape4k-ktor-core` for shared route
-parameter validation and `bluetape4k-ktor-testing` for common Ktor response
-assertions.
+`AwsExposedPlugin`, creates the Exposed schema on application start, and exposes
+order routes backed by PostgreSQL. The example is intentionally small: routes
+own HTTP semantics, repositories own Exposed queries, and the plugin owns the
+database lifecycle and transaction dispatch. Local tests use Testcontainers and
+do not require AWS credentials.
 
 ## Architecture
 
@@ -24,10 +24,11 @@ assertions.
 ## Transaction Boundary
 
 Routes call repositories only through `call.awsExposedTransaction { ... }`.
-The repository contains Exposed query code only and does not own the Ktor plugin,
-database handle, or connection lifecycle. `AwsExposedPlugin` dispatches route
-transactions through its `transactionContext`, which defaults to `Dispatchers.IO`
-for blocking JDBC work.
+`OrderRepository` contains Exposed query code only and does not own the Ktor
+plugin, database handle, or connection lifecycle. `AwsExposedPlugin` dispatches
+route transactions through its `transactionContext`, which defaults to
+`Dispatchers.IO` for blocking JDBC work. The startup hook uses the same boundary
+to create `OrdersTable`.
 
 ## Configuration
 
@@ -55,5 +56,6 @@ environment before installing the plugin.
 ./gradlew :aws-ktor-exposed-examples:test
 ```
 
-The test starts the shared `PostgreSQLServer.Launcher.postgres` container and
-verifies route-level create/read/list/not-found behavior.
+The test starts the shared `PostgreSQLServer.Launcher.postgres` container,
+passes its JDBC settings into `ExampleDatabaseConfig`, and verifies route-level
+create/read/list/not-found behavior.
