@@ -775,19 +775,42 @@ suspend fun archiveObject(bucket: String, key: String) =
 
 ### SQS 송수신 — Coroutines (`aws-java` 모듈)
 
+SQS coroutine 지원은 AWS SDK v2 `SqsAsyncClient`에 queue discovery, single/batch
+send, receive, visibility change, message deletion, queue deletion용 suspend helper를
+더합니다. Async 계층은 SDK 호출 전에 blank queue URL, receive count, empty batch
+entry를 먼저 검증합니다.
+
+![SQS coroutine support map](docs/images/readme-diagrams/bluetape4k-aws-sqs-components-26.png)
+
 ```kotlin
-import io.bluetape4k.aws.sqs.coroutines.*
+import io.bluetape4k.aws.sqs.changeMessageVisibility
+import io.bluetape4k.aws.sqs.deleteMessage
+import io.bluetape4k.aws.sqs.receiveMessages
+import io.bluetape4k.aws.sqs.send
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 suspend fun sendMessage(client: SqsAsyncClient, queueUrl: String, body: String) =
-    client.sendMessageSuspend {
-        it.queueUrl(queueUrl).messageBody(body)
-    }
+    client.send(queueUrl, body)
 
 suspend fun receiveMessages(client: SqsAsyncClient, queueUrl: String) =
-    client.receiveMessageSuspend {
-        it.queueUrl(queueUrl).maxNumberOfMessages(10)
-    }.messages()
+    client.receiveMessages(queueUrl, maxResults = 10).messages()
+
+suspend fun processOnce(client: SqsAsyncClient, queueUrl: String) {
+    val message = client.receiveMessages(queueUrl, maxResults = 1).messages().firstOrNull() ?: return
+    client.changeMessageVisibility(queueUrl, message.receiptHandle(), visibilityTimeout = 30)
+    process(message.body())
+    client.deleteMessage(queueUrl, message.receiptHandle())
+}
+
+private fun process(body: String) = Unit
 ```
+
+![SQS coroutine message flow](docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-27.png)
+
+`receiveMessages`의 `maxResults`는 SQS 범위인 `1..10`만 허용합니다. Batch send,
+visibility, delete helper는 비어 있는 entry collection을 SQS로 보내기 전에 거부합니다.
+메시지는 처리가 성공한 뒤 `receiptHandle`로 삭제하세요. 실패했다면 visibility timeout이
+끝나 queue로 돌아가게 두는 편이 안전합니다.
 
 ### DynamoDB — 네이티브 Suspend (`bluetape4k-aws-kotlin` 모듈)
 

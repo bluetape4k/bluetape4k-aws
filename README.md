@@ -786,19 +786,43 @@ copied destination object.
 
 ### SQS Send / Receive — Coroutines (`aws-java` module)
 
+SQS coroutine support extends AWS SDK v2 `SqsAsyncClient` with suspend helpers
+for queue discovery, single and batch send, receive, visibility changes, message
+deletion, and queue deletion. The async layer validates blank queue URLs,
+receive counts, and empty batch entries before the SDK call.
+
+![SQS coroutine support map](docs/images/readme-diagrams/bluetape4k-aws-sqs-components-26.png)
+
 ```kotlin
-import io.bluetape4k.aws.sqs.coroutines.*
+import io.bluetape4k.aws.sqs.changeMessageVisibility
+import io.bluetape4k.aws.sqs.deleteMessage
+import io.bluetape4k.aws.sqs.receiveMessages
+import io.bluetape4k.aws.sqs.send
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 suspend fun sendMessage(client: SqsAsyncClient, queueUrl: String, body: String) =
-    client.sendMessageSuspend {
-        it.queueUrl(queueUrl).messageBody(body)
-    }
+    client.send(queueUrl, body)
 
 suspend fun receiveMessages(client: SqsAsyncClient, queueUrl: String) =
-    client.receiveMessageSuspend {
-        it.queueUrl(queueUrl).maxNumberOfMessages(10)
-    }.messages()
+    client.receiveMessages(queueUrl, maxResults = 10).messages()
+
+suspend fun processOnce(client: SqsAsyncClient, queueUrl: String) {
+    val message = client.receiveMessages(queueUrl, maxResults = 1).messages().firstOrNull() ?: return
+    client.changeMessageVisibility(queueUrl, message.receiptHandle(), visibilityTimeout = 30)
+    process(message.body())
+    client.deleteMessage(queueUrl, message.receiptHandle())
+}
+
+private fun process(body: String) = Unit
 ```
+
+![SQS coroutine message flow](docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-27.png)
+
+`receiveMessages` accepts `maxResults` only in the SQS range `1..10`.
+Batch send, visibility, and delete helpers reject empty entry collections before
+the request reaches SQS. Delete messages with the `receiptHandle` only after
+processing succeeds; otherwise let the visibility timeout return the message to
+the queue.
 
 ### DynamoDB — Native Suspend (`bluetape4k-aws-kotlin` module)
 
