@@ -6,7 +6,8 @@
 `S3Operations` 인터페이스를 통해 `S3CoroutinesTemplate` 기반 업로드, 다운로드,
 객체 목록, 삭제, presigned URL API를 보여줍니다.
 선택적으로 `S3ClientSideEncryptionOperations` route도 제공해 KMS 기반 envelope
-metadata와 함께 payload를 암호화 저장하는 흐름을 확인할 수 있습니다.
+metadata와 함께 payload를 암호화 저장하는 흐름을 확인할 수 있습니다. Controller는 HTTP
+표면을 작게 유지하고, object 동작은 자동설정된 operations bean에 위임합니다.
 
 ## 아키텍처
 
@@ -59,9 +60,9 @@ bluetape4k:
 ./gradlew :aws-spring-boot-s3-examples:test
 ```
 
-테스트는 Testcontainers로 LocalStack을 시작하고 bucket을 만든 뒤 업로드, 다운로드,
-목록, presigned GET/PUT URL 생성, 삭제 동작과 deterministic test KMS 구현을 통한
-client-side encryption helper를 검증합니다.
+테스트는 Testcontainers로 선택된 AWS emulator를 시작하고 bucket을 만든 뒤 업로드,
+다운로드, 목록, presigned GET/PUT URL 생성, 삭제 동작과 deterministic test KMS 구현을
+통한 client-side encryption helper를 검증합니다.
 
 ## AOT
 
