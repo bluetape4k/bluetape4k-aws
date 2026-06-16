@@ -1,89 +1,123 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="812" viewBox="0 0 1440 812" role="img" aria-label="AWS Java architecture">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-label="AWS Java module architecture">
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#d97706"/>
+    </marker>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .band{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .bandTitle{font-family:"Comic Mono";font-size:18px;font-weight:700;fill:#475569}
+      .card{fill:#ffffff;stroke-width:2.2;filter:url(#softShadow)}
+      .cardTitle{font-family:"Architects Daughter";font-size:24px;fill:#17233a}
+      .cardText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .route{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+      .routeText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .pill{fill:#ffffff;stroke-width:2}
+      .pillText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1388" height="760" rx="14" class="frame"/>
-<text class="title" x="54" y="72">AWS Java architecture</text>
-<text class="subtitle" x="56" y="104">Java SDK v2 wrappers expose sync, async, and coroutine tiers for service clients.</text>
-<g><rect x="975" y="58" width="126" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/><text class="chip" x="1038.0" y="70" text-anchor="middle" dominant-baseline="middle">public API</text></g>
-<g><rect x="1120" y="58" width="126" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/><text class="chip" x="1183.0" y="70" text-anchor="middle" dominant-baseline="middle">adapter/config</text></g>
-<g><rect x="1265" y="58" width="126" height="24" rx="12" fill="#FFF7ED" stroke="#F97316"/><text class="chip" x="1328.0" y="70" text-anchor="middle" dominant-baseline="middle">runtime</text></g>
-<rect x="54" y="150" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="175">API tiers</text>
-<rect x="54" y="338" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
-<text class="chip" x="74" y="363">Kotlin facade</text>
-<rect x="54" y="526" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="551">AWS services</text>
-<g id="routes">
-<path class="edge" d="M 699.0 230.0 L 741.0 230.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 805.5 276.0 L 805.5 372.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<path class="edge" d="M 720.0 464.0 L 720.0 560.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-</g>
-<g id="sync">
-  <rect class="card" x="399.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="549.0" y="218.0" text-anchor="middle" dominant-baseline="middle">Sync support</text>
-  <text class="detail" x="549.0" y="242.0" text-anchor="middle" dominant-baseline="middle">client factories</text>
-  <text class="detail" x="549.0" y="260.0" text-anchor="middle" dominant-baseline="middle">request DSLs</text>
-</g>
-<g id="async">
-  <rect class="card" x="741.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="891.0" y="218.0" text-anchor="middle" dominant-baseline="middle">Async support</text>
-  <text class="detail" x="891.0" y="242.0" text-anchor="middle" dominant-baseline="middle">CompletableFuture</text>
-  <text class="detail" x="891.0" y="260.0" text-anchor="middle" dominant-baseline="middle">SDK async clients</text>
-</g>
-<g id="coroutines">
-  <rect class="card" x="570.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="720.0" y="406.0" text-anchor="middle" dominant-baseline="middle">Coroutine facade</text>
-  <text class="detail" x="720.0" y="430.0" text-anchor="middle" dominant-baseline="middle">await wrappers</text>
-  <text class="detail" x="720.0" y="448.0" text-anchor="middle" dominant-baseline="middle">Flow helpers</text>
-</g>
-<g id="services">
-  <rect class="card" x="570.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="720.0" y="594.0" text-anchor="middle" dominant-baseline="middle">Service packages</text>
-  <text class="detail" x="720.0" y="618.0" text-anchor="middle" dominant-baseline="middle">DynamoDB/S3/SQS</text>
-  <text class="detail" x="720.0" y="636.0" text-anchor="middle" dominant-baseline="middle">KMS/CloudWatch/STS</text>
-</g>
-<rect class="footer" x="54" y="718" width="1332" height="54" rx="8"/>
-<text class="footer-title" x="74" y="741" dominant-baseline="middle">Reader cue</text>
-<text class="footer-detail" x="74" y="761" dominant-baseline="middle">Consumers add only the AWS SDK services they use.</text>
+  <rect class="canvas" width="1600" height="1120"/>
+  <rect class="frame" x="42" y="36" width="1516" height="1044" rx="24"/>
+  <text class="title" x="800" y="96" text-anchor="middle">AWS Java Module Architecture</text>
+  <text class="subtitle" x="800" y="132" text-anchor="middle">AWS Java SDK v2 support layer: client builders, request DSLs, async helpers, and coroutine facades.</text>
+
+  <g id="consumer">
+    <rect class="band" x="92" y="178" width="1416" height="132" rx="18"/>
+    <text class="bandTitle" x="118" y="216">CONSUMER APPLICATION</text>
+    <rect class="card" x="156" y="238" width="368" height="52" rx="14" stroke="#2563eb"/>
+    <text class="cardTitle" x="340" y="270" text-anchor="middle">service code</text>
+    <rect class="card" x="616" y="238" width="368" height="52" rx="14" stroke="#059669"/>
+    <text class="cardTitle" x="800" y="270" text-anchor="middle">coroutine scopes</text>
+    <rect class="card" x="1076" y="238" width="368" height="52" rx="14" stroke="#d97706"/>
+    <text class="cardTitle" x="1260" y="270" text-anchor="middle">runtime AWS SDK choices</text>
+  </g>
+
+  <g id="module">
+    <rect class="band" x="92" y="354" width="1416" height="332" rx="18"/>
+    <text class="bandTitle" x="118" y="392">BLUETAPE4K AWS JAVA MODULE</text>
+    <rect class="card" x="142" y="430" width="300" height="92" rx="16" stroke="#2563eb"/>
+    <text class="cardTitle" x="292" y="462" text-anchor="middle">client foundation</text>
+    <text class="cardText" x="292" y="488" text-anchor="middle">auth, regions, override config</text>
+    <text class="cardText" x="292" y="508" text-anchor="middle">CRT, Netty, HTTP providers</text>
+
+    <rect class="card" x="478" y="430" width="300" height="92" rx="16" stroke="#059669"/>
+    <text class="cardTitle" x="628" y="462" text-anchor="middle">request builders</text>
+    <text class="cardText" x="628" y="488" text-anchor="middle">DynamoDB, S3, KMS, SNS</text>
+    <text class="cardText" x="628" y="508" text-anchor="middle">typed model helper DSLs</text>
+
+    <rect class="card" x="814" y="430" width="300" height="92" rx="16" stroke="#d97706"/>
+    <text class="cardTitle" x="964" y="462" text-anchor="middle">async extensions</text>
+    <text class="cardText" x="964" y="488" text-anchor="middle">CompletableFuture helpers</text>
+    <text class="cardText" x="964" y="508" text-anchor="middle">pagination and transfer APIs</text>
+
+    <rect class="card" x="1150" y="430" width="300" height="92" rx="16" stroke="#7c3aed"/>
+    <text class="cardTitle" x="1300" y="462" text-anchor="middle">coroutine facades</text>
+    <text class="cardText" x="1300" y="488" text-anchor="middle">await(), suspend, Flow</text>
+    <text class="cardText" x="1300" y="508" text-anchor="middle">DynamoDB repository support</text>
+
+    <rect class="pill" x="166" y="570" width="178" height="38" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="255" y="594" text-anchor="middle">DynamoDB</text>
+    <rect class="pill" x="370" y="570" width="178" height="38" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="459" y="594" text-anchor="middle">S3 / Transfer</text>
+    <rect class="pill" x="574" y="570" width="178" height="38" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="663" y="594" text-anchor="middle">S3 Vectors</text>
+    <rect class="pill" x="778" y="570" width="150" height="38" rx="13" stroke="#059669"/>
+    <text class="pillText" x="853" y="594" text-anchor="middle">SQS / SNS</text>
+    <rect class="pill" x="954" y="570" width="134" height="38" rx="13" stroke="#059669"/>
+    <text class="pillText" x="1021" y="594" text-anchor="middle">SES</text>
+    <rect class="pill" x="1114" y="570" width="148" height="38" rx="13" stroke="#d97706"/>
+    <text class="pillText" x="1188" y="594" text-anchor="middle">KMS / STS</text>
+    <rect class="pill" x="1288" y="570" width="178" height="38" rx="13" stroke="#d97706"/>
+    <text class="pillText" x="1377" y="594" text-anchor="middle">CloudWatch / Kinesis</text>
+  </g>
+
+  <g id="api-tiers">
+    <rect class="band" x="92" y="730" width="1416" height="132" rx="18"/>
+    <text class="bandTitle" x="118" y="768">API TIERS EXPOSED TO CALLERS</text>
+    <rect class="card" x="194" y="790" width="316" height="52" rx="14" stroke="#2563eb"/>
+    <text class="cardTitle" x="352" y="822" text-anchor="middle">sync blocking clients</text>
+    <rect class="card" x="642" y="790" width="316" height="52" rx="14" stroke="#059669"/>
+    <text class="cardTitle" x="800" y="822" text-anchor="middle">async futures</text>
+    <rect class="card" x="1090" y="790" width="316" height="52" rx="14" stroke="#d97706"/>
+    <text class="cardTitle" x="1248" y="822" text-anchor="middle">suspend and Flow APIs</text>
+  </g>
+
+  <g id="boundary">
+    <rect class="band" x="92" y="906" width="1416" height="116" rx="18"/>
+    <text class="bandTitle" x="118" y="944">DEPENDENCY AND VERIFICATION BOUNDARY</text>
+    <rect class="pill" x="178" y="966" width="318" height="38" rx="13" stroke="#0ea5e9"/>
+    <text class="pillText" x="337" y="990" text-anchor="middle">AWS service SDKs are compileOnly</text>
+    <rect class="pill" x="530" y="966" width="274" height="38" rx="13" stroke="#0ea5e9"/>
+    <text class="pillText" x="667" y="990" text-anchor="middle">consumer adds used services</text>
+    <rect class="pill" x="838" y="966" width="234" height="38" rx="13" stroke="#7c3aed"/>
+    <text class="pillText" x="955" y="990" text-anchor="middle">Floci-first tests</text>
+    <rect class="pill" x="1106" y="966" width="316" height="38" rx="13" stroke="#7c3aed"/>
+    <text class="pillText" x="1264" y="990" text-anchor="middle">LocalStack fallback when needed</text>
+  </g>
+
+  <path class="route" d="M 800 310 L 800 354" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  <text class="routeText" x="846" y="338">call through the smallest matching helper layer</text>
+
+  <path class="route" d="M 800 686 L 800 730" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <text class="routeText" x="846" y="714">same service packages expose sync, future, and coroutine forms</text>
+
+  <path class="route" d="M 800 862 L 800 906" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <text class="routeText" x="846" y="890">runtime service selection remains outside the library artifact</text>
+
+  <text class="footerText" x="800" y="1050" text-anchor="middle">Reader contract: bluetape4k-aws-java adapts AWS Java SDK v2 APIs without bundling every AWS service runtime.</text>
 </svg>

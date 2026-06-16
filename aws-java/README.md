@@ -4,9 +4,9 @@ English | [한국어](./README.ko.md)
 
 A unified integration module built on AWS Java SDK v2. Provides async/non-blocking and Kotlin Coroutines support for major AWS services including DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis, and STS.
 
-## Architecture
+## Diagrams
 
-### Architecture
+### Module Architecture
 
 ![AWS Java architecture diagram](../docs/images/readme-diagrams/aws-java-architecture-01.png)
 
