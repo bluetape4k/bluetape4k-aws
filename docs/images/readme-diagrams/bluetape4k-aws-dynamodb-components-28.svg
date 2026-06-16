@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+<title id="title">DynamoDB native suspend support map</title>
+<desc id="desc">The aws-kotlin DynamoDB module wraps AWS Kotlin SDK clients with lifecycle helpers, request builders, attribute conversion, scan flows, mappers, and batch retry support.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}.frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}.subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}
+    .legend{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}
+    .layer{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}.layer-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}.layer-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-purple{fill:#F7ECFF;stroke:#C925D1;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-red{fill:#FEECEC;stroke:#DC2626;stroke-width:2.2}
+    .aws-icon{fill:#C925D1;fill-rule:evenodd}.footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}.arrow-purple{stroke:#A21CAF;stroke-width:3;fill:none;marker-end:url(#arrow-purple)}.arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}.arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
+  <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#A21CAF"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1400" height="860"/><rect class="frame" x="24" y="24" width="1352" height="812" rx="14"/>
+<text class="title" x="54" y="74">DynamoDB native suspend support map</text>
+<text class="subtitle" x="54" y="108">The aws-kotlin module adds lifecycle, builder, mapping, flow, and batch retry helpers around AWS Kotlin SDK DynamoDbClient.</text>
+<rect class="card-blue" x="804" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="855" y="78" text-anchor="middle">Client</text>
+<rect class="card-green" x="926" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="977" y="78" text-anchor="middle">Builder</text>
+<rect class="card-purple" x="1048" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="1099" y="78" text-anchor="middle">Data</text>
+<rect class="card-orange" x="1170" y="62" width="102" height="24" rx="12" opacity="0.24"/><text class="legend" x="1221" y="78" text-anchor="middle">Batch</text>
+
+<rect class="layer" x="64" y="140" width="292" height="600" rx="12"/><text class="layer-title" x="92" y="177">Client lifecycle</text><text class="layer-sub" x="92" y="195">create, configure, close</text>
+<rect class="card-blue" x="92" y="232" width="236" height="68" rx="8"/><text class="card-title" x="210" y="256" text-anchor="middle">dynamoDbClientOf</text><text class="card-text" x="210" y="278" text-anchor="middle">region, endpoint, credentials</text>
+<rect class="card-blue" x="92" y="358" width="236" height="68" rx="8"/><text class="card-title" x="210" y="382" text-anchor="middle">withDynamoDbClient</text><text class="card-text" x="210" y="404" text-anchor="middle">useSafe auto-close block</text>
+<rect class="card-red" x="92" y="484" width="236" height="68" rx="8"/><text class="card-title" x="210" y="508" text-anchor="middle">Region guard</text><text class="card-text" x="210" y="530" text-anchor="middle">blank region fails fast</text>
+
+<rect class="layer" x="386" y="140" width="292" height="600" rx="12"/><text class="layer-title" x="414" y="177">Request DSL</text><text class="layer-sub" x="414" y="195">typed builders and table helpers</text>
+<rect class="card-green" x="414" y="232" width="236" height="68" rx="8"/><text class="card-title" x="532" y="256" text-anchor="middle">Table helpers</text><text class="card-text" x="532" y="278" text-anchor="middle">create, exists, wait, delete</text>
+<rect class="card-green" x="414" y="358" width="236" height="68" rx="8"/><text class="card-title" x="532" y="382" text-anchor="middle">Request builders</text><text class="card-text" x="532" y="404" text-anchor="middle">put, query, scan, transact</text>
+<rect class="card-teal" x="414" y="484" width="236" height="68" rx="8"/><text class="card-title" x="532" y="508" text-anchor="middle">AttributeValue</text><text class="card-text" x="532" y="530" text-anchor="middle">Any? map to DynamoDB values</text>
+
+<rect class="layer" x="708" y="140" width="292" height="600" rx="12"/><text class="layer-title" x="736" y="177">Data access</text><text class="layer-sub" x="736" y="195">items, pages, and mappers</text>
+<rect class="card-purple" x="736" y="232" width="236" height="68" rx="8"/><g transform="translate(760 246) scale(0.62)"><path class="aws-icon" d="M13.355 11.862h32.573V2H13.355v9.862zM15.355 9.862h28.572V4.001H15.355v5.861zM2 11.862h9.861V2H2v9.862zM4 9.862h5.862V4.001H4v5.861zM13.355 23.217h32.573v-9.861H13.355v9.861zM15.355 21.217h28.572v-5.861H15.355v5.861zM2 23.217h9.861v-9.861H2v9.861zM4 21.217h5.862v-5.861H4v5.861zM13.355 34.572h32.573v-9.861H13.355v9.861zM15.355 32.572h28.572V26.71H15.355v5.862zM2 34.572h9.861v-9.861H2v9.861zM4 32.572h5.862V26.71H4v5.862zM13.355 45.927h32.573v-9.861H13.355v9.861zM15.355 43.928h28.572v-5.862H15.355v5.862zM2 45.927h9.861v-9.861H2v9.861zM4 43.928h5.862v-5.862H4v5.862z"/></g><text class="card-title" x="872" y="256" text-anchor="middle">DynamoDB table</text><text class="card-text" x="872" y="278" text-anchor="middle">put item, scan pages</text>
+<rect class="card-purple" x="736" y="358" width="236" height="68" rx="8"/><text class="card-title" x="854" y="382" text-anchor="middle">scanPaginated</text><text class="card-text" x="854" y="404" text-anchor="middle">Flow&lt;ScanResponse&gt;</text>
+<rect class="card-teal" x="736" y="484" width="236" height="68" rx="8"/><text class="card-title" x="854" y="508" text-anchor="middle">Mapper / Reader</text><text class="card-text" x="854" y="530" text-anchor="middle">explicit domain conversion</text>
+
+<rect class="layer" x="1030" y="140" width="306" height="600" rx="12"/><text class="layer-title" x="1058" y="177">Batch and retry</text><text class="layer-sub" x="1058" y="195">chunked write/delete behavior</text>
+<rect class="card-orange" x="1058" y="232" width="250" height="68" rx="8"/><text class="card-title" x="1183" y="256" text-anchor="middle">DynamoDbBatchExecutor</text><text class="card-text" x="1183" y="278" text-anchor="middle">putAll and deleteAll</text>
+<rect class="card-orange" x="1058" y="358" width="250" height="68" rx="8"/><text class="card-title" x="1183" y="382" text-anchor="middle">Chunk size 25</text><text class="card-text" x="1183" y="404" text-anchor="middle">BatchWriteItem limit</text>
+<rect class="card-red" x="1058" y="484" width="250" height="68" rx="8"/><text class="card-title" x="1183" y="508" text-anchor="middle">Unprocessed retry</text><text class="card-text" x="1183" y="530" text-anchor="middle">Resilience4j + max attempts</text>
+
+<path class="arrow-blue" d="M328 266 H414"/><path class="arrow-blue" d="M328 392 H414"/>
+<path class="arrow-green" d="M650 266 H736"/><path class="arrow-teal" d="M650 392 H736"/><path class="arrow-teal" d="M650 518 H736"/>
+<path class="arrow-purple" d="M972 266 H1058"/><path class="arrow-purple" d="M972 392 H1058"/><path class="arrow-teal" d="M972 518 H1058"/>
+<path class="arrow-orange" d="M1183 300 V358"/><path class="arrow-orange" d="M1183 426 V484"/>
+<rect class="footer" x="54" y="786" width="1292" height="36" rx="8"/><text class="footer-title" x="76" y="805" dominant-baseline="middle">Support</text><text class="footer-detail" x="170" y="805" dominant-baseline="middle">DynamoDB helpers keep SDK-native suspend calls while making client lifecycle, item conversion, pagination, and batch retry boundaries explicit.</text>
+</svg>
