@@ -1,98 +1,128 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1000" viewBox="0 0 1440 1000" role="img" aria-label="Spring Boot AWS architecture">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
+  <title id="title">AWS Spring Boot Module Architecture</title>
+  <desc id="desc">Spring Boot 4 auto-configuration layers for AWS SDK v2 clients, coroutine operations, listener containers, repositories, environment sources, Exposed database registry, and runtime AWS services.</desc>
+  <defs>
+    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#d97706"/>
+    </marker>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .band{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .bandTitle{font-family:"Comic Mono";font-size:18px;font-weight:700;fill:#475569}
+      .card{fill:#ffffff;stroke-width:2.2;filter:url(#softShadow)}
+      .cardTitle{font-family:"Architects Daughter";font-size:23px;fill:#17233a}
+      .cardText{font-family:"Comic Mono";font-size:13px;fill:#475569}
+      .pill{fill:#ffffff;stroke-width:2}
+      .pillText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .route{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+      .routeText{font-family:"Comic Mono";font-size:13px;fill:#334155}
+      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1388" height="948" rx="14" class="frame"/>
-<text class="title" x="54" y="72">Spring Boot AWS architecture</text>
-<text class="subtitle" x="56" y="104">Auto-configured clients feed coroutine operations, listeners, repositories, and remote Environment sources.</text>
-<g><rect x="975" y="58" width="126" height="24" rx="12" fill="#E8F3FF" stroke="#5B8DEF"/><text class="chip" x="1038.0" y="70" text-anchor="middle" dominant-baseline="middle">public API</text></g>
-<g><rect x="1120" y="58" width="126" height="24" rx="12" fill="#E9F7F6" stroke="#45A7A1"/><text class="chip" x="1183.0" y="70" text-anchor="middle" dominant-baseline="middle">adapter/config</text></g>
-<g><rect x="1265" y="58" width="126" height="24" rx="12" fill="#FFF7ED" stroke="#F97316"/><text class="chip" x="1328.0" y="70" text-anchor="middle" dominant-baseline="middle">runtime</text></g>
-<rect x="54" y="150" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="175">Configuration</text>
-<rect x="54" y="338" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
-<text class="chip" x="74" y="363">Spring boundary</text>
-<rect x="54" y="526" width="1332" height="152" rx="10" fill="#F8FBFF" stroke="#DBEAFE"/>
-<text class="chip" x="74" y="551">Runtime target</text>
-<rect x="54" y="714" width="1332" height="152" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
-<text class="chip" x="74" y="739">Config data</text>
-<g id="routes">
-<path class="edge" d="M 634.5 276.0 L 634.5 372.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 699.0 418.0 L 741.0 418.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<path class="edge" d="M 805.5 464.0 L 805.5 560.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<path class="edge" d="M 720.0 748.0 L 720.0 652.0" stroke="#B98518" marker-end="url(#arrow-amber)"/>
-</g>
-<g id="props">
-  <rect class="card" x="570.0" y="184.0" width="300.0" height="92.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="720.0" y="218.0" text-anchor="middle" dominant-baseline="middle">AwsProperties</text>
-  <text class="detail" x="720.0" y="242.0" text-anchor="middle" dominant-baseline="middle">global + service config</text>
-  <text class="detail" x="720.0" y="260.0" text-anchor="middle" dominant-baseline="middle">endpoint/credentials</text>
-</g>
-<g id="auto">
-  <rect class="card" x="399.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="549.0" y="406.0" text-anchor="middle" dominant-baseline="middle">Auto-configuration</text>
-  <text class="detail" x="549.0" y="430.0" text-anchor="middle" dominant-baseline="middle">conditional beans</text>
-  <text class="detail" x="549.0" y="448.0" text-anchor="middle" dominant-baseline="middle">client customizers</text>
-</g>
-<g id="ops">
-  <rect class="card" x="741.0" y="372.0" width="300.0" height="92.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="891.0" y="406.0" text-anchor="middle" dominant-baseline="middle">Operations/templates</text>
-  <text class="detail" x="891.0" y="430.0" text-anchor="middle" dominant-baseline="middle">S3/SQS/SNS/KMS</text>
-  <text class="detail" x="891.0" y="448.0" text-anchor="middle" dominant-baseline="middle">CloudWatch/DynamoDB</text>
-</g>
-<g id="env">
-  <rect class="card" x="570.0" y="748.0" width="300.0" height="92.0" rx="10" fill="#FFF3D9" stroke="#D6A441"/>
-  <text class="card-title" x="720.0" y="782.0" text-anchor="middle" dominant-baseline="middle">Environment sources</text>
-  <text class="detail" x="720.0" y="806.0" text-anchor="middle" dominant-baseline="middle">S3/Secrets/SSM</text>
-  <text class="detail" x="720.0" y="824.0" text-anchor="middle" dominant-baseline="middle">refresh optional</text>
-</g>
-<g id="aws">
-  <rect class="card" x="570.0" y="560.0" width="300.0" height="92.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="720.0" y="594.0" text-anchor="middle" dominant-baseline="middle">AWS/emulator</text>
-  <text class="detail" x="720.0" y="618.0" text-anchor="middle" dominant-baseline="middle">Floci/LocalStack</text>
-  <text class="detail" x="720.0" y="636.0" text-anchor="middle" dominant-baseline="middle">real AWS</text>
-</g>
-<rect class="footer" x="54" y="906" width="1332" height="54" rx="8"/>
-<text class="footer-title" x="74" y="929" dominant-baseline="middle">Reader cue</text>
-<text class="footer-detail" x="74" y="949" dominant-baseline="middle">No awspring runtime dependency; consumers add SDK services explicitly.</text>
+  <rect class="canvas" width="1600" height="1120"/>
+  <rect class="frame" x="42" y="36" width="1516" height="1044" rx="24"/>
+  <text class="title" x="800" y="96" text-anchor="middle">AWS Spring Boot Module Architecture</text>
+  <text class="subtitle" x="800" y="132" text-anchor="middle">Spring Boot 4 auto-configuration without awspring: SDK v2 clients, coroutine operations, listeners, repositories, and config sources.</text>
+
+  <g id="app">
+    <rect class="band" x="92" y="178" width="1416" height="132" rx="18"/>
+    <text class="bandTitle" x="118" y="216">SPRING BOOT APPLICATION</text>
+    <rect class="card" x="142" y="238" width="300" height="52" rx="14" stroke="#2563eb"/>
+    <text class="cardTitle" x="292" y="271" text-anchor="middle">ConfigurationProperties</text>
+    <rect class="card" x="478" y="238" width="300" height="52" rx="14" stroke="#059669"/>
+    <text class="cardTitle" x="628" y="271" text-anchor="middle">Business services</text>
+    <rect class="card" x="814" y="238" width="300" height="52" rx="14" stroke="#d97706"/>
+    <text class="cardTitle" x="964" y="271" text-anchor="middle">@SqsListener methods</text>
+    <rect class="card" x="1150" y="238" width="300" height="52" rx="14" stroke="#7c3aed"/>
+    <text class="cardTitle" x="1300" y="271" text-anchor="middle">Exposed repositories</text>
+  </g>
+
+  <g id="autoconfig">
+    <rect class="band" x="92" y="354" width="1416" height="322" rx="18"/>
+    <text class="bandTitle" x="118" y="392">BLUETAPE4K AWS SPRING BOOT AUTO-CONFIGURATION</text>
+
+    <rect class="card" x="132" y="430" width="266" height="92" rx="16" stroke="#2563eb"/>
+    <text class="cardTitle" x="265" y="462" text-anchor="middle">Shared AWS beans</text>
+    <text class="cardText" x="265" y="488" text-anchor="middle">AwsProperties</text>
+    <text class="cardText" x="265" y="508" text-anchor="middle">credentials + customizers</text>
+
+    <rect class="card" x="432" y="430" width="266" height="92" rx="16" stroke="#059669"/>
+    <text class="cardTitle" x="565" y="462" text-anchor="middle">Operations/templates</text>
+    <text class="cardText" x="565" y="488" text-anchor="middle">S3, SNS, SES, SQS</text>
+    <text class="cardText" x="565" y="508" text-anchor="middle">KMS, CloudWatch, IMDS</text>
+
+    <rect class="card" x="732" y="430" width="266" height="92" rx="16" stroke="#d97706"/>
+    <text class="cardTitle" x="865" y="462" text-anchor="middle">Messaging runtime</text>
+    <text class="cardText" x="865" y="488" text-anchor="middle">listener containers</text>
+    <text class="cardText" x="865" y="508" text-anchor="middle">retry + interceptors</text>
+
+    <rect class="card" x="1032" y="430" width="266" height="92" rx="16" stroke="#7c3aed"/>
+    <text class="cardTitle" x="1165" y="462" text-anchor="middle">Data integrations</text>
+    <text class="cardText" x="1165" y="488" text-anchor="middle">DynamoDB repository</text>
+    <text class="cardText" x="1165" y="508" text-anchor="middle">Exposed registry</text>
+
+    <rect class="card" x="132" y="562" width="266" height="76" rx="16" stroke="#2563eb"/>
+    <text class="cardTitle" x="265" y="592" text-anchor="middle">Environment sources</text>
+    <text class="cardText" x="265" y="616" text-anchor="middle">S3, Secrets, SSM before binding</text>
+
+    <rect class="card" x="432" y="562" width="266" height="76" rx="16" stroke="#059669"/>
+    <text class="cardTitle" x="565" y="592" text-anchor="middle">Observability</text>
+    <text class="cardText" x="565" y="616" text-anchor="middle">CloudWatch + Micrometer timers</text>
+
+    <rect class="card" x="732" y="562" width="266" height="76" rx="16" stroke="#d97706"/>
+    <text class="cardTitle" x="865" y="592" text-anchor="middle">Optional classpath</text>
+    <text class="cardText" x="865" y="616" text-anchor="middle">S3 transfer, JavaMail, DAX, STS</text>
+
+    <rect class="card" x="1032" y="562" width="266" height="76" rx="16" stroke="#7c3aed"/>
+    <text class="cardTitle" x="1165" y="592" text-anchor="middle">Security helpers</text>
+    <text class="cardText" x="1165" y="616" text-anchor="middle">KMS TextEncryptor + field codec</text>
+  </g>
+
+  <g id="runtime">
+    <rect class="band" x="92" y="720" width="1416" height="154" rx="18"/>
+    <text class="bandTitle" x="118" y="758">RUNTIME AWS SDK V2 SERVICES</text>
+    <rect class="pill" x="142" y="790" width="138" height="38" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="211" y="814" text-anchor="middle">S3 / S3 Vectors</text>
+    <rect class="pill" x="304" y="790" width="132" height="38" rx="13" stroke="#059669"/>
+    <text class="pillText" x="370" y="814" text-anchor="middle">SNS / SES</text>
+    <rect class="pill" x="460" y="790" width="110" height="38" rx="13" stroke="#d97706"/>
+    <text class="pillText" x="515" y="814" text-anchor="middle">SQS</text>
+    <rect class="pill" x="594" y="790" width="142" height="38" rx="13" stroke="#7c3aed"/>
+    <text class="pillText" x="665" y="814" text-anchor="middle">DynamoDB / DAX</text>
+    <rect class="pill" x="760" y="790" width="190" height="38" rx="13" stroke="#2563eb"/>
+    <text class="pillText" x="855" y="814" text-anchor="middle">CloudWatch / Logs</text>
+    <rect class="pill" x="974" y="790" width="116" height="38" rx="13" stroke="#059669"/>
+    <text class="pillText" x="1032" y="814" text-anchor="middle">IMDS</text>
+    <rect class="pill" x="1114" y="790" width="110" height="38" rx="13" stroke="#d97706"/>
+    <text class="pillText" x="1169" y="814" text-anchor="middle">KMS</text>
+    <rect class="pill" x="1248" y="790" width="176" height="38" rx="13" stroke="#7c3aed"/>
+    <text class="pillText" x="1336" y="814" text-anchor="middle">Secrets / SSM</text>
+  </g>
+
+  <g id="contract">
+    <rect class="band" x="92" y="918" width="1416" height="98" rx="18"/>
+    <text class="bandTitle" x="118" y="956">MODULE CONTRACT</text>
+    <text class="footerText" x="140" y="990">No awspring runtime dependency. AWS service SDKs are compileOnly here; applications add only the runtime services they use.</text>
+  </g>
+
+  <path class="route" d="M 800 310 V 354" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  <text class="routeText" x="846" y="338">Spring Boot imports conditional auto-configurations</text>
+  <path class="route" d="M 800 676 V 720" stroke="#059669" marker-end="url(#arrowGreen)"/>
+  <text class="routeText" x="846" y="704">created beans call selected AWS SDK clients</text>
+  <path class="route" d="M 800 874 V 918" stroke="#d97706" marker-end="url(#arrowAmber)"/>
+  <text class="routeText" x="846" y="902">runtime dependency choice stays with the application</text>
 </svg>

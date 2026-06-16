@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-labelledby="title desc">
+  <title id="title">AWS Spring Boot Configuration Flow</title>
+  <desc id="desc">Spring Boot startup flow for remote S3, Secrets Manager, and Parameter Store property sources before normal bean binding and auto-configuration.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="returnArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#9b7d54"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
+      .canvas{fill:#f8fafc}
+      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#shadow)}
+      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
+      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
+      .lane{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
+      .laneTitle{font-family:"Comic Mono";font-size:18px;font-weight:700;fill:#475569}
+      .card{fill:#ffffff;stroke-width:2.3;filter:url(#shadow)}
+      .cardTitle{font-family:"Architects Daughter";font-size:25px;fill:#17233a}
+      .cardText{font-family:"Comic Mono";font-size:15px;fill:#475569}
+      .flow{fill:none;stroke:#2563eb;stroke-width:4.5;marker-end:url(#arrow)}
+      .return{fill:none;stroke:#9b7d54;stroke-width:3;stroke-dasharray:8 7;marker-end:url(#returnArrow)}
+      .note{font-family:"Comic Mono";font-size:15px;fill:#334155}
+      .footer{font-family:"Comic Mono";font-size:15px;fill:#475569}
+    </style>
+  </defs>
+  <rect class="canvas" width="1600" height="1080"/>
+  <rect class="frame" x="42" y="36" width="1516" height="1008" rx="24"/>
+  <text class="title" x="800" y="96" text-anchor="middle">AWS Spring Boot Configuration Flow</text>
+  <text class="subtitle" x="800" y="132" text-anchor="middle">Remote configuration is loaded before bean binding; failed lazy refresh keeps the previous property values.</text>
+
+  <rect class="lane" x="92" y="180" width="1416" height="176" rx="18"/>
+  <text class="laneTitle" x="118" y="218">SPRING BOOT STARTUP</text>
+  <g filter="url(#shadow)">
+    <rect class="card" x="125" y="250" width="390" height="72" rx="14" stroke="#2563eb"/>
+    <text class="cardTitle" x="320" y="282" text-anchor="middle">EnvironmentPostProcessor</text>
+    <text class="cardText" x="320" y="306" text-anchor="middle">runs before ApplicationContext refresh</text>
+    <rect class="card" x="605" y="250" width="390" height="72" rx="14" stroke="#059669"/>
+    <text class="cardTitle" x="800" y="282" text-anchor="middle">bind remote source props</text>
+    <text class="cardText" x="800" y="306" text-anchor="middle">enabled + non-empty sources required</text>
+    <rect class="card" x="1085" y="250" width="390" height="72" rx="14" stroke="#d97706"/>
+    <text class="cardTitle" x="1280" y="282" text-anchor="middle">classpath guard</text>
+    <text class="cardText" x="1280" y="306" text-anchor="middle">S3 / Secrets Manager / SSM SDK present</text>
+  </g>
+  <path class="flow" d="M 515 286 H 593"/>
+  <path class="flow" d="M 995 286 H 1073"/>
+
+  <rect class="lane" x="92" y="414" width="1416" height="206" rx="18"/>
+  <text class="laneTitle" x="118" y="452">REMOTE LOADERS</text>
+  <g filter="url(#shadow)">
+    <rect class="card" x="125" y="486" width="390" height="86" rx="14" stroke="#2563eb"/>
+    <text class="cardTitle" x="320" y="520" text-anchor="middle">S3 config object</text>
+    <text class="cardText" x="320" y="546" text-anchor="middle">properties, yaml, json, auto format</text>
+    <rect class="card" x="605" y="486" width="390" height="86" rx="14" stroke="#059669"/>
+    <text class="cardTitle" x="800" y="520" text-anchor="middle">Secrets Manager</text>
+    <text class="cardText" x="800" y="546" text-anchor="middle">json/properties/yaml flattened with prefix</text>
+    <rect class="card" x="1085" y="486" width="390" height="86" rx="14" stroke="#d97706"/>
+    <text class="cardTitle" x="1280" y="520" text-anchor="middle">Parameter Store</text>
+    <text class="cardText" x="1280" y="546" text-anchor="middle">path names mapped to dotted keys</text>
+  </g>
+  <path class="flow" d="M 320 322 V 474"/>
+  <path class="flow" d="M 800 322 V 474"/>
+  <path class="flow" d="M 1280 322 V 474"/>
+
+  <rect class="lane" x="92" y="678" width="1416" height="176" rx="18"/>
+  <text class="laneTitle" x="118" y="716">ENVIRONMENT BINDING</text>
+  <g filter="url(#shadow)">
+    <rect class="card" x="125" y="748" width="390" height="72" rx="14" stroke="#2563eb"/>
+    <text class="cardTitle" x="320" y="780" text-anchor="middle">addAwsPropertySource()</text>
+    <text class="cardText" x="320" y="804" text-anchor="middle">earlier configured source has higher priority</text>
+    <rect class="card" x="605" y="748" width="390" height="72" rx="14" stroke="#059669"/>
+    <text class="cardTitle" x="800" y="780" text-anchor="middle">normal bean binding</text>
+    <text class="cardText" x="800" y="804" text-anchor="middle">@ConfigurationProperties sees resolved keys</text>
+    <rect class="card" x="1085" y="748" width="390" height="72" rx="14" stroke="#d97706"/>
+    <text class="cardTitle" x="1280" y="780" text-anchor="middle">optional lazy refresh</text>
+    <text class="cardText" x="1280" y="804" text-anchor="middle">reload after refreshInterval on access</text>
+  </g>
+  <path class="flow" d="M 320 572 V 736"/>
+  <path class="flow" d="M 800 572 V 736"/>
+  <path class="flow" d="M 1280 572 V 736"/>
+  <path class="flow" d="M 515 784 H 593"/>
+  <path class="flow" d="M 995 784 H 1073"/>
+  <path class="return" d="M 1280 820 V 878 H 320 V 832"/>
+
+  <rect x="142" y="906" width="1316" height="62" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text class="note" x="170" y="936">Reader contract: S3, Secrets Manager, and Parameter Store values enter Spring Environment before AWS client beans and Exposed registry are created.</text>
+  <text class="footer" x="170" y="960">If a lazy reload fails, the previous property values remain active.</text>
+</svg>
