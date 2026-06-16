@@ -1,15 +1,25 @@
 # Module bluetape4k-aws-spring-boot
 
-[English](README.md) | [한국어](README.ko.md)
+English | [한국어](README.ko.md)
 
-Spring Boot 4 auto-configuration for AWS Java SDK v2. Provides coroutine-first
-templates, a SQS listener container, CloudWatch metric/log helpers, EC2 IMDS
-metadata operations, and remote Environment sources, with no `awspring` runtime
-dependency.
+Spring Boot 4 auto-configuration for AWS Java SDK v2 without an `awspring`
+runtime dependency. The module provides coroutine-first templates, an SQS
+listener container, CloudWatch metric/log helpers, EC2 IMDS metadata operations,
+remote Environment sources, and AWS-backed Exposed database wiring.
 
-## Architecture
+## Diagrams
 
-![aws spring boot Architecture diagram](../docs/images/readme-diagrams/aws-spring-boot-architecture-01.png)
+### Module Architecture
+
+![AWS Spring Boot architecture diagram](../docs/images/readme-diagrams/aws-spring-boot-architecture-01.png)
+
+### Configuration Flow
+
+![AWS Spring Boot configuration flow diagram](../docs/images/readme-diagrams/aws-spring-boot-flow-02.png)
+
+### SQS Listener Sequence
+
+![AWS Spring Boot SQS listener sequence diagram](../docs/images/readme-diagrams/aws-spring-boot-sequence-03.png)
 
 ## Core Features
 

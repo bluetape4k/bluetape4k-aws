@@ -2,52 +2,63 @@
 
 [English](README.md) | 한국어
 
-AWS Java SDK v2 를 위한 Spring Boot 4 자동 설정 모듈. Coroutines 우선 템플릿과
-SQS 리스너 컨테이너, CloudWatch metric/log helper, EC2 IMDS metadata operation,
-원격 Environment source 를 제공하며, `awspring` 런타임 의존성은 사용하지 않는다.
+AWS Java SDK v2를 Spring Boot 4에서 바로 쓰기 위한 자동 설정 모듈입니다.
+Coroutine 우선 템플릿, SQS 리스너 컨테이너, CloudWatch metric/log helper,
+EC2 IMDS metadata operation, 원격 Environment source, AWS-backed Exposed
+데이터베이스 연결을 제공합니다. `awspring` 런타임 의존성은 사용하지 않습니다.
 
-## Architecture
+## 다이어그램
 
-![aws spring boot Architecture diagram](../docs/images/readme-diagrams/aws-spring-boot-architecture-01.png)
+### 모듈 아키텍처
+
+![AWS Spring Boot architecture diagram](../docs/images/readme-diagrams/aws-spring-boot-architecture-01.png)
+
+### 설정 흐름
+
+![AWS Spring Boot configuration flow diagram](../docs/images/readme-diagrams/aws-spring-boot-flow-02.png)
+
+### SQS 리스너 시퀀스
+
+![AWS Spring Boot SQS listener sequence diagram](../docs/images/readme-diagrams/aws-spring-boot-sequence-03.png)
 
 ## 주요 기능
 
-- **S3** — `S3CoroutinesTemplate` 로 버킷 존재 확인, 업로드/다운로드(바이트·문자열),
+- **S3** — `S3CoroutinesTemplate`로 버킷 존재 확인, 업로드/다운로드(바이트·문자열),
   삭제, 페이지 단위 조회(`listPage`/`listFlow`), Spring `Resource` 뷰, presigned
-  GET/PUT URL 발급을 지원한다.
-- **S3 Vectors** — 선택적 `S3VectorsOperations` 로 vector bucket/index 조회와
-  vector put/get/list/query 호출을 지원한다.
-- **SNS** — `SnsCoroutinesTemplate` 로 topic 생성/조회, topic publish, FIFO publish
+  GET/PUT URL 발급을 지원합니다.
+- **S3 Vectors** — 선택적 `S3VectorsOperations`로 vector bucket/index 조회와
+  vector put/get/list/query 호출을 지원합니다.
+- **SNS** — `SnsCoroutinesTemplate`로 topic 생성/조회, topic publish, FIFO publish
   필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
-  confirmation 을 지원한다.
-- **SES** — `SesCoroutinesMailSender` 로 simple, template, raw, attachment,
-  custom-header email send 를 지원하고, 선택적 Spring `JavaMailSender` adapter 를 제공한다.
-- **SQS** — `SqsCoroutinesTemplate` 로 큐 조회·생성, 송신, 수신, visibility 변경,
-  cold `Flow<SqsReceivedMessage>` 스트림을 제공한다.
-- **SQS 리스너** — `@SqsListener` 어노테이션 기반의 Coroutine 메시지 리스너 컨테이너.
-  동시 처리 수, visibility/error-visibility 타임아웃을 속성으로 조정한다.
+  confirmation을 지원합니다.
+- **SES** — `SesCoroutinesMailSender`로 simple, template, raw, attachment,
+  custom-header email send를 지원하고, 선택적 Spring `JavaMailSender` adapter를 제공합니다.
+- **SQS** — `SqsCoroutinesTemplate`로 큐 조회·생성, 송신, 수신, visibility 변경,
+  cold `Flow<SqsReceivedMessage>` 스트림을 제공합니다.
+- **SQS 리스너** — `@SqsListener` 어노테이션 기반 Coroutine 메시지 리스너 컨테이너입니다.
+  동시 처리 수와 visibility/error-visibility 타임아웃을 속성으로 조정합니다.
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` 추상 베이스가
-  `DynamoDbAsyncTable` 위에서 `save`/`findById`/`update`/`delete` 와
-  `scan`/`query`/`queryIndex` 의 `Flow` 결과를 제공한다. 논리 테이블 이름은
+  `DynamoDbAsyncTable` 위에서 `save`/`findById`/`update`/`delete`와
+  `scan`/`query`/`queryIndex`의 `Flow` 결과를 제공합니다. 논리 테이블 이름은
   `DynamoDbTableNameResolver`(기본 구현은 `tablePrefix` 적용)로 해석되며,
-  async client 는 선택적으로 DynamoDB Accelerator(DAX)로 구성할 수 있다.
-- **CloudWatch / CloudWatch Logs** — `CloudWatchCoroutinesTemplate` 과
-  `CloudWatchLogsCoroutinesTemplate` 로 coroutine metric/log publishing 을 제공하고,
-  Micrometer가 있을 때 application `MeterRegistry` 를 읽는 선택적
-  `CloudWatchMeterPublishingOperations` helper 를 제공한다.
-- **EC2 IMDS** — `ImdsOperations` 가 AWS SDK v2 IMDS 호출을 coroutine method 와
-  operation timeout 으로 감싸 EC2 instance metadata 조회를 제공한다.
-- **KMS** — `KmsOperations` 로 coroutine 암호화/복호화와 data key 생성을
+  async client는 선택적으로 DynamoDB Accelerator(DAX)로 구성할 수 있습니다.
+- **CloudWatch / CloudWatch Logs** — `CloudWatchCoroutinesTemplate`과
+  `CloudWatchLogsCoroutinesTemplate`로 coroutine metric/log publishing을 제공하고,
+  Micrometer가 있을 때 application `MeterRegistry`를 읽는 선택적
+  `CloudWatchMeterPublishingOperations` helper를 제공합니다.
+- **EC2 IMDS** — `ImdsOperations`가 AWS SDK v2 IMDS 호출을 coroutine method와
+  operation timeout으로 감싸 EC2 instance metadata 조회를 제공합니다.
+- **KMS** — `KmsOperations`로 coroutine 암호화/복호화와 data key 생성을
   제공하고, 선택적 Spring Security `TextEncryptor`, `String` 필드용 명시적
-  `@KmsEncrypted` + `KmsEncryptedFieldCodec` 를 지원한다.
-- **S3 / Secrets Manager / Parameter Store config** — S3 object, 원격 secret/parameter 를
-  시작 시점에 Spring Environment 로 로드하고, 선택적 lazy refresh 및 Spring `@Value` 기반의
-  `@SecretsValue` / `@ParameterStoreValue` 조합 어노테이션을 제공한다.
+  `@KmsEncrypted` + `KmsEncryptedFieldCodec`를 지원합니다.
+- **S3 / Secrets Manager / Parameter Store config** — S3 object, 원격 secret/parameter를
+  시작 시점에 Spring Environment로 로드합니다. 선택적 lazy refresh와 Spring `@Value` 기반
+  `@SecretsValue` / `@ParameterStoreValue` 조합 어노테이션도 제공합니다.
 - **Exposed 데이터베이스** — 명시적 속성 또는 Secrets Manager / Parameter Store 로
   로드한 Environment 값으로 AWS-backed `AwsExposedDatabaseRegistry`, 기본 Exposed
-  `Database`, 기본 `DataSource` 를 자동 설정한다.
-- **awspring 런타임 의존성 없음** — AWS SDK v2 서비스는 모두 `compileOnly` 로
-  선언되어 있어, 사용자는 실제로 쓰는 서비스만 골라 추가할 수 있다.
+  `Database`, 기본 `DataSource`를 자동 설정합니다.
+- **awspring 런타임 의존성 없음** — AWS SDK v2 서비스는 모두 `compileOnly`로
+  선언되어 있어, 애플리케이션은 실제로 쓰는 서비스만 골라 추가하면 됩니다.
 
 ## 의존성
 
@@ -237,43 +248,42 @@ bluetape4k:
           password: ${app.analytics.password}
 ```
 
-`bluetape4k.aws.region` 과 `bluetape4k.aws.endpoint-override` 는 자동 설정되는
-AWS SDK v2 client 의 공유 기본값이다. `bluetape4k.aws.s3.region` 이나
+`bluetape4k.aws.region`과 `bluetape4k.aws.endpoint-override`는 자동 설정되는
+AWS SDK v2 client의 공유 기본값입니다. `bluetape4k.aws.s3.region`이나
 `bluetape4k.aws.sqs.endpoint-override` 같은 서비스별 속성이 공유 기본값보다
-우선한다. 실제로 적용되는 `endpoint-override` 가 있으면 실제 적용 region 도
-필요하다.
-`bluetape4k.aws.credentials.web-identity.enabled=true` 는 런타임 classpath 에
-`software.amazon.awssdk:sts` 가 있을 때 선택적으로
-`WebIdentityTokenFileCredentialsProvider` 를 등록한다. 조건이 맞지 않으면 AWS SDK
-기본 credentials provider chain 을 사용한다.
-생성되는 AWS SDK v2 builder 를 조정하려면 ordered `AwsSyncClientCustomizer`,
+우선합니다. 실제 적용되는 `endpoint-override`가 있으면 region도 함께 필요합니다.
+`bluetape4k.aws.credentials.web-identity.enabled=true`는 런타임 classpath에
+`software.amazon.awssdk:sts`가 있을 때 선택적으로
+`WebIdentityTokenFileCredentialsProvider`를 등록합니다. 조건이 맞지 않으면 AWS SDK
+기본 credentials provider chain을 사용합니다.
+생성되는 AWS SDK v2 builder를 조정하려면 ordered `AwsSyncClientCustomizer`,
 `AwsAsyncClientCustomizer`, 또는 typed
 `AwsClientCustomizer<S3ClientBuilder>` / `AwsClientCustomizer<SqsAsyncClientBuilder>`
-bean 을 등록한다.
-`sns.topics.<name>` 은 `SnsOperations.createConfiguredTopic("<name>")` 에서 사용하는
-topic 생성 기본값이다.
-`sqs.queues.<name>.url` 은 `@SqsListener(queue = "<name>")` 에서 논리 큐 이름을
-실제 URL로 바꾸는 alias 설정이다. `SqsOperations.getQueueUrl("<name>")` 은 여전히
-AWS SQS `GetQueueUrl` 요청을 수행한다.
-`cloudwatch.namespace` 는 기본 namespace metric publishing method 에서 사용된다.
-Micrometer helper 는 application `MeterRegistry` bean 이 있을 때만 등록되며,
-명시적 method 호출 시점에 meter snapshot 을 읽고 활성 registry 를 대체하지 않는다.
-`cloudwatch-logs.log-group-name` 과 `cloudwatch-logs.log-stream-name` 은 기본 log-event
-publishing method 에서 사용된다.
-`imds.request-timeout` 은 각 metadata operation 을 제한한다. IMDS bean 생성은 metadata
-endpoint 를 호출하지 않으므로 EC2가 아닌 환경에서도 startup probe 비용이 없다.
-credential 조회는 AWS SDK default provider chain 또는 STS web identity 에 맡기고,
-`ImdsOperations` 는 안전한 metadata helper 만 노출한다.
-S3 config, Secrets Manager, Parameter Store source 는 `EnvironmentPostProcessor` 로
-일반 bean binding 전에 로드된다. S3 config source 는 단일 object 를 `properties`,
-`yaml`, `json` 형식으로 읽는다. `auto` 형식은 object key 확장자로 parser 를 고르고,
-알 수 없으면 `properties` 로 처리한다. `refresh-interval` 을 설정하면 interval 이
-지난 뒤 property 접근 시점에 lazy reload 하며, reload 실패 시에는 이전 값을 유지한다.
-여러 원격 source 가 같은 key 를 제공하면 먼저 설정된 source 가 더 높은 Spring
-property-source 우선순위를 가진다.
-`bluetape4k.aws.exposed.default-database.url` 이 있을 때 Exposed registry 가
-활성화된다. URL 이 없으면 Exposed auto-configuration 은 property binding 만 제공하고
-registry 나 database pool 은 만들지 않는다.
+bean을 등록합니다.
+`sns.topics.<name>`은 `SnsOperations.createConfiguredTopic("<name>")`에서 사용하는
+topic 생성 기본값입니다.
+`sqs.queues.<name>.url`은 `@SqsListener(queue = "<name>")`에서 논리 큐 이름을
+실제 URL로 바꾸는 alias 설정입니다. `SqsOperations.getQueueUrl("<name>")`은 여전히
+AWS SQS `GetQueueUrl` 요청을 수행합니다.
+`cloudwatch.namespace`는 기본 namespace metric publishing method에서 사용됩니다.
+Micrometer helper는 application `MeterRegistry` bean이 있을 때만 등록되며,
+명시적 method 호출 시점에 meter snapshot을 읽습니다. 활성 registry를 대체하지는 않습니다.
+`cloudwatch-logs.log-group-name`과 `cloudwatch-logs.log-stream-name`은 기본 log-event
+publishing method에서 사용됩니다.
+`imds.request-timeout`은 각 metadata operation을 제한합니다. IMDS bean 생성은 metadata
+endpoint를 호출하지 않으므로 EC2가 아닌 환경에서도 startup probe 비용이 없습니다.
+credential 조회는 AWS SDK default provider chain 또는 STS web identity에 맡기고,
+`ImdsOperations`는 안전한 metadata helper만 노출합니다.
+S3 config, Secrets Manager, Parameter Store source는 `EnvironmentPostProcessor`로
+일반 bean binding 전에 로드됩니다. S3 config source는 단일 object를 `properties`,
+`yaml`, `json` 형식으로 읽습니다. `auto` 형식은 object key 확장자로 parser를 고르고,
+알 수 없으면 `properties`로 처리합니다. `refresh-interval`을 설정하면 interval이
+지난 뒤 property 접근 시점에 lazy reload하며, reload 실패 시에는 이전 값을 유지합니다.
+여러 원격 source가 같은 key를 제공하면 먼저 설정된 source가 더 높은 Spring
+property-source 우선순위를 가집니다.
+`bluetape4k.aws.exposed.default-database.url`이 있을 때 Exposed registry가
+활성화됩니다. URL이 없으면 Exposed auto-configuration은 property binding만 제공하고
+registry나 database pool은 만들지 않습니다.
 
 ## 사용 예제
 
@@ -296,12 +306,12 @@ class DatabaseTokenReader(
 )
 ```
 
-JSON secret 은 dot notation 으로 flatten 된다. 설정한 path 아래의 parameter 이름은
-dot-separated key 로 매핑되고, 두 source 모두 `prefix` 를 앞에 붙인다.
-`@SecretsValue` 와 `@ParameterStoreValue` 는 일반 Spring `@Value` placeholder 문법을
-사용한다.
-S3 config JSON object 도 같은 방식으로 flatten 된다. S3 `.properties` 와 YAML object 는
-Spring Boot property-source loader 로 읽은 뒤 설정된 `prefix` 를 앞에 붙인다.
+JSON secret은 dot notation으로 flatten됩니다. 설정한 path 아래의 parameter 이름은
+dot-separated key로 매핑되고, 두 source 모두 `prefix`를 앞에 붙입니다.
+`@SecretsValue`와 `@ParameterStoreValue`는 일반 Spring `@Value` placeholder 문법을
+사용합니다.
+S3 config JSON object도 같은 방식으로 flatten됩니다. S3 `.properties`와 YAML object는
+Spring Boot property-source loader로 읽은 뒤 설정된 `prefix`를 앞에 붙입니다.
 
 ### Exposed — AWS-backed database registry
 
@@ -332,14 +342,14 @@ class OrderQueryService(
 }
 ```
 
-Spring adapter 는 `bluetape4k-aws-exposed` 를 통해 registry 를 만들고, 애플리케이션이
-직접 제공한 bean 이 없을 때 default handle 을 Spring `DataSource` 와 Exposed
-`Database` 로 노출한다. Named database 는 `AwsExposedDatabaseRegistry` 로 조회한다.
-Secrets Manager 나 Parameter Store 의 값을 데이터베이스 설정으로 사용하려면 source 의
-`prefix` 를 `bluetape4k.aws.exposed.default-database` 처럼 지정하면 된다. 원격에서
-로드된 key 는 registry 생성 전에 Spring Environment 로 들어와 동일한 설정 prefix 에
-binding 된다. Pool lifecycle 은 registry 가 소유하므로 alias bean 은 pool 을 별도로
-닫지 않는다.
+Spring adapter는 `bluetape4k-aws-exposed`를 통해 registry를 만들고, 애플리케이션이
+직접 제공한 bean이 없을 때 default handle을 Spring `DataSource`와 Exposed
+`Database`로 노출합니다. Named database는 `AwsExposedDatabaseRegistry`로 조회합니다.
+Secrets Manager나 Parameter Store 값을 데이터베이스 설정으로 사용하려면 source의
+`prefix`를 `bluetape4k.aws.exposed.default-database`처럼 지정하면 됩니다. 원격에서
+로드된 key는 registry 생성 전에 Spring Environment로 들어와 동일한 설정 prefix에
+binding됩니다. Pool lifecycle은 registry가 소유하므로 alias bean은 pool을 별도로
+닫지 않습니다.
 
 ### S3 — Coroutines 템플릿
 
@@ -379,21 +389,21 @@ class DocumentStorage(
 }
 ```
 
-`S3Operations` 는 upload/download, resource, list, presigned URL 을 위한 기본
-small-object API 다. `S3TransferOperations` 는
-`software.amazon.awssdk:s3-transfer-manager` 가 classpath 에 있고
-`bluetape4k.aws.s3.transfer.enabled=true`(기본값)일 때만 활성화된다. 내부에서는
+`S3Operations`는 upload/download, resource, list, presigned URL을 위한 기본
+small-object API입니다. `S3TransferOperations`는
+`software.amazon.awssdk:s3-transfer-manager`가 classpath에 있고
+`bluetape4k.aws.s3.transfer.enabled=true`(기본값)일 때만 활성화됩니다. 내부에서는
 `aws` 모듈의 coroutine `S3TransferManager` 확장을 사용해 multipart file/byte
-transfer 를 수행한다. CRT-backed transfer 가 필요하면 CRT-backed `S3AsyncClient`
-bean 을 제공하면 된다. transfer manager auto-configuration 은 그 bean 을 재사용하므로
-기본 S3 사용자에게 CRT dependency 를 강제하지 않는다.
+transfer를 수행합니다. CRT-backed transfer가 필요하면 CRT-backed `S3AsyncClient`
+bean을 제공하면 됩니다. transfer manager auto-configuration은 그 bean을 재사용하므로
+기본 S3 사용자에게 CRT dependency를 강제하지 않습니다.
 
-`S3ClientSideEncryptionOperations` 는
-`bluetape4k.aws.s3.client-side-encryption.enabled=true` 이고 `KmsOperations`
-bean 이 있을 때 활성화된다. AWS KMS data key 를 생성하고 object byte 를 로컬에서
-AES-GCM 으로 암호화한 뒤 encrypted data key 와 nonce 를 S3 metadata 에 저장한다.
-이 helper 는 byte-array object 용이다. multipart 또는 streaming client-side
-encryption 은 지원하지 않으며, metadata format 은 AWS Encryption SDK 와 호환되지 않는다.
+`S3ClientSideEncryptionOperations`는
+`bluetape4k.aws.s3.client-side-encryption.enabled=true`이고 `KmsOperations`
+bean이 있을 때 활성화됩니다. AWS KMS data key를 생성하고 object byte를 로컬에서
+AES-GCM으로 암호화한 뒤 encrypted data key와 nonce를 S3 metadata에 저장합니다.
+이 helper는 byte-array object용입니다. multipart 또는 streaming client-side
+encryption은 지원하지 않으며, metadata format은 AWS Encryption SDK와 호환되지 않습니다.
 
 ### S3 Vectors — Spring Boot operations
 
@@ -424,9 +434,9 @@ class SemanticSearch(
 }
 ```
 
-자동설정은 `bluetape4k.aws.s3-vectors.enabled=true` 이고 `s3vectors` SDK가 있을 때만
-`S3VectorsAsyncClient` 와 `S3VectorsOperations` 를 등록합니다. 이 설정은 LocalStack,
-Floci, Ministack 의 S3 Vectors 동작을 보장하지 않습니다.
+자동설정은 `bluetape4k.aws.s3-vectors.enabled=true`이고 `s3vectors` SDK가 있을 때만
+`S3VectorsAsyncClient`와 `S3VectorsOperations`를 등록합니다. 이 설정은 LocalStack,
+Floci, Ministack의 S3 Vectors 동작을 보장하지 않습니다.
 
 ### SQS — 송수신
 
@@ -502,10 +512,10 @@ class OrderEmail(
 }
 ```
 
-`SesOperations` 는 convenience request 에 `bluetape4k.aws.ses.default-from` 과
-`configuration-set-name` 기본값을 적용한다. 하위 수준 `send(SendEmailRequest)` 는
-AWS SDK request 를 그대로 전송한다. JavaMail adapter 는 Spring `JavaMailSender`,
-Jakarta Mail, Angus Mail provider 가 런타임 classpath 에 있을 때만 등록된다.
+`SesOperations`는 convenience request에 `bluetape4k.aws.ses.default-from`과
+`configuration-set-name` 기본값을 적용합니다. 하위 수준 `send(SendEmailRequest)`는
+AWS SDK request를 그대로 전송합니다. JavaMail adapter는 Spring `JavaMailSender`,
+Jakarta Mail, Angus Mail provider가 런타임 classpath에 있을 때만 등록됩니다.
 
 ### SNS — Publish, SMS, HTTP endpoint message
 
@@ -547,12 +557,12 @@ class OrderNotifications(private val sns: SnsOperations) {
 }
 ```
 
-SNS 는 queue policy 가 topic ARN 의 `sqs:SendMessage` 를 허용하면 SQS subscription 으로
-fanout 할 수 있다. `SnsHttpMessageParser` 는 SNS HTTP JSON 과 선택적
-`x-amz-sns-message-type` header 를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
-`SigningCertURL` 은 거부한다. Signature 검증은 수행하지 않으므로 notification 처리나
+SNS는 queue policy가 topic ARN의 `sqs:SendMessage`를 허용하면 SQS subscription으로
+fanout할 수 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과 선택적
+`x-amz-sns-message-type` header를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
+`SigningCertURL`은 거부합니다. Signature 검증은 수행하지 않으므로 notification 처리나
 subscription confirmation 전에 certificate chain, signature, signature version, 기대한
-`TopicArn` 을 검증해야 한다.
+`TopicArn`을 검증해야 합니다.
 
 ### SQS — `@SqsListener` 어노테이션
 
@@ -580,22 +590,22 @@ class OrderListener {
 ```
 
 리스너 메서드는 `String`, AWS SDK `Message`, `SqsReceivedMessage`, 또는
-`SqsMessageConverter` bean 이 있을 때 typed payload 를 인자로 받을 수 있다. Jackson 3
-`ObjectMapper` 가 있으면 converter 가 자동 등록된다. `SqsAcknowledgement` 를 선언하면
-manual acknowledgement 모드가 되어 handler 가 `acknowledge()` 를 호출할 때만 메시지를
-삭제한다. `queue` 에는 SpEL 을 지원하지 않으며 `${...}` 플레이스홀더는 지원한다.
-`bluetape4k.aws.sqs.queues.orders.url` 을 설정하면 `queue = "orders"` 는 해당 URL을
-직접 사용한다.
-리스너 ack 는 성공 시 삭제 방식이다. 리스너 메서드가 정상 반환된 뒤에만 메시지를
-삭제하고, 예외가 발생하면 삭제하지 않는다. `error-visibility-timeout-seconds` 를
-설정하면 실패 메시지의 visibility 를 명시적으로 바꿔 재시도 타이밍을 제어한다.
-`listener.retry` 는 최종 실패 처리 전에 in-process retry 를 수행하며 linear/exponential
-backoff 와 optional jitter 를 지원한다. `SqsListenerInterceptor` bean 을 등록하면
+`SqsMessageConverter` bean이 있을 때 typed payload를 인자로 받을 수 있습니다. Jackson 3
+`ObjectMapper`가 있으면 converter가 자동 등록됩니다. `SqsAcknowledgement`를 선언하면
+manual acknowledgement 모드가 되어 handler가 `acknowledge()`를 호출할 때만 메시지를
+삭제합니다. `queue`에는 SpEL을 지원하지 않으며 `${...}` 플레이스홀더는 지원합니다.
+`bluetape4k.aws.sqs.queues.orders.url`을 설정하면 `queue = "orders"`는 해당 URL을
+직접 사용합니다.
+리스너 ack는 성공 시 삭제 방식입니다. 리스너 메서드가 정상 반환된 뒤에만 메시지를
+삭제하고, 예외가 발생하면 삭제하지 않습니다. `error-visibility-timeout-seconds`를
+설정하면 실패 메시지의 visibility를 명시적으로 바꿔 재시도 타이밍을 제어합니다.
+`listener.retry`는 최종 실패 처리 전에 in-process retry를 수행하며 linear/exponential
+backoff와 optional jitter를 지원합니다. `SqsListenerInterceptor` bean을 등록하면
 receive, handler, ack/nack, failure 단계를 Micrometer나 logging/tracing library로
-관찰할 수 있다. `stop-timeout-millis` 는 poller 취소 후 컨테이너 종료 대기 시간을 제한한다.
+관찰할 수 있습니다. `stop-timeout-millis`는 poller 취소 후 컨테이너 종료 대기 시간을 제한합니다.
 
-FIFO 큐 메타데이터는 수신 시 `SqsReceivedMessage` 에 유지된다. FIFO 메시지는
-`SqsSendRequest` 로 group/deduplication ID 를 지정해 발송한다.
+FIFO 큐 메타데이터는 수신 시 `SqsReceivedMessage`에 유지됩니다. FIFO 메시지는
+`SqsSendRequest`로 group/deduplication ID를 지정해 발송합니다.
 
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsOperations
@@ -614,8 +624,8 @@ suspend fun publishOrder(sqs: SqsOperations, queueUrl: String, body: String) {
 ```
 
 `SqsReceivedMessage.messageGroupId`, `messageDeduplicationId`, `sequenceNumber`,
-`approximateReceiveCount`, `messageAttributes` 로 FIFO 및 재시도 처리에 필요한 SQS
-메타데이터를 읽을 수 있다.
+`approximateReceiveCount`, `messageAttributes`로 FIFO 및 재시도 처리에 필요한 SQS
+메타데이터를 읽을 수 있습니다.
 
 ### DynamoDB — Coroutines Repository
 
@@ -640,8 +650,8 @@ class OrderRepository(
 }
 ```
 
-`aws-spring-boot` 은 DynamoDB 테이블을 자동 생성하지 않는다. 마이그레이션,
-배포 자동화, 또는 테스트 셋업에서 명시적으로 테이블을 만들어야 한다.
+`aws-spring-boot`는 DynamoDB 테이블을 자동 생성하지 않습니다. 마이그레이션,
+배포 자동화, 또는 테스트 셋업에서 명시적으로 테이블을 만들어야 합니다.
 
 DynamoDB Accelerator(DAX)는 사용하는 애플리케이션에 DAX runtime dependency가 있을
 때만 활성화한다.
@@ -664,11 +674,11 @@ bluetape4k:
         write-retries: 2
 ```
 
-DAX가 활성화되면 auto-configuration 은 DAX-backed `DynamoDbAsyncClient` 를
-제공하고 기존 `DynamoDbEnhancedAsyncClient` 와 repository base class 는 그대로
-사용된다. DAX는 실제 AWS cluster cache 이며 emulator 기능이 아니다. LocalStack,
+DAX가 활성화되면 auto-configuration은 DAX-backed `DynamoDbAsyncClient`를
+제공하고 기존 `DynamoDbEnhancedAsyncClient`와 repository base class는 그대로
+사용됩니다. DAX는 실제 AWS cluster cache이며 emulator 기능이 아닙니다. LocalStack,
 Floci, DynamoDB Local 테스트는 일반 DynamoDB client 경로를 유지하고, DAX cache
-consistency 가정은 애플리케이션 boundary 에 문서화한다.
+consistency 가정은 애플리케이션 boundary에 문서화합니다.
 
 ### CloudWatch — Metrics, Logs, Micrometer
 
@@ -697,16 +707,16 @@ class OrderObservability(
 }
 ```
 
-`bluetape4k-aws-spring-boot` 는 Spring Boot 애플리케이션의 관측성 baseline 에 맞춰
-`micrometer-core` 를 일반 의존성으로 포함한다. 단,
-`micrometer-registry-cloudwatch` 를 자동 설정하지는 않는다. registry 수준의
-scheduled publishing 이 필요하면 애플리케이션에서 해당 registry 를 추가한다. 내장
-helper 는 현재 `MeterRegistry` 를 읽어 명시적으로 한 번 publish 하는 snapshot
-publisher 이다.
+`bluetape4k-aws-spring-boot`는 Spring Boot 애플리케이션의 관측성 baseline에 맞춰
+`micrometer-core`를 일반 의존성으로 포함합니다. 단,
+`micrometer-registry-cloudwatch`를 자동 설정하지는 않습니다. registry 수준의
+scheduled publishing이 필요하면 애플리케이션에서 해당 registry를 추가합니다. 내장
+helper는 현재 `MeterRegistry`를 읽어 명시적으로 한 번 publish하는 snapshot
+publisher입니다.
 
-`MeterRegistry` bean 이 있으면 low-cardinality SQS/S3 operation timer 도 자동으로
-등록됩니다. SQS instrumentation 은 send, receive, listener handler, acknowledgement,
-failure phase 를 다룹니다. S3 instrumentation 은 upload, download, delete, list,
+`MeterRegistry` bean이 있으면 low-cardinality SQS/S3 operation timer도 자동으로
+등록됩니다. SQS instrumentation은 send, receive, listener handler, acknowledgement,
+failure phase를 다룹니다. S3 instrumentation은 upload, download, delete, list,
 resource, presign operation 을 다룹니다. Queue URL, message ID, receipt handle,
 object key, raw exception message 는 기본 tag 로 사용하지 않습니다.
 
@@ -731,17 +741,17 @@ class InstanceMetadataReporter(
 }
 ```
 
-`ImdsOperations` 는 AWS SDK v2 `Ec2MetadataAsyncClient` 로 위임하고 각 호출을 설정된
-timeout 으로 감싼다. Spring startup 중에는 수동적이며, EC2에서 실행되는 애플리케이션의
-instance metadata 조회 용도로만 사용한다. IAM role credential document 는 노출하지
-않는다. 애플리케이션 credential 은 `DefaultCredentialsProvider`, STS web identity,
-또는 명시적 AWS SDK credentials provider 에 맡긴다.
+`ImdsOperations`는 AWS SDK v2 `Ec2MetadataAsyncClient`로 위임하고 각 호출을 설정된
+timeout으로 감쌉니다. Spring startup 중에는 수동적이며, EC2에서 실행되는 애플리케이션의
+instance metadata 조회 용도로만 사용합니다. IAM role credential document는 노출하지
+않습니다. 애플리케이션 credential은 `DefaultCredentialsProvider`, STS web identity,
+또는 명시적 AWS SDK credentials provider에 맡깁니다.
 
 ### KMS — 명시적 필드 암호화
 
-`@KmsEncrypted` 는 mapper/converter 경계에서 사용하는 metadata 이다. DTO,
-entity, configuration properties, 기존 plaintext 데이터를 투명하게 변경하지 않는다.
-첫 지원 타입은 `String`/`String?` 이다.
+`@KmsEncrypted`는 mapper/converter 경계에서 사용하는 metadata입니다. DTO,
+entity, configuration properties, 기존 plaintext 데이터를 투명하게 변경하지 않습니다.
+첫 지원 타입은 `String`/`String?`입니다.
 
 ```kotlin
 import io.bluetape4k.aws.spring.kms.KmsEncrypted
@@ -766,16 +776,16 @@ class CustomerSecretMapper(private val codec: KmsEncryptedFieldCodec) {
 }
 ```
 
-Ciphertext 문자열은 `b4k-kms:v1:` prefix 를 사용한다. 잘못된 ciphertext, 지원하지
-않는 field type, 누락된 key id, KMS 복호화 실패는 결정적인 예외로 실패한다. 서비스
-단위 payload 나 envelope encryption 은 직접 `KmsOperations` 를 사용하고, 필드
-암호화는 짧은 단일 `String` 이 안정적인 persistence/serialization 경계를 가져야 할 때
-사용한다.
+Ciphertext 문자열은 `b4k-kms:v1:` prefix를 사용합니다. 잘못된 ciphertext, 지원하지
+않는 field type, 누락된 key id, KMS 복호화 실패는 결정적인 예외로 실패합니다. 서비스
+단위 payload나 envelope encryption은 직접 `KmsOperations`를 사용하고, 필드
+암호화는 짧은 단일 `String`이 안정적인 persistence/serialization 경계를 가져야 할 때
+사용합니다.
 
 ## 테스트
 
-`src/test/...` 에 로컬 AWS emulator 기반 통합 테스트가 포함되어 있다. 기본값은
-Floci 이며 `-Dbluetape4k.aws.emulator=...` 로 전환할 수 있다:
+`src/test/...`에 로컬 AWS emulator 기반 통합 테스트가 포함되어 있습니다. 기본값은
+Floci이며 `-Dbluetape4k.aws.emulator=...`로 전환할 수 있습니다:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
