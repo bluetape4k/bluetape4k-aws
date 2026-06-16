@@ -5,7 +5,8 @@
 `aws-spring-boot` DynamoDB 자동설정을 사용하는 Spring Boot 4 WebFlux 예제입니다.
 `DynamoDbAutoConfiguration`을 연결하고,
 `AbstractCoroutinesDynamoDbRepository` 기반 `OrderRepository`와 작은 `/orders`
-REST API를 제공합니다.
+REST API를 제공합니다. DynamoDB enhanced async client 위에서 coroutine CRUD를 구성할
+때 복사해 쓰기 좋은 작은 예제입니다.
 
 ## 아키텍처
 
@@ -26,7 +27,8 @@ class Order {
 ```
 
 `OrderRepository`는 table name을 `orders`로 해석하고, item과 id 값을 enhanced
-client `Key`로 변환합니다.
+client `Key`로 변환합니다. Repository method는 suspend 또는 `Flow` 기반으로 유지하고,
+enhanced client와 table name resolver는 Spring Boot 자동설정에서 받습니다.
 
 ## API
 
@@ -57,9 +59,10 @@ bluetape4k:
       enabled: true
 ```
 
-LocalStack 테스트는 `ApplicationContextRunner`로
+LocalStack 또는 Floci 테스트는 `ApplicationContextRunner`로
 `bluetape4k.aws.dynamodb.region`과
-`bluetape4k.aws.dynamodb.endpoint-override`를 제공합니다.
+`bluetape4k.aws.dynamodb.endpoint-override`를 제공합니다. Runner는 emulator credential도
+`AwsCredentialsProvider` bean으로 공급합니다.
 
 ## 실행
 
@@ -72,6 +75,9 @@ LocalStack 테스트는 `ApplicationContextRunner`로
 ```bash
 ./gradlew :aws-spring-boot-dynamodb-examples:test
 ```
+
+테스트 suite는 repository CRUD, scan, `SuspendedJobTester` 기반 concurrent save/find,
+그리고 `WebTestClient` 기반 controller HTTP layer를 검증합니다.
 
 ## AOT
 
