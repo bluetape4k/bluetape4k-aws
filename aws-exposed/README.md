@@ -21,7 +21,7 @@ resolve AWS configuration and pass the final JDBC settings to this foundation.
 contain the raw secret and must stay inside trusted process or storage
 boundaries.
 
-## Architecture
+## Diagrams
 
 ### Module Architecture
 

@@ -1,82 +1,118 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="370" viewBox="0 0 1460 370" role="img" aria-label="AWS Exposed configuration flow">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1060" viewBox="0 0 1600 1060" role="img" aria-labelledby="title desc">
+  <title id="title">AWS Exposed Configuration Flow</title>
+  <desc id="desc">Configuration flow from application properties through resolver, validation, authentication, Hikari datasource creation, Exposed database handle creation, and registry cleanup behavior.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="12.5" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#2563eb" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="none"/>
+    </marker>
+    <marker id="soft-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#64748b" stroke="#64748b" stroke-width="1.2" stroke-dasharray="none"/>
+    </marker>
+    <filter id="shadow" x="-12%" y="-12%" width="124%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+    <style>
+      .canvas { fill: #f8fafc; }
+      .title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 52px; fill: #17233a; }
+      .subtitle { font-family: "Comic Mono", monospace; font-size: 22px; fill: #475569; }
+      .step-title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 27px; fill: #17233a; }
+      .step-text { font-family: "Comic Mono", monospace; font-size: 17px; fill: #475569; }
+      .lane-title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 31px; fill: #475569; }
+      .lane-note { font-family: "Comic Mono", monospace; font-size: 17px; fill: #5a6c7a; }
+      .tag { font-family: "Comic Mono", monospace; font-size: 17px; fill: #29465f; }
+      .footer { font-family: "Comic Mono", monospace; font-size: 18px; fill: #475569; }
+      .lane { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 3; }
+      .lane-auth { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 3; }
+      .lane-output { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 3; }
+      .step { fill: #ffffff; stroke: #2563eb; stroke-width: 2.6; }
+      .step-strong { fill: #ffffff; stroke: #059669; stroke-width: 2.8; }
+      .branch { fill: #ffffff; stroke: #d97706; stroke-width: 2.8; }
+      .danger { fill: #fffefa; stroke: #d97706; stroke-width: 2.6; stroke-dasharray: 10 8; }
+      .flow { fill: none; stroke: #2563eb; stroke-width: 5; marker-end: url(#arrow); }
+      .soft { fill: none; stroke: #64748b; stroke-width: 3.2; stroke-dasharray: 8 7; marker-end: url(#soft-arrow); }
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="26" y="26" width="1408" height="318" rx="14" class="frame"/>
-<text class="title" x="54" y="72">AWS Exposed configuration flow</text>
-<text class="subtitle" x="56" y="104">Resolved database settings are redacted, converted into Hikari configuration, and registered as Exposed handles.</text>
-<g id="routes">
-<path class="edge" d="M 294.0 198.0 L 332.0 198.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<path class="edge" d="M 572.0 198.0 L 610.0 198.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
-<path class="edge" d="M 850.0 198.0 L 888.0 198.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<path class="edge" d="M 1128.0 198.0 L 1166.0 198.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-</g>
-<g id="raw">
-  <rect class="card" x="54.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E8F3FF" stroke="#5B8DEF"/>
-  <text class="card-title" x="174.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Raw settings</text>
-  <text class="detail" x="174.0" y="219.0" text-anchor="middle" dominant-baseline="middle">local or AWS-resolved</text>
-</g>
-<g id="secret">
-  <rect class="card" x="332.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#EAF7EF" stroke="#58A978"/>
-  <text class="card-title" x="452.0" y="195.0" text-anchor="middle" dominant-baseline="middle">AwsSecretString</text>
-  <text class="detail" x="452.0" y="219.0" text-anchor="middle" dominant-baseline="middle">redacted diagnostics</text>
-</g>
-<g id="auth">
-  <rect class="card" x="610.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#F1ECFF" stroke="#8A72D6"/>
-  <text class="card-title" x="730.0" y="195.0" text-anchor="middle" dominant-baseline="middle">RDS IAM token</text>
-  <text class="detail" x="730.0" y="219.0" text-anchor="middle" dominant-baseline="middle">optional password</text>
-</g>
-<g id="factory">
-  <rect class="card" x="888.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#E9F7F6" stroke="#45A7A1"/>
-  <text class="card-title" x="1008.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Factory create</text>
-  <text class="detail" x="1008.0" y="219.0" text-anchor="middle" dominant-baseline="middle">Hikari + Exposed</text>
-</g>
-<g id="handle">
-  <rect class="card" x="1166.0" y="150.0" width="240.0" height="96.0" rx="10" fill="#FFF7ED" stroke="#F97316"/>
-  <text class="card-title" x="1286.0" y="195.0" text-anchor="middle" dominant-baseline="middle">Database handle</text>
-  <text class="detail" x="1286.0" y="219.0" text-anchor="middle" dominant-baseline="middle">registry stores</text>
-</g>
-<rect class="footer" x="54" y="276" width="1352" height="54" rx="8"/>
-<text class="footer-title" x="74" y="299" dominant-baseline="middle">Outcome</text>
-<text class="footer-detail" x="74" y="319" dominant-baseline="middle">Serialized secrets must stay inside trusted process or storage boundaries.</text>
+  <rect class="canvas" width="1600" height="1060"/>
+  <rect x="34" y="30" width="1532" height="996" rx="28" fill="#ffffff" stroke="#8aa6cf" stroke-width="3"/>
+
+  <text class="title" x="80" y="102">AWS Exposed Configuration Flow</text>
+  <text class="subtitle" x="82" y="140">A resolved database definition becomes a Hikari-backed Exposed handle; auth mode decides how the JDBC password is supplied.</text>
+
+  <rect class="lane" x="82" y="188" width="1436" height="288" rx="22"/>
+  <text class="lane-title" x="112" y="235">Configuration pipeline</text>
+  <text class="lane-note" x="112" y="266">The foundation receives final settings and validates them before opening an Exposed boundary.</text>
+
+  <g filter="url(#shadow)">
+    <rect class="step" x="122" y="306" width="240" height="116" rx="16"/>
+    <text class="step-title" x="148" y="343">1. Supply config</text>
+    <text class="step-text" x="148" y="374">defaultDatabase</text>
+    <text class="step-text" x="148" y="400">namedDatabases</text>
+
+    <rect class="step" x="426" y="306" width="240" height="116" rx="16"/>
+    <text class="step-title" x="452" y="343">2. Resolve</text>
+    <text class="step-text" x="452" y="374">resolver hook</text>
+    <text class="step-text" x="452" y="400">databaseName scoped</text>
+
+    <rect class="step-strong" x="730" y="306" width="240" height="116" rx="16"/>
+    <text class="step-title" x="756" y="343">3. Validate</text>
+    <text class="step-text" x="756" y="374">url and driver class</text>
+    <text class="step-text" x="756" y="400">auth mode invariants</text>
+
+    <rect class="step" x="1034" y="306" width="240" height="116" rx="16"/>
+    <text class="step-title" x="1060" y="343">4. Build data</text>
+    <text class="step-text" x="1060" y="374">Hikari config</text>
+    <text class="step-text" x="1060" y="400">JDBC properties</text>
+
+    <rect class="step" x="1308" y="306" width="170" height="116" rx="16"/>
+    <text class="step-title" x="1336" y="343">5. Connect</text>
+    <text class="step-text" x="1336" y="374">Exposed</text>
+    <text class="step-text" x="1336" y="400">Database</text>
+  </g>
+
+  <path class="flow" d="M 362 364 H 414"/>
+  <path class="flow" d="M 666 364 H 718"/>
+  <path class="flow" d="M 970 364 H 1022"/>
+  <path class="flow" d="M 1274 364 H 1296"/>
+
+  <path class="flow" d="M 850 422 V 530"/>
+
+  <rect class="lane-auth" x="82" y="530" width="1436" height="302" rx="22"/>
+  <text class="lane-title" x="112" y="577">Authentication branch</text>
+  <text class="lane-note" x="112" y="608">`STATIC_PASSWORD` and `RDS_IAM` are mutually exclusive in `AwsDatabaseConnectionProperties`.</text>
+
+  <g filter="url(#shadow)">
+    <rect class="branch" x="156" y="652" width="420" height="118" rx="16"/>
+    <text class="step-title" x="184" y="690">STATIC_PASSWORD</text>
+    <text class="step-text" x="184" y="722">uses `AwsSecretString.reveal()` only</text>
+    <text class="step-text" x="184" y="748">at the JDBC boundary</text>
+
+    <rect class="branch" x="636" y="652" width="420" height="118" rx="16"/>
+    <text class="step-title" x="664" y="690">RDS_IAM</text>
+    <text class="step-text" x="664" y="722">requires region, real RDS hostname,</text>
+    <text class="step-text" x="664" y="748">port, effective username, SDK RDS runtime</text>
+
+    <rect class="branch" x="1116" y="652" width="320" height="118" rx="16"/>
+    <text class="step-title" x="1144" y="690">Token cache</text>
+    <text class="step-text" x="1144" y="722">refreshes before expiry</text>
+    <text class="step-text" x="1144" y="748">wraps generator failures</text>
+  </g>
+
+  <path class="flow" d="M 836 610 C 732 648 512 612 380 640"/>
+  <path class="flow" d="M 864 610 C 852 622 850 632 850 640"/>
+  <path class="flow" d="M 1056 710 H 1104"/>
+
+  <path class="flow" d="M 366 770 C 472 840 640 856 790 892"/>
+  <path class="flow" d="M 1276 770 C 1164 840 1048 856 932 892"/>
+
+  <rect class="lane-output" x="82" y="892" width="1436" height="86" rx="22"/>
+  <text class="lane-title" x="112" y="944">Registry output</text>
+  <text class="footer" x="420" y="930">`createRegistry()` builds the default handle first, then named handles.</text>
+  <text class="footer" x="420" y="956">Any creation failure closes already-created handles in reverse order.</text>
+
+  <path class="soft" d="M 850 422 C 1010 504 1220 508 1276 640"/>
+  <rect class="danger" x="1092" y="488" width="386" height="82" rx="14"/>
+  <text class="tag" x="1122" y="514">RDS IAM token generation</text>
+  <text class="tag" x="1122" y="538">uses RdsUtilities; credentials</text>
+  <text class="tag" x="1122" y="562">may come from the SDK chain.</text>
 </svg>
