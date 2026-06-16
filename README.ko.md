@@ -563,6 +563,12 @@ refresh가 실패하면 마지막으로 성공한 값을 유지합니다.
 
 ### SQS — Spring Boot Coroutines Template과 Listener
 
+SQS auto-configuration은 coroutine operations API와 listener runtime을
+분리합니다. Listener method는 raw payload, Jackson 변환 payload, 선택적 manual
+acknowledgement를 사용할 수 있습니다.
+
+![SQS Spring Boot runtime](docs/images/readme-diagrams/bluetape4k-aws-sqs-components-18.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsListener
 import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
@@ -591,11 +597,13 @@ class OrderQueue(
 }
 ```
 
-Typed listener payload 는 `SqsMessageConverter` 로 활성화된다. Jackson 3
-`ObjectMapper` bean 이 있으면 converter 가 자동 등록된다. `SqsAcknowledgement` 를
-선언하면 manual acknowledgement 모드가 된다. Listener retry, backoff, jitter,
-`SqsListenerInterceptor` hook 으로 운영 환경의 redelivery 와 observability 흐름을
-구성할 수 있다.
+![SQS listener flow](docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-19.png)
+
+Typed listener payload는 `SqsMessageConverter`가 처리합니다. Jackson 3
+`ObjectMapper` bean이 있으면 converter가 자동 등록됩니다. `SqsAcknowledgement`를
+선언하면 listener는 manual acknowledgement 모드로 동작합니다. Listener retry,
+backoff, jitter, `SqsListenerInterceptor` hook으로 redelivery와 observability
+흐름을 구성할 수 있습니다.
 
 ### KMS — Spring Boot Coroutines Encryptor
 

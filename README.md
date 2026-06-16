@@ -573,6 +573,12 @@ read and keeps the last good values if a refresh fails.
 
 ### SQS — Spring Boot Coroutines Template and Listener
 
+SQS auto-configuration separates the coroutine operations surface from the
+listener runtime. Listener methods can use raw payloads, Jackson-converted
+payloads, and optional manual acknowledgement.
+
+![SQS Spring Boot runtime](docs/images/readme-diagrams/bluetape4k-aws-sqs-components-18.png)
+
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsListener
 import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
@@ -600,6 +606,8 @@ class OrderQueue(
     }
 }
 ```
+
+![SQS listener flow](docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-19.png)
 
 Typed listener payloads are enabled by a `SqsMessageConverter`; a Jackson 3
 converter is auto-registered when an `ObjectMapper` bean is present. Declaring
