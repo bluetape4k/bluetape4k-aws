@@ -1,98 +1,170 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1860" height="1055" viewBox="0 0 1860 1055" role="img" aria-label="AWS Exposed database handle sequence">
-<defs>
-  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/></filter>
-</defs>
-<style>
-  svg{background:#F5F7FA}
-  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
-  .title{font-family:"Architects Daughter";font-size:34px;fill:#102033}
-  .seqTitle{font-family:"Architects Daughter";font-size:44px;fill:#102033}
-  .seqSubtitle{font-family:"Comic Mono";font-size:16px;fill:#526274}
-  .seqParticipantTitle{font-family:"Architects Daughter";font-size:24px;fill:#102033}
-  .seqParticipantDetail{font-family:"Comic Mono";font-size:13px;fill:#526274}
-  .subtitle,.detail,.tiny,.label{font-family:"Comic Mono";fill:#526274}
-  .subtitle{font-size:14px}
-  .label{font-size:12px;fill:#344456}
-  .card-title{font-family:"Architects Daughter";font-size:20px;fill:#102033}
-  .detail{font-size:13px}
-  .tiny{font-size:10px}
-  .chip{font-family:"Comic Mono";font-size:10px;fill:#243447}
-  .card{stroke-width:2;filter:url(#shadow)}
-  .edge{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .seq{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .seqReturn{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
-  .labelPill{fill:#FFFFFF;stroke:#D6E3EF;stroke-width:1.4}
-  .numberBadge{font-family:"Comic Mono";font-size:12px;fill:#FFFFFF}
-  .altBox{fill:#FFFFFF;fill-opacity:.44;stroke:#D6A441;stroke-width:1.8;stroke-dasharray:8 8}
-  .activation{stroke-width:1.4}
-  .footer{fill:#0E2238;stroke:#0E2238}
-  .footer-title{font-family:"Architects Daughter";font-size:16px;fill:#FFFFFF}
-  .footer-detail{font-family:"Comic Mono";font-size:11px;fill:#DDE7F2}
-  .seq-line{stroke:#CBD5E1;stroke-width:1.6;stroke-dasharray:6 8}
-  .bar-label{font-family:"Architects Daughter";font-size:17px;fill:#102033}
-</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1320" viewBox="0 0 1700 1320" role="img" aria-labelledby="title desc">
+  <title id="title">AWS Exposed Database Handle Sequence</title>
+  <desc id="desc">Sequence showing caller, factory, settings resolver, datasource factory, password provider, Exposed database, and registry interactions for default and named database handles.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#3f7d9c" stroke="#3f7d9c" stroke-width="1.2" stroke-dasharray="none"/>
+    </marker>
+    <marker id="work-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#6e8f4f" stroke="#6e8f4f" stroke-width="1.2" stroke-dasharray="none"/>
+    </marker>
+    <marker id="auth-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#d97706" stroke="#d97706" stroke-width="1.2" stroke-dasharray="none"/>
+    </marker>
+    <marker id="failure-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#b86868" stroke="#b86868" stroke-width="1.2" stroke-dasharray="none"/>
+    </marker>
+    <marker id="return-arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#9b7d54" stroke="#9b7d54" stroke-width="1.2" stroke-dasharray="none"/>
+    </marker>
+    <filter id="shadow" x="-14%" y="-14%" width="128%" height="130%">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.13"/>
+    </filter>
+    <style>
+      .canvas { fill: #f8fafc; }
+      .title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 52px; fill: #17233a; }
+      .subtitle { font-family: "Comic Mono", monospace; font-size: 22px; fill: #475569; }
+      .participant-title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 24px; fill: #17233a; }
+      .participant-text { font-family: "Comic Mono", monospace; font-size: 16px; fill: #475569; }
+      .label { font-family: "Comic Mono", monospace; font-size: 17px; fill: #334155; }
+      .return-label { font-family: "Comic Mono", monospace; font-size: 16px; fill: #687d8d; }
+      .region-title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 25px; fill: #263f58; }
+      .region-note { font-family: "Comic Mono", monospace; font-size: 16px; fill: #5c7182; }
+      .footer { font-family: "Comic Mono", monospace; font-size: 18px; fill: #475569; }
+      .frame { fill: #ffffff; stroke: #8aa6cf; stroke-width: 3; }
+      .participant-call { fill: #eaf4f8; stroke: #3f7d9c; stroke-width: 2.6; }
+      .participant-work { fill: #eef7f0; stroke: #6e8f4f; stroke-width: 2.6; }
+      .participant-config { fill: #e8f0fe; stroke: #2563eb; stroke-width: 2.6; }
+      .participant-auth { fill: #fff7e8; stroke: #d97706; stroke-width: 2.6; }
+      .lifeline { stroke: #94a3b8; stroke-width: 2.4; stroke-dasharray: 8 9; }
+      .activation-call { fill: #eaf4f8; stroke: #3f7d9c; stroke-width: 2; }
+      .activation-work { fill: #eef7f0; stroke: #6e8f4f; stroke-width: 2; }
+      .activation-config { fill: #e8f0fe; stroke: #2563eb; stroke-width: 2; }
+      .activation-auth { fill: #fff7e8; stroke: #d97706; stroke-width: 2; }
+      .call { stroke: #3f7d9c; stroke-width: 3.6; marker-end: url(#arrow); fill: none; }
+      .work { stroke: #6e8f4f; stroke-width: 3.6; marker-end: url(#work-arrow); fill: none; }
+      .auth { stroke: #d97706; stroke-width: 3.6; marker-end: url(#auth-arrow); fill: none; }
+      .failure { stroke: #b86868; stroke-width: 3.4; marker-end: url(#failure-arrow); fill: none; }
+      .return { stroke: #9b7d54; stroke-width: 3; stroke-dasharray: 8 7; marker-end: url(#return-arrow); fill: none; }
+      .region { fill: #fff7e8; stroke: #d97706; stroke-width: 2.4; stroke-dasharray: 12 8; }
+      .region-blue { fill: #eef7f0; stroke: #6e8f4f; stroke-width: 2.4; stroke-dasharray: 12 8; }
+      .region-red { fill: #fff5f5; stroke: #b86868; stroke-width: 2.4; stroke-dasharray: 12 8; }
+      .label-bg { fill: #ffffff; stroke: #d7e0e4; stroke-width: 1.4; }
+      .label-call { fill: #ffffff; stroke: #9cc2d1; stroke-width: 1.5; }
+      .label-work { fill: #ffffff; stroke: #b6c9a4; stroke-width: 1.5; }
+      .label-auth { fill: #ffffff; stroke: #d7b06c; stroke-width: 1.5; }
+      .label-return { fill: #ffffff; stroke: #c8b38f; stroke-width: 1.5; }
+      .label-failure { fill: #ffffff; stroke: #d9abab; stroke-width: 1.5; }
+      .label.callText { fill: #2f6f8e; }
+      .label.workText { fill: #55783f; }
+      .label.authText { fill: #a45f00; }
+      .return-label { fill: #7f6038; }
+    </style>
+  </defs>
 
-<defs>
-  <marker id="arrow-blue" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F6DE0"/></marker>
-  <marker id="arrow-green" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#2F8B57"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#168E86"/></marker>
-  <marker id="arrow-amber" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#B98518"/></marker>
-  <marker id="arrow-rose" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#C74E68"/></marker>
-  <marker id="arrow-violet" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#7255C7"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-slate" viewBox="0 0 5 5" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M 0.5 0.5 L 4.5 2.5 L 0.5 4.5 Z" fill="#475569"/></marker>
-</defs>
-<rect x="32" y="28" width="1796" height="999" rx="30" class="frame"/>
-<text class="seqTitle" x="68" y="88">AWS Exposed database handle sequence</text>
-<text class="seqSubtitle" x="72" y="124">Caller, registry, factory, and database collaborate to return default or named Exposed handles.</text>
-<rect class="card" x="180.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E8F3FF" stroke="#5B8DEF"/>
-<text class="seqParticipantTitle" x="305.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Application</text>
-<text class="seqParticipantDetail" x="305.0" y="227.0" text-anchor="middle" dominant-baseline="middle">needs DB</text>
-<line class="seq-line" x1="305.0" y1="248.0" x2="305.0" y2="900.0"/>
-<rect class="card" x="600.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#EAF7EF" stroke="#58A978"/>
-<text class="seqParticipantTitle" x="725.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Database registry</text>
-<text class="seqParticipantDetail" x="725.0" y="227.0" text-anchor="middle" dominant-baseline="middle">default/named</text>
-<line class="seq-line" x1="725.0" y1="248.0" x2="725.0" y2="900.0"/>
-<rect class="card" x="1020.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#E9F7F6" stroke="#45A7A1"/>
-<text class="seqParticipantTitle" x="1145.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Database factory</text>
-<text class="seqParticipantDetail" x="1145.0" y="227.0" text-anchor="middle" dominant-baseline="middle">create handle</text>
-<line class="seq-line" x1="1145.0" y1="248.0" x2="1145.0" y2="900.0"/>
-<rect class="card" x="1440.0" y="170.0" width="250.0" height="78.0" rx="11" fill="#FFF7ED" stroke="#F97316"/>
-<text class="seqParticipantTitle" x="1565.0" y="199.0" text-anchor="middle" dominant-baseline="middle">Exposed Database</text>
-<text class="seqParticipantDetail" x="1565.0" y="227.0" text-anchor="middle" dominant-baseline="middle">JDBC handle</text>
-<line class="seq-line" x1="1565.0" y1="248.0" x2="1565.0" y2="900.0"/>
-<rect class="activation" x="717.0" y="318.0" width="16" height="330.0" rx="5" fill="#EAF7EF" stroke="#58A978"/>
-<rect class="activation" x="1137.0" y="406.0" width="16" height="66.0" rx="5" fill="#E9F7F6" stroke="#45A7A1"/>
-<rect class="activation" x="1557.0" y="494.0" width="16" height="66.0" rx="5" fill="#FFF7ED" stroke="#F97316"/>
-<rect class="activation" x="297.0" y="670.0" width="16" height="66.0" rx="5" fill="#E8F3FF" stroke="#5B8DEF"/>
-<rect class="altBox" x="820" y="480" width="780" height="226" rx="18"/>
-<rect class="labelPill" x="845" y="466" width="270" height="28" rx="7"/>
-<text class="detail" x="980" y="480" text-anchor="middle" dominant-baseline="middle">opt database handle available</text>
-<path class="seq" d="M 317.0 320.0 L 713.0 320.0" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
-<rect class="labelPill" x="392.0" y="280.0" width="246" height="28" rx="7"/>
-<circle cx="411.0" cy="294.0" r="12" fill="#2F6DE0"/>
-<text class="numberBadge" x="411.0" y="295.0" text-anchor="middle" dominant-baseline="middle">1</text>
-<text class="label" x="525.0" y="294.0" text-anchor="middle" dominant-baseline="middle">request database handle</text>
-<path class="seq" d="M 737.0 408.0 L 1133.0 408.0" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-<rect class="labelPill" x="812.0" y="368.0" width="246" height="28" rx="7"/>
-<circle cx="831.0" cy="382.0" r="12" fill="#2F8B57"/>
-<text class="numberBadge" x="831.0" y="383.0" text-anchor="middle" dominant-baseline="middle">2</text>
-<text class="label" x="945.0" y="382.0" text-anchor="middle" dominant-baseline="middle">resolve secret or IAM</text>
-<path class="seq" d="M 1157.0 496.0 L 1553.0 496.0" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
-<rect class="labelPill" x="1232.0" y="456.0" width="246" height="28" rx="7"/>
-<circle cx="1251.0" cy="470.0" r="12" fill="#EA580C"/>
-<text class="numberBadge" x="1251.0" y="471.0" text-anchor="middle" dominant-baseline="middle">3</text>
-<text class="label" x="1365.0" y="470.0" text-anchor="middle" dominant-baseline="middle">create Hikari database</text>
-<path class="seqReturn" d="M 1553.0 584.0 L 737.0 584.0" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-<rect class="labelPill" x="1022.0" y="544.0" width="246" height="28" rx="7"/>
-<circle cx="1041.0" cy="558.0" r="12" fill="#168E86"/>
-<text class="numberBadge" x="1041.0" y="559.0" text-anchor="middle" dominant-baseline="middle">4</text>
-<text class="label" x="1155.0" y="558.0" text-anchor="middle" dominant-baseline="middle">register handle</text>
-<path class="seqReturn" d="M 713.0 672.0 L 317.0 672.0" stroke="#7255C7" marker-end="url(#arrow-violet)"/>
-<rect class="labelPill" x="392.0" y="632.0" width="246" height="28" rx="7"/>
-<circle cx="411.0" cy="646.0" r="12" fill="#7255C7"/>
-<text class="numberBadge" x="411.0" y="647.0" text-anchor="middle" dominant-baseline="middle">5</text>
-<text class="label" x="525.0" y="646.0" text-anchor="middle" dominant-baseline="middle">return database handle</text>
-<rect x="260" y="910" width="1340" height="42" rx="12" fill="#FFFFFF" stroke="#D6E3EF" stroke-width="1.6"/>
-<text class="detail" x="930.0" y="936" text-anchor="middle">RDS IAM token refresh happens before physical JDBC connection creation.</text>
+  <rect class="canvas" width="1700" height="1320"/>
+  <rect class="frame" x="34" y="30" width="1632" height="1258" rx="28"/>
+
+  <text class="title" x="80" y="102">AWS Exposed Database Handle Sequence</text>
+  <text class="subtitle" x="82" y="140">Factory creates default and named handles; authentication providers supply only the JDBC password boundary.</text>
+
+  <g filter="url(#shadow)">
+    <rect class="participant-call" x="82" y="200" width="170" height="86" rx="14"/>
+    <text class="participant-title" x="112" y="236">Caller</text>
+    <text class="participant-text" x="112" y="264">adapter or app</text>
+
+    <rect class="participant-work" x="324" y="200" width="190" height="86" rx="14"/>
+    <text class="participant-title" x="354" y="236">Factory</text>
+    <text class="participant-text" x="354" y="264">AwsExposed...</text>
+
+    <rect class="participant-config" x="596" y="200" width="190" height="86" rx="14"/>
+    <text class="participant-title" x="626" y="236">Resolver</text>
+    <text class="participant-text" x="626" y="264">settings hook</text>
+
+    <rect class="participant-work" x="868" y="200" width="190" height="86" rx="14"/>
+    <text class="participant-title" x="898" y="236">DataSource</text>
+    <text class="participant-text" x="898" y="264">Hikari factory</text>
+
+    <rect class="participant-auth" x="1140" y="200" width="190" height="86" rx="14"/>
+    <text class="participant-title" x="1170" y="236">Password</text>
+    <text class="participant-text" x="1170" y="264">static or IAM</text>
+
+    <rect class="participant-work" x="1412" y="200" width="190" height="86" rx="14"/>
+    <text class="participant-title" x="1442" y="236">Exposed DB</text>
+    <text class="participant-text" x="1442" y="264">handle registry</text>
+  </g>
+
+  <line class="lifeline" x1="167" y1="286" x2="167" y2="1198"/>
+  <line class="lifeline" x1="419" y1="286" x2="419" y2="1198"/>
+  <line class="lifeline" x1="691" y1="286" x2="691" y2="1198"/>
+  <line class="lifeline" x1="963" y1="286" x2="963" y2="1198"/>
+  <line class="lifeline" x1="1235" y1="286" x2="1235" y2="1198"/>
+  <line class="lifeline" x1="1507" y1="286" x2="1507" y2="1198"/>
+
+  <rect class="activation-work" x="411" y="330" width="16" height="666" rx="8"/>
+  <rect class="activation-config" x="683" y="426" width="16" height="86" rx="8"/>
+  <rect class="activation-work" x="955" y="690" width="16" height="292" rx="8"/>
+  <rect class="activation-auth" x="1227" y="838" width="16" height="74" rx="8"/>
+  <rect class="activation-work" x="1499" y="970" width="16" height="116" rx="8"/>
+
+  <path class="call" d="M 167 346 H 407"/>
+  <rect class="label-call" x="204" y="322" width="160" height="28" rx="9"/>
+  <text class="label callText" x="214" y="342">createRegistry()</text>
+
+  <path class="call" d="M 427 402 C 482 402 482 382 427 382"/>
+  <rect class="label-call" x="458" y="370" width="218" height="28" rx="9"/>
+  <text class="label callText" x="468" y="390">create("default")</text>
+
+  <path class="call" d="M 427 454 H 679"/>
+  <rect class="label-call" x="468" y="430" width="178" height="28" rx="9"/>
+  <text class="label callText" x="478" y="450">resolve(name, props)</text>
+
+  <path class="return" d="M 683 506 H 431"/>
+  <rect class="label-return" x="493" y="482" width="132" height="28" rx="9"/>
+  <text class="return-label" x="503" y="501">final settings</text>
+
+  <rect class="region-blue" x="300" y="548" width="910" height="94" rx="14"/>
+  <text class="region-title" x="328" y="584">validateFor(databaseName)</text>
+  <text class="region-note" x="328" y="616">rejects blank url, missing driver class, invalid auth combinations, and blank RDS IAM fields.</text>
+
+  <path class="work" d="M 427 700 H 951"/>
+  <rect class="label-work" x="532" y="676" width="312" height="28" rx="9"/>
+  <text class="label workText" x="542" y="696">dataSourceFactory.create()</text>
+
+  <rect class="region" x="850" y="730" width="618" height="202" rx="14"/>
+  <text class="region-title" x="878" y="766">alt password provider</text>
+  <text class="region-note" x="878" y="794">STATIC_PASSWORD reveals the wrapped secret only for JDBC.</text>
+  <text class="region-note" x="878" y="822">RDS_IAM generates and caches a token before Hikari opens a connection.</text>
+
+  <path class="auth" d="M 971 860 H 1223"/>
+  <rect class="label-auth" x="1010" y="836" width="174" height="28" rx="9"/>
+  <text class="label authText" x="1020" y="856">currentPassword()</text>
+
+  <path class="return" d="M 1227 908 H 975"/>
+  <rect class="label-return" x="1036" y="912" width="200" height="28" rx="9"/>
+  <text class="return-label" x="1046" y="931">redacted password value</text>
+
+  <path class="work" d="M 971 982 H 1495"/>
+  <rect class="label-work" x="1118" y="958" width="230" height="28" rx="9"/>
+  <text class="label workText" x="1128" y="978">Database.connect(dataSource)</text>
+
+  <path class="return" d="M 1499 1042 H 431"/>
+  <rect class="label-return" x="842" y="1018" width="250" height="28" rx="9"/>
+  <text class="return-label" x="852" y="1037">AwsExposedDatabaseHandle</text>
+
+  <rect class="region-blue" x="300" y="1062" width="910" height="86" rx="14"/>
+  <text class="region-title" x="328" y="1096">loop namedDatabases</text>
+  <text class="region-note" x="622" y="1088">factory repeats resolve, validate, datasource creation,</text>
+  <text class="region-note" x="622" y="1114">and Database.connect for each named entry.</text>
+
+  <path class="return" d="M 411 1126 H 171"/>
+  <rect class="label-return" x="212" y="1102" width="180" height="28" rx="9"/>
+  <text class="return-label" x="222" y="1121">registry returned</text>
+
+  <rect class="region-red" x="1218" y="1070" width="340" height="106" rx="14"/>
+  <text class="region-title" x="1246" y="1106">failure cleanup</text>
+  <text class="region-note" x="1246" y="1134">on creation failure, close created</text>
+  <text class="region-note" x="1246" y="1160">handles in reverse order.</text>
+
+  <text class="footer" x="82" y="1252">Reader contract: this foundation never contacts Secrets Manager or Parameter Store directly; adapters pass resolved JDBC settings into the sequence.</text>
 </svg>

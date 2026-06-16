@@ -19,17 +19,17 @@ AWS 기반 데이터베이스 설정과 Exposed JDBC를 연결하는 공통 기�
 `AwsSecretString`은 진단 출력을 redaction하지만 Java serialization byte에는 raw secret이
 포함되므로 신뢰된 process 또는 storage boundary 안에서만 다뤄야 합니다.
 
-## Architecture
+## 다이어그램
 
-### Module Architecture
+### 모듈 아키텍처
 
 ![AWS Exposed architecture diagram](../docs/images/readme-diagrams/aws-exposed-architecture-01.png)
 
-### Configuration Flow
+### 설정 흐름
 
 ![AWS Exposed configuration flow diagram](../docs/images/readme-diagrams/aws-exposed-flow-02.png)
 
-### Database Handle Sequence
+### 데이터베이스 핸들 시퀀스
 
 ![AWS Exposed database handle sequence diagram](../docs/images/readme-diagrams/aws-exposed-sequence-03.png)
 
