@@ -860,25 +860,38 @@ fun userAttributes(user: User) = mapOf("id" to user.id, "name" to user.name).toA
 
 ### CloudWatch 메트릭 — DSL (`bluetape4k-aws-kotlin` 모듈)
 
+`bluetape4k-aws-kotlin`의 CloudWatch helper는 AWS Kotlin SDK 응답 타입을 그대로
+유지하면서, 자주 쓰는 metric 흐름만 짧게 만듭니다. Scoped client를 만들고,
+`MetricDatum`을 DSL로 구성한 뒤, namespace를 검증하고, 하나 또는 여러 metric을
+게시하며, 필요한 경우 optional filter로 metric metadata를 조회합니다.
+
+![CloudWatch metrics DSL support map](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.png)
+
 ```kotlin
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 import io.bluetape4k.aws.kotlin.cloudwatch.*
-import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
+import io.bluetape4k.aws.kotlin.cloudwatch.model.metricDatumOf
 
-val cw = CloudWatchClient { region = "ap-northeast-2" }
-
-suspend fun publishMetric(namespace: String, value: Double) {
-    cw.putMetricData {
-        this.namespace = namespace
-        metricData = listOf(
-            metricDatum {                // bluetape4k DSL
-                metricName = "RequestCount"
-                this.value = value
-                unit = StandardUnit.Count
-            }
+suspend fun publishMetric(namespace: String, value: Double) =
+    withCloudWatchClient(region = "ap-northeast-2") { client ->
+        val datum = metricDatumOf(
+            metricName = "RequestCount",
+            value = value,
+            unit = StandardUnit.Count,
         )
+
+        client.putMetricData(namespace, datum)
+        client.listMetrics(namespace = namespace, metricName = "RequestCount")
     }
-}
 ```
+
+![CloudWatch metrics publish and list flow](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.png)
+
+일반적인 name/value/unit 조합은 `metricDatumOf`로 만들고, `storageResolution` 같은
+추가 필드가 필요할 때는 `metricDatum { ... }` DSL을 사용하세요. `putMetricData`는
+SDK 요청을 보내기 전에 빈 namespace를 거부합니다. `listMetrics`는 `namespace`,
+`metricName`, `dimensions`를 모두 optional로 두기 때문에, 호출자가 필요한 폭만큼
+CloudWatch metric metadata를 조회할 수 있습니다.
 
 ---
 

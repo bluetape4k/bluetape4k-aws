@@ -874,25 +874,38 @@ configured retry ceiling is reached.
 
 ### CloudWatch Metrics — DSL (`bluetape4k-aws-kotlin` module)
 
+CloudWatch helpers in `bluetape4k-aws-kotlin` keep the AWS Kotlin SDK response
+types intact while making the common metric path shorter: create a scoped
+client, build `MetricDatum` values, validate the namespace, publish one or more
+metrics, and query metric metadata with optional filters.
+
+![CloudWatch metrics DSL support map](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.png)
+
 ```kotlin
+import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 import io.bluetape4k.aws.kotlin.cloudwatch.*
-import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
+import io.bluetape4k.aws.kotlin.cloudwatch.model.metricDatumOf
 
-val cw = CloudWatchClient { region = "ap-northeast-2" }
-
-suspend fun publishMetric(namespace: String, value: Double) {
-    cw.putMetricData {
-        this.namespace = namespace
-        metricData = listOf(
-            metricDatum {                // bluetape4k DSL
-                metricName = "RequestCount"
-                this.value = value
-                unit = StandardUnit.Count
-            }
+suspend fun publishMetric(namespace: String, value: Double) =
+    withCloudWatchClient(region = "ap-northeast-2") { client ->
+        val datum = metricDatumOf(
+            metricName = "RequestCount",
+            value = value,
+            unit = StandardUnit.Count,
         )
+
+        client.putMetricData(namespace, datum)
+        client.listMetrics(namespace = namespace, metricName = "RequestCount")
     }
-}
 ```
+
+![CloudWatch metrics publish and list flow](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.png)
+
+Use `metricDatumOf` for the usual name/value/unit case, or `metricDatum { ... }`
+when you need extra fields such as `storageResolution`. `putMetricData` rejects
+blank namespaces before the SDK request is sent; `listMetrics` leaves
+`namespace`, `metricName`, and `dimensions` optional so callers can choose how
+broadly to inspect CloudWatch metric metadata.
 
 ---
 
