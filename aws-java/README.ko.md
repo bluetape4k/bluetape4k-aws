@@ -2,9 +2,17 @@
 
 [English](./README.md) | 한국어
 
-AWS Java SDK v2 기반 단일 통합 모듈입니다. DynamoDB, S3, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis, STS 등 주요 AWS 서비스를 Async/Non-Blocking 방식 및 Kotlin Coroutines로 사용할 수 있도록 지원합니다.
+AWS Java SDK v2 기반 통합 모듈입니다. AWS SDK 모델 타입은 그대로 드러내고,
+동기 helper, 비동기 `CompletableFuture` 확장, coroutine API를 더합니다.
+DynamoDB, S3, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis,
+STS 같은 주요 서비스를 대상으로 합니다.
 
 ## 다이어그램
+
+아래 다이어그램은 모듈을 정적 경계, 런타임 호출 흐름, 코루틴 handoff 세 관점으로
+나눠 보여줍니다. 애플리케이션이 AWS SDK 런타임 의존성을 직접 고르는 지점과
+이 모듈이 제공하는 factory, request DSL, async extension, coroutine wrapper,
+repository helper의 역할을 함께 확인할 수 있습니다.
 
 ### 모듈 아키텍처
 
