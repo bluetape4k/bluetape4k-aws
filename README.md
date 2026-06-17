@@ -9,9 +9,10 @@ English | [한국어](./README.ko.md)
 
 ![Bluetape4k AWS workbench](./docs/assets/aws-workbench.png)
 
-Kotlin/JVM wrappers for **AWS Java SDK v2** and the **AWS Kotlin SDK**, with Kotlin Coroutines
-support, Spring Boot 4 auto-configuration, and Ktor 3 integration. Part of the
-[bluetape4k](https://github.com/bluetape4k) ecosystem.
+Kotlin/JVM wrappers for **AWS Java SDK v2** and the **AWS Kotlin SDK**. The
+repository adds coroutine-friendly APIs, Spring Boot 4 auto-configuration, and
+Ktor 3 integration for bluetape4k services that need AWS without committing to
+one application stack.
 
 ---
 
@@ -19,23 +20,24 @@ support, Spring Boot 4 auto-configuration, and Ktor 3 integration. Part of the
 
 `bluetape4k-aws` keeps AWS service access idiomatic for Kotlin services. It
 bridges the Java SDK v2 async model, the AWS Kotlin SDK suspend model, Spring
-Boot 4 auto-configuration, and Ktor 3 HTTP integration without forcing
-applications to adopt a single framework or dependency stack.
+Boot 4 auto-configuration, and Ktor 3 HTTP integration while leaving each
+application free to choose the AWS SDK modules and runtime stack it actually
+uses.
 
 ## What It Provides
 
-- **Kotlin-first AWS clients** — coroutine adapters for Java SDK v2 plus native
-  AWS Kotlin SDK helpers and DSL builders.
+- **Kotlin-first AWS clients** — coroutine adapters for Java SDK v2, native AWS
+  Kotlin SDK helpers, and small DSL builders for request objects.
 - **Service coverage** — DynamoDB, S3, S3 Vectors, SES/SESv2, SNS, SQS, KMS,
   CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, STS, RDS IAM, Secrets Manager,
   and Parameter Store.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
-  listeners, and auto-configuration without awspring.
-- **Ktor 3 integration** — SigV4 signing, coroutine S3 client support, SQS
-  consumer runtime, DynamoDB server repository support, EC2 IMDS helpers, and
-  Ktor server/client examples.
+  listeners, and auto-configuration without depending on awspring.
+- **Ktor 3 integration** — SigV4 signing, coroutine S3 access, SQS consumer
+  runtime, DynamoDB server repositories, EC2 IMDS helpers, and Ktor
+  server/client examples.
 - **Local integration testing** — Floci-first emulator wiring through
-  Testcontainers and explicit LocalStack fallback runs.
+  Testcontainers, with explicit LocalStack fallback runs for coverage gaps.
 
 <!-- README_VISUAL_OVERVIEW:START -->
 ## Overview Diagram
