@@ -2,9 +2,17 @@
 
 English | [한국어](./README.ko.md)
 
-A unified integration module built on AWS Java SDK v2. Provides async/non-blocking and Kotlin Coroutines support for major AWS services including DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis, and STS.
+A unified integration module built on AWS Java SDK v2. It keeps AWS SDK model
+types visible while adding sync helpers, async `CompletableFuture` extensions,
+and coroutine APIs for DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS,
+CloudWatch, Kinesis, and STS.
 
 ## Diagrams
+
+The diagrams below split the module into three views: static boundaries,
+runtime call flow, and coroutine handoff. Together they show where application
+code owns AWS SDK runtime dependencies and where this module adds factories,
+request DSLs, async extensions, coroutine wrappers, and repository helpers.
 
 ### Module Architecture
 

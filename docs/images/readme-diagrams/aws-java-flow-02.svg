@@ -1,108 +1,80 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-label="AWS Java operation flow">
-  <defs>
-    <filter id="softShadow" x="-8%" y="-8%" width="116%" height="116%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
-    </filter>
-    <marker id="arrowBlue" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#2563eb"/>
-    </marker>
-    <marker id="arrowGreen" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#059669"/>
-    </marker>
-    <marker id="arrowAmber" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M 0 0 L 14 7 L 0 14 Z" fill="#d97706"/>
-    </marker>
-    <style>
-      svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
-      .canvas{fill:#f8fafc}
-      .frame{fill:#ffffff;stroke:#8aa6cf;stroke-width:3;filter:url(#softShadow)}
-      .title{font-family:"Architects Daughter";font-size:48px;fill:#17233a}
-      .subtitle{font-family:"Comic Mono";font-size:16px;fill:#475569}
-      .lane{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2;stroke-dasharray:9 8}
-      .laneTitle{font-family:"Comic Mono";font-size:18px;font-weight:700;fill:#475569}
-      .step{fill:#ffffff;stroke-width:2.2;filter:url(#softShadow)}
-      .stepTitle{font-family:"Architects Daughter";font-size:24px;fill:#17233a}
-      .stepText{font-family:"Comic Mono";font-size:13px;fill:#475569}
-      .note{fill:#ffffff;stroke-width:2}
-      .noteTitle{font-family:"Comic Mono";font-size:15px;font-weight:700;fill:#334155}
-      .noteText{font-family:"Comic Mono";font-size:12px;fill:#475569}
-      .route{fill:none;stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round}
-      .routeSmall{fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
-      .routeText{font-family:"Comic Mono";font-size:13px;fill:#334155}
-      .footerText{font-family:"Comic Mono";font-size:14px;fill:#475569}
-    </style>
-  </defs>
-
-  <rect class="canvas" width="1600" height="1040"/>
-  <rect class="frame" x="42" y="36" width="1516" height="964" rx="24"/>
-  <text class="title" x="800" y="96" text-anchor="middle">AWS Java Operation Flow</text>
-  <text class="subtitle" x="800" y="132" text-anchor="middle">The module keeps AWS SDK calls async, then exposes suspend and Flow contracts around the futures.</text>
-
-  <g id="primary">
-    <rect class="lane" x="92" y="178" width="1416" height="260" rx="18"/>
-    <text class="laneTitle" x="118" y="216">SINGLE REQUEST PATH</text>
-    <rect class="step" x="130" y="254" width="250" height="94" rx="16" stroke="#2563eb"/>
-    <text class="stepTitle" x="255" y="286" text-anchor="middle">caller input</text>
-    <text class="stepText" x="255" y="312" text-anchor="middle">bucket, key, entity</text>
-    <text class="stepText" x="255" y="332" text-anchor="middle">or service request</text>
-
-    <rect class="step" x="452" y="254" width="250" height="94" rx="16" stroke="#059669"/>
-    <text class="stepTitle" x="577" y="286" text-anchor="middle">validate and build</text>
-    <text class="stepText" x="577" y="312" text-anchor="middle">requireNotBlank</text>
-    <text class="stepText" x="577" y="332" text-anchor="middle">typed request DSL</text>
-
-    <rect class="step" x="774" y="254" width="250" height="94" rx="16" stroke="#d97706"/>
-    <text class="stepTitle" x="899" y="286" text-anchor="middle">AWS async client</text>
-    <text class="stepText" x="899" y="312" text-anchor="middle">S3AsyncClient</text>
-    <text class="stepText" x="899" y="332" text-anchor="middle">DynamoDbAsyncTable</text>
-
-    <rect class="step" x="1096" y="254" width="250" height="94" rx="16" stroke="#7c3aed"/>
-    <text class="stepTitle" x="1221" y="286" text-anchor="middle">coroutine result</text>
-    <text class="stepText" x="1221" y="312" text-anchor="middle">CompletableFuture.await()</text>
-    <text class="stepText" x="1221" y="332" text-anchor="middle">suspend response</text>
-
-    <path class="route" d="M 380 301 L 452 301" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
-    <path class="route" d="M 702 301 L 774 301" stroke="#059669" marker-end="url(#arrowGreen)"/>
-    <path class="route" d="M 1024 301 L 1096 301" stroke="#d97706" marker-end="url(#arrowAmber)"/>
-  </g>
-
-  <g id="streaming">
-    <rect class="lane" x="92" y="492" width="1416" height="214" rx="18"/>
-    <text class="laneTitle" x="118" y="530">PAGINATED AND STREAMING PATHS</text>
-    <rect class="step" x="170" y="574" width="310" height="72" rx="16" stroke="#2563eb"/>
-    <text class="stepTitle" x="325" y="604" text-anchor="middle">start cold Flow</text>
-    <text class="stepText" x="325" y="628" text-anchor="middle">listAllObjects(), queryAll(), scanAll()</text>
-
-    <rect class="step" x="646" y="574" width="310" height="72" rx="16" stroke="#059669"/>
-    <text class="stepTitle" x="801" y="604" text-anchor="middle">collect pages lazily</text>
-    <text class="stepText" x="801" y="628" text-anchor="middle">continuation token or reactive publisher</text>
-
-    <rect class="step" x="1122" y="574" width="310" height="72" rx="16" stroke="#d97706"/>
-    <text class="stepTitle" x="1277" y="604" text-anchor="middle">emit domain values</text>
-    <text class="stepText" x="1277" y="628" text-anchor="middle">S3Object, DynamoDB items, batch results</text>
-
-    <path class="route" d="M 480 610 L 646 610" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
-    <path class="route" d="M 956 610 L 1122 610" stroke="#059669" marker-end="url(#arrowGreen)"/>
-  </g>
-
-  <g id="safety">
-    <rect class="lane" x="92" y="760" width="1416" height="140" rx="18"/>
-    <text class="laneTitle" x="118" y="798">S3 MOVE SAFETY PATH</text>
-    <rect class="note" x="210" y="826" width="294" height="44" rx="14" stroke="#2563eb"/>
-    <text class="noteTitle" x="357" y="854" text-anchor="middle">copy succeeds</text>
-    <rect class="note" x="654" y="826" width="294" height="44" rx="14" stroke="#d97706"/>
-    <text class="noteTitle" x="801" y="854" text-anchor="middle">delete source may fail</text>
-    <rect class="note" x="1098" y="826" width="294" height="44" rx="14" stroke="#059669"/>
-    <text class="noteTitle" x="1245" y="854" text-anchor="middle">atomic variant cleans up copy</text>
-    <path class="routeSmall" d="M 504 848 L 654 848" stroke="#d97706" marker-end="url(#arrowAmber)"/>
-    <path class="routeSmall" d="M 948 848 L 1098 848" stroke="#059669" marker-end="url(#arrowGreen)"/>
-  </g>
-
-  <path class="routeSmall" d="M 800 438 L 800 492" stroke="#059669" marker-end="url(#arrowGreen)"/>
-  <text class="routeText" x="846" y="469">multi-item calls switch from single suspend result to Flow</text>
-
-  <path class="routeSmall" d="M 800 706 L 800 760" stroke="#d97706" marker-end="url(#arrowAmber)"/>
-  <text class="routeText" x="846" y="737">operations with partial success expose explicit recovery behavior</text>
-
-  <text class="footerText" x="800" y="946" text-anchor="middle">Reader contract: futures stay non-blocking, suspend wrappers await them, and Flow helpers model lazy multi-page reads.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980" role="img" aria-labelledby="title desc">
+<title id="title">AWS Java operation flow</title>
+<desc id="desc">The call path stays SDK-native: request helpers prepare models, extensions call the selected client, and coroutine APIs await the async boundary.</desc>
+<defs>
+  <style>
+    .canvas{fill:#FFFFFF}.frame{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:2}.layer{fill:#F8FAFC;stroke:#D8E2ED;stroke-width:1.6}
+    .title{font-family:"Architects Daughter";font-size:42px;fill:#102033}.subtitle{font-family:"Comic Mono";font-size:17px;fill:#5A6B7F}.band-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}.band-sub{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
+    .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:12px;fill:#5A6B7F}
+    .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}.card-pink{fill:#FFF0F8;stroke:#E7157B;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-service{fill:#FFFFFF;stroke:#8997A8;stroke-width:2.1}
+    .arrow-blue{stroke:#2563EB;stroke-width:3;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3;fill:none;marker-end:url(#arrow-green)}.arrow-teal{stroke:#0F8E89;stroke-width:3;fill:none;marker-end:url(#arrow-teal)}.arrow-pink{stroke:#E7157B;stroke-width:3;fill:none;marker-end:url(#arrow-pink)}.arrow-orange{stroke:#EA580C;stroke-width:3;fill:none;marker-end:url(#arrow-orange)}.arrow-gray{stroke:#64748B;stroke-width:2.8;fill:none;marker-end:url(#arrow-gray)}
+    .footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+  </style>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
+  <marker id="arrow-pink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#E7157B"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
+  <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#64748B"/></marker>
+</defs>
+<rect class="canvas" x="0" y="0" width="1500" height="980"/>
+<rect class="frame" x="24" y="24" width="1452" height="932" rx="14"/>
+<text class="title" x="54" y="74">AWS Java operation flow</text>
+<text class="subtitle" x="54" y="108">The call path stays SDK-native: helpers prepare requests, extensions call clients, and coroutine APIs await async boundaries.</text>
+<rect class="layer" x="54" y="148" width="1392" height="144" rx="12"/><text class="band-title" x="82" y="186">1. Choose API tier</text><text class="band-sub" x="82" y="206">sync support, async support, suspend extensions, or higher-level facades</text>
+<rect class="card-blue" x="130" y="218" width="230" height="60" rx="8"/>
+<text class="card-title" x="245" y="248" text-anchor="middle">Sync support</text>
+<text class="card-text" x="245" y="274" text-anchor="middle">blocking SDK client</text>
+<rect class="card-pink" x="466" y="218" width="230" height="60" rx="8"/>
+<text class="card-title" x="581" y="248" text-anchor="middle">Async support</text>
+<text class="card-text" x="581" y="274" text-anchor="middle">CompletableFuture client</text>
+<rect class="card-orange" x="802" y="218" width="230" height="60" rx="8"/>
+<text class="card-title" x="917" y="248" text-anchor="middle">Coroutine API</text>
+<text class="card-text" x="917" y="274" text-anchor="middle">suspend functions and Flow</text>
+<rect class="card-green" x="1138" y="218" width="230" height="60" rx="8"/>
+<text class="card-title" x="1253" y="248" text-anchor="middle">Template/Repository</text>
+<text class="card-text" x="1253" y="274" text-anchor="middle">DynamoDB and S3 Vectors</text>
+<rect class="layer" x="54" y="328" width="1392" height="144" rx="12"/><text class="band-title" x="82" y="366">2. Build SDK request</text><text class="band-sub" x="82" y="386">short helper DSLs still produce AWS SDK request objects</text>
+<rect class="card-teal" x="130" y="398" width="230" height="60" rx="8"/>
+<text class="card-title" x="245" y="428" text-anchor="middle">model DSL</text>
+<text class="card-text" x="245" y="454" text-anchor="middle">PutObject, SendMessage</text>
+<rect class="card-teal" x="466" y="398" width="230" height="60" rx="8"/>
+<text class="card-title" x="581" y="428" text-anchor="middle">validation guards</text>
+<text class="card-text" x="581" y="454" text-anchor="middle">blank names and limits</text>
+<rect class="card-teal" x="802" y="398" width="230" height="60" rx="8"/>
+<text class="card-title" x="917" y="428" text-anchor="middle">SDK request object</text>
+<text class="card-text" x="917" y="454" text-anchor="middle">builder().build()</text>
+<rect class="card-teal" x="1138" y="398" width="230" height="60" rx="8"/>
+<text class="card-title" x="1253" y="428" text-anchor="middle">override config</text>
+<text class="card-text" x="1253" y="454" text-anchor="middle">timeouts and retries</text>
+<rect class="layer" x="54" y="508" width="1392" height="144" rx="12"/><text class="band-title" x="82" y="546">3. Execute selected client</text><text class="band-sub" x="82" y="566">sync wrappers move to IO; async wrappers await SDK futures</text>
+<rect class="card-blue" x="130" y="578" width="230" height="60" rx="8"/>
+<text class="card-title" x="245" y="608" text-anchor="middle">suspendCommand</text>
+<text class="card-text" x="245" y="634" text-anchor="middle">sync call on IO</text>
+<rect class="card-pink" x="466" y="578" width="230" height="60" rx="8"/>
+<text class="card-title" x="581" y="608" text-anchor="middle">future.await()</text>
+<text class="card-text" x="581" y="634" text-anchor="middle">async bridge</text>
+<rect class="card-orange" x="802" y="578" width="230" height="60" rx="8"/>
+<text class="card-title" x="917" y="608" text-anchor="middle">Flow adapters</text>
+<text class="card-text" x="917" y="634" text-anchor="middle">paged items</text>
+<rect class="card-green" x="1138" y="578" width="230" height="60" rx="8"/>
+<text class="card-title" x="1253" y="608" text-anchor="middle">batch/template calls</text>
+<text class="card-text" x="1253" y="634" text-anchor="middle">facade reuse</text>
+<rect class="layer" x="54" y="688" width="1392" height="144" rx="12"/><text class="band-title" x="82" y="726">4. Return SDK result</text><text class="band-sub" x="82" y="746">responses remain AWS SDK-native model types</text>
+<rect class="card-service" x="214" y="758" width="260" height="60" rx="8"/>
+<text class="card-title" x="344" y="788" text-anchor="middle">AWS service</text>
+<text class="card-text" x="344" y="814" text-anchor="middle">selected runtime dependency</text>
+<rect class="card-green" x="620" y="758" width="260" height="60" rx="8"/>
+<text class="card-title" x="750" y="788" text-anchor="middle">SDK response</text>
+<text class="card-text" x="750" y="814" text-anchor="middle">native response type</text>
+<rect class="card-orange" x="1026" y="758" width="260" height="60" rx="8"/>
+<text class="card-title" x="1156" y="788" text-anchor="middle">Suspend result / Flow</text>
+<text class="card-text" x="1156" y="814" text-anchor="middle">caller consumes normally</text>
+<path class="arrow-blue" d="M360 248 H466"/><path class="arrow-pink" d="M696 248 H802"/><path class="arrow-orange" d="M1032 248 H1138"/>
+<path class="arrow-blue" d="M245 278 V398"/><path class="arrow-pink" d="M581 278 V398"/><path class="arrow-orange" d="M917 278 V398"/><path class="arrow-green" d="M1253 278 V398"/>
+<path class="arrow-teal" d="M360 428 H466"/><path class="arrow-teal" d="M696 428 H802"/><path class="arrow-teal" d="M1032 428 H1138"/>
+<path class="arrow-blue" d="M245 458 V578"/><path class="arrow-pink" d="M581 458 V578"/><path class="arrow-orange" d="M917 458 V578"/><path class="arrow-green" d="M1253 458 V578"/>
+<path class="arrow-blue" d="M245 638 V672 H344 V758"/><path class="arrow-pink" d="M581 638 V672 H344 V758"/><path class="arrow-orange" d="M917 638 V672 H344 V758"/><path class="arrow-green" d="M1253 638 V672 H344 V758"/>
+<path class="arrow-gray" d="M474 788 H620"/><path class="arrow-gray" d="M880 788 H1026"/>
+<rect class="footer" x="54" y="906" width="1392" height="36" rx="8"/><text class="footer-title" x="76" y="925" dominant-baseline="middle">Flow</text><text class="footer-detail" x="146" y="925" dominant-baseline="middle">No custom service abstraction is hidden: helpers produce SDK requests, call SDK clients, and return SDK responses.</text>
 </svg>
