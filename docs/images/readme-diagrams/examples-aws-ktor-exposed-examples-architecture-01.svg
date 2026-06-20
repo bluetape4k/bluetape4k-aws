@@ -3,20 +3,20 @@
   <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
     <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20"/>
   </filter>
-  <marker id="arrow-blue" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
-    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#2F6DE0"/>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0"/>
   </marker>
-  <marker id="arrow-green" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
-    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#2F8B57"/>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57"/>
   </marker>
-  <marker id="arrow-teal" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
-    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#168E86"/>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86"/>
   </marker>
-  <marker id="arrow-orange" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
-    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#EA580C"/>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/>
   </marker>
-  <marker id="arrow-slate" viewBox="0 0 6 6" markerWidth="6" markerHeight="6" refX="5.2" refY="3" orient="auto" markerUnits="strokeWidth">
-    <path d="M 0.6 0.8 L 5.2 3 L 0.6 5.2 Z" fill="#475569"/>
+  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569"/>
   </marker>
 </defs>
 <style>
@@ -55,8 +55,9 @@
 
 <g id="layers">
   <rect class="layer" x="70" y="142" width="300" height="392" rx="12"/>
-  <text class="layer-title" x="92" y="178">HTTP routes</text>
-  <text class="layer-detail" x="94" y="200">create, read, list by customer</text>
+  <image data-bluetape4k-icon="framework.ktor" x="92" y="158" width="24" height="24" href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMDg3Q0ZBIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+S3RvcjwvdGl0bGU+PHBhdGggZD0iTTggMCAwIDhsOCA4VjhoOHptOCA4djhIOGw4IDggOC04eiIvPjwvc3ZnPg=="/>
+  <text class="layer-title" x="124" y="178">HTTP routes</text>
+  <text class="layer-detail" x="126" y="200">create, read, list by customer</text>
 
   <rect class="layer" x="405" y="142" width="355" height="392" rx="12"/>
   <text class="layer-title" x="427" y="178">Transaction boundary</text>
@@ -112,13 +113,13 @@
 <g id="connections">
   <path class="edge" d="M 340 289 L 435 289" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
   <path class="edge" d="M 730 280 L 825 280" stroke="#2F8B57" marker-end="url(#arrow-green)"/>
-  <path class="edge" d="M 1065 280 L 1160 314" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+  <path class="edge" d="M 1065 280 H 1120 Q 1132 280 1132 292 V 314 Q 1132 326 1144 326 H 1160" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
 
   <path class="soft-edge" d="M 582.5 338 L 582.5 382" stroke="#475569" marker-end="url(#arrow-slate)"/>
   <path class="soft-edge" d="M 945 338 L 945 382" stroke="#475569" marker-end="url(#arrow-slate)"/>
-  <path class="soft-edge" d="M 340 431 L 435 440" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
+  <path class="soft-edge" d="M 340 431 H 435" stroke="#2F6DE0" marker-end="url(#arrow-blue)"/>
   <path class="soft-edge" d="M 730 440 L 825 440" stroke="#168E86" marker-end="url(#arrow-teal)"/>
-  <path class="soft-edge" d="M 1065 440 L 1250 388" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
+  <path class="soft-edge" d="M 1065 440 H 1124 Q 1136 440 1136 428 V 388 Q 1136 376 1148 376 H 1160" stroke="#EA580C" marker-end="url(#arrow-orange)"/>
 </g>
 
 <g id="route-table">
