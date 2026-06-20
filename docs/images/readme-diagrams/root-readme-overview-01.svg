@@ -12,6 +12,12 @@
     <marker id="arrowAmber" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
       <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#d97706"/>
     </marker>
+    <marker id="arrowTeal" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#0891b2"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 13 6.5 L 0 13 Z" fill="#7c3aed"/>
+    </marker>
     <style>
       svg{font-family:"Architects Daughter","Comic Mono",ui-sans-serif,system-ui,sans-serif}
       .canvas{fill:#f8fafc}
@@ -80,15 +86,18 @@
 
     <g id="exposed-card">
       <rect class="card" x="184" y="712" width="324" height="54" rx="14" stroke="#d97706"/>
-      <text class="cardTitle" x="346" y="744" text-anchor="middle">AWS Exposed</text>
+      <image data-bluetape4k-icon="generic.database" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InRpdGxlIGRlc2MiPgogIDx0aXRsZSBpZD0idGl0bGUiPkdlbmVyaWMgZGF0YWJhc2Ugc2VydmVyIGljb248L3RpdGxlPgogIDxkZXNjIGlkPSJkZXNjIj5HZW5lcmljIGRhdGFiYXNlIHNlcnZlciBpY29uIGZvciBibHVldGFwZTRrIGRpYWdyYW1zLjwvZGVzYz4KICA8cmVjdCB4PSIxMCIgeT0iOCIgd2lkdGg9IjEwOCIgaGVpZ2h0PSIxMTIiIHJ4PSIxOCIgZmlsbD0iI2ZmZmFmMiIgc3Ryb2tlPSIjMjg0ODVhIiBzdHJva2Utd2lkdGg9IjYiLz4KICA8ZWxsaXBzZSBjeD0iNjQiIGN5PSIzNiIgcng9IjM0IiByeT0iMTMiIGZpbGw9IiNmZmYwZDgiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI2Ii8+CiAgPHBhdGggZD0iTTMwIDM2djQ0YzAgOCAxNSAxNCAzNCAxNHMzNC02IDM0LTE0VjM2IiBmaWxsPSIjZmZmMGQ4IiBzdHJva2U9IiM4YzZmMzMiIHN0cm9rZS13aWR0aD0iNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxlbGxpcHNlIGN4PSI2NCIgY3k9IjM2IiByeD0iMzQiIHJ5PSIxMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGM2ZjMzIiBzdHJva2Utd2lkdGg9IjUiLz4KICA8cGF0aCBkPSJNMzAgNThjMCA4IDE1IDE0IDM0IDE0czM0LTYgMzQtMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMzAgODBjMCA4IDE1IDE0IDM0IDE0czM0LTYgMzQtMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+Cg==" x="210" y="724" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+      <text class="cardTitle" x="366" y="744" text-anchor="middle">AWS Exposed</text>
     </g>
     <g id="spring-card">
       <rect class="card" x="588" y="712" width="324" height="54" rx="14" stroke="#dc2626"/>
-      <text class="cardTitle" x="750" y="744" text-anchor="middle">Spring Boot 4</text>
+      <image data-bluetape4k-icon="spring.spring-boot" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI0LjAuMywgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIGZpbGw9IiM2REIzM0YiIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA1MTAgNDU3LjgiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDUxMCA0NTcuODsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOiM2REIzM0Y7fQo8L3N0eWxlPgo8dGl0bGU+aWNvbi1zcHJpbmctYm9vdDwvdGl0bGU+CjxnIGlkPSJMYXllcl8yXzFfIj4KCTxnIGlkPSJMYXllcl8xLTIiPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik01MDMuNSwyMDEuNEw0MDMsMjcuNUMzOTQuMywxMi40LDM3Mi45LDAsMzU1LjQsMEgxNTQuNmMtMTcuNCwwLTM4LjksMTIuNC00Ny42LDI3LjVMNi42LDIwMS40CgkJCWMtOC43LDE1LjEtOC43LDM5LjgsMCw1NC45bDEwMC40LDE3NGM4LjcsMTUuMSwzMC4xLDI3LjUsNDcuNiwyNy41aDIwMC45YzE3LjQsMCwzOC44LTEyLjQsNDcuNi0yNy41bDEwMC40LTE3NAoJCQlDNTEyLjIsMjQxLjIsNTEyLjIsMjE2LjUsNTAzLjUsMjAxLjR6IE0yMzMuMyw5Ni4yYzAtMTEuNCw5LjMtMjAuNywyMC43LTIwLjdjMTEuNCwwLDIwLjcsOS4zLDIwLjcsMjAuN3YxMjMuNwoJCQljMCwxMS40LTkuMywyMC43LTIwLjcsMjAuN2MtMTEuNCwwLTIwLjctOS4zLTIwLjctMjAuN2wwLDBWOTYuMnogTTI1NCwzNjAuM2MtNzcuNCwwLTE0MC40LTYzLTE0MC40LTE0MC40CgkJCWMwLjEtNDQuNCwyMS4xLTg2LjEsNTYuNy0xMTIuN2M4LjItNi4xLDE5LjctNC40LDI1LjgsMy44czQuNCwxOS43LTMuOCwyNS44bDAsMGMtNDUuOSwzNC4xLTU1LjUsOTktMjEuNCwxNDQuOQoJCQlzOTksNTUuNSwxNDQuOSwyMS40YzI2LjMtMTkuNSw0MS44LTUwLjQsNDEuOC04My4yYy0wLjEtMzIuOS0xNS43LTYzLjgtNDIuMi04My40Yy04LjItNi05LjktMTcuNi0zLjktMjUuOHMxNy42LTkuOSwyNS44LTMuOQoJCQljMzUuOSwyNi41LDU3LDY4LjUsNTcuMSwxMTMuMUMzOTQuNCwyOTcuNCwzMzEuNCwzNjAuMywyNTQsMzYwLjN6Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" x="614" y="724" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+      <text class="cardTitle" x="774" y="744" text-anchor="middle">Spring Boot 4</text>
     </g>
     <g id="ktor-card">
       <rect class="card" x="992" y="712" width="324" height="54" rx="14" stroke="#7c3aed"/>
-      <text class="cardTitle" x="1154" y="744" text-anchor="middle">Ktor 3</text>
+      <image data-bluetape4k-icon="framework.ktor" href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMDg3Q0ZBIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+S3RvcjwvdGl0bGU+PHBhdGggZD0iTTggMCAwIDhsOCA4VjhoOHptOCA4djhIOGw4IDggOC04eiIvPjwvc3ZnPg==" x="1018" y="724" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+      <text class="cardTitle" x="1174" y="744" text-anchor="middle">Ktor 3</text>
     </g>
   </g>
 
@@ -104,12 +113,12 @@
 
   <path class="route" d="M 339 536 L 339 608" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
   <path class="route" d="M 749 536 L 749 608" stroke="#059669" marker-end="url(#arrowGreen)"/>
-  <path class="route" d="M 1159 536 L 1159 608" stroke="#0891b2" marker-end="url(#arrowGreen)"/>
+  <path class="route" d="M 1159 536 L 1159 608" stroke="#0891b2" marker-end="url(#arrowTeal)"/>
   <text class="routeText" x="750" y="586" text-anchor="middle">wire framework or data layer</text>
 
   <path class="route" d="M 346 766 L 346 824" stroke="#d97706" marker-end="url(#arrowAmber)"/>
   <path class="route" d="M 750 766 L 750 824" stroke="#d97706" marker-end="url(#arrowAmber)"/>
-  <path class="route" d="M 1154 766 L 1154 824" stroke="#7c3aed" marker-end="url(#arrowAmber)"/>
+  <path class="route" d="M 1154 766 L 1154 824" stroke="#7c3aed" marker-end="url(#arrowPurple)"/>
 
   <rect class="footer" x="118" y="914" width="1264" height="38" rx="16"/>
   <text class="footerText" x="750" y="938" text-anchor="middle">Start with a core SDK lane, add Exposed/Spring/Ktor only when needed, and validate with emulator-backed examples.</text>

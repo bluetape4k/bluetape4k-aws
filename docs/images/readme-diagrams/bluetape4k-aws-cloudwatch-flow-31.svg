@@ -9,83 +9,77 @@
     .card-title{font-family:"Architects Daughter";font-size:22px;fill:#102033}.card-text{font-family:"Comic Mono";font-size:13px;fill:#5A6B7F}
     .card-blue{fill:#E8F2FF;stroke:#4F8AF7;stroke-width:2.2}.card-green{fill:#E9F7EF;stroke:#45A06B;stroke-width:2.2}.card-pink{fill:#FFF0F8;stroke:#E7157B;stroke-width:2.2}.card-orange{fill:#FFF4E6;stroke:#F97316;stroke-width:2.2}.card-red{fill:#FEECEC;stroke:#DC2626;stroke-width:2.2}.card-teal{fill:#EAF8F7;stroke:#47B8B1;stroke-width:2.2}
     .label{font-family:"Comic Mono";font-size:12px;font-weight:700;fill:#334155}.label-box{fill:#FFFFFF;stroke:#D9E3EF;stroke-width:1}
-    .arrow-blue{stroke:#2563EB;stroke-width:3.4;fill:none;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3.4;fill:none;marker-end:url(#arrow-green)}.arrow-pink{stroke:#E7157B;stroke-width:3.4;fill:none;marker-end:url(#arrow-pink)}.arrow-orange{stroke:#EA580C;stroke-width:3.4;fill:none;marker-end:url(#arrow-orange)}.arrow-teal{stroke:#0F8E89;stroke-width:3.4;fill:none;marker-end:url(#arrow-teal)}.arrow-red{stroke:#DC2626;stroke-width:3.2;fill:none;marker-end:url(#arrow-red)}
+    .arrow-blue{stroke:#2563EB;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow-blue)}.arrow-green{stroke:#15803D;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow-green)}.arrow-pink{stroke:#E7157B;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow-pink)}.arrow-orange{stroke:#EA580C;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow-orange)}.arrow-teal{stroke:#0F8E89;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow-teal)}.arrow-red{stroke:#DC2626;stroke-width:3.2;fill:none;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow-red)}
     .footer{fill:#0E2238;stroke:#0E2238}.footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}.footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
   </style>
-  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB"/></marker>
-  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D"/></marker>
-  <marker id="arrow-pink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#E7157B"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C"/></marker>
-  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89"/></marker>
-  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#DC2626"/></marker>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563EB" /></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#15803D" /></marker>
+  <marker id="arrow-pink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#E7157B" /></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" /></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#0F8E89" /></marker>
+  <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#DC2626" /></marker>
 </defs>
-<rect class="canvas" x="0" y="0" width="1400" height="840"/>
-<rect class="frame" x="24" y="24" width="1352" height="792" rx="14"/>
+<rect class="canvas" x="0" y="0" width="1400" height="840" />
+<rect class="frame" x="24" y="24" width="1352" height="792" rx="14" />
 <text class="title" x="54" y="74">CloudWatch metrics publish and list flow</text>
 <text class="subtitle" x="54" y="108">The Kotlin SDK helpers keep the SDK request model, but make client scope, datum construction, and namespace validation explicit.</text>
 
-<rect class="lane" x="66" y="150" width="1268" height="164" rx="12"/>
+<rect class="lane" x="66" y="150" width="1268" height="164" rx="12" />
 <text class="lane-title" x="94" y="188">1. Scope client</text>
 <text class="lane-sub" x="94" y="206">CloudWatchClient is created from endpoint, region, credentials, and closed after the suspend block.</text>
-<rect class="card-blue" x="96" y="228" width="250" height="62" rx="8"/>
+<rect class="card-blue" x="96" y="228" width="250" height="62" rx="8" />
 <text class="card-title" x="221" y="253" text-anchor="middle">cloudWatchClientOf</text>
 <text class="card-text" x="221" y="275" text-anchor="middle">configure SDK client</text>
-<rect class="card-blue" x="408" y="228" width="250" height="62" rx="8"/>
+<rect class="card-blue" x="408" y="228" width="250" height="62" rx="8" />
 <text class="card-title" x="533" y="253" text-anchor="middle">withCloudWatchClient</text>
 <text class="card-text" x="533" y="275" text-anchor="middle">suspend block</text>
-<rect class="card-teal" x="720" y="228" width="250" height="62" rx="8"/>
+<rect class="card-teal" x="720" y="228" width="250" height="62" rx="8" />
 <text class="card-title" x="845" y="253" text-anchor="middle">useSafe</text>
 <text class="card-text" x="845" y="275" text-anchor="middle">close after use</text>
 
-<rect class="lane" x="66" y="344" width="1268" height="164" rx="12"/>
+<rect class="lane" x="66" y="344" width="1268" height="164" rx="12" />
 <text class="lane-title" x="94" y="382">2. Build metric datum</text>
 <text class="lane-sub" x="94" y="400">Use the builder DSL for custom fields or the compact metricDatumOf helper for name, value, and unit.</text>
-<rect class="card-green" x="96" y="422" width="250" height="62" rx="8"/>
+<rect class="card-green" x="96" y="422" width="250" height="62" rx="8" />
 <text class="card-title" x="221" y="447" text-anchor="middle">metricDatum</text>
 <text class="card-text" x="221" y="469" text-anchor="middle">builder DSL</text>
-<rect class="card-green" x="408" y="422" width="250" height="62" rx="8"/>
+<rect class="card-green" x="408" y="422" width="250" height="62" rx="8" />
 <text class="card-title" x="533" y="447" text-anchor="middle">metricDatumOf</text>
 <text class="card-text" x="533" y="469" text-anchor="middle">name, value, unit</text>
-<rect class="card-teal" x="720" y="422" width="250" height="62" rx="8"/>
+<rect class="card-teal" x="720" y="422" width="250" height="62" rx="8" />
 <text class="card-title" x="845" y="447" text-anchor="middle">MetricDatum</text>
 <text class="card-text" x="845" y="469" text-anchor="middle">SDK-native value object</text>
 
-<rect class="lane" x="66" y="538" width="1268" height="164" rx="12"/>
+<rect class="lane" x="66" y="538" width="1268" height="164" rx="12" />
 <text class="lane-title" x="94" y="576">3. Publish or list metrics</text>
 <text class="lane-sub" x="94" y="594">Validate before publish; filters stay optional.</text>
-<rect class="card-red" x="96" y="616" width="250" height="62" rx="8"/>
+<rect class="card-red" x="96" y="616" width="250" height="62" rx="8" />
 <text class="card-title" x="221" y="641" text-anchor="middle">namespace guard</text>
 <text class="card-text" x="221" y="663" text-anchor="middle">requireNotBlank</text>
-<rect class="card-pink" x="408" y="616" width="250" height="62" rx="8"/>
+<rect class="card-pink" x="408" y="616" width="250" height="62" rx="8" />
 <text class="card-title" x="533" y="641" text-anchor="middle">putMetricData</text>
 <text class="card-text" x="533" y="663" text-anchor="middle">single datum or list</text>
-<rect class="card-orange" x="720" y="616" width="250" height="62" rx="8"/>
+<rect class="card-orange" x="720" y="616" width="250" height="62" rx="8" />
 <text class="card-title" x="845" y="641" text-anchor="middle">listMetrics</text>
 <text class="card-text" x="845" y="663" text-anchor="middle">optional filters</text>
-<rect class="card-pink" x="1032" y="616" width="250" height="62" rx="8"/>
-<g transform="translate(1051 630) scale(0.37)"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <g fill="#E7157B">
-            <rect x="0" y="0" width="64" height="64"></rect>
-        </g>
-        <path d="M42.184,39.3811216 C42.184,37.1282698 40.347,35.2954581 38.089,35.2954581 C35.831,35.2954581 33.995,37.1282698 33.995,39.3811216 C33.995,41.6339735 35.831,43.4667852 38.089,43.4667852 C40.347,43.4667852 42.184,41.6339735 42.184,39.3811216 L42.184,39.3811216 Z M44.184,39.3811216 C44.184,42.7344587 41.45,45.4622252 38.089,45.4622252 C34.729,45.4622252 31.995,42.7344587 31.995,39.3811216 C31.995,36.0277846 34.729,33.3000181 38.089,33.3000181 C41.45,33.3000181 44.184,36.0277846 44.184,39.3811216 L44.184,39.3811216 Z M50.743,49.6157337 L45.846,45.2157884 C45.524,45.6398194 45.17,46.0379097 44.785,46.4050706 L49.671,50.8030205 C49.997,51.0953525 50.505,51.0714072 50.802,50.744155 C51.096,50.4179006 51.07,49.9110588 50.743,49.6157337 L50.743,49.6157337 Z M38.089,47.091502 C42.351,47.091502 45.818,43.6324067 45.818,39.3811216 C45.818,35.1298366 42.351,31.6707413 38.089,31.6707413 C33.829,31.6707413 30.362,35.1298366 30.362,39.3811216 C30.362,43.6324067 33.829,47.091502 38.089,47.091502 L38.089,47.091502 Z M52.081,48.1341194 C53.227,49.1667597 53.319,50.9357173 52.288,52.0801021 C51.735,52.6897091 50.971,53 50.205,53 C49.538,53 48.868,52.7655358 48.333,52.2866302 L43.172,47.6412457 C41.691,48.5521641 39.954,49.0869421 38.089,49.0869421 C32.725,49.0869421 28.362,44.7328919 28.362,39.3811216 C28.362,34.0293514 32.725,29.6753012 38.089,29.6753012 C43.454,29.6753012 47.818,34.0293514 47.818,39.3811216 C47.818,40.8447769 47.482,42.2286146 46.897,43.4757646 L52.081,48.1341194 Z M17.697,23.5383254 C17.697,23.9394088 17.72,24.3384968 17.767,24.722619 C17.802,25.0059715 17.713,25.2913194 17.524,25.5048315 C17.375,25.6714508 17.177,25.7831954 16.961,25.8241019 C15.084,26.3079961 12,27.7716514 12,32.1566309 C12,35.4800363 13.836,37.3138458 15.377,38.2676661 C16.049,38.6897017 16.64,38.9052092 17.138,38.9101978 L26.127,38.9101978 L26.127,40.9056378 L17.127,40.9056378 C16.243,40.8966584 15.3,40.577388 14.317,39.9588015 C12.708,38.9640747 10,36.6214281 10,32.1566309 C10,26.8876715 13.526,24.8642953 15.71,24.117003 C15.702,23.924443 15.697,23.7308853 15.697,23.5383254 C15.697,19.1603299 18.673,14.6217015 22.621,12.9784566 C27.232,11.0508615 32.119,12.0066773 35.687,15.5336176 C36.734,16.5672555 37.604,17.8084192 38.285,19.2361566 C39.203,18.5507229 40.304,18.1745825 41.459,18.1745825 C43.874,18.1745825 46.587,19.9684831 47.122,23.8895228 C50.58,24.7216213 54,27.27778 54,32.2174919 C54,35.1078868 52.864,37.4565197 50.713,39.0089721 L49.541,37.3926656 C51.173,36.2143583 52,34.4733368 52,32.2174919 C52,27.2388689 47.811,25.9997007 46.01,25.6983892 C45.743,25.6534918 45.505,25.5018384 45.351,25.2793468 C45.208,25.071821 45.15,24.8184001 45.186,24.5709656 C44.931,21.5319104 43.141,20.1700225 41.459,20.1700225 C40.402,20.1700225 39.409,20.6858438 38.734,21.5857873 C38.514,21.8791169 38.156,22.0297727 37.786,21.9748981 C37.422,21.9210212 37.118,21.6715912 36.993,21.3263801 C36.359,19.5743837 35.446,18.1027466 34.281,16.9513777 C32.851,15.5396039 28.933,12.506535 23.391,14.81925 C20.198,16.1492108 17.697,19.9784603 17.697,23.5383254 L17.697,23.5383254 Z" fill="#FFFFFF"></path>
-    </g></g>
-<text class="card-title" x="1172" y="641" text-anchor="middle">CloudWatch Metrics</text>
-<text class="card-text" x="1172" y="663" text-anchor="middle">published time series</text>
+<rect class="card-pink" x="1012" y="616" width="300" height="62" rx="8" />
+<image data-bluetape4k-icon="aws.cloudwatch" x="1022" y="635" width="24" height="24" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tQ2xvdWRXYXRjaF8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tQ2xvdWRXYXRjaF8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL01hbmFnZW1lbnQtR292ZXJuYW5jZSIgZmlsbD0iI0U3MTU3QiI+CiAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUiIHg9IjAiIHk9IjAiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PC9yZWN0PgogICAgICAgIDwvZz4KICAgICAgICA8cGF0aCBkPSJNMjcuNjI5OTg0NCwyNC4xMjQzNDE5IEMyNy42Mjk5ODQ0LDIyLjIyMDc5NDggMjYuMDQ5OTA0NiwyMC42NzIzMTM1IDI0LjEwNzUxMzQsMjAuNjcyMzEzNSBDMjIuMTY1MTIyMywyMC42NzIzMTM1IDIwLjU4NTA0MjUsMjIuMjIwNzk0OCAyMC41ODUwNDI1LDI0LjEyNDM0MTkgQzIwLjU4NTA0MjUsMjYuMDI3ODg5IDIyLjE2NTEyMjMsMjcuNTc2MzcwMyAyNC4xMDc1MTM0LDI3LjU3NjM3MDMgQzI2LjA0OTkwNDYsMjcuNTc2MzcwMyAyNy42Mjk5ODQ0LDI2LjAyNzg4OSAyNy42Mjk5ODQ0LDI0LjEyNDM0MTkgTDI3LjYyOTk4NDQsMjQuMTI0MzQxOSBaIE0yOC42MzY0MDQ3LDI0LjEyNDM0MTkgQzI4LjYzNjQwNDcsMjYuNTcxMzM2OSAyNi42MDQ0NDIxLDI4LjU2MjY2NDEgMjQuMTA3NTEzNCwyOC41NjI2NjQxIEMyMS42MTA1ODQ4LDI4LjU2MjY2NDEgMTkuNTc4NjIyMiwyNi41NzEzMzY5IDE5LjU3ODYyMjIsMjQuMTI0MzQxOSBDMTkuNTc4NjIyMiwyMS42NzczNDY5IDIxLjYxMDU4NDgsMTkuNjg2MDE5NyAyNC4xMDc1MTM0LDE5LjY4NjAxOTcgQzI2LjYwNDQ0MjEsMTkuNjg2MDE5NyAyOC42MzY0MDQ3LDIxLjY3NzM0NjkgMjguNjM2NDA0NywyNC4xMjQzNDE5IEwyOC42MzY0MDQ3LDI0LjEyNDM0MTkgWiBNMzIuOTExNjc3OSwzMC43MDI5MjE3IEwyOS41MjUwNzM3LDI3LjcxMzQ2NTEgQzI5LjIzNjIzMTEsMjguMTMwNjY3NCAyOC44OTUwNTQ3LDI4LjUwNjQ0NTMgMjguNTE2NjQwNiwyOC44NDU3MzA0IEwzMS44ODQxMjI5LDMxLjgyMjM2NTIgQzMyLjIwMDEzODgsMzIuMDk5NTEzNyAzMi42ODYyMzk4LDMyLjA3Mzg3MDEgMzIuOTY5MDQzOSwzMS43NjYxNDY0IEMzMy4yNTA4NDE2LDMxLjQ1OTQwOSAzMy4yMjU2ODExLDMwLjk4MTA1NjUgMzIuOTExNjc3OSwzMC43MDI5MjE3IEwzMi45MTE2Nzc5LDMwLjcwMjkyMTcgWiBNMjQuMTA3NTEzNCwyOS41NDg5NTc5IEMyNy4xNTg5Nzk3LDI5LjU0ODk1NzkgMjkuNjQyODI0OSwyNy4xMTU3NzExIDI5LjY0MjgyNDksMjQuMTI0MzQxOSBDMjkuNjQyODI0OSwyMS4xMzI5MTI3IDI3LjE1ODk3OTcsMTguNjk5NzI1OSAyNC4xMDc1MTM0LDE4LjY5OTcyNTkgQzIxLjA1NjA0NzIsMTguNjk5NzI1OSAxOC41NzIyMDIsMjEuMTMyOTEyNyAxOC41NzIyMDIsMjQuMTI0MzQxOSBDMTguNTcyMjAyLDI3LjExNTc3MTEgMjEuMDU2MDQ3MiwyOS41NDg5NTc5IDI0LjEwNzUxMzQsMjkuNTQ4OTU3OSBMMjQuMTA3NTEzNCwyOS41NDg5NTc5IFogTTMzLjU4NTk3OTUsMjkuOTcxMDkxNyBDMzQuMzEwNjAyMSwzMC42MTMxNjg5IDM0LjM2ODk3NDUsMzEuNzEzODcyOSAzMy43MTY4MTQyLDMyLjQyNTk3NyBDMzMuMzY1NTczNSwzMi44MDY2ODY0IDMyLjg4MjQ5MTgsMzMgMzIuMzk2MzkwOCwzMyBDMzEuOTcyNjg3OCwzMyAzMS41NDg5ODQ5LDMyLjg1MzA0MjIgMzEuMjEwODI3NywzMi41NTUxODE1IEwyNy43MTY1MzY1LDI5LjQ2NjEwOTIgQzI2LjY4MDkzMDEsMzAuMTQwNzM0MiAyNS40NDEwMjAzLDMwLjUzNTI1MTcgMjQuMTA3NTEzNCwzMC41MzUyNTE3IEMyMC41MDA1MDMyLDMwLjUzNTI1MTcgMTcuNTY1NzgxNywyNy42NTkyMTg5IDE3LjU2NTc4MTcsMjQuMTI0MzQxOSBDMTcuNTY1NzgxNywyMC41ODk0NjQ4IDIwLjUwMDUwMzIsMTcuNzEzNDMyIDI0LjEwNzUxMzQsMTcuNzEzNDMyIEMyNy43MTQ1MjM3LDE3LjcxMzQzMiAzMC42NDkyNDUyLDIwLjU4OTQ2NDggMzAuNjQ5MjQ1MiwyNC4xMjQzNDE5IEMzMC42NDkyNDUyLDI1LjA5MTg5NjEgMzAuNDIyODAwNiwyNi4wMDcxNzY4IDMwLjAyOTI5MDMsMjYuODMwNzMyMSBMMzMuNTg1OTc5NSwyOS45NzEwOTE3IFogTTEwLjU5MjI5NTcsMjQuNjE3NDg4OCBMMTUuNTUyOTQxMiwyNC42MTc0ODg4IEwxNS41NTI5NDEyLDI1LjYwMzc4MjYgTDEwLjU4NjI1NzIsMjUuNjAzNzgyNiBDMTAuMDI4NzAwMywyNS41OTc4NjQ5IDkuNDI5ODgwMjcsMjUuMzk3NjQ3MiA4Ljc5OTg2MTE4LDI1LjAwODA2MTEgQzcuNzU2MjAzMzcsMjQuMzczODc0MiA2LDIyLjg4MDYyNTQgNiwyMC4wMzUxNjc3IEM2LDE2LjU5MzAwMjIgOC40MTAzNzY1NCwxNS4zMjg1NzM2IDkuODEyMzE5OTcsMTQuODg0NzQxMyBDOS44MDEyNDkzNSwxNC43MjIwMDI5IDkuNzk2MjE3MjUsMTQuNTU3MjkxOCA5Ljc5NjIxNzI1LDE0LjM5MjU4MDcgQzkuNzk2MjE3MjUsMTEuNTg4NTQ3NCAxMS43Mzc2MDE5LDguNjc4OTgwNjEgMTQuMzExMDE4Niw3LjYyNzU5MTM5IEMxNy4zMjQyNDA4LDYuMzkwNzc4OTQgMjAuNTEzNTg2Nyw3LjAwNTIzOTk5IDIyLjg0MjQ0MzIsOS4yNjU4MjU0NCBDMjMuNTcxMDkxNCw5Ljk3Mjk5ODExIDI0LjE2OTkxMTUsMTAuODMyMDYgMjQuNjI3ODMyNywxMS44MjkyMDMxIEMyNS4yNDE3NDkxLDExLjMyMjI0ODEgMjYuMDAyNjAyOCwxMS4wNDIxNDA2IDI2LjgwNDcxOTgsMTEuMDQyMTQwNiBDMjguMzY1Njc3NiwxMS4wNDIxNDA2IDMwLjEyMzg5MzgsMTIuMjA2OTUzNiAzMC40MzA4NTIsMTQuNzU0NTUwNiBDMzEuODg3MTQyMSwxNS4wODEwMTM4IDM1LDE2LjIzMDA0NjEgMzUsMjAuMDc1NjA1NyBDMzUsMjEuNzI3NjQ3OSAzNC40MzMzODU0LDIzLjA2NTA2MjMgMzMuMzEzMjM5NiwyNC4wNDc0MTEgTDMyLjY0MDk1MDksMjMuMzEzNjA4NCBDMzMuNTM4Njc3OCwyMi41MjU1NTk2IDMzLjk5MzU3OTcsMjEuNDM1NzA0OSAzMy45OTM1Nzk3LDIwLjA3NTYwNTcgQzMzLjk5MzU3OTcsMTYuNjkzNjA0MiAzMS4xMDYxNiwxNS44NTMyODE5IDI5Ljg2NDIzNzQsMTUuNjQ5MTE5MSBDMjkuNzI5Mzc3MSwxNS42Mjc0MjA2IDI5LjYxMDYxOTUsMTUuNTUyNDYyMyAyOS41MzMxMjUxLDE1LjQ0MTk5NzQgQzI5LjQ1NDYyNDMsMTUuMzMxNTMyNCAyOS40Mjc0NTEsMTUuMTk1NDIzOSAyOS40NTM2MTc5LDE1LjA2NDI0NjggQzI5LjMwNjY4MDUsMTIuOTkwMDcwOSAyOC4wMTY0NDk4LDEyLjAyODQzNDQgMjYuODA0NzE5OCwxMi4wMjg0MzQ0IEMyNi4wNDc4OTE3LDEyLjAyODQzNDQgMjUuMzM4MzY1NCwxMi4zODk0MTggMjQuODU3Mjk2NSwxMy4wMTg2NzM0IEMyNC43NDc1OTY3LDEzLjE2NDY0NDkgMjQuNTYyNDE1NCwxMy4yMzU2NTgxIDI0LjM4MDI1MzMsMTMuMjExOTg3IEMyNC4xOTgwOTEzLDEzLjE4NTM1NzEgMjQuMDQ0MTA5LDEzLjA2MjA3MDQgMjMuOTgxNzEwOSwxMi44OTE0NDE1IEMyMy41NDg5NTAyLDExLjcxOTcyNDUgMjIuOTI3OTg4OSwxMC43MzYzODk1IDIyLjEzNDkyOTcsOS45NjcwODAzNCBDMjAuMTAyOTY3Miw3Ljk5NDQ5MjcgMTcuMzIzMjM0NCw3LjQ1ODkzNTE1IDE0LjY5ODQ5MDQsOC41Mzc5NDA1OSBDMTIuNTEzNTUyLDkuNDMwNTM2NSAxMC44MDI2Mzc1LDEyLjAwMTgwNDUgMTAuODAyNjM3NSwxNC4zOTI1ODA3IEMxMC44MDI2Mzc1LDE0LjY2MDg1MjYgMTAuODE4NzQwMiwxNC45MjkxMjQ2IDEwLjg1MDk0NTcsMTUuMTg2NTQ3MyBDMTAuODY5MDYxMywxNS4zMjY2MDEgMTAuODI0Nzc4OCwxNS40Njc2NDEgMTAuNzI5MTY4OCwxNS41NzQxNjA3IEMxMC42NTI2ODA5LDE1LjY1ODk4MiAxMC41NTAwMjYsMTUuNzE0MjE0NSAxMC40MzgzMTM0LDE1LjczMzk0MDMgQzkuMTQyMDQ0MDcsMTYuMDYxMzg5OSA3LjAwNjQyMDI3LDE3LjA1MzYwMTUgNy4wMDY0MjAyNywyMC4wMzUxNjc3IEM3LjAwNjQyMDI3LDIyLjI4NDkwMzkgOC4yNzI0OTY5NiwyMy41MjY2NDc4IDkuMzMzMjYzOTMsMjQuMTcyNjcwMyBDOS44MDYyODE0NSwyNC40NjQ2MTMzIDEwLjIyODk3OCwyNC42MTM1NDM2IDEwLjU5MjI5NTcsMjQuNjE3NDg4OCBMMTAuNTkyMjk1NywyNC42MTc0ODg4IFoiIGlkPSJBbWF6b24tQ2xvdWRXYXRjaF9JY29uXzMyX1NxdWlkIiBmaWxsPSIjRkZGRkZGIj48L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="1056" y="641">CloudWatch Metrics</text>
+<text class="card-text" x="1056" y="663">published time series</text>
 
-<path class="arrow-blue" d="M346 259 H408"/>
-<path class="arrow-blue" d="M658 259 H720"/>
-<path class="arrow-green" d="M346 453 H382 V412 H845 V422"/>
-<path class="arrow-green" d="M658 453 H720"/>
-<path class="arrow-teal" d="M845 290 V422"/>
-<rect class="label-box" x="866" y="337" width="62" height="20" rx="6"/><text class="label" x="897" y="351" text-anchor="middle">client</text>
-<path class="arrow-pink" d="M845 484 V520 H533 V616"/>
-<rect class="label-box" x="566" y="505" width="92" height="20" rx="6"/><text class="label" x="612" y="519" text-anchor="middle">publish path</text>
-<path class="arrow-orange" d="M845 484 V616"/>
-<rect class="label-box" x="868" y="542" width="78" height="20" rx="6"/><text class="label" x="907" y="556" text-anchor="middle">query path</text>
-<path class="arrow-red" d="M346 647 H408"/>
-<path class="arrow-pink" d="M658 647 H720"/>
-<path class="arrow-orange" d="M970 647 H1032"/>
+<path class="arrow-blue" d="M346 259 H408" />
+<path class="arrow-blue" d="M658 259 H720" />
+<path class="arrow-green" d="M346 453 H370 Q382 453 382 441 V424 Q382 412 394 412 H833 Q845 412 845 422" />
+<path class="arrow-green" d="M658 453 H720" />
+<path class="arrow-teal" d="M845 290 V422" />
+<rect class="label-box" x="866" y="337" width="62" height="20" rx="6" /><text class="label" x="897" y="351" text-anchor="middle">client</text>
+<path class="arrow-pink" d="M845 484 V508 Q845 520 833 520 H545 Q533 520 533 532 V616" />
+<rect class="label-box" x="566" y="505" width="92" height="20" rx="6" /><text class="label" x="612" y="519" text-anchor="middle">publish path</text>
+<path class="arrow-orange" d="M845 484 V616" />
+<rect class="label-box" x="868" y="542" width="78" height="20" rx="6" /><text class="label" x="907" y="556" text-anchor="middle">query path</text>
+<path class="arrow-red" d="M346 647 H408" />
+<path class="arrow-pink" d="M658 647 H720" />
+<path class="arrow-orange" d="M970 647 H1012" />
 
-<rect class="footer" x="54" y="746" width="1292" height="36" rx="8"/>
+<rect class="footer" x="54" y="746" width="1292" height="36" rx="8" />
 <text class="footer-title" x="76" y="765" dominant-baseline="middle">Flow</text><text class="footer-detail" x="146" y="765" dominant-baseline="middle">The helper layer never hides the SDK request model: it scopes the client, builds MetricDatum values, validates namespaces, and calls CloudWatch.</text>
 </svg>
