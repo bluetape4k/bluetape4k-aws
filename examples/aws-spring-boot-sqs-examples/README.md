@@ -17,7 +17,7 @@ owns queue URLs, topic subscriptions, queue policies, and redrive attributes.
 
 ```kotlin
 dependencies {
-    implementation(project(":aws-spring-boot"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:${bluetape4kVersion}")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:sns")
