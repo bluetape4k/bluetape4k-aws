@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import kotlinx.coroutines.test.runTest
 import org.jetbrains.exposed.v1.core.Table
@@ -27,6 +28,8 @@ import javax.sql.DataSource
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AwsExposedDatabaseFactoryTest {
+
+    companion object: KLogging()
 
     @Test
     fun `secret string redacts generated connection output`() {
@@ -147,7 +150,8 @@ class AwsExposedDatabaseFactoryTest {
     @Test
     fun `factory creates PostgreSQL Testcontainers Exposed database`() = runTest {
         val postgres = PostgreSQLServer.Launcher.postgres
-        val handle = AwsExposedDatabaseFactory().create(
+        val databaseFactory = AwsExposedDatabaseFactory()
+        val handle = databaseFactory.create(
             properties = AwsDatabaseConnectionProperties(
                 url = postgres.getJdbcUrl(),
                 driverClassName = postgres.getDriverClassName(),
@@ -173,12 +177,14 @@ class AwsExposedDatabaseFactoryTest {
     private fun h2Url(databaseName: String): String =
         "jdbc:h2:mem:$databaseName;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
 
-    private fun serialize(value: AwsSecretString): ByteArray =
-        ByteArrayOutputStream().also {
+    private fun serialize(value: AwsSecretString): ByteArray {
+        return ByteArrayOutputStream().use {
             ObjectOutputStream(it).use { output ->
                 output.writeObject(value)
             }
-        }.toByteArray()
+            it.toByteArray()
+        }
+    }
 
     private fun verifyCreateRead(
         handle: AwsExposedDatabaseHandle,

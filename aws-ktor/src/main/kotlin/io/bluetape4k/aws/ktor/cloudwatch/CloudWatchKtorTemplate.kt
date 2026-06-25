@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor.cloudwatch
 
 import io.bluetape4k.aws.cloudwatch.listMetrics
 import io.bluetape4k.aws.cloudwatch.putMetricData
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
@@ -26,6 +27,8 @@ class CloudWatchKtorTemplate(
     private val namespace: String? = null,
     private val batchSize: Int = CLOUDWATCH_MAX_BATCH_SIZE,
 ): CloudWatchKtorOperations {
+
+    companion object: KLoggingChannel()
 
     init {
         batchSize.requireInRange(CLOUDWATCH_MIN_BATCH_SIZE, CLOUDWATCH_MAX_BATCH_SIZE, "batchSize")

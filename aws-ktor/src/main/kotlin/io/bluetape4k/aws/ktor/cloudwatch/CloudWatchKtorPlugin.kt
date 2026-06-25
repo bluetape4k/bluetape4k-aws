@@ -52,7 +52,7 @@ val CloudWatchKtorPlugin: ApplicationPlugin<CloudWatchKtorPluginConfig> = create
  * @throws IllegalStateException when [CloudWatchKtorPlugin] is absent or disabled.
  */
 fun Application.cloudWatch(): CloudWatchKtorOperations =
-    cloudWatchOrNull() ?: throw IllegalStateException("CloudWatchKtorPlugin is not installed or is disabled.")
+    cloudWatchOrNull() ?: error("CloudWatchKtorPlugin is not installed or is disabled.")
 
 /**
  * Returns CloudWatch operations installed by [CloudWatchKtorPlugin], or null when absent or disabled.

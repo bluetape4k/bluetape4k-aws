@@ -135,16 +135,16 @@ private fun HttpRequestBuilder.toSdkHttpFullRequest(
 
 private fun OutgoingContent.toContentStreamProvider(payloadSigningEnabled: Boolean): ContentStreamProvider? {
     return when (this) {
-        is OutgoingContent.NoContent -> null
+        is OutgoingContent.NoContent        -> null
         is OutgoingContent.ByteArrayContent -> {
             if (payloadSigningEnabled) ContentStreamProvider.fromByteArray(bytes()) else null
         }
-        is OutgoingContent.ContentWrapper -> delegate().toContentStreamProvider(payloadSigningEnabled)
-        else -> {
+        is OutgoingContent.ContentWrapper   -> delegate().toContentStreamProvider(payloadSigningEnabled)
+        else                                -> {
             if (payloadSigningEnabled) {
                 error(
                     "AwsSigV4Plugin can sign only replayable ByteArrayContent payloads. " +
-                        "Set payloadSigningEnabled=false for streaming content."
+                            "Set payloadSigningEnabled=false for streaming content."
                 )
             }
             null
@@ -172,8 +172,8 @@ private fun HttpRequestBuilder.applySignedRequest(signedRequest: SdkHttpRequest)
 
 private fun AwsSigV4AuthLocation.toAwsAuthLocation(): AwsV4FamilyHttpSigner.AuthLocation =
     when (this) {
-        AwsSigV4AuthLocation.Header -> AwsV4FamilyHttpSigner.AuthLocation.HEADER
+        AwsSigV4AuthLocation.Header      -> AwsV4FamilyHttpSigner.AuthLocation.HEADER
         AwsSigV4AuthLocation.QueryString -> AwsV4FamilyHttpSigner.AuthLocation.QUERY_STRING
     }
 
-private object EmptyAwsContent : OutgoingContent.NoContent()
+private object EmptyAwsContent: OutgoingContent.NoContent()

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 
@@ -25,19 +26,26 @@ enum class AwsDatabaseConfigSourceType {
  * use this descriptor to resolve settings through their own AWS clients and pass
  * the resolved values back to [AwsDatabaseSettingsResolver].
  */
-data class AwsDatabaseConfigSource(
+@ConsistentCopyVisibility
+data class AwsDatabaseConfigSource private constructor(
     val type: AwsDatabaseConfigSourceType,
     val sourceId: String,
     val prefix: String? = null,
     val optional: Boolean = false,
 ): Serializable {
 
-    init {
-        sourceId.requireNotBlank("sourceId")
-        prefix?.requireNotBlank("prefix")
-    }
-
-    companion object {
+    companion object: KLogging() {
         private const val serialVersionUID: Long = 6680609014195938796L
+
+        operator fun invoke(
+            type: AwsDatabaseConfigSourceType,
+            sourceId: String,
+            prefix: String? = null,
+            optional: Boolean = false,
+        ): AwsDatabaseConfigSource {
+            sourceId.requireNotBlank("sourceId")
+            prefix?.requireNotBlank("prefix")
+            return AwsDatabaseConfigSource(type, sourceId, prefix, optional)
+        }
     }
 }

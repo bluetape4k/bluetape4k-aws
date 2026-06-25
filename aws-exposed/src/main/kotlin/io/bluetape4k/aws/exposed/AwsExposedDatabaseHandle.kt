@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.logging.KLogging
 import org.jetbrains.exposed.v1.jdbc.Database
 import javax.sql.DataSource
 
@@ -12,6 +13,8 @@ class AwsExposedDatabaseHandle(
     val dataSource: DataSource,
     val database: Database,
 ): AutoCloseable {
+
+    companion object: KLogging()
 
     /**
      * Closes the owned [dataSource] when it supports [AutoCloseable].

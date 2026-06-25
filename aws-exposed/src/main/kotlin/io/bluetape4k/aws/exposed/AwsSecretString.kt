@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.exposed
 
 import io.bluetape4k.aws.exposed.AwsSecretString.Companion.REDACTED
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 import java.nio.charset.StandardCharsets
@@ -34,7 +35,7 @@ class AwsSecretString private constructor(private val value: String): Serializab
 
     override fun hashCode(): Int = REDACTED.hashCode()
 
-    companion object {
+    companion object: KLogging() {
         private const val serialVersionUID: Long = 202605220168169L
 
         /**
