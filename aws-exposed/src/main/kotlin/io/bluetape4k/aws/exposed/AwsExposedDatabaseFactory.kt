@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.exposed
 
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
 import org.jetbrains.exposed.v1.jdbc.Database
 
@@ -16,6 +17,12 @@ class AwsExposedDatabaseFactory(
     private val resolver: AwsDatabaseSettingsResolver = NoopAwsDatabaseSettingsResolver,
     private val dataSourceFactory: AwsJdbcDataSourceFactory = HikariAwsJdbcDataSourceFactory,
 ) {
+    companion object: KLoggingChannel() {
+        /**
+         * Name used for the default database handle.
+         */
+        const val DEFAULT_DATABASE_NAME: String = "default"
+    }
 
     /**
      * Resolves and creates one named Exposed database handle.
@@ -31,7 +38,7 @@ class AwsExposedDatabaseFactory(
 
         val dataSource = dataSourceFactory.create(databaseName, resolved)
         val database = Database.connect(dataSource)
-        log.debug("Created Exposed database handle '{}'.", databaseName)
+        log.debug { "Created Exposed database handle '$databaseName'." }
         return AwsExposedDatabaseHandle(databaseName, resolved, dataSource, database)
     }
 
@@ -76,12 +83,5 @@ class AwsExposedDatabaseFactory(
             runCatching { handle.close() }
                 .onFailure { owner.addSuppressed(it) }
         }
-    }
-
-    companion object: KLogging() {
-        /**
-         * Name used for the default database handle.
-         */
-        const val DEFAULT_DATABASE_NAME: String = "default"
     }
 }

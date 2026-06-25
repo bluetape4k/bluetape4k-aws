@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 
 /**
@@ -10,10 +11,12 @@ class AwsExposedDatabaseRegistry(
     val namedHandles: Map<String, AwsExposedDatabaseHandle> = emptyMap(),
 ): AutoCloseable {
 
+    companion object: KLogging()
+
     /**
      * Finds a database handle. A null or default name returns [defaultHandle].
      */
-    fun get(name: String? = null): AwsExposedDatabaseHandle {
+    operator fun get(name: String? = null): AwsExposedDatabaseHandle {
         if (name == null || name == AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME) {
             return defaultHandle
         }

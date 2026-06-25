@@ -2,6 +2,7 @@ package io.bluetape4k.aws.exposed
 
 import com.zaxxer.hikari.HikariDataSource
 import io.bluetape4k.jdbc.hikari.hikariDataSourceOf
+import io.bluetape4k.logging.KLogging
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.DriverManager
@@ -27,7 +28,9 @@ fun interface AwsJdbcDataSourceFactory {
 /**
  * Default [AwsJdbcDataSourceFactory] backed by HikariCP.
  */
-object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory {
+object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory, KLogging() {
+
+    const val DEFAULT_POOL_NAME_PREFIX: String = "bluetape4k-aws-exposed"
 
     override fun create(
         databaseName: String,
@@ -69,7 +72,7 @@ object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory {
     }
 
     private fun defaultPoolName(databaseName: String): String =
-        "bluetape4k-aws-exposed-$databaseName"
+        "$DEFAULT_POOL_NAME_PREFIX-$databaseName"
 }
 
 internal class RdsIamRefreshingDataSource(
@@ -79,6 +82,8 @@ internal class RdsIamRefreshingDataSource(
     private val dataSourceProperties: Map<String, String>,
     private val passwordProvider: AwsDatabasePasswordProvider,
 ): DataSource {
+
+    companion object: KLogging()
 
     init {
         driverClassName?.let { Class.forName(it) }

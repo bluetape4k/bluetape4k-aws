@@ -5,9 +5,9 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.sql.Connection
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AwsRdsIamAuthenticationTest {
+
+    companion object: KLogging()
 
     @Test
     fun `rds iam properties validate invalid settings`() {
@@ -62,7 +64,7 @@ class AwsRdsIamAuthenticationTest {
         val counter = AtomicInteger()
         val generator = AwsRdsIamAuthTokenGenerator { request ->
             requests += request
-            AwsSecretString.of("token-${counter.incrementAndGet()}")
+            awsSecretStringOf("token-${counter.incrementAndGet()}")
         }
         val provider = AwsDatabasePasswordProviders.rdsIam(
             properties = rdsIamConnectionProperties(),
@@ -89,8 +91,8 @@ class AwsRdsIamAuthenticationTest {
         val counter = AtomicInteger()
         val provider = AwsDatabasePasswordProviders.rdsIam(
             properties = rdsIamConnectionProperties(),
-            tokenGenerator = AwsRdsIamAuthTokenGenerator {
-                AwsSecretString.of("token-${counter.incrementAndGet()}")
+            tokenGenerator = {
+                awsSecretStringOf("token-${counter.incrementAndGet()}")
             },
             clock = clock,
         )
@@ -109,7 +111,7 @@ class AwsRdsIamAuthenticationTest {
         val provider = AwsDatabasePasswordProviders.rdsIam(
             properties = rdsIamConnectionProperties(),
             tokenGenerator = AwsRdsIamAuthTokenGenerator {
-                AwsSecretString.of("token-${counter.incrementAndGet()}")
+                awsSecretStringOf("token-${counter.incrementAndGet()}")
             },
             clock = clock,
         )
@@ -145,7 +147,7 @@ class AwsRdsIamAuthenticationTest {
         val provider = AwsDatabasePasswordProviders.rdsIam(
             properties = rdsIamConnectionProperties(),
             tokenGenerator = AwsRdsIamAuthTokenGenerator {
-                throw IllegalStateException("credential chain failed")
+                error("credential chain failed")
             },
         )
 
@@ -166,7 +168,7 @@ class AwsRdsIamAuthenticationTest {
             username = "sa",
             dataSourceProperties = emptyMap(),
             passwordProvider = AwsDatabasePasswordProvider {
-                AwsSecretString.of("token-${counter.incrementAndGet()}")
+                awsSecretStringOf("token-${counter.incrementAndGet()}")
             },
         )
 

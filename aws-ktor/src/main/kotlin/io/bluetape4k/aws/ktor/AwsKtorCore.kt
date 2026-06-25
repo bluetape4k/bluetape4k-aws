@@ -6,6 +6,7 @@ import io.bluetape4k.AbstractValueObject
 import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.ktor.core.Bluetape4kKtorCoreConfig
 import io.bluetape4k.ktor.core.installBluetape4kKtorCore
+import io.bluetape4k.support.hashOf
 import io.ktor.client.HttpClientConfig
 import io.ktor.http.Url
 import io.ktor.server.application.Application
@@ -123,35 +124,38 @@ class AwsKtorDefaults(
 
     override fun equalProperties(other: Any): Boolean =
         other is AwsKtorDefaults &&
-            region == other.region &&
-            endpointOverrideValue == other.endpointOverrideValue &&
-            javaCredentialsProvider == other.javaCredentialsProvider &&
-            kotlinCredentialsProvider == other.kotlinCredentialsProvider &&
-            signingClock == other.signingClock &&
-            kotlinHttpClient == other.kotlinHttpClient &&
-            httpClientCustomizers == other.httpClientCustomizers &&
-            sqsAsyncClientCustomizers == other.sqsAsyncClientCustomizers &&
-            cloudWatchAsyncClientCustomizers == other.cloudWatchAsyncClientCustomizers &&
-            cloudWatchLogsAsyncClientCustomizers == other.cloudWatchLogsAsyncClientCustomizers &&
-            s3ControlAsyncClientCustomizers == other.s3ControlAsyncClientCustomizers &&
-            s3VectorsAsyncClientCustomizers == other.s3VectorsAsyncClientCustomizers &&
-            dynamoDbClientCustomizers == other.dynamoDbClientCustomizers
+                region == other.region &&
+                endpointOverrideValue == other.endpointOverrideValue &&
+                javaCredentialsProvider == other.javaCredentialsProvider &&
+                kotlinCredentialsProvider == other.kotlinCredentialsProvider &&
+                signingClock == other.signingClock &&
+                kotlinHttpClient == other.kotlinHttpClient &&
+                httpClientCustomizers == other.httpClientCustomizers &&
+                sqsAsyncClientCustomizers == other.sqsAsyncClientCustomizers &&
+                cloudWatchAsyncClientCustomizers == other.cloudWatchAsyncClientCustomizers &&
+                cloudWatchLogsAsyncClientCustomizers == other.cloudWatchLogsAsyncClientCustomizers &&
+                s3ControlAsyncClientCustomizers == other.s3ControlAsyncClientCustomizers &&
+                s3VectorsAsyncClientCustomizers == other.s3VectorsAsyncClientCustomizers &&
+                dynamoDbClientCustomizers == other.dynamoDbClientCustomizers
+
+    override fun equals(other: Any?): Boolean = super.equals(other)
 
     override fun hashCode(): Int {
-        var result = region?.hashCode() ?: 0
-        result = 31 * result + (endpointOverrideValue?.hashCode() ?: 0)
-        result = 31 * result + (javaCredentialsProvider?.hashCode() ?: 0)
-        result = 31 * result + (kotlinCredentialsProvider?.hashCode() ?: 0)
-        result = 31 * result + (signingClock?.hashCode() ?: 0)
-        result = 31 * result + (kotlinHttpClient?.hashCode() ?: 0)
-        result = 31 * result + httpClientCustomizers.hashCode()
-        result = 31 * result + sqsAsyncClientCustomizers.hashCode()
-        result = 31 * result + cloudWatchAsyncClientCustomizers.hashCode()
-        result = 31 * result + cloudWatchLogsAsyncClientCustomizers.hashCode()
-        result = 31 * result + s3ControlAsyncClientCustomizers.hashCode()
-        result = 31 * result + s3VectorsAsyncClientCustomizers.hashCode()
-        result = 31 * result + dynamoDbClientCustomizers.hashCode()
-        return result
+        return hashOf(
+            region,
+            endpointOverrideValue,
+            javaCredentialsProvider,
+            kotlinCredentialsProvider,
+            signingClock,
+            kotlinHttpClient,
+            httpClientCustomizers,
+            sqsAsyncClientCustomizers,
+            cloudWatchAsyncClientCustomizers,
+            cloudWatchLogsAsyncClientCustomizers,
+            s3ControlAsyncClientCustomizers,
+            s3VectorsAsyncClientCustomizers,
+            dynamoDbClientCustomizers,
+        )
     }
 
     override fun buildStringHelper(): ToStringBuilder =

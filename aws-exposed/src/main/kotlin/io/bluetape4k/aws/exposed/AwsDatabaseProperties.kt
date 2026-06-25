@@ -1,16 +1,10 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 
-/**
- * Database settings used to create default and named Exposed databases.
- *
- * The default database is used when callers request a handle without a name.
- * Named databases allow framework adapters to expose multiple Exposed
- * [org.jetbrains.exposed.v1.jdbc.Database] instances without coupling the
- * common foundation to Spring Boot or Ktor APIs.
- */
+
 data class AwsDatabaseProperties(
     val defaultDatabase: AwsDatabaseConnectionProperties = AwsDatabaseConnectionProperties(),
     val namedDatabases: Map<String, AwsDatabaseConnectionProperties> = emptyMap(),
@@ -20,7 +14,7 @@ data class AwsDatabaseProperties(
         namedDatabases.keys.forEach { it.requireNotBlank("namedDatabases key") }
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val serialVersionUID: Long = 4711399148814050012L
     }
 }
@@ -54,7 +48,7 @@ data class AwsDatabaseConnectionProperties(
             AwsDatabaseAuthenticationMode.STATIC_PASSWORD -> {
                 require(rdsIam == null) { "rdsIam must be null when authenticationMode is STATIC_PASSWORD." }
             }
-            AwsDatabaseAuthenticationMode.RDS_IAM -> {
+            AwsDatabaseAuthenticationMode.RDS_IAM         -> {
                 require(password == null) { "password must be null when authenticationMode is RDS_IAM." }
                 val iam = requireNotNull(rdsIam) { "rdsIam must be configured when authenticationMode is RDS_IAM." }
                 iam.effectiveUsername(username)
@@ -64,7 +58,7 @@ data class AwsDatabaseConnectionProperties(
         metadata.keys.forEach { it.requireNotBlank("metadata key") }
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val serialVersionUID: Long = 2904515010393731394L
     }
 }
@@ -95,7 +89,7 @@ data class AwsDatabasePoolProperties(
         require(maxLifetimeMillis > 0) { "maxLifetimeMillis must be greater than 0: $maxLifetimeMillis" }
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val serialVersionUID: Long = -3715261391871650193L
     }
 }

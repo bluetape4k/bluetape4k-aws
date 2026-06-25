@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
 import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireInRange
 import kotlinx.coroutines.CancellationException
@@ -45,7 +45,7 @@ class CloudWatchLogsKtorRuntime(
     private val createLogGroupOnStart: Boolean = false,
     private val createLogStreamOnStart: Boolean = false,
 ) {
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     private val closed = AtomicBoolean(false)
     private val started = AtomicBoolean(false)
@@ -95,7 +95,7 @@ class CloudWatchLogsKtorRuntime(
             scope = currentScope
             flushJob = currentScope.launch(CoroutineName("cloudwatch-logs-flush")) {
                 while (isActive) {
-                    delay(flushInterval.toMillis())
+                    delay(timeMillis = flushInterval.toMillis())
                     try {
                         flush()
                     } catch (e: CancellationException) {
@@ -182,7 +182,7 @@ class CloudWatchLogsKtorRuntime(
         }
 
         try {
-            withTimeoutOrNull(shutdownFlushTimeout.toMillis()) {
+            withTimeoutOrNull(timeMillis = shutdownFlushTimeout.toMillis()) {
                 flush()
             }
         } finally {

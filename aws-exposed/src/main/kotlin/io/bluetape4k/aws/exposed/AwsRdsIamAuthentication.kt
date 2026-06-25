@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
@@ -63,7 +64,7 @@ data class AwsRdsIamAuthenticationProperties(
             .also { it.requireNotBlank("username") }
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val serialVersionUID: Long = -4435741150825464135L
 
         /**
@@ -98,7 +99,7 @@ data class AwsRdsIamAuthTokenRequest(
         require(port in MIN_PORT..MAX_PORT) { "port must be in $MIN_PORT..$MAX_PORT: $port" }
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val serialVersionUID: Long = -1023639141190871715L
 
         private const val MIN_PORT: Int = 1
@@ -151,7 +152,7 @@ class AwsSdkRdsIamAuthTokenGenerator(
             )
         }
 
-    companion object {
+    companion object: KLogging() {
         private const val RDS_UTILITIES_CLASS_NAME: String = "software.amazon.awssdk.services.rds.RdsUtilities"
 
         private fun defaultRdsUtilities(): RdsUtilities {
@@ -197,7 +198,7 @@ fun interface AwsDatabasePasswordProvider {
 /**
  * Factory helpers for static JDBC passwords and RDS IAM token passwords.
  */
-object AwsDatabasePasswordProviders {
+object AwsDatabasePasswordProviders: KLogging() {
 
     /**
      * Returns a provider for [password].
@@ -258,6 +259,8 @@ private class RefreshingRdsIamPasswordProvider(
     private val tokenGenerator: AwsRdsIamAuthTokenGenerator,
     private val clock: Clock,
 ): AwsDatabasePasswordProvider {
+
+    companion object: KLogging()
 
     private val refreshLock = ReentrantLock()
 

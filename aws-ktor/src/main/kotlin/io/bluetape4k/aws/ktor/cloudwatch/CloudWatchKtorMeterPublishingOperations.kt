@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
 import io.micrometer.core.instrument.Measurement
 import io.micrometer.core.instrument.Meter
@@ -9,7 +11,7 @@ import software.amazon.awssdk.services.cloudwatch.model.Dimension
 import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
 import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
-import java.util.Locale
+import java.util.*
 
 /**
  * Publishes selected Micrometer meter snapshots to CloudWatch through [CloudWatchKtorOperations].
@@ -41,6 +43,8 @@ class CloudWatchKtorMeterPublishingTemplate(
     private val cloudWatchOperations: CloudWatchKtorOperations,
 ): CloudWatchKtorMeterPublishingOperations {
 
+    companion object: KLoggingChannel()
+
     override suspend fun publishMeters(predicate: (Meter) -> Boolean): List<PutMetricDataResponse> {
         val metricData = meterRegistry.meters
             .asSequence()
@@ -51,6 +55,7 @@ class CloudWatchKtorMeterPublishingTemplate(
             return emptyList()
         }
 
+        log.debug { "Publishing ${metricData.size} metrics to CloudWatch" }
         return cloudWatchOperations.putMetricData(metricData)
     }
 
@@ -69,7 +74,9 @@ class CloudWatchKtorMeterPublishingTemplate(
 
         return measure()
             .filter { it.value.isFinite() }
-            .map { measurement -> measurement.toMetricDatum(id.name, dimensions) }
+            .map { measurement ->
+                measurement.toMetricDatum(id.name, dimensions)
+            }
     }
 
     private fun Measurement.toMetricDatum(
@@ -86,6 +93,6 @@ class CloudWatchKtorMeterPublishingTemplate(
     private fun Statistic.toStandardUnit(): StandardUnit =
         when (this) {
             Statistic.COUNT -> StandardUnit.COUNT
-            else -> StandardUnit.NONE
+            else            -> StandardUnit.NONE
         }
 }
