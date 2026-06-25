@@ -18,11 +18,13 @@ fun Project.isNonPublishedModule(): Boolean {
             name.endsWith("-benchmark")
 }
 
+val platformDependencies = dependencies
+
 dependencies {
     constraints {
         rootProject.subprojects {
             if (name != "bluetape4k-aws-bom" && !isNonPublishedModule()) {
-                api(this)
+                api(platformDependencies.project(mapOf("path" to path)))
             }
         }
     }

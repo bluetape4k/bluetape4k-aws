@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.kotlin.noarg) apply false
     alias(libs.plugins.kotlinx.atomicfu)
 
-    alias(libs.plugins.detekt)
+    alias(libs.plugins.detekt) apply false
     alias(libs.plugins.dependency.management)
 
     alias(libs.plugins.dokka)
@@ -25,18 +25,34 @@ plugins {
     alias(libs.plugins.nmcp.aggregation)
     alias(libs.plugins.nmcp) apply false
 
-    alias(libs.plugins.kover)
+    alias(libs.plugins.kover) apply false
     alias(libs.plugins.graalvm.native) apply false
     alias(bt4k.plugins.exposed.plugin) apply false
 }
 
 val rootLibs = libs
+val rootDependencies = dependencies
 val bt4kCatalog = extensions.getByType<org.gradle.api.artifacts.VersionCatalogsExtension>().named("bt4k")
 fun bt4kVersion(alias: String): String {
     val version = bt4kCatalog.findVersion(alias).get()
     return version.requiredVersion
         .ifBlank { version.preferredVersion }
         .ifBlank { version.strictVersion }
+}
+
+val requestedTaskNames = gradle.startParameter.taskNames
+val shouldApplyDetekt = requestedTaskNames.any { it.contains("detekt", ignoreCase = true) }
+val shouldApplyKover = requestedTaskNames.any {
+    it.contains("kover", ignoreCase = true) || it.contains("coverage", ignoreCase = true)
+}
+val shouldApplyNative = requestedTaskNames.any { it.contains("native", ignoreCase = true) }
+
+if (shouldApplyDetekt) {
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+}
+
+if (shouldApplyKover) {
+    apply(plugin = "org.jetbrains.kotlinx.kover")
 }
 
 
@@ -49,9 +65,9 @@ val centralSnapshotsParallelism: Int = providers
     .orElse(4)
     .get()
 
-val projectGroup: String by project
-val baseVersion: String by project
-val snapshotVersion: String by project
+val projectGroup: String = providers.gradleProperty("projectGroup").get()
+val baseVersion: String = providers.gradleProperty("baseVersion").get()
+val snapshotVersion: String = providers.gradleProperty("snapshotVersion").get()
 
 allprojects {
     group = projectGroup
@@ -96,7 +112,7 @@ subprojects {
 }
 
 subprojects {
-    if (name.startsWith("aws-spring-boot-") && name.endsWith("-examples")) {
+    if (shouldApplyNative && name.startsWith("aws-spring-boot-") && name.endsWith("-examples")) {
         pluginManager.withPlugin("org.springframework.boot") {
             pluginManager.apply("org.graalvm.buildtools.native")
         }
@@ -109,13 +125,12 @@ subprojects {
         plugin<JavaLibraryPlugin>()
         plugin("org.jetbrains.kotlin.jvm")
         plugin("org.jetbrains.kotlinx.atomicfu")
-        plugin("org.jetbrains.kotlinx.kover")
         plugin("maven-publish")
         plugin("signing")
         plugin("io.spring.dependency-management")
         plugin("org.jetbrains.dokka")
         plugin("com.adarshr.test-logger")
-        if (!path.contains("examples")) {
+        if (shouldApplyKover) {
             plugin("org.jetbrains.kotlinx.kover")
         }
     }
@@ -199,9 +214,8 @@ subprojects {
             showFullStackTraces = true
         }
 
-        val reportMerge by registering(ReportMergeTask::class) {
-            val file = rootProject.layout.buildDirectory.asFile.get().resolve("reports/detekt/merged.xml")
-            output.set(file)
+        val reportMerge = register<ReportMergeTask>("reportMerge") {
+            output.set(rootProject.layout.buildDirectory.file("reports/detekt/merged.xml"))
         }
         withType<Detekt>().configureEach detekt@{
             finalizedBy(reportMerge)
@@ -220,7 +234,7 @@ subprojects {
 
         dokka {
             dokkaPublications.html {
-                outputDirectory.set(layout.buildDirectory.asFile.get().resolve("javadoc"))
+                outputDirectory.set(layout.buildDirectory.dir("javadoc"))
             }
             dokkaSourceSets.configureEach {
                 includes.from(project.files("README.md"))
@@ -254,45 +268,40 @@ subprojects {
     }
 
     dependencies {
-        val api by configurations
-        val implementation by configurations
-        val testImplementation by configurations
-        val testRuntimeOnly by configurations
+        add("api", rootLibs.jetbrains.annotations)
 
-        api(rootLibs.jetbrains.annotations)
+        add("implementation", rootLibs.kotlin.stdlib)
+        add("implementation", rootLibs.kotlin.reflect)
+        add("testImplementation", rootLibs.kotlin.test)
+        add("testImplementation", rootLibs.kotlin.test.junit5)
 
-        implementation(rootLibs.kotlin.stdlib)
-        implementation(rootLibs.kotlin.reflect)
-        testImplementation(rootLibs.kotlin.test)
-        testImplementation(rootLibs.kotlin.test.junit5)
+        add("implementation", rootLibs.kotlinx.coroutines.core)
+        add("implementation", rootLibs.kotlinx.atomicfu)
 
-        implementation(rootLibs.kotlinx.coroutines.core)
-        implementation(rootLibs.kotlinx.atomicfu)
+        add("api", rootLibs.slf4j.api)
+        add("testImplementation", rootLibs.logback)
+        add("testImplementation", rootLibs.jcl.over.slf4j)
+        add("testImplementation", rootLibs.jul.to.slf4j)
+        add("testImplementation", rootLibs.log4j.over.slf4j)
 
-        api(rootLibs.slf4j.api)
-        testImplementation(rootLibs.logback)
-        testImplementation(rootLibs.jcl.over.slf4j)
-        testImplementation(rootLibs.jul.to.slf4j)
-        testImplementation(rootLibs.log4j.over.slf4j)
+        add("testImplementation", rootLibs.junit.jupiter)
+        add("testRuntimeOnly", rootLibs.junit.platform.engine)
 
-        testImplementation(rootLibs.junit.jupiter)
-        testRuntimeOnly(rootLibs.junit.platform.engine)
-
-        testImplementation(rootLibs.awaitility.kotlin)
-        testImplementation(rootLibs.mockk)
+        add("testImplementation", rootLibs.awaitility.kotlin)
+        add("testImplementation", rootLibs.mockk)
     }
 
     publishing {
         publications {
             if (!project.path.contains("examples")) {
                 create<MavenPublication>("BluetapeAws") {
-                    val sourcesJar by tasks.registering(Jar::class) {
+                    val sourcesJar = tasks.register<Jar>("sourcesJar") {
                         archiveClassifier.set("sources")
                         from(sourceSets["main"].allSource)
                     }
-                    val javadocJar by tasks.registering(Jar::class) {
+                    val javadocJar = tasks.register<Jar>("javadocJar") {
                         archiveClassifier.set("javadoc")
-                        from(layout.buildDirectory.asFile.get().resolve("javadoc"))
+                        from(layout.buildDirectory.dir("javadoc"))
                     }
                     from(components["java"])
                     artifact(sourcesJar)
@@ -341,11 +350,13 @@ extensions.configure<NmcpAggregationExtension>("nmcpAggregation") {
 dependencies {
     subprojects
         .filterNot { it.path.contains("examples") }
-        .forEach { add("nmcpAggregation", project(it.path)) }
+        .forEach { add("nmcpAggregation", rootDependencies.project(mapOf("path" to it.path))) }
 }
 
-dependencies {
-    subprojects
-        .filter { it.name != "bluetape4k-aws-bom" && !it.path.contains("examples") }
-        .forEach { sub -> kover(project(sub.path)) }
+if (shouldApplyKover) {
+    dependencies {
+        subprojects
+            .filter { it.name != "bluetape4k-aws-bom" && !it.path.contains("examples") }
+            .forEach { sub -> add("kover", rootDependencies.project(mapOf("path" to sub.path))) }
+    }
 }
