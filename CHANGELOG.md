@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-06-08
+## [0.4.0] - 2026-06-27
 
 ### Added
 
@@ -54,6 +54,10 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   diagrams for the 0.4.0 service surface
   ([#266](https://github.com/bluetape4k/bluetape4k-aws/pull/266),
   [#291](https://github.com/bluetape4k/bluetape4k-aws/pull/291)).
+- Prepared 0.4.0 release documentation and code-pattern preflight evidence for
+  the coordinated dependencies train
+  ([#292](https://github.com/bluetape4k/bluetape4k-aws/issues/292),
+  [#294](https://github.com/bluetape4k/bluetape4k-aws/issues/294)).
 
 ### Fixed
 
