@@ -5,7 +5,8 @@ English | [한국어](README.ko.md)
 Spring Boot 4 auto-configuration for AWS Java SDK v2 without an `awspring`
 runtime dependency. The module provides coroutine-first templates, an SQS
 listener container, CloudWatch metric/log helpers, EC2 IMDS metadata operations,
-remote Environment sources, and AWS-backed Exposed database wiring.
+Kinesis operations, remote Environment sources, and AWS-backed Exposed database
+wiring.
 
 ## Diagrams
 
@@ -31,6 +32,9 @@ remote Environment sources, and AWS-backed Exposed database wiring.
 - **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, topic publish,
   FIFO publish fields, direct SMS publish options, and HTTP(S) notification
   JSON parsing plus token-based subscription confirmation.
+- **Kinesis** — `KinesisCoroutinesTemplate` for stream creation, record
+  publishing, shard iterator lookup, bounded `GetRecords` polling, and a cold
+  single-shard `Flow<Record>`.
 - **SES** — `SesCoroutinesMailSender` for simple, templated, raw, attachment,
   and custom-header email sends, plus an optional Spring `JavaMailSender`
   adapter.
@@ -84,6 +88,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:imds")
+    implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
@@ -574,6 +579,66 @@ checks the optional `x-amz-sns-message-type` header, and rejects non-HTTPS or
 non-SNS `SigningCertURL` hosts. It does not validate SNS signatures; validate
 the certificate chain, signature, signature version, and expected `TopicArn`
 before processing notifications or confirming subscriptions.
+
+### Kinesis — stream operations and record Flow
+
+```yaml
+bluetape4k:
+  aws:
+    kinesis:
+      region: us-east-1
+      streams:
+        orders:
+          shard-count: 1
+      consumer:
+        batch-limit: 100
+        poll-interval: 200ms
+        empty-backoff: 1s
+```
+
+```kotlin
+import io.bluetape4k.aws.spring.kinesis.KinesisOperations
+import io.bluetape4k.aws.spring.kinesis.KinesisPutRecordRequest
+import io.bluetape4k.aws.spring.kinesis.KinesisRecordFlowRequest
+import io.bluetape4k.aws.spring.kinesis.KinesisStartingPosition
+import kotlinx.coroutines.flow.collect
+import software.amazon.awssdk.core.SdkBytes
+
+class OrderStream(
+    private val kinesis: KinesisOperations,
+) {
+    suspend fun ensureStream() {
+        kinesis.createConfiguredStream("orders")
+    }
+
+    suspend fun publish(payload: String): String =
+        kinesis.putRecord(
+            KinesisPutRecordRequest(
+                streamName = "orders",
+                partitionKey = "orders",
+                data = SdkBytes.fromUtf8String(payload),
+            )
+        ).sequenceNumber()
+
+    suspend fun consume(shardId: String) {
+        kinesis.recordFlow(
+            KinesisRecordFlowRequest(
+                streamName = "orders",
+                shardId = shardId,
+                startingPosition = KinesisStartingPosition.TrimHorizon,
+            )
+        ).collect { record ->
+            handle(record.data().asUtf8String())
+        }
+    }
+
+    private fun handle(payload: String) = Unit
+}
+```
+
+`KinesisOperations` is intentionally an explicit operations API. It does not
+start listener containers or manage checkpoints; store sequence numbers or
+application checkpoints in your own persistence layer when you collect the Flow.
 
 ### SQS — `@SqsListener` annotation
 
