@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.cloudwatch
 
+import io.bluetape4k.support.requireInRange
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
@@ -30,9 +31,7 @@ data class CloudWatchProperties(
         require(endpointOverride == null || !region.isNullOrBlank()) {
             "$CLOUDWATCH_PROPERTIES_PREFIX.region is required when endpointOverride is configured."
         }
-        require(batchSize in 1..1_000) {
-            "$CLOUDWATCH_PROPERTIES_PREFIX.batch-size must be between 1 and 1000."
-        }
+        batchSize.requireInRange(1, 1_000, "$CLOUDWATCH_PROPERTIES_PREFIX.batch-size")
     }
 
     data class Micrometer(
@@ -65,9 +64,7 @@ data class CloudWatchLogsProperties(
         require(endpointOverride == null || !region.isNullOrBlank()) {
             "$CLOUDWATCH_LOGS_PROPERTIES_PREFIX.region is required when endpointOverride is configured."
         }
-        require(batchSize in 1..10_000) {
-            "$CLOUDWATCH_LOGS_PROPERTIES_PREFIX.batch-size must be between 1 and 10000."
-        }
+        batchSize.requireInRange(1, 10_000, "$CLOUDWATCH_LOGS_PROPERTIES_PREFIX.batch-size")
     }
 
     companion object {

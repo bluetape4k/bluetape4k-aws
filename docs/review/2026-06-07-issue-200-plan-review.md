@@ -29,4 +29,3 @@ None blocking.
 - The validation commands cover dependency presence, compilation, focused
   behavior, full module regression, and diff hygiene.
 - `P0=0` and `P1=0`; execution may proceed.
-

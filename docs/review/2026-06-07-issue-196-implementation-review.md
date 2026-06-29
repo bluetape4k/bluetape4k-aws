@@ -60,4 +60,3 @@ None blocking.
 - Focused IMDS tests: 12 passing.
 - Full `:bluetape4k-aws-spring-boot:test`: 190 passing.
 - `git diff --check`: passed.
-

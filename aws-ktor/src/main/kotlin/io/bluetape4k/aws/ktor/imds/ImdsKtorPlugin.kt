@@ -59,4 +59,3 @@ fun Application.imds(): ImdsKtorOperations =
  */
 fun Application.imdsOrNull(): ImdsKtorOperations? =
     attributes.getOrNull(ImdsKtorOperationsKey)
-

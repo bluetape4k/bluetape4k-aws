@@ -15,7 +15,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest
 
 /**
- * `@DynamoDbBean` 엔티티를 위한 Coroutines 기반 DynamoDB Repository 기본 구현.
+ * Base coroutine DynamoDB repository implementation for `@DynamoDbBean` entities.
  */
 abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
     private val enhancedClient: DynamoDbEnhancedAsyncClient,
@@ -24,7 +24,7 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
 ): CoroutinesDynamoDbRepository<T, ID> {
 
     /**
-     * Enhanced Client가 사용할 테이블 스키마.
+     * Table schema used by the enhanced client.
      */
     protected open val tableSchema: TableSchema<T> =
         TableSchema.fromBean(entityClass)
@@ -34,12 +34,12 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
     }
 
     /**
-     * 식별자를 DynamoDB [Key]로 변환합니다.
+     * Converts an identifier into a DynamoDB [Key].
      */
     protected abstract fun keyFromId(id: ID): Key
 
     /**
-     * 아이템을 DynamoDB [Key]로 변환합니다.
+     * Converts an item into a DynamoDB [Key].
      */
     protected open fun keyFromItem(item: T): Key =
         throw UnsupportedOperationException("Override keyFromItem(item) to delete items by entity.")

@@ -52,4 +52,3 @@ Type A full feature.
 PR is open for #200 with passing local verification evidence, committed
 spec/plan/review/lesson artifacts, verified PR body, formal PR review, and CI
 status monitored.
-

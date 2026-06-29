@@ -60,4 +60,3 @@ internal const val IMDS_PATH_AVAILABILITY_ZONE = "/latest/meta-data/placement/av
 internal const val IMDS_PATH_REGION = "/latest/meta-data/placement/region"
 internal const val IMDS_PATH_LOCAL_IPV4 = "/latest/meta-data/local-ipv4"
 internal const val IMDS_PATH_IAM_ROLE_NAMES = "/latest/meta-data/iam/security-credentials/"
-

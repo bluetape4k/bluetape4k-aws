@@ -1,7 +1,11 @@
 package io.bluetape4k.aws.spring.dynamodb
 
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
 import io.bluetape4k.support.requirePositiveNumber
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
@@ -11,7 +15,7 @@ internal const val DYNAMODB_PROPERTIES_PREFIX: String = "bluetape4k.aws.dynamodb
 internal const val DYNAMODB_DAX_PROPERTIES_PREFIX: String = "$DYNAMODB_PROPERTIES_PREFIX.dax"
 
 /**
- * DynamoDB 자동 설정 속성.
+ * Configuration properties for DynamoDB auto-configuration.
  */
 @ConfigurationProperties(prefix = DYNAMODB_PROPERTIES_PREFIX)
 data class DynamoDbProperties(
@@ -59,9 +63,7 @@ data class DynamoDbDaxProperties(
 ): Serializable {
 
     internal fun validateEnabled() {
-        require(url != null) {
-            "$DYNAMODB_DAX_PROPERTIES_PREFIX.url is required when DAX is enabled."
-        }
+        url.requireNotNull("$DYNAMODB_DAX_PROPERTIES_PREFIX.url")
         region?.requireNotBlank("$DYNAMODB_DAX_PROPERTIES_PREFIX.region")
 
         requireNonNegative(connectTimeout, "$DYNAMODB_DAX_PROPERTIES_PREFIX.connect-timeout")
@@ -71,12 +73,8 @@ data class DynamoDbDaxProperties(
         requireNonNegative(clusterUpdateInterval, "$DYNAMODB_DAX_PROPERTIES_PREFIX.cluster-update-interval")
         requireNonNegative(endpointRefreshTimeout, "$DYNAMODB_DAX_PROPERTIES_PREFIX.endpoint-refresh-timeout")
 
-        require(writeRetries >= 0) {
-            "$DYNAMODB_DAX_PROPERTIES_PREFIX.write-retries must be greater than or equal to 0."
-        }
-        require(readRetries >= 0) {
-            "$DYNAMODB_DAX_PROPERTIES_PREFIX.read-retries must be greater than or equal to 0."
-        }
+        writeRetries.requireZeroOrPositiveNumber("$DYNAMODB_DAX_PROPERTIES_PREFIX.write-retries")
+        readRetries.requireZeroOrPositiveNumber("$DYNAMODB_DAX_PROPERTIES_PREFIX.read-retries")
         maxConcurrency.requirePositiveNumber("$DYNAMODB_DAX_PROPERTIES_PREFIX.max-concurrency")
         maxPendingConnectionAcquires.requirePositiveNumber(
             "$DYNAMODB_DAX_PROPERTIES_PREFIX.max-pending-connection-acquires"
@@ -85,16 +83,12 @@ data class DynamoDbDaxProperties(
 
     internal fun Duration.toMillisInt(propertyName: String): Int {
         val millis = toMillis()
-        require(millis in 0..Int.MAX_VALUE) {
-            "$propertyName must be between 0 and ${Int.MAX_VALUE} milliseconds."
-        }
+        millis.requireInRange(0L, Int.MAX_VALUE.toLong(), propertyName)
         return millis.toInt()
     }
 
     private fun requireNonNegative(duration: Duration, propertyName: String) {
-        require(!duration.isNegative) {
-            "$propertyName must be greater than or equal to 0 milliseconds."
-        }
+        duration.requireGe(Duration.ZERO, propertyName)
     }
 
     companion object {

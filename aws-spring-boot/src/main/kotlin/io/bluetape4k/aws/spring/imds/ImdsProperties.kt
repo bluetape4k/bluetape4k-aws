@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.imds
 
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
 import software.amazon.awssdk.imds.EndpointMode
 import java.io.Serializable
@@ -27,15 +29,9 @@ data class ImdsProperties(
 ): Serializable {
 
     init {
-        require(!tokenTtl.isNegative && !tokenTtl.isZero) {
-            "$IMDS_PROPERTIES_PREFIX.token-ttl must be positive."
-        }
-        require(!requestTimeout.isNegative && !requestTimeout.isZero) {
-            "$IMDS_PROPERTIES_PREFIX.request-timeout must be positive."
-        }
-        require(retries >= 0) {
-            "$IMDS_PROPERTIES_PREFIX.retries must be greater than or equal to 0."
-        }
+        tokenTtl.requireGt(Duration.ZERO, "$IMDS_PROPERTIES_PREFIX.token-ttl")
+        requestTimeout.requireGt(Duration.ZERO, "$IMDS_PROPERTIES_PREFIX.request-timeout")
+        retries.requireZeroOrPositiveNumber("$IMDS_PROPERTIES_PREFIX.retries")
     }
 
     companion object {

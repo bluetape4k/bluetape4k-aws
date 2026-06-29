@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.dynamodb
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.aws.spring.resolveClientDefaults
+import io.bluetape4k.support.requireNotNull
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -51,9 +52,7 @@ class DynamoDbDaxAutoConfiguration {
             properties.endpointOverride,
         )
         val region = dax.region?.let { Region.of(it) } ?: defaults.region
-        require(region != null) {
-            "AWS region is required when DAX is enabled."
-        }
+        region.requireNotNull("$DYNAMODB_DAX_PROPERTIES_PREFIX.region")
 
         val configuration = with(dax) {
             Configuration.builder()

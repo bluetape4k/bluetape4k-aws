@@ -150,7 +150,7 @@ class DynamoDbAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                messages shouldContain "dax.url is required"
+                messages shouldContain "dax.url"
             }
     }
 

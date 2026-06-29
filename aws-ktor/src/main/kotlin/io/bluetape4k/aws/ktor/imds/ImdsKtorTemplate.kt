@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.imds
 
+import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withTimeout
@@ -15,9 +16,7 @@ class ImdsKtorTemplate(
 ): ImdsKtorOperations {
 
     init {
-        require(!requestTimeout.isNegative && !requestTimeout.isZero) {
-            "requestTimeout must be positive."
-        }
+        requestTimeout.requireGt(Duration.ZERO, "requestTimeout")
     }
 
     override suspend fun get(path: String): String {
@@ -39,4 +38,3 @@ class ImdsKtorTemplate(
         return if (path.startsWith("/")) path else "/$path"
     }
 }
-
