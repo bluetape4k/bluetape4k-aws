@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.spring.dynamodb
 
 /**
- * 설정된 prefix를 논리 테이블 이름 앞에 붙이는 기본 [DynamoDbTableNameResolver].
+ * Default [DynamoDbTableNameResolver] that prepends a configured prefix to logical table names.
  */
 class DefaultDynamoDbTableNameResolver(
     private val tablePrefix: String = "",

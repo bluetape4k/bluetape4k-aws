@@ -41,4 +41,3 @@ custom operations beans.
 Do not add an IMDS startup probe to prove EC2 presence. Non-EC2 applications
 must pay no startup network penalty, and credential retrieval should remain on
 the AWS SDK credential provider chain or explicit STS web identity support.
-

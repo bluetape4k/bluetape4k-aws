@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.ktor.imds
 
 import io.bluetape4k.aws.http.SdkAsyncHttpClientProvider
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
@@ -74,15 +76,9 @@ class ImdsKtorPluginConfig {
     }
 
     private fun validate() {
-        require(!tokenTtl.isNegative && !tokenTtl.isZero) {
-            "tokenTtl must be positive."
-        }
-        require(!requestTimeout.isNegative && !requestTimeout.isZero) {
-            "requestTimeout must be positive."
-        }
-        require(retries >= 0) {
-            "retries must be greater than or equal to 0."
-        }
+        tokenTtl.requireGt(Duration.ZERO, "tokenTtl")
+        requestTimeout.requireGt(Duration.ZERO, "requestTimeout")
+        retries.requireZeroOrPositiveNumber("retries")
     }
 
     private fun createEc2MetadataAsyncClient(): Ec2MetadataAsyncClient =

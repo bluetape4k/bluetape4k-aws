@@ -128,7 +128,7 @@ class ImdsAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                messages shouldContain "request-timeout must be positive"
+                messages shouldContain "bluetape4k.aws.imds.request-timeout"
             }
     }
 

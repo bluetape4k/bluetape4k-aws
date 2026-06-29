@@ -30,4 +30,3 @@ None blocking.
 - The spec keeps credential handling out of public helpers.
 - The spec avoids incorrectly inheriting normal AWS service endpoint overrides
   for IMDS metadata endpoint configuration.
-

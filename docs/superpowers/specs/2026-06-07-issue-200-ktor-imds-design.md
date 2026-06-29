@@ -129,4 +129,3 @@ startup-safe behavior, timeout behavior, and credential non-exposure.
 - `dependencyInsight` confirms `software.amazon.awssdk:imds:2.46.0`.
 - `git diff --check` passes.
 - PR body ends with `## DoD Status`.
-

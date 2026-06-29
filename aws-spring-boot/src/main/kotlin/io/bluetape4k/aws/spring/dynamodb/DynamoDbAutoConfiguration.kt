@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder
 
 /**
- * DynamoDB용 Spring Boot 4 자동 설정.
+ * Spring Boot 4 auto-configuration for DynamoDB.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnClass(
