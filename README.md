@@ -56,7 +56,7 @@ uses.
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
@@ -175,6 +175,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:imds")
+    implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3vectors")
@@ -195,8 +196,9 @@ timers are registered automatically with low-cardinality tags. It still does not
 service at runtime; add only the AWS SDK modules you actually use. Add
 `software.amazon.awssdk:cloudwatch` and `software.amazon.awssdk:cloudwatchlogs` when using
 CloudWatch helpers. Add `software.amazon.awssdk:imds` when using EC2 metadata helpers. For KMS, add
-`software.amazon.awssdk:kms`. Add `spring-security-crypto` only when you want to inject Spring
-Security's synchronous `TextEncryptor`.
+`software.amazon.awssdk:kms`. Add `software.amazon.awssdk:kinesis` when using Kinesis operations.
+Add `spring-security-crypto` only when you want to inject Spring Security's synchronous
+`TextEncryptor`.
 
 ```yaml
 bluetape4k:
@@ -746,6 +748,33 @@ module includes the emulator-backed SQS/SNS fanout flow.
 `SigningCertURL` hosts, but it does not validate SNS signatures.
 Validate the certificate chain, `Signature`, `SignatureVersion`, and expected
 `TopicArn` before processing notifications or confirming subscriptions.
+
+### Kinesis — Spring Boot Coroutines Template
+
+Spring Boot Kinesis support centers on `KinesisOperations`: stream creation from
+explicit or configured shard counts, record publishing, shard iterator lookup,
+bounded `GetRecords` polling, and a cold single-shard `Flow<Record>`. It does
+not provide a listener or checkpoint runtime; collect the Flow explicitly and
+store checkpoints in application code when needed.
+
+```kotlin
+import io.bluetape4k.aws.spring.kinesis.KinesisOperations
+import io.bluetape4k.aws.spring.kinesis.KinesisPutRecordRequest
+import software.amazon.awssdk.core.SdkBytes
+
+class StreamPublisher(
+    private val kinesis: KinesisOperations,
+) {
+    suspend fun publish(streamName: String, payload: String): String =
+        kinesis.putRecord(
+            KinesisPutRecordRequest(
+                streamName = streamName,
+                partitionKey = "orders",
+                data = SdkBytes.fromUtf8String(payload),
+            )
+        ).sequenceNumber()
+}
+```
 
 ### S3 Object IO — Coroutines (`aws-java` module)
 

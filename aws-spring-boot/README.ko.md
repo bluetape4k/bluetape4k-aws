@@ -4,8 +4,9 @@
 
 AWS Java SDK v2를 Spring Boot 4에서 바로 쓰기 위한 자동 설정 모듈입니다.
 Coroutine 우선 템플릿, SQS 리스너 컨테이너, CloudWatch metric/log helper,
-EC2 IMDS metadata operation, 원격 Environment source, AWS-backed Exposed
-데이터베이스 연결을 제공합니다. `awspring` 런타임 의존성은 사용하지 않습니다.
+EC2 IMDS metadata operation, Kinesis operations, 원격 Environment source,
+AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런타임 의존성은 사용하지
+않습니다.
 
 ## 다이어그램
 
@@ -31,6 +32,9 @@ EC2 IMDS metadata operation, 원격 Environment source, AWS-backed Exposed
 - **SNS** — `SnsCoroutinesTemplate`로 topic 생성/조회, topic publish, FIFO publish
   필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
   confirmation을 지원합니다.
+- **Kinesis** — `KinesisCoroutinesTemplate`로 stream 생성, record publish, shard
+  iterator 조회, 제한된 `GetRecords` polling, single-shard cold `Flow<Record>`를
+  제공합니다.
 - **SES** — `SesCoroutinesMailSender`로 simple, template, raw, attachment,
   custom-header email send를 지원하고, 선택적 Spring `JavaMailSender` adapter를 제공합니다.
 - **SQS** — `SqsCoroutinesTemplate`로 큐 조회·생성, 송신, 수신, visibility 변경,
@@ -81,6 +85,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:imds")
+    implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:ssm")
@@ -563,6 +568,66 @@ fanout할 수 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과 선택적
 `SigningCertURL`은 거부합니다. Signature 검증은 수행하지 않으므로 notification 처리나
 subscription confirmation 전에 certificate chain, signature, signature version, 기대한
 `TopicArn`을 검증해야 합니다.
+
+### Kinesis — stream operations와 record Flow
+
+```yaml
+bluetape4k:
+  aws:
+    kinesis:
+      region: us-east-1
+      streams:
+        orders:
+          shard-count: 1
+      consumer:
+        batch-limit: 100
+        poll-interval: 200ms
+        empty-backoff: 1s
+```
+
+```kotlin
+import io.bluetape4k.aws.spring.kinesis.KinesisOperations
+import io.bluetape4k.aws.spring.kinesis.KinesisPutRecordRequest
+import io.bluetape4k.aws.spring.kinesis.KinesisRecordFlowRequest
+import io.bluetape4k.aws.spring.kinesis.KinesisStartingPosition
+import kotlinx.coroutines.flow.collect
+import software.amazon.awssdk.core.SdkBytes
+
+class OrderStream(
+    private val kinesis: KinesisOperations,
+) {
+    suspend fun ensureStream() {
+        kinesis.createConfiguredStream("orders")
+    }
+
+    suspend fun publish(payload: String): String =
+        kinesis.putRecord(
+            KinesisPutRecordRequest(
+                streamName = "orders",
+                partitionKey = "orders",
+                data = SdkBytes.fromUtf8String(payload),
+            )
+        ).sequenceNumber()
+
+    suspend fun consume(shardId: String) {
+        kinesis.recordFlow(
+            KinesisRecordFlowRequest(
+                streamName = "orders",
+                shardId = shardId,
+                startingPosition = KinesisStartingPosition.TrimHorizon,
+            )
+        ).collect { record ->
+            handle(record.data().asUtf8String())
+        }
+    }
+
+    private fun handle(payload: String) = Unit
+}
+```
+
+`KinesisOperations`는 명시적인 operations API입니다. listener container를 시작하거나
+checkpoint를 관리하지 않습니다. Flow를 수집할 때 sequence number나 application
+checkpoint는 애플리케이션의 저장소에 직접 기록하세요.
 
 ### SQS — `@SqsListener` 어노테이션
 

@@ -48,7 +48,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
 | `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
@@ -167,6 +167,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:imds")
+    implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3vectors")
@@ -187,8 +188,9 @@ timer 가 low-cardinality tag 로 자동 등록됩니다. 모든 AWS SDK 서비�
 오지 않으므로 실제로 쓰는 서비스 SDK만 직접 추가해야 합니다. CloudWatch helper 를 쓰려면
 `software.amazon.awssdk:cloudwatch` 와 `software.amazon.awssdk:cloudwatchlogs` 를
 추가합니다. EC2 metadata helper 를 쓰려면 `software.amazon.awssdk:imds` 를 추가합니다.
-KMS를 쓰려면 `software.amazon.awssdk:kms`를 추가하고, Spring Security의 동기식
-`TextEncryptor`를 주입받고 싶을 때만 `spring-security-crypto`를 추가합니다.
+KMS를 쓰려면 `software.amazon.awssdk:kms`, Kinesis operations를 쓰려면
+`software.amazon.awssdk:kinesis`를 추가합니다. Spring Security의 동기식 `TextEncryptor`를
+주입받고 싶을 때만 `spring-security-crypto`를 추가합니다.
 
 ```yaml
 bluetape4k:
@@ -736,6 +738,32 @@ fanout 흐름이 들어 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과
 `SigningCertURL`은 거부합니다. 다만 signature 검증은 수행하지 않습니다. Notification
 처리나 subscription confirmation 전에 certificate chain, `Signature`,
 `SignatureVersion`, 기대한 `TopicArn`을 검증하세요.
+
+### Kinesis — Spring Boot Coroutines 템플릿
+
+Spring Boot Kinesis 지원의 중심은 `KinesisOperations`입니다. 명시적 shard 수나 설정된
+shard 수로 stream을 만들고, record publish, shard iterator 조회, 제한된 `GetRecords`
+polling, single-shard cold `Flow<Record>` 수집을 제공합니다. Listener/checkpoint runtime은
+포함하지 않습니다. checkpoint가 필요하면 application code에서 명시적으로 저장하세요.
+
+```kotlin
+import io.bluetape4k.aws.spring.kinesis.KinesisOperations
+import io.bluetape4k.aws.spring.kinesis.KinesisPutRecordRequest
+import software.amazon.awssdk.core.SdkBytes
+
+class StreamPublisher(
+    private val kinesis: KinesisOperations,
+) {
+    suspend fun publish(streamName: String, payload: String): String =
+        kinesis.putRecord(
+            KinesisPutRecordRequest(
+                streamName = streamName,
+                partitionKey = "orders",
+                data = SdkBytes.fromUtf8String(payload),
+            )
+        ).sequenceNumber()
+}
+```
 
 ### S3 Object IO — Coroutines (`aws-java` 모듈)
 
