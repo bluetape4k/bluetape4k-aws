@@ -92,9 +92,11 @@ val handle = factory.create(
 ```
 
 RDS IAM mode signs a fresh token before Hikari opens a physical JDBC
-connection. Tokens are treated as JDBC password substitutes, redacted through
-`AwsSecretString`, cached only until the refresh window, and generated without a
-real AWS network call by `RdsUtilities`. AWS credentials may still be resolved
+connection. The SDK-backed generator delegates signing to the shared
+`bluetape4k-aws-java` RDS IAM helper, then adapts the redacted core token to
+the JDBC-facing `AwsSecretString`. Tokens are treated as JDBC password
+substitutes, cached only until the refresh window, and generated without a real
+AWS network call by `RdsUtilities`. AWS credentials may still be resolved
 through the configured AWS SDK credential chain.
 
 Use the real RDS endpoint hostname in `AwsRdsIamAuthenticationProperties`; AWS

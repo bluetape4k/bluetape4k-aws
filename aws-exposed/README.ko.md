@@ -90,9 +90,11 @@ val handle = factory.create(
 ```
 
 RDS IAM mode는 Hikari가 physical JDBC connection을 열기 전에 새 token을 서명합니다.
-Token은 JDBC password 대체값으로만 사용하며 `AwsSecretString`으로 redaction되고,
-refresh window까지만 cache됩니다. `RdsUtilities` token 생성 자체는 실제 AWS network
-call을 하지 않지만, AWS SDK credential chain은 credential을 해석할 수 있습니다.
+SDK-backed generator는 token signing을 공용 `bluetape4k-aws-java` RDS IAM helper에
+위임한 뒤, redaction된 core token을 JDBC 경계의 `AwsSecretString`으로 변환합니다.
+Token은 JDBC password 대체값으로만 사용하며 refresh window까지만 cache됩니다.
+`RdsUtilities` token 생성 자체는 실제 AWS network call을 하지 않지만, AWS SDK
+credential chain은 credential을 해석할 수 있습니다.
 
 `AwsRdsIamAuthenticationProperties.hostname`에는 실제 RDS endpoint hostname을
 사용해야 합니다. AWS는 custom Route 53 DNS alias로 IAM database authentication token을

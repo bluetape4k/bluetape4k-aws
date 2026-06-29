@@ -89,7 +89,7 @@
       <circle class="stable" cx="1078" cy="318" r="20" /><text class="cellText" x="1078" y="323" text-anchor="middle" fill="#166534">S</text>
       <circle class="stable" cx="1174" cy="318" r="20" /><text class="cellText" x="1174" y="323" text-anchor="middle" fill="#166534">S</text>
       <circle class="stable" cx="1270" cy="318" r="20" /><text class="cellText" x="1270" y="323" text-anchor="middle" fill="#166534">S</text>
-      <circle class="empty" cx="1366" cy="318" r="18" /><text class="cellText" x="1366" y="323" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="stable" cx="1366" cy="318" r="20" /><text class="cellText" x="1366" y="323" text-anchor="middle" fill="#166534">S</text>
       <circle class="empty" cx="1462" cy="318" r="18" /><text class="cellText" x="1462" y="323" text-anchor="middle" fill="#64748b">-</text>
       <circle class="empty" cx="1558" cy="318" r="18" /><text class="cellText" x="1558" y="323" text-anchor="middle" fill="#64748b">-</text>
       <circle class="empty" cx="1654" cy="318" r="18" /><text class="cellText" x="1654" y="323" text-anchor="middle" fill="#64748b">-</text>

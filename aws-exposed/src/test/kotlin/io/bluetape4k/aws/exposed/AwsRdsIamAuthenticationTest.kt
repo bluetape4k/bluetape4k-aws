@@ -5,9 +5,12 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import software.amazon.awssdk.services.rds.RdsUtilities
+import software.amazon.awssdk.services.rds.model.GenerateAuthenticationTokenRequest
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -160,6 +163,31 @@ class AwsRdsIamAuthenticationTest {
     }
 
     @Test
+    fun `exposed sdk generator keeps core failure in cause chain without token leakage`() {
+        val generator = AwsSdkRdsIamAuthTokenGenerator(
+            rdsUtilities = object: RdsUtilities {
+                override fun generateAuthenticationToken(request: GenerateAuthenticationTokenRequest): String =
+                    error("credential chain failed")
+            },
+        )
+
+        val error = assertFailsWith<AwsRdsIamAuthTokenException> {
+            generator.generate(
+                AwsRdsIamAuthTokenRequest(
+                    region = "ap-northeast-2",
+                    hostname = "database.example.com",
+                    port = 5432,
+                    username = "app_user",
+                ),
+            )
+        }
+
+        error.causeChain().any { it is CoreRdsIamAuthTokenException }.shouldBeTrue()
+        error.message.orEmpty() shouldContain "database.example.com:5432"
+        error.message.orEmpty().contains("raw-token").shouldBeFalse()
+    }
+
+    @Test
     fun `rds iam data source opens connection with provider token`() {
         val counter = AtomicInteger()
         val dataSource = RdsIamRefreshingDataSource(
@@ -209,4 +237,7 @@ class AwsRdsIamAuthenticationTest {
 
         override fun instant(): Instant = current
     }
+
+    private fun Throwable.causeChain(): Sequence<Throwable> =
+        generateSequence(this) { it.cause }.drop(1)
 }

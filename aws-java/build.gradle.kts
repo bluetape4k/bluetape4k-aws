@@ -38,6 +38,7 @@ dependencies {
     compileOnly(libs.aws2.cloudwatch)
     compileOnly(libs.aws2.cloudwatchlogs)
     compileOnly(libs.aws2.kinesis)
+    compileOnly(libs.aws2.rds)
     compileOnly(libs.aws2.sts)
 
     // Coroutines
@@ -49,6 +50,7 @@ dependencies {
 
     // Test
     testImplementation(libs.aws2.ec2)
+    testImplementation(libs.aws2.rds)
     testImplementation(libs.aws2.s3vectors)
     testImplementation(libs.aws2.test.utils)
     testImplementation(libs.testcontainers.localstack)
