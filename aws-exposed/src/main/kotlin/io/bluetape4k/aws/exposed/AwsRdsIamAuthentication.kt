@@ -1,11 +1,13 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenGenerator as CoreRdsIamAuthTokenGenerator
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenRequest as CoreRdsIamAuthTokenRequest
+import io.bluetape4k.aws.rds.AwsSdkRdsIamAuthTokenGenerator as CoreAwsSdkRdsIamAuthTokenGenerator
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.rds.RdsUtilities
-import software.amazon.awssdk.services.rds.model.GenerateAuthenticationTokenRequest
 import java.io.Serializable
 import java.time.Clock
 import java.time.Duration
@@ -128,22 +130,30 @@ fun interface AwsRdsIamAuthTokenGenerator {
  * it because `RdsUtilities` itself is a lightweight utility object and may be
  * shared with the caller's AWS SDK lifecycle.
  */
-class AwsSdkRdsIamAuthTokenGenerator(
-    private val rdsUtilities: RdsUtilities = defaultRdsUtilities(),
+class AwsSdkRdsIamAuthTokenGenerator private constructor(
+    private val delegate: CoreRdsIamAuthTokenGenerator,
 ): AwsRdsIamAuthTokenGenerator {
+
+    constructor(): this(CoreAwsSdkRdsIamAuthTokenGenerator())
+
+    constructor(rdsUtilities: RdsUtilities): this(CoreAwsSdkRdsIamAuthTokenGenerator(rdsUtilities))
 
     override fun generate(request: AwsRdsIamAuthTokenRequest): AwsSecretString =
         try {
-            val region = Region.of(request.region)
             AwsSecretString.of(
-                rdsUtilities.generateAuthenticationToken(
-                    GenerateAuthenticationTokenRequest.builder()
-                        .hostname(request.hostname)
-                        .port(request.port)
-                        .username(request.username)
-                        .region(region)
-                        .build()
-                )
+                delegate.generate(
+                    CoreRdsIamAuthTokenRequest(
+                        region = request.region,
+                        hostname = request.hostname,
+                        port = request.port,
+                        username = request.username,
+                    ),
+                ).reveal(),
+            )
+        } catch (e: CoreRdsIamAuthTokenException) {
+            throw AwsRdsIamAuthTokenException(
+                e.message ?: "Failed to generate RDS IAM authentication token for ${request.hostname}:${request.port}.",
+                e,
             )
         } catch (e: RuntimeException) {
             throw AwsRdsIamAuthTokenException(
@@ -151,29 +161,6 @@ class AwsSdkRdsIamAuthTokenGenerator(
                 e,
             )
         }
-
-    companion object: KLogging() {
-        private const val RDS_UTILITIES_CLASS_NAME: String = "software.amazon.awssdk.services.rds.RdsUtilities"
-
-        private fun defaultRdsUtilities(): RdsUtilities {
-            requireRdsUtilitiesClass()
-            return RdsUtilities.builder()
-                .credentialsProvider(DefaultCredentialsProvider.builder().build())
-                .build()
-        }
-
-        private fun requireRdsUtilitiesClass() {
-            try {
-                Class.forName(RDS_UTILITIES_CLASS_NAME)
-            } catch (e: ClassNotFoundException) {
-                throw AwsRdsIamAuthTokenException(
-                    "AWS SDK RDS module is required for RDS IAM authentication. " +
-                            "Add runtime dependency 'software.amazon.awssdk:rds'.",
-                    e,
-                )
-            }
-        }
-    }
 }
 
 /**
