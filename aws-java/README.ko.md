@@ -5,7 +5,7 @@
 AWS Java SDK v2 기반 통합 모듈입니다. AWS SDK 모델 타입은 그대로 드러내고,
 동기 helper, 비동기 `CompletableFuture` 확장, coroutine API를 더합니다.
 DynamoDB, S3, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis,
-STS 같은 주요 서비스를 대상으로 합니다.
+STS, Secrets Manager, Parameter Store 같은 주요 서비스를 대상으로 합니다.
 
 ## 다이어그램
 
@@ -41,6 +41,8 @@ repository helper의 역할을 함께 확인할 수 있습니다.
 | **CloudWatch Logs** | 로그 그룹/스트림 관리, 이벤트 전송, Coroutines 확장                     |
 | **Kinesis**         | 스트림 레코드 전송/조회, Coroutines 확장                            |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines 확장 |
+| **Secrets Manager** | Redacted secret value, 요청 DSL, sync/async/coroutine helper |
+| **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL |
 
 ## 3단계 API 패턴
 
@@ -113,6 +115,49 @@ S3 Vectors는 별도 AWS SDK v2 `s3vectors` 서비스를 사용합니다. 이 �
 선택으로 유지하고 discovery, put/get/list, query 작업용 작은 suspend facade만 제공합니다.
 파괴적 관리, tagging, policy 호출은 raw `S3VectorsAsyncClient` 로 그대로 사용할 수 있습니다.
 
+### Secrets Manager와 Parameter Store
+
+```kotlin
+import io.bluetape4k.aws.secretsmanager.getSecretString
+import io.bluetape4k.aws.ssm.getParameter
+import io.bluetape4k.aws.ssm.getParametersByPath
+import io.bluetape4k.aws.ssm.getSecureParameter
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import software.amazon.awssdk.services.ssm.SsmClient
+
+data class DatabaseCredential(
+    val apiKey: String,
+    val password: String,
+    val database: String,
+)
+
+fun loadApiCredential(
+    secrets: SecretsManagerClient,
+    ssm: SsmClient,
+    secretId: String,
+): DatabaseCredential {
+    val apiKey = secrets.getSecretString(secretId)
+    val dbPassword = ssm.getSecureParameter("/app/db/password")
+    val dbName = ssm.getParameter("/app/db/name").parameter().value()
+
+    return DatabaseCredential(
+        apiKey = apiKey.reveal(),
+        password = dbPassword.reveal(),
+        database = dbName,
+    )
+}
+
+fun loadAppParameters(ssm: SsmClient) =
+    ssm.getParametersByPath(
+        path = "/app",
+        recursive = true,
+        maxResults = 10,
+    ).parameters()
+```
+
+Secret 값은 plaintext가 꼭 필요한 consumer boundary까지 `AwsSecretValue` 안에
+유지하세요. Revealed value를 출력, 로그, 예외 메시지에 포함하지 않습니다.
+
 ### SQS Coroutine Extensions
 
 ```kotlin
@@ -183,6 +228,16 @@ suspend fun putRecord(client: KinesisAsyncClient, streamName: String, data: Byte
     )
 ```
 
+## 이 모듈이 제공하지 않는 것
+
+이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책,
+rotation orchestration, IAM/KMS policy 관리, 숨겨진 전체 페이지 수집 abstraction을
+제공하지 않습니다. 해당 책임은 Spring/Exposed 모듈이나 애플리케이션 코드에서 다룹니다.
+
+Hot path에서는 애플리케이션 경계에서 caller-owned cache를 두고 refresh/error 정책을
+명시하세요. Create/put helper는 AWS-side state를 변경하므로 의도적으로 사용하고
+감사 가능하게 유지해야 합니다.
+
 ## 테스트 환경
 
 공유 AWS 테스트 베이스에서 Floci를 기본 emulator로 사용합니다. Floci coverage gap은
@@ -229,7 +284,9 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
     implementation("software.amazon.awssdk:s3vectors")
+    implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:ssm")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:cloudwatch")

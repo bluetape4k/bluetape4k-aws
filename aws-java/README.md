@@ -5,7 +5,7 @@ English | [한국어](./README.ko.md)
 A unified integration module built on AWS Java SDK v2. It keeps AWS SDK model
 types visible while adding sync helpers, async `CompletableFuture` extensions,
 and coroutine APIs for DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS,
-CloudWatch, Kinesis, and STS.
+CloudWatch, Kinesis, STS, Secrets Manager, and Parameter Store.
 
 ## Diagrams
 
@@ -41,6 +41,8 @@ request DSLs, async extensions, coroutine wrappers, and repository helpers.
 | **CloudWatch Logs** | Log group/stream management, event publishing, Coroutines extensions         |
 | **Kinesis**         | Stream record send/receive, Coroutines extensions                            |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines extensions              |
+| **Secrets Manager** | Redacted secret values, request DSLs, sync/async/coroutine helpers           |
+| **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs           |
 
 ## Three-Tier API Pattern
 
@@ -116,6 +118,50 @@ the dependency optional and exposes a small suspend facade for discovery,
 put/get/list, and query operations. Destructive administration, tagging, and
 policy calls remain available through the raw `S3VectorsAsyncClient`.
 
+### Secrets Manager and Parameter Store
+
+```kotlin
+import io.bluetape4k.aws.secretsmanager.getSecretString
+import io.bluetape4k.aws.ssm.getParameter
+import io.bluetape4k.aws.ssm.getParametersByPath
+import io.bluetape4k.aws.ssm.getSecureParameter
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import software.amazon.awssdk.services.ssm.SsmClient
+
+data class DatabaseCredential(
+    val apiKey: String,
+    val password: String,
+    val database: String,
+)
+
+fun loadApiCredential(
+    secrets: SecretsManagerClient,
+    ssm: SsmClient,
+    secretId: String,
+): DatabaseCredential {
+    val apiKey = secrets.getSecretString(secretId)
+    val dbPassword = ssm.getSecureParameter("/app/db/password")
+    val dbName = ssm.getParameter("/app/db/name").parameter().value()
+
+    return DatabaseCredential(
+        apiKey = apiKey.reveal(),
+        password = dbPassword.reveal(),
+        database = dbName,
+    )
+}
+
+fun loadAppParameters(ssm: SsmClient) =
+    ssm.getParametersByPath(
+        path = "/app",
+        recursive = true,
+        maxResults = 10,
+    ).parameters()
+```
+
+Keep secret values inside `AwsSecretValue` until the consumer boundary that
+requires plaintext. Do not print, log, or include revealed values in exception
+messages.
+
 ### SQS Coroutine Extensions
 
 ```kotlin
@@ -186,6 +232,17 @@ suspend fun putRecord(client: KinesisAsyncClient, streamName: String, data: Byte
     )
 ```
 
+## Not Provided by This Module
+
+This module does not provide Spring Environment loading, JSON flattening,
+cache/refresh policies, rotation orchestration, IAM/KMS policy management, or a
+hidden all-pages collection abstraction. Use the Spring/Exposed modules or
+application code for those concerns.
+
+For hot paths, keep caller-owned caches at the application boundary and define
+explicit refresh/error policy there. Create and put helpers mutate AWS-side
+state; keep their use deliberate and audited.
+
 ## Test Environment
 
 Integration tests default to Floci through the shared AWS test base. LocalStack
@@ -234,7 +291,9 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
     implementation("software.amazon.awssdk:s3vectors")
+    implementation("software.amazon.awssdk:secretsmanager")
     implementation("software.amazon.awssdk:sqs")
+    implementation("software.amazon.awssdk:ssm")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:cloudwatch")

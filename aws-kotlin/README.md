@@ -36,6 +36,8 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 | **CloudWatch Logs** | Log event publishing, DSL (`inputLogEvent {}`)          |
 | **Kinesis**         | Stream record publishing, `recordFlow {}` cold Flow per shard, DSL (`putRecordRequestOf {}`) |
 | **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)      |
+| **Secrets Manager** | Redacted secret values, client lifecycle helpers, request DSLs |
+| **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs |
 
 ## Java SDK v2 vs Kotlin SDK Comparison
 
@@ -242,6 +244,65 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 | Non-retryable `KinesisException` | Propagated immediately |
 | `CancellationException` | Propagated immediately |
 
+### Secrets Manager and Parameter Store
+
+```kotlin
+import io.bluetape4k.aws.kotlin.secretsmanager.getSecretString
+import io.bluetape4k.aws.kotlin.secretsmanager.withSecretsManagerClient
+import io.bluetape4k.aws.kotlin.ssm.getParameter
+import io.bluetape4k.aws.kotlin.ssm.getParametersByPath
+import io.bluetape4k.aws.kotlin.ssm.getSecureParameter
+import io.bluetape4k.aws.kotlin.ssm.withSsmClient
+
+data class DatabaseCredential(
+    val apiKey: String,
+    val password: String,
+    val database: String,
+)
+
+suspend fun loadApiCredential(secretId: String): DatabaseCredential {
+    val apiKey = withSecretsManagerClient(region = "ap-northeast-2") { client ->
+        client.getSecretString(secretId)
+    }
+    val dbPassword = withSsmClient(region = "ap-northeast-2") { client ->
+        client.getSecureParameter("/app/db/password")
+    }
+    val dbName = withSsmClient(region = "ap-northeast-2") { client ->
+        client.getParameter("/app/db/name").parameter?.value.orEmpty()
+    }
+
+    return DatabaseCredential(
+        apiKey = apiKey.reveal(),
+        password = dbPassword.reveal(),
+        database = dbName,
+    )
+}
+
+suspend fun loadAppParameters() =
+    withSsmClient(region = "ap-northeast-2") { client ->
+        client.getParametersByPath(
+            path = "/app",
+            recursive = true,
+            maxResults = 10,
+        ).parameters
+    }
+```
+
+Keep secret values inside `AwsSecretValue` until the consumer boundary that
+requires plaintext. Do not print, log, or include revealed values in exception
+messages.
+
+## Not Provided by This Module
+
+This module does not provide Spring Environment loading, JSON flattening,
+cache/refresh policies, rotation orchestration, IAM/KMS policy management, or a
+hidden all-pages collection abstraction. Use the Spring/Exposed modules or
+application code for those concerns.
+
+For hot paths, keep caller-owned caches at the application boundary and define
+explicit refresh/error policy there. Create and put helpers mutate AWS-side
+state; keep their use deliberate and audited.
+
 ## Test Environment
 
 Integration tests default to Floci through Testcontainers. LocalStack remains
@@ -286,7 +347,9 @@ dependencies {
     // Add only the services you need
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:secretsmanager:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:ssm:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")

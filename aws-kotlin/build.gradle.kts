@@ -26,8 +26,10 @@ dependencies {
     compileOnly(libs.aws.kotlin.s3)
     compileOnly(libs.aws.kotlin.ses)
     compileOnly(libs.aws.kotlin.sesv2)
+    compileOnly(libs.aws.kotlin.secretsmanager)
     compileOnly(libs.aws.kotlin.sns)
     compileOnly(libs.aws.kotlin.sqs)
+    compileOnly(libs.aws.kotlin.ssm)
     compileOnly(libs.aws.kotlin.kms)
     compileOnly(libs.aws.kotlin.cloudwatch)
     compileOnly(libs.aws.kotlin.cloudwatchlogs)
@@ -47,6 +49,8 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 
     // Test
+    testImplementation(libs.aws.kotlin.secretsmanager)
+    testImplementation(libs.aws.kotlin.ssm)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
     testImplementation(libs.awaitility.kotlin)
