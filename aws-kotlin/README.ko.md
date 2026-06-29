@@ -34,6 +34,8 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 | **CloudWatch Logs** | 로그 이벤트 전송, DSL(`inputLogEvent {}`)                |
 | **Kinesis**         | 스트림 레코드 전송, `recordFlow {}` 샤드별 cold Flow, DSL(`putRecordRequestOf {}`) |
 | **STS**             | AssumeRole, CallerIdentity, DSL(`stsClientOf {}`) |
+| **Secrets Manager** | Redacted secret value, client lifecycle helper, 요청 DSL |
+| **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL |
 
 ## Java SDK v2 vs Kotlin SDK 비교
 
@@ -239,6 +241,63 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 | 재시도 불가 `KinesisException` | 즉시 예외 전파 |
 | `CancellationException` | 즉시 예외 전파 |
 
+### Secrets Manager와 Parameter Store
+
+```kotlin
+import io.bluetape4k.aws.kotlin.secretsmanager.getSecretString
+import io.bluetape4k.aws.kotlin.secretsmanager.withSecretsManagerClient
+import io.bluetape4k.aws.kotlin.ssm.getParameter
+import io.bluetape4k.aws.kotlin.ssm.getParametersByPath
+import io.bluetape4k.aws.kotlin.ssm.getSecureParameter
+import io.bluetape4k.aws.kotlin.ssm.withSsmClient
+
+data class DatabaseCredential(
+    val apiKey: String,
+    val password: String,
+    val database: String,
+)
+
+suspend fun loadApiCredential(secretId: String): DatabaseCredential {
+    val apiKey = withSecretsManagerClient(region = "ap-northeast-2") { client ->
+        client.getSecretString(secretId)
+    }
+    val dbPassword = withSsmClient(region = "ap-northeast-2") { client ->
+        client.getSecureParameter("/app/db/password")
+    }
+    val dbName = withSsmClient(region = "ap-northeast-2") { client ->
+        client.getParameter("/app/db/name").parameter?.value.orEmpty()
+    }
+
+    return DatabaseCredential(
+        apiKey = apiKey.reveal(),
+        password = dbPassword.reveal(),
+        database = dbName,
+    )
+}
+
+suspend fun loadAppParameters() =
+    withSsmClient(region = "ap-northeast-2") { client ->
+        client.getParametersByPath(
+            path = "/app",
+            recursive = true,
+            maxResults = 10,
+        ).parameters
+    }
+```
+
+Secret 값은 plaintext가 꼭 필요한 consumer boundary까지 `AwsSecretValue` 안에
+유지하세요. Revealed value를 출력, 로그, 예외 메시지에 포함하지 않습니다.
+
+## 이 모듈이 제공하지 않는 것
+
+이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책,
+rotation orchestration, IAM/KMS policy 관리, 숨겨진 전체 페이지 수집 abstraction을
+제공하지 않습니다. 해당 책임은 Spring/Exposed 모듈이나 애플리케이션 코드에서 다룹니다.
+
+Hot path에서는 애플리케이션 경계에서 caller-owned cache를 두고 refresh/error 정책을
+명시하세요. Create/put helper는 AWS-side state를 변경하므로 의도적으로 사용하고
+감사 가능하게 유지해야 합니다.
+
 ## 테스트 환경
 
 통합 테스트는 Testcontainers 기반 Floci를 기본 emulator로 사용합니다. Floci coverage
@@ -281,7 +340,9 @@ dependencies {
     // 사용할 서비스만 선택적으로 추가
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:secretsmanager:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:ssm:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")

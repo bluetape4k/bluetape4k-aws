@@ -45,8 +45,8 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 
 | 모듈 | 아티팩트 | 설명 |
 |---|---|---|
-| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
-| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
+| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
+| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
@@ -98,6 +98,11 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 이 라이브러리는 AWS 서비스 SDK를 `compileOnly`로 선언합니다. 실제로 사용하는 서비스의
 런타임 의존성은 직접 추가해야 합니다.
 
+Core Secrets Manager와 Parameter Store helper는 의도적으로 얇은 SDK 래퍼입니다.
+Spring Environment 로딩, JSON flattening, 캐시/refresh 정책, rotation orchestration,
+IAM/KMS policy 관리, 전체 페이지 자동 수집 abstraction은 상위 모듈이나 애플리케이션
+코드의 책임으로 남겨둡니다.
+
 ### `bluetape4k-aws-java` 사용 (Java SDK v2 래퍼)
 
 ```kotlin
@@ -139,7 +144,9 @@ dependencies {
     // 사용할 AWS Kotlin SDK 서비스 추가
     implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:secretsmanager:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:ssm:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")

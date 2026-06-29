@@ -189,8 +189,10 @@ aws-kotlin-dynamodb = { module = "aws.sdk.kotlin:dynamodb", version.ref = "aws-k
 aws-kotlin-s3 = { module = "aws.sdk.kotlin:s3", version.ref = "aws-kotlin" }
 aws-kotlin-ses = { module = "aws.sdk.kotlin:ses", version.ref = "aws-kotlin" }
 aws-kotlin-sesv2 = { module = "aws.sdk.kotlin:sesv2", version.ref = "aws-kotlin" }
+aws-kotlin-secretsmanager = { module = "aws.sdk.kotlin:secretsmanager", version.ref = "aws-kotlin" }
 aws-kotlin-sns = { module = "aws.sdk.kotlin:sns", version.ref = "aws-kotlin" }
 aws-kotlin-sqs = { module = "aws.sdk.kotlin:sqs", version.ref = "aws-kotlin" }
+aws-kotlin-ssm = { module = "aws.sdk.kotlin:ssm", version.ref = "aws-kotlin" }
 aws-kotlin-kms = { module = "aws.sdk.kotlin:kms", version.ref = "aws-kotlin" }
 aws-kotlin-cloudwatch = { module = "aws.sdk.kotlin:cloudwatch", version.ref = "aws-kotlin" }
 aws-kotlin-cloudwatchlogs = { module = "aws.sdk.kotlin:cloudwatchlogs", version.ref = "aws-kotlin" }

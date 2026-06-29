@@ -64,7 +64,7 @@
 - Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/AwsSecretValue.kt`
 - Create tests listed in the file map.
 
-- [ ] **Step 1: Write failing redaction tests**
+- [x] **Step 1: Write failing redaction tests**
 
 Create tests that assert:
 
@@ -83,7 +83,7 @@ Run:
 
 Expected: FAIL because classes do not exist.
 
-- [ ] **Step 2: Add dependency aliases and declarations**
+- [x] **Step 2: Add dependency aliases and declarations**
 
 Add to `gradle/libs.versions.toml`:
 
@@ -110,7 +110,7 @@ testImplementation(libs.aws.kotlin.secretsmanager)
 testImplementation(libs.aws.kotlin.ssm)
 ```
 
-- [ ] **Step 3: Implement Java `AwsSecretValue`**
+- [x] **Step 3: Implement Java `AwsSecretValue`**
 
 Use a regular `Serializable` class patterned after `AwsRdsIamAuthToken`, with:
 
@@ -123,12 +123,12 @@ Use a regular `Serializable` class patterned after `AwsRdsIamAuthToken`, with:
 - top-level `awsSecretValueOf`
 - English KDoc for the public class, factories, and `reveal()` warning that raw values must only cross explicit consumer boundaries
 
-- [ ] **Step 4: Implement Kotlin module `AwsSecretValue`**
+- [x] **Step 4: Implement Kotlin module `AwsSecretValue`**
 
 Use the same contract under package `io.bluetape4k.aws.kotlin.secretsmanager`.
 Use the same KDoc and redaction guarantees as the Java module wrapper.
 
-- [ ] **Step 5: Run redaction tests**
+- [x] **Step 5: Run redaction tests**
 
 Run the same Gradle command from Step 1.
 
@@ -142,7 +142,7 @@ Expected: PASS.
 
 **Files:** Java Secrets Manager main/test files from the file map.
 
-- [ ] **Step 1: Write failing request/client/extension tests**
+- [x] **Step 1: Write failing request/client/extension tests**
 
 Tests must cover:
 
@@ -167,7 +167,7 @@ Run:
 
 Expected: FAIL because helpers do not exist.
 
-- [ ] **Step 2: Implement client factories**
+- [x] **Step 2: Implement client factories**
 
 Follow `SnsClientSupport.kt` and `SnsAsyncClientSupport.kt`:
 
@@ -177,7 +177,7 @@ Follow `SnsClientSupport.kt` and `SnsAsyncClientSupport.kt`:
 - async equivalents
 - register Java clients with `ShutdownQueue`
 
-- [ ] **Step 3: Implement request builders**
+- [x] **Step 3: Implement request builders**
 
 Create focused builders:
 
@@ -188,13 +188,13 @@ Create focused builders:
 - `createSecretRequestOf(name, secretValue, description?, clientRequestToken?, overrideConfiguration?, builder)`
 - `putSecretValueRequestOf(secretId, secretValue, clientRequestToken?, versionStages?, overrideConfiguration?, builder)`
 
-- [ ] **Step 4: Implement sync/async/coroutine extensions**
+- [x] **Step 4: Implement sync/async/coroutine extensions**
 
 Add common get/list/put helpers. Do not add delete wrappers. Batch helpers return raw SDK responses for partial failure preservation.
 Add English KDoc to public factories, request builders, and extension helpers. Mutation helpers must state AWS-side mutation/version semantics and must not log or print secret values.
 Do not add broad catch/wrap blocks except for redaction-specific safe failures such as string helpers receiving only binary payloads.
 
-- [ ] **Step 5: Run Java Secrets Manager tests**
+- [x] **Step 5: Run Java Secrets Manager tests**
 
 Run the command from Step 1.
 
@@ -208,7 +208,7 @@ Expected: PASS.
 
 **Files:** Java SSM main/test files from the file map.
 
-- [ ] **Step 1: Write failing SSM tests**
+- [x] **Step 1: Write failing SSM tests**
 
 Tests must cover:
 
@@ -236,7 +236,7 @@ Run:
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement SSM factories and request builders**
+- [x] **Step 2: Implement SSM factories and request builders**
 
 Mirror Secrets Manager style:
 
@@ -244,12 +244,12 @@ Mirror Secrets Manager style:
 - `ssmAsyncClient { }`, `ssmAsyncClientOf(...)`
 - request builders for get parameter, get parameters, get parameters by path, put secure parameter, put string parameter, put string-list parameter, and describe parameters
 
-- [ ] **Step 3: Implement sync/async/coroutine extensions**
+- [x] **Step 3: Implement sync/async/coroutine extensions**
 
 Add common get/list/put helpers. Do not add delete wrappers or hidden all-pages collection helpers.
 Add English KDoc to public factories, request builders, and extension helpers. `putSecureParameter` KDoc must state SecureString plaintext handling, `overwrite` semantics, and caller responsibility. Non-secret write helpers must be named separately and must not accept raw strings for SecureString writes.
 
-- [ ] **Step 4: Run Java SSM tests**
+- [x] **Step 4: Run Java SSM tests**
 
 Run command from Step 1.
 
@@ -263,7 +263,7 @@ Expected: PASS.
 
 **Files:** Kotlin Secrets Manager and SSM files from the file map.
 
-- [ ] **Step 1: Write failing Kotlin SDK tests**
+- [x] **Step 1: Write failing Kotlin SDK tests**
 
 Tests must cover:
 
@@ -289,7 +289,7 @@ Run:
 
 Expected: FAIL before implementation.
 
-- [ ] **Step 2: Implement Kotlin client factories**
+- [x] **Step 2: Implement Kotlin client factories**
 
 Mirror existing `sqsClientOf` / `withSqsClient` patterns:
 
@@ -298,12 +298,12 @@ Mirror existing `sqsClientOf` / `withSqsClient` patterns:
 - `ssmClientOf(...)`
 - `withSsmClient(...)`
 
-- [ ] **Step 3: Implement Kotlin request builders and extensions**
+- [x] **Step 3: Implement Kotlin request builders and extensions**
 
 Implement exact operations from the spec. Re-throw `CancellationException` before broad catch blocks when any catch block is introduced.
 Add English KDoc to public factories, request builders, and suspend helpers. `xxxClientOf` helpers are caller-owned; `withXxxClient` helpers close clients via `useSafe` on normal return, thrown exception, and cancellation.
 
-- [ ] **Step 4: Run Kotlin SDK tests**
+- [x] **Step 4: Run Kotlin SDK tests**
 
 Run command from Step 1.
 
@@ -317,7 +317,7 @@ Expected: PASS.
 
 **Files:** README locale sets and service coverage chart.
 
-- [ ] **Step 1: Update README locale sets**
+- [x] **Step 1: Update README locale sets**
 
 Update all required README files with:
 
@@ -342,11 +342,11 @@ Run and record a README parity audit across `README.md`/`README.ko.md`, `aws-jav
 
 README examples must either be copied from compiling test fixtures or be manually source-checked against the implemented API names. If a snippet is not compiled, record `manual source-checked, not compiled` in PR DoD.
 
-- [ ] **Step 2: Update service coverage chart SVG**
+- [x] **Step 2: Update service coverage chart SVG**
 
 Mark `bluetape4k-aws-java` and `bluetape4k-aws-kotlin` coverage for Secrets Manager and Parameter Store as stable/supported according to the existing chart legend.
 
-- [ ] **Step 3: Regenerate PNG and visually inspect**
+- [x] **Step 3: Regenerate PNG and visually inspect**
 
 Run:
 
@@ -390,7 +390,7 @@ Expected: SVG valid, PNG generated by CairoSVG at the expected dimensions, local
 
 **Applies:** `$verification-before-completion`, `$bluetape4k-code-patterns`
 
-- [ ] **Step 1: Run targeted compile/tests**
+- [x] **Step 1: Run targeted compile/tests**
 
 Run:
 
@@ -400,7 +400,7 @@ Run:
 
 Expected: BUILD SUCCESSFUL.
 
-- [ ] **Step 2: Run static/doc checks**
+- [x] **Step 2: Run static/doc checks**
 
 Run:
 
@@ -411,7 +411,7 @@ grep -RInE 'CompletableFuture\\.allOf|\\basync\\s*\\{|\\bwithTimeout(OrNull)?\\b
 
 Expected: `git diff --check` has no output. The static grep has no custom retry/backoff/deadline/fan-out in touched helpers; any intentional match must be explained and tied to SDK/request override configuration rather than manual retry logic.
 
-- [ ] **Step 3: Run API documentation and warning checks**
+- [x] **Step 3: Run API documentation and warning checks**
 
 Review touched public APIs for English KDoc and run compile warnings:
 
@@ -421,15 +421,15 @@ Review touched public APIs for English KDoc and run compile warnings:
 
 Expected: no unresolved deprecations or public API documentation gaps in touched code.
 
-- [ ] **Step 4: Run Step 5 verifier against spec and plan**
+- [x] **Step 4: Run Step 5 verifier against spec and plan**
 
 Confirm every acceptance criterion maps to implementation and tests.
 
-- [ ] **Step 5: Run Step 6-R code review**
+- [x] **Step 5: Run Step 6-R code review**
 
 Run module-sliced review for `aws-java`, `aws-kotlin`, and docs/chart changes. P0/P1 must be zero.
 
-- [ ] **Step 6: Add lessons, commit, push, create PR**
+- [x] **Step 6: Add lessons, commit, push, create PR**
 
 Create `docs/lessons/2026-06-30-issue-268-secrets-parameter-core.md`, commit with Lore trailers, push, create PR closing #268, assign `debop`, copy issue milestone and labels, verify live PR body final section is `## DoD Status`.
 
