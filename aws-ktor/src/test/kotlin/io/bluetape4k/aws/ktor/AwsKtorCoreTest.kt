@@ -91,4 +91,38 @@ class AwsKtorCoreTest {
 
         application.awsKtorDefaults().s3VectorsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
     }
+
+    @Test
+    fun `core plugin stores SES v2 customizers`() = testApplication {
+        val customizer = AwsKtorSesV2AsyncClientCustomizer { builder ->
+            builder.overrideConfiguration { it.putHeader("x-test", "sesv2") }
+        }
+
+        application {
+            install(AwsKtorCore) {
+                sesV2AsyncClient(customizer)
+            }
+        }
+
+        startApplication()
+
+        application.awsKtorDefaults().sesV2AsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
+    }
+
+    @Test
+    fun `core plugin stores SNS customizers`() = testApplication {
+        val customizer = AwsKtorSnsAsyncClientCustomizer { builder ->
+            builder.overrideConfiguration { it.putHeader("x-test", "sns") }
+        }
+
+        application {
+            install(AwsKtorCore) {
+                snsAsyncClient(customizer)
+            }
+        }
+
+        startApplication()
+
+        application.awsKtorDefaults().snsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
+    }
 }

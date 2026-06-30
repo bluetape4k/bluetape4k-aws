@@ -4,10 +4,10 @@ English | [한국어](README.ko.md)
 
 Ktor 3 integration for bluetape4k AWS modules. It provides AWS SigV4 signing
 for Ktor `HttpClient`, a coroutine-friendly S3 REST client built on that
-signing path, and server-side plugins that bind SQS, DynamoDB, AWS-backed
-Exposed registries, S3 Access Grants, S3 Vectors, IMDS, CloudWatch, and
-CloudWatch Logs to the Ktor application lifecycle without taking ownership away
-from the application.
+signing path, and server-side plugins that bind SES v2, SNS, SQS, DynamoDB,
+AWS-backed Exposed registries, S3 Access Grants, S3 Vectors, IMDS, CloudWatch,
+and CloudWatch Logs to the Ktor application lifecycle without taking ownership
+away from the application.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -42,6 +42,10 @@ from the application.
 - `CloudWatchKtorPlugin` and `CloudWatchLogsKtorPlugin` for explicit
   CloudWatch metric publishing, CloudWatch Logs setup, buffered log-event
   publishing, and bounded shutdown flush.
+- `SesKtorPlugin` for coroutine SES v2 email operations with simple, template,
+  and raw MIME request models.
+- `SnsKtorPlugin` for coroutine SNS topic creation, topic lookup, topic publish,
+  SMS publish, and untrusted HTTP endpoint message parsing.
 
 ## Dependency
 
@@ -77,6 +81,15 @@ dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+
+    // SES v2 email usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:sesv2")
+
+    // SNS topic, SMS, and HTTP endpoint message usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:sns")
+    implementation("io.github.bluetape4k:bluetape4k-jackson3:${bluetape4kVersion}")
 
     // Optional Micrometer bridge for SQS/S3/CloudWatch Ktor helpers
     implementation("io.micrometer:micrometer-core")
@@ -126,14 +139,17 @@ fun Application.module() {
 }
 ```
 
-`S3KtorClient`, `SqsConsumer`, `CloudWatchKtorPlugin`,
-`CloudWatchLogsKtorPlugin`, and `DynamoDbKtorPlugin` can inherit shared
-defaults. Set a service-local `region`, `endpointOverride` / `endpointUrl`, or
-credentials provider when one integration needs a different target. For
-EKS/IRSA or other web-identity deployments, supply the appropriate AWS SDK
-credentials provider in `AwsKtorCore`; keep `software.amazon.awssdk:sts` or
-`aws.sdk.kotlin:sts` on the application runtime classpath when that provider
-requires STS.
+`S3KtorClient`, `SqsConsumer`, `SesKtorPlugin`, `SnsKtorPlugin`,
+`CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, and `DynamoDbKtorPlugin`
+can inherit shared defaults. Set a service-local `region`, `endpointOverride` /
+`endpointUrl`, or credentials provider when one integration needs a different
+target. Use local endpoints such as `http://localhost:4566` with dummy test
+credentials for Floci or LocalStack; production deployments should use an
+explicit AWS SDK credential provider such as default, profile, web-identity, or
+an application-owned provider. For EKS/IRSA or other web-identity deployments,
+supply the appropriate AWS SDK credentials provider in `AwsKtorCore`; keep
+`software.amazon.awssdk:sts` or `aws.sdk.kotlin:sts` on the application runtime
+classpath when that provider requires STS.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
@@ -475,6 +491,83 @@ one-time Micrometer snapshot to CloudWatch. This helper reads an existing
 `MeterRegistry` only when invoked and does not register a scheduled CloudWatch
 registry exporter.
 
+## SES And SNS Server Plugins
+
+`SesKtorPlugin` installs a coroutine SES v2 operations facade for application
+routes that send email. The plugin can use an injected application-owned
+`SesV2AsyncClient`, an injected operations facade, or a plugin-owned client
+created from `AwsKtorCore` and service-local settings. Injected clients are not
+closed by the plugin; plugin-owned clients are closed on `ApplicationStopping`.
+
+```kotlin
+import io.bluetape4k.aws.ktor.ses.SesEmailAddressSet
+import io.bluetape4k.aws.ktor.ses.SesEmailBody
+import io.bluetape4k.aws.ktor.ses.SesEmailRequest
+import io.bluetape4k.aws.ktor.ses.SesKtorPlugin
+import io.bluetape4k.aws.ktor.ses.ses
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+fun Application.module() {
+    install(SesKtorPlugin) {
+        region = "ap-northeast-2"
+        defaultFrom = "noreply@example.com"
+        configurationSetName = "orders"
+    }
+}
+
+suspend fun Application.sendOrderEmail(to: String, orderId: String): String =
+    ses().sendEmail(
+        SesEmailRequest(
+            destination = SesEmailAddressSet(to = listOf(to)),
+            subject = "Order $orderId",
+            body = SesEmailBody(text = "Your order was accepted."),
+        )
+    ).messageId()
+```
+
+`SnsKtorPlugin` installs SNS topic/SMS operations and an SNS HTTP endpoint
+message parser. Parsed HTTP endpoint messages are intentionally untrusted:
+validate the SNS signature, certificate chain, expected topic ARN, and replay
+policy before calling `TrustedSnsHttpMessage.fromVerified(...)`.
+
+```kotlin
+import io.bluetape4k.aws.ktor.sns.SnsKtorPlugin
+import io.bluetape4k.aws.ktor.sns.SnsKtorTopic
+import io.bluetape4k.aws.ktor.sns.SnsHttpMessage
+import io.bluetape4k.aws.ktor.sns.TrustedSnsHttpMessage
+import io.bluetape4k.aws.ktor.sns.sns
+import io.bluetape4k.aws.ktor.sns.snsHttpMessageParser
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+fun Application.module() {
+    install(SnsKtorPlugin) {
+        region = "ap-northeast-2"
+        topics = mapOf("orders" to SnsKtorTopic())
+    }
+}
+
+suspend fun Application.publishOrderEvent(json: String): String {
+    val topicArn = sns().findTopicArn("orders")
+        ?: sns().createConfiguredTopic("orders")
+    return sns().publish(topicArn = topicArn, message = json).messageId()
+}
+
+fun Application.parseSnsMessage(json: String, header: String?): SnsHttpMessage =
+    snsHttpMessageParser().parse(json, messageTypeHeader = header)
+
+fun trustSnsMessageAfterVerification(message: SnsHttpMessage): TrustedSnsHttpMessage =
+    TrustedSnsHttpMessage.fromVerified(
+        message
+    )
+```
+
+SES request models defensively copy raw MIME bytes and validate message size
+before SDK submission. SNS HTTP parsing rejects malformed JSON, duplicate
+fields, mismatched `x-amz-sns-message-type` headers, non-HTTPS signing
+certificate URLs, non-SNS hosts, partition mismatches, and region mismatches.
+
 ## SQS Consumer And Publisher
 
 `SqsConsumer` installs one SQS consumer runtime into a Ktor application. The
@@ -744,6 +837,19 @@ render as redacted in generated diagnostics.
 | `createLogStreamOnStart` | `false` | Opt-in startup log stream creation. Disabled by default. |
 | `cloudWatchLogsAsyncClient` | `null` | Optional application-owned CloudWatch Logs client. Injected clients are not closed by the plugin. |
 | `cloudWatchLogsOperations` | `null` | Optional application-owned operations facade, useful for tests or custom wrappers. |
+
+### SES And SNS Options
+
+| Option | Default | Description |
+|---|---:|---|
+| `SesKtorPlugin.defaultFrom` | `null` | Default sender for simple and template email requests that omit `from`. |
+| `SesKtorPlugin.configurationSetName` | `null` | Default SES configuration set for simple, template, and raw email requests. |
+| `SesKtorPlugin.sesAsyncClient` | `null` | Optional application-owned SES v2 async client. Injected clients are not closed by the plugin. |
+| `SesKtorPlugin.sesOperations` | `null` | Optional application-owned SES operations facade, useful for tests or custom wrappers. |
+| `SnsKtorPlugin.topics` | `emptyMap()` | Named topic definitions used by `createConfiguredTopic`. |
+| `SnsKtorPlugin.snsAsyncClient` | `null` | Optional application-owned SNS async client. Injected clients are not closed by the plugin. |
+| `SnsKtorPlugin.snsOperations` | `null` | Optional application-owned SNS operations facade, useful for tests or custom wrappers. |
+| `SnsKtorPlugin.snsHttpMessageParser` | strict default parser | Optional application-owned parser for SNS HTTP endpoint JSON. |
 
 ### SQS Consumer Options
 
