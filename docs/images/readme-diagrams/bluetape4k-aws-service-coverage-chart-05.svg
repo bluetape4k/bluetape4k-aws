@@ -170,8 +170,8 @@
       <circle class="stable" cx="406" cy="682" r="20" /><text class="cellText" x="406" y="687" text-anchor="middle" fill="#166534">S</text>
       <circle class="stable" cx="502" cy="682" r="20" /><text class="cellText" x="502" y="687" text-anchor="middle" fill="#166534">S</text>
       <circle class="optional" cx="598" cy="682" r="20" /><text class="cellText" x="598" y="687" text-anchor="middle" fill="#9a3412">O</text>
-      <circle class="empty" cx="694" cy="682" r="18" /><text class="cellText" x="694" y="687" text-anchor="middle" fill="#64748b">-</text>
-      <circle class="empty" cx="790" cy="682" r="18" /><text class="cellText" x="790" y="687" text-anchor="middle" fill="#64748b">-</text>
+      <circle class="optional" cx="694" cy="682" r="20" /><text class="cellText" x="694" y="687" text-anchor="middle" fill="#9a3412">O</text>
+      <circle class="optional" cx="790" cy="682" r="20" /><text class="cellText" x="790" y="687" text-anchor="middle" fill="#9a3412">O</text>
       <circle class="stable" cx="886" cy="682" r="20" /><text class="cellText" x="886" y="687" text-anchor="middle" fill="#166534">S</text>
       <circle class="empty" cx="982" cy="682" r="18" /><text class="cellText" x="982" y="687" text-anchor="middle" fill="#64748b">-</text>
       <circle class="stable" cx="1078" cy="682" r="20" /><text class="cellText" x="1078" y="687" text-anchor="middle" fill="#166534">S</text>

@@ -4,10 +4,10 @@
 
 bluetape4k AWS 모듈을 Ktor 3 애플리케이션에 붙이기 위한 통합 모듈입니다. Ktor
 `HttpClient` 요청에 AWS SigV4 서명을 적용하고, 그 경로 위에 coroutine 친화적인 S3
-REST client를 제공합니다. SQS, DynamoDB, AWS-backed Exposed registry, S3 Access
-Grants, S3 Vectors, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에 맞춰
-설치하되, credentials와 app-scoped client, route 설계의 소유권은 애플리케이션에
-남겨 둡니다.
+REST client를 제공합니다. SES v2, SNS, SQS, DynamoDB, AWS-backed Exposed registry,
+S3 Access Grants, S3 Vectors, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에
+맞춰 설치하되, credentials와 app-scoped client, route 설계의 소유권은
+애플리케이션에 남겨 둡니다.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -41,6 +41,10 @@ Grants, S3 Vectors, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에 맞�
 - 명시적 CloudWatch metric publishing, CloudWatch Logs setup, buffered log-event
   publishing, bounded shutdown flush를 제공하는 `CloudWatchKtorPlugin` 과
   `CloudWatchLogsKtorPlugin`.
+- Simple, template, raw MIME 요청 모델을 제공하는 coroutine 기반 SES v2
+  `SesKtorPlugin`.
+- Topic 생성, topic 조회, topic publish, SMS publish, 신뢰 전 SNS HTTP endpoint
+  message parsing을 제공하는 coroutine 기반 `SnsKtorPlugin`.
 
 ## 의존성
 
@@ -75,6 +79,15 @@ dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+
+    // SES v2 email 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:sesv2")
+
+    // SNS topic, SMS, HTTP endpoint message 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:sns")
+    implementation("io.github.bluetape4k:bluetape4k-jackson3:${bluetape4kVersion}")
 
     // SQS/S3/CloudWatch Ktor helper용 선택적 Micrometer bridge
     implementation("io.micrometer:micrometer-core")
@@ -124,13 +137,16 @@ fun Application.module() {
 }
 ```
 
-`S3KtorClient`, `SqsConsumer`, `CloudWatchKtorPlugin`,
-`CloudWatchLogsKtorPlugin`, `DynamoDbKtorPlugin`은 공유 기본값을 상속할 수 있습니다.
-특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`, `endpointOverride` /
-`endpointUrl`, credentials provider를 설정합니다. EKS/IRSA 같은
-web identity 배포에서는 적절한 AWS SDK credentials provider를 `AwsKtorCore`에 직접
-주입하고, 해당 provider가 STS를 요구한다면 애플리케이션 runtime classpath에
-`software.amazon.awssdk:sts` 또는 `aws.sdk.kotlin:sts`를 추가합니다.
+`S3KtorClient`, `SqsConsumer`, `SesKtorPlugin`, `SnsKtorPlugin`,
+`CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, `DynamoDbKtorPlugin`은 공유
+기본값을 상속할 수 있습니다. 특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`,
+`endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. Floci 또는
+LocalStack 테스트에서는 `http://localhost:4566` 같은 local endpoint와 dummy test
+credentials를 사용하세요. 운영 배포에서는 default, profile, web-identity, 또는
+애플리케이션이 소유한 provider처럼 명시적인 AWS SDK credential provider를 사용해야
+합니다. EKS/IRSA 같은 web identity 배포에서는 적절한 AWS SDK credentials provider를
+`AwsKtorCore`에 직접 주입하고, 해당 provider가 STS를 요구한다면 애플리케이션 runtime
+classpath에 `software.amazon.awssdk:sts` 또는 `aws.sdk.kotlin:sts`를 추가합니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
@@ -468,6 +484,83 @@ suspend fun Application.publishAudit(message: String) {
 기존 `MeterRegistry` 를 읽으며 scheduled CloudWatch registry exporter를 등록하지
 않습니다.
 
+## SES And SNS Server Plugins
+
+`SesKtorPlugin` 은 route code가 email을 보낼 수 있도록 coroutine 기반 SES v2
+operations facade를 Ktor 애플리케이션에 설치합니다. 플러그인은 애플리케이션이 소유한
+`SesV2AsyncClient`, 애플리케이션이 소유한 operations facade, 또는 `AwsKtorCore`와
+서비스 로컬 설정으로 만든 plugin-owned client를 사용할 수 있습니다. 주입한 client는
+플러그인이 닫지 않으며, plugin-owned client만 `ApplicationStopping` 에서 닫습니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.ses.SesEmailAddressSet
+import io.bluetape4k.aws.ktor.ses.SesEmailBody
+import io.bluetape4k.aws.ktor.ses.SesEmailRequest
+import io.bluetape4k.aws.ktor.ses.SesKtorPlugin
+import io.bluetape4k.aws.ktor.ses.ses
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+fun Application.module() {
+    install(SesKtorPlugin) {
+        region = "ap-northeast-2"
+        defaultFrom = "noreply@example.com"
+        configurationSetName = "orders"
+    }
+}
+
+suspend fun Application.sendOrderEmail(to: String, orderId: String): String =
+    ses().sendEmail(
+        SesEmailRequest(
+            destination = SesEmailAddressSet(to = listOf(to)),
+            subject = "Order $orderId",
+            body = SesEmailBody(text = "Your order was accepted."),
+        )
+    ).messageId()
+```
+
+`SnsKtorPlugin` 은 SNS topic/SMS operations와 SNS HTTP endpoint message parser를
+설치합니다. HTTP endpoint message parser가 반환한 값은 아직 신뢰할 수 없습니다.
+`TrustedSnsHttpMessage.fromVerified(...)` 를 호출하기 전에 SNS signature, certificate
+chain, 기대한 topic ARN, replay policy를 애플리케이션에서 검증하세요.
+
+```kotlin
+import io.bluetape4k.aws.ktor.sns.SnsKtorPlugin
+import io.bluetape4k.aws.ktor.sns.SnsKtorTopic
+import io.bluetape4k.aws.ktor.sns.SnsHttpMessage
+import io.bluetape4k.aws.ktor.sns.TrustedSnsHttpMessage
+import io.bluetape4k.aws.ktor.sns.sns
+import io.bluetape4k.aws.ktor.sns.snsHttpMessageParser
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+fun Application.module() {
+    install(SnsKtorPlugin) {
+        region = "ap-northeast-2"
+        topics = mapOf("orders" to SnsKtorTopic())
+    }
+}
+
+suspend fun Application.publishOrderEvent(json: String): String {
+    val topicArn = sns().findTopicArn("orders")
+        ?: sns().createConfiguredTopic("orders")
+    return sns().publish(topicArn = topicArn, message = json).messageId()
+}
+
+fun Application.parseSnsMessage(json: String, header: String?): SnsHttpMessage =
+    snsHttpMessageParser().parse(json, messageTypeHeader = header)
+
+fun trustSnsMessageAfterVerification(message: SnsHttpMessage): TrustedSnsHttpMessage =
+    TrustedSnsHttpMessage.fromVerified(
+        message
+    )
+```
+
+SES request model은 raw MIME byte를 방어적으로 복사하고 SDK 제출 전에 message size를
+검증합니다. SNS HTTP parser는 잘못된 JSON, duplicate field, 일치하지 않는
+`x-amz-sns-message-type` header, HTTPS가 아닌 signing certificate URL, SNS가 아닌
+host, partition 불일치, region 불일치를 거부합니다.
+
 ## SQS Consumer And Publisher
 
 `SqsConsumer`는 하나의 SQS consumer runtime을 Ktor 애플리케이션에 설치합니다.
@@ -734,6 +827,19 @@ redacted 문자열로 표시됩니다.
 | `createLogStreamOnStart` | `false` | startup 시 log stream을 생성할지 선택합니다. 기본값은 비활성입니다. |
 | `cloudWatchLogsAsyncClient` | `null` | 선택적 application-owned CloudWatch Logs client입니다. 주입한 client는 plugin이 닫지 않습니다. |
 | `cloudWatchLogsOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned operations facade입니다. |
+
+### SES And SNS 옵션
+
+| 옵션 | 기본값 | 설명 |
+|---|---:|---|
+| `SesKtorPlugin.defaultFrom` | `null` | `from` 을 생략한 simple/template email request에 사용할 기본 sender입니다. |
+| `SesKtorPlugin.configurationSetName` | `null` | simple/template/raw email request에 사용할 기본 SES configuration set입니다. |
+| `SesKtorPlugin.sesAsyncClient` | `null` | 선택적 application-owned SES v2 async client입니다. 주입한 client는 plugin이 닫지 않습니다. |
+| `SesKtorPlugin.sesOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned SES operations facade입니다. |
+| `SnsKtorPlugin.topics` | `emptyMap()` | `createConfiguredTopic` 에서 사용하는 named topic 정의입니다. |
+| `SnsKtorPlugin.snsAsyncClient` | `null` | 선택적 application-owned SNS async client입니다. 주입한 client는 plugin이 닫지 않습니다. |
+| `SnsKtorPlugin.snsOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned SNS operations facade입니다. |
+| `SnsKtorPlugin.snsHttpMessageParser` | strict 기본 parser | SNS HTTP endpoint JSON에 사용할 선택적 application-owned parser입니다. |
 
 ### SQS Consumer 옵션
 
