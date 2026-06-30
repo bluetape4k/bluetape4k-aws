@@ -6,11 +6,14 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
+import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSource
+import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSourceConfig
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.services.rds.RdsUtilities
 import software.amazon.awssdk.services.rds.model.GenerateAuthenticationTokenRequest
+import java.sql.SQLException
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -188,23 +191,41 @@ class AwsRdsIamAuthenticationTest {
     }
 
     @Test
-    fun `rds iam data source opens connection with provider token`() {
+    fun `rds iam data source opens connection with generic refreshing password helper`() {
         val counter = AtomicInteger()
-        val dataSource = RdsIamRefreshingDataSource(
-            url = "jdbc:h2:mem:rds_iam_data_source;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-            driverClassName = "org.h2.Driver",
-            username = "sa",
-            dataSourceProperties = emptyMap(),
-            passwordProvider = AwsDatabasePasswordProvider {
-                awsSecretStringOf("token-${counter.incrementAndGet()}")
-            },
-        )
+        val dataSource = refreshingRdsIamDataSource(counter)
 
         dataSource.connection.use { connection ->
             connection.isValid(1).shouldBeTrue()
         }
         counter.get() shouldBeEqualTo 1
     }
+
+    @Test
+    fun `rds iam data source rejects caller supplied credentials without token lookup`() {
+        val counter = AtomicInteger()
+        val dataSource = refreshingRdsIamDataSource(counter)
+
+        val error = assertFailsWith<SQLException> {
+            dataSource.getConnection("sa", "caller-password")
+        }
+
+        error.message.orEmpty() shouldContain "does not accept caller-supplied credentials"
+        counter.get() shouldBeEqualTo 0
+    }
+
+    private fun refreshingRdsIamDataSource(counter: AtomicInteger): RefreshingJdbcPasswordDataSource =
+        RefreshingJdbcPasswordDataSource(
+            config = RefreshingJdbcPasswordDataSourceConfig(
+                url = "jdbc:h2:mem:rds_iam_data_source;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                driverClassName = "org.h2.Driver",
+                username = "sa",
+                nullPasswordMessage = "RDS IAM password provider returned null.",
+            ),
+            passwordProvider = {
+                awsSecretStringOf("token-${counter.incrementAndGet()}").reveal()
+            },
+        )
 
     private fun rdsIamConnectionProperties(): AwsDatabaseConnectionProperties =
         AwsDatabaseConnectionProperties(
