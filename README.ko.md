@@ -573,6 +573,48 @@ refresh가 실패하면 마지막으로 성공한 값을 유지합니다.
 
 ![Secrets Manager and Parameter Store property key mapping](docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)
 
+### Environment Source 기반 Exposed Database 설정
+
+`AwsExposedAutoConfiguration`은 Secrets Manager나 Parameter Store가 Spring
+Environment에 먼저 게시한 값으로 Exposed registry를 만들 수 있습니다. Exposed
+resolver는 별도의 AWS client 경로를 만들지 않고, `secret-source` 또는
+`parameter-source` descriptor의 prefix 아래에서 `url`, `driver-class-name`,
+`username`, `password` 같은 connection field를 읽습니다.
+
+```yaml
+bluetape4k:
+  aws:
+    secrets-manager:
+      region: ap-northeast-2
+      sources:
+        - name: orders-db
+          secret-id: prod/orders/database
+          prefix: orders.db
+    exposed:
+      default-database:
+        secret-source:
+          source-id: prod/orders/database
+          prefix: orders.db
+        pool:
+          maximum-pool-size: 10
+```
+
+Secret payload는 database field를 그대로 제공할 수 있습니다.
+
+```json
+{
+  "url": "jdbc:postgresql://orders.cluster.local:5432/orders",
+  "driver-class-name": "org.postgresql.Driver",
+  "username": "orders",
+  "password": "change-me"
+}
+```
+
+로컬/테스트 profile에서는 기존처럼
+`bluetape4k.aws.exposed.default-database.*` 속성을 직접 설정해도 됩니다. Source
+descriptor 값은 descriptor prefix 아래 실제 존재하는 key만 덮어쓰며, optional
+descriptor는 source가 없을 때 기존 설정을 유지합니다.
+
 ### SQS — Spring Boot Coroutines Template과 Listener
 
 SQS auto-configuration은 coroutine operations API와 listener runtime을

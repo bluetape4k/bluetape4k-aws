@@ -583,6 +583,49 @@ read and keeps the last good values if a refresh fails.
 
 ![Secrets Manager and Parameter Store property key mapping](docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)
 
+### Exposed Database Settings from Environment Sources
+
+`AwsExposedAutoConfiguration` can create the Exposed registry from values that
+Secrets Manager or Parameter Store have already published into the Spring
+Environment. The Exposed resolver does not create a second AWS client path; it
+uses the `secret-source` or `parameter-source` descriptor prefix to read
+connection fields such as `url`, `driver-class-name`, `username`, and
+`password`.
+
+```yaml
+bluetape4k:
+  aws:
+    secrets-manager:
+      region: ap-northeast-2
+      sources:
+        - name: orders-db
+          secret-id: prod/orders/database
+          prefix: orders.db
+    exposed:
+      default-database:
+        secret-source:
+          source-id: prod/orders/database
+          prefix: orders.db
+        pool:
+          maximum-pool-size: 10
+```
+
+The secret payload can then provide the database fields:
+
+```json
+{
+  "url": "jdbc:postgresql://orders.cluster.local:5432/orders",
+  "driver-class-name": "org.postgresql.Driver",
+  "username": "orders",
+  "password": "change-me"
+}
+```
+
+Direct `bluetape4k.aws.exposed.default-database.*` properties still work for
+local and test profiles. Source descriptor values overlay only keys that exist
+under the descriptor prefix, and optional descriptors leave existing settings
+unchanged when the source is absent.
+
 ### SQS — Spring Boot Coroutines Template and Listener
 
 SQS auto-configuration separates the coroutine operations surface from the

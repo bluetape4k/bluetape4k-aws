@@ -4,7 +4,6 @@ import io.bluetape4k.aws.exposed.AwsDatabaseSettingsResolver
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseFactory
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseHandle
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
-import io.bluetape4k.aws.exposed.NoopAwsDatabaseSettingsResolver
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -16,6 +15,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Condition
+import org.springframework.context.annotation.ConditionContext
+import org.springframework.context.annotation.Conditional
+import org.springframework.core.env.Environment
+import org.springframework.core.type.AnnotatedTypeMetadata
 import javax.sql.DataSource
 
 /**
@@ -24,9 +28,9 @@ import javax.sql.DataSource
  * ## Contract
  *
  * Creates the common `bluetape4k-aws-exposed` registry only when the default
- * database URL is configured. Secrets Manager and Parameter Store integration is
- * provided by the existing environment post-processors that publish properties
- * under the `bluetape4k.aws.exposed` prefix before binding.
+ * database URL or a source descriptor is configured. Secrets Manager and
+ * Parameter Store integration is provided by the existing environment
+ * post-processors that publish properties before registry creation.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnClass(
@@ -47,8 +51,10 @@ class AwsExposedAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(AwsDatabaseSettingsResolver::class)
-    fun awsDatabaseSettingsResolver(): AwsDatabaseSettingsResolver =
-        NoopAwsDatabaseSettingsResolver
+    fun awsDatabaseSettingsResolver(
+        environment: Environment,
+    ): AwsDatabaseSettingsResolver =
+        SpringEnvironmentAwsDatabaseSettingsResolver(environment)
 
     /**
      * Creates the default database factory used by the registry.
@@ -65,7 +71,7 @@ class AwsExposedAutoConfiguration {
      */
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "bluetape4k.aws.exposed.default-database", name = ["url"])
+    @Conditional(AwsExposedDatabaseConfiguredCondition::class)
     fun awsExposedDatabaseRegistry(
         properties: AwsExposedProperties,
         factory: AwsExposedDatabaseFactory,
@@ -127,4 +133,23 @@ class AwsExposedDefaultDatabaseAutoConfiguration {
         registry: AwsExposedDatabaseRegistry,
     ): Database =
         registry.defaultHandle.database
+}
+
+internal class AwsExposedDatabaseConfiguredCondition: Condition {
+    override fun matches(
+        context: ConditionContext,
+        metadata: AnnotatedTypeMetadata,
+    ): Boolean {
+        val environment = context.environment
+        return environment.containsProperty("$DEFAULT_DATABASE_PREFIX.url") ||
+            environment.hasConfiguredSource("$DEFAULT_DATABASE_PREFIX.secret-source") ||
+            environment.hasConfiguredSource("$DEFAULT_DATABASE_PREFIX.parameter-source")
+    }
+
+    private fun Environment.hasConfiguredSource(prefix: String): Boolean =
+        containsProperty("$prefix.source-id") && containsProperty("$prefix.prefix")
+
+    private companion object {
+        const val DEFAULT_DATABASE_PREFIX = "bluetape4k.aws.exposed.default-database"
+    }
 }

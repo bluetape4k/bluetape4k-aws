@@ -207,6 +207,116 @@ class AwsExposedAutoConfigurationTest {
     }
 
     @Test
+    fun `resolve default database from Secrets Manager source descriptor`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsExposedAutoConfiguration::class.java,
+                    AwsExposedDefaultDatabaseAutoConfiguration::class.java,
+                )
+            )
+            .withPropertyValues(
+                "bluetape4k.aws.exposed.default-database.secret-source.source-id=app/database",
+                "bluetape4k.aws.exposed.default-database.secret-source.prefix=remote.db",
+            )
+            .withInitializer { context ->
+                context.environment.propertySources.addFirst(
+                    MapPropertySource(
+                        "aws-secret-database",
+                        mapOf(
+                            "remote.db.url" to h2Url("secret_descriptor"),
+                            "remote.db.driver-class-name" to "org.h2.Driver",
+                            "remote.db.username" to "sa",
+                            "remote.db.password" to "secret-from-descriptor",
+                            "remote.db.pool.maximum-pool-size" to "4",
+                            "remote.db.data-source-properties.cachePrepStmts" to "true",
+                            "remote.db.metadata.owner" to "secrets-manager",
+                        )
+                    )
+                )
+            }
+            .run { context ->
+                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+                val properties = registry.defaultHandle.properties
+
+                properties.url shouldContain "secret_descriptor"
+                properties.password.shouldNotBeNull().reveal() shouldBeEqualTo "secret-from-descriptor"
+                properties.pool.maximumPoolSize shouldBeEqualTo 4
+                properties.dataSourceProperties["cachePrepStmts"] shouldBeEqualTo "true"
+                properties.metadata["owner"] shouldBeEqualTo "secrets-manager"
+            }
+    }
+
+    @Test
+    fun `resolve default database from Parameter Store source descriptor`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsExposedAutoConfiguration::class.java,
+                    AwsExposedDefaultDatabaseAutoConfiguration::class.java,
+                )
+            )
+            .withPropertyValues(
+                "bluetape4k.aws.exposed.default-database.parameter-source.source-id=/config/app/db",
+                "bluetape4k.aws.exposed.default-database.parameter-source.prefix=parameter.db",
+            )
+            .withInitializer { context ->
+                context.environment.propertySources.addFirst(
+                    MapPropertySource(
+                        "aws-parameter-database",
+                        mapOf(
+                            "parameter.db.url" to h2Url("parameter_descriptor"),
+                            "parameter.db.driver-class-name" to "org.h2.Driver",
+                            "parameter.db.username" to "sa",
+                            "parameter.db.password" to "parameter-secret",
+                        )
+                    )
+                )
+            }
+            .run { context ->
+                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+                val properties = registry.defaultHandle.properties
+
+                properties.url shouldContain "parameter_descriptor"
+                properties.password.shouldNotBeNull().reveal() shouldBeEqualTo "parameter-secret"
+            }
+    }
+
+    @Test
+    fun `optional source descriptor keeps explicit settings when no source values exist`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.exposed.default-database.secret-source.source-id=missing/database",
+                "bluetape4k.aws.exposed.default-database.secret-source.prefix=missing.db",
+                "bluetape4k.aws.exposed.default-database.secret-source.optional=true",
+            )
+            .run { context ->
+                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+
+                registry.defaultHandle.properties.url shouldContain "default"
+                registry.defaultHandle.properties.password.shouldNotBeNull().reveal() shouldBeEqualTo "secret"
+            }
+    }
+
+    @Test
+    fun `required source descriptor fails when no source values exist`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsExposedAutoConfiguration::class.java,
+                    AwsExposedDefaultDatabaseAutoConfiguration::class.java,
+                )
+            )
+            .withPropertyValues(
+                "bluetape4k.aws.exposed.default-database.secret-source.source-id=missing/database",
+                "bluetape4k.aws.exposed.default-database.secret-source.prefix=missing.db",
+            )
+            .run { context ->
+                context.startupFailure.shouldNotBeNull().toString() shouldContain "missing/database"
+            }
+    }
+
+    @Test
     fun `default Exposed database supports JDBC transaction usage`() {
         contextRunner.run { context ->
             val database = context.getBean(Database::class.java)
