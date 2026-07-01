@@ -21,6 +21,7 @@ Spring Boot 4, and Ktor 3.
 | `aws-ktor/` | WIP | Ktor 3 client/server integration |
 | `bom/` | stable | `bluetape4k-aws-bom` consumer BOM |
 | `examples/aws-ktor-s3-examples/` | example | Emulator-oriented Ktor S3 examples; not published |
+| `examples/aws-ktor-service-coverage-examples/` | example | Ktor SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, and STS service coverage routes; not published |
 | `examples/aws-spring-boot-s3-examples/` | example | Spring Boot 4 S3 WebFlux examples with AOT tasks; not published |
 | `examples/aws-spring-boot-sqs-examples/` | example | Spring Boot 4 SQS/SNS fanout examples with AOT tasks; not published |
 

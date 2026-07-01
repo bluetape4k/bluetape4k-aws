@@ -62,6 +62,7 @@ uses.
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
 | `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |
 | `aws-ktor-exposed-examples` | not published | Ktor 3 `AwsExposedPlugin` example with PostgreSQL Testcontainers and route-level Exposed transactions |
+| `aws-ktor-service-coverage-examples` | not published | Ktor 3 service coverage examples for SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, and STS plugins with injected operations for deterministic route tests |
 | `aws-spring-boot-dynamodb-examples` | not published | Spring Boot 4 DynamoDB repository examples for coroutine service flows |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`, presigned URLs, and optional KMS-backed client-side encryption; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor events, and Floci-first SNS subscriptions; compiled, tested, and wired for Spring AOT |
@@ -1075,6 +1076,7 @@ count claims alone; prove the exact AWS SDK calls used by the module.
 ./gradlew :bluetape4k-aws-ktor:test
 ./gradlew :aws-ktor-dynamodb-examples:test
 ./gradlew :aws-ktor-sqs-examples:test
+./gradlew :aws-ktor-service-coverage-examples:test
 ./gradlew :aws-spring-boot-dynamodb-examples:test
 ./gradlew :aws-spring-boot-s3-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test
