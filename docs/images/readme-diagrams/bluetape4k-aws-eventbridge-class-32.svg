@@ -44,7 +44,7 @@
   <rect class="layer ktor" x="790" y="115" width="650" height="565"/>
   <text class="layer-title" x="825" y="150">Ktor 3 integration</text>
   <rect class="layer shared" x="410" y="725" width="680" height="210"/>
-  <text class="layer-title" x="750" y="756" text-anchor="middle">Shared EventBridge core and AWS SDK</text>
+  <text class="layer-title" x="750" y="962" text-anchor="middle">Shared EventBridge core and AWS SDK</text>
 
   <!-- Spring cards: generous 120px+ column gap. -->
   <g id="spring-props">

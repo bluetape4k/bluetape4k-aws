@@ -38,4 +38,5 @@
   - `diagram-mixed-corner-audit.py` reported `paths=12 q_bends=4 failures=0`.
   - `diagram-connector-audit.py` reported `markers=0 connectors=12 cards=11 intrusions=0 crossings=0`.
   - Full-size PNG inspection failed the earlier compact layout, so the diagram was expanded to a `1500 x 980` SVG canvas with wider card spacing and a dedicated lower delegate corridor.
+  - Shared layer title was moved below the layer so the delegate connectors no longer pass through the title text.
   - Full-size PNG re-inspection confirmed no text/card/connector overlap, no card intrusions, and readable rounded turns after the expansion.
