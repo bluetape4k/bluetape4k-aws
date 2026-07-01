@@ -441,6 +441,8 @@ application-owned `EventBridgeKtorOperations`, an application-owned client, or a
 plugin-owned client created from `AwsKtorCore` defaults plus EventBridge
 customizers. Injected clients are not closed by the plugin.
 
+![EventBridge Spring Boot and Ktor class map](../docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
+
 ```kotlin
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.ktor.AwsKtorCore

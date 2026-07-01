@@ -434,6 +434,8 @@ operations facade를 Ktor 애플리케이션에 설치합니다. 애플리케이
 EventBridge customizer로 만든 plugin-owned client를 사용할 수 있습니다. 주입한 client는
 plugin이 닫지 않습니다.
 
+![EventBridge Spring Boot and Ktor class map](../docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
+
 ```kotlin
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.ktor.AwsKtorCore

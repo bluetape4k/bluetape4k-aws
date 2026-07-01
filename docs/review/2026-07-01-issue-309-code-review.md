@@ -18,6 +18,7 @@
 | Validation | P0 | None. Blank default event bus names and endpoint-without-region are rejected before client construction. | Verified by Spring property and Ktor config tests. |
 | Emulator | P1 | No repository-local EventBridge emulator scaffold exists for Spring Boot or Ktor. A live Floci/LocalStack smoke was therefore not claimed in this issue. | Recorded with `find ... -name '*EventBridge*Emulator*'` returning `0` and an EventBridge emulator `rg` probe returning no matches. |
 | Documentation | P0 | None. README locale pairs now document dependency requirements, Spring operations, Ktor plugin usage, partial-failure handling, and non-goals. | Verified by README `rg EventBridge/eventbridge/Scheduler` review. |
+| Diagram | P0 | None. README locale pairs now include a source-backed EventBridge Spring/Ktor class map with a solid/dashed relationship legend. | Verified by XML parse, CairoSVG render, full-size PNG inspection, endpoint/geometry/mixed-corner/connector audits, and README image-link checks. |
 
 ## Verification Evidence
 
@@ -29,3 +30,11 @@
 - Compile verification passed after implementation:
   `./gradlew --no-daemon :bluetape4k-aws-spring-boot:compileTestKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all`
 - `git diff --check` passed.
+- Diagram evidence:
+  - `python3 -c "import xml.etree.ElementTree as ET; ET.parse(...)"` passed for `bluetape4k-aws-eventbridge-class-32.svg`.
+  - `~/.local/bin/cairosvg ... -s 2` rendered `bluetape4k-aws-eventbridge-class-32.png` at `2400 x 1520`.
+  - `diagram-geometry-audit.py --fail-diagonal` reported `geometry_failures=0`.
+  - `diagram-endpoint-audit.py` reported `PASS files=1`.
+  - `diagram-mixed-corner-audit.py` reported `paths=13 q_bends=12 failures=0`.
+  - `diagram-connector-audit.py` reported `markers=0 connectors=13 cards=11 intrusions=0 crossings=0`.
+  - Full-size PNG inspection confirmed no text/card/connector overlap after moving Ktor relationship labels and shared-core delegate routes.

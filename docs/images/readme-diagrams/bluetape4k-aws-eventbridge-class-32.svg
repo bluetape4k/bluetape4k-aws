@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">EventBridge Spring Boot And Ktor Class Map</title>
+  <desc id="desc">Class diagram showing EventBridge Spring Boot and Ktor integration surfaces, shared core adapters, and the AWS SDK EventBridge async client.</desc>
+  <defs>
+    <style>
+      .canvas { fill: #f8fafc; }
+      .title { font: 700 30px "Architects Daughter", "Comic Sans MS", cursive; fill: #111827; }
+      .subtitle { font: 16px "Comic Mono", "SFMono-Regular", monospace; fill: #475569; }
+      .layer { fill: #eef6ff; stroke: #9cc7ee; stroke-width: 2; rx: 18; }
+      .layer.ktor { fill: #f1f7ec; stroke: #9ccf9a; }
+      .layer.shared { fill: #fff8e8; stroke: #e6bf63; }
+      .layer-title { font: 700 18px "Comic Mono", "SFMono-Regular", monospace; fill: #1f2937; }
+      .card { fill: #ffffff; stroke: #64748b; stroke-width: 1.6; rx: 10; }
+      .legend-box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.4; rx: 10; }
+      .interface-card { fill: #f0f9ff; stroke: #2f80bd; }
+      .impl-card { fill: #f8fafc; stroke: #475569; }
+      .config-card { fill: #fff7ed; stroke: #c47f23; }
+      .runtime-card { fill: #f3f8ee; stroke: #5e9a56; }
+      .shared-card { fill: #fffbeb; stroke: #b5851b; }
+      .aws-card { fill: #fff3e6; stroke: #d97706; }
+      .card-title { font: 700 15px "Comic Mono", "SFMono-Regular", monospace; fill: #111827; text-anchor: middle; }
+      .stereo { font: 12px "Comic Mono", "SFMono-Regular", monospace; fill: #2563a6; text-anchor: middle; }
+      .method { font: 12px "Comic Mono", "SFMono-Regular", monospace; fill: #334155; }
+      .note { font: 12px "Comic Mono", "SFMono-Regular", monospace; fill: #475569; }
+      .divider { stroke: #cbd5e1; stroke-width: 1; }
+      .connector { fill: none; stroke: #334155; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .connector.dashed { stroke-dasharray: 7 6; }
+      .connector.blue { stroke: #2f80bd; }
+      .connector.green { stroke: #4f8b47; }
+      .connector.amber { stroke: #b87912; }
+      .connector.gray { stroke: #475569; }
+      .arrow-open { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none; }
+      .triangle { fill: #f8fafc; stroke-width: 2.2; stroke-linejoin: round; stroke-dasharray: none; }
+      .legend { font: 12px "Comic Mono", "SFMono-Regular", monospace; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect class="canvas" x="0" y="0" width="1200" height="760"/>
+  <text class="title" x="600" y="42" text-anchor="middle">EventBridge Framework Integration Class Map</text>
+  <text class="subtitle" x="600" y="70" text-anchor="middle">Spring Boot auto-configuration and Ktor plugin surfaces share the focused EventBridge core adapters.</text>
+
+  <rect class="layer" x="36" y="100" width="532" height="468"/>
+  <text class="layer-title" x="62" y="132">Spring Boot 4 integration</text>
+  <rect class="layer ktor" x="632" y="100" width="532" height="468"/>
+  <text class="layer-title" x="658" y="132">Ktor 3 integration</text>
+  <rect class="layer shared" x="260" y="600" width="680" height="116"/>
+  <text class="layer-title" x="600" y="628" text-anchor="middle">Shared EventBridge core and AWS SDK</text>
+
+  <!-- Spring cards -->
+  <g id="spring-ops">
+    <rect id="card-spring-ops" class="card interface-card" x="78" y="160" width="218" height="156"/>
+    <text class="stereo" x="187" y="184">&lt;&lt;interface&gt;&gt;</text>
+    <text class="card-title" x="187" y="207">EventBridgeOperations</text>
+    <line class="divider" x1="78" y1="222" x2="296" y2="222"/>
+    <text class="method" x="94" y="246">+ create/delete event bus</text>
+    <text class="method" x="94" y="266">+ put/delete rule</text>
+    <text class="method" x="94" y="286">+ put/remove targets</text>
+    <text class="method" x="94" y="306">+ putEvents(raw response)</text>
+  </g>
+
+  <g id="spring-template">
+    <rect id="card-spring-template" class="card impl-card" x="78" y="366" width="218" height="132"/>
+    <text class="card-title" x="187" y="392">EventBridge</text>
+    <text class="card-title" x="187" y="412">CoroutinesTemplate</text>
+    <line class="divider" x1="78" y1="426" x2="296" y2="426"/>
+    <text class="method" x="94" y="450">- eventBridgeAsyncClient</text>
+    <text class="method" x="94" y="470">- properties</text>
+    <text class="method" x="94" y="490">+ suspend operations</text>
+  </g>
+
+  <g id="spring-auto">
+    <rect id="card-spring-auto" class="card config-card" x="334" y="160" width="200" height="150"/>
+    <text class="card-title" x="434" y="190">EventBridge</text>
+    <text class="card-title" x="434" y="210">AutoConfiguration</text>
+    <line class="divider" x1="334" y1="225" x2="534" y2="225"/>
+    <text class="method" x="350" y="249">+ EventBridgeAsyncClient</text>
+    <text class="method" x="350" y="269">+ EventBridgeTemplate</text>
+    <text class="method" x="350" y="289">+ customizers</text>
+  </g>
+
+  <g id="spring-props">
+    <rect id="card-spring-props" class="card config-card" x="334" y="366" width="200" height="132"/>
+    <text class="card-title" x="434" y="392">EventBridgeProperties</text>
+    <line class="divider" x1="334" y1="410" x2="534" y2="410"/>
+    <text class="method" x="350" y="434">+ enabled</text>
+    <text class="method" x="350" y="454">+ region / endpoint</text>
+    <text class="method" x="350" y="474">+ defaultEventBusName</text>
+  </g>
+
+  <!-- Ktor cards -->
+  <g id="ktor-ops">
+    <rect id="card-ktor-ops" class="card interface-card" x="670" y="150" width="224" height="166"/>
+    <text class="stereo" x="782" y="174">&lt;&lt;interface&gt;&gt;</text>
+    <text class="card-title" x="782" y="198">EventBridge</text>
+    <text class="card-title" x="782" y="218">KtorOperations</text>
+    <line class="divider" x1="670" y1="234" x2="894" y2="234"/>
+    <text class="method" x="686" y="258">+ suspend operations</text>
+    <text class="method" x="686" y="278">+ *Async futures</text>
+    <text class="method" x="686" y="298">+ putEvents(raw response)</text>
+  </g>
+
+  <g id="ktor-template">
+    <rect id="card-ktor-template" class="card impl-card" x="670" y="366" width="224" height="132"/>
+    <text class="card-title" x="782" y="392">EventBridge</text>
+    <text class="card-title" x="782" y="412">KtorTemplate</text>
+    <line class="divider" x1="670" y1="426" x2="894" y2="426"/>
+    <text class="method" x="686" y="450">- eventBridgeAsyncClient</text>
+    <text class="method" x="686" y="470">- defaultEventBusName</text>
+    <text class="method" x="686" y="490">+ await() or SDK future</text>
+  </g>
+
+  <g id="ktor-plugin">
+    <rect id="card-ktor-plugin" class="card runtime-card" x="936" y="130" width="190" height="112"/>
+    <text class="card-title" x="1031" y="160">EventBridge</text>
+    <text class="card-title" x="1031" y="180">KtorPlugin</text>
+    <line class="divider" x1="936" y1="196" x2="1126" y2="196"/>
+    <text class="method" x="952" y="220">+ install runtime</text>
+  </g>
+
+  <g id="ktor-config">
+    <rect id="card-ktor-config" class="card config-card" x="936" y="286" width="190" height="126"/>
+    <text class="card-title" x="1031" y="314">EventBridge</text>
+    <text class="card-title" x="1031" y="334">KtorPluginConfig</text>
+    <line class="divider" x1="936" y1="350" x2="1126" y2="350"/>
+    <text class="method" x="952" y="374">+ injected client/ops</text>
+    <text class="method" x="952" y="394">+ region / endpoint</text>
+  </g>
+
+  <g id="ktor-runtime">
+    <rect id="card-ktor-runtime" class="card runtime-card" x="936" y="452" width="190" height="92"/>
+    <text class="card-title" x="1031" y="482">EventBridge</text>
+    <text class="card-title" x="1031" y="502">KtorRuntime</text>
+    <line class="divider" x1="936" y1="516" x2="1126" y2="516"/>
+    <text class="method" x="952" y="538">+ stop owned client</text>
+  </g>
+
+  <!-- Shared cards -->
+  <g id="core-adapters">
+    <rect id="card-core-adapters" class="card shared-card" x="350" y="642" width="230" height="56"/>
+    <text class="card-title" x="465" y="666">EventBridge core adapters</text>
+    <text class="note" x="372" y="688">request builders + coroutine/future wrappers</text>
+  </g>
+
+  <g id="aws-client">
+    <rect id="card-aws-client" class="card aws-card" x="660" y="642" width="230" height="56"/>
+    <text class="card-title" x="775" y="666">EventBridgeAsyncClient</text>
+    <text class="note" x="692" y="688">AWS SDK Java v2 async client</text>
+  </g>
+
+  <!-- Relationships: implementation arrows use direct hollow triangle heads. -->
+  <path class="connector dashed blue" d="M 187 366 L 187 332"/>
+  <polygon class="triangle" points="187,316 176,332 198,332" stroke="#2f80bd"/>
+  <text class="note" x="204" y="346">implements</text>
+
+  <path class="connector dashed green" d="M 782 366 L 782 332"/>
+  <polygon class="triangle" points="782,316 771,332 793,332" stroke="#4f8b47"/>
+  <text class="note" x="799" y="346">implements</text>
+
+  <path class="connector amber" d="M 334 236 L 316 236 Q 306 236 306 246 L 306 432 Q 306 442 316 442 L 296 442"/>
+  <polyline class="arrow-open" points="309,434 296,442 309,450" stroke="#b87912"/>
+  <text class="note" x="309" y="335">creates template</text>
+
+  <path class="connector amber" d="M 434 310 L 434 366"/>
+  <polyline class="arrow-open" points="426,352 434,366 442,352" stroke="#b87912"/>
+  <text class="note" x="448" y="342">binds</text>
+
+  <path class="connector green" d="M 1031 242 L 1031 286"/>
+  <polyline class="arrow-open" points="1023,272 1031,286 1039,272" stroke="#4f8b47"/>
+  <text class="note" x="1044" y="266">configures</text>
+
+  <path class="connector green" d="M 1031 412 L 1031 452"/>
+  <polyline class="arrow-open" points="1023,438 1031,452 1039,438" stroke="#4f8b47"/>
+  <text class="note" x="1044" y="435">builds runtime</text>
+
+  <path class="connector green" d="M 936 360 L 918 360 Q 908 360 908 370 L 908 432 Q 908 442 918 442 L 894 442"/>
+  <polyline class="arrow-open" points="907,434 894,442 907,450" stroke="#4f8b47"/>
+
+  <path class="connector green" d="M 936 498 L 916 498 Q 906 498 906 488 L 906 252 Q 906 242 916 242 L 894 242"/>
+  <polyline class="arrow-open" points="907,234 894,242 907,250" stroke="#4f8b47"/>
+
+  <path class="connector gray" d="M 187 498 L 187 536 Q 187 546 197 546 L 320 546 Q 330 546 330 556 L 330 646 Q 330 656 340 656 L 350 656"/>
+  <polyline class="arrow-open" points="336,648 350,656 336,664" stroke="#475569"/>
+  <text class="note" x="218" y="540">delegates</text>
+
+  <path class="connector gray" d="M 782 498 L 782 536 Q 782 546 772 546 L 340 546 Q 330 546 330 556 L 330 680 Q 330 690 340 690 L 350 690"/>
+  <polyline class="arrow-open" points="336,682 350,690 336,698" stroke="#475569"/>
+  <text class="note" x="674" y="540">delegates</text>
+
+  <path class="connector gray" d="M 580 670 L 660 670"/>
+  <polyline class="arrow-open" points="646,662 660,670 646,678" stroke="#475569"/>
+  <text class="note" x="604" y="660">calls</text>
+
+  <g id="legend">
+    <rect class="legend-box" x="70" y="620" width="185" height="76"/>
+    <text class="legend" x="88" y="644">Legend</text>
+    <path class="connector dashed blue" d="M 88 660 L 130 660"/>
+    <polygon class="triangle" points="145,660 130,652 130,668" stroke="#2f80bd"/>
+    <text class="legend" x="156" y="664">implements</text>
+    <path class="connector gray" d="M 88 682 L 142 682"/>
+    <polyline class="arrow-open" points="128,674 142,682 128,690" stroke="#475569"/>
+    <text class="legend" x="156" y="686">creates / delegates</text>
+  </g>
+</svg>

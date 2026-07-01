@@ -956,6 +956,8 @@ adds `EventBridgeOperations`, and Ktor adds `EventBridgeKtorPlugin`. Add
 `software.amazon.awssdk:eventbridge` or `aws.sdk.kotlin:eventbridge` at runtime
 for the layer you use.
 
+![EventBridge Spring Boot and Ktor class map](docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
+
 `PutEvents`, `PutTargets`, and `RemoveTargets` can partially succeed. The
 helpers return raw SDK responses so callers can inspect failed-entry counts and
 per-entry failure details. Scheduler, global endpoints, cross-account target
