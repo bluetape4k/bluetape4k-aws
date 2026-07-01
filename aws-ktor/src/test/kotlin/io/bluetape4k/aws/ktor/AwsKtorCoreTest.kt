@@ -125,4 +125,38 @@ class AwsKtorCoreTest {
 
         application.awsKtorDefaults().snsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
     }
+
+    @Test
+    fun `core plugin stores Kinesis customizers`() = testApplication {
+        val customizer = AwsKtorKinesisAsyncClientCustomizer { builder ->
+            builder.overrideConfiguration { it.putHeader("x-test", "kinesis") }
+        }
+
+        application {
+            install(AwsKtorCore) {
+                kinesisAsyncClient(customizer)
+            }
+        }
+
+        startApplication()
+
+        application.awsKtorDefaults().kinesisAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
+    }
+
+    @Test
+    fun `core plugin stores STS customizers`() = testApplication {
+        val customizer = AwsKtorStsAsyncClientCustomizer { builder ->
+            builder.overrideConfiguration { it.putHeader("x-test", "sts") }
+        }
+
+        application {
+            install(AwsKtorCore) {
+                stsAsyncClient(customizer)
+            }
+        }
+
+        startApplication()
+
+        application.awsKtorDefaults().stsAsyncClientCustomizers.single() shouldBeSameInstanceAs customizer
+    }
 }
