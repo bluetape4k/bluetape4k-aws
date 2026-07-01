@@ -7,6 +7,54 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added core EventBridge wrappers and coroutine DSLs across the Java and Kotlin
+  AWS facades, then exposed them through Spring Boot auto-configuration and
+  Ktor plugins
+  ([#308](https://github.com/bluetape4k/bluetape4k-aws/issues/308),
+  [#309](https://github.com/bluetape4k/bluetape4k-aws/issues/309)).
+- Added Secrets Manager and Parameter Store wrappers in the core Java/Kotlin
+  modules for reusable configuration and secret retrieval
+  ([#268](https://github.com/bluetape4k/bluetape4k-aws/issues/268)).
+- Promoted RDS IAM authentication token helpers into the core AWS modules and
+  delegated JDBC connection refresh to the shared bluetape4k JDBC helper
+  boundary
+  ([#269](https://github.com/bluetape4k/bluetape4k-aws/issues/269),
+  [#295](https://github.com/bluetape4k/bluetape4k-aws/issues/295)).
+- Added Spring Boot Kinesis auto-configuration and coroutine operations
+  ([#270](https://github.com/bluetape4k/bluetape4k-aws/issues/270)).
+- Added Ktor SES v2, SNS, Kinesis, and STS integration helpers
+  ([#271](https://github.com/bluetape4k/bluetape4k-aws/issues/271),
+  [#272](https://github.com/bluetape4k/bluetape4k-aws/issues/272)).
+- Added Spring Boot and Ktor `aws-exposed` settings integration backed by
+  Secrets Manager, Parameter Store, and Ktor database settings plugin coverage
+  ([#180](https://github.com/bluetape4k/bluetape4k-aws/issues/180),
+  [#181](https://github.com/bluetape4k/bluetape4k-aws/issues/181)).
+- Added Ktor example modules for the remaining service coverage gaps after the
+  0.5.0 service expansion
+  ([#273](https://github.com/bluetape4k/bluetape4k-aws/issues/273)).
+
+### Changed
+
+- Opened the `0.5.0` snapshot line after the `0.4.0` release and aligned local
+  bluetape4k BOM refs to `bluetape4k-bom:1.11.1-SNAPSHOT` and
+  `bluetape4k-exposed-bom:1.12.0-SNAPSHOT`.
+- Refreshed README diagrams for EventBridge coverage, including the service
+  matrix, integration view, and class diagram routing
+  ([#326](https://github.com/bluetape4k/bluetape4k-aws/pull/326)).
+
+### Fixed
+
+- Hardened the release asset lookup for gitleaks so CI resolves release
+  artifacts from metadata instead of relying on a brittle URL shape
+  ([#275](https://github.com/bluetape4k/bluetape4k-aws/issues/275)).
+- Closed 0.5.0 hygiene gaps around recent documentation formatting, validation
+  helper usage, and public KDoc language consistency
+  ([#284](https://github.com/bluetape4k/bluetape4k-aws/issues/284),
+  [#285](https://github.com/bluetape4k/bluetape4k-aws/issues/285),
+  [#286](https://github.com/bluetape4k/bluetape4k-aws/issues/286)).
+
 ## [0.4.0] - 2026-06-27
 
 ### Added
