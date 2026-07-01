@@ -4,7 +4,7 @@
 
 AWS Java SDK v2를 Spring Boot 4에서 바로 쓰기 위한 자동 설정 모듈입니다.
 Coroutine 우선 템플릿, SQS 리스너 컨테이너, CloudWatch metric/log helper,
-EC2 IMDS metadata operation, Kinesis operations, 원격 Environment source,
+EC2 IMDS metadata operation, Kinesis와 EventBridge operations, 원격 Environment source,
 AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런타임 의존성은 사용하지
 않습니다.
 
@@ -35,6 +35,8 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
 - **Kinesis** — `KinesisCoroutinesTemplate`로 stream 생성, record publish, shard
   iterator 조회, 제한된 `GetRecords` polling, single-shard cold `Flow<Record>`를
   제공합니다.
+- **EventBridge** — `EventBridgeCoroutinesTemplate`로 event bus, rule, target, list,
+  `PutEvents` operation을 제공하고 raw partial-failure response를 그대로 노출합니다.
 - **SES** — `SesCoroutinesMailSender`로 simple, template, raw, attachment,
   custom-header email send를 지원하고, 선택적 Spring `JavaMailSender` adapter를 제공합니다.
 - **SQS** — `SqsCoroutinesTemplate`로 큐 조회·생성, 송신, 수신, visibility 변경,
@@ -77,6 +79,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3vectors")
+    implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sqs")
@@ -628,6 +631,44 @@ class OrderStream(
 `KinesisOperations`는 명시적인 operations API입니다. listener container를 시작하거나
 checkpoint를 관리하지 않습니다. Flow를 수집할 때 sequence number나 application
 checkpoint는 애플리케이션의 저장소에 직접 기록하세요.
+
+### EventBridge — event bus, rule, target, PutEvents
+
+```yaml
+bluetape4k:
+  aws:
+    eventbridge:
+      region: us-east-1
+      default-event-bus-name: orders
+```
+
+```kotlin
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.aws.spring.eventbridge.EventBridgeOperations
+
+class OrderEvents(
+    private val eventBridge: EventBridgeOperations,
+) {
+    suspend fun publishCreated(orderId: String) {
+        val response = eventBridge.putEvents(
+            listOf(
+                putEventsRequestEntryOf(
+                    source = "orders",
+                    detailType = "order.created",
+                    detail = """{"orderId":"$orderId"}""",
+                )
+            )
+        )
+        require(response.failedEntryCount() == 0) { "EventBridge rejected one or more entries." }
+    }
+}
+```
+
+EventBridge operations를 쓰려면 `software.amazon.awssdk:eventbridge`를 추가하세요.
+Template은 event bus 이름을 생략한 rule, target, list 호출에만
+`default-event-bus-name`을 적용하고, `PutEvents` entry는 변경하지 않습니다.
+`PutEvents`, `PutTargets`, `RemoveTargets`는 raw SDK response를 반환하므로 partial
+failure를 호출자가 직접 확인해야 합니다.
 
 ### SQS — `@SqsListener` 어노테이션
 

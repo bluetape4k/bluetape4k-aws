@@ -17,6 +17,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClientBuilder
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
 import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClientBuilder
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
@@ -48,6 +49,7 @@ class AwsKtorDefaults(
     sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer> = emptyList(),
     cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer> = emptyList(),
     cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer> = emptyList(),
+    eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer> = emptyList(),
     s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer> = emptyList(),
     s3VectorsAsyncClientCustomizers: List<AwsKtorS3VectorsAsyncClientCustomizer> = emptyList(),
     sesV2AsyncClientCustomizers: List<AwsKtorSesV2AsyncClientCustomizer> = emptyList(),
@@ -70,6 +72,10 @@ class AwsKtorDefaults(
     @Transient
     private val cloudWatchLogsAsyncClientCustomizersValue: List<AwsKtorCloudWatchLogsAsyncClientCustomizer>? =
         cloudWatchLogsAsyncClientCustomizers
+
+    @Transient
+    private val eventBridgeAsyncClientCustomizersValue: List<AwsKtorEventBridgeAsyncClientCustomizer>? =
+        eventBridgeAsyncClientCustomizers
 
     @Transient
     private val s3ControlAsyncClientCustomizersValue: List<AwsKtorS3ControlAsyncClientCustomizer>? =
@@ -116,6 +122,10 @@ class AwsKtorDefaults(
     val cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer>
         get() = cloudWatchLogsAsyncClientCustomizersValue ?: emptyList()
 
+    /** Shared customizers for plugin-created AWS SDK Java v2 EventBridge async clients. */
+    val eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer>
+        get() = eventBridgeAsyncClientCustomizersValue ?: emptyList()
+
     /** Shared customizers for plugin-created AWS SDK Java v2 S3 Control async clients. */
     val s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer>
         get() = s3ControlAsyncClientCustomizersValue ?: emptyList()
@@ -154,6 +164,7 @@ class AwsKtorDefaults(
                 sqsAsyncClientCustomizers == other.sqsAsyncClientCustomizers &&
                 cloudWatchAsyncClientCustomizers == other.cloudWatchAsyncClientCustomizers &&
                 cloudWatchLogsAsyncClientCustomizers == other.cloudWatchLogsAsyncClientCustomizers &&
+                eventBridgeAsyncClientCustomizers == other.eventBridgeAsyncClientCustomizers &&
                 s3ControlAsyncClientCustomizers == other.s3ControlAsyncClientCustomizers &&
                 s3VectorsAsyncClientCustomizers == other.s3VectorsAsyncClientCustomizers &&
                 sesV2AsyncClientCustomizers == other.sesV2AsyncClientCustomizers &&
@@ -174,6 +185,7 @@ class AwsKtorDefaults(
             sqsAsyncClientCustomizers,
             cloudWatchAsyncClientCustomizers,
             cloudWatchLogsAsyncClientCustomizers,
+            eventBridgeAsyncClientCustomizers,
             s3ControlAsyncClientCustomizers,
             s3VectorsAsyncClientCustomizers,
             sesV2AsyncClientCustomizers,
@@ -194,6 +206,7 @@ class AwsKtorDefaults(
             .add("sqsAsyncClientCustomizers", sqsAsyncClientCustomizers)
             .add("cloudWatchAsyncClientCustomizers", cloudWatchAsyncClientCustomizers)
             .add("cloudWatchLogsAsyncClientCustomizers", cloudWatchLogsAsyncClientCustomizers)
+            .add("eventBridgeAsyncClientCustomizers", eventBridgeAsyncClientCustomizers)
             .add("s3ControlAsyncClientCustomizers", s3ControlAsyncClientCustomizers)
             .add("s3VectorsAsyncClientCustomizers", s3VectorsAsyncClientCustomizers)
             .add("sesV2AsyncClientCustomizers", sesV2AsyncClientCustomizers)
@@ -256,6 +269,7 @@ class AwsKtorCoreConfig {
     private val sqsAsyncClientCustomizers = mutableListOf<AwsKtorSqsAsyncClientCustomizer>()
     private val cloudWatchAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchAsyncClientCustomizer>()
     private val cloudWatchLogsAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
+    private val eventBridgeAsyncClientCustomizers = mutableListOf<AwsKtorEventBridgeAsyncClientCustomizer>()
     private val s3ControlAsyncClientCustomizers = mutableListOf<AwsKtorS3ControlAsyncClientCustomizer>()
     private val s3VectorsAsyncClientCustomizers = mutableListOf<AwsKtorS3VectorsAsyncClientCustomizer>()
     private val sesV2AsyncClientCustomizers = mutableListOf<AwsKtorSesV2AsyncClientCustomizer>()
@@ -305,6 +319,13 @@ class AwsKtorCoreConfig {
     }
 
     /**
+     * Adds a global EventBridge async client builder customizer.
+     */
+    fun eventBridgeAsyncClient(customizer: AwsKtorEventBridgeAsyncClientCustomizer) {
+        eventBridgeAsyncClientCustomizers += customizer
+    }
+
+    /**
      * Adds a global S3 Control async client builder customizer.
      */
     fun s3ControlAsyncClient(customizer: AwsKtorS3ControlAsyncClientCustomizer) {
@@ -351,6 +372,7 @@ class AwsKtorCoreConfig {
             sqsAsyncClientCustomizers = sqsAsyncClientCustomizers.toList(),
             cloudWatchAsyncClientCustomizers = cloudWatchAsyncClientCustomizers.toList(),
             cloudWatchLogsAsyncClientCustomizers = cloudWatchLogsAsyncClientCustomizers.toList(),
+            eventBridgeAsyncClientCustomizers = eventBridgeAsyncClientCustomizers.toList(),
             s3ControlAsyncClientCustomizers = s3ControlAsyncClientCustomizers.toList(),
             s3VectorsAsyncClientCustomizers = s3VectorsAsyncClientCustomizers.toList(),
             sesV2AsyncClientCustomizers = sesV2AsyncClientCustomizers.toList(),
@@ -385,6 +407,13 @@ fun interface AwsKtorCloudWatchAsyncClientCustomizer {
  */
 fun interface AwsKtorCloudWatchLogsAsyncClientCustomizer {
     fun customize(builder: CloudWatchLogsAsyncClientBuilder)
+}
+
+/**
+ * Customizes plugin-created AWS SDK Java v2 EventBridge async client builders.
+ */
+fun interface AwsKtorEventBridgeAsyncClientCustomizer {
+    fun customize(builder: EventBridgeAsyncClientBuilder)
 }
 
 /**

@@ -5,9 +5,9 @@ English | [한국어](README.ko.md)
 Ktor 3 integration for bluetape4k AWS modules. It provides AWS SigV4 signing
 for Ktor `HttpClient`, a coroutine-friendly S3 REST client built on that
 signing path, and server-side plugins that bind SES v2, SNS, SQS, DynamoDB,
-AWS-backed Exposed registries, S3 Access Grants, S3 Vectors, IMDS, CloudWatch,
-and CloudWatch Logs to the Ktor application lifecycle without taking ownership
-away from the application.
+AWS-backed Exposed registries, S3 Access Grants, S3 Vectors, EventBridge, IMDS,
+CloudWatch, and CloudWatch Logs to the Ktor application lifecycle without
+taking ownership away from the application.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
 
@@ -30,6 +30,8 @@ away from the application.
   access and discovery operations.
 - `S3VectorsKtorPlugin` for optional S3 Vectors discovery, vector write/read,
   listing, and query operations.
+- `EventBridgeKtorPlugin` for event bus, rule, target, list, and `PutEvents`
+  operations with raw partial-failure responses.
 - `SqsConsumer` Ktor `ApplicationPlugin` for coroutine SQS polling, publishing,
   graceful shutdown, retry visibility control, and optional manual DLQ
   forwarding.
@@ -68,6 +70,10 @@ dependencies {
     // S3 Vectors plugin usage
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:s3vectors")
+
+    // EventBridge plugin usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:eventbridge")
 
     // SQS consumer/publisher usage
     implementation("io.ktor:ktor-server-core")
@@ -140,7 +146,8 @@ fun Application.module() {
 ```
 
 `S3KtorClient`, `SqsConsumer`, `SesKtorPlugin`, `SnsKtorPlugin`,
-`CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, and `DynamoDbKtorPlugin`
+`EventBridgeKtorPlugin`, `CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`,
+and `DynamoDbKtorPlugin`
 can inherit shared defaults. Set a service-local `region`, `endpointOverride` /
 `endpointUrl`, or credentials provider when one integration needs a different
 target. Use local endpoints such as `http://localhost:4566` with dummy test
@@ -425,6 +432,54 @@ The plugin can use a caller-owned `S3VectorsOperations`, a caller-owned
 `S3VectorsAsyncClient`, or a plugin-owned client built from `AwsKtorCore`
 defaults plus S3 Vectors customizers. It does not claim emulator-backed S3
 Vectors behavior.
+
+## EventBridge Server Plugin
+
+`EventBridgeKtorPlugin` installs a coroutine and future-friendly operations
+facade backed by AWS SDK Java v2 `EventBridgeAsyncClient`. It can use an
+application-owned `EventBridgeKtorOperations`, an application-owned client, or a
+plugin-owned client created from `AwsKtorCore` defaults plus EventBridge
+customizers. Injected clients are not closed by the plugin.
+
+```kotlin
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.eventbridge.EventBridgeKtorPlugin
+import io.bluetape4k.aws.ktor.eventbridge.eventBridge
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        ktorCore()
+    }
+
+    install(EventBridgeKtorPlugin) {
+        defaultEventBusName = "orders"
+    }
+}
+
+suspend fun Application.publishOrderCreated(orderId: String) {
+    val response = eventBridge().putEvents(
+        listOf(
+            putEventsRequestEntryOf(
+                source = "orders",
+                detailType = "order.created",
+                detail = """{"orderId":"$orderId"}""",
+            )
+        )
+    )
+    require(response.failedEntryCount() == 0) { "EventBridge rejected one or more entries." }
+}
+```
+
+`defaultEventBusName` applies only to rule, target, and list operations that
+omit an event bus name. `PutEvents` entries are not rewritten. `PutEvents`,
+`PutTargets`, and `RemoveTargets` can partially succeed, so callers must inspect
+the returned SDK response.
 
 ## CloudWatch Metrics And Logs
 
@@ -850,6 +905,14 @@ render as redacted in generated diagnostics.
 | `SnsKtorPlugin.snsAsyncClient` | `null` | Optional application-owned SNS async client. Injected clients are not closed by the plugin. |
 | `SnsKtorPlugin.snsOperations` | `null` | Optional application-owned SNS operations facade, useful for tests or custom wrappers. |
 | `SnsKtorPlugin.snsHttpMessageParser` | strict default parser | Optional application-owned parser for SNS HTTP endpoint JSON. |
+
+### EventBridge Options
+
+| Option | Default | Description |
+|---|---:|---|
+| `EventBridgeKtorPlugin.defaultEventBusName` | `null` | Default event bus for rule, target, and list calls that omit one. |
+| `EventBridgeKtorPlugin.eventBridgeAsyncClient` | `null` | Optional application-owned EventBridge async client. Injected clients are not closed by the plugin. |
+| `EventBridgeKtorPlugin.eventBridgeOperations` | `null` | Optional application-owned EventBridge operations facade, useful for tests or custom wrappers. |
 
 ### SQS Consumer Options
 

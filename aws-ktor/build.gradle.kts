@@ -23,6 +23,7 @@ dependencies {
     api(libs.aws2.auth)
     compileOnly(libs.aws2.cloudwatch)
     compileOnly(libs.aws2.cloudwatchlogs)
+    compileOnly(libs.aws2.eventbridge)
     compileOnly(libs.aws2.imds)
     compileOnly(libs.aws2.s3control)
     compileOnly(libs.aws2.s3vectors)
@@ -44,6 +45,7 @@ dependencies {
     // Test
     testImplementation(libs.aws2.cloudwatch)
     testImplementation(libs.aws2.cloudwatchlogs)
+    testImplementation(libs.aws2.eventbridge)
     testImplementation(libs.aws2.imds)
     testImplementation(libs.aws2.s3)
     testImplementation(libs.aws2.s3control)
