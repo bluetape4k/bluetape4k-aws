@@ -651,6 +651,8 @@ application checkpoints in your own persistence layer when you collect the Flow.
 
 ### EventBridge — event bus, rules, targets, and PutEvents
 
+![EventBridge Spring Boot and Ktor class map](../docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
+
 ```yaml
 bluetape4k:
   aws:

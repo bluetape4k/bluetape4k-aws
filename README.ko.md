@@ -942,6 +942,8 @@ AWS Kotlin SDK 모듈은 native suspend helper를 제공합니다. Spring Boot�
 런타임에는 `software.amazon.awssdk:eventbridge` 또는 `aws.sdk.kotlin:eventbridge`를
 추가해야 합니다.
 
+![EventBridge Spring Boot and Ktor class map](docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
+
 `PutEvents`, `PutTargets`, `RemoveTargets`는 일부 항목만 실패할 수 있습니다. Helper는
 성공 여부를 Boolean으로 축약하지 않고 SDK 응답을 그대로 반환하므로, 호출자가 failed-entry
 count와 항목별 실패 정보를 확인해야 합니다. Scheduler, global endpoint,

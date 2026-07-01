@@ -634,6 +634,8 @@ checkpoint는 애플리케이션의 저장소에 직접 기록하세요.
 
 ### EventBridge — event bus, rule, target, PutEvents
 
+![EventBridge Spring Boot and Ktor class map](../docs/images/readme-diagrams/bluetape4k-aws-eventbridge-class-32.png)
+
 ```yaml
 bluetape4k:
   aws:
