@@ -32,9 +32,10 @@
 - `git diff --check` passed.
 - Diagram evidence:
   - `python3 -c "import xml.etree.ElementTree as ET; ET.parse(...)"` passed for `bluetape4k-aws-eventbridge-class-32.svg`.
-  - `~/.local/bin/cairosvg ... -s 2` rendered `bluetape4k-aws-eventbridge-class-32.png` at `2400 x 1520`.
+  - `~/.local/bin/cairosvg ... -s 2` rendered `bluetape4k-aws-eventbridge-class-32.png` at `3000 x 1960`.
   - `diagram-geometry-audit.py --fail-diagonal` reported `geometry_failures=0`.
   - `diagram-endpoint-audit.py` reported `PASS files=1`.
-  - `diagram-mixed-corner-audit.py` reported `paths=13 q_bends=12 failures=0`.
-  - `diagram-connector-audit.py` reported `markers=0 connectors=13 cards=11 intrusions=0 crossings=0`.
-  - Full-size PNG inspection confirmed no text/card/connector overlap after moving Ktor relationship labels and shared-core delegate routes.
+  - `diagram-mixed-corner-audit.py` reported `paths=12 q_bends=4 failures=0`.
+  - `diagram-connector-audit.py` reported `markers=0 connectors=12 cards=11 intrusions=0 crossings=0`.
+  - Full-size PNG inspection failed the earlier compact layout, so the diagram was expanded to a `1500 x 980` SVG canvas with wider card spacing and a dedicated lower delegate corridor.
+  - Full-size PNG re-inspection confirmed no text/card/connector overlap, no card intrusions, and readable rounded turns after the expansion.
