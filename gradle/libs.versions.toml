@@ -174,6 +174,7 @@ aws2-cloudwatch = { module = "software.amazon.awssdk:cloudwatch", version.ref = 
 aws2-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "aws2" }
 aws2-imds = { module = "software.amazon.awssdk:imds", version.ref = "aws2" }
 aws2-kinesis = { module = "software.amazon.awssdk:kinesis", version.ref = "aws2" }
+aws2-eventbridge = { module = "software.amazon.awssdk:eventbridge", version.ref = "aws2" }
 aws2-sts = { module = "software.amazon.awssdk:sts", version.ref = "aws2" }
 aws2-ec2 = { module = "software.amazon.awssdk:ec2", version.ref = "aws2" }
 aws2-utils = { module = "software.amazon.awssdk:utils", version.ref = "aws2" }
@@ -197,6 +198,7 @@ aws-kotlin-kms = { module = "aws.sdk.kotlin:kms", version.ref = "aws-kotlin" }
 aws-kotlin-cloudwatch = { module = "aws.sdk.kotlin:cloudwatch", version.ref = "aws-kotlin" }
 aws-kotlin-cloudwatchlogs = { module = "aws.sdk.kotlin:cloudwatchlogs", version.ref = "aws-kotlin" }
 aws-kotlin-kinesis = { module = "aws.sdk.kotlin:kinesis", version.ref = "aws-kotlin" }
+aws-kotlin-eventbridge = { module = "aws.sdk.kotlin:eventbridge", version.ref = "aws-kotlin" }
 aws-kotlin-sts = { module = "aws.sdk.kotlin:sts", version.ref = "aws-kotlin" }
 aws-kotlin-http-client-engine-crt = { module = "aws.sdk.kotlin:http-client-engine-crt", version.ref = "aws-kotlin" }
 

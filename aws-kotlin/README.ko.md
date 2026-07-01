@@ -33,6 +33,7 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 | **CloudWatch**      | 메트릭 발행/조회, DSL(`metricDatum {}`)                  |
 | **CloudWatch Logs** | 로그 이벤트 전송, DSL(`inputLogEvent {}`)                |
 | **Kinesis**         | 스트림 레코드 전송, `recordFlow {}` 샤드별 cold Flow, DSL(`putRecordRequestOf {}`) |
+| **EventBridge**     | Event bus, rule, target, list, `PutEvents` suspend helper |
 | **STS**             | AssumeRole, CallerIdentity, DSL(`stsClientOf {}`) |
 | **Secrets Manager** | Redacted secret value, client lifecycle helper, 요청 DSL |
 | **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL |
@@ -241,6 +242,31 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 | 재시도 불가 `KinesisException` | 즉시 예외 전파 |
 | `CancellationException` | 즉시 예외 전파 |
 
+### EventBridge (native suspend)
+
+```kotlin
+import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
+import io.bluetape4k.aws.kotlin.eventbridge.putEvents
+import io.bluetape4k.aws.kotlin.eventbridge.model.putEventsRequestEntryOf
+
+suspend fun publishOrderEvent(client: EventBridgeClient) {
+    val entry = putEventsRequestEntryOf(
+        source = "orders",
+        detailType = "OrderCreated",
+        detail = """{"orderId":"o-1"}""",
+        eventBusName = "orders-bus",
+    )
+
+    val response = client.putEvents(listOf(entry))
+    // 일부 항목 실패 여부는 response.failedEntryCount, response.entries로 확인합니다.
+}
+```
+
+EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK 응답을 그대로 반환합니다.
+런타임에는 `aws.sdk.kotlin:eventbridge`를 추가해야 합니다. Scheduler, framework integration,
+global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은
+이 모듈 범위에 포함하지 않습니다.
+
 ### Secrets Manager와 Parameter Store
 
 ```kotlin
@@ -348,6 +374,7 @@ dependencies {
     implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... 필요한 서비스 추가
 }
