@@ -35,6 +35,7 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 | **CloudWatch**      | Metric publishing/querying, DSL (`metricDatum {}`)      |
 | **CloudWatch Logs** | Log event publishing, DSL (`inputLogEvent {}`)          |
 | **Kinesis**         | Stream record publishing, `recordFlow {}` cold Flow per shard, DSL (`putRecordRequestOf {}`) |
+| **EventBridge**     | Event bus, rule, target, list, and `PutEvents` suspend helpers |
 | **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)      |
 | **Secrets Manager** | Redacted secret values, client lifecycle helpers, request DSLs |
 | **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs |
@@ -244,6 +245,31 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 | Non-retryable `KinesisException` | Propagated immediately |
 | `CancellationException` | Propagated immediately |
 
+### EventBridge (native suspend)
+
+```kotlin
+import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
+import io.bluetape4k.aws.kotlin.eventbridge.putEvents
+import io.bluetape4k.aws.kotlin.eventbridge.model.putEventsRequestEntryOf
+
+suspend fun publishOrderEvent(client: EventBridgeClient) {
+    val entry = putEventsRequestEntryOf(
+        source = "orders",
+        detailType = "OrderCreated",
+        detail = """{"orderId":"o-1"}""",
+        eventBusName = "orders-bus",
+    )
+
+    val response = client.putEvents(listOf(entry))
+    // Inspect response.failedEntryCount and response.entries for partial failures.
+}
+```
+
+EventBridge helpers keep one SDK request per call and return raw SDK responses.
+Add `aws.sdk.kotlin:eventbridge` at runtime. Scheduler, framework integrations,
+global endpoints, cross-account target orchestration, and target-specific
+validation beyond SDK model types are outside this module.
+
 ### Secrets Manager and Parameter Store
 
 ```kotlin
@@ -355,6 +381,7 @@ dependencies {
     implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... add other services as needed
 }

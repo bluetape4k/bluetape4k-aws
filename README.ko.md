@@ -26,7 +26,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 ## 제공 기능
 
 - **Kotlin-first AWS 클라이언트** — Java SDK v2 coroutine adapter, AWS Kotlin SDK helper, 작은 request DSL
-- **서비스 범위** — DynamoDB, S3, S3 Vectors, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, STS, RDS IAM, Secrets Manager, Parameter Store
+- **서비스 범위** — DynamoDB, S3, S3 Vectors, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, EventBridge, STS, RDS IAM, Secrets Manager, Parameter Store
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener, auto-configuration 제공
 - **Ktor 3 통합** — SigV4 signing, coroutine S3 접근, SQS consumer runtime, DynamoDB server repository, EC2 IMDS helper, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 Floci-first emulator와 coverage gap을 위한 명시적 LocalStack fallback 검증
@@ -45,8 +45,8 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 
 | 모듈 | 아티팩트 | 설명 |
 |---|---|---|
-| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
-| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
+| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
+| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, SES v2 및 SNS server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
@@ -123,6 +123,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:kinesis")
+    implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:rds")
     implementation("software.amazon.awssdk:sts")
 }
@@ -151,6 +152,7 @@ dependencies {
     implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
 }
 ```
@@ -891,6 +893,19 @@ private fun process(body: String) = Unit
 visibility, delete helper는 비어 있는 entry collection을 SQS로 보내기 전에 거부합니다.
 메시지는 처리가 성공한 뒤 `receiptHandle`로 삭제하세요. 실패했다면 visibility timeout이
 끝나 queue로 돌아가게 두는 편이 안전합니다.
+
+### EventBridge — Core Wrappers (`aws-java`, `aws-kotlin` 모듈)
+
+EventBridge 지원 범위는 event bus, rule, target, list, `PutEvents` 중심의
+얇은 helper입니다. Java SDK v2 모듈은 sync, async, coroutine adapter를 제공하고,
+AWS Kotlin SDK 모듈은 native suspend helper를 제공합니다. 런타임에는
+`software.amazon.awssdk:eventbridge` 또는 `aws.sdk.kotlin:eventbridge`를 추가해야 합니다.
+
+`PutEvents`, `PutTargets`, `RemoveTargets`는 일부 항목만 실패할 수 있습니다. Helper는
+성공 여부를 Boolean으로 축약하지 않고 SDK 응답을 그대로 반환하므로, 호출자가 failed-entry
+count와 항목별 실패 정보를 확인해야 합니다. Scheduler, framework integration, global
+endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은
+이 core wrapper 범위에 포함하지 않습니다.
 
 ### DynamoDB — 네이티브 Suspend (`bluetape4k-aws-kotlin` 모듈)
 

@@ -5,7 +5,7 @@ English | [한국어](./README.ko.md)
 A unified integration module built on AWS Java SDK v2. It keeps AWS SDK model
 types visible while adding sync helpers, async `CompletableFuture` extensions,
 and coroutine APIs for DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS,
-CloudWatch, Kinesis, STS, Secrets Manager, and Parameter Store.
+CloudWatch, Kinesis, EventBridge, STS, Secrets Manager, and Parameter Store.
 
 ## Diagrams
 
@@ -40,6 +40,7 @@ request DSLs, async extensions, coroutine wrappers, and repository helpers.
 | **CloudWatch**      | Metric publishing/querying, Coroutines extensions                            |
 | **CloudWatch Logs** | Log group/stream management, event publishing, Coroutines extensions         |
 | **Kinesis**         | Stream record send/receive, Coroutines extensions                            |
+| **EventBridge**     | Event bus, rule, target, list, and `PutEvents` helpers                       |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines extensions              |
 | **Secrets Manager** | Redacted secret values, request DSLs, sync/async/coroutine helpers           |
 | **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs           |
@@ -232,6 +233,31 @@ suspend fun putRecord(client: KinesisAsyncClient, streamName: String, data: Byte
     )
 ```
 
+### EventBridge Core Helpers
+
+```kotlin
+import io.bluetape4k.aws.eventbridge.putEvents
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient
+
+fun publishOrderEvent(client: EventBridgeClient) {
+    val entry = putEventsRequestEntryOf(
+        source = "orders",
+        detailType = "OrderCreated",
+        detail = """{"orderId":"o-1"}""",
+        eventBusName = "orders-bus",
+    )
+
+    val response = client.putEvents(listOf(entry))
+    // Inspect response.failedEntryCount() and response.entries() for partial failures.
+}
+```
+
+EventBridge helpers keep one SDK request per call and return raw SDK responses.
+Add `software.amazon.awssdk:eventbridge` at runtime. Scheduler, framework
+integrations, global endpoints, cross-account target orchestration, and
+target-specific validation beyond SDK model types are outside this module.
+
 ## Not Provided by This Module
 
 This module does not provide Spring Environment loading, JSON flattening,
@@ -298,6 +324,7 @@ dependencies {
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:kinesis")
+    implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:sts")
     // ... add other services as needed
 }

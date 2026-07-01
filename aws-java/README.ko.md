@@ -5,7 +5,7 @@
 AWS Java SDK v2 기반 통합 모듈입니다. AWS SDK 모델 타입은 그대로 드러내고,
 동기 helper, 비동기 `CompletableFuture` 확장, coroutine API를 더합니다.
 DynamoDB, S3, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis,
-STS, Secrets Manager, Parameter Store 같은 주요 서비스를 대상으로 합니다.
+EventBridge, STS, Secrets Manager, Parameter Store 같은 주요 서비스를 대상으로 합니다.
 
 ## 다이어그램
 
@@ -40,6 +40,7 @@ repository helper의 역할을 함께 확인할 수 있습니다.
 | **CloudWatch**      | 메트릭 발행/조회, Coroutines 확장                                |
 | **CloudWatch Logs** | 로그 그룹/스트림 관리, 이벤트 전송, Coroutines 확장                     |
 | **Kinesis**         | 스트림 레코드 전송/조회, Coroutines 확장                            |
+| **EventBridge**     | Event bus, rule, target, list, `PutEvents` helper           |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines 확장 |
 | **Secrets Manager** | Redacted secret value, 요청 DSL, sync/async/coroutine helper |
 | **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL |
@@ -228,6 +229,31 @@ suspend fun putRecord(client: KinesisAsyncClient, streamName: String, data: Byte
     )
 ```
 
+### EventBridge Core Helpers
+
+```kotlin
+import io.bluetape4k.aws.eventbridge.putEvents
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient
+
+fun publishOrderEvent(client: EventBridgeClient) {
+    val entry = putEventsRequestEntryOf(
+        source = "orders",
+        detailType = "OrderCreated",
+        detail = """{"orderId":"o-1"}""",
+        eventBusName = "orders-bus",
+    )
+
+    val response = client.putEvents(listOf(entry))
+    // 일부 항목 실패 여부는 response.failedEntryCount(), response.entries()로 확인합니다.
+}
+```
+
+EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK 응답을 그대로 반환합니다.
+런타임에는 `software.amazon.awssdk:eventbridge`를 추가해야 합니다. Scheduler, framework
+integration, global endpoint, cross-account target orchestration, SDK model 타입을
+넘어서는 target별 검증은 이 모듈 범위에 포함하지 않습니다.
+
 ## 이 모듈이 제공하지 않는 것
 
 이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책,
@@ -291,6 +317,7 @@ dependencies {
     implementation("software.amazon.awssdk:kms")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:kinesis")
+    implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:sts")
     // ... 필요한 서비스 추가
 }
