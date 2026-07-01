@@ -22,3 +22,5 @@ Spring Boot now creates an optional EventBridge async client and operations temp
 ## Future Guidance
 
 Do not hide EventBridge partial failures behind Boolean helper APIs. Add emulator smoke only after proving Floci or LocalStack supports the exact event bus, rule, target, and `PutEvents` workflow. Scheduler, global endpoint, and richer target validation belong in separate issues.
+
+Diagram QA must treat the rendered PNG as authoritative. Passing SVG scripts do not make a cramped class diagram acceptable; if relationship lines need awkward detours or reversed-looking rounded turns, expand the canvas and card spacing first, then rerun the audits and inspect the full-size PNG again.
