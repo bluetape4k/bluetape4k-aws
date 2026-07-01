@@ -54,6 +54,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
 | `aws-ktor-sqs-examples` | 배포 안 함 | Floci 기반 Ktor 3 SQS consumer/runtime 예제. Manual ack/nack, retry-once redelivery, interceptor, observer event 포함 |
 | `aws-ktor-exposed-examples` | 배포 안 함 | PostgreSQL Testcontainers와 route-level Exposed transaction을 사용하는 Ktor 3 `AwsExposedPlugin` 예제 |
+| `aws-ktor-service-coverage-examples` | 배포 안 함 | SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, STS plugin을 다루는 Ktor 3 service coverage 예제. Injected operations 기반 deterministic route test 포함 |
 | `aws-spring-boot-dynamodb-examples` | 배포 안 함 | Coroutine service flow용 Spring Boot 4 DynamoDB repository 예제 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`, presigned URL, 선택적 KMS 기반 client-side encryption을 다루는 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 | `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor event, Floci-first SNS subscription fanout을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
@@ -1058,6 +1059,7 @@ AWS SDK 호출을 기준으로 검증해야 합니다.
 ./gradlew :bluetape4k-aws-ktor:test
 ./gradlew :aws-ktor-dynamodb-examples:test
 ./gradlew :aws-ktor-sqs-examples:test
+./gradlew :aws-ktor-service-coverage-examples:test
 ./gradlew :aws-spring-boot-dynamodb-examples:test
 ./gradlew :aws-spring-boot-s3-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test

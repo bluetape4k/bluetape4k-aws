@@ -97,5 +97,8 @@ project(":aws-ktor-dynamodb-examples").projectDir = file("examples/aws-ktor-dyna
 include("aws-ktor-exposed-examples")
 project(":aws-ktor-exposed-examples").projectDir = file("examples/aws-ktor-exposed-examples")
 
+include("aws-ktor-service-coverage-examples")
+project(":aws-ktor-service-coverage-examples").projectDir = file("examples/aws-ktor-service-coverage-examples")
+
 include("aws-spring-boot-dynamodb-examples")
 project(":aws-spring-boot-dynamodb-examples").projectDir = file("examples/aws-spring-boot-dynamodb-examples")
