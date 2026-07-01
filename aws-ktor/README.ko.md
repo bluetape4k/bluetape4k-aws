@@ -5,7 +5,7 @@
 bluetape4k AWS 모듈을 Ktor 3 애플리케이션에 붙이기 위한 통합 모듈입니다. Ktor
 `HttpClient` 요청에 AWS SigV4 서명을 적용하고, 그 경로 위에 coroutine 친화적인 S3
 REST client를 제공합니다. SES v2, SNS, SQS, DynamoDB, AWS-backed Exposed registry,
-S3 Access Grants, S3 Vectors, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에
+S3 Access Grants, S3 Vectors, EventBridge, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에
 맞춰 설치하되, credentials와 app-scoped client, route 설계의 소유권은
 애플리케이션에 남겨 둡니다.
 
@@ -29,6 +29,8 @@ S3 Access Grants, S3 Vectors, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycl
   설치하는 `S3AccessGrantsKtorPlugin`.
 - S3 Vectors discovery, vector write/read, listing, query operation을 선택적으로
   설치하는 `S3VectorsKtorPlugin`.
+- Event bus, rule, target, list, `PutEvents` operation과 raw partial-failure response를
+  제공하는 `EventBridgeKtorPlugin`.
 - Coroutine 기반 SQS polling, publishing, graceful shutdown, retry visibility
   제어, 선택적 manual DLQ forwarding을 제공하는 `SqsConsumer` Ktor
   `ApplicationPlugin`.
@@ -66,6 +68,10 @@ dependencies {
     // S3 Vectors plugin 사용 시
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:s3vectors")
+
+    // EventBridge plugin 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:eventbridge")
 
     // SQS consumer/publisher 사용 시
     implementation("io.ktor:ktor-server-core")
@@ -138,7 +144,8 @@ fun Application.module() {
 ```
 
 `S3KtorClient`, `SqsConsumer`, `SesKtorPlugin`, `SnsKtorPlugin`,
-`CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, `DynamoDbKtorPlugin`은 공유
+`EventBridgeKtorPlugin`, `CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`,
+`DynamoDbKtorPlugin`은 공유
 기본값을 상속할 수 있습니다. 특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`,
 `endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. Floci 또는
 LocalStack 테스트에서는 `http://localhost:4566` 같은 local endpoint와 dummy test
@@ -418,6 +425,54 @@ suspend fun Application.listSemanticIndexes(vectorBucketName: String) =
 Plugin은 caller-owned `S3VectorsOperations`, caller-owned `S3VectorsAsyncClient`, 또는
 `AwsKtorCore` 기본값과 S3 Vectors customizer로 만든 plugin-owned client를 사용할 수
 있습니다. 이 plugin은 emulator-backed S3 Vectors 동작을 보장하지 않습니다.
+
+## EventBridge Server Plugin
+
+`EventBridgeKtorPlugin`은 AWS SDK Java v2 `EventBridgeAsyncClient` 기반 coroutine/future
+operations facade를 Ktor 애플리케이션에 설치합니다. 애플리케이션이 소유한
+`EventBridgeKtorOperations`, 애플리케이션이 소유한 client, 또는 `AwsKtorCore` 기본값과
+EventBridge customizer로 만든 plugin-owned client를 사용할 수 있습니다. 주입한 client는
+plugin이 닫지 않습니다.
+
+```kotlin
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.aws.ktor.AwsKtorCore
+import io.bluetape4k.aws.ktor.eventbridge.EventBridgeKtorPlugin
+import io.bluetape4k.aws.ktor.eventbridge.eventBridge
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+
+fun Application.module() {
+    install(AwsKtorCore) {
+        region = "ap-northeast-2"
+        javaCredentialsProvider = DefaultCredentialsProvider.builder().build()
+        ktorCore()
+    }
+
+    install(EventBridgeKtorPlugin) {
+        defaultEventBusName = "orders"
+    }
+}
+
+suspend fun Application.publishOrderCreated(orderId: String) {
+    val response = eventBridge().putEvents(
+        listOf(
+            putEventsRequestEntryOf(
+                source = "orders",
+                detailType = "order.created",
+                detail = """{"orderId":"$orderId"}""",
+            )
+        )
+    )
+    require(response.failedEntryCount() == 0) { "EventBridge rejected one or more entries." }
+}
+```
+
+`defaultEventBusName`은 event bus 이름을 생략한 rule, target, list operation에만
+적용됩니다. `PutEvents` entry는 변경하지 않습니다. `PutEvents`, `PutTargets`,
+`RemoveTargets`는 일부 항목만 실패할 수 있으므로 반환된 SDK response를 호출자가 직접
+확인해야 합니다.
 
 ## CloudWatch Metrics And Logs
 
@@ -840,6 +895,14 @@ redacted 문자열로 표시됩니다.
 | `SnsKtorPlugin.snsAsyncClient` | `null` | 선택적 application-owned SNS async client입니다. 주입한 client는 plugin이 닫지 않습니다. |
 | `SnsKtorPlugin.snsOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned SNS operations facade입니다. |
 | `SnsKtorPlugin.snsHttpMessageParser` | strict 기본 parser | SNS HTTP endpoint JSON에 사용할 선택적 application-owned parser입니다. |
+
+### EventBridge 옵션
+
+| 옵션 | 기본값 | 설명 |
+|---|---:|---|
+| `EventBridgeKtorPlugin.defaultEventBusName` | `null` | event bus 이름을 생략한 rule, target, list 호출에 사용할 기본 event bus입니다. |
+| `EventBridgeKtorPlugin.eventBridgeAsyncClient` | `null` | 선택적 application-owned EventBridge async client입니다. 주입한 client는 plugin이 닫지 않습니다. |
+| `EventBridgeKtorPlugin.eventBridgeOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned EventBridge operations facade입니다. |
 
 ### SQS Consumer 옵션
 

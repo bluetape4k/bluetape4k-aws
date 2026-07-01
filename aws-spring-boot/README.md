@@ -5,8 +5,8 @@ English | [한국어](README.ko.md)
 Spring Boot 4 auto-configuration for AWS Java SDK v2 without an `awspring`
 runtime dependency. The module provides coroutine-first templates, an SQS
 listener container, CloudWatch metric/log helpers, EC2 IMDS metadata operations,
-Kinesis operations, remote Environment sources, and AWS-backed Exposed database
-wiring.
+Kinesis and EventBridge operations, remote Environment sources, and AWS-backed
+Exposed database wiring.
 
 ## Diagrams
 
@@ -35,6 +35,9 @@ wiring.
 - **Kinesis** — `KinesisCoroutinesTemplate` for stream creation, record
   publishing, shard iterator lookup, bounded `GetRecords` polling, and a cold
   single-shard `Flow<Record>`.
+- **EventBridge** — `EventBridgeCoroutinesTemplate` for event bus, rule,
+  target, list, and `PutEvents` operations while preserving raw partial-failure
+  responses.
 - **SES** — `SesCoroutinesMailSender` for simple, templated, raw, attachment,
   and custom-header email sends, plus an optional Spring `JavaMailSender`
   adapter.
@@ -87,6 +90,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+    implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:imds")
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
@@ -202,6 +206,11 @@ bluetape4k:
       log-group-name: /aws/app/order-api
       log-stream-name: local
       batch-size: 10000
+    eventbridge:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      default-event-bus-name: orders
     imds:
       enabled: true
       endpoint-mode: ipv4
@@ -639,6 +648,44 @@ class OrderStream(
 `KinesisOperations` is intentionally an explicit operations API. It does not
 start listener containers or manage checkpoints; store sequence numbers or
 application checkpoints in your own persistence layer when you collect the Flow.
+
+### EventBridge — event bus, rules, targets, and PutEvents
+
+```yaml
+bluetape4k:
+  aws:
+    eventbridge:
+      region: us-east-1
+      default-event-bus-name: orders
+```
+
+```kotlin
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.aws.spring.eventbridge.EventBridgeOperations
+
+class OrderEvents(
+    private val eventBridge: EventBridgeOperations,
+) {
+    suspend fun publishCreated(orderId: String) {
+        val response = eventBridge.putEvents(
+            listOf(
+                putEventsRequestEntryOf(
+                    source = "orders",
+                    detailType = "order.created",
+                    detail = """{"orderId":"$orderId"}""",
+                )
+            )
+        )
+        require(response.failedEntryCount() == 0) { "EventBridge rejected one or more entries." }
+    }
+}
+```
+
+Add `software.amazon.awssdk:eventbridge` when using EventBridge operations. The
+template uses `default-event-bus-name` for rule, target, and list calls that
+omit an event bus name; it does not rewrite `PutEvents` entries. `PutEvents`,
+`PutTargets`, and `RemoveTargets` return raw SDK responses so callers can
+inspect partial failures.
 
 ### SQS — `@SqsListener` annotation
 

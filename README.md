@@ -34,8 +34,8 @@ uses.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
   listeners, and auto-configuration without depending on awspring.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 access, SQS consumer
-  runtime, DynamoDB server repositories, EC2 IMDS helpers, and Ktor
-  server/client examples.
+  runtime, EventBridge publishing, DynamoDB server repositories, EC2 IMDS
+  helpers, and Ktor server/client examples.
 - **Local integration testing** — Floci-first emulator wiring through
   Testcontainers, with explicit LocalStack fallback runs for coverage gaps.
 
@@ -56,8 +56,8 @@ uses.
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, STS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
-| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, EventBridge server plugin, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
 | `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |
@@ -176,6 +176,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+    implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:imds")
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
@@ -199,6 +200,7 @@ service at runtime; add only the AWS SDK modules you actually use. Add
 `software.amazon.awssdk:cloudwatch` and `software.amazon.awssdk:cloudwatchlogs` when using
 CloudWatch helpers. Add `software.amazon.awssdk:imds` when using EC2 metadata helpers. For KMS, add
 `software.amazon.awssdk:kms`. Add `software.amazon.awssdk:kinesis` when using Kinesis operations.
+Add `software.amazon.awssdk:eventbridge` when using EventBridge operations.
 Add `spring-security-crypto` only when you want to inject Spring Security's synchronous
 `TextEncryptor`.
 
@@ -255,6 +257,10 @@ bluetape4k:
       endpoint-override: http://localhost:4566
       log-group-name: /aws/app/order-api
       log-stream-name: local
+    eventbridge:
+      region: ap-northeast-2
+      endpoint-override: http://localhost:4566
+      default-event-bus-name: orders
     imds:
       enabled: true
       endpoint-mode: ipv4
@@ -821,6 +827,39 @@ class StreamPublisher(
 }
 ```
 
+### EventBridge — Spring Boot Coroutines Template
+
+Spring Boot EventBridge support centers on `EventBridgeOperations`: event bus
+creation/deletion, rule creation/deletion, target add/remove, rule/target
+listing, and `PutEvents`. It is an explicit operations API; it does not add
+Scheduler support, hidden batching, retry, cleanup, or listener runtimes.
+
+```kotlin
+import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.aws.spring.eventbridge.EventBridgeOperations
+
+class EventPublisher(
+    private val eventBridge: EventBridgeOperations,
+) {
+    suspend fun publishOrderCreated(orderId: String) {
+        val response = eventBridge.putEvents(
+            listOf(
+                putEventsRequestEntryOf(
+                    source = "orders",
+                    detailType = "order.created",
+                    detail = """{"orderId":"$orderId"}""",
+                    eventBusName = "orders",
+                )
+            )
+        )
+        require(response.failedEntryCount() == 0) { "EventBridge rejected one or more entries." }
+    }
+}
+```
+
+`PutEvents`, `PutTargets`, and `RemoveTargets` can partially succeed. Inspect
+the raw response before committing downstream state.
+
 ### S3 Object IO — Coroutines (`aws-java` module)
 
 S3 coroutine support extends AWS SDK v2 `S3AsyncClient` and
@@ -908,18 +947,20 @@ the request reaches SQS. Delete messages with the `receiptHandle` only after
 processing succeeds; otherwise let the visibility timeout return the message to
 the queue.
 
-### EventBridge — Core Wrappers (`aws-java` and `aws-kotlin` modules)
+### EventBridge — Core And Framework Integration
 
 EventBridge support covers focused event bus, rule, target, list, and
 `PutEvents` helpers. The Java SDK v2 module provides sync, async, and coroutine
-adapters; the AWS Kotlin SDK module provides native suspend helpers. Add
-`software.amazon.awssdk:eventbridge` or `aws.sdk.kotlin:eventbridge` at runtime.
+adapters; the AWS Kotlin SDK module provides native suspend helpers. Spring Boot
+adds `EventBridgeOperations`, and Ktor adds `EventBridgeKtorPlugin`. Add
+`software.amazon.awssdk:eventbridge` or `aws.sdk.kotlin:eventbridge` at runtime
+for the layer you use.
 
 `PutEvents`, `PutTargets`, and `RemoveTargets` can partially succeed. The
 helpers return raw SDK responses so callers can inspect failed-entry counts and
-per-entry failure details. Scheduler, framework integrations, global endpoints,
-cross-account target orchestration, and target-specific validation beyond SDK
-model types are intentionally outside this core wrapper surface.
+per-entry failure details. Scheduler, global endpoints, cross-account target
+orchestration, and target-specific validation beyond SDK model types are
+intentionally outside this EventBridge surface.
 
 ### DynamoDB — Native Suspend (`bluetape4k-aws-kotlin` module)
 
