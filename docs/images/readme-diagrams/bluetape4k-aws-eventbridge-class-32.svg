@@ -44,7 +44,7 @@
   <rect class="layer ktor" x="790" y="115" width="650" height="565"/>
   <text class="layer-title" x="825" y="150">Ktor 3 integration</text>
   <rect class="layer shared" x="410" y="725" width="680" height="210"/>
-  <text class="layer-title" x="750" y="962" text-anchor="middle">Shared EventBridge core and AWS SDK</text>
+  <text class="layer-title" x="750" y="922" text-anchor="middle">Shared EventBridge core and AWS SDK</text>
 
   <!-- Spring cards: generous 120px+ column gap. -->
   <g id="spring-props">
@@ -129,15 +129,15 @@
 
   <!-- Shared cards -->
   <g id="core-adapters">
-    <rect id="card-core-adapters" class="card shared-card" x="600" y="790" width="300" height="58"/>
-    <text class="card-title" x="750" y="814">EventBridge core adapters</text>
-    <text class="note" x="620" y="836">request builders + coroutine/future wrappers</text>
+    <rect id="card-core-adapters" class="card shared-card" x="600" y="760" width="300" height="58"/>
+    <text class="card-title" x="750" y="784">EventBridge core adapters</text>
+    <text class="note" x="620" y="806">request builders + coroutine/future wrappers</text>
   </g>
 
   <g id="aws-client">
-    <rect id="card-aws-client" class="card aws-card" x="600" y="870" width="300" height="46"/>
-    <text class="card-title" x="750" y="895">EventBridgeAsyncClient</text>
-    <text class="note" x="662" y="912">AWS SDK Java v2 async client</text>
+    <rect id="card-aws-client" class="card aws-card" x="600" y="840" width="300" height="46"/>
+    <text class="card-title" x="750" y="865">EventBridgeAsyncClient</text>
+    <text class="note" x="662" y="882">AWS SDK Java v2 async client</text>
   </g>
 
   <!-- Spring relationships -->
@@ -171,17 +171,17 @@
   <text class="note" x="973" y="589">owns lifecycle</text>
 
   <!-- Framework templates delegate to shared core through separate lower corridors. -->
-  <path class="connector gray" d="M 580 567 L 580 690 Q 580 700 590 700 L 720 700 Q 730 700 730 710 L 730 790"/>
-  <polyline class="arrow-open" points="722,776 730,790 738,776" stroke="#475569"/>
+  <path class="connector gray" d="M 580 567 L 580 690 Q 580 700 590 700 L 720 700 Q 730 700 730 710 L 730 760"/>
+  <polyline class="arrow-open" points="722,746 730,760 738,746" stroke="#475569"/>
   <text class="note" x="600" y="686">delegates</text>
 
-  <path class="connector gray" d="M 1300 567 L 1300 690 Q 1300 700 1290 700 L 780 700 Q 770 700 770 710 L 770 790"/>
-  <polyline class="arrow-open" points="762,776 770,790 778,776" stroke="#475569"/>
+  <path class="connector gray" d="M 1300 567 L 1300 690 Q 1300 700 1290 700 L 780 700 Q 770 700 770 710 L 770 760"/>
+  <polyline class="arrow-open" points="762,746 770,760 778,746" stroke="#475569"/>
   <text class="note" x="1212" y="686">delegates</text>
 
-  <path class="connector gray" d="M 750 848 L 750 870"/>
-  <polyline class="arrow-open" points="742,856 750,870 758,856" stroke="#475569"/>
-  <text class="note" x="768" y="864">calls</text>
+  <path class="connector gray" d="M 750 818 L 750 840"/>
+  <polyline class="arrow-open" points="742,826 750,840 758,826" stroke="#475569"/>
+  <text class="note" x="768" y="834">calls</text>
 
   <g id="legend">
     <rect class="legend-box" x="90" y="765" width="205" height="82"/>
