@@ -18,11 +18,13 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClientBuilder
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
 import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClientBuilder
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
 import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
+import software.amazon.awssdk.services.sts.StsAsyncClientBuilder
 import java.net.URI
 import java.time.Clock
 
@@ -50,11 +52,13 @@ class AwsKtorDefaults(
     cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer> = emptyList(),
     cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer> = emptyList(),
     eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer> = emptyList(),
+    kinesisAsyncClientCustomizers: List<AwsKtorKinesisAsyncClientCustomizer> = emptyList(),
     s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer> = emptyList(),
     s3VectorsAsyncClientCustomizers: List<AwsKtorS3VectorsAsyncClientCustomizer> = emptyList(),
     sesV2AsyncClientCustomizers: List<AwsKtorSesV2AsyncClientCustomizer> = emptyList(),
     snsAsyncClientCustomizers: List<AwsKtorSnsAsyncClientCustomizer> = emptyList(),
     dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer> = emptyList(),
+    stsAsyncClientCustomizers: List<AwsKtorStsAsyncClientCustomizer> = emptyList(),
 ): AbstractValueObject() {
 
     private val endpointOverrideValue: String? = endpointOverride?.toString()
@@ -78,6 +82,10 @@ class AwsKtorDefaults(
         eventBridgeAsyncClientCustomizers
 
     @Transient
+    private val kinesisAsyncClientCustomizersValue: List<AwsKtorKinesisAsyncClientCustomizer>? =
+        kinesisAsyncClientCustomizers
+
+    @Transient
     private val s3ControlAsyncClientCustomizersValue: List<AwsKtorS3ControlAsyncClientCustomizer>? =
         s3ControlAsyncClientCustomizers
 
@@ -95,6 +103,9 @@ class AwsKtorDefaults(
 
     @Transient
     private val dynamoDbClientCustomizersValue: List<AwsKtorDynamoDbClientCustomizer>? = dynamoDbClientCustomizers
+
+    @Transient
+    private val stsAsyncClientCustomizersValue: List<AwsKtorStsAsyncClientCustomizer>? = stsAsyncClientCustomizers
 
     init {
         require(endpointOverrideValue == null || !region.isNullOrBlank()) {
@@ -126,6 +137,10 @@ class AwsKtorDefaults(
     val eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer>
         get() = eventBridgeAsyncClientCustomizersValue ?: emptyList()
 
+    /** Shared customizers for plugin-created AWS SDK Java v2 Kinesis async clients. */
+    val kinesisAsyncClientCustomizers: List<AwsKtorKinesisAsyncClientCustomizer>
+        get() = kinesisAsyncClientCustomizersValue ?: emptyList()
+
     /** Shared customizers for plugin-created AWS SDK Java v2 S3 Control async clients. */
     val s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer>
         get() = s3ControlAsyncClientCustomizersValue ?: emptyList()
@@ -146,6 +161,10 @@ class AwsKtorDefaults(
     val dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer>
         get() = dynamoDbClientCustomizersValue ?: emptyList()
 
+    /** Shared customizers for plugin-created AWS SDK Java v2 STS async clients. */
+    val stsAsyncClientCustomizers: List<AwsKtorStsAsyncClientCustomizer>
+        get() = stsAsyncClientCustomizersValue ?: emptyList()
+
     internal val javaEndpointOverride: URI?
         get() = endpointOverrideValue?.let(URI::create)
 
@@ -165,11 +184,13 @@ class AwsKtorDefaults(
                 cloudWatchAsyncClientCustomizers == other.cloudWatchAsyncClientCustomizers &&
                 cloudWatchLogsAsyncClientCustomizers == other.cloudWatchLogsAsyncClientCustomizers &&
                 eventBridgeAsyncClientCustomizers == other.eventBridgeAsyncClientCustomizers &&
+                kinesisAsyncClientCustomizers == other.kinesisAsyncClientCustomizers &&
                 s3ControlAsyncClientCustomizers == other.s3ControlAsyncClientCustomizers &&
                 s3VectorsAsyncClientCustomizers == other.s3VectorsAsyncClientCustomizers &&
                 sesV2AsyncClientCustomizers == other.sesV2AsyncClientCustomizers &&
                 snsAsyncClientCustomizers == other.snsAsyncClientCustomizers &&
-                dynamoDbClientCustomizers == other.dynamoDbClientCustomizers
+                dynamoDbClientCustomizers == other.dynamoDbClientCustomizers &&
+                stsAsyncClientCustomizers == other.stsAsyncClientCustomizers
 
     override fun equals(other: Any?): Boolean = super.equals(other)
 
@@ -186,11 +207,13 @@ class AwsKtorDefaults(
             cloudWatchAsyncClientCustomizers,
             cloudWatchLogsAsyncClientCustomizers,
             eventBridgeAsyncClientCustomizers,
+            kinesisAsyncClientCustomizers,
             s3ControlAsyncClientCustomizers,
             s3VectorsAsyncClientCustomizers,
             sesV2AsyncClientCustomizers,
             snsAsyncClientCustomizers,
             dynamoDbClientCustomizers,
+            stsAsyncClientCustomizers,
         )
     }
 
@@ -207,11 +230,13 @@ class AwsKtorDefaults(
             .add("cloudWatchAsyncClientCustomizers", cloudWatchAsyncClientCustomizers)
             .add("cloudWatchLogsAsyncClientCustomizers", cloudWatchLogsAsyncClientCustomizers)
             .add("eventBridgeAsyncClientCustomizers", eventBridgeAsyncClientCustomizers)
+            .add("kinesisAsyncClientCustomizers", kinesisAsyncClientCustomizers)
             .add("s3ControlAsyncClientCustomizers", s3ControlAsyncClientCustomizers)
             .add("s3VectorsAsyncClientCustomizers", s3VectorsAsyncClientCustomizers)
             .add("sesV2AsyncClientCustomizers", sesV2AsyncClientCustomizers)
             .add("snsAsyncClientCustomizers", snsAsyncClientCustomizers)
             .add("dynamoDbClientCustomizers", dynamoDbClientCustomizers)
+            .add("stsAsyncClientCustomizers", stsAsyncClientCustomizers)
 
     companion object {
         private const val serialVersionUID: Long = -6925410098353228441L
@@ -270,11 +295,13 @@ class AwsKtorCoreConfig {
     private val cloudWatchAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchAsyncClientCustomizer>()
     private val cloudWatchLogsAsyncClientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
     private val eventBridgeAsyncClientCustomizers = mutableListOf<AwsKtorEventBridgeAsyncClientCustomizer>()
+    private val kinesisAsyncClientCustomizers = mutableListOf<AwsKtorKinesisAsyncClientCustomizer>()
     private val s3ControlAsyncClientCustomizers = mutableListOf<AwsKtorS3ControlAsyncClientCustomizer>()
     private val s3VectorsAsyncClientCustomizers = mutableListOf<AwsKtorS3VectorsAsyncClientCustomizer>()
     private val sesV2AsyncClientCustomizers = mutableListOf<AwsKtorSesV2AsyncClientCustomizer>()
     private val snsAsyncClientCustomizers = mutableListOf<AwsKtorSnsAsyncClientCustomizer>()
     private val dynamoDbClientCustomizers = mutableListOf<AwsKtorDynamoDbClientCustomizer>()
+    private val stsAsyncClientCustomizers = mutableListOf<AwsKtorStsAsyncClientCustomizer>()
 
     internal var ktorCoreConfig: Bluetape4kKtorCoreConfig? = null
         private set
@@ -326,6 +353,13 @@ class AwsKtorCoreConfig {
     }
 
     /**
+     * Adds a global Kinesis async client builder customizer.
+     */
+    fun kinesisAsyncClient(customizer: AwsKtorKinesisAsyncClientCustomizer) {
+        kinesisAsyncClientCustomizers += customizer
+    }
+
+    /**
      * Adds a global S3 Control async client builder customizer.
      */
     fun s3ControlAsyncClient(customizer: AwsKtorS3ControlAsyncClientCustomizer) {
@@ -360,6 +394,13 @@ class AwsKtorCoreConfig {
         dynamoDbClientCustomizers += customizer
     }
 
+    /**
+     * Adds a global STS async client builder customizer.
+     */
+    fun stsAsyncClient(customizer: AwsKtorStsAsyncClientCustomizer) {
+        stsAsyncClientCustomizers += customizer
+    }
+
     internal fun toDefaults(): AwsKtorDefaults =
         AwsKtorDefaults(
             region = region,
@@ -373,11 +414,13 @@ class AwsKtorCoreConfig {
             cloudWatchAsyncClientCustomizers = cloudWatchAsyncClientCustomizers.toList(),
             cloudWatchLogsAsyncClientCustomizers = cloudWatchLogsAsyncClientCustomizers.toList(),
             eventBridgeAsyncClientCustomizers = eventBridgeAsyncClientCustomizers.toList(),
+            kinesisAsyncClientCustomizers = kinesisAsyncClientCustomizers.toList(),
             s3ControlAsyncClientCustomizers = s3ControlAsyncClientCustomizers.toList(),
             s3VectorsAsyncClientCustomizers = s3VectorsAsyncClientCustomizers.toList(),
             sesV2AsyncClientCustomizers = sesV2AsyncClientCustomizers.toList(),
             snsAsyncClientCustomizers = snsAsyncClientCustomizers.toList(),
             dynamoDbClientCustomizers = dynamoDbClientCustomizers.toList(),
+            stsAsyncClientCustomizers = stsAsyncClientCustomizers.toList(),
         )
 }
 
@@ -417,6 +460,13 @@ fun interface AwsKtorEventBridgeAsyncClientCustomizer {
 }
 
 /**
+ * Customizes plugin-created AWS SDK Java v2 Kinesis async client builders.
+ */
+fun interface AwsKtorKinesisAsyncClientCustomizer {
+    fun customize(builder: KinesisAsyncClientBuilder)
+}
+
+/**
  * Customizes plugin-created AWS SDK Java v2 S3 Control async client builders.
  */
 fun interface AwsKtorS3ControlAsyncClientCustomizer {
@@ -449,4 +499,11 @@ fun interface AwsKtorSnsAsyncClientCustomizer {
  */
 fun interface AwsKtorDynamoDbClientCustomizer {
     fun customize(builder: aws.sdk.kotlin.services.dynamodb.DynamoDbClient.Config.Builder)
+}
+
+/**
+ * Customizes plugin-created AWS SDK Java v2 STS async client builders.
+ */
+fun interface AwsKtorStsAsyncClientCustomizer {
+    fun customize(builder: StsAsyncClientBuilder)
 }

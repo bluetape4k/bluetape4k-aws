@@ -5,8 +5,8 @@ English | [한국어](README.ko.md)
 Ktor 3 integration for bluetape4k AWS modules. It provides AWS SigV4 signing
 for Ktor `HttpClient`, a coroutine-friendly S3 REST client built on that
 signing path, and server-side plugins that bind SES v2, SNS, SQS, DynamoDB,
-AWS-backed Exposed registries, S3 Access Grants, S3 Vectors, EventBridge, IMDS,
-CloudWatch, and CloudWatch Logs to the Ktor application lifecycle without
+AWS-backed Exposed registries, S3 Access Grants, S3 Vectors, EventBridge,
+Kinesis, STS, IMDS, CloudWatch, and CloudWatch Logs to the Ktor application lifecycle without
 taking ownership away from the application.
 
 ![AWS Ktor Architecture](../docs/images/readme-diagrams/aws-ktor-architecture-01.png)
@@ -32,6 +32,9 @@ taking ownership away from the application.
   listing, and query operations.
 - `EventBridgeKtorPlugin` for event bus, rule, target, list, and `PutEvents`
   operations with raw partial-failure responses.
+- `KinesisKtorPlugin` for stream creation, record publishing, shard iterator
+  access, and explicit single-shard record `Flow` consumers.
+- `StsKtorPlugin` for caller identity, assume-role, and session-token helpers.
 - `SqsConsumer` Ktor `ApplicationPlugin` for coroutine SQS polling, publishing,
   graceful shutdown, retry visibility control, and optional manual DLQ
   forwarding.
@@ -74,6 +77,14 @@ dependencies {
     // EventBridge plugin usage
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:eventbridge")
+
+    // Kinesis stream and record Flow usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:kinesis")
+
+    // STS caller identity and temporary session usage
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:sts")
 
     // SQS consumer/publisher usage
     implementation("io.ktor:ktor-server-core")
@@ -146,8 +157,8 @@ fun Application.module() {
 ```
 
 `S3KtorClient`, `SqsConsumer`, `SesKtorPlugin`, `SnsKtorPlugin`,
-`EventBridgeKtorPlugin`, `CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`,
-and `DynamoDbKtorPlugin`
+`EventBridgeKtorPlugin`, `KinesisKtorPlugin`, `StsKtorPlugin`,
+`CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, and `DynamoDbKtorPlugin`
 can inherit shared defaults. Set a service-local `region`, `endpointOverride` /
 `endpointUrl`, or credentials provider when one integration needs a different
 target. Use local endpoints such as `http://localhost:4566` with dummy test
@@ -482,6 +493,77 @@ suspend fun Application.publishOrderCreated(orderId: String) {
 omit an event bus name. `PutEvents` entries are not rewritten. `PutEvents`,
 `PutTargets`, and `RemoveTargets` can partially succeed, so callers must inspect
 the returned SDK response.
+
+## Kinesis And STS Server Plugins
+
+`KinesisKtorPlugin` installs coroutine Kinesis operations backed by AWS SDK Java
+v2 `KinesisAsyncClient`. The consumer API is intentionally explicit: each
+`recordFlow` call reads one shard, is cold until collected, and does not manage
+leases or checkpoints.
+
+```kotlin
+import io.bluetape4k.aws.ktor.kinesis.KinesisKtorPlugin
+import io.bluetape4k.aws.ktor.kinesis.KinesisKtorStream
+import io.bluetape4k.aws.ktor.kinesis.KinesisPutRecordRequest
+import io.bluetape4k.aws.ktor.kinesis.KinesisRecordFlowRequest
+import io.bluetape4k.aws.ktor.kinesis.kinesis
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import kotlinx.coroutines.flow.collect
+import software.amazon.awssdk.core.SdkBytes
+
+fun Application.module() {
+    install(KinesisKtorPlugin) {
+        streams = mapOf("orders" to KinesisKtorStream(shardCount = 1))
+    }
+}
+
+suspend fun Application.publishOrder(json: String) {
+    kinesis().putRecord(
+        KinesisPutRecordRequest(
+            streamName = "orders",
+            partitionKey = "order-1",
+            data = SdkBytes.fromUtf8String(json),
+        )
+    )
+}
+
+suspend fun Application.collectShard() {
+    kinesis().recordFlow(
+        KinesisRecordFlowRequest(
+            streamName = "orders",
+            shardId = "shardId-000000000000",
+        )
+    ).collect { record -> process(record) }
+}
+```
+
+`StsKtorPlugin` installs STS identity/session helpers. It returns raw AWS SDK
+responses so route code can inspect account, ARN, credentials, expiration, and
+session metadata.
+
+```kotlin
+import io.bluetape4k.aws.ktor.sts.StsAssumeRoleRequest
+import io.bluetape4k.aws.ktor.sts.StsKtorPlugin
+import io.bluetape4k.aws.ktor.sts.sts
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+fun Application.module() {
+    install(StsKtorPlugin)
+}
+
+suspend fun Application.currentCallerArn(): String =
+    sts().callerIdentity().arn()
+
+suspend fun Application.assumeOrdersRole(): String =
+    sts().assumeRole(
+        StsAssumeRoleRequest(
+            roleArn = "arn:aws:iam::123456789012:role/orders",
+            sessionName = "orders-api",
+        )
+    ).credentials().accessKeyId()
+```
 
 ## CloudWatch Metrics And Logs
 
@@ -915,6 +997,16 @@ render as redacted in generated diagnostics.
 | `EventBridgeKtorPlugin.defaultEventBusName` | `null` | Default event bus for rule, target, and list calls that omit one. |
 | `EventBridgeKtorPlugin.eventBridgeAsyncClient` | `null` | Optional application-owned EventBridge async client. Injected clients are not closed by the plugin. |
 | `EventBridgeKtorPlugin.eventBridgeOperations` | `null` | Optional application-owned EventBridge operations facade, useful for tests or custom wrappers. |
+
+### Kinesis And STS Options
+
+| Option | Default | Description |
+|---|---:|---|
+| `KinesisKtorPlugin.kinesisAsyncClient` | `null` | Optional application-owned Kinesis async client. Injected clients are not closed by the plugin. |
+| `KinesisKtorPlugin.kinesisOperations` | `null` | Optional application-owned Kinesis operations facade, useful for tests or custom wrappers. |
+| `KinesisKtorPlugin.streams` | empty map | Stream definitions used by `createConfiguredStream`. |
+| `StsKtorPlugin.stsAsyncClient` | `null` | Optional application-owned STS async client. Injected clients are not closed by the plugin. |
+| `StsKtorPlugin.stsOperations` | `null` | Optional application-owned STS operations facade, useful for tests or custom wrappers. |
 
 ### SQS Consumer Options
 

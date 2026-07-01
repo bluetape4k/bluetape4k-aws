@@ -5,7 +5,7 @@
 bluetape4k AWS 모듈을 Ktor 3 애플리케이션에 붙이기 위한 통합 모듈입니다. Ktor
 `HttpClient` 요청에 AWS SigV4 서명을 적용하고, 그 경로 위에 coroutine 친화적인 S3
 REST client를 제공합니다. SES v2, SNS, SQS, DynamoDB, AWS-backed Exposed registry,
-S3 Access Grants, S3 Vectors, EventBridge, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에
+S3 Access Grants, S3 Vectors, EventBridge, Kinesis, STS, IMDS, CloudWatch, CloudWatch Logs는 Ktor lifecycle에
 맞춰 설치하되, credentials와 app-scoped client, route 설계의 소유권은
 애플리케이션에 남겨 둡니다.
 
@@ -31,6 +31,9 @@ S3 Access Grants, S3 Vectors, EventBridge, IMDS, CloudWatch, CloudWatch Logs는 
   설치하는 `S3VectorsKtorPlugin`.
 - Event bus, rule, target, list, `PutEvents` operation과 raw partial-failure response를
   제공하는 `EventBridgeKtorPlugin`.
+- Stream 생성, record publish, shard iterator 접근, 명시적 single-shard record `Flow`
+  consumer를 제공하는 `KinesisKtorPlugin`.
+- Caller identity, assume-role, session-token helper를 제공하는 `StsKtorPlugin`.
 - Coroutine 기반 SQS polling, publishing, graceful shutdown, retry visibility
   제어, 선택적 manual DLQ forwarding을 제공하는 `SqsConsumer` Ktor
   `ApplicationPlugin`.
@@ -72,6 +75,14 @@ dependencies {
     // EventBridge plugin 사용 시
     implementation("io.ktor:ktor-server-core")
     implementation("software.amazon.awssdk:eventbridge")
+
+    // Kinesis stream 및 record Flow 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:kinesis")
+
+    // STS caller identity 및 임시 session 사용 시
+    implementation("io.ktor:ktor-server-core")
+    implementation("software.amazon.awssdk:sts")
 
     // SQS consumer/publisher 사용 시
     implementation("io.ktor:ktor-server-core")
@@ -144,8 +155,8 @@ fun Application.module() {
 ```
 
 `S3KtorClient`, `SqsConsumer`, `SesKtorPlugin`, `SnsKtorPlugin`,
-`EventBridgeKtorPlugin`, `CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`,
-`DynamoDbKtorPlugin`은 공유
+`EventBridgeKtorPlugin`, `KinesisKtorPlugin`, `StsKtorPlugin`,
+`CloudWatchKtorPlugin`, `CloudWatchLogsKtorPlugin`, `DynamoDbKtorPlugin`은 공유
 기본값을 상속할 수 있습니다. 특정 통합만 다른 대상이 필요하면 서비스 로컬 `region`,
 `endpointOverride` / `endpointUrl`, credentials provider를 설정합니다. Floci 또는
 LocalStack 테스트에서는 `http://localhost:4566` 같은 local endpoint와 dummy test
@@ -475,6 +486,77 @@ suspend fun Application.publishOrderCreated(orderId: String) {
 적용됩니다. `PutEvents` entry는 변경하지 않습니다. `PutEvents`, `PutTargets`,
 `RemoveTargets`는 일부 항목만 실패할 수 있으므로 반환된 SDK response를 호출자가 직접
 확인해야 합니다.
+
+## Kinesis And STS Server Plugins
+
+`KinesisKtorPlugin`은 AWS SDK Java v2 `KinesisAsyncClient` 기반 coroutine Kinesis
+operations를 설치합니다. Consumer API는 의도적으로 명시적입니다. `recordFlow` 하나는
+하나의 shard만 읽고, collect 되기 전까지는 실행되지 않으며, lease나 checkpoint를
+관리하지 않습니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.kinesis.KinesisKtorPlugin
+import io.bluetape4k.aws.ktor.kinesis.KinesisKtorStream
+import io.bluetape4k.aws.ktor.kinesis.KinesisPutRecordRequest
+import io.bluetape4k.aws.ktor.kinesis.KinesisRecordFlowRequest
+import io.bluetape4k.aws.ktor.kinesis.kinesis
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import kotlinx.coroutines.flow.collect
+import software.amazon.awssdk.core.SdkBytes
+
+fun Application.module() {
+    install(KinesisKtorPlugin) {
+        streams = mapOf("orders" to KinesisKtorStream(shardCount = 1))
+    }
+}
+
+suspend fun Application.publishOrder(json: String) {
+    kinesis().putRecord(
+        KinesisPutRecordRequest(
+            streamName = "orders",
+            partitionKey = "order-1",
+            data = SdkBytes.fromUtf8String(json),
+        )
+    )
+}
+
+suspend fun Application.collectShard() {
+    kinesis().recordFlow(
+        KinesisRecordFlowRequest(
+            streamName = "orders",
+            shardId = "shardId-000000000000",
+        )
+    ).collect { record -> process(record) }
+}
+```
+
+`StsKtorPlugin`은 STS identity/session helper를 설치합니다. Raw AWS SDK response를
+반환하므로 route code에서 account, ARN, credentials, expiration, session metadata를
+직접 확인할 수 있습니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.sts.StsAssumeRoleRequest
+import io.bluetape4k.aws.ktor.sts.StsKtorPlugin
+import io.bluetape4k.aws.ktor.sts.sts
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+
+fun Application.module() {
+    install(StsKtorPlugin)
+}
+
+suspend fun Application.currentCallerArn(): String =
+    sts().callerIdentity().arn()
+
+suspend fun Application.assumeOrdersRole(): String =
+    sts().assumeRole(
+        StsAssumeRoleRequest(
+            roleArn = "arn:aws:iam::123456789012:role/orders",
+            sessionName = "orders-api",
+        )
+    ).credentials().accessKeyId()
+```
 
 ## CloudWatch Metrics And Logs
 
@@ -905,6 +987,16 @@ redacted 문자열로 표시됩니다.
 | `EventBridgeKtorPlugin.defaultEventBusName` | `null` | event bus 이름을 생략한 rule, target, list 호출에 사용할 기본 event bus입니다. |
 | `EventBridgeKtorPlugin.eventBridgeAsyncClient` | `null` | 선택적 application-owned EventBridge async client입니다. 주입한 client는 plugin이 닫지 않습니다. |
 | `EventBridgeKtorPlugin.eventBridgeOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned EventBridge operations facade입니다. |
+
+### Kinesis And STS 옵션
+
+| 옵션 | 기본값 | 설명 |
+|---|---:|---|
+| `KinesisKtorPlugin.kinesisAsyncClient` | `null` | 선택적 application-owned Kinesis async client입니다. 주입한 client는 plugin이 닫지 않습니다. |
+| `KinesisKtorPlugin.kinesisOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned Kinesis operations facade입니다. |
+| `KinesisKtorPlugin.streams` | empty map | `createConfiguredStream`에서 사용할 stream definition입니다. |
+| `StsKtorPlugin.stsAsyncClient` | `null` | 선택적 application-owned STS async client입니다. 주입한 client는 plugin이 닫지 않습니다. |
+| `StsKtorPlugin.stsOperations` | `null` | 테스트나 custom wrapper에 사용할 수 있는 선택적 application-owned STS operations facade입니다. |
 
 ### SQS Consumer 옵션
 
