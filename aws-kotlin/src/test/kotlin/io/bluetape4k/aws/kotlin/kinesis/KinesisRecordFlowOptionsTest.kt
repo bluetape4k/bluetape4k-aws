@@ -106,4 +106,22 @@ class KinesisRecordFlowOptionsTest {
         copy.batchLimit shouldBeEqualTo 50
         original.batchLimit shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_BATCH_LIMIT
     }
+
+    @Test
+    fun `copy revalidates options`() {
+        val original = KinesisRecordFlowOptions()
+
+        assertFailsWith<IllegalArgumentException> {
+            original.copy(batchLimit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            original.copy(maxIteratorRetries = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            original.copy(
+                initialThrottleBackoff = 10.seconds,
+                maxThrottleBackoff = 1.seconds,
+            )
+        }
+    }
 }

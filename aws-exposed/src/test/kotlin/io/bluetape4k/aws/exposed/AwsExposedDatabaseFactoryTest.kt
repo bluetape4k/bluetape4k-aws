@@ -103,6 +103,18 @@ class AwsExposedDatabaseFactoryTest {
     }
 
     @Test
+    fun `pool properties copy revalidates limits`() {
+        val pool = AwsDatabasePoolProperties(maximumPoolSize = 4, minimumIdle = 1)
+
+        assertFailsWith<IllegalArgumentException> {
+            pool.copy(maximumPoolSize = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            pool.copy(minimumIdle = 5)
+        }
+    }
+
+    @Test
     fun `factory creates H2 Exposed database`() = runTest {
         val handle = AwsExposedDatabaseFactory().create(
             properties = h2Properties("factory_creates_h2"),

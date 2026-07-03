@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
@@ -121,6 +122,25 @@ class SqsCoroutinesTemplateAwsEmulatorTest {
 
                 operations.delete(queueUrl, message.receiptHandle)
             }
+        }
+    }
+
+    @Test
+    fun `send request copy revalidates fields`() {
+        val request = SqsSendRequest(
+            queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/orders",
+            body = "hello sqs",
+            delaySeconds = 1,
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            request.copy(queueUrl = " ")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            request.copy(delaySeconds = 901)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            request.copy(messageGroupId = " ")
         }
     }
 }
