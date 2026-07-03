@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.exposed
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import java.io.Serializable
 
 
@@ -77,16 +79,14 @@ data class AwsDatabasePoolProperties(
 
     init {
         poolName?.requireNotBlank("poolName")
-        require(maximumPoolSize > 0) { "maximumPoolSize must be greater than 0: $maximumPoolSize" }
-        require(minimumIdle >= 0) { "minimumIdle must be zero or greater: $minimumIdle" }
+        maximumPoolSize.requirePositiveNumber("maximumPoolSize")
+        minimumIdle.requireGe(0, "minimumIdle")
         require(minimumIdle <= maximumPoolSize) {
             "minimumIdle must be less than or equal to maximumPoolSize: $minimumIdle > $maximumPoolSize"
         }
-        require(connectionTimeoutMillis > 0) {
-            "connectionTimeoutMillis must be greater than 0: $connectionTimeoutMillis"
-        }
-        require(idleTimeoutMillis >= 0) { "idleTimeoutMillis must be zero or greater: $idleTimeoutMillis" }
-        require(maxLifetimeMillis > 0) { "maxLifetimeMillis must be greater than 0: $maxLifetimeMillis" }
+        connectionTimeoutMillis.requirePositiveNumber("connectionTimeoutMillis")
+        idleTimeoutMillis.requireGe(0, "idleTimeoutMillis")
+        maxLifetimeMillis.requirePositiveNumber("maxLifetimeMillis")
     }
 
     companion object: KLogging() {

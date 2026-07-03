@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.Serializable
 
@@ -29,11 +30,11 @@ data class SnsPublishRequest(
     val messageDeduplicationId: String? = null,
 ): Serializable {
     init {
-        require(topicArn.isNotBlank()) { "topicArn must not be blank." }
-        require(message.isNotBlank()) { "message must not be blank." }
-        subject?.let { require(it.isNotBlank()) { "subject must not be blank." } }
-        messageGroupId?.let { require(it.isNotBlank()) { "messageGroupId must not be blank." } }
-        messageDeduplicationId?.let { require(it.isNotBlank()) { "messageDeduplicationId must not be blank." } }
+        topicArn.requireNotBlank("topicArn")
+        message.requireNotBlank("message")
+        subject?.requireNotBlank("subject")
+        messageGroupId?.requireNotBlank("messageGroupId")
+        messageDeduplicationId?.requireNotBlank("messageDeduplicationId")
 
         val fifo = topicArn.endsWith(".fifo")
         if (fifo) {

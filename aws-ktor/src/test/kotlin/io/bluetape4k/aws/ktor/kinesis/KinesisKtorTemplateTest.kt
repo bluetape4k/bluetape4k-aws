@@ -91,6 +91,25 @@ class KinesisKtorTemplateTest {
     }
 
     @Test
+    fun `stream and flow options reject invalid limits`() {
+        assertFailsWith<IllegalArgumentException> {
+            KinesisKtorStream(shardCount = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            KinesisRecordFlowOptions(batchLimit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            KinesisRecordFlowOptions(maxIteratorRetries = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            KinesisRecordFlowOptions(maxThrottleRetries = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            KinesisRecordFlowOptions(jitterRatio = 1.1)
+        }
+    }
+
+    @Test
     fun `getShardIterator maps explicit iterator request`() = runTest {
         val client = mockk<KinesisAsyncClient>()
         val request = slot<GetShardIteratorRequest>()

@@ -83,6 +83,25 @@ class AwsExposedDatabaseFactoryTest {
     }
 
     @Test
+    fun `pool properties reject invalid limits`() {
+        assertFailsWith<IllegalArgumentException> {
+            AwsDatabasePoolProperties(maximumPoolSize = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AwsDatabasePoolProperties(minimumIdle = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AwsDatabasePoolProperties(connectionTimeoutMillis = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AwsDatabasePoolProperties(idleTimeoutMillis = -1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AwsDatabasePoolProperties(maxLifetimeMillis = 0)
+        }
+    }
+
+    @Test
     fun `factory creates H2 Exposed database`() = runTest {
         val handle = AwsExposedDatabaseFactory().create(
             properties = h2Properties("factory_creates_h2"),
