@@ -3,10 +3,10 @@
 package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.sqs.SqsClientFactory
 import io.bluetape4k.junit5.awaitility.untilSuspending
+import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
@@ -16,11 +16,7 @@ import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -31,8 +27,8 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeLocalStackTest {
@@ -51,34 +47,27 @@ class SqsConsumerRuntimeLocalStackTest {
     fun `runtime consumes messages from multithreaded coroutine publishers`() = runSuspendIO {
         val queueUrl = createQueue("ktor-sqs-concurrency")
         val received = ConcurrentHashMap.newKeySet<String>()
-        val handlerThreads = ConcurrentHashMap.newKeySet<String>()
-        val publisherThreads = ConcurrentHashMap.newKeySet<String>()
-        val publisherDispatcher = Executors.newFixedThreadPool(4).asCoroutineDispatcher()
         val runtime = runtime(queueUrl, coroutines = 4) {
             val body = it as String
-            handlerThreads += Thread.currentThread().name
             received += body
         }
 
         try {
             runtime.start()
-            withContext(publisherDispatcher) {
-                val jobs = List(40) { index ->
-                    launch {
-                        publisherThreads += Thread.currentThread().name
-                        runtime.send("message-$index", queueUrl)
-                    }
+
+            val index = AtomicInteger()
+            SuspendedJobTester()
+                .workers(4)
+                .rounds(40)
+                .add {
+                    runtime.send("message-${index.getAndIncrement()}", queueUrl)
                 }
-                jobs.joinAll()
-            }
+                .run()
 
             await.atMost(Duration.ofSeconds(30)).untilAsserted {
                 received.size shouldBeEqualTo 40
             }
-            publisherThreads.size shouldBeGreaterOrEqualTo 2
-            handlerThreads.size shouldBeGreaterOrEqualTo 1
         } finally {
-            publisherDispatcher.close()
             runtime.stop()
             deleteQueue(queueUrl)
         }

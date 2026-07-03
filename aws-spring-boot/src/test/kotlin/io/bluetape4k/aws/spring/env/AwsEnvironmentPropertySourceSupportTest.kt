@@ -87,6 +87,7 @@ class AwsEnvironmentPropertySourceSupportTest {
         val environment = StandardEnvironment()
         val reloadStarted = CountDownLatch(1)
         val releaseReload = CountDownLatch(1)
+        // This test pauses a single reload in the materialization window so the old snapshot can be inspected.
         val executor = Executors.newSingleThreadExecutor()
 
         environment.addAwsPropertySource(
