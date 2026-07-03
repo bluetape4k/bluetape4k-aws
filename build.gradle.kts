@@ -275,7 +275,8 @@ subprojects {
                 outputDirectory.set(layout.buildDirectory.dir("javadoc"))
             }
             dokkaSourceSets.configureEach {
-                includes.from(project.files("README.md"))
+                val dokkaModuleDoc = project.layout.projectDirectory.file("DOKKA.md").asFile
+                includes.from(project.files(if (dokkaModuleDoc.exists()) "DOKKA.md" else "README.md"))
             }
         }
 
