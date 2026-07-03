@@ -1,6 +1,9 @@
 package io.bluetape4k.aws.ktor.kinesis
 
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import java.io.ObjectInputStream
@@ -87,7 +90,7 @@ data class KinesisKtorStream(
 ): Serializable {
 
     init {
-        require(shardCount >= 1) { "shardCount must be greater than or equal to 1." }
+        shardCount.requirePositiveNumber("shardCount")
     }
 
     companion object {
@@ -110,16 +113,14 @@ data class KinesisRecordFlowOptions(
 ): Serializable {
 
     init {
-        require(batchLimit in 1..MAX_KINESIS_BATCH_LIMIT) {
-            "batchLimit must be between 1 and $MAX_KINESIS_BATCH_LIMIT."
-        }
+        batchLimit.requireInRange(1, MAX_KINESIS_BATCH_LIMIT, "batchLimit")
         require(!pollInterval.isNegative) { "pollInterval must not be negative." }
         require(!emptyBackoff.isNegative) { "emptyBackoff must not be negative." }
-        require(maxIteratorRetries >= 0) { "maxIteratorRetries must not be negative." }
-        require(maxThrottleRetries >= 0) { "maxThrottleRetries must not be negative." }
+        maxIteratorRetries.requireGe(0, "maxIteratorRetries")
+        maxThrottleRetries.requireGe(0, "maxThrottleRetries")
         require(!initialThrottleBackoff.isNegative) { "initialThrottleBackoff must not be negative." }
         require(!maxThrottleBackoff.isNegative) { "maxThrottleBackoff must not be negative." }
-        require(jitterRatio in 0.0..1.0) { "jitterRatio must be between 0.0 and 1.0." }
+        jitterRatio.requireInRange(0.0, 1.0, "jitterRatio")
     }
 
     companion object {

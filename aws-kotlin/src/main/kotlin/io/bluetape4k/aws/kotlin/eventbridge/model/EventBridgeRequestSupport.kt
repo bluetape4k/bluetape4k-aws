@@ -13,15 +13,17 @@ import aws.sdk.kotlin.services.eventbridge.model.RemoveTargetsRequest
 import aws.sdk.kotlin.services.eventbridge.model.RuleState
 import aws.sdk.kotlin.services.eventbridge.model.Target
 import aws.smithy.kotlin.runtime.time.Instant
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
 
 @PublishedApi
 internal const val MAX_EVENTBRIDGE_BATCH_SIZE = 10
 
 @PublishedApi
 internal fun <T> List<T>.requireSizeInOneToTen(name: String) {
-    require(isNotEmpty()) { "$name must not be empty." }
-    require(size <= MAX_EVENTBRIDGE_BATCH_SIZE) { "$name must not contain more than $MAX_EVENTBRIDGE_BATCH_SIZE items." }
+    requireNotEmpty(name)
+    size.requireInRange(1, MAX_EVENTBRIDGE_BATCH_SIZE, "$name size")
 }
 
 @PublishedApi

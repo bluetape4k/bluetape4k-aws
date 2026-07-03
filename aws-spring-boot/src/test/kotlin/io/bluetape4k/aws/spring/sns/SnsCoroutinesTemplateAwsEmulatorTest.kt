@@ -121,6 +121,23 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
     }
 
     @Test
+    fun `reject blank publish fields`() {
+        assertFailsWith<IllegalArgumentException> {
+            SnsPublishRequest(topicArn = " ", message = "hello")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:000000000000:standard", message = " ")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            SnsPublishRequest(
+                topicArn = "arn:aws:sns:us-east-1:000000000000:orders.fifo",
+                message = "hello",
+                messageGroupId = " ",
+            )
+        }
+    }
+
+    @Test
     fun `propagate AWS publish errors`() {
         contextRunner().run { context ->
             val operations = context.getBean(SnsOperations::class.java)
