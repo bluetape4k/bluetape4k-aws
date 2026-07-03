@@ -5,6 +5,8 @@ import io.bluetape4k.aws.dynamodb.model.toAttributeValue
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
 import software.amazon.awssdk.enhanced.dynamodb.Expression
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.io.Serializable
@@ -297,7 +299,10 @@ class RootFilterBuilder: FilterQueryBuilder {
     var currentFilter: FilterQuery? = null
     var filterQueries = mutableListOf<FilterConnection>()
 
-    override fun build(): RootFilter = RootFilter(filterQueries)
+    override fun build(): RootFilter {
+        filterQueries.requireNotEmpty("filterQueries")
+        return RootFilter(filterQueries)
+    }
 
     infix fun and(setup: RootFilterBuilder.() -> Unit): RootFilterBuilder = apply {
         val value = RootFilterBuilder().apply(setup)
@@ -332,8 +337,9 @@ inline fun RootFilterBuilder.attribute(
     value: String,
     builder: ConcreteFilterBuilder.() -> Unit = {},
 ): RootFilterBuilder = apply {
+    val attributeName = value.requireNotBlank("attribute")
     val concreteFilter = ConcreteFilterBuilder().apply(builder)
-    concreteFilter.dynamoFunction = Attribute(value)
+    concreteFilter.dynamoFunction = Attribute(attributeName)
 
     if (filterQueries.isEmpty()) {
         filterQueries.add(FilterConnection(concreteFilter.build(), null))
@@ -346,5 +352,5 @@ inline fun RootFilterBuilder.attribute(
  * `attribute_exists(name)` 필터를 현재 조건으로 등록합니다.
  */
 infix fun RootFilterBuilder.attributeExists(value: String): RootFilterBuilder = apply {
-    this.currentFilter = ConcreteFilter(AttributeExists(value))
+    this.currentFilter = ConcreteFilter(AttributeExists(value.requireNotBlank("attributeExists")))
 }

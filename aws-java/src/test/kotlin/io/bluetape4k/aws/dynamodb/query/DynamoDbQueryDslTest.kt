@@ -2,6 +2,7 @@ package io.bluetape4k.aws.dynamodb.query
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.dynamodb.model.describe
@@ -81,6 +82,50 @@ class DynamoDbQueryDslTest {
         assertFailsWith<IllegalStateException> {
             SortKeyBuilder("sk").build()
         }
+    }
+
+    @Test
+    fun `filtering rejects empty filter`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            queryRequest {
+                tableName = "orders"
+                primaryKey("orderId") { eq("order-123") }
+                filtering {
+                }
+            }
+        }
+
+        error.message.orEmpty() shouldContain "filterQueries"
+    }
+
+    @Test
+    fun `filtering rejects blank attribute name`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            queryRequest {
+                tableName = "orders"
+                primaryKey("orderId") { eq("order-123") }
+                filtering {
+                    attribute(" ") { eq("OPEN") }
+                }
+            }
+        }
+
+        error.message.orEmpty() shouldContain "attribute"
+    }
+
+    @Test
+    fun `filtering rejects blank attributeExists name`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            queryRequest {
+                tableName = "orders"
+                primaryKey("orderId") { eq("order-123") }
+                filtering {
+                    attributeExists(" ")
+                }
+            }
+        }
+
+        error.message.orEmpty() shouldContain "attributeExists"
     }
 
     @Test
