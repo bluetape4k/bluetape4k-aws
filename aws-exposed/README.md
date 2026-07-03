@@ -109,6 +109,12 @@ example `sslmode=require` for PostgreSQL. The caller's IAM principal needs
 arn:aws:rds-db:{region}:{account-id}:dbuser:{dbi-resource-id}/{db-user-name}
 ```
 
+### Named Database Handles
+
+`AwsDatabaseProperties.defaultDatabase` is always exposed through the reserved
+handle name `default`. Use a different key for each `namedDatabases` entry so
+registry lookup cannot collide with the default handle.
+
 ## Local Verification
 
 ```bash

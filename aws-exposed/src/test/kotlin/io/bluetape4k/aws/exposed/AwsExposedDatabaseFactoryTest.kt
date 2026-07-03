@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
@@ -122,6 +123,19 @@ class AwsExposedDatabaseFactoryTest {
             it.get(AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME) shouldBeSameInstanceAs it.defaultHandle
             it.get("analytics") shouldBeSameInstanceAs it.namedHandles.getValue("analytics")
         }
+    }
+
+    @Test
+    fun `named database keys reject reserved default name`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            AwsDatabaseProperties(
+                namedDatabases = mapOf(
+                    AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME to h2Properties("reserved_default"),
+                )
+            )
+        }
+
+        error.message.orEmpty() shouldContain AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME
     }
 
     @Test

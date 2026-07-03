@@ -106,6 +106,12 @@ property는 호출자가 설정해야 합니다. 호출자의 IAM principal에�
 arn:aws:rds-db:{region}:{account-id}:dbuser:{dbi-resource-id}/{db-user-name}
 ```
 
+### Named Database Handle
+
+`AwsDatabaseProperties.defaultDatabase`는 항상 예약된 handle 이름 `default`로
+노출됩니다. Registry lookup이 default handle과 충돌하지 않도록 `namedDatabases`
+항목에는 다른 key를 사용해야 합니다.
+
 ## 로컬 검증
 
 ```bash
