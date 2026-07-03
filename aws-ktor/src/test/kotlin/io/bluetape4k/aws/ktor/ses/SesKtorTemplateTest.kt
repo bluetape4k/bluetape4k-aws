@@ -183,6 +183,22 @@ class SesKtorTemplateTest {
     }
 
     @Test
+    fun `copy revalidates SES request models`() {
+        val email = sampleEmail()
+        val template = SesTemplateEmailRequest(
+            destination = SesEmailAddressSet(to = listOf("to@example.com")),
+            templateName = "welcome",
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            email.copy(subject = "bad\r\nsubject")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            template.copy(templateName = null, templateArn = null)
+        }
+    }
+
+    @Test
     fun `sendEmail cancels the backing future when coroutine is cancelled`() = runTest {
         val client = mockk<SesV2AsyncClient>()
         val future = CompletableFuture<SendEmailResponse>()

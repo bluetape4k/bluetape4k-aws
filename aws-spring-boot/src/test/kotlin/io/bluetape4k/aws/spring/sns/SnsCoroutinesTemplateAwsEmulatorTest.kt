@@ -138,6 +138,22 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
     }
 
     @Test
+    fun `publish request copy revalidates FIFO contract`() {
+        val request = SnsPublishRequest(
+            topicArn = "arn:aws:sns:us-east-1:000000000000:orders.fifo",
+            message = "hello",
+            messageGroupId = "orders",
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            request.copy(messageGroupId = null)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            request.copy(topicArn = "arn:aws:sns:us-east-1:000000000000:standard")
+        }
+    }
+
+    @Test
     fun `propagate AWS publish errors`() {
         contextRunner().run { context ->
             val operations = context.getBean(SnsOperations::class.java)
