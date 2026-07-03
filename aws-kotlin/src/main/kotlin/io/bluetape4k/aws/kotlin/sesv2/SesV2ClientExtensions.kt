@@ -2,11 +2,15 @@ package io.bluetape4k.aws.kotlin.sesv2
 
 import aws.sdk.kotlin.services.sesv2.SesV2Client
 import aws.sdk.kotlin.services.sesv2.model.GetEmailTemplateRequest
+import aws.sdk.kotlin.services.sesv2.model.NotFoundException
 import aws.sdk.kotlin.services.sesv2.model.SendBulkEmailRequest
 import aws.sdk.kotlin.services.sesv2.model.SendBulkEmailResponse
 import aws.sdk.kotlin.services.sesv2.model.SendEmailRequest
 import aws.sdk.kotlin.services.sesv2.model.SendEmailResponse
 import aws.sdk.kotlin.services.sesv2.model.Template
+import aws.smithy.kotlin.runtime.ServiceException
+import aws.smithy.kotlin.runtime.http.response.statusCode
+import kotlinx.coroutines.CancellationException
 
 /**
  * [emailRequest]를 바탕으로 email 을 전송합니다.
@@ -67,17 +71,17 @@ suspend fun SesV2Client.sendBulk(emailRequest: SendBulkEmailRequest): SendBulkEm
 
 
 /**
- * 등록된 [Template] 를 [templateName]으로 찾아서 반환합니다.
+ * Returns the registered email [Template] named [templateName], or `null` when
+ * it does not exist.
  *
  * ```
  * val template = sesClient.getTemplate("template-name")
  * ```
  *
- * @param templateName 템플릿 이름
- * @return [Template] 템플릿 정보, 없으면 null
+ * @param templateName template name.
+ * @return template details, or `null` when the template does not exist.
  */
 suspend fun SesV2Client.getTemplateOrNull(templateName: String): Template? {
-    // WHY: runCatching + getOrNull()은 CancellationException을 삼키므로 suspend에서 직접 try-catch 사용
     return try {
         val response = getEmailTemplate(GetEmailTemplateRequest { this.templateName = templateName })
         response.templateContent?.let {
@@ -86,9 +90,20 @@ suspend fun SesV2Client.getTemplateOrNull(templateName: String): Template? {
                 this.templateContent = response.templateContent
             }
         }
-    } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+    } catch (e: CancellationException) {
         throw e
-    } catch (_: Exception) {
-        null
+    } catch (e: Exception) {
+        if (e.isMissingSesV2TemplateError()) null else throw e
     }
+}
+
+internal fun Throwable.isMissingSesV2TemplateError(): Boolean {
+    if (this is NotFoundException) return true
+
+    val serviceError = this as? ServiceException ?: return false
+    val errorCode = serviceError.sdkErrorMetadata.errorCode
+    val statusCode = serviceError.sdkErrorMetadata.protocolResponse.statusCode()?.value
+    return errorCode == "NotFound" ||
+            errorCode == "NotFoundException" ||
+            statusCode == 404
 }

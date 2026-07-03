@@ -6,10 +6,17 @@ import aws.sdk.kotlin.services.s3.model.DeleteMarkerEntry
 import aws.sdk.kotlin.services.s3.model.DeleteObjectsRequest
 import aws.sdk.kotlin.services.s3.model.DeleteObjectsResponse
 import aws.sdk.kotlin.services.s3.model.Error as S3DeleteError
+import aws.sdk.kotlin.services.s3.model.GetBucketPolicyRequest
+import aws.sdk.kotlin.services.s3.model.GetBucketPolicyResponse
 import aws.sdk.kotlin.services.s3.model.ListObjectVersionsRequest
 import aws.sdk.kotlin.services.s3.model.ListObjectVersionsResponse
 import aws.sdk.kotlin.services.s3.model.ListObjectsV2Response
 import aws.sdk.kotlin.services.s3.model.ObjectVersion
+import aws.smithy.kotlin.runtime.InternalApi
+import aws.smithy.kotlin.runtime.ServiceErrorMetadata
+import aws.smithy.kotlin.runtime.ServiceException
+import aws.smithy.kotlin.runtime.http.HttpStatusCode
+import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
@@ -132,5 +139,52 @@ class S3ClientBucketMockTest {
         coVerify(exactly = 1) { client.listObjectVersions(any()) }
         coVerify(exactly = 1) { client.deleteObjects(any()) }
         coVerify(exactly = 0) { client.deleteBucket(any()) }
+    }
+
+    @Test
+    fun `tryGetBucketPolicy returns null only for missing policy errors`() = runSuspendIO {
+        coEvery { client.getBucketPolicy(any<GetBucketPolicyRequest>()) } throws
+                serviceException(errorCode = "NoSuchBucketPolicy", statusCode = 404)
+
+        val result = client.tryGetBucketPolicy("bucket-without-policy")
+
+        result.shouldBeNull()
+        coVerify(exactly = 1) { client.getBucketPolicy(any<GetBucketPolicyRequest>()) }
+    }
+
+    @Test
+    fun `tryGetBucketPolicy propagates access denied errors`() = runSuspendIO {
+        coEvery { client.getBucketPolicy(any<GetBucketPolicyRequest>()) } throws
+                serviceException(errorCode = "AccessDenied", statusCode = 403)
+
+        assertFailsWith<ServiceException> {
+            client.tryGetBucketPolicy("private-bucket")
+        }
+
+        coVerify(exactly = 1) { client.getBucketPolicy(any<GetBucketPolicyRequest>()) }
+    }
+
+    @Test
+    fun `tryGetBucketPolicy returns policy when request succeeds`() = runSuspendIO {
+        coEvery { client.getBucketPolicy(any<GetBucketPolicyRequest>()) } returns GetBucketPolicyResponse {
+            policy = """{"Version":"2012-10-17","Statement":[]}"""
+        }
+
+        val result = client.tryGetBucketPolicy("bucket-with-policy")
+
+        result shouldBeEqualTo """{"Version":"2012-10-17","Statement":[]}"""
+        coVerify(exactly = 1) { client.getBucketPolicy(any<GetBucketPolicyRequest>()) }
+    }
+
+    @OptIn(InternalApi::class)
+    private fun serviceException(
+        errorCode: String,
+        statusCode: Int,
+    ): ServiceException {
+        val exception = ServiceException("test error")
+        exception.sdkErrorMetadata.attributes[ServiceErrorMetadata.ErrorCode] = errorCode
+        exception.sdkErrorMetadata.attributes[ServiceErrorMetadata.ProtocolResponse] =
+            HttpResponse(status = HttpStatusCode.fromValue(statusCode))
+        return exception
     }
 }

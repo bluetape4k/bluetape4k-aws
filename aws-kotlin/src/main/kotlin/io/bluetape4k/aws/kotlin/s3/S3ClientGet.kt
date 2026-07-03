@@ -343,32 +343,45 @@ suspend inline fun S3Client.getObjectRetention(
 }
 
 /**
- * [bucketName] 버킷의 정책을 조회합니다. Policy가 없는 경우 `null`을 반환합니다.
+ * Returns the policy document for [bucketName], or `null` when the policy does
+ * not exist.
  *
  * ```
  * val policy = s3Client.tryGetBucketPolicy("bucket-name")
  * ```
- * @param bucketName 버킷 이름
- * @param expectedBucketOwner 버킷 소유자
- * @return 버킷 정책 문자열, Policy가 없는 경우 `null` 반환
+ *
+ * Only documented missing-policy errors are normalized to `null`. Access
+ * failures, throttling, retryable service failures, and unknown SDK errors are
+ * propagated to the caller.
+ *
+ * @param bucketName bucket name.
+ * @param expectedBucketOwner expected bucket owner.
+ * @return bucket policy document, or `null` when the policy does not exist.
  */
 suspend inline fun S3Client.tryGetBucketPolicy(
     bucketName: String,
     expectedBucketOwner: String? = null,
     crossinline builder: GetBucketPolicyRequest.Builder.() -> Unit = {},
 ): String? {
-    // WHY: runCatching은 CancellationException을 삼키므로 suspend 함수에서 사용하면 안 됨
     return try {
         getBucketPolicy {
             this.bucket = bucketName
             this.expectedBucketOwner = expectedBucketOwner
             builder()
         }.policy
-    } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+    } catch (e: CancellationException) {
         throw e
-    } catch (_: Exception) {
-        null
+    } catch (e: Exception) {
+        if (e.isMissingBucketPolicyError()) null else throw e
     }
+}
+
+@PublishedApi
+internal fun Throwable.isMissingBucketPolicyError(): Boolean {
+    val serviceError = this as? ServiceException ?: return false
+    val errorCode = serviceError.sdkErrorMetadata.errorCode
+    val statusCode = serviceError.sdkErrorMetadata.protocolResponse.statusCode()?.value
+    return errorCode in setOf("NoSuchBucketPolicy", "NoSuchBucket", "NotFound") || statusCode == 404
 }
 
 @PublishedApi
