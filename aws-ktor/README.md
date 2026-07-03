@@ -55,9 +55,10 @@ taking ownership away from the application.
 ## Dependency
 
 `aws-ktor` uses shared `bluetape4k-ktor-core` helpers for the common Ktor
-baseline and exposes Ktor client core plus AWS auth APIs. Ktor engines,
-Jackson content negotiation, and AWS service clients remain explicit
-application dependencies where runtime choice matters.
+baseline and exposes Ktor client core, AWS auth, and the AWS service SDK types
+that appear in its public plugin/config APIs. Ktor engines, Jackson content
+negotiation, Micrometer, Exposed, and JDBC drivers remain explicit application
+dependencies where runtime choice matters.
 
 ```kotlin
 dependencies {
@@ -68,44 +69,33 @@ dependencies {
 
     // S3 Access Grants plugin usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:s3control")
 
     // S3 Vectors plugin usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:s3vectors")
 
     // EventBridge plugin usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:eventbridge")
 
     // Kinesis stream and record Flow usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:kinesis")
 
     // STS caller identity and temporary session usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sts")
 
     // SQS consumer/publisher usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sqs")
 
     // EC2 IMDS metadata usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:imds")
 
     // CloudWatch metrics and CloudWatch Logs usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:cloudwatch")
-    implementation("software.amazon.awssdk:cloudwatchlogs")
 
     // SES v2 email usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sesv2")
 
     // SNS topic, SMS, and HTTP endpoint message usage
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sns")
     implementation("io.github.bluetape4k:bluetape4k-jackson3:${bluetape4kVersion}")
 
     // Optional Micrometer bridge for SQS/S3/CloudWatch Ktor helpers
@@ -113,7 +103,6 @@ dependencies {
 
     // DynamoDB Ktor server usage
     implementation("io.ktor:ktor-server-core")
-    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
 
     // AWS-backed Exposed Ktor server usage
     implementation("io.ktor:ktor-server-core")

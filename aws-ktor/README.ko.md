@@ -54,8 +54,9 @@ S3 Access Grants, S3 Vectors, EventBridge, Kinesis, STS, IMDS, CloudWatch, Cloud
 ## 의존성
 
 `aws-ktor`는 공통 Ktor baseline에 `bluetape4k-ktor-core` helper를 사용하고, Ktor
-client core와 AWS auth API를 노출합니다. Ktor engine, Jackson content negotiation,
-AWS service client는 runtime 선택이 중요하므로 애플리케이션 의존성으로 명시합니다.
+client core, AWS auth, public plugin/config API에 등장하는 AWS service SDK 타입을
+노출합니다. Ktor engine, Jackson content negotiation, Micrometer, Exposed, JDBC driver는
+runtime 선택이 중요하므로 애플리케이션 의존성으로 명시합니다.
 
 ```kotlin
 dependencies {
@@ -66,44 +67,33 @@ dependencies {
 
     // S3 Access Grants plugin 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:s3control")
 
     // S3 Vectors plugin 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:s3vectors")
 
     // EventBridge plugin 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:eventbridge")
 
     // Kinesis stream 및 record Flow 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:kinesis")
 
     // STS caller identity 및 임시 session 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sts")
 
     // SQS consumer/publisher 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sqs")
 
     // EC2 IMDS metadata 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:imds")
 
     // CloudWatch metrics 및 CloudWatch Logs 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:cloudwatch")
-    implementation("software.amazon.awssdk:cloudwatchlogs")
 
     // SES v2 email 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sesv2")
 
     // SNS topic, SMS, HTTP endpoint message 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("software.amazon.awssdk:sns")
     implementation("io.github.bluetape4k:bluetape4k-jackson3:${bluetape4kVersion}")
 
     // SQS/S3/CloudWatch Ktor helper용 선택적 Micrometer bridge
@@ -111,7 +101,6 @@ dependencies {
 
     // DynamoDB Ktor server 사용 시
     implementation("io.ktor:ktor-server-core")
-    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
 
     // AWS-backed Exposed Ktor server 사용 시
     implementation("io.ktor:ktor-server-core")
