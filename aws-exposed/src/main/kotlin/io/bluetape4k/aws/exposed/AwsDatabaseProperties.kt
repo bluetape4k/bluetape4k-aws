@@ -5,13 +5,27 @@ import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 
 
+/**
+ * Exposed database connection settings for the default handle and optional named handles.
+ *
+ * ## Contract
+ *
+ * [defaultDatabase] is registered under [AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME].
+ * [namedDatabases] keys must be non-blank and must not use that reserved default
+ * handle name.
+ */
 data class AwsDatabaseProperties(
     val defaultDatabase: AwsDatabaseConnectionProperties = AwsDatabaseConnectionProperties(),
     val namedDatabases: Map<String, AwsDatabaseConnectionProperties> = emptyMap(),
 ): Serializable {
 
     init {
-        namedDatabases.keys.forEach { it.requireNotBlank("namedDatabases key") }
+        namedDatabases.keys.forEach { key ->
+            val databaseName = key.requireNotBlank("namedDatabases key")
+            require(databaseName != AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME) {
+                "namedDatabases key '${AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME}' is reserved for defaultDatabase."
+            }
+        }
     }
 
     companion object: KLogging() {
