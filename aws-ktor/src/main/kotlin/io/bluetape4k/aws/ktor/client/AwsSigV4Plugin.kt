@@ -19,12 +19,12 @@ import java.net.URI
 import java.time.Clock
 
 /**
- * Ktor `HttpClient` 요청에 AWS Signature Version 4 서명을 적용하는 플러그인입니다.
+ * Ktor `HttpClient` plugin that applies AWS Signature Version 4 signing.
  *
- * ## 동작/계약
- * - Ktor `Send` hook에서 최종 [OutgoingContent]로 변환된 요청을 AWS SDK `SdkHttpRequest`로 매핑한다.
- * - [AwsV4HttpSigner]로 헤더 또는 쿼리 문자열 서명을 생성한 뒤 Ktor 요청에 다시 반영한다.
- * - 기본 모드는 replay 가능한 body만 payload 서명한다. 스트리밍 body는 `payloadSigningEnabled=false`일 때만 허용한다.
+ * ## Behavior / Contract
+ * - Maps the request converted by Ktor's `Send` hook to an AWS SDK `SdkHttpRequest`.
+ * - Uses [AwsV4HttpSigner] to create header or query-string signatures, then applies them back to the Ktor request.
+ * - The default mode signs only replayable bodies. Streaming bodies are allowed only when `payloadSigningEnabled=false`.
  *
  * ```kotlin
  * import io.ktor.client.HttpClient
