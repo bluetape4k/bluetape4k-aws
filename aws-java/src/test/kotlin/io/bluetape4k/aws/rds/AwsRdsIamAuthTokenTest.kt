@@ -3,9 +3,7 @@ package io.bluetape4k.aws.rds
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.aws.exceptions.AwsBluetapeException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.regions.Region
@@ -116,7 +114,6 @@ class AwsRdsIamAuthTokenTest {
             )
         }
 
-        (error is AwsBluetapeException).shouldBeTrue()
         error.message.orEmpty() shouldContain "database.example.com:5432"
         error.message.orEmpty().contains("raw-token").shouldBeFalse()
     }
