@@ -4,7 +4,6 @@ import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
-import io.bluetape4k.aws.kotlin.http.HttpClientEngineProvider
 import io.bluetape4k.support.useSafe
 
 /**
@@ -21,7 +20,7 @@ import io.bluetape4k.support.useSafe
  * @param endpointUrl Kinesis 서비스 엔드포인트 URL. null이면 기본 AWS 엔드포인트를 사용합니다.
  * @param region AWS 리전. null이면 환경 설정에서 자동으로 감지합니다.
  * @param credentialsProvider AWS 인증 정보 제공자. null이면 기본 자격 증명 체인을 사용합니다.
- * @param httpClient HTTP 클라이언트 엔진. 기본값은 [HttpClientEngineProvider.defaultHttpEngine]입니다.
+ * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
  * @param builder [KinesisClient.Config.Builder]에 대한 추가 설정 람다.
  * @return 설정된 [KinesisClient] 인스턴스.
  */
@@ -29,7 +28,7 @@ inline fun kinesisClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
-    httpClient: HttpClientEngine? = HttpClientEngineProvider.defaultHttpEngine,
+    httpClient: HttpClientEngine? = null,
     crossinline builder: KinesisClient.Config.Builder.() -> Unit = {},
 ): KinesisClient = KinesisClient {
     endpointUrl?.let { this.endpointUrl = it }

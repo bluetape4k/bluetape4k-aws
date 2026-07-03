@@ -4,7 +4,6 @@ import aws.sdk.kotlin.services.ssm.SsmClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
-import io.bluetape4k.aws.kotlin.http.HttpClientEngineProvider
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.useSafe
 
@@ -15,7 +14,7 @@ inline fun ssmClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
-    httpClient: HttpClientEngine? = HttpClientEngineProvider.defaultHttpEngine,
+    httpClient: HttpClientEngine? = null,
     crossinline builder: SsmClient.Config.Builder.() -> Unit = {},
 ): SsmClient {
     endpointUrl?.let { it.host.toString().requireNotBlank("endpointUrl.host") }

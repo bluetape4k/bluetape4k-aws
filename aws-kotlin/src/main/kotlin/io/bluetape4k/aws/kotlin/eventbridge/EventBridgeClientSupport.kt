@@ -4,7 +4,6 @@ import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
-import io.bluetape4k.aws.kotlin.http.HttpClientEngineProvider
 import io.bluetape4k.support.useSafe
 
 /**
@@ -17,7 +16,7 @@ inline fun eventBridgeClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
-    httpClient: HttpClientEngine? = HttpClientEngineProvider.defaultHttpEngine,
+    httpClient: HttpClientEngine? = null,
     crossinline builder: EventBridgeClient.Config.Builder.() -> Unit = {},
 ): EventBridgeClient = EventBridgeClient {
     endpointUrl?.let { this.endpointUrl = it }
