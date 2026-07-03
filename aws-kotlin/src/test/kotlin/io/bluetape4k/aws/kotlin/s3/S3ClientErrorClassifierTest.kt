@@ -34,6 +34,17 @@ class S3ClientErrorClassifierTest {
         serviceException(errorCode = "AccessDenied", statusCode = 403).isMissingObjectError().shouldBeFalse()
     }
 
+    @Test
+    fun `isMissingBucketPolicyError는 NoSuchBucketPolicy와 404를 미존재로 판별한다`() {
+        serviceException(errorCode = "NoSuchBucketPolicy").isMissingBucketPolicyError().shouldBeTrue()
+        serviceException(statusCode = 404).isMissingBucketPolicyError().shouldBeTrue()
+    }
+
+    @Test
+    fun `isMissingBucketPolicyError는 기타 서비스 오류를 미존재로 판별하지 않는다`() {
+        serviceException(errorCode = "AccessDenied", statusCode = 403).isMissingBucketPolicyError().shouldBeFalse()
+    }
+
     private fun serviceException(
         errorCode: String? = null,
         statusCode: Int? = null,

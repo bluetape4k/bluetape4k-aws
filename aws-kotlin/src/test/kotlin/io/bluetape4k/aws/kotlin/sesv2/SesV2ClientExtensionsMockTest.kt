@@ -3,10 +3,16 @@ package io.bluetape4k.aws.kotlin.sesv2
 import aws.sdk.kotlin.services.sesv2.SesV2Client
 import aws.sdk.kotlin.services.sesv2.model.EmailTemplateContent
 import aws.sdk.kotlin.services.sesv2.model.GetEmailTemplateResponse
+import aws.sdk.kotlin.services.sesv2.model.NotFoundException
 import aws.sdk.kotlin.services.sesv2.model.SendBulkEmailRequest
 import aws.sdk.kotlin.services.sesv2.model.SendBulkEmailResponse
 import aws.sdk.kotlin.services.sesv2.model.SendEmailRequest
 import aws.sdk.kotlin.services.sesv2.model.SendEmailResponse
+import aws.smithy.kotlin.runtime.InternalApi
+import aws.smithy.kotlin.runtime.ServiceErrorMetadata
+import aws.smithy.kotlin.runtime.ServiceException
+import aws.smithy.kotlin.runtime.http.HttpStatusCode
+import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.assertions.assertFailsWith
@@ -95,12 +101,21 @@ class SesV2ClientExtensionsMockTest {
     }
 
     @Test
-    fun `getTemplateOrNull returns null on non-cancellation exception`() = runSuspendIO {
-        coEvery { client.getEmailTemplate(any()) } throws RuntimeException("TemplateDoesNotExist")
+    fun `getTemplateOrNull returns null for missing template errors`() = runSuspendIO {
+        coEvery { client.getEmailTemplate(any()) } throws NotFoundException { message = "missing template" }
 
         val result = client.getTemplateOrNull("nonexistent")
 
         result.shouldBeNull()
+    }
+
+    @Test
+    fun `getTemplateOrNull propagates access denied errors`() = runSuspendIO {
+        coEvery { client.getEmailTemplate(any()) } throws serviceException(errorCode = "AccessDenied", statusCode = 403)
+
+        assertFailsWith<ServiceException> {
+            client.getTemplateOrNull("private-template")
+        }
     }
 
     @Test
@@ -110,5 +125,17 @@ class SesV2ClientExtensionsMockTest {
         assertFailsWith<CancellationException> {
             client.getTemplateOrNull("any")
         }
+    }
+
+    @OptIn(InternalApi::class)
+    private fun serviceException(
+        errorCode: String,
+        statusCode: Int,
+    ): ServiceException {
+        val exception = ServiceException("test error")
+        exception.sdkErrorMetadata.attributes[ServiceErrorMetadata.ErrorCode] = errorCode
+        exception.sdkErrorMetadata.attributes[ServiceErrorMetadata.ProtocolResponse] =
+            HttpResponse(status = HttpStatusCode.fromValue(statusCode))
+        return exception
     }
 }
