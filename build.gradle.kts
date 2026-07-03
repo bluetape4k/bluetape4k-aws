@@ -2,6 +2,12 @@ import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.report.ReportMergeTask
 import nmcp.NmcpAggregationExtension
 import nmcp.NmcpExtension
+import org.gradle.api.attributes.Bundling
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+import org.gradle.api.attributes.java.TargetJvmVersion
+import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import java.util.concurrent.TimeUnit
 
@@ -68,6 +74,38 @@ val centralSnapshotsParallelism: Int = providers
 val projectGroup: String = providers.gradleProperty("projectGroup").get()
 val baseVersion: String = providers.gradleProperty("baseVersion").get()
 val snapshotVersion: String = providers.gradleProperty("snapshotVersion").get()
+
+val awsKtorSqsConsumerFixtureClasspath = configurations.create("awsKtorSqsConsumerFixtureClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+    }
+}
+
+dependencies {
+    awsKtorSqsConsumerFixtureClasspath(project(":bluetape4k-aws-ktor"))
+    awsKtorSqsConsumerFixtureClasspath(libs.ktor.server.core)
+}
+
+val compileAwsKtorSqsConsumerFixture = tasks.register<JavaCompile>("compileAwsKtorSqsConsumerFixture") {
+    description = "Compiles a minimal external SQS consumer against aws-ktor API dependencies."
+    group = "verification"
+    source(fileTree("aws-ktor/src/consumerFixture/java") { include("**/*.java") })
+    classpath = awsKtorSqsConsumerFixtureClasspath
+    destinationDirectory.set(layout.buildDirectory.dir("consumer-fixtures/aws-ktor-sqs/classes"))
+    sourceCompatibility = "21"
+    targetCompatibility = "21"
+    options.encoding = "UTF-8"
+}
+
+tasks.named("check") {
+    dependsOn(compileAwsKtorSqsConsumerFixture)
+}
 
 allprojects {
     group = projectGroup
