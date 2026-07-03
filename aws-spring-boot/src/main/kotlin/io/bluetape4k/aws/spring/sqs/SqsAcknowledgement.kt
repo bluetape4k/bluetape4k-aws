@@ -41,24 +41,22 @@ internal class DefaultSqsAcknowledgement(
 ) : SqsAcknowledgement {
 
     private val terminal = AtomicBoolean(false)
+    private val inFlightTerminal = AtomicBoolean(false)
 
     override val completed: Boolean
         get() = terminal.get()
 
     override suspend fun acknowledge() {
-        if (!terminal.compareAndSet(false, true)) {
-            return
-        }
-        runAcknowledgement(SqsAcknowledgementAction.ACK) {
+        runTerminalAcknowledgement(SqsAcknowledgementAction.ACK) {
             operations.delete(context.queueUrl, context.message.receiptHandle)
         }
     }
 
     override suspend fun nack(timeoutSeconds: Int) {
-        if (!terminal.compareAndSet(false, true)) {
-            return
+        require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
+        runTerminalAcknowledgement(SqsAcknowledgementAction.NACK) {
+            operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
-        changeVisibilityInternal(SqsAcknowledgementAction.NACK, timeoutSeconds)
     }
 
     override suspend fun changeVisibility(timeoutSeconds: Int) {
@@ -72,6 +70,24 @@ internal class DefaultSqsAcknowledgement(
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
         runAcknowledgement(action) {
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
+        }
+    }
+
+    private suspend fun runTerminalAcknowledgement(
+        action: SqsAcknowledgementAction,
+        block: suspend () -> Unit,
+    ) {
+        if (terminal.get()) {
+            return
+        }
+        if (!inFlightTerminal.compareAndSet(false, true)) {
+            return
+        }
+        try {
+            runAcknowledgement(action, block)
+            terminal.set(true)
+        } finally {
+            inFlightTerminal.set(false)
         }
     }
 
