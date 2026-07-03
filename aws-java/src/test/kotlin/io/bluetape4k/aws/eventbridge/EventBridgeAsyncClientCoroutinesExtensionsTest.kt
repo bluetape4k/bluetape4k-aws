@@ -50,4 +50,20 @@ class EventBridgeAsyncClientCoroutinesExtensionsTest {
             client.putEvents(listOf(entry))
         }
     }
+
+    @Test
+    fun `list helpers validate limits before async AWS call`() = runTest {
+        assertFailsWith<IllegalArgumentException> {
+            client.listRulesAsync(limit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            client.listTargetsByRuleAsync("rule", limit = 101)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            client.listRules(limit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            client.listTargetsByRule("rule", limit = 101)
+        }
+    }
 }

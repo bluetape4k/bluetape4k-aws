@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.eventbridge
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
@@ -56,5 +57,15 @@ class EventBridgeClientExtensionsTest {
         result shouldBeSameInstanceAs expected
         result.failedEntryCount() shouldBeEqualTo 1
         verify(exactly = 1) { client.removeTargets(any<RemoveTargetsRequest>()) }
+    }
+
+    @Test
+    fun `list helpers validate limits before AWS call`() {
+        assertFailsWith<IllegalArgumentException> {
+            client.listRules(limit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            client.listTargetsByRule("rule", limit = 101)
+        }
     }
 }

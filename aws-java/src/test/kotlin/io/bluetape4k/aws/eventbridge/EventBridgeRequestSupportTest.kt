@@ -2,6 +2,8 @@ package io.bluetape4k.aws.eventbridge
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.eventbridge.model.listRulesRequestOf
+import io.bluetape4k.aws.eventbridge.model.listTargetsByRuleRequestOf
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestOf
 import io.bluetape4k.aws.eventbridge.model.putRuleRequestOf
@@ -100,5 +102,21 @@ class EventBridgeRequestSupportTest {
 
         request.rule() shouldBeEqualTo "rule"
         request.ids() shouldBeEqualTo listOf("target-1")
+    }
+
+    @Test
+    fun `list request factories validate limits`() {
+        assertFailsWith<IllegalArgumentException> {
+            listRulesRequestOf(limit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listRulesRequestOf(limit = 101)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listTargetsByRuleRequestOf("rule", limit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listTargetsByRuleRequestOf("rule", limit = 101)
+        }
     }
 }

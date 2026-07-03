@@ -36,6 +36,7 @@ fun KinesisClient.createStream(
     shardCount: Int = 1,
 ): CreateStreamResponse {
     streamName.requireNotBlank("streamName")
+    shardCount.validateKinesisShardCount("shardCount")
     return createStream(createStreamRequest {
         streamName(streamName)
         shardCount(shardCount)
@@ -77,7 +78,7 @@ fun KinesisClient.putRecord(
  *
  * ## 동작/계약
  * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [entries]는 비어 있으면 안 된다.
+ * - [entries]는 1..500개여야 한다.
  *
  * ```kotlin
  * val entries = listOf(
@@ -94,6 +95,7 @@ fun KinesisClient.putRecords(
     entries: List<PutRecordsRequestEntry>,
 ): PutRecordsResponse {
     streamName.requireNotBlank("streamName")
+    entries.validateKinesisPutRecordsEntries("entries")
     return putRecords(putRecordsRequest {
         streamName(streamName)
         records(entries)
@@ -135,6 +137,7 @@ fun KinesisClient.getShardIterator(
  *
  * ## 동작/계약
  * - [shardIterator]가 blank이면 `IllegalArgumentException`을 던진다.
+ * - [limit]은 1..10000이어야 한다.
  *
  * ```kotlin
  * val response = kinesisClient.getRecords(shardIterator, limit = 100)
@@ -145,6 +148,7 @@ fun KinesisClient.getRecords(
     limit: Int = 100,
 ): GetRecordsResponse {
     shardIterator.requireNotBlank("shardIterator")
+    limit.validateKinesisGetRecordsLimit("limit")
     return getRecords(getRecordsRequest {
         shardIterator(shardIterator)
         limit(limit)

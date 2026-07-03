@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kinesis.model
 
+import io.bluetape4k.aws.kinesis.validateKinesisShardCount
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kinesis.model.CreateStreamRequest
 
@@ -23,6 +24,7 @@ inline fun createStreamRequest(
  *
  * ## 동작/계약
  * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [shardCount]는 1 이상이어야 한다.
  *
  * ```kotlin
  * val req = createStreamRequestOf("my-stream", shardCount = 2)
@@ -36,6 +38,7 @@ inline fun createStreamRequestOf(
     builder: CreateStreamRequest.Builder.() -> Unit = {},
 ): CreateStreamRequest {
     streamName.requireNotBlank("streamName")
+    shardCount.validateKinesisShardCount("shardCount")
     return createStreamRequest {
         streamName(streamName)
         shardCount(shardCount)
