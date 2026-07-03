@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kinesis.model
 
+import io.bluetape4k.aws.kinesis.validateKinesisGetRecordsLimit
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kinesis.model.GetRecordsRequest
 
@@ -23,6 +24,7 @@ inline fun getRecordsRequest(
  *
  * ## 동작/계약
  * - [shardIterator]가 blank이면 `IllegalArgumentException`을 던진다.
+ * - [limit]은 1..10000이어야 한다.
  *
  * ```kotlin
  * val req = getRecordsRequestOf(shardIterator = "AAA...", limit = 50)
@@ -34,6 +36,7 @@ inline fun getRecordsRequestOf(
     builder: GetRecordsRequest.Builder.() -> Unit = {},
 ): GetRecordsRequest {
     shardIterator.requireNotBlank("shardIterator")
+    limit.validateKinesisGetRecordsLimit("limit")
     return getRecordsRequest {
         shardIterator(shardIterator)
         limit(limit)

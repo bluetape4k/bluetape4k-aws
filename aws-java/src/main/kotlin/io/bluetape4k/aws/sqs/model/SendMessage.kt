@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.sqs.model
 
+import io.bluetape4k.aws.sqs.validateSqsDelaySeconds
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
@@ -26,6 +27,8 @@ inline fun sendMessageRequest(
 /**
  * [queueUrl], [messageBody]로 [SendMessageRequest]를 생성합니다.
  *
+ * [delaySeconds]를 지정하면 SQS 제약(0..900)을 선검증합니다.
+ *
  * ```kotlin
  * val request = sendMessageRequestOf(
  *     queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123/my-queue",
@@ -43,6 +46,7 @@ inline fun sendMessageRequestOf(
 ): SendMessageRequest {
     queueUrl.requireNotBlank("queueUrl")
     messageBody.requireNotBlank("messageBody")
+    delaySeconds?.validateSqsDelaySeconds("delaySeconds")
 
     return sendMessageRequest {
         queueUrl(queueUrl)
@@ -77,7 +81,7 @@ inline fun sendMessageBatchRequestEntry(
  * @param id                An identifier for the message in this batch.
  * @param messageGroupId    An identifier for the group of messages in this batch.
  * @param messageBody       The message to send.
- * @param delaySeconds      The length of time, in seconds, for which to delay a specific message.
+ * @param delaySeconds      The length of time, in seconds, for which to delay a specific message. Range: 0..900.
  * @param builder       The lambda to initialize the builder.
  * @receiver            The builder to build the request.
  * @return            [SendMessageBatchRequestEntry] 인스턴스
@@ -92,6 +96,7 @@ inline fun sendMessageBatchRequestEntryOf(
     id.requireNotBlank("id")
     messageGroupId.requireNotBlank("messageGroupId")
     messageBody.requireNotBlank("messageBody")
+    delaySeconds?.validateSqsDelaySeconds("delaySeconds")
 
     return sendMessageBatchRequestEntry {
         id(id)

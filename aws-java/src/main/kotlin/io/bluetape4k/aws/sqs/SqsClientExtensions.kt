@@ -139,7 +139,7 @@ fun SqsClient.send(
 /**
  * 메시지를 배치로 전송합니다.
  *
- * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
  *
  * ```kotlin
  * val entry = sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello")
@@ -152,7 +152,7 @@ fun SqsClient.sendBatch(
     vararg entries: SendMessageBatchRequestEntry,
 ): SendMessageBatchResponse {
     queueUrl.requireNotBlank("queueUrl")
-    require(entries.isNotEmpty()) { "entries must not be empty" }
+    validateSqsBatchSize(entries.size, "entries")
     return sendMessageBatch {
         it.queueUrl(queueUrl)
         it.entries(*entries)
@@ -162,7 +162,7 @@ fun SqsClient.sendBatch(
 /**
  * 메시지를 배치로 전송합니다.
  *
- * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
  *
  * ```kotlin
  * val entries = listOf(sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello"))
@@ -175,7 +175,7 @@ fun SqsClient.sendBatch(
     entries: Collection<SendMessageBatchRequestEntry>,
 ): SendMessageBatchResponse {
     queueUrl.requireNotBlank("queueUrl")
-    require(entries.isNotEmpty()) { "entries must not be empty" }
+    validateSqsBatchSize(entries.size, "entries")
     return sendMessageBatch {
         it.queueUrl(queueUrl)
         it.entries(entries)
@@ -212,6 +212,8 @@ fun SqsClient.receiveMessages(
 /**
  * 큐 메시지의 가시성 타임아웃을 변경합니다.
  *
+ * [visibilityTimeout]을 지정하면 SQS 제약(0..43200)을 선검증해 네트워크 호출 전에 실패합니다.
+ *
  * ```kotlin
  * val response = sqsClient.changeMessageVisibility(queueUrl, receiptHandle = handle, visibilityTimeout = 30)
  * // response.sdkHttpResponse().isSuccessful == true
@@ -223,6 +225,7 @@ fun SqsClient.changeMessageVisibility(
     visibilityTimeout: Int? = null,
 ): ChangeMessageVisibilityResponse {
     queueUrl.requireNotBlank("queueUrl")
+    visibilityTimeout?.validateSqsVisibilityTimeout("visibilityTimeout")
     return changeMessageVisibility {
         it.queueUrl(queueUrl)
         receiptHandle?.run { it.receiptHandle(this) }
@@ -233,7 +236,7 @@ fun SqsClient.changeMessageVisibility(
 /**
  * 수신된 메시지들의 가시성 타임아웃을 일괄 변경합니다.
  *
- * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
  *
  * ```kotlin
  * val entry = ChangeMessageVisibilityBatchRequestEntry.builder()
@@ -250,7 +253,7 @@ fun SqsClient.changeMessageVisibilityBatch(
     vararg entries: ChangeMessageVisibilityBatchRequestEntry,
 ): ChangeMessageVisibilityBatchResponse {
     queueUrl.requireNotBlank("queueUrl")
-    require(entries.isNotEmpty()) { "entries must not be empty" }
+    validateSqsBatchSize(entries.size, "entries")
     return changeMessageVisibilityBatch {
         it.queueUrl(queueUrl)
         it.entries(*entries)
@@ -260,14 +263,14 @@ fun SqsClient.changeMessageVisibilityBatch(
 /**
  * 수신된 메시지들의 가시성 타임아웃을 일괄 변경합니다.
  *
- * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
  */
 fun SqsClient.changeMessageVisibilityBatch(
     queueUrl: String,
     entries: Collection<ChangeMessageVisibilityBatchRequestEntry>,
 ): ChangeMessageVisibilityBatchResponse {
     queueUrl.requireNotBlank("queueUrl")
-    require(entries.isNotEmpty()) { "entries must not be empty" }
+    validateSqsBatchSize(entries.size, "entries")
     return changeMessageVisibilityBatch {
         it.queueUrl(queueUrl)
         it.entries(entries)
@@ -296,7 +299,7 @@ fun SqsClient.deleteMessage(
 /**
  * 여러 메시지를 일괄 삭제합니다.
  *
- * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
  *
  * ```kotlin
  * val entry = DeleteMessageBatchRequestEntry.builder()
@@ -312,7 +315,7 @@ fun SqsClient.deleteMessageBatch(
     vararg entries: DeleteMessageBatchRequestEntry,
 ): DeleteMessageBatchResponse {
     queueUrl.requireNotBlank("queueUrl")
-    require(entries.isNotEmpty()) { "entries must not be empty" }
+    validateSqsBatchSize(entries.size, "entries")
     return deleteMessageBatch {
         it.queueUrl(queueUrl)
         it.entries(*entries)
@@ -322,14 +325,14 @@ fun SqsClient.deleteMessageBatch(
 /**
  * 여러 메시지를 일괄 삭제합니다.
  *
- * [entries]가 비어 있으면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
  */
 fun SqsClient.deleteMessageBatch(
     queueUrl: String,
     entries: Collection<DeleteMessageBatchRequestEntry>,
 ): DeleteMessageBatchResponse {
     queueUrl.requireNotBlank("queueUrl")
-    require(entries.isNotEmpty()) { "entries must not be empty" }
+    validateSqsBatchSize(entries.size, "entries")
     return deleteMessageBatch {
         it.queueUrl(queueUrl)
         it.entries(entries)

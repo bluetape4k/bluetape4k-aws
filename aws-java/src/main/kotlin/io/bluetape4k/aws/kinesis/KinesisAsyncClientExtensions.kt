@@ -33,6 +33,7 @@ fun KinesisAsyncClient.createStreamAsync(
     shardCount: Int = 1,
 ): CompletableFuture<CreateStreamResponse> {
     streamName.requireNotBlank("streamName")
+    shardCount.validateKinesisShardCount("shardCount")
     return createStream(createStreamRequest {
         streamName(streamName)
         shardCount(shardCount)
@@ -76,6 +77,7 @@ fun KinesisAsyncClient.putRecordsAsync(
     entries: List<PutRecordsRequestEntry>,
 ): CompletableFuture<PutRecordsResponse> {
     streamName.requireNotBlank("streamName")
+    entries.validateKinesisPutRecordsEntries("entries")
     return putRecords(putRecordsRequest {
         streamName(streamName)
         records(entries)
@@ -119,6 +121,7 @@ fun KinesisAsyncClient.getRecordsAsync(
     limit: Int = 100,
 ): CompletableFuture<GetRecordsResponse> {
     shardIterator.requireNotBlank("shardIterator")
+    limit.validateKinesisGetRecordsLimit("limit")
     return getRecords(getRecordsRequest {
         shardIterator(shardIterator)
         limit(limit)

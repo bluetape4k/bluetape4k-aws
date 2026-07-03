@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kinesis.model
 
+import io.bluetape4k.aws.kinesis.validateKinesisPutRecordsEntries
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model.PutRecordsRequest
@@ -25,6 +26,7 @@ inline fun putRecordsRequest(
  *
  * ## 동작/계약
  * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [entries]는 1..500개여야 한다.
  *
  * ```kotlin
  * val req = putRecordsRequestOf("my-stream", entries)
@@ -36,6 +38,7 @@ inline fun putRecordsRequestOf(
     builder: PutRecordsRequest.Builder.() -> Unit = {},
 ): PutRecordsRequest {
     streamName.requireNotBlank("streamName")
+    entries.validateKinesisPutRecordsEntries("entries")
     return putRecordsRequest {
         streamName(streamName)
         records(entries)

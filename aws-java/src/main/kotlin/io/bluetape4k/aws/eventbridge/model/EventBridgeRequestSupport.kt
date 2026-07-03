@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.eventbridge.model
 
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest
 import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusRequest
@@ -19,6 +20,12 @@ import java.time.Instant
 internal const val MAX_EVENTBRIDGE_BATCH_SIZE = 10
 
 @PublishedApi
+internal const val MIN_EVENTBRIDGE_LIST_LIMIT = 1
+
+@PublishedApi
+internal const val MAX_EVENTBRIDGE_LIST_LIMIT = 100
+
+@PublishedApi
 internal fun <T> List<T>.requireSizeInOneToTen(name: String) {
     require(isNotEmpty()) { "$name must not be empty." }
     require(size <= MAX_EVENTBRIDGE_BATCH_SIZE) { "$name must not contain more than $MAX_EVENTBRIDGE_BATCH_SIZE items." }
@@ -27,6 +34,11 @@ internal fun <T> List<T>.requireSizeInOneToTen(name: String) {
 @PublishedApi
 internal fun Iterable<String>.requireNoBlankValues(name: String) {
     forEach { it.requireNotBlank(name) }
+}
+
+@PublishedApi
+internal fun Int.requireEventBridgeListLimit(name: String) {
+    requireInRange(MIN_EVENTBRIDGE_LIST_LIMIT, MAX_EVENTBRIDGE_LIST_LIMIT, name)
 }
 
 /**
@@ -233,6 +245,9 @@ inline fun putEventsRequestOf(
 
 /**
  * Builds [ListRulesRequest].
+ *
+ * [limit] is validated against EventBridge's 1..100 list limit before the
+ * request is built.
  */
 inline fun listRulesRequestOf(
     eventBusName: String? = null,
@@ -243,6 +258,7 @@ inline fun listRulesRequestOf(
 ): ListRulesRequest {
     eventBusName?.requireNotBlank("eventBusName")
     namePrefix?.requireNotBlank("namePrefix")
+    limit?.requireEventBridgeListLimit("limit")
     nextToken?.requireNotBlank("nextToken")
     return ListRulesRequest.builder()
         .also { eventBusName?.let(it::eventBusName) }
@@ -255,6 +271,9 @@ inline fun listRulesRequestOf(
 
 /**
  * Builds [ListTargetsByRuleRequest].
+ *
+ * [limit] is validated against EventBridge's 1..100 list limit before the
+ * request is built.
  */
 inline fun listTargetsByRuleRequestOf(
     rule: String,
@@ -265,6 +284,7 @@ inline fun listTargetsByRuleRequestOf(
 ): ListTargetsByRuleRequest {
     rule.requireNotBlank("rule")
     eventBusName?.requireNotBlank("eventBusName")
+    limit?.requireEventBridgeListLimit("limit")
     nextToken?.requireNotBlank("nextToken")
     return ListTargetsByRuleRequest.builder()
         .rule(rule)
