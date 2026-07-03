@@ -11,6 +11,7 @@ import aws.sdk.kotlin.services.dynamodb.model.DescribeTableRequest
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import aws.sdk.kotlin.services.dynamodb.model.PutItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.PutItemResponse
+import aws.sdk.kotlin.services.dynamodb.model.ResourceNotFoundException
 import aws.sdk.kotlin.services.dynamodb.model.ScanRequest
 import aws.sdk.kotlin.services.dynamodb.model.ScanResponse
 import aws.sdk.kotlin.services.dynamodb.model.TableStatus
@@ -18,7 +19,6 @@ import aws.sdk.kotlin.services.dynamodb.paginators.listTablesPaginated
 import aws.sdk.kotlin.services.dynamodb.paginators.scanPaginated
 import aws.sdk.kotlin.services.dynamodb.paginators.tableNames
 import aws.sdk.kotlin.services.dynamodb.putItem
-import aws.smithy.kotlin.runtime.ServiceException
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValue
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValueMap
 import io.bluetape4k.logging.KotlinLogging
@@ -125,9 +125,9 @@ suspend fun DynamoDbClient.deleteTableIfExists(name: String): DeleteTableRespons
  * [name] 이름의 DynamoDB 테이블 상태를 반환합니다.
  *
  * ## 동작/계약
- * - `DescribeTable`을 호출해 [TableStatus]를 반환한다.
- * - 재시도 가능한(`isRetryable`) [ServiceException] 발생 시 null을 반환한다.
- * - 재시도 불가능한 예외는 그대로 던진다.
+ * - Calls `DescribeTable` and returns [TableStatus].
+ * - Missing table responses return `null`.
+ * - Retryable and operational service failures are propagated.
  *
  * ```kotlin
  * val status = client.getTableStatus("orders")
@@ -138,16 +138,15 @@ suspend fun DynamoDbClient.getTableStatus(name: String): TableStatus? =
     try {
         val req = DescribeTableRequest { tableName = name }
         describeTable(req).table?.tableStatus
-    } catch (ex: ServiceException) {
-        if (!ex.sdkErrorMetadata.isRetryable) throw ex
+    } catch (_: ResourceNotFoundException) {
         null
     }
 
 /**
- * [name] 이름의 DynamoDB 테이블이 `CREATING` 상태를 벗어날 때까지 대기합니다.
+ * [name] 이름의 DynamoDB 테이블이 `ACTIVE` 상태가 될 때까지 대기합니다.
  *
  * ## 동작/계약
- * - 10ms 간격으로 테이블 상태를 폴링하며 `CREATING`이 아닐 때 반환한다.
+ * - 10ms 간격으로 테이블 상태를 폴링하며 `ACTIVE`일 때만 반환한다.
  * - [timeout] 내에 준비되지 않으면 `TimeoutCancellationException`을 던진다.
  *
  * ```kotlin
@@ -166,7 +165,7 @@ suspend fun DynamoDbClient.waitForTableReady(
 
     withTimeout(timeout) {
         while (true) {
-            if (getTableStatus(name) != TableStatus.Creating) {
+            if (getTableStatus(name) == TableStatus.Active) {
                 log.debug { "DynamoDb 테이블[$name]이 준비되었습니다." }
                 break
             }
