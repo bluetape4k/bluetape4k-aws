@@ -434,13 +434,22 @@ class S3KtorClient(
     }
 
     override fun close() {
-        try {
-            if (closeClient) httpClient.close()
-        } finally {
-            if (closeCredentialsProvider && credentialsProvider is AutoCloseable) {
-                (credentialsProvider as AutoCloseable).close()
+        var failure: Throwable? = null
+
+        fun closeOwned(close: () -> Unit) {
+            try {
+                close()
+            } catch (e: Throwable) {
+                failure?.addSuppressed(e) ?: run { failure = e }
             }
         }
+
+        if (closeClient) closeOwned { httpClient.close() }
+        if (closeCredentialsProvider && credentialsProvider is AutoCloseable) {
+            closeOwned { (credentialsProvider as AutoCloseable).close() }
+        }
+
+        failure?.let { throw it }
     }
 
     private fun URLBuilder.applyS3Endpoint(bucket: String? = null, key: String? = null): URLBuilder {
@@ -575,7 +584,13 @@ fun s3KtorClientOf(
             closeCredentialsProvider = ownsProvider,
         )
     } catch (e: Throwable) {
-        if (ownsProvider && effectiveProvider is AutoCloseable) effectiveProvider.close()
+        if (ownsProvider && effectiveProvider is AutoCloseable) {
+            try {
+                effectiveProvider.close()
+            } catch (closeFailure: Throwable) {
+                e.addSuppressed(closeFailure)
+            }
+        }
         throw e
     }
 }

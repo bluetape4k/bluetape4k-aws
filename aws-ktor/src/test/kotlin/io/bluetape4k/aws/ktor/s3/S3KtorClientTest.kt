@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor.s3
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEqualTo
@@ -21,8 +22,13 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.headersOf
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import java.time.Clock
 import java.time.Duration
@@ -432,6 +438,32 @@ class S3KtorClientTest {
         s3.close()
     }
 
+    @Test
+    fun `close preserves primary failure and suppresses provider close failure`() {
+        val httpClient = mockk<HttpClient>()
+        val clientFailure = IllegalStateException("http client close failed")
+        val providerFailure = IllegalStateException("credentials provider close failed")
+        every { httpClient.close() } throws clientFailure
+        val s3 = S3KtorClient(
+            httpClient = httpClient,
+            region = "ap-northeast-2",
+            credentialsProvider = CloseThrowingCredentialsProvider(providerFailure),
+            endpointOverride = Url("http://localhost:4566"),
+            addressingStyle = S3KtorAddressingStyle.Path,
+            signingClock = FIXED_CLOCK,
+            closeClient = true,
+            closeCredentialsProvider = true,
+        )
+
+        val error = assertFailsWith<IllegalStateException> {
+            s3.close()
+        }
+
+        error shouldBeSameInstanceAs clientFailure
+        error.suppressed.single() shouldBeSameInstanceAs providerFailure
+        verify(exactly = 1) { httpClient.close() }
+    }
+
     private fun s3Client(
         capture: (HttpRequestData) -> Unit = {},
         response: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData = { respond("") },
@@ -492,4 +524,16 @@ private class InMemoryDataKeyProvider: S3KtorDataKeyProvider {
 
     override suspend fun decryptDataKey(encryptedDataKey: ByteArray, encryptionContext: Map<String, String>): ByteArray =
         encryptedDataKey.reversedArray()
+}
+
+private class CloseThrowingCredentialsProvider(
+    private val closeFailure: RuntimeException,
+): AwsCredentialsProvider, AutoCloseable {
+
+    override fun resolveCredentials(): AwsCredentials =
+        AwsBasicCredentials.create("akid", "secret")
+
+    override fun close() {
+        throw closeFailure
+    }
 }
