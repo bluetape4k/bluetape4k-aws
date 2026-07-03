@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.transfer.s3.S3TransferManager
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Auto-configures [S3TransferManager] and [S3TransferTemplate] beans for high-throughput S3 transfers.
@@ -34,6 +35,7 @@ import software.amazon.awssdk.transfer.s3.S3TransferManager
  * ```
  */
 @AutoConfiguration(after = [S3AutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.services.s3.S3AsyncClient",

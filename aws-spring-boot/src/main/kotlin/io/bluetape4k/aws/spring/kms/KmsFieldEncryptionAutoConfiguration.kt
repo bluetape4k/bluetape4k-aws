@@ -6,11 +6,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Auto-configuration for explicit field-level KMS encryption helpers.
  */
 @AutoConfiguration(after = [KmsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnBean(KmsOperations::class)
 @ConditionalOnProperty(
     prefix = "bluetape4k.aws.kms",

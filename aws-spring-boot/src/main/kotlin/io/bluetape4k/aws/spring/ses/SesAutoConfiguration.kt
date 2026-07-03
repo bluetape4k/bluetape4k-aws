@@ -20,6 +20,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot 4 auto-configuration for AWS SES.
@@ -30,6 +31,7 @@ import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
  * on the runtime classpath and `bluetape4k.aws.ses.enabled` is not disabled.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.async.SdkAsyncHttpClient",

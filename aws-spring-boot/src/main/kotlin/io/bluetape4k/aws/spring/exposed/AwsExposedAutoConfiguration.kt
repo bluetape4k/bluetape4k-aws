@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.core.env.Environment
 import org.springframework.core.type.AnnotatedTypeMetadata
 import javax.sql.DataSource
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot auto-configuration for AWS-backed Exposed database registries.
@@ -33,6 +34,7 @@ import javax.sql.DataSource
  * post-processors that publish properties before registry creation.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "io.bluetape4k.aws.exposed.AwsExposedDatabaseFactory",
@@ -91,6 +93,7 @@ class AwsExposedAutoConfiguration {
  * auto-configuration phase.
  */
 @AutoConfiguration(after = [AwsExposedAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry",

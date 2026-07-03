@@ -16,6 +16,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.dax.ClusterDaxAsyncClient
 import software.amazon.dax.Configuration
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Auto-configures a DAX-backed [DynamoDbAsyncClient] when the DAX SDK is present
@@ -31,6 +32,7 @@ import software.amazon.dax.Configuration
     after = [AwsAutoConfiguration::class],
     before = [DynamoDbAutoConfiguration::class],
 )
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(name = ["software.amazon.dax.ClusterDaxAsyncClient"])
 @ConditionalOnProperty(prefix = DYNAMODB_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @ConditionalOnProperty(prefix = DYNAMODB_DAX_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true")
