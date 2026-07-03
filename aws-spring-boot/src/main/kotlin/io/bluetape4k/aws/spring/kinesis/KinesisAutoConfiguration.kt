@@ -20,6 +20,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot 4 auto-configuration for AWS Kinesis.
@@ -31,6 +32,7 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
  * disabled.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.async.SdkAsyncHttpClient",

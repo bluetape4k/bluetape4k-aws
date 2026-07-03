@@ -20,6 +20,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot 4 auto-configuration for AWS SNS.
@@ -35,6 +36,7 @@ import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
  * ```
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.async.SdkAsyncHttpClient",

@@ -20,11 +20,13 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot 4 auto-configuration for DynamoDB.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.async.SdkAsyncHttpClient",

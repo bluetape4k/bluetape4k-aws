@@ -28,8 +28,10 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.S3ClientBuilder
 import software.amazon.awssdk.services.s3.S3Configuration
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.SdkHttpClient",

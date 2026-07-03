@@ -20,6 +20,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot 4 auto-configuration for AWS EventBridge.
@@ -31,6 +32,7 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
  * `bluetape4k.aws.eventbridge.enabled` is not disabled.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.async.SdkAsyncHttpClient",

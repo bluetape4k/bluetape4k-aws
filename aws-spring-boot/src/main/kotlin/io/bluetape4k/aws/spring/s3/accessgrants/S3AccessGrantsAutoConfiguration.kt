@@ -25,11 +25,13 @@ import software.amazon.awssdk.services.s3control.S3ControlAsyncClient
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
 import software.amazon.awssdk.services.s3control.S3ControlClient
 import software.amazon.awssdk.services.s3control.S3ControlClientBuilder
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot 4 auto-configuration for S3 Access Grants through S3 Control.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class, S3AutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.SdkHttpClient",

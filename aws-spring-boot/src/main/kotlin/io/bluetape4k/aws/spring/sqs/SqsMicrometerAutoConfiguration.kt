@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Auto-configures Micrometer instrumentation for Spring SQS operations.
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Primary
  * concrete template type.
  */
 @AutoConfiguration(after = [SqsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(MeterRegistry::class)
 @ConditionalOnProperty(prefix = "bluetape4k.aws.sqs", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class SqsMicrometerAutoConfiguration {

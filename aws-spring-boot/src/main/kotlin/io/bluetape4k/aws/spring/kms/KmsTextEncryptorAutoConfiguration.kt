@@ -8,11 +8,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.security.crypto.encrypt.TextEncryptor
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Optional Spring Security Crypto adapter auto-configuration for AWS KMS.
  */
 @AutoConfiguration(after = [KmsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(name = ["org.springframework.security.crypto.encrypt.TextEncryptor"])
 @ConditionalOnBean(KmsOperations::class)
 @ConditionalOnProperty(

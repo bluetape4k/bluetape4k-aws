@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Auto-configures Micrometer instrumentation for Spring S3 operations.
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Primary
  * concrete template type.
  */
 @AutoConfiguration(after = [S3AutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(MeterRegistry::class)
 @ConditionalOnProperty(prefix = "bluetape4k.aws.s3", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class S3MicrometerAutoConfiguration {

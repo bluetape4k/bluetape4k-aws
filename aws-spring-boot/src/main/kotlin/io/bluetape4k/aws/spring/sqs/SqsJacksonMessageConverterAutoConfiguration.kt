@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import tools.jackson.databind.ObjectMapper
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Registers the Jackson-backed SQS message converter when Jackson 3 is present.
@@ -15,6 +16,7 @@ import tools.jackson.databind.ObjectMapper
     before = [SqsAutoConfiguration::class],
     afterName = ["org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration"],
 )
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(name = ["tools.jackson.databind.ObjectMapper"])
 @ConditionalOnProperty(prefix = "bluetape4k.aws.sqs", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class SqsJacksonMessageConverterAutoConfiguration {

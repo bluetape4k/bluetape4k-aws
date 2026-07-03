@@ -13,11 +13,13 @@ import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring Boot 4 auto-configuration for EC2 Instance Metadata Service access.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "software.amazon.awssdk.http.async.SdkAsyncHttpClient",

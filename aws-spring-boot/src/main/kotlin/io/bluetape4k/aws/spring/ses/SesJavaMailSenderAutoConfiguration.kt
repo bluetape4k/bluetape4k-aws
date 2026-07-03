@@ -7,11 +7,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.mail.javamail.JavaMailSender
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Auto-configuration for the optional Spring [JavaMailSender] SES adapter.
  */
 @AutoConfiguration(after = [SesAutoConfiguration::class])
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "org.springframework.mail.javamail.JavaMailSender",

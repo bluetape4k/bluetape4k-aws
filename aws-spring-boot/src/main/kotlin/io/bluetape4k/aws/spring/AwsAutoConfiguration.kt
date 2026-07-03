@@ -15,6 +15,7 @@ import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsPr
  * Spring Boot auto-configuration for shared AWS SDK v2 support.
  */
 @AutoConfiguration
+@ConditionalOnAwsEnabled
 @ConditionalOnProperty(prefix = "bluetape4k.aws", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(AwsProperties::class)
 class AwsAutoConfiguration {
