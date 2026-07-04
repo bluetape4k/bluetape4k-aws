@@ -140,14 +140,24 @@ jobs:
           filters: |
             aws:
               - 'aws/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-kotlin:
               - 'aws-kotlin/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-exposed:
               - 'aws-exposed/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-spring-boot:
               - 'aws-spring-boot/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-ktor:
               - 'aws-ktor/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-spring-boot-s3-examples:
               - 'examples/aws-spring-boot-s3-examples/**'
               - 'aws-spring-boot/**'
