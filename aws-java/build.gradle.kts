@@ -41,6 +41,7 @@ dependencies {
     compileOnly(libs.aws2.cloudwatchlogs)
     compileOnly(libs.aws2.kinesis)
     compileOnly(libs.aws2.eventbridge)
+    compileOnly(libs.aws2.scheduler)
     compileOnly(libs.aws2.rds)
     compileOnly(libs.aws2.sts)
 
@@ -58,6 +59,7 @@ dependencies {
     testImplementation(libs.aws2.s3vectors)
     testImplementation(libs.aws2.ssm)
     testImplementation(libs.aws2.eventbridge)
+    testImplementation(libs.aws2.scheduler)
     testImplementation(libs.aws2.test.utils)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
