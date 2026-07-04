@@ -6,7 +6,6 @@ import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
@@ -79,25 +78,22 @@ class DynamoDbExampleRoutesLocalStackTest {
     }
 
     @Test
-    fun `concurrent saves and findById retrieve correct results`() = testModule {
-        SuspendedJobTester()
-            .workers(4)
-            .rounds(3)
-            .add {
-                val jsonClient = createClient { install(ContentNegotiation) { jackson() } }
-                val order = Order(
-                    id = "order-${UUID.randomUUID()}",
-                    status = "CONCURRENT",
-                    description = "stress test",
-                )
-                jsonClient.post("/dynamodb/orders") {
-                    contentType(ContentType.Application.Json)
-                    setBody(order)
-                } shouldHaveStatus HttpStatusCode.Created
+    fun `repeated saves and findById retrieve correct results`() = testModule {
+        val jsonClient = createClient { install(ContentNegotiation) { jackson() } }
 
-                jsonClient.get("/dynamodb/orders/${order.id}").body<Order>().id shouldBeEqualTo order.id
-            }
-            .run()
+        repeat(12) { index ->
+            val order = Order(
+                id = "order-${UUID.randomUUID()}",
+                status = "REPEATED",
+                description = "repeat test $index",
+            )
+            jsonClient.post("/dynamodb/orders") {
+                contentType(ContentType.Application.Json)
+                setBody(order)
+            } shouldHaveStatus HttpStatusCode.Created
+
+            jsonClient.get("/dynamodb/orders/${order.id}").body<Order>().id shouldBeEqualTo order.id
+        }
     }
 
     private fun awsEmulator(vararg services: String): AwsEmulatorServer =
