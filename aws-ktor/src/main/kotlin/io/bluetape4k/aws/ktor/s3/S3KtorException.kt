@@ -4,12 +4,12 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpStatusCode
 
 /**
- * S3 REST API가 non-2xx 응답을 반환할 때 발생합니다.
+ * Thrown when the S3 REST API returns a non-2xx response.
  *
- * ## 동작/계약
+ * ## Behavior/Contract
  *
- * HTTP status, S3 error code/message, request id, host id, response headers를 함께 보존합니다.
- * XML error body를 해석할 수 없으면 응답 body 일부가 message로 전달될 수 있습니다.
+ * Preserves the HTTP status, S3 error code/message, request id, host id, and response headers.
+ * If the XML error body cannot be parsed, part of the response body may be propagated as the message.
  *
  * ```kotlin
  * suspend fun readOrNull(s3: S3KtorClient): ByteArray? {

@@ -6,15 +6,15 @@ import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
 import java.io.Serializable
 
 /**
- * 수신한 SQS 메시지와 큐 URL을 함께 보관하는 메시지 래퍼.
+ * Message wrapper that keeps a received SQS message together with its queue URL.
  */
 data class SqsReceivedMessage(
     /**
-     * 메시지를 수신한 큐 URL.
+     * Queue URL from which the message was received.
      */
     val queueUrl: String,
     /**
-     * AWS SDK 원본 SQS 메시지.
+     * Original AWS SDK SQS message.
      */
     val message: Message,
 ): Serializable {
@@ -24,12 +24,12 @@ data class SqsReceivedMessage(
     val messageId: String get() = message.messageId()
 
     /**
-     * 메시지 본문.
+     * Message body.
      */
     val body: String get() = message.body()
 
     /**
-     * 삭제나 visibility timeout 변경에 사용할 receipt handle.
+     * Receipt handle used to delete the message or change its visibility timeout.
      */
     val receiptHandle: String get() = message.receiptHandle()
 

@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * 하나의 `@SqsListener` 엔드포인트를 실행하는 SQS 메시지 리스너 컨테이너.
+ * SQS message listener container that runs one `@SqsListener` endpoint.
  */
 class SqsMessageListenerContainer internal constructor(
     private val endpoint: SqsListenerEndpoint,
