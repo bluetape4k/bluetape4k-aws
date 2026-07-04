@@ -15,8 +15,8 @@ Spring Boot 4, and Ktor 3.
 
 | Module | Status | Purpose |
 |---|---|---|
-| `aws/` | stable | AWS Java SDK v2 sync, async `CompletableFuture`, and coroutine extensions for DynamoDB, S3, SES, SNS, SQS, KMS, CloudWatch, Kinesis, STS |
-| `aws-kotlin/` | stable | AWS Kotlin SDK native suspend APIs and DSL builders |
+| `aws/` | stable | AWS Java SDK v2 sync, async `CompletableFuture`, and coroutine extensions for DynamoDB, S3, SES, SNS, SQS, KMS, CloudWatch, Kinesis, EventBridge Scheduler, STS |
+| `aws-kotlin/` | stable | AWS Kotlin SDK native suspend APIs and DSL builders, including EventBridge Scheduler helpers |
 | `aws-spring-boot/` | WIP | Spring Boot 4 auto-configuration without awspring |
 | `aws-ktor/` | WIP | Ktor 3 client/server integration |
 | `bom/` | stable | `bluetape4k-aws-bom` consumer BOM |

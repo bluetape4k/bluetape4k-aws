@@ -35,6 +35,7 @@ dependencies {
     compileOnly(libs.aws.kotlin.cloudwatchlogs)
     compileOnly(libs.aws.kotlin.kinesis)
     compileOnly(libs.aws.kotlin.eventbridge)
+    compileOnly(libs.aws.kotlin.scheduler)
     compileOnly(libs.aws.kotlin.sts)
 
     // Resilience4j
@@ -53,6 +54,7 @@ dependencies {
     testImplementation(libs.aws.kotlin.secretsmanager)
     testImplementation(libs.aws.kotlin.ssm)
     testImplementation(libs.aws.kotlin.eventbridge)
+    testImplementation(libs.aws.kotlin.scheduler)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.mockk)
     testImplementation(libs.awaitility.kotlin)
