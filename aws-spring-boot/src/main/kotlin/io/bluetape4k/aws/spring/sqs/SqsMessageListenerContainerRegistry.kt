@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 /**
- * 애플리케이션의 SQS 리스너 컨테이너를 수명주기 단위로 관리하는 레지스트리.
+ * Registry that manages application SQS listener containers by lifecycle.
  */
 class SqsMessageListenerContainerRegistry: SmartLifecycle {
 

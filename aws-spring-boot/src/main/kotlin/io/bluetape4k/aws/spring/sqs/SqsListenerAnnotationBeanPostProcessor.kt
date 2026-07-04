@@ -10,7 +10,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
 /**
- * `@SqsListener` 메서드를 찾아 리스너 컨테이너로 등록하는 BeanPostProcessor.
+ * BeanPostProcessor that finds `@SqsListener` methods and registers them as listener containers.
  */
 class SqsListenerAnnotationBeanPostProcessor(
     private val environment: Environment,

@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception
 import java.io.InputStream
 
 /**
- * S3 객체를 Spring `Resource`로 노출하는 읽기 전용 어댑터.
+ * Read-only adapter that exposes an S3 object as a Spring `Resource`.
  */
 class S3Resource(
     private val s3Client: S3Client,

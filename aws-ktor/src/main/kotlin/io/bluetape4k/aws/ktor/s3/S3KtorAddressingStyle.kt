@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.ktor.s3
 
 /**
- * S3 REST 요청의 bucket 주소 지정 방식입니다.
+ * Bucket addressing style for S3 REST requests.
  *
- * ## 동작/계약
+ * ## Behavior/Contract
  *
- * [VirtualHosted]는 AWS S3 기본 endpoint에서 DNS-safe bucket을 host에 포함하고,
- * [Path]는 LocalStack이나 S3 호환 endpoint처럼 bucket을 path 첫 segment로 보내야 할 때 사용합니다.
+ * [VirtualHosted] puts a DNS-safe bucket in the host for the default AWS S3 endpoint, while
+ * [Path] sends the bucket as the first path segment for LocalStack or S3-compatible endpoints.
  *
  * ```kotlin
  * val s3 = s3KtorClientOf(
@@ -17,7 +17,7 @@ package io.bluetape4k.aws.ktor.s3
  */
 enum class S3KtorAddressingStyle {
     /**
-     * Bucket 이름을 host에 포함합니다.
+     * Includes the bucket name in the host.
      *
      * ```text
      * https://bucket.s3.ap-northeast-2.amazonaws.com/key
@@ -26,7 +26,7 @@ enum class S3KtorAddressingStyle {
     VirtualHosted,
 
     /**
-     * Bucket 이름을 path 첫 segment로 둡니다.
+     * Places the bucket name in the first path segment.
      *
      * ```text
      * https://s3.ap-northeast-2.amazonaws.com/bucket/key

@@ -3,7 +3,7 @@ package io.bluetape4k.aws.spring.s3
 import java.io.Serializable
 
 /**
- * S3 객체 위치.
+ * S3 object location.
  */
 data class S3ObjectLocation(
     val bucket: String,
