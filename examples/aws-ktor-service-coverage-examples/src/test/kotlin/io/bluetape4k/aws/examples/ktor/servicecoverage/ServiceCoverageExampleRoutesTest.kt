@@ -58,7 +58,7 @@ class ServiceCoverageExampleRoutesTest {
 
         val response = jsonClient().post("/coverage/email") {
             contentType(ContentType.Application.Json)
-            setBody(SendEmailExampleRequest("dev@example.com", "Coverage", "hello"))
+            setBody("""{"to":"dev@example.com","subject":"Coverage","text":"hello"}""")
         }
 
         response shouldHaveStatus HttpStatusCode.OK
@@ -81,7 +81,7 @@ class ServiceCoverageExampleRoutesTest {
 
         val response = jsonClient().post("/coverage/notifications") {
             contentType(ContentType.Application.Json)
-            setBody(PublishNotificationExampleRequest("build finished", "Coverage"))
+            setBody("""{"message":"build finished","subject":"Coverage"}""")
         }
 
         response shouldHaveStatus HttpStatusCode.OK
@@ -104,7 +104,7 @@ class ServiceCoverageExampleRoutesTest {
 
         val response = jsonClient().post("/coverage/metrics") {
             contentType(ContentType.Application.Json)
-            setBody(MetricExampleRequest("ProcessedJobs", 3.0))
+            setBody("""{"metricName":"ProcessedJobs","value":3.0}""")
         }
 
         response shouldHaveStatus HttpStatusCode.OK
@@ -129,7 +129,7 @@ class ServiceCoverageExampleRoutesTest {
 
         val response = jsonClient().post("/coverage/logs") {
             contentType(ContentType.Application.Json)
-            setBody(LogEventExampleRequest("example event"))
+            setBody("""{"message":"example event"}""")
         }
 
         response shouldHaveStatus HttpStatusCode.OK
@@ -153,7 +153,7 @@ class ServiceCoverageExampleRoutesTest {
 
         val response = jsonClient().post("/coverage/stream-records") {
             contentType(ContentType.Application.Json)
-            setBody(StreamRecordExampleRequest("partition-a", "payload"))
+            setBody("""{"partitionKey":"partition-a","data":"payload"}""")
         }
 
         response shouldHaveStatus HttpStatusCode.OK
