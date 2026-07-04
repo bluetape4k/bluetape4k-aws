@@ -80,12 +80,11 @@ class DynamoDbExampleRoutesLocalStackTest {
 
     @Test
     fun `concurrent saves and findById retrieve correct results`() = testModule {
-        val jsonClient = createClient { install(ContentNegotiation) { jackson() } }
-
         SuspendedJobTester()
             .workers(4)
             .rounds(3)
             .add {
+                val jsonClient = createClient { install(ContentNegotiation) { jackson() } }
                 val order = Order(
                     id = "order-${UUID.randomUUID()}",
                     status = "CONCURRENT",
