@@ -4,10 +4,10 @@ import aws.sdk.kotlin.services.sts.model.AssumeRoleRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * DSL 블록으로 [AssumeRoleRequest]를 빌드합니다.
+ * Builds an [AssumeRoleRequest] from a DSL block.
  *
- * ## 동작/계약
- * - [builder] 블록에서 `roleArn`, `roleSessionName` 등을 직접 설정한다.
+ * ## Contract
+ * - The [builder] block sets `roleArn`, `roleSessionName`, and any other request fields directly.
  *
  * ```kotlin
  * val req = assumeRoleRequest {
@@ -22,11 +22,11 @@ inline fun assumeRoleRequest(
     AssumeRoleRequest { builder() }
 
 /**
- * role ARN과 세션 이름으로 [AssumeRoleRequest]를 생성합니다.
+ * Creates an [AssumeRoleRequest] from a role ARN and session name.
  *
- * ## 동작/계약
- * - [roleArn]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [sessionName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Contract
+ * - Throws [IllegalArgumentException] when [roleArn] is blank.
+ * - Throws [IllegalArgumentException] when [sessionName] is blank.
  *
  * ```kotlin
  * val req = assumeRoleRequestOf(
