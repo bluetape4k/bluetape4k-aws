@@ -621,12 +621,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
+      - changes
       - test-aws
       - test-aws-kotlin
       - test-aws-exposed
       - test-aws-spring-boot
       - test-aws-ktor
-    if: always()
+    if: >
+      always() && (
+        needs.changes.outputs.aws == 'true' ||
+        needs.changes.outputs.aws-kotlin == 'true' ||
+        needs.changes.outputs.aws-exposed == 'true' ||
+        needs.changes.outputs.aws-spring-boot == 'true' ||
+        needs.changes.outputs.aws-ktor == 'true'
+      )
     steps:
       - uses: actions/checkout@v7
 
