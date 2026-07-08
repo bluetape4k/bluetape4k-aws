@@ -4,15 +4,15 @@ import aws.smithy.kotlin.runtime.http.engine.okhttp.OkHttpEngine
 import aws.smithy.kotlin.runtime.http.engine.okhttp.OkHttpEngineConfig
 
 /**
- * [OkHttpEngineConfig]을 사용하여 [OkHttpEngine] 인스턴스를 생성합니다.
+ * Creates an [OkHttpEngine] with the supplied [OkHttpEngineConfig].
  *
  * ```kotlin
  * val engine = okHttpEngineOf()
  * val client = S3Client { httpClient = engine }
  * ```
  *
- * @param config [OkHttpEngineConfig] 설정 (기본값: [OkHttpEngineConfig.Default])
- * @return [OkHttpEngine] 인스턴스
+ * @param config engine configuration. Defaults to [OkHttpEngineConfig.Default].
+ * @return configured [OkHttpEngine] instance.
  */
 fun okHttpEngineOf(config: OkHttpEngineConfig = OkHttpEngineConfig.Default): OkHttpEngine =
     OkHttpEngine(config)

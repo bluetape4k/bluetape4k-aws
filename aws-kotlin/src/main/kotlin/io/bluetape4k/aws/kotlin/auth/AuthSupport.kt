@@ -5,24 +5,24 @@ import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * 로컬 테스트 환경에서 사용하는 기본 Access Key 입니다.
+ * Default access key used by local AWS emulator tests.
  */
 const val AWS_LOCAL_ACCESS_KEY = "accesskey"
 
 /**
- * 로컬 테스트 환경에서 사용하는 기본 Secret Key 입니다.
+ * Default secret key used by local AWS emulator tests.
  */
 const val AWS_LOCAL_SECRET_KEY = "secretkey"
 
 /**
- * 로컬 테스트 환경에서 사용할 [StaticCredentialsProvider] 인스턴스입니다.
+ * [StaticCredentialsProvider] for local AWS emulator tests.
  */
 @JvmField
 val LocalCredentialsProvider: StaticCredentialsProvider =
     staticCredentialsProviderOf(AWS_LOCAL_ACCESS_KEY, AWS_LOCAL_SECRET_KEY)
 
 /**
- * [Credentials]을 제공하는 [StaticCredentialsProvider]를 생성합니다.
+ * Creates a [StaticCredentialsProvider] from an access key and secret key.
  *
  * ```
  * private val credentialsProvider: StaticCredentialsProvider by lazy {
@@ -31,16 +31,16 @@ val LocalCredentialsProvider: StaticCredentialsProvider =
  * ```
  * @param accessKeyId      AWS access key
  * @param secretAccessKey  AWS secret key
- * @return [StaticCredentialsProvider] 인스턴스
+ * @return [StaticCredentialsProvider] backed by the supplied credentials.
  */
 fun staticCredentialsProviderOf(accessKeyId: String, secretAccessKey: String): StaticCredentialsProvider {
     return staticCredentialsProviderOf(credentialsOf(accessKeyId, secretAccessKey))
 }
 
 /**
- * [Credentials]을 제공하는 [StaticCredentialsProvider]를 생성합니다.
+ * Creates a [StaticCredentialsProvider] from existing [Credentials].
  *
- * @param credentials  [Credentials] 인스턴스
+ * @param credentials [Credentials] to expose through the provider.
  */
 fun staticCredentialsProviderOf(credentials: Credentials): StaticCredentialsProvider =
     StaticCredentialsProvider {
@@ -49,7 +49,7 @@ fun staticCredentialsProviderOf(credentials: Credentials): StaticCredentialsProv
     }
 
 /**
- * [Credentials]를 생성합니다.
+ * Creates AWS [Credentials] after validating the required key values.
  *
  * @param accessKeyId      AWS access key
  * @param secretAccessKey  AWS secret key
