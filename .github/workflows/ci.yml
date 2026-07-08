@@ -656,18 +656,24 @@ jobs:
           set -euo pipefail
 
           expected_artifacts=(
-            coverage-aws
-            coverage-aws-kotlin
-            coverage-aws-exposed
-            coverage-aws-spring-boot
-            coverage-aws-ktor
           )
+
+          [[ "${{ needs.changes.outputs.aws }}" == "true" ]] && expected_artifacts+=(coverage-aws)
+          [[ "${{ needs.changes.outputs['aws-kotlin'] }}" == "true" ]] && expected_artifacts+=(coverage-aws-kotlin)
+          [[ "${{ needs.changes.outputs['aws-exposed'] }}" == "true" ]] && expected_artifacts+=(coverage-aws-exposed)
+          [[ "${{ needs.changes.outputs['aws-spring-boot'] }}" == "true" ]] && expected_artifacts+=(coverage-aws-spring-boot)
+          [[ "${{ needs.changes.outputs['aws-ktor'] }}" == "true" ]] && expected_artifacts+=(coverage-aws-ktor)
 
           missing_artifacts=()
           empty_artifacts=()
 
           for artifact in "${expected_artifacts[@]}"; do
             artifact_dir="coverage-artifacts/${artifact}"
+            alternate_dir="coverage-artifacts/${artifact#coverage-}"
+            if [[ ! -d "${artifact_dir}" && -d "${alternate_dir}" ]]; then
+              mv "${alternate_dir}" "${artifact_dir}"
+            fi
+
             if [[ ! -d "${artifact_dir}" ]]; then
               missing_artifacts+=("${artifact}")
               continue

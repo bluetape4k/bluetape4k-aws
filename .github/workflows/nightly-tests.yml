@@ -466,6 +466,11 @@ jobs:
 
           for artifact in "${expected_artifacts[@]}"; do
             artifact_dir="coverage-artifacts/${artifact}"
+            alternate_dir="coverage-artifacts/${artifact#coverage-}"
+            if [[ ! -d "${artifact_dir}" && -d "${alternate_dir}" ]]; then
+              mv "${alternate_dir}" "${artifact_dir}"
+            fi
+
             if [[ ! -d "${artifact_dir}" ]]; then
               missing_artifacts+=("${artifact}")
               continue
