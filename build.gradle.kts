@@ -209,12 +209,8 @@ subprojects {
     }
 
     tasks {
-        abstract class TestMutexService: BuildService<BuildServiceParameters.None>
         abstract class SigningMutexService: BuildService<BuildServiceParameters.None>
 
-        val testMutex = gradle.sharedServices.registerIfAbsent("test-mutex", TestMutexService::class) {
-            maxParallelUsages.set(1)
-        }
         val signingMutex = gradle.sharedServices.registerIfAbsent("signing-mutex", SigningMutexService::class) {
             maxParallelUsages.set(1)
         }
@@ -223,7 +219,6 @@ subprojects {
         compileKotlin { compilerOptions { incremental = true } }
 
         test {
-            usesService(testMutex)
             useJUnitPlatform()
             jvmArgs(
                 "-Xshare:off",
