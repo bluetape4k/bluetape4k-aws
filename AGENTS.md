@@ -36,6 +36,25 @@ Store reusable repository guidance, release rules, checklists, and other
 durable operating documents under `docs/`, not `.omx/`. Treat `.omx/` as
 transient runtime state and local artifacts only.
 
+## Manual Ownership
+
+- `docs/manual/` is the source of truth for detailed user guidance. README files
+  summarize the repository and point readers to the manual; do not duplicate a
+  full manual chapter in README.
+- Keep English and Korean pages structurally aligned. Korean prose must read as
+  natural Korean rather than a literal translation while preserving API names,
+  links, anchors, and technical meaning.
+- Bind a stable manual to an actual release tag and peeled commit. A page may be
+  authored on `develop`, but every release source link must resolve in the
+  declared `releaseRef` tree.
+- Consumers select the `bluetape4k-dependencies` version. Internal AWS BOM and
+  service SDK versions are implementation details unless a runtime
+  `compileOnly` dependency requires the application to add that service SDK.
+- Keep workshops and runnable examples as first-class learning paths.
+- Store each manual diagram as an editable SVG plus a 2x authoritative PNG.
+  Follow the `bluetape-diagram` checklist, the established dark palette, and
+  full-size visual inspection before publication.
+
 For release work, check the workspace governance docs first:
 `../.github/docs/release/central-portal-release-runbook.md`,
 `../.github/docs/release/pre-release-checklist.md`, and
@@ -55,6 +74,10 @@ For release work, check the workspace governance docs first:
 ./gradlew :aws-spring-boot-sqs-examples:processAot :aws-spring-boot-sqs-examples:processTestAot
 ./gradlew build
 ./gradlew detekt
+./gradlew exportManualModuleInventory --no-daemon
+TAG=0.4.0; SHA=$(git rev-parse "$TAG^{}"); ruby scripts/manual/validate_release_manuals.rb "$TAG" "$SHA"
+ruby scripts/manual/export_manifest.rb docs/manual/manifest.yaml docs/manual/generated/manifest.json --check
+ruby scripts/manual/manual_contract_test.rb
 ./gradlew publishBluetapeAwsPublicationToCentralPortal
 ./gradlew publishBluetapeAwsPublicationToCentralPortal -PsnapshotVersion=
 ```
