@@ -14,6 +14,10 @@
 통합을 제공하되, 애플리케이션이 특정 스택 하나에 묶이지 않도록 경계를
 얇게 유지합니다.
 
+SDK와 framework 선택, lifecycle 원칙, 실전 예제 중심의 학습 경로는
+[AWS 매뉴얼](docs/manual/ko/index.md)에서 자세히 설명합니다. README는 저장소를
+빠르게 둘러보는 문서이고, 상세 설명의 기준은 매뉴얼입니다.
+
 ---
 
 ## 프로젝트 목적
@@ -97,7 +101,9 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 ## 설치
 
 이 라이브러리는 AWS 서비스 SDK를 `compileOnly`로 선언합니다. 실제로 사용하는 서비스의
-런타임 의존성은 직접 추가해야 합니다.
+런타임 의존성은 직접 추가해야 합니다. 중앙 `bluetape4k-dependencies` BOM을 한 번
+가져오면 이 라이브러리와 지원하는 AWS SDK artifact의 버전이 함께 맞춰집니다. 사용자가
+저장소 버전이나 AWS SDK BOM 버전을 따로 고를 필요는 없습니다.
 
 Core Secrets Manager와 Parameter Store helper는 의도적으로 얇은 SDK 래퍼입니다.
 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책, rotation orchestration,
@@ -108,10 +114,10 @@ IAM/KMS policy 관리, 전체 페이지 자동 수집 abstraction은 상위 모�
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.4.0")
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
 
     // 사용할 AWS Java SDK v2 서비스 추가
-    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
@@ -142,21 +148,22 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.4.0")
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin")
 
     // 사용할 AWS Kotlin SDK 서비스 추가
-    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:secretsmanager:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:ssm:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:scheduler:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:dynamodb")
+    implementation("aws.sdk.kotlin:s3")
+    implementation("aws.sdk.kotlin:secretsmanager")
+    implementation("aws.sdk.kotlin:sqs")
+    implementation("aws.sdk.kotlin:ssm")
+    implementation("aws.sdk.kotlin:sns")
+    implementation("aws.sdk.kotlin:kms")
+    implementation("aws.sdk.kotlin:cloudwatch")
+    implementation("aws.sdk.kotlin:kinesis")
+    implementation("aws.sdk.kotlin:eventbridge")
+    implementation("aws.sdk.kotlin:scheduler")
+    implementation("aws.sdk.kotlin:sts")
 }
 ```
 
@@ -164,10 +171,10 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.4.0")
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot")
 
     // 사용할 AWS Java SDK v2 서비스는 런타임 의존성으로 직접 추가합니다.
-    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")

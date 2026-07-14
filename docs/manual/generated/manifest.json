@@ -438,20 +438,24 @@
         "en/index.md",
         "en/getting-started.md",
         "en/architecture/repository-map.md",
+        "en/architecture/runtime-boundaries.md",
+        "en/guides/learning-path.md",
         "en/guides/sdk-selection.md",
         "en/guides/service-learning-paths.md",
-        "en/guides/framework-selection.md",
-        "en/guides/database-integration.md",
+        "en/guides/spring-vs-ktor.md",
+        "en/guides/database-with-exposed.md",
         "en/guides/testing-and-operations.md"
       ],
       "ko": [
         "ko/index.md",
         "ko/getting-started.md",
         "ko/architecture/repository-map.md",
+        "ko/architecture/runtime-boundaries.md",
+        "ko/guides/learning-path.md",
         "ko/guides/sdk-selection.md",
         "ko/guides/service-learning-paths.md",
-        "ko/guides/framework-selection.md",
-        "ko/guides/database-integration.md",
+        "ko/guides/spring-vs-ktor.md",
+        "ko/guides/database-with-exposed.md",
         "ko/guides/testing-and-operations.md"
       ]
     }

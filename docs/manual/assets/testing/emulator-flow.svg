@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1320" viewBox="0 0 1600 1320" role="img" aria-labelledby="title desc">
+  <title id="title">Floci-first AWS emulator test flow</title>
+  <desc id="desc">Sequence in which a test selects Floci by default, uses LocalStack only for an explicit coverage gap, injects deterministic endpoint and credentials, verifies behavior, and closes all resources.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#05070d" flood-opacity="0.45"/>
+    </filter>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#78a9c7"/></marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#94a56b"/></marker>
+    <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#c49a62"/></marker>
+    <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#65a6a2"/></marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#b88473"/></marker>
+    <style>
+      .participant { fill:#1d2431; stroke:#61708c; stroke-width:2.5; }
+      .participant-title { fill:#f2f0e9; font:700 22px Inter,Arial,sans-serif; text-anchor:middle; }
+      .role { fill:#a9b2c3; font:15px Inter,Arial,sans-serif; text-anchor:middle; }
+      .lifeline { stroke:#556176; stroke-width:2; stroke-dasharray:8 10; }
+      .activation { fill:#273247; stroke:#6d7d98; stroke-width:2; }
+      .callBlue { fill:none; stroke:#78a9c7; stroke-width:3; marker-end:url(#arrow-blue); }
+      .callGreen { fill:none; stroke:#94a56b; stroke-width:3; marker-end:url(#arrow-green); }
+      .callAmber { fill:none; stroke:#c49a62; stroke-width:3; marker-end:url(#arrow-amber); }
+      .callRed { fill:none; stroke:#b88473; stroke-width:3; marker-end:url(#arrow-red); }
+      .return { fill:none; stroke:#65a6a2; stroke-width:3; stroke-dasharray:8 6; marker-end:url(#arrow-teal); }
+      .labelPill { fill:#111620; stroke-width:2; }
+      .labelText { fill:#e7e5df; font:600 16px Inter,Arial,sans-serif; }
+      .badge { fill:#111620; stroke-width:2; }
+      .badgeText { font:700 15px Inter,Arial,sans-serif; text-anchor:middle; }
+      .branch { fill:none; stroke:#6b7280; stroke-width:2; }
+      .branchDivider { stroke:#515968; stroke-width:2; stroke-dasharray:7 7; }
+      .branch-title { fill:#c49a62; font:700 16px Inter,Arial,sans-serif; }
+      .note { fill:#1d2431; stroke:#61708c; stroke-width:2.5; }
+      .note-title { fill:#f2f0e9; font:700 18px Inter,Arial,sans-serif; }
+      .note-text { fill:#b9c1cf; font:16px Inter,Arial,sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1320" fill="#0b0f17"/>
+  <rect class="frame" x="30" y="30" width="1540" height="1260" rx="28" fill="none" stroke="#3c4659" stroke-width="2.5"/>
+  <text class="title" x="80" y="78" fill="#f4f1e8" font-family="Bradley Hand,Comic Sans MS,cursive" font-size="48" font-weight="700">Test locally without hiding the boundary</text>
+  <text class="subtitle" x="82" y="118" fill="#9da8ba" font-family="Inter,Arial,sans-serif" font-size="19">Prefer Floci, name every LocalStack fallback, inject the endpoint, and make cleanup observable.</text>
+
+  <g filter="url(#shadow)">
+    <rect class="participant" x="70" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="195" y="199">Test case</text>
+    <text class="role" x="195" y="226">owns the full fixture</text>
+    <rect class="participant" x="385" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="510" y="199">Emulator selector</text>
+    <text class="role" x="510" y="226">floci by default</text>
+    <rect class="participant" x="700" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="825" y="199">Testcontainer</text>
+    <text class="role" x="825" y="226">Floci or LocalStack</text>
+    <rect class="participant" x="1015" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="1140" y="199">AWS client</text>
+    <text class="role" x="1140" y="226">endpoint is injected</text>
+    <rect class="participant" x="1330" y="165" width="200" height="82" rx="18"/>
+    <text class="participant-title" x="1430" y="199">Service state</text>
+    <text class="role" x="1430" y="226">fixture and result</text>
+  </g>
+
+  <line class="lifeline" x1="195" y1="247" x2="195" y2="1125"/>
+  <line class="lifeline" x1="510" y1="247" x2="510" y2="1125"/>
+  <line class="lifeline" x1="825" y1="247" x2="825" y2="1125"/>
+  <line class="lifeline" x1="1140" y1="247" x2="1140" y2="1125"/>
+  <line class="lifeline" x1="1430" y1="247" x2="1430" y2="1125"/>
+
+  <rect class="activation" x="185" y="292" width="20" height="784" rx="6"/>
+  <rect class="activation" x="500" y="333" width="20" height="275" rx="6"/>
+  <rect class="activation" x="815" y="400" width="20" height="676" rx="6"/>
+  <rect class="activation" x="1130" y="716" width="20" height="360" rx="6"/>
+  <rect class="activation" x="1420" y="786" width="20" height="210" rx="6"/>
+
+  <g>
+    <rect class="labelPill" x="226" y="290" width="247" height="34" rx="17" stroke="#78a9c7"/>
+    <circle class="badge" cx="244" cy="307" r="13" stroke="#78a9c7"/><text class="badgeText" x="244" y="312" fill="#78a9c7">1</text>
+    <text class="labelText" x="265" y="313">select configured emulator</text>
+    <path class="callBlue" d="M 205 333 H 500"/>
+  </g>
+
+  <rect class="branch" x="468" y="365" width="430" height="250" rx="14"/>
+  <rect x="468" y="365" width="205" height="32" rx="12" fill="#1d291e" stroke="#94a56b" stroke-width="2"/>
+  <text x="490" y="387" fill="#94a56b" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="700">alt default: floci</text>
+  <g>
+    <rect class="labelPill" x="548" y="415" width="260" height="34" rx="17" stroke="#94a56b"/>
+    <circle class="badge" cx="566" cy="432" r="13" stroke="#94a56b"/><text class="badgeText" x="566" y="437" fill="#94a56b">2</text>
+    <text class="labelText" x="587" y="438">create fast Floci container</text>
+    <path class="callGreen" d="M 520 458 H 815"/>
+  </g>
+  <line class="branchDivider" x1="468" y1="488" x2="898" y2="488"/>
+  <text class="branch-title" x="490" y="513">else explicit coverage gap: localstack</text>
+  <g>
+    <rect class="labelPill" x="533" y="531" width="275" height="34" rx="17" stroke="#b88473"/>
+    <circle class="badge" cx="551" cy="548" r="13" stroke="#b88473"/><text class="badgeText" x="551" y="553" fill="#b88473">3</text>
+    <text class="labelText" x="572" y="554">create LocalStack container</text>
+    <path class="callRed" d="M 520 574 H 815"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="538" y="632" width="270" height="34" rx="17" stroke="#78a9c7"/>
+    <circle class="badge" cx="556" cy="649" r="13" stroke="#78a9c7"/><text class="badgeText" x="556" y="654" fill="#78a9c7">4</text>
+    <text class="labelText" x="577" y="655">start selected container</text>
+    <path class="callBlue" d="M 205 675 H 815"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="442" y="682" width="354" height="34" rx="17" stroke="#65a6a2"/>
+    <circle class="badge" cx="460" cy="699" r="13" stroke="#65a6a2"/><text class="badgeText" x="460" y="704" fill="#65a6a2">5</text>
+    <text class="labelText" x="481" y="705">return endpoint, region, credentials</text>
+    <path class="return" d="M 815 725 H 205"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="740" y="742" width="365" height="34" rx="17" stroke="#94a56b"/>
+    <circle class="badge" cx="758" cy="759" r="13" stroke="#94a56b"/><text class="badgeText" x="758" y="764" fill="#94a56b">6</text>
+    <text class="labelText" x="779" y="765">build client with injected values</text>
+    <path class="callGreen" d="M 205 785 H 1130"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="1194" y="802" width="220" height="34" rx="17" stroke="#78a9c7"/>
+    <circle class="badge" cx="1212" cy="819" r="13" stroke="#78a9c7"/><text class="badgeText" x="1212" y="824" fill="#78a9c7">7</text>
+    <text class="labelText" x="1233" y="825">create service fixture</text>
+    <path class="callBlue" d="M 1150 845 H 1420"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="1194" y="866" width="220" height="34" rx="17" stroke="#78a9c7"/>
+    <circle class="badge" cx="1212" cy="883" r="13" stroke="#78a9c7"/><text class="badgeText" x="1212" y="888" fill="#78a9c7">8</text>
+    <text class="labelText" x="1233" y="889">execute real behavior</text>
+    <path class="callBlue" d="M 1150 909 H 1420"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="790" y="926" width="306" height="34" rx="17" stroke="#65a6a2"/>
+    <circle class="badge" cx="808" cy="943" r="13" stroke="#65a6a2"/><text class="badgeText" x="808" y="948" fill="#65a6a2">9</text>
+    <text class="labelText" x="829" y="949">assert response and state</text>
+    <path class="return" d="M 1420 970 H 205"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="849" y="988" width="246" height="34" rx="17" stroke="#c49a62"/>
+    <circle class="badge" cx="867" cy="1005" r="13" stroke="#c49a62"/><text class="badgeText" x="867" y="1010" fill="#c49a62">10</text>
+    <text class="labelText" x="888" y="1011">close the AWS client</text>
+    <path class="callAmber" d="M 205 1031 H 1130"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="548" y="1046" width="260" height="34" rx="17" stroke="#c49a62"/>
+    <circle class="badge" cx="566" cy="1063" r="13" stroke="#c49a62"/><text class="badgeText" x="566" y="1068" fill="#c49a62">11</text>
+    <text class="labelText" x="587" y="1069">stop selected container</text>
+    <path class="callAmber" d="M 205 1090 H 815"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="note" x="190" y="1150" width="1220" height="112" rx="20"/>
+    <text class="note-title" x="225" y="1191">Coverage rule</text>
+    <text class="note-text" x="225" y="1223">An emulator proves local integration, not AWS IAM, quota, latency, or managed-service policy.</text>
+    <text class="note-text" x="225" y="1248">Keep Floci as the quick default and record the precise unsupported operation that requires LocalStack.</text>
+  </g>
+</svg>

@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1150" viewBox="0 0 1600 1150" role="img" aria-labelledby="title desc">
+  <title id="title">AWS service learning paths for Spring Boot and Ktor</title>
+  <desc id="desc">A dark two-lane learning map that orders the eight released Spring Boot and Ktor examples for S3, DynamoDB, SQS or SNS, and Exposed.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#101827"/><stop offset="58%" stop-color="#172334"/><stop offset="100%" stop-color="#223047"/></linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1f2937"/><stop offset="100%" stop-color="#111827"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#020617" flood-opacity="0.34"/></filter>
+    <filter id="glow" x="-20" y="-20" width="1640" height="1190" filterUnits="userSpaceOnUse"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#67e8f9" flood-opacity="0.24"/></filter>
+    <marker id="arrow-blue" viewBox="0 0 14 14" refX="13" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 14 7 L 0 14 Z" fill="#9ed8ff"/></marker>
+    <marker id="arrow-amber" viewBox="0 0 14 14" refX="13" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 14 7 L 0 14 Z" fill="#f6c96b"/></marker>
+    <marker id="arrow-green" viewBox="0 0 14 14" refX="13" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 14 7 L 0 14 Z" fill="#5eead4"/></marker>
+  </defs>
+  <rect width="1600" height="1150" fill="url(#canvas)"/>
+  <rect x="42" y="36" width="1516" height="1078" rx="34" fill="url(#panel)" stroke="#536377" stroke-width="4" filter="url(#shadow)"/>
+  <text x="800" y="98" text-anchor="middle" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="40" fill="#f8fafc">Learn One Service at a Time, Then Cross the Database Boundary</text>
+  <text x="800" y="140" text-anchor="middle" font-family="Comic Mono, ui-monospace, monospace" font-size="18" fill="#b6c4d6">Every card is a released 0.4 example with executable tests and a concrete application entry point.</text>
+
+  <rect x="90" y="300" width="680" height="750" rx="28" fill="#121c2d" stroke="#4c8cc8" stroke-width="2.5" stroke-dasharray="10 8"/>
+  <rect x="830" y="300" width="680" height="750" rx="28" fill="#121c2d" stroke="#c58b2a" stroke-width="2.5" stroke-dasharray="10 8"/>
+
+  <g id="connectors" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" filter="url(#glow)">
+    <path id="choose-spring" d="M 710 260 V 290 Q 710 305 695 305 H 215 Q 200 305 200 320 V 370" stroke="#9ed8ff" marker-end="url(#arrow-blue)"/>
+    <path id="choose-ktor" d="M 890 260 V 290 Q 890 305 905 305 H 1385 Q 1400 305 1400 320 V 370" stroke="#f6c96b" marker-end="url(#arrow-amber)"/>
+    <path id="spring-s3-dynamo" d="M 430 520 V 550" stroke="#5eead4" marker-end="url(#arrow-green)"/>
+    <path id="spring-dynamo-sqs" d="M 430 700 V 730" stroke="#5eead4" marker-end="url(#arrow-green)"/>
+    <path id="spring-sqs-exposed" d="M 430 880 V 910" stroke="#5eead4" marker-end="url(#arrow-green)"/>
+    <path id="ktor-s3-dynamo" d="M 1170 520 V 550" stroke="#5eead4" marker-end="url(#arrow-green)"/>
+    <path id="ktor-dynamo-sqs" d="M 1170 700 V 730" stroke="#5eead4" marker-end="url(#arrow-green)"/>
+    <path id="ktor-sqs-exposed" d="M 1170 880 V 910" stroke="#5eead4" marker-end="url(#arrow-green)"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect id="choice-card" x="350" y="175" width="900" height="85" rx="24" fill="#172033" stroke="#8b6bd6" stroke-width="4"/>
+    <text x="800" y="210" text-anchor="middle" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="30" fill="#c4b5fd">Which server framework owns the application boundary?</text>
+    <text x="800" y="239" text-anchor="middle" font-family="Comic Mono, ui-monospace, monospace" font-size="15" fill="#d5dfeb">stay in one lane; compare the other only when its lifecycle model matters</text>
+  </g>
+
+  <text x="430" y="338" text-anchor="middle" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="31" fill="#9ed8ff">Spring Boot 4 learning path</text>
+  <text x="1170" y="338" text-anchor="middle" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="31" fill="#f6c96b">Ktor 3 learning path</text>
+
+  <g id="spring-cards" filter="url(#shadow)">
+    <rect id="spring-s3-card" x="150" y="370" width="560" height="150" rx="22" fill="#172033" stroke="#4c8cc8" stroke-width="4"/>
+    <rect id="spring-dynamo-card" x="150" y="550" width="560" height="150" rx="22" fill="#172033" stroke="#159c92" stroke-width="4"/>
+    <rect id="spring-sqs-card" x="150" y="730" width="560" height="150" rx="22" fill="#172033" stroke="#c58b2a" stroke-width="4"/>
+    <rect id="spring-exposed-card" x="150" y="910" width="560" height="110" rx="22" fill="#172033" stroke="#8b6bd6" stroke-width="4"/>
+  </g>
+  <g id="ktor-cards" filter="url(#shadow)">
+    <rect id="ktor-s3-card" x="890" y="370" width="560" height="150" rx="22" fill="#172033" stroke="#4c8cc8" stroke-width="4"/>
+    <rect id="ktor-dynamo-card" x="890" y="550" width="560" height="150" rx="22" fill="#172033" stroke="#159c92" stroke-width="4"/>
+    <rect id="ktor-sqs-card" x="890" y="730" width="560" height="150" rx="22" fill="#172033" stroke="#c58b2a" stroke-width="4"/>
+    <rect id="ktor-exposed-card" x="890" y="910" width="560" height="110" rx="22" fill="#172033" stroke="#8b6bd6" stroke-width="4"/>
+  </g>
+
+  <g text-anchor="middle">
+    <text x="430" y="415" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="27" fill="#9ed8ff">S3 documents and object IO</text>
+    <text x="430" y="451" font-family="Comic Mono, ui-monospace, monospace" font-size="16" fill="#d5dfeb">controller / presigned URL / optional KMS</text>
+    <text x="430" y="485" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-spring-boot-s3-examples</text>
+    <text x="430" y="595" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="27" fill="#5eead4">DynamoDB repository</text>
+    <text x="430" y="631" font-family="Comic Mono, ui-monospace, monospace" font-size="16" fill="#d5dfeb">coroutine service and order API</text>
+    <text x="430" y="665" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-spring-boot-dynamodb-examples</text>
+    <text x="430" y="775" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="27" fill="#f6c96b">SQS listener and SNS fan-out</text>
+    <text x="430" y="811" font-family="Comic Mono, ui-monospace, monospace" font-size="16" fill="#d5dfeb">typed payload / manual ack / retry</text>
+    <text x="430" y="845" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-spring-boot-sqs-examples</text>
+    <text x="430" y="952" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="25" fill="#c4b5fd">AWS settings to Exposed</text>
+    <text x="430" y="989" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-spring-boot-exposed-examples</text>
+
+    <text x="1170" y="415" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="27" fill="#9ed8ff">S3 client and object routes</text>
+    <text x="1170" y="451" font-family="Comic Mono, ui-monospace, monospace" font-size="16" fill="#d5dfeb">REST client / presigned URL / encryption</text>
+    <text x="1170" y="485" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-ktor-s3-examples</text>
+    <text x="1170" y="595" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="27" fill="#5eead4">DynamoDB server repository</text>
+    <text x="1170" y="631" font-family="Comic Mono, ui-monospace, monospace" font-size="16" fill="#d5dfeb">route-level CRUD with emulator tests</text>
+    <text x="1170" y="665" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-ktor-dynamodb-examples</text>
+    <text x="1170" y="775" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="27" fill="#f6c96b">SQS consumer runtime</text>
+    <text x="1170" y="811" font-family="Comic Mono, ui-monospace, monospace" font-size="16" fill="#d5dfeb">ack / nack / retry / interceptor</text>
+    <text x="1170" y="845" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-ktor-sqs-examples</text>
+    <text x="1170" y="952" font-family="Architects Daughter, Comic Sans MS, cursive" font-size="25" fill="#c4b5fd">Route transaction with Exposed</text>
+    <text x="1170" y="989" font-family="Comic Mono, ui-monospace, monospace" font-size="14" fill="#9fb0c4">aws-ktor-exposed-examples</text>
+  </g>
+  <text x="800" y="1082" text-anchor="middle" font-family="Comic Mono, ui-monospace, monospace" font-size="15" fill="#b6c4d6">Start with one service, read its test, then reuse the same lifecycle and failure rules in your application.</text>
+</svg>

@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1320" viewBox="0 0 1600 1320" role="img" aria-labelledby="title desc">
+  <title id="title">AWS-backed database integration flow</title>
+  <desc id="desc">Sequence from application settings resolution through optional AWS configuration and RDS IAM authentication to an application-owned Hikari and Exposed handle.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#05070d" flood-opacity="0.45"/>
+    </filter>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#78a9c7"/>
+    </marker>
+    <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#c49a62"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#94a56b"/>
+    </marker>
+    <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#65a6a2"/>
+    </marker>
+    <marker id="arrow-branch" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#b88473"/>
+    </marker>
+    <style>
+      .participant { fill:#171c27; stroke:#44516a; stroke-width:2; }
+      .participant-title { fill:#f2f0e9; font:700 22px Inter,Arial,sans-serif; text-anchor:middle; }
+      .role { fill:#a9b2c3; font:15px Inter,Arial,sans-serif; text-anchor:middle; }
+      .lifeline { stroke:#556176; stroke-width:2; stroke-dasharray:8 10; }
+      .activation { fill:#273247; stroke:#6d7d98; stroke-width:2; }
+      .callBlue { fill:none; stroke:#78a9c7; stroke-width:3; marker-end:url(#arrow-blue); }
+      .callAmber { fill:none; stroke:#c49a62; stroke-width:3; marker-end:url(#arrow-amber); }
+      .callRed { fill:none; stroke:#b88473; stroke-width:3; marker-end:url(#arrow-branch); }
+      .callGreen { fill:none; stroke:#94a56b; stroke-width:3; marker-end:url(#arrow-green); }
+      .return { fill:none; stroke:#65a6a2; stroke-width:3; stroke-dasharray:8 6; marker-end:url(#arrow-teal); }
+      .labelPill { fill:#111620; stroke-width:2; }
+      .labelText { fill:#e7e5df; font:600 16px Inter,Arial,sans-serif; }
+      .badge { fill:#111620; stroke-width:2; }
+      .badgeText { font:700 15px Inter,Arial,sans-serif; text-anchor:middle; }
+      .branch { fill:none; stroke:#6b7280; stroke-width:2; }
+      .branchDivider { stroke:#515968; stroke-width:2; stroke-dasharray:7 7; }
+      .branch-title { fill:#c49a62; font:700 16px Inter,Arial,sans-serif; }
+      .note { fill:#171c27; stroke:#44516a; stroke-width:2; }
+      .note-title { fill:#f2f0e9; font:700 18px Inter,Arial,sans-serif; }
+      .note-text { fill:#b9c1cf; font:16px Inter,Arial,sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1320" fill="#0b0f17"/>
+  <rect class="frame" x="30" y="30" width="1540" height="1260" rx="28" fill="none" stroke="#252d3b" stroke-width="2"/>
+  <text class="title" x="80" y="78" fill="#f4f1e8" font-family="Bradley Hand,Comic Sans MS,cursive" font-size="48" font-weight="700">Database integration: resolve, connect, own</text>
+  <text class="subtitle" x="82" y="118" fill="#9da8ba" font-family="Inter,Arial,sans-serif" font-size="19">AWS supplies optional configuration and credentials; the application owns the pool and Exposed lifecycle.</text>
+
+  <g filter="url(#shadow)">
+    <rect class="participant" x="70" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="195" y="199">Application</text>
+    <text class="role" x="195" y="226">startup and shutdown owner</text>
+
+    <rect class="participant" x="385" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="510" y="199">Settings resolver</text>
+    <text class="role" x="510" y="226">database policy boundary</text>
+
+    <rect class="participant" x="700" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="825" y="199">AWS config source</text>
+    <text class="role" x="825" y="226">Secrets / Parameter Store</text>
+
+    <rect class="participant" x="1015" y="165" width="250" height="82" rx="18"/>
+    <text class="participant-title" x="1140" y="199">RDS IAM</text>
+    <text class="role" x="1140" y="226">optional auth token</text>
+
+    <rect class="participant" x="1330" y="165" width="200" height="82" rx="18"/>
+    <text class="participant-title" x="1430" y="199">DB handle</text>
+    <text class="role" x="1430" y="226">Hikari + Exposed</text>
+  </g>
+
+  <line class="lifeline" x1="195" y1="247" x2="195" y2="1120"/>
+  <line class="lifeline" x1="510" y1="247" x2="510" y2="1120"/>
+  <line class="lifeline" x1="825" y1="247" x2="825" y2="1120"/>
+  <line class="lifeline" x1="1140" y1="247" x2="1140" y2="1120"/>
+  <line class="lifeline" x1="1430" y1="247" x2="1430" y2="1120"/>
+
+  <rect class="activation" x="185" y="292" width="20" height="766" rx="6"/>
+  <rect class="activation" x="500" y="346" width="20" height="448" rx="6"/>
+  <rect class="activation" x="815" y="454" width="20" height="136" rx="6"/>
+  <rect class="activation" x="1130" y="644" width="20" height="96" rx="6"/>
+  <rect class="activation" x="1420" y="820" width="20" height="238" rx="6"/>
+
+  <g>
+    <rect class="labelPill" x="224" y="290" width="250" height="34" rx="17" stroke="#78a9c7"/>
+    <circle class="badge" cx="242" cy="307" r="13" stroke="#78a9c7"/>
+    <text class="badgeText" x="242" y="312" fill="#78a9c7">1</text>
+    <text class="labelText" x="263" y="313">resolve database settings</text>
+    <path class="callBlue" d="M 205 333 H 500"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="535" y="350" width="275" height="34" rx="17" stroke="#78a9c7"/>
+    <circle class="badge" cx="553" cy="367" r="13" stroke="#78a9c7"/>
+    <text class="badgeText" x="553" y="372" fill="#78a9c7">2</text>
+    <text class="labelText" x="574" y="373">read explicit config / environment</text>
+    <path class="callBlue" d="M 520 393 H 805"/>
+  </g>
+
+  <rect class="branch" x="468" y="424" width="430" height="180" rx="14"/>
+  <rect x="468" y="424" width="168" height="32" rx="12" fill="#282218" stroke="#c49a62" stroke-width="2"/>
+  <text class="branch-title" x="490" y="446">opt AWS-backed values</text>
+
+  <g>
+    <rect class="labelPill" x="557" y="462" width="250" height="34" rx="17" stroke="#b88473"/>
+    <circle class="badge" cx="575" cy="479" r="13" stroke="#b88473"/>
+    <text class="badgeText" x="575" y="484" fill="#b88473">3</text>
+    <text class="labelText" x="596" y="485">fetch secret or parameter</text>
+    <path class="callRed" d="M 520 505 H 815"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="565" y="526" width="235" height="34" rx="17" stroke="#65a6a2"/>
+    <circle class="badge" cx="583" cy="543" r="13" stroke="#65a6a2"/>
+    <text class="badgeText" x="583" y="548" fill="#65a6a2">4</text>
+    <text class="labelText" x="604" y="549">return resolved values</text>
+    <path class="return" d="M 815 569 H 520"/>
+  </g>
+
+  <rect class="branch" x="468" y="620" width="730" height="160" rx="14"/>
+  <rect x="468" y="620" width="248" height="32" rx="12" fill="#282218" stroke="#c49a62" stroke-width="2"/>
+  <text class="branch-title" x="490" y="642">opt RDS IAM authentication</text>
+
+  <g>
+    <rect class="labelPill" x="711" y="654" width="290" height="34" rx="17" stroke="#b88473"/>
+    <circle class="badge" cx="729" cy="671" r="13" stroke="#b88473"/>
+    <text class="badgeText" x="729" y="676" fill="#b88473">5</text>
+    <text class="labelText" x="750" y="677">request short-lived auth token</text>
+    <path class="callRed" d="M 520 697 H 1130"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="774" y="710" width="226" height="34" rx="17" stroke="#65a6a2"/>
+    <circle class="badge" cx="792" cy="727" r="13" stroke="#65a6a2"/>
+    <text class="badgeText" x="792" y="732" fill="#65a6a2">6</text>
+    <text class="labelText" x="813" y="733">return token as password</text>
+    <path class="return" d="M 1130 753 H 520"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="791" y="800" width="315" height="34" rx="17" stroke="#94a56b"/>
+    <circle class="badge" cx="809" cy="817" r="13" stroke="#94a56b"/>
+    <text class="badgeText" x="809" y="822" fill="#94a56b">7</text>
+    <text class="labelText" x="830" y="823">build owned Hikari data source</text>
+    <path class="callGreen" d="M 205 843 H 1420"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="846" y="866" width="260" height="34" rx="17" stroke="#94a56b"/>
+    <circle class="badge" cx="864" cy="883" r="13" stroke="#94a56b"/>
+    <text class="badgeText" x="864" y="888" fill="#94a56b">8</text>
+    <text class="labelText" x="885" y="889">connect Exposed database</text>
+    <path class="callGreen" d="M 205 909 H 1420"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="712" y="932" width="394" height="34" rx="17" stroke="#65a6a2"/>
+    <circle class="badge" cx="730" cy="949" r="13" stroke="#65a6a2"/>
+    <text class="badgeText" x="730" y="954" fill="#65a6a2">9</text>
+    <text class="labelText" x="751" y="955">return handle with explicit close ownership</text>
+    <path class="return" d="M 1420 975 H 205"/>
+  </g>
+
+  <g>
+    <rect class="labelPill" x="863" y="998" width="243" height="34" rx="17" stroke="#c49a62"/>
+    <circle class="badge" cx="881" cy="1015" r="13" stroke="#c49a62"/>
+    <text class="badgeText" x="881" y="1020" fill="#c49a62">10</text>
+    <text class="labelText" x="902" y="1021">close handle and pool</text>
+    <path class="callAmber" d="M 205 1041 H 1420"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="note" x="190" y="1150" width="1220" height="112" rx="20"/>
+    <text class="note-title" x="225" y="1191">Ownership rule</text>
+    <text class="note-text" x="225" y="1223">Configuration may come from AWS and credentials may expire, but resource ownership never becomes implicit.</text>
+    <text class="note-text" x="225" y="1248">Create one application-scoped handle, reuse it for transactions, and close it with the application lifecycle.</text>
+  </g>
+</svg>

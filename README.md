@@ -14,6 +14,11 @@ repository adds coroutine-friendly APIs, Spring Boot 4 auto-configuration, and
 Ktor 3 integration for bluetape4k services that need AWS without committing to
 one application stack.
 
+For task-oriented guidance, SDK and framework choices, lifecycle rules, and
+runnable learning paths, use the [AWS manual](docs/manual/en/index.md). This
+README remains a repository overview; the manual is the detailed source of
+truth.
+
 ---
 
 ## Project Purpose
@@ -105,7 +110,9 @@ uses.
 ## Installation
 
 AWS service SDKs are declared as `compileOnly` in this library. Add only the service dependencies
-you need at runtime.
+you need at runtime. Import the central `bluetape4k-dependencies` BOM once; it
+aligns this library and the supported AWS SDK artifacts, so consumers do not
+select separate repository or SDK BOM versions.
 
 Core Secrets Manager and Parameter Store helpers are intentionally thin SDK
 wrappers. Spring Environment loading, JSON flattening, cache/refresh policies,
@@ -116,10 +123,10 @@ pagination abstractions remain in higher-level modules or application code.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:0.4.0")
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
 
     // Add the AWS Java SDK v2 services you use
-    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
@@ -150,21 +157,22 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:0.4.0")
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin")
 
     // Add the AWS Kotlin SDK services you use
-    implementation("aws.sdk.kotlin:dynamodb:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:s3:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:secretsmanager:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sqs:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:ssm:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sns:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:kms:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:cloudwatch:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:scheduler:${awsKotlinSdkVersion}")
-    implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:dynamodb")
+    implementation("aws.sdk.kotlin:s3")
+    implementation("aws.sdk.kotlin:secretsmanager")
+    implementation("aws.sdk.kotlin:sqs")
+    implementation("aws.sdk.kotlin:ssm")
+    implementation("aws.sdk.kotlin:sns")
+    implementation("aws.sdk.kotlin:kms")
+    implementation("aws.sdk.kotlin:cloudwatch")
+    implementation("aws.sdk.kotlin:kinesis")
+    implementation("aws.sdk.kotlin:eventbridge")
+    implementation("aws.sdk.kotlin:scheduler")
+    implementation("aws.sdk.kotlin:sts")
 }
 ```
 
@@ -172,10 +180,10 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:0.4.0")
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot")
 
     // Add the AWS Java SDK v2 services you use at runtime.
-    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
