@@ -1,0 +1,263 @@
+schemaVersion: 2
+repository: "bluetape4k/bluetape4k-aws"
+releaseRef: "0.4.0"
+releaseCommit: "be4e6daea5654f84579955307ec56a58c8f405be"
+overview:
+  documents:
+    en:
+      - "en/index.md"
+      - "en/getting-started.md"
+      - "en/architecture/repository-map.md"
+      - "en/guides/sdk-selection.md"
+      - "en/guides/service-learning-paths.md"
+      - "en/guides/framework-selection.md"
+      - "en/guides/database-integration.md"
+      - "en/guides/testing-and-operations.md"
+    ko:
+      - "ko/index.md"
+      - "ko/getting-started.md"
+      - "ko/architecture/repository-map.md"
+      - "ko/guides/sdk-selection.md"
+      - "ko/guides/service-learning-paths.md"
+      - "ko/guides/framework-selection.md"
+      - "ko/guides/database-integration.md"
+      - "ko/guides/testing-and-operations.md"
+  assets:
+    - "assets/overview/repository-module-map.svg"
+    - "assets/overview/repository-module-map.png"
+    - "assets/sdk/sdk-decision-map.svg"
+    - "assets/sdk/sdk-decision-map.png"
+    - "assets/framework/service-learning-map.svg"
+    - "assets/framework/service-learning-map.png"
+    - "assets/database/integration-flow.svg"
+    - "assets/database/integration-flow.png"
+    - "assets/testing/emulator-flow.svg"
+    - "assets/testing/emulator-flow.png"
+modules:
+  - id: "bluetape4k-aws-bom"
+    title: {"en":"AWS Bill of Materials","ko":"AWS BOM"}
+    gradlePath: ":bluetape4k-aws-bom"
+    sourceDir: "bom"
+    kind: "library"
+    group: "foundation"
+    artifact: "io.github.bluetape4k.aws:bluetape4k-aws-bom"
+    en: "en/modules/bluetape4k-aws-bom.md"
+    ko: "ko/modules/bluetape4k-aws-bom.md"
+    sourcePaths: []
+    testPaths: []
+    workshops: []
+  - id: "bluetape4k-aws-java"
+    title: {"en":"AWS SDK for Java v2 Extensions","ko":"AWS SDK for Java v2 확장"}
+    gradlePath: ":bluetape4k-aws-java"
+    sourceDir: "aws-java"
+    kind: "library"
+    group: "foundation"
+    artifact: "io.github.bluetape4k.aws:bluetape4k-aws-java"
+    en: "en/modules/bluetape4k-aws-java.md"
+    ko: "ko/modules/bluetape4k-aws-java.md"
+    sourcePaths: ["aws-java/src/main/kotlin"]
+    testPaths: ["aws-java/src/test/kotlin","aws-java/src/test/resources"]
+    workshops:
+      - "examples/aws-ktor-s3-examples"
+      - "examples/aws-spring-boot-s3-examples"
+      - "examples/aws-ktor-dynamodb-examples"
+      - "examples/aws-spring-boot-dynamodb-examples"
+      - "examples/aws-ktor-sqs-examples"
+      - "examples/aws-spring-boot-sqs-examples"
+    chapters:
+      - id: "client-lifecycle"
+        en: "en/modules/bluetape4k-aws-java/client-lifecycle.md"
+        ko: "ko/modules/bluetape4k-aws-java/client-lifecycle.md"
+      - id: "sync-async-coroutines"
+        en: "en/modules/bluetape4k-aws-java/sync-async-coroutines.md"
+        ko: "ko/modules/bluetape4k-aws-java/sync-async-coroutines.md"
+      - id: "service-patterns"
+        en: "en/modules/bluetape4k-aws-java/service-patterns.md"
+        ko: "ko/modules/bluetape4k-aws-java/service-patterns.md"
+  - id: "bluetape4k-aws-kotlin"
+    title: {"en":"AWS SDK for Kotlin Extensions","ko":"AWS SDK for Kotlin 확장"}
+    gradlePath: ":bluetape4k-aws-kotlin"
+    sourceDir: "aws-kotlin"
+    kind: "library"
+    group: "foundation"
+    artifact: "io.github.bluetape4k.aws:bluetape4k-aws-kotlin"
+    en: "en/modules/bluetape4k-aws-kotlin.md"
+    ko: "ko/modules/bluetape4k-aws-kotlin.md"
+    sourcePaths: ["aws-kotlin/src/main/kotlin"]
+    testPaths: ["aws-kotlin/src/test/kotlin","aws-kotlin/src/test/resources"]
+    workshops:
+      - "examples/aws-ktor-s3-examples"
+      - "examples/aws-ktor-dynamodb-examples"
+      - "examples/aws-ktor-sqs-examples"
+  - id: "bluetape4k-aws-exposed"
+    title: {"en":"AWS Exposed Database Integration","ko":"AWS Exposed 데이터베이스 통합"}
+    gradlePath: ":bluetape4k-aws-exposed"
+    sourceDir: "aws-exposed"
+    kind: "library"
+    group: "database"
+    artifact: "io.github.bluetape4k.aws:bluetape4k-aws-exposed"
+    en: "en/modules/bluetape4k-aws-exposed.md"
+    ko: "ko/modules/bluetape4k-aws-exposed.md"
+    sourcePaths: ["aws-exposed/src/main/kotlin"]
+    testPaths: ["aws-exposed/src/test/kotlin","aws-exposed/src/test/resources"]
+    workshops:
+      - "examples/aws-spring-boot-exposed-examples"
+      - "examples/aws-ktor-exposed-examples"
+    chapters:
+      - id: "database-settings"
+        en: "en/modules/bluetape4k-aws-exposed/database-settings.md"
+        ko: "ko/modules/bluetape4k-aws-exposed/database-settings.md"
+      - id: "rds-iam-and-hikari"
+        en: "en/modules/bluetape4k-aws-exposed/rds-iam-and-hikari.md"
+        ko: "ko/modules/bluetape4k-aws-exposed/rds-iam-and-hikari.md"
+      - id: "transaction-boundaries"
+        en: "en/modules/bluetape4k-aws-exposed/transaction-boundaries.md"
+        ko: "ko/modules/bluetape4k-aws-exposed/transaction-boundaries.md"
+  - id: "bluetape4k-aws-spring-boot"
+    title: {"en":"AWS Spring Boot Integration","ko":"AWS Spring Boot 통합"}
+    gradlePath: ":bluetape4k-aws-spring-boot"
+    sourceDir: "aws-spring-boot"
+    kind: "library"
+    group: "framework"
+    artifact: "io.github.bluetape4k.aws:bluetape4k-aws-spring-boot"
+    en: "en/modules/bluetape4k-aws-spring-boot.md"
+    ko: "ko/modules/bluetape4k-aws-spring-boot.md"
+    sourcePaths: ["aws-spring-boot/src/main/kotlin","aws-spring-boot/src/main/resources"]
+    testPaths: ["aws-spring-boot/src/test/kotlin","aws-spring-boot/src/test/resources"]
+    workshops:
+      - "examples/aws-spring-boot-s3-examples"
+      - "examples/aws-spring-boot-dynamodb-examples"
+      - "examples/aws-spring-boot-sqs-examples"
+      - "examples/aws-spring-boot-exposed-examples"
+    chapters:
+      - id: "auto-configuration"
+        en: "en/modules/bluetape4k-aws-spring-boot/auto-configuration.md"
+        ko: "ko/modules/bluetape4k-aws-spring-boot/auto-configuration.md"
+      - id: "storage-and-messaging"
+        en: "en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md"
+        ko: "ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md"
+      - id: "runtime-operations"
+        en: "en/modules/bluetape4k-aws-spring-boot/runtime-operations.md"
+        ko: "ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md"
+  - id: "bluetape4k-aws-ktor"
+    title: {"en":"AWS Ktor Integration","ko":"AWS Ktor 통합"}
+    gradlePath: ":bluetape4k-aws-ktor"
+    sourceDir: "aws-ktor"
+    kind: "library"
+    group: "framework"
+    artifact: "io.github.bluetape4k.aws:bluetape4k-aws-ktor"
+    en: "en/modules/bluetape4k-aws-ktor.md"
+    ko: "ko/modules/bluetape4k-aws-ktor.md"
+    sourcePaths: ["aws-ktor/src/main/kotlin"]
+    testPaths: ["aws-ktor/src/test/kotlin","aws-ktor/src/test/resources"]
+    workshops:
+      - "examples/aws-ktor-s3-examples"
+      - "examples/aws-ktor-dynamodb-examples"
+      - "examples/aws-ktor-sqs-examples"
+      - "examples/aws-ktor-exposed-examples"
+    chapters:
+      - id: "client-and-sigv4"
+        en: "en/modules/bluetape4k-aws-ktor/client-and-sigv4.md"
+        ko: "ko/modules/bluetape4k-aws-ktor/client-and-sigv4.md"
+      - id: "service-plugins"
+        en: "en/modules/bluetape4k-aws-ktor/service-plugins.md"
+        ko: "ko/modules/bluetape4k-aws-ktor/service-plugins.md"
+      - id: "runtime-lifecycle"
+        en: "en/modules/bluetape4k-aws-ktor/runtime-lifecycle.md"
+        ko: "ko/modules/bluetape4k-aws-ktor/runtime-lifecycle.md"
+  - id: "aws-ktor-s3-examples"
+    title: {"en":"Ktor S3 Examples","ko":"Ktor S3 예제"}
+    gradlePath: ":aws-ktor-s3-examples"
+    sourceDir: "examples/aws-ktor-s3-examples"
+    kind: "example"
+    group: "example-s3"
+    artifact: null
+    en: "en/modules/aws-ktor-s3-examples.md"
+    ko: "ko/modules/aws-ktor-s3-examples.md"
+    sourcePaths: ["examples/aws-ktor-s3-examples/src/main/kotlin"]
+    testPaths: ["examples/aws-ktor-s3-examples/src/test/kotlin","examples/aws-ktor-s3-examples/src/test/resources"]
+    workshops: []
+  - id: "aws-spring-boot-s3-examples"
+    title: {"en":"Spring Boot S3 Examples","ko":"Spring Boot S3 예제"}
+    gradlePath: ":aws-spring-boot-s3-examples"
+    sourceDir: "examples/aws-spring-boot-s3-examples"
+    kind: "example"
+    group: "example-s3"
+    artifact: null
+    en: "en/modules/aws-spring-boot-s3-examples.md"
+    ko: "ko/modules/aws-spring-boot-s3-examples.md"
+    sourcePaths: ["examples/aws-spring-boot-s3-examples/src/main/kotlin"]
+    testPaths: ["examples/aws-spring-boot-s3-examples/src/test/kotlin","examples/aws-spring-boot-s3-examples/src/test/resources"]
+    workshops: []
+  - id: "aws-spring-boot-exposed-examples"
+    title: {"en":"Spring Boot Exposed Examples","ko":"Spring Boot Exposed 예제"}
+    gradlePath: ":aws-spring-boot-exposed-examples"
+    sourceDir: "examples/aws-spring-boot-exposed-examples"
+    kind: "example"
+    group: "example-database"
+    artifact: null
+    en: "en/modules/aws-spring-boot-exposed-examples.md"
+    ko: "ko/modules/aws-spring-boot-exposed-examples.md"
+    sourcePaths: ["examples/aws-spring-boot-exposed-examples/src/main/kotlin"]
+    testPaths: ["examples/aws-spring-boot-exposed-examples/src/test/kotlin","examples/aws-spring-boot-exposed-examples/src/test/resources"]
+    workshops: []
+  - id: "aws-spring-boot-sqs-examples"
+    title: {"en":"Spring Boot SQS Examples","ko":"Spring Boot SQS 예제"}
+    gradlePath: ":aws-spring-boot-sqs-examples"
+    sourceDir: "examples/aws-spring-boot-sqs-examples"
+    kind: "example"
+    group: "example-messaging"
+    artifact: null
+    en: "en/modules/aws-spring-boot-sqs-examples.md"
+    ko: "ko/modules/aws-spring-boot-sqs-examples.md"
+    sourcePaths: ["examples/aws-spring-boot-sqs-examples/src/main/kotlin"]
+    testPaths: ["examples/aws-spring-boot-sqs-examples/src/test/kotlin","examples/aws-spring-boot-sqs-examples/src/test/resources"]
+    workshops: []
+  - id: "aws-ktor-sqs-examples"
+    title: {"en":"Ktor SQS Examples","ko":"Ktor SQS 예제"}
+    gradlePath: ":aws-ktor-sqs-examples"
+    sourceDir: "examples/aws-ktor-sqs-examples"
+    kind: "example"
+    group: "example-messaging"
+    artifact: null
+    en: "en/modules/aws-ktor-sqs-examples.md"
+    ko: "ko/modules/aws-ktor-sqs-examples.md"
+    sourcePaths: ["examples/aws-ktor-sqs-examples/src/main/kotlin"]
+    testPaths: ["examples/aws-ktor-sqs-examples/src/test/kotlin","examples/aws-ktor-sqs-examples/src/test/resources"]
+    workshops: []
+  - id: "aws-ktor-dynamodb-examples"
+    title: {"en":"Ktor DynamoDB Examples","ko":"Ktor DynamoDB 예제"}
+    gradlePath: ":aws-ktor-dynamodb-examples"
+    sourceDir: "examples/aws-ktor-dynamodb-examples"
+    kind: "example"
+    group: "example-database"
+    artifact: null
+    en: "en/modules/aws-ktor-dynamodb-examples.md"
+    ko: "ko/modules/aws-ktor-dynamodb-examples.md"
+    sourcePaths: ["examples/aws-ktor-dynamodb-examples/src/main/kotlin"]
+    testPaths: ["examples/aws-ktor-dynamodb-examples/src/test/kotlin","examples/aws-ktor-dynamodb-examples/src/test/resources"]
+    workshops: []
+  - id: "aws-ktor-exposed-examples"
+    title: {"en":"Ktor Exposed Examples","ko":"Ktor Exposed 예제"}
+    gradlePath: ":aws-ktor-exposed-examples"
+    sourceDir: "examples/aws-ktor-exposed-examples"
+    kind: "example"
+    group: "example-database"
+    artifact: null
+    en: "en/modules/aws-ktor-exposed-examples.md"
+    ko: "ko/modules/aws-ktor-exposed-examples.md"
+    sourcePaths: ["examples/aws-ktor-exposed-examples/src/main/kotlin"]
+    testPaths: ["examples/aws-ktor-exposed-examples/src/test/kotlin","examples/aws-ktor-exposed-examples/src/test/resources"]
+    workshops: []
+  - id: "aws-spring-boot-dynamodb-examples"
+    title: {"en":"Spring Boot DynamoDB Examples","ko":"Spring Boot DynamoDB 예제"}
+    gradlePath: ":aws-spring-boot-dynamodb-examples"
+    sourceDir: "examples/aws-spring-boot-dynamodb-examples"
+    kind: "example"
+    group: "example-database"
+    artifact: null
+    en: "en/modules/aws-spring-boot-dynamodb-examples.md"
+    ko: "ko/modules/aws-spring-boot-dynamodb-examples.md"
+    sourcePaths: ["examples/aws-spring-boot-dynamodb-examples/src/main/kotlin","examples/aws-spring-boot-dynamodb-examples/src/main/resources"]
+    testPaths: ["examples/aws-spring-boot-dynamodb-examples/src/test/kotlin","examples/aws-spring-boot-dynamodb-examples/src/test/resources"]
+    workshops: []
