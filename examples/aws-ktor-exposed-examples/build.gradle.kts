@@ -16,21 +16,21 @@ dependencies {
     implementation(project(":bluetape4k-aws-ktor"))
 
     implementation(platform(libs.exposed.bom))
-    implementation(platform(libs.bluetape4k.exposed.bom))
-    implementation(libs.bluetape4k.exposed.jdbc)
-    implementation(libs.bluetape4k.ktor.core)
-    implementation(libs.exposed.jdbc)
+    implementation(platform(bt4k.bluetape4k.exposed.bom))
+    implementation(bt4k.bluetape4k.exposed.jdbc)
+    implementation(bt4k.bluetape4k.ktor.core)
+    implementation(bt4k.exposed.jdbc)
     // Direct Ktor artifacts remain intentional: the example runs on CIO and uses Jackson DTO binding.
     implementation(libs.ktor.serialization.jackson)
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.kotlinx.coroutines.core)
 
-    runtimeOnly(libs.postgresql.driver)
+    runtimeOnly(bt4k.postgresql)
 
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.ktor.testing)
-    testImplementation(libs.bluetape4k.testcontainers)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.ktor.testing)
+    testImplementation(bt4k.bluetape4k.testcontainers)
     // Jackson remains intentional because the example DTOs are Jackson-serialized Exposed records.
     testImplementation(libs.ktor.client.content.negotiation)
     testImplementation(libs.testcontainers.postgresql)

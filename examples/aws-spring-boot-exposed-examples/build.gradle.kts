@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.kotlin.spring)
-    alias(libs.plugins.spring.boot)
+    alias(bt4k.plugins.kotlin.spring)
+    alias(bt4k.plugins.spring.boot)
     alias(bt4k.plugins.exposed.plugin)
 }
 
@@ -15,9 +15,9 @@ exposed {
 
 dependencyManagement {
     imports {
-        mavenBom(libs.spring.boot.dependencies.get().toString())
-        mavenBom(libs.kotlin.bom.get().toString())
-        mavenBom(libs.kotlinx.coroutines.bom.get().toString())
+        mavenBom("org.springframework.boot:spring-boot-dependencies:${bt4k.versions.spring.boot.get()}")
+        mavenBom("org.jetbrains.kotlin:kotlin-bom:${bt4k.versions.kotlin.get()}")
+        mavenBom("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${bt4k.versions.kotlinx.coroutines.get()}")
     }
 }
 
@@ -26,15 +26,15 @@ dependencies {
     implementation(project(":bluetape4k-aws-spring-boot"))
 
     implementation(platform(libs.exposed.bom))
-    implementation(platform(libs.bluetape4k.exposed.bom))
-    implementation(libs.bluetape4k.exposed.jdbc)
-    implementation(libs.exposed.jdbc)
+    implementation(platform(bt4k.bluetape4k.exposed.bom))
+    implementation(bt4k.bluetape4k.exposed.jdbc)
+    implementation(bt4k.exposed.jdbc)
     implementation(libs.spring.boot.starter.web)
 
-    runtimeOnly(libs.postgresql.driver)
+    runtimeOnly(bt4k.postgresql)
 
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.testcontainers)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.testcontainers.postgresql)
 }

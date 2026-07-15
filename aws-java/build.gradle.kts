@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.kotlin.spring)
+    alias(bt4k.plugins.kotlin.spring)
 }
 
 configurations {
@@ -8,14 +8,14 @@ configurations {
 
 dependencies {
     // bluetape4k artifacts (via BOM)
-    api(libs.bluetape4k.core)
-    api(libs.bluetape4k.io)
-    api(libs.bluetape4k.netty)
-    api(libs.bluetape4k.idgenerators)
-    compileOnly(libs.bluetape4k.jackson3)
-    compileOnly(libs.bluetape4k.resilience4j)
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.testcontainers)
+    api(bt4k.bluetape4k.core)
+    api(bt4k.bluetape4k.io)
+    api(bt4k.bluetape4k.netty)
+    api(bt4k.bluetape4k.idgenerators)
+    compileOnly(bt4k.bluetape4k.jackson3)
+    compileOnly(bt4k.bluetape4k.resilience4j)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.testcontainers)
 
     // AWS SDK v2 Core (via BOM)
     api(libs.aws2.aws.core)
@@ -46,7 +46,7 @@ dependencies {
     compileOnly(libs.aws2.sts)
 
     // Coroutines
-    compileOnly(libs.bluetape4k.coroutines)
+    compileOnly(bt4k.bluetape4k.coroutines)
     compileOnly(libs.kotlinx.coroutines.core)
     compileOnly(libs.kotlinx.coroutines.reactive)
     compileOnly(libs.kotlinx.coroutines.reactor)
