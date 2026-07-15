@@ -9,13 +9,13 @@ dependencies {
     compileOnly(project(":bluetape4k-aws-exposed"))
 
     // bluetape4k artifacts
-    api(libs.bluetape4k.io)
-    api(libs.bluetape4k.coroutines)
-    api(libs.bluetape4k.ktor.core)
-    compileOnly(libs.bluetape4k.jackson3)
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.ktor.testing)
-    testImplementation(libs.bluetape4k.testcontainers)
+    api(bt4k.bluetape4k.io)
+    api(bt4k.bluetape4k.coroutines)
+    api(bt4k.bluetape4k.ktor.core)
+    compileOnly(bt4k.bluetape4k.jackson3)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.ktor.testing)
+    testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(project(":bluetape4k-aws-exposed"))
 
     // Ktor client and optional runtime integrations. Keep direct dependencies

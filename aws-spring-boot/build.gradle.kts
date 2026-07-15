@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.kotlin.spring)
-    alias(libs.plugins.kotlin.noarg)
-    alias(libs.plugins.spring.boot) apply false
+    alias(bt4k.plugins.kotlin.spring)
+    alias(bt4k.plugins.kotlin.noarg)
+    alias(bt4k.plugins.spring.boot) apply false
 }
 
 configurations {
@@ -14,10 +14,10 @@ noArg {
 
 dependencyManagement {
     imports {
-        mavenBom(libs.spring.boot.dependencies.get().toString())
+        mavenBom("org.springframework.boot:spring-boot-dependencies:${bt4k.versions.spring.boot.get()}")
         // Override Spring Boot's kotlin.version=2.2.x back to 2.3.21
-        mavenBom(libs.kotlin.bom.get().toString())
-        mavenBom(libs.kotlinx.coroutines.bom.get().toString())
+        mavenBom("org.jetbrains.kotlin:kotlin-bom:${bt4k.versions.kotlin.get()}")
+        mavenBom("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${bt4k.versions.kotlinx.coroutines.get()}")
     }
 }
 
@@ -46,12 +46,12 @@ dependencies {
     compileOnly(libs.aws2.ssm)
 
     // bluetape4k artifacts
-    api(libs.bluetape4k.io)
-    api(libs.bluetape4k.coroutines)
+    api(bt4k.bluetape4k.io)
+    api(bt4k.bluetape4k.coroutines)
     api(libs.micrometer.core)
-    compileOnly(libs.bluetape4k.jackson3)
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.testcontainers)
+    compileOnly(bt4k.bluetape4k.jackson3)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(project(":bluetape4k-aws-exposed"))
     testImplementation(libs.aws.dax.client)
     testImplementation(libs.aws2.cloudwatch)

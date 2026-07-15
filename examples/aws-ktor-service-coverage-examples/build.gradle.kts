@@ -1,12 +1,12 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(bt4k.plugins.kotlin.jvm)
 }
 
 dependencies {
     implementation(project(":bluetape4k-aws-ktor"))
 
-    implementation(libs.bluetape4k.jackson3)
-    implementation(libs.bluetape4k.ktor.core)
+    implementation(bt4k.bluetape4k.jackson3)
+    implementation(bt4k.bluetape4k.ktor.core)
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.jackson)
@@ -18,8 +18,8 @@ dependencies {
     implementation(libs.aws2.sts)
     implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.ktor.testing)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.ktor.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.ktor.client.content.negotiation)
 }

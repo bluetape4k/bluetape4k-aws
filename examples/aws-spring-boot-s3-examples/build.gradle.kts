@@ -1,13 +1,13 @@
 plugins {
-    alias(libs.plugins.kotlin.spring)
-    alias(libs.plugins.spring.boot)
+    alias(bt4k.plugins.kotlin.spring)
+    alias(bt4k.plugins.spring.boot)
 }
 
 dependencyManagement {
     imports {
-        mavenBom(libs.spring.boot.dependencies.get().toString())
-        mavenBom(libs.kotlin.bom.get().toString())
-        mavenBom(libs.kotlinx.coroutines.bom.get().toString())
+        mavenBom("org.springframework.boot:spring-boot-dependencies:${bt4k.versions.spring.boot.get()}")
+        mavenBom("org.jetbrains.kotlin:kotlin-bom:${bt4k.versions.kotlin.get()}")
+        mavenBom("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${bt4k.versions.kotlinx.coroutines.get()}")
     }
 }
 
@@ -21,8 +21,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
 
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.testcontainers)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.kotlinx.coroutines.test)

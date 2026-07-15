@@ -15,23 +15,23 @@ plugins {
     base
     `maven-publish`
     signing
-    alias(libs.plugins.kotlin.jvm)
+    alias(bt4k.plugins.kotlin.jvm)
 
-    alias(libs.plugins.kotlin.spring) apply false
-    alias(libs.plugins.kotlin.allopen) apply false
-    alias(libs.plugins.kotlin.noarg) apply false
+    alias(bt4k.plugins.kotlin.spring) apply false
+    alias(bt4k.plugins.kotlin.allopen) apply false
+    alias(bt4k.plugins.kotlin.noarg) apply false
     alias(libs.plugins.kotlinx.atomicfu)
 
     alias(libs.plugins.detekt) apply false
-    alias(libs.plugins.dependency.management)
+    alias(bt4k.plugins.dependency.management)
 
-    alias(libs.plugins.dokka)
+    alias(bt4k.plugins.dokka)
     alias(libs.plugins.test.logger)
 
-    alias(libs.plugins.nmcp.aggregation)
-    alias(libs.plugins.nmcp) apply false
+    alias(bt4k.plugins.nmcp.aggregation)
+    alias(bt4k.plugins.nmcp) apply false
 
-    alias(libs.plugins.kover) apply false
+    alias(bt4k.plugins.kover) apply false
     alias(libs.plugins.graalvm.native) apply false
     alias(bt4k.plugins.exposed.plugin) apply false
 }
@@ -39,6 +39,7 @@ plugins {
 val rootLibs = libs
 val rootDependencies = dependencies
 val bt4kCatalog = extensions.getByType<org.gradle.api.artifacts.VersionCatalogsExtension>().named("bt4k")
+fun bt4kLibrary(alias: String) = bt4kCatalog.findLibrary(alias).get()
 fun bt4kVersion(alias: String): String {
     val version = bt4kCatalog.findVersion(alias).get()
     return version.requiredVersion
@@ -78,6 +79,17 @@ val snapshotVersion: String = providers.gradleProperty("snapshotVersion").get()
 val awsKtorSqsConsumerFixtureClasspath = configurations.create("awsKtorSqsConsumerFixtureClasspath") {
     isCanBeConsumed = false
     isCanBeResolved = true
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "software.amazon.awssdk" -> useVersion(bt4kVersion("aws2"))
+            "aws.sdk.kotlin" -> useVersion(bt4kVersion("aws-kotlin"))
+            "io.ktor" -> useVersion(bt4kVersion("ktor"))
+            "org.jetbrains.kotlinx" -> if (requested.name.startsWith("kotlinx-coroutines")) {
+                useVersion(bt4kVersion("kotlinx-coroutines"))
+            }
+        }
+        because("consumer fixture resolves versions from the central bt4k catalog")
+    }
     attributes {
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
@@ -287,15 +299,161 @@ subprojects {
     dependencyManagement {
         setApplyMavenExclusions(false)
         imports {
-            mavenBom(rootLibs.bluetape4k.bom.get().toString())
-            mavenBom(rootLibs.kotlinx.coroutines.bom.get().toString())
-            mavenBom(rootLibs.kotlin.bom.get().toString())
+            mavenBom(bt4kLibrary("bluetape4k-bom").get().toString())
+            mavenBom("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${bt4kVersion("kotlinx-coroutines")}")
+            mavenBom("org.jetbrains.kotlin:kotlin-bom:${bt4kVersion("kotlin")}")
             mavenBom(rootLibs.junit.bom.get().toString())
-            mavenBom(rootLibs.testcontainers.bom.get().toString())
-            mavenBom(rootLibs.aws2.bom.get().toString())
+            mavenBom("org.testcontainers:testcontainers-bom:${bt4kVersion("testcontainers")}")
+            mavenBom(bt4kLibrary("aws2-bom").get().toString())
         }
-    
+
         dependencies {
+
+            // <central-catalog-local-aliases>
+
+            dependency("aws.sdk.kotlin:aws-config:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:aws-endpoint:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:aws-http:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:cloudwatch:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:cloudwatchlogs:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:dynamodb:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:eventbridge:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:http-client-engine-crt:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:kinesis:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:kms:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:s3:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:scheduler:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:secretsmanager:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:ses:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:sesv2:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:sns:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:sqs:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:ssm:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:sts:${bt4kVersion("aws-kotlin")}")
+
+            dependency("io.ktor:ktor-client-cio:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-client-content-negotiation:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-client-core:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-client-mock:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-serialization-jackson:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-server-cio:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-server-content-negotiation:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-server-core:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-server-netty:${bt4kVersion("ktor")}")
+
+            dependency("io.ktor:ktor-server-test-host:${bt4kVersion("ktor")}")
+
+            dependency("org.awaitility:awaitility-kotlin:${bt4kVersion("awaitility")}")
+
+            dependency("org.jetbrains.exposed:exposed-bom:${bt4kVersion("exposed")}")
+
+            dependency("org.jetbrains.kotlin:kotlin-bom:${bt4kVersion("kotlin")}")
+
+            dependency("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${bt4kVersion("kotlinx-coroutines")}")
+
+            dependency("org.slf4j:jcl-over-slf4j:${bt4kVersion("slf4j")}")
+
+            dependency("org.slf4j:jul-to-slf4j:${bt4kVersion("slf4j")}")
+
+            dependency("org.slf4j:log4j-over-slf4j:${bt4kVersion("slf4j")}")
+
+            dependency("org.springframework.boot:spring-boot-dependencies:${bt4kVersion("spring-boot")}")
+
+            dependency("org.testcontainers:testcontainers-bom:${bt4kVersion("testcontainers")}")
+
+            dependency("org.testcontainers:testcontainers-junit-jupiter:${bt4kVersion("testcontainers")}")
+
+            dependency("org.testcontainers:testcontainers-localstack:${bt4kVersion("testcontainers")}")
+
+            dependency("org.testcontainers:testcontainers-postgresql:${bt4kVersion("testcontainers")}")
+
+            dependency("software.amazon.awssdk:apache-client:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:auth:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:aws-core:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:aws-crt-client:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:cloudwatch:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:cloudwatchlogs:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:dynamodb-enhanced:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:ec2:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:eventbridge:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:imds:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:kinesis:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:kms:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:netty-nio-client:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:rds:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:s3:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:s3-transfer-manager:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:s3control:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:s3vectors:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:scheduler:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:sdk-core:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:secretsmanager:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:ses:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:sesv2:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:sns:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:sqs:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:ssm:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:sts:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:test-utils:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:url-connection-client:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:utils:${bt4kVersion("aws2")}")
+
+            // </central-catalog-local-aliases>
             dependency("org.postgresql:postgresql:${bt4kVersion("postgresql")}")
             dependency("org.slf4j:slf4j-api:${bt4kVersion("slf4j")}")
         }
@@ -312,7 +470,7 @@ subprojects {
         add("implementation", rootLibs.kotlinx.coroutines.core)
         add("implementation", rootLibs.kotlinx.atomicfu)
 
-        add("api", rootLibs.slf4j.api)
+        add("api", bt4kLibrary("slf4j-api"))
         add("testImplementation", rootLibs.logback)
         add("testImplementation", rootLibs.jcl.over.slf4j)
         add("testImplementation", rootLibs.jul.to.slf4j)

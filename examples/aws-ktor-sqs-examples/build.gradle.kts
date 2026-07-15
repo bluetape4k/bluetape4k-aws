@@ -1,11 +1,11 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(bt4k.plugins.kotlin.jvm)
 }
 
 dependencies {
     implementation(project(":bluetape4k-aws-ktor"))
 
-    implementation(libs.bluetape4k.ktor.core)
+    implementation(bt4k.bluetape4k.ktor.core)
     // Direct Ktor artifacts remain intentional: the example runs on CIO and uses Jackson event DTO binding.
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.content.negotiation)
@@ -14,9 +14,9 @@ dependencies {
     implementation(libs.aws2.auth)
     implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation(libs.bluetape4k.junit5)
-    testImplementation(libs.bluetape4k.ktor.testing)
-    testImplementation(libs.bluetape4k.testcontainers)
+    testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(bt4k.bluetape4k.ktor.testing)
+    testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.kotlinx.coroutines.test)
     // Jackson remains intentional because the example exposes Jackson-serialized event DTOs.
