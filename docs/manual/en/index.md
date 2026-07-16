@@ -11,6 +11,15 @@ releaseRef: "0.4.0"
 
 This manual is organized around decisions rather than package names. Start by choosing the Java or Kotlin SDK path, then choose direct library use, Spring Boot, or Ktor. Service guides for S3, DynamoDB, and SQS/SNS lead to runnable examples, while the database and operations guides make ownership and shutdown boundaries explicit.
 
+## Core capabilities
+
+- **Two SDK paths:** [SDK selection](guides/sdk-selection.md) explains when to extend AWS SDK for Java v2 with coroutine adapters and when to use the AWS SDK for Kotlin directly.
+- **Coroutine-friendly service APIs:** The [Java SDK extensions](modules/bluetape4k-aws-java.md) bridge sync and async clients into structured Kotlin execution, while the [Kotlin SDK extensions](modules/bluetape4k-aws-kotlin.md) reduce request and response boilerplate.
+- **Service patterns and examples:** [Service learning paths](guides/service-learning-paths.md) connect S3, DynamoDB, SQS, and SNS helpers to runnable Ktor and Spring Boot examples.
+- **Application frameworks:** [Spring Boot and Ktor](guides/spring-vs-ktor.md) integrations manage client construction, configuration, lifecycle, and request signing at the appropriate framework boundary.
+- **Database integration:** The [Exposed database guide](guides/database-with-exposed.md) turns AWS-provided database settings and RDS IAM authentication into explicit JDBC configuration.
+- **Testing and operations:** [Testing and operations](guides/testing-and-operations.md) separates emulator proof from AWS integration proof and defines client ownership, shutdown, retry, and observability checks.
+
 ## Version baseline
 
 Applications select one central BOM version: `io.github.bluetape4k:bluetape4k-dependencies:<version>`. They do not need to coordinate the `bluetape4k-aws`, AWS SDK, and related bluetape4k library versions independently.
@@ -37,4 +46,3 @@ This repository owns AWS client adaptation and framework integration. It does no
 
 - [Release module registry](../../../settings.gradle.kts)
 - [Repository dependency and module overview](../../../README.md)
-
