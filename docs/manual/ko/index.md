@@ -11,6 +11,15 @@ releaseRef: "0.4.0"
 
 이 매뉴얼은 패키지 목록을 나열하는 대신 선택 순서부터 설명한다. 먼저 Java SDK와 Kotlin SDK 중 주 경로를 고르고, 라이브러리를 직접 쓸지 Spring Boot나 Ktor에 맡길지 결정한다. S3, DynamoDB, SQS/SNS 학습 경로에는 실행 가능한 예제를 연결했고, 데이터베이스와 운영 문서에서는 클라이언트와 자원을 누가 닫는지까지 짚는다.
 
+## 핵심 기능
+
+- **두 가지 SDK 경로:** [SDK 선택 가이드](guides/sdk-selection.md)에서 AWS SDK for Java v2에 코루틴 어댑터를 붙일 때와 AWS SDK for Kotlin을 직접 사용할 때를 구분합니다.
+- **코루틴에 맞춘 서비스 API:** [Java SDK 확장](modules/bluetape4k-aws-java.md)은 동기·비동기 클라이언트를 구조화된 Kotlin 실행 흐름에 연결하고, [Kotlin SDK 확장](modules/bluetape4k-aws-kotlin.md)은 요청과 응답을 다루는 반복 코드를 줄입니다.
+- **서비스 패턴과 예제:** [서비스별 학습 경로](guides/service-learning-paths.md)에서 S3, DynamoDB, SQS, SNS 기능을 실행 가능한 Ktor·Spring Boot 예제로 이어 줍니다.
+- **애플리케이션 프레임워크:** [Spring Boot와 Ktor](guides/spring-vs-ktor.md) 연동이 프레임워크 경계에서 클라이언트 생성, 설정, 생명 주기, 요청 서명을 관리합니다.
+- **데이터베이스 연동:** [Exposed 데이터베이스 가이드](guides/database-with-exposed.md)에서 AWS가 제공하는 데이터베이스 설정과 RDS IAM 인증을 명시적인 JDBC 구성으로 바꿉니다.
+- **테스트와 운영:** [테스트와 운영](guides/testing-and-operations.md) 문서가 에뮬레이터 검증과 실제 AWS 연동 검증을 구분하고, 클라이언트 소유권, 종료, 재시도, 관측성 기준을 설명합니다.
+
 ## 버전 기준
 
 애플리케이션이 직접 선택할 버전은 중앙 BOM인 `io.github.bluetape4k:bluetape4k-dependencies:<version>` 하나다. `bluetape4k-aws`, AWS SDK와 다른 bluetape4k 라이브러리의 버전을 따로 맞출 필요는 없다.
