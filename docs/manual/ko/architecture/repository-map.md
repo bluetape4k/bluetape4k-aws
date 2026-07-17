@@ -51,203 +51,203 @@ releaseRef: "0.4.0"
 <!-- release-readme-diagrams:start -->
 ## 배포본 다이어그램 {#release-diagrams}
 
-아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+아래 그림은 `0.4.0` 배포본의 README 자산을 해당 배포 커밋에서 직접 불러옵니다. 이후 SNAPSHOT이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 같은 배포 커밋의 SVG 원본이 열립니다.
 
 ### Bluetape4k AWS 아키텍처
 
-[![Bluetape4k AWS 아키텍처](../../assets/readme-diagrams/bluetape4k-aws-architecture-01.png)](../../assets/readme-diagrams/bluetape4k-aws-architecture-01.svg)
+[![Bluetape4k AWS 아키텍처](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-01.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Three-Tier API (bluetape4k-aws-java 모듈 — Java SDK v2) 다이어그램
 
-[![Three-Tier API (bluetape4k-aws-java 모듈 — Java SDK v2) 다이어그램](../../assets/readme-diagrams/bluetape4k-aws-architecture-02.png)](../../assets/readme-diagrams/bluetape4k-aws-architecture-02.svg)
+[![Three-Tier API (bluetape4k-aws-java 모듈 — Java SDK v2) 다이어그램](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-02.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-02.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Native Suspend (bluetape4k-aws-kotlin 모듈 — Kotlin SDK) 다이어그램
 
-[![Native Suspend (bluetape4k-aws-kotlin 모듈 — Kotlin SDK) 다이어그램](../../assets/readme-diagrams/bluetape4k-aws-architecture-03.png)](../../assets/readme-diagrams/bluetape4k-aws-architecture-03.svg)
+[![Native Suspend (bluetape4k-aws-kotlin 모듈 — Kotlin SDK) 다이어그램](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-03.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-03.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### CloudWatch metrics and logs 구성 요소
 
-[![CloudWatch metrics and logs 구성 요소](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.svg)
+[![CloudWatch metrics and logs 구성 요소](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### CloudWatch metrics DSL 지원 범위
 
-[![CloudWatch metrics DSL 지원 범위](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.svg)
+[![CloudWatch metrics DSL 지원 범위](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### CloudWatch publish 흐름
 
-[![CloudWatch publish 흐름](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.svg)
+[![CloudWatch publish 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### CloudWatch metrics publish and list 흐름
 
-[![CloudWatch metrics publish and list 흐름](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.svg)
+[![CloudWatch metrics publish and list 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Bluetape4k AWS 구성 요소도
 
-[![Bluetape4k AWS 구성 요소도](../../assets/readme-diagrams/bluetape4k-aws-components-04.png)](../../assets/readme-diagrams/bluetape4k-aws-components-04.svg)
+[![Bluetape4k AWS 구성 요소도](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-components-04.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-components-04.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### DynamoDB coroutine repository 구성 요소
 
-[![DynamoDB coroutine repository 구성 요소](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-10.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-10.svg)
+[![DynamoDB coroutine repository 구성 요소](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-10.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-10.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### DynamoDB native suspend 지원 범위
 
-[![DynamoDB native suspend 지원 범위](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-28.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-28.svg)
+[![DynamoDB native suspend 지원 범위](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-28.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-28.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### DynamoDB coroutine repository 흐름
 
-[![DynamoDB coroutine repository 흐름](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.svg)
+[![DynamoDB coroutine repository 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### DynamoDB suspend item and batch 흐름
 
-[![DynamoDB suspend item and batch 흐름](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.svg)
+[![DynamoDB suspend item and batch 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Secrets Manager and Parameter Store environment sources
 
-[![Secrets Manager and Parameter Store environment sources](../../assets/readme-diagrams/bluetape4k-aws-env-sources-components-16.png)](../../assets/readme-diagrams/bluetape4k-aws-env-sources-components-16.svg)
+[![Secrets Manager and Parameter Store environment sources](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-components-16.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-components-16.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Secrets Manager and Parameter Store property key mapping
 
-[![Secrets Manager and Parameter Store property key mapping](../../assets/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)](../../assets/readme-diagrams/bluetape4k-aws-env-sources-flow-17.svg)
+[![Secrets Manager and Parameter Store property key mapping](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### EC2 IMDS access surfaces
 
-[![EC2 IMDS access surfaces](../../assets/readme-diagrams/bluetape4k-aws-imds-components-14.png)](../../assets/readme-diagrams/bluetape4k-aws-imds-components-14.svg)
+[![EC2 IMDS access surfaces](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-components-14.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-components-14.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### EC2 IMDS metadata 흐름
 
-[![EC2 IMDS metadata 흐름](../../assets/readme-diagrams/bluetape4k-aws-imds-flow-15.png)](../../assets/readme-diagrams/bluetape4k-aws-imds-flow-15.svg)
+[![EC2 IMDS metadata 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-flow-15.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-flow-15.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### KMS Spring Boot 구성 요소
 
-[![KMS Spring Boot 구성 요소](../../assets/readme-diagrams/bluetape4k-aws-kms-components-06.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-components-06.svg)
+[![KMS Spring Boot 구성 요소](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-06.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-06.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### KMS Spring Boot 지원 범위
 
-[![KMS Spring Boot 지원 범위](../../assets/readme-diagrams/bluetape4k-aws-kms-components-20.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-components-20.svg)
+[![KMS Spring Boot 지원 범위](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-20.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-20.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### KMS encrypt and decrypt 흐름
 
-[![KMS encrypt and decrypt 흐름](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-07.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-07.svg)
+[![KMS encrypt and decrypt 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-07.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-07.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### KMS operations 흐름
 
-[![KMS operations 흐름](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-21.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-21.svg)
+[![KMS operations 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-21.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-21.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### S3 Access Grants 구성 요소
 
-[![S3 Access Grants 구성 요소](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.svg)
+[![S3 Access Grants 구성 요소](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### S3 Access Grants 흐름
 
-[![S3 Access Grants 흐름](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.svg)
+[![S3 Access Grants 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### S3 coroutine 지원 범위
 
-[![S3 coroutine 지원 범위](../../assets/readme-diagrams/bluetape4k-aws-s3-components-24.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-components-24.svg)
+[![S3 coroutine 지원 범위](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-components-24.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-components-24.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### S3 coroutine operation 흐름
 
-[![S3 coroutine operation 흐름](../../assets/readme-diagrams/bluetape4k-aws-s3-flow-25.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-flow-25.svg)
+[![S3 coroutine operation 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-flow-25.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-flow-25.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Bluetape4k AWS service coverage 차트
 
-[![Bluetape4k AWS service coverage 차트](../../assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)](../../assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg)
+[![Bluetape4k AWS service coverage 차트](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### SNS Spring Boot 지원 범위
 
-[![SNS Spring Boot 지원 범위](../../assets/readme-diagrams/bluetape4k-aws-sns-components-22.png)](../../assets/readme-diagrams/bluetape4k-aws-sns-components-22.svg)
+[![SNS Spring Boot 지원 범위](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-components-22.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-components-22.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### SNS publish and HTTP endpoint 흐름
 
-[![SNS publish and HTTP endpoint 흐름](../../assets/readme-diagrams/bluetape4k-aws-sns-flow-23.png)](../../assets/readme-diagrams/bluetape4k-aws-sns-flow-23.svg)
+[![SNS publish and HTTP endpoint 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### SQS Spring Boot 런타임
 
-[![SQS Spring Boot 런타임](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-18.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-18.svg)
+[![SQS Spring Boot 런타임](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-18.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-18.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### SQS coroutine 지원 범위
 
-[![SQS coroutine 지원 범위](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-26.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-26.svg)
+[![SQS coroutine 지원 범위](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-26.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-26.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### SQS listener 흐름
 
-[![SQS listener 흐름](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-19.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-19.svg)
+[![SQS listener 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-19.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-19.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### SQS coroutine message 흐름
 
-[![SQS coroutine message 흐름](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-27.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-27.svg)
+[![SQS coroutine message 흐름](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-27.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-27.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Bluetape4k AWS 모듈 구성도
 
-[![Bluetape4k AWS 모듈 구성도](../../assets/readme-diagrams/root-readme-module-chart-01.png)](../../assets/readme-diagrams/root-readme-module-chart-01.svg)
+[![Bluetape4k AWS 모듈 구성도](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-module-chart-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-module-chart-01.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 
 ### Bluetape4k AWS 개요
 
-[![Bluetape4k AWS 개요](../../assets/readme-diagrams/root-readme-overview-01.png)](../../assets/readme-diagrams/root-readme-overview-01.svg)
+[![Bluetape4k AWS 개요](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-overview-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-overview-01.svg)
 
 _배포본 README: [`README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.ko.md)_
 

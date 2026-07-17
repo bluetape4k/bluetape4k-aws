@@ -51,203 +51,203 @@ This map includes only projects registered by `settings.gradle.kts` in tag `0.4.
 <!-- release-readme-diagrams:start -->
 ## Release diagrams {#release-diagrams}
 
-These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+These diagrams are loaded directly from README assets published with the `0.4.0` release and pinned to its immutable commit. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG at the same release commit.
 
 ### Overview diagram
 
-[![Overview diagram](../../assets/readme-diagrams/bluetape4k-aws-architecture-01.png)](../../assets/readme-diagrams/bluetape4k-aws-architecture-01.svg)
+[![Overview diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-01.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram
 
-[![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram](../../assets/readme-diagrams/bluetape4k-aws-architecture-02.png)](../../assets/readme-diagrams/bluetape4k-aws-architecture-02.svg)
+[![Three-Tier API (bluetape4k-aws-java module — Java SDK v2) diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-02.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-02.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram
 
-[![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram](../../assets/readme-diagrams/bluetape4k-aws-architecture-03.png)](../../assets/readme-diagrams/bluetape4k-aws-architecture-03.svg)
+[![Native Suspend (bluetape4k-aws-kotlin module — Kotlin SDK) diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-03.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-architecture-03.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### CloudWatch metrics and logs components
 
-[![CloudWatch metrics and logs components](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.svg)
+[![CloudWatch metrics and logs components](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### CloudWatch metrics DSL support map
 
-[![CloudWatch metrics DSL support map](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.svg)
+[![CloudWatch metrics DSL support map](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-30.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### CloudWatch publish flow
 
-[![CloudWatch publish flow](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.svg)
+[![CloudWatch publish flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### CloudWatch metrics publish and list flow
 
-[![CloudWatch metrics publish and list flow](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.png)](../../assets/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.svg)
+[![CloudWatch metrics publish and list flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-31.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### AWS component map diagram
 
-[![AWS component map diagram](../../assets/readme-diagrams/bluetape4k-aws-components-04.png)](../../assets/readme-diagrams/bluetape4k-aws-components-04.svg)
+[![AWS component map diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-components-04.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-components-04.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### DynamoDB coroutine repository components
 
-[![DynamoDB coroutine repository components](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-10.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-10.svg)
+[![DynamoDB coroutine repository components](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-10.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-10.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### DynamoDB native suspend support map
 
-[![DynamoDB native suspend support map](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-28.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-components-28.svg)
+[![DynamoDB native suspend support map](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-28.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-components-28.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### DynamoDB coroutine repository flow
 
-[![DynamoDB coroutine repository flow](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.svg)
+[![DynamoDB coroutine repository flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-11.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### DynamoDB suspend item and batch flow
 
-[![DynamoDB suspend item and batch flow](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.png)](../../assets/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.svg)
+[![DynamoDB suspend item and batch flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-dynamodb-flow-29.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### Secrets Manager and Parameter Store environment sources
 
-[![Secrets Manager and Parameter Store environment sources](../../assets/readme-diagrams/bluetape4k-aws-env-sources-components-16.png)](../../assets/readme-diagrams/bluetape4k-aws-env-sources-components-16.svg)
+[![Secrets Manager and Parameter Store environment sources](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-components-16.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-components-16.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### Secrets Manager and Parameter Store property key mapping
 
-[![Secrets Manager and Parameter Store property key mapping](../../assets/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)](../../assets/readme-diagrams/bluetape4k-aws-env-sources-flow-17.svg)
+[![Secrets Manager and Parameter Store property key mapping](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-env-sources-flow-17.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### EC2 IMDS access surfaces
 
-[![EC2 IMDS access surfaces](../../assets/readme-diagrams/bluetape4k-aws-imds-components-14.png)](../../assets/readme-diagrams/bluetape4k-aws-imds-components-14.svg)
+[![EC2 IMDS access surfaces](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-components-14.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-components-14.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### EC2 IMDS metadata flow
 
-[![EC2 IMDS metadata flow](../../assets/readme-diagrams/bluetape4k-aws-imds-flow-15.png)](../../assets/readme-diagrams/bluetape4k-aws-imds-flow-15.svg)
+[![EC2 IMDS metadata flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-flow-15.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-imds-flow-15.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### KMS Spring Boot components
 
-[![KMS Spring Boot components](../../assets/readme-diagrams/bluetape4k-aws-kms-components-06.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-components-06.svg)
+[![KMS Spring Boot components](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-06.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-06.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### KMS Spring Boot support map
 
-[![KMS Spring Boot support map](../../assets/readme-diagrams/bluetape4k-aws-kms-components-20.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-components-20.svg)
+[![KMS Spring Boot support map](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-20.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-components-20.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### KMS encrypt and decrypt flow
 
-[![KMS encrypt and decrypt flow](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-07.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-07.svg)
+[![KMS encrypt and decrypt flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-07.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-07.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### KMS operations flow
 
-[![KMS operations flow](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-21.png)](../../assets/readme-diagrams/bluetape4k-aws-kms-flow-21.svg)
+[![KMS operations flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-21.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-kms-flow-21.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### S3 Access Grants components
 
-[![S3 Access Grants components](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.svg)
+[![S3 Access Grants components](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### S3 Access Grants flow
 
-[![S3 Access Grants flow](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.svg)
+[![S3 Access Grants flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### S3 coroutine support map
 
-[![S3 coroutine support map](../../assets/readme-diagrams/bluetape4k-aws-s3-components-24.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-components-24.svg)
+[![S3 coroutine support map](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-components-24.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-components-24.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### S3 coroutine operation flow
 
-[![S3 coroutine operation flow](../../assets/readme-diagrams/bluetape4k-aws-s3-flow-25.png)](../../assets/readme-diagrams/bluetape4k-aws-s3-flow-25.svg)
+[![S3 coroutine operation flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-flow-25.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-s3-flow-25.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### AWS service coverage chart
 
-[![AWS service coverage chart](../../assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)](../../assets/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg)
+[![AWS service coverage chart](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### SNS Spring Boot support map
 
-[![SNS Spring Boot support map](../../assets/readme-diagrams/bluetape4k-aws-sns-components-22.png)](../../assets/readme-diagrams/bluetape4k-aws-sns-components-22.svg)
+[![SNS Spring Boot support map](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-components-22.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-components-22.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### SNS publish and HTTP endpoint flow
 
-[![SNS publish and HTTP endpoint flow](../../assets/readme-diagrams/bluetape4k-aws-sns-flow-23.png)](../../assets/readme-diagrams/bluetape4k-aws-sns-flow-23.svg)
+[![SNS publish and HTTP endpoint flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### SQS Spring Boot runtime
 
-[![SQS Spring Boot runtime](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-18.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-18.svg)
+[![SQS Spring Boot runtime](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-18.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-18.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### SQS coroutine support map
 
-[![SQS coroutine support map](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-26.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-components-26.svg)
+[![SQS coroutine support map](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-26.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-components-26.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### SQS listener flow
 
-[![SQS listener flow](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-19.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-19.svg)
+[![SQS listener flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-19.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-19.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### SQS coroutine message flow
 
-[![SQS coroutine message flow](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-27.png)](../../assets/readme-diagrams/bluetape4k-aws-sqs-flow-27.svg)
+[![SQS coroutine message flow](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-27.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bluetape4k-aws-sqs-flow-27.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### Bluetape4k AWS module composition chart
 
-[![Bluetape4k AWS module composition chart](../../assets/readme-diagrams/root-readme-module-chart-01.png)](../../assets/readme-diagrams/root-readme-module-chart-01.svg)
+[![Bluetape4k AWS module composition chart](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-module-chart-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-module-chart-01.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
 ### Bluetape4k AWS overview diagram
 
-[![Bluetape4k AWS overview diagram](../../assets/readme-diagrams/root-readme-overview-01.png)](../../assets/readme-diagrams/root-readme-overview-01.svg)
+[![Bluetape4k AWS overview diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-overview-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/root-readme-overview-01.svg)
 
 _Release README: [`README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/README.md)_
 
