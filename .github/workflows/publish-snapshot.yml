@@ -41,6 +41,12 @@ jobs:
           cache-provider: basic
           cache-read-only: true
 
+      - name: Validate publication POMs
+        run: |
+          ./gradlew generatePomFileForBluetapeAwsPublication -PsnapshotVersion=-SNAPSHOT \
+            --no-daemon --no-configuration-cache --no-build-cache
+          ruby scripts/publication/validate_poms.rb
+
       - name: Publish SNAPSHOT
         run: |
           ./gradlew publishAggregationToCentralSnapshots -PsnapshotVersion=-SNAPSHOT \

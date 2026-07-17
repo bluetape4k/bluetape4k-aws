@@ -242,6 +242,14 @@ jobs:
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
+      - name: Validate publication POMs
+        run: |
+          ruby scripts/publication/publication_pom_audit_test.rb
+          ruby scripts/publication/publication_pom_integration_test.rb
+          ./gradlew generatePomFileForBluetapeAwsPublication -PsnapshotVersion=-SNAPSHOT \
+            --no-daemon --no-configuration-cache --no-build-cache
+          ruby scripts/publication/validate_poms.rb
+
   test-aws:
     name: Test / aws
     runs-on: ubuntu-latest

@@ -66,7 +66,7 @@ dependencies {
     testImplementation(libs.awaitility.kotlin)
 
     // Spring Boot (DynamoDB 예제 테스트용)
-    testImplementation(platform(libs.spring.boot.dependencies))
+    testImplementation(platform(bt4k.spring.boot4.dependencies))
     testImplementation(platform(libs.kotlin.bom))  // Spring Boot's kotlin.version override
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.boot:spring-boot-starter-test") {

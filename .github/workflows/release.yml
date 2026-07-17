@@ -131,7 +131,9 @@ jobs:
           required_aliases=(
             "bluetape4k-bom"
             "bluetape4k-exposed-bom"
+            "exposed-bom"
             "exposed-plugin"
+            "spring-boot4-dependencies"
           )
 
           echo "Fetching bluetape4k-dependencies catalog: $catalog_url"
@@ -145,7 +147,7 @@ jobs:
           done
 
           echo "Verified catalog aliases from ${BLUETAPE4K_DEPENDENCIES_CATALOG_REF}:"
-          grep -E '^[[:space:]]*(bluetape4k-bom|bluetape4k-exposed-bom|exposed-plugin)[[:space:]]*=' "$catalog_file"
+          grep -E '^[[:space:]]*(bluetape4k-bom|bluetape4k-exposed-bom|exposed-bom|exposed-plugin|spring-boot4-dependencies)[[:space:]]*=' "$catalog_file"
 
       - name: Verify gradle.properties matches tag
         shell: bash
@@ -212,6 +214,12 @@ jobs:
           print(f"SIGNING_KEY source={source} normalized_length={len(normalized_key)}")
           print(f"SIGNING_KEY armored={'BEGIN PGP PRIVATE KEY BLOCK' in normalized_key}")
           PY
+
+      - name: Validate publication POMs
+        run: |
+          ./gradlew generatePomFileForBluetapeAwsPublication \
+            --no-daemon --no-configuration-cache --no-build-cache
+          ruby scripts/publication/validate_poms.rb
 
       - name: Publish to Central Portal
         run: >
