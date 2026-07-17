@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":bluetape4k-aws-exposed"))
     implementation(project(":bluetape4k-aws-ktor"))
 
-    implementation(platform(libs.exposed.bom))
+    implementation(platform(bt4k.exposed.bom))
     implementation(platform(bt4k.bluetape4k.exposed.bom))
     implementation(bt4k.bluetape4k.exposed.jdbc)
     implementation(bt4k.bluetape4k.ktor.core)
