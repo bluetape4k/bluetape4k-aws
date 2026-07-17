@@ -77,11 +77,11 @@ MockEngine tests do not prove S3 IAM, network behavior, multipart recovery, buck
 <!-- release-readme-diagrams:start -->
 ## Release diagrams {#release-diagrams}
 
-These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+These diagrams are loaded directly from README assets published with the `0.4.0` release and pinned to its immutable commit. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG at the same release commit.
 
 ### aws ktor s3 examples Architecture diagram
 
-[![aws ktor s3 examples Architecture diagram](../../assets/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.svg)
+[![aws ktor s3 examples Architecture diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/examples-aws-ktor-s3-examples-architecture-01.svg)
 
 _Release README: [`examples/aws-ktor-s3-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-ktor-s3-examples/README.md)_
 

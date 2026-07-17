@@ -90,23 +90,23 @@ This module resolves and owns infrastructure; it does not design Exposed tables 
 <!-- release-readme-diagrams:start -->
 ## Release diagrams {#release-diagrams}
 
-These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+These diagrams are loaded directly from README assets published with the `0.4.0` release and pinned to its immutable commit. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG at the same release commit.
 
 ### AWS Exposed architecture diagram
 
-[![AWS Exposed architecture diagram](../../assets/readme-diagrams/aws-exposed-architecture-01.png)](../../assets/readme-diagrams/aws-exposed-architecture-01.svg)
+[![AWS Exposed architecture diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/aws-exposed-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/aws-exposed-architecture-01.svg)
 
 _Release README: [`aws-exposed/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-exposed/README.md)_
 
 ### AWS Exposed configuration flow diagram
 
-[![AWS Exposed configuration flow diagram](../../assets/readme-diagrams/aws-exposed-flow-02.png)](../../assets/readme-diagrams/aws-exposed-flow-02.svg)
+[![AWS Exposed configuration flow diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/aws-exposed-flow-02.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/aws-exposed-flow-02.svg)
 
 _Release README: [`aws-exposed/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-exposed/README.md)_
 
 ### AWS Exposed database handle sequence diagram
 
-[![AWS Exposed database handle sequence diagram](../../assets/readme-diagrams/aws-exposed-sequence-03.png)](../../assets/readme-diagrams/aws-exposed-sequence-03.svg)
+[![AWS Exposed database handle sequence diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/aws-exposed-sequence-03.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/aws-exposed-sequence-03.svg)
 
 _Release README: [`aws-exposed/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-exposed/README.md)_
 
