@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-labelledby="title desc">
+  <title id="title">AWS Exposed Module Architecture</title>
+  <desc id="desc">Framework adapters resolve AWS configuration and pass final JDBC settings to the shared Exposed foundation, which creates Hikari-backed Exposed database handles.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563eb" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="none"/>
+    </marker>
+    <filter id="shadow" x="-12%" y="-12%" width="124%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+    <style>
+      .canvas { fill: #f8fafc; }
+      .title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 52px; fill: #17233a; }
+      .subtitle { font-family: "Comic Mono", monospace; font-size: 22px; fill: #475569; }
+      .layer-title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 30px; fill: #475569; }
+      .layer-note { font-family: "Comic Mono", monospace; font-size: 17px; fill: #475569; }
+      .card-title { font-family: "Architects Daughter", "Comic Mono", monospace; font-size: 26px; fill: #17233a; }
+      .card-text { font-family: "Comic Mono", monospace; font-size: 17px; fill: #475569; }
+      .pill { font-family: "Comic Mono", monospace; font-size: 17px; fill: #334155; }
+      .footer { font-family: "Comic Mono", monospace; font-size: 18px; fill: #475569; }
+      .layer { fill: #f8fafc; stroke: #cbd5e1; }
+      .card-blue { fill: #ffffff; stroke: #2563eb; }
+      .card-green { fill: #ffffff; stroke: #059669; }
+      .card-gold { fill: #ffffff; stroke: #d97706; }
+      .card-violet { fill: #ffffff; stroke: #7c3aed; }
+      .connector { fill: none; stroke: #2563eb; stroke-width: 4.6; marker-end: url(#arrow); }
+      .connector-soft { fill: none; stroke: #7c92a4; stroke-width: 3.2; stroke-dasharray: 9 8; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
+      .boundary { fill: #fffef8; stroke: #d4be75; stroke-width: 2.4; stroke-dasharray: 10 8; }
+    </style>
+  </defs>
+
+  <rect class="canvas" width="1600" height="1040"/>
+  <rect x="34" y="30" width="1532" height="980" rx="28" fill="#ffffff" stroke="#8aa6cf" stroke-width="3"/>
+
+  <text class="title" x="80" y="102">AWS Exposed Module Architecture</text>
+  <text class="subtitle" x="82" y="140">Shared JDBC foundation: AWS-aware adapters supply resolved settings; this module creates Exposed database handles.</text>
+
+  <rect class="layer" x="82" y="190" width="1436" height="178" rx="22" stroke-width="3"/>
+  <text class="layer-title" x="112" y="236">Framework adapters and application config</text>
+  <text class="layer-note" x="112" y="266">Secrets Manager, Parameter Store, profiles, and runtime config are resolved before entering this foundation.</text>
+
+  <g filter="url(#shadow)">
+    <rect class="card-blue" x="118" y="286" width="310" height="72" rx="14" stroke-width="2.5"/>
+    <image data-bluetape4k-icon="spring.spring-boot" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI0LjAuMywgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIGZpbGw9IiM2REIzM0YiIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA1MTAgNDU3LjgiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDUxMCA0NTcuODsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOiM2REIzM0Y7fQo8L3N0eWxlPgo8dGl0bGU+aWNvbi1zcHJpbmctYm9vdDwvdGl0bGU+CjxnIGlkPSJMYXllcl8yXzFfIj4KCTxnIGlkPSJMYXllcl8xLTIiPgoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik01MDMuNSwyMDEuNEw0MDMsMjcuNUMzOTQuMywxMi40LDM3Mi45LDAsMzU1LjQsMEgxNTQuNmMtMTcuNCwwLTM4LjksMTIuNC00Ny42LDI3LjVMNi42LDIwMS40CgkJCWMtOC43LDE1LjEtOC43LDM5LjgsMCw1NC45bDEwMC40LDE3NGM4LjcsMTUuMSwzMC4xLDI3LjUsNDcuNiwyNy41aDIwMC45YzE3LjQsMCwzOC44LTEyLjQsNDcuNi0yNy41bDEwMC40LTE3NAoJCQlDNTEyLjIsMjQxLjIsNTEyLjIsMjE2LjUsNTAzLjUsMjAxLjR6IE0yMzMuMyw5Ni4yYzAtMTEuNCw5LjMtMjAuNywyMC43LTIwLjdjMTEuNCwwLDIwLjcsOS4zLDIwLjcsMjAuN3YxMjMuNwoJCQljMCwxMS40LTkuMywyMC43LTIwLjcsMjAuN2MtMTEuNCwwLTIwLjctOS4zLTIwLjctMjAuN2wwLDBWOTYuMnogTTI1NCwzNjAuM2MtNzcuNCwwLTE0MC40LTYzLTE0MC40LTE0MC40CgkJCWMwLjEtNDQuNCwyMS4xLTg2LjEsNTYuNy0xMTIuN2M4LjItNi4xLDE5LjctNC40LDI1LjgsMy44czQuNCwxOS43LTMuOCwyNS44bDAsMGMtNDUuOSwzNC4xLTU1LjUsOTktMjEuNCwxNDQuOQoJCQlzOTksNTUuNSwxNDQuOSwyMS40YzI2LjMtMTkuNSw0MS44LTUwLjQsNDEuOC04My4yYy0wLjEtMzIuOS0xNS43LTYzLjgtNDIuMi04My40Yy04LjItNi05LjktMTcuNi0zLjktMjUuOHMxNy42LTkuOSwyNS44LTMuOQoJCQljMzUuOSwyNi41LDU3LDY4LjUsNTcuMSwxMTMuMUMzOTQuNCwyOTcuNCwzMzEuNCwzNjAuMywyNTQsMzYwLjN6Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==" x="138" y="306" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+    <text class="card-title" x="180" y="316">Spring Boot adapter</text>
+    <text class="card-text" x="180" y="342">binds props + AWS sources</text>
+
+    <rect class="card-blue" x="464" y="286" width="310" height="72" rx="14" stroke-width="2.5"/>
+    <image data-bluetape4k-icon="framework.ktor" href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMDg3Q0ZBIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+S3RvcjwvdGl0bGU+PHBhdGggZD0iTTggMCAwIDhsOCA4VjhoOHptOCA4djhIOGw4IDggOC04eiIvPjwvc3ZnPg==" x="484" y="306" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+    <text class="card-title" x="526" y="316">Ktor adapter</text>
+    <text class="card-text" x="526" y="342">passes final JDBC settings</text>
+
+    <rect class="card-blue" x="810" y="286" width="310" height="72" rx="14" stroke-width="2.5"/>
+    <text class="card-title" x="834" y="316">Static app config</text>
+    <text class="card-text" x="834" y="342">default and named maps</text>
+
+    <rect class="boundary" x="1156" y="286" width="320" height="72" rx="16"/>
+    <text class="card-title" x="1184" y="316">Module boundary</text>
+    <text class="card-text" x="1184" y="342">no direct AWS value fetch</text>
+  </g>
+
+  <path class="connector" d="M 800 368 V 462"/>
+
+  <rect class="layer" x="82" y="462" width="1436" height="226" rx="22" stroke-width="3"/>
+  <text class="layer-title" x="112" y="508">AWS Exposed foundation</text>
+  <text class="layer-note" x="112" y="538">Source-backed contracts validate database names, auth mode, driver class, and cleanup behavior.</text>
+
+  <g filter="url(#shadow)">
+    <rect class="card-green" x="118" y="558" width="300" height="104" rx="14" stroke-width="2.5"/>
+    <text class="card-title" x="140" y="592">DB properties</text>
+    <text class="card-text" x="140" y="620">AwsDatabaseProperties</text>
+    <text class="card-text" x="140" y="646">default and named maps</text>
+
+    <rect class="card-green" x="454" y="558" width="300" height="104" rx="14" stroke-width="2.5"/>
+    <text class="card-title" x="476" y="592">Settings resolver</text>
+    <text class="card-text" x="476" y="620">framework hook point</text>
+    <text class="card-text" x="476" y="646">returns final JDBC props</text>
+
+    <rect class="card-green" x="790" y="558" width="300" height="104" rx="14" stroke-width="2.5"/>
+    <image data-bluetape4k-icon="library.exposed" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA1MCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQ1LjI2NTEgMzEuMjAxOEM0NS44MDYzIDMwLjM3MjIgNDYuOTU1MiAyOC4xMTI4IDQ3LjQ3NyAyNy4wOTExQzQ3LjU0NzMgMjYuOTUzNCA0Ny41OTE3IDI2LjgxMzIgNDcuNjI0OSAyNi42NzE4QzUxLjE0NTkgMTkuNTA4MiA1MC42NzAyIDYuOTExMjkgNDYuNzQwMiAzLjA0MTM0QzQyLjc1NTMgLTAuODgyNjA3IDI5LjcxODkgLTAuOTcxODMzIDIyLjU5NjkgMi41NTUzQzIxLjU1OTQgMy4wNjkxNyAxOS41MDU5IDMuOTY2MjMgMTguMzkwOCA0LjY3NTY0QzE2LjY0NDcgNS43ODY0OCAxNC45MjU2IDYuOTIxMTMgMTQuODc2OCA4Ljg3NUMxNC44MzgyIDEwLjQxODYgMTcuMDcwNiAxMi41NjAzIDE2LjY5NzEgMTMuNDkyOEMxNS44NTkzIDE1LjU4MzggMTMuNzc3OSAxNC4xOTY3IDEwLjk0NTUgMTcuNzc2M0M5LjA4NjQgMjAuMTI1OCAxMS4wNDExIDIzLjcxMzkgMTAuNjk2NiAyNC4zMDc1QzguOTEzOTEgMjcuMzc5NCA1LjMyNTQgMjUuOTcwOCAzLjAxMTAxIDI3LjIxNjRDMS4zMzQwNCAyOC4xMTkgMC40MTg3MzQgMjkuNzY4IDAuMDQwMTA5MyAzMC42MTI4Qy0wLjA5NDUxMzYgMzAuOTEzMyAwLjEyNTg5NCAzMS4yNjA0IDAuNDYwNDY1IDMxLjI2NzRDMS4xNjI2OSAzMS4yODIyIDEuNzAyNjggMzAuOTM0IDMuNTUyMzkgMzAuNjM3MkM1Ljk1OTM2IDMwLjI1MSA3LjUwMjQyIDI5LjI0MjggOC4yMDI4MiAyOS45NzQ5QzguNTYxNzMgMzAuMzUgNi4zMjkzNSAzMC45Nzg4IDUuODc4ODMgMzEuMDk4OUM0LjY3MjczIDMxLjQyIDMuMDA5ODMgMzEuNzE4MSAyLjMzNjUzIDMyLjg3MTRDMi4xODE1NiAzMy4xMzcxIDIuMjg3MDIgMzMuNDc5NiAyLjU2ODM3IDMzLjYxNTVDMy42MTc0MiAzNC4xMjIgNC43OTEzMiAzNC43MDE0IDYuNjU5MTEgMzQuMjE2QzguNjEzNzQgMzMuNzA4MSA5LjkyNjkyIDMyLjMwOTUgMTAuOTQyNSAzMy4xOTY2QzExLjU5NyAzMy43Njg1IDUuMTc5NDkgMzUuNjQxMSA1LjYzNzA0IDM2Ljk2MUM1Ljk2MTEyIDM3Ljg5NTkgOS4zNDUyNyAzOC42OTY3IDExLjkzMjEgMzYuNTYwNUMxMi42NTkxIDM1Ljk2MDIgMTMuMzk2NCAzNS4yMzI3IDEzLjYxNzIgMzUuNzg5M0MxNC4xODI5IDM3LjIxNTEgMTAuMzMyNCAzOC42MjI1IDEwLjE4OTMgNDEuMjMxMkMxMC4xODI4IDQxLjM1MDkgMTAuMjcxNiA0MS40NTQ3IDEwLjM4NjIgNDEuNDk2M0MxNC4xMDk1IDQyLjg1MDMgMTUuMzE1OSAzNy45MzE2IDE2LjA3NjEgMzguMjA4MkMxOC4yMTk2IDM4Ljk4OCAxMy4wNjcyIDQxLjc4MjEgMTMuOTQzMSA0NC45OTIzQzEzLjk3NzEgNDUuMTE2NSAxNC4xMDI1IDQ1LjIwMTIgMTQuMjMyMyA0NS4xOTEzQzE1LjEyNzQgNDUuMTIyMyAxNi4wODA3IDQ0Ljk4NCAxNy40NTk4IDQzLjYyNkMxOC41Njk4IDQyLjUzMjkgMTguNDk4NiA0MC42OTAyIDE5LjE1ODIgNDAuNzY1MUMxOS44MTc3IDQwLjgzOTkgMTguODA2MSA0My4wMzE3IDE4LjA0MDUgNDQuNjQyOEMxNy40NjAzIDQ1Ljg2NCAxNy4wMjggNDcuMDA5IDE2Ljk3MyA0Ny42NDkxQzE2Ljk1MzUgNDcuODc4MyAxNy4xOTAxIDQ4LjA1NDQgMTcuNDEyIDQ3Ljk4NDVDMjAuOTMyMiA0Ni44NzY4IDIxLjk5MDIgNDQuNzU0MyAyMi4xOTIzIDQ0LjA4MjNDMjIuODQ0NCA0MS45MTgyIDIyLjgyMDkgMzkuNzM3OSAyNC45MDY2IDM4LjQxMzhDMjUuNTM0MiAzOC4wODk3IDI5LjMxMDIgMzkuOTkyIDMxLjc2NTYgMzguMjc4MkMzNS4xOTA1IDM1Ljg4NzggMzQuNDkzOCAzMy4zNzk1IDM2LjExNjcgMzIuNjE1N0MzNy4wNjM3IDMyLjI0NzggMzkuMjYyMyAzNC4yOTkgNDAuNzE2MiAzNC4yNTEyQzQyLjc0ODEgMzQuMTg0MiA0NC4xNDE2IDMyLjkyNDEgNDUuMjY1MSAzMS4yMDE4WiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzEzNDFfMTk0KSIvPgo8cGF0aCBkPSJNMjYuMzk3NiAyOS4zMzg1QzI3Ljg4OTMgMjguMzYzNSAyOS45MDE2IDI4Ljc2NDIgMzAuODkxOCAzMC4yMzNDMzEuODgxOSAzMS43MDE5IDMxLjQ3NTMgMzMuNjgzOCAyOS45ODM2IDM0LjY1ODhDMjguNDkxOCAzNS42MzM2IDI2LjQ3OTUgMzUuMjMzMSAyNS40ODk0IDMzLjc2NDJDMjQuNDk5MyAzMi4yOTUzIDI0LjkwNTkgMzAuMzEzNSAyNi4zOTc2IDI5LjMzODVaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMTcuMzA1OCAyNy4yNDA4QzE4LjM5NzcgMjYuNTg1NSAxNy44MzY3IDI4LjQ5OTEgMTkuMTU1NCAzMC4wMTUyQzE5LjE4MzcgMzAuMDQ3OSAxOS4zMDI5IDMwLjE2NTIgMTkuMzM2MSAzMC4xOTI5QzIwLjg3NiAzMS40OTE2IDIyLjgxODkgMzAuOTM5NCAyMi4xNTI1IDMyLjAxNTJDMjEuOTc3OSAzMi4yOTQ2IDE5Ljk1NTEgMzMuNTI5NSAxNy44NTA3IDMxLjQ3ODFDMTUuNzY1OSAyOS40MDQ2IDE3LjAyMzIgMjcuNDEwNiAxNy4zMDU4IDI3LjI0MDhaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMTUuNTI4NSAxOC42MzUzQzE3LjAyMDIgMTcuNjYwNCAxOS4wMzI0IDE4LjA2MTEgMjAuMDIyNiAxOS41Mjk5QzIxLjAxMjcgMjAuOTk4OCAyMC42MDYyIDIyLjk4MDcgMTkuMTE0NCAyMy45NTU2QzE3LjYyMjcgMjQuOTMwNSAxNS42MTA0IDI0LjUzIDE0LjYyMDMgMjMuMDYxMUMxMy42MzAyIDIxLjU5MjIgMTQuMDM2OCAxOS42MTAzIDE1LjUyODUgMTguNjM1M1oiIGZpbGw9ImJsYWNrIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXJfMTM0MV8xOTQiIHgxPSI0MC41IiB5MT0iOS43NSIgeDI9IjE0LjI3OTgiIHkyPSIzNi4wMjg5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiNFRjRGRkYiLz4KPHN0b3Agb2Zmc2V0PSIwLjU5MTM0NiIgc3RvcC1jb2xvcj0iI0M3MTFFMSIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM3RjUyRkYiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K" x="812" y="576" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+    <text class="card-title" x="854" y="592">Database factory</text>
+    <text class="card-text" x="854" y="620">validates url and driver</text>
+    <text class="card-text" x="854" y="646">creates DataSource and DB</text>
+
+    <rect class="card-green" x="1126" y="558" width="300" height="104" rx="14" stroke-width="2.5"/>
+    <image data-bluetape4k-icon="library.exposed" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA1MCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQ1LjI2NTEgMzEuMjAxOEM0NS44MDYzIDMwLjM3MjIgNDYuOTU1MiAyOC4xMTI4IDQ3LjQ3NyAyNy4wOTExQzQ3LjU0NzMgMjYuOTUzNCA0Ny41OTE3IDI2LjgxMzIgNDcuNjI0OSAyNi42NzE4QzUxLjE0NTkgMTkuNTA4MiA1MC42NzAyIDYuOTExMjkgNDYuNzQwMiAzLjA0MTM0QzQyLjc1NTMgLTAuODgyNjA3IDI5LjcxODkgLTAuOTcxODMzIDIyLjU5NjkgMi41NTUzQzIxLjU1OTQgMy4wNjkxNyAxOS41MDU5IDMuOTY2MjMgMTguMzkwOCA0LjY3NTY0QzE2LjY0NDcgNS43ODY0OCAxNC45MjU2IDYuOTIxMTMgMTQuODc2OCA4Ljg3NUMxNC44MzgyIDEwLjQxODYgMTcuMDcwNiAxMi41NjAzIDE2LjY5NzEgMTMuNDkyOEMxNS44NTkzIDE1LjU4MzggMTMuNzc3OSAxNC4xOTY3IDEwLjk0NTUgMTcuNzc2M0M5LjA4NjQgMjAuMTI1OCAxMS4wNDExIDIzLjcxMzkgMTAuNjk2NiAyNC4zMDc1QzguOTEzOTEgMjcuMzc5NCA1LjMyNTQgMjUuOTcwOCAzLjAxMTAxIDI3LjIxNjRDMS4zMzQwNCAyOC4xMTkgMC40MTg3MzQgMjkuNzY4IDAuMDQwMTA5MyAzMC42MTI4Qy0wLjA5NDUxMzYgMzAuOTEzMyAwLjEyNTg5NCAzMS4yNjA0IDAuNDYwNDY1IDMxLjI2NzRDMS4xNjI2OSAzMS4yODIyIDEuNzAyNjggMzAuOTM0IDMuNTUyMzkgMzAuNjM3MkM1Ljk1OTM2IDMwLjI1MSA3LjUwMjQyIDI5LjI0MjggOC4yMDI4MiAyOS45NzQ5QzguNTYxNzMgMzAuMzUgNi4zMjkzNSAzMC45Nzg4IDUuODc4ODMgMzEuMDk4OUM0LjY3MjczIDMxLjQyIDMuMDA5ODMgMzEuNzE4MSAyLjMzNjUzIDMyLjg3MTRDMi4xODE1NiAzMy4xMzcxIDIuMjg3MDIgMzMuNDc5NiAyLjU2ODM3IDMzLjYxNTVDMy42MTc0MiAzNC4xMjIgNC43OTEzMiAzNC43MDE0IDYuNjU5MTEgMzQuMjE2QzguNjEzNzQgMzMuNzA4MSA5LjkyNjkyIDMyLjMwOTUgMTAuOTQyNSAzMy4xOTY2QzExLjU5NyAzMy43Njg1IDUuMTc5NDkgMzUuNjQxMSA1LjYzNzA0IDM2Ljk2MUM1Ljk2MTEyIDM3Ljg5NTkgOS4zNDUyNyAzOC42OTY3IDExLjkzMjEgMzYuNTYwNUMxMi42NTkxIDM1Ljk2MDIgMTMuMzk2NCAzNS4yMzI3IDEzLjYxNzIgMzUuNzg5M0MxNC4xODI5IDM3LjIxNTEgMTAuMzMyNCAzOC42MjI1IDEwLjE4OTMgNDEuMjMxMkMxMC4xODI4IDQxLjM1MDkgMTAuMjcxNiA0MS40NTQ3IDEwLjM4NjIgNDEuNDk2M0MxNC4xMDk1IDQyLjg1MDMgMTUuMzE1OSAzNy45MzE2IDE2LjA3NjEgMzguMjA4MkMxOC4yMTk2IDM4Ljk4OCAxMy4wNjcyIDQxLjc4MjEgMTMuOTQzMSA0NC45OTIzQzEzLjk3NzEgNDUuMTE2NSAxNC4xMDI1IDQ1LjIwMTIgMTQuMjMyMyA0NS4xOTEzQzE1LjEyNzQgNDUuMTIyMyAxNi4wODA3IDQ0Ljk4NCAxNy40NTk4IDQzLjYyNkMxOC41Njk4IDQyLjUzMjkgMTguNDk4NiA0MC42OTAyIDE5LjE1ODIgNDAuNzY1MUMxOS44MTc3IDQwLjgzOTkgMTguODA2MSA0My4wMzE3IDE4LjA0MDUgNDQuNjQyOEMxNy40NjAzIDQ1Ljg2NCAxNy4wMjggNDcuMDA5IDE2Ljk3MyA0Ny42NDkxQzE2Ljk1MzUgNDcuODc4MyAxNy4xOTAxIDQ4LjA1NDQgMTcuNDEyIDQ3Ljk4NDVDMjAuOTMyMiA0Ni44NzY4IDIxLjk5MDIgNDQuNzU0MyAyMi4xOTIzIDQ0LjA4MjNDMjIuODQ0NCA0MS45MTgyIDIyLjgyMDkgMzkuNzM3OSAyNC45MDY2IDM4LjQxMzhDMjUuNTM0MiAzOC4wODk3IDI5LjMxMDIgMzkuOTkyIDMxLjc2NTYgMzguMjc4MkMzNS4xOTA1IDM1Ljg4NzggMzQuNDkzOCAzMy4zNzk1IDM2LjExNjcgMzIuNjE1N0MzNy4wNjM3IDMyLjI0NzggMzkuMjYyMyAzNC4yOTkgNDAuNzE2MiAzNC4yNTEyQzQyLjc0ODEgMzQuMTg0MiA0NC4xNDE2IDMyLjkyNDEgNDUuMjY1MSAzMS4yMDE4WiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzEzNDFfMTk0KSIvPgo8cGF0aCBkPSJNMjYuMzk3NiAyOS4zMzg1QzI3Ljg4OTMgMjguMzYzNSAyOS45MDE2IDI4Ljc2NDIgMzAuODkxOCAzMC4yMzNDMzEuODgxOSAzMS43MDE5IDMxLjQ3NTMgMzMuNjgzOCAyOS45ODM2IDM0LjY1ODhDMjguNDkxOCAzNS42MzM2IDI2LjQ3OTUgMzUuMjMzMSAyNS40ODk0IDMzLjc2NDJDMjQuNDk5MyAzMi4yOTUzIDI0LjkwNTkgMzAuMzEzNSAyNi4zOTc2IDI5LjMzODVaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMTcuMzA1OCAyNy4yNDA4QzE4LjM5NzcgMjYuNTg1NSAxNy44MzY3IDI4LjQ5OTEgMTkuMTU1NCAzMC4wMTUyQzE5LjE4MzcgMzAuMDQ3OSAxOS4zMDI5IDMwLjE2NTIgMTkuMzM2MSAzMC4xOTI5QzIwLjg3NiAzMS40OTE2IDIyLjgxODkgMzAuOTM5NCAyMi4xNTI1IDMyLjAxNTJDMjEuOTc3OSAzMi4yOTQ2IDE5Ljk1NTEgMzMuNTI5NSAxNy44NTA3IDMxLjQ3ODFDMTUuNzY1OSAyOS40MDQ2IDE3LjAyMzIgMjcuNDEwNiAxNy4zMDU4IDI3LjI0MDhaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMTUuNTI4NSAxOC42MzUzQzE3LjAyMDIgMTcuNjYwNCAxOS4wMzI0IDE4LjA2MTEgMjAuMDIyNiAxOS41Mjk5QzIxLjAxMjcgMjAuOTk4OCAyMC42MDYyIDIyLjk4MDcgMTkuMTE0NCAyMy45NTU2QzE3LjYyMjcgMjQuOTMwNSAxNS42MTA0IDI0LjUzIDE0LjYyMDMgMjMuMDYxMUMxMy42MzAyIDIxLjU5MjIgMTQuMDM2OCAxOS42MTAzIDE1LjUyODUgMTguNjM1M1oiIGZpbGw9ImJsYWNrIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXJfMTM0MV8xOTQiIHgxPSI0MC41IiB5MT0iOS43NSIgeDI9IjE0LjI3OTgiIHkyPSIzNi4wMjg5IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IiNFRjRGRkYiLz4KPHN0b3Agb2Zmc2V0PSIwLjU5MTM0NiIgc3RvcC1jb2xvcj0iI0M3MTFFMSIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM3RjUyRkYiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K" x="1148" y="576" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+    <text class="card-title" x="1190" y="592">Database registry</text>
+    <text class="card-text" x="1190" y="620">default plus named handles</text>
+    <text class="card-text" x="1190" y="646">reverse close on failure</text>
+  </g>
+
+  <path class="connector" d="M 800 688 V 775"/>
+
+  <rect class="layer" x="82" y="775" width="1436" height="140" rx="22" stroke-width="3"/>
+  <text class="layer-title" x="112" y="820">Authentication and JDBC boundary</text>
+
+  <g filter="url(#shadow)">
+    <rect class="card-gold" x="118" y="840" width="250" height="58" rx="16" stroke-width="2.5"/>
+    <text class="pill" x="145" y="876">STATIC_PASSWORD</text>
+
+    <rect class="card-gold" x="406" y="840" width="250" height="58" rx="16" stroke-width="2.5"/>
+    <text class="pill" x="432" y="876">RDS_IAM token cache</text>
+
+    <rect class="card-gold" x="694" y="840" width="250" height="58" rx="16" stroke-width="2.5"/>
+    <text class="pill" x="724" y="876">AwsSecretString redaction</text>
+
+    <rect class="card-gold" x="982" y="840" width="250" height="58" rx="16" stroke-width="2.5"/>
+    <image data-bluetape4k-icon="generic.database" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InRpdGxlIGRlc2MiPgogIDx0aXRsZSBpZD0idGl0bGUiPkdlbmVyaWMgZGF0YWJhc2Ugc2VydmVyIGljb248L3RpdGxlPgogIDxkZXNjIGlkPSJkZXNjIj5HZW5lcmljIGRhdGFiYXNlIHNlcnZlciBpY29uIGZvciBibHVldGFwZTRrIGRpYWdyYW1zLjwvZGVzYz4KICA8cmVjdCB4PSIxMCIgeT0iOCIgd2lkdGg9IjEwOCIgaGVpZ2h0PSIxMTIiIHJ4PSIxOCIgZmlsbD0iI2ZmZmFmMiIgc3Ryb2tlPSIjMjg0ODVhIiBzdHJva2Utd2lkdGg9IjYiLz4KICA8ZWxsaXBzZSBjeD0iNjQiIGN5PSIzNiIgcng9IjM0IiByeT0iMTMiIGZpbGw9IiNmZmYwZDgiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI2Ii8+CiAgPHBhdGggZD0iTTMwIDM2djQ0YzAgOCAxNSAxNCAzNCAxNHMzNC02IDM0LTE0VjM2IiBmaWxsPSIjZmZmMGQ4IiBzdHJva2U9IiM4YzZmMzMiIHN0cm9rZS13aWR0aD0iNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxlbGxpcHNlIGN4PSI2NCIgY3k9IjM2IiByeD0iMzQiIHJ5PSIxMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGM2ZjMzIiBzdHJva2Utd2lkdGg9IjUiLz4KICA8cGF0aCBkPSJNMzAgNThjMCA4IDE1IDE0IDM0IDE0czM0LTYgMzQtMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMzAgODBjMCA4IDE1IDE0IDM0IDE0czM0LTYgMzQtMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+Cg==" x="1004" y="853" width="28" height="28" preserveAspectRatio="xMidYMid meet"/>
+    <text class="pill" x="1048" y="876">Hikari DataSource</text>
+
+    <rect class="card-gold" x="1270" y="840" width="206" height="58" rx="16" stroke-width="2.5"/>
+    <image data-bluetape4k-icon="generic.database" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InRpdGxlIGRlc2MiPgogIDx0aXRsZSBpZD0idGl0bGUiPkdlbmVyaWMgZGF0YWJhc2Ugc2VydmVyIGljb248L3RpdGxlPgogIDxkZXNjIGlkPSJkZXNjIj5HZW5lcmljIGRhdGFiYXNlIHNlcnZlciBpY29uIGZvciBibHVldGFwZTRrIGRpYWdyYW1zLjwvZGVzYz4KICA8cmVjdCB4PSIxMCIgeT0iOCIgd2lkdGg9IjEwOCIgaGVpZ2h0PSIxMTIiIHJ4PSIxOCIgZmlsbD0iI2ZmZmFmMiIgc3Ryb2tlPSIjMjg0ODVhIiBzdHJva2Utd2lkdGg9IjYiLz4KICA8ZWxsaXBzZSBjeD0iNjQiIGN5PSIzNiIgcng9IjM0IiByeT0iMTMiIGZpbGw9IiNmZmYwZDgiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI2Ii8+CiAgPHBhdGggZD0iTTMwIDM2djQ0YzAgOCAxNSAxNCAzNCAxNHMzNC02IDM0LTE0VjM2IiBmaWxsPSIjZmZmMGQ4IiBzdHJva2U9IiM4YzZmMzMiIHN0cm9rZS13aWR0aD0iNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxlbGxpcHNlIGN4PSI2NCIgY3k9IjM2IiByeD0iMzQiIHJ5PSIxMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOGM2ZjMzIiBzdHJva2Utd2lkdGg9IjUiLz4KICA8cGF0aCBkPSJNMzAgNThjMCA4IDE1IDE0IDM0IDE0czM0LTYgMzQtMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMzAgODBjMCA4IDE1IDE0IDM0IDE0czM0LTYgMzQtMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhjNmYzMyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+Cg==" x="1288" y="853" width="28" height="28" preserveAspectRatio="xMidYMid meet"/>
+    <text class="pill" x="1334" y="876">JDBC properties</text>
+  </g>
+
+  <path class="connector" d="M 800 915 V 967"/>
+
+  <rect class="layer" x="82" y="967" width="1436" height="52" rx="18" stroke-width="3"/>
+  <text class="footer" x="112" y="1000">Runtime output: Exposed Database handles connect to caller-selected JDBC drivers, RDS endpoints, H2 tests, or PostgreSQL Testcontainers.</text>
+
+  <path class="connector-soft" d="M 268 662 V 716 Q 268 728 256 728 H 96 Q 84 728 84 740 V 816 Q 84 828 96 828 H 519 Q 531 828 531 840"/>
+  <path class="connector-soft" d="M 940 662 V 716 Q 940 728 952 728 H 1095 Q 1107 728 1107 740 V 840"/>
+  <path class="connector-soft" d="M 1276 662 V 716 Q 1276 728 1288 728 H 1361 Q 1373 728 1373 740 V 840"/>
+</svg>

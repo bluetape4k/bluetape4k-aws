@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-label="S3 Access Grants data access flow">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
+    <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20" />
+  </filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" />
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" />
+  </marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" />
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" />
+  </marker>
+  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569" />
+  </marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}
+  .lane-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .lane-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:11px}
+  .chip{font-size:11px;fill:#243447}
+  .lane{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .soft-edge{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="708" rx="14" class="frame" />
+<text class="title" x="54" y="74">S3 Access Grants flow</text>
+<text class="subtitle" x="56" y="106">The facade resolves temporary data-access credentials first; the application then performs object I/O with an S3 client.</text>
+
+<g>
+  <rect x="1020" y="57" width="128" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="chip" x="1084" y="70.5" text-anchor="middle" dominant-baseline="middle">Request</text>
+  <rect x="1162" y="57" width="124" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978" />
+  <text class="chip" x="1224" y="70.5" text-anchor="middle" dominant-baseline="middle">Grant</text>
+  <rect x="1300" y="57" width="70" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316" />
+  <text class="chip" x="1335" y="70.5" text-anchor="middle" dominant-baseline="middle">S3</text>
+</g>
+
+<g id="lanes">
+  <rect class="lane" x="70" y="150" width="1300" height="192" rx="12" />
+  <text class="lane-title" x="96" y="188">Data access resolution</text>
+  <text class="lane-detail" x="98" y="210">getDataAccess request with account id, S3 target, and permission</text>
+
+  <rect class="lane" x="70" y="382" width="1300" height="214" rx="12" />
+  <text class="lane-title" x="96" y="420">Object operation</text>
+  <text class="lane-detail" x="98" y="442">Application uses the returned scoped access with a normal S3 object client</text>
+</g>
+
+<g id="resolution">
+  <rect class="card" x="118" y="246" width="210" height="76" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="223" y="276" text-anchor="middle">Caller intent</text>
+  <text class="detail" x="223" y="300" text-anchor="middle">target + permission</text>
+
+  <rect class="card" x="386" y="246" width="236" height="76" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <text class="card-title" x="504" y="276" text-anchor="middle">getDataAccess</text>
+  <text class="detail" x="504" y="300" text-anchor="middle">coroutine facade</text>
+
+  <rect class="card" x="680" y="246" width="210" height="76" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <image data-bluetape4k-icon="aws.s3" x="694" y="271" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL1N0b3JhZ2UiIGZpbGw9IiM3QUExMTYiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPGcgaWQ9Ikljb24tU2VydmljZS8zMi9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNy4wMDAyMDAsIDYuMDAwMTAwKSIgZmlsbD0iI0ZGRkZGRiI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0yMy41MzIsMTUuMzkxIEwyMy43MjksMTMuOTMyIEMyNS44MjEsMTUuMTMxIDI1Ljg2NCwxNS42MjYgMjUuODYzMDE0OSwxNS42NCBDMjUuODU5LDE1LjY0MyAyNS41MDksMTUuOTIzIDIzLjUzMiwxNS4zOTEgTDIzLjUzMiwxNS4zOTEgWiBNMjIuNTY0LDE1LjEwMyBDMTkuNzIyLDE0LjIwNiAxNS45MDQsMTIuNTMxIDEzLjcyMywxMS41MDQgQzEzLjcyMywxMS40OTcgMTMuNzI3LDExLjQ5MSAxMy43MjcsMTEuNDg0IEMxMy43MjcsMTAuODIxIDEzLjE4NywxMC4yODEgMTIuNTI0LDEwLjI4MSBDMTEuODYxLDEwLjI4MSAxMS4zMjEsMTAuODIxIDExLjMyMSwxMS40ODQgQzExLjMyMSwxMi4xNDggMTEuODYxLDEyLjY4NyAxMi41MjQsMTIuNjg3IEMxMi44MTQsMTIuNjg3IDEzLjA3LDEyLjU3MSAxMy4yNzgsMTIuNCBDMTQuNTQ3LDEyLjk5NCAxOS4wNzUsMTUuMDc2IDIyLjQyOCwxNi4xMTMgTDIxLjI0OSwyNC44NSBDMjEuMjQ5LDI1LjcxNiAxNy41NzUsMjcgMTIuNSwyNyBDNy40MjUsMjcgMy43NTEsMjUuNzE2IDMuNzQ2LDI0Ljc4NCBMMS4yODMsNi41NjMgQzMuNDU4LDguMTU1IDguMDc0LDkgMTIuNSw5IEMxNi45MjYsOSAyMS41NDMsOC4xNTUgMjMuNzE4LDYuNTYzIEwyMi41NjQsMTUuMTAzIFogTTEuMDAzLDQuNDg5IEMxLjAzMiwzLjYwOSA1LjEwNCwxIDEyLjUsMSBDMTkuODk1LDEgMjMuOTcsMy42MDkgMjQsNC40ODkgTDI0LDQuNjAzIEMyMy44MSw2LjIzMSAxOS4xMzcsOCAxMi41LDggQzUuODYzLDggMS4yMDksNi4yMzEgMS4wMTgsNC42MDQgTDEuMDAzLDQuNDg5IFogTTI1LDQuNSBDMjUsMi42NjUgMjAuMTMxLDAgMTIuNSwwIEM0Ljg2OSwwIDAsMi42NjUgMCw0LjUgTDAsNC41NjcgTDIuNzUxLDI0Ljg1IEMyLjc1MSwyNi44OTYgNy43NzMsMjggMTIuNSwyOCBDMTcuMjI2LDI4IDIyLjI0OSwyNi44OTYgMjIuMjQ0LDI0LjkxNyBMMjMuMzk2LDE2LjM5IEMyNC4yMTcsMTYuNjA0IDI0Ljg4MSwxNi43MTggMjUuMzkyLDE2LjcxOCBDMjUuOTg1LDE2LjcxOCAyNi4zODYsMTYuNTc0IDI2LjYyOCwxNi4yODUgQzI2LjgyNywxNi4wNDcgMjYuOTAzLDE1Ljc2IDI2Ljg0NSwxNS40NTQgQzI2LjcwOCwxNC43MTYgMjUuNzk3LDEzLjkxOSAyMy44OSwxMi44NyBMMjMuODY5LDEyLjg5NiBMMjUsNC41NjcgTDI1LDQuNSBaIiBpZD0iQW1hem9uLVNpbXBsZS1TdG9yYWdlLVNlcnZpY2UtSWNvbl8zMl9TcXVpZCI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="791.8" y="276" text-anchor="middle">S3 Control</text>
+  <text class="detail" x="785" y="300" text-anchor="middle">grant evaluation</text>
+
+  <rect class="card" x="948" y="246" width="210" height="76" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="1053" y="276" text-anchor="middle">Data access</text>
+  <text class="detail" x="1053" y="300" text-anchor="middle">temporary scope</text>
+
+  <rect class="card" x="1216" y="246" width="118" height="76" rx="9" fill="#F0F6FF" stroke="#7AA3F5" />
+  <text class="card-title" x="1275" y="276" text-anchor="middle">Handle</text>
+  <text class="detail" x="1275" y="300" text-anchor="middle">credentials</text>
+</g>
+
+<g id="object-io">
+  <rect class="card" x="1074" y="486" width="232" height="84" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="1190" y="518" text-anchor="middle">Scoped access</text>
+  <text class="detail" x="1190" y="544" text-anchor="middle">from S3 Control</text>
+
+  <rect class="card" x="772" y="486" width="232" height="84" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <image data-bluetape4k-icon="aws.s3" x="786" y="515" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL1N0b3JhZ2UiIGZpbGw9IiM3QUExMTYiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPGcgaWQ9Ikljb24tU2VydmljZS8zMi9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNy4wMDAyMDAsIDYuMDAwMTAwKSIgZmlsbD0iI0ZGRkZGRiI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0yMy41MzIsMTUuMzkxIEwyMy43MjksMTMuOTMyIEMyNS44MjEsMTUuMTMxIDI1Ljg2NCwxNS42MjYgMjUuODYzMDE0OSwxNS42NCBDMjUuODU5LDE1LjY0MyAyNS41MDksMTUuOTIzIDIzLjUzMiwxNS4zOTEgTDIzLjUzMiwxNS4zOTEgWiBNMjIuNTY0LDE1LjEwMyBDMTkuNzIyLDE0LjIwNiAxNS45MDQsMTIuNTMxIDEzLjcyMywxMS41MDQgQzEzLjcyMywxMS40OTcgMTMuNzI3LDExLjQ5MSAxMy43MjcsMTEuNDg0IEMxMy43MjcsMTAuODIxIDEzLjE4NywxMC4yODEgMTIuNTI0LDEwLjI4MSBDMTEuODYxLDEwLjI4MSAxMS4zMjEsMTAuODIxIDExLjMyMSwxMS40ODQgQzExLjMyMSwxMi4xNDggMTEuODYxLDEyLjY4NyAxMi41MjQsMTIuNjg3IEMxMi44MTQsMTIuNjg3IDEzLjA3LDEyLjU3MSAxMy4yNzgsMTIuNCBDMTQuNTQ3LDEyLjk5NCAxOS4wNzUsMTUuMDc2IDIyLjQyOCwxNi4xMTMgTDIxLjI0OSwyNC44NSBDMjEuMjQ5LDI1LjcxNiAxNy41NzUsMjcgMTIuNSwyNyBDNy40MjUsMjcgMy43NTEsMjUuNzE2IDMuNzQ2LDI0Ljc4NCBMMS4yODMsNi41NjMgQzMuNDU4LDguMTU1IDguMDc0LDkgMTIuNSw5IEMxNi45MjYsOSAyMS41NDMsOC4xNTUgMjMuNzE4LDYuNTYzIEwyMi41NjQsMTUuMTAzIFogTTEuMDAzLDQuNDg5IEMxLjAzMiwzLjYwOSA1LjEwNCwxIDEyLjUsMSBDMTkuODk1LDEgMjMuOTcsMy42MDkgMjQsNC40ODkgTDI0LDQuNjAzIEMyMy44MSw2LjIzMSAxOS4xMzcsOCAxMi41LDggQzUuODYzLDggMS4yMDksNi4yMzEgMS4wMTgsNC42MDQgTDEuMDAzLDQuNDg5IFogTTI1LDQuNSBDMjUsMi42NjUgMjAuMTMxLDAgMTIuNSwwIEM0Ljg2OSwwIDAsMi42NjUgMCw0LjUgTDAsNC41NjcgTDIuNzUxLDI0Ljg1IEMyLjc1MSwyNi44OTYgNy43NzMsMjggMTIuNSwyOCBDMTcuMjI2LDI4IDIyLjI0OSwyNi44OTYgMjIuMjQ0LDI0LjkxNyBMMjMuMzk2LDE2LjM5IEMyNC4yMTcsMTYuNjA0IDI0Ljg4MSwxNi43MTggMjUuMzkyLDE2LjcxOCBDMjUuOTg1LDE2LjcxOCAyNi4zODYsMTYuNTc0IDI2LjYyOCwxNi4yODUgQzI2LjgyNywxNi4wNDcgMjYuOTAzLDE1Ljc2IDI2Ljg0NSwxNS40NTQgQzI2LjcwOCwxNC43MTYgMjUuNzk3LDEzLjkxOSAyMy44OSwxMi44NyBMMjMuODY5LDEyLjg5NiBMMjUsNC41NjcgTDI1LDQuNSBaIiBpZD0iQW1hem9uLVNpbXBsZS1TdG9yYWdlLVNlcnZpY2UtSWNvbl8zMl9TcXVpZCI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="888" y="518" text-anchor="middle">S3 client</text>
+  <text class="detail" x="888" y="544" text-anchor="middle">object request</text>
+
+  <rect class="card" x="470" y="486" width="232" height="84" rx="9" fill="#FFF4E6" stroke="#F59E0B" />
+  <image data-bluetape4k-icon="aws.s3" x="484" y="515" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL1N0b3JhZ2UiIGZpbGw9IiM3QUExMTYiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPGcgaWQ9Ikljb24tU2VydmljZS8zMi9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNy4wMDAyMDAsIDYuMDAwMTAwKSIgZmlsbD0iI0ZGRkZGRiI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0yMy41MzIsMTUuMzkxIEwyMy43MjksMTMuOTMyIEMyNS44MjEsMTUuMTMxIDI1Ljg2NCwxNS42MjYgMjUuODYzMDE0OSwxNS42NCBDMjUuODU5LDE1LjY0MyAyNS41MDksMTUuOTIzIDIzLjUzMiwxNS4zOTEgTDIzLjUzMiwxNS4zOTEgWiBNMjIuNTY0LDE1LjEwMyBDMTkuNzIyLDE0LjIwNiAxNS45MDQsMTIuNTMxIDEzLjcyMywxMS41MDQgQzEzLjcyMywxMS40OTcgMTMuNzI3LDExLjQ5MSAxMy43MjcsMTEuNDg0IEMxMy43MjcsMTAuODIxIDEzLjE4NywxMC4yODEgMTIuNTI0LDEwLjI4MSBDMTEuODYxLDEwLjI4MSAxMS4zMjEsMTAuODIxIDExLjMyMSwxMS40ODQgQzExLjMyMSwxMi4xNDggMTEuODYxLDEyLjY4NyAxMi41MjQsMTIuNjg3IEMxMi44MTQsMTIuNjg3IDEzLjA3LDEyLjU3MSAxMy4yNzgsMTIuNCBDMTQuNTQ3LDEyLjk5NCAxOS4wNzUsMTUuMDc2IDIyLjQyOCwxNi4xMTMgTDIxLjI0OSwyNC44NSBDMjEuMjQ5LDI1LjcxNiAxNy41NzUsMjcgMTIuNSwyNyBDNy40MjUsMjcgMy43NTEsMjUuNzE2IDMuNzQ2LDI0Ljc4NCBMMS4yODMsNi41NjMgQzMuNDU4LDguMTU1IDguMDc0LDkgMTIuNSw5IEMxNi45MjYsOSAyMS41NDMsOC4xNTUgMjMuNzE4LDYuNTYzIEwyMi41NjQsMTUuMTAzIFogTTEuMDAzLDQuNDg5IEMxLjAzMiwzLjYwOSA1LjEwNCwxIDEyLjUsMSBDMTkuODk1LDEgMjMuOTcsMy42MDkgMjQsNC40ODkgTDI0LDQuNjAzIEMyMy44MSw2LjIzMSAxOS4xMzcsOCAxMi41LDggQzUuODYzLDggMS4yMDksNi4yMzEgMS4wMTgsNC42MDQgTDEuMDAzLDQuNDg5IFogTTI1LDQuNSBDMjUsMi42NjUgMjAuMTMxLDAgMTIuNSwwIEM0Ljg2OSwwIDAsMi42NjUgMCw0LjUgTDAsNC41NjcgTDIuNzUxLDI0Ljg1IEMyLjc1MSwyNi44OTYgNy43NzMsMjggMTIuNSwyOCBDMTcuMjI2LDI4IDIyLjI0OSwyNi44OTYgMjIuMjQ0LDI0LjkxNyBMMjMuMzk2LDE2LjM5IEMyNC4yMTcsMTYuNjA0IDI0Ljg4MSwxNi43MTggMjUuMzkyLDE2LjcxOCBDMjUuOTg1LDE2LjcxOCAyNi4zODYsMTYuNTc0IDI2LjYyOCwxNi4yODUgQzI2LjgyNywxNi4wNDcgMjYuOTAzLDE1Ljc2IDI2Ljg0NSwxNS40NTQgQzI2LjcwOCwxNC43MTYgMjUuNzk3LDEzLjkxOSAyMy44OSwxMi44NyBMMjMuODY5LDEyLjg5NiBMMjUsNC41NjcgTDI1LDQuNSBaIiBpZD0iQW1hem9uLVNpbXBsZS1TdG9yYWdlLVNlcnZpY2UtSWNvbl8zMl9TcXVpZCI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="586" y="518" text-anchor="middle">S3 object</text>
+  <text class="detail" x="586" y="544" text-anchor="middle">read/write target</text>
+
+  <rect class="card" x="168" y="486" width="232" height="84" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="284" y="518" text-anchor="middle">Application result</text>
+  <text class="detail" x="284" y="544" text-anchor="middle">body or error</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 328 284 L 386 284" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 622 284 L 680 284" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 890 284 L 948 284" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+  <path class="soft-edge" d="M 1158 284 L 1216 284" stroke="#475569" marker-end="url(#arrow-slate)" />
+  <path class="soft-edge" d="M 1275 322 V 456 Q 1275 468 1263 468 H 1202 Q 1190 468 1190 480 V 486" stroke="#475569" marker-end="url(#arrow-slate)" />
+
+  <path class="edge" d="M 1074 528 L 1004 528" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 772 528 L 702 528" stroke="#168E86" marker-end="url(#arrow-teal)" />
+  <path class="edge" d="M 470 528 L 400 528" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+</g>
+
+<g id="contracts">
+  <rect x="86" y="620" width="600" height="64" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="110" y="650">Failure boundary</text>
+  <text class="detail" x="334" y="648">grant denied</text>
+  <text class="detail" x="500" y="648">object error</text>
+  <text class="tiny" x="110" y="672">Grant resolution and object transfer fail independently and are easier to diagnose separately.</text>
+
+  <rect x="724" y="620" width="630" height="64" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="748" y="650">API scope</text>
+  <text class="detail" x="930" y="648">get/list path</text>
+  <text class="detail" x="1106" y="648">no admin facade</text>
+  <text class="tiny" x="748" y="672">Administrative create/update/delete calls stay on raw S3 Control clients.</text>
+</g>
+
+<rect class="footer" x="54" y="700" width="1332" height="34" rx="8" />
+<text class="footer-title" x="74" y="720" dominant-baseline="middle">Outcome</text>
+<text class="footer-detail" x="176" y="720" dominant-baseline="middle">Access Grants answers who may access which S3 target; the S3 client still performs the object operation.</text>
+</svg>

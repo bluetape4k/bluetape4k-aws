@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-label="Spring Boot S3 example architecture">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
+    <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20" />
+  </filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" />
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" />
+  </marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" />
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" />
+  </marker>
+  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569" />
+  </marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}
+  .layer-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .layer-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:11px}
+  .chip{font-size:11px;fill:#243447}
+  .layer{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .soft-edge{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="668" rx="14" class="frame" />
+<text class="title" x="54" y="74">Spring Boot S3 example</text>
+<text class="subtitle" x="56" y="106">A WebFlux sample for S3 auto-configuration, coroutine object APIs, presigned URLs, and optional client-side encryption.</text>
+
+<g>
+  <rect x="1008" y="57" width="112" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="chip" x="1064" y="70.5" text-anchor="middle" dominant-baseline="middle">WebFlux</text>
+  <rect x="1134" y="57" width="128" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978" />
+  <text class="chip" x="1198" y="70.5" text-anchor="middle" dominant-baseline="middle">S3 ops</text>
+  <rect x="1276" y="57" width="94" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316" />
+  <text class="chip" x="1323" y="70.5" text-anchor="middle" dominant-baseline="middle">S3</text>
+</g>
+
+<g id="layers">
+  <rect class="layer" x="70" y="142" width="300" height="392" rx="12" />
+  <text class="layer-title" x="92" y="178">HTTP API</text>
+  <text class="layer-detail" x="94" y="200">Spring WebFlux controller</text>
+
+  <rect class="layer" x="405" y="142" width="355" height="392" rx="12" />
+  <image data-bluetape4k-icon="spring.spring-boot" x="427" y="156" width="26" height="24" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsdXN0cmF0b3IgMjQuMC4zLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjxzdmcgZmlsbD0iIzZEQjMzRiIgdmVyc2lvbj0iMS4xIiBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiCgkgdmlld0JveD0iMCAwIDUxMCA0NTcuOCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgNTEwIDQ1Ny44OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+Cgkuc3Qwe2ZpbGw6IzZEQjMzRjt9Cjwvc3R5bGU+Cjx0aXRsZT5pY29uLXNwcmluZy1ib290PC90aXRsZT4KPGcgaWQ9IkxheWVyXzJfMV8iPgoJPGcgaWQ9IkxheWVyXzEtMiI+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTUwMy41LDIwMS40TDQwMywyNy41QzM5NC4zLDEyLjQsMzcyLjksMCwzNTUuNCwwSDE1NC42Yy0xNy40LDAtMzguOSwxMi40LTQ3LjYsMjcuNUw2LjYsMjAxLjQKCQkJYy04LjcsMTUuMS04LjcsMzkuOCwwLDU0LjlsMTAwLjQsMTc0YzguNywxNS4xLDMwLjEsMjcuNSw0Ny42LDI3LjVoMjAwLjljMTcuNCwwLDM4LjgtMTIuNCw0Ny42LTI3LjVsMTAwLjQtMTc0CgkJCUM1MTIuMiwyNDEuMiw1MTIuMiwyMTYuNSw1MDMuNSwyMDEuNHogTTIzMy4zLDk2LjJjMC0xMS40LDkuMy0yMC43LDIwLjctMjAuN2MxMS40LDAsMjAuNyw5LjMsMjAuNywyMC43djEyMy43CgkJCWMwLDExLjQtOS4zLDIwLjctMjAuNywyMC43Yy0xMS40LDAtMjAuNy05LjMtMjAuNy0yMC43bDAsMFY5Ni4yeiBNMjU0LDM2MC4zYy03Ny40LDAtMTQwLjQtNjMtMTQwLjQtMTQwLjQKCQkJYzAuMS00NC40LDIxLjEtODYuMSw1Ni43LTExMi43YzguMi02LjEsMTkuNy00LjQsMjUuOCwzLjhzNC40LDE5LjctMy44LDI1LjhsMCwwYy00NS45LDM0LjEtNTUuNSw5OS0yMS40LDE0NC45CgkJCXM5OSw1NS41LDE0NC45LDIxLjRjMjYuMy0xOS41LDQxLjgtNTAuNCw0MS44LTgzLjJjLTAuMS0zMi45LTE1LjctNjMuOC00Mi4yLTgzLjRjLTguMi02LTkuOS0xNy42LTMuOS0yNS44czE3LjYtOS45LDI1LjgtMy45CgkJCWMzNS45LDI2LjUsNTcsNjguNSw1Ny4xLDExMy4xQzM5NC40LDI5Ny40LDMzMS40LDM2MC4zLDI1NCwzNjAuM3oiLz4KCTwvZz4KPC9nPgo8L3N2Zz4K" />
+  <text class="layer-title" x="461" y="178">Spring Boot wiring</text>
+  <text class="layer-detail" x="463" y="200">S3 and KMS auto-configuration</text>
+
+  <rect class="layer" x="795" y="142" width="300" height="392" rx="12" />
+  <text class="layer-title" x="817" y="178">Object operations</text>
+  <text class="layer-detail" x="819" y="200">S3Operations and encryption wrapper</text>
+
+  <rect class="layer" x="1130" y="142" width="240" height="392" rx="12" />
+  <text class="layer-title" x="1152" y="178">S3 target</text>
+  <text class="layer-detail" x="1154" y="200">Floci or LocalStack</text>
+</g>
+
+<g id="cards">
+  <rect class="card" x="100" y="238" width="240" height="102" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="220" y="274" text-anchor="middle">S3DocumentController</text>
+  <text class="detail" x="220" y="302" text-anchor="middle">upload, download</text>
+  <text class="detail" x="220" y="322" text-anchor="middle">list and presign</text>
+
+  <rect class="card" x="100" y="380" width="240" height="102" rx="9" fill="#F0F6FF" stroke="#7AA3F5" />
+  <text class="card-title" x="220" y="416" text-anchor="middle">Controller tests</text>
+  <text class="detail" x="220" y="444" text-anchor="middle">direct controller calls</text>
+  <text class="detail" x="220" y="464" text-anchor="middle">bucket lifecycle</text>
+
+  <rect class="card" x="435" y="222" width="295" height="116" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <image data-bluetape4k-icon="aws.s3" x="449" y="267" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL1N0b3JhZ2UiIGZpbGw9IiM3QUExMTYiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPGcgaWQ9Ikljb24tU2VydmljZS8zMi9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNy4wMDAyMDAsIDYuMDAwMTAwKSIgZmlsbD0iI0ZGRkZGRiI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0yMy41MzIsMTUuMzkxIEwyMy43MjksMTMuOTMyIEMyNS44MjEsMTUuMTMxIDI1Ljg2NCwxNS42MjYgMjUuODYzMDE0OSwxNS42NCBDMjUuODU5LDE1LjY0MyAyNS41MDksMTUuOTIzIDIzLjUzMiwxNS4zOTEgTDIzLjUzMiwxNS4zOTEgWiBNMjIuNTY0LDE1LjEwMyBDMTkuNzIyLDE0LjIwNiAxNS45MDQsMTIuNTMxIDEzLjcyMywxMS41MDQgQzEzLjcyMywxMS40OTcgMTMuNzI3LDExLjQ5MSAxMy43MjcsMTEuNDg0IEMxMy43MjcsMTAuODIxIDEzLjE4NywxMC4yODEgMTIuNTI0LDEwLjI4MSBDMTEuODYxLDEwLjI4MSAxMS4zMjEsMTAuODIxIDExLjMyMSwxMS40ODQgQzExLjMyMSwxMi4xNDggMTEuODYxLDEyLjY4NyAxMi41MjQsMTIuNjg3IEMxMi44MTQsMTIuNjg3IDEzLjA3LDEyLjU3MSAxMy4yNzgsMTIuNCBDMTQuNTQ3LDEyLjk5NCAxOS4wNzUsMTUuMDc2IDIyLjQyOCwxNi4xMTMgTDIxLjI0OSwyNC44NSBDMjEuMjQ5LDI1LjcxNiAxNy41NzUsMjcgMTIuNSwyNyBDNy40MjUsMjcgMy43NTEsMjUuNzE2IDMuNzQ2LDI0Ljc4NCBMMS4yODMsNi41NjMgQzMuNDU4LDguMTU1IDguMDc0LDkgMTIuNSw5IEMxNi45MjYsOSAyMS41NDMsOC4xNTUgMjMuNzE4LDYuNTYzIEwyMi41NjQsMTUuMTAzIFogTTEuMDAzLDQuNDg5IEMxLjAzMiwzLjYwOSA1LjEwNCwxIDEyLjUsMSBDMTkuODk1LDEgMjMuOTcsMy42MDkgMjQsNC40ODkgTDI0LDQuNjAzIEMyMy44MSw2LjIzMSAxOS4xMzcsOCAxMi41LDggQzUuODYzLDggMS4yMDksNi4yMzEgMS4wMTgsNC42MDQgTDEuMDAzLDQuNDg5IFogTTI1LDQuNSBDMjUsMi42NjUgMjAuMTMxLDAgMTIuNSwwIEM0Ljg2OSwwIDAsMi42NjUgMCw0LjUgTDAsNC41NjcgTDIuNzUxLDI0Ljg1IEMyLjc1MSwyNi44OTYgNy43NzMsMjggMTIuNSwyOCBDMTcuMjI2LDI4IDIyLjI0OSwyNi44OTYgMjIuMjQ0LDI0LjkxNyBMMjMuMzk2LDE2LjM5IEMyNC4yMTcsMTYuNjA0IDI0Ljg4MSwxNi43MTggMjUuMzkyLDE2LjcxOCBDMjUuOTg1LDE2LjcxOCAyNi4zODYsMTYuNTc0IDI2LjYyOCwxNi4yODUgQzI2LjgyNywxNi4wNDcgMjYuOTAzLDE1Ljc2IDI2Ljg0NSwxNS40NTQgQzI2LjcwOCwxNC43MTYgMjUuNzk3LDEzLjkxOSAyMy44OSwxMi44NyBMMjMuODY5LDEyLjg5NiBMMjUsNC41NjcgTDI1LDQuNSBaIiBpZD0iQW1hem9uLVNpbXBsZS1TdG9yYWdlLVNlcnZpY2UtSWNvbl8zMl9TcXVpZCI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="582.5" y="258" text-anchor="middle">S3 auto-config</text>
+  <text class="detail" x="582.5" y="286" text-anchor="middle">endpoint and path style</text>
+  <text class="detail" x="582.5" y="306" text-anchor="middle">presign duration</text>
+
+  <rect class="card" x="435" y="382" width="295" height="116" rx="9" fill="#EEF9F1" stroke="#75B989" />
+  <image data-bluetape4k-icon="aws.kms" x="449" y="427" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BV1MtS2V5LU1hbmFnZW1lbnQtU2VydmljZV8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BV1MtS2V5LU1hbmFnZW1lbnQtU2VydmljZV8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL1NlY3VyaXR5LUlkZW50aXR5LUNvbXBsaWFuY2UiIGZpbGw9IiNERDM0NEMiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPHBhdGggZD0iTTI2LjczMDYwNTMsMjYuNDk2OTk4NCBMMzAuNzMwNjA1MywyNi40OTY5OTg0IEwzMC43MzA2MDUzLDI1LjQ5Njk5ODQgTDI2LjczMDYwNTMsMjUuNDk2OTk4NCBMMjYuNzMwNjA1MywyNi40OTY5OTg0IFogTTIxLjczMDYwNTMsMjYuNDk2OTk4NCBMMjUuNzMwNjA1MywyNi40OTY5OTg0IEwyNS43MzA2MDUzLDI1LjQ5Njk5ODQgTDIxLjczMDYwNTMsMjUuNDk2OTk4NCBMMjEuNzMwNjA1MywyNi40OTY5OTg0IFogTTE2LjczMDYwNTMsMjYuNDk2OTk4NCBMMjAuNzMwNjA1MywyNi40OTY5OTg0IEwyMC43MzA2MDUzLDI1LjQ5Njk5ODQgTDE2LjczMDYwNTMsMjUuNDk2OTk4NCBMMTYuNzMwNjA1MywyNi40OTY5OTg0IFogTTIyLjczMDYwNTMsMjIuNDk2OTk4NCBDMjIuNzMwNjA1MywyMS45NDU5OTg0IDIzLjE3OTYwNTMsMjEuNDk2OTk4NCAyMy43MzA2MDUzLDIxLjQ5Njk5ODQgQzI0LjI4MjYwNTMsMjEuNDk2OTk4NCAyNC43MzA2MDUzLDIxLjk0NTk5ODQgMjQuNzMwNjA1MywyMi40OTY5OTg0IEMyNC43MzA2MDUzLDIzLjA0Nzk5ODQgMjQuMjgyNjA1MywyMy40OTY5OTg0IDIzLjczMDYwNTMsMjMuNDk2OTk4NCBDMjMuMTc5NjA1MywyMy40OTY5OTg0IDIyLjczMDYwNTMsMjMuMDQ3OTk4NCAyMi43MzA2MDUzLDIyLjQ5Njk5ODQgTDIyLjczMDYwNTMsMjIuNDk2OTk4NCBaIE0yNS43MzA2MDUzLDIyLjQ5Njk5ODQgQzI1LjczMDYwNTMsMjEuMzkzOTk4NCAyNC44MzM2MDUzLDIwLjQ5Njk5ODQgMjMuNzMwNjA1MywyMC40OTY5OTg0IEMyMi42Mjg2MDUzLDIwLjQ5Njk5ODQgMjEuNzMwNjA1MywyMS4zOTM5OTg0IDIxLjczMDYwNTMsMjIuNDk2OTk4NCBDMjEuNzMwNjA1MywyMy41OTk5OTg0IDIyLjYyODYwNTMsMjQuNDk2OTk4NCAyMy43MzA2MDUzLDI0LjQ5Njk5ODQgQzI0LjgzMzYwNTMsMjQuNDk2OTk4NCAyNS43MzA2MDUzLDIzLjU5OTk5ODQgMjUuNzMwNjA1MywyMi40OTY5OTg0IEwyNS43MzA2MDUzLDIyLjQ5Njk5ODQgWiBNMTkuNzMwNjA1MywyMi40OTY5OTg0IEMxOS43MzA2MDUzLDIzLjA0Nzk5ODQgMTkuMjgyNjA1MywyMy40OTY5OTg0IDE4LjczMDYwNTMsMjMuNDk2OTk4NCBDMTguMTc5NjA1MywyMy40OTY5OTg0IDE3LjczMDYwNTMsMjMuMDQ3OTk4NCAxNy43MzA2MDUzLDIyLjQ5Njk5ODQgQzE3LjczMDYwNTMsMjEuOTQ1OTk4NCAxOC4xNzk2MDUzLDIxLjQ5Njk5ODQgMTguNzMwNjA1MywyMS40OTY5OTg0IEMxOS4yODI2MDUzLDIxLjQ5Njk5ODQgMTkuNzMwNjA1MywyMS45NDU5OTg0IDE5LjczMDYwNTMsMjIuNDk2OTk4NCBMMTkuNzMwNjA1MywyMi40OTY5OTg0IFogTTE2LjczMDYwNTMsMjIuNDk2OTk4NCBDMTYuNzMwNjA1MywyMy41OTk5OTg0IDE3LjYyODYwNTMsMjQuNDk2OTk4NCAxOC43MzA2MDUzLDI0LjQ5Njk5ODQgQzE5LjgzMzYwNTMsMjQuNDk2OTk4NCAyMC43MzA2MDUzLDIzLjU5OTk5ODQgMjAuNzMwNjA1MywyMi40OTY5OTg0IEMyMC43MzA2MDUzLDIxLjM5Mzk5ODQgMTkuODMzNjA1MywyMC40OTY5OTg0IDE4LjczMDYwNTMsMjAuNDk2OTk4NCBDMTcuNjI4NjA1MywyMC40OTY5OTg0IDE2LjczMDYwNTMsMjEuMzkzOTk4NCAxNi43MzA2MDUzLDIyLjQ5Njk5ODQgTDE2LjczMDYwNTMsMjIuNDk2OTk4NCBaIE0zMy43MzA2MDUzLDE1Ljk5Njk5ODQgTDMzLjczMDYwNTMsMjguOTk2OTk4NCBDMzMuNzMwNjA1MywyOS4yNzI5OTg0IDMzLjUwNzYwNTMsMjkuNDk2OTk4NCAzMy4yMzA2MDUzLDI5LjQ5Njk5ODQgTDE2LjczMDYwNTMsMjkuNDk2OTk4NCBMMTYuNzMwNjA1MywyOC40OTY5OTg0IEwzMi43MzA2MDUzLDI4LjQ5Njk5ODQgTDMyLjczMDYwNTMsMTYuNDk2OTk4NCBMMjAuNzMwNjA1MywxNi40OTY5OTg0IEwyMC43MzA2MDUzLDE1LjQ5Njk5ODQgTDMzLjIzMDYwNTMsMTUuNDk2OTk4NCBDMzMuNTA3NjA1MywxNS40OTY5OTg0IDMzLjczMDYwNTMsMTUuNzIwOTk4NCAzMy43MzA2MDUzLDE1Ljk5Njk5ODQgTDMzLjczMDYwNTMsMTUuOTk2OTk4NCBaIE0xNC4wNDU2MDUzLDE5LjAyMDk5ODQgQzEzLjgzOTYwNTMsMTkuMDg3OTk4NCAxMy42OTk2MDUzLDE5LjI3OTk5ODQgMTMuNjk5NjA1MywxOS40OTY5OTg0IEwxMy42OTk2MDUzLDMxLjI1OTk5ODQgTDEyLjM5NTYwNTMsMzIuMzIyOTk4NCBMMTEuMjMwNjA1MywzMC4zNTk5OTg0IEwxMS4yMzA2MDUzLDI4LjQ5Njk5ODQgQzExLjIzMDYwNTMsMjguMzQ5OTk4NCAxMS4xNjU2MDUzLDI4LjIwODk5ODQgMTEuMDUzNjA1MywyOC4xMTM5OTg0IEw5Ljg1NTYwNTI3LDI3LjEwNzk5ODQgTDExLjA4ODYwNTMsMjUuODQ2OTk4NCBDMTEuMTgwNjA1MywyNS43NTI5OTg0IDExLjIzMDYwNTMsMjUuNjI3OTk4NCAxMS4yMzA2MDUzLDI1LjQ5Njk5ODQgTDExLjIzMDYwNTMsMjQuNDk2OTk4NCBDMTEuMjMwNjA1MywyNC4zNjM5OTg0IDExLjE3ODYwNTMsMjQuMjM1OTk4NCAxMS4wODM2MDUzLDI0LjE0Mjk5ODQgTDkuODU0NjA1MjcsMjIuOTE5OTk4NCBMMTEuMDU5NjA1MywyMS44NzM5OTg0IEMxMS4xNjg2MDUzLDIxLjc3ODk5ODQgMTEuMjMwNjA1MywyMS42NDE5OTg0IDExLjIzMDYwNTMsMjEuNDk2OTk4NCBMMTEuMjMwNjA1MywxOS40OTY5OTg0IEMxMS4yMzA2MDUzLDE5LjI3ODk5ODQgMTEuMDg5NjA1MywxOS4wODU5OTg0IDEwLjg4MjYwNTMsMTkuMDE5OTk4NCBDOC4xNDA2MDUyNywxOC4xNTE5OTg0IDYuNTI0NjA1MjcsMTUuMzA3OTk4NCA3LjEyNDYwNTI3LDEyLjQwMzk5ODQgQzcuNTUyNjA1MjcsMTAuMzMxOTk4NCA5LjE0NTYwNTI3LDguNjcwOTk4NDMgMTEuMTg0NjA1Myw4LjE3MTk5ODQzIEMxMi45MTQ2MDUzLDcuNzQ0OTk4NDMgMTQuNjk0NjA1Myw4LjExNjk5ODQzIDE2LjA2MzYwNTMsOS4xODg5OTg0MyBDMTcuNDMwNjA1MywxMC4yNjA5OTg0IDE4LjIxMzYwNTMsMTEuODY5OTk4NCAxOC4yMTM2MDUzLDEzLjYwMjk5ODQgQzE4LjIxMzYwNTMsMTUuOTIyOTk4NCAxNi40MjE2MDUzLDE4LjI1MTk5ODQgMTQuMDQ1NjA1MywxOS4wMjA5OTg0IEwxNC4wNDU2MDUzLDE5LjAyMDk5ODQgWiBNMTkuMjEzNjA1MywxMy42MDI5OTg0IEMxOS4yMTM2MDUzLDExLjU2MDk5ODQgMTguMjkwNjA1Myw5LjY2NDk5ODQzIDE2LjY4MTYwNTMsOC40MDI5OTg0MyBDMTUuMDcwNjA1Myw3LjEzOTk5ODQzIDEyLjk4MjYwNTMsNi43MDM5OTg0MyAxMC45NDU2MDUzLDcuMTk5OTk4NDMgQzguNTM0NjA1MjcsNy43OTA5OTg0MyA2LjY1MDYwNTI3LDkuNzUzOTk4NDMgNi4xNDU2MDUyNywxMi4yMDE5OTg0IEM1LjQ2NzYwNTI3LDE1LjQ4Mzk5ODQgNy4yMTI2MDUyNywxOC43MDQ5OTg0IDEwLjIzMDYwNTMsMTkuODUxOTk4NCBMMTAuMjMwNjA1MywyMS4yNjg5OTg0IEw4Ljc5MzYwNTI3LDIyLjUxNzk5ODQgQzguNjg4NjA1MjcsMjIuNjA4OTk4NCA4LjYyNjYwNTI3LDIyLjczOTk5ODQgOC42MjE2MDUyNywyMi44Nzc5OTg0IEM4LjYxNjYwNTI3LDIzLjAxNzk5ODQgOC42NzA2MDUyNywyMy4xNTE5OTg0IDguNzY5NjA1MjcsMjMuMjQ5OTk4NCBMMTAuMjMwNjA1MywyNC43MDQ5OTg0IEwxMC4yMzA2MDUzLDI1LjI5Mjk5ODQgTDguNzY0NjA1MjcsMjYuNzkzOTk4NCBDOC42NjY2MDUyNywyNi44OTI5OTg0IDguNjE1NjA1MjcsMjcuMDI4OTk4NCA4LjYyMjYwNTI3LDI3LjE2Nzk5ODQgQzguNjI5NjA1MjcsMjcuMzA2OTk4NCA4LjY5MjYwNTI3LDI3LjQzNTk5ODQgOC43OTk2MDUyNywyNy41MjU5OTg0IEwxMC4yMzA2MDUzLDI4LjcyOTk5ODQgTDEwLjIzMDYwNTMsMzAuNDk2OTk4NCBDMTAuMjMwNjA1MywzMC41ODY5OTg0IDEwLjI1NTYwNTMsMzAuNjc0OTk4NCAxMC4zMDE2MDUzLDMwLjc1MTk5ODQgTDExLjgzMjYwNTMsMzMuMzMyOTk4NCBDMTEuOTA2NjA1MywzMy40NTc5OTg0IDEyLjAzMTYwNTMsMzMuNTQzOTk4NCAxMi4xNzU2MDUzLDMzLjU2OTk5ODQgQzEyLjIwMzYwNTMsMzMuNTc0OTk4NCAxMi4yMzI2MDUzLDMzLjU3Nzk5ODQgMTIuMjYyNjA1MywzMy41Nzc5OTg0IEMxMi4zNzY2MDUzLDMzLjU3Nzk5ODQgMTIuNDg4NjA1MywzMy41Mzg5OTg0IDEyLjU3ODYwNTMsMzMuNDY0OTk4NCBMMTQuNTE2NjA1MywzMS44ODM5OTg0IEMxNC42MzI2MDUzLDMxLjc4ODk5ODQgMTQuNjk5NjA1MywzMS42NDY5OTg0IDE0LjY5OTYwNTMsMzEuNDk2OTk4NCBMMTQuNjk5NjA1MywxOS44NDk5OTg0IEMxNi45OTY2MDUzLDE4Ljk1NTk5ODQgMTkuMjEzNjA1MywxNi42MDA5OTg0IDE5LjIxMzYwNTMsMTMuNjAyOTk4NCBMMTkuMjEzNjA1MywxMy42MDI5OTg0IFogTTEyLjYwNTYwNTMsMTQuOTAzOTk4NCBDMTEuODQwNjA1MywxNC45MDM5OTg0IDExLjIxNzYwNTMsMTQuMjgwOTk4NCAxMS4yMTc2MDUzLDEzLjUxNTk5ODQgQzExLjIxNzYwNTMsMTIuNzQ4OTk4NCAxMS44NDA2MDUzLDEyLjEyNTk5ODQgMTIuNjA1NjA1MywxMi4xMjU5OTg0IEMxMy4zNzI2MDUzLDEyLjEyNTk5ODQgMTMuOTk1NjA1MywxMi43NDg5OTg0IDEzLjk5NTYwNTMsMTMuNTE1OTk4NCBDMTMuOTk1NjA1MywxNC4yODA5OTg0IDEzLjM3MjYwNTMsMTQuOTAzOTk4NCAxMi42MDU2MDUzLDE0LjkwMzk5ODQgTDEyLjYwNTYwNTMsMTQuOTAzOTk4NCBaIE0xMi42MDU2MDUzLDExLjEyNTk5ODQgQzExLjI4ODYwNTMsMTEuMTI1OTk4NCAxMC4yMTc2MDUzLDEyLjE5Nzk5ODQgMTAuMjE3NjA1MywxMy41MTU5OTg0IEMxMC4yMTc2MDUzLDE0LjgzMTk5ODQgMTEuMjg4NjA1MywxNS45MDM5OTg0IDEyLjYwNTYwNTMsMTUuOTAzOTk4NCBDMTMuOTIzNjA1MywxNS45MDM5OTg0IDE0Ljk5NTYwNTMsMTQuODMxOTk4NCAxNC45OTU2MDUzLDEzLjUxNTk5ODQgQzE0Ljk5NTYwNTMsMTIuMTk3OTk4NCAxMy45MjM2MDUzLDExLjEyNTk5ODQgMTIuNjA1NjA1MywxMS4xMjU5OTg0IEwxMi42MDU2MDUzLDExLjEyNTk5ODQgWiIgaWQ9IkFXUy1LZXktTWFuYWdlbWVudC1TZXJ2aWNlX0ljb25fMzJfU3F1aWQiIGZpbGw9IiNGRkZGRkYiPjwvcGF0aD4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="582.5" y="418" text-anchor="middle">KMS test bean</text>
+  <text class="detail" x="582.5" y="446" text-anchor="middle">FixedS3KmsOperations</text>
+  <text class="detail" x="582.5" y="466" text-anchor="middle">deterministic keys</text>
+
+  <rect class="card" x="825" y="222" width="240" height="116" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <image data-bluetape4k-icon="aws.s3" x="839" y="267" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL1N0b3JhZ2UiIGZpbGw9IiM3QUExMTYiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPGcgaWQ9Ikljb24tU2VydmljZS8zMi9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNy4wMDAyMDAsIDYuMDAwMTAwKSIgZmlsbD0iI0ZGRkZGRiI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0yMy41MzIsMTUuMzkxIEwyMy43MjksMTMuOTMyIEMyNS44MjEsMTUuMTMxIDI1Ljg2NCwxNS42MjYgMjUuODYzMDE0OSwxNS42NCBDMjUuODU5LDE1LjY0MyAyNS41MDksMTUuOTIzIDIzLjUzMiwxNS4zOTEgTDIzLjUzMiwxNS4zOTEgWiBNMjIuNTY0LDE1LjEwMyBDMTkuNzIyLDE0LjIwNiAxNS45MDQsMTIuNTMxIDEzLjcyMywxMS41MDQgQzEzLjcyMywxMS40OTcgMTMuNzI3LDExLjQ5MSAxMy43MjcsMTEuNDg0IEMxMy43MjcsMTAuODIxIDEzLjE4NywxMC4yODEgMTIuNTI0LDEwLjI4MSBDMTEuODYxLDEwLjI4MSAxMS4zMjEsMTAuODIxIDExLjMyMSwxMS40ODQgQzExLjMyMSwxMi4xNDggMTEuODYxLDEyLjY4NyAxMi41MjQsMTIuNjg3IEMxMi44MTQsMTIuNjg3IDEzLjA3LDEyLjU3MSAxMy4yNzgsMTIuNCBDMTQuNTQ3LDEyLjk5NCAxOS4wNzUsMTUuMDc2IDIyLjQyOCwxNi4xMTMgTDIxLjI0OSwyNC44NSBDMjEuMjQ5LDI1LjcxNiAxNy41NzUsMjcgMTIuNSwyNyBDNy40MjUsMjcgMy43NTEsMjUuNzE2IDMuNzQ2LDI0Ljc4NCBMMS4yODMsNi41NjMgQzMuNDU4LDguMTU1IDguMDc0LDkgMTIuNSw5IEMxNi45MjYsOSAyMS41NDMsOC4xNTUgMjMuNzE4LDYuNTYzIEwyMi41NjQsMTUuMTAzIFogTTEuMDAzLDQuNDg5IEMxLjAzMiwzLjYwOSA1LjEwNCwxIDEyLjUsMSBDMTkuODk1LDEgMjMuOTcsMy42MDkgMjQsNC40ODkgTDI0LDQuNjAzIEMyMy44MSw2LjIzMSAxOS4xMzcsOCAxMi41LDggQzUuODYzLDggMS4yMDksNi4yMzEgMS4wMTgsNC42MDQgTDEuMDAzLDQuNDg5IFogTTI1LDQuNSBDMjUsMi42NjUgMjAuMTMxLDAgMTIuNSwwIEM0Ljg2OSwwIDAsMi42NjUgMCw0LjUgTDAsNC41NjcgTDIuNzUxLDI0Ljg1IEMyLjc1MSwyNi44OTYgNy43NzMsMjggMTIuNSwyOCBDMTcuMjI2LDI4IDIyLjI0OSwyNi44OTYgMjIuMjQ0LDI0LjkxNyBMMjMuMzk2LDE2LjM5IEMyNC4yMTcsMTYuNjA0IDI0Ljg4MSwxNi43MTggMjUuMzkyLDE2LjcxOCBDMjUuOTg1LDE2LjcxOCAyNi4zODYsMTYuNTc0IDI2LjYyOCwxNi4yODUgQzI2LjgyNywxNi4wNDcgMjYuOTAzLDE1Ljc2IDI2Ljg0NSwxNS40NTQgQzI2LjcwOCwxNC43MTYgMjUuNzk3LDEzLjkxOSAyMy44OSwxMi44NyBMMjMuODY5LDEyLjg5NiBMMjUsNC41NjcgTDI1LDQuNSBaIiBpZD0iQW1hem9uLVNpbXBsZS1TdG9yYWdlLVNlcnZpY2UtSWNvbl8zMl9TcXVpZCI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="945" y="258" text-anchor="middle">S3Operations</text>
+  <text class="detail" x="945" y="286" text-anchor="middle">coroutine template</text>
+  <text class="detail" x="945" y="306" text-anchor="middle">Flow object listing</text>
+
+  <rect class="card" x="825" y="382" width="240" height="116" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="945" y="418" text-anchor="middle">Encryption ops</text>
+  <text class="detail" x="945" y="446" text-anchor="middle">tenant context</text>
+  <text class="detail" x="945" y="466" text-anchor="middle">metadata envelope</text>
+
+  <rect class="card" x="1160" y="260" width="180" height="128" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <image data-bluetape4k-icon="aws.s3" x="1174" y="311" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL1N0b3JhZ2UiIGZpbGw9IiM3QUExMTYiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPGcgaWQ9Ikljb24tU2VydmljZS8zMi9BbWF6b24tU2ltcGxlLVN0b3JhZ2UtU2VydmljZV8zMiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNy4wMDAyMDAsIDYuMDAwMTAwKSIgZmlsbD0iI0ZGRkZGRiI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik0yMy41MzIsMTUuMzkxIEwyMy43MjksMTMuOTMyIEMyNS44MjEsMTUuMTMxIDI1Ljg2NCwxNS42MjYgMjUuODYzMDE0OSwxNS42NCBDMjUuODU5LDE1LjY0MyAyNS41MDksMTUuOTIzIDIzLjUzMiwxNS4zOTEgTDIzLjUzMiwxNS4zOTEgWiBNMjIuNTY0LDE1LjEwMyBDMTkuNzIyLDE0LjIwNiAxNS45MDQsMTIuNTMxIDEzLjcyMywxMS41MDQgQzEzLjcyMywxMS40OTcgMTMuNzI3LDExLjQ5MSAxMy43MjcsMTEuNDg0IEMxMy43MjcsMTAuODIxIDEzLjE4NywxMC4yODEgMTIuNTI0LDEwLjI4MSBDMTEuODYxLDEwLjI4MSAxMS4zMjEsMTAuODIxIDExLjMyMSwxMS40ODQgQzExLjMyMSwxMi4xNDggMTEuODYxLDEyLjY4NyAxMi41MjQsMTIuNjg3IEMxMi44MTQsMTIuNjg3IDEzLjA3LDEyLjU3MSAxMy4yNzgsMTIuNCBDMTQuNTQ3LDEyLjk5NCAxOS4wNzUsMTUuMDc2IDIyLjQyOCwxNi4xMTMgTDIxLjI0OSwyNC44NSBDMjEuMjQ5LDI1LjcxNiAxNy41NzUsMjcgMTIuNSwyNyBDNy40MjUsMjcgMy43NTEsMjUuNzE2IDMuNzQ2LDI0Ljc4NCBMMS4yODMsNi41NjMgQzMuNDU4LDguMTU1IDguMDc0LDkgMTIuNSw5IEMxNi45MjYsOSAyMS41NDMsOC4xNTUgMjMuNzE4LDYuNTYzIEwyMi41NjQsMTUuMTAzIFogTTEuMDAzLDQuNDg5IEMxLjAzMiwzLjYwOSA1LjEwNCwxIDEyLjUsMSBDMTkuODk1LDEgMjMuOTcsMy42MDkgMjQsNC40ODkgTDI0LDQuNjAzIEMyMy44MSw2LjIzMSAxOS4xMzcsOCAxMi41LDggQzUuODYzLDggMS4yMDksNi4yMzEgMS4wMTgsNC42MDQgTDEuMDAzLDQuNDg5IFogTTI1LDQuNSBDMjUsMi42NjUgMjAuMTMxLDAgMTIuNSwwIEM0Ljg2OSwwIDAsMi42NjUgMCw0LjUgTDAsNC41NjcgTDIuNzUxLDI0Ljg1IEMyLjc1MSwyNi44OTYgNy43NzMsMjggMTIuNSwyOCBDMTcuMjI2LDI4IDIyLjI0OSwyNi44OTYgMjIuMjQ0LDI0LjkxNyBMMjMuMzk2LDE2LjM5IEMyNC4yMTcsMTYuNjA0IDI0Ljg4MSwxNi43MTggMjUuMzkyLDE2LjcxOCBDMjUuOTg1LDE2LjcxOCAyNi4zODYsMTYuNTc0IDI2LjYyOCwxNi4yODUgQzI2LjgyNywxNi4wNDcgMjYuOTAzLDE1Ljc2IDI2Ljg0NSwxNS40NTQgQzI2LjcwOCwxNC43MTYgMjUuNzk3LDEzLjkxOSAyMy44OSwxMi44NyBMMjMuODY5LDEyLjg5NiBMMjUsNC41NjcgTDI1LDQuNSBaIiBpZD0iQW1hem9uLVNpbXBsZS1TdG9yYWdlLVNlcnZpY2UtSWNvbl8zMl9TcXVpZCI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="1260.2" y="296" text-anchor="middle">S3 bucket</text>
+  <text class="detail" x="1212" y="324">spring-example</text>
+  <text class="detail" x="1250" y="344" text-anchor="middle">docs/ keys</text>
+  <text class="detail" x="1250" y="364" text-anchor="middle">encrypted object</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 340 289 L 435 289" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 730 280 L 825 280" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 1065 280 H 1120 Q 1132 280 1132 292 V 314 Q 1132 326 1144 326 H 1160" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+
+  <path class="soft-edge" d="M 582.5 338 L 582.5 382" stroke="#475569" marker-end="url(#arrow-slate)" />
+  <path class="soft-edge" d="M 945 338 L 945 382" stroke="#475569" marker-end="url(#arrow-slate)" />
+  <path class="soft-edge" d="M 340 431 H 435" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="soft-edge" d="M 730 440 L 825 440" stroke="#168E86" marker-end="url(#arrow-teal)" />
+  <path class="soft-edge" d="M 1065 440 H 1124 Q 1136 440 1136 428 V 388 Q 1136 376 1148 376 H 1160" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+</g>
+
+<g id="route-table">
+  <rect x="86" y="564" width="600" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="110" y="596">API contract</text>
+  <text class="detail" x="286" y="594">objects</text>
+  <text class="detail" x="396" y="594">presign</text>
+  <text class="detail" x="512" y="594">encryption</text>
+  <text class="tiny" x="110" y="620">Encrypted routes require an available S3ClientSideEncryptionOperations bean.</text>
+
+  <rect x="724" y="564" width="630" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="748" y="596">Verification</text>
+  <text class="detail" x="904" y="594">upload/list/delete</text>
+  <text class="detail" x="1086" y="594">presigned URLs</text>
+  <text class="detail" x="1240" y="594">encrypted roundtrip</text>
+  <text class="tiny" x="748" y="620">ApplicationContextRunner supplies emulator endpoint, credentials, and KMS stub.</text>
+</g>
+
+<rect class="footer" x="54" y="652" width="1332" height="34" rx="8" />
+<text class="footer-title" x="74" y="672" dominant-baseline="middle">Reader cue</text>
+<text class="footer-detail" x="190" y="672" dominant-baseline="middle">Use this example to copy S3 auto-configuration into WebFlux routes, including optional tenant-aware encrypted objects.</text>
+</svg>

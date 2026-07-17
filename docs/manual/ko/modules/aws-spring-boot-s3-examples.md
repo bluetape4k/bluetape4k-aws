@@ -74,6 +74,19 @@ Ktor S3 워크숍에서 직접 SigV4 HTTP 동작을 비교하고, 실제 IAM과 
 
 Test KMS는 AWS KMS 권한과 ciphertext 동작을 증명하지 않는다. 큰 전송, multipart 복구, versioned delete와 bucket policy도 다루지 않는다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS spring boot s3 examples 아키텍처
+
+[![Bluetape4k AWS spring boot s3 examples 아키텍처](../../assets/readme-diagrams/examples-aws-spring-boot-s3-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-spring-boot-s3-examples-architecture-01.svg)
+
+_배포본 README: [`examples/aws-spring-boot-s3-examples/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-s3-examples/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 소스 {#sources}
 
 - [S3 controller](../../../../examples/aws-spring-boot-s3-examples/src/main/kotlin/io/bluetape4k/aws/examples/spring/s3/S3DocumentController.kt)

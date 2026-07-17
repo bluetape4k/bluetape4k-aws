@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-label="Spring Boot DynamoDB example architecture">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
+    <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20" />
+  </filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" />
+  </marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" />
+  </marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" />
+  </marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" />
+  </marker>
+  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569" />
+  </marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}
+  .layer-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .layer-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .detail{font-size:13px}
+  .tiny{font-size:11px}
+  .chip{font-size:11px;fill:#243447}
+  .layer{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .soft-edge{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="668" rx="14" class="frame" />
+<text class="title" x="54" y="74">Spring Boot DynamoDB example</text>
+<text class="subtitle" x="56" y="106">A WebFlux sample for DynamoDB auto-configuration, coroutine repositories, and emulator-backed controller tests.</text>
+
+<g>
+  <rect x="1008" y="57" width="112" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="chip" x="1064" y="70.5" text-anchor="middle" dominant-baseline="middle">WebFlux</text>
+  <rect x="1134" y="57" width="128" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978" />
+  <text class="chip" x="1198" y="70.5" text-anchor="middle" dominant-baseline="middle">auto-config</text>
+  <rect x="1276" y="57" width="94" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316" />
+  <text class="chip" x="1323" y="70.5" text-anchor="middle" dominant-baseline="middle">DynamoDB</text>
+</g>
+
+<g id="layers">
+  <rect class="layer" x="70" y="142" width="300" height="392" rx="12" />
+  <text class="layer-title" x="92" y="178">HTTP API</text>
+  <text class="layer-detail" x="94" y="200">Spring WebFlux controller</text>
+
+  <rect class="layer" x="405" y="142" width="355" height="392" rx="12" />
+  <image data-bluetape4k-icon="spring.spring-boot" x="427" y="156" width="26" height="24" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsdXN0cmF0b3IgMjQuMC4zLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjxzdmcgZmlsbD0iIzZEQjMzRiIgdmVyc2lvbj0iMS4xIiBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiCgkgdmlld0JveD0iMCAwIDUxMCA0NTcuOCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgNTEwIDQ1Ny44OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+Cgkuc3Qwe2ZpbGw6IzZEQjMzRjt9Cjwvc3R5bGU+Cjx0aXRsZT5pY29uLXNwcmluZy1ib290PC90aXRsZT4KPGcgaWQ9IkxheWVyXzJfMV8iPgoJPGcgaWQ9IkxheWVyXzEtMiI+CgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTUwMy41LDIwMS40TDQwMywyNy41QzM5NC4zLDEyLjQsMzcyLjksMCwzNTUuNCwwSDE1NC42Yy0xNy40LDAtMzguOSwxMi40LTQ3LjYsMjcuNUw2LjYsMjAxLjQKCQkJYy04LjcsMTUuMS04LjcsMzkuOCwwLDU0LjlsMTAwLjQsMTc0YzguNywxNS4xLDMwLjEsMjcuNSw0Ny42LDI3LjVoMjAwLjljMTcuNCwwLDM4LjgtMTIuNCw0Ny42LTI3LjVsMTAwLjQtMTc0CgkJCUM1MTIuMiwyNDEuMiw1MTIuMiwyMTYuNSw1MDMuNSwyMDEuNHogTTIzMy4zLDk2LjJjMC0xMS40LDkuMy0yMC43LDIwLjctMjAuN2MxMS40LDAsMjAuNyw5LjMsMjAuNywyMC43djEyMy43CgkJCWMwLDExLjQtOS4zLDIwLjctMjAuNywyMC43Yy0xMS40LDAtMjAuNy05LjMtMjAuNy0yMC43bDAsMFY5Ni4yeiBNMjU0LDM2MC4zYy03Ny40LDAtMTQwLjQtNjMtMTQwLjQtMTQwLjQKCQkJYzAuMS00NC40LDIxLjEtODYuMSw1Ni43LTExMi43YzguMi02LjEsMTkuNy00LjQsMjUuOCwzLjhzNC40LDE5LjctMy44LDI1LjhsMCwwYy00NS45LDM0LjEtNTUuNSw5OS0yMS40LDE0NC45CgkJCXM5OSw1NS41LDE0NC45LDIxLjRjMjYuMy0xOS41LDQxLjgtNTAuNCw0MS44LTgzLjJjLTAuMS0zMi45LTE1LjctNjMuOC00Mi4yLTgzLjRjLTguMi02LTkuOS0xNy42LTMuOS0yNS44czE3LjYtOS45LDI1LjgtMy45CgkJCWMzNS45LDI2LjUsNTcsNjguNSw1Ny4xLDExMy4xQzM5NC40LDI5Ny40LDMzMS40LDM2MC4zLDI1NCwzNjAuM3oiLz4KCTwvZz4KPC9nPgo8L3N2Zz4K" />
+  <text class="layer-title" x="461" y="178">Spring Boot wiring</text>
+  <text class="layer-detail" x="463" y="200">DynamoDbAutoConfiguration</text>
+
+  <rect class="layer" x="795" y="142" width="300" height="392" rx="12" />
+  <text class="layer-title" x="817" y="178">Coroutine repository</text>
+  <text class="layer-detail" x="819" y="200">Enhanced async client table API</text>
+
+  <rect class="layer" x="1130" y="142" width="240" height="392" rx="12" />
+  <text class="layer-title" x="1152" y="178">DynamoDB target</text>
+  <text class="layer-detail" x="1154" y="200">Floci or LocalStack</text>
+</g>
+
+<g id="cards">
+  <rect class="card" x="100" y="238" width="240" height="102" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="220" y="274" text-anchor="middle">OrderController</text>
+  <text class="detail" x="220" y="302" text-anchor="middle">POST, GET, DELETE</text>
+  <text class="detail" x="220" y="322" text-anchor="middle">Flow scan</text>
+
+  <rect class="card" x="100" y="380" width="240" height="102" rx="9" fill="#F0F6FF" stroke="#7AA3F5" />
+  <text class="card-title" x="220" y="416" text-anchor="middle">WebTestClient</text>
+  <text class="detail" x="220" y="444" text-anchor="middle">controller binding</text>
+  <text class="detail" x="220" y="464" text-anchor="middle">201, 200, 404</text>
+
+  <rect class="card" x="435" y="222" width="295" height="116" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <image data-bluetape4k-icon="aws.dynamodb" x="449" y="267" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tRHluYW1vREJfMzI8L3RpdGxlPgogICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLzMyL0FyY2hfQW1hem9uLUR5bmFtb0RCXzMyIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4KICAgICAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUtQkcvMzIvRGF0YWJhc2UiIGZpbGw9IiNDOTI1RDEiPgogICAgICAgICAgICA8cmVjdCBpZD0iUmVjdGFuZ2xlIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiPjwvcmVjdD4KICAgICAgICA8L2c+CiAgICAgICAgPHBhdGggZD0iTTI2LjA2NjE4NTEsMzEuMDE4NTg2MyBMMjYuMDY2MTg1MSwzMS4wMTc1ODQ1IEwyNi4wNjYxODUxLDI4LjE1MzI1MDkgQzI0LjUzOTcwMTUsMjkuNDYwNjg1NCAyMS4zNzIyNzI3LDMwLjMyMjI4OTggMTcuNTI3OTQxNywzMC4zMjIyODk4IEMxMy42ODA2NTA0LDMwLjMyMjI4OTggMTAuNTEzMjIxNiwyOS40NTk2ODM1IDguOTg2NzM3OTUsMjguMTUxMjQ3MSBMOC45ODY3Mzc5NSwzMS4wMTM1NzcgTDguOTg3NzI0NjksMzEuMDEzNTc3IEM4Ljk4NzcyNDY5LDMyLjQyNTIwNTYgMTIuNDk0NTkxNCwzMy45OTgxMzQ1IDE3LjUyNzk0MTcsMzMuOTk4MTM0NSBDMjIuNTU0Mzg0OCwzMy45OTgxMzQ1IDI2LjA1ODI5MTIsMzIuNDI4MjExMiAyNi4wNjYxODUxLDMxLjAxODU4NjMgTDI2LjA2NjE4NTEsMzEuMDE4NTg2MyBaIE0yNi4wNjcxNzE5LDIyLjg0NDM2NTQgTDI3LjA1MzkwOTgsMjIuODM4MzU0MiBMMjcuMDUzOTA5OCwyMi44NDQzNjU0IEMyNy4wNTM5MDk4LDIzLjQ2ODUyNzYgMjYuNzQyMTAwNiwyNC4wNTA2MTE1IDI2LjE0ODA4NDQsMjQuNTg1NjA3NyBDMjYuODc0MzIzNSwyNS4yMzg4MjQgMjcuMDUzOTA5OCwyNS44ODAwMTggMjcuMDUzOTA5OCwyNi4zMzU4NjY4IEMyNy4wNTM5MDk4LDI2LjMzODg3MjQgMjcuMDUyOTIzMSwyNi4zNDE4NzggMjcuMDUyOTIzMSwyNi4zNDM4ODE3IEwyNy4wNTI5MjMxLDMxLjAxMzU3NyBMMjcuMDUzOTA5OCwzMS4wMTM1NzcgQzI3LjA1MzkwOTgsMzMuMjg1ODA4MSAyMi45NTg5NDczLDM1IDE3LjUyNzk0MTcsMzUgQzEyLjEyNDU2NDYsMzUgOC4wNDczNjM0MiwzMy4zMDM4NDE2IDguMDA0OTMzNjksMzEuMDQ4NjQyMyBDOC4wMDQ5MzM2OSwzMS4wMzk2MjU1IDgsMzEuMDMyNjEyNSA4LDMxLjAyMzU5NTcgTDgsMjYuMzMzODYzMSBDOCwyNi4zMzA4NTc1IDguMDAxOTczNDgsMjYuMzI4ODUzNyA4LjAwMTk3MzQ4LDI2LjMyNTg0ODEgQzguMDAzOTQ2OTUsMjUuODcyMDAzIDguMTg0NTIsMjUuMjM2ODIwMyA4LjkwMjg2NTIyLDI0LjU4ODYxMzMgQzguMTg2NDkzNDcsMjMuOTM4NDAyNSA4LjAwNDkzMzY5LDIzLjMwNTIyMzUgOC4wMDA5ODY3NCwyMi44NTUzODU5IEM4LjAwMDk4Njc0LDIyLjg1MzM4MjIgOCwyMi44NTEzNzg0IDgsMjIuODQ5Mzc0NyBMOCwxOC4xNTk2NDIxIEM4LDE4LjE1NjYzNjUgOC4wMDE5NzM0OCwxOC4xNTM2MzA5IDguMDAxOTczNDgsMTguMTUxNjI3MiBDOC4wMDM5NDY5NSwxNy42OTY3ODAyIDguMTg1NTA2NzMsMTcuMDYxNTk3NSA4LjkwMzg1MTk2LDE2LjQxNDM5MjMgQzguMTg2NDkzNDcsMTUuNzYzMTc5NyA4LjAwNDkzMzY5LDE1LjEzMTAwMjYgOC4wMDA5ODY3NCwxNC42ODAxNjMxIEM4LjAwMDk4Njc0LDE0LjY3ODE1OTMgOCwxNC42NzYxNTU2IDgsMTQuNjc1MTUzNyBMOCw5Ljk4NDQxOTI2IEM4LDkuOTc5NDA5OTQgOC4wMDI5NjAyMSw5Ljk3NjQwNDM0IDguMDAyOTYwMjEsOS45NzEzOTUwMSBDOC4wMjI2OTQ5Nyw3LjcwNjE3NzAyIDEyLjEwODc3NjgsNiAxNy41Mjc5NDE3LDYgQzIwLjEzNTg5MDEsNiAyMi42NDIyMDQ0LDYuNDI5ODAwMzIgMjQuNDAxNTU4Miw3LjE3NzE5MjAxIEwyNC4wMjA2Nzc0LDguMTAxOTEzOTEgQzIyLjM3Nzc1ODcsNy40MDI2MTE3NiAyMC4wMTA1NzQzLDcuMDAxODY1NTQgMTcuNTI3OTQxNyw3LjAwMTg2NTU0IEMxMi40OTQ1OTE0LDcuMDAxODY1NTQgOC45ODc3MjQ2OSw4LjU3NDc5NDQ0IDguOTg3NzI0NjksOS45ODY0MjI5OSBDOC45ODc3MjQ2OSwxMS4zOTkwNTM0IDEyLjQ5NDU5MTQsMTIuOTcxOTgyMyAxNy41Mjc5NDE3LDEyLjk3MTk4MjMgQzE3LjY2NjA4NSwxMi45NzI5ODQyIDE3Ljc5NjMzNDQsMTIuOTcxOTgyMyAxNy45MzA1MzA3LDEyLjk2NTk3MTEgTDE3Ljk3MDk4NywxMy45NjY4MzQ4IEMxNy44MjI5NzYzLDEzLjk3Mzg0NzkgMTcuNjc0OTY1NiwxMy45NzM4NDc5IDE3LjUyNzk0MTcsMTMuOTczODQ3OSBDMTMuNjgwNjUwNCwxMy45NzM4NDc5IDEwLjUxMzIyMTYsMTMuMTExMjQxNiA4Ljk4NjczNzk1LDExLjgwMTgwMzQgTDguOTg2NzM3OTUsMTQuNjY0MTMzMiBMOC45ODc3MjQ2OSwxNC42NjQxMzMyIEw4Ljk4NzcyNDY5LDE0LjY3NjE1NTYgQzguOTkyNjU4MzgsMTUuMjIxMTcwNSA5LjUzMDQzMDU2LDE1LjY5NjA1NDcgOS45NzkzOTYzMywxNS45OTc2MTYzIEMxMS4zMjcyODA0LDE2Ljg4NzI3MjkgMTMuNzQxODI4MSwxNy40OTQ0MDM0IDE2LjQzMjY2MjUsMTcuNjE5NjM2NiBMMTYuMzg2Mjg1OCwxOC42MjA1MDAyIEMxMy42NjI4ODkxLDE4LjQ5NDI2NTIgMTEuMjc1OTcsMTcuOTA4MTczOCA5Ljc0MDYwNTc0LDE3LjAxMTUwNDIgQzkuMzU2NzY0NjgsMTcuMzA3MDU0NSA4Ljk4NzcyNDY5LDE3LjcwMzc5MzMgOC45ODc3MjQ2OSwxOC4xNjE2NDU4IEM4Ljk4NzcyNDY5LDE5LjU3MzI3NDQgMTIuNDk0NTkxNCwyMS4xNDYyMDMzIDE3LjUyNzk0MTcsMjEuMTQ2MjAzMyBDMTguMDI0MjcwOCwyMS4xNDYyMDMzIDE4LjUwODc1OTIsMjEuMTI5MTcxNiAxOC45ODE0MDY3LDIxLjA5NTEwODEgTDE5LjA1MzQzODUsMjIuMDkzOTY4MSBDMTguNTU3MTA5MywyMi4xMzAwMzUyIDE4LjA0Njk2NTgsMjIuMTQ4MDY4OCAxNy41Mjc5NDE3LDIyLjE0ODA2ODggQzEzLjY4MDY1MDQsMjIuMTQ4MDY4OCAxMC41MTMyMjE2LDIxLjI4NjQ2NDUgOC45ODY3Mzc5NSwxOS45NzcwMjYyIEw4Ljk4NjczNzk1LDIyLjgzODM1NDIgTDguOTg3NzI0NjksMjIuODM4MzU0MiBDOC45OTI2NTgzOCwyMy4zOTYzOTMzIDkuNTI5NDQzODIsMjMuODcxMjc3NiA5Ljk3OTM5NjMzLDI0LjE3MTgzNzIgQzExLjUxOTY5NDMsMjUuMTg5NzMyNiAxNC40MTI4MDk5LDI1LjgyMjkxMTYgMTcuNTI3OTQxNywyNS44MjI5MTE2IEwxNy43NDY5OTc1LDI1LjgyMjkxMTYgTDE3Ljc0Njk5NzUsMjYuODI0Nzc3MiBMMTcuNTI3OTQxNywyNi44MjQ3NzcyIEMxNC4zNjI0ODYzLDI2LjgyNDc3NzIgMTEuNDk3OTg2LDI2LjIxMjYzNzMgOS43NDE1OTI0OCwyNS4xODM3MjE0IEM5LjM1Nzc1MTQyLDI1LjQ3OTI3MTcgOC45ODc3MjQ2OSwyNS44NzcwMTI0IDguOTg3NzI0NjksMjYuMzM1ODY2OCBDOC45ODc3MjQ2OSwyNy43NDc0OTUzIDEyLjQ5NDU5MTQsMjkuMzIwNDI0MiAxNy41Mjc5NDE3LDI5LjMyMDQyNDIgQzIyLjU1MjQxMTMsMjkuMzIwNDI0MiAyNi4wNTUzMzEsMjcuNzUyNTA0NyAyNi4wNjYxODUxLDI2LjM0MTg3OCBMMjYuMDY2MTg1MSwyNi4zMzM4NjMxIEwyNi4wNjYxODUxLDI2LjMzMjg2MTIgQzI2LjA2NTE5ODQsMjUuODc4MDE0MiAyNS42OTkxMTg2LDI1LjQ4MjI3NzMgMjUuMzE3MjUxLDI1LjE4NzcyODkgQzI1LjA3MzUyNjgsMjUuMzMwOTk1NiAyNC44MTIwNDEyLDI1LjQ2ODI1MTIgMjQuNTE2MDE5OCwyNS41OTQ0ODYzIEwyNC4xMzQxNTIyLDI0LjY3MTc2ODEgQzI0LjQ5NjI4NTEsMjQuNTE2NDc5IDI0LjgxMjA0MTIsMjQuMzQ5MTY3NCAyNS4wNzI1NCwyNC4xNzI4MzkxIEMyNS41MjY0Mzk1LDIzLjg2NjI2ODIgMjYuMDY3MTcxOSwyMy4zODYzNzQ2IDI2LjA2NzE3MTksMjIuODQ0MzY1NCBMMjYuMDY3MTcxOSwyMi44NDQzNjU0IFogTTMxLjM1NTEwMDYsMTQuNDg4ODA2NyBMMjguMDcyMjIzNCwxNC40ODg4MDY3IEMyNy45MTMzNTg2LDE0LjQ4ODgwNjcgMjcuNzY0MzYxMSwxNC40MTA2NjEyIDI3LjY3MTYwNzgsMTQuMjc5NDE2OCBDMjcuNTc4ODU0NCwxNC4xNDgxNzI1IDI3LjU1NDE4NiwxMy45Nzk4NTkgMjcuNjA1NDk2MywxMy44MjY1NzM2IEwyOS4wNTk5NDgxLDkuNDc5NDc5MDMgTDIyLjUzMTY4OTgsOS40Nzk0NzkwMyBMMTkuNDEwNjM3NywxNS40OTA2NzIzIEwyMi41ODAwNCwxNS40OTA2NzIzIEMyMi43MzM5NzExLDE1LjQ5MDY3MjMgMjIuODc5MDIxNiwxNS41NjM4MDg1IDIyLjk3MTc3NDksMTUuNjg4MDM5OCBDMjMuMDY1NTE1LDE1LjgxMTI2OTMgMjMuMDk2MTAzOSwxNS45NzI1Njk2IDIzLjA1NTY0NzYsMTYuMTIzODUxMyBMMjAuMzM4MTcxMywyNi4yMzE2NzI4IEwzMS4zNTUxMDA2LDE0LjQ4ODgwNjcgWiBNMzIuODY0ODA5NiwxNC4zMzM1MTc2IEwxOS43MDU2NzIzLDI4LjM1OTYzNTIgQzE5LjYwODk3MiwyOC40NjE4MjU1IDE5LjQ3ODcyMjYsMjguNTE0OTI0MyAxOS4zNDc0ODY0LDI4LjUxNDkyNDMgQzE5LjI2NDYwMDQsMjguNTE0OTI0MyAxOS4xODA3Mjc3LDI4LjQ5Mzg4NTIgMTkuMTA0NzQ4OSwyOC40NTA4MDQ5IEMxOC45MDgzODgsMjguMzM3NTk0MSAxOC44MTE2ODc3LDI4LjEwMzE1NzYgMTguODcxODc4NywyNy44ODE3NDUzIEwyMS45MzQ3MTMzLDE2LjQ5MjUzNzggTDE4LjU5MjYzMTksMTYuNDkyNTM3OCBDMTguNDE5OTUyOCwxNi40OTI1Mzc4IDE4LjI1OTExNDUsMTYuNDAwMzY2MiAxOC4xNzAzMDgxLDE2LjI1MDA4NjQgQzE4LjA4MDUxNDksMTYuMDk5ODA2NSAxOC4wNzQ1OTQ1LDE1LjkxMzQ1OTUgMTguMTU1NTA3LDE1Ljc1ODE3MDQgTDIxLjc5NzU1NjgsOC43NDUxMTE1OSBDMjEuODgzNDAzLDguNTgwODA1NjQgMjIuMDUxMTQ4NCw4LjQ3NzYxMzQ5IDIyLjIzMzY5NDksOC40Nzc2MTM0OSBMMjkuNzQ4NjkxMiw4LjQ3NzYxMzQ5IEMyOS45MDg1NDI3LDguNDc3NjEzNDkgMzAuMDU3NTQwMSw4LjU1NTc1OSAzMC4xNTAyOTM1LDguNjg3MDAzMzkgQzMwLjI0MjA2MDEsOC44MTgyNDc3NyAzMC4yNjc3MTUzLDguOTg2NTYxMTggMzAuMjE2NDA1LDkuMTM5ODQ2NjEgTDI4Ljc2MDk2NjUsMTMuNDg2OTQxMiBMMzIuNTA2NjIzNywxMy40ODY5NDEyIEMzMi43MDQ5NTgxLDEzLjQ4Njk0MTIgMzIuODgyNTcwOSwxMy42MDYxNjMyIDMyLjk2MDUyMzIsMTMuNzkwNTA2NSBDMzMuMDM3NDg4OCwxMy45NzQ4NDk3IDMzLDE0LjE4ODI0NzEgMzIuODY0ODA5NiwxNC4zMzM1MTc2IEwzMi44NjQ4MDk2LDE0LjMzMzUxNzYgWiBNOS43Mjc3NzgxNSwzMS4wNDA2Mjc0IEMxMC4yOTkwOTk0LDMxLjM3MzI0NjcgMTAuOTk4Njk2NiwzMS42NjY3OTMzIDExLjgwNjgzNSwzMS45MTEyNDg1IEwxMi4wODgwNTUzLDMwLjk1MTQ2MTMgQzExLjM1MzkyMjMsMzAuNzI5MDQ3MiAxMC43MjUzNzAyLDMwLjQ2NjU1ODQgMTAuMjE5MTczNywzMC4xNzIwMDk5IEw5LjcyNzc3ODE1LDMxLjA0MDYyNzQgWiBNMTEuODA2ODM1LDIzLjgwOTE2MTkgTDEyLjA4ODA1NTMsMjIuODQ5Mzc0NyBDMTEuMzU1ODk1OCwyMi42Mjc5NjI0IDEwLjcyNzM0MzcsMjIuMzY1NDczNiAxMC4yMTkxNzM3LDIyLjA2ODkyMTQgTDkuNzI3Nzc4MTUsMjIuOTM4NTQwNyBDMTAuMzAxMDcyOSwyMy4yNzMxNjM4IDExLjAwMDY3MDEsMjMuNTY1NzA4NiAxMS44MDY4MzUsMjMuODA5MTYxOSBMMTEuODA2ODM1LDIzLjgwOTE2MTkgWiBNOS43Mjc3NzgxNSwxNC44MzU0NTIyIEwxMC4yMTkxNzM3LDEzLjk2NjgzNDggQzEwLjcyNDM4MzUsMTQuMjYxMzgzMyAxMS4zNTM5MjIzLDE0LjUyNDg3MzkgMTIuMDg4MDU1MywxNC43NDcyODgxIEwxMS44MDY4MzUsMTUuNzA3MDc1MiBDMTAuOTk3NzA5OSwxNS40NjI2MjAxIDEwLjI5OTA5OTQsMTUuMTY5MDczNCA5LjcyNzc3ODE1LDE0LjgzNTQ1MjIgTDkuNzI3Nzc4MTUsMTQuODM1NDUyMiBaIiBpZD0iQW1hem9uLUR5bmFtb0RCX0ljb25fMzJfU3F1aWQiIGZpbGw9IiNGRkZGRkYiPjwvcGF0aD4KICAgIDwvZz4KPC9zdmc+" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="487" y="258">DynamoDbAutoConfig</text>
+  <text class="detail" x="582.5" y="286" text-anchor="middle">region and endpoint</text>
+  <text class="detail" x="582.5" y="306" text-anchor="middle">enhanced async client</text>
+
+  <rect class="card" x="435" y="382" width="295" height="116" rx="9" fill="#EEF9F1" stroke="#75B989" />
+  <text class="card-title" x="582.5" y="418" text-anchor="middle">Context runner</text>
+  <text class="detail" x="582.5" y="446" text-anchor="middle">AWS credentials bean</text>
+  <text class="detail" x="582.5" y="466" text-anchor="middle">emulator properties</text>
+
+  <rect class="card" x="825" y="222" width="240" height="116" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <text class="card-title" x="945" y="258" text-anchor="middle">OrderRepository</text>
+  <text class="detail" x="945" y="286" text-anchor="middle">coroutine CRUD</text>
+  <text class="detail" x="945" y="306" text-anchor="middle">table name orders</text>
+
+  <rect class="card" x="825" y="382" width="240" height="116" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="945" y="418" text-anchor="middle">Enhanced mapping</text>
+  <text class="detail" x="945" y="446" text-anchor="middle">DynamoDbBean Order</text>
+  <text class="detail" x="945" y="466" text-anchor="middle">id partition key</text>
+
+  <rect class="card" x="1160" y="260" width="180" height="128" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <text class="card-title" x="1250" y="296" text-anchor="middle">orders table</text>
+  <text class="detail" x="1250" y="324" text-anchor="middle">PAY_PER_REQUEST</text>
+  <text class="detail" x="1250" y="344" text-anchor="middle">String id key</text>
+  <text class="detail" x="1250" y="364" text-anchor="middle">status, description</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 340 289 L 435 289" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 730 280 L 825 280" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 1065 280 H 1120 Q 1132 280 1132 292 V 314 Q 1132 326 1144 326 H 1160" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+
+  <path class="soft-edge" d="M 582.5 338 L 582.5 382" stroke="#475569" marker-end="url(#arrow-slate)" />
+  <path class="soft-edge" d="M 945 338 L 945 382" stroke="#475569" marker-end="url(#arrow-slate)" />
+  <path class="soft-edge" d="M 340 431 H 435" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="soft-edge" d="M 730 440 L 825 440" stroke="#168E86" marker-end="url(#arrow-teal)" />
+  <path class="soft-edge" d="M 1065 440 H 1124 Q 1136 440 1136 428 V 388 Q 1136 376 1148 376 H 1160" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+</g>
+
+<g id="route-table">
+  <rect x="86" y="564" width="600" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="110" y="596">API contract</text>
+  <text class="detail" x="292" y="594">create UUID</text>
+  <text class="detail" x="440" y="594">find by id</text>
+  <text class="detail" x="572" y="594">delete</text>
+  <text class="tiny" x="110" y="620">Missing orders return 404; list returns a Flow scan result.</text>
+
+  <rect x="724" y="564" width="630" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="748" y="596">Verification</text>
+  <text class="detail" x="920" y="594">repository CRUD</text>
+  <text class="detail" x="1088" y="594">concurrent saves</text>
+  <text class="detail" x="1250" y="594">HTTP layer</text>
+  <text class="tiny" x="748" y="620">ApplicationContextRunner supplies emulator endpoint and credentials.</text>
+</g>
+
+<rect class="footer" x="54" y="652" width="1332" height="34" rx="8" />
+<text class="footer-title" x="74" y="672" dominant-baseline="middle">Reader cue</text>
+<text class="footer-detail" x="190" y="672" dominant-baseline="middle">Use this example to copy Spring Boot DynamoDB auto-configuration into a coroutine WebFlux CRUD service.</text>
+</svg>

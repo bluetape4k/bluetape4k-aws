@@ -1,0 +1,535 @@
+---
+schemaVersion: 1
+sourcePolicy: release-readme
+diagrams:
+- id: aws-exposed-architecture-01
+  canonical: aws-exposed-architecture-01
+  target: bluetape4k-aws-exposed
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-exposed.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-exposed.md
+  releaseReadmes:
+  - aws-exposed/README.ko.md
+  - aws-exposed/README.md
+- id: aws-exposed-flow-02
+  canonical: aws-exposed-flow-02
+  target: bluetape4k-aws-exposed
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-exposed.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-exposed.md
+  releaseReadmes:
+  - aws-exposed/README.ko.md
+  - aws-exposed/README.md
+- id: aws-exposed-sequence-03
+  canonical: aws-exposed-sequence-03
+  target: bluetape4k-aws-exposed
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-exposed.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-exposed.md
+  releaseReadmes:
+  - aws-exposed/README.ko.md
+  - aws-exposed/README.md
+- id: aws-java-architecture-01
+  canonical: aws-java-architecture-01
+  target: bluetape4k-aws-java
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-java.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-java.md
+  releaseReadmes:
+  - aws-java/README.ko.md
+  - aws-java/README.md
+- id: aws-java-flow-02
+  canonical: aws-java-flow-02
+  target: bluetape4k-aws-java
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-java.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-java.md
+  releaseReadmes:
+  - aws-java/README.ko.md
+  - aws-java/README.md
+- id: aws-java-sequence-03
+  canonical: aws-java-sequence-03
+  target: bluetape4k-aws-java
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-java.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-java.md
+  releaseReadmes:
+  - aws-java/README.ko.md
+  - aws-java/README.md
+- id: aws-kotlin-architecture-01
+  canonical: aws-kotlin-architecture-01
+  target: bluetape4k-aws-kotlin
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-kotlin.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-kotlin.md
+  releaseReadmes:
+  - aws-kotlin/README.ko.md
+  - aws-kotlin/README.md
+- id: aws-kotlin-flow-02
+  canonical: aws-kotlin-flow-02
+  target: bluetape4k-aws-kotlin
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-kotlin.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-kotlin.md
+  releaseReadmes:
+  - aws-kotlin/README.ko.md
+  - aws-kotlin/README.md
+- id: aws-kotlin-sequence-03
+  canonical: aws-kotlin-sequence-03
+  target: bluetape4k-aws-kotlin
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-kotlin.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-kotlin.md
+  releaseReadmes:
+  - aws-kotlin/README.ko.md
+  - aws-kotlin/README.md
+- id: aws-ktor-architecture-01
+  canonical: aws-ktor-architecture-01
+  target: bluetape4k-aws-ktor
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-ktor.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-ktor.md
+  releaseReadmes:
+  - aws-ktor/README.ko.md
+  - aws-ktor/README.md
+- id: aws-ktor-s3-access-grants-flow-01
+  canonical: aws-ktor-s3-access-grants-flow-01
+  target: bluetape4k-aws-ktor
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-ktor.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-ktor.md
+  releaseReadmes:
+  - aws-ktor/README.ko.md
+  - aws-ktor/README.md
+- id: aws-ktor-s3-advanced-architecture-01
+  canonical: aws-ktor-s3-advanced-architecture-01
+  target: bluetape4k-aws-ktor
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-ktor.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-ktor.md
+  releaseReadmes:
+  - aws-ktor/README.ko.md
+  - aws-ktor/README.md
+- id: aws-ktor-s3-advanced-sequence-01
+  canonical: aws-ktor-s3-advanced-sequence-01
+  target: bluetape4k-aws-ktor
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-ktor.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-ktor.md
+  releaseReadmes:
+  - aws-ktor/README.ko.md
+  - aws-ktor/README.md
+- id: aws-ktor-sequence-01
+  canonical: aws-ktor-sequence-01
+  target: bluetape4k-aws-ktor
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-ktor.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-ktor.md
+  releaseReadmes:
+  - aws-ktor/README.ko.md
+  - aws-ktor/README.md
+- id: aws-spring-boot-architecture-01
+  canonical: aws-spring-boot-architecture-01
+  target: bluetape4k-aws-spring-boot
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-spring-boot.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-spring-boot.md
+  releaseReadmes:
+  - aws-spring-boot/README.ko.md
+  - aws-spring-boot/README.md
+- id: aws-spring-boot-flow-02
+  canonical: aws-spring-boot-flow-02
+  target: bluetape4k-aws-spring-boot
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-spring-boot.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-spring-boot.md
+  releaseReadmes:
+  - aws-spring-boot/README.ko.md
+  - aws-spring-boot/README.md
+- id: aws-spring-boot-sequence-03
+  canonical: aws-spring-boot-sequence-03
+  target: bluetape4k-aws-spring-boot
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-spring-boot.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-spring-boot.md
+  releaseReadmes:
+  - aws-spring-boot/README.ko.md
+  - aws-spring-boot/README.md
+- id: bluetape4k-aws-architecture-01
+  canonical: bluetape4k-aws-architecture-01
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-architecture-02
+  canonical: bluetape4k-aws-architecture-02
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-architecture-03
+  canonical: bluetape4k-aws-architecture-03
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-cloudwatch-components-12
+  canonical: bluetape4k-aws-cloudwatch-components-12
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-cloudwatch-components-30
+  canonical: bluetape4k-aws-cloudwatch-components-30
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-cloudwatch-flow-13
+  canonical: bluetape4k-aws-cloudwatch-flow-13
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-cloudwatch-flow-31
+  canonical: bluetape4k-aws-cloudwatch-flow-31
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-components-04
+  canonical: bluetape4k-aws-components-04
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-dynamodb-components-10
+  canonical: bluetape4k-aws-dynamodb-components-10
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-dynamodb-components-28
+  canonical: bluetape4k-aws-dynamodb-components-28
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-dynamodb-flow-11
+  canonical: bluetape4k-aws-dynamodb-flow-11
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-dynamodb-flow-29
+  canonical: bluetape4k-aws-dynamodb-flow-29
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-env-sources-components-16
+  canonical: bluetape4k-aws-env-sources-components-16
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-env-sources-flow-17
+  canonical: bluetape4k-aws-env-sources-flow-17
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-imds-components-14
+  canonical: bluetape4k-aws-imds-components-14
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-imds-flow-15
+  canonical: bluetape4k-aws-imds-flow-15
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-kms-components-06
+  canonical: bluetape4k-aws-kms-components-06
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-kms-components-20
+  canonical: bluetape4k-aws-kms-components-20
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-kms-flow-07
+  canonical: bluetape4k-aws-kms-flow-07
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-kms-flow-21
+  canonical: bluetape4k-aws-kms-flow-21
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-s3-access-grants-components-08
+  canonical: bluetape4k-aws-s3-access-grants-components-08
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-s3-access-grants-flow-09
+  canonical: bluetape4k-aws-s3-access-grants-flow-09
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-s3-components-24
+  canonical: bluetape4k-aws-s3-components-24
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-s3-flow-25
+  canonical: bluetape4k-aws-s3-flow-25
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-service-coverage-chart-05
+  canonical: bluetape4k-aws-service-coverage-chart-05
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-sns-components-22
+  canonical: bluetape4k-aws-sns-components-22
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-sns-flow-23
+  canonical: bluetape4k-aws-sns-flow-23
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-sqs-components-18
+  canonical: bluetape4k-aws-sqs-components-18
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-sqs-components-26
+  canonical: bluetape4k-aws-sqs-components-26
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-sqs-flow-19
+  canonical: bluetape4k-aws-sqs-flow-19
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bluetape4k-aws-sqs-flow-27
+  canonical: bluetape4k-aws-sqs-flow-27
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: bom-architecture-01
+  canonical: bom-architecture-01
+  target: bluetape4k-aws-bom
+  manualPages:
+    en: docs/manual/en/modules/bluetape4k-aws-bom.md
+    ko: docs/manual/ko/modules/bluetape4k-aws-bom.md
+  releaseReadmes:
+  - bom/README.ko.md
+  - bom/README.md
+- id: examples-aws-ktor-dynamodb-examples-architecture-01
+  canonical: examples-aws-ktor-dynamodb-examples-architecture-01
+  target: aws-ktor-dynamodb-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-ktor-dynamodb-examples.md
+    ko: docs/manual/ko/modules/aws-ktor-dynamodb-examples.md
+  releaseReadmes:
+  - examples/aws-ktor-dynamodb-examples/README.ko.md
+  - examples/aws-ktor-dynamodb-examples/README.md
+- id: examples-aws-ktor-exposed-examples-architecture-01
+  canonical: examples-aws-ktor-exposed-examples-architecture-01
+  target: aws-ktor-exposed-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-ktor-exposed-examples.md
+    ko: docs/manual/ko/modules/aws-ktor-exposed-examples.md
+  releaseReadmes:
+  - examples/aws-ktor-exposed-examples/README.ko.md
+  - examples/aws-ktor-exposed-examples/README.md
+- id: examples-aws-ktor-s3-examples-architecture-01
+  canonical: examples-aws-ktor-s3-examples-architecture-01
+  target: aws-ktor-s3-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-ktor-s3-examples.md
+    ko: docs/manual/ko/modules/aws-ktor-s3-examples.md
+  releaseReadmes:
+  - examples/aws-ktor-s3-examples/README.ko.md
+  - examples/aws-ktor-s3-examples/README.md
+- id: examples-aws-ktor-sqs-examples-architecture-01
+  canonical: examples-aws-ktor-sqs-examples-architecture-01
+  target: aws-ktor-sqs-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-ktor-sqs-examples.md
+    ko: docs/manual/ko/modules/aws-ktor-sqs-examples.md
+  releaseReadmes:
+  - examples/aws-ktor-sqs-examples/README.ko.md
+  - examples/aws-ktor-sqs-examples/README.md
+- id: examples-aws-spring-boot-dynamodb-examples-architecture-01
+  canonical: examples-aws-spring-boot-dynamodb-examples-architecture-01
+  target: aws-spring-boot-dynamodb-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-spring-boot-dynamodb-examples.md
+    ko: docs/manual/ko/modules/aws-spring-boot-dynamodb-examples.md
+  releaseReadmes:
+  - examples/aws-spring-boot-dynamodb-examples/README.ko.md
+  - examples/aws-spring-boot-dynamodb-examples/README.md
+- id: examples-aws-spring-boot-exposed-examples-architecture-01
+  canonical: examples-aws-spring-boot-exposed-examples-architecture-01
+  target: aws-spring-boot-exposed-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-spring-boot-exposed-examples.md
+    ko: docs/manual/ko/modules/aws-spring-boot-exposed-examples.md
+  releaseReadmes:
+  - examples/aws-spring-boot-exposed-examples/README.ko.md
+  - examples/aws-spring-boot-exposed-examples/README.md
+- id: examples-aws-spring-boot-s3-examples-architecture-01
+  canonical: examples-aws-spring-boot-s3-examples-architecture-01
+  target: aws-spring-boot-s3-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-spring-boot-s3-examples.md
+    ko: docs/manual/ko/modules/aws-spring-boot-s3-examples.md
+  releaseReadmes:
+  - examples/aws-spring-boot-s3-examples/README.ko.md
+  - examples/aws-spring-boot-s3-examples/README.md
+- id: examples-aws-spring-boot-sqs-examples-architecture-01
+  canonical: examples-aws-spring-boot-sqs-examples-architecture-01
+  target: aws-spring-boot-sqs-examples
+  manualPages:
+    en: docs/manual/en/modules/aws-spring-boot-sqs-examples.md
+    ko: docs/manual/ko/modules/aws-spring-boot-sqs-examples.md
+  releaseReadmes:
+  - examples/aws-spring-boot-sqs-examples/README.ko.md
+  - examples/aws-spring-boot-sqs-examples/README.md
+- id: root-readme-module-chart-01
+  canonical: root-readme-module-chart-01
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md
+- id: root-readme-overview-01
+  canonical: root-readme-overview-01
+  target: overview
+  manualPages:
+    en: docs/manual/en/architecture/repository-map.md
+    ko: docs/manual/ko/architecture/repository-map.md
+  releaseReadmes:
+  - README.ko.md
+  - README.md

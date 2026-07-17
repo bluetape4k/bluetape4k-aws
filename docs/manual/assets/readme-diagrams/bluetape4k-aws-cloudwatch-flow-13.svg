@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-label="CloudWatch metrics logs and meter publishing flow">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20" /></filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" /></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" /></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" /></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" /></marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}.detail{font-size:13px}.tiny{font-size:11px}.chip{font-size:11px;fill:#243447}
+  .lane-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .lane-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .lane{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="708" rx="14" class="frame" />
+<text class="title" x="54" y="74">CloudWatch publish flow</text>
+<text class="subtitle" x="56" y="106">The example publishes one custom metric, one log-event batch, and one explicit Micrometer snapshot.</text>
+
+<g>
+  <rect x="994" y="57" width="112" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="chip" x="1050" y="70.5" text-anchor="middle" dominant-baseline="middle">Metric</text>
+  <rect x="1120" y="57" width="112" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978" />
+  <text class="chip" x="1176" y="70.5" text-anchor="middle" dominant-baseline="middle">Log</text>
+  <rect x="1246" y="57" width="124" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316" />
+  <text class="chip" x="1308" y="70.5" text-anchor="middle" dominant-baseline="middle">Meter</text>
+</g>
+
+<g id="lanes">
+  <rect class="lane" x="70" y="150" width="1300" height="150" rx="12" />
+  <text class="lane-title" x="96" y="188">Custom metric</text>
+  <text class="lane-detail" x="98" y="210">putMetricDatum uses the configured namespace unless a namespace is passed explicitly</text>
+  <rect class="lane" x="70" y="332" width="1300" height="150" rx="12" />
+  <text class="lane-title" x="96" y="370">Log event batch</text>
+  <text class="lane-detail" x="98" y="392">putLogEvents uses the configured group and stream for default publishing</text>
+  <rect class="lane" x="70" y="514" width="1300" height="150" rx="12" />
+  <text class="lane-title" x="96" y="552">Meter snapshot</text>
+  <text class="lane-detail" x="98" y="574">publishMeter reads the existing registry and sends finite measurements as metric data</text>
+</g>
+
+<g id="cards">
+  <rect class="card" x="152" y="222" width="210" height="58" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="257" y="246" text-anchor="middle">metricDatumOf</text>
+  <text class="detail" x="257" y="266" text-anchor="middle">OrderProcessed</text>
+  <rect class="card" x="472" y="222" width="210" height="58" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="577" y="246" text-anchor="middle">Metric ops</text>
+  <text class="detail" x="577" y="266" text-anchor="middle">batch size limit</text>
+  <rect class="card" x="792" y="222" width="210" height="58" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <image data-bluetape4k-icon="aws.cloudwatch" x="806" y="238" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tQ2xvdWRXYXRjaF8zMjwvdGl0bGU+CiAgICA8ZyBpZD0iSWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tQ2xvdWRXYXRjaF8zMiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9Ikljb24tQXJjaGl0ZWN0dXJlLUJHLzMyL01hbmFnZW1lbnQtR292ZXJuYW5jZSIgZmlsbD0iI0U3MTU3QiI+CiAgICAgICAgICAgIDxyZWN0IGlkPSJSZWN0YW5nbGUiIHg9IjAiIHk9IjAiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PC9yZWN0PgogICAgICAgIDwvZz4KICAgICAgICA8cGF0aCBkPSJNMjcuNjI5OTg0NCwyNC4xMjQzNDE5IEMyNy42Mjk5ODQ0LDIyLjIyMDc5NDggMjYuMDQ5OTA0NiwyMC42NzIzMTM1IDI0LjEwNzUxMzQsMjAuNjcyMzEzNSBDMjIuMTY1MTIyMywyMC42NzIzMTM1IDIwLjU4NTA0MjUsMjIuMjIwNzk0OCAyMC41ODUwNDI1LDI0LjEyNDM0MTkgQzIwLjU4NTA0MjUsMjYuMDI3ODg5IDIyLjE2NTEyMjMsMjcuNTc2MzcwMyAyNC4xMDc1MTM0LDI3LjU3NjM3MDMgQzI2LjA0OTkwNDYsMjcuNTc2MzcwMyAyNy42Mjk5ODQ0LDI2LjAyNzg4OSAyNy42Mjk5ODQ0LDI0LjEyNDM0MTkgTDI3LjYyOTk4NDQsMjQuMTI0MzQxOSBaIE0yOC42MzY0MDQ3LDI0LjEyNDM0MTkgQzI4LjYzNjQwNDcsMjYuNTcxMzM2OSAyNi42MDQ0NDIxLDI4LjU2MjY2NDEgMjQuMTA3NTEzNCwyOC41NjI2NjQxIEMyMS42MTA1ODQ4LDI4LjU2MjY2NDEgMTkuNTc4NjIyMiwyNi41NzEzMzY5IDE5LjU3ODYyMjIsMjQuMTI0MzQxOSBDMTkuNTc4NjIyMiwyMS42NzczNDY5IDIxLjYxMDU4NDgsMTkuNjg2MDE5NyAyNC4xMDc1MTM0LDE5LjY4NjAxOTcgQzI2LjYwNDQ0MjEsMTkuNjg2MDE5NyAyOC42MzY0MDQ3LDIxLjY3NzM0NjkgMjguNjM2NDA0NywyNC4xMjQzNDE5IEwyOC42MzY0MDQ3LDI0LjEyNDM0MTkgWiBNMzIuOTExNjc3OSwzMC43MDI5MjE3IEwyOS41MjUwNzM3LDI3LjcxMzQ2NTEgQzI5LjIzNjIzMTEsMjguMTMwNjY3NCAyOC44OTUwNTQ3LDI4LjUwNjQ0NTMgMjguNTE2NjQwNiwyOC44NDU3MzA0IEwzMS44ODQxMjI5LDMxLjgyMjM2NTIgQzMyLjIwMDEzODgsMzIuMDk5NTEzNyAzMi42ODYyMzk4LDMyLjA3Mzg3MDEgMzIuOTY5MDQzOSwzMS43NjYxNDY0IEMzMy4yNTA4NDE2LDMxLjQ1OTQwOSAzMy4yMjU2ODExLDMwLjk4MTA1NjUgMzIuOTExNjc3OSwzMC43MDI5MjE3IEwzMi45MTE2Nzc5LDMwLjcwMjkyMTcgWiBNMjQuMTA3NTEzNCwyOS41NDg5NTc5IEMyNy4xNTg5Nzk3LDI5LjU0ODk1NzkgMjkuNjQyODI0OSwyNy4xMTU3NzExIDI5LjY0MjgyNDksMjQuMTI0MzQxOSBDMjkuNjQyODI0OSwyMS4xMzI5MTI3IDI3LjE1ODk3OTcsMTguNjk5NzI1OSAyNC4xMDc1MTM0LDE4LjY5OTcyNTkgQzIxLjA1NjA0NzIsMTguNjk5NzI1OSAxOC41NzIyMDIsMjEuMTMyOTEyNyAxOC41NzIyMDIsMjQuMTI0MzQxOSBDMTguNTcyMjAyLDI3LjExNTc3MTEgMjEuMDU2MDQ3MiwyOS41NDg5NTc5IDI0LjEwNzUxMzQsMjkuNTQ4OTU3OSBMMjQuMTA3NTEzNCwyOS41NDg5NTc5IFogTTMzLjU4NTk3OTUsMjkuOTcxMDkxNyBDMzQuMzEwNjAyMSwzMC42MTMxNjg5IDM0LjM2ODk3NDUsMzEuNzEzODcyOSAzMy43MTY4MTQyLDMyLjQyNTk3NyBDMzMuMzY1NTczNSwzMi44MDY2ODY0IDMyLjg4MjQ5MTgsMzMgMzIuMzk2MzkwOCwzMyBDMzEuOTcyNjg3OCwzMyAzMS41NDg5ODQ5LDMyLjg1MzA0MjIgMzEuMjEwODI3NywzMi41NTUxODE1IEwyNy43MTY1MzY1LDI5LjQ2NjEwOTIgQzI2LjY4MDkzMDEsMzAuMTQwNzM0MiAyNS40NDEwMjAzLDMwLjUzNTI1MTcgMjQuMTA3NTEzNCwzMC41MzUyNTE3IEMyMC41MDA1MDMyLDMwLjUzNTI1MTcgMTcuNTY1NzgxNywyNy42NTkyMTg5IDE3LjU2NTc4MTcsMjQuMTI0MzQxOSBDMTcuNTY1NzgxNywyMC41ODk0NjQ4IDIwLjUwMDUwMzIsMTcuNzEzNDMyIDI0LjEwNzUxMzQsMTcuNzEzNDMyIEMyNy43MTQ1MjM3LDE3LjcxMzQzMiAzMC42NDkyNDUyLDIwLjU4OTQ2NDggMzAuNjQ5MjQ1MiwyNC4xMjQzNDE5IEMzMC42NDkyNDUyLDI1LjA5MTg5NjEgMzAuNDIyODAwNiwyNi4wMDcxNzY4IDMwLjAyOTI5MDMsMjYuODMwNzMyMSBMMzMuNTg1OTc5NSwyOS45NzEwOTE3IFogTTEwLjU5MjI5NTcsMjQuNjE3NDg4OCBMMTUuNTUyOTQxMiwyNC42MTc0ODg4IEwxNS41NTI5NDEyLDI1LjYwMzc4MjYgTDEwLjU4NjI1NzIsMjUuNjAzNzgyNiBDMTAuMDI4NzAwMywyNS41OTc4NjQ5IDkuNDI5ODgwMjcsMjUuMzk3NjQ3MiA4Ljc5OTg2MTE4LDI1LjAwODA2MTEgQzcuNzU2MjAzMzcsMjQuMzczODc0MiA2LDIyLjg4MDYyNTQgNiwyMC4wMzUxNjc3IEM2LDE2LjU5MzAwMjIgOC40MTAzNzY1NCwxNS4zMjg1NzM2IDkuODEyMzE5OTcsMTQuODg0NzQxMyBDOS44MDEyNDkzNSwxNC43MjIwMDI5IDkuNzk2MjE3MjUsMTQuNTU3MjkxOCA5Ljc5NjIxNzI1LDE0LjM5MjU4MDcgQzkuNzk2MjE3MjUsMTEuNTg4NTQ3NCAxMS43Mzc2MDE5LDguNjc4OTgwNjEgMTQuMzExMDE4Niw3LjYyNzU5MTM5IEMxNy4zMjQyNDA4LDYuMzkwNzc4OTQgMjAuNTEzNTg2Nyw3LjAwNTIzOTk5IDIyLjg0MjQ0MzIsOS4yNjU4MjU0NCBDMjMuNTcxMDkxNCw5Ljk3Mjk5ODExIDI0LjE2OTkxMTUsMTAuODMyMDYgMjQuNjI3ODMyNywxMS44MjkyMDMxIEMyNS4yNDE3NDkxLDExLjMyMjI0ODEgMjYuMDAyNjAyOCwxMS4wNDIxNDA2IDI2LjgwNDcxOTgsMTEuMDQyMTQwNiBDMjguMzY1Njc3NiwxMS4wNDIxNDA2IDMwLjEyMzg5MzgsMTIuMjA2OTUzNiAzMC40MzA4NTIsMTQuNzU0NTUwNiBDMzEuODg3MTQyMSwxNS4wODEwMTM4IDM1LDE2LjIzMDA0NjEgMzUsMjAuMDc1NjA1NyBDMzUsMjEuNzI3NjQ3OSAzNC40MzMzODU0LDIzLjA2NTA2MjMgMzMuMzEzMjM5NiwyNC4wNDc0MTEgTDMyLjY0MDk1MDksMjMuMzEzNjA4NCBDMzMuNTM4Njc3OCwyMi41MjU1NTk2IDMzLjk5MzU3OTcsMjEuNDM1NzA0OSAzMy45OTM1Nzk3LDIwLjA3NTYwNTcgQzMzLjk5MzU3OTcsMTYuNjkzNjA0MiAzMS4xMDYxNiwxNS44NTMyODE5IDI5Ljg2NDIzNzQsMTUuNjQ5MTE5MSBDMjkuNzI5Mzc3MSwxNS42Mjc0MjA2IDI5LjYxMDYxOTUsMTUuNTUyNDYyMyAyOS41MzMxMjUxLDE1LjQ0MTk5NzQgQzI5LjQ1NDYyNDMsMTUuMzMxNTMyNCAyOS40Mjc0NTEsMTUuMTk1NDIzOSAyOS40NTM2MTc5LDE1LjA2NDI0NjggQzI5LjMwNjY4MDUsMTIuOTkwMDcwOSAyOC4wMTY0NDk4LDEyLjAyODQzNDQgMjYuODA0NzE5OCwxMi4wMjg0MzQ0IEMyNi4wNDc4OTE3LDEyLjAyODQzNDQgMjUuMzM4MzY1NCwxMi4zODk0MTggMjQuODU3Mjk2NSwxMy4wMTg2NzM0IEMyNC43NDc1OTY3LDEzLjE2NDY0NDkgMjQuNTYyNDE1NCwxMy4yMzU2NTgxIDI0LjM4MDI1MzMsMTMuMjExOTg3IEMyNC4xOTgwOTEzLDEzLjE4NTM1NzEgMjQuMDQ0MTA5LDEzLjA2MjA3MDQgMjMuOTgxNzEwOSwxMi44OTE0NDE1IEMyMy41NDg5NTAyLDExLjcxOTcyNDUgMjIuOTI3OTg4OSwxMC43MzYzODk1IDIyLjEzNDkyOTcsOS45NjcwODAzNCBDMjAuMTAyOTY3Miw3Ljk5NDQ5MjcgMTcuMzIzMjM0NCw3LjQ1ODkzNTE1IDE0LjY5ODQ5MDQsOC41Mzc5NDA1OSBDMTIuNTEzNTUyLDkuNDMwNTM2NSAxMC44MDI2Mzc1LDEyLjAwMTgwNDUgMTAuODAyNjM3NSwxNC4zOTI1ODA3IEMxMC44MDI2Mzc1LDE0LjY2MDg1MjYgMTAuODE4NzQwMiwxNC45MjkxMjQ2IDEwLjg1MDk0NTcsMTUuMTg2NTQ3MyBDMTAuODY5MDYxMywxNS4zMjY2MDEgMTAuODI0Nzc4OCwxNS40Njc2NDEgMTAuNzI5MTY4OCwxNS41NzQxNjA3IEMxMC42NTI2ODA5LDE1LjY1ODk4MiAxMC41NTAwMjYsMTUuNzE0MjE0NSAxMC40MzgzMTM0LDE1LjczMzk0MDMgQzkuMTQyMDQ0MDcsMTYuMDYxMzg5OSA3LjAwNjQyMDI3LDE3LjA1MzYwMTUgNy4wMDY0MjAyNywyMC4wMzUxNjc3IEM3LjAwNjQyMDI3LDIyLjI4NDkwMzkgOC4yNzI0OTY5NiwyMy41MjY2NDc4IDkuMzMzMjYzOTMsMjQuMTcyNjcwMyBDOS44MDYyODE0NSwyNC40NjQ2MTMzIDEwLjIyODk3OCwyNC42MTM1NDM2IDEwLjU5MjI5NTcsMjQuNjE3NDg4OCBMMTAuNTkyMjk1NywyNC42MTc0ODg4IFoiIGlkPSJBbWF6b24tQ2xvdWRXYXRjaF9JY29uXzMyX1NxdWlkIiBmaWxsPSIjRkZGRkZGIj48L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="903.8" y="246" text-anchor="middle">CloudWatch</text>
+  <text class="detail" x="897" y="266" text-anchor="middle">custom metric</text>
+  <rect class="card" x="1112" y="222" width="180" height="58" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <text class="card-title" x="1202" y="246" text-anchor="middle">Response</text>
+  <text class="detail" x="1202" y="266" text-anchor="middle">SDK result</text>
+
+  <rect class="card" x="152" y="404" width="210" height="58" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <text class="card-title" x="257" y="428" text-anchor="middle">inputLogEventOf</text>
+  <text class="detail" x="257" y="448" text-anchor="middle">timestamp + message</text>
+  <rect class="card" x="472" y="404" width="210" height="58" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="577" y="428" text-anchor="middle">Logs ops</text>
+  <text class="detail" x="577" y="448" text-anchor="middle">batch size limit</text>
+  <rect class="card" x="792" y="404" width="210" height="58" rx="9" fill="#FFF4E6" stroke="#F59E0B" />
+  <text class="card-title" x="897" y="428" text-anchor="middle">Logs stream</text>
+  <text class="detail" x="897" y="448" text-anchor="middle">event batch</text>
+  <rect class="card" x="1112" y="404" width="180" height="58" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <text class="card-title" x="1202" y="428" text-anchor="middle">Response</text>
+  <text class="detail" x="1202" y="448" text-anchor="middle">SDK result</text>
+
+  <rect class="card" x="284" y="586" width="220" height="58" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <text class="card-title" x="394" y="610" text-anchor="middle">MeterRegistry</text>
+  <text class="detail" x="394" y="630" text-anchor="middle">measurements</text>
+  <rect class="card" x="610" y="586" width="220" height="58" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="720" y="610" text-anchor="middle">Metric data</text>
+  <text class="detail" x="720" y="630" text-anchor="middle">finite values</text>
+  <rect class="card" x="936" y="586" width="220" height="58" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <text class="card-title" x="1046" y="610" text-anchor="middle">Metric ops</text>
+  <text class="detail" x="1046" y="630" text-anchor="middle">CloudWatch path</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 362 251 L 472 251" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 682 251 L 792 251" stroke="#168E86" marker-end="url(#arrow-teal)" />
+  <path class="edge" d="M 1002 251 L 1112 251" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+  <path class="edge" d="M 362 433 L 472 433" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 682 433 L 792 433" stroke="#168E86" marker-end="url(#arrow-teal)" />
+  <path class="edge" d="M 1002 433 L 1112 433" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+  <path class="edge" d="M 504 615 L 610 615" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+  <path class="edge" d="M 830 615 L 936 615" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+</g>
+
+<rect class="footer" x="54" y="704" width="1332" height="30" rx="8" />
+<text class="footer-title" x="74" y="721" dominant-baseline="middle">Outcome</text>
+<text class="footer-detail" x="176" y="721" dominant-baseline="middle">Publishing is explicit: no scheduled meter drain or implicit log-stream creation is hidden in the helper.</text>
+</svg>

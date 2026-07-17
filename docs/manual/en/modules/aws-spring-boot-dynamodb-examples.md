@@ -74,6 +74,19 @@ Compare the Ktor DynamoDB workshop for explicit plugin setup, then add condition
 
 The workshop uses a single-key table and scan. It does not cover indexes, transactions, optimistic concurrency, production capacity, IAM, or schema migration.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### aws spring boot dynamodb examples Architecture diagram
+
+[![aws spring boot dynamodb examples Architecture diagram](../../assets/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.svg)
+
+_Release README: [`examples/aws-spring-boot-dynamodb-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-dynamodb-examples/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Application and controller](../../../../examples/aws-spring-boot-dynamodb-examples/src/main/kotlin/io/bluetape4k/aws/examples/spring/dynamodb/OrderController.kt)

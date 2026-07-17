@@ -74,6 +74,19 @@ Continue to the Spring Boot SQS/SNS workshop for annotations, typed payloads, fa
 
 The in-memory received-message store is for inspection only. The workshop does not prove production throughput, native redrive policy behavior, IAM, tracing export, or exactly-once processing.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### aws ktor sqs examples Architecture diagram
+
+[![aws ktor sqs examples Architecture diagram](../../assets/readme-diagrams/examples-aws-ktor-sqs-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-ktor-sqs-examples-architecture-01.svg)
+
+_Release README: [`examples/aws-ktor-sqs-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-ktor-sqs-examples/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Consumer and routes](../../../../examples/aws-ktor-sqs-examples/src/main/kotlin/io/bluetape4k/aws/examples/ktor/sqs/SqsExampleRoutes.kt)

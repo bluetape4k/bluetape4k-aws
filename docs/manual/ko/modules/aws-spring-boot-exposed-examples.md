@@ -74,6 +74,19 @@ Ktor Exposed 워크숍에서 plugin transaction을 비교하고, repository와 t
 
 AWS 설정 service나 RDS IAM을 직접 호출하지 않는다. TLS, migration tool, credential rotation과 운영 pool 크기도 증명하지 않는다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS spring boot exposed examples 아키텍처
+
+[![Bluetape4k AWS spring boot exposed examples 아키텍처](../../assets/readme-diagrams/examples-aws-spring-boot-exposed-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-spring-boot-exposed-examples-architecture-01.svg)
+
+_배포본 README: [`examples/aws-spring-boot-exposed-examples/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-exposed-examples/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 소스 {#sources}
 
 - [Controller](../../../../examples/aws-spring-boot-exposed-examples/src/main/kotlin/io/bluetape4k/aws/examples/spring/exposed/OrderController.kt)

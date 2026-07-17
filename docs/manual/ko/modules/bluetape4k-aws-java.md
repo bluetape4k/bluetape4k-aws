@@ -89,6 +89,31 @@ endpoint override와 테스트용 고정 자격 증명으로 Floci를 먼저 사
 
 이 artifact는 모든 AWS 서비스 SDK를 런타임에 끌어오지 않습니다. coroutine helper를 사용해도 동기 클라이언트가 비동기 클라이언트로 바뀌지는 않습니다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS Java 아키텍처
+
+[![Bluetape4k AWS Java 아키텍처](../../assets/readme-diagrams/aws-java-architecture-01.png)](../../assets/readme-diagrams/aws-java-architecture-01.svg)
+
+_배포본 README: [`aws-java/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-java/README.ko.md)_
+
+### Bluetape4k AWS Java operation 처리 흐름
+
+[![Bluetape4k AWS Java operation 처리 흐름](../../assets/readme-diagrams/aws-java-flow-02.png)](../../assets/readme-diagrams/aws-java-flow-02.svg)
+
+_배포본 README: [`aws-java/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-java/README.ko.md)_
+
+### Bluetape4k AWS Java coroutine 시퀀스 다이어그램
+
+[![Bluetape4k AWS Java coroutine 시퀀스 다이어그램](../../assets/readme-diagrams/aws-java-sequence-03.png)](../../assets/readme-diagrams/aws-java-sequence-03.svg)
+
+_배포본 README: [`aws-java/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-java/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 자료 {#sources}
 
 - [릴리스 소스: `aws-java/src/main/kotlin/io/bluetape4k/aws/s3/S3AsyncClientCoroutinesExtensions.kt`](../../../../aws-java/src/main/kotlin/io/bluetape4k/aws/s3/S3AsyncClientCoroutinesExtensions.kt)

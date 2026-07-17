@@ -74,6 +74,19 @@ Compare the Ktor Exposed workshop for plugin-managed transactions, then continue
 
 The test does not call AWS configuration services or RDS IAM and does not prove TLS, migration tooling, credential rotation, or production pool sizing.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### aws spring boot exposed examples Architecture diagram
+
+[![aws spring boot exposed examples Architecture diagram](../../assets/readme-diagrams/examples-aws-spring-boot-exposed-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-spring-boot-exposed-examples-architecture-01.svg)
+
+_Release README: [`examples/aws-spring-boot-exposed-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-exposed-examples/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Controller](../../../../examples/aws-spring-boot-exposed-examples/src/main/kotlin/io/bluetape4k/aws/examples/spring/exposed/OrderController.kt)

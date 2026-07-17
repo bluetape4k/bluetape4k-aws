@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-label="EC2 IMDS metadata read flow">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20" /></filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" /></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" /></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" /></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" /></marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}.detail{font-size:13px}.tiny{font-size:11px}.chip{font-size:11px;fill:#243447}
+  .lane-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .lane-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .lane{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="708" rx="14" class="frame" />
+<text class="title" x="54" y="74">EC2 IMDS metadata flow</text>
+<text class="subtitle" x="56" y="106">Setup is passive; metadata is fetched only inside a timeout-bounded operation call.</text>
+
+<g>
+  <rect x="960" y="57" width="124" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="chip" x="1022" y="70.5" text-anchor="middle" dominant-baseline="middle">Setup</text>
+  <rect x="1100" y="57" width="124" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978" />
+  <text class="chip" x="1162" y="70.5" text-anchor="middle" dominant-baseline="middle">Read</text>
+  <rect x="1240" y="57" width="130" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316" />
+  <text class="chip" x="1305" y="70.5" text-anchor="middle" dominant-baseline="middle">Boundary</text>
+</g>
+
+<g id="lanes">
+  <rect class="lane" x="70" y="150" width="1300" height="145" rx="12" />
+  <text class="lane-title" x="96" y="188">Install or auto-configure</text>
+  <text class="lane-detail" x="98" y="210">Spring bean creation and Ktor plugin installation prepare a facade without metadata reads</text>
+  <rect class="lane" x="70" y="324" width="1300" height="145" rx="12" />
+  <text class="lane-title" x="96" y="362">Metadata operation</text>
+  <text class="lane-detail" x="98" y="384">Helpers call IMDS only after application code invokes get, getList, instanceId, region, or availabilityZone</text>
+  <rect class="lane" x="70" y="498" width="1300" height="145" rx="12" />
+  <text class="lane-title" x="96" y="536">IAM role boundary</text>
+  <text class="lane-detail" x="98" y="558">The helper can list attached role names but intentionally avoids temporary credential documents</text>
+</g>
+
+<g id="cards">
+  <rect class="card" x="150" y="218" width="210" height="56" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <image data-bluetape4k-icon="framework.ktor" x="160" y="236" width="20" height="20" href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMDg3Q0ZBIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+S3RvcjwvdGl0bGU+PHBhdGggZD0iTTggMCAwIDhsOCA4VjhoOHptOCA4djhIOGw4IDggOC04eiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="267.1" y="241" text-anchor="middle">Spring / Ktor</text>
+  <text class="detail" x="255" y="260" text-anchor="middle">configure facade</text>
+  <rect class="card" x="470" y="218" width="210" height="56" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <text class="card-title" x="575" y="241" text-anchor="middle">Client ready</text>
+  <text class="detail" x="575" y="260" text-anchor="middle">injected or created</text>
+  <rect class="card" x="790" y="218" width="210" height="56" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="895" y="241" text-anchor="middle">No metadata call</text>
+  <text class="detail" x="895" y="260" text-anchor="middle">startup remains passive</text>
+  <rect class="card" x="1110" y="218" width="180" height="56" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <text class="card-title" x="1140" y="241">Ready state</text>
+  <text class="detail" x="1140" y="260">operations stored</text>
+
+  <rect class="card" x="150" y="392" width="210" height="56" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <text class="card-title" x="255" y="415" text-anchor="middle">Application call</text>
+  <text class="detail" x="255" y="434" text-anchor="middle">instanceId / region</text>
+  <rect class="card" x="470" y="392" width="210" height="56" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <text class="card-title" x="575" y="415" text-anchor="middle">Normalize path</text>
+  <text class="detail" x="575" y="434" text-anchor="middle">leading slash added</text>
+  <rect class="card" x="790" y="392" width="210" height="56" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="895" y="415" text-anchor="middle">Timeout call</text>
+  <text class="detail" x="895" y="434" text-anchor="middle">SDK async get</text>
+  <rect class="card" x="1110" y="392" width="180" height="56" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <image data-bluetape4k-icon="aws.ec2" x="1120" y="410" width="20" height="20" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tRUMyXzMyPC90aXRsZT4KICAgIDxnIGlkPSJJY29uLUFyY2hpdGVjdHVyZS8zMi9BcmNoX0FtYXpvbi1FQzJfMzIiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSJJY29uLUFyY2hpdGVjdHVyZS1CRy8zMi9Db21wdXRlIiBmaWxsPSIjRUQ3MTAwIj4KICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZSIgeD0iMCIgeT0iMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIj48L3JlY3Q+CiAgICAgICAgPC9nPgogICAgICAgIDxwYXRoIGQ9Ik0yNi4wNTIsMjcgTDI2LDEzLjk0OCBMMTMsMTQgTDEzLDI3LjA1MiBMMjYuMDUyLDI3IFogTTI3LDE0IEwyOSwxNCBMMjksMTUgTDI3LDE1IEwyNywxNyBMMjksMTcgTDI5LDE4IEwyNywxOCBMMjcsMjAgTDI5LDIwIEwyOSwyMSBMMjcsMjEgTDI3LDIzIEwyOSwyMyBMMjksMjQgTDI3LDI0IEwyNywyNiBMMjksMjYgTDI5LDI3IEwyNywyNyBMMjcsMjcuMDUyIEMyNywyNy41NzUgMjYuNTc0LDI4IDI2LjA1MiwyOCBMMjYsMjggTDI2LDMwIEwyNSwzMCBMMjUsMjggTDIzLDI4IEwyMywzMCBMMjIsMzAgTDIyLDI4IEwyMCwyOCBMMjAsMzAgTDE5LDMwIEwxOSwyOCBMMTcsMjggTDE3LDMwIEwxNiwzMCBMMTYsMjggTDE0LDI4IEwxNCwzMCBMMTMsMzAgTDEzLDI4IEwxMi45NDgsMjggQzEyLjQyNiwyOCAxMiwyNy41NzUgMTIsMjcuMDUyIEwxMiwyNyBMMTAsMjcgTDEwLDI2IEwxMiwyNiBMMTIsMjQgTDEwLDI0IEwxMCwyMyBMMTIsMjMgTDEyLDIxIEwxMCwyMSBMMTAsMjAgTDEyLDIwIEwxMiwxOCBMMTAsMTggTDEwLDE3IEwxMiwxNyBMMTIsMTUgTDEwLDE1IEwxMCwxNCBMMTIsMTQgTDEyLDEzLjk0OCBDMTIsMTMuNDI1IDEyLjQyNiwxMyAxMi45NDgsMTMgTDEzLDEzIEwxMywxMSBMMTQsMTEgTDE0LDEzIEwxNiwxMyBMMTYsMTEgTDE3LDExIEwxNywxMyBMMTksMTMgTDE5LDExIEwyMCwxMSBMMjAsMTMgTDIyLDEzIEwyMiwxMSBMMjMsMTEgTDIzLDEzIEwyNSwxMyBMMjUsMTEgTDI2LDExIEwyNiwxMyBMMjYuMDUyLDEzIEMyNi41NzQsMTMgMjcsMTMuNDI1IDI3LDEzLjk0OCBMMjcsMTQgWiBNMjEsMzMgTDcsMzMgTDcsMTkgTDksMTkgTDksMTggTDcuMDYyLDE4IEM2LjQ3NywxOCA2LDE4LjQ3NyA2LDE5LjA2MiBMNiwzMi45MzggQzYsMzMuNTIzIDYuNDc3LDM0IDcuMDYyLDM0IEwyMC45MzksMzQgQzIxLjUyNCwzNCAyMiwzMy41MjMgMjIsMzIuOTM4IEwyMiwzMSBMMjEsMzEgTDIxLDMzIFogTTM0LDcuMDYyIEwzNCwyMC45MzggQzM0LDIxLjUyMyAzMy41MjQsMjIgMzIuOTM5LDIyIEwzMCwyMiBMMzAsMjEgTDMzLDIxIEwzMyw3IEwxOSw3IEwxOSwxMCBMMTgsMTAgTDE4LDcuMDYyIEMxOCw2LjQ3NyAxOC40NzcsNiAxOS4wNjIsNiBMMzIuOTM5LDYgQzMzLjUyNCw2IDM0LDYuNDc3IDM0LDcuMDYyIEwzNCw3LjA2MiBaIiBpZD0iQW1hem9uLUVDMl9JY29uXzMyX1NxdWlkIiBmaWxsPSIjRkZGRkZGIj48L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="1200" y="415" text-anchor="middle">IMDS result</text>
+  <text class="detail" x="1200" y="434" text-anchor="middle">string or list</text>
+
+  <rect class="card" x="260" y="566" width="240" height="56" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <text class="card-title" x="380" y="589" text-anchor="middle">iamRoleNames</text>
+  <text class="detail" x="380" y="608" text-anchor="middle">security-credentials path</text>
+  <rect class="card" x="610" y="566" width="240" height="56" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="730" y="589" text-anchor="middle">Role list only</text>
+  <text class="detail" x="730" y="608" text-anchor="middle">line-separated names</text>
+  <rect class="card" x="960" y="566" width="240" height="56" rx="9" fill="#FFF4E6" stroke="#F59E0B" />
+  <text class="card-title" x="1080" y="589" text-anchor="middle">Credentials stay out</text>
+  <text class="detail" x="1080" y="608" text-anchor="middle">use SDK providers</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 360 246 L 470 246" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 680 246 L 790 246" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 1000 246 L 1110 246" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+  <path class="edge" d="M 360 420 L 470 420" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 680 420 L 790 420" stroke="#168E86" marker-end="url(#arrow-teal)" />
+  <path class="edge" d="M 1000 420 L 1110 420" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 500 594 L 610 594" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 850 594 L 960 594" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+</g>
+
+<rect class="footer" x="54" y="704" width="1332" height="30" rx="8" />
+<text class="footer-title" x="74" y="721" dominant-baseline="middle">Outcome</text>
+<text class="footer-detail" x="176" y="721" dominant-baseline="middle">Metadata reads are explicit, timeout-bounded, and narrower than AWS credential resolution.</text>
+</svg>
