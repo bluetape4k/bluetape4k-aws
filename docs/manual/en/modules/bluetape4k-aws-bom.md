@@ -87,6 +87,19 @@ Start with the central platform, choose one library, add one service SDK, and th
 
 This BOM does not add AWS SDK service jars, create clients, or configure credentials.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### bom Architecture diagram
+
+[![bom Architecture diagram](../../assets/readme-diagrams/bom-architecture-01.png)](../../assets/readme-diagrams/bom-architecture-01.svg)
+
+_Release README: [`bom/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/bom/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Release source: `bom/build.gradle.kts`](../../../../bom/build.gradle.kts)

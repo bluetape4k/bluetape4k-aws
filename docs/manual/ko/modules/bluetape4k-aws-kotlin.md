@@ -86,6 +86,31 @@ S3 요청 빌더부터 시작해 DynamoDB 모델 변환을 익힌 뒤 Kinesis �
 
 Java SDK v2 호환 wrapper가 아니므로 타입과 서비스 지원 범위가 다를 수 있습니다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS Kotlin 아키텍처
+
+[![Bluetape4k AWS Kotlin 아키텍처](../../assets/readme-diagrams/aws-kotlin-architecture-01.png)](../../assets/readme-diagrams/aws-kotlin-architecture-01.svg)
+
+_배포본 README: [`aws-kotlin/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-kotlin/README.ko.md)_
+
+### Bluetape4k AWS Kotlin operation 처리 흐름
+
+[![Bluetape4k AWS Kotlin operation 처리 흐름](../../assets/readme-diagrams/aws-kotlin-flow-02.png)](../../assets/readme-diagrams/aws-kotlin-flow-02.svg)
+
+_배포본 README: [`aws-kotlin/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-kotlin/README.ko.md)_
+
+### Bluetape4k AWS Kotlin client 수명 주기 시퀀스 다이어그램
+
+[![Bluetape4k AWS Kotlin client 수명 주기 시퀀스 다이어그램](../../assets/readme-diagrams/aws-kotlin-sequence-03.png)](../../assets/readme-diagrams/aws-kotlin-sequence-03.svg)
+
+_배포본 README: [`aws-kotlin/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-kotlin/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 자료 {#sources}
 
 - [릴리스 소스: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/s3/S3ClientSupport.kt`](../../../../aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/s3/S3ClientSupport.kt)

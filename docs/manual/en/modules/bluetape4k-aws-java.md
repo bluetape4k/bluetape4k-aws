@@ -87,6 +87,31 @@ Read `client-lifecycle`, then `sync-async-coroutines`, then `service-patterns`; 
 
 The artifact does not bring every AWS service SDK at runtime. Coroutine helpers do not turn synchronous clients into non-blocking clients.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### AWS Java architecture diagram
+
+[![AWS Java architecture diagram](../../assets/readme-diagrams/aws-java-architecture-01.png)](../../assets/readme-diagrams/aws-java-architecture-01.svg)
+
+_Release README: [`aws-java/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-java/README.md)_
+
+### AWS Java operation flow diagram
+
+[![AWS Java operation flow diagram](../../assets/readme-diagrams/aws-java-flow-02.png)](../../assets/readme-diagrams/aws-java-flow-02.svg)
+
+_Release README: [`aws-java/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-java/README.md)_
+
+### AWS Java coroutine sequence diagram
+
+[![AWS Java coroutine sequence diagram](../../assets/readme-diagrams/aws-java-sequence-03.png)](../../assets/readme-diagrams/aws-java-sequence-03.svg)
+
+_Release README: [`aws-java/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-java/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Release source: `aws-java/src/main/kotlin/io/bluetape4k/aws/s3/S3AsyncClientCoroutinesExtensions.kt`](../../../../aws-java/src/main/kotlin/io/bluetape4k/aws/s3/S3AsyncClientCoroutinesExtensions.kt)

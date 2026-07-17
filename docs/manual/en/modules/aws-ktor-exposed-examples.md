@@ -73,6 +73,19 @@ Continue with the Spring Boot Exposed workshop to compare bean-managed lifecycle
 
 The local test does not exercise Secrets Manager, Parameter Store, RDS IAM, TLS, credential rotation, migrations, or production pool sizing.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### aws ktor exposed examples Architecture diagram
+
+[![aws ktor exposed examples Architecture diagram](../../assets/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.svg)
+
+_Release README: [`examples/aws-ktor-exposed-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-ktor-exposed-examples/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Application and plugin setup](../../../../examples/aws-ktor-exposed-examples/src/main/kotlin/io/bluetape4k/aws/examples/ktor/exposed/ExposedExampleApplication.kt)

@@ -87,6 +87,19 @@ BOM은 bluetape4k 라이브러리 버전을 맞춥니다. AWS 서비스 SDK는 �
 
 이 BOM은 AWS SDK 서비스 JAR을 추가하거나 클라이언트를 만들고 자격 증명을 설정하지 않습니다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### bom 아키텍처
+
+[![bom 아키텍처](../../assets/readme-diagrams/bom-architecture-01.png)](../../assets/readme-diagrams/bom-architecture-01.svg)
+
+_배포본 README: [`bom/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/bom/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 자료 {#sources}
 
 - [릴리스 소스: `bom/build.gradle.kts`](../../../../bom/build.gradle.kts)

@@ -74,6 +74,19 @@ Compare the Ktor SQS workshop for explicit runtime and observer hooks, then desi
 
 The in-memory stores do not survive restart. Emulator success does not prove IAM, production redrive timing, high concurrency, ordering, exactly-once processing, or cross-account fanout.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### aws spring boot sqs examples Architecture diagram
+
+[![aws spring boot sqs examples Architecture diagram](../../assets/readme-diagrams/examples-aws-spring-boot-sqs-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-spring-boot-sqs-examples-architecture-01.svg)
+
+_Release README: [`examples/aws-spring-boot-sqs-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-sqs-examples/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Controller](../../../../examples/aws-spring-boot-sqs-examples/src/main/kotlin/io/bluetape4k/aws/examples/spring/sqs/SqsSnsExampleController.kt)

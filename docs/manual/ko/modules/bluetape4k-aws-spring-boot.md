@@ -87,6 +87,31 @@ Micrometer 지표를 노출하고 listener acknowledgement 정책을 분명히 �
 
 이 모듈은 awspring이 아니며 모든 AWS 서비스를 자동으로 켜지 않습니다. 선택 기능은 필요한 클래스와 설정이 있을 때만 활성화됩니다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS Spring Boot 아키텍처
+
+[![Bluetape4k AWS Spring Boot 아키텍처](../../assets/readme-diagrams/aws-spring-boot-architecture-01.png)](../../assets/readme-diagrams/aws-spring-boot-architecture-01.svg)
+
+_배포본 README: [`aws-spring-boot/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-spring-boot/README.ko.md)_
+
+### Bluetape4k AWS Spring Boot configuration 처리 흐름
+
+[![Bluetape4k AWS Spring Boot configuration 처리 흐름](../../assets/readme-diagrams/aws-spring-boot-flow-02.png)](../../assets/readme-diagrams/aws-spring-boot-flow-02.svg)
+
+_배포본 README: [`aws-spring-boot/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-spring-boot/README.ko.md)_
+
+### Bluetape4k AWS Spring Boot SQS listener 시퀀스 다이어그램
+
+[![Bluetape4k AWS Spring Boot SQS listener 시퀀스 다이어그램](../../assets/readme-diagrams/aws-spring-boot-sequence-03.png)](../../assets/readme-diagrams/aws-spring-boot-sequence-03.svg)
+
+_배포본 README: [`aws-spring-boot/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-spring-boot/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 자료 {#sources}
 
 - [릴리스 소스: `aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`](../../../../aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports)

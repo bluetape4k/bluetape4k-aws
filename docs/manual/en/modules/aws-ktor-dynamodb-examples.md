@@ -73,6 +73,19 @@ Continue to the Spring Boot DynamoDB workshop to compare enhanced-client mapping
 
 The workshop uses one partition key and a scan endpoint. It does not teach secondary indexes, conditional concurrency control, pagination, transactions, IAM policy, or production capacity design.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### aws ktor dynamodb examples Architecture diagram
+
+[![aws ktor dynamodb examples Architecture diagram](../../assets/readme-diagrams/examples-aws-ktor-dynamodb-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-ktor-dynamodb-examples-architecture-01.svg)
+
+_Release README: [`examples/aws-ktor-dynamodb-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-ktor-dynamodb-examples/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Routes, table, mapper, and repository](../../../../examples/aws-ktor-dynamodb-examples/src/main/kotlin/io/bluetape4k/aws/examples/ktor/dynamodb/DynamoDbExampleRoutes.kt)

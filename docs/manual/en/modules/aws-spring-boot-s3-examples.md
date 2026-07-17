@@ -74,6 +74,19 @@ Compare the Ktor S3 workshop for direct SigV4 HTTP behavior, then add service-sp
 
 The deterministic KMS helper does not prove AWS KMS permissions or ciphertext behavior. The example does not benchmark large transfers, multipart recovery, versioned deletion, or bucket policy.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### aws spring boot s3 examples Architecture diagram
+
+[![aws spring boot s3 examples Architecture diagram](../../assets/readme-diagrams/examples-aws-spring-boot-s3-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-spring-boot-s3-examples-architecture-01.svg)
+
+_Release README: [`examples/aws-spring-boot-s3-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-s3-examples/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [S3 controller](../../../../examples/aws-spring-boot-s3-examples/src/main/kotlin/io/bluetape4k/aws/examples/spring/s3/S3DocumentController.kt)

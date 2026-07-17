@@ -74,6 +74,19 @@ Ktor DynamoDB 워크숍에서 명시적인 plugin 구성을 비교하고, 조건
 
 단일 key table과 scan만 다룬다. Index, transaction, optimistic concurrency, 운영 capacity, IAM과 schema migration은 포함하지 않는다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS spring boot dynamodb examples 아키텍처
+
+[![Bluetape4k AWS spring boot dynamodb examples 아키텍처](../../assets/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.svg)
+
+_배포본 README: [`examples/aws-spring-boot-dynamodb-examples/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-dynamodb-examples/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 소스 {#sources}
 
 - [Application과 controller](../../../../examples/aws-spring-boot-dynamodb-examples/src/main/kotlin/io/bluetape4k/aws/examples/spring/dynamodb/OrderController.kt)

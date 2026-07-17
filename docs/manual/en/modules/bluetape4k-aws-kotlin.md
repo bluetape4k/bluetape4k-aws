@@ -84,6 +84,31 @@ Begin with S3 request builders, then DynamoDB model conversion, and finally Kine
 
 The module is not a compatibility wrapper around Java SDK v2; types and some service coverage differ.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### AWS Kotlin architecture diagram
+
+[![AWS Kotlin architecture diagram](../../assets/readme-diagrams/aws-kotlin-architecture-01.png)](../../assets/readme-diagrams/aws-kotlin-architecture-01.svg)
+
+_Release README: [`aws-kotlin/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-kotlin/README.md)_
+
+### AWS Kotlin operation flow diagram
+
+[![AWS Kotlin operation flow diagram](../../assets/readme-diagrams/aws-kotlin-flow-02.png)](../../assets/readme-diagrams/aws-kotlin-flow-02.svg)
+
+_Release README: [`aws-kotlin/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-kotlin/README.md)_
+
+### AWS Kotlin client lifecycle sequence diagram
+
+[![AWS Kotlin client lifecycle sequence diagram](../../assets/readme-diagrams/aws-kotlin-sequence-03.png)](../../assets/readme-diagrams/aws-kotlin-sequence-03.svg)
+
+_Release README: [`aws-kotlin/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-kotlin/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Release source: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/s3/S3ClientSupport.kt`](../../../../aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/s3/S3ClientSupport.kt)

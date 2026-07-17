@@ -73,6 +73,19 @@ Spring Boot Exposed 워크숍에서 bean lifecycle을 비교하고, repository�
 
 Secrets Manager, Parameter Store, RDS IAM, TLS, credential rotation, migration과 운영 pool 크기는 검증하지 않는다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS ktor exposed examples 아키텍처
+
+[![Bluetape4k AWS ktor exposed examples 아키텍처](../../assets/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)](../../assets/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.svg)
+
+_배포본 README: [`examples/aws-ktor-exposed-examples/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-ktor-exposed-examples/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 소스 {#sources}
 
 - [Application과 plugin 설정](../../../../examples/aws-ktor-exposed-examples/src/main/kotlin/io/bluetape4k/aws/examples/ktor/exposed/ExposedExampleApplication.kt)

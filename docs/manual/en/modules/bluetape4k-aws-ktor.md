@@ -85,6 +85,43 @@ Read `client-and-sigv4`, then `service-plugins`, then `runtime-lifecycle`; run t
 
 The Ktor REST helpers do not replace the full AWS SDK surface, and installing a plugin does not provision AWS resources.
 
+<!-- release-readme-diagrams:start -->
+## Release diagrams {#release-diagrams}
+
+These diagrams are copied byte-for-byte from README assets in the `0.4.0` release tag. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG source.
+
+### AWS Ktor Architecture
+
+[![AWS Ktor Architecture](../../assets/readme-diagrams/aws-ktor-architecture-01.png)](../../assets/readme-diagrams/aws-ktor-architecture-01.svg)
+
+_Release README: [`aws-ktor/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.md)_
+
+### Ktor S3 Access Grants flow
+
+[![Ktor S3 Access Grants flow](../../assets/readme-diagrams/aws-ktor-s3-access-grants-flow-01.png)](../../assets/readme-diagrams/aws-ktor-s3-access-grants-flow-01.svg)
+
+_Release README: [`aws-ktor/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.md)_
+
+### Advanced S3 helper architecture
+
+[![Advanced S3 helper architecture](../../assets/readme-diagrams/aws-ktor-s3-advanced-architecture-01.png)](../../assets/readme-diagrams/aws-ktor-s3-advanced-architecture-01.svg)
+
+_Release README: [`aws-ktor/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.md)_
+
+### Advanced S3 upload/load sequence
+
+[![Advanced S3 upload/load sequence](../../assets/readme-diagrams/aws-ktor-s3-advanced-sequence-01.png)](../../assets/readme-diagrams/aws-ktor-s3-advanced-sequence-01.svg)
+
+_Release README: [`aws-ktor/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.md)_
+
+### SQS Consumer And Publisher diagram
+
+[![SQS Consumer And Publisher diagram](../../assets/readme-diagrams/aws-ktor-sequence-01.png)](../../assets/readme-diagrams/aws-ktor-sequence-01.svg)
+
+_Release README: [`aws-ktor/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## Sources {#sources}
 
 - [Release source: `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/client/AwsSigV4Plugin.kt`](../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/client/AwsSigV4Plugin.kt)

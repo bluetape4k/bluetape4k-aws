@@ -87,6 +87,43 @@ Ktor `testApplication`, 서명용 고정 credentials·clock, 서비스 runtime�
 
 Ktor REST helper가 AWS SDK 전체 기능을 대신하지는 않습니다. plugin을 설치해도 AWS 리소스가 자동으로 생성되지 않습니다.
 
+<!-- release-readme-diagrams:start -->
+## 배포본 다이어그램 {#release-diagrams}
+
+아래 그림은 현재 개발 브랜치가 아니라 `0.4.0` 배포 태그의 README 자산을 바이트 단위로 그대로 옮긴 것입니다. 따라서 이후 SNAPSHOT 변경이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 SVG 원본이 열립니다.
+
+### Bluetape4k AWS Ktor 아키텍처
+
+[![Bluetape4k AWS Ktor 아키텍처](../../assets/readme-diagrams/aws-ktor-architecture-01.png)](../../assets/readme-diagrams/aws-ktor-architecture-01.svg)
+
+_배포본 README: [`aws-ktor/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.ko.md)_
+
+### Ktor S3 Access Grants 흐름
+
+[![Ktor S3 Access Grants 흐름](../../assets/readme-diagrams/aws-ktor-s3-access-grants-flow-01.png)](../../assets/readme-diagrams/aws-ktor-s3-access-grants-flow-01.svg)
+
+_배포본 README: [`aws-ktor/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.ko.md)_
+
+### Advanced S3 helper 아키텍처
+
+[![Advanced S3 helper 아키텍처](../../assets/readme-diagrams/aws-ktor-s3-advanced-architecture-01.png)](../../assets/readme-diagrams/aws-ktor-s3-advanced-architecture-01.svg)
+
+_배포본 README: [`aws-ktor/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.ko.md)_
+
+### Advanced S3 upload/load 처리 순서
+
+[![Advanced S3 upload/load 처리 순서](../../assets/readme-diagrams/aws-ktor-s3-advanced-sequence-01.png)](../../assets/readme-diagrams/aws-ktor-s3-advanced-sequence-01.svg)
+
+_배포본 README: [`aws-ktor/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.ko.md)_
+
+### SQS Consumer And Publisher 다이어그램
+
+[![SQS Consumer And Publisher 다이어그램](../../assets/readme-diagrams/aws-ktor-sequence-01.png)](../../assets/readme-diagrams/aws-ktor-sequence-01.svg)
+
+_배포본 README: [`aws-ktor/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/aws-ktor/README.ko.md)_
+
+<!-- release-readme-diagrams:end -->
+
 ## 근거 자료 {#sources}
 
 - [릴리스 소스: `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/client/AwsSigV4Plugin.kt`](../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/client/AwsSigV4Plugin.kt)

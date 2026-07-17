@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-label="EC2 IMDS Spring Boot and Ktor component map">
+<defs>
+  <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
+    <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20" />
+  </filter>
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" /></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" /></marker>
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" /></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" /></marker>
+</defs>
+<style>
+  svg{background:#F5F7FA}
+  .frame{fill:#FFFFFF;stroke:#D9E2EC;stroke-width:1.5}
+  .title{font-family:"Architects Daughter";font-size:38px;fill:#102033}
+  .subtitle,.detail,.tiny,.chip{font-family:"Comic Mono";fill:#526274}
+  .subtitle{font-size:16px}
+  .layer-title{font-family:"Architects Daughter";font-size:24px;fill:#102033}
+  .layer-detail{font-family:"Comic Mono";font-size:12px;fill:#526274}
+  .card-title{font-family:"Architects Daughter";font-size:21px;fill:#102033}
+  .detail{font-size:13px}.tiny{font-size:11px}.chip{font-size:11px;fill:#243447}
+  .layer{fill:#F8FAFC;stroke:#D9E2EC;stroke-width:1.4}
+  .card{stroke-width:2;filter:url(#shadow)}
+  .edge{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+  .footer{fill:#0E2238;stroke:#0E2238}
+  .footer-title{font-family:"Architects Daughter";font-size:17px;fill:#FFFFFF}
+  .footer-detail{font-family:"Comic Mono";font-size:12px;fill:#DDE7F2}
+</style>
+
+<rect x="26" y="26" width="1388" height="708" rx="14" class="frame" />
+<text class="title" x="54" y="74">EC2 IMDS access surfaces</text>
+<text class="subtitle" x="56" y="106">Spring Boot and Ktor create passive metadata facades; IMDS is contacted only when application code calls an operation.</text>
+
+<g>
+  <rect x="962" y="57" width="116" height="25" rx="12.5" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="chip" x="1020" y="70.5" text-anchor="middle" dominant-baseline="middle">Spring</text>
+  <rect x="1094" y="57" width="116" height="25" rx="12.5" fill="#EAF7EF" stroke="#58A978" />
+  <text class="chip" x="1152" y="70.5" text-anchor="middle" dominant-baseline="middle">Ktor</text>
+  <rect x="1226" y="57" width="144" height="25" rx="12.5" fill="#FFF7ED" stroke="#F97316" />
+  <text class="chip" x="1298" y="70.5" text-anchor="middle" dominant-baseline="middle">IMDS on demand</text>
+</g>
+
+<g id="layers">
+  <rect class="layer" x="70" y="142" width="280" height="410" rx="12" />
+  <text class="layer-title" x="92" y="178">Framework entry</text>
+  <text class="layer-detail" x="94" y="200">configuration without metadata reads</text>
+  <rect class="layer" x="390" y="142" width="300" height="410" rx="12" />
+  <text class="layer-title" x="412" y="178">Runtime holder</text>
+  <text class="layer-detail" x="414" y="200">client ownership and custom injection</text>
+  <rect class="layer" x="730" y="142" width="310" height="410" rx="12" />
+  <text class="layer-title" x="752" y="178">Operations</text>
+  <text class="layer-detail" x="754" y="200">coroutine facade and bounded calls</text>
+  <rect class="layer" x="1080" y="142" width="290" height="410" rx="12" />
+  <text class="layer-title" x="1102" y="178">EC2 metadata</text>
+  <text class="layer-detail" x="1104" y="200">instance metadata, not credentials</text>
+</g>
+
+<g id="cards">
+  <rect class="card" x="100" y="224" width="220" height="92" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="210" y="258" text-anchor="middle">Spring auto-config</text>
+  <text class="detail" x="210" y="284" text-anchor="middle">enabled by default</text>
+  <text class="detail" x="210" y="304" text-anchor="middle">backs off on beans</text>
+  <rect class="card" x="100" y="382" width="220" height="92" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <image data-bluetape4k-icon="framework.ktor" x="114" y="415" width="26" height="26" href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMDg3Q0ZBIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+S3RvcjwvdGl0bGU+PHBhdGggZD0iTTggMCAwIDhsOCA4VjhoOHptOCA4djhIOGw4IDggOC04eiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="148" y="416">Ktor plugin</text>
+  <text class="detail" x="152" y="442">install stores facade</text>
+  <text class="detail" x="148" y="462">disabled stores none</text>
+
+  <rect class="card" x="420" y="224" width="240" height="92" rx="9" fill="#E8F3FF" stroke="#5B8DEF" />
+  <text class="card-title" x="540" y="258" text-anchor="middle">SDK client bean</text>
+  <text class="detail" x="540" y="284" text-anchor="middle">token TTL + retries</text>
+  <text class="detail" x="540" y="304" text-anchor="middle">customizer support</text>
+  <rect class="card" x="420" y="382" width="240" height="92" rx="9" fill="#EAF7EF" stroke="#58A978" />
+  <image data-bluetape4k-icon="framework.ktor" x="434" y="415" width="26" height="26" href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMDg3Q0ZBIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+S3RvcjwvdGl0bGU+PHBhdGggZD0iTTggMCAwIDhsOCA4VjhoOHptOCA4djhIOGw4IDggOC04eiIvPjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="468" y="416">Ktor runtime</text>
+  <text class="detail" x="472" y="442">injected or owned client</text>
+  <text class="detail" x="468" y="462">owned client closed</text>
+
+  <rect class="card" x="760" y="224" width="250" height="92" rx="9" fill="#E9F7F6" stroke="#45A7A1" />
+  <image data-bluetape4k-icon="aws.ec2" x="774" y="257" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tRUMyXzMyPC90aXRsZT4KICAgIDxnIGlkPSJJY29uLUFyY2hpdGVjdHVyZS8zMi9BcmNoX0FtYXpvbi1FQzJfMzIiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSJJY29uLUFyY2hpdGVjdHVyZS1CRy8zMi9Db21wdXRlIiBmaWxsPSIjRUQ3MTAwIj4KICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZSIgeD0iMCIgeT0iMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIj48L3JlY3Q+CiAgICAgICAgPC9nPgogICAgICAgIDxwYXRoIGQ9Ik0yNi4wNTIsMjcgTDI2LDEzLjk0OCBMMTMsMTQgTDEzLDI3LjA1MiBMMjYuMDUyLDI3IFogTTI3LDE0IEwyOSwxNCBMMjksMTUgTDI3LDE1IEwyNywxNyBMMjksMTcgTDI5LDE4IEwyNywxOCBMMjcsMjAgTDI5LDIwIEwyOSwyMSBMMjcsMjEgTDI3LDIzIEwyOSwyMyBMMjksMjQgTDI3LDI0IEwyNywyNiBMMjksMjYgTDI5LDI3IEwyNywyNyBMMjcsMjcuMDUyIEMyNywyNy41NzUgMjYuNTc0LDI4IDI2LjA1MiwyOCBMMjYsMjggTDI2LDMwIEwyNSwzMCBMMjUsMjggTDIzLDI4IEwyMywzMCBMMjIsMzAgTDIyLDI4IEwyMCwyOCBMMjAsMzAgTDE5LDMwIEwxOSwyOCBMMTcsMjggTDE3LDMwIEwxNiwzMCBMMTYsMjggTDE0LDI4IEwxNCwzMCBMMTMsMzAgTDEzLDI4IEwxMi45NDgsMjggQzEyLjQyNiwyOCAxMiwyNy41NzUgMTIsMjcuMDUyIEwxMiwyNyBMMTAsMjcgTDEwLDI2IEwxMiwyNiBMMTIsMjQgTDEwLDI0IEwxMCwyMyBMMTIsMjMgTDEyLDIxIEwxMCwyMSBMMTAsMjAgTDEyLDIwIEwxMiwxOCBMMTAsMTggTDEwLDE3IEwxMiwxNyBMMTIsMTUgTDEwLDE1IEwxMCwxNCBMMTIsMTQgTDEyLDEzLjk0OCBDMTIsMTMuNDI1IDEyLjQyNiwxMyAxMi45NDgsMTMgTDEzLDEzIEwxMywxMSBMMTQsMTEgTDE0LDEzIEwxNiwxMyBMMTYsMTEgTDE3LDExIEwxNywxMyBMMTksMTMgTDE5LDExIEwyMCwxMSBMMjAsMTMgTDIyLDEzIEwyMiwxMSBMMjMsMTEgTDIzLDEzIEwyNSwxMyBMMjUsMTEgTDI2LDExIEwyNiwxMyBMMjYuMDUyLDEzIEMyNi41NzQsMTMgMjcsMTMuNDI1IDI3LDEzLjk0OCBMMjcsMTQgWiBNMjEsMzMgTDcsMzMgTDcsMTkgTDksMTkgTDksMTggTDcuMDYyLDE4IEM2LjQ3NywxOCA2LDE4LjQ3NyA2LDE5LjA2MiBMNiwzMi45MzggQzYsMzMuNTIzIDYuNDc3LDM0IDcuMDYyLDM0IEwyMC45MzksMzQgQzIxLjUyNCwzNCAyMiwzMy41MjMgMjIsMzIuOTM4IEwyMiwzMSBMMjEsMzEgTDIxLDMzIFogTTM0LDcuMDYyIEwzNCwyMC45MzggQzM0LDIxLjUyMyAzMy41MjQsMjIgMzIuOTM5LDIyIEwzMCwyMiBMMzAsMjEgTDMzLDIxIEwzMyw3IEwxOSw3IEwxOSwxMCBMMTgsMTAgTDE4LDcuMDYyIEMxOCw2LjQ3NyAxOC40NzcsNiAxOS4wNjIsNiBMMzIuOTM5LDYgQzMzLjUyNCw2IDM0LDYuNDc3IDM0LDcuMDYyIEwzNCw3LjA2MiBaIiBpZD0iQW1hem9uLUVDMl9JY29uXzMyX1NxdWlkIiBmaWxsPSIjRkZGRkZGIj48L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="889.2" y="258" text-anchor="middle">ImdsOperations</text>
+  <text class="detail" x="885" y="284" text-anchor="middle">instance, region, zone</text>
+  <text class="detail" x="885" y="304" text-anchor="middle">IAM role names only</text>
+  <rect class="card" x="760" y="382" width="250" height="92" rx="9" fill="#F3FBFA" stroke="#63B8B3" />
+  <text class="card-title" x="885" y="416" text-anchor="middle">Bounded get</text>
+  <text class="detail" x="885" y="442" text-anchor="middle">normalize path</text>
+  <text class="detail" x="885" y="462" text-anchor="middle">withTimeout per call</text>
+
+  <rect class="card" x="1110" y="224" width="230" height="92" rx="9" fill="#FFF7ED" stroke="#F97316" />
+  <image data-bluetape4k-icon="aws.ec2" x="1124" y="257" width="26" height="26" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNDBweCIgaGVpZ2h0PSI0MHB4IiB2aWV3Qm94PSIwIDAgNDAgNDAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+SWNvbi1BcmNoaXRlY3R1cmUvMzIvQXJjaF9BbWF6b24tRUMyXzMyPC90aXRsZT4KICAgIDxnIGlkPSJJY29uLUFyY2hpdGVjdHVyZS8zMi9BcmNoX0FtYXpvbi1FQzJfMzIiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSJJY29uLUFyY2hpdGVjdHVyZS1CRy8zMi9Db21wdXRlIiBmaWxsPSIjRUQ3MTAwIj4KICAgICAgICAgICAgPHJlY3QgaWQ9IlJlY3RhbmdsZSIgeD0iMCIgeT0iMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIj48L3JlY3Q+CiAgICAgICAgPC9nPgogICAgICAgIDxwYXRoIGQ9Ik0yNi4wNTIsMjcgTDI2LDEzLjk0OCBMMTMsMTQgTDEzLDI3LjA1MiBMMjYuMDUyLDI3IFogTTI3LDE0IEwyOSwxNCBMMjksMTUgTDI3LDE1IEwyNywxNyBMMjksMTcgTDI5LDE4IEwyNywxOCBMMjcsMjAgTDI5LDIwIEwyOSwyMSBMMjcsMjEgTDI3LDIzIEwyOSwyMyBMMjksMjQgTDI3LDI0IEwyNywyNiBMMjksMjYgTDI5LDI3IEwyNywyNyBMMjcsMjcuMDUyIEMyNywyNy41NzUgMjYuNTc0LDI4IDI2LjA1MiwyOCBMMjYsMjggTDI2LDMwIEwyNSwzMCBMMjUsMjggTDIzLDI4IEwyMywzMCBMMjIsMzAgTDIyLDI4IEwyMCwyOCBMMjAsMzAgTDE5LDMwIEwxOSwyOCBMMTcsMjggTDE3LDMwIEwxNiwzMCBMMTYsMjggTDE0LDI4IEwxNCwzMCBMMTMsMzAgTDEzLDI4IEwxMi45NDgsMjggQzEyLjQyNiwyOCAxMiwyNy41NzUgMTIsMjcuMDUyIEwxMiwyNyBMMTAsMjcgTDEwLDI2IEwxMiwyNiBMMTIsMjQgTDEwLDI0IEwxMCwyMyBMMTIsMjMgTDEyLDIxIEwxMCwyMSBMMTAsMjAgTDEyLDIwIEwxMiwxOCBMMTAsMTggTDEwLDE3IEwxMiwxNyBMMTIsMTUgTDEwLDE1IEwxMCwxNCBMMTIsMTQgTDEyLDEzLjk0OCBDMTIsMTMuNDI1IDEyLjQyNiwxMyAxMi45NDgsMTMgTDEzLDEzIEwxMywxMSBMMTQsMTEgTDE0LDEzIEwxNiwxMyBMMTYsMTEgTDE3LDExIEwxNywxMyBMMTksMTMgTDE5LDExIEwyMCwxMSBMMjAsMTMgTDIyLDEzIEwyMiwxMSBMMjMsMTEgTDIzLDEzIEwyNSwxMyBMMjUsMTEgTDI2LDExIEwyNiwxMyBMMjYuMDUyLDEzIEMyNi41NzQsMTMgMjcsMTMuNDI1IDI3LDEzLjk0OCBMMjcsMTQgWiBNMjEsMzMgTDcsMzMgTDcsMTkgTDksMTkgTDksMTggTDcuMDYyLDE4IEM2LjQ3NywxOCA2LDE4LjQ3NyA2LDE5LjA2MiBMNiwzMi45MzggQzYsMzMuNTIzIDYuNDc3LDM0IDcuMDYyLDM0IEwyMC45MzksMzQgQzIxLjUyNCwzNCAyMiwzMy41MjMgMjIsMzIuOTM4IEwyMiwzMSBMMjEsMzEgTDIxLDMzIFogTTM0LDcuMDYyIEwzNCwyMC45MzggQzM0LDIxLjUyMyAzMy41MjQsMjIgMzIuOTM5LDIyIEwzMCwyMiBMMzAsMjEgTDMzLDIxIEwzMyw3IEwxOSw3IEwxOSwxMCBMMTgsMTAgTDE4LDcuMDYyIEMxOCw2LjQ3NyAxOC40NzcsNiAxOS4wNjIsNiBMMzIuOTM5LDYgQzMzLjUyNCw2IDM0LDYuNDc3IDM0LDcuMDYyIEwzNCw3LjA2MiBaIiBpZD0iQW1hem9uLUVDMl9JY29uXzMyX1NxdWlkIiBmaWxsPSIjRkZGRkZGIj48L3BhdGg+CiAgICA8L2c+Cjwvc3ZnPg==" preserveAspectRatio="xMidYMid meet" /><text class="card-title" x="1225" y="258" text-anchor="middle">EC2 IMDS</text>
+  <text class="detail" x="1225" y="284" text-anchor="middle">/latest/meta-data</text>
+  <text class="detail" x="1225" y="304" text-anchor="middle">IMDSv2 token TTL</text>
+  <rect class="card" x="1110" y="382" width="230" height="92" rx="9" fill="#FFF4E6" stroke="#F59E0B" />
+  <text class="card-title" x="1225" y="416" text-anchor="middle">Credentials boundary</text>
+  <text class="detail" x="1225" y="442" text-anchor="middle">role names exposed</text>
+  <text class="detail" x="1225" y="462" text-anchor="middle">documents not read</text>
+</g>
+
+<g id="connections">
+  <path class="edge" d="M 320 270 L 420 270" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 320 428 L 420 428" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 660 270 L 760 270" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
+  <path class="edge" d="M 660 428 L 760 428" stroke="#2F8B57" marker-end="url(#arrow-green)" />
+  <path class="edge" d="M 1010 270 L 1110 270" stroke="#168E86" marker-end="url(#arrow-teal)" />
+  <path class="edge" d="M 1010 428 L 1110 428" stroke="#EA580C" marker-end="url(#arrow-orange)" />
+</g>
+
+<g id="contracts">
+  <rect x="86" y="584" width="600" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="110" y="616">Startup contract</text>
+  <text class="detail" x="404" y="614">passive install</text>
+  <text class="detail" x="552" y="614">custom beans</text>
+  <text class="tiny" x="110" y="640">Creating Spring beans or installing the Ktor plugin must not call IMDS.</text>
+  <rect x="724" y="584" width="630" height="72" rx="10" fill="#FFFFFF" stroke="#D9E2EC" />
+  <text class="card-title" x="748" y="616">Use boundary</text>
+  <text class="detail" x="986" y="614">metadata only</text>
+  <text class="detail" x="1172" y="614">not credentials</text>
+  <text class="tiny" x="748" y="640">Use the helper for EC2 metadata snapshots, not as a credentials-provider replacement.</text>
+</g>
+
+<rect class="footer" x="54" y="690" width="1332" height="34" rx="8" />
+<text class="footer-title" x="74" y="710" dominant-baseline="middle">Boundary</text>
+<text class="footer-detail" x="178" y="710" dominant-baseline="middle">IMDS access is explicit and timeout-bounded; credentials stay with AWS SDK providers.</text>
+</svg>
