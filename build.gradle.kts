@@ -2,13 +2,17 @@ import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.report.ReportMergeTask
 import nmcp.NmcpAggregationExtension
 import nmcp.NmcpExtension
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.attributes.Bundling
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
 import org.gradle.api.attributes.java.TargetJvmVersion
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.JavaCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.util.concurrent.TimeUnit
 
 plugins {
@@ -99,9 +103,51 @@ val awsKtorSqsConsumerFixtureClasspath = configurations.create("awsKtorSqsConsum
     }
 }
 
+fun Configuration.configureBedrockConsumerFixtureVersions() {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "software.amazon.awssdk" -> useVersion(bt4kVersion("aws2"))
+            "aws.sdk.kotlin" -> useVersion(bt4kVersion("aws-kotlin"))
+            "org.jetbrains.kotlinx" -> if (requested.name.startsWith("kotlinx-coroutines")) {
+                useVersion(bt4kVersion("kotlinx-coroutines"))
+            }
+        }
+        because("consumer fixture resolves versions from the central bt4k catalog")
+    }
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+    }
+}
+
+val bedrockJavaConsumerFixtureClasspath =
+    configurations.create("bedrockJavaConsumerFixtureClasspath") {
+        configureBedrockConsumerFixtureVersions()
+    }
+val bedrockKotlinConsumerFixtureClasspath =
+    configurations.create("bedrockKotlinConsumerFixtureClasspath") {
+        configureBedrockConsumerFixtureVersions()
+    }
+
 dependencies {
     awsKtorSqsConsumerFixtureClasspath(project(":bluetape4k-aws-ktor"))
     awsKtorSqsConsumerFixtureClasspath(libs.ktor.server.core)
+
+    bedrockJavaConsumerFixtureClasspath(project(":bluetape4k-aws-java"))
+    bedrockJavaConsumerFixtureClasspath(libs.aws2.bedrock.runtime)
+    bedrockJavaConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
+    bedrockJavaConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
+    bedrockJavaConsumerFixtureClasspath(libs.kotlinx.coroutines.reactive)
+
+    bedrockKotlinConsumerFixtureClasspath(project(":bluetape4k-aws-kotlin"))
+    bedrockKotlinConsumerFixtureClasspath(libs.aws.kotlin.bedrock.runtime)
+    bedrockKotlinConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
+    bedrockKotlinConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
 }
 
 val compileAwsKtorSqsConsumerFixture = tasks.register<JavaCompile>("compileAwsKtorSqsConsumerFixture") {
@@ -115,8 +161,51 @@ val compileAwsKtorSqsConsumerFixture = tasks.register<JavaCompile>("compileAwsKt
     options.encoding = "UTF-8"
 }
 
+fun registerBedrockConsumerFixtureCompile(
+    name: String,
+    sourcePath: String,
+    classpath: Configuration,
+    outputPath: String,
+    moduleJarTask: String,
+): TaskProvider<out Task> {
+    val sourceSetName = name.removePrefix("compile").replaceFirstChar(Char::lowercase)
+    val sourceSet: SourceSet = sourceSets.create(sourceSetName)
+    tasks.named<JavaCompile>(sourceSet.compileJavaTaskName) {
+        options.release.set(21)
+    }
+    val kotlinCompile = tasks.named<KotlinJvmCompile>(sourceSet.getCompileTaskName("kotlin")) {
+        source(fileTree(sourcePath) { include("**/*.kt") })
+        libraries.setFrom(classpath)
+        destinationDirectory.set(layout.buildDirectory.dir(outputPath))
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
+        dependsOn(moduleJarTask)
+    }
+    return tasks.register(name) {
+        description = "Compiles a minimal external Bedrock consumer."
+        group = "verification"
+        dependsOn(kotlinCompile)
+    }
+}
+
+val compileBedrockJavaConsumerFixture = registerBedrockConsumerFixtureCompile(
+    "compileBedrockJavaConsumerFixture",
+    "aws-java/src/consumerFixture/kotlin",
+    bedrockJavaConsumerFixtureClasspath,
+    "consumer-fixtures/aws-java-bedrock/classes",
+    ":bluetape4k-aws-java:jar",
+)
+val compileBedrockKotlinConsumerFixture = registerBedrockConsumerFixtureCompile(
+    "compileBedrockKotlinConsumerFixture",
+    "aws-kotlin/src/consumerFixture/kotlin",
+    bedrockKotlinConsumerFixtureClasspath,
+    "consumer-fixtures/aws-kotlin-bedrock/classes",
+    ":bluetape4k-aws-kotlin:jar",
+)
+
 tasks.named("check") {
     dependsOn(compileAwsKtorSqsConsumerFixture)
+    dependsOn(compileBedrockJavaConsumerFixture)
+    dependsOn(compileBedrockKotlinConsumerFixture)
 }
 
 allprojects {

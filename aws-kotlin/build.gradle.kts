@@ -63,5 +63,22 @@ dependencies {
 }
 
 tasks.test {
+    val smokeRequested = providers.gradleProperty("bedrockSmoke").isPresent
+    val missingSmokeInputs = listOf("BEDROCK_REGION", "BEDROCK_MODEL_ID")
+        .filter { providers.environmentVariable(it).orNull.isNullOrBlank() }
+    val smokeEnabled = smokeRequested && missingSmokeInputs.isEmpty()
+
     systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
+    useJUnitPlatform {
+        if (smokeEnabled) {
+            includeTags("bedrock-smoke")
+        } else {
+            excludeTags("bedrock-smoke")
+        }
+    }
+    onlyIf(
+        "bedrock-smoke: SKIP before client creation; missing=${missingSmokeInputs.joinToString(",")}",
+    ) {
+        !smokeRequested || smokeEnabled
+    }
 }
