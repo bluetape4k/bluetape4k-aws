@@ -34,8 +34,8 @@
 
   <rect class="canvas" width="1900" height="1040" />
   <rect class="frame" x="48" y="38" width="1804" height="964" rx="24" />
-  <text class="title" x="950" y="96" text-anchor="middle">AWS Service Support Matrix</text>
-  <text class="subtitle" x="950" y="132" text-anchor="middle">Support status by module, based on current README installation guidance and build.gradle.kts service dependencies.</text>
+  <text class="title" x="950" y="96" text-anchor="middle">Selected AWS Service Integration Matrix</text>
+  <text class="subtitle" x="950" y="132" text-anchor="middle">Established cross-module integrations; module-only services are documented in module tables and READMEs.</text>
 
   <g id="matrix">
     <rect class="matrix" x="78" y="176" width="1744" height="642" rx="22" />

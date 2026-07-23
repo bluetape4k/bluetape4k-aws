@@ -35,7 +35,8 @@ uses.
   Kotlin SDK helpers, and small DSL builders for request objects.
 - **Service coverage** — DynamoDB, S3, S3 Vectors, SES/SESv2, SNS, SQS, KMS,
   CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, EventBridge, EventBridge
-  Scheduler, STS, RDS IAM, Secrets Manager, and Parameter Store.
+  Scheduler, Bedrock Runtime, STS, RDS IAM, Secrets Manager, and Parameter
+  Store.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
   listeners, and auto-configuration without depending on awspring.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 access, SQS consumer
@@ -58,8 +59,8 @@ uses.
 
 | Module | Artifact | Description |
 |---|---|---|
-| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
-| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, STS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Bedrock Runtime, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
+| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Bedrock Runtime, STS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, EventBridge server plugin, Kinesis and STS server plugins, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
@@ -77,9 +78,13 @@ uses.
 
 ![AWS component map diagram](docs/images/readme-diagrams/bluetape4k-aws-components-04.png)
 
-### Service Coverage Chart
+### Selected Cross-Module Service Coverage
 
 ![AWS service coverage chart](docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
+
+This chart tracks established cross-module integrations. Core-client-only
+services such as Bedrock Runtime are listed in the module table and module
+READMEs.
 
 ---
 
@@ -141,6 +146,7 @@ dependencies {
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:scheduler")
+    implementation("software.amazon.awssdk:bedrockruntime")
     implementation("software.amazon.awssdk:rds")
     implementation("software.amazon.awssdk:sts")
 }
@@ -172,6 +178,7 @@ dependencies {
     implementation("aws.sdk.kotlin:kinesis")
     implementation("aws.sdk.kotlin:eventbridge")
     implementation("aws.sdk.kotlin:scheduler")
+    implementation("aws.sdk.kotlin:bedrockruntime")
     implementation("aws.sdk.kotlin:sts")
 }
 ```
