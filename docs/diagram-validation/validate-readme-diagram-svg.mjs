@@ -8,7 +8,12 @@ if (files.length === 0) {
   process.exit(2);
 }
 
-const allowedFonts = new Set(["Architects Daughter", "Comic Mono"]);
+const allowedFonts = new Set([
+  "Architects Daughter",
+  "Comic Mono",
+  "goorm Sans",
+  "goorm Sans Code",
+]);
 const failures = [];
 
 function attrsOf(tag) {

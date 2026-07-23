@@ -1,13 +1,14 @@
 # WIP - bluetape4k-aws
 
-Snapshot: 2026-07-01 KST
-Scope: post-0.4.0 service expansion closeout and backlog handoff.
-Open count: 5 backlog issues.
+Snapshot: 2026-07-23 KST
+Scope: active 0.5.0 Bedrock Runtime delivery and remaining documentation cleanup.
+Open count: 6 issues, including 2 in milestone 0.5.0.
 
 ## Current Direction
 
-The `0.5.0` and `0.6.0` work queues are complete. Both milestones have zero
-open issues, no open pull requests, and only backlog-level service ideas remain.
+The `0.5.0` queue is active again for the Bedrock Runtime facade and the
+remaining legacy Korean KDoc migration. Issue #312 is in implementation on
+`feat/issue-312-bedrock-runtime`; no pull request exists yet.
 
 Keep this file focused on active repository management:
 
@@ -26,13 +27,14 @@ fallback for Floci API coverage gaps, and MiniStack remains comparison-only.
 
 | Priority | Issue | Milestone | Notes |
 |---|---|---|---|
-| None | N/A | N/A | No active AWS milestone work remains after the 0.5.0 and 0.6.0 closeout. |
+| P0 | [#312](https://github.com/bluetape4k/bluetape4k-aws/issues/312) | 0.5.0 | Bedrock Runtime minimal facade is in implementation and validation. |
+| P1 | [#359](https://github.com/bluetape4k/bluetape4k-aws/issues/359) | 0.5.0 | Finish the remaining legacy Korean KDoc migration after #312. |
 
 ## Open PRs
 
 | PR | Branch | Notes |
 |---|---|---|
-| None | N/A | Verified with `gh pr list` on 2026-07-01 KST. |
+| None | N/A | Verified with `gh pr list` on 2026-07-23 KST. |
 
 ## Completed Since 0.4.0
 
@@ -68,18 +70,17 @@ fallback for Floci API coverage gaps, and MiniStack remains comparison-only.
 
 | Issue | Notes |
 |---|---|
-| [#310](https://github.com/bluetape4k/bluetape4k-aws/issues/310) | EventBridge Scheduler support. |
 | [#311](https://github.com/bluetape4k/bluetape4k-aws/issues/311) | S3 Tables support. |
-| [#312](https://github.com/bluetape4k/bluetape4k-aws/issues/312) | Bedrock Runtime minimal facade. |
 | [#313](https://github.com/bluetape4k/bluetape4k-aws/issues/313) | Step Functions execution helpers. |
 | [#314](https://github.com/bluetape4k/bluetape4k-aws/issues/314) | Lambda invocation helpers. |
+| [#369](https://github.com/bluetape4k/bluetape4k-aws/issues/369) | Isolate Testcontainers reuse from module tests and example applications. |
 
 ## Refresh Notes
 
-- Verified with `gh` on 2026-07-01 KST: `0.5.0` has 24 closed items and zero
-  open items.
-- Verified with `gh` on 2026-07-01 KST: `0.6.0` has 4 closed items and zero
-  open items.
+- Verified with `gh` on 2026-07-23 KST: `0.5.0` has 32 closed items and 2 open
+  items (#312 and #359).
+- Verified with `gh` on 2026-07-23 KST: the repository has 6 open issues and no
+  open pull requests.
 - Latest GitHub release remains `0.4.0`; current unreleased development uses
   `baseVersion=0.5.0`.
 - Local snapshot dependencies are
