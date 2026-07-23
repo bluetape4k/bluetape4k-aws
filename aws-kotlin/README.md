@@ -36,9 +36,73 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 | **CloudWatch Logs** | Log event publishing, DSL (`inputLogEvent {}`)          |
 | **Kinesis**         | Stream record publishing, `recordFlow {}` cold Flow per shard, DSL (`putRecordRequestOf {}`) |
 | **EventBridge**     | Event bus, rule, target, list, and `PutEvents` suspend helpers |
+| **Bedrock Runtime** | Native suspend `Converse`, `ConverseStream`, and cold text-delta `Flow` |
 | **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)      |
 | **Secrets Manager** | Redacted secret values, client lifecycle helpers, request DSLs |
 | **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs |
+
+## Bedrock Runtime Converse and Streaming
+
+![Amazon Bedrock Runtime streaming sequence](../docs/images/readme-diagrams/aws-bedrock-runtime-streaming-sequence-en-01.png)
+
+The facade keeps native AWS Kotlin SDK request, response, event, exception, and
+suspension contracts. `Converse` stays a native suspend operation, while
+`ConverseStream` becomes a cold `Flow` without adding a provider-specific
+prompt framework.
+
+```kotlin
+import io.bluetape4k.aws.kotlin.bedrock.converseStreamFlow
+import io.bluetape4k.aws.kotlin.bedrock.model.converseStreamRequestOf
+import io.bluetape4k.aws.kotlin.bedrock.model.userMessageOf
+import io.bluetape4k.aws.kotlin.bedrock.textDeltaFlow
+import io.bluetape4k.aws.kotlin.bedrock.withBedrockRuntimeClient
+import io.bluetape4k.coroutines.flow.extensions.takeUntil
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun streamReply(
+    modelId: String,
+    prompt: String,
+    stopSignal: Flow<Any?>,
+): List<String> =
+    withBedrockRuntimeClient { client ->
+        withTimeout(30.seconds) {
+            client.converseStreamFlow(
+                converseStreamRequestOf(
+                    modelId = modelId,
+                    messages = listOf(userMessageOf(prompt)),
+                ),
+            )
+                .textDeltaFlow()
+                .takeUntil(stopSignal)
+                .toList()
+        }
+    }
+```
+
+Complete terminal collection inside `withBedrockRuntimeClient`; a returned
+Flow cannot outlive the client scope. For application-scoped clients, use
+`bedrockRuntimeClientOf` and close the client explicitly. Every collection is a
+new, potentially billable request. `takeUntil` checks its stop state when the
+source produces the next event, so use `withTimeout` for a hard deadline.
+
+- `textDeltaFlow()` reuses bluetape4k-coroutines `castNotNull` to select native
+  text deltas in order without buffering, replay, parallel mapping, or logging.
+- Blank model IDs, blank content, and empty message collections fail with
+  `IllegalArgumentException` before an SDK call.
+- Native SDK failures and structured cancellation reach the caller unchanged.
+  A streaming collector can already hold partial text when failure, timeout,
+  or cancellation occurs.
+- AWS SDK retries can repeat semantically equivalent output. There is no
+  exactly-once delivery, deduplication, replay, or facade-level retry.
+- Prefer non-streaming `Converse` when the operation must be transactional.
+- Keep credentials on the default AWS provider chain, use HTTPS except for
+  literal loopback tests, treat generated output as untrusted, and never
+  execute tools from it automatically. Log only allowlisted operation
+  metadata; never log or expose raw SDK exceptions, prompts, or model output
+  beyond the application boundary.
 
 ## Java SDK v2 vs Kotlin SDK Comparison
 
@@ -368,6 +432,7 @@ AWS service client onto consumers that do not use that service.
 
 ```kotlin
 dependencies {
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:${bluetape4kVersion}"))
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin:${bluetape4kVersion}")
 
     // Add only the services you need
@@ -382,6 +447,7 @@ dependencies {
     implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:bedrockruntime:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... add other services as needed
 }

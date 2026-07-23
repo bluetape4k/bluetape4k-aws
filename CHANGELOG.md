@@ -9,6 +9,11 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added model-neutral Amazon Bedrock Runtime `Converse` and `ConverseStream`
+  facades for the Java and Kotlin SDK modules, including coroutine-first cold
+  Flow adapters, scoped lifecycle helpers, bilingual diagrams, and opt-in
+  credentialed smoke tests
+  ([#312](https://github.com/bluetape4k/bluetape4k-aws/issues/312)).
 - Added core EventBridge wrappers and coroutine DSLs across the Java and Kotlin
   AWS facades, then exposed them through Spring Boot auto-configuration and
   Ktor plugins

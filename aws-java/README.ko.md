@@ -41,9 +41,72 @@ repository helper의 역할을 함께 확인할 수 있습니다.
 | **CloudWatch Logs** | 로그 그룹/스트림 관리, 이벤트 전송, Coroutines 확장                     |
 | **Kinesis**         | 스트림 레코드 전송/조회, Coroutines 확장                            |
 | **EventBridge**     | Event bus, rule, target, list, `PutEvents` helper           |
+| **Bedrock Runtime** | 모델 중립 `Converse`, `ConverseStream`, cold text-delta `Flow` |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines 확장 |
 | **Secrets Manager** | Redacted secret value, 요청 DSL, sync/async/coroutine helper |
 | **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL |
+
+## Bedrock Runtime Converse와 스트리밍
+
+![Amazon Bedrock Runtime 스트리밍 시퀀스](../docs/images/readme-diagrams/aws-bedrock-runtime-streaming-sequence-ko-01.png)
+
+이 파사드는 AWS SDK v2의 요청·응답·이벤트·future·예외 타입을 그대로 사용합니다.
+블로킹 `Converse`, 원본 `CompletableFuture`를 돌려주는 `converseAsync`, suspend
+`converse` 확장, 모델 중립 `ConverseStream`을 cold `Flow`로 제공합니다. 특정 모델
+제공자에 종속된 프롬프트 추상화는 만들지 않습니다.
+
+```kotlin
+import io.bluetape4k.aws.bedrock.bedrockRuntimeAsyncClientOf
+import io.bluetape4k.aws.bedrock.converseStreamFlow
+import io.bluetape4k.aws.bedrock.model.converseStreamRequestOf
+import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.aws.bedrock.textDeltaFlow
+import io.bluetape4k.coroutines.flow.extensions.takeUntil
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun streamReply(
+    modelId: String,
+    prompt: String,
+    stopSignal: Flow<Any?>,
+): List<String> =
+    bedrockRuntimeAsyncClientOf().use { client ->
+        withTimeout(30.seconds) {
+            client.converseStreamFlow(
+                converseStreamRequestOf(
+                    modelId = modelId,
+                    messages = listOf(userMessageOf(prompt)),
+                ),
+            )
+                .textDeltaFlow()
+                .takeUntil(stopSignal)
+                .toList()
+        }
+    }
+```
+
+`bedrockRuntimeClientOf`와 `bedrockRuntimeAsyncClientOf`가 돌려준 클라이언트의
+생명주기는 애플리케이션이 소유합니다. 스트림의 최종 수집이 끝난 뒤 클라이언트를
+닫아야 합니다. Flow를 다시 수집하면 과금될 수 있는 새 요청이 실행됩니다.
+`takeUntil`은 원본 Flow가 다음 이벤트를 내보낼 때 중단 상태를 확인하므로, 모델이 한동안
+응답하지 않을 수 있다면 `withTimeout`으로 강제 제한 시간을 함께 두세요.
+
+- `textDeltaFlow()`는 bluetape4k-coroutines의 `castNotNull`을 재사용해 네이티브
+  텍스트 델타를 순서대로 고릅니다. 버퍼링·재생·병렬 매핑·로그 기록은 추가하지 않습니다.
+- 빈 모델 ID와 콘텐츠, 비어 있는 메시지 컬렉션은 SDK 호출 전에
+  `IllegalArgumentException`으로 거절합니다.
+- 네이티브 SDK 오류와 코루틴 취소는 바꾸지 않고 호출자에게 전달합니다. 예외로 완료된
+  future도 그대로 유지하며, 실패·시간 초과·취소 시점에 수집자에게는 이미 일부 텍스트가
+  전달됐을 수 있습니다.
+- AWS SDK 재시도는 의미가 같은 출력을 반복할 수 있습니다. 정확히 한 번
+  (exactly-once), 중복 제거, 재생, 파사드 차원의 재시도는 제공하지 않습니다.
+- 트랜잭션 성격의 작업에는 비스트리밍 `Converse`가 더 안전합니다.
+- 자격 증명은 기본 AWS provider chain으로 공급하고, 루프백 주소를 직접 지정한 테스트가
+  아니라면 HTTPS 엔드포인트만 사용하세요. 생성된 출력은 신뢰하지 말고 도구를 자동
+  실행하지 마세요. 운영 로그에는 허용한 메타데이터만 남기며 원문 SDK 예외, 프롬프트,
+  모델 출력은 기록하거나 애플리케이션 경계 밖에 그대로 노출하지 않습니다.
 
 ## 3단계 API 패턴
 
@@ -296,6 +359,7 @@ AWS SDK 서비스와 코루틴 헬퍼는 `compileOnly`로 선언되어 있으므
 
 ```kotlin
 dependencies {
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:${bluetape4kVersion}"))
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:${bluetape4kVersion}")
 
     // 공개 코루틴 확장과 Flow 어댑터 사용 시 필요
@@ -318,6 +382,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:eventbridge")
+    implementation("software.amazon.awssdk:bedrockruntime")
     implementation("software.amazon.awssdk:sts")
     // ... 필요한 서비스 추가
 }

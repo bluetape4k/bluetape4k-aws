@@ -41,9 +41,74 @@ request DSLs, async extensions, coroutine wrappers, and repository helpers.
 | **CloudWatch Logs** | Log group/stream management, event publishing, Coroutines extensions         |
 | **Kinesis**         | Stream record send/receive, Coroutines extensions                            |
 | **EventBridge**     | Event bus, rule, target, list, and `PutEvents` helpers                       |
+| **Bedrock Runtime** | Model-neutral `Converse`, `ConverseStream`, and cold text-delta `Flow`       |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines extensions              |
 | **Secrets Manager** | Redacted secret values, request DSLs, sync/async/coroutine helpers           |
 | **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs           |
+
+## Bedrock Runtime Converse and Streaming
+
+![Amazon Bedrock Runtime streaming sequence](../docs/images/readme-diagrams/aws-bedrock-runtime-streaming-sequence-en-01.png)
+
+The facade keeps native AWS SDK v2 request, response, event, future, and
+exception types. It supports blocking `Converse`, the original
+`CompletableFuture` through `converseAsync`, a suspending `converse` extension,
+and model-neutral `ConverseStream` as a cold `Flow`. It does not add a
+provider-specific prompt abstraction.
+
+```kotlin
+import io.bluetape4k.aws.bedrock.bedrockRuntimeAsyncClientOf
+import io.bluetape4k.aws.bedrock.converseStreamFlow
+import io.bluetape4k.aws.bedrock.model.converseStreamRequestOf
+import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.aws.bedrock.textDeltaFlow
+import io.bluetape4k.coroutines.flow.extensions.takeUntil
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun streamReply(
+    modelId: String,
+    prompt: String,
+    stopSignal: Flow<Any?>,
+): List<String> =
+    bedrockRuntimeAsyncClientOf().use { client ->
+        withTimeout(30.seconds) {
+            client.converseStreamFlow(
+                converseStreamRequestOf(
+                    modelId = modelId,
+                    messages = listOf(userMessageOf(prompt)),
+                ),
+            )
+                .textDeltaFlow()
+                .takeUntil(stopSignal)
+                .toList()
+        }
+    }
+```
+
+The application owns clients returned by `bedrockRuntimeClientOf` and
+`bedrockRuntimeAsyncClientOf`; close them after the terminal stream collection.
+Every collection is a new, potentially billable request. `takeUntil` checks its
+stop state when the source produces the next event, so use `withTimeout` for a
+hard deadline when the model may remain silent.
+
+- `textDeltaFlow()` reuses bluetape4k-coroutines `castNotNull` to select native
+  text deltas in order without buffering, replay, parallel mapping, or logging.
+- Blank model IDs, blank content, and empty message collections fail with
+  `IllegalArgumentException` before an SDK call.
+- Native SDK failures and coroutine cancellation reach the caller unchanged.
+  Exceptional futures remain exceptional, and a streaming collector can
+  already hold partial text when failure, timeout, or cancellation occurs.
+- AWS SDK retries can repeat semantically equivalent output. There is no
+  exactly-once delivery, deduplication, replay, or facade-level retry.
+- Prefer non-streaming `Converse` when the operation must be transactional.
+- Keep credentials on the default AWS provider chain, use HTTPS except for
+  literal loopback tests, treat generated output as untrusted, and never
+  execute tools from it automatically. Log only allowlisted operation
+  metadata; never log or expose raw SDK exceptions, prompts, or model output
+  beyond the application boundary.
 
 ## Three-Tier API Pattern
 
@@ -303,6 +368,7 @@ dependencies, so consumers add the runtime dependencies for the APIs they use.
 
 ```kotlin
 dependencies {
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:${bluetape4kVersion}"))
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-java:${bluetape4kVersion}")
 
     // Coroutine extensions and Flow adapters used by public APIs
@@ -325,6 +391,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:eventbridge")
+    implementation("software.amazon.awssdk:bedrockruntime")
     implementation("software.amazon.awssdk:sts")
     // ... add other services as needed
 }
