@@ -1,14 +1,15 @@
 # WIP - bluetape4k-aws
 
-Snapshot: 2026-07-23 KST
+Snapshot: 2026-07-24 KST
 Scope: active 0.5.0 Bedrock Runtime delivery and remaining documentation cleanup.
 Open count: 6 issues, including 2 in milestone 0.5.0.
 
 ## Current Direction
 
 The `0.5.0` queue is active again for the Bedrock Runtime facade and the
-remaining legacy Korean KDoc migration. Issue #312 is in implementation on
-`feat/issue-312-bedrock-runtime`; no pull request exists yet.
+remaining legacy Korean KDoc migration. Issue #312 is under review in
+[#380](https://github.com/bluetape4k/bluetape4k-aws/pull/380) from
+`feat/issue-312-bedrock-runtime`.
 
 Keep this file focused on active repository management:
 
@@ -27,14 +28,14 @@ fallback for Floci API coverage gaps, and MiniStack remains comparison-only.
 
 | Priority | Issue | Milestone | Notes |
 |---|---|---|---|
-| P0 | [#312](https://github.com/bluetape4k/bluetape4k-aws/issues/312) | 0.5.0 | Bedrock Runtime minimal facade is in implementation and validation. |
+| P0 | [#312](https://github.com/bluetape4k/bluetape4k-aws/issues/312) | 0.5.0 | Bedrock Runtime minimal facade is under review in PR #380. |
 | P1 | [#359](https://github.com/bluetape4k/bluetape4k-aws/issues/359) | 0.5.0 | Finish the remaining legacy Korean KDoc migration after #312. |
 
 ## Open PRs
 
 | PR | Branch | Notes |
 |---|---|---|
-| None | N/A | Verified with `gh pr list` on 2026-07-23 KST. |
+| [#380](https://github.com/bluetape4k/bluetape4k-aws/pull/380) | `feat/issue-312-bedrock-runtime` → `develop` | Open; Bedrock Runtime facade validation and review. |
 
 ## Completed Since 0.4.0
 
@@ -77,10 +78,10 @@ fallback for Floci API coverage gaps, and MiniStack remains comparison-only.
 
 ## Refresh Notes
 
-- Verified with `gh` on 2026-07-23 KST: `0.5.0` has 32 closed items and 2 open
+- Verified with `gh` on 2026-07-24 KST: `0.5.0` has 32 closed items and 2 open
   items (#312 and #359).
-- Verified with `gh` on 2026-07-23 KST: the repository has 6 open issues and no
-  open pull requests.
+- Verified with `gh` on 2026-07-24 KST: the repository has 6 open issues and
+  PR #380 is open from `feat/issue-312-bedrock-runtime` to `develop`.
 - Latest GitHub release remains `0.4.0`; current unreleased development uses
   `baseVersion=0.5.0`.
 - Local snapshot dependencies are
