@@ -317,6 +317,8 @@ subprojects {
 
             dependency("aws.sdk.kotlin:aws-http:${bt4kVersion("aws-kotlin")}")
 
+            dependency("aws.sdk.kotlin:bedrockruntime:${bt4kVersion("aws-kotlin")}")
+
             dependency("aws.sdk.kotlin:cloudwatch:${bt4kVersion("aws-kotlin")}")
 
             dependency("aws.sdk.kotlin:cloudwatchlogs:${bt4kVersion("aws-kotlin")}")
@@ -400,6 +402,8 @@ subprojects {
             dependency("software.amazon.awssdk:aws-core:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:aws-crt-client:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:bedrockruntime:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:cloudwatch:${bt4kVersion("aws2")}")
 

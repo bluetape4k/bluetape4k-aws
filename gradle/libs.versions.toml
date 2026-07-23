@@ -113,6 +113,7 @@ aws2-aws-crt-client = { module = "software.amazon.awssdk:aws-crt-client" }
 aws2-netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client" }
 aws2-url-connection-client = { module = "software.amazon.awssdk:url-connection-client" }
 aws2-aws-crt = { module = "software.amazon.awssdk.crt:aws-crt", version.ref = "aws2-crt" }
+aws2-bedrock-runtime = { module = "software.amazon.awssdk:bedrockruntime" }
 aws2-dynamodb-enhanced = { module = "software.amazon.awssdk:dynamodb-enhanced" }
 aws2-s3 = { module = "software.amazon.awssdk:s3" }
 aws2-s3control = { module = "software.amazon.awssdk:s3control" }
@@ -142,6 +143,7 @@ aws-dax-client = { module = "software.amazon.dax:amazon-dax-client", version.ref
 aws-kotlin-aws-config = { module = "aws.sdk.kotlin:aws-config" }
 aws-kotlin-aws-endpoint = { module = "aws.sdk.kotlin:aws-endpoint" }
 aws-kotlin-aws-http = { module = "aws.sdk.kotlin:aws-http" }
+aws-kotlin-bedrock-runtime = { module = "aws.sdk.kotlin:bedrockruntime" }
 aws-kotlin-dynamodb = { module = "aws.sdk.kotlin:dynamodb" }
 aws-kotlin-s3 = { module = "aws.sdk.kotlin:s3" }
 aws-kotlin-ses = { module = "aws.sdk.kotlin:ses" }

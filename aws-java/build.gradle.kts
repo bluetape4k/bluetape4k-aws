@@ -25,6 +25,7 @@ dependencies {
     compileOnly(libs.aws2.url.connection.client)
 
     // AWS SDK v2 Services (compileOnly — consumer adds runtime deps)
+    compileOnly(libs.aws2.bedrock.runtime)
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.s3)
     compileOnly(libs.aws2.s3vectors)
@@ -53,6 +54,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 
     // Test
+    testImplementation(libs.aws2.bedrock.runtime)
     testImplementation(libs.aws2.ec2)
     testImplementation(libs.aws2.rds)
     testImplementation(libs.aws2.secretsmanager)
