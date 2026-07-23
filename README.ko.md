@@ -30,7 +30,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 ## 제공 기능
 
 - **Kotlin-first AWS 클라이언트** — Java SDK v2 coroutine adapter, AWS Kotlin SDK helper, 작은 request DSL
-- **서비스 범위** — DynamoDB, S3, S3 Vectors, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, EventBridge, EventBridge Scheduler, STS, RDS IAM, Secrets Manager, Parameter Store
+- **서비스 범위** — DynamoDB, S3, S3 Vectors, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, EventBridge, EventBridge Scheduler, Bedrock Runtime, STS, RDS IAM, Secrets Manager, Parameter Store
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener, auto-configuration 제공
 - **Ktor 3 통합** — SigV4 signing, coroutine S3 접근, SQS consumer runtime, EventBridge publishing, DynamoDB server repository, EC2 IMDS helper, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 Floci-first emulator와 coverage gap을 위한 명시적 LocalStack fallback 검증
@@ -49,8 +49,8 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 
 | 모듈 | 아티팩트 | 설명 |
 |---|---|---|
-| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
-| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
+| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
+| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, EventBridge operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, EventBridge server plugin, Kinesis 및 STS server plugin, SES v2 및 SNS server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
@@ -68,9 +68,13 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 
 ![AWS component map diagram](docs/images/readme-diagrams/bluetape4k-aws-components-04.png)
 
-### 서비스 커버리지 차트
+### 주요 교차 모듈 서비스 커버리지
 
 ![AWS service coverage chart](docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png)
+
+이 차트는 여러 모듈에 걸쳐 통합된 주요 서비스를 다룹니다. Bedrock Runtime처럼
+core client 모듈에서만 제공하는 서비스는 위 모듈 표와 각 모듈 README에서
+확인할 수 있습니다.
 
 ---
 
@@ -132,6 +136,7 @@ dependencies {
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:scheduler")
+    implementation("software.amazon.awssdk:bedrockruntime")
     implementation("software.amazon.awssdk:rds")
     implementation("software.amazon.awssdk:sts")
 }
@@ -163,6 +168,7 @@ dependencies {
     implementation("aws.sdk.kotlin:kinesis")
     implementation("aws.sdk.kotlin:eventbridge")
     implementation("aws.sdk.kotlin:scheduler")
+    implementation("aws.sdk.kotlin:bedrockruntime")
     implementation("aws.sdk.kotlin:sts")
 }
 ```

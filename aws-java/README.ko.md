@@ -95,7 +95,8 @@ suspend fun streamReply(
 
 - `textDeltaFlow()`는 bluetape4k-coroutines의 `castNotNull`을 재사용해 네이티브
   텍스트 델타를 순서대로 고릅니다. 버퍼링·재생·병렬 매핑·로그 기록은 추가하지 않습니다.
-- 빈 모델 ID와 콘텐츠, 비어 있는 메시지 컬렉션은 SDK 호출 전에
+- 빈 모델 ID, 비어 있는 메시지 컬렉션, `contentBlockOf` 또는
+  `userMessageOf`에 전달한 빈 텍스트는 SDK 호출 전에
   `IllegalArgumentException`으로 거절합니다.
 - 네이티브 SDK 오류와 코루틴 취소는 바꾸지 않고 호출자에게 전달합니다. 예외로 완료된
   future도 그대로 유지하며, 실패·시간 초과·취소 시점에 수집자에게는 이미 일부 텍스트가

@@ -4,7 +4,10 @@ import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import software.amazon.awssdk.core.async.SdkPublisher
 
-internal class RecordingSdkPublisher<T> : SdkPublisher<T> {
+internal class RecordingSdkPublisher<T>(
+    private val onSubscribed: () -> Unit = {},
+    private val onCancelled: () -> Unit = {},
+) : SdkPublisher<T> {
 
     private val lock = Any()
     private var subscriber: Subscriber<in T>? = null
@@ -43,15 +46,20 @@ internal class RecordingSdkPublisher<T> : SdkPublisher<T> {
                 }
 
                 override fun cancel() {
-                    synchronized(lock) {
+                    val notifyCancelled = synchronized(lock) {
                         if (!cancelled) {
                             cancelled = true
                             cancelCount++
+                            true
+                        } else {
+                            false
                         }
                     }
+                    if (notifyCancelled) onCancelled()
                 }
             },
         )
+        onSubscribed()
     }
 
     fun emitOne(value: T): Boolean {

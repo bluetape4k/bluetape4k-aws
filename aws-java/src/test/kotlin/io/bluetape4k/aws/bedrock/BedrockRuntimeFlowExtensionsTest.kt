@@ -13,6 +13,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -37,6 +38,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRespon
 import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent
 import software.amazon.awssdk.services.bedrockruntime.model.ValidationException
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 class BedrockRuntimeFlowExtensionsTest {
@@ -445,6 +448,44 @@ class BedrockRuntimeFlowExtensionsTest {
         future.cancelCount shouldBeEqualTo 1
         publisher.cancelCount shouldBeEqualTo 1
         verify(exactly = 1) { client.converseStream(any<ConverseStreamRequest>(), any()) }
+    }
+
+    @Test
+    fun `cancellation before retry publisher handoff cancels publisher once`() = runTest {
+        val handlerReady = CompletableDeferred<ConverseStreamResponseHandler>()
+        val future = CancelCountingFuture()
+        every { client.converseStream(request, any<ConverseStreamResponseHandler>()) } answers {
+            handlerReady.complete(secondArg())
+            future
+        }
+        val collector = launch(Dispatchers.Default) {
+            client.converseStreamFlow(request).toList()
+        }
+        val handler = handlerReady.await()
+        val firstSubscribed = CountDownLatch(1)
+        val firstCancelEntered = CountDownLatch(1)
+        val firstCancelRelease = CountDownLatch(1)
+        val first = RecordingSdkPublisher<ConverseStreamOutput>(
+            onSubscribed = firstSubscribed::countDown,
+            onCancelled = {
+                firstCancelEntered.countDown()
+                firstCancelRelease.await(5, TimeUnit.SECONDS)
+            },
+        )
+        val replacement = RecordingSdkPublisher<ConverseStreamOutput>()
+        handler.onEventStream(first)
+        firstSubscribed.await(5, TimeUnit.SECONDS).shouldBeTrue()
+
+        handler.onEventStream(replacement)
+        firstCancelEntered.await(5, TimeUnit.SECONDS).shouldBeTrue()
+        collector.cancel()
+        firstCancelRelease.countDown()
+        collector.join()
+
+        future.isCancelled.shouldBeTrue()
+        future.cancelCount shouldBeEqualTo 1
+        first.cancelCount shouldBeEqualTo 1
+        replacement.cancelCount shouldBeEqualTo 1
     }
 
     @Test

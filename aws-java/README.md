@@ -96,8 +96,9 @@ hard deadline when the model may remain silent.
 
 - `textDeltaFlow()` reuses bluetape4k-coroutines `castNotNull` to select native
   text deltas in order without buffering, replay, parallel mapping, or logging.
-- Blank model IDs, blank content, and empty message collections fail with
-  `IllegalArgumentException` before an SDK call.
+- Blank model IDs, empty message collections, and blank text passed to
+  `contentBlockOf` or `userMessageOf` fail with `IllegalArgumentException`
+  before an SDK call.
 - Native SDK failures and coroutine cancellation reach the caller unchanged.
   Exceptional futures remain exceptional, and a streaming collector can
   already hold partial text when failure, timeout, or cancellation occurs.

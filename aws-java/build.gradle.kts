@@ -94,7 +94,13 @@ tasks.test {
     }
     onlyIf(
         "bedrock-smoke: SKIP before client creation; missing=${missingSmokeInputs.joinToString(",")}",
-    ) {
+    ) { task ->
+        if (smokeRequested && !smokeEnabled) {
+            task.logger.lifecycle(
+                "bedrock-smoke: SKIP before client creation; missing={}",
+                missingSmokeInputs.joinToString(","),
+            )
+        }
         !smokeRequested || smokeEnabled
     }
 }

@@ -107,62 +107,62 @@ private class StreamCoordinator<T : Any>(
     }
 
     private suspend fun replace(sequence: Long, publisher: SdkPublisher<T>) {
-        var previous: StreamAttempt<T>? = null
-        val canClaim = mutex.withLock {
-            if (terminal !is StreamTerminal.Active || futureSucceeded || sequence < generation) {
-                false
-            } else {
-                generation = sequence
-                previous = attempt
-                attempt = null
-                true
+        var handedOff = false
+        try {
+            var previous: StreamAttempt<T>? = null
+            val canClaim = mutex.withLock {
+                if (terminal !is StreamTerminal.Active || futureSucceeded || sequence < generation) {
+                    false
+                } else {
+                    generation = sequence
+                    previous = attempt
+                    attempt = null
+                    true
+                }
             }
-        }
-        if (!canClaim) {
-            publisher.cancelImmediately()
-            return
-        }
+            if (!canClaim) return
 
-        previous?.cancelOnce()
-        previous?.jobReady?.await()?.join()
+            previous?.cancelOnce()
+            previous?.jobReady?.await()?.join()
 
-        val current = StreamAttempt(sequence, publisher)
-        val canSubscribe = mutex.withLock {
-            if (terminal is StreamTerminal.Active && !futureSucceeded && generation == sequence) {
-                attempt = current
-                true
-            } else {
-                false
+            val current = StreamAttempt(sequence, publisher)
+            val canSubscribe = mutex.withLock {
+                if (terminal is StreamTerminal.Active && !futureSucceeded && generation == sequence) {
+                    attempt = current
+                    true
+                } else {
+                    false
+                }
             }
-        }
-        if (!canSubscribe) {
-            publisher.cancelImmediately()
-            return
-        }
+            if (!canSubscribe) return
+            handedOff = true
 
-        val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            current.jobReady.complete(currentCoroutineContext().job)
-            if (current.cancelled.get()) return@launch
-            try {
-                publisher.asFlow()
-                    .buffer(0)
-                    .collect { value ->
-                        val currentGeneration = mutex.withLock {
-                            terminal is StreamTerminal.Active &&
-                                generation == sequence &&
-                                attempt === current
+            val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                current.jobReady.complete(currentCoroutineContext().job)
+                if (current.cancelled.get()) return@launch
+                try {
+                    publisher.asFlow()
+                        .buffer(0)
+                        .collect { value ->
+                            val currentGeneration = mutex.withLock {
+                                terminal is StreamTerminal.Active &&
+                                    generation == sequence &&
+                                    attempt === current
+                            }
+                            if (currentGeneration) emit(value)
                         }
-                        if (currentGeneration) emit(value)
-                    }
-                current.completion.complete(Result.success(Unit))
-            } catch (ce: CancellationException) {
-                current.completion.complete(Result.failure(ce))
-                throw ce
-            } catch (cause: Throwable) {
-                current.completion.complete(Result.failure(cause))
+                    current.completion.complete(Result.success(Unit))
+                } catch (ce: CancellationException) {
+                    current.completion.complete(Result.failure(ce))
+                    throw ce
+                } catch (cause: Throwable) {
+                    current.completion.complete(Result.failure(cause))
+                }
             }
+            if (!current.jobReady.isCompleted) current.jobReady.complete(job)
+        } finally {
+            if (!handedOff) publisher.cancelImmediately()
         }
-        if (!current.jobReady.isCompleted) current.jobReady.complete(job)
     }
 
     fun handlerFailureFromCallback(cause: Throwable) {
