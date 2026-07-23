@@ -196,6 +196,11 @@ request helper는 새로운 DTO를 만들지 않고 SDK model을 조립한다.
 - blank `modelId`, 빈 message 목록, blank text를 조기에 거부
 - SDK builder block으로 advanced field를 추가할 수 있게 유지
 
+Java SDK의 text content block은 generated `ContentBlock.Builder`를 사용한다.
+AWS Kotlin SDK의 `ContentBlock`은 builder가 없는 sealed class이므로 text
+helper는 `ContentBlock.Text(text)`를 반환하고 별도 builder parameter를
+노출하지 않는다.
+
 helper는 특정 모델 ID, provider 이름, prompt template 또는 기본 temperature를
 강제하지 않는다. inference 기본값은 AWS SDK와 호출자가 소유한다. builder
 block을 먼저 적용한 뒤 helper-owned 필수 입력인 text, user role, `modelId`,
@@ -332,10 +337,7 @@ suspend fun <R> withBedrockRuntimeClient(
     block: suspend (BedrockRuntimeClient) -> R,
 ): R
 
-inline fun contentBlockOf(
-    text: String,
-    crossinline builder: ContentBlock.Builder.() -> Unit = {},
-): ContentBlock
+fun contentBlockOf(text: String): ContentBlock
 
 inline fun userMessageOf(
     text: String,
@@ -823,6 +825,15 @@ opt-in smoke, release/rollback, prerequisites, compatibility까지 포함했다.
 
 첫 검토의 P2/P3는 모두 본문, 테스트, 문서, 수용 기준에 반영했으며 구현
 단계로 미룬 미해결 항목은 없다.
+
+### 2026-07-23 Kotlin SDK 계약 정정
+
+계획 작성 중 공식 AWS Kotlin SDK API를 다시 대조해 `ContentBlock`이
+builder를 노출하지 않는 sealed class임을 확인했다. Kotlin text helper를
+`contentBlockOf(text: String): ContentBlock`으로 좁히고
+`ContentBlock.Text(text)`를 반환하도록 정정했다. Java SDK의 generated
+builder 계약은 그대로 유지한다. 영향받는 Developer/API 및 User/Caller
+lens를 재검토했으며 두 lens 모두 P0=0, P1=0으로 수렴했다.
 
 ## 수용 기준
 
