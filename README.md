@@ -1091,6 +1091,12 @@ Override the emulator per test task with `-Dbluetape4k.aws.emulator=...` when
 the module supports it. Do not change repository-wide defaults based on service
 count claims alone; prove the exact AWS SDK calls used by the module.
 
+Testcontainer launchers are shared only within a single module test JVM.
+Committed tests, examples, application startup paths, and CI must not enable
+Docker-level container reuse implicitly. A developer who needs local-only
+container reuse for an experiment must instantiate the wrapper explicitly with
+`reuse = true` outside repository defaults and keep that choice out of CI.
+
 ```bash
 # Core Floci-first modules
 ./gradlew :bluetape4k-aws-java:test
