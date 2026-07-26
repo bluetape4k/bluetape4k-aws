@@ -6,15 +6,15 @@ import aws.sdk.kotlin.services.sesv2.model.Message
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * 이메일 본문 [Content]를 생성합니다.
+ * Creates email [Content].
  *
  * ```kotlin
  * val subject = contentOf("Hello, World!")
  * ```
  *
- * @param data 본문 문자열 (비어 있으면 안 됨)
- * @param charset 문자 인코딩 (기본값: UTF-8)
- * @return [Content] 인스턴스
+ * @param data content string. It must not be blank.
+ * @param charset character encoding. Defaults to UTF-8.
+ * @return [Content] instance.
  */
 fun contentOf(
     data: String,
@@ -32,14 +32,14 @@ fun contentOf(
 }
 
 /**
- * HTML 본문 [Body]를 생성합니다.
+ * Creates an HTML [Body].
  *
  * ```kotlin
  * val body = htmlBodyOf(contentOf("<h1>Hello</h1>"))
  * ```
  *
- * @param html HTML [Content] (null이면 생략)
- * @return [Body] 인스턴스
+ * @param html HTML [Content], or `null` to omit it.
+ * @return [Body] instance.
  */
 fun htmlBodyOf(
     html: Content? = null,
@@ -51,14 +51,14 @@ fun htmlBodyOf(
     }
 
 /**
- * 텍스트 본문 [Body]를 생성합니다.
+ * Creates a text [Body].
  *
  * ```kotlin
  * val body = textBodyOf(contentOf("Hello, World!"))
  * ```
  *
- * @param text 텍스트 [Content] (null이면 생략)
- * @return [Body] 인스턴스
+ * @param text text [Content], or `null` to omit it.
+ * @return [Body] instance.
  */
 fun textBodyOf(
     text: Content? = null,
@@ -70,7 +70,7 @@ fun textBodyOf(
     }
 
 /**
- * 제목과 본문으로 이메일 [Message]를 생성합니다.
+ * Creates an email [Message] from a subject and body.
  *
  * ```kotlin
  * val message = messageOf(
@@ -79,9 +79,9 @@ fun textBodyOf(
  * )
  * ```
  *
- * @param subject 이메일 제목 [Content]
- * @param body 이메일 본문 [Body]
- * @return [Message] 인스턴스
+ * @param subject email subject [Content].
+ * @param body email [Body].
+ * @return [Message] instance.
  */
 fun messageOf(
     subject: Content,

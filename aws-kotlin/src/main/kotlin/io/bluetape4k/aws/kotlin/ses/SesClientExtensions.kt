@@ -19,7 +19,7 @@ import aws.smithy.kotlin.runtime.http.response.statusCode
 import kotlinx.coroutines.CancellationException
 
 /**
- * [emailRequest]를 바탕으로 email 을 전송합니다.
+ * Sends an email from [emailRequest].
  *
  * ```kotlin
  * val request = SendEmailRequest {
@@ -41,18 +41,18 @@ import kotlinx.coroutines.CancellationException
  *     }
  *     source = "noreply@example.com"
  *  }
- * // 메일 발송
+ * // Send the email.
  * val response = sesClient.send(request)
  * ```
- * @param emailRequest [SendEmailRequest] email 전송 요청 정보
- * @return [SendEmailResponse] email 전송 결과
+ * @param emailRequest [SendEmailRequest] with the email delivery details.
+ * @return [SendEmailResponse] with the email delivery result.
  */
 suspend inline fun SesClient.send(emailRequest: SendEmailRequest): SendEmailResponse =
     sendEmail(emailRequest)
 
 
 /**
- * [rawEmailRequest]를 바탕으로 raw email 을 전송합니다.
+ * Sends a raw email from [rawEmailRequest].
  *
  * ```kotlin
  * val request = SendRawEmailRequest {
@@ -63,14 +63,14 @@ suspend inline fun SesClient.send(emailRequest: SendEmailRequest): SendEmailResp
  *
  * val response = sesClient.sendRaw(request)
  * ```
- * @param rawEmailRequest [SendRawEmailRequest] raw email 전송 요청 정보
- * @return [SendRawEmailResponse] raw email 전송 결과
+ * @param rawEmailRequest [SendRawEmailRequest] with the raw email delivery details.
+ * @return [SendRawEmailResponse] with the raw email delivery result.
  */
 suspend inline fun SesClient.sendRaw(rawEmailRequest: SendRawEmailRequest): SendRawEmailResponse =
     sendRawEmail(rawEmailRequest)
 
 /**
- * [emailRequest]를 바탕으로 템플릿을 사용한 email 을 전송합니다.
+ * Sends a templated email from [emailRequest].
  *
  * ```kotlin
  * val request = SendTemplatedEmailRequest {
@@ -91,14 +91,14 @@ suspend inline fun SesClient.sendRaw(rawEmailRequest: SendRawEmailRequest): Send
  * val response = sesClient.sendTemplated(request)
  * ```
  *
- * @param emailRequest [SendTemplatedEmailRequest] email 전송 요청 정보
- * @return [SendTemplatedEmailResponse] email 전송 결과
+ * @param emailRequest [SendTemplatedEmailRequest] with the templated email delivery details.
+ * @return [SendTemplatedEmailResponse] with the templated email delivery result.
  */
 suspend inline fun SesClient.sendTemplated(emailRequest: SendTemplatedEmailRequest): SendTemplatedEmailResponse =
     sendTemplatedEmail(emailRequest)
 
 /**
- * [emailRequest]를 바탕으로 템플릿을 사용한 email 을 벌크로 전송합니다.
+ * Sends bulk templated email from [emailRequest].
  *
  * ```kotlin
  * val request = SendBulkTemplatedEmailRequest {
@@ -116,15 +116,15 @@ suspend inline fun SesClient.sendTemplated(emailRequest: SendTemplatedEmailReque
  * val response = sesClient.sendBulkTemplated(request)
  * ```
  *
- * @param emailRequest [SendBulkTemplatedEmailRequest] email 전송 요청 정보
- * @return [SendBulkTemplatedEmailResponse] email 전송 결과
+ * @param emailRequest [SendBulkTemplatedEmailRequest] with the bulk templated email delivery details.
+ * @return [SendBulkTemplatedEmailResponse] with the bulk templated email delivery result.
  */
 suspend inline fun SesClient.sendBulkTemplated(emailRequest: SendBulkTemplatedEmailRequest): SendBulkTemplatedEmailResponse =
     sendBulkTemplatedEmail(emailRequest)
 
 
 /**
- * 새로운 [Template]을 생성합니다.
+ * Creates a new [Template].
  *
  * ```kotlin
  * val template = Template {
@@ -137,7 +137,7 @@ suspend inline fun SesClient.sendBulkTemplated(emailRequest: SendBulkTemplatedEm
  * val response = sesClient.createTemplate(template)
  * ```
  *
- * @param template [Template] 템플릿 정보
+ * @param template [Template] definition.
  */
 suspend inline fun SesClient.createTemplate(template: Template): CreateTemplateResponse =
     createTemplate { this.template = template }
