@@ -21,11 +21,11 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
 /**
- * Kinesis 스트림을 생성합니다.
+ * Creates a Kinesis stream.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [shardCount]는 1 이상이어야 한다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
+ * - [shardCount] must be at least 1.
  *
  * ```kotlin
  * val response = kinesisClient.createStream("my-stream", shardCount = 1)
@@ -44,11 +44,11 @@ fun KinesisClient.createStream(
 }
 
 /**
- * Kinesis 스트림에 단일 레코드를 전송합니다.
+ * Sends a single record to a Kinesis stream.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [partitionKey]가 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
+ * - Throws `IllegalArgumentException` when [partitionKey] is blank.
  *
  * ```kotlin
  * val response = kinesisClient.putRecord(
@@ -74,11 +74,11 @@ fun KinesisClient.putRecord(
 }
 
 /**
- * Kinesis 스트림에 복수의 레코드를 배치로 전송합니다.
+ * Sends multiple records to a Kinesis stream as a batch.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [entries]는 1..500개여야 한다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
+ * - [entries] must contain 1..500 entries.
  *
  * ```kotlin
  * val entries = listOf(
@@ -103,11 +103,11 @@ fun KinesisClient.putRecords(
 }
 
 /**
- * Kinesis 스트림의 샤드 이터레이터를 조회합니다.
+ * Gets a shard iterator for a Kinesis stream.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [shardId]가 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
+ * - Throws `IllegalArgumentException` when [shardId] is blank.
  *
  * ```kotlin
  * val response = kinesisClient.getShardIterator(
@@ -133,11 +133,11 @@ fun KinesisClient.getShardIterator(
 }
 
 /**
- * Kinesis 샤드 이터레이터로부터 레코드를 조회합니다.
+ * Gets records from a Kinesis shard iterator.
  *
- * ## 동작/계약
- * - [shardIterator]가 blank이면 `IllegalArgumentException`을 던진다.
- * - [limit]은 1..10000이어야 한다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [shardIterator] is blank.
+ * - [limit] must be in the 1..10000 range.
  *
  * ```kotlin
  * val response = kinesisClient.getRecords(shardIterator, limit = 100)
@@ -156,10 +156,10 @@ fun KinesisClient.getRecords(
 }
 
 /**
- * Kinesis 스트림의 상세 정보를 조회합니다.
+ * Describes a Kinesis stream.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
  *
  * ```kotlin
  * val response = kinesisClient.describeStream("my-stream")
@@ -175,10 +175,10 @@ fun KinesisClient.describeStream(
 }
 
 /**
- * Kinesis 스트림을 삭제합니다.
+ * Deletes a Kinesis stream.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
  *
  * ```kotlin
  * val response = kinesisClient.deleteStream("my-stream")

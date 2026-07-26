@@ -13,17 +13,17 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClientBuilder
 import java.net.URI
 
 /**
- * [CloudWatchClient], [CloudWatchAsyncClient] 생성을 위한 Factory 입니다.
+ * Factory for creating [CloudWatchClient] and [CloudWatchAsyncClient] instances.
  */
 object CloudWatchClientFactory {
 
     /**
-     * 동기 [CloudWatchClient] 생성을 지원합니다.
+     * Supports synchronous [CloudWatchClient] creation.
      */
     object Sync {
 
         /**
-         * DSL 빌더로 [CloudWatchClient]를 생성합니다.
+         * Creates a [CloudWatchClient] with a DSL builder.
          *
          * ```kotlin
          * val client = CloudWatchClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -36,7 +36,7 @@ object CloudWatchClientFactory {
             cloudWatchClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [CloudWatchClient]를 생성합니다.
+         * Creates a [CloudWatchClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = CloudWatchClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -54,12 +54,12 @@ object CloudWatchClientFactory {
     }
 
     /**
-     * 비동기 [CloudWatchAsyncClient] 생성을 지원합니다.
+     * Supports asynchronous [CloudWatchAsyncClient] creation.
      */
     object Async {
 
         /**
-         * DSL 빌더로 [CloudWatchAsyncClient]를 생성합니다.
+         * Creates a [CloudWatchAsyncClient] with a DSL builder.
          *
          * ```kotlin
          * val client = CloudWatchClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -72,7 +72,7 @@ object CloudWatchClientFactory {
             cloudWatchAsyncClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [CloudWatchAsyncClient]를 생성합니다.
+         * Creates a [CloudWatchAsyncClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = CloudWatchClientFactory.Async.create(region = Region.AP_NORTHEAST_2)

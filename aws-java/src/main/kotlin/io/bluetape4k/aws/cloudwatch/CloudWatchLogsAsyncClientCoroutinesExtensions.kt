@@ -11,10 +11,10 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
 
 /**
- * [logGroupName]으로 CloudWatch Logs 그룹을 코루틴으로 생성합니다.
+ * Creates a CloudWatch Logs group with [logGroupName] using coroutines.
  *
- * ## 동작/계약
- * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [logGroupName] is blank.
  *
  * ```kotlin
  * val response = cloudWatchLogsAsyncClient.createLogGroup("/aws/lambda/my-function")
@@ -28,11 +28,11 @@ suspend fun CloudWatchLogsAsyncClient.createLogGroup(
 }
 
 /**
- * [logGroupName]과 [logStreamName]으로 CloudWatch Logs 스트림을 코루틴으로 생성합니다.
+ * Creates a CloudWatch Logs stream with [logGroupName] and [logStreamName] using coroutines.
  *
- * ## 동작/계약
- * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [logStreamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [logGroupName] is blank.
+ * - Throws `IllegalArgumentException` when [logStreamName] is blank.
  *
  * ```kotlin
  * val response = cloudWatchLogsAsyncClient.createLogStream(
@@ -54,11 +54,11 @@ suspend fun CloudWatchLogsAsyncClient.createLogStream(
 }
 
 /**
- * [logGroupName]의 [logStreamName] 스트림에 [logEvents] 목록을 코루틴으로 게시합니다.
+ * Publishes [logEvents] to the [logStreamName] stream in [logGroupName] using coroutines.
  *
- * ## 동작/계약
- * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [logStreamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [logGroupName] is blank.
+ * - Throws `IllegalArgumentException` when [logStreamName] is blank.
  *
  * ```kotlin
  * val response = cloudWatchLogsAsyncClient.putLogEvents(
@@ -83,7 +83,7 @@ suspend fun CloudWatchLogsAsyncClient.putLogEvents(
 }
 
 /**
- * CloudWatch Logs 그룹 목록을 코루틴으로 조회합니다.
+ * Lists CloudWatch Logs groups using coroutines.
  *
  * ```kotlin
  * val response = cloudWatchLogsAsyncClient.describeLogGroups(logGroupNamePrefix = "/aws/lambda")
@@ -98,10 +98,10 @@ suspend fun CloudWatchLogsAsyncClient.describeLogGroups(
     }.await()
 
 /**
- * [logGroupName]의 로그 스트림 목록을 코루틴으로 조회합니다.
+ * Lists log streams in [logGroupName] using coroutines.
  *
- * ## 동작/계약
- * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [logGroupName] is blank.
  *
  * ```kotlin
  * val response = cloudWatchLogsAsyncClient.describeLogStreams("/aws/lambda/my-function")

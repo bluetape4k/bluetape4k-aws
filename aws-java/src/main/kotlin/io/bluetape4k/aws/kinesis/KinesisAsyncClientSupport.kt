@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
 import java.net.URI
 
 /**
- * [KinesisAsyncClient]를 빌드합니다.
+ * Builds a [KinesisAsyncClient].
  *
  * ```kotlin
  * val client = kinesisAsyncClient { region(Region.AP_NORTHEAST_2) }
@@ -25,9 +25,9 @@ inline fun kinesisAsyncClient(
         }
 
 /**
- * endpoint + credentials 기반으로 [KinesisAsyncClient]를 생성합니다.
+ * Creates a [KinesisAsyncClient] from endpoint and credentials settings.
  *
- * nullable 파라미터는 null 이 아닐 때만 builder에 반영됩니다.
+ * Nullable parameters are applied to the builder only when they are not null.
  *
  * ```kotlin
  * val client = kinesisAsyncClientOf(endpoint = URI("http://localhost:4566"))

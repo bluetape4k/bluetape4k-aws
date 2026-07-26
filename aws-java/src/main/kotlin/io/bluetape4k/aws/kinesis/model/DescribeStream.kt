@@ -4,7 +4,7 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kinesis.model.DescribeStreamRequest
 
 /**
- * DSL 블록으로 [DescribeStreamRequest]를 빌드합니다.
+ * Builds a [DescribeStreamRequest] with a DSL block.
  *
  * ```kotlin
  * val req = describeStreamRequest {
@@ -18,10 +18,10 @@ inline fun describeStreamRequest(
     DescribeStreamRequest.builder().apply(builder).build()
 
 /**
- * 스트림 이름으로 [DescribeStreamRequest]를 생성합니다.
+ * Creates a [DescribeStreamRequest] from a stream name.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
  *
  * ```kotlin
  * val req = describeStreamRequestOf("my-stream")

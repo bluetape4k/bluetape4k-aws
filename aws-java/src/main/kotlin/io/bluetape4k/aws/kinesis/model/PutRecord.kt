@@ -5,7 +5,7 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
 
 /**
- * DSL 블록으로 [PutRecordRequest]를 빌드합니다.
+ * Builds a [PutRecordRequest] with a DSL block.
  *
  * ```kotlin
  * val req = putRecordRequest {
@@ -21,11 +21,11 @@ inline fun putRecordRequest(
     PutRecordRequest.builder().apply(builder).build()
 
 /**
- * 스트림 이름, 파티션 키, 데이터로 [PutRecordRequest]를 생성합니다.
+ * Creates a [PutRecordRequest] from a stream name, partition key, and data.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [partitionKey]가 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
+ * - Throws `IllegalArgumentException` when [partitionKey] is blank.
  *
  * ```kotlin
  * val req = putRecordRequestOf(

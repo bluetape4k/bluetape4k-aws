@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import java.util.concurrent.CompletableFuture
 
 /**
- * Kinesis 스트림을 비동기로 생성합니다.
+ * Creates a Kinesis stream asynchronously.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.createStreamAsync("my-stream", shardCount = 1).join()
@@ -41,7 +41,7 @@ fun KinesisAsyncClient.createStreamAsync(
 }
 
 /**
- * Kinesis 스트림에 단일 레코드를 비동기로 전송합니다.
+ * Sends a single record to a Kinesis stream asynchronously.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.putRecordAsync(
@@ -66,7 +66,7 @@ fun KinesisAsyncClient.putRecordAsync(
 }
 
 /**
- * Kinesis 스트림에 복수의 레코드를 비동기로 배치 전송합니다.
+ * Sends multiple records to a Kinesis stream asynchronously as a batch.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.putRecordsAsync("my-stream", entries).join()
@@ -85,7 +85,7 @@ fun KinesisAsyncClient.putRecordsAsync(
 }
 
 /**
- * Kinesis 스트림의 샤드 이터레이터를 비동기로 조회합니다.
+ * Gets a shard iterator for a Kinesis stream asynchronously.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.getShardIteratorAsync(
@@ -110,7 +110,7 @@ fun KinesisAsyncClient.getShardIteratorAsync(
 }
 
 /**
- * Kinesis 샤드 이터레이터로부터 레코드를 비동기로 조회합니다.
+ * Gets records from a Kinesis shard iterator asynchronously.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.getRecordsAsync(shardIterator, limit = 100).join()
@@ -129,7 +129,7 @@ fun KinesisAsyncClient.getRecordsAsync(
 }
 
 /**
- * Kinesis 스트림 상세 정보를 비동기로 조회합니다.
+ * Describes a Kinesis stream asynchronously.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.describeStreamAsync("my-stream").join()
@@ -145,7 +145,7 @@ fun KinesisAsyncClient.describeStreamAsync(
 }
 
 /**
- * Kinesis 스트림을 비동기로 삭제합니다.
+ * Deletes a Kinesis stream asynchronously.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.deleteStreamAsync("my-stream").join()

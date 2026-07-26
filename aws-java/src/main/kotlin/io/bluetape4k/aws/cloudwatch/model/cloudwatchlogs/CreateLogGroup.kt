@@ -4,7 +4,7 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupRequest
 
 /**
- * DSL 블록으로 [CreateLogGroupRequest]를 빌드합니다.
+ * Builds a [CreateLogGroupRequest] with a DSL block.
  *
  * ```kotlin
  * val request = createLogGroupRequest {
@@ -18,10 +18,10 @@ inline fun createLogGroupRequest(
     CreateLogGroupRequest.builder().apply(builder).build()
 
 /**
- * 로그 그룹 이름으로 [CreateLogGroupRequest]를 생성합니다.
+ * Creates a [CreateLogGroupRequest] from a log group name.
  *
- * ## 동작/계약
- * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [logGroupName] is blank.
  *
  * ```kotlin
  * val request = createLogGroupRequestOf("/aws/lambda/my-function")

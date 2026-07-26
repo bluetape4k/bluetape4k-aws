@@ -5,7 +5,7 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kinesis.model.CreateStreamRequest
 
 /**
- * DSL 블록으로 [CreateStreamRequest]를 빌드합니다.
+ * Builds a [CreateStreamRequest] with a DSL block.
  *
  * ```kotlin
  * val req = createStreamRequest {
@@ -20,11 +20,11 @@ inline fun createStreamRequest(
     CreateStreamRequest.builder().apply(builder).build()
 
 /**
- * 스트림 이름과 샤드 수로 [CreateStreamRequest]를 생성합니다.
+ * Creates a [CreateStreamRequest] from a stream name and shard count.
  *
- * ## 동작/계약
- * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [shardCount]는 1 이상이어야 한다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [streamName] is blank.
+ * - [shardCount] must be at least 1.
  *
  * ```kotlin
  * val req = createStreamRequestOf("my-stream", shardCount = 2)
