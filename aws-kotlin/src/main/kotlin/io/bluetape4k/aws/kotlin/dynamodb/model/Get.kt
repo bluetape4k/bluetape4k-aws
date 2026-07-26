@@ -5,12 +5,12 @@ import aws.sdk.kotlin.services.dynamodb.model.Get
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * DSL 블록으로 DynamoDB [Get]을 빌드합니다 ([AttributeValue] 키 오버로드).
+ * Builds a DynamoDB [Get] with a DSL block. [AttributeValue] key overload.
  *
- * ## 동작/계약
- * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [key]는 조회할 항목의 기본 키 맵으로, null이면 설정되지 않는다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [tableName] is blank.
+ * - [key] is the primary key map for the item to read and is omitted when null.
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val get = getOf("users", mapOf("id" to AttributeValue.S("u1")))
@@ -18,10 +18,10 @@ import io.bluetape4k.support.requireNotBlank
  * // get.key?.get("id") == AttributeValue.S("u1")
  * ```
  *
- * @param tableName 조회할 DynamoDB 테이블 이름 (blank이면 예외)
- * @param key 조회할 항목의 기본 키 맵
- * @param expressionAttributeNames 프로젝션 표현식 속성 이름 치환 맵
- * @param projectionExpression 반환할 속성을 지정하는 프로젝션 표현식
+ * @param tableName DynamoDB table name to read from. Blank values throw.
+ * @param key primary key map for the item to read.
+ * @param expressionAttributeNames projection expression attribute name substitution map.
+ * @param projectionExpression projection expression that selects returned attributes.
  */
 @JvmName("getOfAttributeValue")
 inline fun getOf(
@@ -44,22 +44,22 @@ inline fun getOf(
 }
 
 /**
- * DSL 블록으로 DynamoDB [Get]을 빌드합니다 (Any? 키 오버로드).
+ * Builds a DynamoDB [Get] with a DSL block. Any? key overload.
  *
- * ## 동작/계약
- * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [key]의 각 값은 [toAttributeValueMap]을 통해 [AttributeValue]로 자동 변환된다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [tableName] is blank.
+ * - Each value in [key] is converted into [AttributeValue] through [toAttributeValueMap].
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val get = getOf("users", mapOf("id" to "u1"))
  * // get.key?.get("id") == AttributeValue.S("u1")
  * ```
  *
- * @param tableName 조회할 DynamoDB 테이블 이름 (blank이면 예외)
- * @param key 조회할 항목의 기본 키 맵 (자동으로 [AttributeValue]로 변환)
- * @param expressionAttributeNames 프로젝션 표현식 속성 이름 치환 맵
- * @param projectionExpression 반환할 속성을 지정하는 프로젝션 표현식
+ * @param tableName DynamoDB table name to read from. Blank values throw.
+ * @param key primary key map for the item to read. Converted to [AttributeValue] automatically.
+ * @param expressionAttributeNames projection expression attribute name substitution map.
+ * @param projectionExpression projection expression that selects returned attributes.
  */
 @JvmName("getOfAny")
 inline fun getOf(

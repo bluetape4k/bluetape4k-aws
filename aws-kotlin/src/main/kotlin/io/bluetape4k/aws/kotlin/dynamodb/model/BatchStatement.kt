@@ -6,12 +6,12 @@ import aws.sdk.kotlin.services.dynamodb.model.ReturnValuesOnConditionCheckFailur
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * DSL 블록으로 DynamoDB [BatchStatementRequest]를 빌드합니다 ([AttributeValue] 파라미터 오버로드).
+ * Builds a DynamoDB [BatchStatementRequest] with a DSL block. [AttributeValue] parameter overload.
  *
- * ## 동작/계약
- * - [statement]가 blank이면 `IllegalArgumentException`을 던진다.
- * - [parameters]는 PartiQL 구문의 바인딩 파라미터로 순서대로 매핑된다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [statement] is blank.
+ * - [parameters] are mapped in order as PartiQL binding parameters.
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val req = batchStatementRequestOf(
@@ -21,10 +21,10 @@ import io.bluetape4k.support.requireNotBlank
  * // req.statement == "SELECT * FROM users WHERE id = ?"
  * ```
  *
- * @param statement 실행할 PartiQL 구문 (blank이면 예외)
- * @param parameters PartiQL 바인딩 파라미터 목록
- * @param consistentRead 강력한 일관성 읽기 사용 여부
- * @param returnValuesOnConditionCheckFailure 조건 검사 실패 시 반환할 항목 설정
+ * @param statement PartiQL statement to execute. Blank values throw.
+ * @param parameters PartiQL binding parameter list.
+ * @param consistentRead whether to use strongly consistent reads.
+ * @param returnValuesOnConditionCheckFailure item return settings for condition check failures.
  */
 @JvmName("batchStatementRequestOfAttributeValue")
 inline fun batchStatementRequestOf(
@@ -47,12 +47,12 @@ inline fun batchStatementRequestOf(
 }
 
 /**
- * DSL 블록으로 DynamoDB [BatchStatementRequest]를 빌드합니다 (Any? 파라미터 오버로드).
+ * Builds a DynamoDB [BatchStatementRequest] with a DSL block. Any? parameter overload.
  *
- * ## 동작/계약
- * - [statement]가 blank이면 `IllegalArgumentException`을 던진다.
- * - [parameters]의 각 원소는 [toAttributeValue]를 통해 [AttributeValue]로 자동 변환된다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [statement] is blank.
+ * - Each element in [parameters] is converted into [AttributeValue] through [toAttributeValue].
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val req = batchStatementRequestOf(
@@ -62,10 +62,10 @@ inline fun batchStatementRequestOf(
  * // req.parameters?.first() == AttributeValue.S("u1")
  * ```
  *
- * @param statement 실행할 PartiQL 구문 (blank이면 예외)
- * @param parameters PartiQL 바인딩 파라미터 목록 (자동으로 [AttributeValue]로 변환)
- * @param consistentRead 강력한 일관성 읽기 사용 여부
- * @param returnValuesOnConditionCheckFailure 조건 검사 실패 시 반환할 항목 설정
+ * @param statement PartiQL statement to execute. Blank values throw.
+ * @param parameters PartiQL binding parameter list. Converted to [AttributeValue] automatically.
+ * @param consistentRead whether to use strongly consistent reads.
+ * @param returnValuesOnConditionCheckFailure item return settings for condition check failures.
  */
 @JvmName("batchStatementRequestOfAny")
 inline fun batchStatementRequestOf(
