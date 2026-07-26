@@ -4,7 +4,7 @@ import aws.sdk.kotlin.services.s3.model.GetObjectRetentionRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * [bucket]의 [key]에 해당하는 객체의 보존 설정 조회를 위한 [GetObjectRetentionRequest]를 생성합니다.
+ * Creates a [GetObjectRetentionRequest] for the retention settings of the object at [key] in [bucket].
  *
  * ```kotlin
  * val request = getObjectRetentionRequestOf(
@@ -14,10 +14,10 @@ import io.bluetape4k.support.requireNotBlank
  * val response = s3Client.getObjectRetention(request)
  * ```
  *
- * @param bucket 버킷 이름
- * @param key 객체 키
- * @param versionId 특정 버전 ID (null이면 최신 버전)
- * @return [GetObjectRetentionRequest] 인스턴스
+ * @param bucket bucket name
+ * @param key object key
+ * @param versionId specific version ID; when null, uses the latest version
+ * @return the [GetObjectRetentionRequest]
  */
 inline fun getObjectRetentionRequestOf(
     bucket: String,

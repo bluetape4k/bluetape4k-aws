@@ -4,16 +4,16 @@ import aws.sdk.kotlin.services.s3.model.HeadBucketRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * 버킷 존재 여부 확인을 위한 [HeadBucketRequest]를 생성합니다.
+ * Creates a [HeadBucketRequest] for checking whether a bucket exists.
  *
  * ```kotlin
  * val request = headBucketRequestOf("my-bucket")
  * val response = s3Client.headBucket(request)
  * ```
  *
- * @param bucket 버킷 이름
- * @param expectedBucketOwner 예상 버킷 소유자 계정 ID (null이면 생략)
- * @return [HeadBucketRequest] 인스턴스
+ * @param bucket bucket name
+ * @param expectedBucketOwner expected bucket owner account ID; omitted when null
+ * @return the [HeadBucketRequest]
  */
 inline fun headBucketRequestOf(
     bucket: String,

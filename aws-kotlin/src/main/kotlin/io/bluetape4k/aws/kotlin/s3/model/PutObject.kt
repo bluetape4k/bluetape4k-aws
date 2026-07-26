@@ -6,7 +6,7 @@ import aws.smithy.kotlin.runtime.content.ByteStream
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * [bucket]의 [key]에 객체를 저장하기 위한 [PutObjectRequest]를 생성합니다.
+ * Creates a [PutObjectRequest] for storing an object at [key] in [bucket].
  *
  * ```kotlin
  * val request = putObjectRequestOf(
@@ -18,13 +18,13 @@ import io.bluetape4k.support.requireNotBlank
  * s3Client.putObject(request)
  * ```
  *
- * @param bucket 버킷 이름
- * @param key 객체 키
- * @param body 저장할 [aws.smithy.kotlin.runtime.content.ByteStream] (null이면 빈 객체)
- * @param metadata 메타데이터 맵
- * @param acl 접근 제어 목록
- * @param contentType 콘텐츠 타입 (예: "text/plain", "application/json")
- * @return [PutObjectRequest] 인스턴스
+ * @param bucket bucket name
+ * @param key object key
+ * @param body [aws.smithy.kotlin.runtime.content.ByteStream] to store; when null, stores an empty object
+ * @param metadata metadata map
+ * @param acl access control list
+ * @param contentType content type, such as "text/plain" or "application/json"
+ * @return the [PutObjectRequest]
  */
 inline fun putObjectRequestOf(
     bucket: String,

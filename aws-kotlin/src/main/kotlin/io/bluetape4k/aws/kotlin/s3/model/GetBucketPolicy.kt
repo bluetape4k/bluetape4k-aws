@@ -4,7 +4,7 @@ import aws.sdk.kotlin.services.s3.model.GetBucketPolicyRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * [bucket]의 정책 조회를 위한 [GetBucketPolicyRequest]를 생성합니다.
+ * Creates a [GetBucketPolicyRequest] for retrieving the policy of [bucket].
  *
  * ```kotlin
  * val request = getBucketPolicyRequestOf("my-bucket")
@@ -12,9 +12,9 @@ import io.bluetape4k.support.requireNotBlank
  * val policy = response.policy
  * ```
  *
- * @param bucket 버킷 이름
- * @param expectedBucketOwner 예상 버킷 소유자 계정 ID (null이면 생략)
- * @return [GetBucketPolicyRequest] 인스턴스
+ * @param bucket bucket name
+ * @param expectedBucketOwner expected bucket owner account ID; omitted when null
+ * @return the [GetBucketPolicyRequest]
  */
 inline fun getBucketPolicyRequestOf(
     bucket: String,
