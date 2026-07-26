@@ -4,14 +4,14 @@ import aws.sdk.kotlin.services.ses.model.RawMessage
 import aws.sdk.kotlin.services.ses.model.SendRawEmailRequest
 
 /**
- * [RawMessage]로 [SendRawEmailRequest]를 생성합니다.
+ * Creates a [SendRawEmailRequest] from [RawMessage].
  *
  * ```kotlin
  * val request = sendRawEmailRequestOf(rawMessageOf(mimeBytes))
  * ```
  *
- * @param rawMessage 전송할 [RawMessage]
- * @return [SendRawEmailRequest] 인스턴스
+ * @param rawMessage [RawMessage] to send.
+ * @return [SendRawEmailRequest] instance.
  */
 inline fun sendRawEmailRequestOf(
     rawMessage: RawMessage,
