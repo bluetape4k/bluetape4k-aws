@@ -5,10 +5,10 @@ import software.amazon.awssdk.services.kms.model.CreateGrantRequest
 import software.amazon.awssdk.services.kms.model.GrantOperation
 
 /**
- * DSL 스타일의 빌더 람다로 [CreateGrantRequest]를 생성합니다.
+ * Creates a [CreateGrantRequest] with a DSL-style builder lambda.
  *
- * ## 동작/계약
- * - [CreateGrantRequest.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
+ * ## Behavior/Contract
+ * - Applies [builder] to [CreateGrantRequest.builder], then calls `build()`.
  *
  * ```kotlin
  * val request = createGrantRequest {
@@ -24,12 +24,12 @@ inline fun createGrantRequest(
     CreateGrantRequest.builder().apply(builder).build()
 
 /**
- * 주요 파라미터를 직접 지정하여 [CreateGrantRequest]를 생성합니다.
+ * Creates a [CreateGrantRequest] by specifying primary parameters directly.
  *
- * ## 동작/계약
- * - [keyId]가 blank이면 `IllegalArgumentException`을 던집니다.
- * - [operations]가 비어있지 않을 때만 `operations(*operations)`를 호출합니다.
- * - 마지막에 [builder]를 추가로 실행합니다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [keyId] is blank.
+ * - Calls `operations(*operations)` only when [operations] is not empty.
+ * - Runs [builder] last.
  *
  * ```kotlin
  * val request = createGrantRequestOf(

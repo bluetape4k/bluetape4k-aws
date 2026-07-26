@@ -10,11 +10,11 @@ import software.amazon.awssdk.services.kms.KmsAsyncClientBuilder
 import java.net.URI
 
 /**
- * DSL 스타일의 빌더 람다로 비동기식 [KmsAsyncClient]를 생성합니다.
+ * Creates an asynchronous [KmsAsyncClient] with a DSL-style builder lambda.
  *
- * ## 동작/계약
- * - [KmsAsyncClient.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
- * - 생성된 클라이언트 인스턴스를 [ShutdownQueue]에 등록합니다.
+ * ## Behavior/Contract
+ * - Applies [builder] to [KmsAsyncClient.builder], then calls `build()`.
+ * - Registers the created client instance with [ShutdownQueue].
  *
  * ```kotlin
  * val client = kmsAsyncClient {
@@ -32,14 +32,14 @@ inline fun kmsAsyncClient(
         }
 
 /**
- * 주요 파라미터를 직접 지정하여 비동기식 [KmsAsyncClient]를 생성합니다.
+ * Creates an asynchronous [KmsAsyncClient] by specifying primary parameters directly.
  *
- * ## 동작/계약
- * - `null`이 아닌 인자만 [KmsAsyncClientBuilder]에 반영합니다.
- * - [httpClient]는 항상 `httpClient(httpClient)`로 설정합니다.
- * - 마지막에 [builder]를 호출하고 [kmsAsyncClient]를 통해 클라이언트를 생성/등록합니다.
+ * ## Behavior/Contract
+ * - Applies only non-null arguments to [KmsAsyncClientBuilder].
+ * - Always configures [httpClient] with `httpClient(httpClient)`.
+ * - Calls [builder] last, then creates and registers the client through [kmsAsyncClient].
  *
- * 예시:
+ * Example:
  * ```kotlin
  * val client = kmsAsyncClientOf(
  *     endpointOverride = URI.create("http://localhost:4566"),

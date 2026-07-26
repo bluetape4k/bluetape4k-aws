@@ -4,10 +4,10 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kms.model.RevokeGrantRequest
 
 /**
- * DSL 스타일의 빌더 람다로 [RevokeGrantRequest]를 생성합니다.
+ * Creates a [RevokeGrantRequest] with a DSL-style builder lambda.
  *
- * ## 동작/계약
- * - [RevokeGrantRequest.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
+ * ## Behavior/Contract
+ * - Applies [builder] to [RevokeGrantRequest.builder], then calls `build()`.
  *
  * ```kotlin
  * val request = revokeGrantRequest {
@@ -23,11 +23,11 @@ inline fun revokeGrantRequest(
     RevokeGrantRequest.builder().apply(builder).build()
 
 /**
- * 키 ID와 Grant ID를 지정하여 [RevokeGrantRequest]를 생성합니다.
+ * Creates a [RevokeGrantRequest] by specifying a key ID and grant ID.
  *
- * ## 동작/계약
- * - [keyId], [grantId]가 blank이면 `IllegalArgumentException`을 던집니다.
- * - 검증이 통과하면 두 필드를 설정하고 [builder]를 추가로 실행합니다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [keyId] or [grantId] is blank.
+ * - When validation passes, sets both fields and then runs [builder].
  *
  * ```kotlin
  * val request = revokeGrantRequestOf(

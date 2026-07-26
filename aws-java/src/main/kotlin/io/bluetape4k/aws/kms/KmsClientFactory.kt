@@ -14,11 +14,12 @@ import software.amazon.awssdk.services.kms.KmsClientBuilder
 import java.net.URI
 
 /**
- * KMS 동기/비동기 클라이언트 생성을 모아둔 팩토리입니다.
+ * Factory that groups KMS synchronous and asynchronous client creation.
  *
- * ## 동작/계약
- * - 실제 클라이언트 생성은 [kmsClient], [kmsClientOf], [kmsAsyncClient], [kmsAsyncClientOf]에 위임합니다.
- * - 팩토리 메서드가 반환한 클라이언트는 위임 대상 함수의 동작에 따라 [io.bluetape4k.utils.ShutdownQueue] 등록이 수행됩니다.
+ * ## Behavior/Contract
+ * - Delegates actual client creation to [kmsClient], [kmsClientOf], [kmsAsyncClient], and [kmsAsyncClientOf].
+ * - Clients returned by factory methods are registered with [io.bluetape4k.utils.ShutdownQueue] according to
+ * the delegated function behavior.
  *
  * ```kotlin
  * val syncClient = KmsClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -29,10 +30,10 @@ import java.net.URI
 object KmsClientFactory: KLogging() {
 
     /**
-     * 동기식 [KmsClient] 생성 진입점을 제공합니다.
+     * Provides synchronous [KmsClient] creation entry points.
      *
-     * ## 동작/계약
-     * - 두 `create` 오버로드 모두 [kmsClient] 계열 함수에 위임합니다.
+     * ## Behavior/Contract
+     * - Both `create` overloads delegate to the [kmsClient] function family.
      *
      * ```kotlin
      * val client = KmsClientFactory.Sync.create {
@@ -44,10 +45,10 @@ object KmsClientFactory: KLogging() {
     object Sync {
 
         /**
-         * 빌더 람다를 받아 동기식 [KmsClient]를 생성합니다.
+         * Creates a synchronous [KmsClient] from a builder lambda.
          *
-         * ## 동작/계약
-         * - 인자로 받은 [builder]를 [kmsClient]에 그대로 전달합니다.
+         * ## Behavior/Contract
+         * - Passes the received [builder] directly to [kmsClient].
          *
          * ```kotlin
          * val client = KmsClientFactory.Sync.create {
@@ -61,11 +62,11 @@ object KmsClientFactory: KLogging() {
         ): KmsClient = kmsClient(builder)
 
         /**
-         * 주요 연결 정보를 받아 동기식 [KmsClient]를 생성합니다.
+         * Creates a synchronous [KmsClient] from primary connection settings.
          *
-         * ## 동작/계약
-         * - 인자를 [kmsClientOf]에 순서대로 전달합니다.
-         * - [credentialsProvider]를 생략하면 기본 인증 체인 해석은 AWS SDK 빌더 기본 동작에 따릅니다.
+         * ## Behavior/Contract
+         * - Passes arguments to [kmsClientOf] in order.
+         * - When [credentialsProvider] is omitted, default credential-chain resolution follows AWS SDK builder behavior.
          *
          * ```kotlin
          * val client = KmsClientFactory.Sync.create(
@@ -86,10 +87,10 @@ object KmsClientFactory: KLogging() {
     }
 
     /**
-     * 비동기식 [KmsAsyncClient] 생성 진입점을 제공합니다.
+     * Provides asynchronous [KmsAsyncClient] creation entry points.
      *
-     * ## 동작/계약
-     * - 두 `create` 오버로드 모두 [kmsAsyncClient] 계열 함수에 위임합니다.
+     * ## Behavior/Contract
+     * - Both `create` overloads delegate to the [kmsAsyncClient] function family.
      *
      * ```kotlin
      * val client = KmsClientFactory.Async.create {
@@ -100,10 +101,10 @@ object KmsClientFactory: KLogging() {
      */
     object Async {
         /**
-         * 빌더 람다를 받아 비동기식 [KmsAsyncClient]를 생성합니다.
+         * Creates an asynchronous [KmsAsyncClient] from a builder lambda.
          *
-         * ## 동작/계약
-         * - 인자로 받은 [builder]를 [kmsAsyncClient]에 그대로 전달합니다.
+         * ## Behavior/Contract
+         * - Passes the received [builder] directly to [kmsAsyncClient].
          *
          * ```kotlin
          * val client = KmsClientFactory.Async.create {
@@ -117,11 +118,11 @@ object KmsClientFactory: KLogging() {
         ): KmsAsyncClient = kmsAsyncClient(builder)
 
         /**
-         * 주요 연결 정보를 받아 비동기식 [KmsAsyncClient]를 생성합니다.
+         * Creates an asynchronous [KmsAsyncClient] from primary connection settings.
          *
-         * ## 동작/계약
-         * - 인자를 [kmsAsyncClientOf]에 순서대로 전달합니다.
-         * - [credentialsProvider]를 생략하면 기본 인증 체인 해석은 AWS SDK 빌더 기본 동작에 따릅니다.
+         * ## Behavior/Contract
+         * - Passes arguments to [kmsAsyncClientOf] in order.
+         * - When [credentialsProvider] is omitted, default credential-chain resolution follows AWS SDK builder behavior.
          *
          * ```kotlin
          * val client = KmsClientFactory.Async.create(
