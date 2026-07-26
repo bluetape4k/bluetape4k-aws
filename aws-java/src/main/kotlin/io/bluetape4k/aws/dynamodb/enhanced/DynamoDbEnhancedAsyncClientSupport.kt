@@ -6,7 +6,7 @@ import software.amazon.awssdk.enhanced.dynamodb.internal.client.ExtensionResolve
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 
 /**
- * [DynamoDbEnhancedAsyncClient] 를 생성합니다.
+ * Creates a [DynamoDbEnhancedAsyncClient].
  *
  * ```kotlin
  * val client = dynamoDbEnhancedAsyncClient {
@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
  * }
  * ```
  *
- * @param builder [DynamoDbEnhancedAsyncClient.Builder] 를 초기화하는 람다 함수
+ * @param builder Lambda that initializes [DynamoDbEnhancedAsyncClient.Builder].
  * @return [DynamoDbEnhancedAsyncClient] instance
  */
 inline fun dynamoDbEnhancedAsyncClient(
@@ -24,7 +24,7 @@ inline fun dynamoDbEnhancedAsyncClient(
 }
 
 /**
- * [DynamoDbEnhancedAsyncClient] 를 생성합니다.
+ * Creates a [DynamoDbEnhancedAsyncClient].
  *
  * ```kotlin
  * val client = dynamoDbEnhancedAsyncClientOf(DynamoDbAsyncClient.create()) {
@@ -33,7 +33,7 @@ inline fun dynamoDbEnhancedAsyncClient(
  * ```
  *
  * @param client [DynamoDbAsyncClient] instance
- * @param builder [DynamoDbEnhancedAsyncClient.Builder] 를 초기화하는 람다 함수
+ * @param builder Lambda that initializes [DynamoDbEnhancedAsyncClient.Builder].
  * @return [DynamoDbEnhancedAsyncClient] instance
  */
 inline fun dynamoDbEnhancedAsyncClientOf(
@@ -47,7 +47,7 @@ inline fun dynamoDbEnhancedAsyncClientOf(
     }
 
 /**
- * [DynamoDbEnhancedAsyncClient] 를 생성합니다.
+ * Creates a [DynamoDbEnhancedAsyncClient].
  *
  * ```kotlin
  * val client = dynamoDbEnhancedAsyncClientOf(
