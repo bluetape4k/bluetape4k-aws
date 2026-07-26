@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsClientBui
 import java.net.URI
 
 /**
- * [dynamoDbStreamsClient]를 빌드해주는 함수입니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val dynamoDbStreamsClient = DynamoDbStreamsClient {
@@ -20,7 +20,7 @@ import java.net.URI
  * }
  * ```
  *
- * @return [dynamoDbStreamsClient] 인스턴스
+ * @return Return value.
  */
 inline fun dynamoDbStreamsClient(
     builder: DynamoDbStreamsClientBuilder.() -> Unit,
@@ -29,7 +29,7 @@ inline fun dynamoDbStreamsClient(
 }
 
 /**
- * [DynamoDbStreamsClient]를 빌드해주는 함수입니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val dynamoDbStreamsClient = dynamoDbStreamsClientOf(
@@ -41,7 +41,7 @@ inline fun dynamoDbStreamsClient(
  * }
  * ```
  *
- * @return [DynamoDbStreamsClient] 인스턴스
+ * @return Return value.
  * @see [DynamoDbStreamsClient]
  */
 inline fun dynamoDbStreamsClientOf(

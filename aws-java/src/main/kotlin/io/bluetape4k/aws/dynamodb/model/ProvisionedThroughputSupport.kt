@@ -3,7 +3,7 @@ package io.bluetape4k.aws.dynamodb.model
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 
 /**
- * DynamoDB 테이블의 프로비저닝된 처리량 설정을 생성합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val throughput = provisionedThroughput {
@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
  * }
  * ```
  *
- * @return [ProvisionedThroughput] 인스턴스
+ * @return Return value.
  */
 inline fun ProvisionedThroughput(
     builder: ProvisionedThroughput.Builder.() -> Unit,
@@ -21,16 +21,16 @@ inline fun ProvisionedThroughput(
 }
 
 /**
- * DynamoDB 테이블의 프로비저닝된 처리량 설정을 생성합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val throughput = provisionedThroughputOf(10, 5)
  * ```
  *
- * @param readCapacityUnits 읽기 처리량
- * @param writeCapacityUnits 쓰기 처리량
+ * @param readCapacityUnits Parameter.
+ * @param writeCapacityUnits Parameter.
  *
- * @return [ProvisionedThroughput] 인스턴스
+ * @return Return value.
  */
 fun provisionedThroughputOf(
     readCapacityUnits: Long? = null,

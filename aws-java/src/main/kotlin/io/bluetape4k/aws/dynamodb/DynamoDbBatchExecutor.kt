@@ -20,11 +20,11 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest
 import java.io.Serializable
 
 /**
- * Coroutine 환경에서 DynamoDB 에 배치 작업을 수행하는 Executor
+ * See the API documentation for details.
  *
- * @param T  작업할 DynamoDB Item Type
- * @property dynamoDB [DynamoDbClient] 인스턴스
- * @property retry  Resilience4j [Retry] 인스턴스
+ * @param T Parameter.
+ * See the API documentation for details.
+ * See the API documentation for details.
  */
 class DynamoDbBatchExecutor<T: Any>(
     private val dynamoDB: DynamoDbClient,
@@ -43,19 +43,19 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * 테이블 이름과 [WriteRequest]를 묶는 작업 단위입니다.
+     * See the API documentation for details.
      *
-     * ## 동작/계약
-     * - [tableName]과 [writeRequest]를 하나의 배치 작업 항목으로 묶는다.
-     * - [DynamoDbBatchExecutor.persist]에 전달할 때 사용한다.
+     * See the API documentation for details.
+     * See the API documentation for details.
+     * See the API documentation for details.
      *
      * ```kotlin
      * val tuple = DynamoDbBatchExecutor.TableItemTuple("orders", writeRequest)
      * // tuple.tableName == "orders"
      * ```
      *
-     * @property tableName DynamoDB 테이블 이름
-     * @property writeRequest 실행할 쓰기 요청
+     * See the API documentation for details.
+     * See the API documentation for details.
      */
     data class TableItemTuple(
         val tableName: String,
@@ -67,14 +67,14 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * 재시도 가능한 Batch 쓰기 작업의 상태를 보관하는 데이터 클래스입니다.
+     * See the API documentation for details.
      *
-     * ## 동작/계약
-     * - [attempt]는 현재까지 시도한 횟수를 나타낸다.
-     * - [items]는 아직 처리되지 않은 [TableItemTuple] 목록이다.
+     * See the API documentation for details.
+     * See the API documentation for details.
+     * See the API documentation for details.
      *
-     * @property attempt 현재 시도 횟수 (1부터 시작)
-     * @property items 재시도할 [TableItemTuple] 목록
+     * See the API documentation for details.
+     * See the API documentation for details.
      */
     data class RetryablePut(
         val attempt: Int,
@@ -86,10 +86,10 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * [tableName] table에서 [items] 를 삭제하는 작업을 Batch로 수행합니다.
+     * See the API documentation for details.
      *
      * @param tableName  Table name
-     * @param items      삭제할 Items
+     * @param items Parameter.
      * @param primaryKeySelector primary key selector
      */
     suspend fun delete(
@@ -114,20 +114,20 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * [mapper]를 사용해 [items]를 [tableName] 테이블에 Batch로 저장합니다.
+     * See the API documentation for details.
      *
-     * ## 동작/계약
-     * - [mapper]로 [T] 엔티티를 `Map<String, AttributeValue>`로 변환한 뒤 Batch 저장한다.
-     * - 25개 단위로 청크를 나눠 여러 번의 BatchWrite를 수행한다.
-     * - 미처리 항목이 남으면 [Retry] 설정 내에서 재시도한다.
+     * See the API documentation for details.
+     * See the API documentation for details.
+     * See the API documentation for details.
+     * See the API documentation for details.
      *
      * ```kotlin
      * executor.persist("orders", listOf(order1, order2), OrderMapper())
      * ```
      *
-     * @param tableName 저장할 DynamoDB 테이블 이름
-     * @param items 저장할 엔티티 목록
-     * @param mapper 엔티티를 DynamoDB Item으로 변환하는 [DynamoItemMapper]
+     * @param tableName Parameter.
+     * @param items Parameter.
+     * @param mapper Parameter.
      */
     suspend inline fun persist(
         tableName: String,
@@ -142,19 +142,19 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * `Map<String, AttributeValue>` 형태의 [items]를 [tableName] 테이블에 Batch로 저장합니다.
+     * See the API documentation for details.
      *
-     * ## 동작/계약
-     * - 이미 DynamoDB 속성 맵으로 변환된 아이템을 직접 저장할 때 사용한다.
-     * - 25개 단위로 청크를 나눠 BatchWrite를 수행한다.
+     * See the API documentation for details.
+     * See the API documentation for details.
+     * See the API documentation for details.
      *
      * ```kotlin
      * val items = listOf(mapOf("id" to stringOf("1"), "name" to stringOf("Alice")))
      * executor.persist("users", items)
      * ```
      *
-     * @param tableName 저장할 DynamoDB 테이블 이름
-     * @param items 저장할 DynamoDB Item 속성 맵 목록
+     * @param tableName Parameter.
+     * @param items Parameter.
      */
     suspend inline fun persist(
         tableName: String,
@@ -164,18 +164,18 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * [TableItemTuple] 목록을 25개 단위로 분할하여 Batch로 저장합니다.
+     * See the API documentation for details.
      *
-     * ## 동작/계약
-     * - [writeItems]를 [MAX_BATCH_ITEM_SIZE](25)개씩 청크로 나눠 순차 실행한다.
-     * - 미처리 항목이 남으면 [Retry] 설정 내에서 재시도하며, 한계 초과 시 예외를 던진다.
+     * See the API documentation for details.
+     * See the API documentation for details.
+     * See the API documentation for details.
      *
      * ```kotlin
      * val tuples = listOf(TableItemTuple("orders", writeRequest1))
      * executor.persist(tuples)
      * ```
      *
-     * @param writeItems 저장할 [TableItemTuple] 목록
+     * @param writeItems Parameter.
      */
     suspend fun persist(writeItems: List<TableItemTuple>) {
         writeItems

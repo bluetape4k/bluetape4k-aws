@@ -4,7 +4,7 @@ import software.amazon.awssdk.services.dynamodb.model.Projection
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType
 
 /**
- * DynamoDB 테이블의 프로젝션 설정을 생성합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val projection = projection {
@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProjectionType
  * }
  * ```
  *
- * @return [Projection] 인스턴스
+ * @return Return value.
  */
 inline fun Projection(
     builder: Projection.Builder.() -> Unit,
@@ -22,16 +22,16 @@ inline fun Projection(
 }
 
 /**
- * DynamoDB 테이블의 프로젝션 설정을 생성합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val projection = projectionOf(ProjectionType.ALL, listOf("name", "age"))
  * ```
  *
- * @param projectionType 프로젝션 타입
- * @param nonKeyAttrs 프로젝션에 포함할 속성 목록
+ * @param projectionType Parameter.
+ * @param nonKeyAttrs Parameter.
  *
- * @return [Projection] 인스턴스
+ * @return Return value.
  */
 fun projectionOf(
     projectionType: ProjectionType = ProjectionType.ALL,
@@ -44,16 +44,16 @@ fun projectionOf(
 }
 
 /**
- * DynamoDB 테이블의 프로젝션 설정을 생성합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val projection = projectionOf("ALL", listOf("name", "age"))
  * ```
  *
- * @param projectionType 프로젝션 타입을 나타내는 문자열
- * @param nonKeyAttrs 프로젝션에 포함할 속성 목록
+ * @param projectionType Parameter.
+ * @param nonKeyAttrs Parameter.
  *
- * @return [Projection] 인스턴스
+ * @return Return value.
  */
 fun projectionOf(
     projectionType: String,
