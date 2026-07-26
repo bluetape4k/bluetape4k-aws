@@ -140,7 +140,7 @@ jobs:
         with:
           filters: |
             aws:
-              - 'aws/**'
+              - 'aws-java/**'
               - '.github/workflows/ci.yml'
               - '.github/scripts/**'
             aws-kotlin:
