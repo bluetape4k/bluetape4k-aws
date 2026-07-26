@@ -4,9 +4,9 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 
 /**
- * [bucket], [key] 기반 [GetObjectRequest]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = getObjectRequest("demo-bucket", "docs/readme.txt") { partNumber(2) }
  * // result.partNumber() == 2
@@ -28,9 +28,9 @@ inline fun getObjectRequest(
 }
 
 /**
- * 선택 속성([versionId], [partNumber])을 포함해 [GetObjectRequest]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = getObjectRequestOf("demo-bucket", "docs/readme.txt", versionId = "v2")
  * // result.versionId() == "v2"

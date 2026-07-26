@@ -7,9 +7,9 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 
 /**
- * 단일 객체 삭제용 [DeleteObjectRequest]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = deleteObjectRequest("demo-bucket", "logs/app.log")
  * // result.key() == "logs/app.log"
@@ -31,9 +31,9 @@ inline fun deleteObjectRequest(
 }
 
 /**
- * 선택적으로 [versionId]를 지정해 [DeleteObjectRequest]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = deleteObjectRequestOf("demo-bucket", "logs/app.log", versionId = "3LgV") { }
  * // result.versionId() == "3LgV"
@@ -51,9 +51,9 @@ inline fun deleteObjectRequestOf(
     }
 
 /**
- * 다중 객체 삭제용 [DeleteObjectsRequest]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val delete = deleteOf(objectIdentifier("a.txt"), objectIdentifier("b.txt"))
  * val result = deleteObjectsRequest("demo-bucket", delete)
@@ -75,9 +75,9 @@ inline fun deleteObjectsRequest(
 }
 
 /**
- * [Delete]와 선택 요청자 과금자([requestPlayer])로 [DeleteObjectsRequest]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val delete = deleteOf(objectIdentifier("a.txt"))
  * val result = deleteObjectsRequestOf("demo-bucket", delete, requestPlayer = "requester")
@@ -94,9 +94,9 @@ fun deleteObjectsRequestOf(
     }
 
 /**
- * 식별자 컬렉션으로 [DeleteObjectsRequest]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val ids = listOf(objectIdentifier("a.txt"), objectIdentifier("b.txt"))
  * val result = deleteObjectsRequestOf("demo-bucket", ids)

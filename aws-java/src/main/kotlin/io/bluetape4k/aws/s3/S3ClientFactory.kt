@@ -20,25 +20,25 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 /**
- * [S3Client], [S3AsyncClient], [S3TransferManager] 인스턴스를 생성하는 함수를 제공합니다.
+ * See the API documentation for details.
  */
 object S3ClientFactory {
 
     /**
-     * S3를 동기방식으로 사용하는 [S3Client] 를 생성하는 메소드를 제공합니다.
+     * See the API documentation for details.
      */
     object Sync {
 
         /**
-         * [S3Client] 를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = S3ClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
          * // client != null
          * ```
          *
-         * @param builder [S3ClientBuilder]를 이용하여 [S3Client]를 설정합니다.
-         * @return [S3Client] 인스턴스
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             builder: S3ClientBuilder.() -> Unit,
@@ -50,7 +50,7 @@ object S3ClientFactory {
         }
 
         /**
-         * [S3Client] 를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = S3ClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -59,9 +59,9 @@ object S3ClientFactory {
          *
          * @param endpointOverride      S3 endpoint
          * @param region                S3 region
-         * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
-         * @param builder           [S3ClientBuilder]를 이용하여 [S3Client]를 설정합니다.
-         * @return [S3Client] 인스턴스
+         * @param credentialsProvider Parameter.
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             endpointOverride: URI? = null,
@@ -86,20 +86,20 @@ object S3ClientFactory {
     }
 
     /**
-     * S3를 비동기방식으로 사용하는 [S3AsyncClient] 를 생성하는 메소드를 제공합니다.
+     * See the API documentation for details.
      */
     object Async {
 
         /**
-         * [S3AsyncClient] 를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = S3ClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
          * // client != null
          * ```
          *
-         * @param builder [S3AsyncClientBuilder]를 이용하여 [S3AsyncClient]를 설정합니다.
-         * @return [S3AsyncClient] 인스턴스
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             builder: S3AsyncClientBuilder.() -> Unit,
@@ -113,7 +113,7 @@ object S3ClientFactory {
         }
 
         /**
-         * [S3AsyncClient] 를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = S3ClientFactory.Async.create(region = Region.AP_NORTHEAST_2)
@@ -122,9 +122,9 @@ object S3ClientFactory {
          *
          * @param endpointOverride      S3 endpoint
          * @param region                S3 region
-         * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
-         * @param builder           [S3AsyncClientBuilder]를 이용하여 [S3Client]를 설정합니다.
-         * @return [S3AsyncClient] 인스턴스
+         * @param credentialsProvider Parameter.
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             endpointOverride: URI? = null,
@@ -150,22 +150,22 @@ object S3ClientFactory {
 
 
     /**
-     * S3를 비동기방식으로 사용하는 [S3AsyncClient] 를 생성하는 메소드를 제공합니다.
+     * See the API documentation for details.
      *
-     * 참고: [AWSCRT 기반 HTTP 클라이언트 설정](https://docs.aws.amazon.com/ko_kr/sdk-for-java/latest/developer-guide/http-configuration-crt.html)
+     * Note: See the referenced documentation.
      */
     object CrtAsync {
 
         /**
-         * [S3AsyncClient] 를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = S3ClientFactory.CrtAsync.create { region(Region.AP_NORTHEAST_2) }
          * // client != null
          * ```
          *
-         * @param builder [S3AsyncClientBuilder]를 이용하여 [S3AsyncClient]를 설정합니다.
-         * @return [S3AsyncClient] 인스턴스
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             builder: S3CrtAsyncClientBuilder.() -> Unit,
@@ -177,7 +177,7 @@ object S3ClientFactory {
         }
 
         /**
-         * [S3AsyncClient] 를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = S3ClientFactory.CrtAsync.create(region = Region.AP_NORTHEAST_2)
@@ -186,9 +186,9 @@ object S3ClientFactory {
          *
          * @param endpointOverride      S3 endpoint
          * @param region                S3 region
-         * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
-         * @param builder           [S3AsyncClientBuilder]를 이용하여 [S3Client]를 설정합니다.
-         * @return [S3AsyncClient] 인스턴스
+         * @param credentialsProvider Parameter.
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             endpointOverride: URI? = null,
@@ -211,20 +211,20 @@ object S3ClientFactory {
     }
 
     /**
-     * [S3TransferManager]를 생성하는 Factory
+     * See the API documentation for details.
      */
     object TransferManager {
 
         /**
-         * [S3TransferManager]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val tm = S3ClientFactory.TransferManager.create { }
          * // tm != null
          * ```
          *
-         * @param  builder [S3TransferManager] Builder를 이용하여 설정하는 코드 블럭
-         * @return [S3TransferManager] 인스턴스
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             builder: S3TransferManager.Builder.() -> Unit,
@@ -236,21 +236,21 @@ object S3ClientFactory {
         }
 
         /**
-         * [S3TransferManager]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val tm = S3ClientFactory.TransferManager.create(region = Region.AP_NORTHEAST_2)
          * // tm != null
          * ```
          *
-         * 참고: [Amazon S3 Transfer Manager](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/transfer-manager.html)
+         * Note: See the referenced documentation.
          *
          * @param endpointOverride      S3 endpoint
          * @param region                S3 region
-         * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
-         * @param executor               [Executor] 인스턴스
-         * @param builder  [S3TransferManager] Builder를 이용하여 설정하는 코드 블럭
-         * @return [S3TransferManager] 인스턴스
+         * @param credentialsProvider Parameter.
+         * @param executor Parameter.
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             endpointOverride: URI? = null,
@@ -261,7 +261,7 @@ object S3ClientFactory {
             builder: S3TransferManager.Builder.() -> Unit = {},
         ): S3TransferManager {
             return create {
-                // AWS CRT-based S3AsyncClient 를 사용하는 것을 추천한다
+                // See the API documentation for details.
                 val asyncClient = CrtAsync.create(endpointOverride, region, credentialsProvider)
 
                 s3Client(asyncClient)
@@ -272,7 +272,7 @@ object S3ClientFactory {
         }
 
         /**
-         * [S3TransferManager]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val asyncClient = S3ClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -280,10 +280,10 @@ object S3ClientFactory {
          * // tm != null
          * ```
          *
-         * @param  asyncClient            [S3AsyncClient] 인스턴스
-         * @param  executor               [Executor] 인스턴스
-         * @param  builder  [S3TransferManager] Builder를 이용하여 설정하는 코드 블럭
-         * @return [S3TransferManager] 인스턴스
+         * @param asyncClient Parameter.
+         * @param executor Parameter.
+         * @param builder Parameter.
+         * @return Return value.
          */
         inline fun create(
             asyncClient: S3AsyncClient,

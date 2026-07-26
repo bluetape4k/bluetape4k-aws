@@ -33,14 +33,14 @@ import java.util.concurrent.ExecutionException
 private val log = KotlinLogging.logger { }
 
 /**
- * [bucketName]의 Bucket 이 존재하는지 알아봅니다.
+ * See the API documentation for details.
  *
- * 내부적으로 `headBucket`의 예외를 unwrap 하여, 버킷 미존재(404)를 `false`로 정규화합니다.
+ * See the API documentation for details.
  *
- * @param bucketName 존재를 파악할 Bucket name
- * @return 존재 여부
+ * @param bucketName Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.existsBucketAsync("demo-bucket").join()
  * // result == true
@@ -78,13 +78,13 @@ private fun Throwable.unwrapKnownWrapper(): Throwable {
 }
 
 /**
- * [bucketName]의 Bucket을 생성합니다.
+ * See the API documentation for details.
  *
- * @param bucketName  생성할 Bucket name
- * @param builder 생성할 Bucket을 위한 Configuration
- * @return Bucket 생성 결과. [CreateBucketResponse]
+ * @param bucketName Parameter.
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.createBucketAsync("demo-bucket").join()
  * // result.location().contains("demo-bucket")
@@ -106,14 +106,14 @@ fun S3AsyncClient.createBucketAsync(
 //
 
 /**
- * S3 Object 를 download 한 후, ByteArray 로 반환합니다.
+ * See the API documentation for details.
  *
  * @param bucket Bucket name
  * @param key Object key
- * @param builder 요청 설정을 위한 빌더
- * @return 다욱받은 S3 Object의 ByteArray 형태의 정보를 담은 [CompletableFuture]
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.getAsByteArrayAsync("demo-bucket", "docs/readme.txt").join()
  * // result.isNotEmpty() == true
@@ -131,14 +131,14 @@ inline fun S3AsyncClient.getAsByteArrayAsync(
 }
 
 /**
- * S3 Object 를 download 한 후, 문자열로 반환합니다.
+ * See the API documentation for details.
  *
  * @param bucket Bucket name
  * @param key Object key
- * @param builder 요청 설정을 위한 빌더
- * @return 다욱받은 S3 Object의 문자열 형태의 정보를 담은 [CompletableFuture]
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.getAsStringAsync("demo-bucket", "docs/readme.txt").join()
  * // result.contains("readme", ignoreCase = true) == true
@@ -156,15 +156,15 @@ inline fun S3AsyncClient.getAsStringAsync(
 }
 
 /**
- * S3 Object 를 download 한 후, [destinationPath]에 저장합니다.
+ * See the API documentation for details.
  *
  * @param bucket Bucket name
  * @param key Object key
- * @param destinationPath 저장할 경로
- * @param builder 요청 설정을 위한 빌더
- * @return 다욱받은 S3 Object의 정보를 담은 [CompletableFuture]
+ * @param destinationPath Parameter.
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val target = java.nio.file.Path.of("build/tmp/readme.txt")
  * val result = s3AsyncClient.getAsFileAsync("demo-bucket", "docs/readme.txt", target).join()
@@ -187,15 +187,15 @@ inline fun S3AsyncClient.getAsFileAsync(
 //
 
 /**
- * S3 서버로 [body]를 Upload 합니다.
+ * See the API documentation for details.
  *
- * @param bucket Upload 할 Bucket name
- * @param key Upload 할 Object key
- * @param body Upload 할 [AsyncRequestBody]
- * @param builder 요청 설정을 위한 빌더
- * @return S3에 저장된 결과를 담은 [CompletableFuture]
+ * @param bucket Parameter.
+ * @param key Parameter.
+ * @param body Parameter.
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.putAsync("demo-bucket", "notes/hello.txt", "hello".toAsyncRequestBody()).join()
  * // result.eTag().isNullOrBlank() == false
@@ -215,15 +215,15 @@ inline fun S3AsyncClient.putAsync(
 }
 
 /**
- * S3 서버로 [bytes]를 Upload 합니다.
+ * See the API documentation for details.
  *
- * @param bucket Upload 할 Bucket name
- * @param key Upload 할 Object key
- * @param bytes Upload 할 Byte Array
- * @param builder 요청 설정을 위한 빌더
- * @return S3에 저장된 결과를 담은 [CompletableFuture]
+ * @param bucket Parameter.
+ * @param key Parameter.
+ * @param bytes Parameter.
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.putAsByteArrayAsync("demo-bucket", "notes/data.bin", byteArrayOf(1, 2, 3)).join()
  * // result.eTag().isNullOrBlank() == false
@@ -238,15 +238,15 @@ inline fun S3AsyncClient.putAsByteArrayAsync(
     putAsync(bucket, key, bytes.toAsyncRequestBody(), builder)
 
 /**
- * S3 서버로 [contents]를 Upload 합니다.
+ * See the API documentation for details.
  *
- * @param bucket Upload 할 Bucket name
- * @param key Upload 할 Object key
- * @param contents Upload 할 문자열
- * @param builder 요청 설정을 위한 빌더
- * @return S3에 저장된 결과를 담은 [CompletableFuture]
+ * @param bucket Parameter.
+ * @param key Parameter.
+ * @param contents Parameter.
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.putAsStringAsync("demo-bucket", "notes/hello.txt", "hello").join()
  * // result.eTag().isNullOrBlank() == false
@@ -262,15 +262,15 @@ inline fun S3AsyncClient.putAsStringAsync(
     putAsync(bucket, key, contents.toAsyncRequestBody(charset), builder)
 
 /**
- * S3 서버로 [file]을 Upload 합니다.
+ * See the API documentation for details.
  *
- * @param bucket Upload 할 Bucket name
- * @param key Upload 할 Object key
- * @param file Upload 할 파일
- * @param builder 요청 설정을 위한 빌더
- * @return S3에 저장된 결과를 담은 [CompletableFuture]
+ * @param bucket Parameter.
+ * @param key Parameter.
+ * @param file Parameter.
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val source = java.io.File("settings.gradle.kts")
  * val result = s3AsyncClient.putAsFileAsync("demo-bucket", "repo/settings.gradle.kts", source).join()
@@ -286,15 +286,15 @@ inline fun S3AsyncClient.putAsFileAsync(
     putAsync(bucket, key, file.toAsyncRequestBody(), builder)
 
 /**
- * S3 서버로 [path]의 파일을 Upload 합니다.
+ * See the API documentation for details.
  *
- * @param bucket Upload 할 Bucket name
- * @param key Upload 할 Object key
- * @param path Upload 할 파일 경로
- * @param builder 요청 설정을 위한 빌더
- * @return S3에 저장된 결과를 담은 [CompletableFuture]
+ * @param bucket Parameter.
+ * @param key Parameter.
+ * @param path Parameter.
+ * @param builder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val source = java.nio.file.Path.of("settings.gradle.kts")
  * val result = s3AsyncClient.putAsFileAsync("demo-bucket", "repo/settings.gradle.kts", source).join()
@@ -314,18 +314,18 @@ inline fun S3AsyncClient.putAsFileAsync(
 //
 
 /**
- * [S3Object]를 Move 합니다.
+ * See the API documentation for details.
  *
- * 참고: 이 연산은 원자적이지 않습니다. 복사는 성공했지만 삭제가 실패할 수 있습니다.
- * 원자성이 필요한 경우 [moveObjectAtomicAsync]을 사용하세요.
+ * Note: See the referenced documentation.
+ * See the API documentation for details.
  *
- * @param srcBucketName 원본 bucket name
- * @param srcKey        원본 object key
- * @param destBucketName 대상 bucket name
- * @param destKey        대상 object key
- * @return 이동 작업 결과
+ * @param srcBucketName Parameter.
+ * @param srcKey Parameter.
+ * @param destBucketName Parameter.
+ * @param destKey Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.moveObjectAsync("demo-bucket", "docs/a.txt", "demo-bucket", "archive/a.txt").join()
  * // result.copyResult.eTag().isNullOrBlank() == false
@@ -368,15 +368,15 @@ fun S3AsyncClient.moveObjectAsync(
 }
 
 /**
- * [S3Object]를 Move 합니다.
+ * See the API documentation for details.
  *
- * 참고: 이 연산은 원자적이지 않습니다. 복사는 성공했지만 삭제가 실패할 수 있습니다.
+ * Note: See the referenced documentation.
  *
- * @param copyRequestBuilder   복사 Request
- * @param deleteRequestBuilder 원본 복제품 삭제 request
- * @return 이동 작업 결과
+ * @param copyRequestBuilder Parameter.
+ * @param deleteRequestBuilder Parameter.
+ * @return Return value.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.moveObjectAsync(
  *     copyRequestBuilder = {
@@ -410,18 +410,18 @@ fun S3AsyncClient.moveObjectAsync(
         }
 
 /**
- * [S3Object]를 원자적으로 Move 합니다.
+ * See the API documentation for details.
  *
- * 복사가 성공했지만 삭제가 실패한 경우, 복사된 객체를 삭제하고 예외를 발생시킵니다.
+ * See the API documentation for details.
  *
- * @param srcBucketName 원본 bucket name
- * @param srcKey        원본 object key
- * @param destBucketName 대상 bucket name
- * @param destKey        대상 object key
- * @return 이동 작업 결과
- * @throws IllegalStateException 삭제 실패 시 복구도 실패한 경우
+ * @param srcBucketName Parameter.
+ * @param srcKey Parameter.
+ * @param destBucketName Parameter.
+ * @param destKey Parameter.
+ * @return Return value.
+ * @throws Throwable if the operation fails.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = s3AsyncClient.moveObjectAtomicAsync("demo-bucket", "docs/a.txt", "demo-bucket", "archive/a.txt").join()
  * // result.isSuccess == true
@@ -435,7 +435,7 @@ fun S3AsyncClient.moveObjectAtomicAsync(
 ): CompletableFuture<MoveObjectResult> =
     moveObjectAsync(srcBucketName, srcKey, destBucketName, destKey).thenCompose { result ->
         if (result.isPartialSuccess) {
-            // 복사는 성공했지만 삭제가 실패한 경우, 롤백 시도
+            // See the API documentation for details.
             log.warn {
                 "Move partially succeeded. Attempting rollback by deleting copied object. Dest: $destBucketName/$destKey"
             }
