@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.kotlin.dynamodb
 
 /**
- * DynamoDB의 예약어 정보
+ * DynamoDB reserved word entries.
  *
- * 참고: [DynamoDB 예약어]( https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html )
+ * Reference: [DynamoDB reserved words](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html)
  */
 enum class ReservedWords {
     ABORT,

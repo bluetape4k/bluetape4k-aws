@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.kotlin.dynamodb
 
 /**
- * DynamoDb를 위한 상수와 유틸리티 함수를 제공합니다.
+ * Constants and utility values for DynamoDB support.
  */
 object Defaults {
 
     /**
-     * DynamoDB의 BatchWriteItem 은 Batch당 최대 25개의 Item만 허용합니다.
+     * DynamoDB BatchWriteItem accepts at most 25 items per batch.
      */
     const val MAX_BATCH_ITEM_SIZE = 25
 }

@@ -9,16 +9,16 @@ import io.bluetape4k.support.useSafe
 
 
 /**
- * [DynamoDbClient]를 생성합니다.
+ * Creates a [DynamoDbClient].
  *
- * @param endpointUrl DynamoDB 엔드포인트 URL
- * @param region AWS 리전 (필수 — AWS SDK Kotlin은 region 미지정 시 런타임 에러 발생)
- * @param credentialsProvider AWS 자격 증명 제공자
+ * @param endpointUrl DynamoDB endpoint URL.
+ * @param region AWS region. Required because the AWS SDK for Kotlin fails at runtime without it.
+ * @param credentialsProvider AWS credentials provider.
  * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
- * @param builder [DynamoDbClient.Config.Builder] 를 통해 [DynamoDbClient.Config] 를 설정합니다.
+ * @param builder configures [DynamoDbClient.Config] through [DynamoDbClient.Config.Builder].
  *
- * @return [DynamoDbClient] 인스턴스
- * @throws IllegalArgumentException [region]이 blank인 경우
+ * @return a [DynamoDbClient] instance.
+ * @throws IllegalArgumentException if [region] is blank.
  */
 inline fun dynamoDbClientOf(
     endpointUrl: Url? = null,
@@ -27,7 +27,7 @@ inline fun dynamoDbClientOf(
     httpClient: HttpClientEngine? = null,
     crossinline builder: DynamoDbClient.Config.Builder.() -> Unit = {},
 ): DynamoDbClient {
-    // WHY: region은 AWS SDK Kotlin에서 필수 — null 허용 시 런타임에서 초기화 실패하므로 빠른 실패 보장
+    // WHY: the AWS SDK for Kotlin requires region; fail fast before client initialization.
     region.requireNotBlank("region")
 
     return DynamoDbClient {
@@ -41,9 +41,9 @@ inline fun dynamoDbClientOf(
 }
 
 /**
- * [DynamoDbClient]를 생성하고 [block]을 실행한 후 자동으로 닫습니다.
+ * Creates a [DynamoDbClient], runs [block], and closes the client automatically.
  *
- * SDK가 내부 HTTP 엔진을 직접 관리하므로 close() 시 엔진도 함께 종료됩니다.
+ * When the SDK manages the internal HTTP engine, closing the client also closes that engine.
  *
  * ```kotlin
  * withDynamoDbClient(endpointUrl, region = "us-east-1", credentialsProvider) { client ->
@@ -51,9 +51,9 @@ inline fun dynamoDbClientOf(
  * }
  * ```
  *
- * @param region AWS 리전 (필수)
- * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
- * @throws IllegalArgumentException [region]이 blank인 경우
+ * @param region AWS region. Required.
+ * @param block suspend block. AWS SDK operations are suspend functions, so this block is suspend too.
+ * @throws IllegalArgumentException if [region] is blank.
  */
 suspend fun <R> withDynamoDbClient(
     endpointUrl: Url? = null,
