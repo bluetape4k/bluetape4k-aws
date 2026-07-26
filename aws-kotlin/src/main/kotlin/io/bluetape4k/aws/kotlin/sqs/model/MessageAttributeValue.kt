@@ -3,16 +3,16 @@ package io.bluetape4k.aws.kotlin.sqs.model
 import aws.sdk.kotlin.services.sqs.model.MessageAttributeValue
 
 /**
- * 문자열 값으로 SQS [MessageAttributeValue]를 생성합니다.
+ * Creates an SQS [MessageAttributeValue] from a string value.
  *
  * ```kotlin
  * val attr = messageAttributeValueOf("hello")
  * // attr.stringValue == "hello"
  * ```
  *
- * @param value 문자열 값 (null 허용)
- * @param builder [MessageAttributeValue.Builder]를 설정하는 람다
- * @return [MessageAttributeValue] 인스턴스
+ * @param value String value; null is allowed.
+ * @param builder Lambda for configuring [MessageAttributeValue.Builder].
+ * @return A [MessageAttributeValue] instance.
  */
 @JvmName("messageAttributeValueOfNullableString")
 inline fun messageAttributeValueOf(
@@ -26,16 +26,16 @@ inline fun messageAttributeValueOf(
     }
 
 /**
- * 문자열 목록으로 SQS [MessageAttributeValue]를 생성합니다.
+ * Creates an SQS [MessageAttributeValue] from a list of strings.
  *
  * ```kotlin
  * val attr = messageAttributeValueOf(listOf("a", "b", "c"))
  * // attr.stringListValues == ["a", "b", "c"]
  * ```
  *
- * @param values 문자열 목록 (null 허용)
- * @param builder [MessageAttributeValue.Builder]를 설정하는 람다
- * @return [MessageAttributeValue] 인스턴스
+ * @param values String values; null is allowed.
+ * @param builder Lambda for configuring [MessageAttributeValue.Builder].
+ * @return A [MessageAttributeValue] instance.
  */
 @JvmName("messageAttributeValueOfNullableStringList")
 inline fun messageAttributeValueOf(
@@ -49,16 +49,16 @@ inline fun messageAttributeValueOf(
     }
 
 /**
- * 바이너리 값으로 SQS [MessageAttributeValue]를 생성합니다.
+ * Creates an SQS [MessageAttributeValue] from a binary value.
  *
  * ```kotlin
  * val attr = messageAttributeValueOf(byteArrayOf(1, 2, 3))
  * // attr.binaryValue?.contentEquals(byteArrayOf(1, 2, 3)) == true
  * ```
  *
- * @param value 바이너리 값 (null 허용)
- * @param builder [MessageAttributeValue.Builder]를 설정하는 람다
- * @return [MessageAttributeValue] 인스턴스
+ * @param value Binary value; null is allowed.
+ * @param builder Lambda for configuring [MessageAttributeValue.Builder].
+ * @return A [MessageAttributeValue] instance.
  */
 @JvmName("messageAttributeValueOfNullableByteArray")
 inline fun messageAttributeValueOf(
@@ -72,16 +72,16 @@ inline fun messageAttributeValueOf(
     }
 
 /**
- * 바이너리 목록으로 SQS [MessageAttributeValue]를 생성합니다.
+ * Creates an SQS [MessageAttributeValue] from a list of binary values.
  *
  * ```kotlin
  * val attr = messageAttributeValueOf(listOf(byteArrayOf(1), byteArrayOf(2)))
  * // attr.binaryListValues?.size == 2
  * ```
  *
- * @param values 바이너리 목록 (null 허용)
- * @param builder [MessageAttributeValue.Builder]를 설정하는 람다
- * @return [MessageAttributeValue] 인스턴스
+ * @param values Binary values; null is allowed.
+ * @param builder Lambda for configuring [MessageAttributeValue.Builder].
+ * @return A [MessageAttributeValue] instance.
  */
 @JvmName("messageAttributeValueOfNullableByteArrayList")
 inline fun messageAttributeValueOf(
