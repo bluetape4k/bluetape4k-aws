@@ -10,11 +10,11 @@ import software.amazon.awssdk.services.sts.StsClientBuilder
 import java.net.URI
 
 /**
- * [StsClient]를 빌드합니다.
+ * Builds a [StsClient].
  *
  * ```kotlin
  * val client = stsClient { region(Region.AP_NORTHEAST_2) }
- * // client == StsClient 인스턴스
+ * // client == StsClient instance
  * ```
  */
 inline fun stsClient(
@@ -26,13 +26,13 @@ inline fun stsClient(
         }
 
 /**
- * [Region] 기반으로 [StsClient]를 생성합니다.
+ * Creates a [StsClient] from [Region].
  *
- * [httpClient]는 기본 HTTP 클라이언트를 사용하며, 생성된 클라이언트는 [ShutdownQueue]에 등록됩니다.
+ * [httpClient] uses the default HTTP client, and the created client is registered with [ShutdownQueue].
  *
  * ```kotlin
  * val client = stsClientOf(Region.AP_NORTHEAST_2)
- * // client == StsClient 인스턴스
+ * // client == StsClient instance
  * ```
  */
 inline fun stsClientOf(
@@ -47,13 +47,13 @@ inline fun stsClientOf(
 }
 
 /**
- * endpoint + credentials 기반으로 [StsClient]를 생성합니다.
+ * Creates a [StsClient] from endpoint and credentials settings.
  *
- * nullable 파라미터는 null 이 아닐 때만 builder에 반영됩니다.
+ * Nullable parameters are reflected in the builder only when they are not null.
  *
  * ```kotlin
  * val client = stsClientOf(endpoint = URI("http://localhost:4566"))
- * // client == StsClient 인스턴스
+ * // client == StsClient instance
  * ```
  */
 inline fun stsClientOf(

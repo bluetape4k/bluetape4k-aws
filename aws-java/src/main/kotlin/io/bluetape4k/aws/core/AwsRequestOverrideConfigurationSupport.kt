@@ -4,11 +4,11 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 
 /**
- * [AwsRequestOverrideConfiguration]을 빌더 DSL로 생성합니다.
+ * Creates [AwsRequestOverrideConfiguration] with a builder DSL.
  *
- * ## 동작/계약
- * - [AwsRequestOverrideConfiguration.builder]로 새 빌더를 만든 뒤 [builder]를 적용한다.
- * - [builder] 실행 후 `build()` 결과를 즉시 반환한다.
+ * ## Behavior and contract
+ * - Creates a new builder with [AwsRequestOverrideConfiguration.builder], then applies [builder].
+ * - Returns the `build()` result immediately after [builder] runs.
  *
  * ```kotlin
  * val configuration = awsRequestOverrideConfiguration {
@@ -24,11 +24,11 @@ inline fun awsRequestOverrideConfiguration(
 }
 
 /**
- * 요청 단위 자격 증명 공급자를 지정한 [AwsRequestOverrideConfiguration]을 생성합니다.
+ * Creates [AwsRequestOverrideConfiguration] with a request-level credentials provider.
  *
- * ## 동작/계약
- * - 내부 [awsRequestOverrideConfiguration]에서 `credentialsProvider(credentialsProvider)`를 호출한다.
- * - 반환 객체는 전달된 provider를 요청 오버라이드 자격 증명으로 포함한다.
+ * ## Behavior and contract
+ * - Calls `credentialsProvider(credentialsProvider)` inside [awsRequestOverrideConfiguration].
+ * - The returned object includes the supplied provider as request override credentials.
  *
  * ```kotlin
  * val provider = software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider.create()

@@ -6,27 +6,27 @@ import software.amazon.awssdk.http.apache.ApacheHttpClient
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
 
 /**
- * 동기 [SdkHttpClient] 공용 인스턴스를 지연 생성해 제공하는 Provider입니다.
+ * Provider that lazily creates and exposes shared synchronous [SdkHttpClient] instances.
  *
- * ## 동작/계약
- * - 하위 객체별 `httpClient`는 `by lazy`로 최초 접근 시 1회 생성된다.
- * - 생성된 클라이언트는 [ShutdownQueue]에 등록되어 종료 훅에서 정리된다.
+ * ## Behavior and contract
+ * - Each nested object's `httpClient` is created once on first access through `by lazy`.
+ * - Created clients are registered with [ShutdownQueue] and cleaned up by the shutdown hook.
  *
  * ```kotlin
  * val client = SdkHttpClientProvider.defaultHttpClient
  * // client == SdkHttpClientProvider.Apache.httpClient
  * ```
  *
- * 참고: [AWS HTTP 클라이언트](https://docs.aws.amazon.com/ko_kr/sdk-for-java/latest/developer-guide/http-configuration.html)
+ * Reference: [AWS HTTP clients](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/http-configuration.html)
  */
 object SdkHttpClientProvider {
 
     /**
-     * Apache 기반 동기 HTTP 클라이언트를 제공합니다.
+     * Provides an Apache-based synchronous HTTP client.
      *
-     * ## 동작/계약
-     * - [ApacheHttpClient] 빌더 기본값으로 클라이언트를 생성한다.
-     * - 생성 직후 [ShutdownQueue]에 등록한 인스턴스를 캐시해 재사용한다.
+     * ## Behavior and contract
+     * - Creates the client with [ApacheHttpClient] builder defaults.
+     * - Caches and reuses the instance registered with [ShutdownQueue] immediately after creation.
      *
      * ```kotlin
      * val apache = SdkHttpClientProvider.Apache.httpClient
@@ -36,11 +36,11 @@ object SdkHttpClientProvider {
     object Apache {
 
         /**
-         * Apache 기반 공용 [SdkHttpClient] 인스턴스입니다.
+         * Shared Apache-based [SdkHttpClient] instance.
          *
-         * ## 동작/계약
-         * - 최초 접근 시 1회 생성되고 이후 동일 인스턴스를 반환한다.
-         * - 생성된 인스턴스는 종료 큐에 등록된다.
+         * ## Behavior and contract
+         * - Created once on first access and returns the same instance afterward.
+         * - The created instance is registered with the shutdown queue.
          *
          * ```kotlin
          * val first = SdkHttpClientProvider.Apache.httpClient
@@ -57,11 +57,11 @@ object SdkHttpClientProvider {
     }
 
     /**
-     * URLConnection 기반 동기 HTTP 클라이언트를 제공합니다.
+     * Provides a URLConnection-based synchronous HTTP client.
      *
-     * ## 동작/계약
-     * - [UrlConnectionHttpClient] 기본 빌더로 클라이언트를 생성한다.
-     * - 생성 직후 [ShutdownQueue]에 등록한 인스턴스를 재사용한다.
+     * ## Behavior and contract
+     * - Creates the client with the default [UrlConnectionHttpClient] builder.
+     * - Reuses the instance registered with [ShutdownQueue] immediately after creation.
      *
      * ```kotlin
      * val urlConnection = SdkHttpClientProvider.UrlConnection.httpClient
@@ -71,11 +71,11 @@ object SdkHttpClientProvider {
     object UrlConnection {
 
         /**
-         * URLConnection 기반 공용 [SdkHttpClient] 인스턴스입니다.
+         * Shared URLConnection-based [SdkHttpClient] instance.
          *
-         * ## 동작/계약
-         * - 최초 접근 시 1회 생성되고 이후 동일 인스턴스를 반환한다.
-         * - 생성된 인스턴스는 종료 큐에 등록된다.
+         * ## Behavior and contract
+         * - Created once on first access and returns the same instance afterward.
+         * - The created instance is registered with the shutdown queue.
          *
          * ```kotlin
          * val first = SdkHttpClientProvider.UrlConnection.httpClient
@@ -92,11 +92,11 @@ object SdkHttpClientProvider {
     }
 
     /**
-     * 기본 동기 HTTP 클라이언트로 Apache 구현을 반환합니다.
+     * Returns the Apache implementation as the default synchronous HTTP client.
      *
-     * ## 동작/계약
-     * - [Apache.httpClient] 참조를 그대로 반환한다.
-     * - 별도 새 인스턴스를 만들지 않는다.
+     * ## Behavior and contract
+     * - Returns the [Apache.httpClient] reference directly.
+     * - Does not create a separate new instance.
      *
      * ```kotlin
      * val defaultClient = SdkHttpClientProvider.defaultHttpClient

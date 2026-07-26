@@ -7,10 +7,10 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
 import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
 
 /**
- * 현재 AWS 자격 증명의 호출자 신원 정보를 코루틴으로 반환합니다.
+ * Returns caller identity information for the current AWS credentials as a coroutine result.
  *
- * ## 동작/계약
- * - 내부적으로 [getCallerIdentityAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
+ * ## Behavior and contract
+ * - Calls [getCallerIdentityAsync] internally, then waits for completion with `await()`.
  *
  * ```kotlin
  * val response = stsAsyncClient.getCallerIdentity()
@@ -21,11 +21,11 @@ suspend fun StsAsyncClient.getDefaultCallerIdentity(): GetCallerIdentityResponse
     getCallerIdentityAsync().await()
 
 /**
- * IAM 역할을 임시로 맡아(Assume) 임시 자격 증명을 코루틴으로 반환합니다.
+ * Assumes an IAM role temporarily and returns temporary credentials as a coroutine result.
  *
- * ## 동작/계약
- * - 내부적으로 [assumeRoleAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
- * - [durationSeconds]는 900~43200 범위를 만족해야 하며, 검증 실패 시 [IllegalArgumentException]을 던진다.
+ * ## Behavior and contract
+ * - Calls [assumeRoleAsync] internally, then waits for completion with `await()`.
+ * - [durationSeconds] must be in the 900..43200 range; validation failures throw [IllegalArgumentException].
  *
  * ```kotlin
  * val response = stsAsyncClient.assumeRole(
@@ -43,11 +43,11 @@ suspend fun StsAsyncClient.assumeRole(
     assumeRoleAsync(roleArn, sessionName, durationSeconds).await()
 
 /**
- * MFA 인증 기반의 임시 세션 자격 증명을 코루틴으로 반환합니다.
+ * Returns MFA-based temporary session credentials as a coroutine result.
  *
- * ## 동작/계약
- * - 내부적으로 [getSessionTokenAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
- * - [durationSeconds]는 900~129600 범위를 만족해야 하며, 검증 실패 시 [IllegalArgumentException]을 던진다.
+ * ## Behavior and contract
+ * - Calls [getSessionTokenAsync] internally, then waits for completion with `await()`.
+ * - [durationSeconds] must be in the 900..129600 range; validation failures throw [IllegalArgumentException].
  *
  * ```kotlin
  * val response = stsAsyncClient.getSessionToken()

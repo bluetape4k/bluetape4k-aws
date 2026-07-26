@@ -7,15 +7,15 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 /**
- * CRT 빌더 DSL로 [SdkAsyncHttpClient]를 생성합니다.
+ * Creates [SdkAsyncHttpClient] with the CRT builder DSL.
  *
- * ## 동작/계약
- * - [AwsCrtAsyncHttpClient.builder]에 [builder]를 적용한 뒤 `build()`를 반환한다.
- * - [builder]에서 지정한 설정이 최종 클라이언트에 반영된다.
+ * ## Behavior and contract
+ * - Applies [builder] to [AwsCrtAsyncHttpClient.builder], then returns `build()`.
+ * - Settings supplied by [builder] are reflected in the final client.
  *
- * 참고: [AWSCRT 기반 HTTP 클라이언트 설정](https://docs.aws.amazon.com/ko_kr/sdk-for-java/latest/developer-guide/http-configuration-crt.html)
+ * Reference: [AWS CRT-based HTTP client configuration](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/http-configuration-crt.html)
  *
- * NOTE: [AwsCrtAsyncHttpClient]를 사용하려면 참조에서 `netty-nio-client` 를 제거해야 합니다. (동시 사용은 불가능)
+ * NOTE: Remove `netty-nio-client` from dependencies before using [AwsCrtAsyncHttpClient]. They cannot be used together.
  *
  * ```kotlin
  * val client = awsCrtAsyncHttpClient {
@@ -31,12 +31,12 @@ inline fun awsCrtAsyncHttpClient(
 }
 
 /**
- * 기본 동시성/버퍼/타임아웃 설정을 적용한 CRT [SdkAsyncHttpClient]를 생성합니다.
+ * Creates a CRT [SdkAsyncHttpClient] with default concurrency, buffer, and timeout settings.
  *
- * ## 동작/계약
- * - 기본값은 `maxConcurrency=100`, `readBufferSize=2*1024*1024`, `connectionMaxIdleTime=30.seconds`, `connectionTimeout=5.seconds`, `postQuantumTlsEnabled=false`다.
- * - Kotlin [Duration]을 Java Duration으로 변환해 CRT 빌더에 적용한다.
- * - 마지막에 전달된 [builder]를 적용하므로 기본값을 선택적으로 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - Defaults are `maxConcurrency=100`, `readBufferSize=2*1024*1024`, `connectionMaxIdleTime=30.seconds`, `connectionTimeout=5.seconds`, and `postQuantumTlsEnabled=false`.
+ * - Converts Kotlin [Duration] values to Java Duration values before applying them to the CRT builder.
+ * - Applies [builder] last, so callers can selectively override defaults.
  *
  * ```kotlin
  * val client = awsCrtAsyncHttpClientOf(
