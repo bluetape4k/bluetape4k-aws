@@ -5,12 +5,12 @@ import aws.sdk.kotlin.services.dynamodb.model.RestoreTableToPointInTimeRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * DSL 블록으로 DynamoDB [RestoreTableFromBackupRequest]를 빌드합니다.
+ * Builds a DynamoDB [RestoreTableFromBackupRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [backupArn]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [targetTableName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [backupArn] is blank.
+ * - Throws `IllegalArgumentException` when [targetTableName] is blank.
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val req = restoreTableFromBackupRequestOf(
@@ -20,8 +20,8 @@ import io.bluetape4k.support.requireNotBlank
  * // req.targetTableName == "users-restored"
  * ```
  *
- * @param backupArn 복원 원본 백업의 ARN (blank이면 예외)
- * @param targetTableName 복원 대상 테이블 이름 (blank이면 예외)
+ * @param backupArn ARN of the source backup to restore from. Blank values throw.
+ * @param targetTableName target table name to restore. Blank values throw.
  */
 inline fun restoreTableFromBackupRequestOf(
     backupArn: String,
@@ -40,12 +40,12 @@ inline fun restoreTableFromBackupRequestOf(
 }
 
 /**
- * DSL 블록으로 DynamoDB [RestoreTableToPointInTimeRequest]를 빌드합니다.
+ * Builds a DynamoDB [RestoreTableToPointInTimeRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [targetTableName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [sourceTableArn] 또는 [sourceTableName] 중 하나를 지정하여 복원 원본을 설정한다.
- * - [useLatestRestorableTime]이 true이면 가장 최근 복원 가능 시점으로 복원한다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [targetTableName] is blank.
+ * - Specify either [sourceTableArn] or [sourceTableName] to set the restore source.
+ * - When [useLatestRestorableTime] is true, restores to the latest restorable point in time.
  *
  * ```kotlin
  * val req = restoreTableToPointInTimeRequestOf(
@@ -57,10 +57,10 @@ inline fun restoreTableFromBackupRequestOf(
  * // req.useLatestRestorableTime == true
  * ```
  *
- * @param sourceTableArn 복원 원본 테이블의 ARN
- * @param sourceTableName 복원 원본 테이블 이름
- * @param targetTableName 복원 대상 테이블 이름 (blank이면 예외)
- * @param useLatestRestorableTime 가장 최근 복원 가능 시점 사용 여부
+ * @param sourceTableArn ARN of the source table to restore from.
+ * @param sourceTableName source table name to restore from.
+ * @param targetTableName target table name to restore. Blank values throw.
+ * @param useLatestRestorableTime whether to use the latest restorable point in time.
  */
 inline fun restoreTableToPointInTimeRequestOf(
     sourceTableArn: String? = null,

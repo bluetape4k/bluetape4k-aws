@@ -7,11 +7,11 @@ import aws.sdk.kotlin.services.dynamodb.model.Tag
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * DSL 블록으로 DynamoDB [CreateTableRequest]를 빌드합니다.
+ * Builds a DynamoDB [CreateTableRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - 키 스키마·속성 정의 등 추가 설정은 [builder] 블록으로 확장한다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [tableName] is blank.
+ * - Additional settings such as key schema and attribute definitions are supplied through [builder].
  *
  * ```kotlin
  * val req = createTableRequestOf("orders") {
@@ -20,8 +20,8 @@ import io.bluetape4k.support.requireNotBlank
  * }
  * ```
  *
- * @param tableName 생성할 테이블 이름
- * @throws IllegalArgumentException [tableName]이 blank인 경우
+ * @param tableName table name to create.
+ * @throws IllegalArgumentException if [tableName] is blank.
  */
 inline fun createTableRequestOf(
     tableName: String,
