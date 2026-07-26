@@ -8,7 +8,7 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * [bucket]의 [key]에 해당하는 S3 객체를 삭제하기 위한 [DeleteObjectRequest]를 생성합니다.
+ * Creates a [DeleteObjectRequest] for the S3 object at [key] in [bucket].
  *
  * ```kotlin
  * val request = deleteObjectRequestOf(
@@ -18,10 +18,10 @@ import io.bluetape4k.support.requireNotEmpty
  * s3Client.deleteObject(request)
  * ```
  *
- * @param bucket 버킷 이름
- * @param key 삭제할 객체 키
- * @param versionId 특정 버전 ID (null이면 최신 버전)
- * @return [DeleteObjectRequest] 인스턴스
+ * @param bucket bucket name
+ * @param key key of the object to delete
+ * @param versionId specific version ID; when null, uses the latest version
+ * @return the [DeleteObjectRequest]
  */
 inline fun deleteObjectRequestOf(
     bucket: String,
@@ -42,7 +42,7 @@ inline fun deleteObjectRequestOf(
 }
 
 /**
- * [bucket]의 [identifiers] 목록에 해당하는 S3 객체들을 일괄 삭제하기 위한 [DeleteObjectsRequest]를 생성합니다.
+ * Creates a [DeleteObjectsRequest] for deleting the S3 objects identified by [identifiers] from [bucket].
  *
  * ```kotlin
  * val identifiers = listOf("key1", "key2").map { it.toObjectIdentifier() }
@@ -50,9 +50,9 @@ inline fun deleteObjectRequestOf(
  * s3Client.deleteObjects(request)
  * ```
  *
- * @param bucket 버킷 이름
- * @param identifiers 삭제할 객체 식별자 목록
- * @return [DeleteObjectsRequest] 인스턴스
+ * @param bucket bucket name
+ * @param identifiers identifiers of the objects to delete
+ * @return the [DeleteObjectsRequest]
  */
 inline fun deleteObjectsRequestOf(
     bucket: String,
@@ -66,7 +66,7 @@ inline fun deleteObjectsRequestOf(
 }
 
 /**
- * [Delete] 객체를 사용하여 [DeleteObjectsRequest]를 생성합니다.
+ * Creates a [DeleteObjectsRequest] from a [Delete] object.
  *
  * ```kotlin
  * val delete = deleteOf("key1", "key2")
@@ -74,9 +74,9 @@ inline fun deleteObjectsRequestOf(
  * s3Client.deleteObjects(request)
  * ```
  *
- * @param bucket 버킷 이름
- * @param delete 삭제할 객체 목록을 포함하는 [Delete] 객체
- * @return [DeleteObjectsRequest] 인스턴스
+ * @param bucket bucket name
+ * @param delete [Delete] object containing the objects to delete
+ * @return the [DeleteObjectsRequest]
  */
 inline fun deleteObjectsRequestOf(
     bucket: String,

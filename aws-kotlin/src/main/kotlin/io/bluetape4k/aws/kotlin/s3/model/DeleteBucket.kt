@@ -4,16 +4,16 @@ import aws.sdk.kotlin.services.s3.model.DeleteBucketRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * [bucket] 이름으로 [DeleteBucketRequest]를 생성합니다.
+ * Creates a [DeleteBucketRequest] for [bucket].
  *
  * ```kotlin
  * val request = deleteBucketRequestOf("my-bucket")
  * s3Client.deleteBucket(request)
  * ```
  *
- * @param bucket 삭제할 버킷 이름
- * @param expectedBucketOwner 예상 버킷 소유자 계정 ID (null이면 생략)
- * @return [DeleteBucketRequest] 인스턴스
+ * @param bucket name of the bucket to delete
+ * @param expectedBucketOwner expected bucket owner account ID; omitted when null
+ * @return the [DeleteBucketRequest]
  */
 inline fun deleteBucketRequestOf(
     bucket: String,

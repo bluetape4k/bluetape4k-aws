@@ -11,15 +11,15 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * S3 Bucket 에서 여러 Object 를 삭제합니다.
+ * Deletes multiple objects from an S3 bucket.
  *
  * ```
  * val response = s3Client.deleteAll("bucket", "key-1", "key-2")
  * ```
  *
- * @param bucket 삭제할 Object 가 있는 버킷 이름
- * @param keys 삭제할 Object 의 키 목록
- * @return [DeleteObjectsResponse] 인스턴스
+ * @param bucket name of the bucket containing the objects
+ * @param keys keys of the objects to delete
+ * @return the [DeleteObjectsResponse]
  */
 suspend inline fun S3Client.deleteAll(
     bucket: String,
@@ -35,15 +35,15 @@ suspend inline fun S3Client.deleteAll(
 }
 
 /**
- * S3 [bucket]의 [keys]에 해당하는 오브젝트들을 삭제합니다.
+ * Deletes the objects identified by [keys] from S3 [bucket].
  *
  * ```
  * val response = s3Client.deleteAll("bucket", listOf("key-1", "key-2"))
  * ```
  *
- * @param bucket 삭제할 Object 가 있는 버킷 이름
- * @param keys 삭제할 Object 의 키 목록
- * @return [DeleteObjectsResponse] 인스턴스
+ * @param bucket name of the bucket containing the objects
+ * @param keys keys of the objects to delete
+ * @return the [DeleteObjectsResponse]
  */
 suspend inline fun S3Client.deleteAll(
     bucket: String,
@@ -61,7 +61,7 @@ suspend inline fun S3Client.deleteAll(
 }
 
 /**
- * S3 Bucket 에서 여러 Object 를 삭제합니다.
+ * Deletes multiple objects from an S3 bucket.
  *
  * ```
  * val keys = listOf("key-1", "key-2")
@@ -73,9 +73,9 @@ suspend inline fun S3Client.deleteAll(
  * }
  * ```
  *
- * @param bucket 삭제할 Object 가 있는 버킷 이름
- * @param builder [DeleteObjectsRequest.Builder]를 통해 [DeleteObjectsRequest]를 설정합니다.
- * @return [DeleteObjectsResponse] 인스턴스
+ * @param bucket name of the bucket containing the objects
+ * @param builder configures the [DeleteObjectsRequest] through [DeleteObjectsRequest.Builder]
+ * @return the [DeleteObjectsResponse]
  */
 suspend inline fun S3Client.deleteAll(
     bucket: String,

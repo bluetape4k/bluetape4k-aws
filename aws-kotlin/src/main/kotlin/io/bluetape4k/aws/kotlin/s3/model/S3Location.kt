@@ -4,7 +4,7 @@ import aws.sdk.kotlin.services.s3.model.S3Location
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * [bucket] 이름으로 [S3Location]을 생성합니다.
+ * Creates an [S3Location] for [bucket].
  *
  * ```kotlin
  * val location = s3LocationOf("my-bucket") {
@@ -12,8 +12,8 @@ import io.bluetape4k.support.requireNotBlank
  * }
  * ```
  *
- * @param bucket 버킷 이름
- * @return [S3Location] 인스턴스
+ * @param bucket bucket name
+ * @return the [S3Location]
  */
 inline fun s3LocationOf(
     bucket: String,

@@ -7,7 +7,7 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /**
- * [S3Client] 를 생성합니다.
+ * Creates an [S3Client].
  *
  * ```kotlin
  * val s3Client = s3ClientOf(
@@ -19,12 +19,12 @@ import io.bluetape4k.support.useSafe
  * }
  * ```
  *
- * @param endpointUrl S3 엔드포인트 URL
- * @param region AWS 리전
- * @param credentialsProvider AWS 자격 증명 제공자
+ * @param endpointUrl S3 endpoint URL
+ * @param region AWS Region
+ * @param credentialsProvider AWS credentials provider
  * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
- * @param builder [S3Client.Config.Builder] 를 통해 [S3Client.Config] 를 설정합니다.
- * @return [S3Client] 인스턴스
+ * @param builder configures [S3Client.Config] through [S3Client.Config.Builder]
+ * @return the [S3Client]
  */
 inline fun s3ClientOf(
     endpointUrl: Url? = null,
@@ -43,9 +43,9 @@ inline fun s3ClientOf(
     }
 
 /**
- * [S3Client]를 생성하고 [block]을 실행한 후 자동으로 닫습니다.
+ * Creates an [S3Client], executes [block], and closes the client automatically.
  *
- * SDK가 내부 HTTP 엔진을 직접 관리하므로 close() 시 엔진도 함께 종료됩니다.
+ * The SDK manages its internal HTTP engine, so closing the client also shuts down the engine.
  *
  * ```kotlin
  * withS3Client(endpointUrl, region, credentialsProvider) { client ->
@@ -53,7 +53,7 @@ inline fun s3ClientOf(
  * }
  * ```
  *
- * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
+ * @param block suspending block; AWS SDK operations are suspend functions
  */
 suspend fun <R> withS3Client(
     endpointUrl: Url? = null,

@@ -6,7 +6,7 @@ import io.bluetape4k.support.requireNotBlank
 import java.net.URLEncoder
 
 /**
- * 버킷/키 정보를 받아 URL-encoded copy source를 생성한 뒤 [CopyObjectRequest] 를 생성합니다.
+ * Creates a URL-encoded copy source from bucket and key information, then builds a [CopyObjectRequest].
  *
  * ```kotlin
  * val request = copyObjectRequestOf(
@@ -18,12 +18,12 @@ import java.net.URLEncoder
  * s3Client.copyObject(request)
  * ```
  *
- * @param srcBucket 원본 버킷 이름
- * @param srcKey 원본 객체 키
- * @param destBucket 대상 버킷 이름
- * @param destKey 대상 객체 키
- * @param acl 접근 제어 목록
- * @return [CopyObjectRequest] 인스턴스
+ * @param srcBucket source bucket name
+ * @param srcKey source object key
+ * @param destBucket destination bucket name
+ * @param destKey destination object key
+ * @param acl access control list
+ * @return the [CopyObjectRequest]
  */
 inline fun copyObjectRequestOf(
     srcBucket: String,
@@ -49,7 +49,7 @@ inline fun copyObjectRequestOf(
 }
 
 /**
- * 이미 구성된 copy source 문자열을 사용해 [CopyObjectRequest]를 생성합니다.
+ * Creates a [CopyObjectRequest] from an existing copy source string.
  *
  * ```kotlin
  * val request = copyObjectRequestOf(
@@ -60,11 +60,11 @@ inline fun copyObjectRequestOf(
  * s3Client.copyObject(request)
  * ```
  *
- * @param copySource URL-encoded copy source 문자열 (예: "src-bucket/src-key")
- * @param destBucket 대상 버킷 이름
- * @param destKey 대상 객체 키
- * @param acl 접근 제어 목록
- * @return [CopyObjectRequest] 인스턴스
+ * @param copySource URL-encoded copy source string, such as "src-bucket/src-key"
+ * @param destBucket destination bucket name
+ * @param destKey destination object key
+ * @param acl access control list
+ * @return the [CopyObjectRequest]
  */
 inline fun copyObjectRequestOf(
     copySource: String,

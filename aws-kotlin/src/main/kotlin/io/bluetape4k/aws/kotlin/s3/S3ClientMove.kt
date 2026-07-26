@@ -8,17 +8,17 @@ import aws.sdk.kotlin.services.s3.model.CopyObjectResponse
 import aws.sdk.kotlin.services.s3.model.DeleteObjectRequest
 
 /**
- * S3 Object 를 이동 시킵니다.
+ * Moves an S3 object.
  *
  * ```kotlin
  * val response = s3Client.move("src-bucket", "src-key", "dest-bucket", "dest-key")
  * ```
  *
- * @param srcBucket 이동할 Object 가 있는 버킷 이름
- * @param srcKey 이동할 Object 의 키
- * @param destBucket 이동할 Object 가 위치할 버킷 이름
- * @param destKey 이동할 Object 의 키
- * @return [CopyObjectResponse] 인스턴스
+ * @param srcBucket bucket containing the source object
+ * @param srcKey source object key
+ * @param destBucket destination bucket
+ * @param destKey destination object key
+ * @return the [CopyObjectResponse]
  */
 suspend inline fun S3Client.move(
     srcBucket: String,
@@ -39,7 +39,7 @@ suspend inline fun S3Client.move(
 }
 
 /**
- * S3 Object 를 이동 시킵니다.
+ * Moves an S3 object.
  *
  * ```kotlin
  * val response = s3Client.move(
@@ -54,9 +54,9 @@ suspend inline fun S3Client.move(
  *    }
  * )
  * ```
- * @param copyRequestBuilder [CopyObjectRequest.Builder] 를 통해 [CopyObjectRequest] 를 설정합니다.
- * @param deleteRequestBuilder [DeleteObjectRequest.Builder] 를 통해 [DeleteObjectRequest] 를 설정합니다.
- * @return [CopyObjectResponse] 인스턴스
+ * @param copyRequestBuilder configures the [CopyObjectRequest] through [CopyObjectRequest.Builder]
+ * @param deleteRequestBuilder configures the [DeleteObjectRequest] through [DeleteObjectRequest.Builder]
+ * @return the [CopyObjectResponse]
  */
 suspend inline fun S3Client.move(
     crossinline copyRequestBuilder: CopyObjectRequest.Builder.() -> Unit,
