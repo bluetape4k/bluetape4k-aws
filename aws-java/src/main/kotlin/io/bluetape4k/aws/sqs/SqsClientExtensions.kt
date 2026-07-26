@@ -29,9 +29,9 @@ private const val MIN_RECEIVE_MESSAGES = 1
 private const val MAX_RECEIVE_MESSAGES = 10
 
 /**
- * DSL 빌더로 [SqsClient]를 생성합니다.
+ * Creates a [SqsClient] with a DSL builder.
  *
- * 생성된 클라이언트는 JVM 종료 시 자동으로 닫히도록 [ShutdownQueue]에 등록됩니다.
+ * The created client is registered with [ShutdownQueue] so it is closed automatically on JVM shutdown.
  *
  * ```kotlin
  * val client = sqsClient { region(Region.AP_NORTHEAST_2) }
@@ -50,12 +50,12 @@ inline fun sqsClient(
         }
 
 /**
- * 편의 파라미터로 [SqsClient]를 생성합니다.
+ * Creates a [SqsClient] with convenience parameters.
  *
- * @param endpoint 엔드포인트 URI (LocalStack 등 오버라이드 시 지정)
- * @param region AWS 리전
- * @param credentialsProvider 자격증명 공급자
- * @param httpClient HTTP 클라이언트
+ * @param endpoint Endpoint URI, specified when overriding for LocalStack or similar.
+ * @param region AWS region.
+ * @param credentialsProvider Credentials provider.
+ * @param httpClient HTTP client.
  *
  * ```kotlin
  * val client = sqsClientOf(endpoint = URI("http://localhost:4566"), region = Region.AP_NORTHEAST_2)
@@ -79,7 +79,7 @@ inline fun sqsClientOf(
     }
 
 /**
- * [queueName]으로 SQS 큐를 생성하고 큐 URL을 반환합니다.
+ * Creates an SQS queue with [queueName] and returns the queue URL.
  *
  * ```kotlin
  * val queueUrl = sqsClient.createQueue("my-queue")
@@ -92,7 +92,7 @@ fun SqsClient.createQueue(queueName: String): String {
 }
 
 /**
- * SQS 큐 목록을 조회합니다.
+ * Lists SQS queues.
  *
  * ```kotlin
  * val response = sqsClient.listQueues(prefix = "my-")
@@ -111,7 +111,7 @@ fun SqsClient.listQueues(
     }
 
 /**
- * [queueName]으로 SQS 큐 URL을 조회합니다.
+ * Gets the SQS queue URL for [queueName].
  *
  * ```kotlin
  * val response = sqsClient.getQueueUrl("my-queue")
@@ -124,7 +124,7 @@ fun SqsClient.getQueueUrl(queueName: String): GetQueueUrlResponse {
 }
 
 /**
- * [queueUrl] 큐에 [messageBody]를 전송합니다.
+ * Sends [messageBody] to the [queueUrl] queue.
  *
  * ```kotlin
  * val response = sqsClient.send("https://sqs.ap-northeast-2.amazonaws.com/123/my-queue", "hello")
@@ -137,9 +137,9 @@ fun SqsClient.send(
 ): SendMessageResponse = sendMessage(sendMessageRequestOf(queueUrl, messageBody))
 
 /**
- * 메시지를 배치로 전송합니다.
+ * Sends messages as a batch.
  *
- * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * If [entries] is not in the 1..10 range, throws [IllegalArgumentException] before making a network call.
  *
  * ```kotlin
  * val entry = sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello")
@@ -160,9 +160,9 @@ fun SqsClient.sendBatch(
 }
 
 /**
- * 메시지를 배치로 전송합니다.
+ * Sends messages as a batch.
  *
- * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * If [entries] is not in the 1..10 range, throws [IllegalArgumentException] before making a network call.
  *
  * ```kotlin
  * val entries = listOf(sendMessageBatchRequestEntryOf(id = "1", messageGroupId = "default", messageBody = "hello"))
@@ -183,9 +183,9 @@ fun SqsClient.sendBatch(
 }
 
 /**
- * 큐에서 메시지를 조회합니다.
+ * Receives messages from a queue.
  *
- * [maxResults]를 지정하면 SQS 제약(1..10)을 선검증해 네트워크 호출 전에 실패합니다.
+ * When [maxResults] is set, validates the SQS 1..10 constraint up front and fails before the network call.
  *
  * ```kotlin
  * val response = sqsClient.receiveMessages(queueUrl, maxResults = 10) {
@@ -210,9 +210,9 @@ fun SqsClient.receiveMessages(
 }
 
 /**
- * 큐 메시지의 가시성 타임아웃을 변경합니다.
+ * Changes queue message visibility timeout.
  *
- * [visibilityTimeout]을 지정하면 SQS 제약(0..43200)을 선검증해 네트워크 호출 전에 실패합니다.
+ * When [visibilityTimeout] is set, validates the SQS 0..43200 constraint up front and fails before the network call.
  *
  * ```kotlin
  * val response = sqsClient.changeMessageVisibility(queueUrl, receiptHandle = handle, visibilityTimeout = 30)
@@ -234,9 +234,9 @@ fun SqsClient.changeMessageVisibility(
 }
 
 /**
- * 수신된 메시지들의 가시성 타임아웃을 일괄 변경합니다.
+ * Changes visibility timeouts for received messages as a batch.
  *
- * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * If [entries] is not in the 1..10 range, throws [IllegalArgumentException] before making a network call.
  *
  * ```kotlin
  * val entry = ChangeMessageVisibilityBatchRequestEntry.builder()
@@ -261,9 +261,9 @@ fun SqsClient.changeMessageVisibilityBatch(
 }
 
 /**
- * 수신된 메시지들의 가시성 타임아웃을 일괄 변경합니다.
+ * Changes visibility timeouts for received messages as a batch.
  *
- * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * If [entries] is not in the 1..10 range, throws [IllegalArgumentException] before making a network call.
  */
 fun SqsClient.changeMessageVisibilityBatch(
     queueUrl: String,
@@ -278,7 +278,7 @@ fun SqsClient.changeMessageVisibilityBatch(
 }
 
 /**
- * 큐에서 메시지를 삭제합니다.
+ * Deletes a message from a queue.
  *
  * ```kotlin
  * val response = sqsClient.deleteMessage(queueUrl, receiptHandle = handle)
@@ -297,9 +297,9 @@ fun SqsClient.deleteMessage(
 }
 
 /**
- * 여러 메시지를 일괄 삭제합니다.
+ * Deletes multiple messages as a batch.
  *
- * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * If [entries] is not in the 1..10 range, throws [IllegalArgumentException] before making a network call.
  *
  * ```kotlin
  * val entry = DeleteMessageBatchRequestEntry.builder()
@@ -323,9 +323,9 @@ fun SqsClient.deleteMessageBatch(
 }
 
 /**
- * 여러 메시지를 일괄 삭제합니다.
+ * Deletes multiple messages as a batch.
  *
- * [entries]가 1..10개가 아니면 네트워크 호출 전에 [IllegalArgumentException]을 던집니다.
+ * If [entries] is not in the 1..10 range, throws [IllegalArgumentException] before making a network call.
  */
 fun SqsClient.deleteMessageBatch(
     queueUrl: String,
@@ -340,7 +340,7 @@ fun SqsClient.deleteMessageBatch(
 }
 
 /**
- * SQS 큐를 삭제합니다.
+ * Deletes an SQS queue.
  *
  * ```kotlin
  * val response = sqsClient.deleteQueue("https://sqs.ap-northeast-2.amazonaws.com/123/my-queue")

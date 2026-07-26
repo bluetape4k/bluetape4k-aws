@@ -6,10 +6,10 @@ import software.amazon.awssdk.services.sns.model.Tag
 import software.amazon.awssdk.services.sns.model.TagResourceRequest
 
 /**
- * DSL 블록으로 [TagResourceRequest]를 빌드합니다.
+ * Builds a [TagResourceRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [builder] 블록에서 `resourceArn`, `tags` 등을 직접 설정한다.
+ * ## Behavior/Contract
+ * - Sets `resourceArn`, `tags`, and other fields directly in the [builder] block.
  *
  * ```kotlin
  * val req = tagResourceRequest {
@@ -24,10 +24,10 @@ inline fun tagResourceRequest(
     TagResourceRequest.builder().apply(builder).build()
 
 /**
- * 리소스 ARN과 태그 목록으로 [TagResourceRequest]를 생성합니다.
+ * Creates a [TagResourceRequest] from a resource ARN and tag list.
  *
- * ## 동작/계약
- * - [resourceArn]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [resourceArn] is blank.
  *
  * ```kotlin
  * val tag = Tag.builder().key("env").value("prod").build()

@@ -13,17 +13,17 @@ import software.amazon.awssdk.services.sqs.SqsClientBuilder
 import java.net.URI
 
 /**
- * [SqsClient], [SqsAsyncClient] 생성을 위한 Factory 입니다.
+ * Factory for creating [SqsClient] and [SqsAsyncClient] instances.
  */
 object SqsClientFactory {
 
     /**
-     * 동기 [SqsClient] 생성을 지원합니다.
+     * Supports synchronous [SqsClient] creation.
      */
     object Sync {
 
         /**
-         * DSL 빌더로 [SqsClient]를 생성합니다.
+         * Creates a [SqsClient] with a DSL builder.
          *
          * ```kotlin
          * val client = SqsClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -35,7 +35,7 @@ object SqsClientFactory {
         ): SqsClient = sqsClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [SqsClient]를 생성합니다.
+         * Creates a [SqsClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = SqsClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -58,12 +58,12 @@ object SqsClientFactory {
     }
 
     /**
-     * 비동기 [SqsAsyncClient] 생성을 지원합니다.
+     * Supports asynchronous [SqsAsyncClient] creation.
      */
     object Async {
 
         /**
-         * DSL 빌더로 [SqsAsyncClient]를 생성합니다.
+         * Creates a [SqsAsyncClient] with a DSL builder.
          *
          * ```kotlin
          * val client = SqsClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -75,7 +75,7 @@ object SqsClientFactory {
         ): SqsAsyncClient = sqsAsyncClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [SqsAsyncClient]를 생성합니다.
+         * Creates a [SqsAsyncClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = SqsClientFactory.Async.create(region = Region.AP_NORTHEAST_2)

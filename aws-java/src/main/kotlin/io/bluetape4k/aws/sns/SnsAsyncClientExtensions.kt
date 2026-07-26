@@ -7,11 +7,11 @@ import software.amazon.awssdk.services.sns.model.CreateTopicResponse
 import java.util.concurrent.CompletableFuture
 
 /**
- * 디바이스 [token]과 플랫폼 애플리케이션 ARN으로 SNS 플랫폼 엔드포인트를 비동기로 생성합니다.
+ * Creates an SNS platform endpoint asynchronously from a device [token] and platform application ARN.
  *
- * ## 동작/계약
- * - [token]이 blank이면 `IllegalArgumentException`을 던진다.
- * - [platformApplicationArn]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [token] is blank.
+ * - Throws `IllegalArgumentException` when [platformApplicationArn] is blank.
  *
  * ```kotlin
  * val response = snsAsyncClient.createPlatformEndpointAsync(
@@ -35,10 +35,10 @@ fun SnsAsyncClient.createPlatformEndpointAsync(
 }
 
 /**
- * [topicName]으로 SNS 토픽을 비동기로 생성합니다.
+ * Creates an SNS topic asynchronously with [topicName].
  *
- * ## 동작/계약
- * - [topicName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [topicName] is blank.
  *
  * ```kotlin
  * val response = snsAsyncClient.createTopicAsync("my-topic").join()
@@ -57,11 +57,11 @@ fun SnsAsyncClient.createTopicAsync(
 }
 
 /**
- * [topicName]으로 SNS FIFO 토픽을 비동기로 생성합니다.
+ * Creates a FIFO SNS topic asynchronously with [topicName].
  *
- * ## 동작/계약
- * - [topicName]이 blank이면 `IllegalArgumentException`을 던진다.
- * - 기본 속성에 `FifoTopic=true`, `ContentBasedDeduplication=true`가 포함된다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [topicName] is blank.
+ * - The default attributes include `FifoTopic=true` and `ContentBasedDeduplication=true`.
  *
  * ```kotlin
  * val response = snsAsyncClient.createFIFOTopicAsync("my-topic.fifo").join()

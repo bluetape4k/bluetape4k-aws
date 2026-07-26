@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
 import java.net.URI
 
 /**
- * [SnsAsyncClient]를 빌드합니다.
+ * Builds a [SnsAsyncClient].
  *
  * ```kotlin
  * val client = snsAsyncClient { region(Region.AP_NORTHEAST_2) }
@@ -26,7 +26,7 @@ inline fun snsAsyncClient(
         }
 
 /**
- * endpoint + credentials 기반으로 [SnsAsyncClient]를 생성합니다.
+ * Creates a [SnsAsyncClient] from endpoint and credentials settings.
  *
  * ```kotlin
  * val client = snsAsyncClientOf(endpoint = URI("http://localhost:4566"), region = Region.AP_NORTHEAST_2)
