@@ -6,12 +6,12 @@ import aws.sdk.kotlin.services.dynamodb.model.WriteRequest
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * DSL 블록으로 DynamoDB [BatchWriteItemRequest]를 빌드합니다.
+ * Builds a DynamoDB [BatchWriteItemRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [requestItems]가 비어 있으면 `IllegalArgumentException`을 던진다.
- * - 각 테이블에 대해 쓰기(Put/Delete) 요청 목록을 [WriteRequest]로 지정한다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [requestItems] is empty.
+ * - Uses [WriteRequest] lists to specify Put/Delete requests for each table.
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val req = batchWriteItemRequestOf(
@@ -20,8 +20,8 @@ import io.bluetape4k.support.requireNotEmpty
  * // req.requestItems?.size == 1
  * ```
  *
- * @param requestItems 테이블 이름과 쓰기 요청 목록의 매핑 (비어 있으면 예외)
- * @param returnConsumedCapacity 소비된 용량 반환 여부
+ * @param requestItems mapping from table name to write request list. Empty values throw.
+ * @param returnConsumedCapacity whether to return consumed capacity details.
  */
 inline fun batchWriteItemRequestOf(
     requestItems: Map<String, List<WriteRequest>>,

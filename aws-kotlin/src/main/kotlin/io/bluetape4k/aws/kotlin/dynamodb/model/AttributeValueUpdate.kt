@@ -5,12 +5,12 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValueUpdate
 
 /**
- * DSL 블록으로 DynamoDB [AttributeValueUpdate]를 빌드합니다.
+ * Builds a DynamoDB [AttributeValueUpdate] with a DSL block.
  *
- * ## 동작/계약
- * - [value]는 [toAttributeValue]를 통해 [AttributeValue]로 변환된다.
- * - [action]은 PUT, DELETE, ADD 중 하나를 지정한다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - [value] is converted into [AttributeValue] through [toAttributeValue].
+ * - [action] selects one of PUT, DELETE, or ADD.
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val update = attributeValueUpdateOf("newName", AttributeAction.Put)
@@ -18,8 +18,8 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValueUpdate
  * // update.action == AttributeAction.Put
  * ```
  *
- * @param value 업데이트할 값 (자동으로 [AttributeValue]로 변환)
- * @param action 수행할 속성 업데이트 동작
+ * @param value value to update. Converted to [AttributeValue] automatically.
+ * @param action attribute update action to perform.
  */
 inline fun <T> attributeValueUpdateOf(
     value: T,
@@ -29,12 +29,12 @@ inline fun <T> attributeValueUpdateOf(
     attributeValueUpdateOf(value.toAttributeValue(), action, builder)
 
 /**
- * DSL 블록으로 DynamoDB [AttributeValueUpdate]를 빌드합니다.
+ * Builds a DynamoDB [AttributeValueUpdate] with a DSL block.
  *
- * ## 동작/계약
- * - [value]는 [AttributeValue] 타입을 직접 받아 변환 없이 설정된다.
- * - [action]은 PUT, DELETE, ADD 중 하나를 지정한다.
- * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
+ * ## Behavior and contract
+ * - [value] is accepted as [AttributeValue] and set without conversion.
+ * - [action] selects one of PUT, DELETE, or ADD.
+ * - Additional fields can be overridden through [builder].
  *
  * ```kotlin
  * val update = attributeValueUpdateOf(AttributeValue.S("hello"), AttributeAction.Put)
@@ -42,8 +42,8 @@ inline fun <T> attributeValueUpdateOf(
  * // update.action == AttributeAction.Put
  * ```
  *
- * @param value 업데이트할 [AttributeValue]
- * @param action 수행할 속성 업데이트 동작
+ * @param value [AttributeValue] to update.
+ * @param action attribute update action to perform.
  */
 inline fun attributeValueUpdateOf(
     value: AttributeValue,
