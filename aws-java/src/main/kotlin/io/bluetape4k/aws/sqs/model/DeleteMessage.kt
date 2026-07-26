@@ -6,10 +6,10 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
 
 /**
- * 제공된 초기화자를 사용하여 DeleteMessageRequest를 구성합니다.
+ * Builds a [DeleteMessageRequest] with the provided initializer.
  *
- * @param builder DeleteMessageRequest.Builder를 초기화하는 람다입니다.
- * @return DeleteMessageRequest 인스턴스를 반환합니다.
+ * @param builder Lambda that initializes [DeleteMessageRequest.Builder].
+ * @return [DeleteMessageRequest] instance.
  *
  * ```kotlin
  * val request = deleteMessageRequest {
@@ -26,11 +26,11 @@ inline fun deleteMessageRequest(
 }
 
 /**
- * 제공된 queueUrl과 receiptHandle을 사용하여 DeleteMessageRequest를 생성합니다.
+ * Creates a [DeleteMessageRequest] from the provided queue URL and receipt handle.
  *
- * @param queueUrl 메시지를 삭제할 Amazon SQS 큐의 URL입니다.
- * @param receiptHandle 삭제할 메시지와 연관된 영수증 핸들입니다.
- * @return DeleteMessageRequest 인스턴스를 반환합니다.
+ * @param queueUrl URL of the Amazon SQS queue that contains the message to delete.
+ * @param receiptHandle Receipt handle associated with the message to delete.
+ * @return [DeleteMessageRequest] instance.
  *
  * ```kotlin
  * val request = deleteMessageRequestOf(
@@ -54,10 +54,10 @@ fun deleteMessageRequestOf(
 }
 
 /**
- * 제공된 초기화자를 사용하여 DeleteMessageBatchRequest를 구성합니다.
+ * Builds a [DeleteMessageBatchRequest] with the provided initializer.
  *
- * @param builder DeleteMessageBatchRequest.Builder를 초기화하는 람다입니다.
- * @return DeleteMessageBatchRequest 인스턴스를 반환합니다.
+ * @param builder Lambda that initializes [DeleteMessageBatchRequest.Builder].
+ * @return [DeleteMessageBatchRequest] instance.
  *
  * ```kotlin
  * val request = deleteMessageBatchRequest {
@@ -73,11 +73,11 @@ inline fun deleteMessageBatchRequest(
 }
 
 /**
- * 제공된 queueUrl과 entries를 사용하여 DeleteMessageBatchRequest를 생성합니다.
+ * Creates a [DeleteMessageBatchRequest] from the provided queue URL and entries.
  *
- * @param queueUrl 메시지를 삭제할 Amazon SQS 큐의 URL입니다.
- * @param entries DeleteMessageBatchRequestEntry 인스턴스의 컬렉션입니다.
- * @return DeleteMessageBatchRequest 인스턴스를 반환합니다.
+ * @param queueUrl URL of the Amazon SQS queue that contains the messages to delete.
+ * @param entries Collection of [DeleteMessageBatchRequestEntry] instances.
+ * @return [DeleteMessageBatchRequest] instance.
  *
  * ```kotlin
  * val entry = deleteMessageBatchRequestEntryOf("msg-1", "handle-xyz")
@@ -98,10 +98,10 @@ fun deleteMessageBatchRequestOf(
 }
 
 /**
- * 제공된 초기화자를 사용하여 DeleteMessageBatchRequestEntry를 구성합니다.
+ * Builds a [DeleteMessageBatchRequestEntry] with the provided initializer.
  *
- * @param builder DeleteMessageBatchRequestEntry.Builder를 초기화하는 람다입니다.
- * @return DeleteMessageBatchRequestEntry 인스턴스를 반환합니다.
+ * @param builder Lambda that initializes [DeleteMessageBatchRequestEntry.Builder].
+ * @return [DeleteMessageBatchRequestEntry] instance.
  *
  * ```kotlin
  * val entry = deleteMessageBatchRequestEntry {
@@ -118,11 +118,11 @@ inline fun deleteMessageBatchRequestEntry(
 }
 
 /**
- * 제공된 id와 receiptHandle을 사용하여 DeleteMessageBatchRequestEntry를 생성합니다.
+ * Creates a [DeleteMessageBatchRequestEntry] from the provided ID and receipt handle.
  *
- * @param id 삭제할 메시지의 식별자입니다.
- * @param receiptHandle 삭제할 메시지와 연관된 영수증 핸들입니다.
- * @return DeleteMessageBatchRequestEntry 인스턴스를 반환합니다.
+ * @param id Identifier of the message to delete.
+ * @param receiptHandle Receipt handle associated with the message to delete.
+ * @return [DeleteMessageBatchRequestEntry] instance.
  *
  * ```kotlin
  * val entry = deleteMessageBatchRequestEntryOf("msg-1", "handle-xyz")

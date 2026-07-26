@@ -5,10 +5,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.GetSubscriptionAttributesRequest
 
 /**
- * DSL 블록으로 [GetSubscriptionAttributesRequest]를 빌드합니다.
+ * Builds a [GetSubscriptionAttributesRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [builder] 블록에서 `subscriptionArn` 등을 직접 설정한다.
+ * ## Behavior/Contract
+ * - Sets `subscriptionArn` and other fields directly in the [builder] block.
  *
  * ```kotlin
  * val req = getSubscriptionAttributesRequest {
@@ -22,10 +22,10 @@ inline fun getSubscriptionAttributesRequest(
     GetSubscriptionAttributesRequest.builder().apply(builder).build()
 
 /**
- * 구독 ARN으로 [GetSubscriptionAttributesRequest]를 생성합니다.
+ * Creates a [GetSubscriptionAttributesRequest] from a subscription ARN.
  *
- * ## 동작/계약
- * - [subscriptionArn]이 non-null이면서 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [subscriptionArn] is non-null and blank.
  *
  * ```kotlin
  * val req = getSubscriptionAttributesRequestOf("arn:aws:sns:ap-northeast-2:123456:my-topic:sub-id")

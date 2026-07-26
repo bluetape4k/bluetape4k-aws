@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
 /**
- * 큐를 생성하고 큐 URL을 반환합니다.
+ * Creates a queue and returns its queue URL.
  *
  * ```kotlin
  * val queueUrl = client.createQueue("my-queue")
@@ -29,7 +29,7 @@ suspend fun SqsAsyncClient.createQueue(queueName: String): String =
     createQueueAsync(queueName).await()
 
 /**
- * 큐 목록을 조회합니다.
+ * Lists queues.
  *
  * ```kotlin
  * val response = client.listQueuesSuspend(prefix = "my-")
@@ -44,7 +44,7 @@ suspend fun SqsAsyncClient.listQueuesSuspend(
     listQueuesAsync(prefix, nextToken, maxResults).await()
 
 /**
- * 큐 이름으로 큐 URL을 조회합니다.
+ * Gets a queue URL by queue name.
  *
  * ```kotlin
  * val response = client.getQueueUrl("my-queue")
@@ -58,7 +58,7 @@ suspend fun SqsAsyncClient.getQueueUrl(
     getQueueUrlAsync(queueName, queueOwnerAWSAccountId).await()
 
 /**
- * 메시지를 큐에 전송합니다.
+ * Sends a message to a queue.
  *
  * ```kotlin
  * val response = client.send(queueUrl, "hello world")
@@ -73,7 +73,7 @@ suspend fun SqsAsyncClient.send(
     sendAsync(queueUrl, messageBody, delaySeconds).await()
 
 /**
- * 여러 메시지를 배치로 큐에 전송합니다.
+ * Sends multiple messages to a queue as a batch.
  *
  * ```kotlin
  * val response = client.sendBatch(queueUrl, entry1, entry2)
@@ -87,7 +87,7 @@ suspend fun SqsAsyncClient.sendBatch(
     sendBatchAsync(queueUrl, *entries).await()
 
 /**
- * 여러 메시지를 컬렉션으로 배치 전송합니다.
+ * Sends a collection of messages as a batch.
  *
  * ```kotlin
  * val response = client.sendBatch(queueUrl, listOf(entry1, entry2))
@@ -101,7 +101,7 @@ suspend fun SqsAsyncClient.sendBatch(
     sendBatchAsync(queueUrl, entries).await()
 
 /**
- * 큐에서 메시지를 수신합니다.
+ * Receives messages from a queue.
  *
  * ```kotlin
  * val response = client.receiveMessages(queueUrl, maxResults = 5)
@@ -116,7 +116,7 @@ suspend fun SqsAsyncClient.receiveMessages(
     receiveMessagesAsync(queueUrl, maxResults, builder).await()
 
 /**
- * 메시지의 가시성 타임아웃을 변경합니다.
+ * Changes a message visibility timeout.
  *
  * ```kotlin
  * val response = client.changeMessageVisibility(queueUrl, receiptHandle, visibilityTimeout = 30)
@@ -131,7 +131,7 @@ suspend fun SqsAsyncClient.changeMessageVisibility(
     changeMessageVisibilityAsync(queueUrl, receiptHandle, visibilityTimeout).await()
 
 /**
- * 여러 메시지의 가시성 타임아웃을 배치로 변경합니다.
+ * Changes visibility timeouts for multiple messages as a batch.
  *
  * ```kotlin
  * val response = client.changeMessageVisibilityBatch(queueUrl, entry1, entry2)
@@ -145,7 +145,7 @@ suspend fun SqsAsyncClient.changeMessageVisibilityBatch(
     changeMessageVisibilityBatchAsync(queueUrl, *entries).await()
 
 /**
- * 여러 메시지의 가시성 타임아웃을 컬렉션으로 배치 변경합니다.
+ * Changes visibility timeouts for a collection of messages as a batch.
  *
  * ```kotlin
  * val response = client.changeMessageVisibilityBatch(queueUrl, listOf(entry1, entry2))
@@ -159,7 +159,7 @@ suspend fun SqsAsyncClient.changeMessageVisibilityBatch(
     changeMessageVisibilityBatchAsync(queueUrl, entries).await()
 
 /**
- * 큐에서 메시지를 삭제합니다.
+ * Deletes a message from a queue.
  *
  * ```kotlin
  * val response = client.deleteMessage(queueUrl, receiptHandle)
@@ -173,7 +173,7 @@ suspend fun SqsAsyncClient.deleteMessage(
     deleteMessageAsync(queueUrl, receiptHandle).await()
 
 /**
- * 여러 메시지를 배치로 삭제합니다.
+ * Deletes multiple messages as a batch.
  *
  * ```kotlin
  * val response = client.deleteMessageBatch(queueUrl, entry1, entry2)
@@ -187,7 +187,7 @@ suspend fun SqsAsyncClient.deleteMessageBatch(
     deleteMessageBatchAsync(queueUrl, *entries).await()
 
 /**
- * 여러 메시지를 컬렉션으로 배치 삭제합니다.
+ * Deletes a collection of messages as a batch.
  *
  * ```kotlin
  * val response = client.deleteMessageBatch(queueUrl, listOf(entry1, entry2))
@@ -201,7 +201,7 @@ suspend fun SqsAsyncClient.deleteMessageBatch(
     deleteMessageBatchAsync(queueUrl, entries).await()
 
 /**
- * 큐를 삭제합니다.
+ * Deletes a queue.
  *
  * ```kotlin
  * val response = client.deleteQueue(queueUrl)

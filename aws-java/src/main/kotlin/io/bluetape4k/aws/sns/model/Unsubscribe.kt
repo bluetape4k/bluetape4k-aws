@@ -4,10 +4,10 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sns.model.UnsubscribeRequest
 
 /**
- * DSL 블록으로 [UnsubscribeRequest]를 빌드합니다.
+ * Builds an [UnsubscribeRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [builder] 블록에서 `subscriptionArn` 등을 직접 설정한다.
+ * ## Behavior/Contract
+ * - Sets `subscriptionArn` and other fields directly in the [builder] block.
  *
  * ```kotlin
  * val req = unsubscribeRequest {
@@ -20,10 +20,10 @@ inline fun unsubscribeRequest(
 ): UnsubscribeRequest = UnsubscribeRequest.builder().apply(builder).build()
 
 /**
- * 구독 ARN으로 [UnsubscribeRequest]를 생성합니다.
+ * Creates an [UnsubscribeRequest] from a subscription ARN.
  *
- * ## 동작/계약
- * - [subscriptionArn]이 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior/Contract
+ * - Throws `IllegalArgumentException` when [subscriptionArn] is blank.
  *
  * ```kotlin
  * val req = unsubscribeRequestOf("arn:aws:sns:ap-northeast-2:123456:my-topic:sub-id")

@@ -6,10 +6,10 @@ import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse
 
 /**
- * 디바이스 토큰과 플랫폼 ARN으로 SNS 플랫폼 엔드포인트를 코루틴으로 생성합니다.
+ * Creates an SNS platform endpoint from a device token and platform ARN with coroutines.
  *
- * ## 동작/계약
- * - 내부적으로 [createPlatformEndpointAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
+ * ## Behavior/Contract
+ * - Internally calls [createPlatformEndpointAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = snsAsyncClient.createPlatformEndpoint(
@@ -26,10 +26,10 @@ suspend fun SnsAsyncClient.createPlatformEndpoint(
     createPlatformEndpointAsync(token, platformApplicationArn).await()
 
 /**
- * 토픽 이름으로 SNS 토픽을 코루틴으로 생성합니다.
+ * Creates an SNS topic by topic name with coroutines.
  *
- * ## 동작/계약
- * - 내부적으로 [createTopicAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
+ * ## Behavior/Contract
+ * - Internally calls [createTopicAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = snsAsyncClient.createTopic("my-topic")
@@ -43,11 +43,11 @@ suspend fun SnsAsyncClient.createTopic(
     createTopicAsync(topicName, attributes).await()
 
 /**
- * FIFO SNS 토픽을 코루틴으로 생성합니다.
+ * Creates a FIFO SNS topic with coroutines.
  *
- * ## 동작/계약
- * - 내부적으로 [createFIFOTopicAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
- * - 기본 속성에 `FifoTopic=true`, `ContentBasedDeduplication=true`가 포함된다.
+ * ## Behavior/Contract
+ * - Internally calls [createFIFOTopicAsync] and waits for completion with `await()`.
+ * - The default attributes include `FifoTopic=true` and `ContentBasedDeduplication=true`.
  *
  * ```kotlin
  * val response = snsAsyncClient.createFIFOTopic("my-topic.fifo")

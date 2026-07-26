@@ -16,9 +16,9 @@ internal const val MIN_WAIT_TIME_SECONDS = 0
 internal const val MAX_WAIT_TIME_SECONDS = 20
 
 /**
- * [ReceiveMessageRequest]를 생성합니다.
+ * Creates a [ReceiveMessageRequest].
  *
- * @param builder [ReceiveMessageRequest.Builder]를 이용하여 [ReceiveMessageRequest]를 초기화하는 람다입니다.
+ * @param builder Lambda that initializes [ReceiveMessageRequest] with [ReceiveMessageRequest.Builder].
  *
  * ```kotlin
  * val request = receiveMessageRequest {
@@ -35,17 +35,18 @@ inline fun receiveMessageRequest(
 }
 
 /**
- * `queueUrl`, `maxNumber`, `waitTimeSeconds`, `attributeNames`를 사용하여 [ReceiveMessageRequest]를 생성합니다.
+ * Creates a [ReceiveMessageRequest] with `queueUrl`, `maxNumber`, `waitTimeSeconds`, and `attributeNames`.
  *
- * @param queueUrl 메시지를 수신할 Amazon SQS 큐의 URL입니다.
- * @param maxNumber 한 번에 수신할 최대 메시지 수입니다. 기본값은 3입니다. (허용 범위: 1..10)
- * @param waitTimeSeconds 메시지가 없을 경우 대기할 시간(초)입니다. 기본값은 20초입니다. (허용 범위: 0..20)
- * @param attributeNames 수신할 메시지의 속성 이름 컬렉션입니다. 기본값은 null입니다.
- * @param builder ReceiveMessageRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
- * @return ReceiveMessageRequest 인스턴스를 반환합니다.
+ * @param queueUrl URL of the Amazon SQS queue to receive messages from.
+ * @param maxNumber Maximum number of messages to receive at once. Defaults to 3. (Allowed range: 1..10)
+ * @param waitTimeSeconds Time to wait in seconds when no messages are available. Defaults to 20 seconds.
+ * (Allowed range: 0..20)
+ * @param attributeNames Collection of message attribute names to receive. Defaults to null.
+ * @param builder Lambda that initializes [ReceiveMessageRequest.Builder]. Defaults to an empty lambda.
+ * @return [ReceiveMessageRequest] instance.
  */
 /**
- * `queueUrl`, `maxNumber`, `waitTimeSeconds`, `attributeNames`로 [ReceiveMessageRequest]를 생성합니다.
+ * Creates a [ReceiveMessageRequest] with `queueUrl`, `maxNumber`, `waitTimeSeconds`, and `attributeNames`.
  *
  * ```kotlin
  * val request = receiveMessageRequestOf(
