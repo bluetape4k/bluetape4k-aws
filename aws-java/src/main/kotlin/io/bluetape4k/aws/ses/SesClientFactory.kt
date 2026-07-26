@@ -13,17 +13,17 @@ import software.amazon.awssdk.services.ses.SesClientBuilder
 import java.net.URI
 
 /**
- * [SesClient], [SesAsyncClient] 생성을 위한 Factory 입니다.
+ * Factory for creating [SesClient] and [SesAsyncClient] instances.
  */
 object SesClientFactory {
 
     /**
-     * 동기 [SesClient] 생성을 지원합니다.
+     * Supports synchronous [SesClient] creation.
      */
     object Sync {
 
         /**
-         * DSL 빌더로 [SesClient]를 생성합니다.
+         * Creates a [SesClient] with a DSL builder.
          *
          * ```kotlin
          * val client = SesClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -35,7 +35,7 @@ object SesClientFactory {
         ): SesClient = sesClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [SesClient]를 생성합니다.
+         * Creates a [SesClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = SesClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -60,12 +60,12 @@ object SesClientFactory {
     }
 
     /**
-     * 비동기 [SesAsyncClient] 생성을 지원합니다.
+     * Supports asynchronous [SesAsyncClient] creation.
      */
     object Async {
 
         /**
-         * DSL 빌더로 [SesAsyncClient]를 생성합니다.
+         * Creates a [SesAsyncClient] with a DSL builder.
          *
          * ```kotlin
          * val client = SesClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -77,7 +77,7 @@ object SesClientFactory {
         ): SesAsyncClient = sesAsyncClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [SesAsyncClient]를 생성합니다.
+         * Creates a [SesAsyncClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = SesClientFactory.Async.create(region = Region.AP_NORTHEAST_2)

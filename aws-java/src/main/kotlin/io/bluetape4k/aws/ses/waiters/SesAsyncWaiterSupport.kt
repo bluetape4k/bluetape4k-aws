@@ -7,7 +7,7 @@ import software.amazon.awssdk.services.ses.waiters.SesAsyncWaiter
 import java.util.concurrent.ScheduledExecutorService
 
 /**
- * [SesAsyncWaiter.Builder]를 이용하여 [sesAsyncWaiter] 인스턴스를 생성합니다.
+ * Creates a [sesAsyncWaiter] instance with [SesAsyncWaiter.Builder].
  *
  * ```kotlin
  * val waiter = sesAsyncWaiter {
@@ -26,8 +26,8 @@ import java.util.concurrent.ScheduledExecutorService
  * waiter.waitUntil(...)
  * ```
  *
- * @param builder [SesAsyncWaiter.Builder] 초기화 람다
- * @return [sesAsyncWaiter] 인스턴스
+ * @param builder [SesAsyncWaiter.Builder] initialization lambda.
+ * @return [sesAsyncWaiter] instance.
  */
 fun sesAsyncWaiter(
     builder: SesAsyncWaiter.Builder.() -> Unit,
@@ -39,17 +39,17 @@ fun sesAsyncWaiter(
 }
 
 /**
- * [SesAsyncWaiter] 인스턴스를 생성합니다.
+ * Creates a [SesAsyncWaiter] instance.
  *
  * ```kotlin
  * val waiter = sesAsyncWaiterOf(sesAsyncClient, scheduledExecutorService)
  * waiter.waitUntil(...)
  * ```
  *
- * @param client [SesAsyncClient] 인스턴스
- * @param scheduledExecutorService [ScheduledExecutorService] 인스턴스
- * @param configuration [WaiterOverrideConfiguration] 인스턴스
- * @return [SesAsyncWaiter] 인스턴스
+ * @param client [SesAsyncClient] instance.
+ * @param scheduledExecutorService [ScheduledExecutorService] instance.
+ * @param configuration [WaiterOverrideConfiguration] instance.
+ * @return [SesAsyncWaiter] instance.
  */
 fun sesAsyncWaiterOf(
     client: SesAsyncClient,

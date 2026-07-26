@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.ses.model.SendTemplatedEmailRequest
 import software.amazon.awssdk.services.ses.model.SendTemplatedEmailResponse
 
 /**
- * [SendEmailRequest] 정보를 바탕으로 email을 전송합니다.
+ * Sends an email from [SendEmailRequest] data.
  *
  * ```kotlin
  * val response = client.send(request)
@@ -19,50 +19,50 @@ import software.amazon.awssdk.services.ses.model.SendTemplatedEmailResponse
  * log.debug { "response=$response" }
  * ```
  *
- * @param request [SendEmailRequest] email 전송 요청 정보
- * @return [SendEmailResponse] email 전송 응답 정보
+ * @param request [SendEmailRequest] email send request data.
+ * @return [SendEmailResponse] email send response data.
  */
 fun SesClient.send(request: SendEmailRequest): SendEmailResponse =
     sendEmail(request)
 
 /**
- * [SendRawEmailRequest] 정보를 바탕으로 email을 전송합니다.
+ * Sends an email from [SendRawEmailRequest] data.
  *
  * ```kotlin
  * val response = client.sendRaw(rawEmailRequest)
  * log.debug { "response=$response" }
  * ```
  *
- * @param request [SendRawEmailRequest] email 전송 요청 정보
- * @return [SendRawEmailResponse] email 전송 응답 정보
+ * @param request [SendRawEmailRequest] email send request data.
+ * @return [SendRawEmailResponse] email send response data.
  */
 fun SesClient.sendRaw(request: SendRawEmailRequest): SendRawEmailResponse =
     sendRawEmail(request)
 
 /**
- * [SendTemplatedEmailRequest] 정보를 바탕으로 email을 전송합니다.
+ * Sends an email from [SendTemplatedEmailRequest] data.
  *
  * ```kotlin
  * val response = client.sendTemplated(templatedEmailRequest)
  * log.debug { "response=$response" }
  * ```
  *
- * @param request [SendTemplatedEmailRequest] email 전송 요청 정보
- * @return [SendTemplatedEmailResponse] email 전송 응답 정보
+ * @param request [SendTemplatedEmailRequest] email send request data.
+ * @return [SendTemplatedEmailResponse] email send response data.
  */
 fun SesClient.sendTemplated(request: SendTemplatedEmailRequest): SendTemplatedEmailResponse =
     sendTemplatedEmail(request)
 
 /**
- * [SendBulkTemplatedEmailRequest] 정보를 바탕으로 email을 전송합니다.
+ * Sends an email from [SendBulkTemplatedEmailRequest] data.
  *
  * ```kotlin
  * val response = client.sendBulkTemplated(bulkTemplatedEmailRequest)
  * log.debug { "response=$response" }
  * ```
  *
- * @param request [SendBulkTemplatedEmailRequest] email 전송 요청 정보
- * @return [SendBulkTemplatedEmailResponse] email 전송 응답 정보
+ * @param request [SendBulkTemplatedEmailRequest] email send request data.
+ * @return [SendBulkTemplatedEmailResponse] email send response data.
  */
 fun SesClient.sendBulkTemplated(request: SendBulkTemplatedEmailRequest): SendBulkTemplatedEmailResponse =
     sendBulkTemplatedEmail(request)
