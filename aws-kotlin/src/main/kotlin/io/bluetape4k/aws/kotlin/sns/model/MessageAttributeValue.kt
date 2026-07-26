@@ -4,15 +4,15 @@ import aws.sdk.kotlin.services.sns.model.MessageAttributeValue
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * [stringValue] 문자열을 가지는 [MessageAttributeValue]를 생성합니다.
+ * Creates a [MessageAttributeValue] containing [stringValue].
  *
  * ```
  * val messageAttributeValue = messageAttributeValueOf("stringValue")
  * ```
  *
- * @param stringValue 문자열 값
- * @param builder [MessageAttributeValue.Builder]를 설정하는 람다
- * @return [MessageAttributeValue] 인스턴스
+ * @param stringValue String value.
+ * @param builder Lambda for configuring [MessageAttributeValue.Builder].
+ * @return A [MessageAttributeValue] instance.
  */
 inline fun messageAttributeValueOf(
     stringValue: String,
@@ -28,15 +28,15 @@ inline fun messageAttributeValueOf(
 }
 
 /**
- * [binaryValue] 바이너리 값을 가지는 [MessageAttributeValue]를 생성합니다.
+ * Creates a [MessageAttributeValue] containing [binaryValue].
  *
  * ```
  * val messageAttributeValue = messageAttributeValueOf(byteArrayOf(0x01, 0x02, 0x03))
  * ```
  *
- * @param binaryValue 바이너리 값
- * @param builder [MessageAttributeValue.Builder]를 설정하는 람다
- * @return [MessageAttributeValue] 인스턴스
+ * @param binaryValue Binary value.
+ * @param builder Lambda for configuring [MessageAttributeValue.Builder].
+ * @return A [MessageAttributeValue] instance.
  */
 inline fun messageAttributeValueOf(
     binaryValue: ByteArray,
@@ -52,15 +52,15 @@ inline fun messageAttributeValueOf(
 }
 
 /**
- * [numberValue] 숫자 값을 가지는 [MessageAttributeValue]를 생성합니다.
+ * Creates a numeric [MessageAttributeValue] containing [numberValue].
  *
  * ```
  * val messageAttributeValue = messageAttributeValueOf(123)
  * ```
  *
- * @param numberValue 숫자 값
- * @param builder [MessageAttributeValue.Builder]를 설정하는 람다
- * @return [MessageAttributeValue] 인스턴스
+ * @param numberValue Numeric value.
+ * @param builder Lambda for configuring [MessageAttributeValue.Builder].
+ * @return A [MessageAttributeValue] instance.
  */
 inline fun <T: Number> messageAttributeValueOf(
     numberValue: T,

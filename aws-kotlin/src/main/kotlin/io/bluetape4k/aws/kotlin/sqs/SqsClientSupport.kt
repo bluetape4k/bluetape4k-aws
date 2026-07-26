@@ -8,7 +8,7 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.useSafe
 
 /**
- * AWS Kotlin SDK [SqsClient] 인스턴스를 생성합니다.
+ * Creates an AWS Kotlin SDK [SqsClient] instance.
  *
  * ```kotlin
  * val client = sqsClientOf(
@@ -18,12 +18,12 @@ import io.bluetape4k.support.useSafe
  * )
  * ```
  *
- * @param endpointUrl SQS 서비스 엔드포인트 URL. null이면 기본 AWS 엔드포인트를 사용합니다.
- * @param region AWS 리전. null이면 환경 설정에서 자동으로 감지합니다.
- * @param credentialsProvider AWS 인증 정보 제공자. null이면 기본 자격 증명 체인을 사용합니다.
+ * @param endpointUrl SQS service endpoint URL. Uses the default AWS endpoint when null.
+ * @param region AWS Region. Automatically detected from the environment when null.
+ * @param credentialsProvider AWS credentials provider. Uses the default credentials chain when null.
  * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
- * @param builder [SqsClient.Config.Builder]에 대한 추가 설정 람다.
- * @return 설정된 [SqsClient] 인스턴스.
+ * @param builder Lambda for applying additional settings to [SqsClient.Config.Builder].
+ * @return The configured [SqsClient] instance.
  */
 inline fun sqsClientOf(
     endpointUrl: Url? = null,
@@ -32,7 +32,7 @@ inline fun sqsClientOf(
     httpClient: HttpClientEngine? = null,
     crossinline builder: SqsClient.Config.Builder.() -> Unit = {},
 ): SqsClient {
-    // WHY: endpointUrl이 null이면 기본 AWS 엔드포인트 사용 — null일 때는 검증 불필요
+    // WHY: A null endpointUrl selects the default AWS endpoint, so no validation is needed.
     endpointUrl?.let {
         it.host.toString().requireNotBlank("endpointUrl.host")
     }
@@ -48,9 +48,9 @@ inline fun sqsClientOf(
 }
 
 /**
- * [SqsClient]를 생성하고 [block]을 실행한 후 자동으로 닫습니다.
+ * Creates an [SqsClient], executes [block], and closes the client automatically.
  *
- * SDK가 내부 HTTP 엔진을 직접 관리하므로 close() 시 엔진도 함께 종료됩니다.
+ * The SDK owns its internal HTTP engine, so closing the client also shuts down the engine.
  *
  * ```kotlin
  * withSqsClient(endpointUrl, region, credentialsProvider) { client ->
@@ -58,7 +58,7 @@ inline fun sqsClientOf(
  * }
  * ```
  *
- * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
+ * @param block Suspending block because all AWS SDK operations are suspend functions.
  */
 suspend fun <R> withSqsClient(
     endpointUrl: Url? = null,

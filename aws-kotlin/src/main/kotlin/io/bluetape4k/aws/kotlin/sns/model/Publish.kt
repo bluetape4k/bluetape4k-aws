@@ -6,7 +6,7 @@ import aws.sdk.kotlin.services.sns.model.PublishRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * [topicArn] Topic에 [message]를 발행 요청하는 [PublishRequest]를 생성합니다.
+ * Creates a [PublishRequest] that publishes [message] to the topic identified by [topicArn].
  *
  * ```
  * val request = publishRequestOf(
@@ -16,15 +16,15 @@ import io.bluetape4k.support.requireNotBlank
  * client.publish(request)
  * ```
  *
- * @param topicArn 발행할 Topic의 ARN
- * @param phoneNumber 발행할 전화번호
- * @param message 발행할 메시지
- * @param subject 메시지 제목
- * @param messageAttributes 메시지 속성
- * @param messageDeduplicationId 메시지 중복 제거 ID
- * @param messageGroupId 메시지 그룹 ID
- * @param builder [PublishRequest.Builder]를 통해 추가적인 설정을 할 수 있는 람다 함수
- * @return [PublishRequest] 인스턴스
+ * @param topicArn ARN of the topic to publish to.
+ * @param phoneNumber Phone number to publish to.
+ * @param message Message to publish.
+ * @param subject Message subject.
+ * @param messageAttributes Message attributes.
+ * @param messageDeduplicationId Message deduplication ID.
+ * @param messageGroupId Message group ID.
+ * @param builder Lambda for applying additional settings to [PublishRequest.Builder].
+ * @return A [PublishRequest] instance.
  */
 inline fun publishRequestOf(
     topicArn: String,
@@ -54,7 +54,7 @@ inline fun publishRequestOf(
 }
 
 /**
- * SNS 배치 발행 요청의 개별 항목 [PublishBatchRequestEntry]를 생성합니다.
+ * Creates a [PublishBatchRequestEntry] for an SNS batch publish request.
  *
  * ```
  * val entry = publishBatchRequestEntryOf(
@@ -64,13 +64,13 @@ inline fun publishRequestOf(
  * )
  * ```
  *
- * @param id 배치 항목의 고유 식별자
- * @param message 발행할 메시지 내용
- * @param messageAttributes 메시지 속성 맵
- * @param messageDeduplicationId 메시지 중복 제거 ID (FIFO 토픽 전용)
- * @param messageGroupId 메시지 그룹 ID (FIFO 토픽 전용)
- * @param builder [PublishBatchRequestEntry.Builder]를 통해 추가적인 설정을 할 수 있는 람다 함수
- * @return [PublishBatchRequestEntry] 인스턴스
+ * @param id Unique identifier for the batch entry.
+ * @param message Message content to publish.
+ * @param messageAttributes Message attribute map.
+ * @param messageDeduplicationId Message deduplication ID for FIFO topics.
+ * @param messageGroupId Message group ID for FIFO topics.
+ * @param builder Lambda for applying additional settings to [PublishBatchRequestEntry.Builder].
+ * @return A [PublishBatchRequestEntry] instance.
  */
 inline fun publishBatchRequestEntryOf(
     id: String,
