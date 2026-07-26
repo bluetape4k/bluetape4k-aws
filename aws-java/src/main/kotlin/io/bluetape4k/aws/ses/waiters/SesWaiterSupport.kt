@@ -6,7 +6,7 @@ import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.ses.waiters.SesWaiter
 
 /**
- * [SesWaiter.Builder]를 이용하여 [sesWaiter] 인스턴스를 생성합니다.
+ * Creates a [sesWaiter] instance with [SesWaiter.Builder].
  *
  * ```kotlin
  * val waiter = sesWaiter {
@@ -24,8 +24,8 @@ import software.amazon.awssdk.services.ses.waiters.SesWaiter
  * waiter.waitUntil(...)
  * ```
  *
- * @param builder [SesWaiter.Builder] 초기화 람다
- * @return [sesWaiter] 인스턴스
+ * @param builder [SesWaiter.Builder] initialization lambda.
+ * @return [sesWaiter] instance.
  */
 fun sesWaiter(
     builder: SesWaiter.Builder.() -> Unit,
@@ -37,16 +37,16 @@ fun sesWaiter(
 }
 
 /**
- * [SesWaiter] 인스턴스를 생성합니다.
+ * Creates a [SesWaiter] instance.
  *
  * ```kotlin
  * val waiter = sesWaiterOf(sesClient)
  * waiter.waitUntil(...)
  * ```
  *
- * @param client [SesClient] 인스턴스
- * @param configuration [WaiterOverrideConfiguration] 인스턴스
- * @return [SesWaiter] 인스턴스
+ * @param client [SesClient] instance.
+ * @param configuration [WaiterOverrideConfiguration] instance.
+ * @return [SesWaiter] instance.
  */
 fun sesWaiterOf(
     client: SesClient,

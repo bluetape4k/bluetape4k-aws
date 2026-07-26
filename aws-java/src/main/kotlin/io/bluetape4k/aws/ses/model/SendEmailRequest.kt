@@ -7,7 +7,7 @@ import software.amazon.awssdk.services.ses.model.SendEmailRequest
 import software.amazon.awssdk.services.ses.model.SendTemplatedEmailRequest
 
 /**
- * [SendEmailRequest.Builder]를 사용하여 [SendEmailRequest] 인스턴스를 생성합니다.
+ * Creates a [SendEmailRequest] instance with [SendEmailRequest.Builder].
  *
  * ```kotlin
  * val request = sendEmailRequest {
@@ -16,8 +16,8 @@ import software.amazon.awssdk.services.ses.model.SendTemplatedEmailRequest
  *    ...
  * ```
  *
- * @param builder [SendEmailRequest.Builder] 초기화 람다
- * @return [SendEmailRequest] 인스턴스
+ * @param builder [SendEmailRequest.Builder] initialization lambda.
+ * @return [SendEmailRequest] instance.
  */
 inline fun sendEmailRequest(
     builder: SendEmailRequest.Builder.() -> Unit,
@@ -25,7 +25,7 @@ inline fun sendEmailRequest(
     SendEmailRequest.builder().apply(builder).build()
 
 /**
- * [SendEmailRequest] 인스턴스를 생성합니다.
+ * Creates a [SendEmailRequest] instance.
  *
  * ```kotlin
  * val request = sendEmailRequestOf(
@@ -35,14 +35,14 @@ inline fun sendEmailRequest(
  * )
  * ```
  *
- * @param source 발신자
- * @param destination 수신자
- * @param sourceArn 발신자 ARN
- * @param replyToAddresses 회신 주소
- * @param returnPath 반환 주소
- * @param returnPathArn 반환 주소 ARN
- * @param tags 메시지 태그
- * @return [SendEmailRequest] 인스턴스
+ * @param source sender.
+ * @param destination recipient destination.
+ * @param sourceArn sender ARN.
+ * @param replyToAddresses reply-to addresses.
+ * @param returnPath return path.
+ * @param returnPathArn return path ARN.
+ * @param tags message tags.
+ * @return [SendEmailRequest] instance.
  */
 inline fun sendEmailRequestOf(
     source: String,
@@ -66,7 +66,7 @@ inline fun sendEmailRequestOf(
 }
 
 /**
- * [SendTemplatedEmailRequest.Builder]를 사용하여 [SendTemplatedEmailRequest] 인스턴스를 생성합니다.
+ * Creates a [SendTemplatedEmailRequest] instance with [SendTemplatedEmailRequest.Builder].
  *
  * ```kotlin
  * val request = sendTemplatedEmailRequest {
@@ -76,8 +76,8 @@ inline fun sendEmailRequestOf(
  *    ...
  * ```
  *
- * @param builder [SendTemplatedEmailRequest.Builder] 초기화 람다
- * @return [SendTemplatedEmailRequest] 인스턴스
+ * @param builder [SendTemplatedEmailRequest.Builder] initialization lambda.
+ * @return [SendTemplatedEmailRequest] instance.
  */
 inline fun sendTemplatedEmailRequest(
     builder: SendTemplatedEmailRequest.Builder.() -> Unit,
@@ -85,7 +85,7 @@ inline fun sendTemplatedEmailRequest(
     SendTemplatedEmailRequest.builder().apply(builder).build()
 
 /**
- * [SendTemplatedEmailRequest] 인스턴스를 생성합니다.
+ * Creates a [SendTemplatedEmailRequest] instance.
  *
  * ```kotlin
  * val request = sendTemplatedEmailRequestOf(
@@ -96,19 +96,19 @@ inline fun sendTemplatedEmailRequest(
  * )
  * ```
  *
- * @param source 발신자
- * @param destination 수신자
- * @param template 템플릿
- * @param templateArn 템플릿 ARN
- * @param templateData 템플릿 데이터
- * @param sourceArn 발신자 ARN
- * @param replyToAddresses 회신 주소
- * @param returnPath 반환 주소
- * @param returnPathArn 반환 주소 ARN
- * @param tags 메시지 태그
- * @param configurationSetName 설정 집합 이름
+ * @param source sender.
+ * @param destination recipient destination.
+ * @param template template name.
+ * @param templateArn template ARN.
+ * @param templateData template data.
+ * @param sourceArn sender ARN.
+ * @param replyToAddresses reply-to addresses.
+ * @param returnPath return path.
+ * @param returnPathArn return path ARN.
+ * @param tags message tags.
+ * @param configurationSetName configuration set name.
  *
- * @return [SendTemplatedEmailRequest] 인스턴스
+ * @return [SendTemplatedEmailRequest] instance.
  */
 inline fun sendTemplatedEmailRequestOf(
     source: String,

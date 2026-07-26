@@ -12,11 +12,11 @@ import software.amazon.awssdk.services.ses.model.SendTemplatedEmailRequest
 import software.amazon.awssdk.services.ses.model.SendTemplatedEmailResponse
 
 /**
- * [SendEmailRequest]를 코루틴으로 전송합니다.
+ * Sends a [SendEmailRequest] from a coroutine.
  *
- * ## 동작/계약
- * - 내부적으로 [sendAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
- * - 반환값은 비동기 API의 [SendEmailResponse]와 동일합니다.
+ * ## Behavior and contract
+ * - Calls [sendAsync] internally, then waits for completion with `await()`.
+ * - The return value is the same [SendEmailResponse] returned by the async API.
  *
  * ```kotlin
  * val response = sesAsyncClient.send(sendEmailRequest)
@@ -28,11 +28,11 @@ suspend inline fun SesAsyncClient.send(request: SendEmailRequest): SendEmailResp
     sendAsync(request).await()
 
 /**
- * [SendRawEmailRequest]를 코루틴으로 전송합니다.
+ * Sends a [SendRawEmailRequest] from a coroutine.
  *
- * ## 동작/계약
- * - 내부적으로 [sendRawAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
- * - 반환값은 비동기 API의 [SendRawEmailResponse]와 동일합니다.
+ * ## Behavior and contract
+ * - Calls [sendRawAsync] internally, then waits for completion with `await()`.
+ * - The return value is the same [SendRawEmailResponse] returned by the async API.
  *
  * ```kotlin
  * val response = sesAsyncClient.sendRaw(sendRawEmailRequest)
@@ -44,11 +44,11 @@ suspend inline fun SesAsyncClient.sendRaw(request: SendRawEmailRequest): SendRaw
     sendRawAsync(request).await()
 
 /**
- * [SendTemplatedEmailRequest]를 코루틴으로 전송합니다.
+ * Sends a [SendTemplatedEmailRequest] from a coroutine.
  *
- * ## 동작/계약
- * - 내부적으로 [sendTemplatedAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
- * - 반환값은 비동기 API의 [SendTemplatedEmailResponse]와 동일합니다.
+ * ## Behavior and contract
+ * - Calls [sendTemplatedAsync] internally, then waits for completion with `await()`.
+ * - The return value is the same [SendTemplatedEmailResponse] returned by the async API.
  *
  * ```kotlin
  * val response = sesAsyncClient.sendTemplated(sendTemplatedEmailRequest)
@@ -60,11 +60,11 @@ suspend inline fun SesAsyncClient.sendTemplated(request: SendTemplatedEmailReque
     sendTemplatedAsync(request).await()
 
 /**
- * [SendBulkTemplatedEmailRequest]를 코루틴으로 전송합니다.
+ * Sends a [SendBulkTemplatedEmailRequest] from a coroutine.
  *
- * ## 동작/계약
- * - 내부적으로 [sendBulkTemplatedAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
- * - 반환값은 비동기 API의 [SendBulkTemplatedEmailResponse]와 동일합니다.
+ * ## Behavior and contract
+ * - Calls [sendBulkTemplatedAsync] internally, then waits for completion with `await()`.
+ * - The return value is the same [SendBulkTemplatedEmailResponse] returned by the async API.
  *
  * ```kotlin
  * val response = sesAsyncClient.sendBulkTemplated(sendBulkTemplatedEmailRequest)
