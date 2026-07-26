@@ -4,7 +4,7 @@ import aws.sdk.kotlin.services.cloudwatch.model.MetricDatum
 import aws.sdk.kotlin.services.cloudwatch.model.StandardUnit
 
 /**
- * DSL 블록으로 [MetricDatum]을 빌드합니다.
+ * Builds a [MetricDatum] with a DSL block.
  *
  * ```kotlin
  * val datum = metricDatum {
@@ -20,7 +20,7 @@ inline fun metricDatum(
     MetricDatum { builder() }
 
 /**
- * 메트릭 이름과 값으로 [MetricDatum]을 생성합니다.
+ * Creates a [MetricDatum] from a metric name and value.
  *
  * ```kotlin
  * val datum = metricDatumOf(
@@ -30,11 +30,11 @@ inline fun metricDatum(
  * )
  * ```
  *
- * @param metricName 메트릭 이름
- * @param value 메트릭 값
- * @param unit 메트릭 단위. 기본값은 [StandardUnit.None]입니다.
- * @param builder [MetricDatum.Builder]에 대한 추가 설정 람다
- * @return [MetricDatum] 인스턴스
+ * @param metricName metric name
+ * @param value metric value
+ * @param unit metric unit; defaults to [StandardUnit.None]
+ * @param builder additional configuration for [MetricDatum.Builder]
+ * @return the [MetricDatum]
  */
 inline fun metricDatumOf(
     metricName: String,

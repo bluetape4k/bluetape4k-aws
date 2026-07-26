@@ -4,10 +4,10 @@ import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * 파티션 키와 데이터로 [PutRecordsRequestEntry]를 생성합니다.
+ * Creates a [PutRecordsRequestEntry] from a partition key and data.
  *
- * ## 동작/계약
- * - [partitionKey]가 blank이면 `IllegalArgumentException`을 던진다.
+ * ## Behavior and contract
+ * - Throws `IllegalArgumentException` when [partitionKey] is blank.
  *
  * ```kotlin
  * val entry = putRecordsRequestEntryOf(

@@ -7,7 +7,7 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /**
- * AWS Kotlin SDK [CloudWatchClient] 인스턴스를 생성합니다.
+ * Creates an AWS Kotlin SDK [CloudWatchClient].
  *
  * ```kotlin
  * val client = cloudWatchClientOf(
@@ -17,12 +17,12 @@ import io.bluetape4k.support.useSafe
  * )
  * ```
  *
- * @param endpointUrl CloudWatch 서비스 엔드포인트 URL. null이면 기본 AWS 엔드포인트를 사용합니다.
- * @param region AWS 리전. null이면 환경 설정에서 자동으로 감지합니다.
- * @param credentialsProvider AWS 인증 정보 제공자. null이면 기본 자격 증명 체인을 사용합니다.
+ * @param endpointUrl CloudWatch service endpoint URL; when null, uses the default AWS endpoint
+ * @param region AWS Region; when null, resolves it from the environment
+ * @param credentialsProvider AWS credentials provider; when null, uses the default credentials chain
  * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
- * @param builder [CloudWatchClient.Config.Builder]에 대한 추가 설정 람다.
- * @return 설정된 [CloudWatchClient] 인스턴스.
+ * @param builder additional configuration for [CloudWatchClient.Config.Builder]
+ * @return the configured [CloudWatchClient]
  */
 inline fun cloudWatchClientOf(
     endpointUrl: Url? = null,
@@ -41,9 +41,9 @@ inline fun cloudWatchClientOf(
     }
 
 /**
- * [CloudWatchClient]를 생성하고 [block]을 실행한 후 자동으로 닫습니다.
+ * Creates a [CloudWatchClient], executes [block], and closes the client automatically.
  *
- * SDK가 내부 HTTP 엔진을 직접 관리하므로 close() 시 엔진도 함께 종료됩니다.
+ * The SDK manages its internal HTTP engine, so closing the client also shuts down the engine.
  *
  * ```kotlin
  * withCloudWatchClient(endpointUrl, region, credentialsProvider) { client ->
@@ -51,7 +51,7 @@ inline fun cloudWatchClientOf(
  * }
  * ```
  *
- * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
+ * @param block suspending block; AWS SDK operations are suspend functions
  */
 suspend fun <R> withCloudWatchClient(
     endpointUrl: Url? = null,

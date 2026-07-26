@@ -27,16 +27,16 @@ import aws.sdk.kotlin.services.kinesis.putRecords
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Kinesis 스트림을 생성합니다.
+ * Creates a Kinesis stream.
  *
  * ```kotlin
  * val response = kinesisClient.createStream("my-stream", shardCount = 1)
  * ```
  *
- * @param streamName 생성할 스트림 이름
- * @param shardCount 샤드 수 (기본값: 1)
- * @param builder [CreateStreamRequest]를 빌드하는 람다 함수
- * @return [CreateStreamResponse] 인스턴스
+ * @param streamName name of the stream to create
+ * @param shardCount number of shards; defaults to 1
+ * @param builder configures the [CreateStreamRequest]
+ * @return the [CreateStreamResponse]
  */
 suspend inline fun KinesisClient.createStream(
     streamName: String,
@@ -52,7 +52,7 @@ suspend inline fun KinesisClient.createStream(
 }
 
 /**
- * Kinesis 스트림에 단일 레코드를 전송합니다.
+ * Puts a single record into a Kinesis stream.
  *
  * ```kotlin
  * val response = kinesisClient.putRecord(
@@ -62,11 +62,11 @@ suspend inline fun KinesisClient.createStream(
  * )
  * ```
  *
- * @param streamName 대상 스트림 이름
- * @param partitionKey 파티션 키
- * @param data 전송할 데이터 바이트 배열
- * @param builder [PutRecordRequest]를 빌드하는 람다 함수
- * @return [PutRecordResponse] 인스턴스
+ * @param streamName target stream name
+ * @param partitionKey partition key
+ * @param data data bytes to send
+ * @param builder configures the [PutRecordRequest]
+ * @return the [PutRecordResponse]
  */
 suspend inline fun KinesisClient.putRecord(
     streamName: String,
@@ -85,7 +85,7 @@ suspend inline fun KinesisClient.putRecord(
 }
 
 /**
- * Kinesis 스트림에 복수의 레코드를 배치로 전송합니다.
+ * Puts multiple records into a Kinesis stream as a batch.
  *
  * ```kotlin
  * val entries = listOf(
@@ -94,10 +94,10 @@ suspend inline fun KinesisClient.putRecord(
  * val response = kinesisClient.putRecords("my-stream", entries)
  * ```
  *
- * @param streamName 대상 스트림 이름
- * @param entries 전송할 레코드 목록
- * @param builder [PutRecordsRequest]를 빌드하는 람다 함수
- * @return [PutRecordsResponse] 인스턴스
+ * @param streamName target stream name
+ * @param entries records to send
+ * @param builder configures the [PutRecordsRequest]
+ * @return the [PutRecordsResponse]
  */
 suspend inline fun KinesisClient.putRecords(
     streamName: String,
@@ -113,7 +113,7 @@ suspend inline fun KinesisClient.putRecords(
 }
 
 /**
- * Kinesis 스트림의 샤드 이터레이터를 조회합니다.
+ * Retrieves a shard iterator for a Kinesis stream.
  *
  * ```kotlin
  * val response = kinesisClient.getShardIterator(
@@ -123,11 +123,11 @@ suspend inline fun KinesisClient.putRecords(
  * )
  * ```
  *
- * @param streamName 스트림 이름
- * @param shardId 샤드 ID
- * @param type 샤드 이터레이터 타입 (기본값: [ShardIteratorType.TrimHorizon])
- * @param builder [GetShardIteratorRequest]를 빌드하는 람다 함수
- * @return [GetShardIteratorResponse] 인스턴스
+ * @param streamName stream name
+ * @param shardId shard ID
+ * @param type shard iterator type; defaults to [ShardIteratorType.TrimHorizon]
+ * @param builder configures the [GetShardIteratorRequest]
+ * @return the [GetShardIteratorResponse]
  */
 suspend inline fun KinesisClient.getShardIterator(
     streamName: String,
@@ -146,16 +146,16 @@ suspend inline fun KinesisClient.getShardIterator(
 }
 
 /**
- * Kinesis 샤드 이터레이터로부터 레코드를 조회합니다.
+ * Retrieves records from a Kinesis shard iterator.
  *
  * ```kotlin
  * val response = kinesisClient.getRecords(shardIterator, limit = 100)
  * ```
  *
- * @param shardIterator 샤드 이터레이터 문자열
- * @param limit 조회할 최대 레코드 수 (기본값: 100)
- * @param builder [GetRecordsRequest]를 빌드하는 람다 함수
- * @return [GetRecordsResponse] 인스턴스
+ * @param shardIterator shard iterator string
+ * @param limit maximum number of records to retrieve; defaults to 100
+ * @param builder configures the [GetRecordsRequest]
+ * @return the [GetRecordsResponse]
  */
 suspend inline fun KinesisClient.getRecords(
     shardIterator: String,
@@ -171,15 +171,15 @@ suspend inline fun KinesisClient.getRecords(
 }
 
 /**
- * Kinesis 스트림의 상세 정보를 조회합니다.
+ * Retrieves details about a Kinesis stream.
  *
  * ```kotlin
  * val response = kinesisClient.describeStream("my-stream")
  * ```
  *
- * @param streamName 스트림 이름
- * @param builder [DescribeStreamRequest]를 빌드하는 람다 함수
- * @return [DescribeStreamResponse] 인스턴스
+ * @param streamName stream name
+ * @param builder configures the [DescribeStreamRequest]
+ * @return the [DescribeStreamResponse]
  */
 suspend inline fun KinesisClient.describeStream(
     streamName: String,
@@ -193,15 +193,15 @@ suspend inline fun KinesisClient.describeStream(
 }
 
 /**
- * Kinesis 스트림을 삭제합니다.
+ * Deletes a Kinesis stream.
  *
  * ```kotlin
  * val response = kinesisClient.deleteStream("my-stream")
  * ```
  *
- * @param streamName 삭제할 스트림 이름
- * @param builder [DeleteStreamRequest]를 빌드하는 람다 함수
- * @return [DeleteStreamResponse] 인스턴스
+ * @param streamName name of the stream to delete
+ * @param builder configures the [DeleteStreamRequest]
+ * @return the [DeleteStreamResponse]
  */
 suspend inline fun KinesisClient.deleteStream(
     streamName: String,
