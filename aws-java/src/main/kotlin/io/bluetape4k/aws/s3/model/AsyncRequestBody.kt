@@ -13,9 +13,9 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ForkJoinPool
 
 /**
- * 문자열을 [AsyncRequestBody]로 변환합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val result = "hello".toAsyncRequestBody()
  * // result.contentLength().orElse(-1L) == 5L
@@ -25,29 +25,29 @@ inline fun String.toAsyncRequestBody(charset: Charset = Charsets.UTF_8): AsyncRe
     AsyncRequestBody.fromString(this, charset)
 
 /**
- * 바이트 배열을 [AsyncRequestBody]로 변환합니다.
+ * See the API documentation for details.
  */
 inline fun ByteArray.toAsyncRequestBody(): AsyncRequestBody = AsyncRequestBody.fromBytes(this)
 
 /**
- * [ByteBuffer]를 [AsyncRequestBody]로 변환합니다.
+ * See the API documentation for details.
  */
 inline fun ByteBuffer.toAsyncRequestBody(): AsyncRequestBody = AsyncRequestBody.fromByteBuffer(this)
 
 /**
- * 파일을 [AsyncRequestBody]로 변환합니다.
+ * See the API documentation for details.
  */
 inline fun File.toAsyncRequestBody(): AsyncRequestBody = AsyncRequestBody.fromFile(this)
 
 /**
- * 경로의 파일을 [AsyncRequestBody]로 변환합니다.
+ * See the API documentation for details.
  */
 inline fun Path.toAsyncRequestBody(): AsyncRequestBody = AsyncRequestBody.fromFile(this)
 
 /**
- * [InputStream]을 [AsyncRequestBody]로 변환합니다.
+ * See the API documentation for details.
  *
- * [contentLength]는 0 이상이어야 합니다.
+ * See the API documentation for details.
  */
 inline fun InputStream.toAsyncRequestBody(
     contentLength: Long,
@@ -58,37 +58,37 @@ inline fun InputStream.toAsyncRequestBody(
 }
 
 /**
- * 문자열로 [AsyncRequestBody]를 생성합니다.
+ * See the API documentation for details.
  */
 inline fun asyncRequestBodyOf(text: String, cs: Charset = Charsets.UTF_8): AsyncRequestBody =
     AsyncRequestBody.fromString(text, cs)
 
 /**
- * 바이트 배열로 [AsyncRequestBody]를 생성합니다.
+ * See the API documentation for details.
  */
 inline fun asyncRequestBodyOf(bytes: ByteArray): AsyncRequestBody = AsyncRequestBody.fromBytes(bytes)
 
 /**
- * [ByteBuffer]로 [AsyncRequestBody]를 생성합니다.
+ * See the API documentation for details.
  */
 inline fun asyncRequestBodyOf(byteBuffer: ByteBuffer): AsyncRequestBody = AsyncRequestBody.fromByteBuffer(byteBuffer)
 
 /**
- * 파일로 [AsyncRequestBody]를 생성합니다.
+ * See the API documentation for details.
  */
 inline fun asyncRequestBodyOf(file: File): AsyncRequestBody = AsyncRequestBody.fromFile(file)
 
 /**
- * 경로의 파일로 [AsyncRequestBody]를 생성합니다.
+ * See the API documentation for details.
  */
 inline fun asyncRequestBodyOf(path: Path): AsyncRequestBody = AsyncRequestBody.fromFile(path)
 
 /**
- * [InputStream]으로 [AsyncRequestBody]를 생성합니다.
+ * See the API documentation for details.
  *
- * [contentLength]는 0 이상이어야 합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val stream = java.io.ByteArrayInputStream(byteArrayOf(1, 2, 3, 4))
  * val result = asyncRequestBodyOf(stream, 4)
@@ -105,9 +105,9 @@ inline fun asyncRequestBodyOf(
 }
 
 /**
- * [Publisher] 기반 [AsyncRequestBody]를 생성합니다.
+ * See the API documentation for details.
  *
- * 예제:
+ * Example:
  * ```kotlin
  * val publisher = org.reactivestreams.FlowAdapters.toPublisher(
  *     java.util.concurrent.SubmissionPublisher<java.nio.ByteBuffer>().apply {
