@@ -1070,6 +1070,12 @@ smoke matrix가 반복적으로 통과하기 전까지 coverage gap 검증 후�
 서비스 수 주장만으로 repository-wide 기본값을 바꾸지 말고, 해당 모듈이 실제 사용하는
 AWS SDK 호출을 기준으로 검증해야 합니다.
 
+Testcontainer launcher는 단일 module test JVM 안에서만 공유됩니다. 커밋되는 테스트,
+예제, application startup path, CI는 Docker-level container reuse를 암묵적으로
+활성화하면 안 됩니다. 로컬 실험에서만 재사용이 필요하면 개발자가 repository default
+밖에서 wrapper를 `reuse = true` 로 명시 생성해야 하며, 그 선택은 CI에 들어가면 안
+됩니다.
+
 ```bash
 # 핵심 Floci-first 모듈
 ./gradlew :bluetape4k-aws-java:test
