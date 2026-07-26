@@ -10,11 +10,11 @@ import software.amazon.awssdk.services.sts.StsAsyncClientBuilder
 import java.net.URI
 
 /**
- * [StsAsyncClient]를 빌드합니다.
+ * Builds a [StsAsyncClient].
  *
  * ```kotlin
  * val client = stsAsyncClient { region(Region.AP_NORTHEAST_2) }
- * // client == StsAsyncClient 인스턴스
+ * // client == StsAsyncClient instance
  * ```
  */
 inline fun stsAsyncClient(
@@ -26,13 +26,13 @@ inline fun stsAsyncClient(
         }
 
 /**
- * endpoint + credentials 기반으로 [StsAsyncClient]를 생성합니다.
+ * Creates a [StsAsyncClient] from endpoint and credentials settings.
  *
- * nullable 파라미터는 null 이 아닐 때만 builder에 반영됩니다.
+ * Nullable parameters are reflected in the builder only when they are not null.
  *
  * ```kotlin
  * val client = stsAsyncClientOf(endpoint = URI("http://localhost:4566"))
- * // client == StsAsyncClient 인스턴스
+ * // client == StsAsyncClient instance
  * ```
  */
 inline fun stsAsyncClientOf(

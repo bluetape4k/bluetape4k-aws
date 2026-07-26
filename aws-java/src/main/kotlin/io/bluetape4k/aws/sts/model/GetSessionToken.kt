@@ -3,10 +3,10 @@ package io.bluetape4k.aws.sts.model
 import software.amazon.awssdk.services.sts.model.GetSessionTokenRequest
 
 /**
- * DSL 블록으로 [GetSessionTokenRequest]를 빌드합니다.
+ * Builds a [GetSessionTokenRequest] with a DSL block.
  *
- * ## 동작/계약
- * - [builder] 블록에서 `durationSeconds`, `serialNumber`, `tokenCode` 등을 설정할 수 있다.
+ * ## Behavior and contract
+ * - Set `durationSeconds`, `serialNumber`, `tokenCode`, and other fields inside [builder].
  *
  * ```kotlin
  * val req = getSessionTokenRequest {
@@ -20,10 +20,10 @@ inline fun getSessionTokenRequest(
     GetSessionTokenRequest.builder().apply(builder).build()
 
 /**
- * 유효 시간(초)으로 [GetSessionTokenRequest]를 생성합니다.
+ * Creates a [GetSessionTokenRequest] from a lifetime in seconds.
  *
- * ## 동작/계약
- * - [durationSeconds]는 임시 자격 증명의 유효 시간(초)이다. 기본값은 3600초(1시간)이다.
+ * ## Behavior and contract
+ * - [durationSeconds] is the temporary credential lifetime in seconds. The default is 3600 seconds, or one hour.
  *
  * ```kotlin
  * val req = getSessionTokenRequestOf(durationSeconds = 7200)

@@ -9,10 +9,10 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
 import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
 
 /**
- * 현재 AWS 자격 증명의 호출자 신원 정보를 반환합니다.
+ * Returns caller identity information for the current AWS credentials.
  *
- * ## 동작/계약
- * - 계정 ID, 사용자 ID, ARN 정보를 포함하는 응답을 반환한다.
+ * ## Behavior and contract
+ * - Returns a response containing account ID, user ID, and ARN information.
  *
  * ```kotlin
  * val response = stsClient.getDefaultCallerIdentity()
@@ -25,13 +25,13 @@ fun StsClient.getDefaultCallerIdentity(): GetCallerIdentityResponse {
 }
 
 /**
- * IAM 역할을 임시로 맡아(Assume) 임시 자격 증명을 반환합니다.
+ * Assumes an IAM role temporarily and returns temporary credentials.
  *
- * ## 동작/계약
- * - [roleArn]은 맡을 IAM 역할의 ARN이다.
- * - [sessionName]은 세션 이름으로, 감사 로그에 기록된다.
- * - [durationSeconds]는 임시 자격 증명의 유효 시간(초)이다.
- * - [durationSeconds]는 900~43200 범위여야 하며, 범위를 벗어나면 [IllegalArgumentException]을 던진다.
+ * ## Behavior and contract
+ * - [roleArn] is the ARN of the IAM role to assume.
+ * - [sessionName] is the session name recorded in audit logs.
+ * - [durationSeconds] is the temporary credential lifetime in seconds.
+ * - [durationSeconds] must be in the 900..43200 range; out-of-range values throw [IllegalArgumentException].
  *
  * ```kotlin
  * val response = stsClient.assumeRole(
@@ -55,11 +55,11 @@ fun StsClient.assumeRole(
 }
 
 /**
- * MFA 인증 기반의 임시 세션 자격 증명을 반환합니다.
+ * Returns MFA-based temporary session credentials.
  *
- * ## 동작/계약
- * - [durationSeconds]는 임시 자격 증명의 유효 시간(초)이다.
- * - [durationSeconds]는 900~129600 범위여야 하며, 범위를 벗어나면 [IllegalArgumentException]을 던진다.
+ * ## Behavior and contract
+ * - [durationSeconds] is the temporary credential lifetime in seconds.
+ * - [durationSeconds] must be in the 900..129600 range; out-of-range values throw [IllegalArgumentException].
  *
  * ```kotlin
  * val response = stsClient.getSessionToken()

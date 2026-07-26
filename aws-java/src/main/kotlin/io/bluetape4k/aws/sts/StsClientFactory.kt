@@ -13,17 +13,17 @@ import software.amazon.awssdk.services.sts.StsClientBuilder
 import java.net.URI
 
 /**
- * [StsClient], [StsAsyncClient] 생성을 위한 Factory 입니다.
+ * Factory for creating [StsClient] and [StsAsyncClient] instances.
  */
 object StsClientFactory {
 
     /**
-     * 동기 [StsClient] 생성을 지원합니다.
+     * Supports synchronous [StsClient] creation.
      */
     object Sync {
 
         /**
-         * DSL 블록으로 [StsClient]를 생성합니다.
+         * Creates a [StsClient] with a DSL block.
          *
          * ```kotlin
          * val client = StsClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -36,7 +36,7 @@ object StsClientFactory {
             stsClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [StsClient]를 생성합니다.
+         * Creates a [StsClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = StsClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -54,12 +54,12 @@ object StsClientFactory {
     }
 
     /**
-     * 비동기 [StsAsyncClient] 생성을 지원합니다.
+     * Supports asynchronous [StsAsyncClient] creation.
      */
     object Async {
 
         /**
-         * DSL 블록으로 [StsAsyncClient]를 생성합니다.
+         * Creates a [StsAsyncClient] with a DSL block.
          *
          * ```kotlin
          * val client = StsClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -72,7 +72,7 @@ object StsClientFactory {
             stsAsyncClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [StsAsyncClient]를 생성합니다.
+         * Creates a [StsAsyncClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = StsClientFactory.Async.create(region = Region.AP_NORTHEAST_2)

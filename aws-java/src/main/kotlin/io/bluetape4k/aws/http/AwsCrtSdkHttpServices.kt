@@ -1,11 +1,11 @@
 package io.bluetape4k.aws.http
 
 /**
- * AWS SDK 비동기 HTTP 서비스 구현을 CRT로 고정하는 초기화 오브젝트입니다.
+ * Initialization object that pins the AWS SDK async HTTP service implementation to CRT.
  *
- * ## 동작/계약
- * - 클래스 로딩 시 JVM 시스템 프로퍼티 `software.amazon.awssdk.http.coroutines.service.impl`를 설정한다.
- * - 설정값은 `software.amazon.awssdk.http.crt.AwsCrtSdkHttpService`로 고정된다.
+ * ## Behavior and contract
+ * - Sets the JVM system property `software.amazon.awssdk.http.coroutines.service.impl` when the class is loaded.
+ * - The configured value is fixed to `software.amazon.awssdk.http.crt.AwsCrtSdkHttpService`.
  *
  * ```kotlin
  * AwsCrtSdkHttpServices
