@@ -6,7 +6,7 @@ import software.amazon.awssdk.enhanced.dynamodb.internal.client.ExtensionResolve
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 
 /**
- * [DynamoDbEnhancedClient.Builder]를 구성해 [DynamoDbEnhancedClient]를 생성합니다.
+ * Creates a [DynamoDbEnhancedClient] by configuring [DynamoDbEnhancedClient.Builder].
  *
  * ```kotlin
  * val enhanced = dynamoDbEnhancedClient {
@@ -22,9 +22,9 @@ inline fun dynamoDbEnhancedClient(
     DynamoDbEnhancedClient.builder().apply(builder).build()
 
 /**
- * 기존 [DynamoDbClient]를 사용해 [DynamoDbEnhancedClient]를 생성합니다.
+ * Creates a [DynamoDbEnhancedClient] from an existing [DynamoDbClient].
  *
- * 기본 builder는 AWS 기본 extension 집합([ExtensionResolver.defaultExtensions])을 적용합니다.
+ * The default builder applies the AWS default extension set ([ExtensionResolver.defaultExtensions]).
  *
  * ```kotlin
  * val baseClient = DynamoDbClient.create()
@@ -43,7 +43,7 @@ inline fun dynamoDbEnhancedClientOf(
 }
 
 /**
- * [DynamoDbEnhancedClientExtension] 목록을 명시해 [DynamoDbEnhancedClient]를 생성합니다.
+ * Creates a [DynamoDbEnhancedClient] with an explicit [DynamoDbEnhancedClientExtension] list.
  *
  * ```kotlin
  * val baseClient = DynamoDbClient.create()

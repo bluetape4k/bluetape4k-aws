@@ -18,15 +18,15 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult
 
 /**
- * ([tableName]) 이름의 DynamoDb Table 을 생성합니다.
+ * Creates a DynamoDb Table named [tableName].
  *
  * ```kotlin
  * val table = enhancedAsyncClient.table<MyEntity>("orders")
  * check(table.tableName() == "orders")
  * ```
  *
- * @param T DynamoDB Table 의 Entity Type
- * @param tableName 테이블 이름
+ * @param T DynamoDB table entity type.
+ * @param tableName Table name.
  * @return [DynamoDbAsyncTable] instance
  */
 inline fun <reified T: Any> DynamoDbEnhancedAsyncClient.table(tableName: String): DynamoDbAsyncTable<T> {
@@ -35,17 +35,17 @@ inline fun <reified T: Any> DynamoDbEnhancedAsyncClient.table(tableName: String)
 }
 
 /**
- * 대량의 Item 을 저장할 때, [DynamoDb.MAX_BATCH_ITEM_SIZE] 만큼의 크기로 나누어 저장한다.
+ * Splits large item writes into chunks of up to [DynamoDb.MAX_BATCH_ITEM_SIZE].
  *
- * 테스트(`EnhancedAsyncClientExtensionsTest`) 기준으로 `30`건 입력 시 기본 chunk(`25`)에서
- * [Flow]의 결과 개수는 `2`가 된다.
+ * Based on `EnhancedAsyncClientExtensionsTest`, when 30 items are provided with the default chunk size 25,
+ * the [Flow] emits 2 results.
  *
  * @param T
  * @param itemClass entity class
  * @param table [DynamoDbAsyncTable] instance
- * @param items 저장할 item 컬렉션
- * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
- * @return [BatchWriteResult] 컬렉션
+ * @param items Item collection to store.
+ * @param chunkSize Must be no greater than [DynamoDb.MAX_BATCH_ITEM_SIZE] (1..25).
+ * @return [BatchWriteResult] collection.
  */
 fun <T: Any> DynamoDbEnhancedAsyncClient.batchWriteItems(
     itemClass: Class<T>,
@@ -69,7 +69,7 @@ fun <T: Any> DynamoDbEnhancedAsyncClient.batchWriteItems(
 }
 
 /**
- * 대량의 Item 을 저장할 때, [DynamoDb.MAX_BATCH_ITEM_SIZE] 만큼의 크기로 나누어 저장한다.
+ * Splits large item writes into chunks of up to [DynamoDb.MAX_BATCH_ITEM_SIZE].
  *
  * ```kotlin
  * val resultCount = enhancedAsyncClient.batchWriteItems(table, items, chunkSize = 5).count()
@@ -78,9 +78,9 @@ fun <T: Any> DynamoDbEnhancedAsyncClient.batchWriteItems(
  *
  * @param T
  * @param table [DynamoDbAsyncTable] instance
- * @param items 저장할 item 컬렉션
- * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
- * @return [BatchWriteResult] 컬렉션
+ * @param items Item collection to store.
+ * @param chunkSize Must be no greater than [DynamoDb.MAX_BATCH_ITEM_SIZE] (1..25).
+ * @return [BatchWriteResult] collection.
  */
 inline fun <reified T: Any> DynamoDbEnhancedAsyncClient.batchWriteItems(
     table: MappedTableResource<T>,

@@ -3,10 +3,10 @@ package io.bluetape4k.aws.dynamodb.query
 import java.io.Serializable
 
 /**
- * DynamoDB DSL 에서 SortKey 를 지원하기 위한 클래스
+ * Class that supports `SortKey` in the DynamoDB DSL.
  *
- * [comparisonOperator]는 Enhanced Query DSL에서 [software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional]
- * 생성 분기에 사용됩니다.
+ * [comparisonOperator] is used to choose the [software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional]
+ * creation branch in the Enhanced Query DSL.
  *
  * ```kotlin
  * val sk = SortKey(sortKeyName = "createdAt", comparisonOperator = Equals("2026-01-01"))
@@ -23,7 +23,7 @@ data class SortKey(
 }
 
 /**
- * SortKey 를 생성하기 위한 빌더 클래스
+ * Builder class for creating a [SortKey].
  *
  * ```kotlin
  * val builder = SortKeyBuilder("createdAt")
@@ -35,20 +35,20 @@ data class SortKey(
 class SortKeyBuilder(val keyName: String = "sortKey") {
     var comparator: DynamoComparator? = null
 
-    /** 설정된 비교 연산자를 기반으로 [SortKey]를 생성합니다. */
+    /** Creates a [SortKey] from the configured comparison operator. */
     fun build(): SortKey {
-        // WHY: comparator 미설정 시 명확한 에러 메시지 제공 (non-null assertion 대신)
+        // WHY: provide a clear error when comparator is missing, instead of using a non-null assertion.
         val cmp = checkNotNull(comparator) { "SortKeyBuilder: comparator must be set via 'eq', 'between', etc. before build()" }
         return SortKey(keyName, cmp)
     }
 }
 
-/** 정렬 키를 `BETWEEN` 비교식으로 설정합니다. */
+/** Sets the sort key to a `BETWEEN` comparison expression. */
 fun SortKeyBuilder.between(values: Pair<Any, Any>) {
     comparator = Between(values.first, values.second)
 }
 
-/** 정렬 키를 `EQ` 비교식으로 설정합니다. */
+/** Sets the sort key to an `EQ` comparison expression. */
 infix fun SortKeyBuilder.eq(value: Any) {
     comparator = Equals(value)
 }
