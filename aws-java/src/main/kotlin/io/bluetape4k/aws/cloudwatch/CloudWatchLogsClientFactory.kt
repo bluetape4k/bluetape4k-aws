@@ -13,17 +13,17 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClientBuilde
 import java.net.URI
 
 /**
- * [CloudWatchLogsClient], [CloudWatchLogsAsyncClient] 생성을 위한 Factory 입니다.
+ * Factory for creating [CloudWatchLogsClient] and [CloudWatchLogsAsyncClient] instances.
  */
 object CloudWatchLogsClientFactory {
 
     /**
-     * 동기 [CloudWatchLogsClient] 생성을 지원합니다.
+     * Supports synchronous [CloudWatchLogsClient] creation.
      */
     object Sync {
 
         /**
-         * DSL 빌더로 [CloudWatchLogsClient]를 생성합니다.
+         * Creates a [CloudWatchLogsClient] with a DSL builder.
          *
          * ```kotlin
          * val client = CloudWatchLogsClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -36,7 +36,7 @@ object CloudWatchLogsClientFactory {
             cloudWatchLogsClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [CloudWatchLogsClient]를 생성합니다.
+         * Creates a [CloudWatchLogsClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = CloudWatchLogsClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -54,12 +54,12 @@ object CloudWatchLogsClientFactory {
     }
 
     /**
-     * 비동기 [CloudWatchLogsAsyncClient] 생성을 지원합니다.
+     * Supports asynchronous [CloudWatchLogsAsyncClient] creation.
      */
     object Async {
 
         /**
-         * DSL 빌더로 [CloudWatchLogsAsyncClient]를 생성합니다.
+         * Creates a [CloudWatchLogsAsyncClient] with a DSL builder.
          *
          * ```kotlin
          * val client = CloudWatchLogsClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -72,7 +72,7 @@ object CloudWatchLogsClientFactory {
             cloudWatchLogsAsyncClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [CloudWatchLogsAsyncClient]를 생성합니다.
+         * Creates a [CloudWatchLogsAsyncClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = CloudWatchLogsClientFactory.Async.create(region = Region.AP_NORTHEAST_2)

@@ -13,17 +13,17 @@ import software.amazon.awssdk.services.kinesis.KinesisClientBuilder
 import java.net.URI
 
 /**
- * [KinesisClient], [KinesisAsyncClient] 생성을 위한 Factory 입니다.
+ * Factory for creating [KinesisClient] and [KinesisAsyncClient] instances.
  */
 object KinesisClientFactory {
 
     /**
-     * 동기 [KinesisClient] 생성을 지원합니다.
+     * Supports synchronous [KinesisClient] creation.
      */
     object Sync {
 
         /**
-         * DSL 빌더 블록으로 [KinesisClient]를 생성합니다.
+         * Creates a [KinesisClient] with a DSL builder block.
          *
          * ```kotlin
          * val client = KinesisClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -36,7 +36,7 @@ object KinesisClientFactory {
             kinesisClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [KinesisClient]를 생성합니다.
+         * Creates a [KinesisClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = KinesisClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -54,12 +54,12 @@ object KinesisClientFactory {
     }
 
     /**
-     * 비동기 [KinesisAsyncClient] 생성을 지원합니다.
+     * Supports asynchronous [KinesisAsyncClient] creation.
      */
     object Async {
 
         /**
-         * DSL 빌더 블록으로 [KinesisAsyncClient]를 생성합니다.
+         * Creates a [KinesisAsyncClient] with a DSL builder block.
          *
          * ```kotlin
          * val client = KinesisClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -72,7 +72,7 @@ object KinesisClientFactory {
             kinesisAsyncClient(builder)
 
         /**
-         * endpoint, region, credentials 기반으로 [KinesisAsyncClient]를 생성합니다.
+         * Creates a [KinesisAsyncClient] from endpoint, region, and credentials settings.
          *
          * ```kotlin
          * val client = KinesisClientFactory.Async.create(region = Region.AP_NORTHEAST_2)

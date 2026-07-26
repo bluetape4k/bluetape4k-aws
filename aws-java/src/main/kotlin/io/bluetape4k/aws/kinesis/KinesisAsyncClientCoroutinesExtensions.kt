@@ -14,9 +14,9 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
 /**
- * Kinesis 스트림을 코루틴으로 생성합니다.
+ * Creates a Kinesis stream with coroutines.
  *
- * 내부적으로 [createStreamAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
+ * Internally calls [createStreamAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.createStream("my-stream", shardCount = 1)
@@ -29,9 +29,9 @@ suspend fun KinesisAsyncClient.createStream(
     createStreamAsync(streamName, shardCount).await()
 
 /**
- * Kinesis 스트림에 단일 레코드를 코루틴으로 전송합니다.
+ * Sends a single record to a Kinesis stream with coroutines.
  *
- * 내부적으로 [putRecordAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
+ * Internally calls [putRecordAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.putRecord(
@@ -49,9 +49,9 @@ suspend fun KinesisAsyncClient.putRecord(
     putRecordAsync(streamName, partitionKey, data).await()
 
 /**
- * Kinesis 스트림에 복수의 레코드를 코루틴으로 배치 전송합니다.
+ * Sends multiple records to a Kinesis stream as a batch with coroutines.
  *
- * 내부적으로 [putRecordsAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
+ * Internally calls [putRecordsAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.putRecords("my-stream", entries)
@@ -64,9 +64,9 @@ suspend fun KinesisAsyncClient.putRecords(
     putRecordsAsync(streamName, entries).await()
 
 /**
- * Kinesis 스트림의 샤드 이터레이터를 코루틴으로 조회합니다.
+ * Gets a shard iterator for a Kinesis stream with coroutines.
  *
- * 내부적으로 [getShardIteratorAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
+ * Internally calls [getShardIteratorAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.getShardIterator(
@@ -84,9 +84,9 @@ suspend fun KinesisAsyncClient.getShardIterator(
     getShardIteratorAsync(streamName, shardId, type).await()
 
 /**
- * Kinesis 샤드 이터레이터로부터 레코드를 코루틴으로 조회합니다.
+ * Gets records from a Kinesis shard iterator with coroutines.
  *
- * 내부적으로 [getRecordsAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
+ * Internally calls [getRecordsAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.getRecords(shardIterator, limit = 100)
@@ -99,9 +99,9 @@ suspend fun KinesisAsyncClient.getRecords(
     getRecordsAsync(shardIterator, limit).await()
 
 /**
- * Kinesis 스트림 상세 정보를 코루틴으로 조회합니다.
+ * Describes a Kinesis stream with coroutines.
  *
- * 내부적으로 [describeStreamAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
+ * Internally calls [describeStreamAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.describeStream("my-stream")
@@ -113,9 +113,9 @@ suspend fun KinesisAsyncClient.describeStream(
     describeStreamAsync(streamName).await()
 
 /**
- * Kinesis 스트림을 코루틴으로 삭제합니다.
+ * Deletes a Kinesis stream with coroutines.
  *
- * 내부적으로 [deleteStreamAsync]를 호출한 뒤 `await()`로 완료를 기다립니다.
+ * Internally calls [deleteStreamAsync] and waits for completion with `await()`.
  *
  * ```kotlin
  * val response = kinesisAsyncClient.deleteStream("my-stream")

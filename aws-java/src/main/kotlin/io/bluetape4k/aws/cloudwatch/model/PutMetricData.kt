@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest
 import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
 
 /**
- * DSL 블록으로 [PutMetricDataRequest]를 빌드합니다.
+ * Builds a [PutMetricDataRequest] with a DSL block.
  *
  * ```kotlin
  * val request = putMetricDataRequest {
@@ -20,7 +20,7 @@ inline fun putMetricDataRequest(
     PutMetricDataRequest.builder().apply(builder).build()
 
 /**
- * namespace와 metricData 목록으로 [PutMetricDataRequest]를 생성합니다.
+ * Creates a [PutMetricDataRequest] from a namespace and metric data list.
  *
  * ```kotlin
  * val request = putMetricDataRequestOf(
@@ -40,7 +40,7 @@ inline fun putMetricDataRequestOf(
 }
 
 /**
- * DSL 블록으로 [MetricDatum]을 빌드합니다.
+ * Builds a [MetricDatum] with a DSL block.
  *
  * ```kotlin
  * val datum = metricDatum {
@@ -56,7 +56,7 @@ inline fun metricDatum(
     MetricDatum.builder().apply(builder).build()
 
 /**
- * 메트릭 이름과 값으로 [MetricDatum]을 생성합니다.
+ * Creates a [MetricDatum] from a metric name and value.
  *
  * ```kotlin
  * val datum = metricDatumOf(
