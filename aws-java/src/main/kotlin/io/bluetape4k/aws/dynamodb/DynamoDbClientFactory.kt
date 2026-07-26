@@ -16,19 +16,19 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder
 import java.net.URI
 
 /**
- * DynamoDB 클라이언트 생성 진입점을 제공합니다.
+ * See the API documentation for details.
  *
- * 동기/비동기/Enhanced Async 클라이언트 생성을 한 곳에서 호출할 수 있습니다.
+ * See the API documentation for details.
  */
 object DynamoDbClientFactory {
 
     /**
-     * 동기 [DynamoDbClient] 생성 유틸리티입니다.
+     * See the API documentation for details.
      */
     object Sync {
 
         /**
-         * [DynamoDbClientBuilder] DSL로 [DynamoDbClient]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = DynamoDbClientFactory.Sync.create {
@@ -44,7 +44,7 @@ object DynamoDbClientFactory {
             dynamoDbClient(builder)
 
         /**
-         * 기본 파라미터와 커스텀 builder를 조합해 [DynamoDbClient]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = DynamoDbClientFactory.Sync.create(
@@ -65,12 +65,12 @@ object DynamoDbClientFactory {
     }
 
     /**
-     * 비동기 [DynamoDbAsyncClient] 생성 유틸리티입니다.
+     * See the API documentation for details.
      */
     object Async {
 
         /**
-         * [DynamoDbAsyncClientBuilder] DSL로 [DynamoDbAsyncClient]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = DynamoDbClientFactory.Async.create {
@@ -86,7 +86,7 @@ object DynamoDbClientFactory {
             dynamoDbAsyncClient(builder)
 
         /**
-         * 기본 파라미터와 커스텀 builder를 조합해 [DynamoDbAsyncClient]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val client = DynamoDbClientFactory.Async.create(
@@ -107,12 +107,12 @@ object DynamoDbClientFactory {
     }
 
     /**
-     * [DynamoDbEnhancedAsyncClient] 생성 유틸리티입니다.
+     * See the API documentation for details.
      */
     object EnhancedAsync {
 
         /**
-         * [DynamoDbEnhancedAsyncClient.Builder] DSL로 Enhanced Async 클라이언트를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val enhanced = DynamoDbClientFactory.EnhancedAsync.create {
@@ -128,7 +128,7 @@ object DynamoDbClientFactory {
             dynamoDbEnhancedAsyncClient(builder)
 
         /**
-         * 기존 [DynamoDbAsyncClient]를 감싸 [DynamoDbEnhancedAsyncClient]를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val asyncClient = DynamoDbClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -145,7 +145,7 @@ object DynamoDbClientFactory {
         }
 
         /**
-         * 연결 파라미터로 [DynamoDbAsyncClient]를 만들고, 이를 기반으로 Enhanced Async 클라이언트를 생성합니다.
+         * See the API documentation for details.
          *
          * ```kotlin
          * val enhanced = DynamoDbClientFactory.EnhancedAsync.create(

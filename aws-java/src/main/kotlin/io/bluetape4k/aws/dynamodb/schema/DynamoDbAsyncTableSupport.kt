@@ -5,7 +5,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 import java.util.concurrent.CompletableFuture
 
 /**
- * [DynamoDbAsyncTable]을 이용하여 Table을 생성합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val client: DynamoDbEnhancedAsyncClient
@@ -17,10 +17,10 @@ import java.util.concurrent.CompletableFuture
  * table.createTable(100, 100).await()
  * ```
  *
- * @param readCapacityUnits 읽기 용량 단위
- * @param writeCapacityUnits 쓰기 용량 단위
+ * @param readCapacityUnits Parameter.
+ * @param writeCapacityUnits Parameter.
  *
- * @return [CompletableFuture] 인스턴스
+ * @return Return value.
  */
 fun <T: Any> DynamoDbAsyncTable<T>.createTable(
     readCapacityUnits: Long? = null,
@@ -33,7 +33,7 @@ fun <T: Any> DynamoDbAsyncTable<T>.createTable(
 }
 
 /**
- * [DynamoDbAsyncTable]에 여러 개의 Item을 저장합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val client: DynamoDbEnhancedAsyncClient
@@ -46,8 +46,8 @@ fun <T: Any> DynamoDbAsyncTable<T>.createTable(
  * table.putItems(food1, food2, food3).await()
  * ```
  *
- * @param items 저장할 Item 목록
- * @return [CompletableFuture] 인스턴스
+ * @param items Parameter.
+ * @return Return value.
  *
  */
 fun <T: Any> DynamoDbAsyncTable<T>.putItems(vararg items: T): CompletableFuture<Void> {
@@ -55,7 +55,7 @@ fun <T: Any> DynamoDbAsyncTable<T>.putItems(vararg items: T): CompletableFuture<
 }
 
 /**
- * [DynamoDbAsyncTable]에 여러 개의 Item을 저장합니다.
+ * See the API documentation for details.
  *
  * ```kotlin
  * val client: DynamoDbEnhancedAsyncClient
@@ -68,8 +68,8 @@ fun <T: Any> DynamoDbAsyncTable<T>.putItems(vararg items: T): CompletableFuture<
  * table.putItems(listOf(food1, food2, food3)).await()
  * ```
  *
- * @param items 저장할 Item 목록
- * @return [CompletableFuture] 인스턴스
+ * @param items Parameter.
+ * @return Return value.
  *
  */
 fun <T: Any> DynamoDbAsyncTable<T>.putItems(items: Collection<T>): CompletableFuture<Void> {
