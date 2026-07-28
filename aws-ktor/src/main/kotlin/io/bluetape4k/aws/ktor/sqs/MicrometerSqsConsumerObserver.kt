@@ -6,9 +6,9 @@ import io.micrometer.core.instrument.Tags
 import java.time.Duration
 
 /**
- * Bridges [SqsConsumerObservation] events to Micrometer timers.
+ * [SqsConsumerObservation] 이벤트를 Micrometer timer로 전달합니다.
  *
- * Install through [micrometer] to keep Micrometer opt-in for Ktor users.
+ * Ktor 사용자가 Micrometer 의존성을 명시적으로 선택할 수 있도록 [micrometer] 확장 함수로 등록합니다.
  */
 class MicrometerSqsConsumerObserver(
     private val meterRegistry: MeterRegistry,
@@ -39,7 +39,7 @@ class MicrometerSqsConsumerObserver(
 }
 
 /**
- * Adds a Micrometer observer to this SQS consumer plugin configuration.
+ * 이 SQS consumer 플러그인 설정에 Micrometer observer를 추가합니다.
  */
 fun SqsConsumerPluginConfig.micrometer(
     meterRegistry: MeterRegistry,

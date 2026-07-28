@@ -69,15 +69,18 @@ internal object KtorSqsObservationTags {
 }
 
 /**
- * Backoff policy for receive-loop failures.
+ * receive loop 실패에 적용할 backoff 정책입니다.
  *
- * Contract:
- * - [initialDelay] and [maxDelay] must be positive.
- * - [multiplier] must be at least 1.0.
+ * 계약:
+ * - [initialDelay]와 [maxDelay]는 양수여야 합니다.
+ * - [multiplier]는 `1.0` 이상이어야 합니다.
  */
 data class SqsPollBackoff(
+    /** 첫 receive 실패 후 기다릴 초기 지연 시간입니다. */
     val initialDelay: Duration = Duration.ofMillis(250),
+    /** backoff가 증가할 때 허용되는 최대 지연 시간입니다. */
     val maxDelay: Duration = Duration.ofSeconds(5),
+    /** 다음 지연 시간을 계산할 때 이전 지연 시간에 곱할 배율입니다. */
     val multiplier: Double = 2.0,
 ): Serializable {
     init {
@@ -112,34 +115,57 @@ internal class BackoffState(
 }
 
 /**
- * Runtime configuration for [SqsConsumerRuntime].
+ * [SqsConsumerRuntime] 실행 설정입니다.
  *
- * Most applications should create this through [SqsConsumerPluginConfig]. Direct
- * construction is useful for tests and non-Ktor bootstrapping.
+ * 대부분의 application은 [SqsConsumerPluginConfig]로 이 설정을 생성합니다. 직접 생성은 테스트 또는
+ * Ktor를 거치지 않는 bootstrap 코드에서 유용합니다.
  */
 data class SqsConsumerRuntimeConfig(
+    /** receive, delete, visibility 변경, send 요청에 사용할 AWS SDK v2 async SQS client입니다. */
     val sqsAsyncClient: SqsAsyncClient,
+    /** runtime이 [sqsAsyncClient]를 소유하며 [stop] 후 닫아야 하는지 나타냅니다. */
     val ownsClient: Boolean = false,
+    /** 소비할 queue URL입니다. [queueName]과 동시에 설정할 수 없습니다. */
     val queueUrl: String? = null,
+    /** runtime 시작 후 SQS에서 URL로 확인할 queue name입니다. [queueUrl]과 동시에 설정할 수 없습니다. */
     val queueName: String? = null,
+    /** 병렬 receive loop를 실행할 poller coroutine 수입니다. */
     val coroutines: Int = 1,
+    /** receive 요청당 가져올 최대 메시지 수입니다. AWS SQS 범위는 `1..10`입니다. */
     val maxMessages: Int = 10,
+    /** SQS long polling 대기 시간 초 단위 값입니다. AWS SQS 범위는 `0..20`입니다. */
     val waitTimeSeconds: Int = 20,
+    /** receive 요청에 지정할 선택적 visibility timeout 초 단위 값입니다. */
     val visibilityTimeoutSeconds: Int? = null,
+    /** handler가 정상 완료된 메시지를 자동 삭제할지 나타냅니다. */
     val deleteOnSuccess: Boolean = true,
+    /** 실패한 메시지에 적용할 고정 visibility timeout입니다. [failureVisibilityStrategy]와 동시에 사용할 수 없습니다. */
     val failureVisibilityTimeoutSeconds: Int? = null,
+    /** 실패 메시지를 직접 전달할 dead-letter queue URL입니다. native SQS redrive를 사용할 수 없을 때만 사용합니다. */
     val deadLetterQueueUrl: String? = null,
+    /** URL로 확인할 dead-letter queue name입니다. [deadLetterQueueUrl]과 동시에 설정할 수 없습니다. */
     val deadLetterQueueName: String? = null,
+    /** shutdown 시 처리 중인 handler가 끝나기를 기다릴 최대 시간입니다. */
     val shutdownTimeout: Duration = Duration.ofSeconds(30),
+    /** receive loop 실패 후 재시도 전 사용할 backoff 정책입니다. */
     val pollBackoff: SqsPollBackoff = SqsPollBackoff(),
+    /** handler 실행 중 메시지 visibility를 주기적으로 연장할 heartbeat 간격 초 단위 값입니다. */
     val visibilityHeartbeatSeconds: Int? = null,
+    /** poller와 handler에 사용할 coroutine dispatcher입니다. `null`이면 IO dispatcher를 제한해 사용합니다. */
     val dispatcher: CoroutineDispatcher? = null,
+    /** AWS SQS [Message]를 handler payload로 변환할 converter입니다. */
     val converter: SqsMessageConverter = StringOrByteArraySqsMessageConverter,
+    /** converter가 handler 호출 전에 실패했을 때 적용할 정책입니다. */
     val conversionFailurePolicy: SqsConversionFailurePolicy = SqsConversionFailurePolicy.HandleAsFailure,
+    /** 실패 context에 따라 visibility timeout을 계산하는 전략입니다. [failureVisibilityTimeoutSeconds]와 동시에 사용할 수 없습니다. */
     val failureVisibilityStrategy: SqsFailureVisibilityStrategy? = null,
+    /** receive, invoke, ack, nack lifecycle에 호출할 interceptor 목록입니다. */
     val interceptors: List<SqsConsumerInterceptor> = emptyList(),
+    /** runtime operation 관측 이벤트를 받을 observer 목록입니다. */
     val observers: List<SqsConsumerObserver> = emptyList(),
+    /** handler가 받을 payload 타입입니다. */
     val messageType: KClass<out Any>,
+    /** 변환된 payload를 처리할 suspend message handler입니다. */
     val messageHandler: suspend SqsMessageContext.(Any) -> Unit,
 ): Serializable {
     init {
@@ -199,42 +225,43 @@ data class SqsConsumerRuntimeConfig(
 }
 
 /**
- * Per-message context passed to SQS handlers.
+ * SQS handler에 전달되는 메시지별 context입니다.
  *
- * Contract:
- * - Helper methods call AWS using the same [SqsConsumerRuntime].
- * - Calling [delete] marks the message as deleted so `deleteOnSuccess` will not
- *   delete it a second time.
+ * 계약:
+ * - helper method는 동일한 [SqsConsumerRuntime]을 통해 AWS를 호출합니다.
+ * - [delete]를 호출하면 메시지를 삭제됨으로 표시하므로 `deleteOnSuccess`가 같은 메시지를 다시 삭제하지 않습니다.
  */
 class SqsMessageContext internal constructor(
     private val runtime: SqsConsumerRuntime,
+    /** 현재 메시지를 받은 source queue URL입니다. */
     val queueUrl: String,
+    /** handler가 처리 중인 AWS SDK SQS 메시지 원본입니다. */
     val message: Message,
 ) {
     @Volatile
     internal var deleted: Boolean = false
 
-    /** Deletes the current message from the source queue. */
+    /** 현재 메시지를 source queue에서 삭제합니다. */
     suspend fun delete() {
         ack()
     }
 
-    /** Acknowledges the current message by deleting it from the source queue. */
+    /** 현재 메시지를 source queue에서 삭제해 acknowledge 처리합니다. */
     suspend fun ack() {
         runtime.ack(this)
     }
 
-    /** Changes the visibility timeout for the current message. */
+    /** 현재 메시지의 visibility timeout을 변경합니다. */
     suspend fun changeVisibility(timeoutSeconds: Int) {
         runtime.changeVisibility(queueUrl, message.receiptHandle(), timeoutSeconds)
     }
 
-    /** Negatively acknowledges the current message by changing its visibility timeout. */
+    /** 현재 메시지의 visibility timeout을 변경해 negative acknowledge 처리합니다. */
     suspend fun nack(timeoutSeconds: Int = 0) {
         runtime.nack(this, timeoutSeconds)
     }
 
-    /** Publishes a message to the source queue or to [targetQueueUrl] when provided. */
+    /** source queue 또는 지정한 [targetQueueUrl]로 메시지를 발행합니다. */
     suspend fun send(
         messageBody: String,
         targetQueueUrl: String = queueUrl,
@@ -244,13 +271,13 @@ class SqsMessageContext internal constructor(
 }
 
 /**
- * Coroutine-based SQS consumer runtime used by the Ktor plugin.
+ * Ktor plugin이 사용하는 coroutine 기반 SQS consumer runtime입니다.
  *
- * Contract:
- * - [start] is idempotent and launches [SqsConsumerRuntimeConfig.coroutines] pollers.
- * - [stop] stops new receives, waits for in-flight handlers up to
- *   [SqsConsumerRuntimeConfig.shutdownTimeout], then cancels remaining handlers.
- * - [SqsAsyncClient] is closed only when it was created by the plugin.
+ * 계약:
+ * - [start]는 idempotent하며 [SqsConsumerRuntimeConfig.coroutines]개 poller를 시작합니다.
+ * - [stop]은 새 receive를 중단하고 [SqsConsumerRuntimeConfig.shutdownTimeout]까지 처리 중인 handler를 기다린 뒤
+ *   남은 handler를 취소합니다.
+ * - [SqsAsyncClient]는 plugin이 생성한 경우에만 닫습니다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SqsConsumerRuntime(
@@ -278,11 +305,11 @@ class SqsConsumerRuntime(
     @Volatile
     private var resolvedQueueUrl: String? = config.queueUrl
 
-    /** True while the runtime accepts receives and handler launches. */
+    /** runtime이 receive와 handler launch를 받을 수 있는 상태이면 `true`입니다. */
     val isRunning: Boolean
         get() = lifecycleState.get() == LifecycleState.RUNNING
 
-    /** Starts polling if the runtime is not already running. */
+    /** runtime이 아직 실행 중이 아니면 polling을 시작합니다. */
     fun start() {
         if (!lifecycleState.compareAndSet(LifecycleState.STOPPED, LifecycleState.RUNNING)) {
             return
@@ -299,7 +326,7 @@ class SqsConsumerRuntime(
         }
     }
 
-    /** Stops pollers and drains in-flight handlers according to the shutdown contract. */
+    /** shutdown 계약에 따라 poller를 중지하고 처리 중인 handler를 drain합니다. */
     suspend fun stop() {
         if (!lifecycleState.compareAndSet(LifecycleState.RUNNING, LifecycleState.STOPPING)) {
             closeOwnedClient()
@@ -351,14 +378,14 @@ class SqsConsumerRuntime(
         }
     }
 
-    /** Publishes [messageBody] to the configured source queue. */
+    /** [messageBody]를 설정된 source queue로 발행합니다. */
     suspend fun send(
         messageBody: String,
         delaySeconds: Int? = null,
     ): SendMessageResponse =
         send(messageBody, resolveQueueUrl(), delaySeconds)
 
-    /** Publishes [messageBody] to [queueUrl]. */
+    /** [messageBody]를 [queueUrl]로 발행합니다. */
     suspend fun send(
         messageBody: String,
         queueUrl: String,
