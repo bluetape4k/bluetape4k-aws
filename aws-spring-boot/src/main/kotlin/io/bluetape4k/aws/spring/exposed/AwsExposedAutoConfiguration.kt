@@ -24,14 +24,13 @@ import javax.sql.DataSource
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot auto-configuration for AWS-backed Exposed database registries.
+ * AWS 기반 Exposed database registry를 구성하는 Spring Boot auto-configuration입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Creates the common `bluetape4k-aws-exposed` registry only when the default
- * database URL or a source descriptor is configured. Secrets Manager and
- * Parameter Store integration is provided by the existing environment
- * post-processors that publish properties before registry creation.
+ * 기본 database URL 또는 source descriptor가 설정된 경우에만 공통 `bluetape4k-aws-exposed` registry를 생성합니다.
+ * Secrets Manager와 Parameter Store integration은 registry 생성 전에 property를 게시하는 기존 environment
+ * post-processor가 제공합니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled
@@ -48,8 +47,7 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 class AwsExposedAutoConfiguration {
 
     /**
-     * Returns the default resolver that keeps already-bound properties
-     * unchanged.
+     * 이미 bind된 properties를 그대로 유지하는 기본 resolver를 반환합니다.
      */
     @Bean
     @ConditionalOnMissingBean(AwsDatabaseSettingsResolver::class)
@@ -59,7 +57,7 @@ class AwsExposedAutoConfiguration {
         SpringEnvironmentAwsDatabaseSettingsResolver(environment)
 
     /**
-     * Creates the default database factory used by the registry.
+     * registry가 사용할 기본 database factory를 생성합니다.
      */
     @Bean
     @ConditionalOnMissingBean
@@ -69,7 +67,7 @@ class AwsExposedAutoConfiguration {
         AwsExposedDatabaseFactory(resolver = resolver)
 
     /**
-     * Creates the default and named Exposed database registry.
+     * 기본 및 named Exposed database registry를 생성합니다.
      */
     @Bean(destroyMethod = "close")
     @ConditionalOnMissingBean
@@ -78,19 +76,18 @@ class AwsExposedAutoConfiguration {
         properties: AwsExposedProperties,
         factory: AwsExposedDatabaseFactory,
     ): AwsExposedDatabaseRegistry =
-        // Spring @Bean factory methods are synchronous; registry creation is suspend
-        // and may initialize blocking JDBC pools during one-time context startup.
+        // Spring @Bean factory method는 동기식이고 registry 생성은 suspend 함수입니다.
+        // context startup 중 JDBC pool 초기화가 blocking 될 수 있어 IO dispatcher에서 실행합니다.
         runBlocking(Dispatchers.IO) {
             factory.createRegistry(properties.toDatabaseProperties())
         }
 }
 
 /**
- * Exposes aliases for the default AWS-backed Exposed database handle.
+ * 기본 AWS 기반 Exposed database handle의 alias bean을 노출합니다.
  *
- * This phase is split from [AwsExposedAutoConfiguration] so
- * `@ConditionalOnBean` observes a registry bean created by an earlier
- * auto-configuration phase.
+ * 이 단계는 [AwsExposedAutoConfiguration]과 분리되어 `@ConditionalOnBean`이 앞선 auto-configuration 단계에서
+ * 생성된 registry bean을 관측할 수 있게 합니다.
  */
 @AutoConfiguration(after = [AwsExposedAutoConfiguration::class])
 @ConditionalOnAwsEnabled
@@ -105,7 +102,7 @@ class AwsExposedAutoConfiguration {
 class AwsExposedDefaultDatabaseAutoConfiguration {
 
     /**
-     * Exposes the default registry handle without taking over lifecycle.
+     * lifecycle을 넘겨받지 않고 기본 registry handle을 노출합니다.
      */
     @Bean(destroyMethod = "")
     @ConditionalOnBean(AwsExposedDatabaseRegistry::class)
@@ -116,7 +113,7 @@ class AwsExposedDefaultDatabaseAutoConfiguration {
         registry.defaultHandle
 
     /**
-     * Exposes the default JDBC data source without taking over lifecycle.
+     * lifecycle을 넘겨받지 않고 기본 JDBC data source를 노출합니다.
      */
     @Bean(destroyMethod = "")
     @ConditionalOnBean(AwsExposedDatabaseRegistry::class)
@@ -127,7 +124,7 @@ class AwsExposedDefaultDatabaseAutoConfiguration {
         registry.defaultHandle.dataSource
 
     /**
-     * Exposes the default Exposed database without taking over lifecycle.
+     * lifecycle을 넘겨받지 않고 기본 Exposed database를 노출합니다.
      */
     @Bean(destroyMethod = "")
     @ConditionalOnBean(AwsExposedDatabaseRegistry::class)
