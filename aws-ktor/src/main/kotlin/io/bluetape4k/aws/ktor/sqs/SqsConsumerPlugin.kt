@@ -12,17 +12,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
- * Application attribute key that stores the installed [SqsConsumerRuntime].
+ * 설치된 [SqsConsumerRuntime]을 저장하는 Ktor application attribute key입니다.
  */
 val SqsConsumerRuntimeKey: AttributeKey<SqsConsumerRuntime> = AttributeKey("SqsConsumerRuntime")
 
 /**
- * Ktor application plugin for consuming and publishing SQS messages.
+ * SQS 메시지를 소비하고 발행하는 Ktor application plugin입니다.
  *
- * Contract:
- * - Starts polling on [ApplicationStarted].
- * - Stops polling and drains in-flight handlers on [ApplicationStopping].
- * - Leaves the injected AWS SDK [software.amazon.awssdk.services.sqs.SqsAsyncClient] open.
+ * 계약:
+ * - [ApplicationStarted] 이벤트에서 polling을 시작합니다.
+ * - [ApplicationStopping] 이벤트에서 polling을 멈추고 처리 중인 handler를 drain합니다.
+ * - 주입된 AWS SDK [software.amazon.awssdk.services.sqs.SqsAsyncClient]는 닫지 않습니다.
  */
 val SqsConsumer: ApplicationPlugin<SqsConsumerPluginConfig> = createApplicationPlugin(
     name = "SqsConsumer",
@@ -35,7 +35,7 @@ val SqsConsumer: ApplicationPlugin<SqsConsumerPluginConfig> = createApplicationP
         runtime.start()
     }
     on(MonitoringEvent(ApplicationStopping)) {
-        // Ktor monitoring events are synchronous; use IO while draining SQS handlers.
+        // Ktor monitoring event는 동기식이므로 SQS handler를 drain하는 동안 IO dispatcher를 사용합니다.
         runBlocking(Dispatchers.IO) {
             runtime.stop()
         }
@@ -43,15 +43,14 @@ val SqsConsumer: ApplicationPlugin<SqsConsumerPluginConfig> = createApplicationP
 }
 
 /**
- * Discoverability alias for the SQS Ktor integration.
+ * SQS Ktor integration을 쉽게 찾을 수 있게 하는 alias입니다.
  *
- * Prefer [SqsConsumer] in new code when the application only consumes one queue
- * per plugin instance.
+ * plugin instance 하나가 queue 하나만 소비하는 새 코드에서는 [SqsConsumer]를 우선 사용합니다.
  */
 val SqsKtorPlugin: ApplicationPlugin<SqsConsumerPluginConfig> = SqsConsumer
 
 /**
- * Returns the runtime installed by [SqsConsumer].
+ * [SqsConsumer]가 설치한 runtime을 반환합니다.
  */
 fun Application.sqsConsumer(): SqsConsumerRuntime =
     attributes[SqsConsumerRuntimeKey]
