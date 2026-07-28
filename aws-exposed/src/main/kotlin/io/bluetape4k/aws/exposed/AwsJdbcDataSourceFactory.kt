@@ -8,12 +8,12 @@ import io.bluetape4k.logging.KLogging
 import javax.sql.DataSource
 
 /**
- * Creates a JDBC [DataSource] for an Exposed database handle.
+ * Exposed database handle에 사용할 JDBC [DataSource]를 생성합니다.
  */
 fun interface AwsJdbcDataSourceFactory {
 
     /**
-     * Creates a data source for [databaseName] from already-resolved [properties].
+     * 이미 해석된 [properties]로 [databaseName]용 data source를 생성합니다.
      */
     fun create(
         databaseName: String,
@@ -22,7 +22,7 @@ fun interface AwsJdbcDataSourceFactory {
 }
 
 /**
- * Default [AwsJdbcDataSourceFactory] backed by HikariCP.
+ * HikariCP 기반 기본 [AwsJdbcDataSourceFactory]입니다.
  */
 object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory, KLogging() {
 

@@ -4,17 +4,19 @@ import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Registry for default and named Exposed database handles.
+ * 기본 및 named Exposed database handle을 보관하는 registry입니다.
  */
 class AwsExposedDatabaseRegistry(
+    /** 기본 database handle입니다. */
     val defaultHandle: AwsExposedDatabaseHandle,
+    /** 이름으로 조회할 수 있는 추가 database handle map입니다. */
     val namedHandles: Map<String, AwsExposedDatabaseHandle> = emptyMap(),
 ): AutoCloseable {
 
     companion object: KLogging()
 
     /**
-     * Finds a database handle. A null or default name returns [defaultHandle].
+     * database handle을 찾습니다. `null` 또는 기본 이름은 [defaultHandle]을 반환합니다.
      */
     operator fun get(name: String? = null): AwsExposedDatabaseHandle {
         if (name == null || name == AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME) {
@@ -26,7 +28,7 @@ class AwsExposedDatabaseRegistry(
     }
 
     /**
-     * Closes named handles first, then the default handle.
+     * named handle을 먼저 닫고 마지막에 기본 handle을 닫습니다.
      */
     override fun close() {
         var failure: Throwable? = null

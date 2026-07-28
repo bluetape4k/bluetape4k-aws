@@ -3,16 +3,15 @@ package io.bluetape4k.aws.exposed
 import io.bluetape4k.logging.KLogging
 
 /**
- * Resolves database settings before [AwsExposedDatabaseFactory] creates a pool.
+ * [AwsExposedDatabaseFactory]가 pool을 만들기 전에 database 설정을 해석합니다.
  *
- * Framework adapters may implement this contract with AWS Secrets Manager,
- * Parameter Store, cached values, or test doubles. The foundation module keeps
- * the contract suspend-friendly but does not own AWS client lifecycle.
+ * framework adapter는 AWS Secrets Manager, Parameter Store, cache 값, test double로 이 계약을 구현할 수 있습니다.
+ * foundation module은 suspend-friendly 계약만 제공하며 AWS client lifecycle은 소유하지 않습니다.
  */
 fun interface AwsDatabaseSettingsResolver {
 
     /**
-     * Resolves settings for [databaseName].
+     * [databaseName]에 대한 설정을 해석합니다.
      */
     suspend fun resolve(
         databaseName: String,
@@ -21,7 +20,7 @@ fun interface AwsDatabaseSettingsResolver {
 }
 
 /**
- * Resolver that returns settings unchanged.
+ * 설정을 변경하지 않고 그대로 반환하는 resolver입니다.
  */
 object NoopAwsDatabaseSettingsResolver: AwsDatabaseSettingsResolver, KLogging() {
     override suspend fun resolve(

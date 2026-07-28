@@ -6,12 +6,11 @@ import io.bluetape4k.support.requireNotBlank
 import org.jetbrains.exposed.v1.jdbc.Database
 
 /**
- * Creates Exposed [Database] handles from AWS-backed database settings.
+ * AWS 기반 database 설정으로 Exposed [Database] handle을 생성합니다.
  *
- * The factory resolves settings through [AwsDatabaseSettingsResolver], creates a
- * Hikari [DataSource], and connects Exposed through `Database.connect(dataSource)`.
- * Transaction execution remains the caller's responsibility, matching
- * `bluetape4k-exposed` repository conventions.
+ * factory는 [AwsDatabaseSettingsResolver]로 설정을 해석하고 Hikari [DataSource]를 만든 뒤
+ * `Database.connect(dataSource)`로 Exposed를 연결합니다. transaction 실행은 `bluetape4k-exposed`
+ * repository 관례에 맞게 호출자 책임으로 남깁니다.
  */
 class AwsExposedDatabaseFactory(
     private val resolver: AwsDatabaseSettingsResolver = NoopAwsDatabaseSettingsResolver,
@@ -19,13 +18,13 @@ class AwsExposedDatabaseFactory(
 ) {
     companion object: KLoggingChannel() {
         /**
-         * Name used for the default database handle.
+         * 기본 database handle에 사용하는 이름입니다.
          */
         const val DEFAULT_DATABASE_NAME: String = "default"
     }
 
     /**
-     * Resolves and creates one named Exposed database handle.
+     * 이름이 지정된 Exposed database handle 하나를 해석하고 생성합니다.
      */
     suspend fun create(
         databaseName: String = DEFAULT_DATABASE_NAME,
@@ -43,10 +42,9 @@ class AwsExposedDatabaseFactory(
     }
 
     /**
-     * Creates a registry containing the default database plus named databases.
+     * 기본 database와 named database를 포함하는 registry를 생성합니다.
      *
-     * If a later database fails during creation, previously created handles are
-     * closed before the original failure is rethrown.
+     * 뒤쪽 database 생성 중 실패하면 이미 생성된 handle을 닫은 뒤 원래 실패를 다시 던집니다.
      */
     suspend fun createRegistry(properties: AwsDatabaseProperties): AwsExposedDatabaseRegistry {
         val created = mutableListOf<AwsExposedDatabaseHandle>()
