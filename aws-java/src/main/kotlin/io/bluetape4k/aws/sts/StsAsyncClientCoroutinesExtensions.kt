@@ -7,10 +7,10 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
 import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
 
 /**
- * Returns caller identity information for the current AWS credentials as a coroutine result.
+ * 현재 AWS credential의 caller identity 정보를 coroutine 결과로 반환한다.
  *
- * ## Behavior and contract
- * - Calls [getCallerIdentityAsync] internally, then waits for completion with `await()`.
+ * ## 동작과 계약
+ * - 내부에서 [getCallerIdentityAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
  *
  * ```kotlin
  * val response = stsAsyncClient.getCallerIdentity()
@@ -21,11 +21,11 @@ suspend fun StsAsyncClient.getDefaultCallerIdentity(): GetCallerIdentityResponse
     getCallerIdentityAsync().await()
 
 /**
- * Assumes an IAM role temporarily and returns temporary credentials as a coroutine result.
+ * IAM role을 임시로 assume하고 임시 credential을 coroutine 결과로 반환한다.
  *
- * ## Behavior and contract
- * - Calls [assumeRoleAsync] internally, then waits for completion with `await()`.
- * - [durationSeconds] must be in the 900..43200 range; validation failures throw [IllegalArgumentException].
+ * ## 동작과 계약
+ * - 내부에서 [assumeRoleAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
+ * - [durationSeconds]는 900..43200 범위여야 하며, 검증 실패 시 [IllegalArgumentException]을 던진다.
  *
  * ```kotlin
  * val response = stsAsyncClient.assumeRole(
@@ -43,11 +43,11 @@ suspend fun StsAsyncClient.assumeRole(
     assumeRoleAsync(roleArn, sessionName, durationSeconds).await()
 
 /**
- * Returns MFA-based temporary session credentials as a coroutine result.
+ * MFA 기반 임시 session credential을 coroutine 결과로 반환한다.
  *
- * ## Behavior and contract
- * - Calls [getSessionTokenAsync] internally, then waits for completion with `await()`.
- * - [durationSeconds] must be in the 900..129600 range; validation failures throw [IllegalArgumentException].
+ * ## 동작과 계약
+ * - 내부에서 [getSessionTokenAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
+ * - [durationSeconds]는 900..129600 범위여야 하며, 검증 실패 시 [IllegalArgumentException]을 던진다.
  *
  * ```kotlin
  * val response = stsAsyncClient.getSessionToken()

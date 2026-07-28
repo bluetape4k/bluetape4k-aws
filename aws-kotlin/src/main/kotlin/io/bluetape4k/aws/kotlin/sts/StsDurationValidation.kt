@@ -6,9 +6,9 @@ private const val SESSION_TOKEN_MIN_DURATION_SECONDS = 900
 private const val SESSION_TOKEN_MAX_DURATION_SECONDS = 129_600
 
 /**
- * Validates the `durationSeconds` contract for the AssumeRole API.
+ * AssumeRole API의 `durationSeconds` 계약을 검증한다.
  *
- * AWS STS AssumeRole accepts values in the 900..43200 second range by default.
+ * AWS STS AssumeRole은 기본적으로 900..43200초 범위의 값을 허용한다.
  */
 internal fun requireValidAssumeRoleDuration(durationSeconds: Int) {
     require(durationSeconds in ASSUME_ROLE_MIN_DURATION_SECONDS..ASSUME_ROLE_MAX_DURATION_SECONDS) {
@@ -18,9 +18,9 @@ internal fun requireValidAssumeRoleDuration(durationSeconds: Int) {
 }
 
 /**
- * Validates the `durationSeconds` contract for the GetSessionToken API.
+ * GetSessionToken API의 `durationSeconds` 계약을 검증한다.
  *
- * AWS STS GetSessionToken accepts values in the 900..129600 second range by default.
+ * AWS STS GetSessionToken은 기본적으로 900..129600초 범위의 값을 허용한다.
  */
 internal fun requireValidSessionTokenDuration(durationSeconds: Int) {
     require(durationSeconds in SESSION_TOKEN_MIN_DURATION_SECONDS..SESSION_TOKEN_MAX_DURATION_SECONDS) {

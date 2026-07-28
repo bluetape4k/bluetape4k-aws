@@ -10,10 +10,10 @@ import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
 import java.util.concurrent.CompletableFuture
 
 /**
- * Returns caller identity information for the current AWS credentials asynchronously.
+ * 현재 AWS credential의 caller identity 정보를 비동기로 반환한다.
  *
- * ## Behavior and contract
- * - Returns a response containing account ID, user ID, and ARN information asynchronously.
+ * ## 동작과 계약
+ * - account ID, user ID, ARN 정보를 담은 response를 비동기로 반환한다.
  *
  * ```kotlin
  * val response = stsAsyncClient.getCallerIdentityAsync().join()
@@ -26,13 +26,13 @@ fun StsAsyncClient.getCallerIdentityAsync(): CompletableFuture<GetCallerIdentity
 }
 
 /**
- * Assumes an IAM role temporarily and returns temporary credentials asynchronously.
+ * IAM role을 임시로 assume하고 임시 credential을 비동기로 반환한다.
  *
- * ## Behavior and contract
- * - [roleArn] is the ARN of the IAM role to assume.
- * - [sessionName] is the session name recorded in audit logs.
- * - [durationSeconds] is the temporary credential lifetime in seconds.
- * - [durationSeconds] must be in the 900..43200 range; out-of-range values throw [IllegalArgumentException].
+ * ## 동작과 계약
+ * - [roleArn]은 assume할 IAM role ARN이다.
+ * - [sessionName]은 audit log에 기록되는 session name이다.
+ * - [durationSeconds]는 임시 credential 유효 기간이며 단위는 초다.
+ * - [durationSeconds]는 900..43200 범위여야 하며, 범위를 벗어나면 [IllegalArgumentException]을 던진다.
  *
  * ```kotlin
  * val response = stsAsyncClient.assumeRoleAsync(
@@ -56,11 +56,11 @@ fun StsAsyncClient.assumeRoleAsync(
 }
 
 /**
- * Returns MFA-based temporary session credentials asynchronously.
+ * MFA 기반 임시 session credential을 비동기로 반환한다.
  *
- * ## Behavior and contract
- * - [durationSeconds] is the temporary credential lifetime in seconds.
- * - [durationSeconds] must be in the 900..129600 range; out-of-range values throw [IllegalArgumentException].
+ * ## 동작과 계약
+ * - [durationSeconds]는 임시 credential 유효 기간이며 단위는 초다.
+ * - [durationSeconds]는 900..129600 범위여야 하며, 범위를 벗어나면 [IllegalArgumentException]을 던진다.
  *
  * ```kotlin
  * val response = stsAsyncClient.getSessionTokenAsync().join()

@@ -3,11 +3,11 @@ package io.bluetape4k.aws.sts.model
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest
 
 /**
- * Builds a [GetCallerIdentityRequest] with a DSL block.
+ * DSL block으로 [GetCallerIdentityRequest]를 생성한다.
  *
- * ## Behavior and contract
- * - Additional settings can be applied inside [builder].
- * - Most callers use an empty block because this request has no parameters.
+ * ## 동작과 계약
+ * - [builder] 안에서 추가 설정을 적용할 수 있다.
+ * - 이 request는 parameter가 없으므로 대부분의 caller는 empty block을 사용한다.
  *
  * ```kotlin
  * val req = getCallerIdentityRequest {}
