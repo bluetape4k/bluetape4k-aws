@@ -9,10 +9,10 @@ import aws.sdk.kotlin.services.sts.model.GetSessionTokenResponse
 import io.bluetape4k.aws.kotlin.sts.model.assumeRoleRequestOf
 
 /**
- * Returns caller identity details for the current AWS credentials.
+ * 현재 AWS credential에 연결된 caller identity 정보를 조회한다.
  *
- * ## Contract
- * - Returns the account ID, user ID, and ARN associated with the configured credentials.
+ * ## 계약
+ * - 설정된 credential에 연결된 account ID, user ID, ARN을 반환한다.
  *
  * ```kotlin
  * val response = client.getCallerIdentity()
@@ -23,13 +23,13 @@ suspend fun StsClient.getCallerIdentity(): GetCallerIdentityResponse =
     getCallerIdentity {}
 
 /**
- * Assumes an IAM role and returns temporary credentials.
+ * IAM role을 assume하고 임시 credential을 반환한다.
  *
- * ## Contract
- * - [roleArn] is the ARN of the IAM role to assume.
- * - [sessionName] is recorded in AWS audit logs for the assumed-role session.
- * - [durationSeconds] is the temporary credential lifetime in seconds.
- * - Throws [IllegalArgumentException] when [durationSeconds] is outside the 900..43200 range.
+ * ## 계약
+ * - [roleArn]은 assume할 IAM role ARN이다.
+ * - [sessionName]은 assumed-role session의 AWS audit log에 기록되는 이름이다.
+ * - [durationSeconds]는 임시 credential 유효 기간이며 단위는 초다.
+ * - [durationSeconds]가 900..43200 범위를 벗어나면 [IllegalArgumentException]을 던진다.
  *
  * ```kotlin
  * val response = client.assumeRole(
@@ -53,11 +53,11 @@ suspend fun StsClient.assumeRole(
 }
 
 /**
- * Returns temporary session credentials for the current AWS principal.
+ * 현재 AWS principal에 대한 임시 session credential을 반환한다.
  *
- * ## Contract
- * - [durationSeconds] is the temporary credential lifetime in seconds.
- * - Throws [IllegalArgumentException] when [durationSeconds] is outside the 900..129600 range.
+ * ## 계약
+ * - [durationSeconds]는 임시 credential 유효 기간이며 단위는 초다.
+ * - [durationSeconds]가 900..129600 범위를 벗어나면 [IllegalArgumentException]을 던진다.
  *
  * ```kotlin
  * val response = client.getSessionToken()

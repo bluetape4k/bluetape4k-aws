@@ -7,12 +7,12 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /**
- * Creates an AWS Kotlin SDK [StsClient].
+ * AWS Kotlin SDK [StsClient]를 생성한다.
  *
- * AWS Security Token Service (STS) issues temporary, limited-privilege credentials
- * that applications can use to access AWS resources.
+ * AWS Security Token Service (STS)는 application이 AWS resource 접근에 사용할 수
+ * 있는 임시 limited-privilege credential을 발급한다.
  *
- * Example:
+ * 예시:
  * ```kotlin
  * val client = stsClientOf(
  *     endpointUrl = Url.parse("http://localhost:4566"),
@@ -21,12 +21,12 @@ import io.bluetape4k.support.useSafe
  * )
  * ```
  *
- * @param endpointUrl STS service endpoint URL. When null, the SDK uses the default AWS endpoint.
- * @param region AWS region. When null, the SDK resolves the region from its environment chain.
- * @param credentialsProvider AWS credentials provider. When null, the SDK uses the default credentials chain.
- * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
- * @param builder additional configuration for [StsClient.Config.Builder].
- * @return configured [StsClient] instance.
+ * @param endpointUrl STS service endpoint URL. null이면 SDK가 default AWS endpoint를 사용한다.
+ * @param region AWS region. null이면 SDK가 environment chain에서 region을 resolve한다.
+ * @param credentialsProvider AWS credential provider. null이면 SDK가 default credentials chain을 사용한다.
+ * @param httpClient 외부에서 관리하는 optional HTTP engine. 생략하면 SDK가 engine ownership을 관리한다.
+ * @param builder [StsClient.Config.Builder]에 적용할 추가 설정이다.
+ * @return 설정이 적용된 [StsClient] instance.
  */
 inline fun stsClientOf(
     endpointUrl: Url? = null,
@@ -44,9 +44,9 @@ inline fun stsClientOf(
 }
 
 /**
- * Creates an [StsClient], runs [block], and closes the client automatically.
+ * [StsClient]를 생성하고 [block]을 실행한 뒤 client를 자동으로 닫는다.
  *
- * When the SDK owns the HTTP engine, closing the client closes the engine as well.
+ * SDK가 HTTP engine을 소유하는 경우 client를 닫으면 engine도 함께 닫힌다.
  *
  * ```kotlin
  * withStsClient(endpointUrl, region, credentialsProvider) { client ->
@@ -54,7 +54,7 @@ inline fun stsClientOf(
  * }
  * ```
  *
- * @param block suspend block that receives the configured [StsClient].
+ * @param block 설정된 [StsClient]를 전달받는 suspend block이다.
  */
 suspend fun <R> withStsClient(
     endpointUrl: Url? = null,
