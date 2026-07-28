@@ -16,32 +16,38 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 /**
- * Authentication mode used when opening physical JDBC connections.
+ * physical JDBC connection을 열 때 사용할 인증 방식입니다.
  */
 enum class AwsDatabaseAuthenticationMode {
     /**
-     * Uses the configured static [AwsDatabaseConnectionProperties.password].
+     * 설정된 static [AwsDatabaseConnectionProperties.password]를 사용합니다.
      */
     STATIC_PASSWORD,
 
     /**
-     * Generates Amazon RDS IAM authentication tokens at connection creation.
+     * connection 생성 시 Amazon RDS IAM authentication token을 생성합니다.
      */
     RDS_IAM,
 }
 
 /**
- * Amazon RDS IAM authentication settings for one JDBC connection target.
+ * JDBC 연결 대상 하나에 대한 Amazon RDS IAM authentication 설정입니다.
  *
- * [hostname] must be the actual RDS endpoint hostname used for token signing.
- * Custom DNS aliases are not supported by Amazon RDS IAM token generation.
+ * [hostname]은 token signing에 사용할 실제 RDS endpoint hostname이어야 합니다.
+ * Amazon RDS IAM token 생성은 사용자 정의 DNS alias를 지원하지 않습니다.
  */
 data class AwsRdsIamAuthenticationProperties(
+    /** token signing에 사용할 AWS region 이름입니다. */
     val region: String,
+    /** token signing 대상 RDS endpoint hostname입니다. 사용자 정의 DNS alias가 아니어야 합니다. */
     val hostname: String,
+    /** RDS endpoint port입니다. `1..65_535` 범위여야 합니다. */
     val port: Int,
+    /** token에 포함할 database username입니다. `null`이면 connection username을 사용합니다. */
     val username: String? = null,
+    /** 생성된 token의 유효 시간입니다. Amazon RDS IAM의 최대 TTL을 넘을 수 없습니다. */
     val tokenTtl: Duration = MAX_TOKEN_TTL,
+    /** token 만료 전에 새 token을 만들 refresh 여유 시간입니다. [tokenTtl]보다 짧아야 합니다. */
     val refreshBeforeExpiry: Duration = DEFAULT_REFRESH_BEFORE_EXPIRY,
 ): Serializable {
 
@@ -70,12 +76,12 @@ data class AwsRdsIamAuthenticationProperties(
         private const val serialVersionUID: Long = -4435741150825464135L
 
         /**
-         * Amazon RDS IAM database authentication token lifetime.
+         * Amazon RDS IAM database authentication token의 최대 수명입니다.
          */
         val MAX_TOKEN_TTL: Duration = Duration.ofMinutes(15)
 
         /**
-         * Default refresh skew before the token reaches its AWS-enforced TTL.
+         * AWS가 강제하는 TTL에 도달하기 전 token을 갱신할 기본 여유 시간입니다.
          */
         val DEFAULT_REFRESH_BEFORE_EXPIRY: Duration = Duration.ofMinutes(2)
 
@@ -85,12 +91,16 @@ data class AwsRdsIamAuthenticationProperties(
 }
 
 /**
- * Request passed to an RDS IAM authentication token generator.
+ * RDS IAM authentication token generator에 전달되는 요청입니다.
  */
 data class AwsRdsIamAuthTokenRequest(
+    /** token signing에 사용할 AWS region 이름입니다. */
     val region: String,
+    /** token signing 대상 RDS endpoint hostname입니다. */
     val hostname: String,
+    /** RDS endpoint port입니다. */
     val port: Int,
+    /** token에 포함할 database username입니다. */
     val username: String,
 ): Serializable {
 
@@ -110,25 +120,23 @@ data class AwsRdsIamAuthTokenRequest(
 }
 
 /**
- * Generates a redacted RDS IAM authentication token for a JDBC password slot.
+ * JDBC password slot에 사용할 redaction-safe RDS IAM authentication token을 생성합니다.
  *
- * Implementations must not log or retain the revealed token string beyond the
- * call boundary needed by the JDBC driver.
+ * 구현체는 JDBC driver에 전달하는 호출 경계를 넘어 reveal된 token 문자열을 log로 남기거나 보관하면 안 됩니다.
  */
 fun interface AwsRdsIamAuthTokenGenerator {
 
     /**
-     * Generates a token for [request].
+     * [request]에 대한 token을 생성합니다.
      */
     fun generate(request: AwsRdsIamAuthTokenRequest): AwsSecretString
 }
 
 /**
- * AWS SDK Java v2-backed RDS IAM authentication token generator.
+ * AWS SDK Java v2 기반 RDS IAM authentication token generator입니다.
  *
- * The supplied [rdsUtilities] is caller-managed. This generator does not close
- * it because `RdsUtilities` itself is a lightweight utility object and may be
- * shared with the caller's AWS SDK lifecycle.
+ * 주입된 [rdsUtilities]는 호출자가 관리합니다. `RdsUtilities` 자체가 가벼운 utility 객체이고 호출자의
+ * AWS SDK lifecycle과 공유될 수 있으므로 이 generator는 닫지 않습니다.
  */
 class AwsSdkRdsIamAuthTokenGenerator private constructor(
     private val delegate: CoreRdsIamAuthTokenGenerator,
@@ -164,7 +172,7 @@ class AwsSdkRdsIamAuthTokenGenerator private constructor(
 }
 
 /**
- * Redaction-safe exception for RDS IAM token generation failures.
+ * RDS IAM token 생성 실패를 나타내는 redaction-safe 예외입니다.
  */
 class AwsRdsIamAuthTokenException(
     message: String,
@@ -172,29 +180,29 @@ class AwsRdsIamAuthTokenException(
 ): RuntimeException(message, cause)
 
 /**
- * Supplies the password value used when a physical JDBC connection is opened.
+ * physical JDBC connection을 열 때 사용할 password 값을 제공합니다.
  */
 fun interface AwsDatabasePasswordProvider {
 
     /**
-     * Returns the current password, or `null` when no password is configured.
+     * 현재 password를 반환합니다. password가 설정되지 않았으면 `null`을 반환합니다.
      */
     fun currentPassword(): AwsSecretString?
 }
 
 /**
- * Factory helpers for static JDBC passwords and RDS IAM token passwords.
+ * static JDBC password와 RDS IAM token password를 위한 factory helper입니다.
  */
 object AwsDatabasePasswordProviders: KLogging() {
 
     /**
-     * Returns a provider for [password].
+     * [password]를 그대로 반환하는 provider를 생성합니다.
      */
     fun static(password: AwsSecretString?): AwsDatabasePasswordProvider =
         AwsDatabasePasswordProvider { password }
 
     /**
-     * Returns a provider for [properties] using [tokenGenerator].
+     * [tokenGenerator]로 [properties]에 맞는 RDS IAM token provider를 생성합니다.
      */
     fun rdsIam(
         properties: AwsDatabaseConnectionProperties,
@@ -226,7 +234,7 @@ object AwsDatabasePasswordProviders: KLogging() {
     }
 
     /**
-     * Returns the provider selected by [AwsDatabaseConnectionProperties.authenticationMode].
+     * [AwsDatabaseConnectionProperties.authenticationMode]에 따라 선택된 provider를 반환합니다.
      */
     fun from(
         properties: AwsDatabaseConnectionProperties,
@@ -285,7 +293,9 @@ private class RefreshingRdsIamPasswordProvider(
         "RefreshingRdsIamPasswordProvider(request=${request.copy(username = AwsSecretString.REDACTED)})"
 
     private data class CachedToken(
+        /** cache에 저장된 redaction-safe RDS IAM token입니다. */
         val token: AwsSecretString,
+        /** 이 시각 이후에는 token을 새로 생성해야 합니다. */
         val refreshAt: Instant,
     ): Serializable {
         companion object {
