@@ -1,54 +1,52 @@
-# Disabled Test Registry
+# 비활성화 테스트 등록부
 
-Tests annotated with `@Disabled` are tracked here so their scope, reason, and
-tracking issue are visible at a glance. Every `@Disabled` annotation **must**
-include a reference to the tracking issue in the format `#NNN — <reason>`.
+`@Disabled`가 붙은 테스트는 범위, 사유, 추적 이슈를 한눈에 확인할 수 있도록 여기에서 관리합니다.
+모든 `@Disabled` annotation은 반드시 `#NNN — <reason>` 형식으로 추적 이슈를 포함해야 합니다.
 
-## Category Legend
+## Category 설명
 
-| Category | Meaning |
+| Category | 의미 |
 |---|---|
-| `unsupported-emulator` | Service or API variant not supported by LocalStack or floci |
-| `out-of-band-protocol` | Flow requires a token/event delivered outside the emulator (e.g., SMS, email callback) |
+| `unsupported-emulator` | LocalStack 또는 floci가 지원하지 않는 service 또는 API variant |
+| `out-of-band-protocol` | token/event가 emulator 밖에서 전달되어야 하는 flow 예: SMS, email callback |
 
-## Registry
+## 등록 목록
 
 | Module | File | Test | Level | Category | Tracking Issue | Reason |
 |---|---|---|---|---|---|---|
-| `aws-kotlin` | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sesv2/SesV2ClientExtensionsTest.kt` | *(entire class)* | class | `unsupported-emulator` | [#99](https://github.com/bluetape4k/bluetape4k-aws/issues/99) | LocalStack does not support SES V2; mock-based coverage tracked in #105 |
-| `aws-kotlin` | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sns/SnsClientExtensionsTest.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS subscription token delivered out-of-band to subscriber endpoint; no emulator support |
-| `aws-kotlin` | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sns/examples/SnsClientExamples.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS subscription token delivered out-of-band to subscriber endpoint; no emulator support |
-| `aws` | `aws/src/test/kotlin/io/bluetape4k/aws/sns/SnsAsyncClientTest.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS SMS token delivered out-of-band to subscriber; no emulator support |
-| `aws` | `aws/src/test/kotlin/io/bluetape4k/aws/sns/SnsClientTest.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS SMS token delivered out-of-band to subscriber; no emulator support |
+| `aws-kotlin` | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sesv2/SesV2ClientExtensionsTest.kt` | *(entire class)* | class | `unsupported-emulator` | [#99](https://github.com/bluetape4k/bluetape4k-aws/issues/99) | LocalStack이 SES V2를 지원하지 않음; mock 기반 coverage는 #105에서 추적 |
+| `aws-kotlin` | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sns/SnsClientExtensionsTest.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS subscription token이 subscriber endpoint로 out-of-band 전달됨; emulator 지원 없음 |
+| `aws-kotlin` | `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sns/examples/SnsClientExamples.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS subscription token이 subscriber endpoint로 out-of-band 전달됨; emulator 지원 없음 |
+| `aws` | `aws/src/test/kotlin/io/bluetape4k/aws/sns/SnsAsyncClientTest.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS SMS token이 subscriber로 out-of-band 전달됨; emulator 지원 없음 |
+| `aws` | `aws/src/test/kotlin/io/bluetape4k/aws/sns/SnsClientTest.kt` | `confirm subscription` | method | `out-of-band-protocol` | [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100) | SNS SMS token이 subscriber로 out-of-band 전달됨; emulator 지원 없음 |
 
-## Annotation Format Convention
+## Annotation 형식 규칙
 
-All `@Disabled` annotations must follow this exact format:
+모든 `@Disabled` annotation은 다음 형식을 정확히 따라야 합니다.
 
-```
+```kotlin
 @Disabled("#NNN — <one-sentence reason>")
 ```
 
-- `#NNN` — the GitHub issue number tracking this skip
-- ` — ` — em dash with surrounding spaces
-- reason — why the test cannot run (not what it tests)
+- `#NNN` — skip을 추적하는 GitHub issue number
+- ` — ` — 양쪽에 공백이 있는 em dash
+- reason — 테스트가 실행될 수 없는 이유, 즉 테스트 대상 설명이 아님
 
-**Valid examples:**
+**유효한 예:**
 
 ```kotlin
 @Disabled("#99 — LocalStack does not support SES V2; mock-based coverage tracked in issue #105")
 @Disabled("#100 — SNS SMS token is delivered out-of-band to subscriber; no emulator support")
 ```
 
-**Invalid (no issue reference):**
+**유효하지 않은 예: issue reference가 없음**
 
 ```kotlin
 @Disabled("not working")
 @Disabled
 ```
 
-## CI Format Validation
+## CI 형식 검증
 
-The `validate-disabled-annotations` job in CI rejects any `@Disabled` annotation
-that does not match `@Disabled("#NNN — <reason>")`. PRs with non-conforming
-annotations will fail CI automatically.
+CI의 `validate-disabled-annotations` job은 `@Disabled("#NNN — <reason>")` 형식과 일치하지 않는
+`@Disabled` annotation을 거부합니다. 형식을 지키지 않은 annotation이 포함된 PR은 CI에서 자동으로 실패합니다.
