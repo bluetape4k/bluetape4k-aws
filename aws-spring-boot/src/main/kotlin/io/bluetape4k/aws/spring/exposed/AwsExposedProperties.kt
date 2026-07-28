@@ -13,23 +13,25 @@ import java.io.Serializable
 import java.time.Duration
 
 /**
- * Spring Boot configuration properties for AWS-backed Exposed databases.
+ * AWS 기반 Exposed database를 위한 Spring Boot configuration properties입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Binds `bluetape4k.aws.exposed` and adapts the Spring configuration model to
- * the framework-neutral [AwsDatabaseProperties] used by
- * `bluetape4k-aws-exposed`.
+ * `bluetape4k.aws.exposed`를 bind하고 Spring configuration model을 `bluetape4k-aws-exposed`가 사용하는
+ * framework-neutral [AwsDatabaseProperties]로 변환합니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.exposed")
 data class AwsExposedProperties(
+    /** AWS Exposed auto-configuration을 활성화할지 나타냅니다. 기본값은 `true`입니다. */
     val enabled: Boolean = true,
+    /** 기본 Exposed database 연결 설정입니다. */
     val defaultDatabase: AwsExposedConnectionProperties = AwsExposedConnectionProperties(),
+    /** 이름으로 구분되는 추가 Exposed database 연결 설정입니다. */
     val namedDatabases: Map<String, AwsExposedConnectionProperties> = emptyMap(),
 ): Serializable {
 
     /**
-     * Converts Spring-bound properties to the common AWS Exposed model.
+     * Spring-bound properties를 공통 AWS Exposed model로 변환합니다.
      */
     fun toDatabaseProperties(): AwsDatabaseProperties =
         AwsDatabaseProperties(
@@ -43,24 +45,35 @@ data class AwsExposedProperties(
 }
 
 /**
- * Spring-bindable JDBC connection settings for one AWS-backed Exposed database.
+ * AWS 기반 Exposed database 하나에 대한 Spring-bindable JDBC 연결 설정입니다.
  */
 data class AwsExposedConnectionProperties(
+    /** JDBC URL입니다. 실제 registry 생성 시 비어 있으면 안 됩니다. */
     val url: String = "",
+    /** 선택적 JDBC driver class name입니다. 지정하면 classpath에서 로드 가능해야 합니다. */
     val driverClassName: String? = null,
+    /** JDBC username입니다. RDS IAM 모드에서는 token username의 fallback으로도 사용됩니다. */
     val username: String? = null,
+    /** static password 모드에서 사용할 평문 bind 값입니다. 공통 model 변환 시 [AwsSecretString]으로 감쌉니다. */
     val password: String? = null,
+    /** HikariCP pool 동작을 제어하는 설정입니다. */
     val pool: AwsExposedPoolProperties = AwsExposedPoolProperties(),
+    /** JDBC driver 또는 DataSource로 전달할 추가 속성입니다. */
     val dataSourceProperties: Map<String, String> = emptyMap(),
+    /** application이 연결 설정에 붙일 수 있는 부가 metadata입니다. */
     val metadata: Map<String, String> = emptyMap(),
+    /** Secrets Manager 기반 설정 overlay descriptor입니다. */
     val secretSource: AwsExposedConfigSource? = null,
+    /** Parameter Store 기반 설정 overlay descriptor입니다. */
     val parameterSource: AwsExposedConfigSource? = null,
+    /** physical JDBC connection을 열 때 사용할 인증 방식입니다. */
     val authenticationMode: AwsDatabaseAuthenticationMode = AwsDatabaseAuthenticationMode.STATIC_PASSWORD,
+    /** [AwsDatabaseAuthenticationMode.RDS_IAM] 인증을 사용할 때 필요한 token 설정입니다. */
     val rdsIam: AwsExposedRdsIamAuthenticationProperties? = null,
 ): Serializable {
 
     /**
-     * Converts Spring-bound settings to the common AWS Exposed model.
+     * Spring-bound settings를 공통 AWS Exposed model로 변환합니다.
      */
     fun toConnectionProperties(): AwsDatabaseConnectionProperties =
         AwsDatabaseConnectionProperties(
@@ -83,19 +96,25 @@ data class AwsExposedConnectionProperties(
 }
 
 /**
- * Spring-bindable Hikari pool settings.
+ * Spring-bindable Hikari pool 설정입니다.
  */
 data class AwsExposedPoolProperties(
+    /** 명시적 pool name입니다. `null`이면 공통 factory가 database name으로 기본 이름을 생성합니다. */
     val poolName: String? = null,
+    /** pool이 열 수 있는 최대 connection 수입니다. */
     val maximumPoolSize: Int = 10,
+    /** pool이 유지할 최소 idle connection 수입니다. */
     val minimumIdle: Int = 1,
+    /** connection 획득을 기다릴 최대 시간 ms 단위 값입니다. */
     val connectionTimeoutMillis: Long = 30_000L,
+    /** idle connection을 유지할 시간 ms 단위 값입니다. */
     val idleTimeoutMillis: Long = 600_000L,
+    /** connection 최대 수명 ms 단위 값입니다. */
     val maxLifetimeMillis: Long = 1_800_000L,
 ): Serializable {
 
     /**
-     * Converts Spring-bound settings to the common AWS Exposed pool model.
+     * Spring-bound settings를 공통 AWS Exposed pool model로 변환합니다.
      */
     fun toPoolProperties(): AwsDatabasePoolProperties =
         AwsDatabasePoolProperties(
@@ -113,16 +132,19 @@ data class AwsExposedPoolProperties(
 }
 
 /**
- * Spring-bindable remote configuration source descriptor.
+ * Spring-bindable remote configuration source descriptor입니다.
  */
 data class AwsExposedConfigSource(
+    /** secret id, parameter path 등 backend에서 source를 식별하는 값입니다. */
     val sourceId: String = "",
+    /** source 안에서 database 설정 key를 구분할 선택적 prefix입니다. */
     val prefix: String? = null,
+    /** source가 없거나 비어 있어도 오류로 처리하지 않을지 나타냅니다. */
     val optional: Boolean = false,
 ): Serializable {
 
     /**
-     * Converts this descriptor to the common AWS Exposed source model.
+     * 이 descriptor를 공통 AWS Exposed source model로 변환합니다.
      */
     fun toConfigSource(type: AwsDatabaseConfigSourceType): AwsDatabaseConfigSource =
         AwsDatabaseConfigSource(
@@ -138,19 +160,25 @@ data class AwsExposedConfigSource(
 }
 
 /**
- * Spring-bindable Amazon RDS IAM authentication settings.
+ * Spring-bindable Amazon RDS IAM authentication 설정입니다.
  */
 data class AwsExposedRdsIamAuthenticationProperties(
+    /** token signing에 사용할 AWS region 이름입니다. */
     val region: String = "",
+    /** token signing 대상 RDS endpoint hostname입니다. */
     val hostname: String = "",
+    /** RDS endpoint port입니다. */
     val port: Int = 0,
+    /** token에 포함할 database username입니다. `null`이면 connection username을 사용합니다. */
     val username: String? = null,
+    /** 생성된 token의 유효 시간입니다. */
     val tokenTtl: Duration = AwsRdsIamAuthenticationProperties.MAX_TOKEN_TTL,
+    /** token 만료 전에 새 token을 만들 refresh 여유 시간입니다. */
     val refreshBeforeExpiry: Duration = AwsRdsIamAuthenticationProperties.DEFAULT_REFRESH_BEFORE_EXPIRY,
 ): Serializable {
 
     /**
-     * Converts Spring-bound settings to the common AWS Exposed RDS IAM model.
+     * Spring-bound settings를 공통 AWS Exposed RDS IAM model로 변환합니다.
      */
     fun toRdsIamAuthenticationProperties(): AwsRdsIamAuthenticationProperties =
         AwsRdsIamAuthenticationProperties(

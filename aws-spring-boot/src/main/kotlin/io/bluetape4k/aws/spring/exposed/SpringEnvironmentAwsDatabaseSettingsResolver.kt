@@ -13,16 +13,16 @@ import org.springframework.core.env.Environment
 import java.time.Duration
 
 /**
- * Resolves Exposed database settings from Spring Environment property sources.
+ * Spring Environment property source에서 Exposed database 설정을 해석합니다.
  *
- * ## Contract
+ * ## 계약
  *
- * `secretSource` and `parameterSource` descriptors point to properties already
- * loaded by the Spring Environment post-processors. This resolver never creates
- * AWS clients; it overlays only keys that actually exist under the descriptor
- * prefix and leaves the rest of the bound connection settings unchanged.
+ * `secretSource`와 `parameterSource` descriptor는 Spring Environment post-processor가 이미 load한 property를
+ * 가리킵니다. 이 resolver는 AWS client를 생성하지 않으며, descriptor prefix 아래에 실제 존재하는 key만
+ * overlay하고 나머지 bound connection 설정은 변경하지 않습니다.
  */
 internal class SpringEnvironmentAwsDatabaseSettingsResolver(
+    /** remote source post-processor가 게시한 property까지 포함하는 Spring Environment입니다. */
     private val environment: Environment,
 ): AwsDatabaseSettingsResolver {
 
@@ -67,7 +67,10 @@ internal class SpringEnvironmentAwsDatabaseSettingsResolver(
         )
     }
 
-    private inner class ConnectionOverlay(private val prefix: String) {
+    private inner class ConnectionOverlay(
+        /** overlay를 적용할 Spring property prefix입니다. */
+        private val prefix: String,
+    ) {
 
         private val keyPrefix = "$prefix."
 
