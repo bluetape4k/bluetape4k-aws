@@ -9,10 +9,10 @@ import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
 import java.util.concurrent.CompletableFuture
 
 /**
- * Publishes [metricData] to CloudWatch under [namespace] asynchronously.
+ * [namespace]에 [metricData] 목록을 CloudWatch에 비동기로 게시합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [namespace] is blank.
+ * ## 동작/계약
+ * - [namespace]가 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val response = cloudWatchAsyncClient.putMetricDataAsync(
@@ -33,10 +33,10 @@ fun CloudWatchAsyncClient.putMetricDataAsync(
 }
 
 /**
- * Publishes a single [metricDatum] to CloudWatch under [namespace] asynchronously.
+ * [namespace]에 단일 [metricDatum]을 CloudWatch에 비동기로 게시합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [namespace] is blank.
+ * ## 동작/계약
+ * - [namespace]가 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val response = cloudWatchAsyncClient.putMetricDataAsync(
@@ -54,7 +54,7 @@ fun CloudWatchAsyncClient.putMetricDataAsync(
 }
 
 /**
- * Lists metrics in [namespace] asynchronously.
+ * [namespace]의 메트릭 목록을 비동기로 조회합니다.
  *
  * ```kotlin
  * val response = cloudWatchAsyncClient.listMetricsAsync(namespace = "MyApp/Performance").join()

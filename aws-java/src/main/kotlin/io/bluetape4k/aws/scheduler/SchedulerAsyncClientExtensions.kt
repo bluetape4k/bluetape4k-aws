@@ -26,7 +26,7 @@ import software.amazon.awssdk.services.scheduler.model.UpdateScheduleResponse
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
-/** Creates a schedule asynchronously. */
+/** 스케줄을 비동기로 생성합니다. */
 fun SchedulerAsyncClient.createScheduleAsync(
     name: String,
     scheduleExpression: String,
@@ -58,7 +58,7 @@ fun SchedulerAsyncClient.createScheduleAsync(
         ),
     )
 
-/** Updates a schedule asynchronously. */
+/** 스케줄을 비동기로 갱신합니다. */
 fun SchedulerAsyncClient.updateScheduleAsync(
     name: String,
     scheduleExpression: String,
@@ -90,7 +90,7 @@ fun SchedulerAsyncClient.updateScheduleAsync(
         ),
     )
 
-/** Deletes a schedule asynchronously. */
+/** 스케줄을 비동기로 삭제합니다. */
 fun SchedulerAsyncClient.deleteScheduleAsync(
     name: String,
     groupName: String? = null,
@@ -98,14 +98,14 @@ fun SchedulerAsyncClient.deleteScheduleAsync(
 ): CompletableFuture<DeleteScheduleResponse> =
     deleteSchedule(deleteScheduleRequestOf(name, groupName, clientToken))
 
-/** Reads a schedule asynchronously. */
+/** 스케줄을 비동기로 조회합니다. */
 fun SchedulerAsyncClient.getScheduleAsync(
     name: String,
     groupName: String? = null,
 ): CompletableFuture<GetScheduleResponse> =
     getSchedule(getScheduleRequestOf(name, groupName))
 
-/** Lists schedules asynchronously. */
+/** 스케줄 목록을 비동기로 조회합니다. */
 fun SchedulerAsyncClient.listSchedulesAsync(
     groupName: String? = null,
     namePrefix: String? = null,
@@ -115,25 +115,25 @@ fun SchedulerAsyncClient.listSchedulesAsync(
 ): CompletableFuture<ListSchedulesResponse> =
     listSchedules(listSchedulesRequestOf(groupName, namePrefix, state, maxResults, nextToken))
 
-/** Creates a schedule group asynchronously. */
+/** 스케줄 그룹을 비동기로 생성합니다. */
 fun SchedulerAsyncClient.createScheduleGroupAsync(
     name: String,
     clientToken: String? = null,
 ): CompletableFuture<CreateScheduleGroupResponse> =
     createScheduleGroup(createScheduleGroupRequestOf(name, clientToken))
 
-/** Deletes a schedule group asynchronously. */
+/** 스케줄 그룹을 비동기로 삭제합니다. */
 fun SchedulerAsyncClient.deleteScheduleGroupAsync(
     name: String,
     clientToken: String? = null,
 ): CompletableFuture<DeleteScheduleGroupResponse> =
     deleteScheduleGroup(deleteScheduleGroupRequestOf(name, clientToken))
 
-/** Reads a schedule group asynchronously. */
+/** 스케줄 그룹을 비동기로 조회합니다. */
 fun SchedulerAsyncClient.getScheduleGroupAsync(name: String): CompletableFuture<GetScheduleGroupResponse> =
     getScheduleGroup(getScheduleGroupRequestOf(name))
 
-/** Lists schedule groups asynchronously. */
+/** 스케줄 그룹 목록을 비동기로 조회합니다. */
 fun SchedulerAsyncClient.listScheduleGroupsAsync(
     namePrefix: String? = null,
     maxResults: Int? = null,

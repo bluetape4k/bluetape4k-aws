@@ -19,13 +19,12 @@ import software.amazon.awssdk.services.s3vectors.model.QueryVectorsRequest
 import software.amazon.awssdk.services.s3vectors.model.QueryVectorsResponse
 
 /**
- * Default [S3VectorsOperations] implementation backed by [S3VectorsAsyncClient].
+ * [S3VectorsAsyncClient]를 사용하는 기본 [S3VectorsOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Methods await the AWS SDK `CompletableFuture` directly and do not wrap
- * suspend calls, so coroutine cancellation and exceptional completion keep the
- * normal `CompletableFuture.await()` behavior.
+ * 각 메서드는 suspend 호출을 추가로 감싸지 않고 AWS SDK `CompletableFuture`를 직접 기다립니다.
+ * 따라서 코루틴 취소와 예외 완료는 일반적인 `CompletableFuture.await()` 동작을 유지합니다.
  */
 class S3VectorsCoroutinesTemplate(
     private val s3VectorsAsyncClient: S3VectorsAsyncClient,

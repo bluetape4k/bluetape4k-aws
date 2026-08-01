@@ -24,15 +24,15 @@ import software.amazon.awssdk.services.eventbridge.model.RuleState
 import software.amazon.awssdk.services.eventbridge.model.Target
 import java.util.concurrent.CompletableFuture
 
-/** Creates an EventBridge event bus asynchronously. */
+/** EventBridge 이벤트 버스를 비동기로 생성합니다. */
 fun EventBridgeAsyncClient.createEventBusAsync(name: String): CompletableFuture<CreateEventBusResponse> =
     createEventBus(createEventBusRequestOf(name))
 
-/** Deletes an EventBridge event bus asynchronously without hidden cleanup. */
+/** 숨겨진 정리 작업 없이 EventBridge 이벤트 버스를 비동기로 삭제합니다. */
 fun EventBridgeAsyncClient.deleteEventBusAsync(name: String): CompletableFuture<DeleteEventBusResponse> =
     deleteEventBus(deleteEventBusRequestOf(name))
 
-/** Creates or updates a rule asynchronously. */
+/** 규칙을 비동기로 생성하거나 갱신합니다. */
 fun EventBridgeAsyncClient.putRuleAsync(
     name: String,
     eventBusName: String? = null,
@@ -43,7 +43,7 @@ fun EventBridgeAsyncClient.putRuleAsync(
 ): CompletableFuture<PutRuleResponse> =
     putRule(putRuleRequestOf(name, eventBusName, eventPattern, scheduleExpression, state, description))
 
-/** Deletes a rule asynchronously after the caller removes targets. */
+/** 호출자가 대상을 제거한 뒤 규칙을 비동기로 삭제합니다. */
 fun EventBridgeAsyncClient.deleteRuleAsync(
     name: String,
     eventBusName: String? = null,
@@ -51,7 +51,7 @@ fun EventBridgeAsyncClient.deleteRuleAsync(
 ): CompletableFuture<DeleteRuleResponse> =
     deleteRule(deleteRuleRequestOf(name, eventBusName, force))
 
-/** Adds or updates targets asynchronously and preserves the raw partial-failure response. */
+/** 대상을 비동기로 추가하거나 갱신하고 부분 실패 원본 응답을 보존합니다. */
 fun EventBridgeAsyncClient.putTargetsAsync(
     rule: String,
     targets: List<Target>,
@@ -59,7 +59,7 @@ fun EventBridgeAsyncClient.putTargetsAsync(
 ): CompletableFuture<PutTargetsResponse> =
     putTargets(putTargetsRequestOf(rule, targets, eventBusName))
 
-/** Removes targets asynchronously and preserves the raw partial-failure response. */
+/** 대상을 비동기로 제거하고 부분 실패 원본 응답을 보존합니다. */
 fun EventBridgeAsyncClient.removeTargetsAsync(
     rule: String,
     ids: List<String>,
@@ -68,7 +68,7 @@ fun EventBridgeAsyncClient.removeTargetsAsync(
 ): CompletableFuture<RemoveTargetsResponse> =
     removeTargets(removeTargetsRequestOf(rule, ids, eventBusName, force))
 
-/** Lists rules asynchronously. */
+/** 규칙 목록을 비동기로 조회합니다. */
 fun EventBridgeAsyncClient.listRulesAsync(
     eventBusName: String? = null,
     namePrefix: String? = null,
@@ -77,7 +77,7 @@ fun EventBridgeAsyncClient.listRulesAsync(
 ): CompletableFuture<ListRulesResponse> =
     listRules(listRulesRequestOf(eventBusName, namePrefix, limit, nextToken))
 
-/** Lists rule targets asynchronously. */
+/** 규칙 대상을 비동기로 조회합니다. */
 fun EventBridgeAsyncClient.listTargetsByRuleAsync(
     rule: String,
     eventBusName: String? = null,
@@ -86,7 +86,7 @@ fun EventBridgeAsyncClient.listTargetsByRuleAsync(
 ): CompletableFuture<ListTargetsByRuleResponse> =
     listTargetsByRule(listTargetsByRuleRequestOf(rule, eventBusName, limit, nextToken))
 
-/** Publishes events asynchronously with one SDK request and no hidden batching. */
+/** 숨겨진 배치 처리 없이 SDK 요청 하나로 이벤트를 비동기 게시합니다. */
 fun EventBridgeAsyncClient.putEventsAsync(
     entries: List<PutEventsRequestEntry>,
 ): CompletableFuture<PutEventsResponse> =

@@ -23,13 +23,12 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for AWS EventBridge.
+ * AWS EventBridge용 Spring Boot 4 자동 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Registers an [EventBridgeAsyncClient] and [EventBridgeOperations] when the
- * EventBridge SDK is on the runtime classpath and
- * `bluetape4k.aws.eventbridge.enabled` is not disabled.
+ * 런타임 클래스패스에 EventBridge SDK가 있고 `bluetape4k.aws.eventbridge.enabled`를
+ * 비활성화하지 않았으면 [EventBridgeAsyncClient]와 [EventBridgeOperations]를 등록합니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

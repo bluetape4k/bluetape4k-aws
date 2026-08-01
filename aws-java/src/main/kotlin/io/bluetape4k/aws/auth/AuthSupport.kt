@@ -5,11 +5,11 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 
 /**
- * Default access key string used by local test environments.
+ * 로컬 테스트 환경에서 사용하는 기본 Access Key 문자열입니다.
  *
- * ## Behavior / Contract
- * - Used as the default `accessKeyId` when creating local credentials.
- * - The value is fixed to the `"accesskey"` constant.
+ * ## 동작/계약
+ * - 로컬 자격 증명 생성 시 `accessKeyId` 기본값으로 사용한다.
+ * - 값은 `"accesskey"` 상수로 고정되어 있다.
  *
  * ```kotlin
  * val accessKey = AWS_LOCAL_ACCESS_KEY
@@ -19,11 +19,11 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 const val AWS_LOCAL_ACCESS_KEY = "accesskey"
 
 /**
- * Default secret key string used by local test environments.
+ * 로컬 테스트 환경에서 사용하는 기본 Secret Key 문자열입니다.
  *
- * ## Behavior / Contract
- * - Used as the default `secretAccessKey` when creating local credentials.
- * - The value is fixed to the `"secretkey"` constant.
+ * ## 동작/계약
+ * - 로컬 자격 증명 생성 시 `secretAccessKey` 기본값으로 사용한다.
+ * - 값은 `"secretkey"` 상수로 고정되어 있다.
  *
  * ```kotlin
  * val secretKey = AWS_LOCAL_SECURITY_KEY
@@ -33,11 +33,11 @@ const val AWS_LOCAL_ACCESS_KEY = "accesskey"
 const val AWS_LOCAL_SECURITY_KEY = "secretkey"
 
 /**
- * Provides a [StaticCredentialsProvider] backed by the local default key pair.
+ * 로컬 기본 키 쌍으로 구성한 [StaticCredentialsProvider]를 제공합니다.
  *
- * ## Behavior / Contract
- * - Created eagerly from `AWS_LOCAL_ACCESS_KEY` and `AWS_LOCAL_SECURITY_KEY`.
- * - Exposed as a reusable `val` instance.
+ * ## 동작/계약
+ * - `AWS_LOCAL_ACCESS_KEY`, `AWS_LOCAL_SECURITY_KEY`를 사용해 즉시 생성한다.
+ * - 동일 인스턴스를 재사용하는 `val` 프로퍼티다.
  *
  * ```kotlin
  * val provider = LocalAwsCredentialsProvider
@@ -50,11 +50,11 @@ val LocalAwsCredentialsProvider: StaticCredentialsProvider =
     staticCredentialsProviderOf(AWS_LOCAL_ACCESS_KEY, AWS_LOCAL_SECURITY_KEY)
 
 /**
- * Creates [AwsBasicCredentials] from access key and secret key strings.
+ * Access Key/Secret Key 문자열로 [AwsBasicCredentials]를 생성합니다.
  *
- * ## Behavior / Contract
- * - Delegates to [AwsBasicCredentials.create] and returns a new instance.
- * - Maps input strings directly to the credential fields without conversion.
+ * ## 동작/계약
+ * - [AwsBasicCredentials.create]를 그대로 호출해 새 인스턴스를 반환한다.
+ * - 입력 문자열은 변환 없이 자격 증명 필드에 매핑된다.
  *
  * ```kotlin
  * val credentials = awsBasicCredentialsOf("ak", "sk")
@@ -62,18 +62,18 @@ val LocalAwsCredentialsProvider: StaticCredentialsProvider =
  * ```
  */
 fun awsBasicCredentialsOf(accessKeyId: String, securityAccessKey: String): AwsBasicCredentials {
-    // WHY: Blank credential strings fail later as ambiguous AWS 401/403 responses.
+    // WHY: 빈 자격 증명 문자열은 AWS API 호출 시 모호한 401/403 에러를 유발하므로 조기 실패
     accessKeyId.requireNotBlank("accessKeyId")
     securityAccessKey.requireNotBlank("securityAccessKey")
     return AwsBasicCredentials.create(accessKeyId, securityAccessKey)
 }
 
 /**
- * Creates a [StaticCredentialsProvider] for [AwsBasicCredentials].
+ * [AwsBasicCredentials]를 감싼 [StaticCredentialsProvider]를 생성합니다.
  *
- * ## Behavior / Contract
- * - Delegates to [StaticCredentialsProvider.create].
- * - Resolves the provided [credentials] as-is.
+ * ## 동작/계약
+ * - [StaticCredentialsProvider.create]를 호출해 provider를 생성한다.
+ * - 전달된 [credentials]를 resolve 결과로 그대로 노출한다.
  *
  * ```kotlin
  * val credentials = awsBasicCredentialsOf("ak", "sk")
@@ -85,11 +85,11 @@ fun staticCredentialsProviderOf(credentials: AwsBasicCredentials): StaticCredent
     StaticCredentialsProvider.create(credentials)
 
 /**
- * Creates [AwsBasicCredentials] from key strings and wraps them in a [StaticCredentialsProvider].
+ * 키 문자열로 [AwsBasicCredentials]을 만들고 [StaticCredentialsProvider]를 생성합니다.
  *
- * ## Behavior / Contract
- * - Calls [awsBasicCredentialsOf] and then [staticCredentialsProviderOf].
- * - Returns a fixed credential provider from the two key strings.
+ * ## 동작/계약
+ * - 내부에서 [awsBasicCredentialsOf] 후 [staticCredentialsProviderOf]를 순차 호출한다.
+ * - 인자 두 개를 전달하면 즉시 고정 자격 증명 provider를 얻는다.
  *
  * ```kotlin
  * private val credentialsProvider: StaticCredentialsProvider by lazy {

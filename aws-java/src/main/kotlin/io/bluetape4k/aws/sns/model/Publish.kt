@@ -6,10 +6,10 @@ import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import software.amazon.awssdk.services.sns.model.PublishRequest
 
 /**
- * Builds a [PublishRequest] with a DSL block.
+ * DSL 블록으로 [PublishRequest]를 빌드합니다.
  *
- * ## Behavior/Contract
- * - Sets `topicArn`, `message`, and other fields directly in the [builder] block.
+ * ## 동작/계약
+ * - [builder] 블록에서 `topicArn`, `message` 등을 직접 설정한다.
  *
  * ```kotlin
  * val req = publishRequest {
@@ -24,12 +24,12 @@ inline fun publishRequest(
     PublishRequest.builder().apply(builder).build()
 
 /**
- * Creates a [PublishRequest] from a topic ARN and message.
+ * 토픽 ARN과 메시지로 [PublishRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [topicArn] is blank.
- * - Throws `IllegalArgumentException` when [message] is blank.
- * - When [snsAttributes] is not null, sets it as message attributes.
+ * ## 동작/계약
+ * - [topicArn]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [message]가 blank이면 `IllegalArgumentException`을 던진다.
+ * - [snsAttributes]가 null이 아니면 메시지 속성으로 설정된다.
  *
  * ```kotlin
  * val req = publishRequestOf(

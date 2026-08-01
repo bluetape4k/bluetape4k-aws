@@ -4,10 +4,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.SetSubscriptionAttributesRequest
 
 /**
- * Builds a [SetSubscriptionAttributesRequest] with a DSL block.
+ * DSL 블록으로 [SetSubscriptionAttributesRequest]를 빌드합니다.
  *
- * ## Behavior/Contract
- * - Sets `subscriptionArn`, `attributeName`, `attributeValue`, and other fields directly in the [builder] block.
+ * ## 동작/계약
+ * - [builder] 블록에서 `subscriptionArn`, `attributeName`, `attributeValue` 등을 직접 설정한다.
  *
  * ```kotlin
  * val req = setSubscriptionAttributesRequest {
@@ -23,10 +23,10 @@ inline fun setSubscriptionAttributesRequest(
     SetSubscriptionAttributesRequest.builder().apply(builder).build()
 
 /**
- * Creates a [SetSubscriptionAttributesRequest] for configuring subscription attributes.
+ * 구독 속성 설정을 위한 [SetSubscriptionAttributesRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - All parameters are optional and are not set when null.
+ * ## 동작/계약
+ * - 모든 파라미터는 optional이며 null이면 설정되지 않는다.
  *
  * ```kotlin
  * val req = setSubscriptionAttributesRequestOf(

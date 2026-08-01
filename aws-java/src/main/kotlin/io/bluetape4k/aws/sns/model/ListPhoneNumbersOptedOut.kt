@@ -5,10 +5,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.ListPhoneNumbersOptedOutRequest
 
 /**
- * Builds a [ListPhoneNumbersOptedOutRequest] with a DSL block.
+ * DSL 블록으로 [ListPhoneNumbersOptedOutRequest]를 빌드합니다.
  *
- * ## Behavior/Contract
- * - Sets `nextToken` and other fields directly in the [builder] block.
+ * ## 동작/계약
+ * - [builder] 블록에서 `nextToken` 등을 직접 설정한다.
  *
  * ```kotlin
  * val req = listPhoneNumbersOptedOutRequest { nextToken("token123") }
@@ -20,15 +20,15 @@ inline fun listPhoneNumbersOptedOutRequest(
     ListPhoneNumbersOptedOutRequest.builder().apply(builder).build()
 
 /**
- * Creates a [ListPhoneNumbersOptedOutRequest] for listing SMS opted-out phone numbers by pagination token.
+ * 페이지네이션 토큰으로 SMS 수신 거부 번호 목록 [ListPhoneNumbersOptedOutRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [nextToken] is non-null and blank.
- * - When [nextToken] is null, retrieves the first page.
+ * ## 동작/계약
+ * - [nextToken]이 non-null이면서 blank이면 `IllegalArgumentException`을 던진다.
+ * - [nextToken]이 null이면 첫 페이지를 조회한다.
  *
  * ```kotlin
  * val req = listPhoneNumbersOptedOutRequestOf()
- * // Request the first page of opted-out phone numbers
+ * // 첫 페이지 수신 거부 번호 목록 요청
  * ```
  */
 inline fun listPhoneNumbersOptedOutRequestOf(

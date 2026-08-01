@@ -7,12 +7,12 @@ import java.io.Serializable
 import java.time.Instant
 
 /**
- * Represents an S3 object location.
+ * S3 객체 위치를 표현합니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * A value object that keeps only [bucket] and [key]. Operation methods on [S3KtorClient]
- * perform validation before sending real requests.
+ * [bucket]과 [key]만 보존하는 값 객체입니다. 실제 요청 전 검증은 [S3KtorClient]의 작업
+ * 메서드에서 수행합니다.
  *
  * ```kotlin
  * val ref = S3KtorObjectRef(bucket = "demo-bucket", key = "docs/hello.txt")
@@ -28,12 +28,12 @@ data class S3KtorObjectRef(
 }
 
 /**
- * S3 PutObject request.
+ * S3 PutObject 요청입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Pass [metadata] keys without the `x-amz-meta-` prefix. [headers] are added to the S3
- * request as-is, so use them for headers that must be controlled explicitly, such as `Content-MD5`.
+ * [metadata]의 key는 `x-amz-meta-` 접두사 없이 전달합니다. [headers]는 S3 요청에 그대로
+ * 추가되므로 `Content-MD5`처럼 명시적으로 제어해야 하는 헤더에 사용합니다.
  *
  * ```kotlin
  * val request = S3KtorPutObjectRequest(
@@ -57,12 +57,12 @@ data class S3KtorPutObjectRequest(
 }
 
 /**
- * S3 PutObject response.
+ * S3 PutObject 응답입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Keeps the ETag, version id, and raw response headers returned by S3. [versionId] may be
- * null for buckets without versioning.
+ * S3가 반환한 ETag, version id, 원본 응답 headers를 보존합니다. Versioning이 꺼진 bucket에서는
+ * [versionId]가 null일 수 있습니다.
  *
  * ```kotlin
  * val response = s3.putObject("demo-bucket", "docs/hello.txt", "hello".encodeToByteArray())
@@ -80,13 +80,13 @@ data class S3KtorPutObjectResponse(
 }
 
 /**
- * S3 GetObject response body and metadata.
+ * S3 GetObject 응답 body와 metadata입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * [bytes] contains the full response body loaded into memory. Use
- * [S3KtorClient.getObjectStream] for large objects. [metadata] keys are exposed without the
- * `x-amz-meta-` prefix.
+ * [bytes]는 응답 body 전체를 메모리에 적재한 값입니다. 큰 객체를 다룰 때는
+ * [S3KtorClient.getObjectStream]을 사용합니다. [metadata] key는 `x-amz-meta-` 접두사를 제거한
+ * 형태로 제공됩니다.
  *
  * ```kotlin
  * val response = s3.getObject("demo-bucket", "docs/hello.txt")
@@ -129,11 +129,11 @@ data class S3KtorGetObjectResponse(
 }
 
 /**
- * S3 GetObject streaming response.
+ * S3 GetObject streaming 응답입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * [body] is the Ktor response channel, so the caller must finish consuming it.
+ * [body]는 Ktor response channel이므로 caller가 소비를 완료해야 합니다.
  *
  * ```kotlin
  * val response = s3.getObjectStream("demo-bucket", "large.bin")
@@ -154,11 +154,11 @@ data class S3KtorStreamingObjectResponse(
 }
 
 /**
- * S3 DeleteObject response.
+ * S3 DeleteObject 응답입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * The delete marker and version id may be null depending on bucket versioning and delete mode.
+ * 삭제 marker와 version id는 bucket versioning 및 삭제 방식에 따라 null일 수 있습니다.
  *
  * ```kotlin
  * val response = s3.deleteObject("demo-bucket", "docs/hello.txt")
@@ -176,12 +176,12 @@ data class S3KtorDeleteObjectResponse(
 }
 
 /**
- * S3 ListObjectsV2 request.
+ * S3 ListObjectsV2 요청입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Null fields are omitted from request query parameters. [maxKeys] should be within the S3 API
- * limit range of 1..1000.
+ * null인 필드는 요청 query parameter에 포함하지 않습니다. [maxKeys]는 S3 API 제한에 맞게
+ * 1..1000 범위로 지정하는 것을 권장합니다.
  *
  * ```kotlin
  * val request = S3KtorListObjectsRequest(
@@ -206,12 +206,12 @@ data class S3KtorListObjectsRequest(
 }
 
 /**
- * S3 object list item.
+ * S3 객체 목록 항목입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Converts a ListObjectsV2 `Contents` element into a simple value object. Optional fields missing
- * from the S3 response remain null.
+ * ListObjectsV2의 `Contents` 요소를 단순 값 객체로 변환합니다. S3 응답에 없는 선택 필드는
+ * null로 유지됩니다.
  *
  * ```kotlin
  * val firstKey = page.contents.firstOrNull()?.key
@@ -230,12 +230,12 @@ data class S3KtorObjectSummary(
 }
 
 /**
- * S3 ListObjectsV2 response.
+ * S3 ListObjectsV2 응답입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Keeps paging fields and the object list from the S3 XML response. When [isTruncated] is `true`,
- * use [nextContinuationToken] to fetch the next page.
+ * S3 XML 응답의 paging 필드와 객체 목록을 보존합니다. [isTruncated]가 `true`이면
+ * [nextContinuationToken]으로 다음 페이지를 조회합니다.
  *
  * ```kotlin
  * val page = s3.listObjectsV2(S3KtorListObjectsRequest(bucket = "demo-bucket"))
@@ -259,11 +259,11 @@ data class S3KtorListObjectsResponse(
 }
 
 /**
- * Multipart upload initiation result.
+ * Multipart upload 시작 결과입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Includes the [uploadId] required for subsequent part upload and complete/abort requests.
+ * 이후 part 업로드와 완료/중단 요청에 필요한 [uploadId]를 포함합니다.
  *
  * ```kotlin
  * val upload = s3.createMultipartUpload("demo-bucket", "large.bin")
@@ -280,12 +280,12 @@ data class S3KtorMultipartUpload(
 }
 
 /**
- * Multipart upload part result.
+ * Multipart upload part 결과입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Keeps the part number and ETag for CompleteMultipartUpload XML generation. Complete requests
- * sort parts by part number.
+ * CompleteMultipartUpload XML 생성을 위해 part number와 ETag를 보존합니다. 완료 요청에서는
+ * part number 순서로 정렬됩니다.
  *
  * ```kotlin
  * val part = s3.uploadPart("demo-bucket", "large.bin", uploadId, 1, bytes)
@@ -301,12 +301,12 @@ data class S3KtorCompletedPart(
 }
 
 /**
- * CompleteMultipartUpload response.
+ * CompleteMultipartUpload 응답입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Keeps the bucket, key, location, and ETag returned by S3. S3-compatible endpoints may omit
- * some fields, so they are exposed as nullable values.
+ * S3가 반환한 bucket, key, location, ETag를 보존합니다. S3 호환 endpoint는 일부 필드를
+ * 생략할 수 있으므로 nullable로 노출합니다.
  *
  * ```kotlin
  * val completed = s3.completeMultipartUpload("demo-bucket", "large.bin", uploadId, parts)
@@ -325,12 +325,12 @@ data class S3KtorCompleteMultipartUploadResponse(
 }
 
 /**
- * Presigned S3 request URL.
+ * Presigned S3 요청 URL입니다.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * [method] is the signed HTTP method, and [url] includes `X-Amz-*` query parameters.
- * URL validity follows the expires value passed at creation time and the S3 SigV4 7-day maximum.
+ * [method]는 서명된 HTTP method이고 [url]은 `X-Amz-*` query parameter를 포함합니다.
+ * URL 유효 시간은 생성 시 전달한 expires 값과 S3 SigV4 최대 7일 제한을 따릅니다.
  *
  * ```kotlin
  * import java.time.Duration

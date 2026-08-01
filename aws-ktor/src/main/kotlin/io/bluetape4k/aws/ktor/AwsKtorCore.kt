@@ -29,16 +29,16 @@ import java.net.URI
 import java.time.Clock
 
 /**
- * Application-level AWS defaults shared by bluetape4k Ktor integrations.
+ * bluetape4k Ktor 통합이 공유하는 애플리케이션 수준 AWS 기본값입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Plugin-specific settings always override these defaults. The defaults are
- * opt-in: applications install [AwsKtorCore] once and then service plugins can
- * inherit the region, endpoint override, credentials, clock, and customizers.
+ * 플러그인별 설정은 항상 이 기본값보다 우선합니다. 기본값은 옵트인 방식입니다. 애플리케이션이
+ * [AwsKtorCore]를 한 번 설치하면 서비스 플러그인이 리전, 엔드포인트 재정의, 자격 증명, 시계,
+ * 사용자 정의 설정을 상속할 수 있습니다.
  *
- * Live collaborator properties are transient because credentials providers,
- * HTTP engines, and customizer lambdas are runtime objects, not durable state.
+ * 자격 증명 공급자, HTTP 엔진, 사용자 정의 람다는 영속 상태가 아닌 런타임 객체이므로
+ * 실행 중인 협력 객체 속성은 transient입니다.
  */
 class AwsKtorDefaults(
     val region: String? = null,
@@ -113,55 +113,55 @@ class AwsKtorDefaults(
         }
     }
 
-    /** Shared endpoint override, commonly LocalStack in tests and local development. */
+    /** 테스트와 로컬 개발에서 주로 LocalStack을 지정하는 공유 엔드포인트 재정의입니다. */
     val endpointOverride: Url?
         get() = endpointOverrideValue?.let(::Url)
 
-    /** Shared customizers for plugin-created Ktor HTTP clients. */
+    /** 플러그인이 생성한 Ktor HTTP 클라이언트의 공유 사용자 정의 설정입니다. */
     val httpClientCustomizers: List<AwsKtorHttpClientCustomizer>
         get() = httpClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 SQS async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 SQS 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val sqsAsyncClientCustomizers: List<AwsKtorSqsAsyncClientCustomizer>
         get() = sqsAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 CloudWatch async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 CloudWatch 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val cloudWatchAsyncClientCustomizers: List<AwsKtorCloudWatchAsyncClientCustomizer>
         get() = cloudWatchAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 CloudWatch Logs async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 CloudWatch Logs 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val cloudWatchLogsAsyncClientCustomizers: List<AwsKtorCloudWatchLogsAsyncClientCustomizer>
         get() = cloudWatchLogsAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 EventBridge async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 EventBridge 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val eventBridgeAsyncClientCustomizers: List<AwsKtorEventBridgeAsyncClientCustomizer>
         get() = eventBridgeAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 Kinesis async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 Kinesis 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val kinesisAsyncClientCustomizers: List<AwsKtorKinesisAsyncClientCustomizer>
         get() = kinesisAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 S3 Control async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 S3 Control 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val s3ControlAsyncClientCustomizers: List<AwsKtorS3ControlAsyncClientCustomizer>
         get() = s3ControlAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 S3 Vectors async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 S3 Vectors 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val s3VectorsAsyncClientCustomizers: List<AwsKtorS3VectorsAsyncClientCustomizer>
         get() = s3VectorsAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 SES v2 async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 SES v2 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val sesV2AsyncClientCustomizers: List<AwsKtorSesV2AsyncClientCustomizer>
         get() = sesV2AsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 SNS async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 SNS 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val snsAsyncClientCustomizers: List<AwsKtorSnsAsyncClientCustomizer>
         get() = snsAsyncClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS Kotlin SDK DynamoDB clients. */
+    /** 플러그인이 생성한 AWS Kotlin SDK DynamoDB 클라이언트의 공유 사용자 정의 설정입니다. */
     val dynamoDbClientCustomizers: List<AwsKtorDynamoDbClientCustomizer>
         get() = dynamoDbClientCustomizersValue ?: emptyList()
 
-    /** Shared customizers for plugin-created AWS SDK Java v2 STS async clients. */
+    /** 플러그인이 생성한 AWS SDK Java v2 STS 비동기 클라이언트의 공유 사용자 정의 설정입니다. */
     val stsAsyncClientCustomizers: List<AwsKtorStsAsyncClientCustomizer>
         get() = stsAsyncClientCustomizersValue ?: emptyList()
 
@@ -244,7 +244,7 @@ class AwsKtorDefaults(
 }
 
 /**
- * Ktor application plugin that stores shared AWS defaults in application attributes.
+ * 공유 AWS 기본값을 애플리케이션 속성에 저장하는 Ktor 애플리케이션 플러그인입니다.
  */
 val AwsKtorCore: ApplicationPlugin<AwsKtorCoreConfig> = createApplicationPlugin(
     name = "AwsKtorCore",
@@ -257,37 +257,37 @@ val AwsKtorCore: ApplicationPlugin<AwsKtorCoreConfig> = createApplicationPlugin(
 }
 
 /**
- * Application attribute key for [AwsKtorDefaults].
+ * [AwsKtorDefaults]용 애플리케이션 속성 키입니다.
  */
 val AwsKtorDefaultsKey: AttributeKey<AwsKtorDefaults> = AttributeKey("AwsKtorDefaults")
 
 /**
- * Returns installed shared AWS defaults, or an empty defaults value when [AwsKtorCore] is absent.
+ * 설치된 공유 AWS 기본값을 반환합니다. [AwsKtorCore]가 없으면 빈 기본값을 반환합니다.
  */
 fun Application.awsKtorDefaults(): AwsKtorDefaults =
     attributes.getOrNull(AwsKtorDefaultsKey) ?: AwsKtorDefaults()
 
 /**
- * Mutable configuration for [AwsKtorCore].
+ * [AwsKtorCore]의 변경 가능한 구성입니다.
  */
 class AwsKtorCoreConfig {
 
-    /** Shared AWS region inherited by service plugins unless they set their own region. */
+    /** 서비스 플러그인이 자체 리전을 지정하지 않을 때 상속하는 공유 AWS 리전입니다. */
     var region: String? = null
 
-    /** Shared endpoint override, commonly LocalStack in tests and local development. */
+    /** 테스트와 로컬 개발에서 주로 LocalStack을 지정하는 공유 엔드포인트 재정의입니다. */
     var endpointOverride: Url? = null
 
-    /** Shared AWS SDK Java v2 credentials provider. */
+    /** 공유 AWS SDK Java v2 자격 증명 공급자입니다. */
     var javaCredentialsProvider: AwsCredentialsProvider? = null
 
-    /** Shared AWS SDK for Kotlin credentials provider. */
+    /** 공유 AWS SDK for Kotlin 자격 증명 공급자입니다. */
     var kotlinCredentialsProvider: CredentialsProvider? = null
 
-    /** Shared SigV4 signing clock for deterministic tests. */
+    /** 결정론적 테스트를 위한 공유 SigV4 서명 시계입니다. */
     var signingClock: Clock? = null
 
-    /** Shared AWS SDK for Kotlin HTTP engine. */
+    /** 공유 AWS SDK for Kotlin HTTP 엔진입니다. */
     var kotlinHttpClient: HttpClientEngine? = null
 
     private val httpClientCustomizers = mutableListOf<AwsKtorHttpClientCustomizer>()
@@ -307,95 +307,94 @@ class AwsKtorCoreConfig {
         private set
 
     /**
-     * Installs the shared bluetape4k Ktor baseline together with [AwsKtorCore].
+     * [AwsKtorCore]와 함께 공유 bluetape4k Ktor 기준 구성을 설치합니다.
      *
-     * The baseline remains opt-in so existing AWS-only applications do not get
-     * content negotiation, status pages, or health routes unless they request
-     * the shared bluetape4k Ktor server defaults explicitly.
+     * 기준 구성은 옵트인 방식입니다. 따라서 기존 AWS 전용 애플리케이션은 공유 bluetape4k Ktor 서버
+     * 기본값을 명시적으로 요청하지 않는 한 콘텐츠 협상, 상태 페이지 또는 상태 확인 경로를 설치하지 않습니다.
      */
     fun ktorCore(config: Bluetape4kKtorCoreConfig = Bluetape4kKtorCoreConfig()) {
         ktorCoreConfig = config
     }
 
     /**
-     * Adds a global Ktor [io.ktor.client.HttpClient] customizer for plugin-created clients.
+     * 플러그인이 생성한 클라이언트에 전역 Ktor [io.ktor.client.HttpClient] 사용자 정의 설정을 추가합니다.
      */
     fun httpClient(customizer: AwsKtorHttpClientCustomizer) {
         httpClientCustomizers += customizer
     }
 
     /**
-     * Adds a global SQS async client builder customizer.
+     * 전역 SQS 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun sqsAsyncClient(customizer: AwsKtorSqsAsyncClientCustomizer) {
         sqsAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global CloudWatch async client builder customizer.
+     * 전역 CloudWatch 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun cloudWatchAsyncClient(customizer: AwsKtorCloudWatchAsyncClientCustomizer) {
         cloudWatchAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global CloudWatch Logs async client builder customizer.
+     * 전역 CloudWatch Logs 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun cloudWatchLogsAsyncClient(customizer: AwsKtorCloudWatchLogsAsyncClientCustomizer) {
         cloudWatchLogsAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global EventBridge async client builder customizer.
+     * 전역 EventBridge 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun eventBridgeAsyncClient(customizer: AwsKtorEventBridgeAsyncClientCustomizer) {
         eventBridgeAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global Kinesis async client builder customizer.
+     * 전역 Kinesis 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun kinesisAsyncClient(customizer: AwsKtorKinesisAsyncClientCustomizer) {
         kinesisAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global S3 Control async client builder customizer.
+     * 전역 S3 Control 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun s3ControlAsyncClient(customizer: AwsKtorS3ControlAsyncClientCustomizer) {
         s3ControlAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global S3 Vectors async client builder customizer.
+     * 전역 S3 Vectors 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun s3VectorsAsyncClient(customizer: AwsKtorS3VectorsAsyncClientCustomizer) {
         s3VectorsAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global SES v2 async client builder customizer.
+     * 전역 SES v2 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun sesV2AsyncClient(customizer: AwsKtorSesV2AsyncClientCustomizer) {
         sesV2AsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global SNS async client builder customizer.
+     * 전역 SNS 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun snsAsyncClient(customizer: AwsKtorSnsAsyncClientCustomizer) {
         snsAsyncClientCustomizers += customizer
     }
 
     /**
-     * Adds a global AWS Kotlin SDK DynamoDB client builder customizer.
+     * 전역 AWS Kotlin SDK DynamoDB 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun dynamoDbClient(customizer: AwsKtorDynamoDbClientCustomizer) {
         dynamoDbClientCustomizers += customizer
     }
 
     /**
-     * Adds a global STS async client builder customizer.
+     * 전역 STS 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun stsAsyncClient(customizer: AwsKtorStsAsyncClientCustomizer) {
         stsAsyncClientCustomizers += customizer
@@ -425,84 +424,84 @@ class AwsKtorCoreConfig {
 }
 
 /**
- * Customizes plugin-created Ktor HTTP clients before they are built.
+ * 플러그인이 생성할 Ktor HTTP 클라이언트를 빌드 전에 사용자 정의합니다.
  */
 fun interface AwsKtorHttpClientCustomizer {
     fun customize(config: HttpClientConfig<*>)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 SQS async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 SQS 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorSqsAsyncClientCustomizer {
     fun customize(builder: SqsAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 CloudWatch async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 CloudWatch 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorCloudWatchAsyncClientCustomizer {
     fun customize(builder: CloudWatchAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 CloudWatch Logs async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 CloudWatch Logs 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorCloudWatchLogsAsyncClientCustomizer {
     fun customize(builder: CloudWatchLogsAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 EventBridge async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 EventBridge 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorEventBridgeAsyncClientCustomizer {
     fun customize(builder: EventBridgeAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 Kinesis async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 Kinesis 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorKinesisAsyncClientCustomizer {
     fun customize(builder: KinesisAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 S3 Control async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 S3 Control 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorS3ControlAsyncClientCustomizer {
     fun customize(builder: S3ControlAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 S3 Vectors async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 S3 Vectors 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorS3VectorsAsyncClientCustomizer {
     fun customize(builder: S3VectorsAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 SES v2 async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 SES v2 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorSesV2AsyncClientCustomizer {
     fun customize(builder: SesV2AsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 SNS async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 SNS 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorSnsAsyncClientCustomizer {
     fun customize(builder: SnsAsyncClientBuilder)
 }
 
 /**
- * Customizes plugin-created AWS Kotlin SDK DynamoDB client builders.
+ * 플러그인이 생성할 AWS Kotlin SDK DynamoDB 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorDynamoDbClientCustomizer {
     fun customize(builder: aws.sdk.kotlin.services.dynamodb.DynamoDbClient.Config.Builder)
 }
 
 /**
- * Customizes plugin-created AWS SDK Java v2 STS async client builders.
+ * 플러그인이 생성할 AWS SDK Java v2 STS 비동기 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsKtorStsAsyncClientCustomizer {
     fun customize(builder: StsAsyncClientBuilder)

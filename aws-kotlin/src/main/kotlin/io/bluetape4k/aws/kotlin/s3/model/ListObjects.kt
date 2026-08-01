@@ -5,7 +5,7 @@ import aws.sdk.kotlin.services.s3.model.ListObjectsRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a [ListObjectsRequest] for listing objects in [bucket].
+ * [bucket]의 객체 목록 조회를 위한 [ListObjectsRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = listObjectsRequestOf(
@@ -17,12 +17,12 @@ import io.bluetape4k.support.requireNotBlank
  * val objects = response.contents
  * ```
  *
- * @param bucket bucket name
- * @param prefix prefix filter; when null, includes all objects
- * @param delimiter delimiter; when null, does not group keys hierarchically
- * @param maxKeys maximum number of objects to return
- * @param encondingType encoding type
- * @return the [ListObjectsRequest]
+ * @param bucket 버킷 이름
+ * @param prefix 접두어 필터 (null이면 모든 객체)
+ * @param delimiter 구분자 (null이면 계층 구조 없음)
+ * @param maxKeys 반환할 최대 객체 수
+ * @param encondingType 인코딩 타입
+ * @return [ListObjectsRequest] 인스턴스
  */
 inline fun listObjectsRequestOf(
     bucket: String,

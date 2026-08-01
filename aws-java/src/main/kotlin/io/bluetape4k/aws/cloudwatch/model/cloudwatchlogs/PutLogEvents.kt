@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsRequest
 
 /**
- * Builds a [PutLogEventsRequest] with a DSL block.
+ * DSL 블록으로 [PutLogEventsRequest]를 빌드합니다.
  *
  * ```kotlin
  * val request = putLogEventsRequest {
@@ -21,11 +21,11 @@ inline fun putLogEventsRequest(
     PutLogEventsRequest.builder().apply(builder).build()
 
 /**
- * Creates a [PutLogEventsRequest] from a log group name, stream name, and event list.
+ * 로그 그룹/스트림 이름과 이벤트 목록으로 [PutLogEventsRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [logGroupName] is blank.
- * - Throws `IllegalArgumentException` when [logStreamName] is blank.
+ * ## 동작/계약
+ * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [logStreamName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val request = putLogEventsRequestOf(
@@ -52,7 +52,7 @@ inline fun putLogEventsRequestOf(
 }
 
 /**
- * Builds an [InputLogEvent] with a DSL block.
+ * DSL 블록으로 [InputLogEvent]를 빌드합니다.
  *
  * ```kotlin
  * val event = inputLogEvent {
@@ -67,7 +67,7 @@ inline fun inputLogEvent(
     InputLogEvent.builder().apply(builder).build()
 
 /**
- * Creates an [InputLogEvent] from a timestamp and message.
+ * 타임스탬프와 메시지로 [InputLogEvent]를 생성합니다.
  *
  * ```kotlin
  * val event = inputLogEventOf(

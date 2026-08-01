@@ -4,12 +4,12 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 
 /**
- * Coroutine-based SNS operations for Spring applications.
+ * Spring 애플리케이션을 위한 코루틴 기반 SNS 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Provides topic creation, configured-topic creation, topic lookup, and message
- * publishing without exposing `CompletableFuture` to application code.
+ * 애플리케이션 코드에 `CompletableFuture`를 노출하지 않고 주제 생성, 구성된 주제 생성,
+ * 주제 조회, 메시지 게시 기능을 제공합니다.
  *
  * ```kotlin
  * class OrderTopic(private val sns: SnsOperations) {
@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 interface SnsOperations {
 
     /**
-     * Creates a standard topic and returns its topic ARN.
+     * 표준 주제를 생성하고 topic ARN을 반환합니다.
      */
     suspend fun createTopic(
         topicName: String,
@@ -30,7 +30,7 @@ interface SnsOperations {
     ): String
 
     /**
-     * Creates a FIFO topic and returns its topic ARN.
+     * FIFO 주제를 생성하고 topic ARN을 반환합니다.
      */
     suspend fun createFifoTopic(
         topicName: String,
@@ -40,30 +40,29 @@ interface SnsOperations {
     ): String
 
     /**
-     * Creates a topic using `bluetape4k.aws.sns.topics` configuration.
+     * `bluetape4k.aws.sns.topics` 구성으로 주제를 생성합니다.
      */
     suspend fun createConfiguredTopic(topicName: String): String
 
     /**
-     * Finds a topic ARN by topic name.
+     * 주제 이름으로 topic ARN을 찾습니다.
      *
-     * Scans every `ListTopics` page and returns null when no matching topic is
-     * found.
+     * 모든 `ListTopics` 페이지를 스캔하고 일치하는 주제가 없으면 null을 반환합니다.
      */
     suspend fun findTopicArn(topicName: String): String?
 
     /**
-     * Publishes a message to an SNS topic.
+     * SNS 주제에 메시지를 게시합니다.
      */
     suspend fun publish(request: SnsPublishRequest): PublishResponse
 
     /**
-     * Publishes an SMS message directly to a phone number.
+     * 전화번호로 SMS 메시지를 직접 게시합니다.
      */
     suspend fun publishSms(request: SnsSmsRequest): PublishResponse
 
     /**
-     * Confirms an HTTP(S) endpoint subscription using the SNS confirmation token.
+     * SNS 확인 토큰으로 HTTP(S) 엔드포인트 구독을 확인합니다.
      */
     suspend fun confirmSubscription(
         topicArn: String,
@@ -72,8 +71,7 @@ interface SnsOperations {
     ): ConfirmSubscriptionResponse
 
     /**
-     * Confirms or re-confirms an HTTP(S) endpoint subscription from a parsed SNS
-     * confirmation message.
+     * 파싱된 SNS 확인 메시지로 HTTP(S) 엔드포인트 구독을 확인하거나 재확인합니다.
      */
     suspend fun confirmSubscription(
         message: SnsHttpMessage,

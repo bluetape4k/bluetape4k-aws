@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for SQS clients, operations, and listener infrastructure.
+ * SQS용 Spring Boot 4 자동 설정.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

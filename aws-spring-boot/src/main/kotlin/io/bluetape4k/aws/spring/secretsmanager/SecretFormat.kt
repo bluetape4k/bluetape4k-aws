@@ -1,15 +1,14 @@
 package io.bluetape4k.aws.spring.secretsmanager
 
 /**
- * Format used to expose a Secrets Manager secret string as Spring properties.
+ * Secrets Manager 보안 문자열을 Spring 속성으로 노출하는 형식입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * `JSON` flattens a JSON object into dot-separated property keys. `TEXT`
- * exposes the whole secret string at the configured source `prefix` or `name`.
+ * `JSON`은 JSON 객체를 점으로 구분한 속성 키로 평탄화합니다. `TEXT`는 구성된 소스의
+ * `prefix` 또는 `name`에 전체 보안 문자열을 노출합니다.
  */
 enum class SecretFormat {
     JSON,
     TEXT,
 }
-

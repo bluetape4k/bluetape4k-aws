@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
 /**
- * Template that wraps AWS SDK v2 [SqsAsyncClient] as coroutine-friendly [SqsOperations].
+ * AWS SDK v2 [SqsAsyncClient]를 Coroutines 친화적인 [SqsOperations]로 감싸는 템플릿.
  */
 class SqsCoroutinesTemplate(
     private val sqsAsyncClient: SqsAsyncClient,

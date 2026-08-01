@@ -4,10 +4,10 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kms.model.EnableKeyRequest
 
 /**
- * Creates an [EnableKeyRequest] with a DSL-style builder lambda.
+ * DSL 스타일의 빌더 람다로 [EnableKeyRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies [builder] to [EnableKeyRequest.builder], then calls `build()`.
+ * ## 동작/계약
+ * - [EnableKeyRequest.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
  *
  * ```kotlin
  * val request = enableKeyRequest {
@@ -22,11 +22,11 @@ inline fun enableKeyRequest(
     EnableKeyRequest.builder().apply(builder).build()
 
 /**
- * Creates an [EnableKeyRequest] by specifying a key ID.
+ * 키 ID를 지정하여 [EnableKeyRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [keyId] is blank.
- * - When validation passes, sets the value on [EnableKeyRequest.Builder.keyId].
+ * ## 동작/계약
+ * - [keyId]가 blank이면 `IllegalArgumentException`을 던집니다.
+ * - 검증이 통과하면 [EnableKeyRequest.Builder.keyId]에 값을 설정합니다.
  *
  * ```kotlin
  * val request = enableKeyRequestOf("key-id")

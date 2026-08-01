@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Auto-configuration for explicit field-level KMS encryption helpers.
+ * 명시적인 필드 수준 KMS 암호화 도우미의 자동 구성입니다.
  */
 @AutoConfiguration(after = [KmsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

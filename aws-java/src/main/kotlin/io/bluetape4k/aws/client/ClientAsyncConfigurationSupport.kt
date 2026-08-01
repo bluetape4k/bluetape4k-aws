@@ -4,11 +4,11 @@ import software.amazon.awssdk.core.client.config.ClientAsyncConfiguration
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption
 
 /**
- * Creates [ClientAsyncConfiguration] with a builder DSL.
+ * [ClientAsyncConfiguration]을 빌더 DSL로 생성합니다.
  *
- * ## Behavior and contract
- * - Applies [builder] to the builder created by [ClientAsyncConfiguration.builder].
- * - Returns the `build()` result after applying [builder].
+ * ## 동작/계약
+ * - [ClientAsyncConfiguration.builder]로 생성한 빌더에 [builder]를 적용한다.
+ * - [builder] 적용 후 `build()` 결과를 반환한다.
  *
  * ```kotlin
  * val config = clientAsyncConfiguration {
@@ -24,11 +24,11 @@ inline fun clientAsyncConfiguration(
 }
 
 /**
- * Creates [ClientAsyncConfiguration] with a single advanced async option.
+ * 단일 비동기 고급 옵션으로 [ClientAsyncConfiguration]을 생성합니다.
  *
- * ## Behavior and contract
- * - Calls `advancedOption(asyncOption, value)` once inside the [clientAsyncConfiguration] block.
- * - The supplied option and value are reflected directly in the resulting configuration.
+ * ## 동작/계약
+ * - 내부 [clientAsyncConfiguration] 블록에서 `advancedOption(asyncOption, value)`를 1회 호출한다.
+ * - 전달한 옵션과 값이 생성 결과에 그대로 반영된다.
  *
  * ```kotlin
  * val executor = java.util.concurrent.Executors.newSingleThreadExecutor()

@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClientB
 import java.net.URI
 
 /**
- * Builds a [SecretsManagerAsyncClient] and registers it with [ShutdownQueue].
+ * [SecretsManagerAsyncClient]를 생성하고 [ShutdownQueue]에 등록합니다.
  */
 inline fun secretsManagerAsyncClient(
     builder: SecretsManagerAsyncClientBuilder.() -> Unit,
@@ -21,7 +21,7 @@ inline fun secretsManagerAsyncClient(
         }
 
 /**
- * Creates a [SecretsManagerAsyncClient] with optional local endpoint and credentials.
+ * 선택적인 로컬 엔드포인트와 자격 증명으로 [SecretsManagerAsyncClient]를 생성합니다.
  */
 inline fun secretsManagerAsyncClientOf(
     endpoint: URI? = null,

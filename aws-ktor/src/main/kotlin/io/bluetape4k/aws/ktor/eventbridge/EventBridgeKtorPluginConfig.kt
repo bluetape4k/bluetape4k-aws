@@ -9,40 +9,40 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 import java.net.URI
 
 /**
- * Configuration for [EventBridgeKtorPlugin].
+ * [EventBridgeKtorPlugin] 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Installing the plugin registers operations only. Events are sent only when
- * application code invokes [EventBridgeKtorOperations].
+ * 플러그인을 설치하면 작업만 등록합니다. 애플리케이션 코드가
+ * [EventBridgeKtorOperations]를 호출할 때만 이벤트를 전송합니다.
  */
 class EventBridgeKtorPluginConfig {
 
-    /** Enables Ktor EventBridge runtime registration. */
+    /** Ktor EventBridge 런타임 등록을 활성화합니다. */
     var enabled: Boolean = true
 
-    /** Optional application-owned AWS SDK v2 EventBridge async client. */
+    /** 애플리케이션이 소유하는 선택적인 AWS SDK v2 EventBridge 비동기 클라이언트입니다. */
     var eventBridgeAsyncClient: EventBridgeAsyncClient? = null
 
-    /** Optional application-owned operations facade. */
+    /** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
     var eventBridgeOperations: EventBridgeKtorOperations? = null
 
-    /** Optional EventBridge region used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 EventBridge 리전입니다. */
     var region: String? = null
 
-    /** Optional EventBridge endpoint override used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 EventBridge 엔드포인트 재정의입니다. */
     var endpointOverride: URI? = null
 
-    /** Optional credentials provider used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
     var credentialsProvider: AwsCredentialsProvider? = null
 
-    /** Default event bus for rule, target, and list operations that omit one. */
+    /** 이벤트 버스를 생략한 규칙, 대상, 목록 작업에 사용할 기본 이벤트 버스입니다. */
     var defaultEventBusName: String? = null
 
     private val clientCustomizers = mutableListOf<AwsKtorEventBridgeAsyncClientCustomizer>()
 
     /**
-     * Adds EventBridge async client builder customization for plugin-created clients.
+     * 플러그인이 생성한 클라이언트에 EventBridge 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun eventBridgeAsyncClient(customizer: AwsKtorEventBridgeAsyncClientCustomizer) {
         clientCustomizers += customizer

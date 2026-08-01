@@ -51,20 +51,19 @@ private val MIN_PRESIGN_EXPIRY: Duration = Duration.ofSeconds(1)
 private val MAX_PRESIGN_EXPIRY: Duration = Duration.ofDays(7)
 
 /**
- * Ktor `HttpClient`-based S3 REST client.
+ * Ktor `HttpClient` 기반 S3 REST 클라이언트입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * Uses Ktor `HttpClient` and [AwsSigV4Plugin] to call the S3 REST API. Supports object upload,
- * download, delete, ListObjectsV2, multipart upload, and presigned GET/PUT URL generation.
- * Path-style URLs are used when `endpointOverride` is set; virtual-hosted URLs are used for
- * DNS-safe buckets on the default AWS S3 endpoint.
+ * Ktor `HttpClient`와 [AwsSigV4Plugin]으로 S3 REST API를 호출합니다. 객체 업로드, 다운로드,
+ * 삭제, ListObjectsV2, 멀티파트 업로드, 사전 서명된 GET/PUT URL 생성을 지원합니다.
+ * `endpointOverride`를 지정하면 path-style URL을 사용하고, 기본 AWS S3 엔드포인트의
+ * DNS-safe 버킷에는 virtual-hosted URL을 사용합니다.
  *
- * **Ownership semantics**: An externally injected `HttpClient` is never closed by this client.
- * An `HttpClient` created by [s3KtorClientOf] is closed when `closeClient = true`. Similarly,
- * an `AwsCredentialsProvider` created by [s3KtorClientOf] (i.e. when the caller omits
- * `credentialsProvider`) is closed on [close] if it implements `AutoCloseable`. A
- * caller-supplied provider is never closed by this client.
+ * **소유권 의미**: 외부에서 주입한 `HttpClient`는 이 클라이언트가 닫지 않습니다.
+ * [s3KtorClientOf]가 생성한 `HttpClient`는 `closeClient = true`일 때 닫습니다. 마찬가지로
+ * 호출자가 `credentialsProvider`를 생략해 [s3KtorClientOf]가 생성한 `AwsCredentialsProvider`는
+ * `AutoCloseable`을 구현한 경우 [close]에서 닫습니다. 호출자가 제공한 공급자는 닫지 않습니다.
  *
  * ```kotlin
  * import io.bluetape4k.aws.ktor.s3.s3KtorClientOf
@@ -95,9 +94,9 @@ class S3KtorClient(
     }
 
     /**
-     * Stores [bytes] as an S3 object.
+     * [bytes]를 S3 객체로 저장합니다.
      *
-     * Pass [metadata] keys without the `x-amz-meta-` prefix.
+     * [metadata]의 key는 `x-amz-meta-` 접두사 없이 전달합니다.
      */
     suspend fun putObject(
         bucket: String,
@@ -113,10 +112,10 @@ class S3KtorClient(
         )
 
     /**
-     * Stores [bytes] while detecting content type from [key] and the payload.
+     * [key]와 페이로드에서 콘텐츠 타입을 감지해 [bytes]를 저장합니다.
      *
-     * Use this helper for object names where the caller has no trusted HTTP
-     * `Content-Type` header. Detection falls back to `application/octet-stream`.
+     * 호출자가 신뢰할 수 있는 HTTP `Content-Type` 헤더를 갖지 않은 객체 이름에 이 도우미를 사용하세요.
+     * 감지에 실패하면 `application/octet-stream`을 사용합니다.
      */
     suspend fun putObjectDetectingContentType(
         bucket: String,
@@ -136,10 +135,10 @@ class S3KtorClient(
         )
 
     /**
-     * Stores [bytes] with S3 server-side encryption request headers.
+     * S3 서버 측 암호화 요청 헤더와 함께 [bytes]를 저장합니다.
      *
-     * This helper only renders S3 request headers. Client-side envelope
-     * encryption is provided by [S3KtorClientSideEncryption].
+     * 이 도우미는 S3 요청 헤더만 생성합니다. 클라이언트 측 봉투 암호화는
+     * [S3KtorClientSideEncryption]에서 제공합니다.
      */
     suspend fun putEncryptedObject(
         bucket: String,
@@ -160,9 +159,9 @@ class S3KtorClient(
         )
 
     /**
-     * Stores [body] as an S3 object.
+     * [body]를 S3 객체로 저장합니다.
      *
-     * When passing a streaming body, the caller is responsible for the exact body semantics.
+     * Streaming body를 전달할 때는 caller가 정확한 body semantics를 책임집니다.
      */
     suspend fun putObject(
         request: S3KtorPutObjectRequest,
@@ -181,13 +180,13 @@ class S3KtorClient(
     }
 
     /**
-     * Fetches an S3 object as a byte array.
+     * S3 객체를 byte array로 가져옵니다.
      */
     suspend fun getObjectBytes(bucket: String, key: String): ByteArray =
         getObject(bucket, key).bytes
 
     /**
-     * Fetches an S3 object as bytes and metadata.
+     * S3 객체를 byte array와 metadata로 가져옵니다.
      */
     suspend fun getObject(bucket: String, key: String): S3KtorGetObjectResponse {
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
@@ -203,9 +202,9 @@ class S3KtorClient(
     }
 
     /**
-     * Fetches an S3 object as a streaming channel.
+     * S3 객체를 streaming channel로 가져옵니다.
      *
-     * The returned [S3KtorStreamingObjectResponse.body] is the response channel, so the caller must finish consuming it.
+     * 반환된 [S3KtorStreamingObjectResponse.body]는 response channel이므로 caller가 소비를 완료해야 합니다.
      */
     suspend fun getObjectStream(bucket: String, key: String): S3KtorStreamingObjectResponse {
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
@@ -220,7 +219,7 @@ class S3KtorClient(
     }
 
     /**
-     * Deletes an S3 object.
+     * S3 객체를 삭제합니다.
      */
     suspend fun deleteObject(bucket: String, key: String): S3KtorDeleteObjectResponse {
         val response = httpClient.delete(objectUrl(bucket, key)).ensureSuccess()
@@ -232,7 +231,7 @@ class S3KtorClient(
     }
 
     /**
-     * Calls S3 ListObjectsV2.
+     * S3 ListObjectsV2를 호출합니다.
      *
      * ```kotlin
      * val page = s3.listObjectsV2(
@@ -256,9 +255,9 @@ class S3KtorClient(
     }
 
     /**
-     * Starts a multipart upload.
+     * Multipart upload를 시작합니다.
      *
-     * Pass [metadata] keys without the `x-amz-meta-` prefix.
+     * [metadata]의 key는 `x-amz-meta-` 접두사 없이 전달합니다.
      */
     suspend fun createMultipartUpload(
         bucket: String,
@@ -278,7 +277,7 @@ class S3KtorClient(
     }
 
     /**
-     * Starts multipart upload with S3 server-side encryption request headers.
+     * S3 서버 측 암호화 요청 헤더와 함께 멀티파트 업로드를 시작합니다.
      */
     suspend fun createEncryptedMultipartUpload(
         bucket: String,
@@ -297,7 +296,7 @@ class S3KtorClient(
         )
 
     /**
-     * Uploads a multipart upload part from a byte array.
+     * Multipart upload part를 byte array로 업로드합니다.
      */
     suspend fun uploadPart(
         bucket: String,
@@ -309,9 +308,9 @@ class S3KtorClient(
         uploadPart(bucket, key, uploadId, partNumber, ByteArrayContent(bytes), bytes.size.toLong())
 
     /**
-     * Uploads a multipart upload part from a streaming body.
+     * Multipart upload part를 streaming body로 업로드합니다.
      *
-     * [partNumber] must be at least 1, and [contentLength] cannot be negative.
+     * [partNumber]는 1 이상이어야 하며, [contentLength]는 음수일 수 없습니다.
      */
     suspend fun uploadPart(
         bucket: String,
@@ -338,9 +337,9 @@ class S3KtorClient(
     }
 
     /**
-     * Completes a multipart upload.
+     * Multipart upload를 완료합니다.
      *
-     * [parts] cannot be empty and are sorted by part number when generating XML.
+     * [parts]는 비어 있을 수 없고, XML 생성 시 part number 순서로 정렬됩니다.
      */
     suspend fun completeMultipartUpload(
         bucket: String,
@@ -363,7 +362,7 @@ class S3KtorClient(
     }
 
     /**
-     * Aborts a multipart upload.
+     * Multipart upload를 중단합니다.
      */
     suspend fun abortMultipartUpload(bucket: String, key: String, uploadId: String) {
         httpClient.delete(objectUrl(bucket, key)) {
@@ -372,24 +371,23 @@ class S3KtorClient(
     }
 
     /**
-     * Creates a GetObject presigned URL.
+     * GetObject presigned URL을 생성합니다.
      *
-     * [expires] must satisfy the S3 SigV4 constraint: at least 1 second and at most 7 days.
+     * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
     fun presignGetObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Get, objectUrl(bucket, key), expires)
 
     /**
-     * Creates a PutObject presigned URL.
+     * PutObject presigned URL을 생성합니다.
      *
-     * [expires] must satisfy the S3 SigV4 constraint: at least 1 second and at most 7 days.
+     * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
     fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Put, objectUrl(bucket, key), expires)
 
     /**
-     * Loads a text configuration file from S3 without coupling it to a Ktor
-     * `ApplicationConfig` implementation.
+     * Ktor `ApplicationConfig` 구현에 결합하지 않고 S3에서 텍스트 구성 파일을 읽습니다.
      */
     suspend fun getConfigObject(
         bucket: String,
@@ -408,7 +406,7 @@ class S3KtorClient(
     }
 
     /**
-     * Stores a text configuration file in S3.
+     * 텍스트 구성 파일을 S3에 저장합니다.
      */
     suspend fun putConfigObject(
         bucket: String,
@@ -518,18 +516,18 @@ class S3KtorClient(
 }
 
 /**
- * Creates an S3 REST client backed by an internal Ktor CIO HTTP client.
+ * 내부 Ktor CIO HTTP 클라이언트를 사용하는 S3 REST 클라이언트를 생성합니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * The created `HttpClient` has S3-specific SigV4 configuration installed. Payload signing,
- * double URL encoding, and path normalization are disabled for S3 streaming body and presigned
- * URL compatibility. Closing the returned [S3KtorClient] also closes the internal `HttpClient`.
+ * 생성한 `HttpClient`에는 S3 전용 SigV4 구성이 설치됩니다. S3 스트리밍 본문 및 사전 서명 URL
+ * 호환성을 위해 페이로드 서명, 이중 URL 인코딩, 경로 정규화를 비활성화합니다. 반환된
+ * [S3KtorClient]를 닫으면 내부 `HttpClient`도 닫힙니다.
  *
- * **Credentials provider ownership**: when `credentialsProvider` is `null` (the default),
- * this factory creates a [DefaultCredentialsProvider] and the returned client takes ownership —
- * it will be closed when [S3KtorClient.close] is called. When a provider is supplied by the
- * caller, the client does not close it; the caller retains ownership.
+ * **자격 증명 공급자 소유권**: `credentialsProvider`가 기본값인 `null`이면 이 팩토리가
+ * [DefaultCredentialsProvider]를 생성하고 반환된 클라이언트가 소유합니다. 이 공급자는
+ * [S3KtorClient.close]를 호출할 때 닫힙니다. 호출자가 공급자를 제공하면 클라이언트는
+ * 닫지 않으며 호출자가 소유권을 유지합니다.
  *
  * ```kotlin
  * import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
@@ -596,10 +594,10 @@ fun s3KtorClientOf(
 }
 
 /**
- * Creates an S3 REST client by inheriting shared [AwsKtorDefaults].
+ * 공유 [AwsKtorDefaults]를 상속해 S3 REST 클라이언트를 생성합니다.
  *
- * Service-specific arguments override shared defaults. The caller must provide
- * either [region] or [AwsKtorDefaults.region].
+ * 서비스별 인수는 공유 기본값보다 우선합니다. 호출자는 [region] 또는
+ * [AwsKtorDefaults.region] 중 하나를 제공해야 합니다.
  */
 fun s3KtorClientOf(
     defaults: AwsKtorDefaults,

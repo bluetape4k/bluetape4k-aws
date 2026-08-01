@@ -4,27 +4,27 @@ import io.bluetape4k.utils.ShutdownQueue
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 
 /**
- * Provider that lazily creates and exposes shared async [SdkAsyncHttpClient] instances.
+ * 비동기 [SdkAsyncHttpClient] 공용 인스턴스를 지연 생성해 제공하는 Provider입니다.
  *
- * ## Behavior and contract
- * - Each nested object's `httpClient` is created once on first access through `by lazy`.
- * - Created clients are registered with [ShutdownQueue] and cleaned up during shutdown.
+ * ## 동작/계약
+ * - 하위 객체별 `httpClient`는 `by lazy`로 최초 접근 시 1회 생성된다.
+ * - 생성된 클라이언트는 [ShutdownQueue]에 등록되어 종료 시 정리된다.
  *
  * ```kotlin
  * val client = SdkAsyncHttpClientProvider.defaultHttpClient
  * // client === SdkAsyncHttpClientProvider.Netty.httpClient
  * ```
  *
- * Reference: [AWS HTTP clients](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/http-configuration.html)
+ * 참고: [AWS HTTP 클라이언트](https://docs.aws.amazon.com/ko_kr/sdk-for-java/latest/developer-guide/http-configuration.html)
  */
 object SdkAsyncHttpClientProvider {
 
     /**
-     * Provides a Netty NIO-based async HTTP client.
+     * Netty NIO 기반 비동기 HTTP 클라이언트를 제공합니다.
      *
-     * ## Behavior and contract
-     * - Creates the client with [nettyNioAsyncHttpClientOf] defaults.
-     * - Reuses the instance registered with [ShutdownQueue] immediately after creation.
+     * ## 동작/계약
+     * - [nettyNioAsyncHttpClientOf] 기본 설정으로 클라이언트를 생성한다.
+     * - 생성 직후 [ShutdownQueue]에 등록한 인스턴스를 재사용한다.
      *
      * ```kotlin
      * val netty = SdkAsyncHttpClientProvider.Netty.httpClient
@@ -33,11 +33,11 @@ object SdkAsyncHttpClientProvider {
      */
     object Netty {
         /**
-         * Shared Netty-based [SdkAsyncHttpClient] instance.
+         * Netty 기반 공용 [SdkAsyncHttpClient] 인스턴스입니다.
          *
-         * ## Behavior and contract
-         * - Created once on first access and returns the same instance afterward.
-         * - The created instance is registered with the shutdown queue.
+         * ## 동작/계약
+         * - 최초 접근 시 1회 생성되고 이후 동일 인스턴스를 반환한다.
+         * - 생성된 인스턴스는 종료 큐에 등록된다.
          *
          * ```kotlin
          * val first = SdkAsyncHttpClientProvider.Netty.httpClient
@@ -54,11 +54,11 @@ object SdkAsyncHttpClientProvider {
     }
 
     /**
-     * Provides an AWS CRT-based async HTTP client.
+     * AWS CRT 기반 비동기 HTTP 클라이언트를 제공합니다.
      *
-     * ## Behavior and contract
-     * - Creates the client with [awsCrtAsyncHttpClientOf] defaults.
-     * - Reuses the instance registered with [ShutdownQueue] immediately after creation.
+     * ## 동작/계약
+     * - [awsCrtAsyncHttpClientOf] 기본 설정으로 클라이언트를 생성한다.
+     * - 생성 직후 [ShutdownQueue]에 등록한 인스턴스를 재사용한다.
      *
      * ```kotlin
      * val crt = SdkAsyncHttpClientProvider.AwsCrt.httpClient
@@ -67,11 +67,11 @@ object SdkAsyncHttpClientProvider {
      */
     object AwsCrt {
         /**
-         * Shared AWS CRT-based [SdkAsyncHttpClient] instance.
+         * AWS CRT 기반 공용 [SdkAsyncHttpClient] 인스턴스입니다.
          *
-         * ## Behavior and contract
-         * - Created once on first access and returns the same instance afterward.
-         * - The created instance is registered with the shutdown queue.
+         * ## 동작/계약
+         * - 최초 접근 시 1회 생성되고 이후 동일 인스턴스를 반환한다.
+         * - 생성된 인스턴스는 종료 큐에 등록된다.
          *
          * ```kotlin
          * val first = SdkAsyncHttpClientProvider.AwsCrt.httpClient
@@ -88,11 +88,11 @@ object SdkAsyncHttpClientProvider {
     }
 
     /**
-     * Returns the Netty implementation as the default async HTTP client.
+     * 기본 비동기 HTTP 클라이언트로 Netty 구현을 반환합니다.
      *
-     * ## Behavior and contract
-     * - Returns the [Netty.httpClient] reference directly.
-     * - Does not create a new instance on each call.
+     * ## 동작/계약
+     * - [Netty.httpClient] 참조를 그대로 반환한다.
+     * - 호출할 때마다 새 인스턴스를 생성하지 않는다.
      *
      * ```kotlin
      * val defaultClient = SdkAsyncHttpClientProvider.defaultHttpClient

@@ -1,9 +1,9 @@
-# Issue #227 Code Review
+# Issue #227 코드 검토
 
 Date: 2026-06-08
-Scope: `aws-spring-boot` S3 Access Grants implementation
+범위: `aws-spring-boot` S3 Access Grants 구현
 
-## Verdict
+## 판정
 
 PASS
 
@@ -11,84 +11,78 @@ PASS
 - P1: 0
 - P2: 0
 
-## 7-Tier Review
+## 7단계 검토
 
-### Tier 1 - Correctness
+### 1단계 - 정확성
 
-PASS. The implementation uses the AWS SDK Java v2 `s3control` service module
-and exposes the validated Access Grants methods: `getDataAccess`,
-`listCallerAccessGrants`, `listAccessGrants`, `listAccessGrantsInstances`, and
-`listAccessGrantsLocations`. `javap` confirmed these methods exist on
-`S3ControlAsyncClient` in `s3control-2.46.0.jar`, and Kotlin compilation passed.
+PASS. 구현은 AWS SDK Java v2 `s3control` 서비스 모듈을 사용하고 검증된 Access Grants
+메서드 `getDataAccess`, `listCallerAccessGrants`, `listAccessGrants`,
+`listAccessGrantsInstances`, `listAccessGrantsLocations`를 노출한다. `javap`으로
+`s3control-2.46.0.jar`의 `S3ControlAsyncClient`에 이 메서드가 있음을 확인했고 Kotlin 컴파일도 통과했다.
 
-### Tier 2 - API And Compatibility
+### 2단계 - API와 호환성
 
-PASS. The public coroutine API is additive and isolated under
-`io.bluetape4k.aws.spring.s3.accessgrants`. Existing `S3Operations` remains
-unchanged, and administrative Access Grants methods remain available through
-the raw `S3ControlClient` and `S3ControlAsyncClient` beans.
+PASS. 공개 coroutine API는 추가 방식이며 `io.bluetape4k.aws.spring.s3.accessgrants` 아래로
+격리된다. 기존 `S3Operations`는 변경되지 않고 관리용 Access Grants 메서드는 원시
+`S3ControlClient` 및 `S3ControlAsyncClient` 빈을 통해 계속 사용할 수 있다.
 
-### Tier 3 - Spring Boot Auto-Configuration
+### 3단계 - Spring Boot 자동 구성
 
-PASS. `S3AccessGrantsAutoConfiguration` is registered after
-`AwsAutoConfiguration` and `S3AutoConfiguration`, uses string-based
-`@ConditionalOnClass` guards for compile-only SDK types, and requires both the
-parent S3 integration and `bluetape4k.aws.s3.access-grants.enabled=true`.
-`FilteredClassLoader` coverage confirms the auto-configuration backs off when
-the S3 Control SDK is absent.
+PASS. `S3AccessGrantsAutoConfiguration`은 `AwsAutoConfiguration`과
+`S3AutoConfiguration` 뒤에 등록되고, compile-only SDK 타입을 문자열 기반
+`@ConditionalOnClass`로 보호하며, 상위 S3 통합과
+`bluetape4k.aws.s3.access-grants.enabled=true`를 모두 요구한다. `FilteredClassLoader`
+테스트는 S3 Control SDK가 없을 때 자동 구성이 물러남을 확인한다.
 
-### Tier 4 - Coroutine And Lifecycle
+### 4단계 - Coroutine과 수명 주기
 
-PASS. The template delegates to AWS SDK async calls and awaits
-`CompletableFuture` with `kotlinx.coroutines.future.await()`, matching existing
-module patterns. The auto-configured clients use `destroyMethod = "close"`;
-caller-provided clients still back off auto-created clients.
+PASS. 템플릿은 AWS SDK 비동기 호출에 위임하고 기존 모듈 패턴에 맞춰
+`CompletableFuture`를 `kotlinx.coroutines.future.await()`로 기다린다. 자동 구성된
+클라이언트는 `destroyMethod = "close"`를 사용하며, 호출자가 제공한 클라이언트가 있으면
+자동 생성 클라이언트는 물러난다.
 
-### Tier 5 - Dependency And Runtime Boundary
+### 5단계 - 의존성과 런타임 경계
 
-PASS. `software.amazon.awssdk:s3control` is added as `compileOnly` and
-`testImplementation`, preserving the optional service dependency rule. Runtime
-README docs explicitly tell applications to add `runtimeOnly("software.amazon.awssdk:s3control")`.
+PASS. `software.amazon.awssdk:s3control`을 `compileOnly`와 `testImplementation`으로
+추가해 선택적 서비스 의존성 규칙을 지킨다. 런타임 README는 애플리케이션이
+`runtimeOnly("software.amazon.awssdk:s3control")`을 추가해야 함을 명시한다.
 
-### Tier 6 - Tests
+### 6단계 - 테스트
 
-PASS. Tests cover default opt-out, parent S3 disable backoff, missing SDK
-backoff, custom client/operations backoff, shared AWS defaults, global/service
-customizer ordering, and coroutine delegation for all exposed methods.
+PASS. 테스트는 기본 비활성화, 상위 S3 비활성화 backoff, SDK 누락 backoff, 사용자
+클라이언트/작업 backoff, 공유 AWS 기본값, 전역/서비스 customizer 순서, 노출된 모든
+메서드의 coroutine 위임을 다룬다.
 
-### Tier 7 - Documentation And Lessons
+### 7단계 - 문서와 교훈
 
-PASS. `README.md` and `README.ko.md` document the opt-in property, runtime
-dependency, Spring injection example, and S3 Access Grants component/flow
-diagrams. A durable lesson captures why Access Grants belongs to S3 Control
-rather than the default S3 operations API and records the diagram verification
-evidence.
+PASS. `README.md`와 `README.ko.md`는 opt-in 속성, 런타임 의존성, Spring 주입 예제,
+S3 Access Grants 구성 요소/흐름 다이어그램을 설명한다. 영구 교훈 문서는 Access Grants가
+기본 S3 작업 API가 아닌 S3 Control에 속하는 이유와 다이어그램 검증 증거를 기록한다.
 
-## Evidence
+## 증거
 
 - `./gradlew :bluetape4k-aws-spring-boot:dependencyInsight --dependency s3control --configuration compileClasspath --no-daemon --max-workers=1`
-  passed and showed `software.amazon.awssdk:s3control:2.46.0`.
+  통과했고 `software.amazon.awssdk:s3control:2.46.0`을 표시했다.
 - `./gradlew :bluetape4k-aws-spring-boot:compileKotlin --no-daemon --max-workers=1`
-  passed.
+  통과했다.
 - `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --no-daemon --max-workers=1`
-  passed.
+  통과했다.
 - `./gradlew :bluetape4k-aws-spring-boot:test --tests '*S3AccessGrants*' --no-daemon --max-workers=1`
-  passed with 14 tests.
+  테스트 14개가 통과했다.
 - `./gradlew :bluetape4k-aws-spring-boot:test --tests '*S3AutoConfigurationTest' --tests '*S3AccessGrants*' --no-daemon --max-workers=1`
-  passed with 27 tests.
-- S3 Access Grants component diagram gate:
+  테스트 27개가 통과했다.
+- S3 Access Grants 구성 요소 다이어그램 게이트:
   `nodes=10 routes=9 segments=28 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
-- S3 Access Grants flow diagram gate:
+- S3 Access Grants 흐름 다이어그램 게이트:
   `nodes=12 routes=10 segments=30 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
-- Rendered PNGs were inspected directly and embedded in both README locales:
+- 렌더링된 PNG를 직접 검사하고 두 README 언어판에 포함했다.
   `bluetape4k-aws-s3-access-grants-components-08.png` and
   `bluetape4k-aws-s3-access-grants-flow-09.png`.
-- New public SVG assets were checked for local path and UI-font drift:
-  no `/Users/debop`, `Inter`, `Arial`, or `Helvetica` matches.
-- `git diff --check` passed.
+- 새 공개 SVG 자산에서 로컬 경로와 UI 글꼴 편차를 검사했으며
+  `/Users/debop`, `Inter`, `Arial`, `Helvetica` 일치 항목이 없었다.
+- `git diff --check`가 통과했다.
 
-## Residual Risk
+## 잔여 위험
 
-No live AWS Access Grants integration test was added. That remains intentional
-because Access Grants requires account-level AWS setup and is outside the local
-emulator matrix.
+실제 AWS Access Grants 통합 테스트는 추가하지 않았다. Access Grants에는 계정 수준 AWS
+설정이 필요하고 로컬 에뮬레이터 매트릭스 범위를 벗어나므로 의도된 결정이다.

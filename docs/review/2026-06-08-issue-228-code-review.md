@@ -1,42 +1,28 @@
-# Issue 228 Code Review
+# Issue 228 코드 검토
 
-## Scope
+## 범위
 
-Reviewed the issue #228 diff for `aws-ktor` S3 Access Grants support:
-production plugin/config/runtime/template, focused tests, README locale set, and
-new README diagram assets.
+Issue #228의 `aws-ktor` S3 Access Grants production plugin/config/runtime/template, 집중 test, README locale, diagram asset.
 
-## Verdict
+## 판정
 
-- Gate: PASS
-- P0: 0
-- P1: 0
-- P2: 0
+PASS (P0: 0, P1: 0, P2: 0).
 
-## 7-Tier Review
+## 7-Tier 검토
 
-| Tier | Result | Evidence |
+| Tier | 결과 | 증거 |
 |---|---|---|
-| 1. Build/API | PASS | `compileKotlin` and `compileTestKotlin` succeeded for `:bluetape4k-aws-ktor`. |
-| 2. Behavior | PASS | Template methods delegate to S3 Control async APIs and `await()` responses. |
-| 3. Lifecycle | PASS | Plugin-created S3 Control clients close once; injected clients and operations remain application-owned. |
-| 4. Coroutine Safety | PASS | Async SDK futures are awaited; cancellation propagation is covered; close runs on IO through the established Ktor sync-event bridge. |
-| 5. Ecosystem Patterns | PASS | Reuses `AwsKtorCore` defaults/customizer pattern, `AwsKtorCore.ktorCore()` from the Ktor core baseline, `bluetape4k-ktor-testing.shouldHaveStatus`, bluetape4k assertions, `runSuspendIO`, and class-level MockK mocks. |
-| 6. Documentation | PASS | `README.md` and `README.ko.md` both document dependency, feature, usage, and the shared English-label PNG diagram. |
-| 7. Diagram Gate | PASS | Generator summary: `badEndpointAngle=0`, `badBends=0`, `interiorCrossings=0`, `marginImbalance=0`, `titleGap=54`; SVG parse and PNG inspection passed. |
+| Build/API | PASS | `:bluetape4k-aws-ktor`의 `compileKotlin`/`compileTestKotlin` 성공 |
+| 동작 | PASS | S3 Control async API에 위임하고 `await()` 응답 사용 |
+| 수명 주기 | PASS | Plugin client는 한 번 닫고 injected client/operation은 application 소유 |
+| Coroutine | PASS | Future await/cancellation/IO close sync bridge 검증 |
+| 재사용 | PASS | `AwsKtorCore`, `AwsKtorCore.ktorCore()`, `bluetape4k-ktor-testing.shouldHaveStatus`, assertion, `runSuspendIO`, MockK 재사용 |
+| 문서 | PASS | `README.md`/`README.ko.md` dependency/feature/usage/공유 PNG 설명 |
+| 다이어그램 | PASS | `badEndpointAngle=0`, `badBends=0`, `interiorCrossings=0`, `marginImbalance=0`, `titleGap=54` |
 
-## Notes
+Access Grants는 `S3KtorClient`와 분리하고 관리 create/update/delete를 감싸지 않는다. `bluetape4k-projects` 재사용점은 `AwsKtorCore.ktorCore()`를 통한 `bluetape4k-ktor-core`와 `bluetape4k-ktor-testing`이다. Tool에 필요한 `agent_type`이 없어 native subagent 검증은 사용하지 않았다.
 
-- Access Grants remains separate from `S3KtorClient`, preserving object REST vs
-  S3 Control boundaries.
-- Administrative create/update/delete calls are intentionally not wrapped.
-- `bluetape4k-projects` Ktor modules were checked; the applicable reuse points
-  for this change are `bluetape4k-ktor-core` via `AwsKtorCore.ktorCore()` and
-  `bluetape4k-ktor-testing` in route-level tests.
-- Native subagent verification was not used because the available spawn surface
-  did not expose the required `agent_type` selector from the workspace contract.
-
-## Verification Commands
+## 검증 명령
 
 ```bash
 ./gradlew :bluetape4k-aws-ktor:compileKotlin :bluetape4k-aws-ktor:compileTestKotlin --no-daemon --max-workers=1

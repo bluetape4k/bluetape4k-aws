@@ -6,7 +6,7 @@ import software.amazon.awssdk.enhanced.dynamodb.internal.client.ExtensionResolve
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 
 /**
- * Creates a [DynamoDbEnhancedAsyncClient].
+ * [DynamoDbEnhancedAsyncClient] 를 생성합니다.
  *
  * ```kotlin
  * val client = dynamoDbEnhancedAsyncClient {
@@ -14,8 +14,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
  * }
  * ```
  *
- * @param builder Lambda that initializes [DynamoDbEnhancedAsyncClient.Builder].
- * @return [DynamoDbEnhancedAsyncClient] instance
+ * @param builder [DynamoDbEnhancedAsyncClient.Builder] 를 초기화하는 람다 함수
+ * @return [DynamoDbEnhancedAsyncClient] 인스턴스
  */
 inline fun dynamoDbEnhancedAsyncClient(
     builder: DynamoDbEnhancedAsyncClient.Builder.() -> Unit,
@@ -24,7 +24,7 @@ inline fun dynamoDbEnhancedAsyncClient(
 }
 
 /**
- * Creates a [DynamoDbEnhancedAsyncClient].
+ * [DynamoDbEnhancedAsyncClient] 를 생성합니다.
  *
  * ```kotlin
  * val client = dynamoDbEnhancedAsyncClientOf(DynamoDbAsyncClient.create()) {
@@ -32,9 +32,9 @@ inline fun dynamoDbEnhancedAsyncClient(
  * }
  * ```
  *
- * @param client [DynamoDbAsyncClient] instance
- * @param builder Lambda that initializes [DynamoDbEnhancedAsyncClient.Builder].
- * @return [DynamoDbEnhancedAsyncClient] instance
+ * @param client [DynamoDbAsyncClient] 인스턴스
+ * @param builder [DynamoDbEnhancedAsyncClient.Builder] 를 초기화하는 람다 함수
+ * @return [DynamoDbEnhancedAsyncClient] 인스턴스
  */
 inline fun dynamoDbEnhancedAsyncClientOf(
     client: DynamoDbAsyncClient,
@@ -47,7 +47,7 @@ inline fun dynamoDbEnhancedAsyncClientOf(
     }
 
 /**
- * Creates a [DynamoDbEnhancedAsyncClient].
+ * [DynamoDbEnhancedAsyncClient] 를 생성합니다.
  *
  * ```kotlin
  * val client = dynamoDbEnhancedAsyncClientOf(
@@ -56,9 +56,9 @@ inline fun dynamoDbEnhancedAsyncClientOf(
  * )
  * ```
  *
- * @param client [DynamoDbAsyncClient] instance
- * @param extensions [DynamoDbEnhancedClientExtension] extensions
- * @return [DynamoDbEnhancedAsyncClient] instance
+ * @param client [DynamoDbAsyncClient] 인스턴스
+ * @param extensions [DynamoDbEnhancedClientExtension] 확장 목록
+ * @return [DynamoDbEnhancedAsyncClient] 인스턴스
  */
 fun dynamoDbEnhancedAsyncClientOf(
     client: DynamoDbAsyncClient,

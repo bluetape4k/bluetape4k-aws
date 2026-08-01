@@ -30,7 +30,7 @@ import io.bluetape4k.apache.endsWithIgnoreCase
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a platform endpoint.
+ * 플랫폼 엔드포인트를 생성합니다.
  *
  * ```
  * val response = snsClient.createPlatformEndpoint(token, platformApplicationArn) {
@@ -38,10 +38,10 @@ import io.bluetape4k.support.requireNotBlank
  * }
  * ```
  *
- * @param token Device token.
- * @param platformApplicationArn ARN of the platform application.
- * @param builder Lambda for configuring platform endpoint creation.
- * @return A [CreatePlatformEndpointResponse] instance.
+ * @param token 토큰
+ * @param platformApplicationArn 플랫폼 애플리케이션 ARN
+ * @param builder 플랫폼 엔드포인트 생성 설정 빌더
+ * @return [CreatePlatformEndpointResponse] 인스턴스
  */
 suspend inline fun SnsClient.createPlatformEndpoint(
     token: String,
@@ -60,7 +60,7 @@ suspend inline fun SnsClient.createPlatformEndpoint(
 }
 
 /**
- * Creates an SNS topic.
+ * SNS용 Topic을 생성합니다.
  *
  * ```
  * val response = snsClient.createTopic("topicName", mapOf("key" to "value")) {
@@ -68,9 +68,9 @@ suspend inline fun SnsClient.createPlatformEndpoint(
  * }
  * ```
  *
- * @param topicName Topic name.
- * @param attributes Topic attributes.
- * @param builder Lambda for building [CreateTopicRequest].
+ * @param topicName topic 이름
+ * @param attributes topic 속성
+ * @param builder [CreateTopicRequest]를 빌드하는 람다 함수
  */
 suspend inline fun SnsClient.createTopic(
     topicName: String,
@@ -88,7 +88,7 @@ suspend inline fun SnsClient.createTopic(
 }
 
 /**
- * Creates a FIFO topic. The topic name must end with `.fifo`.
+ * FIFO topic을 생성합니다. FIFO topic은 .fifo로 끝나야 합니다.
  *
  * ```
  * val response = snsClient.createFifoTopic("topicName.fifo", mapOf("key" to "value")) {
@@ -96,9 +96,9 @@ suspend inline fun SnsClient.createTopic(
  * }
  * ```
  *
- * @param topicName Topic name.
- * @param attributes Topic attributes.
- * @param builder Lambda for building [CreateTopicRequest].
+ * @param topicName topic 이름
+ * @param attributes topic 속성
+ * @param builder [CreateTopicRequest]를 빌드하는 람다 함수
  */
 suspend inline fun SnsClient.createFifoTopic(
     topicName: String,
@@ -120,7 +120,7 @@ suspend inline fun SnsClient.createFifoTopic(
 }
 
 /**
- * Subscribes an endpoint to a topic.
+ * Topic에 구독합니다.
  *
  * ```
  * val response = snsClient.subscribe(topicArn, endpoint, "sms") {
@@ -128,11 +128,11 @@ suspend inline fun SnsClient.createFifoTopic(
  * }
  * ```
  *
- * @param topicArn topic ARN
- * @param endpoint endpoint
- * @param protocol Subscription protocol.
- * @param returnSubscriptionArn Whether to return the subscription ARN.
- * @param builder Lambda for building [SubscribeRequest].
+ * @param topicArn 토픽 ARN
+ * @param endpoint 엔드포인트
+ * @param protocol 프로토콜
+ * @param returnSubscriptionArn 구독 ARN 반환 여부
+ * @param builder [SubscribeRequest]를 빌드하는 람다 함수
  */
 suspend inline fun SnsClient.subscribe(
     topicArn: String,
@@ -155,15 +155,15 @@ suspend inline fun SnsClient.subscribe(
 }
 
 /**
- * Checks whether [phoneNumber] has opted out.
+ * [phoneNumber]가 opt out 되었는지 확인합니다.
  *
  * ```
  * val response = snsClient.checkIfPhoneNumberIsOptedOut(phoneNumber)
  * ```
  *
- * @param phoneNumber Phone number to check.
- * @param builder Lambda for building [CheckIfPhoneNumberIsOptedOutRequest].
- * @return A [CheckIfPhoneNumberIsOptedOutResponse] instance.
+ * @param phoneNumber 전화번호
+ * @param builder [CheckIfPhoneNumberIsOptedOutRequest]를 빌드하는 람다 함수
+ * @return [CheckIfPhoneNumberIsOptedOutResponse] 인스턴스
  */
 suspend inline fun SnsClient.checkIfPhoneNumberIsOptedOut(
     phoneNumber: String,
@@ -178,7 +178,7 @@ suspend inline fun SnsClient.checkIfPhoneNumberIsOptedOut(
 }
 
 /**
- * Publishes a message to a topic.
+ * Topic에 메시지를 발행합니다.
  *
  * ```
  * val response = snsClient.publish(topicArn, message, "subject") {
@@ -186,12 +186,12 @@ suspend inline fun SnsClient.checkIfPhoneNumberIsOptedOut(
  * }
  * ```
  *
- * @param topicArn topic ARN
- * @param message Message to publish.
- * @param subject Message subject.
- * @param builder Lambda for building [PublishRequest].
+ * @param topicArn 토픽 ARN
+ * @param message 메시지
+ * @param subject 제목
+ * @param builder [PublishRequest]를 빌드하는 람다 함수
  *
- * @return A [PublishResponse] instance.
+ * @return [PublishResponse] 인스턴스
  */
 suspend inline fun SnsClient.publish(
     topicArn: String,
@@ -212,12 +212,12 @@ suspend inline fun SnsClient.publish(
 }
 
 /**
- * Publishes multiple messages to a topic in a batch.
+ * Topic에 복수의 메시지를 배치로 발행합니다.
  *
  * ```
  * val messageSize = 10
  *
- * // Create the messages to publish.
+ * // 발행할 메시지 목록 생성
  * val entries = List(messageSize) {
  *     publishBatchRequestEntryOf(
  *         id = Base58.randomString(6).lowercase(),
@@ -233,11 +233,11 @@ suspend inline fun SnsClient.publish(
  * }
  * ```
  *
- * @param topicArn topic ARN
- * @param entries Messages to publish.
- * @param builder Lambda for building [PublishBatchRequest].
+ * @param topicArn 토픽 ARN
+ * @param entries 발행할 메시지 목록
+ * @param builder [PublishBatchRequest]를 빌드하는 람다 함수
  *
- * @return A [PublishBatchResponse] instance.
+ * @return [PublishBatchResponse] 인스턴스
  */
 suspend inline fun SnsClient.publishBatch(
     topicArn: String,
@@ -255,15 +255,15 @@ suspend inline fun SnsClient.publishBatch(
 
 
 /**
- * Unsubscribes from a topic.
+ * Topic 구독을 해지합니다.
  *
  * ```
  * val response = snsClient.unsubscribe(subscriptionArn)
  * ```
  *
- * @param subscriptionArn Subscription ARN.
- * @param builder Lambda for building [UnsubscribeRequest].
- * @return An [UnsubscribeResponse] instance.
+ * @param subscriptionArn 구독 ARN
+ * @param builder [UnsubscribeRequest]를 빌드하는 람다 함수
+ * @return [UnsubscribeResponse] 인스턴스
  */
 suspend inline fun SnsClient.unsubscribe(
     subscriptionArn: String,
@@ -278,15 +278,15 @@ suspend inline fun SnsClient.unsubscribe(
 }
 
 /**
- * Deletes a topic.
+ * Topic을 삭제합니다.
  *
  * ```
  * val response = snsClient.deleteTopic(topicArn)
  * ```
  *
- * @param topicArn topic ARN
- * @param builder Lambda for building [DeleteTopicRequest].
- * @return A [DeleteTopicResponse] instance.
+ * @param topicArn 토픽 ARN
+ * @param builder [DeleteTopicRequest]를 빌드하는 람다 함수
+ * @return [DeleteTopicResponse] 인스턴스
  */
 suspend inline fun SnsClient.deleteTopic(
     topicArn: String,

@@ -4,11 +4,11 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest
 
 /**
- * See the API documentation for details.
+ * [bucket] 기반 [ListObjectsRequest]를 생성합니다.
  *
- * See the API documentation for details.
+ * [bucket]은 공백일 수 없습니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = listObjectsRequest("logs-bucket") { prefix("2026/") }
  * // result.prefix() == "2026/"
@@ -26,9 +26,9 @@ inline fun listObjectsRequest(
 }
 
 /**
- * See the API documentation for details.
+ * [listObjectsRequest]의 별칭 함수입니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = listObjectsRequestOf("logs-bucket")
  * // result.bucket() == "logs-bucket"

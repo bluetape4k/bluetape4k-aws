@@ -8,7 +8,7 @@ import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import java.time.Duration
 
 /**
- * Coroutine-friendly [ImdsKtorOperations] backed by AWS SDK v2 [Ec2MetadataAsyncClient].
+ * AWS SDK v2 [Ec2MetadataAsyncClient]를 사용하는 코루틴 친화적인 [ImdsKtorOperations]입니다.
  */
 class ImdsKtorTemplate(
     private val ec2MetadataAsyncClient: Ec2MetadataAsyncClient,

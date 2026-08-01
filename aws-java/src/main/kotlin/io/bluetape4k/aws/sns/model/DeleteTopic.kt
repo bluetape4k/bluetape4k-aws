@@ -5,10 +5,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.DeleteTopicRequest
 
 /**
- * Builds a [DeleteTopicRequest] with a DSL block.
+ * DSL 블록으로 [DeleteTopicRequest]를 빌드합니다.
  *
- * ## Behavior/Contract
- * - Sets `topicArn` and other fields directly in the [builder] block.
+ * ## 동작/계약
+ * - [builder] 블록에서 `topicArn` 등을 직접 설정한다.
  *
  * ```kotlin
  * val req = deleteTopicRequest {
@@ -22,10 +22,10 @@ inline fun deleteTopicRequest(
     DeleteTopicRequest.builder().apply(builder).build()
 
 /**
- * Creates a [DeleteTopicRequest] from a topic ARN.
+ * 토픽 ARN으로 [DeleteTopicRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [topicArn] is blank.
+ * ## 동작/계약
+ * - [topicArn]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val req = deleteTopicRequestOf("arn:aws:sns:ap-northeast-2:123456:my-topic")

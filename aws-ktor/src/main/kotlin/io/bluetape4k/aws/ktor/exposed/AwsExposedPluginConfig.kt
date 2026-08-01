@@ -19,14 +19,13 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Configuration for [AwsExposedPlugin].
+ * [AwsExposedPlugin] 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Use either [databaseProperties] or the DSL methods [defaultDatabase] and
- * [database]. Mixing both configuration styles is rejected to avoid silent
- * precedence rules. Password strings are converted to [AwsSecretString] so
- * generated diagnostics stay redacted.
+ * [databaseProperties] 또는 DSL 메서드 [defaultDatabase]와 [database] 중 한 방식만 사용하세요.
+ * 암묵적인 우선순위 규칙을 피하도록 두 구성 방식을 혼용하면 거부합니다. 생성된 진단 정보에서
+ * 값이 노출되지 않도록 비밀번호 문자열을 [AwsSecretString]으로 변환합니다.
  *
  * ```kotlin
  * install(AwsExposedPlugin) {
@@ -41,16 +40,16 @@ import kotlin.time.Duration.Companion.seconds
  */
 class AwsExposedPluginConfig {
 
-    /** Context used by route-level Exposed JDBC suspend transactions. */
+/** 경로 수준 Exposed JDBC suspend 트랜잭션이 사용하는 컨텍스트입니다. */
     var transactionContext: CoroutineContext = Dispatchers.IO
 
-    /** Maximum time allowed for plugin startup registry creation. */
+/** 플러그인 시작 시 레지스트리 생성에 허용되는 최대 시간입니다. */
     var startTimeout: Duration = 30.seconds
 
-    /** Maximum time allowed for plugin shutdown registry close. */
+/** 플러그인 종료 시 레지스트리 닫기에 허용되는 최대 시간입니다. */
     var stopTimeout: Duration = 10.seconds
 
-    /** Resolver used before the shared Exposed factory creates data sources. */
+/** 공유 Exposed 팩토리가 데이터 소스를 생성하기 전에 사용하는 리졸버입니다. */
     var settingsResolver: AwsDatabaseSettingsResolver = NoopAwsDatabaseSettingsResolver
 
     private var explicitDatabaseProperties: AwsDatabaseProperties? = null
@@ -60,7 +59,7 @@ class AwsExposedPluginConfig {
         (suspend (AwsDatabaseProperties, AwsDatabaseSettingsResolver) -> AwsExposedDatabaseRegistry)? = null
 
     /**
-     * Uses pre-built shared database properties instead of the Ktor DSL.
+     * Ktor DSL 대신 미리 구성된 공유 데이터베이스 속성을 사용합니다.
      */
     fun databaseProperties(properties: AwsDatabaseProperties) {
         require(defaultDatabaseConfig == null && namedDatabaseConfigs.isEmpty()) {
@@ -70,7 +69,7 @@ class AwsExposedPluginConfig {
     }
 
     /**
-     * Configures the default Exposed database.
+     * 기본 Exposed 데이터베이스를 구성합니다.
      */
     fun defaultDatabase(configure: AwsExposedConnectionConfig.() -> Unit) {
         require(explicitDatabaseProperties == null) {
@@ -80,7 +79,7 @@ class AwsExposedPluginConfig {
     }
 
     /**
-     * Configures a named Exposed database.
+     * 이름이 지정된 Exposed 데이터베이스를 구성합니다.
      */
     fun database(
         name: String,
@@ -95,8 +94,8 @@ class AwsExposedPluginConfig {
     }
 
     /**
-     * Overrides registry creation. This is primarily useful for tests and for
-     * applications that need a custom [AwsExposedDatabaseFactory].
+     * 레지스트리 생성을 재정의합니다. 주로 테스트와 사용자 정의 [AwsExposedDatabaseFactory]가
+     * 필요한 애플리케이션에서 유용합니다.
      */
     fun registryFactory(
         factory: suspend (AwsDatabaseProperties, AwsDatabaseSettingsResolver) -> AwsExposedDatabaseRegistry,
@@ -128,32 +127,32 @@ class AwsExposedPluginConfig {
 }
 
 /**
- * Mutable Ktor DSL for one [AwsDatabaseConnectionProperties] value.
+ * [AwsDatabaseConnectionProperties] 값 하나를 위한 변경 가능한 Ktor DSL입니다.
  */
 class AwsExposedConnectionConfig {
 
-    /** JDBC URL. It may be supplied by [secretSource] or [parameterSource]. */
+/** JDBC URL입니다. [secretSource] 또는 [parameterSource]에서 제공할 수 있습니다. */
     var url: String = ""
 
-    /** Optional JDBC driver class name. */
+/** 선택적인 JDBC 드라이버 클래스 이름입니다. */
     var driverClassName: String? = null
 
-    /** Optional JDBC username. */
+/** 선택적인 JDBC 사용자 이름입니다. */
     var username: String? = null
 
-    /** Optional static JDBC password. Rendered as redacted after conversion. */
+/** 선택적인 정적 JDBC 비밀번호입니다. 변환 후에는 값이 가려진 상태로 표시됩니다. */
     var password: String? = null
 
-    /** Additional Hikari data source properties. */
+/** 추가 Hikari 데이터 소스 속성입니다. */
     var dataSourceProperties: Map<String, String> = emptyMap()
 
-    /** Caller metadata preserved with the connection properties. */
+/** 연결 속성과 함께 보존하는 호출자 메타데이터입니다. */
     var metadata: Map<String, String> = emptyMap()
 
-    /** Authentication mode used by the shared Exposed foundation. */
+/** 공유 Exposed 기반 계층이 사용하는 인증 모드입니다. */
     var authenticationMode: AwsDatabaseAuthenticationMode = AwsDatabaseAuthenticationMode.STATIC_PASSWORD
 
-    /** Optional RDS IAM authentication settings. */
+/** 선택적인 RDS IAM 인증 설정입니다. */
     var rdsIam: AwsRdsIamAuthenticationProperties? = null
 
     private val poolConfig = AwsExposedPoolConfig()
@@ -161,14 +160,14 @@ class AwsExposedConnectionConfig {
     private var parameterSource: AwsDatabaseConfigSource? = null
 
     /**
-     * Configures Hikari pool settings.
+     * Hikari 풀 설정을 구성합니다.
      */
     fun pool(configure: AwsExposedPoolConfig.() -> Unit) {
         poolConfig.configure()
     }
 
     /**
-     * Uses an AWS Secrets Manager source descriptor for this database.
+     * 이 데이터베이스에 AWS Secrets Manager 소스 설명자를 사용합니다.
      */
     fun secretSource(
         sourceId: String,
@@ -180,7 +179,7 @@ class AwsExposedConnectionConfig {
     }
 
     /**
-     * Uses an AWS Systems Manager Parameter Store source descriptor for this database.
+     * 이 데이터베이스에 AWS Systems Manager Parameter Store 소스 설명자를 사용합니다.
      */
     fun parameterSource(
         sourceId: String,
@@ -213,7 +212,7 @@ class AwsExposedConnectionConfig {
 }
 
 /**
- * Mutable Ktor DSL for [AwsDatabasePoolProperties].
+ * [AwsDatabasePoolProperties]용 변경 가능한 Ktor DSL입니다.
  */
 class AwsExposedPoolConfig {
 
@@ -236,14 +235,14 @@ class AwsExposedPoolConfig {
 }
 
 /**
- * Mutable Ktor DSL for [AwsDatabaseConfigSource].
+ * [AwsDatabaseConfigSource]용 변경 가능한 Ktor DSL입니다.
  */
 class AwsExposedConfigSourceConfig {
 
-    /** Optional key prefix used by the resolver when mapping remote values. */
+/** 원격 값을 매핑할 때 리졸버가 사용하는 선택적인 키 접두사입니다. */
     var prefix: String? = null
 
-    /** Whether missing remote source values should be ignored by the resolver. */
+/** 리졸버가 누락된 원격 소스 값을 무시할지 여부입니다. */
     var optional: Boolean = false
 
     internal fun toConfigSource(

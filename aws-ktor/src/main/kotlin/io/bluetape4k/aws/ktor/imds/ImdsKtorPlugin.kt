@@ -10,23 +10,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
- * Application attribute key that stores the installed [ImdsKtorRuntime].
+ * 설치된 [ImdsKtorRuntime]을 저장하는 애플리케이션 속성 키입니다.
  */
 val ImdsKtorRuntimeKey: AttributeKey<ImdsKtorRuntime> = AttributeKey("ImdsKtorRuntime")
 
 /**
- * Application attribute key that stores the installed [ImdsKtorOperations].
+ * 설치된 [ImdsKtorOperations]를 저장하는 애플리케이션 속성 키입니다.
  */
 val ImdsKtorOperationsKey: AttributeKey<ImdsKtorOperations> = AttributeKey("ImdsKtorOperations")
 
 /**
- * Ktor application plugin for EC2 Instance Metadata Service access.
+ * EC2 Instance Metadata Service 접근용 Ktor 애플리케이션 플러그인입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * The plugin creates or stores an [ImdsKtorOperations] facade during
- * installation without calling IMDS. Metadata calls are performed only when
- * application code invokes the operations.
+ * 플러그인은 설치 중 IMDS를 호출하지 않고 [ImdsKtorOperations] 파사드를 생성하거나 저장합니다.
+ * 메타데이터 호출은 애플리케이션 코드가 작업을 호출할 때만 수행됩니다.
  */
 val ImdsKtorPlugin: ApplicationPlugin<ImdsKtorPluginConfig> = createApplicationPlugin(
     name = "ImdsKtorPlugin",
@@ -38,7 +37,7 @@ val ImdsKtorPlugin: ApplicationPlugin<ImdsKtorPluginConfig> = createApplicationP
         application.attributes.put(ImdsKtorOperationsKey, runtime.operations)
 
         on(MonitoringEvent(ApplicationStopping)) {
-            // Ktor monitoring events are synchronous; close SDK clients on IO.
+            // Ktor monitoring event는 동기식이므로 SDK client는 IO에서 닫는다.
             runBlocking(Dispatchers.IO) {
                 runtime.stop()
             }
@@ -47,15 +46,15 @@ val ImdsKtorPlugin: ApplicationPlugin<ImdsKtorPluginConfig> = createApplicationP
 }
 
 /**
- * Returns IMDS operations installed by [ImdsKtorPlugin].
+ * [ImdsKtorPlugin]이 설치한 IMDS 작업을 반환합니다.
  *
- * @throws IllegalStateException when [ImdsKtorPlugin] is absent or disabled.
+ * @throws IllegalStateException [ImdsKtorPlugin]이 없거나 비활성화된 경우
  */
 fun Application.imds(): ImdsKtorOperations =
     imdsOrNull() ?: throw IllegalStateException("ImdsKtorPlugin is not installed or is disabled.")
 
 /**
- * Returns IMDS operations installed by [ImdsKtorPlugin], or null when absent or disabled.
+ * [ImdsKtorPlugin]이 설치한 IMDS 작업을 반환합니다. 플러그인이 없거나 비활성화되었으면 null을 반환합니다.
  */
 fun Application.imdsOrNull(): ImdsKtorOperations? =
     attributes.getOrNull(ImdsKtorOperationsKey)

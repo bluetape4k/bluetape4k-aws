@@ -6,13 +6,12 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * Configuration properties for Spring Boot Kinesis support.
+ * Spring Boot Kinesis 지원용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Service-specific values override shared `bluetape4k.aws.*` defaults. When an
- * endpoint override is configured directly on Kinesis properties, a Kinesis or
- * shared region must also be available before the client can be built.
+ * 서비스별 값은 공유 `bluetape4k.aws.*` 기본값보다 우선합니다. Kinesis 속성에 엔드포인트
+ * 재정의를 직접 구성하면 클라이언트를 만들기 전에 Kinesis 또는 공유 리전도 있어야 합니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.kinesis")
 data class KinesisProperties(
@@ -24,7 +23,7 @@ data class KinesisProperties(
 ) : Serializable {
 
     /**
-     * Declarative stream settings used by [KinesisOperations.createConfiguredStream].
+     * [KinesisOperations.createConfiguredStream]에서 사용하는 선언적 스트림 설정입니다.
      */
     data class Stream(
         val shardCount: Int = 1,
@@ -40,7 +39,7 @@ data class KinesisProperties(
     }
 
     /**
-     * Default polling and retry settings for [KinesisOperations.recordFlow].
+     * [KinesisOperations.recordFlow]의 기본 폴링 및 재시도 설정입니다.
      */
     data class Consumer(
         val batchLimit: Int = KinesisRecordFlowOptions.DEFAULT_BATCH_LIMIT,

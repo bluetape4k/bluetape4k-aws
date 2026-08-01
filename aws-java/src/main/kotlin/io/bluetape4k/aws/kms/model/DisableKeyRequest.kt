@@ -4,10 +4,10 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kms.model.DisableKeyRequest
 
 /**
- * Creates a [DisableKeyRequest] with a DSL-style builder lambda.
+ * DSL 스타일의 빌더 람다로 [DisableKeyRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies [builder] to [DisableKeyRequest.builder], then calls `build()`.
+ * ## 동작/계약
+ * - [DisableKeyRequest.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
  *
  * ```kotlin
  * val request = disableKeyRequest {
@@ -22,11 +22,11 @@ inline fun disableKeyRequest(
     DisableKeyRequest.builder().apply(builder).build()
 
 /**
- * Creates a [DisableKeyRequest] by specifying a key ID.
+ * 키 ID를 지정하여 [DisableKeyRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [keyId] is blank.
- * - When validation passes, sets the value on [DisableKeyRequest.Builder.keyId].
+ * ## 동작/계약
+ * - [keyId]가 blank이면 `IllegalArgumentException`을 던집니다.
+ * - 검증이 통과하면 [DisableKeyRequest.Builder.keyId]에 값을 설정합니다.
  *
  * ```kotlin
  * val request = disableKeyRequestOf("key-id")

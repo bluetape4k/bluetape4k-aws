@@ -10,7 +10,7 @@ import io.bluetape4k.aws.kotlin.secretsmanager.AwsSecretValue
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Builds a [GetSecretValueRequest].
+ * [GetSecretValueRequest]를 구성합니다.
  */
 inline fun getSecretValueRequestOf(
     secretId: String,
@@ -31,7 +31,7 @@ inline fun getSecretValueRequestOf(
 }
 
 /**
- * Builds a single-page [BatchGetSecretValueRequest].
+ * 단일 페이지 [BatchGetSecretValueRequest]를 구성합니다.
  */
 inline fun batchGetSecretValueRequestOf(
     secretIds: Collection<String>,
@@ -53,7 +53,7 @@ inline fun batchGetSecretValueRequestOf(
 }
 
 /**
- * Builds a single-page [ListSecretsRequest].
+ * 단일 페이지 [ListSecretsRequest]를 구성합니다.
  */
 inline fun listSecretsRequestOf(
     maxResults: Int? = null,
@@ -70,7 +70,7 @@ inline fun listSecretsRequestOf(
 }
 
 /**
- * Builds a [DescribeSecretRequest].
+ * [DescribeSecretRequest]를 구성합니다.
  */
 inline fun describeSecretRequestOf(
     secretId: String,
@@ -85,11 +85,10 @@ inline fun describeSecretRequestOf(
 }
 
 /**
- * Builds a [CreateSecretRequest] from a redacted value.
+ * 값이 가려진 래퍼에서 [CreateSecretRequest]를 구성합니다.
  *
- * The revealed value is placed into the AWS SDK request at this boundary. This
- * request may create AWS-side state, so callers should keep audit and rotation
- * policy explicit.
+ * 이 경계에서 드러낸 값을 AWS SDK 요청에 담습니다. 이 요청은 AWS 측 상태를 생성할 수 있으므로
+ * 호출자는 감사 및 교체 정책을 명확히 유지해야 합니다.
  */
 inline fun createSecretRequestOf(
     name: String,
@@ -112,10 +111,10 @@ inline fun createSecretRequestOf(
 }
 
 /**
- * Builds a [PutSecretValueRequest] from a redacted value.
+ * 값이 가려진 래퍼에서 [PutSecretValueRequest]를 구성합니다.
  *
- * The revealed value is placed into the AWS SDK request at this boundary. This
- * request may create a new secret version or change staging labels.
+ * 이 경계에서 드러낸 값을 AWS SDK 요청에 담습니다. 이 요청은 새 보안 값 버전을 만들거나
+ * 스테이징 레이블을 변경할 수 있습니다.
  */
 inline fun putSecretValueRequestOf(
     secretId: String,

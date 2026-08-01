@@ -4,16 +4,16 @@ import aws.sdk.kotlin.services.s3.model.ObjectIdentifier
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates an [ObjectIdentifier] whose object key is [key].
+ * [key]를 object identifier로 가지는 [ObjectIdentifier] 를 생성합니다.
  *
  * ```kotlin
  * val identifier = objectIdentifierOf("key")
  * ```
  *
- * @param key object identifier key
- * @param versionId object identifier version ID
+ * @param key [String] 값으로, object identifier의 key 값을 설정합니다.
+ * @param versionId [String] 값으로, object identifier의 version id 값을 설정합니다.
  *
- * @return the [ObjectIdentifier]
+ * @return [ObjectIdentifier] 인스턴스
  */
 inline fun objectIdentifierOf(
     key: String,
@@ -31,16 +31,16 @@ inline fun objectIdentifierOf(
 }
 
 /**
- * Creates an [ObjectIdentifier] using this string as the object key.
+ * 문자열을 object identifier로 가지는 [ObjectIdentifier] 를 생성합니다.
  *
  * ```kotlin
  * val identifier = "key".toObjectIdentifier()
  * ```
  *
- * @receiver object identifier key
- * @param versionId object identifier version ID
+ * @receiver [String] 값으로, object identifier의 key 값을 설정합니다.
+ * @param versionId [String] 값으로, object identifier의 version id 값을 설정합니다.
  *
- * @return the [ObjectIdentifier]
+ * @return [ObjectIdentifier] 인스턴스
  */
 inline fun String.toObjectIdentifier(
     versionId: String? = null,

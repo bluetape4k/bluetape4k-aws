@@ -4,7 +4,7 @@ import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Runtime holder for Ktor IMDS operations and plugin-owned client lifecycle.
+ * Ktor IMDS 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class ImdsKtorRuntime(
     val operations: ImdsKtorOperations,
@@ -14,7 +14,7 @@ class ImdsKtorRuntime(
     private val closed = AtomicBoolean(false)
 
     /**
-     * Closes the plugin-created IMDS client once. Injected clients are never closed.
+     * 플러그인이 생성한 IMDS 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
      */
     fun stop() {
         if (closed.compareAndSet(false, true)) {

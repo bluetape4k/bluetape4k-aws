@@ -6,7 +6,7 @@ import kotlinx.coroutines.withTimeout
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 
 /**
- * Coroutine-friendly [ImdsOperations] backed by AWS SDK v2 [Ec2MetadataAsyncClient].
+ * AWS SDK v2 [Ec2MetadataAsyncClient]를 사용하는 코루틴 친화적인 [ImdsOperations]입니다.
  */
 class ImdsCoroutinesTemplate(
     private val ec2MetadataAsyncClient: Ec2MetadataAsyncClient,

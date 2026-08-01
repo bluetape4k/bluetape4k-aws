@@ -9,59 +9,58 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * Configuration for [CloudWatchLogsKtorPlugin].
+ * [CloudWatchLogsKtorPlugin] 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Installing the plugin registers operations and runtime only. It does not
- * create log groups, create streams, or publish events unless configured or
- * invoked explicitly.
+ * 플러그인을 설치하면 작업과 런타임만 등록합니다. 명시적으로 구성하거나 호출하지 않으면
+ * 로그 그룹이나 스트림을 생성하거나 이벤트를 게시하지 않습니다.
  */
 class CloudWatchLogsKtorPluginConfig {
 
-    /** Enables Ktor CloudWatch Logs runtime registration. */
+    /** Ktor CloudWatch Logs 런타임 등록을 활성화합니다. */
     var enabled: Boolean = true
 
-    /** Optional application-owned AWS SDK v2 CloudWatch Logs async client. */
+    /** 애플리케이션이 소유하는 선택적인 AWS SDK v2 CloudWatch Logs 비동기 클라이언트입니다. */
     var cloudWatchLogsAsyncClient: CloudWatchLogsAsyncClient? = null
 
-    /** Optional application-owned operations facade. */
+    /** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
     var cloudWatchLogsOperations: CloudWatchLogsKtorOperations? = null
 
-    /** Optional CloudWatch Logs region used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 CloudWatch Logs 리전입니다. */
     var region: String? = null
 
-    /** Optional CloudWatch Logs endpoint override used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 CloudWatch Logs 엔드포인트 재정의입니다. */
     var endpointOverride: URI? = null
 
-    /** Optional credentials provider used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
     var credentialsProvider: AwsCredentialsProvider? = null
 
-    /** Default CloudWatch Logs group name for operations that omit stream identity. */
+    /** 스트림 식별자를 생략한 작업에 사용할 기본 CloudWatch Logs 그룹 이름입니다. */
     var logGroupName: String? = null
 
-    /** Default CloudWatch Logs stream name for operations that omit stream identity. */
+    /** 스트림 식별자를 생략한 작업에 사용할 기본 CloudWatch Logs 스트림 이름입니다. */
     var logStreamName: String? = null
 
-    /** CloudWatch Logs PutLogEvents batch size. AWS allows 1..10000. */
+    /** CloudWatch Logs PutLogEvents 배치 크기입니다. AWS는 1..10000을 허용합니다. */
     var batchSize: Int = CLOUDWATCH_LOGS_MAX_BATCH_SIZE
 
-    /** Periodic flush interval for explicitly buffered log events. */
+    /** 명시적으로 버퍼링한 로그 이벤트의 주기적 flush 간격입니다. */
     var flushInterval: Duration = Duration.ofSeconds(5)
 
-    /** Maximum time allowed for shutdown flush. */
+    /** 종료 시 flush에 허용하는 최대 시간입니다. */
     var shutdownFlushTimeout: Duration = Duration.ofSeconds(5)
 
-    /** Creates the configured log group during application start. */
+    /** 애플리케이션 시작 시 구성된 로그 그룹을 생성합니다. */
     var createLogGroupOnStart: Boolean = false
 
-    /** Creates the configured log stream during application start. */
+    /** 애플리케이션 시작 시 구성된 로그 스트림을 생성합니다. */
     var createLogStreamOnStart: Boolean = false
 
     private val clientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
 
     /**
-     * Adds CloudWatch Logs async client builder customization for plugin-created clients.
+     * 플러그인이 생성한 클라이언트에 CloudWatch Logs 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun cloudWatchLogsAsyncClient(customizer: AwsKtorCloudWatchLogsAsyncClientCustomizer) {
         clientCustomizers += customizer

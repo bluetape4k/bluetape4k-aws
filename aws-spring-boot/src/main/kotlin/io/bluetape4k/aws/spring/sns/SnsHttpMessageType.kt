@@ -1,22 +1,22 @@
 package io.bluetape4k.aws.spring.sns
 
 /**
- * SNS HTTP(S) endpoint message types.
+ * SNS HTTP(S) 엔드포인트 메시지 타입입니다.
  */
 enum class SnsHttpMessageType(val value: String) {
 
     /**
-     * Message delivered to a subscribed HTTP(S) endpoint.
+     * 구독한 HTTP(S) 엔드포인트로 전달되는 메시지입니다.
      */
     NOTIFICATION("Notification"),
 
     /**
-     * Message sent after an HTTP(S) endpoint is subscribed and must be confirmed.
+     * HTTP(S) 엔드포인트 구독 후 확인을 위해 전송되는 메시지입니다.
      */
     SUBSCRIPTION_CONFIRMATION("SubscriptionConfirmation"),
 
     /**
-     * Message sent after an HTTP(S) endpoint is unsubscribed and can be re-confirmed.
+     * HTTP(S) 엔드포인트 구독 해제 후 재확인을 위해 전송되는 메시지입니다.
      */
     UNSUBSCRIBE_CONFIRMATION("UnsubscribeConfirmation"),
     ;

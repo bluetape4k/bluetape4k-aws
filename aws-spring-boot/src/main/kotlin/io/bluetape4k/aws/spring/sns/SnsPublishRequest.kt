@@ -5,13 +5,13 @@ import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.Serializable
 
 /**
- * Value object for an SNS publish request.
+ * SNS 게시 요청 값 객체입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Groups the topic ARN, message body, optional subject, attributes, and FIFO
- * fields into a named value to avoid same-typed positional mistakes. FIFO
- * topics require `messageGroupId`; standard topics reject FIFO-only fields.
+ * 타입이 같은 위치 인수의 실수를 피하도록 topic ARN, 메시지 본문, 선택적 제목, 속성,
+ * FIFO 필드를 명명된 값으로 묶습니다. FIFO 주제에는 `messageGroupId`가 필요하며
+ * 표준 주제는 FIFO 전용 필드를 거부합니다.
  *
  * ```kotlin
  * val request = SnsPublishRequest(

@@ -18,14 +18,13 @@ private const val METADATA_KEY_ID = "bt4k-cek-key-id"
 private const val METADATA_NONCE = "bt4k-cek-nonce"
 
 /**
- * Plaintext and encrypted data key pair for S3 client-side envelope encryption.
+ * S3 클라이언트 측 봉투 암호화를 위한 평문 및 암호화된 데이터 키 쌍입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * [plaintextKey] is used only locally to encrypt or decrypt one object payload.
- * [encryptedKey] is stored in S3 object metadata and later passed to the same
- * provider's decrypt path. Production providers should usually wrap AWS KMS
- * GenerateDataKey and Decrypt operations.
+ * [plaintextKey]는 객체 페이로드 하나를 암호화하거나 복호화할 때 로컬에서만 사용합니다.
+ * [encryptedKey]는 S3 객체 메타데이터에 저장한 뒤 같은 공급자의 복호화 경로에 전달합니다.
+ * 프로덕션 공급자는 일반적으로 AWS KMS GenerateDataKey 및 Decrypt 작업을 감싸야 합니다.
  */
 class S3KtorDataKey(
     val plaintextKey: ByteArray,
@@ -47,30 +46,30 @@ class S3KtorDataKey(
 }
 
 /**
- * Data-key provider for S3 client-side envelope encryption.
+ * S3 클라이언트 측 봉투 암호화용 데이터 키 공급자입니다.
  */
 interface S3KtorDataKeyProvider {
 
     /**
-     * Creates a new data key for one object encryption operation.
+     * 객체 암호화 작업 하나에 사용할 새 데이터 키를 생성합니다.
      */
     suspend fun generateDataKey(encryptionContext: Map<String, String>): S3KtorDataKey
 
     /**
-     * Decrypts the encrypted data key read from S3 object metadata.
+     * S3 객체 메타데이터에서 읽은 암호화된 데이터 키를 복호화합니다.
      */
     suspend fun decryptDataKey(encryptedDataKey: ByteArray, encryptionContext: Map<String, String>): ByteArray
 }
 
 /**
- * Client-side envelope encryption helper for [S3KtorClient].
+ * [S3KtorClient]용 클라이언트 측 봉투 암호화 도우미입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * Encrypts object bytes locally with AES-GCM before calling S3 PutObject. The
- * encrypted data key and nonce are stored as S3 metadata. The helper does not
- * depend on AWS KMS directly; inject an [S3KtorDataKeyProvider] backed by KMS
- * when KMS-managed data keys are required.
+ * S3 PutObject를 호출하기 전에 객체 바이트를 AES-GCM으로 로컬에서 암호화합니다.
+ * 암호화된 데이터 키와 nonce는 S3 메타데이터로 저장합니다. 이 도우미는 AWS KMS에
+ * 직접 의존하지 않습니다. KMS 관리형 데이터 키가 필요하면 KMS를 사용하는
+ * [S3KtorDataKeyProvider]를 주입하세요.
  */
 class S3KtorClientSideEncryption(
     private val dataKeyProvider: S3KtorDataKeyProvider,
@@ -78,7 +77,7 @@ class S3KtorClientSideEncryption(
 ) {
 
     /**
-     * Encrypts [plaintext] locally and uploads the ciphertext object.
+     * [plaintext]를 로컬에서 암호화하고 암호문 객체를 업로드합니다.
      */
     suspend fun putEncryptedObject(
         s3: S3KtorClient,
@@ -112,7 +111,7 @@ class S3KtorClientSideEncryption(
     }
 
     /**
-     * Downloads an encrypted object and decrypts the payload locally.
+     * 암호화된 객체를 다운로드하고 페이로드를 로컬에서 복호화합니다.
      */
     suspend fun getEncryptedObjectBytes(
         s3: S3KtorClient,

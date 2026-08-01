@@ -5,12 +5,12 @@ import java.io.Serializable
 import java.net.URI
 
 /**
- * Configuration properties for SNS auto-configuration.
+ * SNS 자동 구성용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Binds the `bluetape4k.aws.sns` prefix and defines SDK client settings plus
- * default topic attributes used by [SnsOperations.createConfiguredTopic].
+ * `bluetape4k.aws.sns` 접두사를 바인딩하고 SDK 클라이언트 설정과
+ * [SnsOperations.createConfiguredTopic]에서 사용하는 기본 주제 속성을 정의합니다.
  *
  * ```yaml
  * bluetape4k:
@@ -37,7 +37,7 @@ data class SnsProperties(
     }
 
     /**
-     * Topic properties used by configuration-driven topic creation.
+     * 구성 기반 주제 생성에 사용하는 주제 속성입니다.
      */
     data class Topic(
         val fifo: Boolean = false,

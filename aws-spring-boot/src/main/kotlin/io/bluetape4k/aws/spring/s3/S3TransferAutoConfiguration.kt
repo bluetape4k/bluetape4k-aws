@@ -11,20 +11,19 @@ import software.amazon.awssdk.transfer.s3.S3TransferManager
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Auto-configures [S3TransferManager] and [S3TransferTemplate] beans for high-throughput S3 transfers.
+ * 고처리량 S3 전송을 위한 [S3TransferManager]와 [S3TransferTemplate] Bean을 자동 구성합니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * - Activates when `software.amazon.awssdk.transfer.s3.S3TransferManager` is on the classpath
- *   and `bluetape4k.aws.s3.enabled=true` (default: true).
- * - Requires an existing [S3AsyncClient] bean, supplied by [S3AutoConfiguration].
- * - [S3TransferManager] bean is only created when neither [S3TransferManager] nor
- *   [S3TransferOperations] is already present in the context.
- * - [S3TransferTemplate] bean is only created when [S3TransferOperations] is absent and
- *   [S3TransferManager] is present.
- * - Both beans can be disabled individually via `bluetape4k.aws.s3.transfer.enabled=false`.
+ * - 클래스패스에 `software.amazon.awssdk.transfer.s3.S3TransferManager`가 있고
+ *   `bluetape4k.aws.s3.enabled=true`(기본값: true)이면 활성화됩니다.
+ * - [S3AutoConfiguration]이 제공하는 기존 [S3AsyncClient] Bean이 필요합니다.
+ * - 컨텍스트에 [S3TransferManager]와 [S3TransferOperations]가 모두 없을 때만
+ *   [S3TransferManager] Bean을 생성합니다.
+ * - [S3TransferOperations]가 없고 [S3TransferManager]가 있을 때만 [S3TransferTemplate] Bean을 생성합니다.
+ * - `bluetape4k.aws.s3.transfer.enabled=false`로 두 Bean을 함께 비활성화할 수 있습니다.
  *
- * ## Usage
+ * ## 사용법
  *
  * ```kotlin
  * @Service

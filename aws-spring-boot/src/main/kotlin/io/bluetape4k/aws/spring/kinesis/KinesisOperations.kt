@@ -12,12 +12,12 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.Record
 
 /**
- * Coroutine-oriented Kinesis operations for Spring applications.
+ * Spring 애플리케이션을 위한 코루틴 중심 Kinesis 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Methods keep AWS SDK response types so callers retain service metadata while
- * avoiding direct `CompletableFuture` handling in application code.
+ * 메서드는 AWS SDK 응답 타입을 유지하므로 애플리케이션 코드에서 `CompletableFuture`를
+ * 직접 처리하지 않으면서 서비스 메타데이터를 보존할 수 있습니다.
  *
  * ```kotlin
  * import software.amazon.awssdk.core.SdkBytes

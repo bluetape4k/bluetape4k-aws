@@ -12,41 +12,40 @@ import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsReq
 import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsResponse
 
 /**
- * Coroutine S3 Access Grants operations for Ktor applications.
+ * Ktor 애플리케이션을 위한 코루틴 S3 Access Grants 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * This facade exposes the common read and data-access path from the AWS SDK v2
- * S3 Control client without leaking `CompletableFuture` to application code.
- * Administrative create, update, and delete calls remain available through the
- * raw `S3ControlAsyncClient` configured by the application.
+ * 이 파사드는 애플리케이션 코드에 `CompletableFuture`를 노출하지 않고 AWS SDK v2
+ * S3 Control 클라이언트의 공통 읽기 및 데이터 접근 경로를 제공합니다. 관리용 생성,
+ * 갱신, 삭제 호출은 애플리케이션이 구성한 원본 `S3ControlAsyncClient`를 통해 사용할 수 있습니다.
  */
 interface S3AccessGrantsKtorOperations {
 
     /**
-     * Requests temporary data-access credentials for an S3 URI covered by an Access Grant.
+     * Access Grant가 적용되는 S3 URI의 임시 데이터 접근 자격 증명을 요청합니다.
      */
     suspend fun getDataAccess(request: GetDataAccessRequest): GetDataAccessResponse
 
     /**
-     * Lists Access Grants available to the caller.
+     * 호출자가 사용할 수 있는 Access Grant 목록을 조회합니다.
      */
     suspend fun listCallerAccessGrants(request: ListCallerAccessGrantsRequest): ListCallerAccessGrantsResponse
 
     /**
-     * Lists grants in an Access Grants instance.
+     * Access Grants 인스턴스의 Grant 목록을 조회합니다.
      */
     suspend fun listAccessGrants(request: ListAccessGrantsRequest): ListAccessGrantsResponse
 
     /**
-     * Lists Access Grants instances for an account.
+     * 계정의 Access Grants 인스턴스 목록을 조회합니다.
      */
     suspend fun listAccessGrantsInstances(
         request: ListAccessGrantsInstancesRequest,
     ): ListAccessGrantsInstancesResponse
 
     /**
-     * Lists registered Access Grants locations.
+     * 등록된 Access Grants 위치 목록을 조회합니다.
      */
     suspend fun listAccessGrantsLocations(
         request: ListAccessGrantsLocationsRequest,

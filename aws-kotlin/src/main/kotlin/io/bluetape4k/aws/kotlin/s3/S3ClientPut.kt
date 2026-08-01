@@ -18,7 +18,7 @@ import java.nio.file.Path
 import io.bluetape4k.coroutines.flow.collect as collectAsync
 
 /**
- * Stores an object at [key] in [bucketName].
+ * [bucketName]의 [key]에 객체를 저장합니다.
  *
  * ```kotlin
  * val response = s3Client.put("bucket-name", "key") {
@@ -28,10 +28,10 @@ import io.bluetape4k.coroutines.flow.collect as collectAsync
  *    this.cacheControl = "max-age=3600"
  * }
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @param builder configures the [PutObjectRequest] through [PutObjectRequest.Builder]
- * @return the [PutObjectResponse]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param builder [PutObjectRequest.Builder] 를 통해 [PutObjectRequest] 를 설정합니다.
+ * @return [PutObjectResponse] 인스턴스
  */
 suspend inline fun S3Client.put(
     bucketName: String,
@@ -47,18 +47,18 @@ suspend inline fun S3Client.put(
 }
 
 /**
- * Stores [bytes] at [key] in [bucketName].
+ * [bucketName]의 [key]에 [bytes]를 저장합니다.
  *
  * ```kotlin
  * val response = s3Client.putFromByteArray("bucket-name", "key", byteArrayOf(1, 2, 3, 4))
  * ```
  *
- * @param bucketName bucket name
- * @param key object key
- * @param bytes bytes to store
- * @param metadata metadata
- * @param builder configures the [PutObjectRequest] through [PutObjectRequest.Builder]
- * @return the [PutObjectResponse]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param bytes 저장할 바이트 배열
+ * @param metadata 메타데이터
+ * @param builder [PutObjectRequest.Builder] 를 통해 [PutObjectRequest] 를 설정합니다.
+ * @return [PutObjectResponse] 인스턴스
  */
 suspend inline fun S3Client.putFromByteArray(
     bucketName: String,
@@ -72,17 +72,17 @@ suspend inline fun S3Client.putFromByteArray(
     put(bucketName, key, ByteStream.fromBytes(bytes), metadata, acl, contentType, builder)
 
 /**
- * Stores [text] at [key] in [bucketName].
+ * [bucketName]의 [key]에 [text]를 저장합니다.
  *
  * ```kotlin
  * val response = s3Client.putFromString("bucket-name", "key", "Hello World!")
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @param text text to store
- * @param metadata metadata
- * @param builder configures the [PutObjectRequest] through [PutObjectRequest.Builder]
- * @return the [PutObjectResponse]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param text 저장할 문자열
+ * @param metadata 메타데이터
+ * @param builder [PutObjectRequest.Builder] 를 통해 [PutObjectRequest] 를 설정합니다.
+ * @return [PutObjectResponse] 인스턴스
  */
 suspend inline fun S3Client.putFromString(
     bucketName: String,
@@ -96,18 +96,18 @@ suspend inline fun S3Client.putFromString(
     put(bucketName, key, ByteStream.fromString(text), metadata, acl, contentType, builder)
 
 /**
- * Stores the contents of [file] at [key] in [bucketName].
+ * [bucketName]의 [key]에 [file]의 정보를 저장합니다.
  *
  * ```kotlin
  * val response = s3Client.putFromFile("bucket-name", "key", File("test.txt"))
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @param file file to store
- * @param metadata metadata
- * @param builder configures the [PutObjectRequest] through [PutObjectRequest.Builder]
- * @return the [PutObjectResponse]
- * @throws IllegalArgumentException when the file does not exist
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param file 저장할 파일
+ * @param metadata 메타데이터
+ * @param builder [PutObjectRequest.Builder] 를 통해 [PutObjectRequest] 를 설정합니다.
+ * @return [PutObjectResponse] 인스턴스
+ * @throws IllegalArgumentException 파일이 존재하지 않을 경우
  * @see putFromPath
  */
 suspend inline fun S3Client.putFromFile(
@@ -125,18 +125,18 @@ suspend inline fun S3Client.putFromFile(
 }
 
 /**
- * Stores the file at [filePath] under [key] in [bucketName].
+ * [bucketName]의 [key]에 [filePath]의 파일 정보를 저장합니다.
  *
  * ```kotlin
  * val response = s3Client.putFromPath("bucket-name", "key", Paths.get("test.txt"))
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @param filePath path of the file to store
- * @param metadata metadata
- * @param builder configures the [PutObjectRequest] through [PutObjectRequest.Builder]
- * @return the [PutObjectResponse]
- * @throws IllegalArgumentException when the file does not exist
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param filePath 저장할 파일 경로
+ * @param metadata 메타데이터
+ * @param builder [PutObjectRequest.Builder] 를 통해 [PutObjectRequest] 를 설정합니다.
+ * @return [PutObjectResponse] 인스턴스
+ * @throws IllegalArgumentException 파일이 존재하지 않을 경우
  * @see putFromFile
  */
 suspend inline fun S3Client.putFromPath(
@@ -154,15 +154,15 @@ suspend inline fun S3Client.putFromPath(
 }
 
 /**
- * Stores multiple objects concurrently.
+ * 여러 객체를 동시에 저장합니다.
  *
  * ```kotlin
  * val response = s3Client.putAll(concurrency = 10, putRequest1, putRequest2, putRequest3).toList()
  * ```
  *
- * @param concurrency number of requests to execute concurrently
- * @param putRequests [PutObjectRequest] instances to execute
- * @return the [PutObjectResponse] instances
+ * @param concurrency 동시에 실행할 요청 수
+ * @param putRequests [PutObjectRequest] 목록
+ * @return [PutObjectResponse] 목록
  * @see put
  */
 fun S3Client.putAll(

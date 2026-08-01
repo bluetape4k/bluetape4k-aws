@@ -5,12 +5,12 @@ import aws.sdk.kotlin.services.dynamodb.model.Replica
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Builds a DynamoDB [CreateGlobalTableRequest] with a DSL block.
+ * DSL 블록으로 DynamoDB [CreateGlobalTableRequest]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [globalTableName] is blank.
- * - Creates the request without a replication group when [replicationGroup] is null.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [globalTableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [replicationGroup]이 null이면 복제 그룹 없이 요청이 생성된다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val req = createGlobalTableRequestOf(
@@ -21,8 +21,8 @@ import io.bluetape4k.support.requireNotBlank
  * // req.replicationGroup?.size == 2
  * ```
  *
- * @param globalTableName global table name to create. Blank values throw.
- * @param replicationGroup [Replica] list for regions to replicate.
+ * @param globalTableName 생성할 글로벌 테이블 이름 (blank이면 예외)
+ * @param replicationGroup 복제할 리전의 [Replica] 목록
  */
 inline fun createGlobalTableRequestOf(
     globalTableName: String,

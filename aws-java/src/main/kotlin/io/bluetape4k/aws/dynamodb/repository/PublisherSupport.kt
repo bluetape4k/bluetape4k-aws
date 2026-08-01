@@ -8,7 +8,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page
 import software.amazon.awssdk.enhanced.dynamodb.model.PagePublisher
 
 /**
- * See the API documentation for details.
+ * 첫 번째 페이지의 아이템을 반환합니다.
  *
  * ```kotlin
  * val items = publisher.findFirst()
@@ -19,7 +19,7 @@ suspend fun <T: Any> SdkPublisher<Page<T>>.findFirst(): List<T> =
     asFlow().firstOrNull()?.items() ?: emptyList()
 
 /**
- * See the API documentation for details.
+ * 첫 번째 페이지의 아이템을 반환합니다.
  *
  * ```kotlin
  * val items = pagePublisher.findFirst()
@@ -30,7 +30,7 @@ suspend fun <T: Any> PagePublisher<T>.findFirst(): List<T> =
     asFlow().firstOrNull()?.items() ?: emptyList()
 
 /**
- * See the API documentation for details.
+ * 첫 번째 페이지의 아이템 수를 반환합니다.
  *
  * ```kotlin
  * val count = publisher.count()
@@ -41,7 +41,7 @@ suspend fun <T: Any> SdkPublisher<Page<T>>.count(): Long =
     asFlow().first().items().count().toLong()
 
 /**
- * See the API documentation for details.
+ * 첫 번째 페이지의 아이템 수를 반환합니다.
  *
  * ```kotlin
  * val count = pagePublisher.count()

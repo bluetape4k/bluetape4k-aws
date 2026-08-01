@@ -5,42 +5,42 @@ import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Default access key used by local AWS emulator tests.
+ * 로컬 테스트 환경에서 사용하는 기본 Access Key 입니다.
  */
 const val AWS_LOCAL_ACCESS_KEY = "accesskey"
 
 /**
- * Default secret key used by local AWS emulator tests.
+ * 로컬 테스트 환경에서 사용하는 기본 Secret Key 입니다.
  */
 const val AWS_LOCAL_SECRET_KEY = "secretkey"
 
 /**
- * [StaticCredentialsProvider] for local AWS emulator tests.
+ * 로컬 테스트 환경에서 사용할 [StaticCredentialsProvider] 인스턴스입니다.
  */
 @JvmField
 val LocalCredentialsProvider: StaticCredentialsProvider =
     staticCredentialsProviderOf(AWS_LOCAL_ACCESS_KEY, AWS_LOCAL_SECRET_KEY)
 
 /**
- * Creates a [StaticCredentialsProvider] from an access key and secret key.
+ * [Credentials]을 제공하는 [StaticCredentialsProvider]를 생성합니다.
  *
  * ```
  * private val credentialsProvider: StaticCredentialsProvider by lazy {
  *      staticCredentialsProviderOf(s3Server.accessKey, s3Server.secretKey)
  * }
  * ```
- * @param accessKeyId      AWS access key
- * @param secretAccessKey  AWS secret key
- * @return [StaticCredentialsProvider] backed by the supplied credentials.
+ * @param accessKeyId      AWS 액세스 키
+ * @param secretAccessKey  AWS 비밀 키
+ * @return [StaticCredentialsProvider] 인스턴스
  */
 fun staticCredentialsProviderOf(accessKeyId: String, secretAccessKey: String): StaticCredentialsProvider {
     return staticCredentialsProviderOf(credentialsOf(accessKeyId, secretAccessKey))
 }
 
 /**
- * Creates a [StaticCredentialsProvider] from existing [Credentials].
+ * [Credentials]을 제공하는 [StaticCredentialsProvider]를 생성합니다.
  *
- * @param credentials [Credentials] to expose through the provider.
+ * @param credentials  [Credentials] 인스턴스
  */
 fun staticCredentialsProviderOf(credentials: Credentials): StaticCredentialsProvider =
     StaticCredentialsProvider {
@@ -49,10 +49,10 @@ fun staticCredentialsProviderOf(credentials: Credentials): StaticCredentialsProv
     }
 
 /**
- * Creates AWS [Credentials] after validating the required key values.
+ * [Credentials]를 생성합니다.
  *
- * @param accessKeyId      AWS access key
- * @param secretAccessKey  AWS secret key
+ * @param accessKeyId      AWS 액세스 키
+ * @param secretAccessKey  AWS 비밀 키
  */
 fun credentialsOf(accessKeyId: String, secretAccessKey: String): Credentials {
     accessKeyId.requireNotBlank("accessKeyId")

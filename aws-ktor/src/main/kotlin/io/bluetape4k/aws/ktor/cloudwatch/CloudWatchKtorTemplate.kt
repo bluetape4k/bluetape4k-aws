@@ -15,12 +15,12 @@ internal const val CLOUDWATCH_MIN_BATCH_SIZE = 1
 internal const val CLOUDWATCH_MAX_BATCH_SIZE = 1000
 
 /**
- * Default [CloudWatchKtorOperations] implementation backed by [CloudWatchAsyncClient].
+ * [CloudWatchAsyncClient]를 사용하는 기본 [CloudWatchKtorOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Metric data is split by [batchSize]. Empty metric lists are no-ops and do not
- * call AWS.
+ * 메트릭 데이터는 [batchSize] 단위로 나눕니다. 빈 메트릭 목록은 아무 작업도 하지 않으며
+ * AWS를 호출하지 않습니다.
  */
 class CloudWatchKtorTemplate(
     private val cloudWatchAsyncClient: CloudWatchAsyncClient,

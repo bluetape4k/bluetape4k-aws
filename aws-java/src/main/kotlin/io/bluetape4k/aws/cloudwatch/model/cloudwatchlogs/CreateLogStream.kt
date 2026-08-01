@@ -4,7 +4,7 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogStreamRequest
 
 /**
- * Builds a [CreateLogStreamRequest] with a DSL block.
+ * DSL 블록으로 [CreateLogStreamRequest]를 빌드합니다.
  *
  * ```kotlin
  * val request = createLogStreamRequest {
@@ -19,11 +19,11 @@ inline fun createLogStreamRequest(
     CreateLogStreamRequest.builder().apply(builder).build()
 
 /**
- * Creates a [CreateLogStreamRequest] from a log group name and stream name.
+ * 로그 그룹 이름과 스트림 이름으로 [CreateLogStreamRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [logGroupName] is blank.
- * - Throws `IllegalArgumentException` when [logStreamName] is blank.
+ * ## 동작/계약
+ * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [logStreamName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val request = createLogStreamRequestOf(

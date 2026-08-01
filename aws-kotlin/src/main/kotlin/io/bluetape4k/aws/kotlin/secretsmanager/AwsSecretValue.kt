@@ -6,14 +6,12 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 /**
- * Redacted AWS Kotlin SDK secret value.
+ * 값이 노출되지 않도록 보호하는 AWS Kotlin SDK 보안 값입니다.
  *
- * ## Contract
- * - [reveal] returns the raw value and should be called only at an explicit
- *   consumer boundary.
- * - Diagnostic output is always redacted.
- * - Serialized bytes contain the raw value and must stay inside trusted
- *   process or storage boundaries.
+ * ## 계약
+ * - [reveal]은 원본 값을 반환하므로 명시적인 소비자 경계에서만 호출해야 합니다.
+ * - 진단 출력에서는 항상 값을 숨깁니다.
+ * - 직렬화된 바이트에는 원본 값이 포함되므로 신뢰할 수 있는 프로세스 또는 저장소 경계 안에서만 다뤄야 합니다.
  *
  * ```kotlin
  * val secret = awsSecretValueOf("raw-secret")
@@ -24,7 +22,7 @@ import java.security.MessageDigest
 class AwsSecretValue private constructor(private val value: String): Serializable {
 
     /**
-     * Returns the raw secret value for the caller's explicit consumer boundary.
+     * 호출자의 명시적인 소비자 경계에서 사용할 원본 보안 값을 반환합니다.
      */
     fun reveal(): String = value
 
@@ -44,12 +42,12 @@ class AwsSecretValue private constructor(private val value: String): Serializabl
         private const val serialVersionUID: Long = 3840856623750752610L
 
         /**
-         * Redacted marker used by [toString].
+         * [toString]이 사용하는 마스킹 문자열입니다.
          */
         const val REDACTED: String = "****"
 
         /**
-         * Creates a redacted secret value wrapper.
+         * 보안 값을 숨기는 래퍼를 생성합니다.
          */
         operator fun invoke(value: String): AwsSecretValue {
             value.requireNotBlank("value")
@@ -57,14 +55,14 @@ class AwsSecretValue private constructor(private val value: String): Serializabl
         }
 
         /**
-         * Creates a redacted secret value wrapper.
+         * 보안 값을 숨기는 래퍼를 생성합니다.
          */
         fun of(value: String): AwsSecretValue = invoke(value)
     }
 }
 
 /**
- * Creates a redacted AWS Kotlin SDK secret value wrapper.
+ * AWS Kotlin SDK 보안 값을 숨기는 래퍼를 생성합니다.
  */
 fun awsSecretValueOf(value: String): AwsSecretValue =
     AwsSecretValue.of(value)

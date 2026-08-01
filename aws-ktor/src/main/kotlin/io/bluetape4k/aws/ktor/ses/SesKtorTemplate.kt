@@ -17,13 +17,12 @@ import software.amazon.awssdk.services.sesv2.model.Template
 import java.util.concurrent.CompletableFuture
 
 /**
- * Default [SesKtorOperations] implementation backed by [SesV2AsyncClient].
+ * [SesV2AsyncClient]를 사용하는 기본 [SesKtorOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Maps Ktor-local SES value objects to the `SendEmail` API, applies configured
- * default sender/configuration set values, and lets AWS SDK exceptions
- * propagate unchanged to callers.
+ * Ktor 로컬 SES 값 객체를 `SendEmail` API에 매핑하고 구성된 기본 발신자와 구성 집합 값을
+ * 적용합니다. AWS SDK 예외는 변경하지 않고 호출자에게 전파합니다.
  */
 class SesKtorTemplate(
     private val sesAsyncClient: SesV2AsyncClient,

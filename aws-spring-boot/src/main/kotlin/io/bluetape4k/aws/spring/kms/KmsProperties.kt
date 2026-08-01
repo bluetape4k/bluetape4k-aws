@@ -8,12 +8,12 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * Configuration properties for AWS KMS Spring Boot support.
+ * AWS KMS Spring Boot 지원용 구성 속성입니다.
  *
- * ## Contract
- * - `keyId` is required for encryption and data-key generation unless the caller supplies one per operation.
- * - `endpointOverride` requires an explicit `region` so LocalStack and custom endpoints are deterministic.
- * - `dataKeyCache` stores plaintext data keys in memory and should use conservative TTL and size limits.
+ * ## 계약
+ * - 호출자가 작업별로 제공하지 않으면 암호화 및 데이터 키 생성에 `keyId`가 필요합니다.
+ * - LocalStack과 사용자 정의 엔드포인트를 결정적으로 사용하려면 `endpointOverride`에 명시적인 `region`이 필요합니다.
+ * - `dataKeyCache`는 평문 데이터 키를 메모리에 저장하므로 보수적인 TTL과 크기 제한을 사용해야 합니다.
  *
  * ```yaml
  * bluetape4k:

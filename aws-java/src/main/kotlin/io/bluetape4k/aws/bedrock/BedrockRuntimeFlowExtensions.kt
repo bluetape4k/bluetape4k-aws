@@ -232,13 +232,12 @@ private class StreamCoordinator<T : Any>(
 }
 
 /**
- * Streams one native Bedrock `ConverseStream` request as a cold [Flow].
+ * Bedrock 네이티브 `ConverseStream` 요청 하나를 콜드 [Flow]로 스트리밍합니다.
  *
- * Each collection starts a new potentially billable SDK call. Demand is
- * limited to `request(1)`, and collector cancellation cancels both the active
- * subscription and operation future. The caller owns the client lifetime.
- * SDK retries may repeat semantically equivalent events; this helper provides
- * neither exactly-once delivery nor deduplication, retry, or replay.
+ * 수집할 때마다 과금될 수 있는 새 SDK 호출을 시작합니다. 수요는 `request(1)`로 제한하며,
+ * 수집기 취소는 활성 구독과 작업 Future를 모두 취소합니다. 클라이언트 수명은 호출자가 관리합니다.
+ * SDK 재시도로 의미상 같은 이벤트가 반복될 수 있습니다. 이 도우미는 정확히 한 번 전달,
+ * 중복 제거, 재시도 또는 재생을 제공하지 않습니다.
  */
 fun BedrockRuntimeAsyncClient.converseStreamFlow(
     request: ConverseStreamRequest,
@@ -277,12 +276,11 @@ fun BedrockRuntimeAsyncClient.converseStreamFlow(
 }.buffer(0)
 
 /**
- * Builds and streams a model-neutral native Bedrock `ConverseStream` request.
+ * 모델에 종속되지 않는 Bedrock 네이티브 `ConverseStream` 요청을 구성하고 스트리밍합니다.
  *
- * The returned [Flow] is cold, so every collection starts a new potentially
- * billable call. It uses `request(1)` demand and forwards cancellation while
- * leaving client closure to the caller. SDK retries may produce semantic
- * duplicates; no exactly-once, deduplication, retry, or replay is added.
+ * 반환된 [Flow]는 콜드 스트림이므로 수집할 때마다 과금될 수 있는 새 호출을 시작합니다.
+ * `request(1)` 수요를 사용하고 취소를 전달하며, 클라이언트 종료는 호출자가 담당합니다.
+ * SDK 재시도로 의미상 중복이 생길 수 있으며 정확히 한 번 전달, 중복 제거, 재시도 또는 재생을 추가하지 않습니다.
  */
 inline fun BedrockRuntimeAsyncClient.converseStreamFlow(
     modelId: String,
@@ -293,10 +291,9 @@ inline fun BedrockRuntimeAsyncClient.converseStreamFlow(
     converseStreamFlow(converseStreamRequestOf(modelId, messages, inferenceConfig, builder))
 
 /**
- * Selects text deltas in source order while preserving empty text.
+ * 빈 텍스트를 보존하면서 원본 순서대로 텍스트 델타를 선택합니다.
  *
- * Non-text events are filtered. This mapping adds no logging, parallel
- * transformation, retry, or replay.
+ * 텍스트가 아닌 이벤트는 걸러냅니다. 이 매핑은 로깅, 병렬 변환, 재시도 또는 재생을 추가하지 않습니다.
  */
 fun Flow<ConverseStreamOutput>.textDeltaFlow(): Flow<String> =
     map(ConverseStreamOutput::textDeltaOrNull).castNotNull<String>()

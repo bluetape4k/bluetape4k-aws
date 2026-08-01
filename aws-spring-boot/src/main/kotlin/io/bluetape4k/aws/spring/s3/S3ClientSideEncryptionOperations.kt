@@ -25,16 +25,14 @@ private const val METADATA_KEY_ID = "bt4k-cek-key-id"
 private const val METADATA_NONCE = "bt4k-cek-nonce"
 
 /**
- * S3 client-side envelope encryption operations backed by AWS KMS data keys.
+ * AWS KMS 데이터 키를 사용하는 S3 클라이언트 측 봉투 암호화 작업입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * Implementations encrypt object bytes locally before uploading them to S3 and
- * store the encrypted data key plus AES-GCM nonce in object metadata. This API
- * is intentionally byte-array based: it is suitable for small and medium
- * objects, not multipart uploads or streaming encryption. The object metadata is
- * required for decryption and the wire format is not AWS Encryption SDK
- * compatible.
+ * 구현은 객체 바이트를 S3에 업로드하기 전에 로컬에서 암호화하고 암호화된 데이터 키와
+ * AES-GCM nonce를 객체 메타데이터에 저장합니다. 이 API는 의도적으로 바이트 배열 기반이며
+ * 중소형 객체에 적합하지만 멀티파트 업로드나 스트리밍 암호화에는 적합하지 않습니다.
+ * 복호화에는 객체 메타데이터가 필요하고 와이어 형식은 AWS Encryption SDK와 호환되지 않습니다.
  *
  * ```kotlin
  * class SecureDocuments(private val s3: S3ClientSideEncryptionOperations) {
@@ -71,7 +69,7 @@ interface S3ClientSideEncryptionOperations {
 }
 
 /**
- * Default [S3ClientSideEncryptionOperations] implementation.
+ * 기본 [S3ClientSideEncryptionOperations] 구현입니다.
  */
 class S3ClientSideEncryptionTemplate(
     private val s3AsyncClient: S3AsyncClient,

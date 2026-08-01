@@ -5,12 +5,11 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
 import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
 
 /**
- * Coroutine-oriented STS operations for Ktor applications.
+ * Ktor 애플리케이션을 위한 코루틴 중심 STS 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Methods return raw AWS SDK response objects so callers keep full identity,
- * credential, and session metadata.
+ * 호출자가 전체 자격, 자격 증명, 세션 메타데이터를 유지할 수 있도록 메서드는 AWS SDK 원본 응답 객체를 반환합니다.
  */
 interface StsKtorOperations {
     suspend fun callerIdentity(): GetCallerIdentityResponse

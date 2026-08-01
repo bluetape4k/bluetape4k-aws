@@ -4,12 +4,11 @@ import org.springframework.boot.json.JsonParserFactory
 import java.net.URI
 
 /**
- * Parser for Amazon SNS HTTP(S) endpoint JSON messages.
+ * Amazon SNS HTTP(S) 엔드포인트 JSON 메시지 파서입니다.
  *
- * The parser maps official SNS fields and optionally checks the
- * `x-amz-sns-message-type` header against the JSON `Type`. It does not verify
- * SNS signatures; callers must validate the certificate chain, signature, and
- * expected topic ARN before trusting the parsed message.
+ * 파서는 공식 SNS 필드를 매핑하고 선택적으로 `x-amz-sns-message-type` 헤더와 JSON `Type`을
+ * 대조합니다. SNS 서명은 검증하지 않으므로 호출자는 파싱된 메시지를 신뢰하기 전에
+ * 인증서 체인, 서명, 예상 topic ARN을 검증해야 합니다.
  */
 object SnsHttpMessageParser {
 

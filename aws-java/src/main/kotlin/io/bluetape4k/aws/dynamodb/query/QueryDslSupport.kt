@@ -5,7 +5,7 @@ import io.bluetape4k.support.requireNotNull
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest
 
 /**
- * Creates a [QueryRequest] with a DSL.
+ * [QueryRequest] 를 DSL 형태로 생성하기 위한 함수
  *
  * ```kotlin
  * val request = queryRequest {
@@ -19,7 +19,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest
 inline fun queryRequest(builder: QueryRequestBuilderDSL.() -> Unit): QueryRequest =
     QueryRequestBuilderDSL().apply(builder).build()
 
-/** Builder that stores DSL state for creating a [QueryRequest]. */
+/** [QueryRequest] 생성용 DSL 상태를 보관하는 빌더입니다. */
 @DynamoDslMarker
 class QueryRequestBuilderDSL {
     var tableName: String? = null
@@ -28,9 +28,9 @@ class QueryRequestBuilderDSL {
     var filtering: RootFilter? = null
 
     /**
-     * Converts the current DSL state to a [QueryRequest].
+     * 현재 DSL 상태를 [QueryRequest]로 변환합니다.
      *
-     * Throws when `tableName` or `primaryKey` is missing.
+     * `tableName`, `primaryKey`가 누락되면 예외가 발생합니다.
      */
     fun build(): QueryRequest {
         val table = tableName.requireNotBlank("tableName")
@@ -66,7 +66,7 @@ class QueryRequestBuilderDSL {
     }
 }
 
-/** Configures the partition-key condition. */
+/** 파티션 키 조건을 설정합니다. */
 inline fun QueryRequestBuilderDSL.primaryKey(
     keyName: String,
     builder: PrimaryKeyBuilder.() -> Unit,
@@ -74,7 +74,7 @@ inline fun QueryRequestBuilderDSL.primaryKey(
     primaryKey = PrimaryKeyBuilder(keyName).apply(builder).build()
 }
 
-/** Configures the sort-key condition. */
+/** 정렬 키 조건을 설정합니다. */
 inline fun QueryRequestBuilderDSL.sortKey(
     keyName: String,
     builder: SortKeyBuilder.() -> Unit,
@@ -82,7 +82,7 @@ inline fun QueryRequestBuilderDSL.sortKey(
     sortKey = SortKeyBuilder(keyName).apply(builder).build()
 }
 
-/** Configures the filter condition. */
+/** 필터 조건을 설정합니다. */
 inline fun QueryRequestBuilderDSL.filtering(
     builder: RootFilterBuilder.() -> Unit,
 ) {

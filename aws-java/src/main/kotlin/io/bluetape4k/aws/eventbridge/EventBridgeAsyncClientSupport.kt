@@ -10,10 +10,10 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
 import java.net.URI
 
 /**
- * Builds an AWS SDK v2 [EventBridgeAsyncClient].
+ * AWS SDK v2 [EventBridgeAsyncClient]를 생성합니다.
  *
- * The created client is registered with [ShutdownQueue]. Coroutine helpers await
- * the returned futures and preserve cancellation/SDK exceptions.
+ * 생성한 클라이언트는 [ShutdownQueue]에 등록합니다. 코루틴 도우미는 반환된 Future를 기다리며
+ * 취소와 SDK 예외를 보존합니다.
  */
 inline fun eventBridgeAsyncClient(
     builder: EventBridgeAsyncClientBuilder.() -> Unit,
@@ -24,7 +24,7 @@ inline fun eventBridgeAsyncClient(
         }
 
 /**
- * Builds an [EventBridgeAsyncClient] with optional endpoint, region, and credentials.
+ * 선택적인 엔드포인트, 리전, 자격 증명으로 [EventBridgeAsyncClient]를 생성합니다.
  */
 inline fun eventBridgeAsyncClientOf(
     endpoint: URI? = null,

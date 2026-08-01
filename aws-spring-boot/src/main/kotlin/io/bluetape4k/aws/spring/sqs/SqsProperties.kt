@@ -6,7 +6,7 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * SQS auto-configuration properties.
+ * SQS 자동 설정 속성.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.sqs")
 data class SqsProperties(
@@ -43,7 +43,7 @@ data class SqsProperties(
     }
 
     /**
-     * In-process listener retry policy before the final SQS failure path.
+     * 최종 SQS 실패 경로 전에 적용하는 프로세스 내부 리스너 재시도 정책입니다.
      */
     data class Retry(
         val maxAttempts: Int = 1,

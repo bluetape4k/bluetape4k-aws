@@ -4,9 +4,9 @@ import software.amazon.awssdk.services.s3.model.Delete
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 
 /**
- * See the API documentation for details.
+ * [Delete]를 빌더로 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = delete { quiet(true) }
  * // result.quiet() == true
@@ -18,9 +18,9 @@ inline fun delete(
     Delete.builder().apply(builder).build()
 
 /**
- * See the API documentation for details.
+ * [ObjectIdentifier] 배열로 [Delete]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val first = objectIdentifier("images/a.png")
  * val second = objectIdentifier("images/b.png")
@@ -39,9 +39,9 @@ fun deleteOf(
     }
 
 /**
- * See the API documentation for details.
+ * [ObjectIdentifier] 컬렉션으로 [Delete]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val ids = listOf(objectIdentifier("a.txt"), objectIdentifier("b.txt"))
  * val result = deleteOf(ids)

@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.secretsmanager.model.ListSecretsRequest
 import software.amazon.awssdk.services.secretsmanager.model.PutSecretValueRequest
 
 /**
- * Builds a [GetSecretValueRequest].
+ * [GetSecretValueRequest]를 구성합니다.
  */
 inline fun getSecretValueRequestOf(
     secretId: String,
@@ -36,7 +36,7 @@ inline fun getSecretValueRequestOf(
 }
 
 /**
- * Builds a single-page [BatchGetSecretValueRequest].
+ * 단일 페이지 [BatchGetSecretValueRequest]를 구성합니다.
  */
 inline fun batchGetSecretValueRequestOf(
     secretIds: Collection<String>,
@@ -62,7 +62,7 @@ inline fun batchGetSecretValueRequestOf(
 }
 
 /**
- * Builds a single-page [ListSecretsRequest].
+ * 단일 페이지 [ListSecretsRequest]를 구성합니다.
  */
 inline fun listSecretsRequestOf(
     maxResults: Int? = null,
@@ -83,7 +83,7 @@ inline fun listSecretsRequestOf(
 }
 
 /**
- * Builds a [DescribeSecretRequest].
+ * [DescribeSecretRequest]를 구성합니다.
  */
 inline fun describeSecretRequestOf(
     secretId: String,
@@ -102,7 +102,7 @@ inline fun describeSecretRequestOf(
 }
 
 /**
- * Builds a [CreateSecretRequest] from a redacted secret value.
+ * 값이 가려진 보안 값으로 [CreateSecretRequest]를 구성합니다.
  */
 inline fun createSecretRequestOf(
     name: String,
@@ -129,7 +129,7 @@ inline fun createSecretRequestOf(
 }
 
 /**
- * Builds a [PutSecretValueRequest] from a redacted secret value.
+ * 값이 가려진 보안 값으로 [PutSecretValueRequest]를 구성합니다.
  */
 inline fun putSecretValueRequestOf(
     secretId: String,

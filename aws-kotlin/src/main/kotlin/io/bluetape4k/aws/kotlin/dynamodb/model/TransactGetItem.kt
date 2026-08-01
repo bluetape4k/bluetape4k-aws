@@ -8,17 +8,17 @@ import aws.sdk.kotlin.services.dynamodb.model.TransactGetItemsRequest
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * Creates a DynamoDB [TransactGetItem] from a [Get] object.
+ * [Get] 객체로 DynamoDB [TransactGetItem]을 생성합니다.
  *
- * ## Behavior and contract
- * - Sets [get] directly on the `get` field of [TransactGetItem].
+ * ## 동작/계약
+ * - [get]을 그대로 [TransactGetItem]의 `get` 필드에 설정한다.
  *
  * ```kotlin
  * val item = transactGetItemOf(getOf("users", mapOf("id" to AttributeValue.S("u1"))))
  * // item.get?.tableName == "users"
  * ```
  *
- * @param get [Get] object that defines the read operation.
+ * @param get 조회 작업을 정의하는 [Get] 객체
  */
 fun transactGetItemOf(get: Get): TransactGetItem =
     TransactGetItem {
@@ -26,11 +26,11 @@ fun transactGetItemOf(get: Get): TransactGetItem =
     }
 
 /**
- * Creates a DynamoDB [TransactGetItem] from a table name and key.
+ * 테이블 이름과 키로 DynamoDB [TransactGetItem]을 생성합니다.
  *
- * ## Behavior and contract
- * - Calls [getOf] internally, creates a [Get], then wraps it as [TransactGetItem].
- * - Throws `IllegalArgumentException` when [tableName] is blank.
+ * ## 동작/계약
+ * - 내부적으로 [getOf]를 호출하여 [Get]을 생성한 후 [TransactGetItem]으로 래핑한다.
+ * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val item = transactGetItemOf("users", emptyMap()) {
@@ -39,10 +39,10 @@ fun transactGetItemOf(get: Get): TransactGetItem =
  * // item.get?.tableName == "users"
  * ```
  *
- * @param tableName DynamoDB table name to read from. Blank values throw.
- * @param key key and attribute map for the item to read.
- * @param expressionAttributeNames projection expression attribute name substitution map.
- * @param projectionExpression projection expression that selects returned attributes.
+ * @param tableName 조회할 DynamoDB 테이블 이름 (blank이면 예외)
+ * @param key 조회할 항목의 키와 속성 맵
+ * @param expressionAttributeNames 프로젝션 표현식 속성 이름 치환 맵
+ * @param projectionExpression 반환할 속성을 지정하는 프로젝션 표현식
  */
 inline fun transactGetItemOf(
     tableName: String,
@@ -54,12 +54,12 @@ inline fun transactGetItemOf(
     transactGetItemOf(getOf(tableName, key, expressionAttributeNames, projectionExpression, builder))
 
 /**
- * Builds a DynamoDB [TransactGetItemsRequest] with a DSL block.
+ * DSL 블록으로 DynamoDB [TransactGetItemsRequest]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [transactItems] is empty.
- * - Does not return consumed capacity details when [returnConsumedCapacity] is null.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [transactItems]가 비어 있으면 `IllegalArgumentException`을 던진다.
+ * - [returnConsumedCapacity]가 null이면 소비 용량 정보를 반환하지 않는다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val req = transactGetItemsRequestOf(
@@ -68,8 +68,8 @@ inline fun transactGetItemOf(
  * // req.transactItems?.size == 1
  * ```
  *
- * @param transactItems [TransactGetItem] list to read transactionally. Empty values throw.
- * @param returnConsumedCapacity whether to return consumed capacity details.
+ * @param transactItems 트랜잭션으로 조회할 [TransactGetItem] 목록 (비어 있으면 예외)
+ * @param returnConsumedCapacity 소비된 용량 반환 여부
  */
 inline fun transactGetItemsRequestOf(
     transactItems: List<TransactGetItem>,

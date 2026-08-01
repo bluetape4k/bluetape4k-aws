@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.sts.model.GetSessionTokenRequest
 import software.amazon.awssdk.services.sts.model.GetSessionTokenResponse
 
 /**
- * Coroutine-friendly [StsKtorOperations] implementation backed by [StsAsyncClient].
+ * [StsAsyncClient]를 사용하는 코루틴 친화적인 [StsKtorOperations] 구현입니다.
  */
 class StsKtorTemplate(
     private val stsAsyncClient: StsAsyncClient,

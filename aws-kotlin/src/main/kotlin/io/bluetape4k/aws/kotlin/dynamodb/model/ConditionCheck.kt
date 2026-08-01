@@ -4,12 +4,12 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.ConditionCheck
 
 /**
- * Builds a DynamoDB [ConditionCheck] with a DSL block. [AttributeValue] map overload.
+ * DSL 블록으로 DynamoDB [ConditionCheck]를 빌드합니다 ([AttributeValue] 맵 오버로드).
  *
- * ## Behavior and contract
- * - [conditionExpression] is the condition expression string and is omitted when null.
- * - [key] and [expressionAttributeValues] accept [AttributeValue] maps directly.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [conditionExpression]은 조건 표현식 문자열로, null이면 설정되지 않는다.
+ * - [key]와 [expressionAttributeValues]는 [AttributeValue] 맵을 직접 받는다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val check = conditionCheckOf(
@@ -19,10 +19,10 @@ import aws.sdk.kotlin.services.dynamodb.model.ConditionCheck
  * // check.conditionExpression == "attribute_exists(id)"
  * ```
  *
- * @param conditionExpression condition expression string.
- * @param expressionAttributeNames expression attribute name substitution map.
- * @param expressionAttributeValues expression attribute value substitution map.
- * @param key primary key map for the item to check.
+ * @param conditionExpression 조건 표현식 문자열
+ * @param expressionAttributeNames 표현식 속성 이름 치환 맵
+ * @param expressionAttributeValues 표현식 속성 값 치환 맵
+ * @param key 조건을 적용할 항목의 기본 키 맵
  */
 @JvmName("conditionCheckOfAttributeValue")
 inline fun conditionCheckOf(
@@ -41,12 +41,12 @@ inline fun conditionCheckOf(
 }
 
 /**
- * Builds a DynamoDB [ConditionCheck] with a DSL block. Any? map overload.
+ * DSL 블록으로 DynamoDB [ConditionCheck]를 빌드합니다 (Any? 맵 오버로드).
  *
- * ## Behavior and contract
- * - Values in [expressionAttributeValues] and [key] are converted into [AttributeValue] through [toAttributeValueMap].
- * - [conditionExpression] is omitted when null.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [expressionAttributeValues]와 [key]의 각 값은 [toAttributeValueMap]을 통해 [AttributeValue]로 자동 변환된다.
+ * - [conditionExpression]은 null이면 설정되지 않는다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val check = conditionCheckOf(
@@ -56,10 +56,10 @@ inline fun conditionCheckOf(
  * // check.key?.get("id") == AttributeValue.S("u1")
  * ```
  *
- * @param conditionExpression condition expression string.
- * @param expressionAttributeNames expression attribute name substitution map.
- * @param expressionAttributeValues expression attribute value substitution map. Converted to [AttributeValue] automatically.
- * @param key primary key map for the item to check. Converted to [AttributeValue] automatically.
+ * @param conditionExpression 조건 표현식 문자열
+ * @param expressionAttributeNames 표현식 속성 이름 치환 맵
+ * @param expressionAttributeValues 표현식 속성 값 치환 맵 (자동으로 [AttributeValue]로 변환)
+ * @param key 조건을 적용할 항목의 기본 키 맵 (자동으로 [AttributeValue]로 변환)
  */
 @JvmName("conditionCheckOfAny")
 inline fun conditionCheckOf(

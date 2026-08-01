@@ -10,15 +10,14 @@ import java.net.URI
 private const val DEFAULT_MAX_SNS_HTTP_MESSAGE_BYTES: Int = 256 * 1024
 
 /**
- * Parser for Amazon SNS HTTP(S) endpoint JSON messages.
+ * Amazon SNS HTTP(S) 엔드포인트 JSON 메시지 파서입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * The parser maps official SNS fields and optionally checks the
- * `x-amz-sns-message-type` header against the JSON `Type`. It validates JSON
- * structure and signing certificate URL shape, but it does not verify SNS
- * signatures. Callers must validate the certificate chain, signature, expected
- * topic ARN, and replay policy before trusting the parsed message.
+ * 파서는 공식 SNS 필드를 매핑하고 선택적으로 `x-amz-sns-message-type` 헤더와 JSON `Type`을
+ * 대조합니다. JSON 구조와 서명 인증서 URL 형식은 검증하지만 SNS 서명은 검증하지 않습니다.
+ * 호출자는 파싱된 메시지를 신뢰하기 전에 인증서 체인, 서명, 예상 topic ARN, 재생 정책을
+ * 검증해야 합니다.
  */
 class SnsHttpMessageParser(
     private val objectMapper: ObjectMapper = defaultObjectMapper(),
@@ -30,7 +29,7 @@ class SnsHttpMessageParser(
     }
 
     /**
-     * Parses an SNS HTTP JSON body into an untrusted [SnsHttpMessage].
+     * SNS HTTP JSON 본문을 신뢰되지 않은 [SnsHttpMessage]로 파싱합니다.
      */
     fun parse(json: String, messageTypeHeader: String? = null): SnsHttpMessage {
         require(json.isNotBlank()) { "json must not be blank." }
@@ -133,10 +132,10 @@ class SnsHttpMessageParser(
             .getOrElse { throw IllegalArgumentException("SNS HTTP message $key must be a valid URI.", it) }
 
     companion object {
-        /** SNS HTTP message type header. */
+        /** SNS HTTP 메시지 타입 헤더입니다. */
         const val MESSAGE_TYPE_HEADER: String = "x-amz-sns-message-type"
 
-        /** Builds a default parser with strict duplicate-field detection. */
+        /** 중복 필드를 엄격하게 감지하는 기본 파서를 생성합니다. */
         fun default(): SnsHttpMessageParser = SnsHttpMessageParser()
 
         private fun defaultObjectMapper(): ObjectMapper =

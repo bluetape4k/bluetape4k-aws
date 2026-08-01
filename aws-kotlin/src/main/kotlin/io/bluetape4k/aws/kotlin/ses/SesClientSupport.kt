@@ -42,7 +42,7 @@ inline fun sesClientOf(
 /**
  * [SesClient]를 생성하고 [block]을 실행한 뒤 client를 자동으로 닫습니다.
  *
- * When the SDK owns the internal HTTP engine, closing the client also shuts down that engine.
+ * SDK가 내부 HTTP 엔진을 직접 관리하므로 close() 시 엔진도 함께 종료됩니다.
  *
  * ```kotlin
  * withSesClient(endpointUrl, region, credentialsProvider) { client ->

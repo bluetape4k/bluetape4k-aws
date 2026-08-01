@@ -4,10 +4,10 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kms.model.ListGrantsRequest
 
 /**
- * Creates a [ListGrantsRequest] with a DSL-style builder lambda.
+ * DSL 스타일의 빌더 람다로 [ListGrantsRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies [builder] to [ListGrantsRequest.builder], then calls `build()`.
+ * ## 동작/계약
+ * - [ListGrantsRequest.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
  *
  * ```kotlin
  * val request = listGrantsRequest {
@@ -23,12 +23,12 @@ inline fun listGrantsRequest(
     ListGrantsRequest.builder().apply(builder).build()
 
 /**
- * Creates a [ListGrantsRequest] by specifying primary parameters directly.
+ * 주요 파라미터를 직접 지정하여 [ListGrantsRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [keyId] is blank.
- * - Applies [grantId], [marker], and [limit] to the builder only when they are non-null.
- * - Runs [builder] last.
+ * ## 동작/계약
+ * - [keyId]가 blank이면 `IllegalArgumentException`을 던집니다.
+ * - [grantId], [marker], [limit]는 `null`이 아닐 때만 빌더에 반영합니다.
+ * - 마지막에 [builder]를 추가로 실행합니다.
  *
  * ```kotlin
  * val request = listGrantsRequestOf(

@@ -7,7 +7,7 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * Creates a SendMessageRequest from the supplied queueUrl and messageBody.
+ * 제공된 queueUrl과 messageBody를 사용하여 SendMessageRequest를 생성합니다.
  *
  * ```kotlin
  * import aws.sdk.kotlin.services.sqs.SqsClient
@@ -26,11 +26,11 @@ import io.bluetape4k.support.requireNotEmpty
  * }
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue to which the message is sent.
- * @param messageBody Body of the message to send.
- * @param delaySeconds Seconds to wait before sending the message. Defaults to null.
- * @param builder Lambda for initializing SendMessageRequest.Builder. Defaults to an empty lambda.
- * @return A [SendMessageRequest] instance.
+ * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
+ * @param messageBody 전송할 메시지의 본문입니다.
+ * @param delaySeconds 메시지를 보내기 전 대기할 시간(초)입니다. 기본값은 null입니다.
+ * @param builder SendMessageRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
+ * @return [SendMessageRequest] 인스턴스를 반환합니다.
  */
 inline fun sendMessageRequestOf(
     queueUrl: String,
@@ -51,23 +51,23 @@ inline fun sendMessageRequestOf(
 }
 
 /**
- * Creates a SendMessageBatchRequestEntry from the supplied id, messageBody, and messageGroupId.
+ * 제공된 id, messageBody, messageGroupId를 사용하여 SendMessageBatchRequestEntry를 생성합니다.
  *
  * ```kotlin
  * val entry = sendMessageBatchRequestEntryOf(
  *     id = "msg-001",
  *     messageBody = "Hello, World!",
- *     messageGroupId = "orders"   // Used for FIFO queues.
+ *     messageGroupId = "orders"   // FIFO 큐에서 사용
  * )
  * ```
  *
- * @param id Message identifier.
- * @param messageBody Body of the message to send.
- * @param messageGroupId Message group identifier.
- * @param delaySeconds Seconds to wait before sending the message. Defaults to null.
- * @param builder Lambda for initializing SendMessageBatchRequestEntry.Builder. Defaults to an empty lambda.
+ * @param id 메시지의 식별자입니다.
+ * @param messageBody 전송할 메시지의 본문입니다.
+ * @param messageGroupId 메시지 그룹의 식별자입니다.
+ * @param delaySeconds 메시지를 보내기 전 대기할 시간(초)입니다. 기본값은 null입니다.
+ * @param builder SendMessageBatchRequestEntry.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
  *
- * @return A SendMessageBatchRequestEntry instance.
+ * @return SendMessageBatchRequestEntry 인스턴스를 반환합니다.
  */
 inline fun sendMessageBatchRequestEntryOf(
     id: String,
@@ -90,7 +90,7 @@ inline fun sendMessageBatchRequestEntryOf(
 }
 
 /**
- * Creates a SendMessageBatchRequest from the supplied queueUrl and entries.
+ * 제공된 queueUrl과 entries를 사용하여 SendMessageBatchRequest를 생성합니다.
  *
  * ```kotlin
  * import aws.sdk.kotlin.services.sqs.SqsClient
@@ -108,10 +108,10 @@ inline fun sendMessageBatchRequestEntryOf(
  * }
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue to which the messages are sent.
- * @param entries Collection of SendMessageBatchRequestEntry instances.
- * @param builder Lambda for initializing SendMessageBatchRequest.Builder. Defaults to an empty lambda.
- * @return A SendMessageBatchRequest instance.
+ * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
+ * @param entries SendMessageBatchRequestEntry 인스턴스의 컬렉션입니다.
+ * @param builder SendMessageBatchRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
+ * @return SendMessageBatchRequest 인스턴스를 반환합니다.
  */
 @JvmName("sendMessageBatchRequestOfCollection")
 inline fun sendMessageBatchRequestOf(
@@ -131,7 +131,7 @@ inline fun sendMessageBatchRequestOf(
 }
 
 /**
- * Creates a SendMessageBatchRequest from the supplied queueUrl and entries.
+ * 제공된 queueUrl과 entries를 사용하여 SendMessageBatchRequest를 생성합니다.
  *
  * ```kotlin
  * import aws.sdk.kotlin.services.sqs.SqsClient
@@ -148,10 +148,10 @@ inline fun sendMessageBatchRequestOf(
  * }
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue to which the messages are sent.
- * @param entries Array of SendMessageBatchRequestEntry instances.
- * @param builder Lambda for initializing SendMessageBatchRequest.Builder. Defaults to an empty lambda.
- * @return A SendMessageBatchRequest instance.
+ * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
+ * @param entries SendMessageBatchRequestEntry 인스턴스의 배열입니다.
+ * @param builder SendMessageBatchRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
+ * @return SendMessageBatchRequest 인스턴스를 반환합니다.
  */
 @JvmName("sendMessageBatchRequestOfArray")
 inline fun sendMessageBatchRequestOf(

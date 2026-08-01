@@ -13,16 +13,15 @@ import software.amazon.awssdk.transfer.s3.model.UploadRequest
 import java.nio.file.Path
 
 /**
- * Coroutine-first S3 transfer operations backed by the AWS SDK `S3TransferManager`.
+ * AWS SDK `S3TransferManager`를 사용하는 코루틴 우선 S3 전송 작업입니다.
  *
- * Use this contract for large files, multipart transfers, progress listeners, and
- * TransferManager-specific request customization. Basic object operations remain
- * available through [S3Operations].
+ * 대용량 파일, 멀티파트 전송, 진행률 리스너, TransferManager 전용 요청 사용자 정의에
+ * 이 계약을 사용하세요. 기본 객체 작업은 [S3Operations]에서 계속 제공합니다.
  */
 interface S3TransferOperations {
 
     /**
-     * Uploads [bytes] to [bucket]/[key] through `S3TransferManager`.
+     * `S3TransferManager`로 [bytes]를 [bucket]/[key]에 업로드합니다.
      */
     suspend fun upload(
         bucket: String,
@@ -32,7 +31,7 @@ interface S3TransferOperations {
     ): CompletedUpload
 
     /**
-     * Uploads [source] to [bucket]/[key] through `S3TransferManager`.
+     * `S3TransferManager`로 [source]를 [bucket]/[key]에 업로드합니다.
      */
     suspend fun uploadFile(
         bucket: String,
@@ -42,7 +41,7 @@ interface S3TransferOperations {
     ): CompletedFileUpload
 
     /**
-     * Downloads [bucket]/[key] as bytes through `S3TransferManager`.
+     * `S3TransferManager`로 [bucket]/[key]를 바이트로 다운로드합니다.
      */
     suspend fun downloadBytes(
         bucket: String,
@@ -51,7 +50,7 @@ interface S3TransferOperations {
     ): CompletedDownload<ResponseBytes<GetObjectResponse>>
 
     /**
-     * Downloads [bucket]/[key] into [destination] through `S3TransferManager`.
+     * `S3TransferManager`로 [bucket]/[key]를 [destination]에 다운로드합니다.
      */
     suspend fun downloadFile(
         bucket: String,

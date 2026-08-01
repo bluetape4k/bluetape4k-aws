@@ -8,7 +8,7 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.useSafe
 
 /**
- * Creates an AWS Kotlin SDK [SsmClient].
+ * AWS Kotlin SDK [SsmClient]를 생성합니다.
  */
 inline fun ssmClientOf(
     endpointUrl: Url? = null,
@@ -30,7 +30,7 @@ inline fun ssmClientOf(
 }
 
 /**
- * Creates an [SsmClient], runs [block], and closes the client.
+ * [SsmClient]를 생성하고 [block]을 실행한 뒤 클라이언트를 닫습니다.
  */
 suspend fun <R> withSsmClient(
     endpointUrl: Url? = null,

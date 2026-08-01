@@ -5,7 +5,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedLocalSecondaryInde
 import software.amazon.awssdk.services.dynamodb.model.Projection
 
 /**
- * See the API documentation for details.
+ * [EnhancedGlobalSecondaryIndex] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val index = EnhancedGlobalSecondaryIndex {
@@ -14,8 +14,8 @@ import software.amazon.awssdk.services.dynamodb.model.Projection
  *   // ...
  * }
  * ```
- * @param builder Parameter.
- * @return Return value.
+ * @param builder EnhancedGlobalSecondaryIndex.Builder 초기화 람다
+ * @return [EnhancedGlobalSecondaryIndex] 인스턴스
  */
 inline fun EnhancedGlobalSecondaryIndex(
     builder: EnhancedGlobalSecondaryIndex.Builder.() -> Unit,
@@ -24,15 +24,15 @@ inline fun EnhancedGlobalSecondaryIndex(
 }
 
 /**
- * See the API documentation for details.
+ * [EnhancedGlobalSecondaryIndex] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val index = enhancedGlobalSecondaryIndexOf("indexName", projection)
  * ```
  *
- * @param indexName Parameter.
- * @param projection Parameter.
- * @return Return value.
+ * @param indexName 인덱스 이름
+ * @param projection 프로젝션 설정
+ * @return [EnhancedGlobalSecondaryIndex] 인스턴스
  */
 fun enhancedGlobalSecondaryIndexOf(
     indexName: String,
@@ -43,7 +43,7 @@ fun enhancedGlobalSecondaryIndexOf(
 }
 
 /**
- * See the API documentation for details.
+ * [EnhancedLocalSecondaryIndex] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val index = EnhancedLocalSecondaryIndex {
@@ -52,8 +52,8 @@ fun enhancedGlobalSecondaryIndexOf(
  *   // ...
  * }
  * ```
- * @param builder Parameter.
- * @return Return value.
+ * @param builder EnhancedLocalSecondaryIndex.Builder 초기화 람다
+ * @return [EnhancedLocalSecondaryIndex] 인스턴스
  */
 inline fun EnhancedLocalSecondaryIndex(
     builder: EnhancedLocalSecondaryIndex.Builder.() -> Unit,
@@ -62,15 +62,15 @@ inline fun EnhancedLocalSecondaryIndex(
 }
 
 /**
- * See the API documentation for details.
+ * [EnhancedLocalSecondaryIndex] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val index = enhancedLocalSecondaryIndexOf("indexName", projection)
  * ```
  *
- * @param indexName Parameter.
- * @param projection Parameter.
- * @return Return value.
+ * @param indexName 인덱스 이름
+ * @param projection 프로젝션 설정
+ * @return [EnhancedLocalSecondaryIndex] 인스턴스
  */
 fun enhancedLocalSecondaryIndexOf(
     indexName: String,

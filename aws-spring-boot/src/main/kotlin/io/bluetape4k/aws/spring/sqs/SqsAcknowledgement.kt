@@ -3,33 +3,32 @@ package io.bluetape4k.aws.spring.sqs
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Manual acknowledgement handle for an `@SqsListener` invocation.
+ * `@SqsListener` 호출의 수동 확인 핸들입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * Listener methods that declare this parameter opt out of automatic message
- * deletion. Call [acknowledge] after successful processing, or [nack] to make
- * the message visible again after the supplied timeout.
+ * 이 매개변수를 선언한 리스너 메서드는 자동 메시지 삭제를 사용하지 않습니다. 처리가 성공하면
+ * [acknowledge]를 호출하고, 지정한 타임아웃 후 메시지를 다시 보이게 하려면 [nack]을 호출하세요.
  */
 interface SqsAcknowledgement {
 
     /**
-     * Whether this acknowledgement has already completed with ack or nack.
+     * 이 확인이 ack 또는 nack으로 이미 완료되었는지 나타냅니다.
      */
     val completed: Boolean
 
     /**
-     * Deletes the message from the queue.
+     * 큐에서 메시지를 삭제합니다.
      */
     suspend fun acknowledge()
 
     /**
-     * Changes visibility and marks the message as negatively acknowledged.
+     * 가시성을 변경하고 메시지를 부정 확인 상태로 표시합니다.
      */
     suspend fun nack(timeoutSeconds: Int = 0)
 
     /**
-     * Changes message visibility without completing acknowledgement state.
+     * 확인 상태를 완료하지 않고 메시지 가시성을 변경합니다.
      */
     suspend fun changeVisibility(timeoutSeconds: Int)
 }

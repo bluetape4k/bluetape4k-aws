@@ -8,43 +8,43 @@ import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
 import java.net.URI
 
 /**
- * Configuration for [SesKtorPlugin].
+ * [SesKtorPlugin] 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Installing the plugin registers operations only. It does not send email
- * until application code invokes [SesKtorOperations].
+ * 플러그인을 설치하면 작업만 등록합니다. 애플리케이션 코드가 [SesKtorOperations]를
+ * 호출하기 전에는 이메일을 전송하지 않습니다.
  */
 class SesKtorPluginConfig {
 
-    /** Enables Ktor SES runtime registration. */
+    /** Ktor SES 런타임 등록을 활성화합니다. */
     var enabled: Boolean = true
 
-    /** Optional application-owned AWS SDK v2 SES v2 async client. */
+    /** 애플리케이션이 소유하는 선택적인 AWS SDK v2 SES v2 비동기 클라이언트입니다. */
     var sesV2AsyncClient: SesV2AsyncClient? = null
 
-    /** Optional application-owned operations facade. */
+    /** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
     var sesOperations: SesKtorOperations? = null
 
-    /** Optional SES region used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 SES 리전입니다. */
     var region: String? = null
 
-    /** Optional SES endpoint override used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 SES 엔드포인트 재정의입니다. */
     var endpointOverride: URI? = null
 
-    /** Optional credentials provider used when the plugin creates the client. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
     var credentialsProvider: AwsCredentialsProvider? = null
 
-    /** Default sender used when a request omits `from`. */
+    /** 요청에서 `from`을 생략했을 때 사용하는 기본 발신자입니다. */
     var defaultFrom: String? = null
 
-    /** Default SES configuration set used when a request omits one. */
+    /** 요청에서 구성 집합을 생략했을 때 사용하는 기본 SES 구성 집합입니다. */
     var configurationSetName: String? = null
 
     private val clientCustomizers = mutableListOf<AwsKtorSesV2AsyncClientCustomizer>()
 
     /**
-     * Adds SES v2 async client builder customization for plugin-created clients.
+     * 플러그인이 생성한 클라이언트에 SES v2 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun sesV2AsyncClient(customizer: AwsKtorSesV2AsyncClientCustomizer) {
         clientCustomizers += customizer

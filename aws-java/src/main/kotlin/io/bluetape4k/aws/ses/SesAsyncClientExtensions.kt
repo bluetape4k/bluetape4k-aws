@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.ses.model.SendTemplatedEmailResponse
 import java.util.concurrent.CompletableFuture
 
 /**
- * Sends an email asynchronously from [SendEmailRequest] data.
+ * [SendEmailRequest] 정보를 바탕으로 email을 비동기로 전송합니다.
  *
  * ```kotlin
  * val response = client.send(request).await()
@@ -20,8 +20,8 @@ import java.util.concurrent.CompletableFuture
  * log.debug { "response=$response" }
  * ```
  *
- * @param emailRequest [SendEmailRequest] email send request data.
- * @return [CompletableFuture]<[SendEmailResponse]> email send response data.
+ * @param emailRequest [SendEmailRequest] email 전송 요청 정보
+ * @return [CompletableFuture]<[SendEmailResponse]> email 전송 응답 정보
  */
 fun SesAsyncClient.sendAsync(
     emailRequest: SendEmailRequest,
@@ -29,7 +29,7 @@ fun SesAsyncClient.sendAsync(
     sendEmail(emailRequest)
 
 /**
- * Sends an email asynchronously from [SendRawEmailRequest] data.
+ * [SendRawEmailRequest] 정보를 바탕으로 email을 비동기로 전송합니다.
  *
  * ```kotlin
  * val response = client.sendRaw(request).await()
@@ -37,8 +37,8 @@ fun SesAsyncClient.sendAsync(
  * log.debug { "response=$response" }
  * ```
  *
- * @param rawEmailRequest [SendRawEmailRequest] email send request data.
- * @return [CompletableFuture]<[SendRawEmailResponse]> email send response data.
+ * @param rawEmailRequest [SendRawEmailRequest] email 전송 요청 정보
+ * @return [CompletableFuture]<[SendRawEmailResponse]> email 전송 응답 정보
  */
 fun SesAsyncClient.sendRawAsync(
     rawEmailRequest: SendRawEmailRequest,
@@ -46,7 +46,7 @@ fun SesAsyncClient.sendRawAsync(
     sendRawEmail(rawEmailRequest)
 
 /**
- * Sends an email asynchronously from [SendTemplatedEmailRequest] data.
+ * [SendTemplatedEmailRequest] 정보를 바탕으로 email을 비동기로 전송합니다.
  *
  * ```kotlin
  * val response = client.sendTemplated(request).await()
@@ -54,8 +54,8 @@ fun SesAsyncClient.sendRawAsync(
  * log.debug { "response=$response" }
  * ```
  *
- * @param templatedEmailRequest [SendTemplatedEmailRequest] email send request data.
- * @return [CompletableFuture]<[SendTemplatedEmailResponse]> email send response data.
+ * @param templatedEmailRequest [SendTemplatedEmailRequest] email 전송 요청 정보
+ * @return [CompletableFuture]<[SendTemplatedEmailResponse]> email 전송 응답 정보
  */
 fun SesAsyncClient.sendTemplatedAsync(
     templatedEmailRequest: SendTemplatedEmailRequest,
@@ -63,7 +63,7 @@ fun SesAsyncClient.sendTemplatedAsync(
     sendTemplatedEmail(templatedEmailRequest)
 
 /**
- * Sends an email asynchronously from [SendBulkTemplatedEmailRequest] data.
+ * [SendBulkTemplatedEmailRequest] 정보를 바탕으로 email을 비동기로 전송합니다.
  *
  * ```kotlin
  * val response = client.sendBulkTemplated(request).await()
@@ -71,8 +71,8 @@ fun SesAsyncClient.sendTemplatedAsync(
  * log.debug { "response=$response" }
  * ```
  *
- * @param bulkTemplatedEmailRequest [SendBulkTemplatedEmailRequest] email send request data.
- * @return [CompletableFuture]<[SendBulkTemplatedEmailResponse]> email send response data.
+ * @param bulkTemplatedEmailRequest [SendBulkTemplatedEmailRequest] email 전송 요청 정보
+ * @return [CompletableFuture]<[SendBulkTemplatedEmailResponse]> email 전송 응답 정보
  */
 fun SesAsyncClient.sendBulkTemplatedAsync(
     bulkTemplatedEmailRequest: SendBulkTemplatedEmailRequest,

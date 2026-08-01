@@ -11,7 +11,7 @@ import org.springframework.security.crypto.encrypt.TextEncryptor
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Optional Spring Security Crypto adapter auto-configuration for AWS KMS.
+ * AWS KMS용 선택적 Spring Security Crypto 어댑터 자동 구성입니다.
  */
 @AutoConfiguration(after = [KmsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

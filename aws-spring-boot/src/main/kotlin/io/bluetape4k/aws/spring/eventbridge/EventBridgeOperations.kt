@@ -14,13 +14,13 @@ import software.amazon.awssdk.services.eventbridge.model.RuleState
 import software.amazon.awssdk.services.eventbridge.model.Target
 
 /**
- * Coroutine-oriented EventBridge operations for Spring applications.
+ * Spring 애플리케이션을 위한 코루틴 중심 EventBridge 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Methods keep raw AWS SDK response types so callers can inspect partial
- * failures from `PutEvents`, `PutTargets`, and `RemoveTargets`. One method call
- * performs one SDK request; callers own batching, retries, and cleanup order.
+ * 메서드는 호출자가 `PutEvents`, `PutTargets`, `RemoveTargets`의 부분 실패를 확인할 수 있도록
+ * 원본 AWS SDK 응답 타입을 유지합니다. 메서드 호출 한 번은 SDK 요청 하나를 수행하며
+ * 배치 처리, 재시도, 정리 순서는 호출자가 책임집니다.
  *
  * ```kotlin
  * suspend fun publish(events: EventBridgeOperations) {

@@ -1,39 +1,29 @@
-# Issue #227 Plan Review
+# Issue #227 계획 검토
 
-## Scope
+## 범위
 
-Reviewed `docs/superpowers/plans/2026-06-08-issue-227-s3-access-grants-spring-plan.md`
-against the approved spec, current `aws-spring-boot` patterns, and
-bluetape4k workflow/code-pattern requirements.
+`docs/superpowers/plans/2026-06-08-issue-227-s3-access-grants-spring-plan.md`를 승인된 spec, 현재 `aws-spring-boot` 패턴, bluetape4k workflow/code-pattern과 대조했다.
 
-## Findings
+## 결과
 
 - P0: 0
 - P1: 0
 - P2: 0
 
-## Gate Verdict
+## Gate 판정
 
-PASS.
+PASS. 다음 조건을 충족해 구현을 진행할 수 있다.
 
-The plan can proceed to implementation because:
+- `software.amazon.awssdk:s3control`을 `compileOnly`/`testImplementation`으로 선택적으로 유지한다.
+- Access Grants 기본 비활성화 계약을 보존한다.
+- `AwsProperties`, client default, customizer hook을 재사용한다.
+- compileOnly SDK type에 문자열 기반 `@ConditionalOnClass` guard를 요구한다.
+- 누락 class, 호출자 소유 Bean, property gate, template delegation test를 포함한다.
+- Ktor Access Grants와 S3 Vector는 이 PR에서 제외한다.
 
-- It keeps `software.amazon.awssdk:s3control` optional through
-  `compileOnly` and `testImplementation`.
-- It preserves the disabled-by-default Access Grants contract.
-- It reuses existing `AwsProperties`, client defaults, and customizer hooks.
-- It requires string-based `@ConditionalOnClass` guards for compileOnly SDK
-  types.
-- It includes tests for missing classes, caller-owned beans, property gates,
-  and template delegation.
-- It keeps Ktor Access Grants and S3 Vector out of this PR.
+## 증거
 
-## Evidence
-
-- Existing Spring templates already use `kotlinx.coroutines.future.await`.
-- `S3AutoConfiguration` and `S3AutoConfigurationTest` provide the local
-  compileOnly/backoff/customizer pattern.
-- `DynamoDbDaxAutoConfiguration` provides a precedent for optional
-  explicitly-enabled client integration.
-- CodeGraph was unavailable for this worktree, so review used source reads and
-  Gradle/GNO evidence.
+- 기존 Spring template은 `kotlinx.coroutines.future.await`를 사용한다.
+- `S3AutoConfiguration`/`S3AutoConfigurationTest`가 compileOnly/backoff/customizer 패턴을 제공한다.
+- `DynamoDbDaxAutoConfiguration`이 optional explicit client 통합 선례를 제공한다.
+- CodeGraph를 사용할 수 없어 source read와 Gradle/GNO 증거를 사용했다.

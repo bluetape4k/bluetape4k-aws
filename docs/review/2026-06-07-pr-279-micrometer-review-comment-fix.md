@@ -1,62 +1,31 @@
-# PR 279 Micrometer Review Comment Fix
+# PR 279 Micrometer 검토 의견 수정
 
-## Scope
+## 범위
 
-Review follow-up for PR #279 comments about magic strings and operation-specific
-Micrometer recording helpers.
+PR #279의 magic string 및 operation-specific Micrometer record helper 의견 후속 작업이다. Ktor Micrometer/S3/SQS, Spring Boot Micrometer/S3/SQS, 집중 test를 변경했다.
 
-Touched areas:
+## 결과
 
-- Ktor Micrometer support, S3 wrapper, SQS consumer observer/runtime.
-- Spring Boot Micrometer support, S3/SQS operation decorators, SQS listener
-  interceptor.
-- Focused Micrometer tests for Ktor and Spring Boot.
+P0/P1/P2=0, 차단 문제 없음.
 
-## Findings
+## 검토 내용
 
-P0 = 0
-P1 = 0
-P2 = 0
+- Service/tag/outcome/exception/operation 문자열을 관련 support object/class 상수로 모았다.
+- `MicrometerS3KtorClient`는 `putObjectRecord`/`getObjectRecord` 같은 operation-specific helper를 호출한다.
+- Ktor/Spring support는 별도 `recordSuspend`/`recordBlocking` support helper 대신 suspend/blocking lambda용 inline `record` overload를 제공한다.
+- Suspend 함수 안 `() -> T`와 `suspend () -> T` 모호성을 피해야 하는 decorator-local helper는 `recordBlocking`을 유지한다.
+- Ktor SQS observer producer도 operation/outcome/tag 상수를 사용한다.
+- 공개 metric/tag 값은 바뀌지 않고 production 상수와 독립적인 test contract 상수로 검증한다.
+- Dependency/public runtime 동작 변경 없음.
 
-No blocking findings after the follow-up change.
+## 검증
 
-## Review Notes
-
-- Metric service names, tag keys, outcomes, exception fallback values, and
-  operation names are now centralized as constants in the relevant support
-  object or operation class.
-- `MicrometerS3KtorClient` now calls operation-specific record helper methods
-  such as `putObjectRecord` and `getObjectRecord`, matching the review request.
-- Ktor and Spring Boot Micrometer support now expose inline `record` overloads
-  for suspend and blocking lambdas instead of separate `recordSuspend` and
-  `recordBlocking` support helpers.
-- Decorator-local blocking helpers keep the `recordBlocking` name where needed
-  to avoid Kotlin overload ambiguity between `() -> T` and `suspend () -> T`
-  call sites inside suspend functions.
-- The Ktor SQS runtime observer producer now uses constants for operations,
-  outcomes, and observer tags so the Micrometer bridge is not the only cleaned
-  layer.
-- Public metric names and emitted tag values are unchanged and are covered by
-  test-side contract constants that are deliberately independent from
-  production constants.
-- No new dependency or public runtime behavior change was introduced.
-
-## Verification
-
-- `./gradlew :bluetape4k-aws-ktor:compileKotlin :bluetape4k-aws-spring-boot:compileKotlin`
-  passed.
-- `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.s3.MicrometerS3KtorClientTest' --tests 'io.bluetape4k.aws.ktor.sqs.MicrometerSqsConsumerObserverTest' :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.s3.MicrometerS3OperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsOperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsListenerInterceptorTest'`
-  passed: 3 Ktor tests and 3 Spring Boot tests.
-- `./gradlew :bluetape4k-aws-ktor:test :bluetape4k-aws-spring-boot:test`
-  passed: 85 Ktor tests and 195 Spring Boot tests.
-- `git diff --check` passed.
-
-Additional review follow-up:
-
-- `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.s3.MicrometerS3KtorClientTest' --tests 'io.bluetape4k.aws.ktor.sqs.MicrometerSqsConsumerObserverTest' --tests 'io.bluetape4k.aws.ktor.sqs.SqsConsumerRuntimeAdvancedTest' :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.s3.MicrometerS3OperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsOperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsListenerInterceptorTest'`
-  passed: 7 Ktor tests and 3 Spring Boot tests.
-- Contract tests now query Micrometer meters with expected external tag names
-  and values from test-side contract objects, not production constants.
+- `./gradlew :bluetape4k-aws-ktor:compileKotlin :bluetape4k-aws-spring-boot:compileKotlin`: PASS
+- `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.s3.MicrometerS3KtorClientTest' --tests 'io.bluetape4k.aws.ktor.sqs.MicrometerSqsConsumerObserverTest' :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.s3.MicrometerS3OperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsOperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsListenerInterceptorTest'`: 3 Ktor+3 Spring PASS
+- `./gradlew :bluetape4k-aws-ktor:test :bluetape4k-aws-spring-boot:test`: 85 Ktor+195 Spring PASS
+- `git diff --check`: PASS
+- `./gradlew :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.s3.MicrometerS3KtorClientTest' --tests 'io.bluetape4k.aws.ktor.sqs.MicrometerSqsConsumerObserverTest' --tests 'io.bluetape4k.aws.ktor.sqs.SqsConsumerRuntimeAdvancedTest' :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.s3.MicrometerS3OperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsOperationsTest' --tests 'io.bluetape4k.aws.spring.sqs.MicrometerSqsListenerInterceptorTest'`: 7 Ktor+3 Spring PASS
+- Contract test는 production 상수가 아닌 test-side object의 external tag name/value로 meter를 조회한다.
 
 ## Gate
 

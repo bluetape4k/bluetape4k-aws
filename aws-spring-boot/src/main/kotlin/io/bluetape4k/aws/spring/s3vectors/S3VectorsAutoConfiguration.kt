@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for optional Amazon S3 Vectors operations.
+ * 선택적인 Amazon S3 Vectors 작업용 Spring Boot 4 자동 구성입니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

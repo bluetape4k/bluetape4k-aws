@@ -10,7 +10,7 @@ import tools.jackson.databind.ObjectMapper
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Registers the Jackson-backed SQS message converter when Jackson 3 is present.
+ * Jackson 3가 있으면 Jackson 기반 SQS 메시지 변환기를 등록합니다.
  */
 @AutoConfiguration(
     before = [SqsAutoConfiguration::class],

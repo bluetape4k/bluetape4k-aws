@@ -9,12 +9,12 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * Builds a DynamoDB [Put] with a DSL block. [AttributeValue] item overload.
+ * DSL 블록으로 DynamoDB [Put]을 빌드합니다 ([AttributeValue] 항목 오버로드).
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [tableName] is blank.
- * - Throws `IllegalArgumentException` when [item] is empty.
- * - Additional fields such as condition expressions can be overridden through [builder].
+ * ## 동작/계약
+ * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [item]이 비어 있으면 `IllegalArgumentException`을 던진다.
+ * - [builder] 블록으로 조건 표현식 등 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val put = putOf("users", mapOf("id" to AttributeValue.S("u1"), "name" to AttributeValue.S("Alice")))
@@ -22,8 +22,8 @@ import io.bluetape4k.support.requireNotEmpty
  * // put.item?.size == 2
  * ```
  *
- * @param tableName DynamoDB table name to store the item in. Blank values throw.
- * @param item attribute map for the item to store. Empty values throw.
+ * @param tableName 저장할 DynamoDB 테이블 이름 (blank이면 예외)
+ * @param item 저장할 항목의 속성 맵 (비어 있으면 예외)
  */
 @JvmName("putOfAttributeValue")
 inline fun putOf(
@@ -43,20 +43,20 @@ inline fun putOf(
 }
 
 /**
- * Builds a DynamoDB [Put] with a DSL block. Any? item overload.
+ * DSL 블록으로 DynamoDB [Put]을 빌드합니다 (Any? 항목 오버로드).
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [tableName] is blank.
- * - Each value in [item] is converted into [AttributeValue] through [toAttributeValueMap].
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [item]의 각 값은 [toAttributeValueMap]을 통해 [AttributeValue]로 자동 변환된다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val put = putOf("users", mapOf("id" to "u1", "name" to "Alice"))
  * // put.item?.get("id") == AttributeValue.S("u1")
  * ```
  *
- * @param tableName DynamoDB table name to store the item in. Blank values throw.
- * @param item attribute map for the item to store. Converted to [AttributeValue] automatically.
+ * @param tableName 저장할 DynamoDB 테이블 이름 (blank이면 예외)
+ * @param item 저장할 항목의 속성 맵 (자동으로 [AttributeValue]로 변환)
  */
 @JvmName("putOfAny")
 inline fun putOf(
@@ -67,17 +67,17 @@ inline fun putOf(
     putOf(tableName, item?.toAttributeValueMap(), builder)
 
 /**
- * Builds a DynamoDB [PutRequest]. [AttributeValue] item overload.
+ * DynamoDB [PutRequest]를 빌드합니다 ([AttributeValue] 항목 오버로드).
  *
- * ## Behavior and contract
- * - [item] is the attribute map for the item to store and is set directly without conversion.
+ * ## 동작/계약
+ * - [item]은 저장할 항목의 속성 맵으로, 변환 없이 직접 설정된다.
  *
  * ```kotlin
  * val req = putRequestOf(mapOf("id" to AttributeValue.S("u1")))
  * // req.item?.get("id") == AttributeValue.S("u1")
  * ```
  *
- * @param item [AttributeValue] attribute map for the item to store.
+ * @param item 저장할 항목의 [AttributeValue] 속성 맵
  */
 @JvmName("putRequestOfAttributeValue")
 inline fun putRequestOf(
@@ -87,17 +87,17 @@ inline fun putRequestOf(
 }
 
 /**
- * Builds a DynamoDB [PutRequest]. Any? item overload.
+ * DynamoDB [PutRequest]를 빌드합니다 (Any? 항목 오버로드).
  *
- * ## Behavior and contract
- * - Each value in [item] is converted into [AttributeValue] through [toAttributeValueMap].
+ * ## 동작/계약
+ * - [item]의 각 값은 [toAttributeValueMap]을 통해 [AttributeValue]로 자동 변환된다.
  *
  * ```kotlin
  * val req = putRequestOf(mapOf("id" to "u1"))
  * // req.item?.get("id") == AttributeValue.S("u1")
  * ```
  *
- * @param item attribute map for the item to store. Converted to [AttributeValue] automatically.
+ * @param item 저장할 항목의 속성 맵 (자동으로 [AttributeValue]로 변환)
  */
 @JvmName("putRequestOfAny")
 inline fun putRequestOf(

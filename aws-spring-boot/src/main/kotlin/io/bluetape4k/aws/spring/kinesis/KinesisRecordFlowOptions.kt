@@ -4,12 +4,12 @@ import java.io.Serializable
 import java.time.Duration
 
 /**
- * Polling and retry options for [KinesisOperations.recordFlow].
+ * [KinesisOperations.recordFlow]의 폴링 및 재시도 옵션입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Values are intentionally expressed as Java [Duration] so Spring Boot property
- * binding and programmatic configuration use the same type.
+ * Spring Boot 속성 바인딩과 프로그래밍 방식 구성이 같은 타입을 사용하도록 값을 의도적으로
+ * Java [Duration]으로 표현합니다.
  */
 data class KinesisRecordFlowOptions(
     val batchLimit: Int = DEFAULT_BATCH_LIMIT,

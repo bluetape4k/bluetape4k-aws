@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClientB
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for CloudWatch Logs event publishing.
+ * CloudWatch Logs 이벤트 게시용 Spring Boot 4 자동 구성입니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

@@ -36,12 +36,12 @@ private val log = KotlinLogging.logger {}
 
 
 /**
- * Creates a DynamoDB table with a DSL block.
+ * DSL 블록으로 DynamoDB 테이블을 생성합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [tableName] is blank.
- * - Sets `provisionedThroughput` only when [readCapacityUnits] or [writeCapacityUnits] is not null.
- * - Additional options can be supplied through [builder].
+ * ## 동작/계약
+ * - [tableName]은 blank이면 `IllegalArgumentException`을 던진다.
+ * - [readCapacityUnits] 또는 [writeCapacityUnits]가 null이 아닌 경우에만 `provisionedThroughput`을 설정한다.
+ * - 추가 설정은 [builder] 블록으로 확장할 수 있다.
  *
  * ```kotlin
  * val response = client.createTable("orders") {
@@ -50,10 +50,10 @@ private val log = KotlinLogging.logger {}
  * }
  * ```
  *
- * @param tableName table name to create.
- * @param readCapacityUnits read capacity units, omitted when null.
- * @param writeCapacityUnits write capacity units, omitted when null.
- * @throws IllegalArgumentException if [tableName] is blank.
+ * @param tableName 생성할 테이블 이름
+ * @param readCapacityUnits 읽기 용량 단위 (null이면 생략)
+ * @param writeCapacityUnits 쓰기 용량 단위 (null이면 생략)
+ * @throws IllegalArgumentException [tableName]이 blank인 경우
  */
 suspend fun DynamoDbClient.createTable(
     tableName: String,
@@ -81,18 +81,18 @@ suspend fun DynamoDbClient.createTable(
 }
 
 /**
- * Checks whether a DynamoDB table named [name] exists.
+ * [name] 이름의 DynamoDB 테이블이 존재하는지 확인합니다.
  *
- * ## Behavior and contract
- * - Iterates through every page from `listTablesPaginated` and returns whether [name] is present.
- * - Throws `IllegalArgumentException` when [name] is blank.
+ * ## 동작/계약
+ * - `listTablesPaginated`를 통해 모든 페이지를 순회하며 [name] 포함 여부를 반환한다.
+ * - [name]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val exists = client.existsTable("orders")
  * // exists == true or false
  * ```
  *
- * @throws IllegalArgumentException if [name] is blank.
+ * @throws IllegalArgumentException [name]이 blank인 경우
  */
 suspend fun DynamoDbClient.existsTable(name: String): Boolean {
     name.requireNotBlank("name")
@@ -102,15 +102,15 @@ suspend fun DynamoDbClient.existsTable(name: String): Boolean {
 }
 
 /**
- * Deletes the DynamoDB table named [name] when it exists.
+ * [name] 이름의 DynamoDB 테이블이 존재하는 경우 삭제합니다.
  *
- * ## Behavior and contract
- * - Returns [DeleteTableResponse] after deleting an existing table.
- * - Returns null when the table does not exist.
+ * ## 동작/계약
+ * - 테이블이 존재하면 삭제 후 [DeleteTableResponse]를 반환한다.
+ * - 테이블이 없으면 null을 반환한다.
  *
  * ```kotlin
  * val response = client.deleteTableIfExists("orders")
- * // response != null -> deleted, null -> table missing
+ * // response != null → 삭제됨, null → 테이블 없음
  * ```
  */
 suspend fun DynamoDbClient.deleteTableIfExists(name: String): DeleteTableResponse? =
@@ -122,12 +122,12 @@ suspend fun DynamoDbClient.deleteTableIfExists(name: String): DeleteTableRespons
     }
 
 /**
- * Returns the status of the DynamoDB table named [name].
+ * [name] 이름의 DynamoDB 테이블 상태를 반환합니다.
  *
- * ## Behavior and contract
- * - Calls `DescribeTable` and returns [TableStatus].
- * - Missing table responses return `null`.
- * - Retryable and operational service failures are propagated.
+ * ## 동작/계약
+ * - `DescribeTable`을 호출하고 [TableStatus]를 반환합니다.
+ * - 테이블 누락 응답은 `null`을 반환합니다.
+ * - 재시도 가능한 서비스 실패와 운영상 실패는 그대로 전파합니다.
  *
  * ```kotlin
  * val status = client.getTableStatus("orders")
@@ -143,19 +143,19 @@ suspend fun DynamoDbClient.getTableStatus(name: String): TableStatus? =
     }
 
 /**
- * Waits until the DynamoDB table named [name] reaches the `ACTIVE` state.
+ * [name] 이름의 DynamoDB 테이블이 `ACTIVE` 상태가 될 때까지 대기합니다.
  *
- * ## Behavior and contract
- * - Polls table status every 10 ms and returns only when the status is `ACTIVE`.
- * - Throws `TimeoutCancellationException` when the table is not ready within [timeout].
+ * ## 동작/계약
+ * - 10ms 간격으로 테이블 상태를 폴링하며 `ACTIVE`일 때만 반환한다.
+ * - [timeout] 내에 준비되지 않으면 `TimeoutCancellationException`을 던진다.
  *
  * ```kotlin
  * client.createTable("orders") { ... }
  * client.waitForTableReady("orders", 30.seconds)
  * ```
  *
- * @param timeout maximum wait time. Defaults to 60 seconds.
- * @throws kotlinx.coroutines.TimeoutCancellationException when the wait exceeds [timeout].
+ * @param timeout 최대 대기 시간 (기본: 60초)
+ * @throws kotlinx.coroutines.TimeoutCancellationException 타임아웃 초과 시
  */
 suspend fun DynamoDbClient.waitForTableReady(
     name: String,
@@ -175,20 +175,20 @@ suspend fun DynamoDbClient.waitForTableReady(
 }
 
 /**
- * Stores [item] in [tableName] as a `Map<String, Any?>`.
+ * `Map<String, Any?>` 형태의 [item]을 [tableName] 테이블에 저장합니다.
  *
- * ## Behavior and contract
- * - Converts [item] values into `AttributeValue` entries with [toAttributeValueMap], then calls PutItem.
- * - Throws `IllegalArgumentException` when [tableName] is blank.
- * - Additional options can be supplied through [builder].
+ * ## 동작/계약
+ * - [item] 값들을 [toAttributeValueMap]으로 `AttributeValue`로 변환한 뒤 PutItem을 호출한다.
+ * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - 추가 설정은 [builder] 블록으로 확장할 수 있다.
  *
  * ```kotlin
  * client.putItem("users", mapOf("id" to "u1", "name" to "Alice"))
  * ```
  *
- * @param tableName DynamoDB table name to store the item in.
- * @param item item to store. Values are converted to `AttributeValue` automatically.
- * @throws IllegalArgumentException if [tableName] is blank.
+ * @param tableName 저장할 DynamoDB 테이블 이름
+ * @param item 저장할 아이템 (값은 `AttributeValue`로 자동 변환)
+ * @throws IllegalArgumentException [tableName]이 blank인 경우
  */
 suspend inline fun DynamoDbClient.putItem(
     tableName: String,
@@ -206,21 +206,21 @@ suspend inline fun DynamoDbClient.putItem(
 }
 
 /**
- * Scans [tableName] with pagination starting from [exclusiveStartKey].
+ * [tableName] 테이블을 [exclusiveStartKey]부터 페이지네이션으로 스캔합니다.
  *
- * ## Behavior and contract
- * - Converts [exclusiveStartKey] values with [toAttributeValue] and uses them as the starting key.
- * - Limits the maximum number of items returned per page with [limit].
- * - Returns results as a `Flow<ScanResponse>` stream that can be collected from coroutines.
+ * ## 동작/계약
+ * - [exclusiveStartKey] 값들을 [toAttributeValue]로 변환해 시작 키로 설정한다.
+ * - [limit]으로 각 페이지당 반환할 최대 아이템 수를 제한한다.
+ * - 결과는 `Flow<ScanResponse>` 스트림으로 반환되며 코루틴에서 collect할 수 있다.
  *
  * ```kotlin
  * val pages: Flow<ScanResponse> = client.scanPaginated("orders", emptyMap(), limit = 100)
  * pages.collect { page -> page.items?.forEach { process(it) } }
  * ```
  *
- * @param tableName DynamoDB table name to scan.
- * @param exclusiveStartKey page starting key. Use an empty map for the first page.
- * @param limit maximum number of items per page. Defaults to 1.
+ * @param tableName 스캔할 DynamoDB 테이블 이름
+ * @param exclusiveStartKey 페이지 시작 키 (첫 페이지는 빈 맵)
+ * @param limit 페이지당 최대 아이템 수 (기본: 1)
  */
 inline fun DynamoDbClient.scanPaginated(
     tableName: String,

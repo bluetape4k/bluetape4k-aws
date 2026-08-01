@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.s3control.S3ControlClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for S3 Access Grants through S3 Control.
+ * S3 Control을 통한 S3 Access Grants용 Spring Boot 4 자동 구성입니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class, S3AutoConfiguration::class])
 @ConditionalOnAwsEnabled

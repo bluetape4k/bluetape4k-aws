@@ -1,9 +1,9 @@
-# Issue #230 Implementation Review
+# Issue #230 구현 검토
 
 Date: 2026-06-07
-Scope: Micrometer observability adapters for `aws-spring-boot` and `aws-ktor`
+범위: `aws-spring-boot`와 `aws-ktor`용 Micrometer 관측성 어댑터
 
-## Verdict
+## 판정
 
 PASS
 
@@ -11,9 +11,9 @@ PASS
 - P1: 0
 - P2: 0
 
-## Evidence Reviewed
+## 검토한 증거
 
-- Source:
+- 소스:
   - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/observability/`
   - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsOperations.kt`
   - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsListenerInterceptor.kt`
@@ -21,64 +21,59 @@ PASS
   - `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/observability/`
   - `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/sqs/MicrometerSqsConsumerObserver.kt`
   - `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/s3/MicrometerS3KtorClient.kt`
-- Auto-configuration:
+- 자동 구성:
   - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsAutoConfiguration.kt`
   - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsMicrometerAutoConfiguration.kt`
   - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfiguration.kt`
   - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3MicrometerAutoConfiguration.kt`
-- Tests:
+- 테스트:
   - `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsOperationsTest.kt`
   - `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsListenerInterceptorTest.kt`
   - `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/MicrometerS3OperationsTest.kt`
   - `aws-ktor/src/test/kotlin/io/bluetape4k/aws/ktor/sqs/MicrometerSqsConsumerObserverTest.kt`
   - `aws-ktor/src/test/kotlin/io/bluetape4k/aws/ktor/s3/MicrometerS3KtorClientTest.kt`
-- Documentation:
+- 문서:
   - `README.md`
   - `README.ko.md`
   - `aws-spring-boot/README.md`
   - `aws-spring-boot/README.ko.md`
   - `aws-ktor/README.md`
   - `aws-ktor/README.ko.md`
-- Workflow artifacts:
+- 워크플로 산출물:
   - `docs/superpowers/specs/2026-06-07-issue-230-micrometer-observability-design.md`
   - `docs/superpowers/plans/2026-06-07-issue-230-micrometer-observability-plan.md`
 
-## Findings
+## 검토 결과
 
-None blocking.
+차단 항목 없음.
 
-## Checks
+## 확인 사항
 
-- `P0=0` and `P1=0`; implementation may proceed to PR validation.
-- Spring Boot instrumentation is automatic only when an application
-  `MeterRegistry` bean exists.
-- Spring Boot Micrometer adapters are registered as primary operation beans
-  without removing the underlying concrete coroutine template beans.
-- Ktor instrumentation stays opt-in through `micrometer(...)` and
-  `withMicrometer(...)`.
-- Default tags avoid queue URLs, message IDs, receipt handles, S3 object keys,
-  and raw exception messages.
-- Bucket tags remain opt-in for S3 instrumentation.
-- The implementation reuses existing SQS/S3 operation interfaces, SQS observer
-  hooks, Spring Boot auto-configuration boundaries, bluetape4k validation
-  helpers, and bluetape4k assertions.
-- IntelliJ diagnostics tools were unavailable in this session; Gradle compile
-  and test tasks were used as the diagnostics fallback.
+- `P0=0`, `P1=0`이므로 구현은 PR 검증으로 진행할 수 있다.
+- Spring Boot 계측은 애플리케이션에 `MeterRegistry` 빈이 있을 때만 자동으로 활성화된다.
+- Spring Boot Micrometer 어댑터는 기반 구체 coroutine template 빈을 제거하지 않고
+  기본 작업 빈으로 등록된다.
+- Ktor 계측은 `micrometer(...)`와 `withMicrometer(...)`를 통한 명시적 선택 방식이다.
+- 기본 태그에는 queue URL, message ID, receipt handle, S3 object key, 원시 예외 메시지가 들어가지 않는다.
+- S3 계측의 bucket 태그는 명시적으로 선택해야 한다.
+- 구현은 기존 SQS/S3 작업 인터페이스, SQS observer hook, Spring Boot 자동 구성 경계,
+  bluetape4k 검증 도우미와 assertion을 재사용한다.
+- 이 세션에서는 IntelliJ 진단 도구를 사용할 수 없어 Gradle 컴파일과 테스트 작업을
+  대체 진단으로 사용했다.
 
-## Verification Evidence
+## 검증 증거
 
 - `./gradlew :bluetape4k-aws-spring-boot:dependencyInsight --dependency micrometer-core --configuration compileClasspath`
-  confirmed `io.micrometer:micrometer-core:1.16.5`.
+  `io.micrometer:micrometer-core:1.16.5`를 확인했다.
 - `./gradlew :bluetape4k-aws-ktor:dependencyInsight --dependency micrometer-core --configuration compileClasspath`
-  confirmed `io.micrometer:micrometer-core:1.16.5` through the Spring Boot BOM constraint.
+  Spring Boot BOM 제약을 통해 `io.micrometer:micrometer-core:1.16.5`를 확인했다.
 - `./gradlew :bluetape4k-aws-spring-boot:compileKotlin :bluetape4k-aws-ktor:compileKotlin`
-  passed.
+  통과했다.
 - `./gradlew :bluetape4k-aws-spring-boot:compileKotlin :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.*Micrometer*' :bluetape4k-aws-ktor:compileKotlin :bluetape4k-aws-ktor:test --tests 'io.bluetape4k.aws.ktor.*Micrometer*'`
-  passed with 8 Spring-focused tests and 3 Ktor-focused tests.
+  Spring 중심 테스트 8개와 Ktor 중심 테스트 3개가 통과했다.
 - `./gradlew :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.sqs.SqsAutoConfigurationTest' --tests 'io.bluetape4k.aws.spring.s3.S3AutoConfigurationTest'`
-  passed with 29 auto-configuration tests after the primary-decorator
-  compatibility adjustment.
+  primary decorator 호환성 조정 후 자동 구성 테스트 29개가 통과했다.
 - `./gradlew :bluetape4k-aws-spring-boot:test :bluetape4k-aws-ktor:test`
-  passed after the compatibility adjustment with 195 Spring Boot tests; the
-  Ktor test task was up-to-date from the earlier successful 85-test run.
-- `git diff --check` passed.
+  호환성 조정 후 Spring Boot 테스트 195개가 통과했고, Ktor 테스트 작업은 앞서 성공한
+  85개 테스트 실행 결과를 사용해 up-to-date였다.
+- `git diff --check`가 통과했다.

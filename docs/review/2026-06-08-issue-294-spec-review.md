@@ -1,36 +1,33 @@
-# Issue 294 Spec Review
+# Issue 294 스펙 검토
 
-Reviewed spec:
-`docs/superpowers/specs/2026-06-08-issue-294-code-patterns-preflight-design.md`
+검토 스펙: `docs/superpowers/specs/2026-06-08-issue-294-code-patterns-preflight-design.md`
 
-## Review Scope
+## 검토 범위
 
-- User correction that the listed items are representative, not exhaustive.
-- `bluetape4k-code-patterns` value object, data class, coroutine, testing, and ecosystem reuse rules.
-- Repo-local `AGENTS.md` release-prep and workflow constraints.
-- Scan evidence captured before spec creation.
+- 열거 항목이 전체가 아니라 대표 예라는 사용자 수정
+- `bluetape4k-code-patterns` value object/data class/coroutine/testing/재사용 규칙
+- Repo-local `AGENTS.md` release-prep/workflow 제약
+- 스펙 작성 전 scan 증거
 
-## 7-Tier Findings
+## 7-Tier 결과
 
-| Tier | Perspective | P0 | P1 | P2 | P3 | Evidence |
+| Tier | 관점 | P0 | P1 | P2 | P3 | 증거 |
 |---|---|---:|---:|---:|---:|---|
-| 1 | Security | 0 | 0 | 1 | 0 | Secret value wrapper remains in scope; private constructor + guarded factory reduces invalid direct construction risk. |
-| 2 | Ops/SRE | 0 | 0 | 1 | 0 | Coroutine cleanup paths are in scope; synchronous Ktor lifecycle bridges are documented as bounded exceptions. |
-| 3 | Structural | 0 | 0 | 1 | 0 | Scope covers published modules first and defers risky broad rewrites to follow-up issues. |
-| 4 | Kotlin/API | 0 | 0 | 1 | 0 | Spec captures companion invoke, Serializable, serialVersionUID, and assertion rules. |
-| 5 | Tests/Types | 0 | 0 | 1 | 0 | Acceptance criteria require targeted Gradle checks and tests for touched behavior. |
-| 6 | Performance/Stability | 0 | 0 | 1 | 0 | `runInterruptible(Dispatchers.IO)` cleanup simplification is low-risk; broad lifecycle changes are excluded. |
-| 7 | Docs/Release Evidence | 0 | 0 | 0 | 0 | Issue body, spec, plan, review artifact, lesson, and PR DoD are required. |
+| 1 | 보안 | 0 | 0 | 1 | 0 | Secret wrapper와 private constructor/guarded factory를 범위에 둔다. |
+| 2 | Ops/SRE | 0 | 0 | 1 | 0 | Coroutine cleanup과 제한된 sync Ktor lifecycle bridge를 다룬다. |
+| 3 | 구조 | 0 | 0 | 1 | 0 | 게시 모듈을 우선하고 위험한 광역 rewrite는 후속 issue로 미룬다. |
+| 4 | Kotlin/API | 0 | 0 | 1 | 0 | companion invoke, Serializable, serialVersionUID, assertion 규칙을 포함한다. |
+| 5 | Test/Type | 0 | 0 | 1 | 0 | 변경 동작의 targeted Gradle check/test를 요구한다. |
+| 6 | 성능/안정성 | 0 | 0 | 1 | 0 | `runInterruptible(Dispatchers.IO)` 단순화만 포함하고 광역 lifecycle 변경은 제외한다. |
+| 7 | 문서/Release | 0 | 0 | 0 | 0 | Issue, spec, plan, review, lesson, PR DoD를 요구한다. |
 
-## Consolidated Findings
+## 통합 결과
 
-| Priority | Finding | Decision |
-|---|---|---|
-| P2 | The scan found many low-risk consistency issues. Fixing all in one PR could make release-prep review too large. | Keep P0/P1 and high-confidence P2 in this branch; create follow-up issues for broad or risky P2/P3 items. |
-| P2 | `AwsJdbcDataSourceFactory` raw DriverManager/Hikari usage may or may not have a better `bluetape4k-jdbc` replacement. | Research existing ecosystem helper before editing; defer if replacement changes behavior or dependency boundary. |
+- 저위험 일관성 항목 전체를 한 PR에서 고치지 않고 P0/P1과 신뢰도 높은 P2만 포함한다.
+- `AwsJdbcDataSourceFactory`의 DriverManager/Hikari 교체는 `bluetape4k-jdbc` helper를 조사하고 동작/의존성 경계가 바뀌면 미룬다.
 
 ## Gate
 
 - P0 = 0
 - P1 = 0
-- Decision: PASS
+- 판정: PASS

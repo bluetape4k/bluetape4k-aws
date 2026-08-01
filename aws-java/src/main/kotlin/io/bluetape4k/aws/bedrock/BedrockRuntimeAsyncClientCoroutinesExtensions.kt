@@ -8,11 +8,10 @@ import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfigurati
 import software.amazon.awssdk.services.bedrockruntime.model.Message
 
 /**
- * Executes one native Bedrock `Converse` request and suspends for its response.
+ * Bedrock 네이티브 `Converse` 요청 하나를 실행하고 응답까지 일시 중단합니다.
  *
- * Coroutine cancellation is forwarded to the backing SDK future. The raw SDK
- * response and exceptions are preserved; this helper neither closes the
- * external client nor adds retries or timeouts.
+ * 코루틴 취소는 기반 SDK Future로 전달됩니다. SDK 원본 응답과 예외는 보존하며,
+ * 이 도우미는 외부 클라이언트를 닫거나 재시도 또는 타임아웃을 추가하지 않습니다.
  */
 suspend inline fun BedrockRuntimeAsyncClient.converse(
     modelId: String,

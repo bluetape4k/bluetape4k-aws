@@ -8,7 +8,7 @@ import kotlinx.coroutines.runInterruptible
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 
 /**
- * Runtime holder for EventBridge Ktor operations and plugin-owned client lifecycle.
+ * EventBridge Ktor 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class EventBridgeKtorRuntime(
     val operations: EventBridgeKtorOperations,
@@ -20,7 +20,7 @@ class EventBridgeKtorRuntime(
     private val closed = atomic(false)
 
     /**
-     * Closes the plugin-created EventBridge client once. Injected clients are never closed.
+     * 플러그인이 생성한 EventBridge 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
      */
     suspend fun stop() {
         if (closed.compareAndSet(expect = false, update = true)) {

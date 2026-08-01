@@ -12,9 +12,9 @@ import java.io.File
 import java.nio.file.Path
 
 /**
- * See the API documentation for details.
+ * [UploadRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = uploadRequest {
  *     putObjectRequest(putObjectRequestOf("demo-bucket", "notes/a.txt"))
@@ -29,9 +29,9 @@ inline fun uploadRequest(
     UploadRequest.builder().apply(builder).build()
 
 /**
- * See the API documentation for details.
+ * [putObjectRequest], [requestBody]로 [UploadRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val put = putObjectRequestOf("demo-bucket", "notes/a.txt")
  * val result = uploadRequestOf(put, "hello".toAsyncRequestBody())
@@ -51,9 +51,9 @@ inline fun uploadRequestOf(
 }
 
 /**
- * See the API documentation for details.
+ * [UploadFileRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = uploadFileRequest { source(java.nio.file.Path.of("build.gradle.kts")) }
  * // result.source() != null
@@ -65,11 +65,11 @@ inline fun uploadFileRequest(
     UploadFileRequest.builder().apply(builder).build()
 
 /**
- * See the API documentation for details.
+ * 경로 기반 [UploadFileRequest]를 생성합니다.
  *
- * See the API documentation for details.
+ * [source]가 존재하지 않으면 [IllegalArgumentException]을 던집니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val source = java.nio.file.Path.of("settings.gradle.kts")
  * val result = uploadFileRequestOf("demo-bucket", "repo/settings.gradle.kts", source) { }
@@ -94,11 +94,11 @@ inline fun uploadFileRequestOf(
 }
 
 /**
- * See the API documentation for details.
+ * 파일 기반 [UploadFileRequest]를 생성합니다.
  *
- * See the API documentation for details.
+ * [source]가 존재하지 않으면 [IllegalArgumentException]을 던집니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val source = java.io.File("settings.gradle.kts")
  * val result = uploadFileRequestOf("demo-bucket", "repo/settings.gradle.kts", source) { }
@@ -123,9 +123,9 @@ inline fun uploadFileRequestOf(
 }
 
 /**
- * See the API documentation for details.
+ * [UploadDirectoryRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = uploadDirectoryRequest {
  *     bucket("demo-bucket")
@@ -140,11 +140,11 @@ inline fun uploadDirectoryRequest(
     UploadDirectoryRequest.builder().apply(builder).build()
 
 /**
- * See the API documentation for details.
+ * 디렉터리 업로드용 [UploadDirectoryRequest]를 생성합니다.
  *
- * See the API documentation for details.
+ * [source]가 존재하지 않으면 [IllegalArgumentException]을 던집니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val source = java.nio.file.Path.of("src")
  * val result = uploadDirectoryRequestOf("demo-bucket", source) { }

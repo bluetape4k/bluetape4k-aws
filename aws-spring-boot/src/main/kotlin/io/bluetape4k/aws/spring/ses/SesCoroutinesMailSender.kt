@@ -17,13 +17,12 @@ import software.amazon.awssdk.services.sesv2.model.Template
 import java.util.concurrent.CompletableFuture
 
 /**
- * Coroutine-friendly [SesOperations] implementation backed by AWS SDK v2 [SesV2AsyncClient].
+ * AWS SDK v2 [SesV2AsyncClient]를 사용하는 코루틴 친화적인 [SesOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Maps bluetape4k SES value objects to the `SendEmail` API, applies configured
- * default sender/configuration set values, and lets AWS SDK exceptions
- * propagate to callers.
+ * bluetape4k SES 값 객체를 `SendEmail` API에 매핑하고 구성된 기본 발신자와 구성 집합 값을
+ * 적용합니다. AWS SDK 예외는 호출자에게 전파합니다.
  */
 class SesCoroutinesMailSender(
     private val sesAsyncClient: SesV2AsyncClient,

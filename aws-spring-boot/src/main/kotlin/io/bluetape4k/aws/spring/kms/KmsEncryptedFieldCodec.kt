@@ -5,11 +5,10 @@ import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 /**
- * Explicit field-level String encryption codec backed by [KmsOperations].
+ * [KmsOperations]를 사용하는 명시적인 필드 수준 String 암호화 코덱입니다.
  *
- * The codec returns versioned ciphertext strings so stored values can evolve
- * without guessing formats later. It intentionally does not perform transparent
- * reflection-based object mutation.
+ * 코덱은 버전이 있는 암호문 문자열을 반환하므로 나중에 형식을 추측하지 않고 저장된 값을
+ * 발전시킬 수 있습니다. 의도적으로 리플렉션 기반 객체 변경을 투명하게 수행하지 않습니다.
  */
 class KmsEncryptedFieldCodec(
     private val kmsOperations: KmsOperations,
@@ -71,7 +70,7 @@ class KmsEncryptedFieldCodec(
     }
 
     fun validate(type: Class<*>) {
-        // Keep this explicit: the first slice validates only directly declared Java fields.
+        // 첫 범위는 직접 선언한 Java field만 검증하므로 이 조건을 명시적으로 유지한다.
         type.declaredFields
             .filter { it.isAnnotationPresent(KmsEncrypted::class.java) }
             .forEach(::validate)

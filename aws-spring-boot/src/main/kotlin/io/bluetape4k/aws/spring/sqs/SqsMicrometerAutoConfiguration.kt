@@ -11,11 +11,10 @@ import org.springframework.context.annotation.Primary
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Auto-configures Micrometer instrumentation for Spring SQS operations.
+ * Spring SQS 작업의 Micrometer 계측을 자동 구성합니다.
  *
- * The observed [SqsOperations] bean is primary, while the underlying
- * [SqsCoroutinesTemplate] remains available for applications that inject the
- * concrete template type.
+ * 관찰되는 [SqsOperations] Bean이 primary이며, 구체적인 템플릿 타입을 주입하는 애플리케이션에서는
+ * 하위 [SqsCoroutinesTemplate]도 계속 사용할 수 있습니다.
  */
 @AutoConfiguration(after = [SqsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

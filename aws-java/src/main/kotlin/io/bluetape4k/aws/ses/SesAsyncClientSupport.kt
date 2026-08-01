@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.ses.SesAsyncClientBuilder
 import software.amazon.awssdk.services.ses.endpoints.SesEndpointProvider
 
 /**
- * Builds a [sesAsyncClient].
+ * [sesAsyncClient]를 빌드합니다.
  *
  * ```kotlin
  * val client = SesAsyncClient {
@@ -20,8 +20,8 @@ import software.amazon.awssdk.services.ses.endpoints.SesEndpointProvider
  * val response = client.send(request).await()
  * ```
  *
- * @param builder initialization lambda using [SesAsyncClientBuilder].
- * @return [sesAsyncClient] instance.
+ * @param builder [SesAsyncClientBuilder]를 이용한 초기화 람다
+ * @return [sesAsyncClient] 인스턴스
  */
 inline fun sesAsyncClient(
     builder: SesAsyncClientBuilder.() -> Unit,
@@ -33,7 +33,7 @@ inline fun sesAsyncClient(
 }
 
 /**
- * Creates a [SesAsyncClient].
+ * [SesAsyncClient]를 생성합니다.
  *
  * ```kotlin
  * val client = sesAsyncClientOf(region) {
@@ -43,9 +43,9 @@ inline fun sesAsyncClient(
  * val response = client.send(request).await()
  * ```
  *
- * @param region [Region] value.
- * @param builder initialization lambda using [SesAsyncClientBuilder].
- * @return [SesAsyncClient] instance.
+ * @param region [Region] 지역
+ * @param builder [SesAsyncClientBuilder]를 이용한 초기화 람다
+ * @return [SesAsyncClient] 인스턴스
  */
 inline fun sesAsyncClientOf(
     region: Region,
@@ -59,7 +59,7 @@ inline fun sesAsyncClientOf(
 }
 
 /**
- * Creates a [SesAsyncClient].
+ * [SesAsyncClient]를 생성합니다.
  *
  * ```kotlin
  * val client = sesAsyncClientOf(endpointProvider) {
@@ -69,9 +69,9 @@ inline fun sesAsyncClientOf(
  * val response = client.send(request).await()
  * ```
  *
- * @param endpointProvider [SesEndpointProvider] endpoint provider.
- * @param builder initialization lambda using [SesAsyncClientBuilder].
- * @return [SesAsyncClient] instance.
+ * @param endpointProvider [SesEndpointProvider] 엔드포인트 제공자
+ * @param builder [SesAsyncClientBuilder]를 이용한 초기화 람다
+ * @return [SesAsyncClient] 인스턴스
  */
 inline fun sesAsyncClientOf(
     endpointProvider: SesEndpointProvider? = null,

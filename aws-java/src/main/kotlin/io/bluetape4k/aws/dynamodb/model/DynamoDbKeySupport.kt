@@ -5,7 +5,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Key
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 
 /**
- * See the API documentation for details.
+ * DynamoDB의 [key]를 생성합니다.
  *
  * ```kotlin
  * val key = Key {
@@ -15,25 +15,25 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
  *
  * check(key.partitionKeyValue().s() == "Hello, World!")
  * ```
- * @param builder Parameter.
- * @return Return value.
+ * @param builder [Key.Builder]를 초기화하는 람다 함수입니다.
+ * @return [key] 객체를 반환합니다.
  */
 inline fun key(builder: Key.Builder.() -> Unit): Key {
     return Key.builder().apply(builder).build()
 }
 
 /**
- * See the API documentation for details.
+ * DynamoDB의 [Key]를 생성합니다.
  *
  * ```kotlin
  * val key = keyOf(AttributeValue.fromS("pk#1"), AttributeValue.fromN("42"))
  * check(key.sortKeyValue().n() == "42")
  * ```
  *
- * @param partitionKey Parameter.
- * @param sortValue Parameter.
+ * @param partitionKey 파티션 키의 값입니다.
+ * @param sortValue 정렬 키의 값입니다.
  *
- * @return Return value.
+ * @return [Key] 객체를 반환합니다.
  */
 fun keyOf(partitionKey: AttributeValue, sortValue: AttributeValue? = null): Key =
     key {
@@ -42,17 +42,17 @@ fun keyOf(partitionKey: AttributeValue, sortValue: AttributeValue? = null): Key 
     }
 
 /**
- * See the API documentation for details.
+ * DynamoDB의 [Key]를 생성합니다.
  *
  * ```kotlin
  * val key = keyOf("pk#1", 42)
  * check(key.partitionKeyValue().s() == "pk#1")
  * ```
  *
- * @param partitionValue Parameter.
- * @param sortValue Parameter.
+ * @param partitionValue 파티션 키에 해당하는 값입니다. (내부적으로 [AttributeValue]로 변환됩니다.)
+ * @param sortValue 정렬 키의 값입니다.
  *
- * @return Return value.
+ * @return [Key] 객체를 반환합니다.
  */
 fun keyOf(partitionValue: Any, sortValue: Any? = null): Key =
     key {

@@ -10,10 +10,10 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClientBuilder
 import java.net.URI
 
 /**
- * Builds an AWS SDK v2 [EventBridgeClient].
+ * AWS SDK v2 [EventBridgeClient]를 생성합니다.
  *
- * The created client is registered with [ShutdownQueue], matching the Java SDK
- * wrapper lifecycle contract used by sibling bluetape4k AWS services.
+ * 생성한 클라이언트는 다른 bluetape4k AWS 서비스의 Java SDK 래퍼 수명 주기 계약과 마찬가지로
+ * [ShutdownQueue]에 등록합니다.
  *
  * ```kotlin
  * val client = eventBridgeClient { region(Region.AP_NORTHEAST_2) }
@@ -28,7 +28,7 @@ inline fun eventBridgeClient(
         }
 
 /**
- * Builds an [EventBridgeClient] for a region.
+ * 리전용 [EventBridgeClient]를 생성합니다.
  */
 inline fun eventBridgeClientOf(
     region: Region,
@@ -41,7 +41,7 @@ inline fun eventBridgeClientOf(
 }
 
 /**
- * Builds an [EventBridgeClient] with optional endpoint, region, and credentials.
+ * 선택적인 엔드포인트, 리전, 자격 증명으로 [EventBridgeClient]를 생성합니다.
  */
 inline fun eventBridgeClientOf(
     endpoint: URI? = null,

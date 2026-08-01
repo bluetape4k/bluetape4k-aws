@@ -3,12 +3,12 @@ package io.bluetape4k.aws.spring.kms
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 
 /**
- * Coroutine-friendly AWS KMS encryption contract for Spring applications.
+ * Spring 애플리케이션을 위한 코루틴 친화적인 AWS KMS 암호화 계약입니다.
  *
- * ## Contract
- * - `encrypt` and `generateDataKey` require a KMS key id from configuration or the method argument.
- * - `decrypt` can omit the key id for symmetric ciphertexts, but passes one when configured.
- * - Method-level encryption context entries override same-named default entries from [KmsProperties].
+ * ## 계약
+ * - `encrypt`와 `generateDataKey`에는 구성 또는 메서드 인수의 KMS 키 id가 필요합니다.
+ * - 대칭 암호문에 `decrypt`를 사용할 때는 키 id를 생략할 수 있지만 구성된 경우 전달합니다.
+ * - 메서드 수준 암호화 컨텍스트 항목은 [KmsProperties]의 같은 이름 기본 항목보다 우선합니다.
  *
  * ```kotlin
  * class SecretService(private val kms: KmsOperations) {

@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.kinesis.model.GetShardIteratorRequest
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 
 /**
- * Builds a [GetShardIteratorRequest] with a DSL block.
+ * DSL 블록으로 [GetShardIteratorRequest]를 빌드합니다.
  *
  * ```kotlin
  * val req = getShardIteratorRequest {
@@ -21,11 +21,11 @@ inline fun getShardIteratorRequest(
     GetShardIteratorRequest.builder().apply(builder).build()
 
 /**
- * Creates a [GetShardIteratorRequest] from a stream name, shard ID, and iterator type.
+ * 스트림 이름, 샤드 ID, 이터레이터 타입으로 [GetShardIteratorRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [streamName] is blank.
- * - Throws `IllegalArgumentException` when [shardId] is blank.
+ * ## 동작/계약
+ * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [shardId]가 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val req = getShardIteratorRequestOf(

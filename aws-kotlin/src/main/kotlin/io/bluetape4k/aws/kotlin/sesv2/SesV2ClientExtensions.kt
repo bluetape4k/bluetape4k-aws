@@ -13,51 +13,72 @@ import aws.smithy.kotlin.runtime.http.response.statusCode
 import kotlinx.coroutines.CancellationException
 
 /**
- * Sends an email from [emailRequest].
+ * [emailRequest]를 바탕으로 email 을 전송합니다.
  *
- * ```kotlin
+ * ```
  * val request = SendEmailRequest {
- *     fromEmailAddress = "noreply@example.com"
- *     // Configure destination and content here.
- * }
- * // Send the email.
+ *      destination {
+ *         toAddresses = listOf("user1@example.com", "user2@example.com")
+ *      }
+ *      message {
+ *          subject {
+ *             data = "Hello, world!"
+ *          }
+ *          body {
+ *             text {
+ *                 data = "Hello, world!"
+ *             }
+ *             html {
+ *                 data = "<h1>Hello, world!</h1>"
+ *             }
+ *          }
+ *     }
+ *     source = "noreply@example.com"
+ *  }
+ * // 메일 발송
  * val response = sesClient.send(request)
  * ```
- * @param emailRequest [SendEmailRequest] with the email delivery details.
- * @return [SendEmailResponse] with the email delivery result.
+ * @param emailRequest [SendEmailRequest] email 전송 요청 정보
+ * @return [SendEmailResponse] email 전송 결과
  */
 suspend fun SesV2Client.send(emailRequest: SendEmailRequest): SendEmailResponse =
     sendEmail(emailRequest)
 
 /**
- * Sends bulk templated email from [emailRequest].
+ * [emailRequest]를 바탕으로 템플릿을 사용한 email 을 벌크로 전송합니다.
  *
- * ```kotlin
- * val request = SendBulkEmailRequest {
- *     fromEmailAddress = "sender@example.com"
- *     // Configure bulk destinations and default content here.
+ * ```
+ * val request = SendBulkTemplatedEmailRequest {
+ *      defaultTemplate {
+ *          templateName = "default-template"
+ *          templateData = """{"name": "John Doe"}"""
+ *          subject = "Hello, world!"
+ *          html = "<h1>Hello, world!</h1>"
+ *          text = "Hello, world!"
+ *          replyToAddresses = listOf("no-reply@example.com")
+ *    }
+ *    source = "sender@example.com"
  * }
  *
- * val response = sesClient.sendBulk(request)
+ * val response = sesClient.sendBulkTemplated(request)
  * ```
  *
- * @param emailRequest [SendBulkEmailRequest] with the bulk email delivery details.
- * @return [SendBulkEmailResponse] with the bulk email delivery result.
+ * @param emailRequest [SendBulkTemplatedEmailRequest] email 전송 요청 정보
+ * @return [SendBulkTemplatedEmailResponse] email 전송 결과
  */
 suspend fun SesV2Client.sendBulk(emailRequest: SendBulkEmailRequest): SendBulkEmailResponse =
     sendBulkEmail(emailRequest)
 
 
 /**
- * Returns the registered email [Template] named [templateName], or `null` when
- * it does not exist.
+ * [templateName]이라는 이름으로 등록된 이메일 [Template]을 반환합니다. 템플릿이 없으면 `null`을 반환합니다.
  *
  * ```
  * val template = sesClient.getTemplate("template-name")
  * ```
  *
- * @param templateName template name.
- * @return template details, or `null` when the template does not exist.
+ * @param templateName 템플릿 이름
+ * @return 템플릿 상세 정보. 템플릿이 없으면 `null`
  */
 suspend fun SesV2Client.getTemplateOrNull(templateName: String): Template? {
     return try {

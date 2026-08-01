@@ -10,11 +10,11 @@ import software.amazon.awssdk.services.sns.SnsClientBuilder
 import java.net.URI
 
 /**
- * Builds a [SnsClient].
+ * [SnsClient]를 빌드합니다.
  *
  * ```kotlin
  * val result = snsClient { region(Region.AP_NORTHEAST_2) }
- * // result == SnsClient instance
+ * // result == SnsClient 인스턴스
  * ```
  */
 inline fun snsClient(builder: SnsClientBuilder.() -> Unit): SnsClient =
@@ -24,13 +24,13 @@ inline fun snsClient(builder: SnsClientBuilder.() -> Unit): SnsClient =
         }
 
 /**
- * Creates a [SnsClient] from [Region].
+ * [Region] 기반으로 [SnsClient]를 생성합니다.
  *
- * [httpClient] uses the default HTTP client, and the created client is registered with [ShutdownQueue].
+ * [httpClient]는 기본 HTTP 클라이언트를 사용하며, 생성된 클라이언트는 [ShutdownQueue]에 등록됩니다.
  *
  * ```kotlin
  * val result = snsClientOf(Region.AP_NORTHEAST_2)
- * // result == SnsClient instance
+ * // result == SnsClient 인스턴스
  * ```
  */
 inline fun snsClientOf(
@@ -45,13 +45,13 @@ inline fun snsClientOf(
 }
 
 /**
- * Creates a [SnsClient] from endpoint and credentials settings.
+ * endpoint + credentials 기반으로 [SnsClient]를 생성합니다.
  *
- * Nullable parameters are applied to the builder only when they are not null.
+ * nullable 파라미터는 null 이 아닐 때만 builder에 반영됩니다.
  *
  * ```kotlin
  * val result = snsClientOf(endpoint = URI("http://localhost:4566"))
- * // result == SnsClient instance
+ * // result == SnsClient 인스턴스
  * ```
  */
 inline fun snsClientOf(

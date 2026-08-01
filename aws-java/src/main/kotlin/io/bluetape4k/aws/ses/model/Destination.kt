@@ -3,7 +3,7 @@ package io.bluetape4k.aws.ses.model
 import software.amazon.awssdk.services.ses.model.Destination
 
 /**
- * Creates a [destination] instance with [Destination.Builder].
+ * [Destination.Builder]를 이용하여 [destination] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val destination = destination {
@@ -13,8 +13,8 @@ import software.amazon.awssdk.services.ses.model.Destination
  * }
  * ```
  *
- * @param builder [Destination.Builder] initialization lambda.
- * @return [destination] instance.
+ * @param builder [Destination.Builder] 초기화 람다
+ * @return [destination] 인스턴스
  */
 inline fun destination(
     builder: Destination.Builder.() -> Unit,
@@ -22,16 +22,16 @@ inline fun destination(
     Destination.builder().apply(builder).build()
 
 /**
- * Creates a [Destination] instance.
+ * [Destination] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val destination = destinationOf(listOf("debop@example.com", "user1@example.com"))
  * ```
  *
- * @param toAddrs recipient address list.
- * @param ccAddrs CC address list.
- * @param bccAddrs BCC address list.
- * @return [Destination] instance.
+ * @param toAddrs 수신자 주소 목록
+ * @param ccAddrs 참조 주소 목록
+ * @param bccAddrs 숨은 참조 주소 목록
+ * @return [Destination] 인스턴스
  */
 fun destinationOf(
     toAddrs: Collection<String>,
@@ -44,14 +44,14 @@ fun destinationOf(
 }
 
 /**
- * Creates a [Destination] instance.
+ * [Destination] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val destination = destinationOf("debop@example.com", "user1@example.com")
  * ```
  *
- * @param toAddrs recipient address list.
- * @return [Destination] instance.
+ * @param toAddrs 수신자 주소 목록
+ * @return [Destination] 인스턴스
  */
 fun destinationOf(vararg toAddrs: String): Destination = destination {
     toAddresses(*toAddrs)

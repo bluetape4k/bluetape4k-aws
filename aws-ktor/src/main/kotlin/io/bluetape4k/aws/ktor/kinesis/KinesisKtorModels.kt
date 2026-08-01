@@ -12,12 +12,12 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * Request for publishing one record to a Kinesis stream.
+ * Kinesis 스트림에 레코드 하나를 게시하는 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Wraps stream name and partition key as named values so Ktor application code
- * does not accidentally swap same-typed parameters.
+ * Ktor 애플리케이션 코드가 타입이 같은 매개변수의 순서를 실수로 바꾸지 않도록
+ * 스트림 이름과 파티션 키를 명명된 값으로 감쌉니다.
  */
 data class KinesisPutRecordRequest(
     val streamName: String,
@@ -36,7 +36,7 @@ data class KinesisPutRecordRequest(
 }
 
 /**
- * Request for obtaining a Kinesis shard iterator.
+ * Kinesis 샤드 반복자를 가져오는 요청입니다.
  */
 data class KinesisShardIteratorRequest(
     val streamName: String,
@@ -57,13 +57,12 @@ data class KinesisShardIteratorRequest(
 }
 
 /**
- * Request for collecting records from one Kinesis shard as a cold Flow.
+ * Kinesis 샤드 하나에서 레코드를 cold Flow로 수집하는 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * The Flow is caller-collected, single-shard, and explicit. This type does not
- * imply a listener container, lease table, checkpoint store, or background
- * consumer.
+ * Flow는 호출자가 수집하는 명시적인 단일 샤드 흐름입니다. 이 타입은 리스너 컨테이너,
+ * 임대 테이블, 체크포인트 저장소 또는 백그라운드 소비자를 제공하지 않습니다.
  */
 data class KinesisRecordFlowRequest(
     val streamName: String,
@@ -83,7 +82,7 @@ data class KinesisRecordFlowRequest(
 }
 
 /**
- * Declares a configured Kinesis stream for [KinesisKtorOperations.createConfiguredStream].
+ * [KinesisKtorOperations.createConfiguredStream]에서 사용할 Kinesis 스트림 구성을 선언합니다.
  */
 data class KinesisKtorStream(
     val shardCount: Int = 1,
@@ -99,7 +98,7 @@ data class KinesisKtorStream(
 }
 
 /**
- * Polling and retry options for [KinesisKtorOperations.recordFlow].
+ * [KinesisKtorOperations.recordFlow]의 폴링 및 재시도 옵션입니다.
  */
 data class KinesisRecordFlowOptions(
     val batchLimit: Int = DEFAULT_BATCH_LIMIT,
@@ -139,23 +138,23 @@ data class KinesisRecordFlowOptions(
 }
 
 /**
- * Starting position for a Kinesis shard iterator.
+ * Kinesis 샤드 반복자의 시작 위치입니다.
  */
 sealed interface KinesisStartingPosition : Serializable {
 
-    /** Read from the oldest available record in the shard. */
+    /** 샤드에서 사용할 수 있는 가장 오래된 레코드부터 읽습니다. */
     data object TrimHorizon : KinesisStartingPosition {
         private const val serialVersionUID: Long = -5888197472956153464L
         private fun readResolve(): Any = TrimHorizon
     }
 
-    /** Read records written after the iterator is obtained. */
+    /** 반복자를 가져온 뒤 작성된 레코드를 읽습니다. */
     data object Latest : KinesisStartingPosition {
         private const val serialVersionUID: Long = -6388982200191080402L
         private fun readResolve(): Any = Latest
     }
 
-    /** Read the record with [sequenceNumber], inclusive. */
+    /** [sequenceNumber]에 해당하는 레코드부터 읽습니다. */
     data class AtSequenceNumber(val sequenceNumber: String) : KinesisStartingPosition {
 
         init {
@@ -173,7 +172,7 @@ sealed interface KinesisStartingPosition : Serializable {
         }
     }
 
-    /** Read records after [sequenceNumber], exclusive. */
+    /** [sequenceNumber] 다음 레코드부터 읽습니다. */
     data class AfterSequenceNumber(val sequenceNumber: String) : KinesisStartingPosition {
 
         init {
@@ -191,7 +190,7 @@ sealed interface KinesisStartingPosition : Serializable {
         }
     }
 
-    /** Read records at or after [timestamp]. */
+    /** [timestamp] 이후의 레코드를 해당 시각을 포함해 읽습니다. */
     data class AtTimestamp(val timestamp: Instant) : KinesisStartingPosition {
         companion object {
             private const val serialVersionUID: Long = 1523906536953919234L

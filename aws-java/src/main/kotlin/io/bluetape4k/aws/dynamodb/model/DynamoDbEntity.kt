@@ -12,7 +12,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 import java.io.Serializable
 
 /**
- * See the API documentation for details.
+ * DynamoDB의 Entity를 표현하는 인터페이스입니다.
  */
 interface DynamoDbEntity: Serializable {
     companion object {
@@ -23,35 +23,35 @@ interface DynamoDbEntity: Serializable {
     }
 
     /**
-     * See the API documentation for details.
+     * DynamoDB의 파티션 키입니다.
      */
     @get:DynamoDbPartitionKey
     val partitionKey: String
 
     /**
-     * See the API documentation for details.
+     * DynamoDB의 정렬 키입니다.
      */
     @get:DynamoDbSortKey
     val sortKey: String
 
     /**
-     * See the API documentation for details.
+     * DynamoDB의 [Key] 객체를 표현합니다.
      */
     val key: Key
 
     /**
-     * See the API documentation for details.
+     * Long 수형의 Unique 값을 제공합니다.
      */
     fun getUniqueLong(): Long = snowflake.nextId()
 
     /**
-     * See the API documentation for details.
+     * UUID를 Base62로 인코딩한 Unique 값을 제공합니다.
      */
     fun getUniqueUuidString(): String = Uuid.V7.nextBase62()
 }
 
 /**
- * See the API documentation for details.
+ * DynamoDB의 Entity를 표현하는 추상 클래스입니다.
  */
 abstract class AbstractDynamoDbEntity:
     AbstractValueObject(),
@@ -77,13 +77,13 @@ abstract class AbstractDynamoDbEntity:
 }
 
 /**
- * See the API documentation for details.
+ * Entity 타입명·파티션 키·정렬 키를 조합한 키 문자열을 반환합니다.
  *
- * See the API documentation for details.
- * See the API documentation for details.
- * See the API documentation for details.
- * See the API documentation for details.
- * See the API documentation for details.
+ * ## 동작/계약
+ * - 항상 `T::class.simpleName`을 접두사로 사용한다.
+ * - [partitionKey]가 blank가 아니면 `ENTITY_NAME_DELIMITER(:)` 뒤에 추가한다.
+ * - [sortKey]가 blank가 아니면 `ENTITY_ID_DELIMITER(#)` 뒤에 추가한다.
+ * - null 또는 blank 값은 해당 구분자 없이 생략된다.
  *
  * ```kotlin
  * val key = order.makeKeyString(partitionKey = "user1", sortKey = "order42")
@@ -93,9 +93,9 @@ abstract class AbstractDynamoDbEntity:
  * // keyNoSort == "Order:user1"
  * ```
  *
- * @param partitionKey Parameter.
- * @param sortKey Parameter.
- * @return Return value.
+ * @param partitionKey 파티션 키 값 (null 또는 blank이면 생략)
+ * @param sortKey 정렬 키 값 (null 또는 blank이면 생략)
+ * @return `ClassName[:partitionKey][#sortKey]` 형태의 문자열
  */
 inline fun <reified T: DynamoDbEntity> T.makeKeyString(
     partitionKey: Any? = null,

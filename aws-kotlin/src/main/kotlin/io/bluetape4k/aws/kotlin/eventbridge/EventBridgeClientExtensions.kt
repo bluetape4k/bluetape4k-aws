@@ -32,18 +32,18 @@ import io.bluetape4k.aws.kotlin.eventbridge.model.putRuleRequestOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.putTargetsRequestOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.removeTargetsRequestOf
 
-/** Creates an EventBridge event bus and returns the raw SDK response. */
+/** EventBridge 이벤트 버스를 생성하고 SDK 원본 응답을 반환합니다. */
 suspend fun EventBridgeClient.createEventBus(name: String): CreateEventBusResponse =
     createEventBus(createEventBusRequestOf(name))
 
-/** Deletes an EventBridge event bus without hidden rule cleanup. */
+/** 숨겨진 규칙 정리 없이 EventBridge 이벤트 버스를 삭제합니다. */
 suspend fun EventBridgeClient.deleteEventBus(name: String): DeleteEventBusResponse =
     deleteEventBus(deleteEventBusRequestOf(name))
 
 /**
- * Creates or updates a rule and returns the raw SDK response.
+ * 규칙을 생성하거나 갱신하고 SDK 원본 응답을 반환합니다.
  *
- * Either [eventPattern] or [scheduleExpression] is required.
+ * [eventPattern] 또는 [scheduleExpression] 중 하나가 필요합니다.
  */
 suspend fun EventBridgeClient.putRule(
     name: String,
@@ -55,7 +55,7 @@ suspend fun EventBridgeClient.putRule(
 ): PutRuleResponse =
     putRule(putRuleRequestOf(name, eventBusName, eventPattern, scheduleExpression, state, description))
 
-/** Deletes a rule after callers remove targets and inspect removal failures. */
+/** 호출자가 대상을 제거하고 제거 실패를 확인한 뒤 규칙을 삭제합니다. */
 suspend fun EventBridgeClient.deleteRule(
     name: String,
     eventBusName: String? = null,
@@ -64,7 +64,7 @@ suspend fun EventBridgeClient.deleteRule(
     deleteRule(deleteRuleRequestOf(name, eventBusName, force))
 
 /**
- * Adds or updates targets and preserves raw partial-failure details.
+ * 대상을 추가하거나 갱신하고 부분 실패 원본 상세 정보를 보존합니다.
  */
 suspend fun EventBridgeClient.putTargets(
     rule: String,
@@ -74,7 +74,7 @@ suspend fun EventBridgeClient.putTargets(
     putTargets(putTargetsRequestOf(rule, targets, eventBusName))
 
 /**
- * Removes targets and preserves raw partial-failure details.
+ * 대상을 제거하고 부분 실패 원본 상세 정보를 보존합니다.
  */
 suspend fun EventBridgeClient.removeTargets(
     rule: String,
@@ -84,7 +84,7 @@ suspend fun EventBridgeClient.removeTargets(
 ): RemoveTargetsResponse =
     removeTargets(removeTargetsRequestOf(rule, ids, eventBusName, force))
 
-/** Lists EventBridge rules. */
+/** EventBridge 규칙 목록을 조회합니다. */
 suspend fun EventBridgeClient.listRules(
     eventBusName: String? = null,
     namePrefix: String? = null,
@@ -93,7 +93,7 @@ suspend fun EventBridgeClient.listRules(
 ): ListRulesResponse =
     listRules(listRulesRequestOf(eventBusName, namePrefix, limit, nextToken))
 
-/** Lists targets attached to a rule. */
+/** 규칙에 연결된 대상 목록을 조회합니다. */
 suspend fun EventBridgeClient.listTargetsByRule(
     rule: String,
     eventBusName: String? = null,
@@ -103,10 +103,9 @@ suspend fun EventBridgeClient.listTargetsByRule(
     listTargetsByRule(listTargetsByRuleRequestOf(rule, eventBusName, limit, nextToken))
 
 /**
- * Publishes events with one SDK request.
+ * SDK 요청 하나로 이벤트를 게시합니다.
  *
- * No hidden batching, retry, or Boolean success collapse is performed. Inspect
- * the raw response failed-entry fields.
+ * 숨겨진 배치, 재시도 또는 Boolean 성공 축약을 수행하지 않습니다. 원본 응답의 실패 항목 필드를 확인하세요.
  */
 suspend fun EventBridgeClient.putEvents(
     entries: List<PutEventsRequestEntry>,

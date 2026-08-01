@@ -34,7 +34,7 @@ import io.bluetape4k.aws.kotlin.scheduler.model.listScheduleGroupsRequestOf
 import io.bluetape4k.aws.kotlin.scheduler.model.listSchedulesRequestOf
 import io.bluetape4k.aws.kotlin.scheduler.model.updateScheduleRequestOf
 
-/** Creates a schedule and returns the raw Scheduler response. */
+/** 스케줄을 생성하고 Scheduler 원본 응답을 반환합니다. */
 suspend fun SchedulerClient.createSchedule(
     name: String,
     scheduleExpression: String,
@@ -66,7 +66,7 @@ suspend fun SchedulerClient.createSchedule(
         ),
     )
 
-/** Updates a schedule with an explicit replacement request. */
+/** 명시적인 대체 요청으로 스케줄을 갱신합니다. */
 suspend fun SchedulerClient.updateSchedule(
     name: String,
     scheduleExpression: String,
@@ -98,7 +98,7 @@ suspend fun SchedulerClient.updateSchedule(
         ),
     )
 
-/** Deletes a schedule. */
+/** 스케줄을 삭제합니다. */
 suspend fun SchedulerClient.deleteSchedule(
     name: String,
     groupName: String? = null,
@@ -106,14 +106,14 @@ suspend fun SchedulerClient.deleteSchedule(
 ): DeleteScheduleResponse =
     deleteSchedule(deleteScheduleRequestOf(name, groupName, clientToken))
 
-/** Reads a schedule. */
+/** 스케줄을 조회합니다. */
 suspend fun SchedulerClient.getSchedule(
     name: String,
     groupName: String? = null,
 ): GetScheduleResponse =
     getSchedule(getScheduleRequestOf(name, groupName))
 
-/** Lists schedules. */
+/** 스케줄 목록을 조회합니다. */
 suspend fun SchedulerClient.listSchedules(
     groupName: String? = null,
     namePrefix: String? = null,
@@ -123,25 +123,25 @@ suspend fun SchedulerClient.listSchedules(
 ): ListSchedulesResponse =
     listSchedules(listSchedulesRequestOf(groupName, namePrefix, state, maxResults, nextToken))
 
-/** Creates a schedule group. */
+/** 스케줄 그룹을 생성합니다. */
 suspend fun SchedulerClient.createScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): CreateScheduleGroupResponse =
     createScheduleGroup(createScheduleGroupRequestOf(name, clientToken))
 
-/** Deletes a schedule group. */
+/** 스케줄 그룹을 삭제합니다. */
 suspend fun SchedulerClient.deleteScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): DeleteScheduleGroupResponse =
     deleteScheduleGroup(deleteScheduleGroupRequestOf(name, clientToken))
 
-/** Reads a schedule group. */
+/** 스케줄 그룹을 조회합니다. */
 suspend fun SchedulerClient.getScheduleGroup(name: String): GetScheduleGroupResponse =
     getScheduleGroup(getScheduleGroupRequestOf(name))
 
-/** Lists schedule groups. */
+/** 스케줄 그룹 목록을 조회합니다. */
 suspend fun SchedulerClient.listScheduleGroups(
     namePrefix: String? = null,
     maxResults: Int? = null,

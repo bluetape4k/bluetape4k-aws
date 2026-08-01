@@ -1,31 +1,21 @@
-# Issue #196 Plan Review
+# Issue #196 계획 검토
 
-Date: 2026-06-07
-Scope: `docs/superpowers/plans/2026-06-07-issue-196-imds-spring-boot-plan.md`
+날짜: 2026-06-07
+범위: `docs/superpowers/plans/2026-06-07-issue-196-imds-spring-boot-plan.md`
 
-## Verdict
+## 판정
 
-PASS
+PASS (P0: 0, P1: 0, P2: 0). 차단 문제 없음.
 
-- P0: 0
-- P1: 0
-- P2: 0
-
-## Evidence Reviewed
+## 검토 증거
 
 - Spec: `docs/superpowers/specs/2026-06-07-issue-196-imds-spring-boot-design.md`
 - Plan: `docs/superpowers/plans/2026-06-07-issue-196-imds-spring-boot-plan.md`
-- Current `aws-spring-boot` CloudWatch/S3 auto-configuration and test patterns.
-- AWS SDK v2 IMDS class inspection for available builder and client APIs.
+- 현재 `aws-spring-boot` CloudWatch/S3 자동 구성 및 테스트 패턴
+- 사용 가능한 builder/client API를 위한 AWS SDK v2 IMDS class 검사
 
-## Findings
+## 메모
 
-None blocking.
-
-## Notes
-
-- The plan preserves the required sequence: dependency, properties, operations,
-  auto-configuration, tests, docs, review, validation.
-- The plan includes a concrete no-startup-call risk control.
-- The validation commands cover dependency presence, compilation, focused
-  behavior, full module regression, and whitespace checks.
+- dependency → properties → operations → auto-configuration → tests → docs → review → validation 순서를 보존한다.
+- 시작 시 호출하지 않는 위험 제어를 구체적으로 포함한다.
+- dependency 존재, compile, 집중 동작, 전체 모듈 회귀, whitespace 검증 command를 포함한다.

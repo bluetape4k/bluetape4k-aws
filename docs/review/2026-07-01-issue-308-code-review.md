@@ -1,26 +1,24 @@
-# Issue 308 Code Review
+# Issue 308 코드 검토
 
-## Scope
+## 범위
 
-- Java SDK v2 EventBridge client factories, request builders, sync/async helpers, and coroutine adapters.
-- AWS Kotlin SDK EventBridge client factory, request builders, and native suspend helpers.
-- README locale set and dependency catalog/build declarations.
+- Java SDK v2 EventBridge client factory, request builder, sync/async helper, coroutine adapter.
+- AWS Kotlin SDK EventBridge client factory, request builder, native suspend helper.
+- README locale과 dependency catalog/build 선언.
 
-## Findings
+## 결과
 
-| Lens | Severity | Finding | Resolution |
-|---|---:|---|---|
-| API contract | P0 | None. Helpers keep one SDK request per call and return raw SDK responses. | Verified by mock invocation-count tests. |
-| Partial failures | P0 | None. `PutEvents`, `PutTargets`, and `RemoveTargets` responses are not collapsed to Boolean results. | Verified by raw response identity tests and README/KDoc notes. |
-| Validation | P0 | None. Blank required fields and EventBridge 10-item request limits are checked before SDK calls. | Verified by Java and AWS Kotlin request-support tests. |
-| Lifecycle | P0 | None. Java clients follow the existing `ShutdownQueue` pattern; AWS Kotlin clients remain caller-owned unless created through `withEventBridgeClient`. | Verified by client construction tests and source inspection. |
-| Cancellation | P0 | None. Java coroutine helpers use `await()` and do not catch cancellation. | Verified by cancellation propagation test. |
-| Emulator | P1 | No `*EventBridgeEmulator*` smoke exists in this repository, so a Floci/LocalStack EventBridge live smoke was not claimed. | Recorded unsupported-emulator evidence from `rg` and file listing; mock/request tests cover core wrappers. |
-| Documentation | P0 | None. Root and module README locale pairs list EventBridge coverage, runtime dependency, partial-failure handling, and non-goals. | Verified by `rg EventBridge/eventbridge/partial` over README locale set. |
+- API/P0: SDK 요청당 helper 호출 한 번과 원본 응답을 유지한다. mock 호출 횟수 테스트로 확인했다.
+- 부분 실패/P0: `PutEvents`, `PutTargets`, `RemoveTargets` 응답을 Boolean으로 축약하지 않는다. 응답 동일성 테스트와 README/KDoc로 확인했다.
+- 검증/P0: 필수 필드 공백과 EventBridge 10개 항목 제한을 SDK 호출 전에 검사한다.
+- 수명 주기/P0: Java client는 `ShutdownQueue`, AWS Kotlin client는 `withEventBridgeClient` 외에는 호출자 소유 규칙을 따른다.
+- 취소/P0: Java coroutine helper는 `await()`를 사용하고 취소를 잡지 않는다.
+- Emulator/P1: `*EventBridgeEmulator*` smoke가 없어 Floci/LocalStack live smoke를 주장하지 않았다. mock/request 테스트로 core wrapper를 검증했다.
+- 문서/P0: README locale에 EventBridge, runtime dependency, 부분 실패, non-goal을 기록했으며 `rg EventBridge/eventbridge/partial`로 확인했다.
 
-## Verification Evidence
+## 검증 증거
 
-- `./gradlew :bluetape4k-aws-java:test --tests '*EventBridge*' :bluetape4k-aws-kotlin:test --tests '*EventBridge*' --no-configuration-cache` passed.
-- `./gradlew :bluetape4k-aws-java:compileTestKotlin :bluetape4k-aws-kotlin:compileTestKotlin --warning-mode all` passed.
-- `git diff --check` passed.
-- Emulator probe evidence: `find aws-java/src/test aws-kotlin/src/test -name '*EventBridgeEmulator*' -o -name '*EventBridge*'` listed only request/client/mock tests, with no emulator smoke class.
+- `./gradlew :bluetape4k-aws-java:test --tests '*EventBridge*' :bluetape4k-aws-kotlin:test --tests '*EventBridge*' --no-configuration-cache`: PASS
+- `./gradlew :bluetape4k-aws-java:compileTestKotlin :bluetape4k-aws-kotlin:compileTestKotlin --warning-mode all`: PASS
+- `git diff --check`: PASS
+- `find aws-java/src/test aws-kotlin/src/test -name '*EventBridgeEmulator*' -o -name '*EventBridge*'`: emulator smoke 없이 request/client/mock test만 확인한 `rg` 증거

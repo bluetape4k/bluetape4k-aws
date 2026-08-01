@@ -11,22 +11,22 @@ import java.util.Base64
 private const val DEFAULT_BINARY_CONTENT_TYPE = "application/octet-stream"
 
 /**
- * Server-side encryption settings for S3 PutObject and multipart-create requests.
+ * S3 PutObject 및 멀티파트 생성 요청의 서버 측 암호화 설정입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * The value object renders only S3 request headers. It does not perform
- * client-side encryption and does not add an AWS KMS runtime dependency.
+ * 이 값 객체는 S3 요청 헤더만 생성합니다. 클라이언트 측 암호화를 수행하지 않으며
+ * AWS KMS 런타임 의존성을 추가하지 않습니다.
  */
 sealed interface S3KtorServerSideEncryption: Serializable {
 
     /**
-     * Returns S3 request headers for this encryption mode.
+     * 이 암호화 모드의 S3 요청 헤더를 반환합니다.
      */
     fun headers(): Map<String, String>
 
     /**
-     * S3-managed server-side encryption (`AES256`).
+     * S3 관리형 서버 측 암호화(`AES256`)입니다.
      */
     data object S3Managed: S3KtorServerSideEncryption {
         private const val serialVersionUID: Long = 1L
@@ -36,7 +36,7 @@ sealed interface S3KtorServerSideEncryption: Serializable {
     }
 
     /**
-     * AWS KMS server-side encryption.
+     * AWS KMS 서버 측 암호화입니다.
      */
     data class Kms(
         val keyId: String? = null,
@@ -64,7 +64,7 @@ sealed interface S3KtorServerSideEncryption: Serializable {
     }
 
     /**
-     * Customer-provided server-side encryption key (`SSE-C`).
+     * 고객 제공 서버 측 암호화 키(`SSE-C`)입니다.
      */
     class CustomerProvided(
         private val key: ByteArray,
@@ -90,23 +90,23 @@ sealed interface S3KtorServerSideEncryption: Serializable {
 }
 
 /**
- * Content-type detector used by Ktor S3 upload helpers.
+ * Ktor S3 업로드 도우미에서 사용하는 콘텐츠 타입 감지기입니다.
  */
 fun interface S3KtorContentTypeDetector {
 
     /**
-     * Detects a content type for [key] and optional [bytes].
+     * [key]와 선택적인 [bytes]에서 콘텐츠 타입을 감지합니다.
      */
     fun detect(key: String, bytes: ByteArray?): String?
 }
 
 /**
- * Common S3 content-type detection helpers.
+ * 공통 S3 콘텐츠 타입 감지 도우미입니다.
  */
 object S3KtorContentTypes {
 
     /**
-     * Detects by object key extension first, then by byte signature when bytes are supplied.
+     * 먼저 객체 키 확장자로 감지하고, 바이트가 제공되면 바이트 시그니처를 확인합니다.
      */
     val Default: S3KtorContentTypeDetector = S3KtorContentTypeDetector { key, bytes ->
         URLConnection.guessContentTypeFromName(key)
@@ -114,14 +114,14 @@ object S3KtorContentTypes {
     }
 
     /**
-     * Returns [detected] when non-blank, otherwise [fallback].
+     * [detected]가 비어 있지 않으면 이를 반환하고, 그렇지 않으면 [fallback]을 반환합니다.
      */
     fun orFallback(detected: String?, fallback: String = DEFAULT_BINARY_CONTENT_TYPE): String =
         detected?.takeIf { it.isNotBlank() } ?: fallback
 }
 
 /**
- * Text object loaded from S3 for Ktor application configuration bootstrap.
+ * Ktor 애플리케이션 구성 부트스트랩을 위해 S3에서 읽은 텍스트 객체입니다.
  */
 data class S3KtorConfigObject(
     val bucket: String,

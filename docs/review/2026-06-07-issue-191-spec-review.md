@@ -1,47 +1,28 @@
-# Issue #191 Spec Review
+# Issue #191 스펙 검토
 
-Date: 2026-06-07
-Artifact: `docs/superpowers/specs/2026-06-07-issue-191-dynamodb-dax-spring-boot-design.md`
+날짜: 2026-06-07
+문서: `docs/superpowers/specs/2026-06-07-issue-191-dynamodb-dax-spring-boot-design.md`
 
-## Review Scope
+## 검토 범위
 
-Reviewed the #191 DAX Spring Boot design against:
+#191 설계를 현재 `DynamoDbAutoConfiguration`/`DynamoDbProperties`, Spring 조건부 자동 구성, optional dependency/README 규칙, AWS DAX Java 2.x 문서, `amazon-dax-client:2.0.9` metadata/`javap`와 대조했다.
 
-- current `DynamoDbAutoConfiguration` and `DynamoDbProperties`
-- Spring Boot conditional auto-configuration rules
-- bluetape4k optional dependency and README language rules
-- AWS DAX Java 2.x official documentation
-- `amazon-dax-client:2.0.9` Maven metadata and `javap` API inspection
+## 결과
 
-## Findings
-
-| Severity | Count | Notes |
+| 심각도 | 수 | 메모 |
 |---|---:|---|
-| P0 | 0 | No blocker found. |
-| P1 | 0 | No high-severity design gap remains. |
-| P2 | 2 | Track during implementation. |
+| P0 | 0 | 차단 없음 |
+| P1 | 0 | 고심각도 공백 없음 |
+| P2 | 2 | 구현 중 추적 |
 
-### P2-1 DAX SDK Customizers Are Not Reusable As-Is
+### P2-1 DAX SDK customizer는 그대로 재사용할 수 없다
 
-`ClusterDaxAsyncClient.Builder` is not a `DynamoDbAsyncClientBuilder`; it only
-accepts `software.amazon.dax.Configuration`. The spec now explicitly rejects
-direct reuse of `AwsAsyncClientCustomizer` /
-`AwsClientCustomizer<DynamoDbAsyncClientBuilder>` and routes DAX tuning through
-typed properties.
+`ClusterDaxAsyncClient.Builder`는 `DynamoDbAsyncClientBuilder`가 아니며 `software.amazon.dax.Configuration`만 받는다. `AwsAsyncClientCustomizer`/`AwsClientCustomizer<DynamoDbAsyncClientBuilder>` 재사용을 거부하고 typed property로 조정한다.
 
-### P2-2 DAX Transitive AWS SDK Version Must Be Verified
+### P2-2 DAX 전이 AWS SDK version을 검증해야 한다
 
-`amazon-dax-client:2.0.9` declares `software.amazon.awssdk:dynamodb:2.38.5`.
-The implementation plan must include `dependencyInsight` evidence proving the
-repo AWS SDK BOM/catalog line remains authoritative.
+`amazon-dax-client:2.0.9`는 `software.amazon.awssdk:dynamodb:2.38.5`를 선언한다. Repository BOM/catalog가 우선함을 `dependencyInsight`로 증명해야 한다.
 
-## Gate Verdict
+## Gate 판정
 
-PASS.
-
-Spec review gate status:
-
-- `P0=0`
-- `P1=0`
-
-Proceed to plan.
+PASS (`P0=0`, `P1=0`). 계획으로 진행한다.

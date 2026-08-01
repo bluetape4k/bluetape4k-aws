@@ -175,7 +175,7 @@ inline fun PutRequest(
     PutRequest.builder().apply(builder).build()
 
 /**
- * See the API documentation for details.
+ * 속성 맵으로 [PutRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = putRequestOf(mapOf("pk" to "order#1".toAttributeValue()))
@@ -330,9 +330,9 @@ inline fun <reified T: Any> writeBatchOf(
 }
 
 /**
- * See the API documentation for details.
+ * 엔티티 컬렉션을 [WriteBatch]로 변환합니다.
  *
- * See the API documentation for details.
+ * [itemClass] 기반 builder를 사용하므로 `reified` 타입 파라미터 없이 호출할 수 있습니다.
  */
 fun <T: Any> writeBatchOf(
     table: MappedTableResource<T>,
@@ -354,7 +354,7 @@ inline fun WriteRequest(
 }
 
 /**
- * See the API documentation for details.
+ * 속성 맵으로 [WriteRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = writeRequestOf(mapOf("pk" to "order#1".toAttributeValue()))
@@ -367,9 +367,9 @@ fun writeRequestOf(items: Map<String, AttributeValue>): WriteRequest =
     }
 
 /**
- * See the API documentation for details.
+ * [QueryRequest]의 정보를 문자열로 표현한다
  *
- * @return Return value.
+ * @return [QueryRequest] 정보를 나타내는 문자열
  */
 fun QueryRequest.describe(): String = buildString {
     appendLine()

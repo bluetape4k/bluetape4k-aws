@@ -13,16 +13,16 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult
 
 /**
- * Create DynamoDb Table with specific name ([tableName])
+ * 지정한 이름([tableName])으로 DynamoDb 테이블을 생성합니다.
  *
  * ```kotlin
  * val table = enhancedClient.table<MyEntity>("orders")
  * check(table.tableName() == "orders")
  * ```
  *
- * @param T entity type
- * @param tableName table name
- * @return [DynamoDbTable] instance
+ * @param T 엔티티 타입
+ * @param tableName 테이블 이름
+ * @return [DynamoDbTable] 인스턴스
  */
 inline fun <reified T: Any> DynamoDbEnhancedClient.table(tableName: String): DynamoDbTable<T> {
     tableName.requireNotBlank("tableName")
@@ -30,17 +30,17 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.table(tableName: String): Dyn
 }
 
 /**
- * Splits large item writes into chunks of up to [DynamoDb.MAX_BATCH_ITEM_SIZE].
+ * 대량의 Item 을 저장할 때, [DynamoDb.MAX_BATCH_ITEM_SIZE] 만큼의 크기로 나누어 저장한다.
  *
- * As verified by the same logic in `EnhancedAsyncClientExtensionsTest`, when `items=30` and `chunkSize=25`,
- * the result collection size is `2`.
+ * `EnhancedAsyncClientExtensionsTest`의 동일 로직 검증 기준과 같이, `items=30`, `chunkSize=25`이면
+ * 결과 컬렉션 크기는 `2`가 된다.
  *
- * @param T  entity type
- * @param itemClass entity class
- * @param table [MappedTableResource] instance
- * @param items Item collection to store.
- * @param chunkSize Must be no greater than [DynamoDb.MAX_BATCH_ITEM_SIZE] (1..25).
- * @return [BatchWriteResult] collection.
+ * @param T 엔티티 타입
+ * @param itemClass 엔티티 클래스
+ * @param table [MappedTableResource] 인스턴스
+ * @param items 저장할 item 컬렉션
+ * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
+ * @return [BatchWriteResult] 컬렉션
  */
 fun <T: Any> DynamoDbEnhancedClient.batchWriteItems(
     itemClass: Class<T>,
@@ -61,18 +61,18 @@ fun <T: Any> DynamoDbEnhancedClient.batchWriteItems(
 }
 
 /**
- * Splits large item writes into chunks of up to [DynamoDb.MAX_BATCH_ITEM_SIZE].
+ * 대량의 Item 을 저장할 때, [DynamoDb.MAX_BATCH_ITEM_SIZE] 만큼의 크기로 나누어 저장한다.
  *
  * ```kotlin
  * val results = enhancedClient.batchWriteItems(table, items, chunkSize = 10)
  * check(results.size == items.chunked(10).size)
  * ```
  *
- * @param T entity type
- * @param table [MappedTableResource] instance
- * @param items Item collection to store.
- * @param chunkSize Must be no greater than [DynamoDb.MAX_BATCH_ITEM_SIZE] (1..25).
- * @return [BatchWriteResult] collection.
+ * @param T 엔티티 타입
+ * @param table [MappedTableResource] 인스턴스
+ * @param items 저장할 item 컬렉션
+ * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
+ * @return [BatchWriteResult] 컬렉션
  */
 inline fun <reified T: Any> DynamoDbEnhancedClient.batchWriteItems(
     table: MappedTableResource<T>,
@@ -81,18 +81,18 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.batchWriteItems(
 ): List<BatchWriteResult> = batchWriteItems(T::class.java, table, items, chunkSize)
 
 /**
- * Returns `true` if the named table exists, `false` if it does not.
+ * 지정한 이름의 테이블이 있으면 `true`, 없으면 `false`를 반환합니다.
  *
- * Only [ResourceNotFoundException] is normalized to `false`; all other exceptions
- * (auth failures, network errors, etc.) propagate to the caller.
+ * [ResourceNotFoundException]만 `false`로 정규화합니다. 인증 실패, 네트워크 오류 등
+ * 다른 모든 예외는 호출자에게 전파합니다.
  *
  * ```kotlin
  * val exists = enhancedClient.existsTable("orders")
  * check(exists is Boolean)
  * ```
  *
- * @param tableName table name to check
- * @return `true` if the table exists, `false` if [ResourceNotFoundException] is thrown
+ * @param tableName 확인할 테이블 이름
+ * @return 테이블이 있으면 `true`, [ResourceNotFoundException]이 발생하면 `false`
  */
 fun DynamoDbEnhancedClient.existsTable(tableName: String): Boolean =
     try {

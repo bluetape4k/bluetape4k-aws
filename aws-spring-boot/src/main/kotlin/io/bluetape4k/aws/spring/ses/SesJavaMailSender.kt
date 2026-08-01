@@ -20,12 +20,12 @@ import java.util.Properties
 import java.util.concurrent.CompletionException
 
 /**
- * Spring [JavaMailSender] adapter backed by [SesOperations].
+ * [SesOperations]를 사용하는 Spring [JavaMailSender] 어댑터입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Sends [SimpleMailMessage] as SES simple messages and [MimeMessage] as SES raw
- * messages without blocking a coroutine dispatcher or using `runBlocking`.
+ * 코루틴 디스패처를 블로킹하거나 `runBlocking`을 사용하지 않고 [SimpleMailMessage]는 SES 단순
+ * 메시지로, [MimeMessage]는 SES 원본 메시지로 전송합니다.
  */
 class SesJavaMailSender(
     private val sesOperations: SesOperations,

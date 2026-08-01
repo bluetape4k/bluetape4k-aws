@@ -9,17 +9,17 @@ import java.io.InputStream
 import java.nio.ByteBuffer
 
 /**
- * Converts a Kotlin value into a DynamoDB [AttributeValue].
+ * Kotlin 값을 DynamoDB의 [AttributeValue]로 변환합니다.
  *
- * ## Behavior and contract
- * - null -> `AttributeValue.Null(true)`
- * - [ByteArray]/[ByteBuffer] -> `AttributeValue.B`
- * - [String] -> `AttributeValue.S`
- * - [Number] -> `AttributeValue.N` after `toString()`
- * - [Boolean] -> `AttributeValue.Bool`
- * - [Iterable] -> `AttributeValue.L`
- * - [Map] -> `AttributeValue.M`
- * - Other values -> `AttributeValue.S` after `toString()`
+ * ## 동작/계약
+ * - null → `AttributeValue.Null(true)`
+ * - [ByteArray]/[ByteBuffer] → `AttributeValue.B`
+ * - [String] → `AttributeValue.S`
+ * - [Number] → `AttributeValue.N` (toString 변환)
+ * - [Boolean] → `AttributeValue.Bool`
+ * - [Iterable] → `AttributeValue.L`
+ * - [Map] → `AttributeValue.M`
+ * - 그 외 → toString() 후 `AttributeValue.S`
  *
  * ```kotlin
  * val s = "hello".toAttributeValue()   // AttributeValue.S("hello")
@@ -43,7 +43,7 @@ fun <T> T.toAttributeValue(): AttributeValue = when (this) {
 
 
 /**
- * Converts a [ByteArray] into DynamoDB [AttributeValue.B].
+ * [ByteArray]를 DynamoDB [AttributeValue.B]로 변환합니다.
  *
  * ```kotlin
  * val av = byteArrayOf(1, 2, 3).toAttributeValue()   // AttributeValue.B(...)
@@ -52,7 +52,7 @@ fun <T> T.toAttributeValue(): AttributeValue = when (this) {
 inline fun ByteArray.toAttributeValue(): AttributeValue = AttributeValue.B(this)
 
 /**
- * Converts a [ByteBuffer] into DynamoDB [AttributeValue.B].
+ * [ByteBuffer]를 DynamoDB [AttributeValue.B]로 변환합니다.
  *
  * ```kotlin
  * val buf = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
@@ -62,7 +62,7 @@ inline fun ByteArray.toAttributeValue(): AttributeValue = AttributeValue.B(this)
 inline fun ByteBuffer.toAttributeValue(): AttributeValue = AttributeValue.B(this.getAllBytes())
 
 /**
- * Converts a [String] into DynamoDB [AttributeValue.S].
+ * [String]을 DynamoDB [AttributeValue.S]로 변환합니다.
  *
  * ```kotlin
  * val av = "hello".toAttributeValue()   // AttributeValue.S("hello")
@@ -71,7 +71,7 @@ inline fun ByteBuffer.toAttributeValue(): AttributeValue = AttributeValue.B(this
 inline fun String.toAttributeValue(): AttributeValue = AttributeValue.S(this)
 
 /**
- * Converts a [Number] into DynamoDB [AttributeValue.N].
+ * [Number]를 DynamoDB [AttributeValue.N]으로 변환합니다.
  *
  * ```kotlin
  * val av = 42.toAttributeValue()   // AttributeValue.N("42")
@@ -80,7 +80,7 @@ inline fun String.toAttributeValue(): AttributeValue = AttributeValue.S(this)
 inline fun Number.toAttributeValue(): AttributeValue = AttributeValue.N(this.toString())
 
 /**
- * Converts a [Boolean] into DynamoDB [AttributeValue.Bool].
+ * [Boolean]을 DynamoDB [AttributeValue.Bool]으로 변환합니다.
  *
  * ```kotlin
  * val av = true.toAttributeValue()   // AttributeValue.Bool(true)
@@ -89,7 +89,7 @@ inline fun Number.toAttributeValue(): AttributeValue = AttributeValue.N(this.toS
 inline fun Boolean.toAttributeValue(): AttributeValue = AttributeValue.Bool(this)
 
 /**
- * Converts a [ByteArray] collection into DynamoDB [AttributeValue.Bs].
+ * [ByteArray] 목록을 DynamoDB [AttributeValue.Bs]로 변환합니다.
  *
  * ```kotlin
  * val av = listOf(byteArrayOf(1), byteArrayOf(2)).toAttributeValue()   // AttributeValue.Bs(...)
@@ -99,7 +99,7 @@ inline fun Boolean.toAttributeValue(): AttributeValue = AttributeValue.Bool(this
 inline fun Iterable<ByteArray>.toAttributeValue(): AttributeValue = AttributeValue.Bs(this.toList())
 
 /**
- * Converts a [CharSequence] collection into DynamoDB [AttributeValue.Ss].
+ * [CharSequence] 목록을 DynamoDB [AttributeValue.Ss]로 변환합니다.
  *
  * ```kotlin
  * val av = listOf("a", "b").toAttributeValue()   // AttributeValue.Ss(["a", "b"])
@@ -110,7 +110,7 @@ inline fun <T: CharSequence> Iterable<T>.toAttributeValue(): AttributeValue =
     AttributeValue.Ss(this.map { it.toString() })
 
 /**
- * Converts a [Number] collection into DynamoDB [AttributeValue.Ns].
+ * [Number] 목록을 DynamoDB [AttributeValue.Ns]로 변환합니다.
  *
  * ```kotlin
  * val av = listOf(1, 2, 3).toAttributeValue()   // AttributeValue.Ns(["1", "2", "3"])
@@ -120,7 +120,7 @@ inline fun <T: CharSequence> Iterable<T>.toAttributeValue(): AttributeValue =
 fun <T: Number> Iterable<T>.toAttributeValue(): AttributeValue = AttributeValue.Ns(this.map { it.toString() })
 
 /**
- * Converts an [InputStream] into DynamoDB [AttributeValue.B].
+ * [InputStream]을 DynamoDB [AttributeValue.B]로 변환합니다.
  *
  * ```kotlin
  * val stream = ByteArrayInputStream(byteArrayOf(1, 2, 3))
@@ -131,7 +131,7 @@ inline fun InputStream.toAttributeValue(): AttributeValue =
     AttributeValue.B(this.toByteArray())
 
 /**
- * Converts [Iterable] elements into a DynamoDB [AttributeValue.L] list.
+ * [Iterable] 요소들을 DynamoDB [AttributeValue.L] 리스트로 변환합니다.
  *
  * ```kotlin
  * val av = listOf("a", 1, true).toAttributeValue()   // AttributeValue.L(...)
@@ -140,7 +140,7 @@ inline fun InputStream.toAttributeValue(): AttributeValue =
 inline fun <T> Iterable<T>.toAttributeValue() = AttributeValue.L(this.map { it.toAttributeValue() })
 
 /**
- * Converts a [Map] into DynamoDB [AttributeValue.M].
+ * [Map]을 DynamoDB [AttributeValue.M]으로 변환합니다.
  *
  * ```kotlin
  * val av = mapOf("name" to "Alice", "age" to 30).toAttributeValue()
@@ -152,10 +152,10 @@ inline fun <K: Any, V> Map<K, V>.toAttributeValue(): AttributeValue.M =
 
 
 /**
- * Converts this iterable's elements into a list of [AttributeValue] values.
+ * Iterable의 요소들을 [AttributeValue] 목록으로 변환합니다.
  *
- * ## Behavior and contract
- * - Returns a new list by applying [toAttributeValue] to each element.
+ * ## 동작/계약
+ * - 각 요소에 [toAttributeValue]를 적용한 새 리스트를 반환한다.
  *
  * ```kotlin
  * val list = listOf("a", "b").toAttributeValueList()
@@ -165,10 +165,10 @@ inline fun <K: Any, V> Map<K, V>.toAttributeValue(): AttributeValue.M =
 inline fun <T> Iterable<T>.toAttributeValueList(): List<AttributeValue> = this.map { it.toAttributeValue() }
 
 /**
- * Converts this map into `Map<String, AttributeValue>`.
+ * Map을 `Map<String, AttributeValue>` 형태로 변환합니다.
  *
- * ## Behavior and contract
- * - Returns a new map by converting keys with `toString()` and values with [toAttributeValue].
+ * ## 동작/계약
+ * - 키는 `toString()`, 값은 [toAttributeValue]로 변환해 새 맵을 반환한다.
  *
  * ```kotlin
  * val attrMap = mapOf("id" to "u1", "age" to 30).toAttributeValueMap()

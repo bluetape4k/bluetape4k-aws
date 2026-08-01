@@ -22,16 +22,16 @@ import java.nio.charset.Charset
 import java.time.Duration
 
 /**
- * Default implementation that provides S3 operations as a Coroutines API for Spring Boot applications.
+ * Spring Boot 애플리케이션에서 S3 작업을 Coroutines API로 제공하는 기본 구현체.
  *
- * ## Behavior/Contract
+ * ## 동작/계약
  *
- * Performs asynchronous object operations with `S3AsyncClient`, creates Spring `Resource`
- * views with `S3Client`, and creates presigned GET/PUT URLs with `S3Presigner`. When no
- * presign duration is specified, it uses the `bluetape4k.aws.s3.presign.duration` property.
+ * `S3AsyncClient`로 비동기 객체 작업을 수행하고, `S3Client`로 Spring `Resource`
+ * 뷰를 만들며, `S3Presigner`로 presigned GET/PUT URL을 생성합니다. presign duration을
+ * 명시하지 않으면 `bluetape4k.aws.s3.presign.duration` 설정값을 사용합니다.
  *
- * For S3-compatible endpoints that use `endpointOverride`, such as LocalStack, also enable
- * `path-style-access-enabled` so the bucket name is placed in the path rather than the host.
+ * LocalStack처럼 `endpointOverride`를 사용하는 S3 호환 엔드포인트에서는 버킷 이름을
+ * 호스트가 아닌 경로에 포함하도록 `path-style-access-enabled`를 함께 켜야 합니다.
  *
  * ```kotlin
  * class DocumentStorage(private val s3: S3CoroutinesTemplate) {

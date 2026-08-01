@@ -1,31 +1,31 @@
-# Issue #180 Spring Exposed Settings Resolver Review
+# Issue #180 Spring Exposed Settings Resolver 검토
 
-Date: 2026-07-01
-Scope: `aws-spring-boot` Exposed auto-configuration, Spring Environment-backed database settings resolver, README locale set.
+날짜: 2026-07-01
+범위: `aws-spring-boot` Exposed 자동 구성, Spring Environment 기반 database settings resolver, README locale.
 
-## Verdict
+## 판정
 
 P0: 0
 P1: 0
 
-## Review Notes
+## 검토 내용
 
-| Tier | Result | Evidence |
+| Tier | 결과 | 증거 |
 |---|---|---|
-| Tier 4 correctness | PASS | `SpringEnvironmentAwsDatabaseSettingsResolver` overlays only existing keys under `secretSource` / `parameterSource` prefixes and leaves unset fields unchanged. Required missing sources fail fast; optional missing sources keep explicit settings. |
-| Tier 5 integration | PASS | `AwsExposedAutoConfiguration` now creates the registry when either `default-database.url` or a configured source descriptor prefix exists. It still backs off when neither URL nor source descriptor exists. |
-| Tier 7 docs/evidence | PASS | `README.md` and `README.ko.md` document the Spring Environment source flow and clarify that Exposed does not create an additional AWS client path. |
-| Security / secret handling | PASS | Remote `password` values are wrapped in `AwsSecretString`; tests assert reveal behavior without logging raw values. |
-| Regression | PASS | `:bluetape4k-aws-spring-boot:test` passed with 247 tests, 0 failures, 0 errors, 0 skipped. |
-| Graph impact | PASS | CodeGraph affected-flow check reported 0 affected flows for the touched files; this repository graph does not model the Spring auto-configuration runtime path. |
+| Tier 4 정확성 | PASS | `SpringEnvironmentAwsDatabaseSettingsResolver`는 `secretSource`/`parameterSource` 접두사의 기존 key만 덮어쓰고 미설정 field를 유지한다. 필수 source 누락은 즉시 실패하고 선택 source 누락은 명시적 설정을 유지한다. |
+| Tier 5 통합 | PASS | `AwsExposedAutoConfiguration`은 `default-database.url` 또는 source descriptor prefix가 있으면 registry를 만들고 둘 다 없으면 물러난다. |
+| Tier 7 문서/증거 | PASS | `README.md`와 `README.ko.md`는 Spring Environment source 흐름과 Exposed가 별도 AWS client 경로를 만들지 않음을 설명한다. |
+| 보안/secret | PASS | 원격 `password`를 `AwsSecretString`으로 감싸고 raw value를 logging하지 않고 reveal 동작을 검증한다. |
+| 회귀 | PASS | `:bluetape4k-aws-spring-boot:test` 247 tests, 0 failures, 0 errors, 0 skipped. |
+| Graph 영향 | PASS | CodeGraph affected-flow 0. 현재 graph는 Spring 자동 구성 runtime 경로를 모델링하지 않는다. |
 
-## Validation
+## 검증
 
-- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --warning-mode all --no-daemon --stacktrace`: PASS.
-- `./gradlew :bluetape4k-aws-spring-boot:test --no-daemon --stacktrace`: PASS.
-- Test XML summary: `tests=247 failures=0 errors=0 skipped=0`.
-- `git diff --check`: PASS.
+- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --warning-mode all --no-daemon --stacktrace`: PASS
+- `./gradlew :bluetape4k-aws-spring-boot:test --no-daemon --stacktrace`: PASS
+- Test XML: `tests=247 failures=0 errors=0 skipped=0`
+- `git diff --check`: PASS
 
-## Residual Risk
+## 잔여 위험
 
-The resolver intentionally depends on Spring Environment property names that are already published by the existing Secrets Manager and Parameter Store post-processors. It does not fetch AWS values directly, so applications must still configure the corresponding Environment source.
+Resolver는 기존 Secrets Manager/Parameter Store post-processor가 게시한 Spring Environment property name에 의존한다. AWS 값을 직접 가져오지 않으므로 애플리케이션은 해당 Environment source를 계속 구성해야 한다.

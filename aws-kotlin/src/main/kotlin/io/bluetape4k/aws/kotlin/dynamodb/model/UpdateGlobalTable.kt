@@ -8,12 +8,12 @@ import aws.sdk.kotlin.services.dynamodb.model.UpdateGlobalTableSettingsRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Builds a DynamoDB [UpdateGlobalTableRequest] with a DSL block.
+ * DSL 블록으로 DynamoDB [UpdateGlobalTableRequest]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [globalTableName] is blank.
- * - Creates the request without replica updates when [replicaUpdates] is null.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [globalTableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [replicaUpdates]가 null이면 복제본 업데이트 없이 요청이 생성된다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val req = updateGlobalTableRequestOf(
@@ -24,8 +24,8 @@ import io.bluetape4k.support.requireNotBlank
  * // req.replicaUpdates?.size == 1
  * ```
  *
- * @param globalTableName global table name to update. Blank values throw.
- * @param replicaUpdates replica add/delete update list.
+ * @param globalTableName 업데이트할 글로벌 테이블 이름 (blank이면 예외)
+ * @param replicaUpdates 복제본 추가/삭제 업데이트 목록
  */
 inline fun updateGlobalTableRequestOf(
     globalTableName: String,
@@ -43,12 +43,12 @@ inline fun updateGlobalTableRequestOf(
 }
 
 /**
- * Builds a DynamoDB [UpdateGlobalTableSettingsRequest] with a DSL block.
+ * DSL 블록으로 DynamoDB [UpdateGlobalTableSettingsRequest]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [globalTableName] is blank.
- * - Null setting values are omitted from the request.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [globalTableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - null로 전달된 설정 값은 요청에 포함되지 않는다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val req = updateGlobalTableSettingsRequestOf(
@@ -58,9 +58,9 @@ inline fun updateGlobalTableRequestOf(
  * // req.globalTableName == "global-users"
  * ```
  *
- * @param globalTableName global table name whose settings will be updated. Blank values throw.
- * @param autoScalingSettingsUpdate write-capacity auto scaling settings.
- * @param gsIndexSettingsUpdates global secondary index settings update list.
+ * @param globalTableName 설정을 업데이트할 글로벌 테이블 이름 (blank이면 예외)
+ * @param autoScalingSettingsUpdate 쓰기 용량 오토스케일링 설정
+ * @param gsIndexSettingsUpdates 글로벌 보조 인덱스 설정 업데이트 목록
  */
 inline fun updateGlobalTableSettingsRequestOf(
     globalTableName: String,

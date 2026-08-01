@@ -5,10 +5,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.SubscribeRequest
 
 /**
- * Builds a [SubscribeRequest] with a DSL block.
+ * DSL 블록으로 [SubscribeRequest]를 빌드합니다.
  *
- * ## Behavior/Contract
- * - Sets `topicArn`, `protocol`, `endpoint`, and other fields directly in the [builder] block.
+ * ## 동작/계약
+ * - [builder] 블록에서 `topicArn`, `protocol`, `endpoint` 등을 직접 설정한다.
  *
  * ```kotlin
  * val req = subscribeRequest {
@@ -24,12 +24,12 @@ inline fun subscribeRequest(
     SubscribeRequest.builder().apply(builder).build()
 
 /**
- * Creates a [SubscribeRequest] from a topic ARN, protocol, and endpoint.
+ * 토픽 ARN, 프로토콜, 엔드포인트로 [SubscribeRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [topicArn] is blank.
- * - Throws `IllegalArgumentException` when [protocol] is blank.
- * - Throws `IllegalArgumentException` when [endpoint] is blank.
+ * ## 동작/계약
+ * - [topicArn]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [protocol]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [endpoint]가 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val req = subscribeRequestOf(

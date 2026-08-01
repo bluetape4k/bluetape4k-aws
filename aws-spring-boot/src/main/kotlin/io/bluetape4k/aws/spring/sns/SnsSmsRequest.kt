@@ -4,13 +4,12 @@ import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.Serializable
 
 /**
- * Value object for publishing an SMS message directly to a phone number.
+ * 전화번호로 SMS 메시지를 직접 게시하는 값 객체입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Maps explicit SMS options to the Amazon SNS SMS message attributes used by
- * the `Publish` API. The phone number should use E.164 format, for example
- * `+15550100000`.
+ * 명시적인 SMS 옵션을 `Publish` API에서 사용하는 Amazon SNS SMS 메시지 속성에 매핑합니다.
+ * 전화번호는 `+15550100000`과 같은 E.164 형식을 사용해야 합니다.
  */
 data class SnsSmsRequest(
     val phoneNumber: String,

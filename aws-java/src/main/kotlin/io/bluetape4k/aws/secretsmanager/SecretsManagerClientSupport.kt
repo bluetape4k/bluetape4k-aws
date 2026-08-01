@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClientBuilde
 import java.net.URI
 
 /**
- * Builds a [SecretsManagerClient] and registers it with [ShutdownQueue].
+ * [SecretsManagerClient]를 생성하고 [ShutdownQueue]에 등록합니다.
  */
 inline fun secretsManagerClient(
     builder: SecretsManagerClientBuilder.() -> Unit,
@@ -21,7 +21,7 @@ inline fun secretsManagerClient(
         }
 
 /**
- * Creates a [SecretsManagerClient] for [region].
+ * [region]용 [SecretsManagerClient]를 생성합니다.
  */
 inline fun secretsManagerClientOf(
     region: Region,
@@ -35,7 +35,7 @@ inline fun secretsManagerClientOf(
 }
 
 /**
- * Creates a [SecretsManagerClient] with optional local endpoint and credentials.
+ * 선택적인 로컬 엔드포인트와 자격 증명으로 [SecretsManagerClient]를 생성합니다.
  */
 inline fun secretsManagerClientOf(
     endpoint: URI? = null,

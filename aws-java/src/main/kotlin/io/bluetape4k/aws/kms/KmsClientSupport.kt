@@ -10,11 +10,11 @@ import software.amazon.awssdk.services.kms.KmsClientBuilder
 import java.net.URI
 
 /**
- * Creates a synchronous [KmsClient] with a DSL-style builder lambda.
+ * DSL 스타일의 빌더 람다로 동기식 [KmsClient]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies [builder] to the builder created by [KmsClient.builder], then calls `build()`.
- * - Registers the created client instance with [ShutdownQueue].
+ * ## 동작/계약
+ * - [KmsClient.builder]로 생성한 빌더에 [builder]를 적용한 뒤 `build()`를 호출합니다.
+ * - 생성된 클라이언트 인스턴스를 [ShutdownQueue]에 등록합니다.
  *
  * ```kotlin
  * val client = kmsClient {
@@ -32,14 +32,14 @@ inline fun kmsClient(
         }
 
 /**
- * Creates a synchronous [KmsClient] by specifying primary parameters directly.
+ * 주요 파라미터를 직접 지정하여 동기식 [KmsClient]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies only non-null arguments to [KmsClientBuilder].
- * - Always configures [httpClient] with `httpClient(httpClient)`.
- * - Calls [builder] last, then creates and registers the client through [kmsClient].
+ * ## 동작/계약
+ * - `null`이 아닌 인자만 [KmsClientBuilder]에 반영합니다.
+ * - [httpClient]는 항상 `httpClient(httpClient)`로 설정합니다.
+ * - 마지막에 [builder]를 호출하고 [kmsClient]를 통해 클라이언트를 생성/등록합니다.
  *
- * Example:
+ * 예시:
  * ```kotlin
  * val client = kmsClientOf(
  *     endpointOverride = URI.create("http://localhost:4566"),

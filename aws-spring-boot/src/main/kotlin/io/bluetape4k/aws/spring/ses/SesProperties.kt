@@ -5,12 +5,12 @@ import java.io.Serializable
 import java.net.URI
 
 /**
- * Configuration properties for SES auto-configuration.
+ * SES 자동 구성용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Binds `bluetape4k.aws.ses` and defines SDK client settings plus sender
- * defaults used by [SesCoroutinesMailSender].
+ * `bluetape4k.aws.ses`를 바인딩하고 SDK 클라이언트 설정과 [SesCoroutinesMailSender]에서
+ * 사용하는 발신자 기본값을 정의합니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.ses")
 data class SesProperties(
@@ -33,7 +33,7 @@ data class SesProperties(
     }
 
     /**
-     * Controls the optional Spring [org.springframework.mail.javamail.JavaMailSender] adapter.
+     * 선택적인 Spring [org.springframework.mail.javamail.JavaMailSender] 어댑터를 제어합니다.
      */
     data class JavaMailSenderProperties(
         val enabled: Boolean = true,

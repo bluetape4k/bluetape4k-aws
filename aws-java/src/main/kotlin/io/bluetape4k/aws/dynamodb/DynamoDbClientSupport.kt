@@ -10,8 +10,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder
 import java.net.URI
 
 /**
- * See the API documentation for details.
- * See the API documentation for details.
+ * [dynamoDbClient]를 빌드해주는 함수입니다.
+ * JVM 종료 시 자동으로 자원을 해제합니다
  *
  * ```kotlin
  * val dynamoDbClient = DynamoDbClient {
@@ -22,7 +22,7 @@ import java.net.URI
  * }
  * ```
  *
- * @return Return value.
+ * @return [dynamoDbClient] 인스턴스
  */
 inline fun dynamoDbClient(
     builder: DynamoDbClientBuilder.() -> Unit,
@@ -34,7 +34,7 @@ inline fun dynamoDbClient(
 }
 
 /**
- * See the API documentation for details.
+ * [DynamoDbClient]를 빌드해주는 함수입니다.
  *
  * ```kotlin
  * val dynamoDbClient = dynamoDbClientOf(
@@ -46,7 +46,7 @@ inline fun dynamoDbClient(
  * }
  * ```
  *
- * @return Return value.
+ * @return [DynamoDbClient] 인스턴스
  * @see [DynamoDbClient]
  */
 inline fun dynamoDbClientOf(

@@ -4,12 +4,12 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import java.io.Serializable
 
 /**
- * SQS message send request.
+ * SQS 메시지 전송 요청입니다.
  *
- * ## Behavior / Contract
- * - [queueUrl] and [body] must not be blank.
- * - [delaySeconds] must be in 0–900 when provided; applies to standard queues only.
- * - [messageGroupId] and [messageDeduplicationId] apply to FIFO queues only and must not be blank when provided.
+ * ## 동작/계약
+ * - [queueUrl]과 [body]는 비어 있지 않아야 합니다.
+ * - [delaySeconds]를 제공하면 0–900 범위여야 하며 표준 큐에만 적용됩니다.
+ * - [messageGroupId]와 [messageDeduplicationId]는 FIFO 큐에만 적용되며 제공하면 비어 있지 않아야 합니다.
  *
  * ```kotlin
  * val request = SqsSendRequest(

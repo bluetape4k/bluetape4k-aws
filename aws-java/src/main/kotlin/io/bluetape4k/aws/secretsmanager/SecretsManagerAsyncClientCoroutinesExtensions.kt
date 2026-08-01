@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.secretsmanager.model.ListSecretsResponse
 import software.amazon.awssdk.services.secretsmanager.model.PutSecretValueResponse
 
 /**
- * Gets the raw secret response from an async client and awaits completion.
+ * 비동기 클라이언트에서 원본 보안 값 응답을 가져와 완료를 기다립니다.
  */
 suspend fun SecretsManagerAsyncClient.getSecretValueResponse(
     secretId: String,
@@ -22,7 +22,7 @@ suspend fun SecretsManagerAsyncClient.getSecretValueResponse(
     getSecretValueAsync(secretId, versionId, versionStage, overrideConfiguration).await()
 
 /**
- * Gets a secret string as a redacted [AwsSecretValue] and awaits completion.
+ * 보안 문자열을 값이 가려진 [AwsSecretValue]로 가져와 완료를 기다립니다.
  */
 suspend fun SecretsManagerAsyncClient.getSecretString(
     secretId: String,
@@ -33,7 +33,7 @@ suspend fun SecretsManagerAsyncClient.getSecretString(
     getSecretStringAsync(secretId, versionId, versionStage, overrideConfiguration).await()
 
 /**
- * Gets one batch page and awaits completion.
+ * 배치 페이지 하나를 가져와 완료를 기다립니다.
  */
 suspend fun SecretsManagerAsyncClient.batchGetSecretValues(
     secretIds: Collection<String>,
@@ -44,7 +44,7 @@ suspend fun SecretsManagerAsyncClient.batchGetSecretValues(
     batchGetSecretValuesAsync(secretIds, maxResults, nextToken, overrideConfiguration).await()
 
 /**
- * Lists one metadata page and awaits completion.
+ * 메타데이터 페이지 하나를 조회하고 완료를 기다립니다.
  */
 suspend fun SecretsManagerAsyncClient.listSecrets(
     maxResults: Int? = null,
@@ -54,7 +54,7 @@ suspend fun SecretsManagerAsyncClient.listSecrets(
     listSecretsAsync(maxResults, nextToken, overrideConfiguration).await()
 
 /**
- * Describes a secret and awaits completion.
+ * 보안 값을 설명하고 완료를 기다립니다.
  */
 suspend fun SecretsManagerAsyncClient.describeSecret(
     secretId: String,
@@ -63,10 +63,9 @@ suspend fun SecretsManagerAsyncClient.describeSecret(
     describeSecretAsync(secretId, overrideConfiguration).await()
 
 /**
- * Creates a secret using a redacted value wrapper and awaits completion.
+ * 값이 가려진 래퍼를 사용해 보안 값을 생성하고 완료를 기다립니다.
  *
- * This mutates AWS-side state and may create a new secret. Do not log or print
- * the revealed value.
+ * 이 작업은 AWS 측 상태를 변경하며 새 보안 값을 만들 수 있습니다. 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
 suspend fun SecretsManagerAsyncClient.createSecret(
     name: String,
@@ -78,10 +77,9 @@ suspend fun SecretsManagerAsyncClient.createSecret(
     createSecretAsync(name, secretValue, description, clientRequestToken, overrideConfiguration).await()
 
 /**
- * Adds a new secret value version using a redacted value wrapper and awaits completion.
+ * 값이 가려진 래퍼로 새 보안 값 버전을 추가하고 완료를 기다립니다.
  *
- * This mutates AWS-side state and may change staging labels. Do not log or
- * print the revealed value.
+ * 이 작업은 AWS 측 상태를 변경하며 스테이징 레이블을 바꿀 수 있습니다. 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
 suspend fun SecretsManagerAsyncClient.putSecretValue(
     secretId: String,

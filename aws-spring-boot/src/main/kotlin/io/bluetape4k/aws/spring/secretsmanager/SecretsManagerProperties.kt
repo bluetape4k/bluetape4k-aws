@@ -8,13 +8,12 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * Configuration properties for Secrets Manager Environment sources.
+ * Secrets Manager Environment 소스용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Binds `bluetape4k.aws.secrets-manager` and defines the remote secret sources
- * loaded during Spring Environment post-processing. No AWS request is made when
- * [sources] is empty.
+ * `bluetape4k.aws.secrets-manager`를 바인딩하고 Spring Environment 후처리 중 로드할
+ * 원격 보안 소스를 정의합니다. [sources]가 비어 있으면 AWS를 요청하지 않습니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.secrets-manager")
 data class SecretsManagerProperties(
@@ -33,7 +32,7 @@ data class SecretsManagerProperties(
     }
 
     /**
-     * Single Secrets Manager secret source.
+     * 단일 Secrets Manager 보안 소스입니다.
      */
     data class Source(
         val name: String? = null,

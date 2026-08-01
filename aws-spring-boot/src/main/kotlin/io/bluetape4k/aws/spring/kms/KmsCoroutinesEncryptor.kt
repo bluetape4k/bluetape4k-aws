@@ -6,7 +6,7 @@ import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 
 /**
- * AWS SDK v2 [KmsAsyncClient] backed implementation of [KmsOperations].
+ * AWS SDK v2 [KmsAsyncClient]를 사용하는 [KmsOperations] 구현입니다.
  */
 class KmsCoroutinesEncryptor(
     private val kmsAsyncClient: KmsAsyncClient,

@@ -23,12 +23,12 @@ import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for AWS SNS.
+ * AWS SNS용 Spring Boot 4 자동 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Registers an [SnsAsyncClient] and [SnsOperations] when the AWS SNS SDK is on
- * the runtime classpath and `bluetape4k.aws.sns.enabled` is not disabled.
+ * 런타임 클래스패스에 AWS SNS SDK가 있고 `bluetape4k.aws.sns.enabled`를 비활성화하지 않았으면
+ * [SnsAsyncClient]와 [SnsOperations]를 등록합니다.
  *
  * ```kotlin
  * @Bean
