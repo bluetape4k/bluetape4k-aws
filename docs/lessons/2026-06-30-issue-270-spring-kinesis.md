@@ -1,41 +1,39 @@
-# Issue #270 Spring Kinesis Lesson
+# Issue #270 Spring Kinesis 교훈
 
-## Context
+## 배경
 
-Issue #270 added Spring Boot 4 Kinesis support to `bluetape4k-aws-spring-boot`.
-The repo already had Java SDK v2 coroutine Kinesis helpers and Kotlin SDK
-Kinesis flows, but Spring adapters consistently wrap Java SDK v2 async clients.
+Issue #270에서는 `bluetape4k-aws-spring-boot`에 Spring Boot 4 Kinesis 지원을 추가했다.
+저장소에는 이미 Java SDK v2 coroutine Kinesis helper와 Kotlin SDK Kinesis flow가 있었지만
+Spring adapter는 일관되게 Java SDK v2 async client를 감싼다.
 
-## Decision
+## 결정
 
-Use `KinesisAsyncClient` plus `KinesisOperations` and keep the Spring surface as
-explicit operations: stream creation, record publish, shard iterator lookup,
-bounded `GetRecords`, and a cold single-shard `Flow<Record>`.
+`KinesisAsyncClient`와 `KinesisOperations`를 사용하고 Spring surface는 명시적인
+operation으로 유지한다. Stream 생성, record 게시, shard iterator 조회, 제한된
+`GetRecords`, 단일 shard의 cold `Flow<Record>`를 제공한다.
 
-Do not add `@KinesisListener` or checkpoint/lease management in this PR. Those
-semantics need a separate design because they define application ownership,
-checkpoint storage, failure recovery, and shard coordination.
+이 PR에서는 `@KinesisListener`나 checkpoint/lease management를 추가하지 않는다. 이
+semantic은 application ownership, checkpoint storage, failure recovery, shard
+coordination을 정의하므로 별도 설계가 필요하다.
 
-## Outcome
+## 결과
 
-- Added Kinesis auto-configuration gated by classpath and
-  `bluetape4k.aws.kinesis.enabled`.
-- Added named request values and configurable Flow polling/retry options.
-- Added unit tests for conditional beans, property binding, request mapping,
-  Flow coldness, repeated collection, EOF, failure propagation, and cancellation.
-- Added Floci emulator coverage for create, put, describe, and Flow collection.
-- Updated root/module README files in English and Korean plus the service
-  coverage chart.
+- Classpath와 `bluetape4k.aws.kinesis.enabled`로 보호하는 Kinesis 자동 구성 추가
+- 이름 있는 request value와 설정 가능한 Flow polling/retry option 추가
+- Conditional bean, property binding, request mapping, Flow coldness, 반복 collection,
+  EOF, failure propagation, cancellation용 unit test 추가
+- Create, put, describe, Flow collection용 Floci emulator 검증 추가
+- 영문/한글 root/module README와 service coverage chart 갱신
 
-## Verification
+## 검증
 
-- `./gradlew :bluetape4k-aws-spring-boot:test --tests '*Kinesis*' --no-configuration-cache`: 22 passing.
-- `./gradlew :bluetape4k-aws-spring-boot:test --no-configuration-cache`: 243 passing.
-- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --warning-mode all --no-configuration-cache --rerun-tasks`: BUILD SUCCESSFUL.
-- SVG parse and PNG regeneration passed for `bluetape4k-aws-service-coverage-chart-05`.
+- `./gradlew :bluetape4k-aws-spring-boot:test --tests '*Kinesis*' --no-configuration-cache`: 22개 통과
+- `./gradlew :bluetape4k-aws-spring-boot:test --no-configuration-cache`: 243개 통과
+- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --warning-mode all --no-configuration-cache --rerun-tasks`: BUILD SUCCESSFUL 확인
+- `bluetape4k-aws-service-coverage-chart-05`의 SVG parse 및 PNG 재생성 통과
 
-## Future Work
+## 향후 작업
 
-If listener support is added later, start with a design for shard lease
-coordination, checkpoint persistence, backpressure, retry/DLQ behavior, and
-shutdown semantics before introducing annotations or containers.
+나중에 listener 지원을 추가한다면 annotation이나 container를 도입하기 전에 shard lease
+coordination, checkpoint persistence, backpressure, retry/DLQ 동작, shutdown semantic을
+먼저 설계한다.

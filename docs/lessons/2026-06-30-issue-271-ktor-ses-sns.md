@@ -1,30 +1,29 @@
-# Issue #271 Ktor SES And SNS
+# Issue #271 Ktor SES 및 SNS
 
-Issue #271 completed the Ktor-side SES v2 and SNS support after the core Java,
-Kotlin, and Spring paths already covered the services.
+Issue #271에서는 core Java, Kotlin, Spring 경로가 이미 service를 지원한 뒤 Ktor 측 SES
+v2와 SNS 지원을 완성했다.
 
-## Decision
+## 결정
 
-Add thin Ktor lifecycle plugins over AWS SDK v2 async clients instead of adding
-another transport abstraction. `AwsKtorCore` now carries SES v2 and SNS async
-client customizers, while `SesKtorPlugin` and `SnsKtorPlugin` follow the
-existing ownership contract: injected clients and operations are application
-owned, plugin-created clients are closed on `ApplicationStopping`.
+또 다른 transport abstraction을 추가하지 않고 AWS SDK v2 async client 위에 얇은 Ktor
+lifecycle plugin을 추가한다. 이제 `AwsKtorCore`는 SES v2와 SNS async client customizer를
+제공한다. `SesKtorPlugin`과 `SnsKtorPlugin`은 기존 ownership contract를 따른다. 주입한
+client와 operation은 application이 소유하고, plugin이 만든 client는
+`ApplicationStopping`에서 닫는다.
 
-SNS HTTP endpoint parsing remains intentionally untrusted. The parser validates
-JSON shape, duplicate fields, message type headers, signing certificate URL
-shape, partition, and region, but callers must still validate the signature,
-certificate chain, expected topic ARN, and replay policy before wrapping with
-`TrustedSnsHttpMessage`.
+SNS HTTP endpoint parsing은 의도적으로 신뢰하지 않는다. Parser는 JSON shape, duplicate
+field, message type header, signing certificate URL shape, partition, region을 검증한다.
+하지만 `TrustedSnsHttpMessage`로 감싸기 전에 호출자가 signature, certificate chain, 예상
+topic ARN, replay policy를 계속 검증해야 한다.
 
-## Outcome
+## 결과
 
-`aws-ktor` now exposes coroutine SES simple/template/raw email operations and
-SNS topic creation, topic lookup, topic publish, SMS publish, subscription
-confirmation by explicit token, and SNS HTTP endpoint message parsing. The
-module README files and root service coverage chart were updated together.
+이제 `aws-ktor`는 coroutine SES simple/template/raw email operation과 SNS topic 생성,
+topic 조회, topic 게시, SMS 게시, 명시적 token을 통한 subscription 확인, SNS HTTP
+endpoint message parsing을 제공한다. Module README와 root service coverage chart를 함께
+갱신했다.
 
-## Verification
+## 검증
 
 - `./gradlew :bluetape4k-aws-ktor:compileKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all`
 - `./gradlew :bluetape4k-aws-ktor:test --tests '*SnsKtorTemplateAwsEmulatorTest'`
@@ -37,13 +36,12 @@ module README files and root service coverage chart were updated together.
 - `rsvg-convert docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg -o docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png`
 - `git diff --check`
 
-The publication metadata tasks require `--no-configuration-cache` in this build
-because the existing Maven POM `withXml` customization is not configuration-cache
-compatible.
+기존 Maven POM `withXml` customization이 configuration cache와 호환되지 않으므로 이
+build에서 publication metadata task에는 `--no-configuration-cache`가 필요하다.
 
-## Future Notes
+## 향후 참고
 
-Do not treat `TrustedSnsHttpMessage.fromVerified` as a signature verifier. It is
-only a type marker for caller-verified messages. If this repo adds built-in SNS
-signature verification later, keep the parser and verifier as separate steps so
-tests can cover URL validation and cryptographic verification independently.
+`TrustedSnsHttpMessage.fromVerified`를 signature verifier로 취급하지 않는다. 호출자가
+검증한 message를 나타내는 type marker일 뿐이다. 나중에 이 저장소가 SNS signature
+verification을 내장하면 parser와 verifier를 별도 단계로 유지해 URL validation과
+cryptographic verification을 독립적으로 테스트할 수 있게 한다.
