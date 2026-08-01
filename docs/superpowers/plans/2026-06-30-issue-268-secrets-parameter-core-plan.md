@@ -1,98 +1,98 @@
-# Core Secrets Manager and Parameter Store Implementation Plan
+# Secrets Manager 및 Parameter Store 핵심 구현 계획
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **에이전트 작업자 안내:** 필수 하위 스킬로 superpowers:subagent-driven-development(권장) 또는 superpowers:executing-plans를 사용해 이 계획을 작업 단위로 구현합니다. 진행 상황은 체크박스(`- [ ]`) 문법으로 추적합니다.
 
-**Goal:** Add framework-neutral Secrets Manager and SSM Parameter Store helpers to `bluetape4k-aws-java` and `bluetape4k-aws-kotlin`.
+**목표:** `bluetape4k-aws-java`와 `bluetape4k-aws-kotlin`에 프레임워크 독립적인 Secrets Manager 및 SSM Parameter Store 도우미를 추가합니다.
 
-**Architecture:** Follow existing service wrapper patterns. Java SDK v2 gets sync, async, and coroutine adapters; AWS Kotlin SDK gets native suspend helpers. Secret-bearing values use module-local redacted value objects and raw binary payload helpers stay on raw SDK calls.
+**아키텍처:** 기존 서비스 래퍼 패턴을 따릅니다. Java SDK v2에는 동기·비동기·코루틴 어댑터를 제공하고 AWS Kotlin SDK에는 네이티브 일시 중단 도우미를 제공합니다. 비밀 값을 담은 데이터에는 모듈 로컬 마스킹 값 객체를 사용하며 원시 바이너리 페이로드 도우미는 원시 SDK 호출에 둡니다.
 
-**Tech Stack:** Kotlin 2.4, Java 21/25-compatible Gradle modules, AWS Java SDK v2 `secretsmanager`/`ssm`, AWS Kotlin SDK `secretsmanager`/`ssm`, MockK, JUnit 5, bluetape4k-assertions.
+**기술 스택:** Kotlin 2.4, Java 21/25 호환 Gradle 모듈, AWS Java SDK v2 `secretsmanager`/`ssm`, AWS Kotlin SDK `secretsmanager`/`ssm`, MockK, JUnit 5, bluetape4k-assertions.
 
-**Execution note:** Commit this spec and plan before implementation starts. Implementation commits must remain separate from the planning artifact commit.
+**실행 메모:** 구현을 시작하기 전에 이 명세와 계획을 커밋합니다. 구현 커밋은 계획 산출물 커밋과 분리해야 합니다.
 
 ---
 
-## File Map
+## 파일 구성
 
-- Modify: `gradle/libs.versions.toml`
-  - Add `aws-kotlin-secretsmanager` and `aws-kotlin-ssm` aliases.
-- Modify: `aws-java/build.gradle.kts`
-  - Add `compileOnly` and `testImplementation` for `libs.aws2.secretsmanager` and `libs.aws2.ssm`.
-- Modify: `aws-kotlin/build.gradle.kts`
-  - Add `compileOnly` and `testImplementation` for `libs.aws.kotlin.secretsmanager` and `libs.aws.kotlin.ssm`.
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/AwsSecretValue.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerClientSupport.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerAsyncClientSupport.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerClientExtensions.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerAsyncClientExtensions.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerAsyncClientCoroutinesExtensions.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/model/SecretsManagerRequestSupport.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmClientSupport.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmAsyncClientSupport.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmClientExtensions.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmAsyncClientExtensions.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmAsyncClientCoroutinesExtensions.kt`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/model/SsmRequestSupport.kt`
-- Create: `aws-java/src/test/kotlin/io/bluetape4k/aws/secretsmanager/AwsSecretValueTest.kt`
-- Create: `aws-java/src/test/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerSupportTest.kt`
-- Create: `aws-java/src/test/kotlin/io/bluetape4k/aws/ssm/SsmSupportTest.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/AwsSecretValue.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/SecretsManagerClientSupport.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/SecretsManagerClientExtensions.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/model/SecretsManagerRequestSupport.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/ssm/SsmClientSupport.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/ssm/SsmClientExtensions.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/ssm/model/SsmRequestSupport.kt`
-- Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/AwsSecretValueTest.kt`
-- Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/SecretsManagerClientSupportTest.kt`
-- Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/ssm/SsmClientSupportTest.kt`
-- Modify: `README.md`, `README.ko.md`, `aws-java/README.md`, `aws-java/README.ko.md`, `aws-kotlin/README.md`, `aws-kotlin/README.ko.md`
-- Modify: `docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg`
-- Regenerate: `docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png`
+- 수정: `gradle/libs.versions.toml`
+  - `aws-kotlin-secretsmanager`와 `aws-kotlin-ssm` 별칭을 추가합니다.
+- 수정: `aws-java/build.gradle.kts`
+  - `libs.aws2.secretsmanager`와 `libs.aws2.ssm`의 `compileOnly` 및 `testImplementation` 의존성을 추가합니다.
+- 수정: `aws-kotlin/build.gradle.kts`
+  - `libs.aws.kotlin.secretsmanager`와 `libs.aws.kotlin.ssm`의 `compileOnly` 및 `testImplementation` 의존성을 추가합니다.
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/AwsSecretValue.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerClientSupport.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerAsyncClientSupport.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerClientExtensions.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerAsyncClientExtensions.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerAsyncClientCoroutinesExtensions.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/model/SecretsManagerRequestSupport.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmClientSupport.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmAsyncClientSupport.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmClientExtensions.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmAsyncClientExtensions.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/SsmAsyncClientCoroutinesExtensions.kt`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/ssm/model/SsmRequestSupport.kt`
+- 생성: `aws-java/src/test/kotlin/io/bluetape4k/aws/secretsmanager/AwsSecretValueTest.kt`
+- 생성: `aws-java/src/test/kotlin/io/bluetape4k/aws/secretsmanager/SecretsManagerSupportTest.kt`
+- 생성: `aws-java/src/test/kotlin/io/bluetape4k/aws/ssm/SsmSupportTest.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/AwsSecretValue.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/SecretsManagerClientSupport.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/SecretsManagerClientExtensions.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/model/SecretsManagerRequestSupport.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/ssm/SsmClientSupport.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/ssm/SsmClientExtensions.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/ssm/model/SsmRequestSupport.kt`
+- 생성: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/AwsSecretValueTest.kt`
+- 생성: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/SecretsManagerClientSupportTest.kt`
+- 생성: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/ssm/SsmClientSupportTest.kt`
+- 수정: `README.md`, `README.ko.md`, `aws-java/README.md`, `aws-java/README.ko.md`, `aws-kotlin/README.md`, `aws-kotlin/README.ko.md`
+- 수정: `docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg`
+- 재생성: `docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png`
 
-## Task 1: Dependencies And Redacted Values
+## 작업 1: 의존성 및 마스킹 값
 
-**Complexity:** medium
+**복잡도:** 중간
 
-**Applies:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`
+**적용:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`
 
-**Files:**
-- Modify: `gradle/libs.versions.toml`
-- Modify: `aws-java/build.gradle.kts`
-- Modify: `aws-kotlin/build.gradle.kts`
-- Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/AwsSecretValue.kt`
-- Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/AwsSecretValue.kt`
-- Create tests listed in the file map.
+**파일:**
+- 수정: `gradle/libs.versions.toml`
+- 수정: `aws-java/build.gradle.kts`
+- 수정: `aws-kotlin/build.gradle.kts`
+- 생성: `aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager/AwsSecretValue.kt`
+- 생성: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager/AwsSecretValue.kt`
+- 파일 구성에 나열한 테스트를 생성합니다.
 
-- [x] **Step 1: Write failing redaction tests**
+- [x] **1단계: 실패하는 마스킹 테스트 작성**
 
-Create tests that assert:
+다음 내용을 검증하는 테스트를 작성합니다.
 
-- blank values throw `IllegalArgumentException`
-- `reveal()` returns raw value
-- `toString()` is `"****"`
-- equality works for equal raw values and does not expose raw values
-- `hashCode()` equals the redacted marker hash
-- sentinel raw value is absent from exception messages and string rendering
+- 빈 값은 `IllegalArgumentException`을 던집니다.
+- `reveal()`은 원시 값을 반환합니다.
+- `toString()`은 `"****"`입니다.
+- 같은 원시 값은 동등하지만 원시 값을 노출하지 않습니다.
+- `hashCode()`는 마스킹 표식의 해시와 같습니다.
+- 예외 메시지와 문자열 표현에 센티널 원시 값이 없습니다.
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*AwsSecretValueTest' :bluetape4k-aws-kotlin:test --tests '*AwsSecretValueTest' --no-configuration-cache
 ```
 
-Expected: FAIL because classes do not exist.
+예상 결과: 클래스가 없으므로 실패합니다.
 
-- [x] **Step 2: Add dependency aliases and declarations**
+- [x] **2단계: 의존성 별칭과 선언 추가**
 
-Add to `gradle/libs.versions.toml`:
+`gradle/libs.versions.toml`에 다음을 추가합니다.
 
 ```toml
 aws-kotlin-secretsmanager = { module = "aws.sdk.kotlin:secretsmanager", version.ref = "aws-kotlin" }
 aws-kotlin-ssm = { module = "aws.sdk.kotlin:ssm", version.ref = "aws-kotlin" }
 ```
 
-Add to `aws-java/build.gradle.kts` service dependencies:
+`aws-java/build.gradle.kts`의 서비스 의존성에 다음을 추가합니다.
 
 ```kotlin
 compileOnly(libs.aws2.secretsmanager)
@@ -101,7 +101,7 @@ testImplementation(libs.aws2.secretsmanager)
 testImplementation(libs.aws2.ssm)
 ```
 
-Add to `aws-kotlin/build.gradle.kts` service dependencies:
+`aws-kotlin/build.gradle.kts`의 서비스 의존성에 다음을 추가합니다.
 
 ```kotlin
 compileOnly(libs.aws.kotlin.secretsmanager)
@@ -110,76 +110,76 @@ testImplementation(libs.aws.kotlin.secretsmanager)
 testImplementation(libs.aws.kotlin.ssm)
 ```
 
-- [x] **Step 3: Implement Java `AwsSecretValue`**
+- [x] **3단계: Java `AwsSecretValue` 구현**
 
-Use a regular `Serializable` class patterned after `AwsRdsIamAuthToken`, with:
+`AwsRdsIamAuthToken` 패턴을 따른 일반 `Serializable` 클래스를 사용하며 다음을 포함합니다.
 
-- private constructor
+- 비공개 생성자
 - `reveal()`
-- redacted `toString()`
-- constant-time equality with `MessageDigest.isEqual`
-- redacted `hashCode()`
-- companion `REDACTED`, `invoke`, and `of`
-- top-level `awsSecretValueOf`
-- English KDoc for the public class, factories, and `reveal()` warning that raw values must only cross explicit consumer boundaries
+- 마스킹된 `toString()`
+- `MessageDigest.isEqual`을 사용한 상수 시간 동등성 비교
+- 마스킹된 `hashCode()`
+- 컴패니언의 `REDACTED`, `invoke`, `of`
+- 최상위 `awsSecretValueOf`
+- 공개 클래스, 팩토리, `reveal()`에 영어 KDoc을 추가하고 원시 값은 명시적인 소비자 경계에서만 전달해야 함을 경고합니다.
 
-- [x] **Step 4: Implement Kotlin module `AwsSecretValue`**
+- [x] **4단계: Kotlin 모듈의 `AwsSecretValue` 구현**
 
-Use the same contract under package `io.bluetape4k.aws.kotlin.secretsmanager`.
-Use the same KDoc and redaction guarantees as the Java module wrapper.
+`io.bluetape4k.aws.kotlin.secretsmanager` 패키지에서 같은 계약을 사용합니다.
+Java 모듈 래퍼와 같은 KDoc 및 마스킹 보장을 적용합니다.
 
-- [x] **Step 5: Run redaction tests**
+- [x] **5단계: 마스킹 테스트 실행**
 
-Run the same Gradle command from Step 1.
+1단계와 같은 Gradle 명령을 실행합니다.
 
-Expected: PASS.
+예상 결과: 통과합니다.
 
-## Task 2: Java SDK v2 Secrets Manager Helpers
+## 작업 2: Java SDK v2 Secrets Manager 도우미
 
-**Complexity:** high
+**복잡도:** 높음
 
-**Applies:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`
+**적용:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`
 
-**Files:** Java Secrets Manager main/test files from the file map.
+**파일:** 파일 구성에 나열한 Java Secrets Manager 메인/테스트 파일입니다.
 
-- [x] **Step 1: Write failing request/client/extension tests**
+- [x] **1단계: 실패하는 요청·클라이언트·확장 테스트 작성**
 
-Tests must cover:
+테스트는 다음을 포함해야 합니다.
 
-- `secretsManagerClientOf` and `secretsManagerAsyncClientOf` construct clients with local endpoint, region, and static dummy credentials.
-- Java sync and async client factories follow existing `ShutdownQueue` ownership. If direct observation is unavailable, use the closest existing S3/SNS/STS factory test pattern and record the observation gap in DoD.
-- request builders validate blank secret ids and reject more than 20 batch ids.
-- `getSecretString` wraps `secretString` as `AwsSecretValue`.
-- `getSecretString` fails safely when only `secretBinary` is present.
-- `createSecret` and `putSecretValue` accept `AwsSecretValue` and do not expose sentinel values through helper `toString()`.
-- async coroutine adapters call async methods and `await()`.
-- coroutine adapters propagate `CancellationException` from suspended async calls without wrapping it.
-- Java sync, async, and coroutine helpers propagate SDK missing-resource exceptions such as `ResourceNotFoundException` without normalizing them to empty success or wrapping the original AWS exception type, cause, request metadata, or message in a generic exception.
-- coroutine cancellation tests include real `runTest` cancellation and a completed-exceptionally `CompletableFuture(CancellationException)` case.
-- list/batch helpers make one SDK call per helper invocation, preserve `nextToken`/`maxResults`, and do not split batches, call `CompletableFuture.allOf`, or launch unbounded `async` fan-out.
-- batch helper preserves raw SDK response errors rather than returning only successes.
+- `secretsManagerClientOf`와 `secretsManagerAsyncClientOf`는 로컬 엔드포인트, 리전, 정적 더미 자격 증명으로 클라이언트를 생성합니다.
+- Java 동기 및 비동기 클라이언트 팩토리는 기존 `ShutdownQueue` 소유권을 따릅니다. 직접 관찰할 수 없다면 가장 가까운 기존 S3/SNS/STS 팩토리 테스트 패턴을 사용하고 관찰 공백을 DoD에 기록합니다.
+- 요청 빌더는 빈 비밀 ID를 검증하고 배치 ID가 20개를 초과하면 거부합니다.
+- `getSecretString`은 `secretString`을 `AwsSecretValue`로 감쌉니다.
+- `getSecretString`은 `secretBinary`만 있을 때 안전하게 실패합니다.
+- `createSecret`과 `putSecretValue`는 `AwsSecretValue`를 받고 도우미의 `toString()`을 통해 센티널 값을 노출하지 않습니다.
+- 비동기 코루틴 어댑터는 비동기 메서드를 호출하고 `await()`합니다.
+- 코루틴 어댑터는 일시 중단된 비동기 호출의 `CancellationException`을 감싸지 않고 전파합니다.
+- Java 동기·비동기·코루틴 도우미는 `ResourceNotFoundException` 같은 SDK 리소스 누락 예외를 빈 성공으로 정규화하지 않고, 원래 AWS 예외 형식·원인·요청 메타데이터·메시지를 일반 예외로 감싸지 않은 채 전파합니다.
+- 코루틴 취소 테스트에는 실제 `runTest` 취소와 예외 완료된 `CompletableFuture(CancellationException)` 사례를 포함합니다.
+- 목록/배치 도우미는 호출마다 SDK를 한 번 호출하고 `nextToken`/`maxResults`를 보존하며, 배치를 분할하거나 `CompletableFuture.allOf`를 호출하거나 제한 없는 `async` 팬아웃을 시작하지 않습니다.
+- 배치 도우미는 성공 항목만 반환하지 않고 원시 SDK 응답 오류를 보존합니다.
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*SecretsManager*' --no-configuration-cache
 ```
 
-Expected: FAIL because helpers do not exist.
+예상 결과: 도우미가 없으므로 실패합니다.
 
-- [x] **Step 2: Implement client factories**
+- [x] **2단계: 클라이언트 팩토리 구현**
 
-Follow `SnsClientSupport.kt` and `SnsAsyncClientSupport.kt`:
+`SnsClientSupport.kt`와 `SnsAsyncClientSupport.kt`를 따릅니다.
 
 - `secretsManagerClient { }`
 - `secretsManagerClientOf(region, httpClient, builder)`
 - `secretsManagerClientOf(endpoint, region, credentialsProvider, httpClient, builder)`
-- async equivalents
-- register Java clients with `ShutdownQueue`
+- 대응하는 비동기 팩토리
+- Java 클라이언트를 `ShutdownQueue`에 등록합니다.
 
-- [x] **Step 3: Implement request builders**
+- [x] **3단계: 요청 빌더 구현**
 
-Create focused builders:
+범위가 명확한 다음 빌더를 생성합니다.
 
 - `getSecretValueRequestOf(secretId, versionId?, versionStage?, overrideConfiguration?, builder)`
 - `batchGetSecretValueRequestOf(secretIds, maxResults?, nextToken?, overrideConfiguration?, builder)`
@@ -188,167 +188,167 @@ Create focused builders:
 - `createSecretRequestOf(name, secretValue, description?, clientRequestToken?, overrideConfiguration?, builder)`
 - `putSecretValueRequestOf(secretId, secretValue, clientRequestToken?, versionStages?, overrideConfiguration?, builder)`
 
-- [x] **Step 4: Implement sync/async/coroutine extensions**
+- [x] **4단계: 동기·비동기·코루틴 확장 구현**
 
-Add common get/list/put helpers. Do not add delete wrappers. Batch helpers return raw SDK responses for partial failure preservation.
-Add English KDoc to public factories, request builders, and extension helpers. Mutation helpers must state AWS-side mutation/version semantics and must not log or print secret values.
-Do not add broad catch/wrap blocks except for redaction-specific safe failures such as string helpers receiving only binary payloads.
+공통 조회/목록/저장 도우미를 추가합니다. 삭제 래퍼는 추가하지 않습니다. 배치 도우미는 부분 실패를 보존하도록 원시 SDK 응답을 반환합니다.
+공개 팩토리, 요청 빌더, 확장 도우미에 영어 KDoc을 추가합니다. 변경 도우미는 AWS 측 변경/버전 의미를 명시하고 비밀 값을 로그에 남기거나 출력하지 않아야 합니다.
+문자열 도우미가 바이너리 페이로드만 받는 경우처럼 마스킹에 특화된 안전한 실패를 제외하고 광범위한 포착/래핑 블록을 추가하지 않습니다.
 
-- [x] **Step 5: Run Java Secrets Manager tests**
+- [x] **5단계: Java Secrets Manager 테스트 실행**
 
-Run the command from Step 1.
+1단계의 명령을 실행합니다.
 
-Expected: PASS.
+예상 결과: 통과합니다.
 
-## Task 3: Java SDK v2 SSM Helpers
+## 작업 3: Java SDK v2 SSM 도우미
 
-**Complexity:** high
+**복잡도:** 높음
 
-**Applies:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`
+**적용:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`
 
-**Files:** Java SSM main/test files from the file map.
+**파일:** 파일 구성에 나열한 Java SSM 메인/테스트 파일입니다.
 
-- [x] **Step 1: Write failing SSM tests**
+- [x] **1단계: 실패하는 SSM 테스트 작성**
 
-Tests must cover:
+테스트는 다음을 포함해야 합니다.
 
-- client factory construction with local endpoint/static credentials
-- Java sync and async client factories follow existing `ShutdownQueue` ownership. If direct observation is unavailable, use the closest existing S3/SNS/STS factory test pattern and record the observation gap in DoD.
-- request validation for blank names/paths/tokens
-- `getSecureParameter` maps `withDecryption = true` and returns `AwsSecretValue`
-- non-secure `getParameter` maps `withDecryption = false`
-- `putSecureParameter` accepts `AwsSecretValue` for `SecureString`; raw `String` write helpers are limited to explicitly non-secret `String` / `StringList` parameter APIs.
-- no raw-string `SecureString` convenience overload exists, and secure write helper `toString()` / validation errors do not contain a sentinel secret.
-- `getParameters` rejects more than 10 names
-- `getParametersByPath` exposes `nextToken` and `maxResults` without hidden loops
-- partial invalid parameters are preserved in raw SDK responses
-- async coroutine adapters await async calls
-- coroutine adapters propagate `CancellationException` from suspended async calls without wrapping it
-- Java sync, async, and coroutine helpers propagate SDK missing-resource exceptions such as `ParameterNotFoundException` without normalizing them to empty success or wrapping the original AWS exception type, cause, request metadata, or message in a generic exception.
-- coroutine cancellation tests include real `runTest` cancellation and a completed-exceptionally `CompletableFuture(CancellationException)` case.
-- path/describe helpers make one SDK call per helper invocation, preserve `nextToken`/`maxResults`, and do not split batches, call `CompletableFuture.allOf`, or launch unbounded `async` fan-out.
+- 로컬 엔드포인트와 정적 자격 증명을 사용한 클라이언트 팩토리 생성
+- Java 동기 및 비동기 클라이언트 팩토리는 기존 `ShutdownQueue` 소유권을 따릅니다. 직접 관찰할 수 없다면 가장 가까운 기존 S3/SNS/STS 팩토리 테스트 패턴을 사용하고 관찰 공백을 DoD에 기록합니다.
+- 빈 이름/경로/토큰 요청 검증
+- `getSecureParameter`는 `withDecryption = true`를 매핑하고 `AwsSecretValue`를 반환합니다.
+- 비보안 `getParameter`는 `withDecryption = false`를 매핑합니다.
+- `putSecureParameter`는 `SecureString`에 `AwsSecretValue`를 받으며, 원시 `String` 쓰기 도우미는 명시적으로 비밀이 아닌 `String` / `StringList` 파라미터 API로 제한합니다.
+- 원시 문자열 `SecureString` 편의 오버로드가 없고, 보안 쓰기 도우미의 `toString()` / 검증 오류에는 센티널 비밀 값이 없습니다.
+- `getParameters`는 이름이 10개를 초과하면 거부합니다.
+- `getParametersByPath`는 숨겨진 반복 없이 `nextToken`과 `maxResults`를 노출합니다.
+- 부분적으로 잘못된 파라미터를 원시 SDK 응답에 보존합니다.
+- 비동기 코루틴 어댑터는 비동기 호출을 기다립니다.
+- 코루틴 어댑터는 일시 중단된 비동기 호출의 `CancellationException`을 감싸지 않고 전파합니다.
+- Java 동기·비동기·코루틴 도우미는 `ParameterNotFoundException` 같은 SDK 리소스 누락 예외를 빈 성공으로 정규화하지 않고, 원래 AWS 예외 형식·원인·요청 메타데이터·메시지를 일반 예외로 감싸지 않은 채 전파합니다.
+- 코루틴 취소 테스트에는 실제 `runTest` 취소와 예외 완료된 `CompletableFuture(CancellationException)` 사례를 포함합니다.
+- 경로/설명 도우미는 호출마다 SDK를 한 번 호출하고 `nextToken`/`maxResults`를 보존하며, 배치를 분할하거나 `CompletableFuture.allOf`를 호출하거나 제한 없는 `async` 팬아웃을 시작하지 않습니다.
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests '*Ssm*' --no-configuration-cache
 ```
 
-Expected: FAIL before implementation.
+예상 결과: 구현 전에는 실패합니다.
 
-- [x] **Step 2: Implement SSM factories and request builders**
+- [x] **2단계: SSM 팩토리 및 요청 빌더 구현**
 
-Mirror Secrets Manager style:
+Secrets Manager 형식을 따릅니다.
 
 - `ssmClient { }`, `ssmClientOf(...)`
 - `ssmAsyncClient { }`, `ssmAsyncClientOf(...)`
-- request builders for get parameter, get parameters, get parameters by path, put secure parameter, put string parameter, put string-list parameter, and describe parameters
+- 파라미터 조회, 여러 파라미터 조회, 경로별 파라미터 조회, 보안 파라미터 저장, 문자열 파라미터 저장, 문자열 목록 파라미터 저장, 파라미터 설명용 요청 빌더
 
-- [x] **Step 3: Implement sync/async/coroutine extensions**
+- [x] **3단계: 동기·비동기·코루틴 확장 구현**
 
-Add common get/list/put helpers. Do not add delete wrappers or hidden all-pages collection helpers.
-Add English KDoc to public factories, request builders, and extension helpers. `putSecureParameter` KDoc must state SecureString plaintext handling, `overwrite` semantics, and caller responsibility. Non-secret write helpers must be named separately and must not accept raw strings for SecureString writes.
+공통 조회/목록/저장 도우미를 추가합니다. 삭제 래퍼나 숨겨진 전체 페이지 수집 도우미는 추가하지 않습니다.
+공개 팩토리, 요청 빌더, 확장 도우미에 영어 KDoc을 추가합니다. `putSecureParameter` KDoc은 SecureString 평문 처리, `overwrite` 의미, 호출자 책임을 명시해야 합니다. 비보안 쓰기 도우미는 별도 이름을 사용하고 SecureString 쓰기에 원시 문자열을 받지 않아야 합니다.
 
-- [x] **Step 4: Run Java SSM tests**
+- [x] **4단계: Java SSM 테스트 실행**
 
-Run command from Step 1.
+1단계의 명령을 실행합니다.
 
-Expected: PASS.
+예상 결과: 통과합니다.
 
-## Task 4: AWS Kotlin SDK Secrets Manager And SSM Helpers
+## 작업 4: AWS Kotlin SDK Secrets Manager 및 SSM 도우미
 
-**Complexity:** high
+**복잡도:** 높음
 
-**Applies:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`, `$kotlin-coroutines-skill`
+**적용:** `$bluetape4k-code-patterns`, `$ecc-kotlin-testing`, `$kotlin-coroutines-skill`
 
-**Files:** Kotlin Secrets Manager and SSM files from the file map.
+**파일:** 파일 구성에 나열한 Kotlin Secrets Manager 및 SSM 파일입니다.
 
-- [x] **Step 1: Write failing Kotlin SDK tests**
+- [x] **1단계: 실패하는 Kotlin SDK 테스트 작성**
 
-Tests must cover:
+테스트는 다음을 포함해야 합니다.
 
 - `secretsManagerClientOf`, `ssmClientOf`, `withSecretsManagerClient`, `withSsmClient`
-- client factory tests use dummy static credentials, localhost endpoint, and explicit region; tests must structurally avoid the default credential provider chain and production AWS endpoints.
-- `withXxxClient` closes on normal return, thrown exception, and cancellation
-- request builder validation and batch limits
-- exact spec operations: `getSecretString`, `listSecrets`, `describeSecret`, `createSecret`, `putSecretValue`, `batchGetSecretValues`, `getParameter`, `getSecureParameter`, `getParameters`, `getParametersByPath`, `describeParameters`, and `putParameter`
-- SSM write APIs separate secure and non-secure writes: `putSecureParameter(..., AwsSecretValue, ...)` for `SecureString`, non-secret raw-string helpers only for `String` / `StringList`, and no raw-string `SecureString` overload.
-- secure write helper `toString()` / validation errors do not contain a sentinel secret.
-- no raw sentinel value appears in `toString()` or exception messages
-- missing SDK exceptions propagate
-- every suspend helper that catches broad exceptions, if any, rethrows `CancellationException` before wrapping or logging
-- cancellation tests include real `runTest` / `Job.cancel()` coverage for `withSecretsManagerClient` and `withSsmClient`.
-- list/path/describe helpers make one SDK call per helper invocation, preserve `nextToken`/`maxResults`, and do not split batches or launch unbounded `async` fan-out.
-- collection helpers preserve partial errors/invalid parameters through raw SDK responses and do not silently return only successes
+- 클라이언트 팩토리 테스트는 더미 정적 자격 증명, localhost 엔드포인트, 명시적 리전을 사용하며 기본 자격 증명 공급자 체인과 운영 AWS 엔드포인트를 구조적으로 피해야 합니다.
+- `withXxxClient`는 정상 반환, 예외 발생, 취소 시 닫힙니다.
+- 요청 빌더 검증과 배치 제한
+- 명세에 정의된 정확한 작업: `getSecretString`, `listSecrets`, `describeSecret`, `createSecret`, `putSecretValue`, `batchGetSecretValues`, `getParameter`, `getSecureParameter`, `getParameters`, `getParametersByPath`, `describeParameters`, `putParameter`
+- SSM 쓰기 API는 보안/비보안 쓰기를 분리합니다. `SecureString`에는 `putSecureParameter(..., AwsSecretValue, ...)`를 사용하고, 비밀이 아닌 원시 문자열 도우미는 `String` / `StringList`에만 제공하며 원시 문자열 `SecureString` 오버로드는 두지 않습니다.
+- 보안 쓰기 도우미의 `toString()` / 검증 오류에는 센티널 비밀 값이 없습니다.
+- `toString()`이나 예외 메시지에 원시 센티널 값이 나타나지 않습니다.
+- SDK 누락 예외가 전파됩니다.
+- 광범위한 예외를 포착하는 일시 중단 도우미가 있다면 래핑하거나 로깅하기 전에 `CancellationException`을 다시 던집니다.
+- 취소 테스트에는 `withSecretsManagerClient`와 `withSsmClient`의 실제 `runTest` / `Job.cancel()` 검증을 포함합니다.
+- 목록/경로/설명 도우미는 호출마다 SDK를 한 번 호출하고 `nextToken`/`maxResults`를 보존하며, 배치를 분할하거나 제한 없는 `async` 팬아웃을 시작하지 않습니다.
+- 컬렉션 도우미는 원시 SDK 응답을 통해 부분 오류/잘못된 파라미터를 보존하고 성공 항목만 조용히 반환하지 않습니다.
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests '*SecretsManager*' --tests '*Ssm*' --no-configuration-cache
 ```
 
-Expected: FAIL before implementation.
+예상 결과: 구현 전에는 실패합니다.
 
-- [x] **Step 2: Implement Kotlin client factories**
+- [x] **2단계: Kotlin 클라이언트 팩토리 구현**
 
-Mirror existing `sqsClientOf` / `withSqsClient` patterns:
+기존 `sqsClientOf` / `withSqsClient` 패턴을 따릅니다.
 
 - `secretsManagerClientOf(endpointUrl, region, credentialsProvider, httpClient, builder)`
 - `withSecretsManagerClient(...)`
 - `ssmClientOf(...)`
 - `withSsmClient(...)`
 
-- [x] **Step 3: Implement Kotlin request builders and extensions**
+- [x] **3단계: Kotlin 요청 빌더 및 확장 구현**
 
-Implement exact operations from the spec. Re-throw `CancellationException` before broad catch blocks when any catch block is introduced.
-Add English KDoc to public factories, request builders, and suspend helpers. `xxxClientOf` helpers are caller-owned; `withXxxClient` helpers close clients via `useSafe` on normal return, thrown exception, and cancellation.
+명세에 정의된 작업을 정확히 구현합니다. 포착 블록을 도입한다면 광범위한 예외 포착 전에 `CancellationException`을 다시 던집니다.
+공개 팩토리, 요청 빌더, 일시 중단 도우미에 영어 KDoc을 추가합니다. `xxxClientOf` 도우미는 호출자가 소유하며, `withXxxClient` 도우미는 정상 반환, 예외 발생, 취소 시 `useSafe`로 클라이언트를 닫습니다.
 
-- [x] **Step 4: Run Kotlin SDK tests**
+- [x] **4단계: Kotlin SDK 테스트 실행**
 
-Run command from Step 1.
+1단계의 명령을 실행합니다.
 
-Expected: PASS.
+예상 결과: 통과합니다.
 
-## Task 5: Documentation And Diagram Assets
+## 작업 5: 문서 및 다이어그램 자산
 
-**Complexity:** medium
+**복잡도:** 중간
 
-**Applies:** `$bluetape4k-code-patterns`, `$bluetape4k-diagram`
+**적용:** `$bluetape4k-code-patterns`, `$bluetape4k-diagram`
 
-**Files:** README locale sets and service coverage chart.
+**파일:** README 언어별 문서 세트와 서비스 지원 범위 차트입니다.
 
-- [x] **Step 1: Update README locale sets**
+- [x] **1단계: README 언어별 문서 세트 갱신**
 
-Update all required README files with:
+필요한 모든 README 파일에 다음 내용을 반영합니다.
 
-- runtime dependencies
-- compileOnly explanation
-- direct examples for get secret string, get parameter, and get parameters by path
-- unsupported capabilities
-- mutation warnings
-- hot-path caller-owned caching guidance
-- no example that logs or prints revealed secret values
-- local image/link references that still resolve after the chart update
+- 런타임 의존성
+- compileOnly 설명
+- 비밀 문자열 조회, 파라미터 조회, 경로별 파라미터 조회의 직접 예제
+- 지원하지 않는 기능
+- 변경 작업 경고
+- 핫 패스에서 호출자가 소유하는 캐시 지침
+- 공개한 비밀 값을 로그에 남기거나 출력하는 예제 금지
+- 차트 갱신 후에도 해석되는 로컬 이미지/링크 참조
 
-Place a short capability boundary in the root README pair. Add a `Not provided by this module` section to both module README locale pairs covering Spring Environment loading, JSON flattening, caching, refresh, rotation orchestration, IAM/KMS policy management, and full all-pages pagination abstraction.
+루트 README 쌍에 간단한 기능 경계를 둡니다. 두 모듈 README 언어별 쌍에 `Not provided by this module` 섹션을 추가하고 Spring Environment 로딩, JSON 평탄화, 캐싱, 새로 고침, 로테이션 오케스트레이션, IAM/KMS 정책 관리, 전체 페이지 페이지네이션 추상화를 다룹니다.
 
-Run and record a README parity audit across `README.md`/`README.ko.md`, `aws-java/README.md`/`aws-java/README.ko.md`, and `aws-kotlin/README.md`/`aws-kotlin/README.ko.md`:
+`README.md`/`README.ko.md`, `aws-java/README.md`/`aws-java/README.ko.md`, `aws-kotlin/README.md`/`aws-kotlin/README.ko.md`에 걸쳐 README 동등성 감사를 실행하고 기록합니다.
 
-- required headings/sections present in both locales
-- required runtime dependency snippets present in both locales
-- required examples present in both locales
-- unsupported capability and mutation warnings present in both locales
-- code-block counts and service-name keyword counts reviewed for obvious drift
+- 필수 제목/섹션이 두 언어에 모두 존재합니다.
+- 필수 런타임 의존성 스니펫이 두 언어에 모두 존재합니다.
+- 필수 예제가 두 언어에 모두 존재합니다.
+- 지원하지 않는 기능과 변경 경고가 두 언어에 모두 존재합니다.
+- 코드 블록 수와 서비스 이름 키워드 수에 명백한 차이가 없는지 검토합니다.
 
-README examples must either be copied from compiling test fixtures or be manually source-checked against the implemented API names. If a snippet is not compiled, record `manual source-checked, not compiled` in PR DoD.
+README 예제는 컴파일되는 테스트 픽스처에서 복사하거나 구현된 API 이름과 수동으로 대조해야 합니다. 스니펫을 컴파일하지 않았다면 PR DoD에 `manual source-checked, not compiled`를 기록합니다.
 
-- [x] **Step 2: Update service coverage chart SVG**
+- [x] **2단계: 서비스 지원 범위 차트 SVG 갱신**
 
-Mark `bluetape4k-aws-java` and `bluetape4k-aws-kotlin` coverage for Secrets Manager and Parameter Store as stable/supported according to the existing chart legend.
+기존 차트 범례에 따라 Secrets Manager 및 Parameter Store의 `bluetape4k-aws-java`와 `bluetape4k-aws-kotlin` 지원 범위를 안정/지원 상태로 표시합니다.
 
-- [x] **Step 3: Regenerate PNG and visually inspect**
+- [x] **3단계: PNG 재생성 및 시각 검사**
 
-Run:
+실행:
 
 ```bash
 svg=docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg
@@ -382,67 +382,67 @@ for readme in readmes:
 PY
 ```
 
-Expected: SVG valid, PNG generated by CairoSVG at the expected dimensions, local README image/link references resolve, and no README example logs or prints revealed secret values. Record visual QA evidence ledger rows for SVG parse, CairoSVG render, PNG dimensions, full-size PNG inspection, no clipped text, no overlapping labels, English labels, correct Secrets Manager / Parameter Store cells, and `connector-heavy audits=N/A` because this service coverage chart is not a connector/card-flow diagram.
+예상 결과: SVG가 유효하고 CairoSVG가 예상 크기의 PNG를 생성하며 로컬 README 이미지/링크 참조가 해석되고 공개한 비밀 값을 로그에 남기거나 출력하는 README 예제가 없습니다. SVG 파싱, CairoSVG 렌더링, PNG 크기, 원본 크기 PNG 검사, 잘린 텍스트 없음, 겹치는 레이블 없음, 영어 레이블, 올바른 Secrets Manager / Parameter Store 셀을 시각 QA 증거 원장에 기록합니다. 이 서비스 지원 범위 차트는 커넥터/카드 흐름 다이어그램이 아니므로 `connector-heavy audits=N/A`도 기록합니다.
 
-## Task 6: Verification, Review, Lessons, PR
+## 작업 6: 검증, 리뷰, 교훈, PR
 
-**Complexity:** high
+**복잡도:** 높음
 
-**Applies:** `$verification-before-completion`, `$bluetape4k-code-patterns`
+**적용:** `$verification-before-completion`, `$bluetape4k-code-patterns`
 
-- [x] **Step 1: Run targeted compile/tests**
+- [x] **1단계: 대상별 컴파일/테스트 실행**
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-java:compileKotlin :bluetape4k-aws-java:compileTestKotlin :bluetape4k-aws-kotlin:compileKotlin :bluetape4k-aws-kotlin:compileTestKotlin :bluetape4k-aws-java:test --tests '*SecretsManager*' --tests '*Ssm*' :bluetape4k-aws-kotlin:test --tests '*SecretsManager*' --tests '*Ssm*' --no-configuration-cache
 ```
 
-Expected: BUILD SUCCESSFUL.
+예상 결과: 빌드가 성공합니다.
 
-- [x] **Step 2: Run static/doc checks**
+- [x] **2단계: 정적 검사 및 문서 검사 실행**
 
-Run:
+실행:
 
 ```bash
 git diff --check
 grep -RInE 'CompletableFuture\\.allOf|\\basync\\s*\\{|\\bwithTimeout(OrNull)?\\b|\\bdelay\\(|retry\\b|backoff\\b' aws-java/src/main/kotlin/io/bluetape4k/aws/secretsmanager aws-java/src/main/kotlin/io/bluetape4k/aws/ssm aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/secretsmanager aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/ssm || true
 ```
 
-Expected: `git diff --check` has no output. The static grep has no custom retry/backoff/deadline/fan-out in touched helpers; any intentional match must be explained and tied to SDK/request override configuration rather than manual retry logic.
+예상 결과: `git diff --check` 출력이 없습니다. 정적 grep은 변경한 도우미에서 사용자 정의 재시도/백오프/기한/팬아웃을 찾지 않아야 합니다. 의도적인 일치 항목은 설명하고 수동 재시도 로직이 아니라 SDK/요청 재정의 구성과 연결해야 합니다.
 
-- [x] **Step 3: Run API documentation and warning checks**
+- [x] **3단계: API 문서 및 경고 검사 실행**
 
-Review touched public APIs for English KDoc and run compile warnings:
+변경한 공개 API의 영어 KDoc을 검토하고 컴파일 경고를 실행합니다.
 
 ```bash
 ./gradlew :bluetape4k-aws-java:compileTestKotlin :bluetape4k-aws-kotlin:compileTestKotlin --warning-mode all --no-configuration-cache
 ```
 
-Expected: no unresolved deprecations or public API documentation gaps in touched code.
+예상 결과: 변경한 코드에 해결되지 않은 사용 중단 경고나 공개 API 문서 공백이 없습니다.
 
-- [x] **Step 4: Run Step 5 verifier against spec and plan**
+- [x] **4단계: 명세와 계획에 대해 5단계 검증기 실행**
 
-Confirm every acceptance criterion maps to implementation and tests.
+모든 인수 기준이 구현과 테스트에 대응하는지 확인합니다.
 
-- [x] **Step 5: Run Step 6-R code review**
+- [x] **5단계: 6-R 코드 리뷰 실행**
 
-Run module-sliced review for `aws-java`, `aws-kotlin`, and docs/chart changes. P0/P1 must be zero.
+`aws-java`, `aws-kotlin`, 문서/차트 변경을 모듈별로 나눠 리뷰합니다. P0/P1은 0건이어야 합니다.
 
-- [x] **Step 6: Add lessons, commit, push, create PR**
+- [x] **6단계: 교훈 추가, 커밋, 푸시, PR 생성**
 
-Create `docs/lessons/2026-06-30-issue-268-secrets-parameter-core.md`, commit with Lore trailers, push, create PR closing #268, assign `debop`, copy issue milestone and labels, verify live PR body final section is `## DoD Status`.
+`docs/lessons/2026-06-30-issue-268-secrets-parameter-core.md`를 생성하고 Lore 트레일러와 함께 커밋한 뒤 푸시합니다. #268을 닫는 PR을 생성하고 `debop`을 할당하며 이슈 마일스톤과 레이블을 복사합니다. 실제 PR 본문의 마지막 섹션이 `## DoD Status`인지 확인합니다.
 
-PR DoD rows must include:
+PR DoD 행에는 다음 내용을 포함해야 합니다.
 
-- README EN/KO parity audit for root, `aws-java`, and `aws-kotlin`
-- runtime dependency snippets and `compileOnly` explanation
-- examples verified and no revealed secret logging
-- unsupported capabilities and mutation warnings
-- SVG parse, CairoSVG render, PNG dimension, full-size visual inspection, and chart evidence ledger
-- local image/link validation
-- targeted compile/tests and static retry/fan-out grep
+- 루트, `aws-java`, `aws-kotlin`의 README 영문/한글 동등성 감사
+- 런타임 의존성 스니펫과 `compileOnly` 설명
+- 검증된 예제와 공개한 비밀 값 로깅 없음
+- 지원하지 않는 기능과 변경 경고
+- SVG 파싱, CairoSVG 렌더링, PNG 크기, 원본 크기 시각 검사, 차트 증거 원장
+- 로컬 이미지/링크 검증
+- 대상별 컴파일/테스트와 정적 재시도/팬아웃 grep
 
-- [ ] **Step 7: CI and merge gate**
+- [ ] **7단계: CI 및 병합 게이트**
 
-After PR checks pass, verify reviews/comments, then report DoD and wait for the user's merge instruction.
+PR 검사가 통과하면 리뷰/댓글을 확인한 뒤 DoD를 보고하고 사용자의 병합 지시를 기다립니다.
