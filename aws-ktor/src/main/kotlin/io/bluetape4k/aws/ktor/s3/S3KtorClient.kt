@@ -95,9 +95,9 @@ class S3KtorClient(
     }
 
     /**
-     * Stores [bytes] as an S3 object.
+     * [bytes]를 S3 객체로 저장합니다.
      *
-     * Pass [metadata] keys without the `x-amz-meta-` prefix.
+     * [metadata]의 key는 `x-amz-meta-` 접두사 없이 전달합니다.
      */
     suspend fun putObject(
         bucket: String,
@@ -160,9 +160,9 @@ class S3KtorClient(
         )
 
     /**
-     * Stores [body] as an S3 object.
+     * [body]를 S3 객체로 저장합니다.
      *
-     * When passing a streaming body, the caller is responsible for the exact body semantics.
+     * Streaming body를 전달할 때는 caller가 정확한 body semantics를 책임집니다.
      */
     suspend fun putObject(
         request: S3KtorPutObjectRequest,
@@ -181,13 +181,13 @@ class S3KtorClient(
     }
 
     /**
-     * Fetches an S3 object as a byte array.
+     * S3 객체를 byte array로 가져옵니다.
      */
     suspend fun getObjectBytes(bucket: String, key: String): ByteArray =
         getObject(bucket, key).bytes
 
     /**
-     * Fetches an S3 object as bytes and metadata.
+     * S3 객체를 byte array와 metadata로 가져옵니다.
      */
     suspend fun getObject(bucket: String, key: String): S3KtorGetObjectResponse {
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
@@ -203,9 +203,9 @@ class S3KtorClient(
     }
 
     /**
-     * Fetches an S3 object as a streaming channel.
+     * S3 객체를 streaming channel로 가져옵니다.
      *
-     * The returned [S3KtorStreamingObjectResponse.body] is the response channel, so the caller must finish consuming it.
+     * 반환된 [S3KtorStreamingObjectResponse.body]는 response channel이므로 caller가 소비를 완료해야 합니다.
      */
     suspend fun getObjectStream(bucket: String, key: String): S3KtorStreamingObjectResponse {
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
@@ -220,7 +220,7 @@ class S3KtorClient(
     }
 
     /**
-     * Deletes an S3 object.
+     * S3 객체를 삭제합니다.
      */
     suspend fun deleteObject(bucket: String, key: String): S3KtorDeleteObjectResponse {
         val response = httpClient.delete(objectUrl(bucket, key)).ensureSuccess()
@@ -232,7 +232,7 @@ class S3KtorClient(
     }
 
     /**
-     * Calls S3 ListObjectsV2.
+     * S3 ListObjectsV2를 호출합니다.
      *
      * ```kotlin
      * val page = s3.listObjectsV2(
@@ -256,9 +256,9 @@ class S3KtorClient(
     }
 
     /**
-     * Starts a multipart upload.
+     * Multipart upload를 시작합니다.
      *
-     * Pass [metadata] keys without the `x-amz-meta-` prefix.
+     * [metadata]의 key는 `x-amz-meta-` 접두사 없이 전달합니다.
      */
     suspend fun createMultipartUpload(
         bucket: String,
@@ -297,7 +297,7 @@ class S3KtorClient(
         )
 
     /**
-     * Uploads a multipart upload part from a byte array.
+     * Multipart upload part를 byte array로 업로드합니다.
      */
     suspend fun uploadPart(
         bucket: String,
@@ -309,9 +309,9 @@ class S3KtorClient(
         uploadPart(bucket, key, uploadId, partNumber, ByteArrayContent(bytes), bytes.size.toLong())
 
     /**
-     * Uploads a multipart upload part from a streaming body.
+     * Multipart upload part를 streaming body로 업로드합니다.
      *
-     * [partNumber] must be at least 1, and [contentLength] cannot be negative.
+     * [partNumber]는 1 이상이어야 하며, [contentLength]는 음수일 수 없습니다.
      */
     suspend fun uploadPart(
         bucket: String,
@@ -338,9 +338,9 @@ class S3KtorClient(
     }
 
     /**
-     * Completes a multipart upload.
+     * Multipart upload를 완료합니다.
      *
-     * [parts] cannot be empty and are sorted by part number when generating XML.
+     * [parts]는 비어 있을 수 없고, XML 생성 시 part number 순서로 정렬됩니다.
      */
     suspend fun completeMultipartUpload(
         bucket: String,
@@ -363,7 +363,7 @@ class S3KtorClient(
     }
 
     /**
-     * Aborts a multipart upload.
+     * Multipart upload를 중단합니다.
      */
     suspend fun abortMultipartUpload(bucket: String, key: String, uploadId: String) {
         httpClient.delete(objectUrl(bucket, key)) {
@@ -372,17 +372,17 @@ class S3KtorClient(
     }
 
     /**
-     * Creates a GetObject presigned URL.
+     * GetObject presigned URL을 생성합니다.
      *
-     * [expires] must satisfy the S3 SigV4 constraint: at least 1 second and at most 7 days.
+     * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
     fun presignGetObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Get, objectUrl(bucket, key), expires)
 
     /**
-     * Creates a PutObject presigned URL.
+     * PutObject presigned URL을 생성합니다.
      *
-     * [expires] must satisfy the S3 SigV4 constraint: at least 1 second and at most 7 days.
+     * [expires]는 S3 SigV4 제약에 맞춰 1초 이상 7일 이하여야 합니다.
      */
     fun presignPutObject(bucket: String, key: String, expires: Duration): S3KtorPresignedRequest =
         presign(HttpMethod.Put, objectUrl(bucket, key), expires)

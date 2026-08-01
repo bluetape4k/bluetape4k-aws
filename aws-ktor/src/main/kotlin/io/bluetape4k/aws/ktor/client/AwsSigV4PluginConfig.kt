@@ -6,12 +6,12 @@ import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner
 import java.time.Clock
 
 /**
- * Configuration for [AwsSigV4Plugin].
+ * [AwsSigV4Plugin] 설정입니다.
  *
- * ## Behavior/Contract
- * - [region] and [service] are used for the SigV4 credential scope and cannot be blank.
- * - [credentialsProvider] is called for each request send to resolve current credentials.
- * - When [payloadSigningEnabled] is `true`, only replayable bodies are signed.
+ * ## 동작/계약
+ * - [region]과 [service]는 SigV4 credential scope에 사용되며 빈 문자열일 수 없다.
+ * - [credentialsProvider]는 요청 전송마다 호출되어 최신 자격 증명을 해석한다.
+ * - [payloadSigningEnabled]가 `true`이면 replay 가능한 body만 서명한다.
  *
  * ```kotlin
  * import java.time.Clock
