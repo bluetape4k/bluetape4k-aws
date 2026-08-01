@@ -1,27 +1,24 @@
-# Issue #308 Spec Review
+# Issue #308 스펙 검토
 
-## Scope
+## 범위
 
 - Spec: `docs/superpowers/specs/2026-07-01-issue-308-eventbridge-core-design.md`
 - Gate: Step 2-R
-- Mode: native lanes plus main-session integration; security lane timed out and
-  was replaced by main-session fallback after user correction.
+- Mode: native lane과 main-session 통합. 지연된 security lane은 사용자 수정 후 main-session fallback으로 대체했다.
 
-## Findings
+## 결과
 
-| Tier | P0 | P1 | P2/P3 | Disposition |
-|---|---:|---:|---|---|
-| Performance | 0 | 1 | PutTargets wording, stress evidence, allocation notes | P1 fixed by adding PutEvents 10-entry and 1 MB contract; P2/P3 folded into plan tasks. |
-| Stability | 0 | 2 | Cancellation and delete ordering notes | P1 fixed by adding client lifecycle and PutEvents limit contracts; P2 folded into KDoc/test requirements. |
-| Developer/API | 0 | 2 | Target/delete/KDoc/Kotlin builder scope notes | P1 fixed by adding PutEvents and PutRule contracts; lower items folded into plan tasks. |
-| Operator/Ops | 0 | 1 | Observability, partial failure, emulator backend notes | P1 fixed by adding Floci-first smoke probe or unsupported evidence requirement. |
-| User/Caller | 0 | 2 | Module README and unsupported edge capability notes | P1 fixed by adding partial-failure and public KDoc/README requirements. |
-| Security fallback | 0 | 0 | Caller-controlled detail/target/resource validation reviewed | No blocking finding after spec revisions. |
+| 관점 | P0 | P1 | 조치 |
+|---|---:|---:|---|
+| 성능 | 0 | 1 | PutEvents 10개 항목/1 MB 계약을 추가하고 하위 항목을 계획 테스트로 옮겼다. |
+| 안정성 | 0 | 2 | client 수명 주기와 PutEvents 제한 계약을 추가하고 취소/삭제 순서를 KDoc/test에 반영했다. |
+| 개발자/API | 0 | 2 | PutEvents/PutRule 계약을 추가하고 target/delete/KDoc/Kotlin builder 항목을 계획에 반영했다. |
+| 운영 | 0 | 1 | Floci-first smoke 또는 미지원 증거를 요구했다. |
+| 사용자 | 0 | 2 | 부분 실패와 public KDoc/README 요구사항을 추가했다. |
+| 보안 fallback | 0 | 0 | 호출자 제어 detail/target/resource 검증 후 차단 문제 없음. |
 
-## Integrated Verdict
+## 통합 판정
 
 - P0: 0
-- P1: 0 after spec revisions
-- Remaining P2/P3: accepted into the implementation plan as concrete tests,
-  KDoc, README, and emulator-probe tasks.
-
+- P1: 스펙 수정 후 0
+- P2/P3: 구체적인 test, KDoc, README, emulator probe 작업으로 구현 계획에 수용했다.

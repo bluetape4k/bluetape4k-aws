@@ -1,24 +1,19 @@
-# Issue 308 Plan Review
+# Issue 308 계획 검토
 
-## Scope
+## 범위
 
-- Issue: #308 EventBridge core wrappers.
-- Artifact reviewed: `docs/superpowers/plans/2026-07-01-issue-308-eventbridge-core-plan.md`.
-- Review method: local Step 3-R fallback after slow subagent lanes were stopped.
+- Issue: #308 EventBridge core wrapper.
+- 검토 문서: `docs/superpowers/plans/2026-07-01-issue-308-eventbridge-core-plan.md`.
+- 방법: 지연된 subagent lane을 중지한 뒤 로컬 Step 3-R fallback.
 
-## Findings
+## 결과
 
-| Lens | Severity | Finding | Resolution |
-|---|---:|---|---|
-| Requirements | P0 | None. The plan maps the spec goals to Java and AWS Kotlin implementation tasks. | No change needed. |
-| Testability | P1 | Emulator validation initially used an open-ended command note. | Fixed with concrete Floci-first inspection and smoke/fallback commands. |
-| Lifecycle | P1 | Java client ownership initially said "where that pattern is used". | Fixed to require `ShutdownQueue.register(this)` after every EventBridge client build. |
-| API shape | P0 | None. The plan preserves raw SDK responses and one-request helper semantics. | No change needed. |
-| Documentation | P0 | None. README locale set and KDoc requirements are explicit. | No change needed. |
-| Release readiness | P0 | None. Final validation includes compile, targeted EventBridge tests, and diff check. | No change needed. |
+- 요구사항/API/문서/release readiness: P0 없음. Java/AWS Kotlin 작업, 원본 응답, 요청당 한 번 호출, README locale/KDoc, 최종 검증을 명시했다.
+- 테스트 가능성 P1: 열린 command 메모를 Floci-first 검사와 smoke/fallback command로 수정했다.
+- 수명 주기 P1: 모든 EventBridge client build 뒤 `ShutdownQueue.register(this)`를 요구하도록 수정했다.
 
-## Verdict
+## 판정
 
 - P0: 0
-- P1: 0 after plan repair
-- Accepted residual risk: EventBridge emulator coverage may be unavailable in Floci or LocalStack; the plan requires exact unsupported evidence instead of a false smoke claim.
+- P1: 계획 수정 후 0
+- 잔여 위험: Floci/LocalStack에서 EventBridge emulator를 지원하지 않을 수 있으며, 이 경우 허위 smoke 대신 정확한 미지원 증거를 남긴다.
