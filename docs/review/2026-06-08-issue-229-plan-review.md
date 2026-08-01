@@ -1,62 +1,29 @@
-# Issue #229 Plan Review
+# Issue #229 계획 검토
 
-## Scope
+## 범위와 입력
 
-Reviewed `docs/superpowers/plans/2026-06-08-issue-229-s3-vectors-plan.md`
-against the approved spec, current repository patterns, and
-`bluetape4k-full-feature` Step 3-R review requirements.
-
-## Inputs
+`docs/superpowers/plans/2026-06-08-issue-229-s3-vectors-plan.md`를 승인 spec과 repository 패턴, `bluetape4k-full-feature` Step 3-R에 대조했다.
 
 - Spec: `docs/superpowers/specs/2026-06-08-issue-229-s3-vectors-design.md`
 - Spec review: `docs/review/2026-06-08-issue-229-spec-review.md`
-- Existing Spring and Ktor Access Grants patterns.
-- `references/step-3r-plan-review-perspectives.md`
-- `references/step-3r-plan-review.md`
+- 기존 Spring/Ktor Access Grants 패턴
+- `references/step-3r-plan-review-perspectives.md`, `references/step-3r-plan-review.md`
 
-## 7-Tier Findings
+## 7-Tier 결과
 
-| Tier | Scope | P0 | P1 | P2 | P3 | Notes |
-|---|---|---:|---:|---:|---:|---|
-| 1 Security | AWS credentials, endpoint override, unsupported backend claims | 0 | 0 | 0 | 0 | Plan keeps credential ownership in AWS SDK/provider wiring and requires no emulator claim. |
-| 2 Ops/SRE | startup, shutdown, retries/timeouts, resource ownership | 0 | 0 | 0 | 0 | Plan names plugin-owned vs caller-owned clients and Spring destroy semantics. |
-| 3 Structural impact | catalog, `aws-java`, Spring, Ktor, README locale set | 0 | 0 | 0 | 0 | Tasks are ordered from shared dependency/API to adapters and docs. |
-| 4 Kotlin/API quality | shared facade reuse, coroutine contracts, public KDoc | 0 | 0 | 0 | 0 | Plan requires shared `aws-java` operations reuse and English KDoc. |
-| 5 Tests/types | delegation, backoff, customizers, lifecycle, cancellation | 0 | 0 | 0 | 0 | Plan maps each behavior to focused tests and concrete Gradle commands. |
-| 6 Performance/stability | optional dependency, blocking async-client caveat, cleanup | 0 | 0 | 0 | 0 | Plan avoids runtime dependency expansion and requires lifecycle tests. |
-| 7 Docs/release evidence | README, lesson, research preservation, PR readiness | 0 | 0 | 0 | 0 | Plan includes root/module README locale sets, lesson, and wiki preservation. |
+Security, Ops/SRE, structural impact, Kotlin/API, tests/types, performance/stability, docs/release 모두 P0/P1/P2/P3=0이다. Credential 소유권, client lifecycle, shared `aws-java` reuse, public English KDoc, focused Gradle test, optional dependency, README/lesson/wiki를 구체적 task로 연결했다.
 
-## Gate Verdict
+## Gate 판정
 
-PASS.
+PASS (P0/P1/P2/P3: 0). Shared `aws-java` facade 뒤 Spring/Ktor adapter를 추가해 cross-module risk를 제어하고 `aws-java` operation 재사용을 유지한다.
 
-- P0: 0
-- P1: 0
-- P2: 0
-- P3: 0
+## Iteration 2
 
-The plan can proceed to implementation because every spec requirement maps to a
-concrete ordered task, and the broad cross-module risk is controlled by adding
-the shared `aws-java` facade before Spring/Ktor adapters.
+하위 `S3VectorsAsyncClient` coroutine extension은 `*Suspend` 이름을 사용하도록 명확히 했다. 현재 SDK bytecode에서 구현 가능하며 task 순서를 바꾸지 않는다.
 
-## Iteration 2 - Extension Naming Clarification
+## 증거
 
-The plan was clarified so low-level `S3VectorsAsyncClient` coroutine extensions
-use `*Suspend` names. This is implementable against the current SDK bytecode and
-does not change the shared facade or adapter task order.
-
-- P0: 0
-- P1: 0
-- P2: 0
-- P3: 0
-
-## Evidence
-
-- `git diff --check` passed after spec/plan/review artifact creation.
-- `find aws-java aws-spring-boot aws-ktor -maxdepth 1 -name 'README*'`
-  confirmed all three module README locale sets exist.
-- Current `aws-ktor` dependencies already include `bluetape4k-ktor-core` and
-  `bluetape4k-ktor-testing`, so route-level tests can reuse ecosystem helpers.
-- Existing `S3AccessGrantsAutoConfiguration` and `S3AccessGrantsKtorPlugin`
-  provide the optional dependency, caller-owned bean/client, and lifecycle
-  templates used by the plan.
+- `git diff --check`: PASS
+- `find aws-java aws-spring-boot aws-ktor -maxdepth 1 -name 'README*'`: 세 module README locale 확인
+- `aws-ktor`에는 이미 `bluetape4k-ktor-core`/`bluetape4k-ktor-testing`이 있다.
+- `S3AccessGrantsAutoConfiguration`/`S3AccessGrantsKtorPlugin`이 optional dependency, caller ownership, lifecycle template을 제공한다.

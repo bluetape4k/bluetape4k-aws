@@ -1,43 +1,27 @@
-# Issue #273 Code Review
+# Issue #273 코드 검토
 
-## Scope
+## 범위
 
-Review of `examples/aws-ktor-service-coverage-examples` plus repository
-registration, README locale updates, service coverage chart, and CI/Nightly
-workflow wiring.
+`examples/aws-ktor-service-coverage-examples`, repository 등록, README locale, service coverage chart, CI/Nightly workflow.
 
-## Findings
+## 결과
 
-- P0: none.
-- P1: none.
+- P0/P1 없음.
+- 새 route module은 기존 Ktor plugin과 application accessor를 사용한다.
+- `ServiceCoverageExampleOptions`로 같은 타입 resource name의 위치 실수를 피한다.
+- Route test는 injected facade로 SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, STS mapping을 검증한다.
+- Service별 emulator 지원이 달라 외부 emulator를 사용하지 않으며 README에 Floci-first와 LocalStack/real AWS fallback을 기록한다.
+- CI path/status, Nightly, `settings.gradle.kts`, `AGENTS.md`, root README locale이 새 module을 참조한다.
 
-## Review Notes
+## 검증 증거
 
-- The new route module installs existing Ktor plugins and calls application
-  accessors instead of bypassing plugin runtime state.
-- `ServiceCoverageExampleOptions` groups same-typed resource names to avoid
-  positional mistakes.
-- Route tests verify SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, and STS
-  request/response mapping through injected operation facades.
-- Tests intentionally avoid external emulators because service support is not
-  uniform across the covered APIs. README files document Floci-first use where
-  emulator support exists and LocalStack or real AWS endpoints as fallback.
-- CI path filters, CI status aggregation, Nightly selected example run,
-  `settings.gradle.kts`, repo `AGENTS.md`, and root README locale set all
-  reference the new module.
+- `./gradlew :aws-ktor-service-coverage-examples:compileTestKotlin :aws-ktor-service-coverage-examples:test --no-daemon --rerun-tasks`: PASS
+- `./gradlew projects --no-daemon`: PASS, `:aws-ktor-service-coverage-examples` 포함
+- `actionlint .github/workflows/ci.yml .github/workflows/nightly-tests.yml`: PASS
+- `xmllint --noout docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg`: PASS
+- `rsvg-convert docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg -o docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png`: PASS
+- `git diff --check`: PASS
 
-## Verification Evidence
+## 잔여 위험
 
-- `./gradlew :aws-ktor-service-coverage-examples:compileTestKotlin :aws-ktor-service-coverage-examples:test --no-daemon --rerun-tasks`: pass.
-- `./gradlew projects --no-daemon`: pass; includes `:aws-ktor-service-coverage-examples`.
-- `actionlint .github/workflows/ci.yml .github/workflows/nightly-tests.yml`: pass.
-- `xmllint --noout docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg`: pass.
-- `rsvg-convert docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg -o docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png`: pass.
-- `git diff --check`: pass.
-
-## Residual Risk
-
-- The module proves Ktor integration and mapping deterministically, but it is
-  not a substitute for service-specific live AWS or emulator compatibility
-  testing. That is documented as the fallback policy rather than hidden in test
-  assumptions.
+Ktor integration/mapping을 결정적으로 증명하지만 service별 live AWS/emulator compatibility test를 대체하지는 않는다. 이 제약을 숨기지 않고 fallback 정책으로 문서화했다.

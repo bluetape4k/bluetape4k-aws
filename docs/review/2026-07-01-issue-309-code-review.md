@@ -1,42 +1,36 @@
-# Issue 309 Code Review
+# Issue 309 코드 검토
 
-## Scope
+## 범위
 
-- Spring Boot EventBridge auto-configuration, properties, and coroutine operations template.
-- Ktor EventBridge server plugin, configuration, runtime ownership, and coroutine/future operations facade.
-- Root and module README locale pairs for EventBridge framework integration.
+- Spring Boot EventBridge 자동 구성/property/coroutine operation template
+- Ktor EventBridge server plugin/configuration/runtime ownership/coroutine-future facade
+- EventBridge framework 통합용 root/module README locale
 
-## Findings
+## 결과
 
-| Lens | Severity | Finding | Resolution |
+| 관점 | 심각도 | 결과 | 증거 |
 |---|---:|---|---|
-| API contract | P0 | None. Framework layers delegate to the focused #308 EventBridge core helpers and keep one SDK request per operation. | Verified by template tests that capture SDK requests. |
-| Partial failures | P0 | None. `PutEvents`, `PutTargets`, and `RemoveTargets` return raw SDK responses instead of collapsing failures to Boolean success. | Verified by Spring and Ktor raw response tests. |
-| Spring Boot lifecycle | P0 | None. Auto-configuration is opt-out, optional on the EventBridge SDK classpath, and backs off when users provide their own client or operations facade. | Verified by `ApplicationContextRunner` tests. |
-| Ktor lifecycle | P0 | None. Injected operations and clients remain application-owned, while plugin-owned clients are closed once on `ApplicationStopping`. | Verified by Ktor plugin lifecycle tests. |
-| Defaults and customization | P0 | None. Region, endpoint override, credentials, shared AWS defaults, global customizers, and EventBridge-specific customizers compose in the same order as existing Spring/Ktor integrations. | Verified by Spring and Ktor customization tests. |
-| Validation | P0 | None. Blank default event bus names and endpoint-without-region are rejected before client construction. | Verified by Spring property and Ktor config tests. |
-| Emulator | P1 | No repository-local EventBridge emulator scaffold exists for Spring Boot or Ktor. A live Floci/LocalStack smoke was therefore not claimed in this issue. | Recorded with `find ... -name '*EventBridge*Emulator*'` returning `0` and an EventBridge emulator `rg` probe returning no matches. |
-| Documentation | P0 | None. README locale pairs now document dependency requirements, Spring operations, Ktor plugin usage, partial-failure handling, and non-goals. | Verified by README `rg EventBridge/eventbridge/Scheduler` review. |
-| Diagram | P0 | None. README locale pairs now include a source-backed EventBridge Spring/Ktor class map with a solid/dashed relationship legend. | Verified by XML parse, CairoSVG render, full-size PNG inspection, endpoint/geometry/mixed-corner/connector audits, and README image-link checks. |
+| API | P0 | #308 core helper에 위임하고 operation당 SDK request 하나를 유지한다. | SDK request capture template test |
+| 부분 실패 | P0 | `PutEvents`, `PutTargets`, `RemoveTargets`는 원본 응답을 반환한다. | Spring/Ktor raw response test |
+| Spring 수명 주기 | P0 | EventBridge SDK classpath에 선택적이며 opt-out이고 사용자 client/facade가 있으면 물러난다. | `ApplicationContextRunner` test |
+| Ktor 수명 주기 | P0 | injected operation/client는 application 소유이며 plugin client는 `ApplicationStopping`에서 한 번 닫힌다. | lifecycle test |
+| 기본값/customization | P0 | region/endpoint/credentials/default/global/service customizer 순서를 기존 패턴과 맞춘다. | customization test |
+| 검증 | P0 | 빈 default event bus와 region 없는 endpoint를 client 생성 전에 거부한다. | property/config test |
+| Emulator | P1 | 로컬 scaffold가 없어 live smoke를 주장하지 않았다. | `find ... -name '*EventBridge*Emulator*'`=`0`, `rg` 결과 없음 |
+| 문서 | P0 | dependency, Spring/Ktor usage, 부분 실패, non-goal을 기록했다. | README `rg EventBridge/eventbridge/Scheduler` |
+| 다이어그램 | P0 | source 기반 class map과 관계 legend를 추가했다. | XML/render/geometry/connector/image-link 검사 |
 
-## Verification Evidence
+## 검증 증거
 
-- Baseline compile before changes passed:
-  `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all`
-- RED test pass failed on the missing EventBridge framework surfaces before implementation.
-- Targeted tests passed after implementation:
-  `./gradlew --no-daemon :bluetape4k-aws-spring-boot:test --tests "*EventBridge*" :bluetape4k-aws-ktor:test --tests "*EventBridge*" --no-configuration-cache`
-- Compile verification passed after implementation:
-  `./gradlew --no-daemon :bluetape4k-aws-spring-boot:compileTestKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all`
-- `git diff --check` passed.
-- Diagram evidence:
-  - `python3 -c "import xml.etree.ElementTree as ET; ET.parse(...)"` passed for `bluetape4k-aws-eventbridge-class-32.svg`.
-  - `~/.local/bin/cairosvg ... -s 2` rendered `bluetape4k-aws-eventbridge-class-32.png` at `3000 x 1960`.
-  - `diagram-geometry-audit.py --fail-diagonal` reported `geometry_failures=0`.
-  - `diagram-endpoint-audit.py` reported `PASS files=1`.
-  - `diagram-mixed-corner-audit.py` reported `paths=12 q_bends=4 failures=0`.
-  - `diagram-connector-audit.py` reported `markers=0 connectors=12 cards=11 intrusions=0 crossings=0`.
-  - Full-size PNG inspection failed the earlier compact layout, so the diagram was expanded to a `1500 x 980` SVG canvas with wider card spacing and a dedicated lower delegate corridor.
-  - Shared layer title was moved to the inside-bottom of the layer, and shared cards were raised so delegate connectors no longer pass through the title text.
-  - Full-size PNG re-inspection confirmed no text/card/connector overlap, no card intrusions, and readable rounded turns after the expansion.
+- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all`: baseline PASS
+- 구현 전 누락 surface로 RED test 실패
+- `./gradlew --no-daemon :bluetape4k-aws-spring-boot:test --tests "*EventBridge*" :bluetape4k-aws-ktor:test --tests "*EventBridge*" --no-configuration-cache`: PASS
+- `./gradlew --no-daemon :bluetape4k-aws-spring-boot:compileTestKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all`: PASS
+- `git diff --check`: PASS
+- `python3 -c "import xml.etree.ElementTree as ET; ET.parse(...)"`: `bluetape4k-aws-eventbridge-class-32.svg` PASS
+- `~/.local/bin/cairosvg ... -s 2`: `bluetape4k-aws-eventbridge-class-32.png`, `3000 x 1960`
+- `diagram-geometry-audit.py --fail-diagonal`: `geometry_failures=0`
+- `diagram-endpoint-audit.py`: `PASS files=1`
+- `diagram-mixed-corner-audit.py`: `paths=12 q_bends=4 failures=0`
+- `diagram-connector-audit.py`: `markers=0 connectors=12 cards=11 intrusions=0 crossings=0`
+- Full-size 검사 실패 후 canvas를 `1500 x 980`으로 확장하고 card 간격/delegate corridor/title 위치를 조정했으며 재검사에서 overlap/intrusion 문제 없음.
