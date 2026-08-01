@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * SQS message listener container that runs one `@SqsListener` endpoint.
+ * 하나의 `@SqsListener` 엔드포인트를 실행하는 SQS 메시지 리스너 컨테이너.
  */
 class SqsMessageListenerContainer internal constructor(
     private val endpoint: SqsListenerEndpoint,

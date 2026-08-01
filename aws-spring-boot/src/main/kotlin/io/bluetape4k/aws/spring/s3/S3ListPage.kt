@@ -4,7 +4,7 @@ import software.amazon.awssdk.services.s3.model.S3Object
 import java.io.Serializable
 
 /**
- * One page of S3 `ListObjectsV2` results.
+ * S3 `ListObjectsV2` 한 페이지 결과.
  */
 data class S3ListPage(
     val objects: List<S3Object>,

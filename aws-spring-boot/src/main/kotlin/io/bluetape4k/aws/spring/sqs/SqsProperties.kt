@@ -6,7 +6,7 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * SQS auto-configuration properties.
+ * SQS 자동 설정 속성.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.sqs")
 data class SqsProperties(
