@@ -8,7 +8,7 @@ import kotlinx.coroutines.runInterruptible
 import software.amazon.awssdk.services.sts.StsAsyncClient
 
 /**
- * Runtime holder for STS Ktor operations and plugin-owned client lifecycle.
+ * STS Ktor 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class StsKtorRuntime(
     val operations: StsKtorOperations,
@@ -20,7 +20,7 @@ class StsKtorRuntime(
     private val closed = atomic(false)
 
     /**
-     * Closes the plugin-created STS client once. Injected clients are never closed.
+     * 플러그인이 생성한 STS 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
      */
     suspend fun stop() {
         if (closed.compareAndSet(expect = false, update = true)) {

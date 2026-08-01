@@ -9,13 +9,12 @@ private const val SESSION_TOKEN_MIN_DURATION_SECONDS = 900
 private const val SESSION_TOKEN_MAX_DURATION_SECONDS = 129_600
 
 /**
- * Request for assuming an IAM role through STS.
+ * STS를 통해 IAM 역할을 맡기 위한 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * [durationSeconds] follows the standard STS AssumeRole range of 900 to 43,200
- * seconds. The response is returned as the raw AWS SDK object by
- * [StsKtorOperations.assumeRole].
+ * [durationSeconds]는 STS AssumeRole 표준 범위인 900~43,200초를 따릅니다.
+ * [StsKtorOperations.assumeRole]은 응답을 AWS SDK 원본 객체로 반환합니다.
  */
 data class StsAssumeRoleRequest(
     val roleArn: String,
@@ -40,12 +39,12 @@ data class StsAssumeRoleRequest(
 }
 
 /**
- * Request for obtaining STS session credentials.
+ * STS 세션 자격 증명을 얻기 위한 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * [durationSeconds] follows the standard STS GetSessionToken range of 900 to
- * 129,600 seconds. MFA fields are optional but, when set, must be nonblank.
+ * [durationSeconds]는 STS GetSessionToken 표준 범위인 900~129,600초를 따릅니다.
+ * MFA 필드는 선택 사항이지만 지정할 때는 비어 있지 않아야 합니다.
  */
 data class StsSessionTokenRequest(
     val durationSeconds: Int = 3600,

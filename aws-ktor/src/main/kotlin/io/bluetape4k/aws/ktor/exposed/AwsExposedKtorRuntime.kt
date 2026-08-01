@@ -32,14 +32,13 @@ internal class AwsExposedKtorRuntimeConfig(
 )
 
 /**
- * Runtime installed by [AwsExposedPlugin].
+ * [AwsExposedPlugin]이 설치하는 런타임입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * The runtime owns one [AwsExposedDatabaseRegistry] created during Ktor
- * application startup and closed during shutdown. Route code should use
- * [handle], [database], or [transaction] instead of creating per-request
- * database factories.
+ * 런타임은 Ktor 애플리케이션 시작 시 생성하고 종료 시 닫는 [AwsExposedDatabaseRegistry] 하나를
+ * 소유합니다. 경로 코드는 요청마다 데이터베이스 팩토리를 생성하지 말고 [handle], [database],
+ * [transaction]을 사용해야 합니다.
  */
 class AwsExposedKtorRuntime internal constructor(
     private val config: AwsExposedKtorRuntimeConfig,
@@ -57,13 +56,13 @@ class AwsExposedKtorRuntime internal constructor(
     private val registryRef = atomic<AwsExposedDatabaseRegistry?>(null)
 
     /**
-     * Started registry. Throws when the plugin has not completed startup.
+     * 시작된 레지스트리입니다. 플러그인이 시작을 완료하지 않았으면 예외를 던집니다.
      */
     val registry: AwsExposedDatabaseRegistry
         get() = registryRef.value ?: throw IllegalStateException("AwsExposedPlugin is not started.")
 
     /**
-     * Starts the runtime and creates the shared registry.
+     * 런타임을 시작하고 공유 레지스트리를 생성합니다.
      */
     suspend fun start() {
         if (!state.compareAndSet(LifecycleState.NEW, LifecycleState.STARTING)) {
@@ -96,7 +95,7 @@ class AwsExposedKtorRuntime internal constructor(
     }
 
     /**
-     * Stops the runtime and closes the registry once.
+     * 런타임을 중지하고 레지스트리를 한 번 닫습니다.
      */
     suspend fun stop() {
         val closeable = when (state.value) {
@@ -137,19 +136,19 @@ class AwsExposedKtorRuntime internal constructor(
     }
 
     /**
-     * Returns the default or named database handle.
+     * 기본 또는 이름이 지정된 데이터베이스 핸들을 반환합니다.
      */
     fun handle(name: String? = null): AwsExposedDatabaseHandle =
         registry.get(name)
 
     /**
-     * Returns the default or named Exposed [Database].
+     * 기본 또는 이름이 지정된 Exposed [Database]를 반환합니다.
      */
     fun database(name: String? = null): Database =
         handle(name).database
 
     /**
-     * Runs [statement] inside an Exposed JDBC suspend transaction.
+     * Exposed JDBC suspend 트랜잭션 안에서 [statement]를 실행합니다.
      */
     suspend fun <T> transaction(
         name: String? = null,

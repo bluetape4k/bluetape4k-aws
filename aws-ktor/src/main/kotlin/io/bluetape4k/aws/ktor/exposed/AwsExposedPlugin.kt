@@ -16,19 +16,18 @@ import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import kotlin.coroutines.CoroutineContext
 
 /**
- * Application attribute key that stores the installed [AwsExposedKtorRuntime].
+ * 설치된 [AwsExposedKtorRuntime]을 저장하는 애플리케이션 속성 키입니다.
  */
 val AwsExposedKtorRuntimeKey: AttributeKey<AwsExposedKtorRuntime> = AttributeKey("AwsExposedKtorRuntime")
 
 /**
- * Ktor application plugin for AWS-backed Exposed JDBC databases.
+ * AWS 기반 Exposed JDBC 데이터베이스용 Ktor 애플리케이션 플러그인입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * The plugin creates a shared [AwsExposedKtorRuntime] on application start,
- * stores it in application attributes, and closes its registry on application
- * stopping. Ktor lifecycle hooks are synchronous, so startup and shutdown bridge
- * to suspend database work with bounded `runBlocking(Dispatchers.IO)`.
+ * 플러그인은 애플리케이션 시작 시 공유 [AwsExposedKtorRuntime]을 생성해 애플리케이션 속성에 저장하고,
+ * 애플리케이션 중지 시 레지스트리를 닫습니다. Ktor 수명 주기 훅은 동기식이므로 시작과 종료 시
+ * 제한 시간이 있는 `runBlocking(Dispatchers.IO)`으로 suspend 데이터베이스 작업을 연결합니다.
  */
 val AwsExposedPlugin: ApplicationPlugin<AwsExposedPluginConfig> = createApplicationPlugin(
     name = "AwsExposedPlugin",
@@ -52,58 +51,58 @@ val AwsExposedPlugin: ApplicationPlugin<AwsExposedPluginConfig> = createApplicat
 }
 
 /**
- * Returns the runtime installed by [AwsExposedPlugin].
+ * [AwsExposedPlugin]이 설치한 런타임을 반환합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않은 경우
  */
 fun Application.awsExposed(): AwsExposedKtorRuntime =
     attributes.getOrNull(AwsExposedKtorRuntimeKey)
         ?: throw IllegalStateException("AwsExposedPlugin is not installed.")
 
 /**
- * Returns the runtime installed by [AwsExposedPlugin] for this call.
+ * 이 호출에 대해 [AwsExposedPlugin]이 설치한 런타임을 반환합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않은 경우
  */
 fun ApplicationCall.awsExposed(): AwsExposedKtorRuntime =
     application.awsExposed()
 
 /**
- * Returns the default or named AWS-backed Exposed database handle.
+ * 기본 또는 이름이 지정된 AWS 기반 Exposed 데이터베이스 핸들을 반환합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed or not started.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않았거나 시작되지 않은 경우
  */
 fun Application.awsExposedHandle(name: String? = null): AwsExposedDatabaseHandle =
     awsExposed().handle(name)
 
 /**
- * Returns the default or named AWS-backed Exposed database handle for this call.
+ * 이 호출에 대해 기본 또는 이름이 지정된 AWS 기반 Exposed 데이터베이스 핸들을 반환합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed or not started.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않았거나 시작되지 않은 경우
  */
 fun ApplicationCall.awsExposedHandle(name: String? = null): AwsExposedDatabaseHandle =
     awsExposed().handle(name)
 
 /**
- * Returns the default or named Exposed [Database].
+ * 기본 또는 이름이 지정된 Exposed [Database]를 반환합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed or not started.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않았거나 시작되지 않은 경우
  */
 fun Application.awsExposedDatabase(name: String? = null): Database =
     awsExposed().database(name)
 
 /**
- * Returns the default or named Exposed [Database] for this call.
+ * 이 호출에 대해 기본 또는 이름이 지정된 Exposed [Database]를 반환합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed or not started.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않았거나 시작되지 않은 경우
  */
 fun ApplicationCall.awsExposedDatabase(name: String? = null): Database =
     awsExposed().database(name)
 
 /**
- * Runs [statement] inside an Exposed JDBC suspend transaction.
+ * Exposed JDBC suspend 트랜잭션 안에서 [statement]를 실행합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed or not started.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않았거나 시작되지 않은 경우
  */
 suspend fun <T> Application.awsExposedTransaction(
     name: String? = null,
@@ -117,9 +116,9 @@ suspend fun <T> Application.awsExposedTransaction(
     }
 
 /**
- * Runs [statement] inside an Exposed JDBC suspend transaction for this call.
+ * 이 호출에 대해 Exposed JDBC suspend 트랜잭션 안에서 [statement]를 실행합니다.
  *
- * @throws IllegalStateException when [AwsExposedPlugin] is not installed or not started.
+ * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않았거나 시작되지 않은 경우
  */
 suspend fun <T> ApplicationCall.awsExposedTransaction(
     name: String? = null,
