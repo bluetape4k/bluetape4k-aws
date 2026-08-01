@@ -4,11 +4,10 @@ import java.io.Serializable
 import java.net.URI
 
 /**
- * Parsed SNS HTTP(S) endpoint message.
+ * 파싱된 SNS HTTP(S) 엔드포인트 메시지입니다.
  *
- * This value object exposes SNS signature fields but does not validate the
- * cryptographic signature. Validate the signature and expected topic ARN before
- * processing notifications or confirming subscriptions.
+ * 이 값 객체는 SNS 서명 필드를 노출하지만 암호학적 서명을 검증하지 않습니다. 알림을 처리하거나
+ * 구독을 확인하기 전에 서명과 예상 topic ARN을 검증하세요.
  */
 data class SnsHttpMessage(
     val type: SnsHttpMessageType,

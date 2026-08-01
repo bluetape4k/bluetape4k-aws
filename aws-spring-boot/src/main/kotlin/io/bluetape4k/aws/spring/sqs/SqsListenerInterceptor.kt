@@ -1,11 +1,10 @@
 package io.bluetape4k.aws.spring.sqs
 
 /**
- * Intercepts SQS listener receive, handler, and acknowledgement phases.
+ * SQS 리스너의 수신, 핸들러, 확인 단계를 가로챕니다.
  *
- * Implement this interface to add metrics, tracing, structured logging, or
- * policy checks without coupling the listener container to a specific
- * observability library.
+ * 리스너 컨테이너를 특정 관찰 가능성 라이브러리에 결합하지 않고 메트릭, 추적, 구조화된 로깅,
+ * 정책 검사를 추가하려면 이 인터페이스를 구현하세요.
  */
 interface SqsListenerInterceptor {
 
@@ -33,7 +32,7 @@ interface SqsListenerInterceptor {
 }
 
 /**
- * Context for one SQS listener handler invocation.
+ * SQS 리스너 핸들러 호출 하나의 컨텍스트입니다.
  */
 data class SqsListenerInvocationContext(
     val listenerId: String,
@@ -47,11 +46,10 @@ data class SqsListenerInvocationContext(
 }
 
 /**
- * Acknowledgement operation being performed for an SQS message.
+ * SQS 메시지에 수행 중인 확인 작업입니다.
  */
 enum class SqsAcknowledgementAction {
     ACK,
     NACK,
     CHANGE_VISIBILITY,
 }
-

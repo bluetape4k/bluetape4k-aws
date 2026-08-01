@@ -12,10 +12,9 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
 /**
- * Micrometer-instrumented [SqsOperations] decorator.
+ * Micrometer로 계측하는 [SqsOperations] 데코레이터입니다.
  *
- * The decorator records low-cardinality operation timers and delegates all SQS
- * behavior to the wrapped [delegate].
+ * 데코레이터는 카디널리티가 낮은 작업 타이머를 기록하고 모든 SQS 동작을 감싼 [delegate]에 위임합니다.
  */
 class MicrometerSqsOperations(
     private val delegate: SqsOperations,

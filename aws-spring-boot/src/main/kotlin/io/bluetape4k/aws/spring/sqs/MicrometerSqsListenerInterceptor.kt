@@ -7,7 +7,7 @@ import io.micrometer.core.instrument.Tags
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Micrometer [SqsListenerInterceptor] for receive, handler, and acknowledgement phases.
+ * 수신, 핸들러, 확인 단계용 Micrometer [SqsListenerInterceptor]입니다.
  */
 class MicrometerSqsListenerInterceptor(
     private val meterRegistry: MeterRegistry,

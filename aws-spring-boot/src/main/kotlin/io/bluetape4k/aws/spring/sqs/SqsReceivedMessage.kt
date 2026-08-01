@@ -19,7 +19,7 @@ data class SqsReceivedMessage(
     val message: Message,
 ): Serializable {
     /**
-     * AWS SDK message ID.
+     * AWS SDK 메시지 ID입니다.
      */
     val messageId: String get() = message.messageId()
 
@@ -34,32 +34,32 @@ data class SqsReceivedMessage(
     val receiptHandle: String get() = message.receiptHandle()
 
     /**
-     * SQS system attributes.
+     * SQS 시스템 속성입니다.
      */
     val attributes: Map<MessageSystemAttributeName, String> get() = message.attributes().orEmpty()
 
     /**
-     * User-defined message attributes.
+     * 사용자 정의 메시지 속성입니다.
      */
     val messageAttributes: Map<String, MessageAttributeValue> get() = message.messageAttributes().orEmpty()
 
     /**
-     * FIFO queue message group ID.
+     * FIFO 큐 메시지 그룹 ID입니다.
      */
     val messageGroupId: String? get() = attributes[MessageSystemAttributeName.MESSAGE_GROUP_ID]
 
     /**
-     * FIFO queue message deduplication ID.
+     * FIFO 큐 메시지 중복 제거 ID입니다.
      */
     val messageDeduplicationId: String? get() = attributes[MessageSystemAttributeName.MESSAGE_DEDUPLICATION_ID]
 
     /**
-     * FIFO queue sequence number.
+     * FIFO 큐 시퀀스 번호입니다.
      */
     val sequenceNumber: String? get() = attributes[MessageSystemAttributeName.SEQUENCE_NUMBER]
 
     /**
-     * Current receive count recorded by SQS.
+     * SQS가 기록한 현재 수신 횟수입니다.
      */
     val approximateReceiveCount: Int? get() =
         attributes[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]?.toIntOrNull()

@@ -6,13 +6,12 @@ import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
- * Coroutine-friendly [SnsOperations] implementation backed by AWS SDK v2 [SnsAsyncClient].
+ * AWS SDK v2 [SnsAsyncClient]를 사용하는 코루틴 친화적인 [SnsOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Wraps `CompletableFuture` SNS APIs with suspending functions, applies
- * configured topic properties from [SnsProperties], and lets AWS SDK exceptions
- * propagate to callers.
+ * `CompletableFuture` SNS API를 suspend 함수로 감싸고 [SnsProperties]의 구성된 주제 속성을
+ * 적용하며 AWS SDK 예외를 호출자에게 전파합니다.
  *
  * ```kotlin
  * val topicArn = sns.createConfiguredTopic("orders")

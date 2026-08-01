@@ -3,18 +3,18 @@ package io.bluetape4k.aws.spring.sqs
 import tools.jackson.databind.ObjectMapper
 
 /**
- * Converts an SQS message body to a listener method parameter type.
+ * SQS 메시지 본문을 리스너 메서드 매개변수 타입으로 변환합니다.
  */
 interface SqsMessageConverter {
 
     /**
-     * Converts [message] to [targetType].
+     * [message]를 [targetType]으로 변환합니다.
      */
     fun convert(message: SqsReceivedMessage, targetType: Class<*>): Any
 }
 
 /**
- * Converter that fails for non-native listener parameter types.
+ * 네이티브가 아닌 리스너 매개변수 타입에서 실패하는 변환기입니다.
  */
 object NoopSqsMessageConverter: SqsMessageConverter {
     override fun convert(message: SqsReceivedMessage, targetType: Class<*>): Any =
@@ -22,7 +22,7 @@ object NoopSqsMessageConverter: SqsMessageConverter {
 }
 
 /**
- * Jackson-backed SQS message body converter.
+ * Jackson 기반 SQS 메시지 본문 변환기입니다.
  */
 class JacksonSqsMessageConverter(
     private val objectMapper: ObjectMapper,
