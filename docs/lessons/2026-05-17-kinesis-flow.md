@@ -1,6 +1,6 @@
 # Kinesis `recordFlow` 구현 — 교훈 문서
 
-**이슈**: #81 — Kinesis Coroutine `Flow<Record>` for `aws-kotlin`
+**이슈**: #81 — `aws-kotlin`용 Kinesis Coroutine `Flow<Record>`
 **날짜**: 2026-05-17
 **모듈**: `aws-kotlin`
 **담당**: bluetape4k AI
@@ -17,7 +17,7 @@ AWS Kinesis 샤드에서 레코드를 지속 폴링하는 cold `Flow<Record>`를
 
 ## 2. 핵심 설계 결정
 
-### 2-1. `var currentPosition` (not `val`)
+### 2-1. `var currentPosition` (`val` 아님)
 
 `ExpiredIteratorException` 복구 시 `currentPosition`을 `AfterSequenceNumber(lastSeen)`으로 교체해야 한다.
 `val`로 선언하면 불변이므로 `var`로 선언했다.
@@ -48,7 +48,7 @@ if (lastSeen == null && currentPosition is KinesisStartingPosition.Latest) {
 }
 ```
 
-### 2-4. `e.sdkErrorMetadata.isRetryable` (not `e.isRetryable`)
+### 2-4. `e.sdkErrorMetadata.isRetryable` (`e.isRetryable` 아님)
 
 AWS Kotlin SDK `KinesisException`에는 `isRetryable` 프로퍼티가 없다.
 올바른 경로는 `e.sdkErrorMetadata.isRetryable`이다.
@@ -121,17 +121,17 @@ fun `TrimHorizon collects records`() = runSuspendIO {
 
 | 라운드 | 리뷰어 | P0 | P1 | 주요 수정 |
 |---|---|---|---|---|
-| Phase 1 (4종) | Developer/Security/Ops/Caller | 3 | 15 | — |
-| 6-tier Advisor | Claude Code | 0 | 3 | — |
-| Phase 2 Critic | 통합 | 0 | 0 | plan v2 |
-| Advisor 추가 | Claude Code | 1 | 0 | recovery fetch retry scope (v2.1) |
-| Codex Phase 3 | Codex | 0 | 1 | Latest fail-fast guard (v2.2) |
+| 1단계 (4종) | Developer/Security/Ops/Caller | 3 | 15 | — |
+| 6단계 Advisor | Claude Code | 0 | 3 | — |
+| 2단계 Critic | 통합 | 0 | 0 | 계획 v2 |
+| Advisor 추가 | Claude Code | 1 | 0 | recovery fetch 재시도 범위 (v2.1) |
+| Codex 3단계 | Codex | 0 | 1 | Latest 즉시 실패 보호 장치 (v2.2) |
 | **최종** | **전체** | **0** | **0** | **수렴 완료** |
 
 ---
 
 ## 5. 향후 작업
 
-- **Issue #81 follow-up**: DynamoDB Streams `Flow<Record>` 구현 (유사 패턴 적용 가능)
+- **Issue #81 후속 작업**: DynamoDB Streams `Flow<Record>` 구현 (유사 패턴 적용 가능)
 - **멀티샤드 팬아웃**: `describeStream` + `merge(shards.map { recordFlow(..., it) })`는 소비자 책임
 - **체크포인트 저장**: DynamoDB / Redis 기반 체크포인트 유틸리티 (별도 이슈 예정)
