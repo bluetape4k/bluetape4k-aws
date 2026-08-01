@@ -38,10 +38,10 @@ import kotlin.time.Duration.Companion.seconds
 import io.bluetape4k.coroutines.flow.collect as collectAsync
 
 /**
- * Checks whether the object at [key] exists in [bucket].
+ * [bucket]의 [key]에 해당하는 객체가 존재하는지 확인합니다.
  *
- * Only a missing object (`NoSuchKey`/`NotFound`/HTTP `404`) is normalized to `false`.
- * Other failures, including authentication and network errors, are propagated.
+ * 존재하지 않는 객체(`NoSuchKey`/`NotFound`/HTTP `404`)만 `false`로 정규화하고,
+ * 인증 실패/네트워크 오류 등 다른 예외는 그대로 전파합니다.
  *
  * ```
  * val exists = s3Client.existsObject("bucket-name", "key")
@@ -64,15 +64,15 @@ suspend inline fun S3Client.existsObject(
 }
 
 /**
- * Retrieves the object at [key] from [bucketName].
+ * [bucketName]의 [key]에 해당하는 객체를 가져옵니다.
  *
  * ```
  * val response = s3Client.get("bucket-name", "key")
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @param builder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
- * @return the [GetObjectResponse]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param builder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
+ * @return [GetObjectResponse] 인스턴스
  */
 suspend inline fun S3Client.get(
     bucketName: String,
@@ -85,16 +85,16 @@ suspend inline fun S3Client.get(
 
 
 /**
- * Retrieves the object at [key] from [bucketName] and transforms it with [responseTransform].
+ * [bucketName]의 [key]에 해당하는 객체를 가져와 [responseTransform]을 통해 원하는 수형으로 변환합니다.
  *
  * ```
  * val objectText = s3Client.getAs("bucket-name", "key") { it.readText() }
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @param requestBuilder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
- * @param responseTransform transforms the [GetObjectResponse] into the desired type
- * @return the value produced by [responseTransform]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param requestBuilder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
+ * @param responseTransform [GetObjectResponse] 를 통해 원하는 수형으로 변환하는 람다
+ * @return [responseTransform] 을 통해 변환된 수형
  */
 suspend inline fun <T> S3Client.getAs(
     bucketName: String,
@@ -107,16 +107,16 @@ suspend inline fun <T> S3Client.getAs(
 }
 
 /**
- * Retrieves the object at [key] from [bucketName] as a byte array.
+ * [bucketName]의 [key]에 해당하는 객체를 가져와 바이트 배열로 변환합니다.
  *
  * ```
  * val bytes = s3Client.getAsByteArray("bucket-name", "key")
  * ```
  *
- * @param bucketName bucket name
- * @param key object key
- * @param requestBuilder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
- * @return the object bytes
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param requestBuilder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
+ * @return 바이트 배열
  */
 suspend inline fun S3Client.getAsByteArray(
     bucketName: String,
@@ -129,16 +129,16 @@ suspend inline fun S3Client.getAsByteArray(
 }
 
 /**
- * Retrieves the object at [key] from [bucketName] as a string.
+ * [bucketName]의 [key]에 해당하는 객체를 가져와 문자열로 변환합니다.
  *
  * ```
  * val text = s3Client.getAsString("bucket-name", "key")
  * ```
  *
- * @param bucketName bucket name
- * @param key object key
- * @param requestBuilder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
- * @return the object content as a string
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param requestBuilder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
+ * @return 문자열
  */
 suspend inline fun S3Client.getAsString(
     bucketName: String,
@@ -151,18 +151,18 @@ suspend inline fun S3Client.getAsString(
 }
 
 /**
- * Retrieves the object at [key] from [bucketName] and stores it in [file].
+ * [bucketName]의 [key]에 해당하는 객체를 가져와 파일로 저장합니다.
  *
  * ```
  * val file = File("test.txt")
  * s3Client.getAsFile("bucket-name", "key", file)
  * ```
  *
- * @param bucketName bucket name
- * @param key object key
- * @param file destination file
- * @param requestBuilder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
- * @return the number of bytes written
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param file 저장할 파일
+ * @param requestBuilder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
+ * @return 저장된 바이트 수
  */
 suspend inline fun S3Client.getAsFile(
     bucketName: String,
@@ -176,18 +176,18 @@ suspend inline fun S3Client.getAsFile(
 }
 
 /**
- * Retrieves the object at [key] from [bucketName] and stores it at [filePath].
+ * [bucketName]의 [key]에 해당하는 객체를 가져와 파일로 저장합니다.
  *
  * ```
  * val filePath = Paths.get("test.txt")
  * s3Client.getAsFile("bucket-name", "key", filePath)
  * ```
  *
- * @param bucketName bucket name
- * @param key object key
- * @param filePath destination file path
- * @param requestBuilder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
- * @return the number of bytes written
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param filePath 저장할 파일 경로
+ * @param requestBuilder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
+ * @return 저장된 바이트 수
  */
 suspend inline fun S3Client.getAsFile(
     bucketName: String,
@@ -201,19 +201,19 @@ suspend inline fun S3Client.getAsFile(
 }
 
 /**
- * Retrieves the object at [key] from [bucketName] and writes it to [outputStream].
- * Use [requestBuilder] to configure the [GetObjectRequest].
+ * [bucketName]의 [key]에 해당하는 객체를 가져와 [outputStream]에 쓰기합니다.
+ * [requestBuilder] 를 통해 [GetObjectRequest] 를 설정합니다.
  *
  * ```
  * val outputStream = ByteArrayOutputStream()
  * s3Client.getAsOutputStream("bucket-name", "key", outputStream)
  * ```
  *
- * @param bucketName bucket name
- * @param key object key
- * @param outputStream destination stream
- * @param requestBuilder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
- * @return the number of bytes written to [outputStream]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param outputStream 출력 스트림
+ * @param requestBuilder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
+ * @return [outputStream]에 쓰인 바이트 수
  * @see [writeToOutputStream]
  */
 suspend inline fun S3Client.getAsOutputStream(
@@ -228,15 +228,15 @@ suspend inline fun S3Client.getAsOutputStream(
 }
 
 /**
- * Downloads multiple S3 objects concurrently.
+ * S3의 여러 객체를 동시에 다운로드 합니다.
  *
  * ```
  * val responses = s3Client.getAll(request1, request2, request3).toList()
  * ```
  *
- * @param concurrency number of requests to process concurrently
- * @param getObjectRequests object requests to download
- * @return a [Flow] of [GetObjectResponse] values
+ * @param concurrency 동시에 처리할 요청 수
+ * @param getObjectRequests 다운로드할 객체 요청들
+ * @return [GetObjectResponse] 의 [Flow]
  */
 fun S3Client.getAll(
     concurrency: Int = DEFAULT_CONCURRENCY,
@@ -246,7 +246,7 @@ fun S3Client.getAll(
         .asFlow()
         .async { request ->
             getObject(request) { response ->
-                // Read the body in the block because getObject closes its stream when the block completes.
+                // body 스트림은 getObject 블록 종료 시 닫히므로 블록 내에서 메모리로 읽어둔다.
                 val bodyBytes = response.body?.toByteArray()
                 response.copy { body = bodyBytes?.let { ByteStream.fromBytes(it) } }
             }
@@ -257,16 +257,16 @@ fun S3Client.getAll(
 }
 
 /**
- * Creates a presigned URL for an S3 object.
+ * S3 객체에 대한 Presigned URL을 생성합니다.
  *
  * ```
  * val url = s3Client.presignGetObject("bucket-name", "key")
  * ```
  *
- * @param bucketName bucket name
- * @param key object key
- * @param duration validity period of the presigned URL
- * @param requestBuilder configures the [GetObjectRequest] through [GetObjectRequest.Builder]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param duration Presigned URL의 유효 시간
+ * @param requestBuilder [GetObjectRequest.Builder] 를 통해 [GetObjectRequest] 를 설정합니다.
  */
 suspend inline fun S3Client.presignGetObject(
     bucketName: String,
@@ -279,14 +279,14 @@ suspend inline fun S3Client.presignGetObject(
 }
 
 /**
- * Retrieves the object ACL for [key] in [bucketName].
+ * [bucketName]의 [key]에 대한 객체 ACL을 조회합니다.
  *
  * ```
  * val response = s3Client.getObjectAcl("bucket-name", "key")
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @return the [GetObjectAclResponse]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @return [GetObjectAclResponse] 인스턴스
  */
 suspend inline fun S3Client.getObjectAcl(
     bucketName: String,
@@ -301,15 +301,15 @@ suspend inline fun S3Client.getObjectAcl(
 }
 
 /**
- * Retrieves object ACLs for multiple keys in [bucketName] concurrently.
+ * [bucketName]의 여러 Key에 대한 객체 ACL을 병렬로 조회합니다.
  *
  * ```
  * val responses = s3Client.getObjectsAcl("bucket-name", "key1", "key2", "key3").toList()
  * ```
  *
- * @param bucketName bucket name
- * @param keys object keys
- * @return a [Flow] of [GetObjectAclResponse] values
+ * @param bucketName 버킷 이름
+ * @param keys 객체 키 목록
+ * @return [GetObjectAclResponse] 의 Flow
  */
 fun S3Client.getObjectsAcl(bucketName: String, vararg keys: String): Flow<GetObjectAclResponse> {
     bucketName.requireNotBlank("bucketName")
@@ -322,15 +322,15 @@ fun S3Client.getObjectsAcl(bucketName: String, vararg keys: String): Flow<GetObj
 }
 
 /**
- * Retrieves object retention settings for [key] in [bucketName].
+ * [bucketName]의 [key]에 대한 객체 Retention을 조회합니다.
  *
  * ```
  * val response = s3Client.getObjectRetention("bucket-name", "key")
  * ```
- * @param bucketName bucket name
- * @param key object key
- * @param builder configures the [GetObjectRetentionRequest] through [GetObjectRetentionRequest.Builder]
- * @return the [GetObjectRetentionResponse]
+ * @param bucketName 버킷 이름
+ * @param key 객체 키
+ * @param builder [GetObjectRetentionRequest.Builder] 를 통해 [GetObjectRetentionRequest] 를 설정합니다.
+ * @return [GetObjectRetentionResponse] 인스턴스
  */
 suspend inline fun S3Client.getObjectRetention(
     bucketName: String,

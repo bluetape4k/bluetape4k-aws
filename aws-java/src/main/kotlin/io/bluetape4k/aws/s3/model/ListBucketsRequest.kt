@@ -4,9 +4,9 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.s3.model.ListBucketsRequest
 
 /**
- * See the API documentation for details.
+ * [ListBucketsRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = listBucketsRequest { maxBuckets(50) }
  * // result.maxBuckets() == 50
@@ -18,9 +18,9 @@ inline fun listBucketsRequest(
     ListBucketsRequest.builder().apply(builder).build()
 
 /**
- * See the API documentation for details.
+ * 요청 override 설정을 포함한 [ListBucketsRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = listBucketsRequestOf {
  *     apiCallAttemptTimeout(java.time.Duration.ofSeconds(3))

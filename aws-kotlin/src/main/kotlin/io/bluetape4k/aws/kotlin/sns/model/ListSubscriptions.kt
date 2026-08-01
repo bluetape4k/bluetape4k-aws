@@ -4,16 +4,16 @@ import aws.sdk.kotlin.services.sns.model.ListSubscriptionsRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a request to list subscriptions, continuing from [nextToken] when provided.
+ * [nextToken]을 가지는 Subscription 목록 조회 요청을 생성합니다.
  *
  * ```
  * val request = listSubscriptionsRequestOf("nextToken")
  * val subscriptions = client.listSubscriptions(request)
  * ```
  *
- * @param nextToken Token used to retrieve the next page.
- * @param builder Lambda for applying additional settings to [ListSubscriptionsRequest.Builder].
- * @return A [ListSubscriptionsRequest] instance.
+ * @param nextToken 다음 페이지를 조회하기 위한 토큰
+ * @param builder [ListSubscriptionsRequest.Builder]를 통해 추가적인 설정을 할 수 있는 람다 함수
+ * @return [ListSubscriptionsRequest] 인스턴스
  */
 inline fun listSubscriptionsRequestOf(
     nextToken: String,

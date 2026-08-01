@@ -5,17 +5,17 @@ import aws.sdk.kotlin.services.dynamodb.model.ScalarAttributeType
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a DynamoDB [AttributeDefinition] from an attribute name and type.
+ * 속성 이름과 타입으로 DynamoDB [AttributeDefinition]을 생성합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [name] is blank.
+ * ## 동작/계약
+ * - [name]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val def = attributeDefinitionOf("userId", ScalarAttributeType.S)
  * // def.attributeName == "userId", def.attributeType == ScalarAttributeType.S
  * ```
  *
- * @throws IllegalArgumentException if [name] is blank.
+ * @throws IllegalArgumentException [name]이 blank인 경우
  */
 fun attributeDefinitionOf(
     name: String,

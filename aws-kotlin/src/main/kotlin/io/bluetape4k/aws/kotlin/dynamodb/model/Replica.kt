@@ -11,18 +11,18 @@ import aws.sdk.kotlin.services.dynamodb.model.TableClass
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Builds a DynamoDB [Replica] with a DSL block.
+ * DSL 블록으로 DynamoDB [Replica]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [regionName] is blank.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [regionName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val replica = replicaOf("ap-northeast-2")
  * // replica.regionName == "ap-northeast-2"
  * ```
  *
- * @param regionName AWS region name to replicate. Blank values throw.
+ * @param regionName 복제할 AWS 리전 이름 (blank이면 예외)
  */
 inline fun replicaOf(
     regionName: String,
@@ -38,20 +38,20 @@ inline fun replicaOf(
 }
 
 /**
- * Builds a DynamoDB [ReplicaUpdate] with a DSL block.
+ * DSL 블록으로 DynamoDB [ReplicaUpdate]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Specify either [create] or [delete] to configure a replica add or delete operation.
- * - Creates an empty [ReplicaUpdate] when both values are null.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [create]와 [delete] 중 하나를 지정하여 복제본 추가 또는 삭제 작업을 설정한다.
+ * - 둘 다 null이면 빈 [ReplicaUpdate]가 생성된다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val update = replicaUpdateOf(create = CreateReplicaAction { regionName = "us-west-2" })
  * // update.create?.regionName == "us-west-2"
  * ```
  *
- * @param create replica region settings to add.
- * @param delete replica region settings to delete.
+ * @param create 추가할 복제본 리전 설정
+ * @param delete 삭제할 복제본 리전 설정
  */
 inline fun replicaUpdateOf(
     create: CreateReplicaAction? = null,
@@ -65,12 +65,12 @@ inline fun replicaUpdateOf(
 }
 
 /**
- * Builds a DynamoDB [ReplicaSettingsUpdate] with a DSL block.
+ * DSL 블록으로 DynamoDB [ReplicaSettingsUpdate]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [regionName] is blank.
- * - Null setting values are omitted from the request.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [regionName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - null로 전달된 설정 값은 요청에 포함되지 않는다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val settings = replicaSettingsUpdateOf(
@@ -81,11 +81,11 @@ inline fun replicaUpdateOf(
  * // settings.replicaProvisionedReadCapacityUnits == 10L
  * ```
  *
- * @param regionName AWS region name of the replica whose settings will be updated. Blank values throw.
- * @param replicaGlobalSecondaryIndexSettingsUpdate GSI settings update list.
- * @param replicaProvisionedReadCapacityAutoScalingSettingsUpdate read-capacity auto scaling settings.
- * @param replicaProvisionedReadCapacityUnits provisioned read capacity units.
- * @param replicaTableClass replica table class.
+ * @param regionName 설정을 업데이트할 복제본의 AWS 리전 이름 (blank이면 예외)
+ * @param replicaGlobalSecondaryIndexSettingsUpdate GSI 설정 업데이트 목록
+ * @param replicaProvisionedReadCapacityAutoScalingSettingsUpdate 읽기 용량 오토스케일링 설정
+ * @param replicaProvisionedReadCapacityUnits 프로비저닝된 읽기 용량 단위
+ * @param replicaTableClass 복제본 테이블 클래스
  */
 inline fun replicaSettingsUpdateOf(
     regionName: String,

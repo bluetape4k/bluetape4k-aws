@@ -6,18 +6,18 @@ import aws.sdk.kotlin.services.sns.model.Tag
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a topic named [name].
+ * [name]의 Topic 을 생성합니다.
  *
  * ```
  * val request = createTopicRequestOf("MyTopic")
  * client.createTopic(request)
  * ```
  *
- * @param name Name of the topic to create.
- * @param tags Tags to add to the topic.
- * @param attributes Attributes to add to the topic.
- * @param builder Lambda for applying additional settings to [CreateTopicRequest.Builder].
- * @return A [CreateTopicRequest] instance.
+ * @param name 생성할 Topic 의 이름
+ * @param tags Topic 에 추가할 Tag 목록
+ * @param attributes Topic 에 추가할 속성 목록
+ * @param builder [CreateTopicRequest.Builder] 를 통해 추가적인 설정을 할 수 있는 람다 함수
+ * @return [CreateTopicRequest] 인스턴스
  */
 inline fun createTopicRequestOf(
     name: String,
@@ -37,16 +37,16 @@ inline fun createTopicRequestOf(
 }
 
 /**
- * Deletes the topic identified by [topicArn].
+ * [topicArn]의 Topic 을 삭제합니다.
  *
  * ```
  * val request = deleteTopicRequestOf("arn:aws:sns:us-east-1:123456789012:MyTopic")
  * client.deleteTopic(request)
  * ```
  *
- * @param topicArn ARN of the topic to delete.
- * @param builder Lambda for applying additional settings to [DeleteTopicRequest.Builder].
- * @return A [DeleteTopicRequest] instance.
+ * @param topicArn 삭제할 Topic 의 ARN
+ * @param builder [DeleteTopicRequest.Builder] 를 통해 추가적인 설정을 할 수 있는 람다 함수
+ * @return [DeleteTopicRequest] 인스턴스
  */
 inline fun deleteTopicRequestOf(
     topicArn: String,

@@ -76,7 +76,7 @@ inline fun QueryEnhancedRequest(
 }
 
 /**
- * See the API documentation for details.
+ * 기본 파라미터를 조합해 [QueryEnhancedRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = queryEhnahcedRequestOf(
@@ -106,7 +106,7 @@ fun queryEhnahcedRequestOf(
 }
 
 /**
- * See the API documentation for details.
+ * [QueryEnhancedRequest]의 정보를 문자열로 표현합니다.
  *
  * ```kotlin
  * val summary = request.describe()

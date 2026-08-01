@@ -4,7 +4,7 @@ import software.amazon.awssdk.services.cloudwatch.model.DimensionFilter
 import software.amazon.awssdk.services.cloudwatch.model.ListMetricsRequest
 
 /**
- * Builds a [ListMetricsRequest] with a DSL block.
+ * DSL 블록으로 [ListMetricsRequest]를 빌드합니다.
  *
  * ```kotlin
  * val request = listMetricsRequest {
@@ -18,7 +18,7 @@ inline fun listMetricsRequest(
     ListMetricsRequest.builder().apply(builder).build()
 
 /**
- * Creates a [ListMetricsRequest] from a namespace and optional filters.
+ * namespace와 선택적 필터로 [ListMetricsRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = listMetricsRequestOf(

@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.kinesis.KinesisClientBuilder
 import java.net.URI
 
 /**
- * Builds a [KinesisClient].
+ * [KinesisClient]를 빌드합니다.
  *
  * ```kotlin
  * val client = kinesisClient { region(Region.AP_NORTHEAST_2) }
@@ -25,9 +25,9 @@ inline fun kinesisClient(
         }
 
 /**
- * Creates a [KinesisClient] from [Region].
+ * [Region] 기반으로 [KinesisClient]를 생성합니다.
  *
- * [httpClient] uses the default HTTP client, and the created client is registered with [ShutdownQueue].
+ * [httpClient]는 기본 HTTP 클라이언트를 사용하며, 생성된 클라이언트는 [ShutdownQueue]에 등록됩니다.
  *
  * ```kotlin
  * val client = kinesisClientOf(Region.AP_NORTHEAST_2)
@@ -45,9 +45,9 @@ inline fun kinesisClientOf(
 }
 
 /**
- * Creates a [KinesisClient] from endpoint and credentials settings.
+ * endpoint + credentials 기반으로 [KinesisClient]를 생성합니다.
  *
- * Nullable parameters are applied to the builder only when they are not null.
+ * nullable 파라미터는 null 이 아닐 때만 builder에 반영됩니다.
  *
  * ```kotlin
  * val client = kinesisClientOf(endpoint = URI("http://localhost:4566"))

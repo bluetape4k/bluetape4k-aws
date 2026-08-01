@@ -6,9 +6,9 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 /**
- * Creates a [SendMessageRequest].
+ * [SendMessageRequest] 를 생성합니다.
  *
- * @param builder Lambda that initializes [SendMessageRequest] with [SendMessageRequest.Builder].
+ * @param builder [SendMessageRequest.Builder]를 이용하여 [SendMessageRequest]를 초기화하는 람다입니다.
  *
  * ```kotlin
  * val request = sendMessageRequest {
@@ -25,9 +25,9 @@ inline fun sendMessageRequest(
 }
 
 /**
- * Creates a [SendMessageRequest] from [queueUrl] and [messageBody].
+ * [queueUrl], [messageBody]로 [SendMessageRequest]를 생성합니다.
  *
- * When [delaySeconds] is set, validates the SQS 0..900 constraint up front.
+ * [delaySeconds]를 지정하면 SQS 제약(0..900)을 선검증합니다.
  *
  * ```kotlin
  * val request = sendMessageRequestOf(
@@ -61,9 +61,9 @@ inline fun sendMessageRequestOf(
 }
 
 /**
- * Creates a [SendMessageBatchRequestEntry].
+ * [SendMessageBatchRequestEntry] 를 생성합니다.
  *
- * @param builder Lambda that initializes [SendMessageBatchRequestEntry] with [SendMessageBatchRequestEntry.Builder].
+ * @param builder [SendMessageBatchRequestEntry.Builder]를 이용하여 [SendMessageBatchRequestEntry]를 초기화하는 람다입니다.
  *
  * ```kotlin
  * val entry = sendMessageBatchRequestEntry {
@@ -88,7 +88,7 @@ inline fun sendMessageBatchRequestEntry(
  * @param delaySeconds      The length of time, in seconds, for which to delay a specific message. Range: 0..900.
  * @param builder       The lambda to initialize the builder.
  * @receiver            The builder to build the request.
- * @return            [SendMessageBatchRequestEntry] instance.
+ * @return            [SendMessageBatchRequestEntry] 인스턴스
  */
 inline fun sendMessageBatchRequestEntryOf(
     id: String,

@@ -16,9 +16,9 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest
 
 /**
- * See the API documentation for details.
+ * Coroutines 환경에서 DynamoDB Repository를 사용하기 위한 인터페이스입니다.
  *
- * See the API documentation for details.
+ * 구현체는 [table], [client], [itemClass]를 제공하면 기본 CRUD 동작을 재사용할 수 있습니다.
  *
  * ```kotlin
  * val saved = repository.update(entity)
@@ -37,7 +37,7 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
     val itemClass: Class<T>
 
     /**
-     * See the API documentation for details.
+     * [Key]로 단건을 조회합니다.
      *
      * ```kotlin
      * val found = repository.findByKey(key)
@@ -49,16 +49,16 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
     }
 
     /**
-     * See the API documentation for details.
+     * [QueryEnhancedRequest] 기준으로 첫 페이지 아이템을 조회합니다.
      *
-     * See the API documentation for details.
+     * 반환 목록은 비어 있을 수 있으며, 테스트에서 첫 페이지의 item 리스트를 그대로 반환하는 동작을 검증합니다.
      */
     suspend fun findFirst(request: QueryEnhancedRequest): List<T> {
         return table.query(request).findFirst()
     }
 
     /**
-     * See the API documentation for details.
+     * 파티션 키 값으로 첫 페이지를 조회합니다.
      *
      * ```kotlin
      * val items = repository.findFirstByPartitionKey("customer#1")
@@ -73,21 +73,21 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
     }
 
     /**
-     * See the API documentation for details.
+     * [QueryEnhancedRequest] 결과의 전체 아이템 개수를 계산합니다.
      */
     suspend fun count(request: QueryEnhancedRequest): Long {
         return table.query(request).count()
     }
 
     /**
-     * See the API documentation for details.
+     * 엔티티를 저장합니다.
      */
     suspend fun save(item: T) {
         table.putItem(item).await()
     }
 
     /**
-     * See the API documentation for details.
+     * 여러 엔티티를 배치로 저장하고 각 배치 결과를 [Flow]로 반환합니다.
      *
      * ```kotlin
      * val count = repository.saveAll(items).count()
@@ -99,30 +99,30 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
     }
 
     /**
-     * See the API documentation for details.
+     * 엔티티를 업데이트하고 DynamoDB가 반환한 최신 엔티티를 반환합니다.
      */
     suspend fun update(item: T): T? {
         return table.updateItem(item).await()
     }
 
     /**
-     * See the API documentation for details.
+     * 엔티티의 [DynamoDbEntity.key]를 사용해 삭제합니다.
      */
     suspend fun delete(item: T): T? {
         return table.deleteItem(item.key).await()
     }
 
     /**
-     * See the API documentation for details.
+     * [Key]로 엔티티를 삭제합니다.
      */
     suspend fun delete(key: Key): T? {
         return table.deleteItem(key).await()
     }
 
     /**
-     * See the API documentation for details.
+     * 엔티티 목록을 비동기로 순회하며 삭제 성공 항목만 [Flow]로 반환합니다.
      *
-     * See the API documentation for details.
+     * `null` 반환(삭제 대상 미존재)은 [mapNotNull]로 제거됩니다.
      */
     fun deleteAll(items: Iterable<T>): Flow<T> {
         return items.asFlow()
@@ -133,7 +133,7 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
     }
 
     /**
-     * See the API documentation for details.
+     * 키 목록을 비동기로 순회하며 삭제 성공 항목만 [Flow]로 반환합니다.
      */
     fun deleteAllByKeys(keys: Iterable<Key>): Flow<T> {
         return keys.asFlow()

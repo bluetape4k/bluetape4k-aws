@@ -50,14 +50,14 @@ internal const val MIN_RECEIVE_MESSAGES = 1
 internal const val MAX_RECEIVE_MESSAGES = 10
 
 /**
- * Creates the queue identified by [queueName].
+ * [queueName]에 해당하는 큐를 생성합니다.
  *
  * ```kotlin
  * val response = sqsClient.createQueue("my-queue")
  * ```
  *
- * @param queueName Name of the Amazon SQS queue.
- * @return A CreateQueueResponse instance.
+ * @param queueName Amazon SQS 큐의 이름입니다.
+ * @return CreateQueueResponse 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.createQueue(
     queueName: String,
@@ -74,14 +74,14 @@ suspend inline fun SqsClient.createQueue(
 }
 
 /**
- * Creates the queue identified by [queueName] when it does not already exist.
+ * [queueName]에 해당하는 큐가 존재하지 않으면 큐를 생성합니다.
  *
  * ```kotlin
  * val queueUrl = sqsClient.ensureQueue("my-queue")
  * ```
  *
- * @param queueName Name of the Amazon SQS queue.
- * @return The queue URL.
+ * @param queueName Amazon SQS 큐의 이름입니다.
+ * @return 큐의 URL을 반환합니다.
  * @see [existsQueue]
  */
 suspend inline fun SqsClient.ensureQueue(
@@ -97,17 +97,17 @@ suspend inline fun SqsClient.ensureQueue(
 }
 
 /**
- * Checks whether the queue identified by [queueName] exists.
+ * [queueName]에 해당하는 큐가 존재하는지 확인합니다.
  *
- * Only missing-queue responses (`QueueDoesNotExist`, `ResourceNotFoundException`, or HTTP `404`) are normalized
- * to `false`; other failures, such as authentication or network errors, are propagated unchanged.
+ * 존재하지 않는 큐(`QueueDoesNotExist`/`ResourceNotFoundException`/HTTP `404`)만 `false`로 정규화하고,
+ * 인증 실패/네트워크 오류 등 다른 예외는 그대로 전파합니다.
  *
  * ```kotlin
  * val exists = sqsClient.existsQueue("my-queue")
  * ```
  *
- * @param queueName Name of the Amazon SQS queue.
- * @return `true` when the queue exists; otherwise `false`.
+ * @param queueName Amazon SQS 큐의 이름입니다.
+ * @return 큐가 존재하면 true, 그렇지 않으면 false를 반환합니다.
  */
 suspend inline fun SqsClient.existsQueue(queueName: String): Boolean =
     try {
@@ -119,17 +119,17 @@ suspend inline fun SqsClient.existsQueue(queueName: String): Boolean =
     }
 
 /**
- * Lists queues whose names start with [queueNamePrefix].
+ * [queueNamePrefix]를 접두사로 가지는 큐 목록을 반환합니다.
  *
  * ```kotlin
  * val response = sqsClient.listQueues(queueNamePrefix = "my-queue")
  * val queueUrls = response.queueUrls
  * ```
  *
- * @param queueNamePrefix Amazon SQS queue name prefix.
- * @param nextToken Token for the next page. Defaults to null.
- * @param maxResults Maximum number of results to return. Defaults to null.
- * @return A ListQueuesResponse instance.
+ * @param queueNamePrefix Amazon SQS 큐의 이름 접두사입니다.
+ * @param nextToken 다음 페이지의 토큰입니다. 기본값은 null입니다.
+ * @param maxResults 반환할 최대 결과 수입니다. 기본값은 null입니다.
+ * @return ListQueuesResponse 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.listQueues(
     queueNamePrefix: String,
@@ -149,15 +149,15 @@ suspend inline fun SqsClient.listQueues(
 }
 
 /**
- * Returns the URL of the queue identified by [queueName].
+ * [queueName]에 해당하는 큐의 URL을 반환합니다.
  *
  * ```kotlin
  * val response = sqsClient.getQueueUrl("my-queue")
  * val queueUrl = response.queueUrl
  * ```
  *
- * @param queueName Name of the Amazon SQS queue.
- * @return The queue URL. Throws when the queue does not exist.
+ * @param queueName Amazon SQS 큐의 이름입니다.
+ * @return 해당 큐의 URL을 반환한다. 해당 큐가 없으면 예외가 발생합니다.
  */
 suspend inline fun SqsClient.getQueueUrl(
     queueName: String,
@@ -172,14 +172,14 @@ suspend inline fun SqsClient.getQueueUrl(
 }
 
 /**
- * Deletes the queue identified by [queueUrl].
+ * [queueUrl]에 해당하는 큐를 삭제합니다.
  *
  * ```kotlin
  * val response = sqsClient.deleteQueue("https://sqs.ap-northeast-2.amazonaws.com/123456789012/my-queue")
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue.
- * @return A DeleteQueueResponse instance.
+ * @param queueUrl Amazon SQS 큐의 URL입니다.
+ * @return DeleteQueueResponse 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.deleteQueue(
     queueUrl: String,
@@ -194,7 +194,7 @@ suspend inline fun SqsClient.deleteQueue(
 }
 
 /**
- * Sends a message to Amazon SQS.
+ * AWS SQS 에 메시지를 보냅니다.
  *
  * ```kotlin
  * val response = sqsClient.sendMessage(
@@ -204,11 +204,11 @@ suspend inline fun SqsClient.deleteQueue(
  * )
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue to which the message is sent.
- * @param messageBody Body of the message. Throws [IllegalArgumentException] when blank.
- * @param delaySeconds Seconds to wait before sending the message. Defaults to null.
- * @param builder Lambda for initializing SendMessageRequest.Builder. Defaults to an empty lambda.
- * @return A SendMessageResponse instance.
+ * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
+ * @param messageBody 전송할 메시지의 본문입니다. blank이면 [IllegalArgumentException]을 던집니다.
+ * @param delaySeconds 메시지를 보내기 전 대기할 시간(초)입니다. 기본값은 null입니다.
+ * @param builder SendMessageRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
+ * @return SendMessageResponse 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.sendMessage(
     queueUrl: String,
@@ -229,7 +229,7 @@ suspend inline fun SqsClient.sendMessage(
 }
 
 /**
- * Sends messages to Amazon SQS in a batch.
+ * AWS SQS 에 배치로 메시지를 보냅니다.
  *
  * ```kotlin
  * val entry1 = SendMessageBatchRequestEntry { id="id1"; messageBody="Hello, World!" }
@@ -240,9 +240,9 @@ suspend inline fun SqsClient.sendMessage(
  * val response = sqsClient.sendMessageBatch(queueUrl, entry1, entry2)
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue to which the messages are sent.
- * @param entries Messages to send.
- * @return A SendMessageBatchResponse instance.
+ * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
+ * @param entries 전송할 메시지의 목록입니다.
+ * @return SendMessageBatchResponse 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.sendMessageBatch(
     queueUrl: String,
@@ -258,7 +258,7 @@ suspend inline fun SqsClient.sendMessageBatch(
 }
 
 /**
- * Sends messages to Amazon SQS in a batch.
+ * AWS SQS 에 배치로 메시지를 보냅니다.
  *
  * ```kotlin
  * val entry1 = SendMessageBatchRequestEntry { id="id1"; messageBody="Hello, World!" }
@@ -270,9 +270,9 @@ suspend inline fun SqsClient.sendMessageBatch(
  * val response = sqsClient.sendMessageBatch(queueUrl, entries)
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue to which the messages are sent.
- * @param entries Messages to send.
- * @return A SendMessageBatchResponse instance.
+ * @param queueUrl 메시지를 보낼 Amazon SQS 큐의 URL입니다.
+ * @param entries 전송할 메시지의 목록입니다.
+ * @return SendMessageBatchResponse 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.sendMessageBatch(
     queueUrl: String,
@@ -288,15 +288,15 @@ suspend inline fun SqsClient.sendMessageBatch(
 }
 
 /**
- * Receives messages from an Amazon SQS queue using the supplied queueUrl.
+ * 제공된 queueUrl을 사용하여 Amazon SQS 큐에서 메시지를 수신합니다.
  *
  * ```kotlin
  * val response = sqsClient.receiveMessage(queueUrl, maxNumberOfMessages = 10)
  * val messages = response.messages
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue from which to receive messages.
- * @param maxNumberOfMessages Maximum number of messages to receive at once. Defaults to null; when set, must be in 1..10.
+ * @param queueUrl 메시지를 수신할 Amazon SQS 큐의 URL입니다.
+ * @param maxNumberOfMessages 한 번에 수신할 최대 메시지 수입니다. 기본값은 null이며, 지정 시 1..10 범위여야 합니다.
  */
 suspend inline fun SqsClient.receiveMessage(
     queueUrl: String,
@@ -316,7 +316,7 @@ suspend inline fun SqsClient.receiveMessage(
 }
 
 /**
- * Changes the visibility of the message identified by [receiptHandle] in [queueUrl].
+ * [queueUrl]의 [receiptHandle]을 가진 메시지에 대해 Visibility를 변경합니다.
  *
  * ```kotlin
  * val response = sqsClient.changeMessageVisibility(
@@ -326,11 +326,11 @@ suspend inline fun SqsClient.receiveMessage(
  * )
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue containing the message.
- * @param receiptHandle Receipt handle associated with the message.
- * @param visibilityTimeout New message visibility timeout in seconds. Defaults to null.
+ * @param queueUrl 메시지의 Visibility를 변경할 Amazon SQS 큐의 URL입니다.
+ * @param receiptHandle Visibility를 변경할 메시지와 연관된 영수증 핸들입니다.
+ * @param visibilityTimeout 메시지의 새로운 VisibilityTimeout(초)입니다. 기본값은 null입니다.
  *
- * @return A ChangeMessageVisibilityResponse instance.
+ * @return ChangeMessageVisibilityResponse 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.changeMessageVisibility(
     queueUrl: String,
@@ -347,7 +347,7 @@ suspend inline fun SqsClient.changeMessageVisibility(
 }
 
 /**
- * Changes message visibility in batches for [entries] in [queueUrl].
+ * [queueUrl]의 [entries]에 대해 Batch 방식으로 Visibility를 변경합니다.
  *
  * ```kotlin
  * val entry1 = ChangeMessageVisibilityBatchRequestEntry {
@@ -365,9 +365,9 @@ suspend inline fun SqsClient.changeMessageVisibility(
  * val response = sqsClient.changeMessageVisibilityBatch(queueUrl, entry1, entry2)
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue containing the messages.
- * @param entries Collection of ChangeMessageVisibilityBatchRequestEntry instances.
- * @return A [ChangeMessageVisibilityBatchResponse] instance.
+ * @param queueUrl 메시지의 Visibility를 변경할 Amazon SQS 큐의 URL입니다.
+ * @param entries ChangeMessageVisibilityBatchRequestEntry 인스턴스의 컬렉션입니다.
+ * @return [ChangeMessageVisibilityBatchResponse] 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.changeMessageVisibilityBatch(
     queueUrl: String,
@@ -383,7 +383,7 @@ suspend inline fun SqsClient.changeMessageVisibilityBatch(
 }
 
 /**
- * Changes message visibility in batches for [entries] in [queueUrl].
+ * [queueUrl]의 [entries]에 대해 Batch 방식으로 Visibility를 변경합니다.
  *
  * ```kotlin
  * val entry1 = ChangeMessageVisibilityBatchRequestEntry {
@@ -401,9 +401,9 @@ suspend inline fun SqsClient.changeMessageVisibilityBatch(
  * val response = sqsClient.changeMessageVisibilityBatch(queueUrl, listOf(entry1, entry2))
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue containing the messages.
- * @param entries Collection of ChangeMessageVisibilityBatchRequestEntry instances.
- * @return A [ChangeMessageVisibilityBatchResponse] instance.
+ * @param queueUrl 메시지의 Visibility를 변경할 Amazon SQS 큐의 URL입니다.
+ * @param entries ChangeMessageVisibilityBatchRequestEntry 인스턴스의 컬렉션입니다.
+ * @return [ChangeMessageVisibilityBatchResponse] 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.changeMessageVisibilityBatch(
     queueUrl: String,
@@ -419,7 +419,7 @@ suspend inline fun SqsClient.changeMessageVisibilityBatch(
 }
 
 /**
- * Deletes a message using the supplied queueUrl and receiptHandle.
+ * 제공된 queueUrl과 receiptHandle을 사용하여 메시지를 삭제합니다.
  *
  * ```kotlin
  * val response = sqsClient.deleteMessage(
@@ -428,9 +428,9 @@ suspend inline fun SqsClient.changeMessageVisibilityBatch(
  * )
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue containing the message.
- * @param receiptHandle Receipt handle associated with the message to delete.
- * @return A [DeleteMessageResponse] instance.
+ * @param queueUrl 메시지를 삭제할 Amazon SQS 큐의 URL입니다.
+ * @param receiptHandle 삭제할 메시지와 연관된 영수증 핸들입니다.
+ * @return [DeleteMessageResponse] 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.deleteMessage(
     queueUrl: String,
@@ -445,7 +445,7 @@ suspend inline fun SqsClient.deleteMessage(
 }
 
 /**
- * Deletes messages in a batch using the supplied queueUrl and entries.
+ * 제공된 queueUrl과 entries를 사용하여 메시지를 배치로 삭제합니다.
  *
  * ```kotlin
  * val response = sqsClient.deleteMessageBatch(
@@ -455,9 +455,9 @@ suspend inline fun SqsClient.deleteMessage(
  * )
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue containing the messages.
- * @param entries Collection of DeleteMessageBatchRequestEntry instances.
- * @return A [DeleteMessageBatchResponse] instance.
+ * @param queueUrl 메시지를 삭제할 Amazon SQS 큐의 URL입니다.
+ * @param entries DeleteMessageBatchRequestEntry 인스턴스의 컬렉션입니다.
+ * @return [DeleteMessageBatchResponse] 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.deleteMessageBatch(
     queueUrl: String,
@@ -473,7 +473,7 @@ suspend inline fun SqsClient.deleteMessageBatch(
 }
 
 /**
- * Deletes messages in a batch using the supplied queueUrl and entries.
+ * 제공된 queueUrl과 entries를 사용하여 메시지를 배치로 삭제합니다.
  *
  * ```kotlin
  * val entries = listOf(
@@ -486,9 +486,9 @@ suspend inline fun SqsClient.deleteMessageBatch(
  * )
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue containing the messages.
- * @param entries Collection of DeleteMessageBatchRequestEntry instances.
- * @return A [DeleteMessageBatchResponse] instance.
+ * @param queueUrl 메시지를 삭제할 Amazon SQS 큐의 URL입니다.
+ * @param entries DeleteMessageBatchRequestEntry 인스턴스의 컬렉션입니다.
+ * @return [DeleteMessageBatchResponse] 인스턴스를 반환합니다.
  */
 suspend inline fun SqsClient.deleteMessageBatch(
     queueUrl: String,

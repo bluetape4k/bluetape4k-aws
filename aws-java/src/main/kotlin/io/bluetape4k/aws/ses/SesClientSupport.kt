@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.ses.SesClientBuilder
 import software.amazon.awssdk.services.ses.endpoints.SesEndpointProvider
 
 /**
- * Builds a [sesClient].
+ * [sesClient]를 빌드합니다.
  *
  * ```kotlin
  * val client = SesClient {
@@ -32,7 +32,7 @@ inline fun sesClient(
 }
 
 /**
- * Creates a [SesClient].
+ * [SesClient]를 생성합니다.
  *
  * ```kotlin
  * val client = sesClientOf(endpointProvider) {

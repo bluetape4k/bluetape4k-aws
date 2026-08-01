@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * See the API documentation for details.
+ * 비동기 방식으로 DynamoDb Table을 생성하는 유틸리티 클래스입니다.
  *
  * ```kotlin
  * val tableCreator = DynamoDbAsyncTableCreator()
@@ -36,8 +36,8 @@ class DynamoDbAsyncTableCreator {
         provisionedThroughputOf(DEFAULT_READ_CAPACITY_UNITS, DEFAULT_WRITE_CAPACITY_UNITS)
 
     /**
-     * See the API documentation for details.
-     * See the API documentation for details.
+     * 비동기 방식으로 새로운 DynamoDb Table을 생성한다.
+     * 이미 테이블이 존재할 경우에는 생성하지 않고, 경고만 로깅합니다.
      *
      * ```kotlin
      * val tableCreator = DynamoDbAsyncTableCreator()
@@ -60,7 +60,7 @@ class DynamoDbAsyncTableCreator {
             asyncTable.createTable(request).await()
             log.info { "Table [${asyncTable.tableName()}] created." }
         } catch (e: CancellationException) {
-            // See the API documentation for details.
+            // WHY: CancellationException을 catch하면 structured concurrency가 깨지므로 반드시 재전파
             throw e
         } catch (e: Throwable) {
             val causes = generateSequence(e) { it.cause }.toList()

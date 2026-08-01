@@ -25,17 +25,17 @@ import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.CancellationException
 
 /**
- * Checks whether [bucket] exists.
+ * [bucket]의 버킷이 존재하는지 확인합니다.
  *
- * Only a missing bucket (`NoSuchBucket`/`NotFound`/HTTP `404`) is normalized to `false`.
- * Other failures, including authentication and network errors, are propagated.
+ * 존재하지 않는 버킷(`NoSuchBucket`/`NotFound`/HTTP `404`)만 `false`로 정규화하고,
+ * 인증 실패/네트워크 오류 등 다른 예외는 그대로 전파합니다.
  *
  * ```
  * val exists = s3Client.existsBucket("bucket-name")
  * ```
  *
- * @param bucket bucket name
- * @return `true` when the bucket exists, otherwise `false`
+ * @param bucket 버킷 이름
+ * @return 버킷이 존재하면 `true`, 존재하지 않으면 `false`
  */
 suspend inline fun S3Client.existsBucket(
     bucket: String,
@@ -53,8 +53,8 @@ suspend inline fun S3Client.existsBucket(
 }
 
 /**
- * Creates the bucket named [bucketName].
- * Use [builder] to customize the bucket creation request.
+ * [bucketName]의 버킷을 생성합니다.
+ * [builder] 를 통해 버킷 생성 설정을 변경할 수 있습니다.
  *
  * ```
  * s3Client.createBucket("bucket-name") {
@@ -65,9 +65,9 @@ suspend inline fun S3Client.existsBucket(
  *    }
  * }
  * ```
- * @param bucketName bucket name
- * @param builder configures the [CreateBucketRequest] through [CreateBucketRequest.Builder]
- * @return the [CreateBucketResponse]
+ * @param bucketName 버킷 이름
+ * @param builder [CreateBucketRequest.Builder] 를 통해 [CreateBucketRequest] 를 설정합니다.
+ * @return [CreateBucketResponse] 인스턴스
  */
 suspend inline fun S3Client.createBucket(
     bucketName: String,
@@ -82,13 +82,13 @@ suspend inline fun S3Client.createBucket(
 }
 
 /**
- * Creates [bucketName] when the bucket does not exist.
+ * [bucketName]의 버킷이 존재하지 않으면 생성합니다.
  *
  * ```
  * s3Client.ensureBucket("bucket-name")
  * ```
  *
- * @param bucketName bucket name
+ * @param bucketName 버킷 이름
  */
 suspend inline fun S3Client.ensureBucketExists(
     bucketName: String,
@@ -122,14 +122,14 @@ suspend inline fun S3Client.forceDeleteBucket(
     deleteAllCurrentObjects(bucket)
     deleteAllObjectVersions(bucket)
 
-    // Delete the bucket.
+    // 버킷 삭제
     log.debug { "버킷을 삭제합니다. bucket=$bucket" }
     return deleteBucket(deleteBucketRequestOf(bucket, builder = builder))
 }
 
 @PublishedApi
 internal suspend fun S3Client.deleteAllCurrentObjects(bucket: String) {
-    // Delete every object, repeating because listObjectsV2 returns at most 1,000 objects.
+    // 버킷 내 모든 Object 삭제 (listObjectsV2는 최대 1000개만 반환하므로, 모든 Object를 삭제하기 위해 반복)
     log.debug { "버킷의 모든 Object를 삭제합니다. bucket=$bucket" }
     do {
         val keys = listObjectsV2 { this.bucket = bucket }.contents?.mapNotNull { it.key } ?: emptyList()

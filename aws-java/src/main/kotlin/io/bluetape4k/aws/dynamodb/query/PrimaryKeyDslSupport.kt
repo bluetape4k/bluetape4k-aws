@@ -3,9 +3,9 @@ package io.bluetape4k.aws.dynamodb.query
 import java.io.Serializable
 
 /**
- * Class that supports `PrimaryKey` in the DSL.
+ * DSL 에서 PrimaryKey 를 지원하기 위한 클래스
  *
- * [keyName] is used as the key in `QueryRequest.keyConditions`.
+ * [keyName]은 `QueryRequest.keyConditions`의 키로 사용됩니다.
  *
  * ```kotlin
  * val pk = PrimaryKey(keyName = "userId", equals = Equals("user-1"))
@@ -20,7 +20,7 @@ data class PrimaryKey(val keyName: String = "primaryKey", val equals: Equals): S
 }
 
 /**
- * Builder class for creating a [PrimaryKey].
+ * PrimaryKey 를 생성하기 위한 빌더 클래스
  *
  * ```kotlin
  * val builder = PrimaryKeyBuilder("userId")
@@ -33,15 +33,15 @@ data class PrimaryKey(val keyName: String = "primaryKey", val equals: Equals): S
 class PrimaryKeyBuilder(val keyName: String = "primaryKey") {
     var comparator: Equals? = null
 
-    /** Creates a [PrimaryKey] from the configured comparator. */
+    /** 설정된 비교자를 기반으로 [PrimaryKey]를 생성합니다. */
     fun build(): PrimaryKey {
-        // WHY: provide a clear error when build() is called without eq(), instead of using a non-null assertion.
+        // WHY: eq() 호출 없이 build() 시 명확한 에러 메시지 제공 (non-null assertion 대신)
         val cmp = checkNotNull(comparator) { "PrimaryKeyBuilder: comparator must be set via 'eq' before build()" }
         return PrimaryKey(keyName, cmp)
     }
 }
 
-/** Sets the partition-key comparison expression to `EQ`. */
+/** 파티션 키 비교식을 `EQ`로 설정합니다. */
 infix fun PrimaryKeyBuilder.eq(value: Any) {
     comparator = Equals(value)
 }

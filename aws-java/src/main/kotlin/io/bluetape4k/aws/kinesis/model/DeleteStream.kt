@@ -4,7 +4,7 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kinesis.model.DeleteStreamRequest
 
 /**
- * Builds a [DeleteStreamRequest] with a DSL block.
+ * DSL 블록으로 [DeleteStreamRequest]를 빌드합니다.
  *
  * ```kotlin
  * val req = deleteStreamRequest {
@@ -18,10 +18,10 @@ inline fun deleteStreamRequest(
     DeleteStreamRequest.builder().apply(builder).build()
 
 /**
- * Creates a [DeleteStreamRequest] from a stream name.
+ * 스트림 이름으로 [DeleteStreamRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [streamName] is blank.
+ * ## 동작/계약
+ * - [streamName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val req = deleteStreamRequestOf("my-stream")

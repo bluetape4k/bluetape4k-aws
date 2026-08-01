@@ -4,7 +4,7 @@ import aws.sdk.kotlin.services.s3.model.GetObjectAclRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a [GetObjectAclRequest] for the ACL of the object at [key] in [bucket].
+ * [bucket]의 [key]에 해당하는 객체의 ACL 조회 요청인 [GetObjectAclRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = getObjectAclRequestOf(
@@ -14,10 +14,10 @@ import io.bluetape4k.support.requireNotBlank
  * val response = s3Client.getObjectAcl(request)
  * ```
  *
- * @param bucket bucket name
- * @param key object key
- * @param versionId specific version ID; when null, uses the latest version
- * @return the [GetObjectAclRequest]
+ * @param bucket 버킷 이름
+ * @param key 객체 키
+ * @param versionId 특정 버전 ID (null이면 최신 버전)
+ * @return [GetObjectAclRequest] 인스턴스
  */
 inline fun getObjectAclRequestOf(
     bucket: String,

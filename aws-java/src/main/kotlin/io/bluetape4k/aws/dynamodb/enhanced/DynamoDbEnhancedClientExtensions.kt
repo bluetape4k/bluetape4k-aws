@@ -30,17 +30,17 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.table(tableName: String): Dyn
 }
 
 /**
- * Splits large item writes into chunks of up to [DynamoDb.MAX_BATCH_ITEM_SIZE].
+ * 대량의 Item 을 저장할 때, [DynamoDb.MAX_BATCH_ITEM_SIZE] 만큼의 크기로 나누어 저장한다.
  *
- * As verified by the same logic in `EnhancedAsyncClientExtensionsTest`, when `items=30` and `chunkSize=25`,
- * the result collection size is `2`.
+ * `EnhancedAsyncClientExtensionsTest`의 동일 로직 검증 기준과 같이, `items=30`, `chunkSize=25`이면
+ * 결과 컬렉션 크기는 `2`가 된다.
  *
  * @param T  entity type
  * @param itemClass entity class
  * @param table [MappedTableResource] instance
- * @param items Item collection to store.
- * @param chunkSize Must be no greater than [DynamoDb.MAX_BATCH_ITEM_SIZE] (1..25).
- * @return [BatchWriteResult] collection.
+ * @param items 저장할 item 컬렉션
+ * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
+ * @return [BatchWriteResult] 컬렉션
  */
 fun <T: Any> DynamoDbEnhancedClient.batchWriteItems(
     itemClass: Class<T>,
@@ -61,7 +61,7 @@ fun <T: Any> DynamoDbEnhancedClient.batchWriteItems(
 }
 
 /**
- * Splits large item writes into chunks of up to [DynamoDb.MAX_BATCH_ITEM_SIZE].
+ * 대량의 Item 을 저장할 때, [DynamoDb.MAX_BATCH_ITEM_SIZE] 만큼의 크기로 나누어 저장한다.
  *
  * ```kotlin
  * val results = enhancedClient.batchWriteItems(table, items, chunkSize = 10)
@@ -70,9 +70,9 @@ fun <T: Any> DynamoDbEnhancedClient.batchWriteItems(
  *
  * @param T entity type
  * @param table [MappedTableResource] instance
- * @param items Item collection to store.
- * @param chunkSize Must be no greater than [DynamoDb.MAX_BATCH_ITEM_SIZE] (1..25).
- * @return [BatchWriteResult] collection.
+ * @param items 저장할 item 컬렉션
+ * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
+ * @return [BatchWriteResult] 컬렉션
  */
 inline fun <reified T: Any> DynamoDbEnhancedClient.batchWriteItems(
     table: MappedTableResource<T>,

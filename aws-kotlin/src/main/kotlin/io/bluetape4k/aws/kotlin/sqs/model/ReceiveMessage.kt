@@ -16,7 +16,7 @@ internal const val MIN_WAIT_TIME_SECONDS = 0
 internal const val MAX_WAIT_TIME_SECONDS = 20
 
 /**
- * Creates a ReceiveMessageRequest from queueUrl, maxNumber, waitTimeSeconds, and attributeNames.
+ * queueUrl, maxNumber, waitTimeSeconds, attributeNames를 사용하여 ReceiveMessageRequest를 생성합니다.
  *
  * ```kotlin
  * import aws.sdk.kotlin.services.sqs.SqsClient
@@ -28,7 +28,7 @@ internal const val MAX_WAIT_TIME_SECONDS = 20
  *         maxNumberOfMessages = 5,
  *         waitTimeSeconds = 10
  *     ) {
- *         receiveRequestAttemptId = "attempt-001"  // Prevents duplicate delivery during FIFO queue retries.
+ *         receiveRequestAttemptId = "attempt-001"  // FIFO 큐 재시도 중복 수신 방지에 사용
  *     }
  *     val response = sqsClient.receiveMessage(request)
  *     val messages = response.messages
@@ -36,13 +36,13 @@ internal const val MAX_WAIT_TIME_SECONDS = 20
  * }
  * ```
  *
- * @param queueUrl URL of the Amazon SQS queue from which to receive messages.
- * @param maxNumberOfMessages Maximum number of messages to receive at once. Defaults to 3 and must be in 1..10.
- * @param waitTimeSeconds Seconds to wait when no message is available. Defaults to 20 and must be in 0..20.
- * @param visibilityTimeout Seconds to hide a message while it is being processed. Defaults to null.
- * @param attributeNames Names of message attributes to receive. Defaults to null.
- * @param builder Lambda for initializing ReceiveMessageRequest.Builder. Defaults to an empty lambda.
- * @return A ReceiveMessageRequest instance.
+ * @param queueUrl 메시지를 수신할 Amazon SQS 큐의 URL입니다.
+ * @param maxNumberOfMessages 한 번에 수신할 최대 메시지 수입니다. 기본값은 3입니다. 허용 범위는 1..10 입니다.
+ * @param waitTimeSeconds 메시지가 없을 경우 대기할 시간(초)입니다. 기본값은 20초입니다. 허용 범위는 0..20 입니다.
+ * @param visibilityTimeout 메시지를 처리하는 동안 숨겨진 시간(초)입니다. 기본값은 null입니다.
+ * @param attributeNames 수신할 메시지의 속성 이름 컬렉션입니다. 기본값은 null입니다.
+ * @param builder ReceiveMessageRequest.Builder를 초기화하는 람다입니다. 기본값은 빈 람다입니다.
+ * @return ReceiveMessageRequest 인스턴스를 반환합니다.
  */
 inline fun receiveMessageRequestOf(
     queueUrl: String,

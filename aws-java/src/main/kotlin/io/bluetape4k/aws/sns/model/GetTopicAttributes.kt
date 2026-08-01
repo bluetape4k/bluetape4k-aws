@@ -5,10 +5,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.GetTopicAttributesRequest
 
 /**
- * Builds a [GetTopicAttributesRequest] with a DSL block.
+ * DSL 블록으로 [GetTopicAttributesRequest]를 빌드합니다.
  *
- * ## Behavior/Contract
- * - Sets `topicArn` and other fields directly in the [builder] block.
+ * ## 동작/계약
+ * - [builder] 블록에서 `topicArn` 등을 직접 설정한다.
  *
  * ```kotlin
  * val req = getTopicAttributesRequest {
@@ -22,10 +22,10 @@ inline fun getTopicAttributesRequest(
     GetTopicAttributesRequest.builder().apply(builder).build()
 
 /**
- * Creates a [GetTopicAttributesRequest] from a topic ARN.
+ * 토픽 ARN으로 [GetTopicAttributesRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [topicArn] is non-null and blank.
+ * ## 동작/계약
+ * - [topicArn]이 non-null이면서 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val req = getTopicAttributesRequestOf("arn:aws:sns:ap-northeast-2:123456:my-topic")

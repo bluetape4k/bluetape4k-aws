@@ -12,7 +12,7 @@ import aws.sdk.kotlin.services.cloudwatch.putMetricData
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Publishes [metricData] to CloudWatch under [namespace].
+ * [namespace]에 [metricData] 목록을 CloudWatch에 게시합니다.
  *
  * ```kotlin
  * val response = cloudWatchClient.putMetricData(
@@ -21,10 +21,10 @@ import io.bluetape4k.support.requireNotBlank
  * )
  * ```
  *
- * @param namespace CloudWatch namespace
- * @param metricData metric data to publish
- * @param builder additional configuration for [PutMetricDataRequest.Builder]
- * @return the [PutMetricDataResponse]
+ * @param namespace CloudWatch 네임스페이스
+ * @param metricData 게시할 메트릭 데이터 목록
+ * @param builder [PutMetricDataRequest.Builder]에 대한 추가 설정 람다
+ * @return [PutMetricDataResponse] 인스턴스
  */
 suspend inline fun CloudWatchClient.putMetricData(
     namespace: String,
@@ -40,7 +40,7 @@ suspend inline fun CloudWatchClient.putMetricData(
 }
 
 /**
- * Publishes a single [metricDatum] to CloudWatch under [namespace].
+ * [namespace]에 단일 [metricDatum]을 CloudWatch에 게시합니다.
  *
  * ```kotlin
  * val response = cloudWatchClient.putMetricData(
@@ -49,10 +49,10 @@ suspend inline fun CloudWatchClient.putMetricData(
  * )
  * ```
  *
- * @param namespace CloudWatch namespace
- * @param metricDatum metric datum to publish
- * @param builder additional configuration for [PutMetricDataRequest.Builder]
- * @return the [PutMetricDataResponse]
+ * @param namespace CloudWatch 네임스페이스
+ * @param metricDatum 게시할 단일 메트릭 데이터
+ * @param builder [PutMetricDataRequest.Builder]에 대한 추가 설정 람다
+ * @return [PutMetricDataResponse] 인스턴스
  */
 suspend inline fun CloudWatchClient.putMetricData(
     namespace: String,
@@ -64,18 +64,18 @@ suspend inline fun CloudWatchClient.putMetricData(
 }
 
 /**
- * Lists CloudWatch metrics using namespace and filter criteria.
+ * 네임스페이스 및 필터 조건으로 CloudWatch 메트릭 목록을 조회합니다.
  *
  * ```kotlin
  * val response = cloudWatchClient.listMetrics(namespace = "MyApp/Performance")
  * response.metrics?.forEach { metric -> println(metric.metricName) }
  * ```
  *
- * @param namespace namespace to query; when null, queries all namespaces
- * @param metricName metric name to query; when null, does not filter by name
- * @param dimensions dimension filters; when null, does not filter by dimensions
- * @param builder additional configuration for [ListMetricsRequest.Builder]
- * @return the [ListMetricsResponse]
+ * @param namespace 조회할 네임스페이스. null이면 전체 조회합니다.
+ * @param metricName 조회할 메트릭 이름. null이면 필터하지 않습니다.
+ * @param dimensions 조회할 dimensions 필터. null이면 필터하지 않습니다.
+ * @param builder [ListMetricsRequest.Builder]에 대한 추가 설정 람다
+ * @return [ListMetricsResponse] 인스턴스
  */
 suspend inline fun CloudWatchClient.listMetrics(
     namespace: String? = null,

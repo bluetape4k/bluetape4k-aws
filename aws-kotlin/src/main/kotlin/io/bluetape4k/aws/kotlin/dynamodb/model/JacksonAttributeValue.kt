@@ -5,13 +5,13 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.databind.node.JsonNodeType
 
 /**
- * Converts a Jackson [JsonNode] into a DynamoDB [AttributeValue].
+ * Jackson의 [JsonNode]를 DynamoDB [AttributeValue]로 변환합니다.
  *
- * ## Behavior and contract
- * - NULL nodes convert to `AttributeValue.Null(true)`.
- * - BOOLEAN, NUMBER, and STRING nodes convert to their matching [AttributeValue] scalar types.
- * - ARRAY nodes convert to `AttributeValue.L`; OBJECT and POJO nodes convert to `AttributeValue.M`.
- * - Unsupported node types throw `IllegalStateException`.
+ * ## 동작/계약
+ * - NULL 노드는 `AttributeValue.Null(true)`로 변환된다.
+ * - BOOLEAN/NUMBER/STRING 노드는 각각 대응하는 [AttributeValue] 스칼라 타입으로 변환된다.
+ * - ARRAY 노드는 `AttributeValue.L` (리스트)으로, OBJECT/POJO 노드는 `AttributeValue.M` (맵)으로 변환된다.
+ * - 지원하지 않는 노드 타입은 `IllegalStateException`을 던진다.
  *
  * ```kotlin
  * val node: JsonNode = ObjectMapper().readTree("""{"name":"Alice","age":30}""")
@@ -20,7 +20,7 @@ import tools.jackson.databind.node.JsonNodeType
  * // (av as AttributeValue.M).value["name"] == AttributeValue.S("Alice")
  * ```
  *
- * @throws IllegalStateException when the [JsonNodeType] is unsupported.
+ * @throws IllegalStateException 지원하지 않는 [JsonNodeType]인 경우
  */
 fun JsonNode.toAttributeValue(): AttributeValue =
     when (this.nodeType) {

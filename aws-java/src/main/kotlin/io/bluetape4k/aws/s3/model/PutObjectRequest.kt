@@ -4,9 +4,9 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 
 /**
- * See the API documentation for details.
+ * [bucket], [key] 기반 [PutObjectRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = putObjectRequest("demo-bucket", "docs/readme.txt") { contentType("text/plain") }
  * // result.contentType() == "text/plain"
@@ -28,9 +28,9 @@ inline fun putObjectRequest(
 }
 
 /**
- * See the API documentation for details.
+ * 선택 속성([acl], [contentType])을 포함해 [PutObjectRequest]를 생성합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = putObjectRequestOf("demo-bucket", "docs/readme.txt", contentType = "text/plain")
  * // result.bucket() == "demo-bucket"

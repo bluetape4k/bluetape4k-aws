@@ -13,25 +13,25 @@ import kotlinx.coroutines.flow.buffer
 import java.io.Serializable
 
 /**
- * Executes DynamoDB batch put and delete operations with the AWS SDK for Kotlin.
+ * AWS Kotlin SDK를 사용해 DynamoDB에 배치 작업(Put/Delete)을 수행하는 Executor입니다.
  *
- * ## Behavior / Contract
- * - Splits work into [MAX_BATCH_ITEM_SIZE] chunks and calls `BatchWriteItem`.
- * - Recursively retries unprocessed items up to [maxUnprocessedRetry].
- * - Applies a [Retry] policy for transient failures such as throttling.
+ * ## 동작/계약
+ * - 내부적으로 25개([MAX_BATCH_ITEM_SIZE]) 단위로 청크를 나눠 BatchWriteItem을 호출한다.
+ * - 미처리 항목은 [maxUnprocessedRetry] 한도 내에서 재귀적으로 재시도한다.
+ * - [Retry]를 통해 일시적 오류(ThrottlingException 등)에 대한 재시도 정책을 적용한다.
  *
  * ```kotlin
  * val executor = DynamoDbBatchExecutor<Order>(client)
  * executor.putAll("orders", orders, OrderMapper())
  * ```
  *
- * @param T Entity type handled by the batch operation.
- * @param client AWS SDK for Kotlin [DynamoDbClient] instance.
- * @param retry Resilience4j [Retry] policy. Defaults to `"dynamo-batch"`.
- * @param maxUnprocessedRetry Maximum retry count for unprocessed items. Defaults to 10.
+ * @param T 배치 작업 대상 엔티티 타입
+ * @param client AWS Kotlin SDK [DynamoDbClient] 인스턴스
+ * @param retry Resilience4j [Retry] 정책 (기본: "dynamo-batch" 기본 설정)
+ * @param maxUnprocessedRetry 미처리 항목 재시도 최대 횟수 (기본: 10)
  */
-// WHY: Methods are suspend functions and should use the caller's coroutine context.
-// A private SupervisorJob-backed scope can survive callers and leak resources.
+// WHY: CoroutineScope 위임 제거 — 모든 메서드가 suspend이므로 호출자의 코루틴 컨텍스트를 사용하며,
+// 독립 scope가 존재할 경우 SupervisorJob이 취소되지 않아 리소스 누수가 발생할 수 있다.
 class DynamoDbBatchExecutor<T: Any>(
     private val client: DynamoDbClient,
     private val retry: Retry = Retry.ofDefaults("dynamo-batch"),
@@ -40,10 +40,10 @@ class DynamoDbBatchExecutor<T: Any>(
     companion object: KLoggingChannel()
 
     /**
-     * Batch work item that pairs a table name with a [WriteRequest].
+     * 테이블 이름과 [WriteRequest]를 묶는 배치 작업 단위입니다.
      *
-     * @property tableName DynamoDB table name.
-     * @property writeRequest Write request to execute.
+     * @property tableName DynamoDB 테이블 이름
+     * @property writeRequest 실행할 쓰기 요청
      */
     data class TableItemTuple(
         val tableName: String,
@@ -55,10 +55,10 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * Retry state containing unprocessed items and the current attempt number.
+     * 미처리 항목과 현재 시도 횟수를 보관하는 데이터 클래스입니다.
      *
-     * @property attempt Current attempt number, starting at 1.
-     * @property items [TableItemTuple] values to retry.
+     * @property attempt 현재 시도 횟수 (1부터 시작)
+     * @property items 재시도할 [TableItemTuple] 목록
      */
     data class RetryablePut(
         val attempt: Int,
@@ -70,19 +70,19 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * Stores attribute maps in [tableName] with DynamoDB batch put requests.
+     * 속성 맵 목록을 [tableName] 테이블에 Batch Put으로 저장합니다.
      *
-     * ## Behavior / Contract
-     * - Puts items that are already mapped to `Map<String, AttributeValue>`.
-     * - Splits items into 25-item chunks and executes `BatchWriteItem`.
+     * ## 동작/계약
+     * - 이미 `Map<String, AttributeValue>`로 변환된 아이템을 직접 Put한다.
+     * - 25개 단위로 청크를 나눠 BatchWriteItem을 실행한다.
      *
      * ```kotlin
      * val items = listOf(mapOf("id" to AttributeValue.S("1")))
      * executor.putAll("users", items)
      * ```
      *
-     * @param tableName DynamoDB table name to store items in.
-     * @param items DynamoDB attribute maps to store.
+     * @param tableName 저장할 DynamoDB 테이블 이름
+     * @param items 저장할 DynamoDB 속성 맵 목록
      */
     suspend fun putAll(
         tableName: String,
@@ -102,19 +102,19 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * Maps [items] with [mapper] and stores them in [tableName] with batch put requests.
+     * [mapper]로 변환한 [items]를 [tableName] 테이블에 Batch Put으로 저장합니다.
      *
-     * ## Behavior / Contract
-     * - [mapper] converts each entity to `Map<String, AttributeValue>`.
-     * - Splits items into 25-item chunks and executes `BatchWriteItem`.
+     * ## 동작/계약
+     * - [mapper]가 각 엔티티를 `Map<String, AttributeValue>`로 변환한다.
+     * - 25개 단위 청크로 분할해 BatchWriteItem을 실행한다.
      *
      * ```kotlin
      * executor.putAll("orders", listOf(order1, order2), OrderMapper())
      * ```
      *
-     * @param tableName DynamoDB table name to store items in.
-     * @param items Entities to store.
-     * @param mapper [DynamoItemMapper] that maps entities to DynamoDB attribute maps.
+     * @param tableName 저장할 DynamoDB 테이블 이름
+     * @param items 저장할 엔티티 목록
+     * @param mapper 엔티티를 DynamoDB 속성 맵으로 변환하는 [DynamoItemMapper]
      */
     suspend fun putAll(
         tableName: String,
@@ -135,19 +135,19 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * Deletes [items] from [tableName] with keys extracted by [primaryKeySelector].
+     * [primaryKeySelector]로 추출한 키를 기준으로 [items]를 [tableName] 테이블에서 Batch 삭제합니다.
      *
-     * ## Behavior / Contract
-     * - [primaryKeySelector] extracts the key attribute map for each entity.
-     * - Splits items into 25-item chunks and executes `BatchWriteItem` delete requests.
+     * ## 동작/계약
+     * - [primaryKeySelector] 람다로 각 엔티티의 파티션 키를 추출한다.
+     * - 25개 단위 청크로 분할해 BatchWriteItem Delete를 실행한다.
      *
      * ```kotlin
      * executor.deleteAll("orders", orders) { mapOf("id" to AttributeValue.S(it.id)) }
      * ```
      *
-     * @param tableName DynamoDB table name to delete items from.
-     * @param items Entities to delete.
-     * @param primaryKeySelector Function that extracts a DynamoDB key map from an entity.
+     * @param tableName 삭제할 DynamoDB 테이블 이름
+     * @param items 삭제할 엔티티 목록
+     * @param primaryKeySelector 엔티티에서 DynamoDB 키 맵을 추출하는 함수
      */
     suspend fun deleteAll(
         tableName: String,
@@ -168,19 +168,19 @@ class DynamoDbBatchExecutor<T: Any>(
     }
 
     /**
-     * Deletes [items] from [tableName] with keys extracted by [primaryKeyMapper].
+     * [primaryKeyMapper]로 추출한 키를 기준으로 [items]를 [tableName] 테이블에서 Batch 삭제합니다.
      *
-     * ## Behavior / Contract
-     * - [primaryKeyMapper] returns the key attribute map for each entity.
-     * - Splits items into 25-item chunks and executes `BatchWriteItem` delete requests.
+     * ## 동작/계약
+     * - [primaryKeyMapper]가 각 엔티티의 키 속성 맵을 반환한다.
+     * - 25개 단위 청크로 분할해 BatchWriteItem Delete를 실행한다.
      *
      * ```kotlin
      * executor.deleteAll("orders", orders, OrderKeyMapper())
      * ```
      *
-     * @param tableName DynamoDB table name to delete items from.
-     * @param items Entities to delete.
-     * @param primaryKeyMapper [DynamoItemMapper] that extracts a DynamoDB key attribute map.
+     * @param tableName 삭제할 DynamoDB 테이블 이름
+     * @param items 삭제할 엔티티 목록
+     * @param primaryKeyMapper 엔티티에서 DynamoDB 키 속성 맵을 추출하는 [DynamoItemMapper]
      */
     suspend fun deleteAll(
         tableName: String,

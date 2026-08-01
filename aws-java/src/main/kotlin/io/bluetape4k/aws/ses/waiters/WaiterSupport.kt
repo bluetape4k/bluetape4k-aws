@@ -5,7 +5,7 @@ import software.amazon.awssdk.retries.api.BackoffStrategy
 import java.time.Duration
 
 /**
- * Builds [WaiterOverrideConfiguration] with a DSL block.
+ * DSL 블록으로 [WaiterOverrideConfiguration]을 빌드합니다.
  *
  * ```kotlin
  * val cfg = waiterOverrideConfiguration {
@@ -20,11 +20,11 @@ fun waiterOverrideConfiguration(
     WaiterOverrideConfiguration.builder().apply(builder).build()
 
 /**
- * Creates [WaiterOverrideConfiguration] with defaults.
+ * 기본값으로 [WaiterOverrideConfiguration]을 생성합니다.
  *
- * ## Behavior and contract
- * - [maxAttempts] defaults to 3 and [waitTimeout] defaults to 5 seconds.
- * - [backoffStrategy] defaults to a fixed 10 ms delay.
+ * ## 동작/계약
+ * - [maxAttempts] 기본값은 3, [waitTimeout] 기본값은 5초이다.
+ * - [backoffStrategy] 기본값은 10ms 고정 지연이다.
  *
  * ```kotlin
  * val cfg = waiterOverrideConfigurationOf(maxAttempts = 5, waitTimeout = Duration.ofSeconds(10))

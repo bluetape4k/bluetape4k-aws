@@ -8,10 +8,10 @@ import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
 
 /**
- * Publishes [metricData] to CloudWatch under [namespace] with coroutines.
+ * [namespace]에 [metricData] 목록을 CloudWatch에 코루틴으로 게시합니다.
  *
- * ## Behavior/Contract
- * - Internally calls [putMetricDataAsync] and waits for completion with `await()`.
+ * ## 동작/계약
+ * - 내부적으로 [putMetricDataAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
  *
  * ```kotlin
  * val response = cloudWatchAsyncClient.putMetricData(
@@ -27,10 +27,10 @@ suspend fun CloudWatchAsyncClient.putMetricData(
     putMetricDataAsync(namespace, metricData).await()
 
 /**
- * Publishes a single [metricDatum] to CloudWatch under [namespace] with coroutines.
+ * [namespace]에 단일 [metricDatum]을 CloudWatch에 코루틴으로 게시합니다.
  *
- * ## Behavior/Contract
- * - Internally calls [putMetricDataAsync] and waits for completion with `await()`.
+ * ## 동작/계약
+ * - 내부적으로 [putMetricDataAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
  *
  * ```kotlin
  * val response = cloudWatchAsyncClient.putMetricData(
@@ -46,10 +46,10 @@ suspend fun CloudWatchAsyncClient.putMetricData(
     putMetricDataAsync(namespace, metricDatum).await()
 
 /**
- * Lists metrics in [namespace] with coroutines.
+ * [namespace]의 메트릭 목록을 코루틴으로 조회합니다.
  *
- * ## Behavior/Contract
- * - Internally calls [listMetricsAsync] and waits for completion with `await()`.
+ * ## 동작/계약
+ * - 내부적으로 [listMetricsAsync]를 호출한 뒤 `await()`로 완료를 기다린다.
  *
  * ```kotlin
  * val response = cloudWatchAsyncClient.listMetrics(namespace = "MyApp/Performance")

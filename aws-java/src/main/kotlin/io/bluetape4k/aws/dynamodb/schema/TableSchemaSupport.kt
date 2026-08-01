@@ -4,13 +4,13 @@ import io.bluetape4k.aws.dynamodb.model.DynamoDbEntity
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema
 
 /**
- * See the API documentation for details.
+ * [DynamoDbEntity]를 상속받은 Entity에 대한 Table Schema를 가져옵니다.
  *
  * ```kotlin
  * val schema = getTableSchema<FoodDocument>()
  * ```
  *
- * @return Return value.
+ * @return [TableSchema] 인스턴스
  */
 inline fun <reified T: DynamoDbEntity> getTableSchema(): TableSchema<T> =
     TableSchema.fromClass(T::class.java)

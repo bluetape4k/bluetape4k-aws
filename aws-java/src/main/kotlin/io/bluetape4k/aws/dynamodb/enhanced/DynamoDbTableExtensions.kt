@@ -9,11 +9,11 @@ import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional
 
 /**
- * Gets an item by key.
+ * Key로 아이템을 조회합니다.
  *
- * @param partitionValue Partition key value.
- * @param sortValue Sort key value (optional).
- * @return Retrieved item, or null.
+ * @param partitionValue 파티션 키 값
+ * @param sortValue 정렬 키 값 (옵션)
+ * @return 조회된 아이템 또는 null
  *
  * ```kotlin
  * val item = table.getItem(partitionValue = "user-1")
@@ -27,11 +27,11 @@ inline fun <T: Any> DynamoDbTable<T>.getItem(
     getItem(keyOf(partitionValue, sortValue))
 
 /**
- * Deletes an item.
+ * 아이템을 삭제합니다.
  *
- * @param partitionValue Partition key value.
- * @param sortValue Sort key value (optional).
- * @return Deleted item.
+ * @param partitionValue 파티션 키 값
+ * @param sortValue 정렬 키 값 (옵션)
+ * @return 삭제된 아이템
  *
  * ```kotlin
  * val deleted = table.deleteItem(partitionValue = "user-1")
@@ -60,9 +60,9 @@ inline fun <T: Any> DynamoDbTable<T>.deleteItem(
 }
 
 /**
- * Retrieves all items with a scan.
+ * 모든 아이템을 조회합니다 (스캔).
  *
- * @return List of all items.
+ * @return 모든 아이템 리스트
  *
  * ```kotlin
  * val items = table.findAll()
@@ -72,10 +72,10 @@ inline fun <T: Any> DynamoDbTable<T>.deleteItem(
 fun <T> DynamoDbTable<T>.findAll(): List<T> = scan().items().toList()
 
 /**
- * Retrieves all items in a specific partition.
+ * 특정 파티션의 모든 아이템을 조회합니다.
  *
- * @param partitionValue Partition key value.
- * @return Item list.
+ * @param partitionValue 파티션 키 값
+ * @return 아이템 리스트
  *
  * ```kotlin
  * val items = table.findByPartition("user-1")
@@ -88,11 +88,11 @@ fun <T: Any> DynamoDbTable<T>.findByPartition(partitionValue: String): List<T> {
 }
 
 /**
- * Checks whether an item exists.
+ * 아이템이 존재하는지 확인합니다.
  *
- * @param partitionValue Partition key value.
- * @param sortValue Sort key value (optional).
- * @return true when the item exists.
+ * @param partitionValue 파티션 키 값
+ * @param sortValue 정렬 키 값 (옵션)
+ * @return 존재하면 true
  *
  * ```kotlin
  * val exists = table.exists(partitionValue = "user-1")
@@ -105,9 +105,9 @@ inline fun <T: Any> DynamoDbTable<T>.exists(
 ): Boolean = getItem(partitionValue, sortValue) != null
 
 /**
- * Converts results to a List.
+ * 결과를 List로 변환합니다.
  *
- * @return List of all items.
+ * @return 모든 아이템 리스트
  *
  * ```kotlin
  * val items = pageIterable.toList()

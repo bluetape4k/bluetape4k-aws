@@ -6,7 +6,7 @@ import aws.sdk.kotlin.services.ses.model.SendEmailRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a [SendEmailRequest] from a source address, destination, and message.
+ * 발신자 주소, 수신자, 메시지로 [SendEmailRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = sendEmailRequestOf(
@@ -16,10 +16,10 @@ import io.bluetape4k.support.requireNotBlank
  * )
  * ```
  *
- * @param source sender email address. It must not be blank.
- * @param destination recipient [Destination].
- * @param message [Message] to send.
- * @return [SendEmailRequest] instance.
+ * @param source 발신자 이메일 주소 (비어 있으면 안 됨)
+ * @param destination 수신자 [Destination]
+ * @param message 전송할 [Message]
+ * @return [SendEmailRequest] 인스턴스
  */
 inline fun sendEmailRequestOf(
     source: String,

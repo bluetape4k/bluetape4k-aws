@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.ses.model.MessageTag
 import java.nio.charset.Charset
 
 /**
- * Creates a [message] instance with [Message.Builder].
+ * [Message.Builder]를 사용하여 [message] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val message = Message {
@@ -28,8 +28,8 @@ import java.nio.charset.Charset
  * }
  * ```
  *
- * @param builder [Message.Builder] initialization lambda.
- * @return [message] instance.
+ * @param builder [Message.Builder] 초기화 람다
+ * @return [message] 인스턴스
  */
 inline fun message(
     builder: Message.Builder.() -> Unit,
@@ -38,7 +38,7 @@ inline fun message(
 }
 
 /**
- * Creates a [Message] instance.
+ * [Message] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val message = messageOf(
@@ -47,9 +47,9 @@ inline fun message(
  * )
  * ```
  *
- * @param subject [Content] subject.
- * @param body [Body] body.
- * @return [Message] instance.
+ * @param subject [Content] 제목
+ * @param body [Body] 본문
+ * @return [Message] 인스턴스
  */
 fun messageOf(
     subject: Content,
@@ -60,7 +60,7 @@ fun messageOf(
 }
 
 /**
- * Creates a [body] instance with [Body.Builder].
+ * [Body.Builder]를 이용하여 [body] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val body = Body {
@@ -73,8 +73,8 @@ fun messageOf(
  * }
  * ```
  *
- * @param builder [Body.Builder] initialization lambda.
- * @return [body] instance.
+ * @param builder [Body.Builder] 초기화 람다
+ * @return [body] 인스턴스
  */
 inline fun body(
     builder: Body.Builder.() -> Unit,
@@ -82,16 +82,16 @@ inline fun body(
     Body.builder().apply(builder).build()
 
 /**
- * Creates a [Body] instance.
+ * [Body] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val body = bodyOf("Hello", "<p>Hello</p>", Charsets.UTF_8)
  * ```
  *
- * @param text [String] text body.
- * @param html [String] HTML body.
- * @param charset [Charset] charset.
- * @return [Body] instance.
+ * @param text [String] 텍스트 본문
+ * @param html [String] HTML 본문
+ * @param charset [Charset] 문자셋
+ * @return [Body] 인스턴스
  */
 fun bodyOf(
     text: String,
@@ -103,15 +103,15 @@ fun bodyOf(
 }
 
 /**
- * Creates a text [Body] instance.
+ * Text [Body] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val body = bodyOf("Hello", Charsets.UTF_8)
  * ```
  *
- * @param text [String] text body.
- * @param charset [Charset] charset.
- * @return [Body] instance.
+ * @param text [String] 텍스트 본문
+ * @param charset [Charset] 문자셋
+ * @return [Body] 인스턴스
  */
 fun bodyAsText(
     text: String,
@@ -121,15 +121,15 @@ fun bodyAsText(
 }
 
 /**
- * Creates an HTML [Body] instance.
+ * HTML [Body] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val body = bodyOf("<p>Hello</p>", Charsets.UTF_8)
  * ```
  *
- * @param html [String] HTML body.
- * @param charset [Charset] charset.
- * @return [Body] instance.
+ * @param html [String] HTML 본문
+ * @param charset [Charset] 문자셋
+ * @return [Body] 인스턴스
  */
 fun bodyAsHtml(
     html: String,
@@ -139,7 +139,7 @@ fun bodyAsHtml(
 }
 
 /**
- * Creates a [content] instance with [Content.Builder].
+ * [Content.Builder]를 이용하여 [content] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val content = Content {
@@ -148,8 +148,8 @@ fun bodyAsHtml(
  * }
  * ```
  *
- * @param builder [Content.Builder] initialization lambda.
- * @return [content] instance.
+ * @param builder [Content.Builder] 초기화 람다
+ * @return [content] 인스턴스
  */
 inline fun content(
     builder: Content.Builder.() -> Unit,
@@ -158,15 +158,15 @@ inline fun content(
 }
 
 /**
- * Creates a [Content] instance.
+ * [Content] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val content = contentOf("Hello", Charsets.UTF_8)
  * ```
  *
- * @param data [String] data.
- * @param charset [Charset] charset.
- * @return [Content] instance.
+ * @param data [String] 데이터
+ * @param charset [Charset] 문자셋
+ * @return [Content] 인스턴스
  */
 fun contentOf(data: String? = null, charset: Charset = Charsets.UTF_8) = content {
     data?.let { data(it) }
@@ -174,7 +174,7 @@ fun contentOf(data: String? = null, charset: Charset = Charsets.UTF_8) = content
 }
 
 /**
- * Creates a [messageTag] instance with [MessageTag.Builder].
+ * [MessageTag.Builder]를 이용하여 [messageTag] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val messageTag = messageTag {
@@ -183,8 +183,8 @@ fun contentOf(data: String? = null, charset: Charset = Charsets.UTF_8) = content
  * }
  * ```
  *
- * @param builder [MessageTag.Builder] initialization lambda.
- * @return [messageTag] instance.
+ * @param builder [MessageTag.Builder] 초기화 람다
+ * @return [messageTag] 인스턴스
  */
 inline fun messageTag(
     builder: MessageTag.Builder.() -> Unit,
@@ -193,15 +193,15 @@ inline fun messageTag(
 }
 
 /**
- * Creates a [MessageTag] instance.
+ * [MessageTag] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val messageTag = messageTagOf("key", "value")
  * ```
  *
- * @param name [String] tag name.
- * @param value [String] tag value.
- * @return [MessageTag] instance.
+ * @param name [String] 태그 이름
+ * @param value [String] 태그 값
+ * @return [MessageTag] 인스턴스
  */
 fun messageTagOf(
     name: String,

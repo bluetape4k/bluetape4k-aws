@@ -4,14 +4,14 @@ import aws.sdk.kotlin.services.ses.model.Destination
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * Creates a [Destination] from recipient addresses.
+ * 수신자 주소 목록으로 [Destination]을 생성합니다.
  *
  * ```kotlin
  * val dest = destinationOf("user1@example.com", "user2@example.com")
  * ```
  *
- * @param toAddresses recipient (TO) email addresses. At least one address is required.
- * @return [Destination] instance.
+ * @param toAddresses 수신자(TO) 이메일 주소 목록 (최소 1개 이상 필요)
+ * @return [Destination] 인스턴스
  */
 inline fun destinationOf(
     vararg toAddresses: String,
@@ -27,7 +27,7 @@ inline fun destinationOf(
 }
 
 /**
- * Creates a [Destination] from TO, CC, and BCC recipient address lists.
+ * TO/CC/BCC 수신자 주소 목록으로 [Destination]을 생성합니다.
  *
  * ```kotlin
  * val dest = destinationOf(
@@ -36,10 +36,10 @@ inline fun destinationOf(
  * )
  * ```
  *
- * @param toAddresses recipient (TO) email addresses.
- * @param ccAddresses carbon copy (CC) email addresses.
- * @param bccAddresses blind carbon copy (BCC) email addresses.
- * @return [Destination] instance.
+ * @param toAddresses 수신자(TO) 이메일 주소 목록
+ * @param ccAddresses 참조(CC) 이메일 주소 목록
+ * @param bccAddresses 숨은 참조(BCC) 이메일 주소 목록
+ * @return [Destination] 인스턴스
  */
 inline fun destinationOf(
     toAddresses: List<String>? = null,

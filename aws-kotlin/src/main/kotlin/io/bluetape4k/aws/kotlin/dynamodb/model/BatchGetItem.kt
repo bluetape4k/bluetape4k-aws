@@ -6,12 +6,12 @@ import aws.sdk.kotlin.services.dynamodb.model.ReturnConsumedCapacity
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * Builds a DynamoDB [BatchGetItemRequest] with a DSL block.
+ * DSL 블록으로 DynamoDB [BatchGetItemRequest]를 빌드합니다.
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [requestItems] is empty.
- * - Uses [KeysAndAttributes] to specify the key set to fetch for each table.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [requestItems]가 비어 있으면 `IllegalArgumentException`을 던진다.
+ * - 각 테이블에 대해 가져올 키 집합을 [KeysAndAttributes]로 지정한다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val req = batchGetItemRequestOf(
@@ -20,8 +20,8 @@ import io.bluetape4k.support.requireNotEmpty
  * // req.requestItems?.size == 1
  * ```
  *
- * @param requestItems mapping from table name to key sets to read. Empty values throw.
- * @param returnConsumedCapacity whether to return consumed capacity details.
+ * @param requestItems 테이블 이름과 읽을 키 집합의 매핑 (비어 있으면 예외)
+ * @param returnConsumedCapacity 소비된 용량 반환 여부
  */
 inline fun batchGetItemRequestOf(
     requestItems: Map<String, KeysAndAttributes>,

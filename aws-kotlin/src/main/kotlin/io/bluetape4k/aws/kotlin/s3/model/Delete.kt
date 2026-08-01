@@ -5,15 +5,15 @@ import aws.sdk.kotlin.services.s3.model.ObjectIdentifier
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * Creates a [Delete] request for S3 objects.
+ * S3 Object 를 삭제하는 [Delete] 객체를 생성합니다.
  *
  * ```kotlin
  * val delete = deleteOf("key-1", "key-2")
  * ```
  *
- * @param quiet whether to return a summarized deletion result
- * @param keys keys of the objects to delete
- * @return the [Delete]
+ * @param quiet [Boolean] 값으로, 삭제 결과를 요약할지 여부를 설정합니다.
+ * @param keys 삭제할 Object 의 키 목록
+ * @return [Delete] 인스턴스
  */
 @JvmName("deleteOfArray")
 inline fun deleteOf(
@@ -24,15 +24,15 @@ inline fun deleteOf(
     deleteOf(keys.map { it.toObjectIdentifier() }, quiet, builder)
 
 /**
- * Creates a [Delete] request for S3 objects.
+ * S3 Object 를 삭제하는 [Delete] 객체를 생성합니다.
  *
  * ```kotlin
  * val delete = deleteOf(listOf("key-1", "key-2"))
  * ```
  *
- * @param quiet whether to return a summarized deletion result
- * @param keys keys of the objects to delete
- * @return the [Delete]
+ * @param quiet [Boolean] 값으로, 삭제 결과를 요약할지 여부를 설정합니다.
+ * @param keys 삭제할 Object 의 키 목록
+ * @return [Delete] 인스턴스
  */
 @JvmName("deleteOfCollection")
 inline fun deleteOf(
@@ -43,16 +43,16 @@ inline fun deleteOf(
     deleteOf(keys.map { it.toObjectIdentifier() }, quiet, builder)
 
 /**
- * Creates a [Delete] request for S3 objects.
+ * S3 Object 를 삭제하는 [Delete] 객체를 생성합니다.
  *
  * ```kotlin
  * val deleteKeys = listOf("key-1", "key-2").map { it.toObjectIdentifier() }
  * val delete = deleteOf(deleteKeys, quiet = true)
  * ```
  *
- * @param quiet whether to return a summarized deletion result
- * @param keys keys of the objects to delete
- * @return the [Delete]
+ * @param quiet [Boolean] 값으로, 삭제 결과를 요약할지 여부를 설정합니다.
+ * @param keys 삭제할 Object 의 키 목록
+ * @return [Delete] 인스턴스
  */
 @JvmName("deleteOfObjectIdentifierCollection")
 inline fun deleteOf(
@@ -71,7 +71,7 @@ inline fun deleteOf(
 }
 
 /**
- * Creates a [Delete] request for S3 objects.
+ * S3 Object 를 삭제하는 [Delete] 객체를 생성합니다.
  *
  * ```kotlin
  * val id1 = "key-1".toObjectIdentifier()
@@ -79,9 +79,9 @@ inline fun deleteOf(
  * val delete = deleteOf(id1, id2, quiet = false)
  * ```
  *
- * @param quiet whether to return a summarized deletion result
- * @param keys keys of the objects to delete
- * @return the [Delete]
+ * @param quiet [Boolean] 값으로, 삭제 결과를 요약할지 여부를 설정합니다.
+ * @param keys 삭제할 Object 의 키 목록
+ * @return [Delete] 인스턴스
  */
 @JvmName("deleteOfObjectIdentifierArray")
 inline fun deleteOf(

@@ -6,13 +6,13 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 
 /**
- * Builds a DynamoDB [Update] with a DSL block. [AttributeValue] key overload.
+ * DSL 블록으로 DynamoDB [Update]를 빌드합니다 ([AttributeValue] 키 오버로드).
  *
- * ## Behavior and contract
- * - Throws `IllegalArgumentException` when [tableName] is blank.
- * - Throws `IllegalArgumentException` when [key] is empty.
- * - Throws `IllegalArgumentException` when [updateExpression] is blank.
- * - Additional fields can be overridden through [builder].
+ * ## 동작/계약
+ * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [key]가 비어 있으면 `IllegalArgumentException`을 던진다.
+ * - [updateExpression]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [builder] 블록으로 추가 필드를 덮어쓸 수 있다.
  *
  * ```kotlin
  * val update = updateOf(
@@ -26,12 +26,12 @@ import io.bluetape4k.support.requireNotEmpty
  * // update.updateExpression == "SET #n = :name"
  * ```
  *
- * @param tableName DynamoDB table name to update. Blank values throw.
- * @param key primary key map for the item to update. Empty values throw.
- * @param updateExpression update expression. Blank values throw.
- * @param expressionAttributeValues update expression value substitution map.
- * @param expressionAttributeNames update expression name substitution map.
- * @param conditionExpression update condition expression.
+ * @param tableName 업데이트할 DynamoDB 테이블 이름 (blank이면 예외)
+ * @param key 업데이트할 항목의 기본 키 맵 (비어 있으면 예외)
+ * @param updateExpression 업데이트 표현식 (blank이면 예외)
+ * @param expressionAttributeValues 업데이트 표현식의 값 치환 맵
+ * @param expressionAttributeNames 업데이트 표현식의 이름 치환 맵
+ * @param conditionExpression 업데이트 조건 표현식
  */
 @JvmName("updateOfAttributeValue")
 inline fun updateOf(
@@ -61,12 +61,12 @@ inline fun updateOf(
 }
 
 /**
- * Builds a DynamoDB [Update] with a DSL block. Any? key overload.
+ * DSL 블록으로 DynamoDB [Update]를 빌드합니다 (Any? 키 오버로드).
  *
- * ## Behavior and contract
- * - Each value in [key] is converted into [AttributeValue] through [toAttributeValueMap].
- * - Throws `IllegalArgumentException` when [tableName] is blank.
- * - Throws `IllegalArgumentException` when [updateExpression] is blank.
+ * ## 동작/계약
+ * - [key]의 각 값은 [toAttributeValueMap]을 통해 [AttributeValue]로 자동 변환된다.
+ * - [tableName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [updateExpression]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val update = updateOf(
@@ -78,12 +78,12 @@ inline fun updateOf(
  * // update.key?.get("id") == AttributeValue.S("u1")
  * ```
  *
- * @param tableName DynamoDB table name to update. Blank values throw.
- * @param key primary key map for the item to update. Converted to [AttributeValue] automatically.
- * @param updateExpression update expression. Blank values throw.
- * @param expressionAttributeValues update expression value substitution map.
- * @param expressionAttributeNames update expression name substitution map.
- * @param conditionExpression update condition expression.
+ * @param tableName 업데이트할 DynamoDB 테이블 이름 (blank이면 예외)
+ * @param key 업데이트할 항목의 기본 키 맵 (자동으로 [AttributeValue]로 변환)
+ * @param updateExpression 업데이트 표현식 (blank이면 예외)
+ * @param expressionAttributeValues 업데이트 표현식의 값 치환 맵
+ * @param expressionAttributeNames 업데이트 표현식의 이름 치환 맵
+ * @param conditionExpression 업데이트 조건 표현식
  */
 @JvmName("updateOfAny")
 inline fun updateOf(

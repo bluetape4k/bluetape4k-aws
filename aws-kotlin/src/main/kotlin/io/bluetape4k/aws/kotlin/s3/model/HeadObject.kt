@@ -4,7 +4,7 @@ import aws.sdk.kotlin.services.s3.model.HeadObjectRequest
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a [HeadObjectRequest] for retrieving metadata about the object at [key] in [bucket].
+ * [bucket]의 [key]에 해당하는 객체 메타데이터 조회를 위한 [HeadObjectRequest]를 생성합니다.
  *
  * ```kotlin
  * val request = headObjectRequestOf(
@@ -12,12 +12,12 @@ import io.bluetape4k.support.requireNotBlank
  *     key = "path/to/object.txt"
  * )
  * val response = s3Client.headObject(request)
- * // response.contentLength is the object size in bytes
+ * // response.contentLength — 객체 크기(바이트)
  * ```
  *
- * @param bucket bucket name
- * @param key object key
- * @return the [HeadObjectRequest]
+ * @param bucket 버킷 이름
+ * @param key 객체 키
+ * @return [HeadObjectRequest] 인스턴스
  */
 inline fun headObjectRequestOf(
     bucket: String,

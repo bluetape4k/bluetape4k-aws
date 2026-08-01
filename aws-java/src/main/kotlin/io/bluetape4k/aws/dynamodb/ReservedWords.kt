@@ -1,14 +1,14 @@
 package io.bluetape4k.aws.dynamodb
 
 /**
- * See the API documentation for details.
+ * DynamoDB의 예약어 정보
  *
  * ```kotlin
  * val isReserved = ReservedWords.values().any { it.name == "NAME" }
  * // isReserved == true
  * ```
  *
- * Note: See the referenced documentation.
+ * 참고: [DynamoDB 예약어]( https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html )
  */
 enum class ReservedWords {
     ABORT,

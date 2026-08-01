@@ -10,10 +10,10 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
 
 /**
- * Creates a CloudWatch Logs group with [logGroupName].
+ * [logGroupName]으로 CloudWatch Logs 그룹을 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [logGroupName] is blank.
+ * ## 동작/계약
+ * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.createLogGroup("/aws/lambda/my-function")
@@ -28,11 +28,11 @@ fun CloudWatchLogsClient.createLogGroup(
 }
 
 /**
- * Creates a CloudWatch Logs stream with [logGroupName] and [logStreamName].
+ * [logGroupName]과 [logStreamName]으로 CloudWatch Logs 스트림을 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [logGroupName] is blank.
- * - Throws `IllegalArgumentException` when [logStreamName] is blank.
+ * ## 동작/계약
+ * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [logStreamName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.createLogStream(
@@ -54,11 +54,11 @@ fun CloudWatchLogsClient.createLogStream(
 }
 
 /**
- * Publishes [logEvents] to the [logStreamName] stream in [logGroupName].
+ * [logGroupName]의 [logStreamName] 스트림에 [logEvents] 목록을 게시합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [logGroupName] is blank.
- * - Throws `IllegalArgumentException` when [logStreamName] is blank.
+ * ## 동작/계약
+ * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
+ * - [logStreamName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.putLogEvents(
@@ -83,7 +83,7 @@ fun CloudWatchLogsClient.putLogEvents(
 }
 
 /**
- * Lists CloudWatch Logs groups.
+ * CloudWatch Logs 그룹 목록을 조회합니다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.describeLogGroups(logGroupNamePrefix = "/aws/lambda")
@@ -98,10 +98,10 @@ fun CloudWatchLogsClient.describeLogGroups(
     }
 
 /**
- * Lists log streams in [logGroupName].
+ * [logGroupName]의 로그 스트림 목록을 조회합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [logGroupName] is blank.
+ * ## 동작/계약
+ * - [logGroupName]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.describeLogStreams("/aws/lambda/my-function")

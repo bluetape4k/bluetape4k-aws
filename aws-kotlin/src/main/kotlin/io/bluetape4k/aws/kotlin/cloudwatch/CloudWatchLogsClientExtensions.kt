@@ -20,15 +20,15 @@ import aws.sdk.kotlin.services.cloudwatchlogs.putLogEvents
 import io.bluetape4k.support.requireNotBlank
 
 /**
- * Creates a CloudWatch Logs group named [logGroupName].
+ * [logGroupName]으로 CloudWatch Logs 그룹을 생성합니다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.createLogGroup("/aws/lambda/my-function")
  * ```
  *
- * @param logGroupName name of the log group to create
- * @param builder additional configuration for [CreateLogGroupRequest.Builder]
- * @return the [CreateLogGroupResponse]
+ * @param logGroupName 생성할 로그 그룹 이름
+ * @param builder [CreateLogGroupRequest.Builder]에 대한 추가 설정 람다
+ * @return [CreateLogGroupResponse] 인스턴스
  */
 suspend inline fun CloudWatchLogsClient.createLogGroup(
     logGroupName: String,
@@ -42,7 +42,7 @@ suspend inline fun CloudWatchLogsClient.createLogGroup(
 }
 
 /**
- * Creates a CloudWatch Logs stream named [logStreamName] in [logGroupName].
+ * [logGroupName]과 [logStreamName]으로 CloudWatch Logs 스트림을 생성합니다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.createLogStream(
@@ -51,10 +51,10 @@ suspend inline fun CloudWatchLogsClient.createLogGroup(
  * )
  * ```
  *
- * @param logGroupName log group name
- * @param logStreamName name of the log stream to create
- * @param builder additional configuration for [CreateLogStreamRequest.Builder]
- * @return the [CreateLogStreamResponse]
+ * @param logGroupName 로그 그룹 이름
+ * @param logStreamName 생성할 로그 스트림 이름
+ * @param builder [CreateLogStreamRequest.Builder]에 대한 추가 설정 람다
+ * @return [CreateLogStreamResponse] 인스턴스
  */
 suspend inline fun CloudWatchLogsClient.createLogStream(
     logGroupName: String,
@@ -71,7 +71,7 @@ suspend inline fun CloudWatchLogsClient.createLogStream(
 }
 
 /**
- * Publishes [logEvents] to [logStreamName] in [logGroupName].
+ * [logGroupName]의 [logStreamName] 스트림에 [logEvents] 목록을 게시합니다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.putLogEvents(
@@ -81,11 +81,11 @@ suspend inline fun CloudWatchLogsClient.createLogStream(
  * )
  * ```
  *
- * @param logGroupName log group name
- * @param logStreamName log stream name
- * @param logEvents log events to publish
- * @param builder additional configuration for [PutLogEventsRequest.Builder]
- * @return the [PutLogEventsResponse]
+ * @param logGroupName 로그 그룹 이름
+ * @param logStreamName 로그 스트림 이름
+ * @param logEvents 게시할 로그 이벤트 목록
+ * @param builder [PutLogEventsRequest.Builder]에 대한 추가 설정 람다
+ * @return [PutLogEventsResponse] 인스턴스
  */
 suspend inline fun CloudWatchLogsClient.putLogEvents(
     logGroupName: String,
@@ -104,16 +104,16 @@ suspend inline fun CloudWatchLogsClient.putLogEvents(
 }
 
 /**
- * Lists CloudWatch Logs groups.
+ * CloudWatch Logs 그룹 목록을 조회합니다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.describeLogGroups(logGroupNamePrefix = "/aws/lambda")
  * response.logGroups?.forEach { group -> println(group.logGroupName) }
  * ```
  *
- * @param logGroupNamePrefix log group name prefix; when null, lists all groups
- * @param builder additional configuration for [DescribeLogGroupsRequest.Builder]
- * @return the [DescribeLogGroupsResponse]
+ * @param logGroupNamePrefix 조회할 로그 그룹 이름 접두어. null이면 전체 조회합니다.
+ * @param builder [DescribeLogGroupsRequest.Builder]에 대한 추가 설정 람다
+ * @return [DescribeLogGroupsResponse] 인스턴스
  */
 suspend inline fun CloudWatchLogsClient.describeLogGroups(
     logGroupNamePrefix: String? = null,
@@ -125,17 +125,17 @@ suspend inline fun CloudWatchLogsClient.describeLogGroups(
     }
 
 /**
- * Lists log streams in [logGroupName].
+ * [logGroupName]의 로그 스트림 목록을 조회합니다.
  *
  * ```kotlin
  * val response = cloudWatchLogsClient.describeLogStreams("/aws/lambda/my-function")
  * response.logStreams?.forEach { stream -> println(stream.logStreamName) }
  * ```
  *
- * @param logGroupName log group name
- * @param logStreamNamePrefix log stream name prefix; when null, does not filter by prefix
- * @param builder additional configuration for [DescribeLogStreamsRequest.Builder]
- * @return the [DescribeLogStreamsResponse]
+ * @param logGroupName 로그 그룹 이름
+ * @param logStreamNamePrefix 조회할 로그 스트림 이름 접두어. null이면 필터하지 않습니다.
+ * @param builder [DescribeLogStreamsRequest.Builder]에 대한 추가 설정 람다
+ * @return [DescribeLogStreamsResponse] 인스턴스
  */
 suspend inline fun CloudWatchLogsClient.describeLogStreams(
     logGroupName: String,

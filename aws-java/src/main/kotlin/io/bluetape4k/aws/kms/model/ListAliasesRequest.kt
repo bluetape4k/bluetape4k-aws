@@ -3,10 +3,10 @@ package io.bluetape4k.aws.kms.model
 import software.amazon.awssdk.services.kms.model.ListAliasesRequest
 
 /**
- * Creates a [ListAliasesRequest] with a DSL-style builder lambda.
+ * DSL 스타일의 빌더 람다로 [ListAliasesRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies [builder] to [ListAliasesRequest.builder], then calls `build()`.
+ * ## 동작/계약
+ * - [ListAliasesRequest.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
  *
  * ```kotlin
  * val request = listAliasesRequest {
@@ -21,11 +21,11 @@ fun listAliasesRequest(
     ListAliasesRequest.builder().apply(builder).build()
 
 /**
- * Creates a [ListAliasesRequest] by specifying primary parameters directly.
+ * 주요 파라미터를 직접 지정하여 [ListAliasesRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies [keyId], [limit], and [marker] to the builder only when they are non-null.
- * - Runs [builder] last.
+ * ## 동작/계약
+ * - [keyId], [limit], [marker]는 `null`이 아닐 때만 빌더에 반영합니다.
+ * - 마지막에 [builder]를 추가로 실행합니다.
  *
  * ```kotlin
  * val request = listAliasesRequestOf(

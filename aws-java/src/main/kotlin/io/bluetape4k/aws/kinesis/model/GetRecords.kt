@@ -5,7 +5,7 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.kinesis.model.GetRecordsRequest
 
 /**
- * Builds a [GetRecordsRequest] with a DSL block.
+ * DSL 블록으로 [GetRecordsRequest]를 빌드합니다.
  *
  * ```kotlin
  * val req = getRecordsRequest {
@@ -20,11 +20,11 @@ inline fun getRecordsRequest(
     GetRecordsRequest.builder().apply(builder).build()
 
 /**
- * Creates a [GetRecordsRequest] from a shard iterator and limit.
+ * 샤드 이터레이터와 한도로 [GetRecordsRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [shardIterator] is blank.
- * - [limit] must be in the 1..10000 range.
+ * ## 동작/계약
+ * - [shardIterator]가 blank이면 `IllegalArgumentException`을 던진다.
+ * - [limit]은 1..10000이어야 한다.
  *
  * ```kotlin
  * val req = getRecordsRequestOf(shardIterator = "AAA...", limit = 50)

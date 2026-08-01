@@ -24,14 +24,14 @@ import java.nio.file.Path
 private val log = KotlinLogging.logger { }
 
 /**
- * See the API documentation for details.
+ * [S3TransferManager]를 이용하여 S3 Object 를 다운로드 받습니다.
  *
- * @param T Parameter.
- * @param responseTransformer Parameter.
- * @param builder Parameter.
- * @return Return value.
+ * @param T 반환 타입
+ * @param responseTransformer 응답을 변환할 transformer
+ * @param builder [DownloadRequest] 를 구성하는 람다 함수
+ * @return [Download] 인스턴스
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val download = transferManager.downloadAsync(AsyncResponseTransformer.toBytes())
  * // download.completionFuture().isDone == false
@@ -43,16 +43,16 @@ inline fun <T: Any> S3TransferManager.downloadAsync(
 ): Download<T> = download(downloadRequest(responseTransformer, builder))
 
 /**
- * See the API documentation for details.
+ * [S3TransferManager]를 이용하여 S3 Object 를 다운로드 받습니다.
  *
- * @param T Parameter.
+ * @param T 반환 타입
  * @param bucket bucket name
  * @param key key
- * @param responseTransformer Parameter.
- * @param builder Parameter.
- * @return Return value.
+ * @param responseTransformer 응답을 변환할 비동기 transformer
+ * @param builder [GetObjectRequest.Builder] 를 구성하는 람다 함수
+ * @return 다운로드한 S3 Object
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val download = transferManager.downloadAsync("demo-bucket", "docs/readme.txt", AsyncResponseTransformer.toBytes())
  * // download.completionFuture().isCompletedExceptionally == false
@@ -72,14 +72,14 @@ inline fun <T: Any> S3TransferManager.downloadAsync(
 }
 
 /**
- * See the API documentation for details.
+ * S3 Object 를 ByteArray 로 다운로드 받습니다.
  *
  * @param bucket bucket name
  * @param key key
- * @param builder Parameter.
- * @return Return value.
+ * @param builder [DownloadRequest.UntypedBuilder] 를 구성하는 람다 함수
+ * @return 다운로드한 S3 Object
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val download = transferManager.downloadAsByteArrayAsync("demo-bucket", "docs/readme.txt")
  * // download.completionFuture().isDone == false
@@ -100,16 +100,16 @@ inline fun S3TransferManager.downloadAsByteArrayAsync(
 }
 
 /**
- * See the API documentation for details.
+ * S3 Object 를 파일로 다운로드 받습니다.
  *
  * @param bucket bucket name
  * @param key key
- * @param destination Parameter.
- * @param builder Parameter.
- * See the API documentation for details.
- * @return Return value.
+ * @param destination 저장할 파일 경로
+ * @param builder [DownloadFileRequest.Builder] 를 구성하는 람다 함수.
+ * 기본 요청(`bucket`, `key`, `destination`) 적용 후 추가 설정을 덮어쓸 수 있습니다.
+ * @return 다운로드한 S3 Object
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val target = java.nio.file.Path.of("build/tmp/readme.txt")
  * val download = transferManager.downloadFileAsync("demo-bucket", "docs/readme.txt", target)
@@ -130,15 +130,15 @@ inline fun S3TransferManager.downloadFileAsync(
 }
 
 /**
- * See the API documentation for details.
+ * [S3TransferManager]를 이용하여 객체를 S3에 업로드 합니다.
  *
  * @param bucket bucket name
  * @param key key
- * @param asyncRequestBody Parameter.
- * @param builder Parameter.
- * @return Return value.
+ * @param asyncRequestBody 업로드할 객체
+ * @param builder  추가로 구성할 [UploadRequest.Builder]를 구성하는 람다 함수
+ * @return [Upload] 인스턴스
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val upload = transferManager.uploadAsync("demo-bucket", "notes/hello.txt", "hello".toAsyncRequestBody())
  * // upload.completionFuture().isDone == false
@@ -163,15 +163,15 @@ inline fun S3TransferManager.uploadAsync(
 }
 
 /**
- * See the API documentation for details.
+ * ByteArray 를 S3에 업로드 합니다.
  *
  * @param bucket bucket name
  * @param key key
- * @param content Parameter.
- * @param builder Parameter.
- * @return Return value.
+ * @param content 업로드할 ByteArray
+ * @param builder [UploadRequest.Builder] 를 구성하는 람다 함수
+ * @return [Upload] 인스턴스
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val upload = transferManager.uploadByteArrayAsync("demo-bucket", "notes/data.bin", byteArrayOf(1, 2, 3))
  * // upload.completionFuture().isDone == false
@@ -197,16 +197,16 @@ inline fun S3TransferManager.uploadByteArrayAsync(
 }
 
 /**
- * See the API documentation for details.
+ * 파일을 S3에 업로드 합니다.
  *
  * @param bucket bucket name
  * @param key key
- * @param source Parameter.
- * @param builder Parameter.
- * @return Return value.
- * @throws Throwable if the operation fails.
+ * @param source 업로드할 파일 경로
+ * @param builder [UploadFileRequest.Builder] 를 구성하는 람다 함수
+ * @return [FileUpload] 인스턴스
+ * @throws IllegalArgumentException 파일이 존재하지 않을 경우
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val source = java.nio.file.Path.of("settings.gradle.kts")
  * val upload = transferManager.uploadFileAsync("demo-bucket", "repo/settings.gradle.kts", source)

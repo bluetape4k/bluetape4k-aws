@@ -4,11 +4,11 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 
 /**
- * See the API documentation for details.
+ * [ObjectIdentifier]를 생성합니다.
  *
- * See the API documentation for details.
+ * [key]는 공백일 수 없습니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = objectIdentifier("docs/readme.md")
  * // result.key() == "docs/readme.md"
@@ -26,9 +26,9 @@ inline fun objectIdentifier(
 }
 
 /**
- * See the API documentation for details.
+ * [ObjectIdentifier]를 생성하고 선택적으로 [versionId]를 지정합니다.
  *
- * Example:
+ * 예제:
  * ```kotlin
  * val result = objectIdentifierOf("docs/readme.md", versionId = "v3")
  * // result.versionId() == "v3"

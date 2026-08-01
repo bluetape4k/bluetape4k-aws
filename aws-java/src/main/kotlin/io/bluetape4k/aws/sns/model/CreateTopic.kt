@@ -5,10 +5,10 @@ import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest
 
 /**
- * Builds a [CreateTopicRequest] with a DSL block.
+ * DSL 블록으로 [CreateTopicRequest]를 빌드합니다.
  *
- * ## Behavior/Contract
- * - Sets `name`, `attributes`, and other fields directly in the [builder] block.
+ * ## 동작/계약
+ * - [builder] 블록에서 `name`, `attributes` 등을 직접 설정한다.
  *
  * ```kotlin
  * val req = createTopicRequest { name("my-topic") }
@@ -20,10 +20,10 @@ inline fun createTopicRequest(
     CreateTopicRequest.builder().apply(builder).build()
 
 /**
- * Creates a [CreateTopicRequest] from a topic name.
+ * 토픽 이름으로 [CreateTopicRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Throws `IllegalArgumentException` when [name] is blank.
+ * ## 동작/계약
+ * - [name]이 blank이면 `IllegalArgumentException`을 던진다.
  *
  * ```kotlin
  * val req = createTopicRequestOf("my-topic")

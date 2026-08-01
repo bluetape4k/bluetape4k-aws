@@ -13,17 +13,17 @@ import software.amazon.awssdk.services.sns.SnsClientBuilder
 import java.net.URI
 
 /**
- * Factory for creating [SnsClient] and [SnsAsyncClient] instances.
+ * [SnsClient], [SnsAsyncClient] 생성을 위한 Factory 입니다.
  */
 object SnsClientFactory {
 
     /**
-     * Supports synchronous [SnsClient] creation.
+     * 동기 [SnsClient] 생성을 지원합니다.
      */
     object Sync {
 
         /**
-         * Creates a [SnsClient] with a DSL builder.
+         * DSL 빌더로 [SnsClient]를 생성합니다.
          *
          * ```kotlin
          * val client = SnsClientFactory.Sync.create { region(Region.AP_NORTHEAST_2) }
@@ -36,7 +36,7 @@ object SnsClientFactory {
             snsClient(builder)
 
         /**
-         * Creates a [SnsClient] from endpoint, region, and credentials settings.
+         * endpoint, region, credentials 기반으로 [SnsClient]를 생성합니다.
          *
          * ```kotlin
          * val client = SnsClientFactory.Sync.create(region = Region.AP_NORTHEAST_2)
@@ -54,12 +54,12 @@ object SnsClientFactory {
     }
 
     /**
-     * Supports asynchronous [SnsAsyncClient] creation.
+     * 비동기 [SnsAsyncClient] 생성을 지원합니다.
      */
     object Async {
 
         /**
-         * Creates a [SnsAsyncClient] with a DSL builder.
+         * DSL 빌더로 [SnsAsyncClient]를 생성합니다.
          *
          * ```kotlin
          * val client = SnsClientFactory.Async.create { region(Region.AP_NORTHEAST_2) }
@@ -72,7 +72,7 @@ object SnsClientFactory {
             snsAsyncClient(builder)
 
         /**
-         * Creates a [SnsAsyncClient] from endpoint, region, and credentials settings.
+         * endpoint, region, credentials 기반으로 [SnsAsyncClient]를 생성합니다.
          *
          * ```kotlin
          * val client = SnsClientFactory.Async.create(region = Region.AP_NORTHEAST_2)

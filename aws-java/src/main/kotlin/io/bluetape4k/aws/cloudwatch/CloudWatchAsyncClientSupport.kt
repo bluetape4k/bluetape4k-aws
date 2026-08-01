@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
 import java.net.URI
 
 /**
- * Builds a [CloudWatchAsyncClient].
+ * [CloudWatchAsyncClient]를 빌드합니다.
  *
  * ```kotlin
  * val client = cloudWatchAsyncClient { region(Region.AP_NORTHEAST_2) }
@@ -25,9 +25,9 @@ inline fun cloudWatchAsyncClient(
         }
 
 /**
- * Creates a [CloudWatchAsyncClient] from endpoint and credentials settings.
+ * endpoint + credentials 기반으로 [CloudWatchAsyncClient]를 생성합니다.
  *
- * Nullable parameters are applied to the builder only when they are not null.
+ * nullable 파라미터는 null 이 아닐 때만 builder에 반영됩니다.
  *
  * ```kotlin
  * val client = cloudWatchAsyncClientOf(endpoint = URI("http://localhost:4566"))

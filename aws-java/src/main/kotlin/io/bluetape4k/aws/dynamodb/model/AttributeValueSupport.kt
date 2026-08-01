@@ -6,7 +6,7 @@ import java.io.InputStream
 import java.nio.ByteBuffer
 
 /**
- * See the API documentation for details.
+ * [AttributeValue.Builder]를 이용하여 [AttributeValue]를 생성합니다.
  *
  * ```kotlin
  * val strValue = attributeValue { s("Hello, World!") }
@@ -14,7 +14,7 @@ import java.nio.ByteBuffer
  * val boolValue = attributeValue { bool(true) }
  * ```
  *
- * @param builder Parameter.
+ * @param builder [AttributeValue.Builder]를 초기화하는 람다 함수입니다.
  */
 inline fun attributeValue(
     builder: AttributeValue.Builder.() -> Unit,
@@ -23,56 +23,56 @@ inline fun attributeValue(
 }
 
 /**
- * See the API documentation for details.
+ * [ByteArray]를 [AttributeValue]로 변환합니다.
  */
 fun ByteArray.toAttributeValue(): AttributeValue = AttributeValue.builder()
     .b(this.toSdkBytes())
     .build()
 
 /**
- * See the API documentation for details.
+ * [ByteBuffer]를 [AttributeValue]로 변환합니다.
  */
 fun ByteBuffer.toAttributeValue(): AttributeValue = AttributeValue.builder()
     .b(this.toSdkBytes())
     .build()
 
 /**
- * See the API documentation for details.
+ * [String]을 [AttributeValue]로 변환합니다.
  */
 fun String.toAttributeValue(): AttributeValue = AttributeValue.builder()
     .s(this)
     .build()
 
 /**
- * See the API documentation for details.
+ * [Number]를 [AttributeValue]로 변환합니다.
  */
 fun Number.toAttributeValue(): AttributeValue = AttributeValue.builder()
     .n(this.toString())
     .build()
 
 /**
- * See the API documentation for details.
+ * [Boolean]을 [AttributeValue]로 변환합니다.
  */
 fun Boolean.toAttributeValue(): AttributeValue = AttributeValue.builder()
     .bool(this)
     .build()
 
 /**
- * See the API documentation for details.
+ * Nullable 인지 여부를 [AttributeValue]로 변환합니다.
  */
 fun Boolean.toNullAttributeValue(): AttributeValue = AttributeValue.builder()
     .nul(this)
     .build()
 
 /**
- * See the API documentation for details.
+ * [Iterable]을 [AttributeValue]로 변환합니다.
  */
 fun Iterable<*>.toAttributeValue(): AttributeValue = AttributeValue.builder()
     .l(this.map { it.toAttributeValue() })
     .build()
 
 /**
- * See the API documentation for details.
+ * [Map]을 [AttributeValue]로 변환합니다.
  */
 fun Map<*, *>.toAttributeValue(): AttributeValue {
     val mapped = this.entries.associate { entry ->
@@ -86,18 +86,18 @@ fun Map<*, *>.toAttributeValue(): AttributeValue {
 }
 
 /**
- * See the API documentation for details.
+ * [InputStream]을 읽어, ByteArray로 표현되는 [AttributeValue]로 변환합니다.
  */
 fun InputStream.toAttributeValue(): AttributeValue = AttributeValue.builder()
     .b(toSdkBytes())
     .build()
 
 /**
- * See the API documentation for details.
- * See the API documentation for details.
+ * [T]를 [AttributeValue]로 변환합니다.
+ * 준비되지 않은 알 수 없는 수형에 대해서는 `String`으로 변환합니다.
  *
- * See the API documentation for details.
- * See the API documentation for details.
+ * 만약 `data class` 등의 사용자 정의 클래스 정보에 대해서는
+ * Binary Serialization을 통해 ByteArray로 변환한 후 `toAttributeValue()`를 호출해야 합니다.
  */
 fun <T> T.toAttributeValue(): AttributeValue = when (this) {
     null          -> AttributeValue.builder().nul(true).build()

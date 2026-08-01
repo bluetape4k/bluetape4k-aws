@@ -6,10 +6,10 @@ import software.amazon.awssdk.services.kms.model.DryRunModifierType
 import software.amazon.awssdk.services.kms.model.RecipientInfo
 
 /**
- * Creates a [DecryptRequest] with a DSL-style builder lambda.
+ * DSL 스타일의 빌더 람다로 [DecryptRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies [builder] to [DecryptRequest.builder], then calls `build()`.
+ * ## 동작/계약
+ * - [DecryptRequest.builder]에 [builder]를 적용한 뒤 `build()`를 호출합니다.
  *
  * ```kotlin
  * val request = decryptRequest {
@@ -24,11 +24,11 @@ inline fun decryptRequest(
     DecryptRequest.builder().apply(builder).build()
 
 /**
- * Creates a [DecryptRequest] by specifying primary parameters directly.
+ * 주요 파라미터를 직접 지정하여 [DecryptRequest]를 생성합니다.
  *
- * ## Behavior/Contract
- * - Applies each argument to the same-named builder method only when it is non-null.
- * - Runs [builder] last.
+ * ## 동작/계약
+ * - 각 인자는 `null`이 아닐 때만 동일 이름의 빌더 메서드에 반영합니다.
+ * - 마지막에 [builder]를 추가로 실행합니다.
  *
  * ```kotlin
  * val request = decryptRequestOf(
