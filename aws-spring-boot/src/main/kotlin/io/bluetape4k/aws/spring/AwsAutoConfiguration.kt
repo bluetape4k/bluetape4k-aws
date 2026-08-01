@@ -12,7 +12,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 
 /**
- * Spring Boot auto-configuration for shared AWS SDK v2 support.
+ * 공유 AWS SDK v2 지원을 위한 Spring Boot 자동 구성입니다.
  */
 @AutoConfiguration
 @ConditionalOnAwsEnabled

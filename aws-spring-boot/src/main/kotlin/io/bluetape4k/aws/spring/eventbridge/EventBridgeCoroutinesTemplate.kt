@@ -24,12 +24,12 @@ import software.amazon.awssdk.services.eventbridge.model.RuleState
 import software.amazon.awssdk.services.eventbridge.model.Target
 
 /**
- * Default [EventBridgeOperations] backed by AWS SDK v2 [EventBridgeAsyncClient].
+ * AWS SDK v2 [EventBridgeAsyncClient]를 사용하는 기본 [EventBridgeOperations]입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Delegates to bluetape4k EventBridge coroutine adapters. Cancellation and SDK
- * exceptions propagate unchanged from the underlying `CompletableFuture`.
+ * bluetape4k EventBridge 코루틴 어댑터에 위임합니다. 취소와 SDK 예외는 하위
+ * `CompletableFuture`에서 변경되지 않고 전파됩니다.
  */
 class EventBridgeCoroutinesTemplate(
     private val eventBridgeAsyncClient: EventBridgeAsyncClient,

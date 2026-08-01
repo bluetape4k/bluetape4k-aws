@@ -5,7 +5,7 @@ import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder
 import java.io.Serializable
 
 /**
- * Context passed to global AWS SDK v2 client customizers.
+ * 전역 AWS SDK v2 클라이언트 사용자 정의 설정에 전달하는 컨텍스트입니다.
  */
 data class AwsClientCustomizationContext(
     val serviceName: String,
@@ -16,7 +16,7 @@ data class AwsClientCustomizationContext(
 }
 
 /**
- * Customizes every sync AWS SDK v2 client builder created by this module.
+ * 이 모듈이 생성하는 모든 동기 AWS SDK v2 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsSyncClientCustomizer {
     fun customize(
@@ -26,7 +26,7 @@ fun interface AwsSyncClientCustomizer {
 }
 
 /**
- * Customizes every async AWS SDK v2 client builder created by this module.
+ * 이 모듈이 생성하는 모든 비동기 AWS SDK v2 클라이언트 빌더를 사용자 정의합니다.
  */
 fun interface AwsAsyncClientCustomizer {
     fun customize(
@@ -36,7 +36,7 @@ fun interface AwsAsyncClientCustomizer {
 }
 
 /**
- * Customizes a specific AWS SDK v2 builder type.
+ * 특정 AWS SDK v2 빌더 타입을 사용자 정의합니다.
  */
 fun interface AwsClientCustomizer<B> {
     fun customize(builder: B)

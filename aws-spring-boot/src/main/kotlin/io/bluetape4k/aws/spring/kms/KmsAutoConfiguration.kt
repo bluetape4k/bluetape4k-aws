@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.kms.KmsAsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot auto-configuration for AWS KMS.
+ * AWS KMS용 Spring Boot 자동 구성입니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

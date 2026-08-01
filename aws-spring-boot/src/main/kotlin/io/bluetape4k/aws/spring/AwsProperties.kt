@@ -6,14 +6,13 @@ import java.net.URI
 import java.nio.file.Path
 
 /**
- * Shared AWS defaults for bluetape4k Spring Boot auto-configuration.
+ * bluetape4k Spring Boot 자동 구성의 공유 AWS 기본값입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Service-specific properties override these defaults. The shared endpoint is
- * useful for local AWS emulators, and web-identity credentials are opt-in so
- * applications can use EKS/IRSA-style deployments without replacing the common
- * credentials bean.
+ * 서비스별 속성은 이 기본값보다 우선합니다. 공유 엔드포인트는 로컬 AWS 에뮬레이터에 유용합니다.
+ * Web Identity 자격 증명은 옵트인이므로 애플리케이션은 공통 자격 증명 Bean을 교체하지 않고
+ * EKS/IRSA 방식 배포를 사용할 수 있습니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws")
 data class AwsProperties(

@@ -8,13 +8,12 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * Configuration properties for SSM Parameter Store Environment sources.
+ * SSM Parameter Store Environment 소스용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Binds `bluetape4k.aws.parameter-store` and defines the SSM parameter paths
- * loaded during Spring Environment post-processing. No AWS request is made when
- * [sources] is empty.
+ * `bluetape4k.aws.parameter-store`를 바인딩하고 Spring Environment 후처리 중 로드할
+ * SSM 파라미터 경로를 정의합니다. [sources]가 비어 있으면 AWS를 요청하지 않습니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.parameter-store")
 data class ParameterStoreProperties(
@@ -33,7 +32,7 @@ data class ParameterStoreProperties(
     }
 
     /**
-     * Single Parameter Store path source.
+     * 단일 Parameter Store 경로 소스입니다.
      */
     data class Source(
         val name: String? = null,

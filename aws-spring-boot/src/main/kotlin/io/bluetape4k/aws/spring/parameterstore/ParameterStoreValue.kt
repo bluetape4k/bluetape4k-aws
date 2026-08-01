@@ -4,10 +4,10 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.annotation.AliasFor
 
 /**
- * Composed Spring [Value] annotation for values loaded from Parameter Store.
+ * Parameter Store에서 로드한 값에 사용하는 합성 Spring [Value] 애너테이션입니다.
  *
- * The [value] contract is the same as Spring `@Value`, so use normal
- * placeholders such as `@ParameterStoreValue("\${app.db.password}")`.
+ * [value] 계약은 Spring `@Value`와 같으므로 `@ParameterStoreValue("\${app.db.password}")`와
+ * 같은 일반 플레이스홀더를 사용하세요.
  */
 @Target(
     AnnotationTarget.FIELD,

@@ -10,10 +10,10 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 /**
- * Cache key for KMS data keys.
+ * KMS 데이터 키의 캐시 키입니다.
  *
- * The encryption context is part of the key because AWS KMS cryptographically binds
- * the context to generated and decrypted data keys.
+ * AWS KMS는 생성 및 복호화한 데이터 키에 암호화 컨텍스트를 암호학적으로 결합하므로
+ * 암호화 컨텍스트가 키에 포함됩니다.
  */
 data class KmsDataKeyCacheKey(
     val keyId: String,
@@ -35,10 +35,9 @@ data class KmsDataKeyCacheKey(
 }
 
 /**
- * Bounded plaintext data key cache.
+ * 크기가 제한된 평문 데이터 키 캐시입니다.
  *
- * Implementations must treat values as sensitive in-memory key material and avoid
- * unbounded retention.
+ * 구현은 값을 민감한 인메모리 키 자료로 취급하고 무제한 보관을 피해야 합니다.
  */
 interface DataKeyCache {
 
@@ -52,7 +51,7 @@ interface DataKeyCache {
 }
 
 /**
- * Data key cache that never stores values.
+ * 값을 저장하지 않는 데이터 키 캐시입니다.
  */
 object NoopDataKeyCache: DataKeyCache {
     override fun get(key: KmsDataKeyCacheKey): KmsDataKey? = null
@@ -62,7 +61,7 @@ object NoopDataKeyCache: DataKeyCache {
 }
 
 /**
- * In-memory [DataKeyCache] with TTL and maximum-size eviction.
+ * TTL과 최대 크기 축출을 적용하는 인메모리 [DataKeyCache]입니다.
  */
 class InMemoryDataKeyCache(
     private val maxSize: Int,

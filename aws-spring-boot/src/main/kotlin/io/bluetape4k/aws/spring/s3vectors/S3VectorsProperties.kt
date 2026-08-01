@@ -7,14 +7,13 @@ import java.net.URI
 internal const val S3_VECTORS_PROPERTIES_PREFIX = "bluetape4k.aws.s3-vectors"
 
 /**
- * Configuration properties for optional Amazon S3 Vectors integration.
+ * 선택적인 Amazon S3 Vectors 통합용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * S3 Vectors is disabled by default because it requires the optional
- * `software.amazon.awssdk:s3vectors` runtime dependency and a service-specific
- * IAM permission set. Service-specific region and endpoint values override the
- * shared `bluetape4k.aws` defaults.
+ * S3 Vectors에는 선택적인 `software.amazon.awssdk:s3vectors` 런타임 의존성과 서비스별
+ * IAM 권한 집합이 필요하므로 기본적으로 비활성화됩니다. 서비스별 리전과 엔드포인트 값은
+ * 공유 `bluetape4k.aws` 기본값보다 우선합니다.
  */
 @ConfigurationProperties(prefix = S3_VECTORS_PROPERTIES_PREFIX)
 data class S3VectorsProperties(
