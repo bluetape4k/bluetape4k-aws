@@ -1,4 +1,4 @@
-# Lessons Learned — Kluent → bluetape4k-assertions 마이그레이션 (2026-05-08)
+# 교훈 — Kluent → bluetape4k-assertions 마이그레이션 (2026-05-08)
 
 **관련 PR**: #22
 **영향 모듈**: aws, aws-kotlin, aws-spring-boot

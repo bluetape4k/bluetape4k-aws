@@ -1,20 +1,20 @@
-# Dependency Catalog Upgrades
+# Dependency catalog upgrade
 
-## Context
+## 배경
 
-`bluetape4k-dependencies` folded Dependabot PRs for AWS SDK Java and AWS SDK
-Kotlin into the central dependency upgrade batch.
+`bluetape4k-dependencies`는 AWS SDK Java 및 AWS SDK Kotlin Dependabot PR을 중앙
+dependency upgrade 묶음에 통합했습니다.
 
-## Decision
+## 결정
 
-Materialize the central catalog versions in the AWS repository instead of
-accepting repo-local Dependabot version bumps.
+저장소별 Dependabot version bump를 수용하는 대신 중앙 catalog version을 AWS 저장소에
+반영합니다.
 
-## Outcome
+## 결과
 
 - AWS SDK Java moved to `2.44.9`.
 - AWS SDK Kotlin moved to `1.6.77`.
 
-## Verification
+## 검증
 
 - `./gradlew build -x test --parallel --no-daemon`

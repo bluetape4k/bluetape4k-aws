@@ -1,20 +1,20 @@
-# Promote CHANGELOG.md [Unreleased] to [0.1.0]
+# CHANGELOG.md [Unreleased]를 [0.1.0]으로 승격
 
-**Date**: 2026-05-16
-**Issue**: #101
-**Branch**: docs/changelog-010-promotion
+**날짜**: 2026-05-16
+**이슈**: #101
+**브랜치**: docs/changelog-010-promotion
 
-## Decision
+## 결정
 
-Promoted `[Unreleased]` section to `[0.1.0] - 2026-05-16` before first Maven Central publish.
+첫 Maven Central 게시 전에 `[Unreleased]` 섹션을 `[0.1.0] - 2026-05-16`로 승격했습니다.
 
-Key structural changes:
-- Renamed `[Unreleased]` → `[0.1.0] - 2026-05-16`
-- Added empty `[Unreleased]` section above for future work
-- Added bug-fix entries from PR #113 (#98) and PR #114 (#99, #100) under `### Fixed`
-- Renamed `### Planned` → `### 0.2.0 Roadmap` and updated issue links (#105, #106 added)
+주요 구조적 변화:
+- `[Unreleased]` → `[0.1.0] - 2026-05-16`로 이름 변경
+- 향후 작업을 위해 위에 빈 `[Unreleased]` 섹션을 추가했습니다.
+- `### Fixed` 아래 PR #113(#98) 및 PR #114(#99, #100)의 버그 수정 항목을 추가했습니다.
+- `### Planned` → `### 0.2.0 Roadmap`로 이름 변경 및 이슈 링크 업데이트 (#105, #106 추가)
 
-## Future Guidance
+## 향후 지침
 
-- Before every Maven Central publish, promote `[Unreleased]` to the release version.
-- Bug fixes merged just before release should be added to the release section, not left in Unreleased.
+- Maven Central에 게시하기 전에 `[Unreleased]`를 릴리스 버전으로 승격합니다.
+- 릴리스 직전에 병합된 버그 수정은 `[Unreleased]`에 남기지 않고 릴리스 섹션에 추가합니다.

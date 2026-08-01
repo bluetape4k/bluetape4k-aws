@@ -1,21 +1,25 @@
-# Dependencies Catalog 2026-05-26-01
+# Dependencies catalog 2026-05-26-01
 
-## Context
+## 배경
 
-`bluetape4k-dependencies` published `catalog/2026-05-26-01` with centralized security dependency lines.
+`bluetape4k-dependencies`는 중앙에서 관리하는 security dependency line을 포함한
+`catalog/2026-05-26-01`을 발행했습니다.
 
-## Decision
+## 결정
 
-Update the downstream default `bluetape4kDependenciesCatalogRef` to the new catalog tag instead of pinning shared external library versions locally.
+공통 external library version을 local에서 고정하는 대신 하위 저장소의 기본
+`bluetape4kDependenciesCatalogRef`를 새 catalog tag로 갱신합니다.
 
-## Outcome
+## 결과
 
-The repository now resolves shared dependency versions from `catalog/2026-05-26-01` by default.
+저장소는 이제 기본적으로 `catalog/2026-05-26-01`에서 공통 dependency version을
+해석합니다.
 
-## Verification
+## 검증
 
-Checked the catalog ref in `settings.gradle.kts`.
+`settings.gradle.kts`의 catalog ref를 확인했습니다.
 
-## Future Notes
+## 향후 지침
 
-For shared external libraries, update `bluetape4k-dependencies` first, tag the catalog, then move downstream repositories to that tag.
+공통 external library는 먼저 `bluetape4k-dependencies`를 갱신하고 catalog tag를 만든 뒤
+하위 저장소를 해당 tag로 옮깁니다.
