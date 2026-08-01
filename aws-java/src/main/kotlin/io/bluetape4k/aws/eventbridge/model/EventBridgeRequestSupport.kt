@@ -164,6 +164,7 @@ inline fun putTargetsRequestOf(
         .also { eventBusName?.let(it::eventBusName) }
         .apply(builder)
         .build()
+        .also { it.targets().requireSizeInOneToTen("targets") }
 }
 
 /**
@@ -190,6 +191,10 @@ inline fun removeTargetsRequestOf(
         .also { force?.let(it::force) }
         .apply(builder)
         .build()
+        .also { request ->
+            request.ids().requireSizeInOneToTen("ids")
+            request.ids().requireNoBlankValues("ids")
+        }
 }
 
 /**
@@ -241,6 +246,7 @@ inline fun putEventsRequestOf(
         .entries(entries)
         .apply(builder)
         .build()
+        .also { it.entries().requireSizeInOneToTen("entries") }
 }
 
 /**
@@ -267,6 +273,7 @@ inline fun listRulesRequestOf(
         .also { nextToken?.let(it::nextToken) }
         .apply(builder)
         .build()
+        .also { it.limit()?.requireEventBridgeListLimit("limit") }
 }
 
 /**
@@ -293,4 +300,5 @@ inline fun listTargetsByRuleRequestOf(
         .also { nextToken?.let(it::nextToken) }
         .apply(builder)
         .build()
+        .also { it.limit()?.requireEventBridgeListLimit("limit") }
 }

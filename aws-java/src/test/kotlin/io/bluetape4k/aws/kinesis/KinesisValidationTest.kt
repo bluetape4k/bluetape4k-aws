@@ -47,6 +47,11 @@ class KinesisValidationTest {
         assertFailsWith<IllegalArgumentException> {
             putRecordsRequestOf("stream", tooManyEntries())
         }
+        assertFailsWith<IllegalArgumentException> {
+            putRecordsRequestOf("stream", validEntries()) {
+                records(emptyList())
+            }
+        }
     }
 
     @Test
@@ -72,4 +77,12 @@ class KinesisValidationTest {
                 .data(SdkBytes.fromUtf8String("message-$index"))
                 .build()
         }
+
+    private fun validEntries(): List<PutRecordsRequestEntry> =
+        listOf(
+            PutRecordsRequestEntry.builder()
+                .partitionKey("partition")
+                .data(SdkBytes.fromUtf8String("message"))
+                .build()
+        )
 }

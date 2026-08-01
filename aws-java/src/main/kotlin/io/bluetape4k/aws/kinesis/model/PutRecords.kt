@@ -43,6 +43,9 @@ inline fun putRecordsRequestOf(
         streamName(streamName)
         records(entries)
         builder()
+    }.also { request ->
+        request.streamName().requireNotBlank("streamName")
+        request.records().validateKinesisPutRecordsEntries("entries")
     }
 }
 

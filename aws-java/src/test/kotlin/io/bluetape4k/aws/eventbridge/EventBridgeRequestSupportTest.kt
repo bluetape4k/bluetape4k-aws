@@ -27,6 +27,13 @@ class EventBridgeRequestSupportTest {
         assertFailsWith<IllegalArgumentException> {
             putEventsRequestOf(entries)
         }
+
+        val validEntry = putEventsRequestEntryOf("app.test", "event", "{}")
+        assertFailsWith<IllegalArgumentException> {
+            putEventsRequestOf(listOf(validEntry)) {
+                entries(emptyList())
+            }
+        }
     }
 
     @Test
@@ -111,6 +118,11 @@ class EventBridgeRequestSupportTest {
         }
         assertFailsWith<IllegalArgumentException> {
             listRulesRequestOf(limit = 101)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listRulesRequestOf(limit = 10) {
+                limit(101)
+            }
         }
         assertFailsWith<IllegalArgumentException> {
             listTargetsByRuleRequestOf("rule", limit = 0)

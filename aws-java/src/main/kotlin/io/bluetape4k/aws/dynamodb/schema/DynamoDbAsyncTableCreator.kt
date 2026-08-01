@@ -63,15 +63,14 @@ class DynamoDbAsyncTableCreator {
             // See the API documentation for details.
             throw e
         } catch (e: Throwable) {
-            when (e.cause) {
-                is ResourceInUseException -> {
-                    log.warn(e) { "Table [${asyncTable.tableName()}] already exists. Skipping creation." }
-                }
+            val causes = generateSequence(e) { it.cause }.toList()
+            causes.filterIsInstance<CancellationException>().firstOrNull()?.let { throw it }
 
-                else -> {
-                    log.error(e) { "Fail to create table [${asyncTable.tableName()}]" }
-                    throw AwsBluetapeException("Fail to create table [${asyncTable.tableName()}", e)
-                }
+            if (causes.any { it is ResourceInUseException }) {
+                log.warn(e) { "Table [${asyncTable.tableName()}] already exists. Skipping creation." }
+            } else {
+                log.error(e) { "Fail to create table [${asyncTable.tableName()}]" }
+                throw AwsBluetapeException("Fail to create table [${asyncTable.tableName()}]", e)
             }
         }
     }

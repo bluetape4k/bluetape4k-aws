@@ -15,6 +15,7 @@ import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.io.ByteArrayInputStream
@@ -123,6 +124,60 @@ class AwsExposedDatabaseFactoryTest {
         handle.use {
             verifyCreateRead(it, "aws_exposed_h2_items", "h2")
         }
+    }
+
+    @Test
+    fun `handle close unregisters Exposed database and closes data source`() = runTest {
+        val dataSource = CloseTrackingDataSource()
+        val factory = AwsExposedDatabaseFactory(
+            dataSourceFactory = AwsJdbcDataSourceFactory { _, _ -> dataSource }
+        )
+        val handle = factory.create(properties = h2Properties("unregister_on_close"))
+
+        handle.close()
+
+        (TransactionManager.primaryDatabase !== handle.database).shouldBeTrue()
+        dataSource.closed.shouldBeTrue()
+    }
+
+    @Test
+    fun `factory closes provisional data source when Exposed connection fails`() = runTest {
+        val dataSource = CloseTrackingDataSource()
+        val failure = IllegalStateException("connect failed")
+        val factory = AwsExposedDatabaseFactory(
+            resolver = NoopAwsDatabaseSettingsResolver,
+            dataSourceFactory = AwsJdbcDataSourceFactory { _, _ -> dataSource },
+            databaseConnector = { throw failure },
+            testing = Unit,
+        )
+
+        val actual = assertFailsWith<IllegalStateException> {
+            factory.create(properties = h2Properties("connect_failure"))
+        }
+
+        actual shouldBeSameInstanceAs failure
+        dataSource.closed.shouldBeTrue()
+    }
+
+    @Test
+    fun `factory preserves connection and provisional close failures`() = runTest {
+        val closeFailure = IllegalStateException("close failed")
+        val dataSource = CloseTrackingDataSource(closeFailure)
+        val connectFailure = IllegalStateException("connect failed")
+        val factory = AwsExposedDatabaseFactory(
+            resolver = NoopAwsDatabaseSettingsResolver,
+            dataSourceFactory = AwsJdbcDataSourceFactory { _, _ -> dataSource },
+            databaseConnector = { throw connectFailure },
+            testing = Unit,
+        )
+
+        val actual = assertFailsWith<IllegalStateException> {
+            factory.create(properties = h2Properties("cleanup_failure"))
+        }
+
+        actual shouldBeSameInstanceAs connectFailure
+        actual.suppressed.single() shouldBeSameInstanceAs closeFailure
+        dataSource.closed.shouldBeTrue()
     }
 
     @Test
@@ -262,12 +317,15 @@ class AwsExposedDatabaseFactoryTest {
         override val primaryKey = PrimaryKey(id)
     }
 
-    private class CloseTrackingDataSource: DataSource, AutoCloseable {
+    private class CloseTrackingDataSource(
+        private val closeFailure: Throwable? = null,
+    ): DataSource, AutoCloseable {
         var closed: Boolean = false
             private set
 
         override fun close() {
             closed = true
+            closeFailure?.let { throw it }
         }
 
         override fun getConnection(): Connection =

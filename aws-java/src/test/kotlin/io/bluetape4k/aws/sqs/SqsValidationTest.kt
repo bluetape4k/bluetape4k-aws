@@ -127,6 +127,11 @@ class SqsValidationTest: AbstractSqsTest() {
             sendMessageRequestOf(queueUrl, "message", delaySeconds = 901)
         }
         assertFailsWith<IllegalArgumentException> {
+            sendMessageRequestOf(queueUrl, "message", delaySeconds = 1) {
+                delaySeconds(901)
+            }
+        }
+        assertFailsWith<IllegalArgumentException> {
             sendMessageBatchRequestEntryOf("id", "group", "message", delaySeconds = -1)
         }
         assertFailsWith<IllegalArgumentException> {

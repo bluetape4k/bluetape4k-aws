@@ -160,6 +160,38 @@ class SqsConsumerRuntimeConfigTest {
         verify(exactly = 1) { client.close() }
     }
 
+    @Test
+    fun `invalid runtime configuration closes plugin owned client`() {
+        val ownedClient = mockk<SqsAsyncClient>(relaxed = true)
+        every { ownedClient.close() } returns Unit
+
+        assertFailsWith<IllegalArgumentException> {
+            SqsConsumerPluginConfig().apply {
+                queueUrl = null
+                queueName = null
+                onMessage<String> {}
+            }.toRuntimeConfig(clientFactory = { ownedClient })
+        }
+
+        verify(exactly = 1) { ownedClient.close() }
+    }
+
+    @Test
+    fun `invalid runtime configuration leaves injected client open`() {
+        val injectedClient = mockk<SqsAsyncClient>(relaxed = true)
+
+        assertFailsWith<IllegalArgumentException> {
+            SqsConsumerPluginConfig().apply {
+                sqsAsyncClient = injectedClient
+                queueUrl = null
+                queueName = null
+                onMessage<String> {}
+            }.toRuntimeConfig()
+        }
+
+        verify(exactly = 0) { injectedClient.close() }
+    }
+
     private fun runtimeConfig(
         client: SqsAsyncClient = this.client,
         ownsClient: Boolean = false,
