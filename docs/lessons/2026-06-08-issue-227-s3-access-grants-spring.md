@@ -1,65 +1,58 @@
-# Issue #227 Spring S3 Access Grants
+# Issue #227 Spring S3 Access Grants 통합
 
-Date: 2026-06-08
-Issue: #227
+날짜: 2026-06-08
+이슈: #227
 
-## Context
+## 배경
 
-Issue #192 deliberately deferred S3 Access Grants because it is not part of the
-ordinary S3 SDK surface. Current AWS SDK Java v2 exposes Access Grants through
-the S3 Control service module, `software.amazon.awssdk:s3control`.
+Issue #192에서는 S3 Access Grants가 일반 S3 SDK surface에 속하지 않아 의도적으로
+연기했다. 현재 AWS SDK Java v2는 S3 Control service module인
+`software.amazon.awssdk:s3control`을 통해 Access Grants를 제공한다.
 
-## Decision
+## 결정
 
-- Add Access Grants as a separate Spring Boot opt-in under
-  `bluetape4k.aws.s3.access-grants`.
-- Keep `s3control` as an optional service dependency: `compileOnly` for
-  production and `testImplementation` for tests.
-- Register `S3ControlClient`, `S3ControlAsyncClient`, and
-  `S3AccessGrantsOperations` only when the S3 parent integration is enabled and
-  `bluetape4k.aws.s3.access-grants.enabled=true`.
-- Reuse shared AWS client defaults and global/service customizers with service
-  name `s3control`.
-- Keep the coroutine operations surface focused on read/data-access methods;
-  administrative create, update, and delete methods remain available through raw
-  S3 Control clients.
+- `bluetape4k.aws.s3.access-grants` 아래에 별도의 Spring Boot opt-in 기능으로 Access
+  Grants를 추가한다.
+- `s3control`을 선택적 service dependency로 유지한다. Production에서는 `compileOnly`,
+  test에서는 `testImplementation`을 사용한다.
+- 상위 S3 통합이 활성화되고 `bluetape4k.aws.s3.access-grants.enabled=true`일 때만
+  `S3ControlClient`, `S3ControlAsyncClient`, `S3AccessGrantsOperations`를 등록한다.
+- Service name `s3control`로 공통 AWS client 기본값과 global/service customizer를
+  재사용한다.
+- Coroutine operation surface는 read/data-access method에 집중한다. 관리용 create,
+  update, delete method는 원본 S3 Control client에서 계속 사용할 수 있다.
 
-## Outcome
+## 결과
 
-`aws-spring-boot` now provides optional S3 Access Grants auto-configuration and
-a coroutine template for `getDataAccess`, `listCallerAccessGrants`,
-`listAccessGrants`, `listAccessGrantsInstances`, and
-`listAccessGrantsLocations`. README English/Korean files document the runtime
-dependency, opt-in property, Spring injection example, and shared
-English-label component/flow diagrams.
+이제 `aws-spring-boot`는 선택적 S3 Access Grants 자동 구성과 `getDataAccess`,
+`listCallerAccessGrants`, `listAccessGrants`, `listAccessGrantsInstances`,
+`listAccessGrantsLocations`용 coroutine template을 제공한다. 영문/한글 README에 runtime
+dependency, opt-in property, Spring injection example, 공통 영문 label component/flow
+diagram을 문서화했다.
 
-## Verification
+## 검증
 
 - `./gradlew :bluetape4k-aws-spring-boot:dependencyInsight --dependency s3control --configuration compileClasspath`
-  showed `software.amazon.awssdk:s3control:2.46.0` on compile classpath.
-- `./gradlew :bluetape4k-aws-spring-boot:compileKotlin --no-daemon --max-workers=1`
-  passed.
-- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --no-daemon --max-workers=1`
-  passed.
+  에서 compile classpath의 `software.amazon.awssdk:s3control:2.46.0` 확인
+- `./gradlew :bluetape4k-aws-spring-boot:compileKotlin --no-daemon --max-workers=1` 통과
+- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --no-daemon --max-workers=1` 통과
 - `./gradlew :bluetape4k-aws-spring-boot:test --tests '*S3AccessGrants*' --no-daemon --max-workers=1`
-  passed with 14 focused tests.
-- S3 Access Grants component diagram gate:
-  `nodes=10 routes=9 segments=28 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
-- S3 Access Grants flow diagram gate:
-  `nodes=12 routes=10 segments=30 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`.
-- Rendered PNGs were inspected directly:
-  `docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png`
-  and
-  `docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png`.
+  에서 대상 테스트 14개 통과
+- S3 Access Grants component diagram 검증:
+  `nodes=10 routes=9 segments=28 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`
+- S3 Access Grants flow diagram 검증:
+  `nodes=12 routes=10 segments=30 badEndpointAngle=0 badBends=0 interiorCrossings=0 marginImbalance=0 titleGap=54`
+- Rendering PNG를 직접 검사했다.
+  `docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-components-08.png` 및
+  `docs/images/readme-diagrams/bluetape4k-aws-s3-access-grants-flow-09.png`
 
-## Future Guard
+## 향후 보호 장치
 
-Do not fold S3 Access Grants into `S3Operations`; it belongs to S3 Control and
-requires a distinct optional runtime dependency. When adding more Access Grants
-methods, keep administrative operations explicit and preserve raw client escape
-hatches for account-management workflows.
+S3 Access Grants를 `S3Operations`에 합치지 않는다. 이 기능은 S3 Control에 속하며 별도의
+선택적 runtime dependency가 필요하다. Access Grants method를 더 추가할 때 관리용
+operation을 명시적으로 유지하고 account management workflow용 원본 client 탈출구를
+보존한다.
 
-When adding a new README integration section, include related diagrams in the
-same PR before review. `bluetape4k-diagram` evidence must include geometry-gate
-counts, PNG inspection, README PNG embeds, and matching SVG/PNG/DOT/plain
-assets.
+새 README integration section을 추가할 때 review 전에 같은 PR에 관련 diagram도 포함한다.
+`bluetape4k-diagram` evidence에는 geometry gate 수치, PNG 검사, README PNG embed, 대응하는
+SVG/PNG/DOT/plain asset이 있어야 한다.
