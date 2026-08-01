@@ -7,7 +7,7 @@ import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Runtime holder for Ktor S3 Vectors operations and plugin-owned client lifecycle.
+ * Ktor S3 Vectors 작업과 플러그인이 소유한 클라이언트 수명 주기를 보관하는 런타임입니다.
  */
 class S3VectorsKtorRuntime(
     val operations: S3VectorsOperations,
@@ -17,7 +17,7 @@ class S3VectorsKtorRuntime(
     private val closed = AtomicBoolean(false)
 
     /**
-     * Closes the plugin-created S3 Vectors client once. Injected clients are never closed.
+     * 플러그인이 생성한 S3 Vectors 클라이언트를 한 번 닫습니다. 주입된 클라이언트는 닫지 않습니다.
      */
     suspend fun stop() {
         if (closed.compareAndSet(false, true)) {

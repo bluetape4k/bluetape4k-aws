@@ -33,13 +33,13 @@ import java.time.Duration
 import kotlin.random.Random
 
 /**
- * Coroutine-friendly [KinesisKtorOperations] implementation backed by [KinesisAsyncClient].
+ * [KinesisAsyncClient]를 사용하는 코루틴 친화적인 [KinesisKtorOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Simple stream and record operations reuse the repository's `aws-java`
- * coroutine helpers. The record Flow stays local because it is an explicit
- * Ktor application consumer contract, not a shared SDK primitive.
+ * 단순한 스트림 및 레코드 작업은 리포지토리의 `aws-java` 코루틴 도우미를 재사용합니다.
+ * 레코드 Flow는 공유 SDK 기본 요소가 아니라 명시적인 Ktor 애플리케이션 소비자 계약이므로
+ * 이 모듈에 유지합니다.
  */
 class KinesisKtorTemplate(
     private val kinesisAsyncClient: KinesisAsyncClient,

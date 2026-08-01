@@ -7,7 +7,7 @@ import io.ktor.http.content.OutgoingContent
 import java.time.Duration
 
 /**
- * Opt-in Micrometer wrapper for selected [S3KtorClient] operations.
+ * 선택한 [S3KtorClient] 작업에 적용하는 옵트인 Micrometer 래퍼입니다.
  */
 class MicrometerS3KtorClient(
     private val delegate: S3KtorClient,
@@ -119,7 +119,7 @@ class MicrometerS3KtorClient(
 }
 
 /**
- * Wraps this S3 Ktor client with Micrometer instrumentation.
+ * 이 S3 Ktor 클라이언트를 Micrometer 계측으로 감쌉니다.
  */
 fun S3KtorClient.withMicrometer(
     meterRegistry: MeterRegistry,

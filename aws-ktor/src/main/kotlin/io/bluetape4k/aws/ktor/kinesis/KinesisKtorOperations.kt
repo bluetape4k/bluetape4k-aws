@@ -12,13 +12,13 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.Record
 
 /**
- * Coroutine-oriented Kinesis operations for Ktor applications.
+ * Ktor 애플리케이션을 위한 코루틴 중심 Kinesis 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Operations return raw AWS SDK response objects so callers retain service
- * metadata and per-entry failure details. [recordFlow] is a cold, explicit,
- * single-shard consumer Flow; it does not manage leases or checkpoints.
+ * 작업은 호출자가 서비스 메타데이터와 항목별 실패 정보를 유지할 수 있도록 원본 AWS SDK
+ * 응답 객체를 반환합니다. [recordFlow]는 명시적인 단일 샤드 cold 소비자 Flow이며
+ * 임대나 체크포인트를 관리하지 않습니다.
  */
 interface KinesisKtorOperations {
     suspend fun createStream(streamName: String, shardCount: Int = 1): CreateStreamResponse
