@@ -14,29 +14,28 @@ import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
 import java.util.*
 
 /**
- * Publishes selected Micrometer meter snapshots to CloudWatch through [CloudWatchKtorOperations].
+ * 선택한 Micrometer 미터 스냅샷을 [CloudWatchKtorOperations]를 통해 CloudWatch에 게시합니다.
  *
- * ## Contract
+ * ## 계약
  *
- * This helper does not create or replace a global Micrometer registry. It reads
- * meters from an existing [MeterRegistry] only when application code invokes
- * one of the publish methods.
+ * 이 도우미는 전역 Micrometer 레지스트리를 생성하거나 교체하지 않습니다. 애플리케이션 코드가
+ * 게시 메서드 중 하나를 호출할 때만 기존 [MeterRegistry]에서 미터를 읽습니다.
  */
 interface CloudWatchKtorMeterPublishingOperations {
 
     /**
-     * Publishes snapshots from all meters accepted by [predicate].
+     * [predicate]가 허용한 모든 미터의 스냅샷을 게시합니다.
      */
     suspend fun publishMeters(predicate: (Meter) -> Boolean = { true }): List<PutMetricDataResponse>
 
     /**
-     * Publishes snapshots for meters whose Micrometer name equals [name].
+     * Micrometer 이름이 [name]과 같은 미터의 스냅샷을 게시합니다.
      */
     suspend fun publishMeter(name: String): List<PutMetricDataResponse>
 }
 
 /**
- * Default [CloudWatchKtorMeterPublishingOperations] implementation.
+ * 기본 [CloudWatchKtorMeterPublishingOperations] 구현입니다.
  */
 class CloudWatchKtorMeterPublishingTemplate(
     private val meterRegistry: MeterRegistry,

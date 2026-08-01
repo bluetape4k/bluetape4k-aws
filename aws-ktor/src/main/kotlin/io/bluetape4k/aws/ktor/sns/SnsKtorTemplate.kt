@@ -8,13 +8,12 @@ import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
- * Coroutine-friendly [SnsKtorOperations] implementation backed by [SnsAsyncClient].
+ * [SnsAsyncClient]를 사용하는 코루틴 친화적인 [SnsKtorOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Reuses existing `aws-java` coroutine helpers for topic creation. Publish,
- * list, and confirmation paths use direct `CompletableFuture.await()` because
- * their Ktor request and trust contracts are local to this module.
+ * 주제 생성에는 기존 `aws-java` 코루틴 도우미를 재사용합니다. 게시, 목록, 확인 경로의
+ * Ktor 요청 및 신뢰 계약은 이 모듈에 속하므로 `CompletableFuture.await()`를 직접 사용합니다.
  */
 class SnsKtorTemplate(
     private val snsAsyncClient: SnsAsyncClient,

@@ -11,22 +11,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
- * Application attribute key that stores the installed [SesKtorRuntime].
+ * 설치된 [SesKtorRuntime]을 저장하는 애플리케이션 속성 키입니다.
  */
 val SesKtorRuntimeKey: AttributeKey<SesKtorRuntime> = AttributeKey("SesKtorRuntime")
 
 /**
- * Application attribute key that stores the installed [SesKtorOperations].
+ * 설치된 [SesKtorOperations]를 저장하는 애플리케이션 속성 키입니다.
  */
 val SesKtorOperationsKey: AttributeKey<SesKtorOperations> = AttributeKey("SesKtorOperations")
 
 /**
- * Ktor application plugin for SES v2 email operations.
+ * SES v2 이메일 작업용 Ktor 애플리케이션 플러그인입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Installing the plugin does not send email. Email calls happen only through
- * [SesKtorOperations] methods.
+ * 플러그인을 설치해도 이메일을 전송하지 않습니다. 이메일 호출은
+ * [SesKtorOperations] 메서드를 통해서만 발생합니다.
  */
 val SesKtorPlugin: ApplicationPlugin<SesKtorPluginConfig> = createApplicationPlugin(
     name = "SesKtorPlugin",
@@ -47,15 +47,15 @@ val SesKtorPlugin: ApplicationPlugin<SesKtorPluginConfig> = createApplicationPlu
 }
 
 /**
- * Returns SES operations installed by [SesKtorPlugin].
+ * [SesKtorPlugin]이 설치한 SES 작업을 반환합니다.
  *
- * @throws IllegalStateException when [SesKtorPlugin] is absent or disabled.
+ * @throws IllegalStateException [SesKtorPlugin]이 없거나 비활성화된 경우
  */
 fun Application.ses(): SesKtorOperations =
     sesOrNull() ?: error("SesKtorPlugin is not installed or is disabled.")
 
 /**
- * Returns SES operations installed by [SesKtorPlugin], or null when absent or disabled.
+ * [SesKtorPlugin]이 설치한 SES 작업을 반환합니다. 플러그인이 없거나 비활성화되었으면 null을 반환합니다.
  */
 fun Application.sesOrNull(): SesKtorOperations? =
     attributes.getOrNull(SesKtorOperationsKey)

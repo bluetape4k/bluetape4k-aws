@@ -27,13 +27,12 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Runtime holder for Ktor CloudWatch Logs operations, buffering, and client lifecycle.
+ * Ktor CloudWatch Logs 작업, 버퍼링, 클라이언트 수명 주기를 보관하는 런타임입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Publishing is explicit: events are sent only after application code appends
- * events or calls operations directly. Shutdown flush is bounded by
- * [shutdownFlushTimeout].
+ * 게시 작업은 명시적입니다. 애플리케이션 코드가 이벤트를 추가하거나 작업을 직접 호출한 뒤에만
+ * 이벤트를 전송합니다. 종료 시 flush 시간은 [shutdownFlushTimeout]으로 제한됩니다.
  */
 class CloudWatchLogsKtorRuntime(
     val operations: CloudWatchLogsKtorOperations,
@@ -69,7 +68,7 @@ class CloudWatchLogsKtorRuntime(
     }
 
     /**
-     * Starts optional setup and periodic flushing.
+     * 선택적인 설정과 주기적 flush를 시작합니다.
      */
     suspend fun start() {
         if (!started.compareAndSet(false, true)) {
@@ -117,7 +116,7 @@ class CloudWatchLogsKtorRuntime(
     }
 
     /**
-     * Appends a log [message] to the configured default log stream buffer.
+     * 로그 [message]를 구성된 기본 로그 스트림 버퍼에 추가합니다.
      */
     suspend fun append(
         message: String,
@@ -132,7 +131,7 @@ class CloudWatchLogsKtorRuntime(
     }
 
     /**
-     * Appends [logEvent] to the configured default log stream buffer.
+     * [logEvent]를 구성된 기본 로그 스트림 버퍼에 추가합니다.
      */
     suspend fun append(logEvent: InputLogEvent) {
         requireNotNull(logStream) {
@@ -144,7 +143,7 @@ class CloudWatchLogsKtorRuntime(
     }
 
     /**
-     * Flushes buffered events to CloudWatch Logs.
+     * 버퍼링한 이벤트를 CloudWatch Logs로 flush합니다.
      */
     suspend fun flush(): List<PutLogEventsResponse> {
         val drained = bufferMutex.withLock {
@@ -171,7 +170,7 @@ class CloudWatchLogsKtorRuntime(
     }
 
     /**
-     * Stops periodic flushing, flushes remaining events, and closes plugin-owned clients.
+     * 주기적 flush를 중지하고 남은 이벤트를 전송한 뒤 플러그인이 소유한 클라이언트를 닫습니다.
      */
     suspend fun stop() {
         if (started.compareAndSet(true, false)) {

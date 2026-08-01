@@ -6,22 +6,22 @@ import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
 
 /**
- * Coroutine CloudWatch metric operations for Ktor applications.
+ * Ktor 애플리케이션을 위한 코루틴 CloudWatch 메트릭 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Operations call AWS only when invoked. Default-namespace methods require the
- * namespace configured for the installed [CloudWatchKtorPlugin].
+ * 작업을 호출할 때만 AWS를 호출합니다. 기본 네임스페이스 메서드는 설치된
+ * [CloudWatchKtorPlugin]에 구성한 네임스페이스가 필요합니다.
  */
 interface CloudWatchKtorOperations {
 
     /**
-     * Publishes [metricData] to the configured default namespace.
+     * [metricData]를 구성된 기본 네임스페이스에 게시합니다.
      */
     suspend fun putMetricData(metricData: List<MetricDatum>): List<PutMetricDataResponse>
 
     /**
-     * Publishes [metricData] to [namespace].
+     * [metricData]를 [namespace]에 게시합니다.
      */
     suspend fun putMetricData(
         namespace: String,
@@ -29,13 +29,13 @@ interface CloudWatchKtorOperations {
     ): List<PutMetricDataResponse>
 
     /**
-     * Publishes one [metricDatum] to the configured default namespace.
+     * [metricDatum] 하나를 구성된 기본 네임스페이스에 게시합니다.
      */
     suspend fun putMetricDatum(metricDatum: MetricDatum): List<PutMetricDataResponse> =
         putMetricData(listOf(metricDatum))
 
     /**
-     * Publishes one [metricDatum] to [namespace].
+     * [metricDatum] 하나를 [namespace]에 게시합니다.
      */
     suspend fun putMetricDatum(
         namespace: String,
@@ -44,7 +44,7 @@ interface CloudWatchKtorOperations {
         putMetricData(namespace, listOf(metricDatum))
 
     /**
-     * Lists CloudWatch metrics.
+     * CloudWatch 메트릭 목록을 조회합니다.
      */
     suspend fun listMetrics(
         namespace: String? = null,

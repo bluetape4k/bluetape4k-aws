@@ -19,12 +19,12 @@ internal const val CLOUDWATCH_LOGS_MIN_BATCH_SIZE = 1
 internal const val CLOUDWATCH_LOGS_MAX_BATCH_SIZE = 10000
 
 /**
- * Default [CloudWatchLogsKtorOperations] implementation backed by [CloudWatchLogsAsyncClient].
+ * [CloudWatchLogsAsyncClient]를 사용하는 기본 [CloudWatchLogsKtorOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Log events are split by [batchSize]. Empty event lists are no-ops and do not
- * call AWS.
+ * 로그 이벤트는 [batchSize] 단위로 나눕니다. 빈 이벤트 목록은 아무 작업도 하지 않으며
+ * AWS를 호출하지 않습니다.
  */
 class CloudWatchLogsKtorTemplate(
     private val cloudWatchLogsAsyncClient: CloudWatchLogsAsyncClient,

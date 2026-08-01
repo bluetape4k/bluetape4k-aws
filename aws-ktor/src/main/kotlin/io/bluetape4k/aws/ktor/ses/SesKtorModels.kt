@@ -6,16 +6,16 @@ import java.io.Serializable
 import java.nio.charset.Charset
 import java.util.Arrays
 
-/** Maximum SES v2 message size accepted by the Ktor value objects. */
+/** Ktor 값 객체가 허용하는 최대 SES v2 메시지 크기입니다. */
 const val MAX_SES_MESSAGE_BYTES: Int = 40 * 1024 * 1024
 
 /**
- * Recipient address set used by SES email requests.
+ * SES 이메일 요청에서 사용하는 수신자 주소 집합입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * At least one recipient must be present. Address strings are validated only
- * for header-safety; SES performs final email-address validation.
+ * 수신자가 하나 이상 있어야 합니다. 주소 문자열은 헤더 안전성만 검증하며
+ * 최종 이메일 주소 검증은 SES가 수행합니다.
  */
 data class SesEmailAddressSet(
     val to: List<String>,
@@ -36,12 +36,11 @@ data class SesEmailAddressSet(
 }
 
 /**
- * Text and/or HTML body for SES simple email content.
+ * SES 단순 이메일 콘텐츠의 텍스트 및 HTML 본문입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Either text or HTML must be non-blank. The charset must be supported by the
- * running JVM.
+ * 텍스트나 HTML 중 하나는 비어 있지 않아야 합니다. 실행 중인 JVM이 문자 집합을 지원해야 합니다.
  */
 data class SesEmailBody(
     val text: String? = null,
@@ -63,13 +62,12 @@ data class SesEmailBody(
 }
 
 /**
- * SES v2 attachment value object for simple and templated messages.
+ * 단순 및 템플릿 메시지용 SES v2 첨부 파일 값 객체입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Attachment bytes are copied at construction and on public read. Internal SDK
- * mapping reuses the constructor-owned copy to avoid additional large-buffer
- * copies.
+ * 첨부 파일 바이트는 생성할 때와 공개 읽기 시 복사합니다. 내부 SDK 매핑은 대용량 버퍼를
+ * 추가로 복사하지 않도록 생성자가 소유한 복사본을 재사용합니다.
  */
 class SesEmailAttachment(
     val fileName: String,
@@ -83,7 +81,7 @@ class SesEmailAttachment(
 
     private val contentValue: ByteArray = content.copyOf()
 
-    /** Defensive copy of the attachment content. */
+    /** 첨부 파일 콘텐츠의 방어적 복사본입니다. */
     val content: ByteArray
         get() = contentValue.copyOf()
 
@@ -130,12 +128,12 @@ class SesEmailAttachment(
 }
 
 /**
- * SES simple email request.
+ * SES 단순 이메일 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Groups destination, subject, body, sender, reply-to, headers, attachments,
- * and configuration-set options into a named request value.
+ * 대상, 제목, 본문, 발신자, 회신 주소, 헤더, 첨부 파일, 구성 집합 옵션을
+ * 명명된 요청 값으로 묶습니다.
  */
 data class SesEmailRequest(
     val destination: SesEmailAddressSet,
@@ -165,11 +163,11 @@ data class SesEmailRequest(
 }
 
 /**
- * SES template email request.
+ * SES 템플릿 이메일 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Exactly one of [templateName] or [templateArn] must be supplied.
+ * [templateName]과 [templateArn] 중 정확히 하나만 제공해야 합니다.
  */
 data class SesTemplateEmailRequest(
     val destination: SesEmailAddressSet,
@@ -205,12 +203,12 @@ data class SesTemplateEmailRequest(
 }
 
 /**
- * SES raw MIME email request.
+ * SES 원본 MIME 이메일 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Raw bytes are copied at construction and on public read. Internal SDK mapping
- * reuses the constructor-owned copy to avoid additional large-buffer copies.
+ * 원본 바이트는 생성할 때와 공개 읽기 시 복사합니다. 내부 SDK 매핑은 대용량 버퍼를
+ * 추가로 복사하지 않도록 생성자가 소유한 복사본을 재사용합니다.
  */
 class SesRawEmailRequest(
     rawContent: ByteArray,
@@ -221,7 +219,7 @@ class SesRawEmailRequest(
 
     private val rawContentValue: ByteArray = rawContent.copyOf()
 
-    /** Defensive copy of the raw MIME content. */
+    /** 원본 MIME 콘텐츠의 방어적 복사본입니다. */
     val rawContent: ByteArray
         get() = rawContentValue.copyOf()
 

@@ -5,34 +5,34 @@ import java.io.Serializable
 import java.net.URI
 
 /**
- * Throughput scope for an SNS FIFO topic.
+ * SNS FIFO 주제의 처리량 범위입니다.
  */
 enum class SnsFifoThroughputScope(val attributeValue: String) {
-    /** Computes FIFO throughput at the whole-topic level. */
+    /** 전체 주제 수준에서 FIFO 처리량을 계산합니다. */
     TOPIC("Topic"),
 
-    /** Computes FIFO throughput at the message-group level. */
+    /** 메시지 그룹 수준에서 FIFO 처리량을 계산합니다. */
     MESSAGE_GROUP("MessageGroup"),
 }
 
 /**
- * Amazon SNS SMS delivery type for the `AWS.SNS.SMS.SMSType` message attribute.
+ * `AWS.SNS.SMS.SMSType` 메시지 속성에 사용할 Amazon SNS SMS 전송 타입입니다.
  */
 enum class SnsSmsType(val attributeValue: String) {
-    /** Cost-optimized, non-critical messages such as marketing notifications. */
+    /** 마케팅 알림처럼 중요하지 않고 비용에 최적화된 메시지입니다. */
     PROMOTIONAL("Promotional"),
 
-    /** Reliability-optimized messages such as one-time passwords or account alerts. */
+    /** 일회용 비밀번호나 계정 알림처럼 안정성에 최적화된 메시지입니다. */
     TRANSACTIONAL("Transactional"),
 }
 
 /**
- * Value object for an SNS topic publish request.
+ * SNS 주제 게시 요청 값 객체입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * FIFO-only fields are accepted only for `.fifo` topic ARNs. FIFO topics require
- * a non-blank message group id.
+ * FIFO 전용 필드는 `.fifo` 주제 ARN에만 허용됩니다. FIFO 주제에는 비어 있지 않은
+ * 메시지 그룹 id가 필요합니다.
  */
 data class SnsPublishRequest(
     val topicArn: String,
@@ -67,12 +67,12 @@ data class SnsPublishRequest(
 }
 
 /**
- * Value object for publishing an SMS message directly to a phone number.
+ * 전화번호로 SMS 메시지를 직접 게시하는 값 객체입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Maps explicit SMS options to Amazon SNS SMS message attributes. The phone
- * number should use E.164 format, for example `+15550100000`.
+ * 명시적인 SMS 옵션을 Amazon SNS SMS 메시지 속성에 매핑합니다. 전화번호는
+ * `+15550100000`과 같은 E.164 형식을 사용해야 합니다.
  */
 data class SnsSmsRequest(
     val phoneNumber: String,
@@ -126,21 +126,21 @@ data class SnsSmsRequest(
 }
 
 /**
- * SNS HTTP(S) endpoint message types.
+ * SNS HTTP(S) 엔드포인트 메시지 타입입니다.
  */
 enum class SnsHttpMessageType(val value: String) {
-    /** Message delivered to a subscribed HTTP(S) endpoint. */
+    /** 구독한 HTTP(S) 엔드포인트로 전달되는 메시지입니다. */
     NOTIFICATION("Notification"),
 
-    /** Message sent after an HTTP(S) endpoint is subscribed and must be confirmed. */
+    /** HTTP(S) 엔드포인트 구독 후 확인을 위해 전송되는 메시지입니다. */
     SUBSCRIPTION_CONFIRMATION("SubscriptionConfirmation"),
 
-    /** Message sent after an HTTP(S) endpoint is unsubscribed and can be re-confirmed. */
+    /** HTTP(S) 엔드포인트 구독 해제 후 재확인을 위해 전송되는 메시지입니다. */
     UNSUBSCRIBE_CONFIRMATION("UnsubscribeConfirmation"),
     ;
 
     companion object {
-        /** Resolves an official SNS HTTP message type value. */
+        /** 공식 SNS HTTP 메시지 타입 값을 해석합니다. */
         fun from(value: String): SnsHttpMessageType =
             entries.firstOrNull { it.value == value }
                 ?: throw IllegalArgumentException("Unsupported SNS HTTP message type: $value")
@@ -148,14 +148,12 @@ enum class SnsHttpMessageType(val value: String) {
 }
 
 /**
- * Parsed SNS HTTP(S) endpoint message.
+ * 파싱된 SNS HTTP(S) 엔드포인트 메시지입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * This value is untrusted. It exposes SNS signature fields but does not validate
- * the cryptographic signature. Validate the certificate chain, signature, and
- * expected topic ARN before processing notifications or confirming
- * subscriptions.
+ * 이 값은 신뢰되지 않습니다. SNS 서명 필드를 노출하지만 암호학적 서명을 검증하지 않습니다.
+ * 알림을 처리하거나 구독을 확인하기 전에 인증서 체인, 서명, 예상 topic ARN을 검증하세요.
  */
 data class SnsHttpMessage(
     val type: SnsHttpMessageType,
@@ -173,19 +171,19 @@ data class SnsHttpMessage(
     val raw: Map<String, String?> = emptyMap(),
 ): Serializable {
 
-    /** True when this is a notification delivery message. */
+    /** 알림 전달 메시지이면 true입니다. */
     val isNotification: Boolean
         get() = type == SnsHttpMessageType.NOTIFICATION
 
-    /** True when this is a subscription confirmation message. */
+    /** 구독 확인 메시지이면 true입니다. */
     val isSubscriptionConfirmation: Boolean
         get() = type == SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION
 
-    /** True when this is an unsubscribe confirmation message. */
+    /** 구독 해제 확인 메시지이면 true입니다. */
     val isUnsubscribeConfirmation: Boolean
         get() = type == SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
 
-    /** True when this message type can carry a subscription confirmation token. */
+    /** 구독 확인 토큰을 전달할 수 있는 메시지 타입이면 true입니다. */
     val canConfirmSubscription: Boolean
         get() = type == SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION ||
             type == SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
@@ -205,12 +203,12 @@ data class SnsHttpMessage(
 }
 
 /**
- * Caller-verified SNS HTTP message.
+ * 호출자가 검증한 SNS HTTP 메시지입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Create this wrapper only after the caller has validated the SNS signature,
- * certificate chain, expected topic ARN, and replay policy.
+ * 호출자가 SNS 서명, 인증서 체인, 예상 topic ARN, 재생 정책을 검증한 뒤에만
+ * 이 래퍼를 생성하세요.
  */
 class TrustedSnsHttpMessage private constructor(
     val message: SnsHttpMessage,
@@ -220,7 +218,7 @@ class TrustedSnsHttpMessage private constructor(
         private const val serialVersionUID: Long = -7318834693375493029L
 
         /**
-         * Wraps a caller-verified SNS HTTP message.
+         * 호출자가 검증한 SNS HTTP 메시지를 감쌉니다.
          */
         fun fromVerified(message: SnsHttpMessage): TrustedSnsHttpMessage =
             TrustedSnsHttpMessage(message)
