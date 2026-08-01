@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
  * ```
  *
  * @param builder [DynamoDbEnhancedAsyncClient.Builder] 를 초기화하는 람다 함수
- * @return [DynamoDbEnhancedAsyncClient] instance
+ * @return [DynamoDbEnhancedAsyncClient] 인스턴스
  */
 inline fun dynamoDbEnhancedAsyncClient(
     builder: DynamoDbEnhancedAsyncClient.Builder.() -> Unit,
@@ -32,9 +32,9 @@ inline fun dynamoDbEnhancedAsyncClient(
  * }
  * ```
  *
- * @param client [DynamoDbAsyncClient] instance
+ * @param client [DynamoDbAsyncClient] 인스턴스
  * @param builder [DynamoDbEnhancedAsyncClient.Builder] 를 초기화하는 람다 함수
- * @return [DynamoDbEnhancedAsyncClient] instance
+ * @return [DynamoDbEnhancedAsyncClient] 인스턴스
  */
 inline fun dynamoDbEnhancedAsyncClientOf(
     client: DynamoDbAsyncClient,
@@ -56,9 +56,9 @@ inline fun dynamoDbEnhancedAsyncClientOf(
  * )
  * ```
  *
- * @param client [DynamoDbAsyncClient] instance
- * @param extensions [DynamoDbEnhancedClientExtension] extensions
- * @return [DynamoDbEnhancedAsyncClient] instance
+ * @param client [DynamoDbAsyncClient] 인스턴스
+ * @param extensions [DynamoDbEnhancedClientExtension] 확장 목록
+ * @return [DynamoDbEnhancedAsyncClient] 인스턴스
  */
 fun dynamoDbEnhancedAsyncClientOf(
     client: DynamoDbAsyncClient,

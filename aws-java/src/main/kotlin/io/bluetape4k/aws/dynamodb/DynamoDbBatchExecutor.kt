@@ -88,9 +88,9 @@ class DynamoDbBatchExecutor<T: Any>(
     /**
      * [tableName] table에서 [items] 를 삭제하는 작업을 Batch로 수행합니다.
      *
-     * @param tableName  Table name
+     * @param tableName  테이블 이름
      * @param items      삭제할 Items
-     * @param primaryKeySelector primary key selector
+     * @param primaryKeySelector 기본 키 선택자
      */
     suspend fun delete(
         tableName: String,

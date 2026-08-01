@@ -108,8 +108,8 @@ fun S3AsyncClient.createBucketAsync(
 /**
  * S3 Object 를 download 한 후, ByteArray 로 반환합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param builder 요청 설정을 위한 빌더
  * @return 다욱받은 S3 Object의 ByteArray 형태의 정보를 담은 [CompletableFuture]
  *
@@ -133,8 +133,8 @@ inline fun S3AsyncClient.getAsByteArrayAsync(
 /**
  * S3 Object 를 download 한 후, 문자열로 반환합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param builder 요청 설정을 위한 빌더
  * @return 다욱받은 S3 Object의 문자열 형태의 정보를 담은 [CompletableFuture]
  *
@@ -158,8 +158,8 @@ inline fun S3AsyncClient.getAsStringAsync(
 /**
  * S3 Object 를 download 한 후, [destinationPath]에 저장합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param destinationPath 저장할 경로
  * @param builder 요청 설정을 위한 빌더
  * @return 다욱받은 S3 Object의 정보를 담은 [CompletableFuture]

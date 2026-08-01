@@ -14,7 +14,7 @@ import io.bluetape4k.support.useSafe
  * @param endpointUrl DynamoDB 엔드포인트 URL
  * @param region AWS 리전 (필수 — AWS SDK Kotlin은 region 미지정 시 런타임 에러 발생)
  * @param credentialsProvider AWS 자격 증명 제공자
- * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
+ * @param httpClient 선택적인 외부 관리 HTTP 엔진. SDK가 엔진 소유권을 관리하게 하려면 생략하세요.
  * @param builder [DynamoDbClient.Config.Builder] 를 통해 [DynamoDbClient.Config] 를 설정합니다.
  *
  * @return [DynamoDbClient] 인스턴스

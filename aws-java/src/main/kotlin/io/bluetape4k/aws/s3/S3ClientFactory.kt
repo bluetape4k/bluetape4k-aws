@@ -57,8 +57,8 @@ object S3ClientFactory {
          * // client != null
          * ```
          *
-         * @param endpointOverride      S3 endpoint
-         * @param region                S3 region
+         * @param endpointOverride      S3 엔드포인트
+         * @param region                S3 리전
          * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
          * @param builder           [S3ClientBuilder]를 이용하여 [S3Client]를 설정합니다.
          * @return [S3Client] 인스턴스
@@ -120,8 +120,8 @@ object S3ClientFactory {
          * // client != null
          * ```
          *
-         * @param endpointOverride      S3 endpoint
-         * @param region                S3 region
+         * @param endpointOverride      S3 엔드포인트
+         * @param region                S3 리전
          * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
          * @param builder           [S3AsyncClientBuilder]를 이용하여 [S3Client]를 설정합니다.
          * @return [S3AsyncClient] 인스턴스
@@ -184,8 +184,8 @@ object S3ClientFactory {
          * // client != null
          * ```
          *
-         * @param endpointOverride      S3 endpoint
-         * @param region                S3 region
+         * @param endpointOverride      S3 엔드포인트
+         * @param region                S3 리전
          * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
          * @param builder           [S3AsyncClientBuilder]를 이용하여 [S3Client]를 설정합니다.
          * @return [S3AsyncClient] 인스턴스
@@ -245,8 +245,8 @@ object S3ClientFactory {
          *
          * 참고: [Amazon S3 Transfer Manager](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/transfer-manager.html)
          *
-         * @param endpointOverride      S3 endpoint
-         * @param region                S3 region
+         * @param endpointOverride      S3 엔드포인트
+         * @param region                S3 리전
          * @param credentialsProvider   AWS [AwsCredentialsProvider] 인스턴스
          * @param executor               [Executor] 인스턴스
          * @param builder  [S3TransferManager] Builder를 이용하여 설정하는 코드 블럭

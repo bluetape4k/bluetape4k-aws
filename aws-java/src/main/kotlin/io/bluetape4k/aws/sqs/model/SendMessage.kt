@@ -80,14 +80,14 @@ inline fun sendMessageBatchRequestEntry(
 }
 
 /**
- * Build [SendMessageBatchRequestEntry]
+ * [SendMessageBatchRequestEntry]를 구성합니다.
  *
- * @param id                An identifier for the message in this batch.
- * @param messageGroupId    An identifier for the group of messages in this batch.
- * @param messageBody       The message to send.
- * @param delaySeconds      The length of time, in seconds, for which to delay a specific message. Range: 0..900.
- * @param builder       The lambda to initialize the builder.
- * @receiver            The builder to build the request.
+ * @param id                이 배치에서 메시지를 식별하는 값
+ * @param messageGroupId    이 배치의 메시지 그룹 식별자
+ * @param messageBody       전송할 메시지
+ * @param delaySeconds      특정 메시지 전송을 지연할 시간(초). 범위: 0..900
+ * @param builder       빌더를 초기화하는 람다
+ * @receiver            요청을 구성할 빌더
  * @return            [SendMessageBatchRequestEntry] 인스턴스
  */
 inline fun sendMessageBatchRequestEntryOf(

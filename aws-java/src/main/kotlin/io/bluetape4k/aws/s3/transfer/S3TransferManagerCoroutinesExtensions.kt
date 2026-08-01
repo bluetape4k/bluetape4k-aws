@@ -38,8 +38,8 @@ suspend inline fun <T: Any> S3TransferManager.download(
 /**
  * [S3TransferManager]를 이용하여 S3 Object 를 다운로드 받습니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param responseTransformer 응답을 변환할 비동기 transformer
  * @param builder [DownloadRequest.UntypedBuilder] 를 구성하는 람다 함수
  * @return 다운로드 완료 결과
@@ -60,8 +60,8 @@ suspend fun <T: Any> S3TransferManager.download(
 /**
  * [S3TransferManager]를 이용하여 S3 Object 를 ByteArray 로 다운로드 받습니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param builder [DownloadRequest.UntypedBuilder] 를 구성하는 람다 함수
  * @return 다운로드 완료 결과
  *
@@ -81,8 +81,8 @@ suspend inline fun S3TransferManager.downloadAsByteArray(
 /**
  * [S3TransferManager]를 이용하여 S3 Object 를 파일로 다운로드 받습니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param destination 저장할 파일 경로
  * @param builder [DownloadFileRequest.Builder] 를 구성하는 람다 함수
  * @return 다운로드 완료 결과
@@ -104,8 +104,8 @@ suspend inline fun S3TransferManager.downloadFile(
 /**
  * [S3TransferManager]를 이용하여 객체를 S3에 업로드 합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param asyncRequestBody 업로드할 객체
  * @param builder [UploadRequest.Builder] 를 구성하는 람다 함수
  * @return 업로드 완료 결과
@@ -126,8 +126,8 @@ suspend inline fun S3TransferManager.upload(
 /**
  * [S3TransferManager]를 이용하여 ByteArray 를 S3에 업로드 합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param content 업로드할 ByteArray
  * @param builder [UploadRequest.Builder] 를 구성하는 람다 함수
  * @return 업로드 완료 결과
@@ -148,8 +148,8 @@ suspend inline fun S3TransferManager.uploadByteArray(
 /**
  * [S3TransferManager]를 이용하여 파일을 S3에 업로드 합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param source 업로드할 파일 경로
  * @param builder [UploadFileRequest.Builder] 를 구성하는 람다 함수
  * @return 업로드 완료 결과

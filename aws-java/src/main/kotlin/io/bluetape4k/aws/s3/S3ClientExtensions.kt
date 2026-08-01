@@ -110,8 +110,8 @@ fun S3Client.createBucket(
 /**
  * S3 Object 를 다운로드 받아 [ResponseTransformer]를 통해 변환된 결과를 반환합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param builder 요청 설정을 위한 빌더
  * @param responseTransformer 응답 변환기
  * @return 변환된 결과
@@ -139,8 +139,8 @@ inline fun <T> S3Client.getObjectAs(
 /**
  * S3 Object 를 download 한 후, ByteArray 로 반환합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param builder 요청 설정을 위한 빌더
  * @return 다욱받은 S3 Object의 ByteArray 형태의 정보
  *
@@ -162,8 +162,8 @@ inline fun S3Client.getAsByteArray(
 /**
  * S3 Object 를 download 한 후, 문자열로 반환합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param charset 문자 인코딩 (기본값: UTF-8)
  * @param builder 요청 설정을 위한 빌더
  * @return 다욱받은 S3 Object의 문자열 형태의 정보
@@ -185,8 +185,8 @@ inline fun S3Client.getAsString(
 /**
  * S3 Object 를 download 한 후, [file]로 저장합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param file 저장할 파일
  * @param builder 요청 설정을 위한 빌더
  * @return 다욱받은 S3 Object의 정보
@@ -211,8 +211,8 @@ inline fun S3Client.getAsFile(
 /**
  * S3 Object 를 download 한 후, [path]에 저장합니다.
  *
- * @param bucket Bucket name
- * @param key Object key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param path 저장할 경로
  * @param builder 요청 설정을 위한 빌더
  * @return 다욱받은 S3 Object의 정보

@@ -29,8 +29,8 @@ val LocalCredentialsProvider: StaticCredentialsProvider =
  *      staticCredentialsProviderOf(s3Server.accessKey, s3Server.secretKey)
  * }
  * ```
- * @param accessKeyId      AWS access key
- * @param secretAccessKey  AWS secret key
+ * @param accessKeyId      AWS 액세스 키
+ * @param secretAccessKey  AWS 비밀 키
  * @return [StaticCredentialsProvider] 인스턴스
  */
 fun staticCredentialsProviderOf(accessKeyId: String, secretAccessKey: String): StaticCredentialsProvider {
@@ -51,8 +51,8 @@ fun staticCredentialsProviderOf(credentials: Credentials): StaticCredentialsProv
 /**
  * [Credentials]를 생성합니다.
  *
- * @param accessKeyId      AWS access key
- * @param secretAccessKey  AWS secret key
+ * @param accessKeyId      AWS 액세스 키
+ * @param secretAccessKey  AWS 비밀 키
  */
 fun credentialsOf(accessKeyId: String, secretAccessKey: String): Credentials {
     accessKeyId.requireNotBlank("accessKeyId")

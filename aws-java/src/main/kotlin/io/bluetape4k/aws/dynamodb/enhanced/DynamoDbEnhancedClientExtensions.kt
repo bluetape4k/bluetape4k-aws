@@ -35,9 +35,9 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.table(tableName: String): Dyn
  * `EnhancedAsyncClientExtensionsTest`의 동일 로직 검증 기준과 같이, `items=30`, `chunkSize=25`이면
  * 결과 컬렉션 크기는 `2`가 된다.
  *
- * @param T  entity type
- * @param itemClass entity class
- * @param table [MappedTableResource] instance
+ * @param T 엔티티 타입
+ * @param itemClass 엔티티 클래스
+ * @param table [MappedTableResource] 인스턴스
  * @param items 저장할 item 컬렉션
  * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
  * @return [BatchWriteResult] 컬렉션
@@ -68,8 +68,8 @@ fun <T: Any> DynamoDbEnhancedClient.batchWriteItems(
  * check(results.size == items.chunked(10).size)
  * ```
  *
- * @param T entity type
- * @param table [MappedTableResource] instance
+ * @param T 엔티티 타입
+ * @param table [MappedTableResource] 인스턴스
  * @param items 저장할 item 컬렉션
  * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
  * @return [BatchWriteResult] 컬렉션

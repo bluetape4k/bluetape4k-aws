@@ -47,8 +47,8 @@ class DynamoDbAsyncTableCreator {
      * tableCreator.tryCreateAsyncTable(asyncTable, request)
      * ```
      *
-     * @param asyncTable [DynamoDbAsyncTable] instance
-     * @param request [CreateTableEnhancedRequest] instance
+     * @param asyncTable [DynamoDbAsyncTable] 인스턴스
+     * @param request [CreateTableEnhancedRequest] 인스턴스
      */
     suspend fun <E: Any> tryCreateAsyncTable(
         asyncTable: DynamoDbAsyncTable<E>,

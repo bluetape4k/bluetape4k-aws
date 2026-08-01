@@ -20,7 +20,7 @@ import io.bluetape4k.support.useSafe
  * @param endpointUrl SES V2 서비스 엔드포인트 URL. null이면 기본 AWS 엔드포인트를 사용합니다.
  * @param region AWS 리전. null이면 환경 설정에서 자동으로 감지합니다.
  * @param credentialsProvider AWS 인증 정보 제공자. null이면 기본 자격 증명 체인을 사용합니다.
- * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
+ * @param httpClient 선택적인 외부 관리 HTTP 엔진. SDK가 엔진 소유권을 관리하게 하려면 생략하세요.
  * @param builder [SesV2Client.Config.Builder]에 대한 추가 설정 람다.
  * @return 설정된 [SesV2Client] 인스턴스.
  */

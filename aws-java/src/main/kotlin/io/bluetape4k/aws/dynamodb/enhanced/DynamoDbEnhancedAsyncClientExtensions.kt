@@ -27,7 +27,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult
  *
  * @param T DynamoDB Table 의 Entity Type
  * @param tableName 테이블 이름
- * @return [DynamoDbAsyncTable] instance
+ * @return [DynamoDbAsyncTable] 인스턴스
  */
 inline fun <reified T: Any> DynamoDbEnhancedAsyncClient.table(tableName: String): DynamoDbAsyncTable<T> {
     tableName.requireNotBlank("tableName")
@@ -41,8 +41,8 @@ inline fun <reified T: Any> DynamoDbEnhancedAsyncClient.table(tableName: String)
  * [Flow]의 결과 개수는 `2`가 된다.
  *
  * @param T
- * @param itemClass entity class
- * @param table [DynamoDbAsyncTable] instance
+ * @param itemClass 엔티티 클래스
+ * @param table [DynamoDbAsyncTable] 인스턴스
  * @param items 저장할 item 컬렉션
  * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
  * @return [BatchWriteResult] 컬렉션
@@ -77,7 +77,7 @@ fun <T: Any> DynamoDbEnhancedAsyncClient.batchWriteItems(
  * ```
  *
  * @param T
- * @param table [DynamoDbAsyncTable] instance
+ * @param table [DynamoDbAsyncTable] 인스턴스
  * @param items 저장할 item 컬렉션
  * @param chunkSize [DynamoDb.MAX_BATCH_ITEM_SIZE] 보다 작은 값을 사용해야 한다 (1~25)
  * @return [BatchWriteResult] 컬렉션

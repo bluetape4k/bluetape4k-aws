@@ -48,8 +48,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
  * }
  * ```
  *
- * @param T DynamoDB Entity Type
- * @param builder Enhanced Query Builder DSL
+ * @param T DynamoDB 엔티티 타입
+ * @param builder Enhanced Query Builder DSL 구성
  * @return [QueryEnhancedRequest] 인스턴스
  */
 inline fun <T: DynamoDbEntity> queryEnhancedRequest(

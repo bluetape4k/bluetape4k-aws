@@ -128,8 +128,8 @@ suspend inline fun SnsClient.createFifoTopic(
  * }
  * ```
  *
- * @param topicArn topic ARN
- * @param endpoint endpoint
+ * @param topicArn 토픽 ARN
+ * @param endpoint 엔드포인트
  * @param protocol 프로토콜
  * @param returnSubscriptionArn 구독 ARN 반환 여부
  * @param builder [SubscribeRequest]를 빌드하는 람다 함수
@@ -186,7 +186,7 @@ suspend inline fun SnsClient.checkIfPhoneNumberIsOptedOut(
  * }
  * ```
  *
- * @param topicArn topic ARN
+ * @param topicArn 토픽 ARN
  * @param message 메시지
  * @param subject 제목
  * @param builder [PublishRequest]를 빌드하는 람다 함수
@@ -233,7 +233,7 @@ suspend inline fun SnsClient.publish(
  * }
  * ```
  *
- * @param topicArn topic ARN
+ * @param topicArn 토픽 ARN
  * @param entries 발행할 메시지 목록
  * @param builder [PublishBatchRequest]를 빌드하는 람다 함수
  *
@@ -284,7 +284,7 @@ suspend inline fun SnsClient.unsubscribe(
  * val response = snsClient.deleteTopic(topicArn)
  * ```
  *
- * @param topicArn topic ARN
+ * @param topicArn 토픽 ARN
  * @param builder [DeleteTopicRequest]를 빌드하는 람다 함수
  * @return [DeleteTopicResponse] 인스턴스
  */

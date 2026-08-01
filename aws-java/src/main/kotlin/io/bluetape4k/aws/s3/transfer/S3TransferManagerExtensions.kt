@@ -46,8 +46,8 @@ inline fun <T: Any> S3TransferManager.downloadAsync(
  * [S3TransferManager]를 이용하여 S3 Object 를 다운로드 받습니다.
  *
  * @param T 반환 타입
- * @param bucket bucket name
- * @param key key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param responseTransformer 응답을 변환할 비동기 transformer
  * @param builder [GetObjectRequest.Builder] 를 구성하는 람다 함수
  * @return 다운로드한 S3 Object
@@ -74,8 +74,8 @@ inline fun <T: Any> S3TransferManager.downloadAsync(
 /**
  * S3 Object 를 ByteArray 로 다운로드 받습니다.
  *
- * @param bucket bucket name
- * @param key key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param builder [DownloadRequest.UntypedBuilder] 를 구성하는 람다 함수
  * @return 다운로드한 S3 Object
  *
@@ -102,8 +102,8 @@ inline fun S3TransferManager.downloadAsByteArrayAsync(
 /**
  * S3 Object 를 파일로 다운로드 받습니다.
  *
- * @param bucket bucket name
- * @param key key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param destination 저장할 파일 경로
  * @param builder [DownloadFileRequest.Builder] 를 구성하는 람다 함수.
  * 기본 요청(`bucket`, `key`, `destination`) 적용 후 추가 설정을 덮어쓸 수 있습니다.
@@ -132,8 +132,8 @@ inline fun S3TransferManager.downloadFileAsync(
 /**
  * [S3TransferManager]를 이용하여 객체를 S3에 업로드 합니다.
  *
- * @param bucket bucket name
- * @param key key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param asyncRequestBody 업로드할 객체
  * @param builder  추가로 구성할 [UploadRequest.Builder]를 구성하는 람다 함수
  * @return [Upload] 인스턴스
@@ -165,8 +165,8 @@ inline fun S3TransferManager.uploadAsync(
 /**
  * ByteArray 를 S3에 업로드 합니다.
  *
- * @param bucket bucket name
- * @param key key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param content 업로드할 ByteArray
  * @param builder [UploadRequest.Builder] 를 구성하는 람다 함수
  * @return [Upload] 인스턴스
@@ -199,8 +199,8 @@ inline fun S3TransferManager.uploadByteArrayAsync(
 /**
  * 파일을 S3에 업로드 합니다.
  *
- * @param bucket bucket name
- * @param key key
+ * @param bucket 버킷 이름
+ * @param key 객체 키
  * @param source 업로드할 파일 경로
  * @param builder [UploadFileRequest.Builder] 를 구성하는 람다 함수
  * @return [FileUpload] 인스턴스

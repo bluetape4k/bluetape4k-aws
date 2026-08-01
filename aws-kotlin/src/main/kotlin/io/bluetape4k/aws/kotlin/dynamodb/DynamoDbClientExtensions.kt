@@ -125,9 +125,9 @@ suspend fun DynamoDbClient.deleteTableIfExists(name: String): DeleteTableRespons
  * [name] 이름의 DynamoDB 테이블 상태를 반환합니다.
  *
  * ## 동작/계약
- * - Calls `DescribeTable` and returns [TableStatus].
- * - Missing table responses return `null`.
- * - Retryable and operational service failures are propagated.
+ * - `DescribeTable`을 호출하고 [TableStatus]를 반환합니다.
+ * - 테이블 누락 응답은 `null`을 반환합니다.
+ * - 재시도 가능한 서비스 실패와 운영상 실패는 그대로 전파합니다.
  *
  * ```kotlin
  * val status = client.getTableStatus("orders")
