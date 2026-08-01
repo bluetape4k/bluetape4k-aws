@@ -11,22 +11,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
- * Application attribute key that stores the installed [EventBridgeKtorRuntime].
+ * 설치된 [EventBridgeKtorRuntime]을 저장하는 애플리케이션 속성 키입니다.
  */
 val EventBridgeKtorRuntimeKey: AttributeKey<EventBridgeKtorRuntime> = AttributeKey("EventBridgeKtorRuntime")
 
 /**
- * Application attribute key that stores the installed [EventBridgeKtorOperations].
+ * 설치된 [EventBridgeKtorOperations]를 저장하는 애플리케이션 속성 키입니다.
  */
 val EventBridgeKtorOperationsKey: AttributeKey<EventBridgeKtorOperations> = AttributeKey("EventBridgeKtorOperations")
 
 /**
- * Ktor application plugin for EventBridge operations.
+ * EventBridge 작업용 Ktor 애플리케이션 플러그인입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Installing the plugin does not send events. EventBridge calls happen only
- * through [EventBridgeKtorOperations] methods.
+ * 플러그인을 설치해도 이벤트를 전송하지 않습니다. EventBridge 호출은
+ * [EventBridgeKtorOperations] 메서드를 통해서만 발생합니다.
  */
 val EventBridgeKtorPlugin: ApplicationPlugin<EventBridgeKtorPluginConfig> = createApplicationPlugin(
     name = "EventBridgeKtorPlugin",
@@ -47,15 +47,15 @@ val EventBridgeKtorPlugin: ApplicationPlugin<EventBridgeKtorPluginConfig> = crea
 }
 
 /**
- * Returns EventBridge operations installed by [EventBridgeKtorPlugin].
+ * [EventBridgeKtorPlugin]이 설치한 EventBridge 작업을 반환합니다.
  *
- * @throws IllegalStateException when [EventBridgeKtorPlugin] is absent or disabled.
+ * @throws IllegalStateException [EventBridgeKtorPlugin]이 없거나 비활성화된 경우
  */
 fun Application.eventBridge(): EventBridgeKtorOperations =
     eventBridgeOrNull() ?: error("EventBridgeKtorPlugin is not installed or is disabled.")
 
 /**
- * Returns EventBridge operations installed by [EventBridgeKtorPlugin], or null when absent or disabled.
+ * [EventBridgeKtorPlugin]이 설치한 EventBridge 작업을 반환합니다. 플러그인이 없거나 비활성화되었으면 null을 반환합니다.
  */
 fun Application.eventBridgeOrNull(): EventBridgeKtorOperations? =
     attributes.getOrNull(EventBridgeKtorOperationsKey)

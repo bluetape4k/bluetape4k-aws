@@ -26,12 +26,12 @@ import software.amazon.awssdk.services.eventbridge.model.Target
 import java.util.concurrent.CompletableFuture
 
 /**
- * Default [EventBridgeKtorOperations] implementation backed by [EventBridgeAsyncClient].
+ * [EventBridgeAsyncClient]를 사용하는 기본 [EventBridgeKtorOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Provides suspend and future-returning variants over the same AWS SDK v2 async
- * client. Future variants return the SDK future directly and do not await it.
+ * 같은 AWS SDK v2 비동기 클라이언트에서 suspend 변형과 Future 반환 변형을 제공합니다.
+ * Future 변형은 SDK Future를 직접 반환하며 완료를 기다리지 않습니다.
  */
 class EventBridgeKtorTemplate(
     private val eventBridgeAsyncClient: EventBridgeAsyncClient,

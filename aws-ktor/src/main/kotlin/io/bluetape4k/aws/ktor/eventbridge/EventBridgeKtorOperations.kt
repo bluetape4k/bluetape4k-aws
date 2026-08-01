@@ -15,13 +15,13 @@ import software.amazon.awssdk.services.eventbridge.model.Target
 import java.util.concurrent.CompletableFuture
 
 /**
- * Coroutine and future-friendly EventBridge operations for Ktor applications.
+ * Ktor 애플리케이션을 위한 코루틴 및 Future 친화적인 EventBridge 작업입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Methods keep raw AWS SDK responses, including partial-failure metadata from
- * `PutEvents`, `PutTargets`, and `RemoveTargets`. One call maps to one SDK
- * request; batching, retry, and cleanup order remain caller responsibilities.
+ * 메서드는 `PutEvents`, `PutTargets`, `RemoveTargets`의 부분 실패 메타데이터를 포함한
+ * 원본 AWS SDK 응답을 유지합니다. 호출 한 번은 SDK 요청 하나에 대응하며 배치 처리,
+ * 재시도, 정리 순서는 호출자가 책임집니다.
  */
 interface EventBridgeKtorOperations {
     suspend fun createEventBus(name: String): CreateEventBusResponse

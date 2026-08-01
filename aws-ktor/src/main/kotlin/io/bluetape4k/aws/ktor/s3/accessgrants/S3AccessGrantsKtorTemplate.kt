@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsReq
 import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsResponse
 
 /**
- * Default [S3AccessGrantsKtorOperations] implementation backed by [S3ControlAsyncClient].
+ * [S3ControlAsyncClient]를 사용하는 기본 [S3AccessGrantsKtorOperations] 구현입니다.
  */
 class S3AccessGrantsKtorTemplate(
     private val s3ControlAsyncClient: S3ControlAsyncClient,
