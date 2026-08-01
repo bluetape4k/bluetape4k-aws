@@ -7,10 +7,10 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /**
- * Builds an AWS Kotlin SDK [EventBridgeClient].
+ * AWS Kotlin SDK [EventBridgeClient]를 생성합니다.
  *
- * The returned client is caller-owned. Use [withEventBridgeClient] for
- * short-lived clients that should be closed after the block.
+ * 반환된 클라이언트는 호출자가 소유합니다. 블록 실행 후 닫아야 하는 단기 클라이언트에는
+ * [withEventBridgeClient]를 사용하세요.
  */
 inline fun eventBridgeClientOf(
     endpointUrl: Url? = null,
@@ -27,7 +27,7 @@ inline fun eventBridgeClientOf(
 }
 
 /**
- * Builds an [EventBridgeClient], runs [block], and closes the client.
+ * [EventBridgeClient]를 생성하고 [block]을 실행한 뒤 클라이언트를 닫습니다.
  */
 suspend fun <R> withEventBridgeClient(
     endpointUrl: Url? = null,

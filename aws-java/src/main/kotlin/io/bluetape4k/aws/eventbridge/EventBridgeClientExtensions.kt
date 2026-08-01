@@ -24,25 +24,24 @@ import software.amazon.awssdk.services.eventbridge.model.RuleState
 import software.amazon.awssdk.services.eventbridge.model.Target
 
 /**
- * Creates an EventBridge event bus and returns the raw SDK response.
+ * EventBridge 이벤트 버스를 생성하고 SDK 원본 응답을 반환합니다.
  */
 fun EventBridgeClient.createEventBus(name: String): CreateEventBusResponse =
     createEventBus(createEventBusRequestOf(name))
 
 /**
- * Deletes an EventBridge event bus.
+ * EventBridge 이벤트 버스를 삭제합니다.
  *
- * Delete rules before deleting a custom or partner bus; this helper performs no
- * hidden cleanup.
+ * 사용자 정의 또는 파트너 버스를 삭제하기 전에 규칙을 삭제해야 합니다. 이 도우미는 숨겨진 정리를 수행하지 않습니다.
  */
 fun EventBridgeClient.deleteEventBus(name: String): DeleteEventBusResponse =
     deleteEventBus(deleteEventBusRequestOf(name))
 
 /**
- * Creates or updates a rule and returns the raw SDK response.
+ * 규칙을 생성하거나 갱신하고 SDK 원본 응답을 반환합니다.
  *
- * EventBridge requires either [eventPattern] or [scheduleExpression]. Omitted
- * fields are not merged by this wrapper.
+ * EventBridge에는 [eventPattern] 또는 [scheduleExpression] 중 하나가 필요합니다.
+ * 이 래퍼는 생략한 필드를 병합하지 않습니다.
  */
 fun EventBridgeClient.putRule(
     name: String,
@@ -55,7 +54,7 @@ fun EventBridgeClient.putRule(
     putRule(putRuleRequestOf(name, eventBusName, eventPattern, scheduleExpression, state, description))
 
 /**
- * Deletes a rule after the caller removes targets.
+ * 호출자가 대상을 제거한 뒤 규칙을 삭제합니다.
  */
 fun EventBridgeClient.deleteRule(
     name: String,
@@ -65,10 +64,9 @@ fun EventBridgeClient.deleteRule(
     deleteRule(deleteRuleRequestOf(name, eventBusName, force))
 
 /**
- * Adds or updates targets for a rule.
+ * 규칙의 대상을 추가하거나 갱신합니다.
  *
- * EventBridge may partially fail the operation. Inspect the returned
- * [PutTargetsResponse] failed-entry count and entries.
+ * EventBridge 작업은 부분적으로 실패할 수 있습니다. 반환된 [PutTargetsResponse]의 실패 항목 수와 항목을 확인하세요.
  */
 fun EventBridgeClient.putTargets(
     rule: String,
@@ -78,10 +76,10 @@ fun EventBridgeClient.putTargets(
     putTargets(putTargetsRequestOf(rule, targets, eventBusName))
 
 /**
- * Removes targets from a rule.
+ * 규칙에서 대상을 제거합니다.
  *
- * EventBridge may partially fail the operation. Inspect the returned
- * [RemoveTargetsResponse] failed-entry count and entries before deleting a rule.
+ * EventBridge 작업은 부분적으로 실패할 수 있습니다. 규칙을 삭제하기 전에 반환된
+ * [RemoveTargetsResponse]의 실패 항목 수와 항목을 확인하세요.
  */
 fun EventBridgeClient.removeTargets(
     rule: String,
@@ -92,7 +90,7 @@ fun EventBridgeClient.removeTargets(
     removeTargets(removeTargetsRequestOf(rule, ids, eventBusName, force))
 
 /**
- * Lists rules on an event bus.
+ * 이벤트 버스의 규칙 목록을 조회합니다.
  */
 fun EventBridgeClient.listRules(
     eventBusName: String? = null,
@@ -103,7 +101,7 @@ fun EventBridgeClient.listRules(
     listRules(listRulesRequestOf(eventBusName, namePrefix, limit, nextToken))
 
 /**
- * Lists targets attached to a rule.
+ * 규칙에 연결된 대상 목록을 조회합니다.
  */
 fun EventBridgeClient.listTargetsByRule(
     rule: String,
@@ -114,10 +112,10 @@ fun EventBridgeClient.listTargetsByRule(
     listTargetsByRule(listTargetsByRuleRequestOf(rule, eventBusName, limit, nextToken))
 
 /**
- * Publishes custom events with one SDK request.
+ * SDK 요청 하나로 사용자 정의 이벤트를 게시합니다.
  *
- * This helper does not batch, retry, or collapse partial success to a Boolean.
- * Inspect [PutEventsResponse] failed-entry count and entries.
+ * 이 도우미는 배치, 재시도 또는 부분 성공을 Boolean으로 축약하지 않습니다.
+ * [PutEventsResponse]의 실패 항목 수와 항목을 확인하세요.
  */
 fun EventBridgeClient.putEvents(
     entries: List<PutEventsRequestEntry>,

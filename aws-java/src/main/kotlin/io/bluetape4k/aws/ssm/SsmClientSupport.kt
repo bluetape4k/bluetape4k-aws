@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.ssm.SsmClientBuilder
 import java.net.URI
 
 /**
- * Builds an [SsmClient] and registers it with [ShutdownQueue].
+ * [SsmClient]를 생성하고 [ShutdownQueue]에 등록합니다.
  */
 inline fun ssmClient(builder: SsmClientBuilder.() -> Unit): SsmClient =
     SsmClient.builder().apply(builder).build()
@@ -19,7 +19,7 @@ inline fun ssmClient(builder: SsmClientBuilder.() -> Unit): SsmClient =
         }
 
 /**
- * Creates an [SsmClient] for [region].
+ * [region]용 [SsmClient]를 생성합니다.
  */
 inline fun ssmClientOf(
     region: Region,
@@ -33,7 +33,7 @@ inline fun ssmClientOf(
 }
 
 /**
- * Creates an [SsmClient] with optional local endpoint and credentials.
+ * 선택적인 로컬 엔드포인트와 자격 증명으로 [SsmClient]를 생성합니다.
  */
 inline fun ssmClientOf(
     endpoint: URI? = null,

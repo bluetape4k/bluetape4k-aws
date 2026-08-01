@@ -6,29 +6,29 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Tuning options for [KinesisClient.recordFlow].
+ * [KinesisClient.recordFlow] 조정 옵션입니다.
  *
- * ## Defaults
- * | Option | Default | Notes |
+ * ## 기본값
+ * | 옵션 | 기본값 | 설명 |
  * |---|---|---|
- * | batchLimit | 100 | Kinesis maximum is 10 000 |
- * | pollInterval | 200 ms | Minimum recommended poll interval per Kinesis quota |
- * | emptyBackoff | 1 s | Delay when a GetRecords response has no records |
- * | maxIteratorRetries | 3 | Maximum [ExpiredIteratorException] recovery attempts |
- * | initialThrottleBackoff | 500 ms | Exponential backoff seed for throttle retries |
- * | maxThrottleBackoff | 30 s | Maximum single delay between throttle retries |
- * | maxThrottleRetries | 5 | Maximum retryable [KinesisException] attempts |
+ * | batchLimit | 100 | Kinesis 최댓값은 10 000 |
+ * | pollInterval | 200 ms | Kinesis 할당량에 따른 최소 권장 폴링 간격 |
+ * | emptyBackoff | 1 s | GetRecords 응답에 레코드가 없을 때의 지연 |
+ * | maxIteratorRetries | 3 | 최대 [ExpiredIteratorException] 복구 시도 횟수 |
+ * | initialThrottleBackoff | 500 ms | 제한 재시도의 지수 백오프 시작값 |
+ * | maxThrottleBackoff | 30 s | 제한 재시도 사이의 단일 최대 지연 |
+ * | maxThrottleRetries | 5 | 재시도 가능한 [KinesisException]의 최대 시도 횟수 |
  *
- * @param batchLimit Maximum records per [GetRecords] call. Must be in 1..[MAX_KINESIS_BATCH_LIMIT].
- * @param pollInterval Delay between successful [GetRecords] calls that returned records.
- *   Must be ≥ [MIN_POLL_INTERVAL] to respect the Kinesis 5 calls/s/shard quota.
- * @param emptyBackoff Delay when a [GetRecords] response has zero records.
- * @param maxIteratorRetries Maximum times the flow will recover from [ExpiredIteratorException]
- *   by re-fetching a shard iterator. Exhausting this limit throws.
- * @param initialThrottleBackoff Starting backoff duration for exponential jitter on throttle retries.
- * @param maxThrottleBackoff Upper bound for a single throttle-retry delay (applied before jitter).
- * @param maxThrottleRetries Maximum times the flow will retry a retryable [KinesisException].
- *   Exhausting this limit throws.
+ * @param batchLimit [GetRecords] 호출당 최대 레코드 수. 1..[MAX_KINESIS_BATCH_LIMIT] 범위여야 합니다.
+ * @param pollInterval 레코드를 반환한 성공적인 [GetRecords] 호출 사이의 지연. Kinesis의 샤드당 초당 5회
+ *   할당량을 지키려면 [MIN_POLL_INTERVAL] 이상이어야 합니다.
+ * @param emptyBackoff [GetRecords] 응답의 레코드가 0개일 때의 지연
+ * @param maxIteratorRetries 샤드 반복자를 다시 가져와 [ExpiredIteratorException]에서 복구할 최대 횟수.
+ *   이 한도를 소진하면 예외를 던집니다.
+ * @param initialThrottleBackoff 제한 재시도의 지수 지터에 사용할 시작 백오프 시간
+ * @param maxThrottleBackoff 단일 제한 재시도 지연의 상한(지터 적용 전)
+ * @param maxThrottleRetries 재시도 가능한 [KinesisException]을 Flow가 재시도할 최대 횟수.
+ *   이 한도를 소진하면 예외를 던집니다.
  */
 data class KinesisRecordFlowOptions(
     val batchLimit: Int = DEFAULT_BATCH_LIMIT,
@@ -67,10 +67,10 @@ data class KinesisRecordFlowOptions(
     companion object {
         private const val serialVersionUID: Long = 1L
 
-        /** Kinesis API hard limit for a single GetRecords call. */
+/** 단일 GetRecords 호출에 적용되는 Kinesis API 상한입니다. */
         const val MAX_KINESIS_BATCH_LIMIT: Int = 10_000
 
-        /** Minimum safe poll interval to avoid exceeding the 5 calls/s/shard quota. */
+/** 샤드당 초당 5회 호출 할당량을 넘지 않기 위한 최소 안전 폴링 간격입니다. */
         val MIN_POLL_INTERVAL: Duration = 200.milliseconds
 
         const val DEFAULT_BATCH_LIMIT: Int = 100

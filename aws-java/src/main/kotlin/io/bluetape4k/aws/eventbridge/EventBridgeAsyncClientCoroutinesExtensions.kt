@@ -15,15 +15,15 @@ import software.amazon.awssdk.services.eventbridge.model.RemoveTargetsResponse
 import software.amazon.awssdk.services.eventbridge.model.RuleState
 import software.amazon.awssdk.services.eventbridge.model.Target
 
-/** Coroutine adapter for [createEventBusAsync]. */
+/** [createEventBusAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.createEventBus(name: String): CreateEventBusResponse =
     createEventBusAsync(name).await()
 
-/** Coroutine adapter for [deleteEventBusAsync]. */
+/** [deleteEventBusAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.deleteEventBus(name: String): DeleteEventBusResponse =
     deleteEventBusAsync(name).await()
 
-/** Coroutine adapter for [putRuleAsync]. */
+/** [putRuleAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.putRule(
     name: String,
     eventBusName: String? = null,
@@ -34,7 +34,7 @@ suspend fun EventBridgeAsyncClient.putRule(
 ): PutRuleResponse =
     putRuleAsync(name, eventBusName, eventPattern, scheduleExpression, state, description).await()
 
-/** Coroutine adapter for [deleteRuleAsync]. */
+/** [deleteRuleAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.deleteRule(
     name: String,
     eventBusName: String? = null,
@@ -42,7 +42,7 @@ suspend fun EventBridgeAsyncClient.deleteRule(
 ): DeleteRuleResponse =
     deleteRuleAsync(name, eventBusName, force).await()
 
-/** Coroutine adapter for [putTargetsAsync]. */
+/** [putTargetsAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.putTargets(
     rule: String,
     targets: List<Target>,
@@ -50,7 +50,7 @@ suspend fun EventBridgeAsyncClient.putTargets(
 ): PutTargetsResponse =
     putTargetsAsync(rule, targets, eventBusName).await()
 
-/** Coroutine adapter for [removeTargetsAsync]. */
+/** [removeTargetsAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.removeTargets(
     rule: String,
     ids: List<String>,
@@ -59,7 +59,7 @@ suspend fun EventBridgeAsyncClient.removeTargets(
 ): RemoveTargetsResponse =
     removeTargetsAsync(rule, ids, eventBusName, force).await()
 
-/** Coroutine adapter for [listRulesAsync]. */
+/** [listRulesAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.listRules(
     eventBusName: String? = null,
     namePrefix: String? = null,
@@ -68,7 +68,7 @@ suspend fun EventBridgeAsyncClient.listRules(
 ): ListRulesResponse =
     listRulesAsync(eventBusName, namePrefix, limit, nextToken).await()
 
-/** Coroutine adapter for [listTargetsByRuleAsync]. */
+/** [listTargetsByRuleAsync]의 코루틴 어댑터입니다. */
 suspend fun EventBridgeAsyncClient.listTargetsByRule(
     rule: String,
     eventBusName: String? = null,
@@ -78,9 +78,9 @@ suspend fun EventBridgeAsyncClient.listTargetsByRule(
     listTargetsByRuleAsync(rule, eventBusName, limit, nextToken).await()
 
 /**
- * Publishes events with one awaited SDK request.
+ * SDK 요청 하나를 기다려 이벤트를 게시합니다.
  *
- * Cancellation and SDK exceptions propagate from `await()`.
+ * 취소와 SDK 예외는 `await()`에서 그대로 전파됩니다.
  */
 suspend fun EventBridgeAsyncClient.putEvents(
     entries: List<PutEventsRequestEntry>,

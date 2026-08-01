@@ -31,7 +31,7 @@ internal fun Iterable<String>.requireNoBlankValues(name: String) {
     forEach { it.requireNotBlank(name) }
 }
 
-/** Builds [CreateEventBusRequest] from a bus name. */
+/** 버스 이름으로 [CreateEventBusRequest]를 구성합니다. */
 inline fun createEventBusRequestOf(
     name: String,
     crossinline builder: CreateEventBusRequest.Builder.() -> Unit = {},
@@ -43,7 +43,7 @@ inline fun createEventBusRequestOf(
     }
 }
 
-/** Builds [DeleteEventBusRequest] from a bus name. */
+/** 버스 이름으로 [DeleteEventBusRequest]를 구성합니다. */
 inline fun deleteEventBusRequestOf(
     name: String,
     crossinline builder: DeleteEventBusRequest.Builder.() -> Unit = {},
@@ -56,10 +56,10 @@ inline fun deleteEventBusRequestOf(
 }
 
 /**
- * Builds [PutRuleRequest].
+ * [PutRuleRequest]를 구성합니다.
  *
- * EventBridge requires either [eventPattern] or [scheduleExpression]. This
- * helper does not merge omitted fields with an existing rule.
+ * EventBridge에는 [eventPattern] 또는 [scheduleExpression] 중 하나가 필요합니다.
+ * 이 도우미는 생략한 필드를 기존 규칙과 병합하지 않습니다.
  */
 inline fun putRuleRequestOf(
     name: String,
@@ -89,7 +89,7 @@ inline fun putRuleRequestOf(
     }
 }
 
-/** Builds [DeleteRuleRequest]. Remove targets before deleting a rule. */
+/** [DeleteRuleRequest]를 구성합니다. 규칙을 삭제하기 전에 대상을 제거하세요. */
 inline fun deleteRuleRequestOf(
     name: String,
     eventBusName: String? = null,
@@ -106,7 +106,7 @@ inline fun deleteRuleRequestOf(
     }
 }
 
-/** Builds [Target] with required id and ARN. */
+/** 필수 id와 ARN으로 [Target]을 구성합니다. */
 inline fun targetOf(
     id: String,
     arn: String,
@@ -121,7 +121,7 @@ inline fun targetOf(
     }
 }
 
-/** Builds [PutTargetsRequest] with EventBridge's 10-target request limit. */
+/** EventBridge의 요청당 대상 10개 제한에 맞춰 [PutTargetsRequest]를 구성합니다. */
 inline fun putTargetsRequestOf(
     rule: String,
     targets: List<Target>,
@@ -140,7 +140,7 @@ inline fun putTargetsRequestOf(
     }
 }
 
-/** Builds [RemoveTargetsRequest] with EventBridge's 10-target-id request limit. */
+/** EventBridge의 요청당 대상 id 10개 제한에 맞춰 [RemoveTargetsRequest]를 구성합니다. */
 inline fun removeTargetsRequestOf(
     rule: String,
     ids: List<String>,
@@ -163,10 +163,10 @@ inline fun removeTargetsRequestOf(
 }
 
 /**
- * Builds [PutEventsRequestEntry].
+ * [PutEventsRequestEntry]를 구성합니다.
  *
- * [detail] must be a nonblank JSON string. This helper does not serialize
- * arbitrary objects and does not estimate the AWS 1 MB request-entry limit.
+ * [detail]은 비어 있지 않은 JSON 문자열이어야 합니다. 이 도우미는 임의 객체를 직렬화하지 않으며
+ * AWS 요청 항목의 1 MB 제한도 계산하지 않습니다.
  */
 inline fun putEventsRequestEntryOf(
     source: String,
@@ -199,7 +199,7 @@ inline fun putEventsRequestEntryOf(
     }
 }
 
-/** Builds [PutEventsRequest] with EventBridge's 10-entry request limit. */
+/** EventBridge의 요청당 항목 10개 제한에 맞춰 [PutEventsRequest]를 구성합니다. */
 inline fun putEventsRequestOf(
     entries: List<PutEventsRequestEntry>,
     crossinline builder: PutEventsRequest.Builder.() -> Unit = {},
@@ -211,7 +211,7 @@ inline fun putEventsRequestOf(
     }
 }
 
-/** Builds [ListRulesRequest]. */
+/** [ListRulesRequest]를 구성합니다. */
 inline fun listRulesRequestOf(
     eventBusName: String? = null,
     namePrefix: String? = null,
@@ -231,7 +231,7 @@ inline fun listRulesRequestOf(
     }
 }
 
-/** Builds [ListTargetsByRuleRequest]. */
+/** [ListTargetsByRuleRequest]를 구성합니다. */
 inline fun listTargetsByRuleRequestOf(
     rule: String,
     eventBusName: String? = null,

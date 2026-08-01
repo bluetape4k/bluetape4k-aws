@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.ssm.model.GetParametersResponse
 import software.amazon.awssdk.services.ssm.model.PutParameterResponse
 
 /**
- * Gets a parameter without decryption by default and awaits completion.
+ * 기본적으로 복호화 없이 파라미터를 가져와 완료를 기다립니다.
  */
 suspend fun SsmAsyncClient.getParameter(
     name: String,
@@ -21,7 +21,7 @@ suspend fun SsmAsyncClient.getParameter(
     getParameterAsync(name, withDecryption, overrideConfiguration).await()
 
 /**
- * Gets a SecureString parameter with decryption enabled and awaits completion.
+ * 복호화를 활성화해 SecureString 파라미터를 가져와 완료를 기다립니다.
  */
 suspend fun SsmAsyncClient.getSecureParameter(
     name: String,
@@ -30,7 +30,7 @@ suspend fun SsmAsyncClient.getSecureParameter(
     getSecureParameterAsync(name, overrideConfiguration).await()
 
 /**
- * Gets up to ten parameters and awaits completion.
+ * 최대 10개의 파라미터를 가져와 완료를 기다립니다.
  */
 suspend fun SsmAsyncClient.getParameters(
     names: Collection<String>,
@@ -40,7 +40,7 @@ suspend fun SsmAsyncClient.getParameters(
     getParametersAsync(names, withDecryption, overrideConfiguration).await()
 
 /**
- * Gets one parameter page by path and awaits completion.
+ * 경로에 해당하는 파라미터 페이지 하나를 가져와 완료를 기다립니다.
  */
 suspend fun SsmAsyncClient.getParametersByPath(
     path: String,
@@ -53,7 +53,7 @@ suspend fun SsmAsyncClient.getParametersByPath(
     getParametersByPathAsync(path, recursive, withDecryption, maxResults, nextToken, overrideConfiguration).await()
 
 /**
- * Describes one page of parameters and awaits completion.
+ * 파라미터 페이지 하나를 설명하고 완료를 기다립니다.
  */
 suspend fun SsmAsyncClient.describeParameters(
     maxResults: Int? = null,
@@ -63,12 +63,11 @@ suspend fun SsmAsyncClient.describeParameters(
     describeParametersAsync(maxResults, nextToken, overrideConfiguration).await()
 
 /**
- * Puts a SecureString parameter from a redacted value and awaits completion.
+ * 값이 가려진 래퍼에서 SecureString 파라미터를 저장하고 완료를 기다립니다.
  *
- * This mutates AWS-side state and sends the revealed value to SSM as
- * SecureString plaintext. [overwrite] controls whether an existing value may be
- * replaced. Callers remain responsible for IAM/KMS policy and audit boundaries.
- * Do not log or print the revealed value.
+ * 이 작업은 AWS 측 상태를 변경하며 드러낸 값을 SecureString 평문으로 SSM에 전송합니다.
+ * [overwrite]는 기존 값을 대체할 수 있는지 제어합니다. IAM/KMS 정책과 감사 경계는 호출자가 책임집니다.
+ * 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
 suspend fun SsmAsyncClient.putSecureParameter(
     name: String,
@@ -80,7 +79,7 @@ suspend fun SsmAsyncClient.putSecureParameter(
     putSecureParameterAsync(name, value, overwrite, description, overrideConfiguration).await()
 
 /**
- * Puts a non-secret String parameter and awaits completion.
+ * 비밀이 아닌 String 파라미터를 저장하고 완료를 기다립니다.
  */
 suspend fun SsmAsyncClient.putStringParameter(
     name: String,
@@ -92,7 +91,7 @@ suspend fun SsmAsyncClient.putStringParameter(
     putStringParameterAsync(name, value, overwrite, description, overrideConfiguration).await()
 
 /**
- * Puts a non-secret StringList parameter and awaits completion.
+ * 비밀이 아닌 StringList 파라미터를 저장하고 완료를 기다립니다.
  */
 suspend fun SsmAsyncClient.putStringListParameter(
     name: String,

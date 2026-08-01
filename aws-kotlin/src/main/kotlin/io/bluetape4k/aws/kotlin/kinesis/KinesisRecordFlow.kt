@@ -24,26 +24,25 @@ import kotlin.time.Duration.Companion.milliseconds
 private val log = KotlinLogging.logger {}
 
 /**
- * Returns a cold [Flow] that continuously polls a single Kinesis shard and emits each [Record].
+ * 단일 Kinesis 샤드를 계속 폴링해 각 [Record]를 내보내는 콜드 [Flow]를 반환합니다.
  *
- * The flow loops indefinitely, calling [KinesisClient.getRecords] on the given shard and emitting
- * all received records before advancing the iterator. The loop exits when Kinesis signals that the
- * shard has been closed (i.e., `nextShardIterator` is `null`).
+ * Flow는 지정한 샤드에서 [KinesisClient.getRecords]를 호출하고 받은 모든 레코드를 내보낸 뒤
+ * 반복자를 전진시키는 작업을 계속 반복합니다. Kinesis가 샤드 종료를 알리면
+ * (`nextShardIterator`가 `null`) 반복을 끝냅니다.
  *
- * ## Error handling
+ * ## 오류 처리
  *
- * - **[CancellationException]** — propagated immediately; never retried.
- * - **[ExpiredIteratorException]** — the iterator is re-fetched using the last seen sequence
- *   number (via [KinesisStartingPosition.AfterSequenceNumber]). If no record has been seen yet
- *   and the starting position is [KinesisStartingPosition.Latest], the error is propagated
- *   immediately because re-fetching a new `Latest` iterator would silently skip all records
- *   written during the 5-minute TTL window. Recovery is attempted at most
- *   [KinesisRecordFlowOptions.maxIteratorRetries] times.
- * - **Retryable [KinesisException]** (e.g. `ProvisionedThroughputExceededException`) — retried
- *   with exponential jitter backoff, up to [KinesisRecordFlowOptions.maxThrottleRetries] times.
- * - **Non-retryable [KinesisException]** — propagated immediately.
+ * - **[CancellationException]** — 즉시 전파하며 재시도하지 않습니다.
+ * - **[ExpiredIteratorException]** — 마지막으로 확인한 시퀀스 번호를 사용해
+ *   ([KinesisStartingPosition.AfterSequenceNumber]로) 반복자를 다시 가져옵니다. 아직 확인한 레코드가 없고
+ *   시작 위치가 [KinesisStartingPosition.Latest]라면 새 `Latest` 반복자가 5분 TTL 동안 기록된 모든
+ *   레코드를 조용히 건너뛸 수 있으므로 오류를 즉시 전파합니다. 복구는 최대
+ *   [KinesisRecordFlowOptions.maxIteratorRetries]번 시도합니다.
+ * - **재시도 가능한 [KinesisException]**(예: `ProvisionedThroughputExceededException`) — 지수 지터
+ *   백오프로 최대 [KinesisRecordFlowOptions.maxThrottleRetries]번 재시도합니다.
+ * - **재시도할 수 없는 [KinesisException]** — 즉시 전파합니다.
  *
- * ## Usage
+ * ## 사용 예
  *
  * ```kotlin
  * kinesisClient.recordFlow(
@@ -55,11 +54,11 @@ private val log = KotlinLogging.logger {}
  * }
  * ```
  *
- * @param streamName Kinesis stream name.
- * @param shardId Target shard identifier.
- * @param position Starting position. Defaults to [KinesisStartingPosition.TrimHorizon].
- * @param options Tuning parameters. Defaults to [KinesisRecordFlowOptions].
- * @return Cold [Flow] of [Record] values.
+ * @param streamName Kinesis 스트림 이름
+ * @param shardId 대상 샤드 식별자
+ * @param position 시작 위치. 기본값은 [KinesisStartingPosition.TrimHorizon]입니다.
+ * @param options 조정 파라미터. 기본값은 [KinesisRecordFlowOptions]입니다.
+ * @return [Record] 값을 내보내는 콜드 [Flow]
  */
 fun KinesisClient.recordFlow(
     streamName: String,
@@ -153,11 +152,10 @@ fun KinesisClient.recordFlow(
 }
 
 /**
- * Fetches a fresh shard iterator for the given [position].
+ * 지정한 [position]에 대한 새 샤드 반복자를 가져옵니다.
  *
- * This is called at flow startup and again after [ExpiredIteratorException] recovery.
- * The call is inside the main `try {}` block so that any transient errors (e.g. throttling on
- * `GetShardIterator`) are handled by the sibling `catch` clauses on the next iteration.
+ * Flow 시작 시와 [ExpiredIteratorException] 복구 후에 호출됩니다. `GetShardIterator` 제한 같은
+ * 일시적 오류를 다음 반복에서 같은 수준의 `catch` 절이 처리하도록 호출은 주 `try {}` 블록 안에 있습니다.
  */
 private suspend fun KinesisClient.fetchShardIterator(
     streamName: String,
@@ -196,15 +194,15 @@ private suspend fun KinesisClient.fetchShardIterator(
 }
 
 /**
- * Computes a randomised (full-jitter) exponential backoff duration for a throttle retry attempt.
+ * 제한 재시도에 사용할 무작위(full-jitter) 지수 백오프 시간을 계산합니다.
  *
- * The base delay doubles each attempt (capped at [KinesisRecordFlowOptions.maxThrottleBackoff])
- * and jitter is applied by sampling uniformly from `[0, base]`. Arithmetic is performed in
- * milliseconds (Long) to avoid [Duration] overflow at high attempt counts.
+ * 기본 지연은 시도할 때마다 두 배로 늘어나며 [KinesisRecordFlowOptions.maxThrottleBackoff]에서 제한합니다.
+ * `[0, base]` 범위의 균등 표본으로 지터를 적용합니다. 시도 횟수가 클 때 [Duration] 오버플로를 피하도록
+ * 밀리초(Long) 단위로 계산합니다.
  *
- * @param attempt 1-based retry attempt number.
- * @param options Flow options supplying backoff parameters.
- * @return A [Duration] in `[0, maxThrottleBackoff]`.
+ * @param attempt 1부터 시작하는 재시도 횟수
+ * @param options 백오프 파라미터를 제공하는 Flow 옵션
+ * @return `[0, maxThrottleBackoff]` 범위의 [Duration]
  */
 internal fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): Duration {
     val maxMs = options.maxThrottleBackoff.inWholeMilliseconds

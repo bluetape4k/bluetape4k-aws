@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.scheduler.model.Target
 import software.amazon.awssdk.services.scheduler.model.UpdateScheduleResponse
 import java.time.Instant
 
-/** Coroutine adapter for [createScheduleAsync]. */
+/** [createScheduleAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.createSchedule(
     name: String,
     scheduleExpression: String,
@@ -47,7 +47,7 @@ suspend fun SchedulerAsyncClient.createSchedule(
         kmsKeyArn = kmsKeyArn,
     ).await()
 
-/** Coroutine adapter for [updateScheduleAsync]. */
+/** [updateScheduleAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.updateSchedule(
     name: String,
     scheduleExpression: String,
@@ -77,7 +77,7 @@ suspend fun SchedulerAsyncClient.updateSchedule(
         kmsKeyArn = kmsKeyArn,
     ).await()
 
-/** Coroutine adapter for [deleteScheduleAsync]. */
+/** [deleteScheduleAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.deleteSchedule(
     name: String,
     groupName: String? = null,
@@ -85,14 +85,14 @@ suspend fun SchedulerAsyncClient.deleteSchedule(
 ): DeleteScheduleResponse =
     deleteScheduleAsync(name, groupName, clientToken).await()
 
-/** Coroutine adapter for [getScheduleAsync]. */
+/** [getScheduleAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.getSchedule(
     name: String,
     groupName: String? = null,
 ): GetScheduleResponse =
     getScheduleAsync(name, groupName).await()
 
-/** Coroutine adapter for [listSchedulesAsync]. */
+/** [listSchedulesAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.listSchedules(
     groupName: String? = null,
     namePrefix: String? = null,
@@ -102,25 +102,25 @@ suspend fun SchedulerAsyncClient.listSchedules(
 ): ListSchedulesResponse =
     listSchedulesAsync(groupName, namePrefix, state, maxResults, nextToken).await()
 
-/** Coroutine adapter for [createScheduleGroupAsync]. */
+/** [createScheduleGroupAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.createScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): CreateScheduleGroupResponse =
     createScheduleGroupAsync(name, clientToken).await()
 
-/** Coroutine adapter for [deleteScheduleGroupAsync]. */
+/** [deleteScheduleGroupAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.deleteScheduleGroup(
     name: String,
     clientToken: String? = null,
 ): DeleteScheduleGroupResponse =
     deleteScheduleGroupAsync(name, clientToken).await()
 
-/** Coroutine adapter for [getScheduleGroupAsync]. */
+/** [getScheduleGroupAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.getScheduleGroup(name: String): GetScheduleGroupResponse =
     getScheduleGroupAsync(name).await()
 
-/** Coroutine adapter for [listScheduleGroupsAsync]. */
+/** [listScheduleGroupsAsync]의 코루틴 어댑터입니다. */
 suspend fun SchedulerAsyncClient.listScheduleGroups(
     namePrefix: String? = null,
     maxResults: Int? = null,

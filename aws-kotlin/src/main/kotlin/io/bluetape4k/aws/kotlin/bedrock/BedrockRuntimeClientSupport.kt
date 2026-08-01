@@ -7,9 +7,9 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /**
- * Verifies that a Bedrock endpoint uses HTTPS or literal loopback HTTP.
+ * Bedrock 엔드포인트가 HTTPS 또는 리터럴 루프백 HTTP를 사용하는지 검증합니다.
  *
- * Host names are not resolved. Plain HTTP is limited to local emulator tests.
+ * 호스트 이름은 확인하지 않습니다. 일반 HTTP는 로컬 에뮬레이터 테스트로 제한됩니다.
  */
 @PublishedApi
 internal fun Url.requireTrustedBedrockEndpoint(): Url = apply {
@@ -30,7 +30,7 @@ internal fun Url.requireTrustedBedrockEndpoint(): Url = apply {
 }
 
 /**
- * Validates a built client and closes it exactly once when validation fails.
+ * 생성된 클라이언트를 검증하고 검증에 실패하면 정확히 한 번 닫습니다.
  */
 @PublishedApi
 internal fun BedrockRuntimeClient.requireTrustedBedrockConfiguration(): BedrockRuntimeClient {
@@ -47,12 +47,11 @@ internal fun BedrockRuntimeClient.requireTrustedBedrockConfiguration(): BedrockR
 }
 
 /**
- * Builds a caller-owned AWS Kotlin SDK [BedrockRuntimeClient].
+ * 호출자가 소유하는 AWS Kotlin SDK [BedrockRuntimeClient]를 생성합니다.
  *
- * Explicit parameters are helper-owned and take precedence over [builder].
- * The final endpoint must use HTTPS except for literal loopback HTTP. The
- * application must add `aws.sdk.kotlin:bedrockruntime` at runtime and close
- * the returned client.
+ * 명시적 파라미터는 도우미가 소유하며 [builder]보다 우선합니다. 최종 엔드포인트는 리터럴
+ * 루프백 HTTP를 제외하면 HTTPS를 사용해야 합니다. 애플리케이션은 런타임에
+ * `aws.sdk.kotlin:bedrockruntime`을 추가하고 반환된 클라이언트를 닫아야 합니다.
  */
 inline fun bedrockRuntimeClientOf(
     endpointUrl: Url? = null,
@@ -70,11 +69,10 @@ inline fun bedrockRuntimeClientOf(
     }.requireTrustedBedrockConfiguration()
 
 /**
- * Builds a block-owned [BedrockRuntimeClient], runs [block], and closes it.
+ * 블록이 소유하는 [BedrockRuntimeClient]를 생성하고 [block]을 실행한 뒤 닫습니다.
  *
- * Complete collection of any cold Flow inside [block]; an escaped Flow cannot
- * use the client after this scope closes. The application must add
- * `aws.sdk.kotlin:bedrockruntime` at runtime.
+ * 모든 콜드 Flow 수집은 [block] 안에서 완료하세요. 이 범위를 벗어난 Flow는 범위가 닫힌 뒤
+ * 클라이언트를 사용할 수 없습니다. 애플리케이션은 런타임에 `aws.sdk.kotlin:bedrockruntime`을 추가해야 합니다.
  */
 suspend fun <R> withBedrockRuntimeClient(
     endpointUrl: Url? = null,

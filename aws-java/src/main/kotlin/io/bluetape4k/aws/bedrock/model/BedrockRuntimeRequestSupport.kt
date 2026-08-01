@@ -10,10 +10,10 @@ import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfigurati
 import software.amazon.awssdk.services.bedrockruntime.model.Message
 
 /**
- * Builds a native Bedrock text [ContentBlock].
+ * Bedrock 네이티브 텍스트 [ContentBlock]을 구성합니다.
  *
- * [text] is helper-owned and takes precedence over [builder].
- * The helper is model-neutral; native model-specific fields remain available.
+ * [text]는 도우미가 소유하며 [builder]보다 우선합니다. 도우미는 모델에 종속되지 않으며,
+ * 네이티브 모델별 필드는 계속 사용할 수 있습니다.
  */
 inline fun contentBlockOf(
     text: String,
@@ -27,11 +27,10 @@ inline fun contentBlockOf(
 }
 
 /**
- * Builds a native Bedrock user [Message].
+ * Bedrock 네이티브 사용자 [Message]를 구성합니다.
  *
- * The user role and text content are helper-owned and take precedence over
- * [builder]. The helper is model-neutral, and other native SDK fields remain
- * available through [builder].
+ * 사용자 역할과 텍스트 내용은 도우미가 소유하며 [builder]보다 우선합니다. 도우미는 모델에
+ * 종속되지 않고 다른 네이티브 SDK 필드는 [builder]를 통해 사용할 수 있습니다.
  */
 inline fun userMessageOf(
     text: String,
@@ -46,10 +45,10 @@ inline fun userMessageOf(
 }
 
 /**
- * Builds a model-neutral native [ConverseRequest].
+ * 모델에 종속되지 않는 네이티브 [ConverseRequest]를 구성합니다.
  *
- * [modelId], [messages], and a non-null [inferenceConfig] are helper-owned.
- * Other model-specific fields remain available through [builder].
+ * [modelId], [messages], null이 아닌 [inferenceConfig]는 도우미가 소유합니다.
+ * 다른 모델별 필드는 [builder]를 통해 사용할 수 있습니다.
  */
 inline fun converseRequestOf(
     modelId: String,
@@ -68,10 +67,10 @@ inline fun converseRequestOf(
 }
 
 /**
- * Builds a model-neutral native [ConverseStreamRequest].
+ * 모델에 종속되지 않는 네이티브 [ConverseStreamRequest]를 구성합니다.
  *
- * [modelId], [messages], and a non-null [inferenceConfig] are helper-owned.
- * Other model-specific fields remain available through [builder].
+ * [modelId], [messages], null이 아닌 [inferenceConfig]는 도우미가 소유합니다.
+ * 다른 모델별 필드는 [builder]를 통해 사용할 수 있습니다.
  */
 inline fun converseStreamRequestOf(
     modelId: String,

@@ -22,7 +22,7 @@ import io.bluetape4k.aws.kotlin.ssm.model.putStringListParameterRequestOf
 import io.bluetape4k.aws.kotlin.ssm.model.putStringParameterRequestOf
 
 /**
- * Gets a parameter without decryption by default.
+ * 기본적으로 복호화 없이 파라미터를 가져옵니다.
  */
 suspend fun SsmClient.getParameter(
     name: String,
@@ -31,13 +31,13 @@ suspend fun SsmClient.getParameter(
     getParameter(getParameterRequestOf(name, withDecryption))
 
 /**
- * Gets a SecureString parameter with decryption enabled and redacts the value.
+ * 복호화를 활성화해 SecureString 파라미터를 가져오고 값을 가립니다.
  */
 suspend fun SsmClient.getSecureParameter(name: String): AwsSecretValue =
     awsSecretValueOf(getParameter(name, withDecryption = true).parameter?.value ?: error("Parameter value is not present."))
 
 /**
- * Gets up to ten parameters and preserves raw SDK invalid-parameter details.
+ * 최대 10개의 파라미터를 가져오고 SDK 원본의 잘못된 파라미터 상세 정보를 보존합니다.
  */
 suspend fun SsmClient.getParameters(
     names: Collection<String>,
@@ -46,7 +46,7 @@ suspend fun SsmClient.getParameters(
     getParameters(getParametersRequestOf(names, withDecryption))
 
 /**
- * Gets one parameter page by path.
+ * 경로에 해당하는 파라미터 페이지 하나를 가져옵니다.
  */
 suspend fun SsmClient.getParametersByPath(
     path: String,
@@ -58,7 +58,7 @@ suspend fun SsmClient.getParametersByPath(
     getParametersByPath(getParametersByPathRequestOf(path, recursive, withDecryption, maxResults, nextToken))
 
 /**
- * Describes one page of parameters.
+ * 파라미터 페이지 하나를 설명합니다.
  */
 suspend fun SsmClient.describeParameters(
     maxResults: Int? = null,
@@ -67,12 +67,11 @@ suspend fun SsmClient.describeParameters(
     describeParameters(describeParametersRequestOf(maxResults, nextToken))
 
 /**
- * Puts a SecureString parameter from a redacted value.
+ * 값이 가려진 래퍼에서 SecureString 파라미터를 저장합니다.
  *
- * This mutates AWS-side state and sends the revealed value to SSM as
- * SecureString plaintext. [overwrite] controls whether an existing value may be
- * replaced. Callers remain responsible for IAM/KMS policy and audit boundaries.
- * Do not log or print the revealed value.
+ * 이 작업은 AWS 측 상태를 변경하며 드러낸 값을 SecureString 평문으로 SSM에 전송합니다.
+ * [overwrite]는 기존 값을 대체할 수 있는지 제어합니다. IAM/KMS 정책과 감사 경계는 호출자가 책임집니다.
+ * 드러낸 값을 로그에 남기거나 출력하지 마세요.
  */
 suspend fun SsmClient.putSecureParameter(
     name: String,
@@ -83,7 +82,7 @@ suspend fun SsmClient.putSecureParameter(
     putParameter(putSecureParameterRequestOf(name, value, overwrite, description))
 
 /**
- * Puts a non-secret String parameter.
+ * 비밀이 아닌 String 파라미터를 저장합니다.
  */
 suspend fun SsmClient.putStringParameter(
     name: String,
@@ -94,7 +93,7 @@ suspend fun SsmClient.putStringParameter(
     putParameter(putStringParameterRequestOf(name, value, overwrite, description))
 
 /**
- * Puts a non-secret StringList parameter.
+ * 비밀이 아닌 StringList 파라미터를 저장합니다.
  */
 suspend fun SsmClient.putStringListParameter(
     name: String,

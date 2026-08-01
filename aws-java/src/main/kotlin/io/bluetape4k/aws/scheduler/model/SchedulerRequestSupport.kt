@@ -63,7 +63,7 @@ internal fun Int.requireSchedulerRetryAttempts(name: String) {
     requireInRange(MIN_SCHEDULER_RETRY_ATTEMPTS, MAX_SCHEDULER_RETRY_ATTEMPTS, name)
 }
 
-/** Builds an EventBridge Scheduler flexible time window. */
+/** EventBridge Scheduler의 유연한 시간 창을 구성합니다. */
 inline fun flexibleTimeWindowOf(
     mode: FlexibleTimeWindowMode = FlexibleTimeWindowMode.OFF,
     maximumWindowInMinutes: Int? = null,
@@ -77,10 +77,10 @@ inline fun flexibleTimeWindowOf(
         .build()
 }
 
-/** Builds the required OFF flexible time window used by precise schedules. */
+/** 정확한 스케줄에 필요한 `OFF` 유연한 시간 창을 구성합니다. */
 fun flexibleTimeWindowOff(): FlexibleTimeWindow = flexibleTimeWindowOf(FlexibleTimeWindowMode.OFF)
 
-/** Builds an EventBridge Scheduler retry policy. */
+/** EventBridge Scheduler 재시도 정책을 구성합니다. */
 inline fun retryPolicyOf(
     maximumEventAgeInSeconds: Int? = null,
     maximumRetryAttempts: Int? = null,
@@ -95,7 +95,7 @@ inline fun retryPolicyOf(
         .build()
 }
 
-/** Builds a dead-letter queue configuration for a Scheduler target. */
+/** Scheduler 대상의 배달 못 한 편지 큐 구성을 만듭니다. */
 inline fun deadLetterConfigOf(
     arn: String,
     builder: DeadLetterConfig.Builder.() -> Unit = {},
@@ -107,7 +107,7 @@ inline fun deadLetterConfigOf(
         .build()
 }
 
-/** Builds a Scheduler target with the required target ARN and execution role ARN. */
+/** 필수 대상 ARN과 실행 역할 ARN으로 Scheduler 대상을 구성합니다. */
 inline fun targetOf(
     arn: String,
     roleArn: String,
@@ -129,7 +129,7 @@ inline fun targetOf(
         .build()
 }
 
-/** Builds [CreateScheduleRequest] with the required schedule expression, target, and flexible time window. */
+/** 필수 스케줄 표현식, 대상, 유연한 시간 창으로 [CreateScheduleRequest]를 구성합니다. */
 inline fun createScheduleRequestOf(
     name: String,
     scheduleExpression: String,
@@ -169,7 +169,7 @@ inline fun createScheduleRequestOf(
         .build()
 }
 
-/** Builds [UpdateScheduleRequest]. Scheduler updates replace omitted mutable fields with service defaults. */
+/** [UpdateScheduleRequest]를 구성합니다. Scheduler 갱신 시 생략한 변경 가능 필드는 서비스 기본값으로 대체됩니다. */
 inline fun updateScheduleRequestOf(
     name: String,
     scheduleExpression: String,
@@ -209,7 +209,7 @@ inline fun updateScheduleRequestOf(
         .build()
 }
 
-/** Builds [DeleteScheduleRequest]. */
+/** [DeleteScheduleRequest]를 구성합니다. */
 inline fun deleteScheduleRequestOf(
     name: String,
     groupName: String? = null,
@@ -227,7 +227,7 @@ inline fun deleteScheduleRequestOf(
         .build()
 }
 
-/** Builds [GetScheduleRequest]. */
+/** [GetScheduleRequest]를 구성합니다. */
 inline fun getScheduleRequestOf(
     name: String,
     groupName: String? = null,
@@ -242,7 +242,7 @@ inline fun getScheduleRequestOf(
         .build()
 }
 
-/** Builds [ListSchedulesRequest]. */
+/** [ListSchedulesRequest]를 구성합니다. */
 inline fun listSchedulesRequestOf(
     groupName: String? = null,
     namePrefix: String? = null,
@@ -265,7 +265,7 @@ inline fun listSchedulesRequestOf(
         .build()
 }
 
-/** Builds [CreateScheduleGroupRequest]. */
+/** [CreateScheduleGroupRequest]를 구성합니다. */
 inline fun createScheduleGroupRequestOf(
     name: String,
     clientToken: String? = null,
@@ -280,7 +280,7 @@ inline fun createScheduleGroupRequestOf(
         .build()
 }
 
-/** Builds [DeleteScheduleGroupRequest]. */
+/** [DeleteScheduleGroupRequest]를 구성합니다. */
 inline fun deleteScheduleGroupRequestOf(
     name: String,
     clientToken: String? = null,
@@ -295,7 +295,7 @@ inline fun deleteScheduleGroupRequestOf(
         .build()
 }
 
-/** Builds [GetScheduleGroupRequest]. */
+/** [GetScheduleGroupRequest]를 구성합니다. */
 inline fun getScheduleGroupRequestOf(
     name: String,
     builder: GetScheduleGroupRequest.Builder.() -> Unit = {},
@@ -307,7 +307,7 @@ inline fun getScheduleGroupRequestOf(
         .build()
 }
 
-/** Builds [ListScheduleGroupsRequest]. */
+/** [ListScheduleGroupsRequest]를 구성합니다. */
 inline fun listScheduleGroupsRequestOf(
     namePrefix: String? = null,
     maxResults: Int? = null,

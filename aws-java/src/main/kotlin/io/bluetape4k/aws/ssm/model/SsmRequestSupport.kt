@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.ssm.model.ParameterType
 import software.amazon.awssdk.services.ssm.model.PutParameterRequest
 
 /**
- * Builds a [GetParameterRequest].
+ * [GetParameterRequest]를 구성합니다.
  */
 inline fun getParameterRequestOf(
     name: String,
@@ -32,7 +32,7 @@ inline fun getParameterRequestOf(
 }
 
 /**
- * Builds a [GetParametersRequest] for at most ten names.
+ * 최대 10개의 이름으로 [GetParametersRequest]를 구성합니다.
  */
 inline fun getParametersRequestOf(
     names: Collection<String>,
@@ -55,7 +55,7 @@ inline fun getParametersRequestOf(
 }
 
 /**
- * Builds a single-page [GetParametersByPathRequest].
+ * 단일 페이지 [GetParametersByPathRequest]를 구성합니다.
  */
 inline fun getParametersByPathRequestOf(
     path: String,
@@ -83,7 +83,7 @@ inline fun getParametersByPathRequestOf(
 }
 
 /**
- * Builds a single-page [DescribeParametersRequest].
+ * 단일 페이지 [DescribeParametersRequest]를 구성합니다.
  */
 inline fun describeParametersRequestOf(
     maxResults: Int? = null,
@@ -104,12 +104,10 @@ inline fun describeParametersRequestOf(
 }
 
 /**
- * Builds a SecureString [PutParameterRequest] from a redacted value.
+ * 값이 가려진 래퍼에서 SecureString [PutParameterRequest]를 구성합니다.
  *
- * The revealed value is placed into the AWS SDK request as plaintext for
- * transport to SSM. [overwrite] controls whether AWS may replace an existing
- * parameter value, and callers remain responsible for IAM/KMS policy and audit
- * boundaries.
+ * 드러낸 값은 SSM으로 전송하기 위해 AWS SDK 요청에 평문으로 담깁니다. [overwrite]는 AWS가 기존
+ * 파라미터 값을 대체할 수 있는지 제어하며 IAM/KMS 정책과 감사 경계는 호출자가 책임집니다.
  */
 inline fun putSecureParameterRequestOf(
     name: String,
@@ -122,7 +120,7 @@ inline fun putSecureParameterRequestOf(
     putParameterRequestOf(name, value.reveal(), ParameterType.SECURE_STRING, overwrite, description, overrideConfiguration, builder)
 
 /**
- * Builds a non-secret String [PutParameterRequest].
+ * 비밀이 아닌 String [PutParameterRequest]를 구성합니다.
  */
 inline fun putStringParameterRequestOf(
     name: String,
@@ -135,7 +133,7 @@ inline fun putStringParameterRequestOf(
     putParameterRequestOf(name, value, ParameterType.STRING, overwrite, description, overrideConfiguration, builder)
 
 /**
- * Builds a non-secret StringList [PutParameterRequest].
+ * 비밀이 아닌 StringList [PutParameterRequest]를 구성합니다.
  */
 inline fun putStringListParameterRequestOf(
     name: String,
@@ -151,10 +149,10 @@ inline fun putStringListParameterRequestOf(
 }
 
 /**
- * Builds a typed [PutParameterRequest].
+ * 타입이 지정된 [PutParameterRequest]를 구성합니다.
  *
- * Prefer [putSecureParameterRequestOf] for `SecureString` writes so secret
- * values stay wrapped until the SDK request boundary.
+ * 보안 값이 SDK 요청 경계까지 래핑된 상태를 유지하도록 `SecureString` 쓰기에는
+ * [putSecureParameterRequestOf]를 사용하세요.
  */
 inline fun putParameterRequestOf(
     name: String,
