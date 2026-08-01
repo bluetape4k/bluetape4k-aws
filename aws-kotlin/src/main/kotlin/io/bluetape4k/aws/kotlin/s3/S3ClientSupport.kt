@@ -7,7 +7,7 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /**
- * Creates an [S3Client].
+ * [S3Client]를 생성합니다.
  *
  * ```kotlin
  * val s3Client = s3ClientOf(
@@ -19,12 +19,12 @@ import io.bluetape4k.support.useSafe
  * }
  * ```
  *
- * @param endpointUrl S3 endpoint URL
- * @param region AWS Region
- * @param credentialsProvider AWS credentials provider
- * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
- * @param builder configures [S3Client.Config] through [S3Client.Config.Builder]
- * @return the [S3Client]
+ * @param endpointUrl S3 엔드포인트 URL
+ * @param region AWS 리전
+ * @param credentialsProvider AWS 자격 증명 공급자
+ * @param httpClient 외부에서 관리하는 HTTP 엔진입니다. 생략하면 SDK가 엔진 소유권을 관리합니다.
+ * @param builder [S3Client.Config.Builder]를 통해 [S3Client.Config]를 구성하는 블록
+ * @return 구성된 [S3Client]
  */
 inline fun s3ClientOf(
     endpointUrl: Url? = null,
@@ -43,7 +43,7 @@ inline fun s3ClientOf(
     }
 
 /**
- * Creates an [S3Client], executes [block], and closes the client automatically.
+ * [S3Client]를 생성하고 [block]을 실행한 뒤 client를 자동으로 닫습니다.
  *
  * The SDK manages its internal HTTP engine, so closing the client also shuts down the engine.
  *
@@ -53,7 +53,7 @@ inline fun s3ClientOf(
  * }
  * ```
  *
- * @param block suspending block; AWS SDK operations are suspend functions
+ * @param block client를 사용하는 suspend 블록입니다. AWS SDK 작업은 suspend 함수입니다.
  */
 suspend fun <R> withS3Client(
     endpointUrl: Url? = null,
@@ -66,11 +66,10 @@ suspend fun <R> withS3Client(
 )
 
 /**
- * Runs a block with a client created by [clientFactory] and closes that client
- * on normal return, failure, and coroutine cancellation.
+ * [clientFactory]가 생성한 client로 블록을 실행하고 정상 반환, 실패, coroutine 취소 시 client를 닫습니다.
  *
- * This internal seam keeps the public helper tied to the same ownership path
- * while allowing deterministic lifecycle regression tests without network I/O.
+ * 이 내부 seam은 public helper가 동일한 소유권 경로를 사용하도록 유지하면서
+ * 네트워크 I/O 없이 client 수명 주기를 결정적으로 회귀 테스트할 수 있게 합니다.
  */
 internal suspend fun <R> withS3Client(
     clientFactory: () -> S3Client,

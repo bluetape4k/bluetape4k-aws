@@ -7,7 +7,7 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.useSafe
 
 /**
- * Creates an AWS Kotlin SDK [SesClient] instance.
+ * AWS Kotlin SDK [SesClient] 인스턴스를 생성합니다.
  *
  * ```kotlin
  * val client = sesClientOf(
@@ -17,12 +17,12 @@ import io.bluetape4k.support.useSafe
  * )
  * ```
  *
- * @param endpointUrl SES service endpoint URL, or `null` to use the default AWS endpoint.
- * @param region AWS Region, or `null` to resolve it from the environment.
- * @param credentialsProvider AWS credentials provider, or `null` to use the default credentials chain.
- * @param httpClient optional externally managed HTTP engine. Omit it to let the SDK manage engine ownership.
- * @param builder additional configuration block for [SesClient.Config.Builder].
- * @return configured [SesClient] instance.
+ * @param endpointUrl SES 서비스 엔드포인트 URL입니다. `null`이면 기본 AWS 엔드포인트를 사용합니다.
+ * @param region AWS 리전입니다. `null`이면 환경에서 확인합니다.
+ * @param credentialsProvider AWS 자격 증명 공급자입니다. `null`이면 기본 자격 증명 체인을 사용합니다.
+ * @param httpClient 외부에서 관리하는 HTTP 엔진입니다. 생략하면 SDK가 엔진 소유권을 관리합니다.
+ * @param builder [SesClient.Config.Builder]를 추가로 구성하는 블록
+ * @return 구성된 [SesClient] 인스턴스
  */
 inline fun sesClientOf(
     endpointUrl: Url? = null,
@@ -40,7 +40,7 @@ inline fun sesClientOf(
 }
 
 /**
- * Creates a [SesClient], runs [block], and closes the client automatically.
+ * [SesClient]를 생성하고 [block]을 실행한 뒤 client를 자동으로 닫습니다.
  *
  * When the SDK owns the internal HTTP engine, closing the client also shuts down that engine.
  *
@@ -50,7 +50,7 @@ inline fun sesClientOf(
  * }
  * ```
  *
- * @param block suspend block to run with the client. AWS SDK operations are suspend functions, so this block is suspend too.
+ * @param block client로 실행할 suspend 블록입니다. AWS SDK 작업이 suspend 함수이므로 이 블록도 suspend입니다.
  */
 suspend fun <R> withSesClient(
     endpointUrl: Url? = null,
@@ -63,11 +63,10 @@ suspend fun <R> withSesClient(
 )
 
 /**
- * Runs a block with a client created by [clientFactory] and closes that client
- * on normal return, failure, and coroutine cancellation.
+ * [clientFactory]가 생성한 client로 블록을 실행하고 정상 반환, 실패, coroutine 취소 시 client를 닫습니다.
  *
- * This internal seam keeps the public helper tied to the same ownership path
- * while allowing deterministic lifecycle regression tests without network I/O.
+ * 이 내부 seam은 public helper가 동일한 소유권 경로를 사용하도록 유지하면서
+ * 네트워크 I/O 없이 client 수명 주기를 결정적으로 회귀 테스트할 수 있게 합니다.
  */
 internal suspend fun <R> withSesClient(
     clientFactory: () -> SesClient,
