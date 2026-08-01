@@ -17,7 +17,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Runtime configuration for [DynamoDbKtorRuntime].
+ * [DynamoDbKtorRuntime]의 런타임 구성입니다.
  */
 class DynamoDbKtorRuntimeConfig(
     val dynamoDbClient: DynamoDbClient,
@@ -29,14 +29,12 @@ class DynamoDbKtorRuntimeConfig(
 )
 
 /**
- * Runtime installed by [DynamoDbKtorPlugin].
+ * [DynamoDbKtorPlugin]이 설치하는 런타임입니다.
  *
- * Contract:
- * - [start] creates missing explicitly registered tables only when
- *   [DynamoDbKtorRuntimeConfig.autoCreateTables] is true.
- * - [stop] closes only plugin-owned clients.
- * - [repository] creates a lightweight repository facade over the same
- *   application-scoped AWS Kotlin SDK client.
+ * 계약:
+ * - [start]는 [DynamoDbKtorRuntimeConfig.autoCreateTables]가 true일 때만 명시적으로 등록한 누락 테이블을 생성합니다.
+ * - [stop]은 플러그인이 소유한 클라이언트만 닫습니다.
+ * - [repository]는 같은 애플리케이션 범위 AWS Kotlin SDK 클라이언트 위에 경량 리포지토리 파사드를 생성합니다.
  */
 class DynamoDbKtorRuntime(
     private val config: DynamoDbKtorRuntimeConfig,
@@ -74,7 +72,7 @@ class DynamoDbKtorRuntime(
     }
 
     /**
-     * Creates a DynamoDB repository bound to [tableName].
+     * [tableName]에 바인딩된 DynamoDB 리포지토리를 생성합니다.
      */
     fun <T: Any, K: Any> repository(
         tableName: String,

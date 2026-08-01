@@ -20,14 +20,12 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 
 /**
- * Coroutine repository facade for one DynamoDB table.
+ * DynamoDB 테이블 하나를 위한 코루틴 리포지토리 파사드입니다.
  *
- * Contract:
- * - Uses explicit [mapper], [reader], and [keyMapper] functions; no reflection
- *   and no preview AWS Kotlin DynamoDB mapper.
- * - Exposes only stable v1 operations: save, find, delete, scan, and query.
- * - Advanced update expressions, batch reads, and schema verification stay in
- *   lower-level AWS Kotlin SDK APIs for now.
+ * 계약:
+ * - 명시적인 [mapper], [reader], [keyMapper] 함수를 사용하며 리플렉션이나 프리뷰 AWS Kotlin DynamoDB 매퍼를 사용하지 않습니다.
+ * - 안정적인 v1 작업인 저장, 조회, 삭제, 스캔, 쿼리만 제공합니다.
+ * - 고급 갱신 표현식, 배치 읽기, 스키마 검증은 현재 하위 수준 AWS Kotlin SDK API에서 사용합니다.
  */
 class DynamoDbKtorRepository<T: Any, K: Any>(
     private val dynamoDbClient: DynamoDbClient,
@@ -41,10 +39,9 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
     }
 
     /**
-     * Saves [item] with PutItem and returns the original input item.
+     * PutItem으로 [item]을 저장하고 원본 입력 항목을 반환합니다.
      *
-     * PutItem does not echo the stored item by default; use [put] when the AWS
-     * response metadata is needed.
+     * PutItem은 기본적으로 저장한 항목을 되돌려주지 않습니다. AWS 응답 메타데이터가 필요하면 [put]을 사용하세요.
      */
     suspend fun save(
         item: T,
@@ -55,7 +52,7 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
     }
 
     /**
-     * Saves [item] with PutItem and returns the AWS response.
+     * PutItem으로 [item]을 저장하고 AWS 응답을 반환합니다.
      */
     suspend fun put(
         item: T,
@@ -68,7 +65,7 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
         }
 
     /**
-     * Finds one item by the mapped DynamoDB key.
+     * 매핑된 DynamoDB 키로 항목 하나를 조회합니다.
      */
     suspend fun findById(
         id: K,
@@ -83,7 +80,7 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
     }
 
     /**
-     * Deletes one item by the mapped DynamoDB key.
+     * 매핑된 DynamoDB 키로 항목 하나를 삭제합니다.
      */
     suspend fun deleteById(
         id: K,
@@ -96,7 +93,7 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
         }
 
     /**
-     * Scans this table and streams mapped items.
+     * 이 테이블을 스캔하고 매핑된 항목을 스트리밍합니다.
      */
     fun scan(
         builder: ScanRequest.Builder.() -> Unit = {},
@@ -111,7 +108,7 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
         }
 
     /**
-     * Queries this table and streams mapped items.
+     * 이 테이블을 쿼리하고 매핑된 항목을 스트리밍합니다.
      */
     fun query(
         builder: QueryRequest.Builder.() -> Unit,
