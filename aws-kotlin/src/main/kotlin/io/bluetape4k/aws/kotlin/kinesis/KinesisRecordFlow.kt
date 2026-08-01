@@ -96,7 +96,7 @@ fun KinesisClient.recordFlow(
                 lastSeenSequenceNumber = record.sequenceNumber
             }
 
-            // nextShardIterator == null means the shard was closed (resharding)
+            // nextShardIterator == null이면 shard가 닫힌 상태다(resharding).
             if (response.nextShardIterator == null) return@flow
             shardIterator = response.nextShardIterator
 
@@ -115,7 +115,7 @@ fun KinesisClient.recordFlow(
 
             val lastSeen = lastSeenSequenceNumber
             if (lastSeen == null && currentPosition is KinesisStartingPosition.Latest) {
-                // Re-fetching Latest would silently skip all records written during the TTL window.
+                // Latest를 다시 조회하면 TTL 구간에 기록된 모든 record를 조용히 건너뛴다.
                 log.error {
                     "Iterator expired for Latest position with no checkpoint: " +
                             "stream=$streamName shard=$shardId — cannot recover without data loss"
@@ -208,7 +208,7 @@ internal fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): D
     val maxMs = options.maxThrottleBackoff.inWholeMilliseconds
     val baseMs = options.initialThrottleBackoff.inWholeMilliseconds
     val shift = (attempt - 1).coerceAtMost(30)
-    // Guard against Long overflow: if baseMs shl shift would exceed Long.MAX_VALUE, cap at maxMs directly.
+    // Long overflow를 방지한다. baseMs shl shift가 Long.MAX_VALUE를 넘으면 즉시 maxMs로 제한한다.
     val cappedMs = if (shift > 0 && baseMs > (Long.MAX_VALUE ushr shift)) {
         maxMs
     } else {

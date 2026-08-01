@@ -70,7 +70,7 @@ class KmsEncryptedFieldCodec(
     }
 
     fun validate(type: Class<*>) {
-        // Keep this explicit: the first slice validates only directly declared Java fields.
+        // 첫 범위는 직접 선언한 Java field만 검증하므로 이 조건을 명시적으로 유지한다.
         type.declaredFields
             .filter { it.isAnnotationPresent(KmsEncrypted::class.java) }
             .forEach(::validate)

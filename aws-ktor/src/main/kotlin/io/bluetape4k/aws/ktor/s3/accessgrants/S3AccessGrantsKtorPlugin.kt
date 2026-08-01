@@ -40,7 +40,7 @@ val S3AccessGrantsKtorPlugin: ApplicationPlugin<S3AccessGrantsKtorPluginConfig> 
         application.attributes.put(S3AccessGrantsKtorOperationsKey, runtime.operations)
 
         on(MonitoringEvent(ApplicationStopping)) {
-            // Ktor monitoring events are synchronous; close SDK clients on IO.
+            // Ktor monitoring event는 동기식이므로 SDK client는 IO에서 닫는다.
             runBlocking(Dispatchers.IO) {
                 runtime.stop()
             }

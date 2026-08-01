@@ -215,7 +215,7 @@ class DynamoDbBatchExecutor<T: Any>(
         val requestItems = writeList.groupBy({ it.tableName }, { it.writeRequest })
         val batchRequest = BatchWriteItemRequest { requestItems(requestItems) }
 
-        // WHY: DynamoDbClient.batchWriteItem is blocking, so isolate it on Dispatchers.IO.
+        // 이유: DynamoDbClient.batchWriteItem은 blocking 호출이므로 Dispatchers.IO로 격리한다.
         return runInterruptible(Dispatchers.IO) {
             dynamoDB.batchWriteItem(batchRequest)
         }

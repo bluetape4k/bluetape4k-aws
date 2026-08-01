@@ -128,7 +128,7 @@ class SqsMessageListenerContainer internal constructor(
             } catch (e: Throwable) {
                 interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e) }
                 log.warn("SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl", e)
-                // Keep the listener alive; individual message failures are handled in handle().
+                // listener는 계속 실행하고 개별 message 실패는 handle()에서 처리한다.
             }
         }
     }

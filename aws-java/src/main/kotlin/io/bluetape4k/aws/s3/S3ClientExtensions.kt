@@ -104,7 +104,7 @@ fun S3Client.createBucket(
 }
 
 //
-// Get Object
+// 객체 조회
 //
 
 /**
@@ -235,7 +235,7 @@ inline fun S3Client.getAsFile(
 }
 
 //
-// Put Object
+// 객체 저장
 //
 
 /**
@@ -367,7 +367,7 @@ inline fun S3Client.putAsFile(
 }
 
 //
-// Move Object
+// 객체 이동
 //
 
 /**

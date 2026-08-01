@@ -77,7 +77,7 @@ object S3ClientFactory {
                 credentialsProvider?.let { credentialsProvider(it) }
                 httpClient(httpClient)
 
-                // Transfer Acceleration requires bucket-level enablement; leave disabled by default.
+                // Transfer Acceleration은 버킷 수준 활성화가 필요하므로 기본값은 비활성화한다.
                 accelerate(accelerate)
 
                 builder()
@@ -140,7 +140,7 @@ object S3ClientFactory {
                 credentialsProvider?.let { credentialsProvider(it) }
                 httpClient(httpClient)
 
-                // Transfer Acceleration requires bucket-level enablement; leave disabled by default.
+                // Transfer Acceleration은 버킷 수준 활성화가 필요하므로 기본값은 비활성화한다.
                 accelerate(accelerate)
 
                 builder()
@@ -203,8 +203,8 @@ object S3ClientFactory {
                 credentialsProvider?.let { credentialsProvider(it) }
                 maxConcurrency(Runtimex.availableProcessors * 2)
                 minimumPartSizeInBytes(miminumPartSizeInBytes)
-                // Transfer Acceleration requires bucket-level enablement; leave disabled by default.
-                // accelerate(false)
+                // Transfer Acceleration은 버킷 수준 활성화가 필요하므로 기본값은 비활성화한다.
+                // Transfer Acceleration 비활성화: accelerate(false)
                 builder()
             }
         }

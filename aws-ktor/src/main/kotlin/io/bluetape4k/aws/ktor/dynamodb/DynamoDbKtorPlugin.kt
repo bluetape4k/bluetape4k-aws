@@ -32,13 +32,13 @@ val DynamoDbKtorPlugin: ApplicationPlugin<DynamoDbKtorPluginConfig> = createAppl
     application.attributes.put(DynamoDbKtorRuntimeKey, runtime)
 
     on(MonitoringEvent(ApplicationStarted)) {
-        // Ktor monitoring events are synchronous; table auto-creation is suspend-only AWS Kotlin SDK work.
+        // Ktor monitoring event는 동기식이지만 table 자동 생성은 suspend 전용 AWS Kotlin SDK 작업이다.
         runBlocking(Dispatchers.IO) {
             runtime.start()
         }
     }
     on(MonitoringEvent(ApplicationStopping)) {
-        // Ktor monitoring events are synchronous; close plugin-owned AWS clients within a bounded suspend bridge.
+        // Ktor monitoring event는 동기식이므로 plugin 소유 AWS client는 시간이 제한된 suspend bridge 안에서 닫는다.
         runBlocking(Dispatchers.IO) {
             runtime.stop()
         }

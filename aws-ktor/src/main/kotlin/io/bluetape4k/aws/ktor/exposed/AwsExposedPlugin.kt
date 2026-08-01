@@ -37,13 +37,13 @@ val AwsExposedPlugin: ApplicationPlugin<AwsExposedPluginConfig> = createApplicat
     application.attributes.put(AwsExposedKtorRuntimeKey, runtime)
 
     on(MonitoringEvent(ApplicationStarted)) {
-        // Ktor monitoring events are synchronous; registry creation is suspend and may initialize blocking JDBC pools.
+        // Ktor monitoring event는 동기식이지만 registry 생성은 suspend이며 blocking JDBC pool을 초기화할 수 있다.
         runBlocking(Dispatchers.IO) {
             runtime.start()
         }
     }
     on(MonitoringEvent(ApplicationStopping)) {
-        // Ktor monitoring events are synchronous; registry shutdown closes blocking JDBC resources.
+        // Ktor monitoring event는 동기식이며 registry 종료는 blocking JDBC resource를 닫는다.
         runBlocking(Dispatchers.IO) {
             runtime.stop()
         }

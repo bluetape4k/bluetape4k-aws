@@ -102,7 +102,7 @@ fun S3AsyncClient.createBucketAsync(
 }
 
 //
-// Get Object
+// 객체 조회
 //
 
 /**
@@ -183,7 +183,7 @@ inline fun S3AsyncClient.getAsFileAsync(
 
 
 //
-// Put Object
+// 객체 저장
 //
 
 /**
@@ -310,7 +310,7 @@ inline fun S3AsyncClient.putAsFileAsync(
     putAsync(bucket, key, path.toAsyncRequestBody(), builder)
 
 //
-// Move Object
+// 객체 이동
 //
 
 /**

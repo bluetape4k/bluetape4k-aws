@@ -40,13 +40,13 @@ val CloudWatchLogsKtorPlugin: ApplicationPlugin<CloudWatchLogsKtorPluginConfig> 
         application.attributes.put(CloudWatchLogsKtorOperationsKey, runtime.operations)
 
         on(MonitoringEvent(ApplicationStarted)) {
-            // Ktor monitoring events are synchronous; startup setup can call AWS.
+            // Ktor monitoring event는 동기식이며 startup 설정에서 AWS를 호출할 수 있다.
             runBlocking(Dispatchers.IO) {
                 runtime.start()
             }
         }
         on(MonitoringEvent(ApplicationStopping)) {
-            // Ktor monitoring events are synchronous; flush and close SDK clients on IO.
+            // Ktor monitoring event는 동기식이므로 flush와 SDK client 종료는 IO에서 수행한다.
             runBlocking(Dispatchers.IO) {
                 runtime.stop()
             }
