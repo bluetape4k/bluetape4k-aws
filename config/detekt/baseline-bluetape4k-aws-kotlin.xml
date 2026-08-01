@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:KinesisRecordFlow.kt:fun KinesisClient.recordFlow: Flow&lt;Record></ID>
+    <ID>EmptyKotlinFile:LocalStackServerSupport.kt:io.bluetape4k.aws.kotlin.LocalStackServerSupport.kt</ID>
+    <ID>ForbiddenComment:UserService.kt:UserService$// TODO: Reflection을 이용해 속성명과 값을 매핑하여 item을 생성하도록 할 수 있을 듯 </ID>
+    <ID>LongMethod:KinesisRecordFlow.kt:fun KinesisClient.recordFlow: Flow&lt;Record></ID>
+    <ID>LongMethod:S3ClientBucketMockTest.kt:S3ClientBucketMockTest$@Test fun `forceDeleteBucket deletes object versions and delete markers`</ID>
+    <ID>MagicNumber:S3ClientBucket.kt:404</ID>
+    <ID>MagicNumber:S3ClientGet.kt:404</ID>
+    <ID>MagicNumber:SecretsManagerRequestSupport.kt:20</ID>
+    <ID>MagicNumber:SesClientExtensions.kt:404</ID>
+    <ID>MagicNumber:SesV2ClientExtensions.kt:404</ID>
+    <ID>MagicNumber:SqsClientExtensions.kt:404</ID>
+    <ID>MagicNumber:SsmRequestSupport.kt:10</ID>
+    <ID>MaxLineLength:AbstractKmsTest.kt:AbstractKmsTest$*</ID>
+    <ID>MaxLineLength:AbstractKotlinKinesisTest.kt:AbstractKotlinKinesisTest$*</ID>
+    <ID>MaxLineLength:AbstractKotlinStsTest.kt:AbstractKotlinStsTest$*</ID>
+    <ID>MaxLineLength:ConditionCheck.kt:*</ID>
+    <ID>MaxLineLength:KinesisRecordFlow.kt:log.error { "Shard iterator expired after $iteratorRetryCount attempts: stream=$streamName shard=$shardId" }</ID>
+    <ID>MaxLineLength:KinesisRecordFlow.kt:log.warn { "Throttle retry $throttleRetryCount/${options.maxThrottleRetries}: stream=$streamName shard=$shardId" }</ID>
+    <ID>MaxLineLength:KinesisStartingPositionTest.kt:KinesisStartingPositionTest$val pos = KinesisStartingPosition.AfterSequenceNumber("49590338271490256608559692540925702759324208523137515522")</ID>
+    <ID>MaxLineLength:SesClientExtensions.kt:suspend inline</ID>
+    <ID>MaxLineLength:SesClientExtensionsTest.kt:SesClientExtensionsTest$*</ID>
+    <ID>MaxLineLength:SesClientSupport.kt:*</ID>
+    <ID>MaxLineLength:SesV2ClientExtensionsTest.kt:SesV2ClientExtensionsTest$*</ID>
+    <ID>MaxLineLength:SesV2ClientSupport.kt:*</ID>
+    <ID>MaxLineLength:SqsClientExtensions.kt:*</ID>
+    <ID>MaxLineLength:SsmClientExtensions.kt:awsSecretValueOf(getParameter(name, withDecryption = true).parameter?.value ?: error("Parameter value is not present."))</ID>
+    <ID>MaxLineLength:SsmRequestSupport.kt:return putParameterRequestOf(name, values.joinToString(","), ParameterType.StringList, overwrite, description, builder)</ID>
+    <ID>MaxLineLength:Subscribe.kt:*</ID>
+    <ID>ReturnCount:SesClientExtensions.kt:@PublishedApi internal fun Throwable.isMissingSesTemplateError: Boolean</ID>
+    <ID>ReturnCount:SesV2ClientExtensions.kt:internal fun Throwable.isMissingSesV2TemplateError: Boolean</ID>
+    <ID>SerialVersionUIDInSerializableClass:User.kt:User : Serializable</ID>
+    <ID>ThrowingExceptionFromFinally:BedrockRuntimeClientSupport.kt:throw cause</ID>
+    <ID>TooGenericExceptionCaught:BedrockRuntimeClientSupport.kt:cause: Throwable</ID>
+    <ID>TooGenericExceptionCaught:S3ClientBucket.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:S3ClientGet.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SesClientExtensions.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SesV2ClientExtensions.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SqsClientExtensions.kt:e: Exception</ID>
+    <ID>TooManyFunctions:AttributeValue.kt:io.bluetape4k.aws.kotlin.dynamodb.model.AttributeValue.kt</ID>
+    <ID>TooManyFunctions:EventBridgeRequestSupport.kt:io.bluetape4k.aws.kotlin.eventbridge.model.EventBridgeRequestSupport.kt</ID>
+    <ID>TooManyFunctions:S3ClientGet.kt:io.bluetape4k.aws.kotlin.s3.S3ClientGet.kt</ID>
+    <ID>TooManyFunctions:SchedulerRequestSupport.kt:io.bluetape4k.aws.kotlin.scheduler.model.SchedulerRequestSupport.kt</ID>
+    <ID>TooManyFunctions:SqsClientExtensions.kt:io.bluetape4k.aws.kotlin.sqs.SqsClientExtensions.kt</ID>
+    <ID>UnusedParameter:Put.kt:crossinline builder: PutRequest.Builder.() -> Unit = {}</ID>
+    <ID>UtilityClassWithPublicConstructor:AbstractAwsTest.kt:AbstractAwsTest</ID>
+    <ID>VariableNaming:KinesisRecordFlowUnitTest.kt:KinesisRecordFlowUnitTest$private val SHARD_ID = "shardId-000000000000"</ID>
+    <ID>VariableNaming:KinesisRecordFlowUnitTest.kt:KinesisRecordFlowUnitTest$private val STREAM = "test-stream"</ID>
+  </CurrentIssues>
+</SmellBaseline>

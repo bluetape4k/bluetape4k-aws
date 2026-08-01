@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:KinesisCoroutinesTemplate.kt:KinesisCoroutinesTemplate$override fun recordFlow: Flow&lt;Record></ID>
+    <ID>LongMethod:KinesisCoroutinesTemplate.kt:KinesisCoroutinesTemplate$override fun recordFlow: Flow&lt;Record></ID>
+    <ID>MagicNumber:CloudWatchProperties.kt:CloudWatchLogsProperties$10_000</ID>
+    <ID>MagicNumber:CloudWatchProperties.kt:CloudWatchProperties$1_000</ID>
+    <ID>MagicNumber:DynamoDbProperties.kt:DynamoDbDaxProperties$30</ID>
+    <ID>MagicNumber:DynamoDbProperties.kt:DynamoDbDaxProperties$4</ID>
+    <ID>MagicNumber:DynamoDbProperties.kt:DynamoDbDaxProperties$6</ID>
+    <ID>MagicNumber:ImdsProperties.kt:ImdsProperties$6</ID>
+    <ID>MagicNumber:KmsProperties.kt:KmsProperties.DataKeyCache$5</ID>
+    <ID>MagicNumber:ParameterStoreEnvironmentPostProcessor.kt:ParameterStoreEnvironmentPostProcessor$10</ID>
+    <ID>MagicNumber:S3ClientSideEncryptionOperations.kt:S3ClientSideEncryptionTemplate$16</ID>
+    <ID>MagicNumber:S3ClientSideEncryptionOperations.kt:S3ClientSideEncryptionTemplate$24</ID>
+    <ID>MagicNumber:S3ClientSideEncryptionOperations.kt:S3ClientSideEncryptionTemplate$32</ID>
+    <ID>MagicNumber:S3ConfigEnvironmentPostProcessor.kt:S3ConfigEnvironmentPostProcessor$15</ID>
+    <ID>MagicNumber:S3CoroutinesTemplate.kt:S3CoroutinesTemplate$1_000</ID>
+    <ID>MagicNumber:S3Properties.kt:S3Properties.Presign$15</ID>
+    <ID>MagicNumber:S3Resource.kt:S3Resource$404</ID>
+    <ID>MagicNumber:SecretsManagerEnvironmentPostProcessor.kt:SecretsManagerEnvironmentPostProcessor$20</ID>
+    <ID>MagicNumber:SesJavaMailSender.kt:SesJavaMailSender$401</ID>
+    <ID>MagicNumber:SesJavaMailSender.kt:SesJavaMailSender$403</ID>
+    <ID>MagicNumber:SqsAcknowledgement.kt:DefaultSqsAcknowledgement$43_200</ID>
+    <ID>MagicNumber:SqsCoroutinesTemplate.kt:SqsCoroutinesTemplate$10</ID>
+    <ID>MagicNumber:SqsCoroutinesTemplate.kt:SqsCoroutinesTemplate$20</ID>
+    <ID>MagicNumber:SqsCoroutinesTemplate.kt:SqsCoroutinesTemplate$43_200</ID>
+    <ID>MagicNumber:SqsProperties.kt:43_200</ID>
+    <ID>MagicNumber:SqsProperties.kt:SqsProperties.Listener$10</ID>
+    <ID>MagicNumber:SqsProperties.kt:SqsProperties.Listener$20</ID>
+    <ID>MagicNumber:SqsSendRequest.kt:SqsSendRequest$900</ID>
+    <ID>MatchingDeclarationName:AwsClientBuilderSupport.kt:AwsClientDefaults : Serializable</ID>
+    <ID>MaxLineLength:AwsExposedAutoConfiguration.kt:AwsExposedAutoConfiguration$@ConditionalOnProperty(prefix = "bluetape4k.aws.exposed", name = ["enabled"], havingValue = "true", matchIfMissing = true)</ID>
+    <ID>MaxLineLength:AwsExposedAutoConfiguration.kt:AwsExposedDefaultDatabaseAutoConfiguration$@ConditionalOnProperty(prefix = "bluetape4k.aws.exposed", name = ["enabled"], havingValue = "true", matchIfMissing = true)</ID>
+    <ID>MaxLineLength:CloudWatchAutoConfiguration.kt:CloudWatchAutoConfiguration$@ConditionalOnProperty(prefix = CLOUDWATCH_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)</ID>
+    <ID>MaxLineLength:CloudWatchAutoConfiguration.kt:CloudWatchAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:CloudWatchLogsAutoConfiguration.kt:CloudWatchLogsAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:DynamoDbAutoConfiguration.kt:DynamoDbAutoConfiguration$@ConditionalOnProperty(prefix = "bluetape4k.aws.dynamodb", name = ["enabled"], havingValue = "true", matchIfMissing = true)</ID>
+    <ID>MaxLineLength:DynamoDbDaxAutoConfiguration.kt:DynamoDbDaxAutoConfiguration$@ConditionalOnProperty(prefix = DYNAMODB_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)</ID>
+    <ID>MaxLineLength:DynamoDbRepositoryAwsEmulatorTest.kt:DynamoDbRepositoryAwsEmulatorTest$AttributeDefinition.builder().attributeName("createdAt").attributeType(ScalarAttributeType.S).build()</ID>
+    <ID>MaxLineLength:DynamoDbRepositoryAwsEmulatorTest.kt:DynamoDbRepositoryAwsEmulatorTest$AttributeDefinition.builder().attributeName("customerId").attributeType(ScalarAttributeType.S).build()</ID>
+    <ID>MaxLineLength:EventBridgeAutoConfiguration.kt:EventBridgeAutoConfiguration$@ConditionalOnProperty(prefix = "bluetape4k.aws.eventbridge", name = ["enabled"], havingValue = "true", matchIfMissing = true)</ID>
+    <ID>MaxLineLength:EventBridgeAutoConfiguration.kt:EventBridgeAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:KinesisAutoConfiguration.kt:KinesisAutoConfiguration$@ConditionalOnProperty(prefix = "bluetape4k.aws.kinesis", name = ["enabled"], havingValue = "true", matchIfMissing = true)</ID>
+    <ID>MaxLineLength:KinesisAutoConfiguration.kt:KinesisAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:KinesisCoroutinesTemplateTest.kt:KinesisCoroutinesTemplateTest$FlowCase(KinesisStartingPosition.AtTimestamp(timestamp), ShardIteratorType.AT_TIMESTAMP, timestamp = timestamp)</ID>
+    <ID>MaxLineLength:KmsAutoConfiguration.kt:KmsAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:S3AccessGrantsAutoConfiguration.kt:S3AccessGrantsAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:S3AutoConfiguration.kt:S3AutoConfiguration$.</ID>
+    <ID>MaxLineLength:S3CoroutinesTemplateAwsEmulatorTest.kt:S3CoroutinesTemplateAwsEmulatorTest$operations.listFlow(bucketName, prefix = "docs/", pageSize = 1).toList().map { it.key() } shouldContain key</ID>
+    <ID>MaxLineLength:S3CoroutinesTemplateAwsEmulatorTest.kt:S3CoroutinesTemplateAwsEmulatorTest$stored.asByteArray().contentEquals(plaintext.toByteArray(StandardCharsets.UTF_8)) shouldBeEqualTo false</ID>
+    <ID>MaxLineLength:S3VectorsAutoConfiguration.kt:S3VectorsAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:SecretsManagerPropertySourceLoader.kt:SecretsManagerPropertySourceLoader$" [secretId=${source.secretId}, region=${properties.region}, endpoint=${properties.endpointOverride}]."</ID>
+    <ID>MaxLineLength:SesAutoConfiguration.kt:SesAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:SesCoroutinesMailSender.kt:SesCoroutinesMailSender$?:</ID>
+    <ID>MaxLineLength:SnsAutoConfiguration.kt:SnsAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:SpringEnvironmentAwsDatabaseSettingsResolver.kt:SpringEnvironmentAwsDatabaseSettingsResolver$authenticationMode = overlay.enum&lt;AwsDatabaseAuthenticationMode>("authentication-mode") ?: authenticationMode</ID>
+    <ID>MaxLineLength:SqsAutoConfiguration.kt:SqsAutoConfiguration$resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)</ID>
+    <ID>MaxLineLength:SqsCoroutinesTemplate.kt:SqsCoroutinesTemplate$visibilityTimeoutSeconds?.let { require(it in 0..43_200) { "visibilityTimeoutSeconds must be between 0 and 43200." } }</ID>
+    <ID>MaxLineLength:SqsListenerAnnotationBeanPostProcessor.kt:SqsListenerAnnotationBeanPostProcessor$val invoker = SqsListenerMethodInvoker(bean, AopUtils.selectInvocableMethod(method, bean.javaClass), messageConverter)</ID>
+    <ID>MaxLineLength:SqsListenerInterceptor.kt:SqsListenerInterceptor$suspend</ID>
+    <ID>MaxLineLength:SqsMessageListenerContainer.kt:SqsMessageListenerContainer$"SQS changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}"</ID>
+    <ID>MaxLineLength:SqsMessageListenerContainer.kt:SqsMessageListenerContainer$"SQS message handling failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}"</ID>
+    <ID>RethrowCaughtException:SqsListenerMethodInvoker.kt:SqsListenerMethodInvoker$throw e</ID>
+    <ID>ReturnCount:KinesisCoroutinesTemplate.kt:KinesisCoroutinesTemplate$private fun jitteredBackoff: Duration</ID>
+    <ID>ReturnCount:SpringEnvironmentAwsDatabaseSettingsResolver.kt:SpringEnvironmentAwsDatabaseSettingsResolver$private fun AwsDatabaseConnectionProperties.resolveFrom: AwsDatabaseConnectionProperties</ID>
+    <ID>ReturnCount:SqsMessageListenerContainer.kt:SqsMessageListenerContainer$private suspend fun handle</ID>
+    <ID>SerialVersionUIDInSerializableClass:SqsListenerMethodInvoker.kt:SqsListenerMethodInvoker$Parameter : Serializable</ID>
+    <ID>ThrowsCount:KmsEncryptedFieldCodec.kt:KmsEncryptedFieldCodec$suspend fun decrypt: String?</ID>
+    <ID>ThrowsCount:KmsEncryptedFieldCodec.kt:KmsEncryptedFieldCodec$suspend fun encrypt: String?</ID>
+    <ID>ThrowsCount:SqsListenerMethodInvoker.kt:SqsListenerMethodInvoker$suspend fun invoke</ID>
+    <ID>TooGenericExceptionCaught:AwsEnvironmentPropertySourceSupport.kt:RefreshingAwsMapPropertySource$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:AwsMicrometerSupport.kt:AwsMicrometerSupport$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:KmsEncryptedFieldCodec.kt:KmsEncryptedFieldCodec$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:ParameterStorePropertySourceLoader.kt:ParameterStorePropertySourceLoader$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:S3ConfigPropertySourceLoader.kt:S3ConfigPropertySourceLoader$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:SecretsManagerPropertySourceLoader.kt:SecretsManagerPropertySourceLoader$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:SesJavaMailSender.kt:SesJavaMailSender$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SqsAcknowledgement.kt:DefaultSqsAcknowledgement$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SqsMessageListenerContainer.kt:SqsMessageListenerContainer$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SqsMessageListenerContainer.kt:SqsMessageListenerContainer$ve: Throwable</ID>
+    <ID>TooManyFunctions:AbstractCoroutinesDynamoDbRepository.kt:AbstractCoroutinesDynamoDbRepository&lt;T: Any, ID: Any> : CoroutinesDynamoDbRepository</ID>
+    <ID>TooManyFunctions:AwsEnvironmentPropertySourceSupport.kt:io.bluetape4k.aws.spring.env.AwsEnvironmentPropertySourceSupport.kt</ID>
+    <ID>TooManyFunctions:KinesisCoroutinesTemplate.kt:KinesisCoroutinesTemplate : KinesisOperations</ID>
+    <ID>TooManyFunctions:MicrometerS3Operations.kt:MicrometerS3Operations : S3Operations</ID>
+    <ID>TooManyFunctions:SesCoroutinesMailSender.kt:SesCoroutinesMailSender : SesOperations</ID>
+  </CurrentIssues>
+</SmellBaseline>

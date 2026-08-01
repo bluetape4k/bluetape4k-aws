@@ -1,5 +1,6 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.report.ReportMergeTask
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.extensions.DetektExtension
+import dev.detekt.gradle.report.ReportMergeTask
 import nmcp.NmcpAggregationExtension
 import nmcp.NmcpExtension
 import org.gradle.api.artifacts.Configuration
@@ -8,12 +9,58 @@ import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
 import org.gradle.api.attributes.java.TargetJvmVersion
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.util.concurrent.TimeUnit
+
+abstract class VerifyDetektCoverage : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val moduleSourceDirectories: ConfigurableFileCollection
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val moduleReports: ConfigurableFileCollection
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val mergedReport: RegularFileProperty
+
+    @get:Input
+    abstract val expectedModuleCount: Property<Int>
+
+    @TaskAction
+    fun verifyCoverage() {
+        val sourceDirectories = moduleSourceDirectories.files
+        require(sourceDirectories.size == expectedModuleCount.get()) {
+            "Expected ${expectedModuleCount.get()} Detekt module source directories, found ${sourceDirectories.size}."
+        }
+        val noSourceModules = sourceDirectories
+            .filter { directory -> directory.walkTopDown().none { it.isFile && it.extension == "kt" } }
+            .map(File::getName)
+        require(noSourceModules.isEmpty()) {
+            "Detekt has no Kotlin sources for published modules: ${noSourceModules.joinToString()}"
+        }
+        require(moduleReports.files.size == expectedModuleCount.get() && moduleReports.files.all(File::isFile)) {
+            "Detekt XML reports are missing for one or more published modules."
+        }
+        require(mergedReport.get().asFile.isFile) {
+            "Merged Detekt report was not created."
+        }
+    }
+}
 
 plugins {
     base
@@ -58,12 +105,30 @@ val shouldApplyKover = requestedTaskNames.any {
 }
 val shouldApplyNative = requestedTaskNames.any { it.contains("native", ignoreCase = true) }
 
-if (shouldApplyDetekt) {
-    apply(plugin = "io.gitlab.arturbosch.detekt")
-}
-
 if (shouldApplyKover) {
     apply(plugin = "org.jetbrains.kotlinx.kover")
+}
+
+val publishedKotlinProjects = subprojects.filter { project ->
+    project.name != "bluetape4k-aws-bom" && !project.path.contains("examples")
+}
+val detektReportMerge = tasks.register<ReportMergeTask>("detektReportMerge") {
+    description = "Merges Detekt XML reports from published Kotlin modules."
+    group = "verification"
+    output.set(layout.buildDirectory.file("reports/detekt/merged.xml"))
+}
+val verifyDetektCoverage = tasks.register<VerifyDetektCoverage>("verifyDetektCoverage") {
+    description = "Verifies Detekt analyzes every published Kotlin module and produces reports."
+    group = "verification"
+    dependsOn(detektReportMerge)
+    expectedModuleCount.set(publishedKotlinProjects.size)
+    moduleSourceDirectories.from(publishedKotlinProjects.map { it.layout.projectDirectory.dir("src") })
+    mergedReport.set(detektReportMerge.flatMap { it.output })
+}
+tasks.register("detekt") {
+    description = "Runs Detekt for every published Kotlin module and verifies the merged report."
+    group = "verification"
+    dependsOn(verifyDetektCoverage)
 }
 
 
@@ -269,8 +334,17 @@ subprojects {
         plugin("io.spring.dependency-management")
         plugin("org.jetbrains.dokka")
         plugin("com.adarshr.test-logger")
+        if (shouldApplyDetekt && !path.contains("examples")) {
+            plugin("dev.detekt")
+        }
         if (shouldApplyKover) {
             plugin("org.jetbrains.kotlinx.kover")
+        }
+    }
+
+    pluginManager.withPlugin("dev.detekt") {
+        extensions.configure<DetektExtension>("detekt") {
+            baseline.set(rootProject.layout.projectDirectory.file("config/detekt/baseline-${project.name}.xml"))
         }
     }
 
@@ -348,12 +422,15 @@ subprojects {
             showFullStackTraces = true
         }
 
-        val reportMerge = register<ReportMergeTask>("reportMerge") {
-            output.set(rootProject.layout.buildDirectory.file("reports/detekt/merged.xml"))
-        }
         withType<Detekt>().configureEach detekt@{
-            finalizedBy(reportMerge)
-            reportMerge.configure { input.from(this@detekt.xmlReportFile) }
+            reports.checkstyle.required.set(true)
+            detektReportMerge.configure {
+                dependsOn(this@detekt)
+                input.from(this@detekt.reports.checkstyle.outputLocation)
+            }
+            verifyDetektCoverage.configure {
+                moduleReports.from(this@detekt.reports.checkstyle.outputLocation)
+            }
         }
 
         jar {

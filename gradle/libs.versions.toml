@@ -31,7 +31,7 @@ junit-jupiter = "6.0.3"  # https://mvnrepository.com/artifact/org.junit/junit-bo
 mockk = "1.14.9"  # https://mvnrepository.com/artifact/io.mockk/mockk
 
 # Plugin versions
-detekt = "1.23.8"  # https://mvnrepository.com/artifact/io.gitlab.arturbosch.detekt/detekt-gradle-plugin
+detekt = "2.0.0-alpha.5"  # https://mvnrepository.com/artifact/dev.detekt/detekt-gradle-plugin
 graalvm-native = "1.1.0"  # https://mvnrepository.com/artifact/org.graalvm.buildtools.native/org.graalvm.buildtools.native.gradle.plugin
 test-logger = "4.0.0"  # https://mvnrepository.com/artifact/com.adarshr/gradle-test-logger-plugin
 
@@ -39,7 +39,7 @@ test-logger = "4.0.0"  # https://mvnrepository.com/artifact/com.adarshr/gradle-t
 [plugins]
 kotlinx-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "kotlinx-atomicfu" }
 
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 test-logger = { id = "com.adarshr.test-logger", version.ref = "test-logger" }
 graalvm-native = { id = "org.graalvm.buildtools.native", version.ref = "graalvm-native" }
 

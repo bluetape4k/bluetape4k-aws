@@ -33,12 +33,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Pin Kotlin for CodeQL extractor
-        if: matrix.language == 'java-kotlin'
-        run: |
-          perl -0pi -e 's/kotlin = "2\.4\.0"/kotlin = "2.3.21"/' gradle/libs.versions.toml
-          grep -n 'kotlin = "2.3.21"' gradle/libs.versions.toml
-
       - name: Setup JDK
         if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v5
@@ -52,9 +46,21 @@ jobs:
           gradle-version: wrapper
           cache-provider: basic
 
+      - name: Pin Kotlin for CodeQL extractor
+        if: matrix.language == 'java-kotlin'
+        run: |
+          ./gradlew help --no-daemon
+          catalog="$(find .gradle/bluetape4k-dependencies -type f -name libs.versions.toml -print -quit)"
+          test -n "$catalog"
+          codeql_catalog="$GITHUB_WORKSPACE/.gradle/codeql-libs.versions.toml"
+          cp "$catalog" "$codeql_catalog"
+          perl -0pi -e 's/^kotlin\s*=\s*"2\.4\.0"/kotlin = "2.3.21"/m' "$codeql_catalog"
+          grep -n '^kotlin\s*=\s*"2.3.21"' "$codeql_catalog"
+          git diff --exit-code -- gradle/libs.versions.toml settings.gradle.kts
+
       - name: Build with Gradle
         if: matrix.language == 'java-kotlin'
-        run: ./gradlew build -x test --no-daemon
+        run: ./gradlew build -x test --no-daemon -Pbluetape4kDependenciesCatalogPath="$GITHUB_WORKSPACE/.gradle/codeql-libs.versions.toml"
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
