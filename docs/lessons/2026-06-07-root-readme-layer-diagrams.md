@@ -1,36 +1,35 @@
-# Root README layer diagrams
+# Root README 계층 다이어그램
 
-## Context
+## 배경
 
-The root README service coverage chart and architecture diagrams were behind
-the current module surface. The chart omitted RDS IAM, Secrets Manager, and
-Parameter Store paths now exposed through `aws-exposed`, `aws-spring-boot`, and
-`aws-ktor`.
+Root README service coverage chart와 architecture diagram이 현재 module surface를 반영하지
+못했다. Chart에는 이제 `aws-exposed`, `aws-spring-boot`, `aws-ktor`를 통해 제공하는 RDS
+IAM, Secrets Manager, Parameter Store 경로가 빠져 있었다.
 
-## Decision
+## 결정
 
-Regenerate the root README service chart and architecture diagrams as shared
-English-label SVG/PNG assets under `docs/images/readme-diagrams`. Architecture
-diagrams use explicit layer bands with a left label gutter and color-coded
-routes instead of Mermaid.
+Root README service chart와 architecture diagram을
+`docs/images/readme-diagrams` 아래의 공통 영문 label SVG/PNG asset으로 다시 생성한다.
+Architecture diagram은 Mermaid 대신 왼쪽 label gutter가 있는 명시적 layer band와 색상으로
+구분한 route를 사용한다.
 
-## Outcome
+## 결과
 
-The root README and Korean README keep the same asset paths while the images
-now show current service coverage and layered module boundaries. README service
-lists now include RDS IAM, Secrets Manager, and Parameter Store.
+Root README와 한국어 README는 같은 asset path를 유지하고, image에는 최신 service
+coverage와 계층화한 module boundary를 표시한다. README service 목록에도 RDS IAM,
+Secrets Manager, Parameter Store를 추가했다.
 
-## Verification
+## 검증
 
-- Regenerated SVG, PNG, DOT, plain, and sketch assets for the service coverage
-  chart and three architecture diagrams.
-- Geometry gate reported `badEndpointAngle=0`, `badBends=0`, and
-  `interiorCrossings=0` for all regenerated diagrams.
-- Visually inspected the service chart, runtime architecture, and combined
-  contact sheet for spacing, label overlap, and route readability.
+- Service coverage chart와 architecture diagram 세 개의 SVG, PNG, DOT, plain, sketch
+  asset을 다시 생성했다.
+- 다시 생성한 모든 diagram에서 geometry gate 결과가 `badEndpointAngle=0`,
+  `badBends=0`, `interiorCrossings=0`이었다.
+- Service chart, runtime architecture, combined contact sheet의 spacing, label overlap,
+  route readability를 시각 검사했다.
 
-## Future Guidance
+## 향후 지침
 
-Reserve a left label gutter for layer titles and short subtitles before placing
-components. If labels or routes start to crowd, increase the canvas or remove
-inline connector labels and use color semantics plus a footer legend.
+Component를 배치하기 전에 layer title과 짧은 subtitle용 왼쪽 label gutter를 확보한다.
+Label이나 route가 빽빽해지면 canvas를 키우거나 inline connector label을 제거하고 색상
+의미와 footer legend를 사용한다.

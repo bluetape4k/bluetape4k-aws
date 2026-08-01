@@ -1,93 +1,81 @@
-# README diagram checklist repair
+# README 다이어그램 체크리스트 보완
 
-## Context
+## 배경
 
-The README diagram refresh was merged before the `bluetape4k-diagram` checklist
-was applied strictly to every rendered PNG. A follow-up audit inspected all
-unique README diagram assets one by one and found failures across the full
-batch.
+모든 rendering PNG에 `bluetape4k-diagram` checklist를 엄격히 적용하기 전에 README
+diagram 갱신을 병합했다. 후속 audit에서 고유 README diagram asset을 하나씩 검사한 결과
+전체 batch에서 실패를 발견했다.
 
-## Decision
+## 결정
 
-Regenerate the README diagram batch with the checklist treated as a gate:
+Checklist를 gate로 삼아 README diagram batch를 다시 생성한다.
 
-- final README assets use the standard title/subtitle/frame/chip/footer shell
-- final service/database endpoint shapes use standard cards instead of
-  cylinder strokes that cross title text
-- flow and lifecycle diagrams stay vertical
-- connector endpoints are orthogonal at node boundaries
-- non-endpoint connector lanes keep visible clearance from boxes
-- box text blocks are vertically middle aligned
-- PNG/SVG/Graphviz evidence stays beside every README asset
+- 최종 README asset은 표준 title/subtitle/frame/chip/footer shell을 사용한다.
+- 최종 service/database endpoint shape는 title text를 가로지르는 cylinder stroke 대신
+  표준 card를 사용한다.
+- Flow와 lifecycle diagram은 vertical layout을 유지한다.
+- Connector endpoint는 node boundary에서 orthogonal하게 연결한다.
+- Endpoint가 아닌 connector lane은 box와 눈에 띄는 간격을 유지한다.
+- Box text block은 세로 중앙에 정렬한다.
+- 모든 README asset 옆에 PNG/SVG/Graphviz 증거를 유지한다.
 
-## Source Drift Evidence
+## Source 변경 증거
 
-The regenerated diagrams were checked against the current checked-out
-repository structure and README scope on 2026-05-30.
+2026-05-30에 현재 checkout한 repository 구조와 README 범위를 기준으로 다시 생성한
+diagram을 검사했다.
 
-- Root repository diagrams: `README.md`, `README.ko.md`, `settings.gradle.kts`,
-  root module directories, and current README feature/module sections.
-- `aws-exposed`: `aws-exposed/README.md`, `aws-exposed/README.ko.md`, current
-  Exposed configuration, registry, factory, and transaction API documentation.
-- `aws-java`: `aws-java/README.md`, `aws-java/README.ko.md`, current Java SDK
-  wrapper README sections for builders, async clients, coroutine adapters, and
-  lifecycle ownership.
-- `aws-kotlin`: `aws-kotlin/README.md`, `aws-kotlin/README.ko.md`, current
-  Kotlin SDK wrapper README sections for `withXClient`, `clientOf`, Flow, and
-  short-lived client lifecycle.
-- `aws-ktor`: `aws-ktor/README.md`, `aws-ktor/README.ko.md`, current Ktor plugin
-  and advanced S3/SQS README sections.
-- `aws-spring-boot`: `aws-spring-boot/README.md`,
-  `aws-spring-boot/README.ko.md`, current Spring Boot auto-configuration README
-  sections.
-- `bom`: `bom/README.md`, `bom/README.ko.md`, and the BOM platform role.
-- Examples: all `examples/*/README.md` and `examples/*/README.ko.md` files for
-  Ktor/Spring Boot DynamoDB, Exposed, S3, SQS/SNS flows.
+- 루트 저장소 다이어그램: `README.md`, `README.ko.md`, `settings.gradle.kts`, 루트 모듈
+  디렉터리, 현재 README 기능/모듈 섹션
+- `aws-exposed`: `aws-exposed/README.md`, `aws-exposed/README.ko.md`, 현재 Exposed
+  configuration, registry, factory, transaction API 문서
+- `aws-java`: `aws-java/README.md`, `aws-java/README.ko.md`, 빌더, 비동기 클라이언트,
+  코루틴 어댑터, 수명 주기 소유권에 관한 현재 Java SDK 래퍼 README 섹션
+- `aws-kotlin`: `aws-kotlin/README.md`, `aws-kotlin/README.ko.md`, `withXClient`, `clientOf`,
+  Flow, short-lived client lifecycle에 관한 현재 Kotlin SDK wrapper README section
+- `aws-ktor`: `aws-ktor/README.md`, `aws-ktor/README.ko.md`, 현재 Ktor plugin 및 고급
+  S3/SQS README 섹션
+- `aws-spring-boot`: `aws-spring-boot/README.md`, `aws-spring-boot/README.ko.md`, 현재 Spring
+  Boot 자동 구성 README section
+- `bom`: `bom/README.md`, `bom/README.ko.md`, BOM 플랫폼 역할
+- Examples: Ktor/Spring Boot DynamoDB, Exposed, S3, SQS/SNS flow를 다루는 모든
+  `examples/*/README.md` 및 `examples/*/README.ko.md` 파일
 
-## Outcome
+## 결과
 
-All README-visible diagram assets must be re-audited after generation with the
-full checklist. A contact sheet is useful for triage only; final evidence must
-come from per-diagram rendered PNG inspection and targeted SVG/Graphviz/source
-checks.
+README에 보이는 모든 diagram asset은 생성 후 전체 checklist로 다시 audit해야 한다.
+Contact sheet는 triage에만 유용하며, 최종 증거는 diagram별 rendering PNG 검사와 대상
+SVG/Graphviz/source 검사에서 얻어야 한다.
 
-The first follow-up still over-trusted generated output. The visible failures
-were connector stubs that did not meet box boundaries at 90 degrees, connector
-lanes that visually crowded boxes, and footer text whose two-line block was not
-vertically centered. Increasing the canvas and spacing is preferable to forcing
-awkward connector detours into a cramped layout.
+첫 후속 작업도 생성한 output을 지나치게 신뢰했다. 눈에 보이는 실패는 box boundary에
+90도로 닿지 않는 connector stub, box와 시각적으로 너무 가까운 connector lane, 두 줄
+block이 세로 중앙에 오지 않은 footer text였다. 좁은 layout에서 connector를 어색하게
+우회하기보다 canvas와 spacing을 늘린다.
 
-## Verification Evidence
+## 검증 증거
 
-Final verification on 2026-05-30 covered all 32 unique README-visible PNG
-assets.
+2026-05-30의 최종 검증은 README에 보이는 고유 PNG asset 32개를 모두 다뤘다.
 
-- README image references: `readmes=31`, `unique=32`, `missing=0`,
-  `svgEmbed=0`, `nonPng=0`, `c3Missing=0`.
-- Endpoint routing gate: `files=64`, `totalEdges=189`, `bad=0`.
-- Connector clearance gate: `files=64`, `segments=478`, `bad=0`.
-- SVG well-formedness: `xmllint --noout` passed for README diagram SVG files.
-- Whitespace validation: `git diff --check` passed.
-- Visual spot checks after the routing gate covered the reported failure cases:
-  root overview footer vertical centering, Java SDK API routing, KMS dashed
-  route and label placement, component map bottom routing, Ktor SQS custom
-  route, and vertical aws-java/aws-kotlin/aws-exposed flows.
-- Root diagrams 1-9: C1-C12 passed in per-diagram visual audit.
-- Module and BOM diagrams 10-18 and 24: C1-C12 passed; Graphviz evidence files
-  were verified beside each PNG.
-- Framework diagrams 19-23: C1-C12 passed after rerouting connector endpoints
-  and increasing the advanced S3 architecture canvas height.
-- Example diagrams 25-32: C1-C12 passed; Graphviz evidence files were verified
-  beside each PNG.
+- README 이미지 참조: `readmes=31`, `unique=32`, `missing=0`, `svgEmbed=0`,
+  `nonPng=0`, `c3Missing=0`
+- 엔드포인트 라우팅 검증: `files=64`, `totalEdges=189`, `bad=0`
+- 커넥터 간격 검증: `files=64`, `segments=478`, `bad=0`
+- SVG well-formedness: README diagram SVG 파일에서 `xmllint --noout` 통과
+- Whitespace validation: `git diff --check` 통과
+- Routing gate 뒤의 visual spot check에서는 보고된 실패 사례인 root overview footer 세로
+  정렬, Java SDK API routing, KMS dashed route 및 label 배치, component map bottom routing,
+  Ktor SQS custom route, vertical aws-java/aws-kotlin/aws-exposed flow를 다뤘다.
+- Root diagram 1-9: diagram별 visual audit에서 C1-C12 통과
+- Module 및 BOM diagram 10-18과 24: C1-C12 통과, 각 PNG 옆의 Graphviz evidence file 확인
+- Framework diagram 19-23: connector endpoint route를 수정하고 고급 S3 architecture
+  canvas height를 늘린 뒤 C1-C12 통과
+- Example diagram 25-32: C1-C12 통과, 각 PNG 옆의 Graphviz evidence file 확인
 
-## Future Rule
+## 향후 규칙
 
-Do not merge or report completion for README diagram batches until the
-checklist result has one row per unique README-visible PNG and no mandatory
-item remains failed or missing.
+README diagram batch는 README에 보이는 고유 PNG마다 checklist result가 한 줄씩 있고,
+필수 항목에 실패나 누락이 없을 때만 병합하거나 완료로 보고한다.
 
-Do not treat a generated diagram as visually correct just because the source
-script ran. For connector-heavy diagrams, run deterministic endpoint and
-clearance gates first, then open the rendered PNGs that changed or previously
-failed. If a connector can only pass by taking an ugly detour, enlarge the
-diagram canvas or increase node spacing before accepting the route.
+Source script가 실행됐다는 이유만으로 생성한 diagram이 시각적으로 올바르다고 판단하지
+않는다. Connector가 많은 diagram은 deterministic endpoint와 clearance gate를 먼저
+실행한 뒤 변경됐거나 이전에 실패한 rendering PNG를 연다. Connector가 보기 흉하게
+우회해야만 통과한다면 route를 승인하기 전에 diagram canvas나 node spacing을 늘린다.
