@@ -1,76 +1,76 @@
-# Issue #4 SNS Spring Boot Design
+# 이슈 #4 SNS Spring Boot 설계
 
-## Context
+## 배경
 
-- Repository: `bluetape4k-aws`
-- Issue: <https://github.com/bluetape4k/bluetape4k-aws/issues/4>
-- Target module: `aws-spring-boot`
-- Work type: new Spring Boot feature, Full Design lane
-- Related future work: issue #13 remains out of scope for this PR.
+- 저장소: `bluetape4k-aws`
+- 이슈: <https://github.com/bluetape4k/bluetape4k-aws/issues/4>
+- 대상 모듈: `aws-spring-boot`
+- 작업 유형: 새 Spring Boot 기능, Full Design lane
+- 관련 후속 작업: 이슈 #13은 이 PR 범위에서 제외한다.
 
-Issue #4 asks for self-managed SNS support in `aws-spring-boot`, without depending on awspring. The feature must provide Spring Boot 4 auto-configuration, a coroutine publishing template, topic ARN lookup, FIFO topic support, and fanout-oriented usage evidence.
+이슈 #4는 awspring에 의존하지 않는 self-managed SNS 지원을 `aws-spring-boot`에 추가하도록 요청한다. 이 기능은 Spring Boot 4 auto-configuration, coroutine publishing template, topic ARN 조회, FIFO topic 지원, fanout 중심의 사용 evidence를 제공해야 한다.
 
-## Evidence
+## 근거
 
-- Existing local pattern: `SqsAutoConfiguration` registers SDK async clients with `@AutoConfiguration(after = [AwsAutoConfiguration::class])`, string-based `@ConditionalOnClass`, `@ConditionalOnProperty`, `@EnableConfigurationProperties`, `@ConditionalOnMissingBean`, `ObjectProvider<AwsCredentialsProvider>`, and optional `SdkAsyncHttpClient`.
-- Existing local pattern: `SqsCoroutinesTemplate` implements an `SqsOperations` contract and uses AWS SDK v2 async calls with `kotlinx.coroutines.future.await()`.
-- Existing local pattern: `aws-spring-boot` keeps service SDK dependencies as `compileOnly` in production and `testImplementation` for integration tests.
-- Spring Boot 4 documentation confirms auto-configuration discovery through `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`, with conditional registration through `@AutoConfiguration`, `@ConditionalOnClass`, `@ConditionalOnMissingBean`, and `@EnableConfigurationProperties`.
-- AWS SDK Java v2 documentation confirms SNS publish uses `PublishRequest` with `topicArn`, `message`, optional `subject`, message attributes, `messageGroupId`, and `messageDeduplicationId`; FIFO topics use topic attributes such as `FifoTopic`, `ContentBasedDeduplication`, and optional FIFO throughput scope.
-- Existing `aws` module already contains SNS helpers under `io.bluetape4k.aws.sns`, including topic creation helpers and `publishRequestOf`.
+- 기존 local pattern: `SqsAutoConfiguration`은 `@AutoConfiguration(after = [AwsAutoConfiguration::class])`, string 기반 `@ConditionalOnClass`, `@ConditionalOnProperty`, `@EnableConfigurationProperties`, `@ConditionalOnMissingBean`, `ObjectProvider<AwsCredentialsProvider>`, 선택형 `SdkAsyncHttpClient`로 SDK async client를 등록한다.
+- 기존 local pattern: `SqsCoroutinesTemplate`은 `SqsOperations` 계약을 구현하고 `kotlinx.coroutines.future.await()`와 AWS SDK v2 async 호출을 사용한다.
+- 기존 local pattern: `aws-spring-boot`는 production에서 service SDK dependency를 `compileOnly`로, integration test에서 `testImplementation`으로 유지한다.
+- Spring Boot 4 문서는 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`를 통한 auto-configuration 탐색과 `@AutoConfiguration`, `@ConditionalOnClass`, `@ConditionalOnMissingBean`, `@EnableConfigurationProperties`를 통한 조건부 등록을 확인해 준다.
+- AWS SDK Java v2 문서는 SNS publish가 `topicArn`, `message`, 선택형 `subject`, message attribute, `messageGroupId`, `messageDeduplicationId`를 갖는 `PublishRequest`를 사용하며, FIFO topic은 `FifoTopic`, `ContentBasedDeduplication`, 선택형 FIFO throughput scope 같은 topic attribute를 사용함을 확인해 준다.
+- 기존 `aws` 모듈은 이미 `io.bluetape4k.aws.sns` 아래에 topic 생성 helper와 `publishRequestOf`를 포함한 SNS helper를 제공한다.
 
-## Goals
+## 목표
 
-1. Add `SnsAutoConfiguration` to `aws-spring-boot`.
-2. Add `SnsProperties` bound to `bluetape4k.aws.sns`.
-3. Add a coroutine-first `SnsOperations` contract and `SnsCoroutinesTemplate`.
-4. Support standard topic creation, configured topic creation, FIFO topic creation, topic ARN lookup, and publish.
-5. Register SNS auto-configuration through `AutoConfiguration.imports`.
-6. Add LocalStack-backed integration tests and ApplicationContextRunner tests.
-7. Update README dependency/configuration snippets for SNS.
+1. `aws-spring-boot`에 `SnsAutoConfiguration`을 추가한다.
+2. `bluetape4k.aws.sns`에 binding하는 `SnsProperties`를 추가한다.
+3. coroutine-first `SnsOperations` 계약과 `SnsCoroutinesTemplate`을 추가한다.
+4. 표준 topic 생성, 설정 기반 topic 생성, FIFO topic 생성, topic ARN 조회, publish를 지원한다.
+5. `AutoConfiguration.imports`를 통해 SNS auto-configuration을 등록한다.
+6. LocalStack 기반 integration test와 ApplicationContextRunner test를 추가한다.
+7. SNS를 위한 README dependency/configuration snippet을 갱신한다.
 
-## Non-Goals
+## 목표가 아닌 항목
 
-- No Spring Cloud AWS or awspring dependency.
-- No SNS listener/message receiver framework.
-- No full SQS-SNS application example module. That remains issue #13.
-- No SES/email support.
-- No cross-account subscription management API.
-- No synchronous/blocking SDK client.
+- Spring Cloud AWS 또는 awspring dependency를 추가하지 않는다.
+- SNS listener/message receiver framework를 제공하지 않는다.
+- 완전한 SQS-SNS application example 모듈을 제공하지 않는다. 이슈 #13의 범위다.
+- SES/email 지원을 제공하지 않는다.
+- cross-account subscription 관리 API를 제공하지 않는다.
+- synchronous/blocking SDK client를 제공하지 않는다.
 
-## Public API
+## 공개 API
 
-Package: `io.bluetape4k.aws.spring.sns`
+패키지: `io.bluetape4k.aws.spring.sns`
 
-### SnsProperties
+### SnsProperties 설정
 
-Configuration prefix: `bluetape4k.aws.sns`
+configuration 접두사: `bluetape4k.aws.sns`
 
-Fields:
+필드:
 
 - `enabled: Boolean = true`
 - `region: String? = null`
 - `endpointOverride: URI? = null`
 - `topics: Map<String, Topic> = emptyMap()`
 
-Nested `Topic` fields:
+중첩 `Topic` 필드:
 
 - `fifo: Boolean = false`
 - `contentBasedDeduplication: Boolean = true`
 - `fifoThroughputScope: SnsFifoThroughputScope? = null`
 - `attributes: Map<String, String> = emptyMap()`
 
-Validation:
+검증:
 
-- `endpointOverride` requires `region`, matching existing SQS behavior.
-- If `region` is null, the AWS SDK default region provider chain applies.
-- Configured FIFO topics must use names ending in `.fifo`.
+- 기존 SQS 동작과 마찬가지로 `endpointOverride`에는 `region`이 필요하다.
+- `region`이 null이면 AWS SDK 기본 region provider chain을 적용한다.
+- 설정한 FIFO topic의 이름은 `.fifo`로 끝나야 한다.
 
-### SnsPublishRequest
+### SnsPublishRequest 요청
 
-Use a request data class instead of positional same-type parameters.
+같은 type의 positional parameter 대신 request data class를 사용한다.
 
-Fields:
+필드:
 
 - `topicArn: String`
 - `message: String`
@@ -79,22 +79,22 @@ Fields:
 - `messageGroupId: String? = null`
 - `messageDeduplicationId: String? = null`
 
-Validation:
+검증:
 
-- `topicArn` and `message` must not be blank.
-- If `topicArn` ends with `.fifo`, `messageGroupId` must not be blank.
-- If `topicArn` does not end with `.fifo`, `messageGroupId` and `messageDeduplicationId` must be null.
+- `topicArn`과 `message`는 blank가 아니어야 한다.
+- `topicArn`이 `.fifo`로 끝나면 `messageGroupId`는 blank가 아니어야 한다.
+- `topicArn`이 `.fifo`로 끝나지 않으면 `messageGroupId`와 `messageDeduplicationId`는 null이어야 한다.
 
-### SnsFifoThroughputScope
+### SnsFifoThroughputScope 범위
 
-Enum values:
+enum 값:
 
-- `TOPIC`, serialized to AWS SNS attribute value `Topic`
-- `MESSAGE_GROUP`, serialized to AWS SNS attribute value `MessageGroup`
+- `TOPIC`, AWS SNS attribute value `Topic`으로 serialize
+- `MESSAGE_GROUP`, AWS SNS attribute value `MessageGroup`으로 serialize
 
-### SnsOperations
+### SnsOperations 작업
 
-Methods:
+메서드:
 
 - `suspend fun createTopic(topicName: String, attributes: Map<String, String> = emptyMap()): String`
 - `suspend fun createFifoTopic(
@@ -107,76 +107,75 @@ Methods:
 - `suspend fun findTopicArn(topicName: String): String?`
 - `suspend fun publish(request: SnsPublishRequest): PublishResponse`
 
-Validation:
+검증:
 
-- `topicName` must not be blank.
-- FIFO topic names must end with `.fifo`.
-- `findTopicArn` must traverse all SNS `ListTopics` pages before returning null.
-- `createConfiguredTopic` delegates to SNS `CreateTopic`. AWS returns the existing topic ARN for an existing name; this method does not reconcile changed attributes on an existing topic.
+- `topicName`은 blank가 아니어야 한다.
+- FIFO topic 이름은 `.fifo`로 끝나야 한다.
+- `findTopicArn`은 null을 반환하기 전에 모든 SNS `ListTopics` page를 순회해야 한다.
+- `createConfiguredTopic`은 SNS `CreateTopic`에 위임한다. AWS는 기존 이름에 대해 기존 topic ARN을 반환하며, 이 method는 기존 topic에서 변경된 attribute를 reconcile하지 않는다.
 
-## Auto-Configuration
+## 자동 구성
 
-`SnsAutoConfiguration` must:
+`SnsAutoConfiguration`은 다음을 수행해야 한다.
 
-- Run after `AwsAutoConfiguration`.
-- Use string-based `@ConditionalOnClass` for `SdkAsyncHttpClient` and `SnsAsyncClient`, because SNS SDK is `compileOnly`.
-- Use `@ConditionalOnProperty(prefix = "bluetape4k.aws.sns", name = ["enabled"], havingValue = "true", matchIfMissing = true)`.
-- Enable `SnsProperties`.
-- Register `SnsAsyncClient` with destroy method `close`.
-- Use custom `AwsCredentialsProvider` and `SdkAsyncHttpClient` beans when available.
-- Apply `region` and `endpointOverride` from properties.
-- Register `SnsCoroutinesTemplate` as `SnsOperations` with `@ConditionalOnMissingBean(SnsOperations::class)`.
+- `AwsAutoConfiguration` 뒤에 실행한다.
+- SNS SDK가 `compileOnly`이므로 `SdkAsyncHttpClient`와 `SnsAsyncClient`에 string 기반 `@ConditionalOnClass`를 사용한다.
+- `@ConditionalOnProperty(prefix = "bluetape4k.aws.sns", name = ["enabled"], havingValue = "true", matchIfMissing = true)`를 사용한다.
+- `SnsProperties`를 활성화한다.
+- destroy method `close`로 `SnsAsyncClient`를 등록한다.
+- 사용할 수 있으면 custom `AwsCredentialsProvider`와 `SdkAsyncHttpClient` bean을 사용한다.
+- property의 `region`과 `endpointOverride`를 적용한다.
+- `@ConditionalOnMissingBean(SnsOperations::class)`으로 `SnsCoroutinesTemplate`을 `SnsOperations`로 등록한다.
 
-## Fanout Boundary
+## fanout 경계
 
-Issue #4 should prove that the SNS publisher can participate in SQS-SNS fanout, but issue #13 owns the full example application. This PR will add one focused integration test or README snippet showing an SNS topic publishing path that can target an SQS subscription. If LocalStack subscription policy behavior is unstable, the PR may keep fanout as documented usage and rely on standard/FIFO publish integration tests for executable coverage.
+이슈 #4는 SNS publisher가 SQS-SNS fanout에 참여할 수 있음을 입증해야 하지만 전체 example application은 이슈 #13의 범위다. 이 PR은 SQS subscription을 대상으로 할 수 있는 SNS topic publishing 경로를 보여주는 하나의 집중된 integration test 또는 README snippet을 추가한다. LocalStack subscription policy 동작이 불안정하면 fanout을 문서화된 사용법으로 유지하고 실행 가능한 coverage는 표준/FIFO publish integration test에 의존할 수 있다.
 
-The preferred executable proof is a single LocalStack SNS-to-SQS test: create a topic, create a queue, subscribe the queue ARN to the topic, publish through `SnsOperations`, and receive the message from SQS. If this proves unstable in CI, keep the test explicitly documented with the observed blocker and retain the README snippet as the issue #4 fanout example while leaving the full application flow to issue #13.
+선호하는 실행 가능한 증거는 하나의 LocalStack SNS-to-SQS test다. topic과 queue를 만들고, queue ARN을 topic에 subscribe하고, `SnsOperations`를 통해 publish한 뒤 SQS에서 message를 수신한다. CI에서 불안정하다면 관찰한 blocker를 test와 함께 명시적으로 문서화하고 README snippet을 이슈 #4 fanout example로 유지하며 전체 application flow는 이슈 #13에 남긴다.
 
-## Tests
+## 테스트
 
-ApplicationContextRunner tests:
+ApplicationContextRunner 테스트:
 
-- Registers `SnsAsyncClient` and `SnsOperations` when SNS SDK classes are present.
-- Does not register when `bluetape4k.aws.sns.enabled=false`.
-- Backs off for custom `SnsAsyncClient`.
-- Backs off for custom `SnsOperations`.
-- Fails validation when `endpointOverride` is set without `region`.
-- Does not register when `SnsAsyncClient` is filtered out.
-- Validates FIFO topic configuration names and throughput scope.
+- SNS SDK class가 있으면 `SnsAsyncClient`와 `SnsOperations`를 등록한다.
+- `bluetape4k.aws.sns.enabled=false`이면 등록하지 않는다.
+- custom `SnsAsyncClient`가 있으면 back off한다.
+- custom `SnsOperations`가 있으면 back off한다.
+- `region` 없이 `endpointOverride`를 설정하면 validation에 실패한다.
+- `SnsAsyncClient`를 filtering하면 등록하지 않는다.
+- FIFO topic configuration 이름과 throughput scope를 validation한다.
 
-LocalStack tests:
+LocalStack 테스트:
 
-- Creates a standard topic and looks it up by name.
-- Publishes a standard message and returns a `PublishResponse.messageId`.
-- Creates a FIFO topic and publishes with `messageGroupId`, asserting `messageId` and, when available, `sequenceNumber`.
-- Creates a configured topic from properties.
-- Rejects FIFO-only publish fields on a standard topic before calling AWS.
-- Propagates AWS publish errors for invalid/non-existent topic ARNs.
-- Verifies SNS-to-SQS fanout if LocalStack behavior is stable in the current test stack.
+- 표준 topic을 만들고 이름으로 조회한다.
+- 표준 message를 publish하고 `PublishResponse.messageId`를 반환한다.
+- FIFO topic을 만들고 `messageGroupId`와 함께 publish한 뒤 `messageId`와, 사용할 수 있으면 `sequenceNumber`를 assertion한다.
+- property로 설정한 topic을 생성한다.
+- AWS를 호출하기 전에 표준 topic의 FIFO 전용 publish field를 거부한다.
+- 잘못됐거나 존재하지 않는 topic ARN에 대한 AWS publish error를 전파한다.
+- 현재 test stack에서 LocalStack 동작이 안정적이면 SNS-to-SQS fanout을 검증한다.
 
-## README Updates
+## README 갱신
 
-Update both `README.md` and `README.ko.md`:
+`README.md`와 `README.ko.md`를 모두 갱신한다.
 
-- Add `software.amazon.awssdk:sns` runtime dependency to `aws-spring-boot` examples.
-- Add `bluetape4k.aws.sns` configuration snippet.
-- Add coroutine publish example using `SnsOperations` and `SnsPublishRequest`.
-- Mention that the complete SQS-SNS application example is tracked separately by issue #13.
+- `aws-spring-boot` example에 `software.amazon.awssdk:sns` runtime dependency를 추가한다.
+- `bluetape4k.aws.sns` configuration snippet을 추가한다.
+- `SnsOperations`와 `SnsPublishRequest`를 사용하는 coroutine publish example을 추가한다.
+- 완전한 SQS-SNS application example은 이슈 #13에서 별도로 추적한다고 언급한다.
 
-## Acceptance Criteria
+## 인수 기준
 
-- `aws-spring-boot` compiles with SNS SDK as `compileOnly`.
-- SNS auto-configuration is listed in `AutoConfiguration.imports`.
-- Public API has English KDoc, because KDoc is contributor-facing public
-  documentation under the workspace language policy.
-- Targeted `aws-spring-boot` tests pass.
-- Strict code review has no unresolved correctness, cancellation, Spring Boot, or public API blockers.
-- PR is opened against `develop`, assigned to `debop`, and linked to issue #4.
+- `aws-spring-boot`가 SNS SDK를 `compileOnly`로 사용해 compile된다.
+- SNS auto-configuration이 `AutoConfiguration.imports`에 등록된다.
+- workspace language policy에서 KDoc은 contributor-facing public documentation이므로 public API에 영문 KDoc이 있다.
+- targeted `aws-spring-boot` test가 통과한다.
+- strict code review에 해결되지 않은 correctness, cancellation, Spring Boot, public API blocker가 없다.
+- `develop` 대상 PR을 열고 `debop`에게 할당하며 이슈 #4에 연결한다.
 
-## Spec Review Notes
+## 명세 검토 기록
 
-- Claude Code advisor review artifact: `.omx/artifacts/ask-claude-issue-4-sns-spec-review.md`.
-- Resolved blocker: FIFO-only publish fields are now rejected for standard topics.
-- Resolved high-risk notes: `findTopicArn` pagination, SDK default region behavior, configured topic idempotency, and FIFO option duplication are specified.
-- Remaining implementation risk: LocalStack SNS-to-SQS fanout can be environment-sensitive; the implementation must attempt an executable integration test and document any CI blocker if it cannot be made stable.
+- Claude Code advisor 검토 artifact: `.omx/artifacts/ask-claude-issue-4-sns-spec-review.md`.
+- 해결한 blocker: 이제 표준 topic에서 FIFO 전용 publish field를 거부한다.
+- 해결한 high-risk note: `findTopicArn` pagination, SDK 기본 region 동작, 설정 기반 topic idempotency, FIFO option 중복을 명시했다.
+- 남은 구현 위험: LocalStack SNS-to-SQS fanout은 환경에 민감할 수 있다. 구현에서 실행 가능한 integration test를 시도하고 안정화할 수 없다면 CI blocker를 문서화해야 한다.
