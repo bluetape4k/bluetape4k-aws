@@ -103,14 +103,13 @@ suspend inline fun S3Client.ensureBucketExists(
 
 
 /**
- * Deletes all current objects, object versions, delete markers, then deletes [bucket].
+ * 현재 객체, 객체 버전, 삭제 마커를 모두 삭제한 뒤 [bucket]을 삭제합니다.
  *
- * Versioned and versioning-suspended buckets require deleting each object
- * version and delete marker by `versionId`; deleting only current object keys can
- * leave the bucket non-empty.
+ * 버전 관리 중이거나 버전 관리가 중단된 버킷은 각 객체 버전과 삭제 마커를 `versionId`로 삭제해야 합니다.
+ * 현재 객체 키만 삭제하면 버킷이 비어 있지 않을 수 있습니다.
  *
- * @param bucket bucket name to delete
- * @return [DeleteBucketResponse] returned by S3
+ * @param bucket 삭제할 버킷 이름
+ * @return S3가 반환한 [DeleteBucketResponse]
  */
 suspend inline fun S3Client.forceDeleteBucket(
     bucket: String,

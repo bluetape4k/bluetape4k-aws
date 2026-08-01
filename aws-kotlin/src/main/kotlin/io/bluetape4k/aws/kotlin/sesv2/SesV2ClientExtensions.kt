@@ -71,15 +71,14 @@ suspend fun SesV2Client.sendBulk(emailRequest: SendBulkEmailRequest): SendBulkEm
 
 
 /**
- * Returns the registered email [Template] named [templateName], or `null` when
- * it does not exist.
+ * [templateName]이라는 이름으로 등록된 이메일 [Template]을 반환합니다. 템플릿이 없으면 `null`을 반환합니다.
  *
  * ```
  * val template = sesClient.getTemplate("template-name")
  * ```
  *
- * @param templateName template name.
- * @return template details, or `null` when the template does not exist.
+ * @param templateName 템플릿 이름
+ * @return 템플릿 상세 정보. 템플릿이 없으면 `null`
  */
 suspend fun SesV2Client.getTemplateOrNull(templateName: String): Template? {
     return try {

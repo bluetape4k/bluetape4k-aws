@@ -143,15 +143,14 @@ suspend inline fun SesClient.createTemplate(template: Template): CreateTemplateR
     createTemplate { this.template = template }
 
 /**
- * Returns the registered [Template] named [templateName], or `null` when it
- * does not exist.
+ * [templateName]이라는 이름으로 등록된 [Template]을 반환합니다. 템플릿이 없으면 `null`을 반환합니다.
  *
  * ```kotlin
  * val template = sesClient.getTemplate("template-name")
  * ```
  *
- * @param templateName template name.
- * @return template details, or `null` when the template does not exist.
+ * @param templateName 템플릿 이름
+ * @return 템플릿 상세 정보. 템플릿이 없으면 `null`
  */
 suspend inline fun SesClient.getTemplateOrNull(templateName: String): Template? =
     try {

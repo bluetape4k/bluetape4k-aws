@@ -343,20 +343,18 @@ suspend inline fun S3Client.getObjectRetention(
 }
 
 /**
- * Returns the policy document for [bucketName], or `null` when the policy does
- * not exist.
+ * [bucketName]의 정책 문서를 반환합니다. 정책이 없으면 `null`을 반환합니다.
  *
  * ```
  * val policy = s3Client.tryGetBucketPolicy("bucket-name")
  * ```
  *
- * Only documented missing-policy errors are normalized to `null`. Access
- * failures, throttling, retryable service failures, and unknown SDK errors are
- * propagated to the caller.
+ * 문서화된 정책 누락 오류만 `null`로 정규화합니다. 접근 실패, 제한, 재시도 가능한 서비스 실패,
+ * 알 수 없는 SDK 오류는 호출자에게 전파합니다.
  *
- * @param bucketName bucket name.
- * @param expectedBucketOwner expected bucket owner.
- * @return bucket policy document, or `null` when the policy does not exist.
+ * @param bucketName 버킷 이름
+ * @param expectedBucketOwner 예상 버킷 소유자
+ * @return 버킷 정책 문서. 정책이 없으면 `null`
  */
 suspend inline fun S3Client.tryGetBucketPolicy(
     bucketName: String,

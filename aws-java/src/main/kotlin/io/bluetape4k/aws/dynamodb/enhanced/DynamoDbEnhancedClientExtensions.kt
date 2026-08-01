@@ -13,16 +13,16 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult
 
 /**
- * Create DynamoDb Table with specific name ([tableName])
+ * 지정한 이름([tableName])으로 DynamoDb 테이블을 생성합니다.
  *
  * ```kotlin
  * val table = enhancedClient.table<MyEntity>("orders")
  * check(table.tableName() == "orders")
  * ```
  *
- * @param T entity type
- * @param tableName table name
- * @return [DynamoDbTable] instance
+ * @param T 엔티티 타입
+ * @param tableName 테이블 이름
+ * @return [DynamoDbTable] 인스턴스
  */
 inline fun <reified T: Any> DynamoDbEnhancedClient.table(tableName: String): DynamoDbTable<T> {
     tableName.requireNotBlank("tableName")
@@ -81,18 +81,18 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.batchWriteItems(
 ): List<BatchWriteResult> = batchWriteItems(T::class.java, table, items, chunkSize)
 
 /**
- * Returns `true` if the named table exists, `false` if it does not.
+ * 지정한 이름의 테이블이 있으면 `true`, 없으면 `false`를 반환합니다.
  *
- * Only [ResourceNotFoundException] is normalized to `false`; all other exceptions
- * (auth failures, network errors, etc.) propagate to the caller.
+ * [ResourceNotFoundException]만 `false`로 정규화합니다. 인증 실패, 네트워크 오류 등
+ * 다른 모든 예외는 호출자에게 전파합니다.
  *
  * ```kotlin
  * val exists = enhancedClient.existsTable("orders")
  * check(exists is Boolean)
  * ```
  *
- * @param tableName table name to check
- * @return `true` if the table exists, `false` if [ResourceNotFoundException] is thrown
+ * @param tableName 확인할 테이블 이름
+ * @return 테이블이 있으면 `true`, [ResourceNotFoundException]이 발생하면 `false`
  */
 fun DynamoDbEnhancedClient.existsTable(tableName: String): Boolean =
     try {

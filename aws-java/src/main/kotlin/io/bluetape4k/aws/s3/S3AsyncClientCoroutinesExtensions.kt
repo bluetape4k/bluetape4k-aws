@@ -239,17 +239,16 @@ suspend inline fun S3AsyncClient.putAsFile(
     putAsFileAsync(bucket, key, path, builder).await()
 
 /**
- * Returns a cold [Flow] that emits every [S3Object] in [bucket].
+ * [bucket]의 모든 [S3Object]를 내보내는 콜드 [Flow]를 반환합니다.
  *
- * The flow calls `ListObjectsV2` lazily when collected and follows
- * `nextContinuationToken` until S3 reports that the result is no longer
- * truncated. Use [prefix] to restrict the emitted objects to a key prefix.
+ * Flow는 수집할 때 `ListObjectsV2`를 지연 호출하고 S3가 결과가 더 이상 잘리지 않았다고 보고할 때까지
+ * `nextContinuationToken`을 따라갑니다. [prefix]로 내보낼 객체를 키 접두사로 제한할 수 있습니다.
  *
- * @param bucket bucket name to list
- * @param prefix optional key prefix filter
- * @return cold [Flow] of all listed [S3Object] values
+ * @param bucket 목록을 조회할 버킷 이름
+ * @param prefix 선택적인 키 접두사 필터
+ * @return 조회한 모든 [S3Object] 값을 내보내는 콜드 [Flow]
  *
- * Example:
+ * 사용 예:
  * ```kotlin
  * s3AsyncClient.listAllObjects("demo-bucket", prefix = "logs/")
  *     .collect { println(it.key()) }

@@ -27,13 +27,11 @@ fun interface DynamoItemMapper<T: Any> {
 }
 
 /**
- * Reads a DynamoDB item attribute map into an application type.
+ * DynamoDB 항목 속성 맵을 애플리케이션 타입으로 읽습니다.
  *
- * Contract:
- * - Implementations should be explicit and deterministic; this interface does
- *   not use reflection or the preview AWS Kotlin DynamoDB mapper.
- * - Missing or malformed attributes should fail fast instead of returning a
- *   partially initialized domain object.
+ * 계약:
+ * - 구현은 명시적이고 결정론적이어야 합니다. 이 인터페이스는 리플렉션이나 프리뷰 AWS Kotlin DynamoDB 매퍼를 사용하지 않습니다.
+ * - 누락되었거나 잘못된 속성은 일부만 초기화된 도메인 객체를 반환하지 말고 빠르게 실패해야 합니다.
  *
  * ```kotlin
  * val reader = DynamoItemReader<Order> { item ->
@@ -44,7 +42,7 @@ fun interface DynamoItemMapper<T: Any> {
 fun interface DynamoItemReader<T: Any> {
 
     /**
-     * Converts one DynamoDB item attribute map into [T].
+     * DynamoDB 항목 속성 맵 하나를 [T]로 변환합니다.
      */
     fun readDynamoItem(item: Map<String, AttributeValue>): T
 }
