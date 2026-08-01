@@ -1,46 +1,35 @@
-# AWS Ktor S3 Client Design
+# AWS Ktor S3 client 설계
 
-## Problem
+## 문제
 
-Issue #9 asks for an S3 HTTP client built on Ktor, using the already merged
-`AwsSigV4Plugin` foundation from issue #8 instead of wrapping the AWS SDK v2
-S3 client. The client must cover common object operations, multipart upload,
-presigned URL generation, and streaming-friendly transfer paths.
+이슈 #9는 AWS SDK v2 S3 client를 wrapping하지 않고 이미 merge된 이슈 #8의 `AwsSigV4Plugin` 기반을 사용하는 Ktor 기반 S3 HTTP client를 요청한다. client는 일반적인 object operation, multipart upload, presigned URL 생성, streaming 친화적인 전송 경로를 지원해야 한다.
 
-## Evidence
+## 근거
 
-- Repository target:
+- 저장소 대상:
   `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/9-ktor-s3-client/aws-ktor`
-- Issue #9 requires `S3KtorClient`, PutObject/GetObject/DeleteObject/ListObjects,
-  multipart upload, presigned URL generation/download, and content streaming.
-- `aws-ktor` currently exposes `AwsSigV4Plugin`, `AwsSigV4PluginConfig`, and
-  `AwsSigV4AuthLocation` under
-  `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/client/`.
-- Existing `AwsSigV4Plugin` supports header signing and query-string signing
-  through AWS SDK Java v2 `AwsV4HttpSigner`.
-- Ktor 3 official docs show `HttpClient.get/post`, `setBody`, `body<T>()`,
-  and `MockEngine` request capture as the current client/test surface.
-- AWS S3 official REST API reference checked:
-  - `PutObject`: `PUT /{Key+}` with object body.
-  - `GetObject`: `GET /{Key+}` with body plus metadata headers.
+- 이슈 #9는 `S3KtorClient`, PutObject/GetObject/DeleteObject/ListObjects, multipart upload, presigned URL 생성/download, content streaming을 요구한다.
+- `aws-ktor`는 현재 `aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/client/` 아래에서 `AwsSigV4Plugin`, `AwsSigV4PluginConfig`, `AwsSigV4AuthLocation`을 제공한다.
+- 기존 `AwsSigV4Plugin`은 AWS SDK Java v2 `AwsV4HttpSigner`를 통해 header signing과 query-string signing을 지원한다.
+- Ktor 3 공식 문서는 현재 client/test surface로 `HttpClient.get/post`, `setBody`, `body<T>()`, `MockEngine` request capture를 제시한다.
+- AWS S3 공식 REST API reference 확인 결과:
+  - `PutObject`: object body를 포함한 `PUT /{Key+}`.
+  - `GetObject`: body와 metadata header를 포함한 `GET /{Key+}`.
   - `DeleteObject`: `DELETE /{Key+}`.
-  - `ListObjectsV2`: `GET /?list-type=2` returns XML and can paginate.
-  - Multipart: `POST /{Key+}?uploads`, `PUT /{Key+}?partNumber=N&uploadId=...`,
-    `POST /{Key+}?uploadId=...`, and abort via `DELETE`.
-  - Presigned URL: SigV4 query authentication uses `X-Amz-*` query parameters
-    and is valid for at most seven days.
+  - `ListObjectsV2`: `GET /?list-type=2`는 XML을 반환하고 pagination할 수 있다.
+  - multipart: `POST /{Key+}?uploads`, `PUT /{Key+}?partNumber=N&uploadId=...`, `POST /{Key+}?uploadId=...`, `DELETE`를 통한 중단.
+  - presigned URL: SigV4 query 인증은 `X-Amz-*` query parameter를 사용하며 최대 7일 동안 유효하다.
 
-## API Design
+## API 설계
 
-Add package `io.bluetape4k.aws.ktor.s3`.
+`io.bluetape4k.aws.ktor.s3` package를 추가한다.
 
-Primary public API:
+주요 public API:
 
 - `S3KtorClient`
-  - Owns a Ktor `HttpClient`, region, credentials provider, endpoint settings,
-    and addressing mode.
-  - Caller-owned constructor does not close the supplied `HttpClient`.
-  - Factory-created client owns an internal `HttpClient` and closes it.
+  - Ktor `HttpClient`, region, credentials provider, endpoint setting, addressing mode를 소유한다.
+  - caller-owned constructor는 전달받은 `HttpClient`를 닫지 않는다.
+  - factory가 생성한 client는 내부 `HttpClient`를 소유하고 닫는다.
 - `S3KtorClientConfig`
   - `region: String`
   - `credentialsProvider: AwsCredentialsProvider`
@@ -51,7 +40,7 @@ Primary public API:
 - `S3KtorAddressingStyle`
   - `VirtualHosted`
   - `Path`
-- Request/response models:
+- request/response 모델:
   - `S3KtorObjectRef(bucket, key)`
   - `S3KtorPutObjectRequest`
   - `S3KtorPutObjectResponse`
@@ -64,7 +53,7 @@ Primary public API:
   - `S3KtorCompletedPart`
   - `S3KtorCompleteMultipartUploadResponse`
 
-Operations:
+작업:
 
 - `putObject(bucket, key, bytes, contentType?, metadata?)`
 - `putObject(request, body: OutgoingContent)`
@@ -81,140 +70,117 @@ Operations:
 - `presignGetObject(bucket, key, expires)`
 - `presignPutObject(bucket, key, expires)`
 
-Convenience factory:
+편의 factory:
 
 - `s3KtorClientOf(...)`
 
-## HTTP / Signing Design
+## HTTP / signing 설계
 
-Default endpoint:
+기본 endpoint:
 
 ```text
 https://{bucket}.s3.{region}.amazonaws.com/{encoded-key}
 ```
 
-When `endpointOverride` is set, default to path-style addressing unless the
-caller explicitly chooses virtual-hosted addressing. This keeps LocalStack and
-S3-compatible endpoints straightforward:
+`endpointOverride`를 설정하면 호출자가 virtual-hosted addressing을 명시적으로 선택하지 않는 한 path-style addressing을 기본값으로 사용한다. 이렇게 하면 LocalStack과 S3-compatible endpoint를 단순하게 유지할 수 있다.
 
 ```text
 {endpointOverride}/{bucket}/{encoded-key}
 ```
 
-Virtual-hosted addressing falls back to path-style when the bucket contains `.`
-or is not DNS-compatible enough for TLS hostnames:
+bucket에 `.`이 포함되거나 TLS hostname에 충분히 DNS-compatible하지 않으면 virtual-hosted addressing이 path-style로 fallback한다.
 
 ```text
 ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
 ```
 
-Key encoding must preserve `/` as path separators while percent-encoding each
-segment. Do not pass a full key as one Ktor `pathSegment`, because that encodes
-slashes inside object keys.
+key encoding은 각 segment를 percent-encoding하면서 `/`를 path separator로 보존해야 한다. 전체 key를 하나의 Ktor `pathSegment`로 전달하면 object key 내부의 slash가 encoding되므로 그렇게 하지 않는다.
 
-Signing:
+서명:
 
-- Use `AwsSigV4Plugin` with `service = "s3"` for real requests.
-- Force S3 signer flags for real requests and presigned URLs:
+- 실제 request에는 `service = "s3"`로 `AwsSigV4Plugin`을 사용한다.
+- 실제 request와 presigned URL에 S3 signer flag를 강제한다.
 
-  | Property | Value | Reason |
+  | property | value | 근거 |
   |---|---|---|
-  | `DOUBLE_URL_ENCODE` | `false` | S3 canonicalization must not double-encode object keys. |
-  | `NORMALIZE_PATH` | `false` | S3 keys can contain path-like segments and must not be normalized. |
-  | `PAYLOAD_SIGNING_ENABLED` | `false` default | Enables `UNSIGNED-PAYLOAD` for streaming-friendly Ktor bodies. |
-  | `AUTH_LOCATION` | `HEADER` or `QUERY_STRING` | Real request vs presigned URL. |
-  | `EXPIRATION_DURATION` | presign only | Required for `X-Amz-Expires`. |
+  | `DOUBLE_URL_ENCODE` | `false` | S3 canonicalization에서 object key를 double-encode하지 않아야 한다. |
+  | `NORMALIZE_PATH` | `false` | S3 key는 path와 유사한 segment를 포함할 수 있으며 normalize하면 안 된다. |
+  | `PAYLOAD_SIGNING_ENABLED` | `false` 기본값 | streaming 친화적인 Ktor body에 `UNSIGNED-PAYLOAD`를 사용한다. |
+  | `AUTH_LOCATION` | `HEADER` 또는 `QUERY_STRING` | 실제 request와 presigned URL을 구분한다. |
+  | `EXPIRATION_DURATION` | presign 전용 | `X-Amz-Expires`에 필요하다. |
 
-- Assert every signed S3 request includes `x-amz-content-sha256`; default value
-  is `UNSIGNED-PAYLOAD`.
-- ByteArray uploads may opt into payload signing later, but the first S3 client
-  keeps unsigned payload mode for consistent byte/stream behavior.
-- Generate presigned URLs directly with AWS SDK `AwsV4HttpSigner` and
-  `AUTH_LOCATION = QUERY_STRING`; do not send a Ktor request just to sign.
-- Enforce presign expiry range: 1 second through 7 days.
-- `presignPutObject` does not pin a body hash unless a future API accepts an
-  explicit payload hash; callers must sign any headers they require.
-- Ktor engine-injected headers such as `Transfer-Encoding` are not part of the
-  signed header set. Headers placed on the `HttpRequestBuilder` before signing
-  are signed; generated transport headers are not.
+- 서명된 모든 S3 request에 `x-amz-content-sha256`가 포함되고 기본값이 `UNSIGNED-PAYLOAD`인지 assertion한다.
+- ByteArray upload는 나중에 payload signing을 선택할 수 있지만, 첫 S3 client는 byte/stream 동작을 일관되게 유지하도록 unsigned payload mode를 사용한다.
+- AWS SDK `AwsV4HttpSigner`와 `AUTH_LOCATION = QUERY_STRING`으로 presigned URL을 직접 생성한다. signing만을 위해 Ktor request를 보내지 않는다.
+- presign 만료 범위를 1초부터 7일까지로 강제한다.
+- future API가 명시적인 payload hash를 받기 전까지 `presignPutObject`는 body hash를 고정하지 않는다. 호출자는 필요한 모든 header를 서명해야 한다.
+- `Transfer-Encoding`처럼 Ktor engine이 주입하는 header는 signed header set에 포함되지 않는다. signing 전에 `HttpRequestBuilder`에 둔 header는 서명하지만 생성된 transport header는 서명하지 않는다.
 
-## XML Parsing / Serialization
+## XML 해석 / 직렬화
 
-Avoid a new dependency. Use XXE-safe JDK XML APIs for the small S3 XML surface:
+새 dependency를 추가하지 않는다. 작은 S3 XML surface에는 XXE-safe JDK XML API를 사용한다.
 
-- Parse `ListObjectsV2` response XML into model values.
-- Parse multipart initiation and completion XML.
-- Serialize `CompleteMultipartUpload` XML from sorted completed parts.
-- Disable external entities and DTDs in `DocumentBuilderFactory`.
-- Serialize `CompleteMultipartUpload` with namespace
-  `http://s3.amazonaws.com/doc/2006-03-01/`.
-- Preserve multipart part ETags verbatim, including quotes.
-- Parse S3 XML error responses for non-2xx responses and surface a typed
-  `S3KtorException`.
+- `ListObjectsV2` response XML을 model value로 parse한다.
+- multipart 시작 및 완료 XML을 parse한다.
+- 정렬한 completed part로 `CompleteMultipartUpload` XML을 serialize한다.
+- `DocumentBuilderFactory`에서 external entity와 DTD를 비활성화한다.
+- namespace `http://s3.amazonaws.com/doc/2006-03-01/`을 사용해 `CompleteMultipartUpload`를 serialize한다.
+- 따옴표를 포함한 multipart part ETag를 그대로 보존한다.
+- non-2xx response의 S3 XML error response를 parse하고 typed `S3KtorException`을 노출한다.
 
-This keeps `aws-ktor` dependency footprint small and avoids coupling public API
-to Jackson XML.
+이 방식은 `aws-ktor` dependency footprint를 작게 유지하고 public API가 Jackson XML에 결합되는 것을 피한다.
 
-## Non-goals
+## 목표가 아닌 항목
 
-- No AWS SDK S3 client wrapper.
-- No bucket management API in issue #9.
-- No S3 Select, object ACL, tagging, copy, retention, or directory-bucket
-  specialized behavior.
-- No full TransferManager replacement.
-- No retry policy abstraction beyond Ktor client configuration.
-- No SigV4 streaming chunk signature
-  (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`) in this issue.
+- AWS SDK S3 client wrapper는 제공하지 않는다.
+- 이슈 #9에서는 bucket 관리 API를 제공하지 않는다.
+- S3 Select, object ACL, tagging, copy, retention, directory-bucket 전용 동작을 제공하지 않는다.
+- 완전한 TransferManager 대체 기능을 제공하지 않는다.
+- Ktor client configuration을 넘어서는 retry policy abstraction을 제공하지 않는다.
+- 이 이슈에서는 SigV4 streaming chunk signature(`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`)를 제공하지 않는다.
 
-## Test Requirements
+## test 요구 사항
 
-- MockEngine tests for URL shape, method, headers, query parameters, and body.
-- MockEngine tests for `x-amz-content-sha256`, signed header coverage, S3 key
-  path encoding, and path-style fallback.
-- XML parser tests for `ListObjectsV2`, multipart initiation, and completion.
-- XML error parsing tests for S3 error envelopes.
-- Continuation-token round-trip tests for values containing `=`, `+`, and `/`.
-- Multipart ETag verbatim and sort-order tests.
-- Presigned URL tests with deterministic clock validating `X-Amz-*` parameters.
-- LocalStack integration smoke:
-  - put bytes
-  - get bytes
-  - list objects
-  - delete object
-  - multipart upload with two parts when LocalStack supports the path
-- README.md and README.ko.md synchronized with public API usage.
+- URL shape, method, header, query parameter, body를 검증하는 MockEngine test.
+- `x-amz-content-sha256`, signed header coverage, S3 key path encoding, path-style fallback을 검증하는 MockEngine test.
+- `ListObjectsV2`, multipart 시작 및 완료를 검증하는 XML parser test.
+- S3 error envelope를 검증하는 XML error parsing test.
+- `=`, `+`, `/`를 포함한 value의 continuation-token round-trip test.
+- multipart ETag 원문 보존 및 sort-order test.
+- deterministic clock으로 `X-Amz-*` parameter를 검증하는 presigned URL test.
+- LocalStack 통합 smoke:
+  - byte 저장
+  - byte 조회
+  - object 목록 조회
+  - object 삭제
+  - LocalStack이 해당 경로를 지원할 때 두 part로 multipart upload
+- public API 사용법과 README.md, README.ko.md를 동기화한다.
 
-## Risks
+## 위험
 
-- `AwsSigV4Plugin` currently rejects arbitrary streaming content when payload
-  signing is enabled. The S3 client must set unsigned payload mode by default
-  unless it can provide replayable byte content.
-- S3-compatible endpoints vary in path-style and virtual-hosted support. Keep
-  endpoint override path-style by default.
-- Multipart completion requires exact part numbers and ETags from upload part
-  responses. The client should preserve caller-provided part order by sorting by
-  `partNumber` during XML serialization.
-- Presigned URLs must not exceed seven days.
+- 현재 `AwsSigV4Plugin`은 payload signing이 활성화되면 임의의 streaming content를 거부한다. replay 가능한 byte content를 제공할 수 없다면 S3 client는 unsigned payload mode를 기본값으로 설정해야 한다.
+- S3-compatible endpoint마다 path-style과 virtual-hosted 지원이 다르므로 endpoint override에는 path-style을 기본값으로 유지한다.
+- multipart 완료에는 upload part response의 정확한 part number와 ETag가 필요하다. client는 XML serialization 중 `partNumber`로 정렬해 호출자가 제공한 part 순서를 보존해야 한다.
+- presigned URL은 7일을 초과할 수 없다.
 
-## Claude Code Opus Advisor
+## Claude Code Opus 자문
 
-Artifact:
+산출물:
 `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/9-ktor-s3-client/.omx/artifacts/ask-claude-aws-ktor-s3-spec-plan-20260510-173549.md`
 
-Accepted high findings:
+수용한 high 발견 사항:
 
-- Force S3 signer flags: `doubleUrlEncode=false`, `normalizePath=false`,
-  unsigned payload default, presign expiration property.
-- Add bucket DNS/TLS fallback rule.
-- Require `x-amz-content-sha256` tests.
-- Add slash-preserving key encoding rule.
-- Clarify streaming and signed-header boundaries.
+- S3 signer flag 강제: `doubleUrlEncode=false`, `normalizePath=false`, unsigned payload 기본값, presign expiration property.
+- bucket DNS/TLS fallback 규칙 추가.
+- `x-amz-content-sha256` test 요구.
+- slash를 보존하는 key encoding 규칙 추가.
+- streaming과 signed-header 경계 명확화.
 
-Accepted medium findings:
+수용한 medium 발견 사항:
 
-- Caller-owned vs factory-owned client close semantics.
-- Streaming upload part overload.
-- Streaming get-object response.
-- XXE-safe XML parsing.
-- Multipart namespace and ETag preservation.
-- Continuation-token encoding tests.
+- caller-owned와 factory-owned client의 close 의미.
+- streaming upload part overload 추가.
+- streaming get-object response 추가.
+- XXE-safe XML 해석.
+- multipart namespace와 ETag 보존.
+- continuation-token encoding test 추가.
