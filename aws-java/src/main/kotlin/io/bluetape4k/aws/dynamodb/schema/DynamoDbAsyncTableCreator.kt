@@ -64,7 +64,7 @@ class DynamoDbAsyncTableCreator {
             throw e
         } catch (e: Throwable) {
             val causes = generateSequence(e) { it.cause }.toList()
-            causes.filterIsInstance<CancellationException>().firstOrNull()?.let { throw it }
+            causes.throwCancellationIfPresent()
 
             if (causes.any { it is ResourceInUseException }) {
                 log.warn(e) { "Table [${asyncTable.tableName()}] already exists. Skipping creation." }
@@ -73,5 +73,9 @@ class DynamoDbAsyncTableCreator {
                 throw AwsBluetapeException("Fail to create table [${asyncTable.tableName()}]", e)
             }
         }
+    }
+
+    private fun List<Throwable>.throwCancellationIfPresent() {
+        filterIsInstance<CancellationException>().firstOrNull()?.let { throw it }
     }
 }
