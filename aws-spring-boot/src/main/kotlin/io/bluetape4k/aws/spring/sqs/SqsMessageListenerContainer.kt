@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -14,7 +15,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.springframework.context.SmartLifecycle
 import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * SQS message listener container that runs one `@SqsListener` endpoint.
@@ -28,23 +31,29 @@ class SqsMessageListenerContainer internal constructor(
 
     companion object : KLogging()
 
-    private val running = AtomicBoolean(false)
-    private var scope: CoroutineScope? = null
-    private var jobs: List<Job> = emptyList()
+    private class ListenerGeneration(
+        val scope: CoroutineScope,
+        val pollerJobs: CopyOnWriteArrayList<Job> = CopyOnWriteArrayList(),
+        val handlerJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet(),
+    )
+
+    private val generation = AtomicReference<ListenerGeneration?>()
     private var resolvedQueueUrl: String? = null
 
     override fun start() {
-        if (!endpoint.autoStartup || !running.compareAndSet(false, true)) {
+        if (!endpoint.autoStartup) {
             return
         }
 
-        val job = SupervisorJob()
-        val currentScope = CoroutineScope(job + Dispatchers.IO)
-        scope = currentScope
+        val current = ListenerGeneration(CoroutineScope(SupervisorJob() + Dispatchers.IO))
+        if (!generation.compareAndSet(null, current)) {
+            current.scope.cancel()
+            return
+        }
 
-        jobs = List(endpoint.concurrency) {
-            currentScope.launch {
-                pollLoop()
+        repeat(endpoint.concurrency) {
+            current.pollerJobs += current.scope.launch {
+                pollLoop(current)
             }
         }
     }
@@ -54,36 +63,42 @@ class SqsMessageListenerContainer internal constructor(
     }
 
     override fun stop(callback: Runnable) {
-        if (!running.compareAndSet(true, false)) {
-            callback.run()
-            return
-        }
-
-        val currentScope = scope
-        if (currentScope == null) {
+        val current = generation.getAndSet(null)
+        if (current == null) {
             callback.run()
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            currentScope.cancel()
-            withTimeoutOrNull(endpoint.stopTimeoutMillis) {
-                jobs.joinAll()
+            try {
+                current.pollerJobs.forEach { it.cancel() }
+                current.pollerJobs.joinAll()
+
+                val drained = withTimeoutOrNull(endpoint.stopTimeoutMillis) {
+                    while (current.handlerJobs.isNotEmpty()) {
+                        current.handlerJobs.toList().joinAll()
+                    }
+                } != null
+                if (!drained) {
+                    current.handlerJobs.toList().forEach { it.cancel() }
+                }
+                current.scope.cancel()
+            } finally {
+                callback.run()
             }
-            callback.run()
         }
     }
 
-    override fun isRunning(): Boolean = running.get()
+    override fun isRunning(): Boolean = generation.get() != null
 
     override fun isAutoStartup(): Boolean = endpoint.autoStartup
 
     override fun getPhase(): Int = endpoint.phase
 
-    private suspend fun pollLoop() {
+    private suspend fun pollLoop(current: ListenerGeneration) {
         val queueUrl = resolveQueueUrl()
 
-        while (running.get()) {
+        while (generation.get() === current) {
             try {
                 interceptors.forEach { it.beforeReceive(endpoint.id, queueUrl) }
                 val messages = operations.receive(
@@ -93,10 +108,21 @@ class SqsMessageListenerContainer internal constructor(
                     visibilityTimeoutSeconds = endpoint.visibilityTimeoutSeconds,
                 )
                 interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, messages, null) }
-                if (!running.get()) {
+                if (generation.get() !== current) {
                     return
                 }
-                messages.forEach { handle(queueUrl, it) }
+                messages.forEach { message ->
+                    if (generation.get() !== current) {
+                        return
+                    }
+                    val handlerJob = current.scope.launch(start = CoroutineStart.LAZY) {
+                        handle(queueUrl, message)
+                    }
+                    current.handlerJobs += handlerJob
+                    handlerJob.invokeOnCompletion { current.handlerJobs -= handlerJob }
+                    handlerJob.start()
+                    handlerJob.join()
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
