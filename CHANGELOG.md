@@ -1,126 +1,124 @@
-# Changelog
+# 변경 이력
 
-All notable changes to `bluetape4k-aws` are documented here.
+`bluetape4k-aws`의 주요 변경 사항을 이 문서에 기록합니다.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+형식은 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)를 따릅니다.
+이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 따릅니다.
 
-## [Unreleased]
+## [미출시]
 
-### Added
+### 추가
 
-- Added model-neutral Amazon Bedrock Runtime `Converse` and `ConverseStream`
-  facades for the Java and Kotlin SDK modules, including coroutine-first cold
-  Flow adapters, scoped lifecycle helpers, bilingual diagrams, and opt-in
-  credentialed smoke tests
+- Java 및 Kotlin SDK 모듈에 모델 중립적인 Amazon Bedrock Runtime `Converse`와
+  `ConverseStream` facade를 추가했습니다. 코루틴 우선 cold Flow adapter, 범위가
+  지정된 lifecycle helper, 이중 언어 다이어그램, 자격 증명을 사용하는 opt-in smoke
+  test를 포함합니다
   ([#312](https://github.com/bluetape4k/bluetape4k-aws/issues/312)).
-- Added core EventBridge wrappers and coroutine DSLs across the Java and Kotlin
-  AWS facades, then exposed them through Spring Boot auto-configuration and
-  Ktor plugins
+- Java 및 Kotlin AWS facade에 EventBridge core wrapper와 coroutine DSL을 추가하고,
+  Spring Boot auto-configuration과 Ktor plugin으로 제공했습니다
   ([#308](https://github.com/bluetape4k/bluetape4k-aws/issues/308),
   [#309](https://github.com/bluetape4k/bluetape4k-aws/issues/309)).
-- Added Secrets Manager and Parameter Store wrappers in the core Java/Kotlin
-  modules for reusable configuration and secret retrieval
+- 재사용 가능한 구성 및 secret 조회를 위해 core Java/Kotlin 모듈에 Secrets Manager와
+  Parameter Store wrapper를 추가했습니다
   ([#268](https://github.com/bluetape4k/bluetape4k-aws/issues/268)).
-- Promoted RDS IAM authentication token helpers into the core AWS modules and
-  delegated JDBC connection refresh to the shared bluetape4k JDBC helper
-  boundary
+- RDS IAM 인증 token helper를 core AWS 모듈로 승격하고 JDBC connection refresh를
+  공통 bluetape4k JDBC helper 경계에 위임했습니다
   ([#269](https://github.com/bluetape4k/bluetape4k-aws/issues/269),
   [#295](https://github.com/bluetape4k/bluetape4k-aws/issues/295)).
-- Added Spring Boot Kinesis auto-configuration and coroutine operations
+- Spring Boot Kinesis auto-configuration과 coroutine operation을 추가했습니다
   ([#270](https://github.com/bluetape4k/bluetape4k-aws/issues/270)).
-- Added Ktor SES v2, SNS, Kinesis, and STS integration helpers
+- Ktor SES v2, SNS, Kinesis, STS integration helper를 추가했습니다
   ([#271](https://github.com/bluetape4k/bluetape4k-aws/issues/271),
   [#272](https://github.com/bluetape4k/bluetape4k-aws/issues/272)).
-- Added Spring Boot and Ktor `aws-exposed` settings integration backed by
-  Secrets Manager, Parameter Store, and Ktor database settings plugin coverage
+- Secrets Manager, Parameter Store, Ktor database settings plugin coverage를
+  기반으로 하는 Spring Boot 및 Ktor `aws-exposed` settings integration을 추가했습니다
   ([#180](https://github.com/bluetape4k/bluetape4k-aws/issues/180),
   [#181](https://github.com/bluetape4k/bluetape4k-aws/issues/181)).
-- Added Ktor example modules for the remaining service coverage gaps after the
-  0.5.0 service expansion
+- 0.5.0 service 확장 후 남은 service coverage gap을 다루는 Ktor example 모듈을
+  추가했습니다
   ([#273](https://github.com/bluetape4k/bluetape4k-aws/issues/273)).
 
-### Changed
+### 변경
 
-- Opened the `0.5.0` snapshot line after the `0.4.0` release and aligned local
-  bluetape4k BOM refs to `bluetape4k-bom:1.11.1-SNAPSHOT` and
-  `bluetape4k-exposed-bom:1.12.0-SNAPSHOT`.
-- Refreshed README diagrams for EventBridge coverage, including the service
-  matrix, integration view, and class diagram routing
+- `0.4.0` 출시 후 `0.5.0` snapshot 개발선을 열고 local bluetape4k BOM ref를
+  `bluetape4k-bom:1.11.1-SNAPSHOT` 및
+  `bluetape4k-exposed-bom:1.12.0-SNAPSHOT`에 맞췄습니다.
+- service matrix, integration view, class diagram routing을 포함하도록 EventBridge
+  coverage 관련 README 다이어그램을 갱신했습니다
   ([#326](https://github.com/bluetape4k/bluetape4k-aws/pull/326)).
 
-### Fixed
+### 수정
 
-- Hardened the release asset lookup for gitleaks so CI resolves release
-  artifacts from metadata instead of relying on a brittle URL shape
+- CI가 불안정한 URL 형식에 의존하지 않고 metadata에서 release artifact를 찾도록
+  gitleaks release asset 조회를 강화했습니다
   ([#275](https://github.com/bluetape4k/bluetape4k-aws/issues/275)).
-- Closed 0.5.0 hygiene gaps around recent documentation formatting, validation
-  helper usage, and public KDoc language consistency
+- 최근 문서 형식, validation helper 사용, public KDoc 언어 일관성과 관련된 0.5.0
+  hygiene gap을 해소했습니다
   ([#284](https://github.com/bluetape4k/bluetape4k-aws/issues/284),
   [#285](https://github.com/bluetape4k/bluetape4k-aws/issues/285),
   [#286](https://github.com/bluetape4k/bluetape4k-aws/issues/286)).
 
 ## [0.4.0] - 2026-06-27
 
-### Added
+### 추가
 
-- Added Ktor DynamoDB integration and emulator-backed Ktor DynamoDB examples
+- Ktor DynamoDB integration과 emulator 기반 Ktor DynamoDB example을 추가했습니다
   ([#179](https://github.com/bluetape4k/bluetape4k-aws/issues/179)).
-- Added optional Spring Boot DynamoDB Accelerator (DAX) client integration,
-  keeping emulator tests on the ordinary DynamoDB client path
+- 선택 가능한 Spring Boot DynamoDB Accelerator(DAX) client integration을 추가하되,
+  emulator test는 일반 DynamoDB client 경로를 유지했습니다
   ([#191](https://github.com/bluetape4k/bluetape4k-aws/issues/191)).
-- Added Spring Boot CloudWatch and CloudWatch Logs auto-configuration,
-  coroutine operation templates, and Micrometer snapshot publishing helpers
+- Spring Boot CloudWatch 및 CloudWatch Logs auto-configuration, coroutine operation
+  template, Micrometer snapshot publishing helper를 추가했습니다
   ([#194](https://github.com/bluetape4k/bluetape4k-aws/issues/194)).
-- Added Ktor CloudWatch and CloudWatch Logs plugins for explicit metric/log
-  publishing and buffered shutdown flushes
+- 명시적인 metric/log 발행과 buffered shutdown flush를 지원하는 Ktor CloudWatch 및
+  CloudWatch Logs plugin을 추가했습니다
   ([#201](https://github.com/bluetape4k/bluetape4k-aws/issues/201)).
-- Added EC2 Instance Metadata Service helpers for Spring Boot and Ktor without
-  using IMDS as a credential strategy
+- IMDS를 credential strategy로 사용하지 않는 Spring Boot 및 Ktor용 EC2 Instance
+  Metadata Service helper를 추가했습니다
   ([#196](https://github.com/bluetape4k/bluetape4k-aws/issues/196),
   [#200](https://github.com/bluetape4k/bluetape4k-aws/issues/200)).
-- Added optional S3 Access Grants support for Spring Boot and Ktor through the
-  AWS SDK v2 S3 Control boundary
+- AWS SDK v2 S3 Control 경계를 통해 Spring Boot와 Ktor에서 선택적으로 사용할 수
+  있는 S3 Access Grants 지원을 추가했습니다
   ([#227](https://github.com/bluetape4k/bluetape4k-aws/issues/227),
   [#228](https://github.com/bluetape4k/bluetape4k-aws/issues/228)).
-- Added optional S3 Vectors support across the Java SDK facade, Spring Boot
-  auto-configuration, and Ktor plugin integration
+- Java SDK facade, Spring Boot auto-configuration, Ktor plugin integration 전반에
+  선택 가능한 S3 Vectors 지원을 추가했습니다
   ([#229](https://github.com/bluetape4k/bluetape4k-aws/issues/229)).
-- Added optional Micrometer observability adapters for SQS and S3 operation
-  timing without making metrics mandatory for every consumer
+- 모든 consumer에 metric을 강제하지 않으면서 SQS와 S3 operation 시간을 측정하는
+  선택 가능한 Micrometer observability adapter를 추가했습니다
   ([#230](https://github.com/bluetape4k/bluetape4k-aws/issues/230)).
 
-### Changed
+### 변경
 
-- Opened the `0.4.0` development line after the `0.3.1` stable release and
-  aligned local bluetape4k BOM refs to `bluetape4k-bom:1.11.0-SNAPSHOT` and
-  `bluetape4k-exposed-bom:1.11.0-SNAPSHOT`.
-- Adopted shared `bluetape4k-ktor-*` modules in AWS Ktor integrations and
-  examples instead of carrying local Ktor helper duplicates
+- `0.3.1` stable release 후 `0.4.0` 개발선을 열고 local bluetape4k BOM ref를
+  `bluetape4k-bom:1.11.0-SNAPSHOT` 및
+  `bluetape4k-exposed-bom:1.11.0-SNAPSHOT`에 맞췄습니다.
+- 중복된 local Ktor helper를 유지하는 대신 AWS Ktor integration과 example에서 공통
+  `bluetape4k-ktor-*` 모듈을 사용하도록 변경했습니다
   ([#244](https://github.com/bluetape4k/bluetape4k-aws/issues/244),
   [#245](https://github.com/bluetape4k/bluetape4k-aws/issues/245)).
-- Moved AWS emulator-aware tests and examples to a Floci-first default while
-  preserving explicit LocalStack fallback runs for API coverage gaps
+- AWS emulator-aware test와 example의 기본값을 Floci 우선으로 변경하고, API coverage
+  gap에는 명시적인 LocalStack fallback 실행을 유지했습니다
   ([#239](https://github.com/bluetape4k/bluetape4k-aws/issues/239),
   [#241](https://github.com/bluetape4k/bluetape4k-aws/issues/241)).
-- Refreshed the root README architecture, component, and service coverage
-  diagrams for the 0.4.0 service surface
+- 0.4.0 service surface에 맞춰 root README의 architecture, component, service
+  coverage 다이어그램을 갱신했습니다
   ([#266](https://github.com/bluetape4k/bluetape4k-aws/pull/266),
   [#291](https://github.com/bluetape4k/bluetape4k-aws/pull/291)).
-- Prepared 0.4.0 release documentation and code-pattern preflight evidence for
-  the coordinated dependencies train
+- 조율된 dependency train을 위한 0.4.0 release 문서와 code-pattern preflight 근거를
+  준비했습니다
   ([#292](https://github.com/bluetape4k/bluetape4k-aws/issues/292),
   [#294](https://github.com/bluetape4k/bluetape4k-aws/issues/294)).
 
-### Fixed
+### 수정
 
-- Closed final IMDS and DAX review gaps, including injected-operation
-  validation and DAX concurrency validation
+- injected-operation validation과 DAX concurrency validation을 포함한 최종 IMDS 및
+  DAX review gap을 해소했습니다
   ([#281](https://github.com/bluetape4k/bluetape4k-aws/issues/281),
   [#282](https://github.com/bluetape4k/bluetape4k-aws/issues/282),
   [#283](https://github.com/bluetape4k/bluetape4k-aws/issues/283)).
-- Hardened CI and Nightly snapshot dependency refresh behavior against Central
-  snapshot metadata and cache refresh failures
+- Central snapshot metadata 및 cache refresh 실패에 대응하도록 CI와 Nightly snapshot
+  dependency refresh 동작을 강화했습니다
   ([#251](https://github.com/bluetape4k/bluetape4k-aws/issues/251),
   [#253](https://github.com/bluetape4k/bluetape4k-aws/issues/253),
   [#255](https://github.com/bluetape4k/bluetape4k-aws/issues/255),
@@ -131,166 +129,176 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.3.1] - 2026-06-01
 
-### Changed
+### 변경
 
-- Updated `aws-exposed` to consume
-  `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.10.0`.
-- Changed the `bluetape4k-exposed-bom` platform import from API scope to
-  implementation scope so the AWS Exposed module does not export the BOM
-  platform to consumers.
-- Kept the concrete `bluetape4k-exposed-jdbc` API dependency versioned directly
-  from the same catalog line so downstream modules do not rely on API-scoped BOM
-  propagation.
-- Updated the default bluetape4k dependencies catalog ref to
-  `catalog/2026-06-01-00` for release workflow alignment.
+- `aws-exposed`가
+  `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.10.0`을 사용하도록
+  갱신했습니다.
+- AWS Exposed 모듈이 consumer에 BOM platform을 노출하지 않도록
+  `bluetape4k-exposed-bom` platform import를 API scope에서 implementation scope로
+  변경했습니다.
+- 하위 모듈이 API scope의 BOM 전파에 의존하지 않도록 구체적인
+  `bluetape4k-exposed-jdbc` API dependency는 같은 catalog line에서 직접 버전을
+  지정하도록 유지했습니다.
+- release workflow와 맞추기 위해 기본 bluetape4k dependencies catalog ref를
+  `catalog/2026-06-01-00`으로 갱신했습니다.
 
 ## [0.3.0] - 2026-05-27
 
-### Added
+### 추가
 
-- Shared Spring Boot AWS core properties and client customizer foundation for
-  S3 and SQS production integrations ([#190](https://github.com/bluetape4k/bluetape4k-aws/issues/190)).
-- Advanced Spring Boot S3 support for encryption, config reload, access grants,
-  vector operations, and content helpers ([#192](https://github.com/bluetape4k/bluetape4k-aws/issues/192)).
-- Advanced Spring Boot SQS support for typed conversion, manual acknowledgement,
-  retry policies, listener interceptors, and observability hooks
+- S3 및 SQS production integration을 위한 공통 Spring Boot AWS core property와 client
+  customizer 기반을 추가했습니다 ([#190](https://github.com/bluetape4k/bluetape4k-aws/issues/190)).
+- 암호화, config reload, access grant, vector operation, content helper를 지원하는
+  고급 Spring Boot S3 기능을 추가했습니다 ([#192](https://github.com/bluetape4k/bluetape4k-aws/issues/192)).
+- typed conversion, manual acknowledgement, retry policy, listener interceptor,
+  observability hook을 지원하는 고급 Spring Boot SQS 기능을 추가했습니다
   ([#193](https://github.com/bluetape4k/bluetape4k-aws/issues/193)).
-- Shared Ktor AWS defaults and client customizer hooks
+- 공통 Ktor AWS 기본값과 client customizer hook을 추가했습니다
   ([#197](https://github.com/bluetape4k/bluetape4k-aws/issues/197)).
-- Advanced Ktor S3 and SQS integrations plus runnable advanced examples
+- 고급 Ktor S3 및 SQS integration과 실행 가능한 고급 example을 추가했습니다
   ([#199](https://github.com/bluetape4k/bluetape4k-aws/issues/199),
   [#203](https://github.com/bluetape4k/bluetape4k-aws/issues/203),
   [#207](https://github.com/bluetape4k/bluetape4k-aws/issues/207)).
-- Spring Boot S3 and SQS AWSpring-parity example scenarios
+- Spring Boot S3 및 SQS용 AWSpring 동등성 example scenario를 추가했습니다
   ([#206](https://github.com/bluetape4k/bluetape4k-aws/issues/206)).
 
-### Changed
+### 변경
 
-- Prepared the 0.3.0 release line to consume
+- 0.3.0 release line에서 다음 BOM을 사용하도록 준비했습니다
   `io.github.bluetape4k:bluetape4k-bom:1.9.2` and
   `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.9.2`.
-- Refreshed README architecture, flow, and sequence diagrams across AWS Java,
-  AWS Kotlin, AWS Ktor, AWS Spring Boot, AWS Exposed, and examples.
+- AWS Java, AWS Kotlin, AWS Ktor, AWS Spring Boot, AWS Exposed 및 example 전반의
+  README architecture, flow, sequence 다이어그램을 갱신했습니다.
 
-### Fixed
+### 수정
 
-- Stabilized SNS-to-SQS fanout LocalStack coverage
+- SNS-to-SQS fanout의 LocalStack coverage를 안정화했습니다
   ([#182](https://github.com/bluetape4k/bluetape4k-aws/issues/182)).
 
 ## [0.2.0] - 2026-05-22
 
-### Added
+### 추가
 
-- `aws-exposed` foundation module for shared Exposed database registry,
-  settings, and AWS-backed credential/property resolution ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
-- Spring Boot Exposed database auto-configuration for AWS-backed JDBC
-  integrations ([#75](https://github.com/bluetape4k/bluetape4k-aws/issues/75)).
-- Ktor `AwsExposedPlugin` lifecycle integration for AWS-backed Exposed
-  databases ([#76](https://github.com/bluetape4k/bluetape4k-aws/issues/76)).
-- `aws-exposed` RDS IAM authentication token provider for Hikari-backed Exposed
-  databases, including refresh-aware token caching and AWS SDK Java v2
-  `RdsUtilities` integration ([#77](https://github.com/bluetape4k/bluetape4k-aws/issues/77)).
-- Spring Boot and Ktor Exposed AWS database example modules ([#82](https://github.com/bluetape4k/bluetape4k-aws/issues/82)).
-- Spring Boot SES email sender support ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7)).
+- 공통 Exposed database registry, settings, AWS 기반 credential/property resolution을
+  제공하는 `aws-exposed` 기반 모듈을 추가했습니다 ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
+- AWS 기반 JDBC integration을 위한 Spring Boot Exposed database auto-configuration을
+  추가했습니다 ([#75](https://github.com/bluetape4k/bluetape4k-aws/issues/75)).
+- AWS 기반 Exposed database를 위한 Ktor `AwsExposedPlugin` lifecycle integration을
+  추가했습니다 ([#76](https://github.com/bluetape4k/bluetape4k-aws/issues/76)).
+- Hikari 기반 Exposed database를 위한 `aws-exposed` RDS IAM authentication token
+  provider를 추가했습니다. refresh-aware token caching과 AWS SDK Java v2
+  `RdsUtilities` integration을 포함합니다 ([#77](https://github.com/bluetape4k/bluetape4k-aws/issues/77)).
+- Spring Boot 및 Ktor Exposed AWS database example 모듈을 추가했습니다 ([#82](https://github.com/bluetape4k/bluetape4k-aws/issues/82)).
+- Spring Boot SES email sender 지원을 추가했습니다 ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7)).
 
-### Changed
+### 변경
 
-- Prepared the 0.2.0 release line to consume `io.github.bluetape4k:bluetape4k-bom:1.9.0` and `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.9.0`.
-- Imported `bluetape4k-exposed-bom` for Exposed helper artifacts instead of pinning direct Exposed helper versions.
+- 0.2.0 release line에서 `io.github.bluetape4k:bluetape4k-bom:1.9.0`과 `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.9.0`을 사용하도록 준비했습니다.
+- Exposed helper artifact 버전을 직접 고정하는 대신 `bluetape4k-exposed-bom`을 가져오도록 변경했습니다.
 
-### Fixed
+### 수정
 
-- Hardened secret redaction across AWS Exposed serialization paths.
+- AWS Exposed serialization 경로 전반에서 secret redaction을 강화했습니다.
 
 ## [0.1.1] - 2026-05-22
 
-### Added
+### 추가
 
-- Added S3 async and AWS Kotlin SDK object listing Flow helpers that automatically traverse `ListObjectsV2` pagination ([#145](https://github.com/bluetape4k/bluetape4k-aws/issues/145)).
+- `ListObjectsV2` pagination을 자동으로 순회하는 S3 async 및 AWS Kotlin SDK object listing Flow helper를 추가했습니다 ([#145](https://github.com/bluetape4k/bluetape4k-aws/issues/145)).
 
-### Changed
+### 변경
 
-- Prepared the 0.1.1 patch release line to consume `io.github.bluetape4k:bluetape4k-bom:1.9.0`.
+- 0.1.1 patch release line에서 `io.github.bluetape4k:bluetape4k-bom:1.9.0`을 사용하도록 준비했습니다.
 
-### Fixed
+### 수정
 
-- Fixed `forceDeleteBucket` so versioned S3 buckets remove object versions and delete markers before bucket deletion ([#147](https://github.com/bluetape4k/bluetape4k-aws/issues/147)).
+- versioning을 사용하는 S3 bucket이 bucket 삭제 전에 object version과 delete marker를 제거하도록 `forceDeleteBucket`을 수정했습니다 ([#147](https://github.com/bluetape4k/bluetape4k-aws/issues/147)).
 
 ## [0.1.0] - 2026-05-16
 
-### Added
+### 추가
 
-- Spring Boot SNS direct SMS publishing plus HTTP(S) endpoint payload parsing
-  and token-based subscription confirmation ([PR #95](https://github.com/bluetape4k/bluetape4k-aws/pull/95)).
-- Optional Spring Boot S3 transfer operations backed by AWS SDK v2
-  `S3TransferManager`, without forcing CRT dependencies on basic S3 users
+- Spring Boot SNS direct SMS 발행, HTTP(S) endpoint payload parsing, token 기반
+  subscription confirmation을 추가했습니다 ([PR #95](https://github.com/bluetape4k/bluetape4k-aws/pull/95)).
+- 기본 S3 사용자에게 CRT dependency를 강제하지 않으면서 AWS SDK v2
+  `S3TransferManager` 기반의 선택 가능한 Spring Boot S3 transfer operation을
+  추가했습니다
   ([PR #94](https://github.com/bluetape4k/bluetape4k-aws/pull/94)).
-- Spring Boot SQS/SNS fanout examples are wired for Spring AOT processing
-  alongside the existing Spring Boot S3 example ([PR #93](https://github.com/bluetape4k/bluetape4k-aws/pull/93)).
-- Ktor DynamoDB server plugin and repository facade built on `:aws-kotlin` and
-  the official AWS SDK for Kotlin ([PR #87](https://github.com/bluetape4k/bluetape4k-aws/pull/87)).
-- Secrets Manager and Parameter Store refresh support for remote Environment
-  sources ([PR #84](https://github.com/bluetape4k/bluetape4k-aws/pull/84)).
-- KMS field-level encryption and Spring Boot SQS/SNS fanout examples ([PR #73](https://github.com/bluetape4k/bluetape4k-aws/pull/73)).
-- Root README hero image plus refreshed project-purpose, feature, and architecture entrypoint documentation ([PR #68](https://github.com/bluetape4k/bluetape4k-aws/pull/68)).
-- Ktor SQS consumer runtime and server integration ([PR #60](https://github.com/bluetape4k/bluetape4k-aws/pull/60)).
-- Spring Boot 4 SNS coroutine publisher ([PR #55](https://github.com/bluetape4k/bluetape4k-aws/pull/55)).
-- Spring Boot 4 Secrets Manager and Parameter Store property loading ([PR #57](https://github.com/bluetape4k/bluetape4k-aws/pull/57)).
-- Spring Boot 4 KMS encryption support and disabled-contract fix ([PR #58](https://github.com/bluetape4k/bluetape4k-aws/pull/58), [PR #62](https://github.com/bluetape4k/bluetape4k-aws/pull/62)).
-- Ktor SigV4 client plugin for AWS request signing ([PR #27](https://github.com/bluetape4k/bluetape4k-aws/pull/27)).
-- Ktor S3 coroutine client and LocalStack-oriented example coverage included in Nightly ([PR #28](https://github.com/bluetape4k/bluetape4k-aws/pull/28)).
-- Spring Boot 4 S3 auto-configuration and coroutine operations template ([PR #29](https://github.com/bluetape4k/bluetape4k-aws/pull/29)).
-- Spring Boot 4 SQS coroutine operations template, listener annotation, and polling container ([PR #30](https://github.com/bluetape4k/bluetape4k-aws/pull/30)).
-- Spring Boot 4 DynamoDB enhanced async client auto-configuration and coroutine repository base ([PR #31](https://github.com/bluetape4k/bluetape4k-aws/pull/31)).
-- `bluetape4k-aws-bom` BOM module for AWS library consumers ([PR #24](https://github.com/bluetape4k/bluetape4k-aws/pull/24)).
-- English and Korean README files for the AWS BOM module ([PR #25](https://github.com/bluetape4k/bluetape4k-aws/pull/25)).
-- GitHub Actions workflows for CI, nightly, snapshot, release, and code-quality checks ([PR #19](https://github.com/bluetape4k/bluetape4k-aws/pull/19)).
+- 기존 Spring Boot S3 example과 함께 Spring Boot SQS/SNS fanout example도 Spring
+  AOT processing에 연결했습니다 ([PR #93](https://github.com/bluetape4k/bluetape4k-aws/pull/93)).
+- `:aws-kotlin`과 공식 AWS SDK for Kotlin을 기반으로 하는 Ktor DynamoDB server
+  plugin 및 repository facade를 추가했습니다 ([PR #87](https://github.com/bluetape4k/bluetape4k-aws/pull/87)).
+- remote Environment source에 Secrets Manager 및 Parameter Store refresh 지원을
+  추가했습니다 ([PR #84](https://github.com/bluetape4k/bluetape4k-aws/pull/84)).
+- KMS field-level encryption과 Spring Boot SQS/SNS fanout example을 추가했습니다 ([PR #73](https://github.com/bluetape4k/bluetape4k-aws/pull/73)).
+- root README hero image를 추가하고 프로젝트 목적, 기능, architecture 진입점 문서를
+  갱신했습니다 ([PR #68](https://github.com/bluetape4k/bluetape4k-aws/pull/68)).
+- Ktor SQS consumer runtime과 server integration을 추가했습니다 ([PR #60](https://github.com/bluetape4k/bluetape4k-aws/pull/60)).
+- Spring Boot 4 SNS coroutine publisher를 추가했습니다 ([PR #55](https://github.com/bluetape4k/bluetape4k-aws/pull/55)).
+- Spring Boot 4 Secrets Manager 및 Parameter Store property loading을 추가했습니다 ([PR #57](https://github.com/bluetape4k/bluetape4k-aws/pull/57)).
+- Spring Boot 4 KMS encryption 지원을 추가하고 disabled contract를 수정했습니다 ([PR #58](https://github.com/bluetape4k/bluetape4k-aws/pull/58), [PR #62](https://github.com/bluetape4k/bluetape4k-aws/pull/62)).
+- AWS request signing을 위한 Ktor SigV4 client plugin을 추가했습니다 ([PR #27](https://github.com/bluetape4k/bluetape4k-aws/pull/27)).
+- Ktor S3 coroutine client와 LocalStack 중심 example coverage를 추가하고 Nightly에
+  포함했습니다 ([PR #28](https://github.com/bluetape4k/bluetape4k-aws/pull/28)).
+- Spring Boot 4 S3 auto-configuration과 coroutine operation template을 추가했습니다 ([PR #29](https://github.com/bluetape4k/bluetape4k-aws/pull/29)).
+- Spring Boot 4 SQS coroutine operation template, listener annotation, polling
+  container를 추가했습니다 ([PR #30](https://github.com/bluetape4k/bluetape4k-aws/pull/30)).
+- Spring Boot 4 DynamoDB enhanced async client auto-configuration과 coroutine
+  repository 기반을 추가했습니다 ([PR #31](https://github.com/bluetape4k/bluetape4k-aws/pull/31)).
+- AWS library consumer를 위한 `bluetape4k-aws-bom` BOM 모듈을 추가했습니다 ([PR #24](https://github.com/bluetape4k/bluetape4k-aws/pull/24)).
+- AWS BOM 모듈의 영문 및 한국어 README를 추가했습니다 ([PR #25](https://github.com/bluetape4k/bluetape4k-aws/pull/25)).
+- CI, nightly, snapshot, release, code-quality 검사를 위한 GitHub Actions workflow를
+  추가했습니다 ([PR #19](https://github.com/bluetape4k/bluetape4k-aws/pull/19)).
 
-### Changed
+### 변경
 
-- Spring Boot SQS listener/template parity now includes FIFO metadata exposure,
-  explicit send request fields, and AOT-safe example coverage ([PR #93](https://github.com/bluetape4k/bluetape4k-aws/pull/93)).
-- Dependency baselines were refreshed for AWS SDK, Ktor 3.5, Gradle 9.5.1, and
-  SLF4J 2.0.18 ([PR #89](https://github.com/bluetape4k/bluetape4k-aws/pull/89),
+- Spring Boot SQS listener/template 동등성 범위에 FIFO metadata 노출, 명시적인 send
+  request field, AOT-safe example coverage를 포함했습니다 ([PR #93](https://github.com/bluetape4k/bluetape4k-aws/pull/93)).
+- AWS SDK, Ktor 3.5, Gradle 9.5.1, SLF4J 2.0.18 버전의 dependency baseline을
+  갱신했습니다 ([PR #89](https://github.com/bluetape4k/bluetape4k-aws/pull/89),
   [PR #90](https://github.com/bluetape4k/bluetape4k-aws/pull/90),
   [PR #91](https://github.com/bluetape4k/bluetape4k-aws/pull/91),
   [PR #92](https://github.com/bluetape4k/bluetape4k-aws/pull/92)).
-- GitHub Actions and Gradle Actions caching were refreshed, and the CI secret
-  scan installer was stabilized after the dependency update wave
+- GitHub Actions 및 Gradle Actions caching을 갱신하고, dependency update 이후 CI
+  secret scan installer를 안정화했습니다
   ([PR #88](https://github.com/bluetape4k/bluetape4k-aws/pull/88)).
-- Standardized AWS modules on `bluetape4k-jackson3` and moved direct Jackson
-  helper usage to `tools.jackson`.
-- Refreshed README workbench image and aligned license text on MIT ([PR #72](https://github.com/bluetape4k/bluetape4k-aws/pull/72), [PR #70](https://github.com/bluetape4k/bluetape4k-aws/pull/70)).
-- Consolidated PR review gate metrics documentation ([PR #69](https://github.com/bluetape4k/bluetape4k-aws/pull/69)).
-- Hardened review findings across `aws`, `aws-kotlin`, `aws-spring-boot`, and `aws-ktor` tests ([PR #64](https://github.com/bluetape4k/bluetape4k-aws/pull/64), [PR #65](https://github.com/bluetape4k/bluetape4k-aws/pull/65), [PR #66](https://github.com/bluetape4k/bluetape4k-aws/pull/66), [PR #67](https://github.com/bluetape4k/bluetape4k-aws/pull/67)).
-- Unified `aws-spring-boot` tests on `bluetape4k-assertions` ([PR #63](https://github.com/bluetape4k/bluetape4k-aws/pull/63)).
-- Refreshed WIP queue and review-gate metrics documentation ([PR #56](https://github.com/bluetape4k/bluetape4k-aws/pull/56), [PR #61](https://github.com/bluetape4k/bluetape4k-aws/pull/61)).
-- CI uses path filtering and retry configuration to reduce unnecessary test work and improve transient failure handling ([PR #23](https://github.com/bluetape4k/bluetape4k-aws/pull/23)).
-- Test code migrated from Kluent to `bluetape4k-assertions` ([PR #22](https://github.com/bluetape4k/bluetape4k-aws/pull/22)).
+- AWS 모듈이 `bluetape4k-jackson3`을 공통으로 사용하도록 하고, 직접적인 Jackson
+  helper 사용을 `tools.jackson`으로 옮겼습니다.
+- README workbench image를 갱신하고 license 문구를 MIT에 맞췄습니다 ([PR #72](https://github.com/bluetape4k/bluetape4k-aws/pull/72), [PR #70](https://github.com/bluetape4k/bluetape4k-aws/pull/70)).
+- PR review gate metrics 문서를 통합했습니다 ([PR #69](https://github.com/bluetape4k/bluetape4k-aws/pull/69)).
+- `aws`, `aws-kotlin`, `aws-spring-boot`, `aws-ktor` test 전반의 review finding을
+  보완했습니다 ([PR #64](https://github.com/bluetape4k/bluetape4k-aws/pull/64), [PR #65](https://github.com/bluetape4k/bluetape4k-aws/pull/65), [PR #66](https://github.com/bluetape4k/bluetape4k-aws/pull/66), [PR #67](https://github.com/bluetape4k/bluetape4k-aws/pull/67)).
+- `aws-spring-boot` test의 assertion library를 `bluetape4k-assertions`로
+  통일했습니다 ([PR #63](https://github.com/bluetape4k/bluetape4k-aws/pull/63)).
+- WIP queue와 review-gate metrics 문서를 갱신했습니다 ([PR #56](https://github.com/bluetape4k/bluetape4k-aws/pull/56), [PR #61](https://github.com/bluetape4k/bluetape4k-aws/pull/61)).
+- 불필요한 test 작업을 줄이고 일시적 실패 처리를 개선하도록 CI에 path filtering과
+  retry 구성을 적용했습니다 ([PR #23](https://github.com/bluetape4k/bluetape4k-aws/pull/23)).
+- test code를 Kluent에서 `bluetape4k-assertions`로 이전했습니다 ([PR #22](https://github.com/bluetape4k/bluetape4k-aws/pull/22)).
 
-### Fixed
+### 수정
 
-- Remote Environment refresh now keeps stable snapshots during reload and avoids
-  refresh race regressions ([PR #86](https://github.com/bluetape4k/bluetape4k-aws/pull/86)).
-- Removed deprecated `S3Factory`, `SesFactory`, `SnsFactory`, and `SqsFactory`
-  objects before first public release; use `S3ClientFactory`, `SesClientFactory`,
-  `SnsClientFactory`, and `SqsClientFactory` respectively ([#98](https://github.com/bluetape4k/bluetape4k-aws/issues/98), [PR #113](https://github.com/bluetape4k/bluetape4k-aws/pull/113)).
-- `@Disabled` test annotations now include issue references and English rationale
-  for emulator-limited and out-of-band-protocol tests ([#99](https://github.com/bluetape4k/bluetape4k-aws/issues/99), [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100), [PR #114](https://github.com/bluetape4k/bluetape4k-aws/pull/114)).
+- remote Environment refresh가 reload 중 안정적인 snapshot을 유지하고 refresh race
+  regression을 방지하도록 수정했습니다 ([PR #86](https://github.com/bluetape4k/bluetape4k-aws/pull/86)).
+- 첫 public release 전에 deprecated `S3Factory`, `SesFactory`, `SnsFactory`,
+  `SqsFactory` object를 제거했습니다. 각각 `S3ClientFactory`, `SesClientFactory`,
+  `SnsClientFactory`, `SqsClientFactory`를 사용합니다 ([#98](https://github.com/bluetape4k/bluetape4k-aws/issues/98), [PR #113](https://github.com/bluetape4k/bluetape4k-aws/pull/113)).
+- emulator 제약 및 out-of-band-protocol test의 `@Disabled` annotation에 issue ref와
+  영문 사유를 포함하도록 변경했습니다 ([#99](https://github.com/bluetape4k/bluetape4k-aws/issues/99), [#100](https://github.com/bluetape4k/bluetape4k-aws/issues/100), [PR #114](https://github.com/bluetape4k/bluetape4k-aws/pull/114)).
 
-### 0.2.0 Roadmap
+### 0.2.0 로드맵
 
-At the 0.1.0 release, the following items were deferred to the 0.2.0 line:
+0.1.0 출시 시점에 다음 항목을 0.2.0 개발선으로 연기했습니다.
 
-- Exposed-first AWS database integration ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
-- Spring Boot and Ktor Exposed auto-configuration and `AwsExposedPlugin`
+- Exposed 우선 AWS database integration ([#74](https://github.com/bluetape4k/bluetape4k-aws/issues/74)).
+- Spring Boot 및 Ktor Exposed auto-configuration과 `AwsExposedPlugin`
   ([#75](https://github.com/bluetape4k/bluetape4k-aws/issues/75),
   [#76](https://github.com/bluetape4k/bluetape4k-aws/issues/76)).
-- RDS IAM auth token provider and Exposed database examples
+- RDS IAM auth token provider와 Exposed database example
   ([#77](https://github.com/bluetape4k/bluetape4k-aws/issues/77),
   [#82](https://github.com/bluetape4k/bluetape4k-aws/issues/82)).
-- Kinesis and DynamoDB Streams coroutine `Flow` support ([#81](https://github.com/bluetape4k/bluetape4k-aws/issues/81)).
-- Spring Boot SES sender ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7)).
-- Ktor integrations migration toward `:aws-kotlin` ([#85](https://github.com/bluetape4k/bluetape4k-aws/issues/85)).
-- LocalStack-compatible test strategy for SES V2 and SNS token flow ([#105](https://github.com/bluetape4k/bluetape4k-aws/issues/105)).
-- Disabled-test registry and CI release gate ([#106](https://github.com/bluetape4k/bluetape4k-aws/issues/106)).
+- Kinesis 및 DynamoDB Streams coroutine `Flow` 지원 ([#81](https://github.com/bluetape4k/bluetape4k-aws/issues/81)).
+- Spring Boot SES sender 지원 ([#7](https://github.com/bluetape4k/bluetape4k-aws/issues/7)).
+- Ktor integration을 `:aws-kotlin`으로 이전 ([#85](https://github.com/bluetape4k/bluetape4k-aws/issues/85)).
+- SES V2 및 SNS token flow를 위한 LocalStack 호환 test strategy ([#105](https://github.com/bluetape4k/bluetape4k-aws/issues/105)).
+- disabled-test registry 및 CI release gate ([#106](https://github.com/bluetape4k/bluetape4k-aws/issues/106)).
