@@ -109,5 +109,10 @@ inline fun sendMessageBatchRequestEntryOf(
         delaySeconds?.let { delaySeconds(it) }
 
         builder()
+    }.also { entry ->
+        entry.id().requireNotBlank("id")
+        entry.messageGroupId().requireNotBlank("messageGroupId")
+        entry.messageBody().requireNotBlank("messageBody")
+        entry.delaySeconds()?.validateSqsDelaySeconds("delaySeconds")
     }
 }
