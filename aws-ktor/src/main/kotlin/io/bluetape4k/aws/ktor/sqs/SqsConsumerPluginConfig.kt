@@ -144,37 +144,51 @@ class SqsConsumerPluginConfig {
         }
     }
 
-    internal fun toRuntimeConfig(defaults: AwsKtorDefaults = AwsKtorDefaults()): SqsConsumerRuntimeConfig {
-        val injectedClient = sqsAsyncClient
-        val client = injectedClient ?: createSqsAsyncClient(defaults)
+    internal fun toRuntimeConfig(
+        defaults: AwsKtorDefaults = AwsKtorDefaults(),
+        clientFactory: (AwsKtorDefaults) -> SqsAsyncClient = ::createSqsAsyncClient,
+    ): SqsConsumerRuntimeConfig {
         val type = requireNotNull(messageType) { "onMessage handler must be configured." }
         val handler = requireNotNull(messageHandler) { "onMessage handler must be configured." }
+        val injectedClient = sqsAsyncClient
+        val client = injectedClient ?: clientFactory(defaults)
 
-        return SqsConsumerRuntimeConfig(
-            sqsAsyncClient = client,
-            ownsClient = injectedClient == null,
-            queueUrl = queueUrl,
-            queueName = queueName,
-            coroutines = coroutines,
-            maxMessages = maxMessages,
-            waitTimeSeconds = waitTimeSeconds,
-            visibilityTimeoutSeconds = visibilityTimeoutSeconds,
-            deleteOnSuccess = deleteOnSuccess,
-            failureVisibilityTimeoutSeconds = failureVisibilityTimeoutSeconds,
-            deadLetterQueueUrl = deadLetterQueueUrl,
-            deadLetterQueueName = deadLetterQueueName,
-            shutdownTimeout = shutdownTimeout,
-            pollBackoff = pollBackoff,
-            visibilityHeartbeatSeconds = visibilityHeartbeatSeconds,
-            dispatcher = dispatcher,
-            converter = converter,
-            conversionFailurePolicy = conversionFailurePolicy,
-            failureVisibilityStrategy = failureVisibilityStrategy,
-            interceptors = interceptors.toList(),
-            observers = observers.toList(),
-            messageType = type,
-            messageHandler = handler,
-        )
+        try {
+            return SqsConsumerRuntimeConfig(
+                sqsAsyncClient = client,
+                ownsClient = injectedClient == null,
+                queueUrl = queueUrl,
+                queueName = queueName,
+                coroutines = coroutines,
+                maxMessages = maxMessages,
+                waitTimeSeconds = waitTimeSeconds,
+                visibilityTimeoutSeconds = visibilityTimeoutSeconds,
+                deleteOnSuccess = deleteOnSuccess,
+                failureVisibilityTimeoutSeconds = failureVisibilityTimeoutSeconds,
+                deadLetterQueueUrl = deadLetterQueueUrl,
+                deadLetterQueueName = deadLetterQueueName,
+                shutdownTimeout = shutdownTimeout,
+                pollBackoff = pollBackoff,
+                visibilityHeartbeatSeconds = visibilityHeartbeatSeconds,
+                dispatcher = dispatcher,
+                converter = converter,
+                conversionFailurePolicy = conversionFailurePolicy,
+                failureVisibilityStrategy = failureVisibilityStrategy,
+                interceptors = interceptors.toList(),
+                observers = observers.toList(),
+                messageType = type,
+                messageHandler = handler,
+            )
+        } catch (e: Throwable) {
+            if (injectedClient == null) {
+                try {
+                    client.close()
+                } catch (closeError: Throwable) {
+                    e.addSuppressed(closeError)
+                }
+            }
+            throw e
+        }
     }
 
     private fun createSqsAsyncClient(defaults: AwsKtorDefaults): SqsAsyncClient {
