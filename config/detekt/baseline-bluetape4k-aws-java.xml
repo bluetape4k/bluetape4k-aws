@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:BedrockRuntimeFlowExtensions.kt:StreamCoordinator$private suspend fun replace</ID>
+    <ID>EqualsWithHashCodeExist:CustomerDocument.kt:CustomerDocument : AbstractDynamoDocument</ID>
+    <ID>EqualsWithHashCodeExist:FoodDocument.kt:FoodDocument : AbstractDynamoDocument</ID>
+    <ID>EqualsWithHashCodeExist:UserDocument.kt:UserDocument : AbstractDynamoDocument</ID>
+    <ID>MagicNumber:AwsCrtAsyncHttpClientSupport.kt:1024</ID>
+    <ID>MagicNumber:S3AsyncClientExtensions.kt:404</ID>
+    <ID>MagicNumber:S3ClientExtensions.kt:404</ID>
+    <ID>MagicNumber:SecretsManagerRequestSupport.kt:20</ID>
+    <ID>MagicNumber:SsmRequestSupport.kt:10</ID>
+    <ID>MagicNumber:WaiterSupport.kt:10</ID>
+    <ID>MagicNumber:WaiterSupport.kt:5</ID>
+    <ID>MaxLineLength:AuthSupportTest.kt:AuthSupportTest$provider.resolveCredentials() shouldBeInstanceOf software.amazon.awssdk.auth.credentials.AwsBasicCredentials::class</ID>
+    <ID>MaxLineLength:AwsCrtAsyncHttpClientSupport.kt:*</ID>
+    <ID>MaxLineLength:ClientAsyncConfigurationSupport.kt:*</ID>
+    <ID>MaxLineLength:EventBridgeRequestSupport.kt:require(size &lt;= MAX_EVENTBRIDGE_BATCH_SIZE) { "$name must not contain more than $MAX_EVENTBRIDGE_BATCH_SIZE items." }</ID>
+    <ID>MaxLineLength:KmsClientFactory.kt:KmsClientFactory.Async$*</ID>
+    <ID>MaxLineLength:KmsClientFactory.kt:KmsClientFactory.Sync$*</ID>
+    <ID>MaxLineLength:NettyNioAsyncHttpClientSupport.kt:*</ID>
+    <ID>MaxLineLength:S3AsyncClientExtensions.kt:"Move partially succeeded. Attempting rollback by deleting copied object. Dest: $destBucketName/$destKey"</ID>
+    <ID>MaxLineLength:S3ClientExtensions.kt:log.error(error) { "Rollback failed! Copied object may remain at destination. Dest: $destBucketName/$destKey" }</ID>
+    <ID>MaxLineLength:S3ClientExtensions.kt:log.warn { "Move partially succeeded. Attempting rollback by deleting copied object. Dest: $destBucketName/$destKey" }</ID>
+    <ID>MaxLineLength:SchedulerClientExtensionsTest.kt:SchedulerClientExtensionsTest$val expected = CreateScheduleResponse.builder().scheduleArn("arn:aws:scheduler:us-east-1:123456789012:schedule/jobs/daily-job").build()</ID>
+    <ID>MaxLineLength:SecretsManagerAsyncClientExtensions.kt:putSecretValue(putSecretValueRequestOf(secretId, secretValue, clientRequestToken, versionStages, overrideConfiguration))</ID>
+    <ID>MaxLineLength:SecretsManagerClientExtensions.kt:putSecretValue(putSecretValueRequestOf(secretId, secretValue, clientRequestToken, versionStages, overrideConfiguration))</ID>
+    <ID>MaxLineLength:SesClientTest.kt:SesClientTest$*</ID>
+    <ID>MaxLineLength:SortKeyDslSupport.kt:SortKeyBuilder$val cmp = checkNotNull(comparator) { "SortKeyBuilder: comparator must be set via 'eq', 'between', etc. before build()" }</ID>
+    <ID>MaxLineLength:SqsAsyncClientCoroutinesExtensionsTest.kt:SqsAsyncClientCoroutinesExtensionsTest$requestSlot.captured.queueUrl() shouldBeEqualTo "https://sqs.ap-northeast-2.amazonaws.com/000000000000/test-queue"</ID>
+    <ID>MaxLineLength:SqsAsyncClientExtensions.kt:*</ID>
+    <ID>MaxLineLength:SqsAsyncClientTest.kt:SqsAsyncClientTest$// NOTE: The total size of all messages that you send in a single SendMessageBatch call can't exceed 262,144 bytes (256 KB).</ID>
+    <ID>MaxLineLength:SqsClientTest.kt:SqsClientTest$// NOTE: The total size of all messages that you send in a single SendMessageBatch call can't exceed 262,144 bytes (256 KB).</ID>
+    <ID>MaxLineLength:SqsExamples.kt:SqsExamples$// NOTE: The total size of all messages that you send in a single SendMessageBatch call can't exceed 262,144 bytes (256 KB).</ID>
+    <ID>MaxLineLength:SsmAsyncClientExtensions.kt:getParametersByPath(getParametersByPathRequestOf(path, recursive, withDecryption, maxResults, nextToken, overrideConfiguration))</ID>
+    <ID>MaxLineLength:SsmClientExtensions.kt:getParametersByPath(getParametersByPathRequestOf(path, recursive, withDecryption, maxResults, nextToken, overrideConfiguration))</ID>
+    <ID>MaxLineLength:SsmRequestSupport.kt:putParameterRequestOf(name, value.reveal(), ParameterType.SECURE_STRING, overwrite, description, overrideConfiguration, builder)</ID>
+    <ID>MaxLineLength:SsmRequestSupport.kt:return putParameterRequestOf(name, values.joinToString(","), ParameterType.STRING_LIST, overwrite, description, overrideConfiguration, builder)</ID>
+    <ID>MaxLineLength:SsmSupportTest.kt:SsmSupportTest$.</ID>
+    <ID>ReturnCount:AwsTestcontainersReusePolicyTest.kt:AwsTestcontainersReusePolicyTest$private fun Path.isExecutablePolicyFile: Boolean</ID>
+    <ID>SerialVersionUIDInSerializableClass:DynamoDbAsyncTableExtensionsTest.kt:DynamoDbAsyncTableExtensionsTest$TestEntity : Serializable</ID>
+    <ID>SerialVersionUIDInSerializableClass:EnhancedAsyncClientExtensionsTest.kt:EnhancedAsyncClientExtensionsTest$BatchTestEntity : Serializable</ID>
+    <ID>SwallowedException:DynamoDbAsyncTableExtensionsTest.kt:DynamoDbAsyncTableExtensionsTest$e: Exception</ID>
+    <ID>ThrowingExceptionFromFinally:BedrockRuntimeAsyncClientSupport.kt:throw cause</ID>
+    <ID>ThrowingExceptionFromFinally:BedrockRuntimeClientSupport.kt:throw cause</ID>
+    <ID>TooGenericExceptionCaught:AwsRdsIamAuthTokenGenerator.kt:AwsSdkRdsIamAuthTokenGenerator$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:BedrockRuntimeAsyncClientSupport.kt:cause: Throwable</ID>
+    <ID>TooGenericExceptionCaught:BedrockRuntimeClientSupport.kt:cause: Throwable</ID>
+    <ID>TooGenericExceptionCaught:BedrockRuntimeFlowExtensions.kt:StreamCoordinator$cause: Throwable</ID>
+    <ID>TooGenericExceptionCaught:BedrockRuntimeFlowExtensions.kt:cause: Throwable</ID>
+    <ID>TooGenericExceptionCaught:DynamoDbAsyncTableCreator.kt:DynamoDbAsyncTableCreator$e: Throwable</ID>
+    <ID>TooManyFunctions:AsyncRequestBody.kt:io.bluetape4k.aws.s3.model.AsyncRequestBody.kt</ID>
+    <ID>TooManyFunctions:EnhancedRequestSupport.kt:io.bluetape4k.aws.dynamodb.model.EnhancedRequestSupport.kt</ID>
+    <ID>TooManyFunctions:EventBridgeRequestSupport.kt:io.bluetape4k.aws.eventbridge.model.EventBridgeRequestSupport.kt</ID>
+    <ID>TooManyFunctions:RequestBody.kt:io.bluetape4k.aws.s3.model.RequestBody.kt</ID>
+    <ID>TooManyFunctions:RequestSupport.kt:io.bluetape4k.aws.dynamodb.model.RequestSupport.kt</ID>
+    <ID>TooManyFunctions:S3AsyncClientCoroutinesExtensions.kt:io.bluetape4k.aws.s3.S3AsyncClientCoroutinesExtensions.kt</ID>
+    <ID>TooManyFunctions:S3AsyncClientExtensions.kt:io.bluetape4k.aws.s3.S3AsyncClientExtensions.kt</ID>
+    <ID>TooManyFunctions:S3ClientExtensions.kt:io.bluetape4k.aws.s3.S3ClientExtensions.kt</ID>
+    <ID>TooManyFunctions:SchedulerRequestSupport.kt:io.bluetape4k.aws.scheduler.model.SchedulerRequestSupport.kt</ID>
+    <ID>TooManyFunctions:SqsAsyncClientCoroutinesExtensions.kt:io.bluetape4k.aws.sqs.SqsAsyncClientCoroutinesExtensions.kt</ID>
+    <ID>TooManyFunctions:SqsAsyncClientExtensions.kt:io.bluetape4k.aws.sqs.SqsAsyncClientExtensions.kt</ID>
+    <ID>TooManyFunctions:SqsClientExtensions.kt:io.bluetape4k.aws.sqs.SqsClientExtensions.kt</ID>
+    <ID>UtilityClassWithPublicConstructor:AbstractAwsTest.kt:AbstractAwsTest</ID>
+  </CurrentIssues>
+</SmellBaseline>

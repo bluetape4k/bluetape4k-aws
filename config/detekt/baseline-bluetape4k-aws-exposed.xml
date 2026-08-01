@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MaxLineLength:AwsDatabaseProperties.kt:AwsDatabaseProperties$"namedDatabases key '${AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME}' is reserved for defaultDatabase."</ID>
+    <ID>TooGenericExceptionCaught:AwsExposedDatabaseFactory.kt:AwsExposedDatabaseFactory$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:AwsExposedDatabaseRegistry.kt:AwsExposedDatabaseRegistry$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:AwsRdsIamAuthentication.kt:AwsSdkRdsIamAuthTokenGenerator$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:AwsRdsIamAuthentication.kt:RefreshingRdsIamPasswordProvider$e: RuntimeException</ID>
+  </CurrentIssues>
+</SmellBaseline>

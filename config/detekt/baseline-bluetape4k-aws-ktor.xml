@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:AwsKtorCore.kt:AwsKtorDefaults$override fun equalProperties: Boolean</ID>
+    <ID>CyclomaticComplexMethod:KinesisKtorTemplate.kt:KinesisKtorTemplate$override fun recordFlow: Flow&lt;Record></ID>
+    <ID>EmptyFunctionBlock:AwsSigV4PluginTest.kt:AwsSigV4PluginTest.&lt;no name provided>${ }</ID>
+    <ID>LongMethod:KinesisKtorTemplate.kt:KinesisKtorTemplate$override fun recordFlow: Flow&lt;Record></ID>
+    <ID>LongMethod:SqsConsumerRuntime.kt:SqsConsumerRuntime$private suspend fun pollLoop</ID>
+    <ID>LongMethod:SqsConsumerRuntimeFailureTest.kt:SqsConsumerRuntimeFailureTest$@Test fun `stop timeout cancels heartbeat without waiting for non cooperative handler`</ID>
+    <ID>MagicNumber:CloudWatchLogsKtorRuntime.kt:CloudWatchLogsKtorRuntime$5</ID>
+    <ID>MagicNumber:S3KtorAdvancedModels.kt:16</ID>
+    <ID>MagicNumber:S3KtorAdvancedModels.kt:4</ID>
+    <ID>MagicNumber:S3KtorAdvancedModels.kt:8</ID>
+    <ID>MagicNumber:S3KtorClient.kt:200</ID>
+    <ID>MagicNumber:S3KtorClient.kt:299</ID>
+    <ID>MagicNumber:S3KtorClientSideEncryption.kt:S3KtorClientSideEncryption$16</ID>
+    <ID>MagicNumber:S3KtorClientSideEncryption.kt:S3KtorClientSideEncryption$24</ID>
+    <ID>MagicNumber:S3KtorClientSideEncryption.kt:S3KtorClientSideEncryption$32</ID>
+    <ID>MagicNumber:S3KtorClientSideEncryption.kt:S3KtorDataKey$16</ID>
+    <ID>MagicNumber:S3KtorClientSideEncryption.kt:S3KtorDataKey$24</ID>
+    <ID>MagicNumber:S3KtorClientSideEncryption.kt:S3KtorDataKey$32</ID>
+    <ID>MagicNumber:SnsHttpMessageParser.kt:4</ID>
+    <ID>MagicNumber:SnsHttpMessageParser.kt:SnsTopicArn.Companion$3</ID>
+    <ID>MagicNumber:SnsHttpMessageParser.kt:SnsTopicArn.Companion$6</ID>
+    <ID>MagicNumber:SqsConsumerAdvancedModels.kt:SqsFixedFailureVisibilityStrategy$43_200</ID>
+    <ID>MagicNumber:SqsConsumerAdvancedModels.kt:SqsLinearFailureVisibilityStrategy$43_200</ID>
+    <ID>MagicNumber:SqsConsumerRuntime.kt:SqsConsumerRuntime$256</ID>
+    <ID>MagicNumber:SqsConsumerRuntime.kt:SqsConsumerRuntimeConfig$30</ID>
+    <ID>MagicNumber:SqsConsumerRuntime.kt:SqsPollBackoff$250</ID>
+    <ID>MagicNumber:SqsConsumerRuntime.kt:SqsPollBackoff$5</ID>
+    <ID>MaxLineLength:AwsSigV4Plugin.kt:*</ID>
+    <ID>MaxLineLength:KinesisKtorTemplateTest.kt:KinesisKtorTemplateTest$FlowCase(KinesisStartingPosition.AtTimestamp(timestamp), ShardIteratorType.AT_TIMESTAMP, timestamp = timestamp)</ID>
+    <ID>MaxLineLength:S3KtorClient.kt:S3KtorClient$*</ID>
+    <ID>MaxLineLength:S3KtorClient.kt:S3KtorClient$?:</ID>
+    <ID>MaxLineLength:S3KtorClientTest.kt:InMemoryDataKeyProvider$override suspend</ID>
+    <ID>MaxLineLength:S3KtorClientTest.kt:S3KtorClientTest$request.method == HttpMethod.Delete &amp;&amp; request.url.parameters["uploadId"] == "upload-1" -> respond("")</ID>
+    <ID>MaxLineLength:SesKtorTemplateTest.kt:SesKtorTemplateTest$val raw = SesRawEmailRequest("secret-body".toByteArray(), destination = SesEmailAddressSet(to = listOf("to@example.com")))</ID>
+    <ID>MaxLineLength:SnsHttpMessageParser.kt:SnsHttpMessageParser$raw = root.properties().associate { it.key to it.value.takeIf { node -> node.isStringNode() }?.stringValue() }</ID>
+    <ID>MaxLineLength:SnsHttpMessageParserTest.kt:SnsHttpMessageParserTest$parser.parse(notificationJson.replace(""""MessageId" : "22b80b92-fdea-4c2c-8f9d-bdfb0c7bf324"""", """"MessageId" : 1"""))</ID>
+    <ID>MaxLineLength:SnsHttpMessageParserTest.kt:SnsHttpMessageParserTest$parser.parse(notificationJson.replaceFirst(""""Type" : "Notification",""", """"Type" : "Notification", "Type" : "Notification","""))</ID>
+    <ID>MaxLineLength:SnsKtorTemplateTest.kt:SnsKtorTemplateTest$SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:000000000000:standard", message = "m", messageGroupId = "g")</ID>
+    <ID>MaxLineLength:SnsKtorTemplateTest.kt:SnsKtorTemplateTest$every { client.publish(any&lt;Consumer&lt;PublishRequest.Builder>>()) } returns CompletableFuture.failedFuture(failure)</ID>
+    <ID>MaxLineLength:SnsKtorTemplateTest.kt:SnsKtorTemplateTest$val message = TrustedSnsHttpMessage.fromVerified(SnsHttpMessageParser.default().parse(subscriptionConfirmationJson))</ID>
+    <ID>MaxLineLength:SqsConsumerRuntime.kt:SqsConsumerRuntime$"Failed to delete successfully handled SQS message. Message will remain eligible for redelivery."</ID>
+    <ID>MaxLineLength:SqsConsumerRuntimeAdvancedTest.kt:SqsConsumerRuntimeAdvancedTest$val request = ChangeMessageVisibilityRequest.builder().also(firstArg&lt;Consumer&lt;ChangeMessageVisibilityRequest.Builder>>()::accept).build()</ID>
+    <ID>MaxLineLength:StsKtorTemplateTest.kt:StsKtorTemplateTest$every { client.getCallerIdentity(any&lt;GetCallerIdentityRequest>()) } returns CompletableFuture.failedFuture(failure)</ID>
+    <ID>ReturnCount:AwsExposedKtorRuntime.kt:AwsExposedKtorRuntime$suspend fun start</ID>
+    <ID>ReturnCount:CloudWatchKtorPluginConfig.kt:CloudWatchKtorPluginConfig$internal fun toRuntime: CloudWatchKtorRuntime?</ID>
+    <ID>ReturnCount:CloudWatchLogsKtorPluginConfig.kt:CloudWatchLogsKtorPluginConfig$internal fun toRuntime: CloudWatchLogsKtorRuntime?</ID>
+    <ID>ReturnCount:EventBridgeKtorPluginConfig.kt:EventBridgeKtorPluginConfig$internal fun toRuntime: EventBridgeKtorRuntime?</ID>
+    <ID>ReturnCount:ImdsKtorPluginConfig.kt:ImdsKtorPluginConfig$internal fun toRuntime: ImdsKtorRuntime?</ID>
+    <ID>ReturnCount:KinesisKtorPluginConfig.kt:KinesisKtorPluginConfig$internal fun toRuntime: KinesisKtorRuntime?</ID>
+    <ID>ReturnCount:KinesisKtorTemplate.kt:KinesisKtorTemplate$private fun jitteredBackoff: Duration</ID>
+    <ID>ReturnCount:S3AccessGrantsKtorPluginConfig.kt:S3AccessGrantsKtorPluginConfig$internal fun toRuntime: S3AccessGrantsKtorRuntime?</ID>
+    <ID>ReturnCount:S3KtorClient.kt:private fun String.isVirtualHostedSafeBucket: Boolean</ID>
+    <ID>ReturnCount:S3KtorXml.kt:S3KtorXml$fun parseError: ParsedS3Error</ID>
+    <ID>ReturnCount:S3VectorsKtorPluginConfig.kt:S3VectorsKtorPluginConfig$internal fun toRuntime: S3VectorsKtorRuntime?</ID>
+    <ID>ReturnCount:SesKtorPluginConfig.kt:SesKtorPluginConfig$internal fun toRuntime: SesKtorRuntime?</ID>
+    <ID>ReturnCount:SnsKtorPluginConfig.kt:SnsKtorPluginConfig$internal fun toRuntime: SnsKtorRuntime?</ID>
+    <ID>ReturnCount:SqsConsumerRuntime.kt:SqsConsumerRuntime$private fun startVisibilityHeartbeat: Job?</ID>
+    <ID>ReturnCount:StsKtorPluginConfig.kt:StsKtorPluginConfig$internal fun toRuntime: StsKtorRuntime?</ID>
+    <ID>ThrowsCount:AwsExposedKtorRuntime.kt:AwsExposedKtorRuntime$suspend fun start</ID>
+    <ID>ThrowsCount:CloudWatchLogsKtorRuntime.kt:CloudWatchLogsKtorRuntime$suspend fun start</ID>
+    <ID>ThrowsCount:SqsConsumerRuntime.kt:SqsConsumerRuntime$private suspend fun handleMessage</ID>
+    <ID>TooGenericExceptionCaught:AwsExposedKtorRuntime.kt:AwsExposedKtorRuntime$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CloudWatchLogsKtorRuntime.kt:CloudWatchLogsKtorRuntime$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:KtorMicrometerSupport.kt:KtorMicrometerSupport$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:S3KtorClient.kt:S3KtorClient$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:S3KtorClient.kt:closeFailure: Throwable</ID>
+    <ID>TooGenericExceptionCaught:S3KtorClient.kt:e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SqsConsumerRuntime.kt:SqsConsumerRuntime$e: Exception</ID>
+    <ID>TooManyFunctions:AwsKtorCore.kt:AwsKtorCoreConfig</ID>
+    <ID>TooManyFunctions:EventBridgeKtorOperations.kt:EventBridgeKtorOperations</ID>
+    <ID>TooManyFunctions:EventBridgeKtorTemplate.kt:EventBridgeKtorTemplate : EventBridgeKtorOperations</ID>
+    <ID>TooManyFunctions:KinesisKtorTemplate.kt:KinesisKtorTemplate : KinesisKtorOperations</ID>
+    <ID>TooManyFunctions:MicrometerS3KtorClient.kt:MicrometerS3KtorClient : AutoCloseable</ID>
+    <ID>TooManyFunctions:S3KtorClient.kt:S3KtorClient : AutoCloseable</ID>
+    <ID>TooManyFunctions:SesKtorTemplate.kt:SesKtorTemplate : SesKtorOperations</ID>
+    <ID>TooManyFunctions:SqsConsumerRuntime.kt:SqsConsumerRuntime</ID>
+  </CurrentIssues>
+</SmellBaseline>
