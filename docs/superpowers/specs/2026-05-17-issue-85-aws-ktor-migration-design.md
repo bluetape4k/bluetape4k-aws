@@ -2,7 +2,7 @@
 
 **Issue**: #85
 **Date**: 2026-05-17
-**Author**: bluetape4k
+**작성자**: bluetape4k
 
 ---
 
@@ -36,7 +36,7 @@
 |------|-----------|
 | `DynamoDbKtorPluginConfig.kt` | `DynamoDbClient`, `CredentialsProvider`, `HttpClientEngine`, `Url` |
 | `DynamoDbKtorRuntime.kt` | `DynamoDbClient` |
-| `DynamoDbKtorRepository.kt` | `DynamoDbClient`, Request/Response model types |
+| `DynamoDbKtorRepository.kt` | `DynamoDbClient`, Request/Response 모델 타입 |
 
 ---
 
