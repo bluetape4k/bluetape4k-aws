@@ -1,45 +1,43 @@
-# Spring Boot Examples AOT And SQS FIFO Hardening
+# Spring Boot 예제 AOT 및 SQS FIFO 강화
 
-Date: 2026-05-16
-Issue: https://github.com/bluetape4k/bluetape4k-aws/issues/79
+날짜: 2026-05-16
+이슈: https://github.com/bluetape4k/bluetape4k-aws/issues/79
 
-## Context
+## 배경
 
-Spring Boot example modules must be AOT-ready, and SQS Spring Boot support
-needed stronger parity around listener acknowledgement, FIFO metadata, and
-shutdown behavior.
+Spring Boot 예제 모듈은 AOT를 지원해야 했다. SQS Spring Boot 지원에는 listener
+acknowledgement, FIFO metadata, shutdown 동작을 더 충실히 맞춰야 했다.
 
-## Decision or Finding
+## 결정 또는 발견
 
-Apply GraalVM Native Build Tools automatically to every project named
-`aws-spring-boot-*-examples` once it applies the Spring Boot plugin. This keeps
-future Spring Boot examples from missing `processAot` and `processTestAot`.
+Spring Boot plugin을 적용한 뒤 이름이 `aws-spring-boot-*-examples`인 모든 프로젝트에
+GraalVM Native Build Tools를 자동으로 적용한다. 이후 추가하는 Spring Boot 예제에서
+`processAot`와 `processTestAot`가 빠지는 일을 막는다.
 
-For SQS, keep listener acknowledgement delete-on-success and expose FIFO metadata
-through `SqsReceivedMessage` rather than requiring callers to inspect raw AWS SDK
-maps. Add `SqsSendRequest` for FIFO group/deduplication IDs and message
-attributes while preserving the existing simple `send(queueUrl, body)` API.
+SQS listener acknowledgement는 성공 시 delete 동작을 유지한다. 호출자가 원본 AWS SDK
+map을 검사하게 하지 않고 `SqsReceivedMessage`를 통해 FIFO metadata를 제공한다. 기존의
+간단한 `send(queueUrl, body)` API를 유지하면서 FIFO group/deduplication ID와 message
+attribute를 위한 `SqsSendRequest`를 추가한다.
 
-## Outcome
+## 결과
 
-- Spring Boot S3 and SQS/SNS examples now expose `processAot`,
-  `processTestAot`, `nativeCompile`, and `nativeTest` tasks.
-- SQS receives all message system attributes and message attributes.
-- `SqsReceivedMessage` exposes `messageGroupId`, `messageDeduplicationId`,
-  `sequenceNumber`, `approximateReceiveCount`, and `messageAttributes`.
-- README files document listener ack/failure/delete behavior, FIFO metadata, and
-  AOT verification commands.
+- 이제 Spring Boot S3 및 SQS/SNS 예제에 `processAot`, `processTestAot`,
+  `nativeCompile`, `nativeTest` task가 있다.
+- SQS가 모든 message system attribute와 message attribute를 수신한다.
+- `SqsReceivedMessage`에서 `messageGroupId`, `messageDeduplicationId`,
+  `sequenceNumber`, `approximateReceiveCount`, `messageAttributes`를 제공한다.
+- README에 listener ack/failure/delete 동작, FIFO metadata, AOT 검증 명령을 문서화했다.
 
-## Verification
+## 검증
 
 - `./gradlew :aws-spring-boot-s3-examples:tasks --all`
 - `./gradlew :aws-spring-boot-sqs-examples:tasks --all`
 - `./gradlew :aws-spring-boot-s3-examples:processAot :aws-spring-boot-sqs-examples:processAot --stacktrace`
 - `./gradlew :aws-spring-boot-s3-examples:processTestAot :aws-spring-boot-sqs-examples:processTestAot --stacktrace`
 
-## Future Guidance
+## 향후 지침
 
-Every new Spring Boot example must match the `aws-spring-boot-*-examples` naming
-pattern or explicitly explain why it should not inherit AOT verification. When
-adding SQS receive surfaces, request SQS system attributes by default so FIFO and
-retry metadata remain visible to callers.
+새 Spring Boot 예제는 `aws-spring-boot-*-examples` naming pattern을 따라야 한다. 따르지
+않는다면 AOT 검증을 상속하지 않아야 하는 이유를 명시한다. SQS 수신 surface를 추가할
+때는 FIFO 및 retry metadata가 호출자에게 계속 보이도록 SQS system attribute를 기본으로
+요청한다.
