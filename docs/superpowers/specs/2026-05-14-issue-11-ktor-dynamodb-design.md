@@ -1,71 +1,52 @@
-# Issue #11 Ktor DynamoDB Design
+# 이슈 #11 Ktor DynamoDB 설계
 
-Date: 2026-05-14
-Issue: https://github.com/bluetape4k/bluetape4k-aws/issues/11
-Branch: `issue-11-ktor-dynamodb`
-Related: https://github.com/bluetape4k/bluetape4k-aws/issues/85
+작성일: 2026-05-14
+이슈: https://github.com/bluetape4k/bluetape4k-aws/issues/11
+브랜치: `issue-11-ktor-dynamodb`
+관련 항목: https://github.com/bluetape4k/bluetape4k-aws/issues/85
 
-## Goal
+## 목표
 
-Add Ktor server integration for DynamoDB repository-style access using
-`bluetape4k-aws`'s `:aws-kotlin` module and the official AWS SDK for Kotlin as
-the primary AWS surface.
+`bluetape4k-aws`의 `:aws-kotlin` module과 공식 AWS SDK for Kotlin을 주요 AWS surface로 사용해 DynamoDB repository-style access를 위한 Ktor server integration을 추가한다.
 
-The plugin should let a Ktor application install DynamoDB support, access a
-managed AWS Kotlin SDK `DynamoDbClient`, create repository objects, optionally
-create tables, and expose scan/query results as Kotlin `Flow`.
+plugin은 Ktor application이 DynamoDB 지원을 설치하고 관리되는 AWS Kotlin SDK `DynamoDbClient`에 접근하며 repository object를 생성하고 선택적으로 table을 생성하며 scan/query 결과를 Kotlin `Flow`로 제공할 수 있게 해야 한다.
 
-## Current Reality
+## 현재 상태
 
-- `aws-ktor` currently depends on `:aws` as `api` and `:aws-kotlin` as
-  `compileOnly`.
-- Existing `aws-ktor` SQS integration uses Java SDK v2 `SqsAsyncClient`.
-- Issue #11 originally mentions DynamoDB Enhanced Client, which is Java SDK v2.
-- `aws-kotlin` already provides native suspend DynamoDB support:
-  `dynamoDbClientOf`, `withDynamoDbClient`, table helpers, batch executor, and
-  `DynamoItemMapper`.
-- AWS Kotlin SDK DynamoDB Mapper exists, but AWS documents it as Developer
-  Preview. Treat it as an evaluation/follow-up path, not the default stable
-  dependency for this issue.
+- `aws-ktor`는 현재 `:aws`를 `api`로, `:aws-kotlin`을 `compileOnly`로 의존한다.
+- 기존 `aws-ktor` SQS integration은 Java SDK v2 `SqsAsyncClient`를 사용한다.
+- 이슈 #11은 원래 Java SDK v2인 DynamoDB Enhanced Client를 언급한다.
+- `aws-kotlin`은 이미 `dynamoDbClientOf`, `withDynamoDbClient`, table helper, batch executor, `DynamoItemMapper`를 포함한 native suspend DynamoDB 지원을 제공한다.
+- AWS Kotlin SDK DynamoDB Mapper가 있지만 AWS는 이를 Developer Preview로 문서화한다. 이 이슈의 기본 stable dependency가 아니라 평가/후속 경로로 취급한다.
 
-## External Reference Check
+## 외부 reference 확인
 
-- Ktor custom plugins can use `createApplicationPlugin` and lifecycle
-  monitoring events such as `ApplicationStarted` and `ApplicationStopped`.
-- AWS SDK for Kotlin DynamoDB provides native suspend operations and paginators.
-- AWS SDK for Kotlin DynamoDB Mapper is Developer Preview and is not the
-  primary implementation target for this issue.
-- AWS Java SDK v2 Enhanced Async Client returns paginated `PagePublisher`
-  results, but Java Enhanced Client is not the default Ktor path for this issue.
+- Ktor custom plugin은 `createApplicationPlugin`과 `ApplicationStarted`, `ApplicationStopped` 같은 lifecycle monitoring event를 사용할 수 있다.
+- AWS SDK for Kotlin DynamoDB는 native suspend operation과 paginator를 제공한다.
+- AWS SDK for Kotlin DynamoDB Mapper는 Developer Preview이며 이 이슈의 주요 구현 대상이 아니다.
+- AWS Java SDK v2 Enhanced Async Client는 paginated `PagePublisher` 결과를 반환하지만 Java Enhanced Client는 이 이슈의 기본 Ktor 경로가 아니다.
 
-## Design Direction
+## 설계 방향
 
-### Dependency Direction
+### dependency 방향
 
-Use two Kotlin-first layers:
+두 Kotlin-first layer를 사용한다.
 
-1. Reuse `bluetape4k-aws` `:aws-kotlin` helpers for client creation, DynamoDB
-   DSLs, table utilities, batch helpers, and mapper conventions.
-2. Use the official AWS SDK for Kotlin DynamoDB module
-   (`aws.sdk.kotlin:dynamodb`) as the underlying service SDK.
+1. client 생성, DynamoDB DSL, table utility, batch helper, mapper convention에 `bluetape4k-aws` `:aws-kotlin` helper를 재사용한다.
+2. 공식 AWS SDK for Kotlin DynamoDB module(`aws.sdk.kotlin:dynamodb`)을 기반 service SDK로 사용한다.
 
-Do not reimplement existing `:aws-kotlin` helpers inside `aws-ktor`.
+기존 `:aws-kotlin` helper를 `aws-ktor` 내부에서 다시 구현하지 않는다.
 
-Dependency decision for this issue:
+이 이슈의 dependency 결정:
 
-- Promote `project(":aws-kotlin")` from `compileOnly` to `api` in `aws-ktor`
-  because the new Ktor DynamoDB API intentionally exposes `:aws-kotlin`
-  conventions.
-- Add `compileOnly(libs.aws.kotlin.dynamodb)` and
-  `testImplementation(libs.aws.kotlin.dynamodb)` to `aws-ktor`.
-- Consumers still add the AWS Kotlin DynamoDB runtime dependency they use,
-  because AWS service SDK dependencies remain compile-only by repository rule.
-- Keep `project(":aws")` as `api` for existing S3/SQS/SigV4 code until #85
-  defines a compatibility-safe migration path.
+- 새 Ktor DynamoDB API가 의도적으로 `:aws-kotlin` convention을 노출하므로 `aws-ktor`에서 `project(":aws-kotlin")`을 `compileOnly`에서 `api`로 승격한다.
+- `aws-ktor`에 `compileOnly(libs.aws.kotlin.dynamodb)`과 `testImplementation(libs.aws.kotlin.dynamodb)`을 추가한다.
+- 저장소 규칙에 따라 AWS service SDK dependency는 compile-only로 유지하므로 consumer가 사용하는 AWS Kotlin DynamoDB runtime dependency를 계속 추가한다.
+- #85에서 compatibility-safe migration 경로를 정의할 때까지 기존 S3/SQS/SigV4 code를 위해 `project(":aws")`를 `api`로 유지한다.
 
-### Primary API
+### 주요 API
 
-Use AWS Kotlin SDK `DynamoDbClient` through the `:aws-kotlin` module.
+`:aws-kotlin` module을 통해 AWS Kotlin SDK `DynamoDbClient`를 사용한다.
 
 ```kotlin
 install(DynamoDbKtorPlugin) {
@@ -77,7 +58,7 @@ install(DynamoDbKtorPlugin) {
 val dynamoDb = application.dynamoDb()
 ```
 
-The plugin should expose one runtime registry:
+plugin은 하나의 runtime registry를 제공해야 한다.
 
 - `DynamoDbKtorPlugin`
 - `DynamoDbKtorPluginConfig`
@@ -85,14 +66,11 @@ The plugin should expose one runtime registry:
 - `DynamoDbKtorRuntimeKey`
 - `Application.dynamoDb()`
 
-`Application.dynamoDb()` returns `DynamoDbKtorRuntime`. The runtime stores the
-default `DynamoDbClient`, table definitions, and repository/table helpers. Named
-clients are out of scope for v1 unless implementation needs them for tests.
+`Application.dynamoDb()`는 `DynamoDbKtorRuntime`을 반환한다. runtime은 기본 `DynamoDbClient`, table definition, repository/table helper를 저장한다. 구현에서 test에 필요하지 않는 한 named client는 v1 범위에서 제외한다.
 
-### Repository API
+### 저장소 API
 
-Provide a Kotlin-SDK repository contract in `aws-ktor`, backed by
-`aws-kotlin` mapper conventions.
+`aws-kotlin` mapper convention을 기반으로 `aws-ktor`에 Kotlin-SDK repository 계약을 제공한다.
 
 ```kotlin
 interface KtorDynamoDbRepository<T: Any, ID: Any> {
@@ -107,115 +85,90 @@ interface KtorDynamoDbRepository<T: Any, ID: Any> {
 }
 ```
 
-The exact generic contract may stay smaller than the Spring Boot repository
-contract if AWS Kotlin SDK types make a fully generic CRUD abstraction brittle.
-Prefer a stable mapper + table binding contract over a broad API that cannot be
-tested clearly.
+AWS Kotlin SDK type 때문에 완전히 generic한 CRUD abstraction이 취약해진다면 정확한 generic 계약은 Spring Boot repository 계약보다 작게 유지할 수 있다. 명확하게 test할 수 없는 광범위한 API보다 안정적인 mapper + table binding 계약을 우선한다.
 
-### Mapping
+### 매핑
 
-Use explicit mapping, not reflection:
+reflection이 아니라 명시적인 mapping을 사용한다.
 
-- `DynamoItemMapper<T>` converts entities to DynamoDB item maps.
-- Add `DynamoItemReader<T>` to `:aws-kotlin`:
+- `DynamoItemMapper<T>`는 entity를 DynamoDB item map으로 변환한다.
+- `:aws-kotlin`에 `DynamoItemReader<T>`를 추가한다.
   `fun readDynamoItem(item: Map<String, AttributeValue>): T`.
-- Repository implementations should accept key selectors/readers explicitly.
-- `aws-ktor` repository support composes `DynamoItemMapper<T>`,
-  `DynamoItemReader<T>`, and key selector functions.
+- repository 구현은 key selector/reader를 명시적으로 받아야 한다.
+- `aws-ktor` repository 지원은 `DynamoItemMapper<T>`, `DynamoItemReader<T>`, key selector function을 조합한다.
 
-Reason: Kotlin SDK Mapper is Developer Preview, and raw reflection-based mapping
-would add a new unstable framework inside `aws-ktor`.
+이유: Kotlin SDK Mapper는 Developer Preview이고 raw reflection 기반 mapping은 `aws-ktor` 내부에 불안정한 새 framework를 추가한다.
 
-### Table Creation
+### table 생성
 
-Support optional table auto-creation through explicit table definitions.
+명시적인 table definition을 통해 선택형 table auto-creation을 지원한다.
 
-The plugin should not infer schemas from arbitrary Kotlin classes. A table
-definition should carry enough AWS Kotlin SDK request data to call
-`createTable` safely.
+plugin은 임의의 Kotlin class에서 schema를 추론하면 안 된다. table definition은 `createTable`을 안전하게 호출할 수 있는 충분한 AWS Kotlin SDK request data를 포함해야 한다.
 
-`autoCreateTables` only gates startup creation for tables explicitly registered
-in plugin configuration. Existing tables are skipped when DynamoDB reports they
-already exist; schema verification is deferred.
+`autoCreateTables`는 plugin configuration에 명시적으로 등록한 table의 startup 생성만 제어한다. DynamoDB가 이미 존재한다고 보고하는 table은 건너뛰며 schema verification은 연기한다.
 
-### Lifecycle
+### 생명주기
 
-- The plugin owns clients it creates.
-- The plugin must not close an application-injected `DynamoDbClient`.
-- Startup may create tables when configured.
-- Shutdown closes only plugin-owned clients.
+- plugin은 자신이 생성한 client를 소유한다.
+- plugin은 application-injected `DynamoDbClient`를 닫으면 안 된다.
+- 설정하면 startup에서 table을 생성할 수 있다.
+- shutdown에서는 plugin-owned client만 닫는다.
 
-Ktor monitoring events are synchronous in the existing SQS plugin. If shutdown
-needs suspend cleanup, use the same constrained `runBlocking(Dispatchers.IO)`
-pattern and document the reason.
+기존 SQS plugin의 Ktor monitoring event는 synchronous하다. shutdown에 suspend cleanup이 필요하면 동일한 제한적 `runBlocking(Dispatchers.IO)` pattern을 사용하고 이유를 문서화한다.
 
-| Client source | Startup behavior | Shutdown behavior |
+| client source | startup 동작 | shutdown 동작 |
 |---|---|---|
-| Plugin-created client | Create from region/endpoint/credentials config | Close on `ApplicationStopping` with a bounded timeout |
-| Injected client | Use as-is | Do not close |
+| plugin-created client | region/endpoint/credentials config로 생성 | `ApplicationStopping`에서 bounded timeout으로 닫음 |
+| injected client | 그대로 사용 | 닫지 않음 |
 
-## Module / Dependency Rules
+## module / dependency 규칙
 
-- Keep AWS service SDK dependencies `compileOnly` for production code.
-- Promote `project(":aws-kotlin")` to `api` in `aws-ktor`.
-- Add `compileOnly(libs.aws.kotlin.dynamodb)` to `aws-ktor`.
-- Add `testImplementation(libs.aws.kotlin.dynamodb)` for tests.
-- Reuse `:aws-kotlin` public helpers instead of duplicating client factories,
-  table utilities, mappers, or DynamoDB helpers in `aws-ktor`.
-- Keep `:aws` available only for existing shared Java SDK v2 utilities already
-  used by `aws-ktor`; do not route the new DynamoDB Ktor repository through
-  Java SDK v2 by default.
+- production code에서 AWS service SDK dependency를 `compileOnly`로 유지한다.
+- `aws-ktor`에서 `project(":aws-kotlin")`을 `api`로 승격한다.
+- `aws-ktor`에 `compileOnly(libs.aws.kotlin.dynamodb)`을 추가한다.
+- test에 `testImplementation(libs.aws.kotlin.dynamodb)`을 추가한다.
+- `aws-ktor`에서 client factory, table utility, mapper, DynamoDB helper를 중복하지 않고 `:aws-kotlin` public helper를 재사용한다.
+- `:aws`는 `aws-ktor`가 이미 사용하는 기존 shared Java SDK v2 utility에만 유지한다. 새 DynamoDB Ktor repository를 기본적으로 Java SDK v2를 통해 routing하지 않는다.
 
-## Non-goals
+## 목표가 아닌 항목
 
-- No Java SDK v2 Enhanced Client as the primary Ktor implementation.
-- No mandatory AWS Kotlin DynamoDB Mapper dependency in the initial slice.
-- No `count`, `batchGet`, advanced update expressions, schema verification, or
-  named-client registry in v1.
-- No Spring dependency.
-- No new example module in this issue; use follow-up #17 for Ktor DynamoDB
-  examples unless the minimal test fixture naturally becomes an example.
+- Java SDK v2 Enhanced Client를 주요 Ktor 구현으로 사용하지 않는다.
+- 초기 범위에서 AWS Kotlin DynamoDB Mapper dependency를 필수로 요구하지 않는다.
+- v1에서 `count`, `batchGet`, 고급 update expression, schema verification, named-client registry를 제공하지 않는다.
+- Spring dependency를 추가하지 않는다.
+- 이 이슈에서 새 example module을 추가하지 않는다. 최소 test fixture가 자연스럽게 example이 되지 않는 한 Ktor DynamoDB example은 후속 #17을 사용한다.
 
-## Risks
+## 위험
 
-- A generic repository API can become too weak or too magical. Keep the initial
-  contract small and mapper-driven.
-- AWS Kotlin SDK Mapper may change because it is Developer Preview.
-- LocalStack DynamoDB eventual consistency can cause flaky tests. Use Awaitility
-  or bounded polling instead of fixed sleeps.
-- Current `aws-ktor` SQS code still uses Java SDK v2; do not treat this issue as
-  a broad migration of existing SQS integration. Existing `aws-ktor` migration
-  toward `:aws-kotlin` and official AWS SDK for Kotlin is tracked separately in
-  #85.
+- generic repository API는 지나치게 약하거나 마법처럼 동작할 수 있다. 초기 계약을 작고 mapper-driven하게 유지한다.
+- AWS Kotlin SDK Mapper는 Developer Preview이므로 변경될 수 있다.
+- LocalStack DynamoDB eventual consistency로 flaky test가 발생할 수 있다. 고정 sleep 대신 Awaitility 또는 bounded polling을 사용한다.
+- 현재 `aws-ktor` SQS code는 여전히 Java SDK v2를 사용한다. 이 이슈를 기존 SQS integration의 광범위한 migration으로 취급하지 않는다. `:aws-kotlin`과 공식 AWS SDK for Kotlin을 향한 기존 `aws-ktor` migration은 #85에서 별도로 추적한다.
 
-## Acceptance Criteria
+## 인수 기준
 
-- Ktor applications can install `DynamoDbKtorPlugin`.
-- The plugin can create or accept an AWS Kotlin SDK `DynamoDbClient`.
-- `Application.dynamoDb()` returns `DynamoDbKtorRuntime` usable from routes.
-- Repository support uses `:aws-kotlin`, official AWS SDK for Kotlin DynamoDB
-  types, `DynamoItemMapper<T>`, `DynamoItemReader<T>`, and explicit key
-  selectors.
-- Scan/query APIs expose Kotlin `Flow`.
-- Optional table auto-creation is explicit and test-covered.
-- Tests prove injected clients are not closed by the plugin.
-- Unit tests cover config validation and lifecycle ownership.
-- LocalStack tests cover save/find/query or scan for a simple mapped entity.
-- README and README.ko document dependency requirements and plugin usage.
+- Ktor application이 `DynamoDbKtorPlugin`을 설치할 수 있다.
+- plugin이 AWS Kotlin SDK `DynamoDbClient`를 생성하거나 받을 수 있다.
+- `Application.dynamoDb()`가 route에서 사용할 수 있는 `DynamoDbKtorRuntime`을 반환한다.
+- repository 지원이 `:aws-kotlin`, 공식 AWS SDK for Kotlin DynamoDB type, `DynamoItemMapper<T>`, `DynamoItemReader<T>`, 명시적인 key selector를 사용한다.
+- scan/query API가 Kotlin `Flow`를 제공한다.
+- 선택형 table auto-creation이 명시적이고 test로 검증된다.
+- test로 plugin이 injected client를 닫지 않음을 입증한다.
+- unit test가 config validation과 lifecycle ownership을 다룬다.
+- LocalStack test가 단순 mapped entity의 save/find/query 또는 scan을 다룬다.
+- README와 README.ko가 dependency 요구 사항과 plugin 사용법을 문서화한다.
 
-## Step 2-R Review Notes
+## 단계 2-R 검토 기록
 
-- Claude advisor artifact:
+- Claude advisor 산출물:
   `.omx/artifacts/claude-issue-11-ktor-dynamodb-spec-20260514-201237.md`.
-- P0/P1 accepted:
-  - `project(":aws-kotlin")` must be `api` in `aws-ktor`.
-  - `DynamoItemReader<T>` belongs in `:aws-kotlin`.
-  - `Application.dynamoDb()` returns `DynamoDbKtorRuntime`.
-  - Table auto-creation requires explicit registered table definitions.
-  - Lifecycle ownership must distinguish plugin-created and injected clients.
-  - v1 repository scope is `save`, `findById`, `deleteById`, `scan`, and
-    `query`; advanced operations are deferred.
-- Rejected:
-  - Demoting `project(":aws")` in this issue. Existing S3/SQS/SigV4 code still
-    depends on it; #85 owns that migration.
-- Convergence: P0 = 0, P1 = 0 after edits.
+- P0/P1 수용 항목:
+  - `project(":aws-kotlin")`은 `aws-ktor`에서 `api`여야 한다.
+  - `DynamoItemReader<T>`는 `:aws-kotlin`에 속한다.
+  - `Application.dynamoDb()`는 `DynamoDbKtorRuntime`을 반환한다.
+  - table auto-creation에는 명시적으로 등록한 table definition이 필요하다.
+  - lifecycle ownership은 plugin-created client와 injected client를 구분해야 한다.
+  - v1 repository 범위는 `save`, `findById`, `deleteById`, `scan`, `query`이며 고급 operation은 연기한다.
+- 기각 항목:
+  - 이 이슈에서 `project(":aws")`를 강등하는 방안. 기존 S3/SQS/SigV4 code가 여전히 의존하며 해당 migration은 #85의 범위다.
+- 수정 후 수렴 상태: P0 = 0, P1 = 0.
