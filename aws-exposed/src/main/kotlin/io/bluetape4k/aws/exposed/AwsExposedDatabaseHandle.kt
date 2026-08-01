@@ -33,19 +33,19 @@ class AwsExposedDatabaseHandle(
             return
         }
 
-        var failure: Throwable? = null
-        try {
+        val failure = runCatching {
             TransactionManager.closeAndUnregister(database)
-        } catch (e: Throwable) {
-            failure = e
         }
+            .exceptionOrNull()
 
-        try {
+        val closeFailure = runCatching {
             (dataSource as? AutoCloseable)?.close()
-        } catch (e: Throwable) {
-            failure?.addSuppressed(e) ?: run { failure = e }
+        }.exceptionOrNull()
+
+        if (failure != null && closeFailure != null) {
+            failure.addSuppressed(closeFailure)
         }
 
-        failure?.let { throw it }
+        (failure ?: closeFailure)?.let { throw it }
     }
 }

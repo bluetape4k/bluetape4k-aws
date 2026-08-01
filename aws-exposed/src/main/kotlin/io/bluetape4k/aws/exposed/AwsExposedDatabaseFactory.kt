@@ -52,11 +52,9 @@ class AwsExposedDatabaseFactory private constructor(
         val database = try {
             databaseConnector(dataSource)
         } catch (e: Throwable) {
-            try {
+            runCatching {
                 (dataSource as? AutoCloseable)?.close()
-            } catch (closeError: Throwable) {
-                e.addSuppressed(closeError)
-            }
+            }.onFailure(e::addSuppressed)
             throw e
         }
         log.debug { "Created Exposed database handle '$databaseName'." }

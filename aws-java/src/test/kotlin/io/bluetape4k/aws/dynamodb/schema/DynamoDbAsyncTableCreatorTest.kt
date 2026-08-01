@@ -22,7 +22,9 @@ class DynamoDbAsyncTableCreatorTest {
     @Test
     fun `direct ResourceInUse exception is idempotent success`() = runTest {
         every { table.tableName() } returns "orders"
-        every { table.createTable(request) } returns failedFuture(ResourceInUseException.builder().message("exists").build())
+        every { table.createTable(request) } returns failedFuture(
+            ResourceInUseException.builder().message("exists").build()
+        )
 
         creator.tryCreateAsyncTable(table, request)
     }

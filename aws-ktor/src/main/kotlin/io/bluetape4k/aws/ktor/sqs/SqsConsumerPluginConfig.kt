@@ -153,8 +153,8 @@ class SqsConsumerPluginConfig {
         val injectedClient = sqsAsyncClient
         val client = injectedClient ?: clientFactory(defaults)
 
-        try {
-            return SqsConsumerRuntimeConfig(
+        return runCatching {
+            SqsConsumerRuntimeConfig(
                 sqsAsyncClient = client,
                 ownsClient = injectedClient == null,
                 queueUrl = queueUrl,
@@ -179,13 +179,11 @@ class SqsConsumerPluginConfig {
                 messageType = type,
                 messageHandler = handler,
             )
-        } catch (e: Throwable) {
+        }.getOrElse { e ->
             if (injectedClient == null) {
-                try {
+                runCatching {
                     client.close()
-                } catch (closeError: Throwable) {
-                    e.addSuppressed(closeError)
-                }
+                }.onFailure(e::addSuppressed)
             }
             throw e
         }
