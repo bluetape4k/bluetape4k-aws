@@ -1,40 +1,36 @@
-# Issue #273 Service Coverage Examples Design
+# 이슈 #273 서비스 커버리지 예제 설계
 
-## Context
+## 배경
 
-Issue #273 closes the remaining AWS Ktor example coverage gaps after SES/v2, SNS,
-CloudWatch, CloudWatch Logs, Kinesis, and STS support landed in the library.
-The existing repository pattern is one example module per user-facing Ktor
-example area, with root README coverage and CI/Nightly registration.
+이슈 #273은 SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, STS 지원이
+라이브러리에 추가된 뒤 남은 AWS Ktor 예제 커버리지 차이를 해소한다.
+기존 저장소 pattern은 사용자를 위한 Ktor 예제 영역마다 예제 모듈 하나를 두고,
+root README에서 다루며 CI/Nightly에 등록하는 방식이다.
 
-## Decision
+## 결정
 
-Add `examples/aws-ktor-service-coverage-examples` as one focused module for the
-remaining service plugins. The module demonstrates route-level Ktor usage with
-operation interfaces injected through the existing plugin configs:
+남은 서비스 plugin을 다루는 단일 집중 모듈로
+`examples/aws-ktor-service-coverage-examples`를 추가한다. 이 모듈은 기존
+plugin config를 통해 operation interface를 주입하여 route 수준의 Ktor 사용법을 보여 준다.
 
-- SES/v2 email send
-- SNS topic publish
-- CloudWatch metric publish
-- CloudWatch Logs event publish
-- Kinesis record publish
-- STS caller identity lookup
+- SES/v2 email 전송
+- SNS topic 공개
+- CloudWatch metric 공개
+- CloudWatch Logs event 공개
+- Kinesis record 공개
+- STS caller identity 조회
 
-Tests use injected MockK operations instead of external emulators. This keeps
-the example deterministic while still proving Ktor plugin installation,
-application accessors, request mapping, and response mapping. README files
-document that real deployments can pass AWS clients/endpoints and that emulator
-coverage depends on the target emulator service support.
+테스트는 외부 emulator 대신 주입된 MockK operation을 사용한다. 따라서 예제의
+결정성을 유지하면서도 Ktor plugin 설치, application accessor, 요청 mapping,
+응답 mapping을 증명할 수 있다. README에는 실제 배포에서 AWS client/endpoint를
+전달할 수 있고 emulator 커버리지는 대상 emulator의 서비스 지원에 따라 달라짐을 기록한다.
 
-## Acceptance Criteria
+## 인수 조건
 
-- `settings.gradle.kts` includes `:aws-ktor-service-coverage-examples`.
-- The module compiles and its route tests pass.
-- Root `README.md` and `README.ko.md` list the module and matching test command.
-- Module `README.md` and `README.ko.md` explain routes, plugin setup, and
-  emulator/fallback behavior.
-- The service coverage chart marks example coverage for SES/v2, SNS,
-  CloudWatch, CloudWatch Logs, Kinesis, and STS.
-- CI/Nightly workflows include the new example module.
-- `./gradlew projects`, targeted tests, workflow lint, diagram render, and
-  `git diff --check` provide completion evidence.
+- `settings.gradle.kts`에 `:aws-ktor-service-coverage-examples`가 있다.
+- 모듈이 compile되고 route 테스트를 통과한다.
+- root `README.md`와 `README.ko.md`에 모듈과 해당 테스트 명령이 있다.
+- 모듈 `README.md`와 `README.ko.md`가 route, plugin 설정, emulator/fallback 동작을 설명한다.
+- 서비스 커버리지 chart가 SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, STS의 예제 커버리지를 표시한다.
+- CI/Nightly workflow에 새 예제 모듈이 있다.
+- `./gradlew projects`, 범위가 좁은 테스트, workflow lint, 다이어그램 render, `git diff --check`가 완료 증거를 제공한다.

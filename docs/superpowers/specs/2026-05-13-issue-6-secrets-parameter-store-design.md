@@ -1,59 +1,53 @@
-# Issue #6 Secrets Manager / Parameter Store Design
+# 이슈 #6 Secrets Manager / Parameter Store 설계
 
-## Context
+## 배경
 
-- Repository: `bluetape4k-aws`
-- Issue: <https://github.com/bluetape4k/bluetape4k-aws/issues/6>
-- Target module: `aws-spring-boot`
-- Work type: new Spring Boot feature, Full Design lane
+- 저장소: `bluetape4k-aws`
+- 이슈: <https://github.com/bluetape4k/bluetape4k-aws/issues/6>
+- 대상 모듈: `aws-spring-boot`
+- 작업 유형: 새로운 Spring Boot 기능, 전체 설계 절차
 
-Issue #6 asks for AWS Secrets Manager and SSM Parameter Store integration as
-Spring `Environment` sources, without awspring. This must happen before normal
-bean binding when users want remote values to participate in
-`@ConfigurationProperties`.
+이슈 #6은 awspring 없이 AWS Secrets Manager와 SSM Parameter Store를 Spring
+`Environment` 소스로 통합하도록 요구한다. 사용자가 원격 값을 `@ConfigurationProperties`에
+참여시키려면 일반 빈 바인딩보다 먼저 이 통합이 이루어져야 한다.
 
-## Evidence
+## 근거
 
-- Current `aws-spring-boot` auto-configuration registers service clients through
-  `AutoConfiguration.imports`, string `@ConditionalOnClass`, service-specific
-  `@ConfigurationProperties`, and `compileOnly` AWS SDK service dependencies.
-- Spring Boot 4.0.3 documentation keeps `EnvironmentPostProcessor`
-  registration through `META-INF/spring.factories` for early Environment
-  mutation.
-- AWS SDK Java v2 exposes `SecretsManagerClient.getSecretValue` with
-  `GetSecretValueRequest.secretId` and `GetSecretValueResponse.secretString`.
-- AWS SDK Java v2 exposes SSM `SsmClient.getParameter` and
-  `SsmClient.getParametersByPath`; SSM parameter values are read from
-  `Parameter.value`.
-- GNO has no issue #6-specific prior design artifact; current implementation
-  evidence comes from repo source plus official Spring/AWS documentation.
+- 현재 `aws-spring-boot` 자동 구성은 `AutoConfiguration.imports`, 문자열
+  `@ConditionalOnClass`, 서비스별 `@ConfigurationProperties`, `compileOnly` AWS SDK 서비스
+  의존성을 통해 서비스 클라이언트를 등록한다.
+- Spring Boot 4.0.3 문서는 Environment를 조기에 변경하기 위한 `EnvironmentPostProcessor`를
+  `META-INF/spring.factories`에 등록하도록 안내한다.
+- AWS SDK Java v2는 `GetSecretValueRequest.secretId`와
+  `GetSecretValueResponse.secretString`을 사용하는 `SecretsManagerClient.getSecretValue`를 제공한다.
+- AWS SDK Java v2는 SSM `SsmClient.getParameter`와 `SsmClient.getParametersByPath`를 제공하며,
+  SSM 파라미터 값은 `Parameter.value`에서 읽는다.
+- GNO에는 이슈 #6 전용 과거 설계 자료가 없다. 현재 구현 근거는 저장소 소스와 공식
+  Spring/AWS 문서에서 얻었다.
 
-## Goals
+## 목표
 
-1. Add AWS Secrets Manager and SSM SDK aliases and `compileOnly` dependencies.
-2. Add environment post-processors that load configured remote sources before
-   bean creation.
-3. Add typed properties for Secrets Manager and Parameter Store source lists.
-4. Add AWS SDK clients only when the relevant SDK module is present.
-5. Add optional lazy refresh for configured sources.
-6. Add composed `@SecretsValue` and `@ParameterStoreValue` annotations over
-   Spring `@Value`.
-7. Add ApplicationContextRunner and LocalStack tests for source loading and
-   refresh.
-8. Update `README.md` and `README.ko.md`.
+1. AWS Secrets Manager와 SSM SDK 별칭 및 `compileOnly` 의존성을 추가한다.
+2. 빈을 만들기 전에 구성된 원격 소스를 로딩하는 Environment 후처리기를 추가한다.
+3. Secrets Manager와 Parameter Store 소스 목록을 위한 타입 안전 프로퍼티를 추가한다.
+4. 관련 SDK 모듈이 있을 때만 AWS SDK 클라이언트를 추가한다.
+5. 구성한 소스에 선택적 지연 새로 고침 기능을 추가한다.
+6. Spring `@Value`를 조합한 `@SecretsValue`와 `@ParameterStoreValue` 애너테이션을 추가한다.
+7. 소스 로딩과 새로 고침을 검증하는 ApplicationContextRunner 및 LocalStack 테스트를 추가한다.
+8. `README.md`와 `README.ko.md`를 갱신한다.
 
-## Non-Goals
+## 제외 범위
 
-- No awspring or Spring Cloud dependency.
-- No runtime refresh scheduler. Startup-time loading remains the durable Spring
-  Boot contract; optional refresh is lazy on property access and keeps previous
-  values if reload fails.
-- No binary Secrets Manager value support.
-- No cross-account AssumeRole helper.
+- awspring 또는 Spring Cloud 의존성을 추가하지 않는다.
+- 런타임 새로 고침 스케줄러를 추가하지 않는다. 시작 시 로딩을 안정적인 Spring Boot
+  계약으로 유지하고, 선택적 새로 고침은 프로퍼티 접근 시 지연 수행하며 재로딩에 실패하면
+  이전 값을 유지한다.
+- Secrets Manager 바이너리 값을 지원하지 않는다.
+- 계정 간 AssumeRole 도우미를 추가하지 않는다.
 
-## Configuration Model
+## 구성 모델
 
-Secrets Manager prefix: `bluetape4k.aws.secrets-manager`
+Secrets Manager 접두사: `bluetape4k.aws.secrets-manager`
 
 - `enabled: Boolean = true`
 - `region: String? = null`
@@ -62,7 +56,7 @@ Secrets Manager prefix: `bluetape4k.aws.secrets-manager`
 - `refreshInterval: Duration? = null`
 - `sources: List<Source> = emptyList()`
 
-Secret source:
+시크릿 소스:
 
 - `name: String? = null`
 - `secretId: String`
@@ -70,12 +64,12 @@ Secret source:
 - `optional: Boolean = false`
 - `format: SecretFormat = JSON`
 
-Secret formats:
+시크릿 형식:
 
-- `JSON`: parse a JSON object into property keys.
-- `TEXT`: expose the full secret string at `prefix` or source `name`.
+- `JSON`: JSON 객체를 프로퍼티 키로 파싱한다.
+- `TEXT`: 전체 시크릿 문자열을 `prefix` 또는 소스 `name`에 노출한다.
 
-Parameter Store prefix: `bluetape4k.aws.parameter-store`
+Parameter Store 접두사: `bluetape4k.aws.parameter-store`
 
 - `enabled: Boolean = true`
 - `region: String? = null`
@@ -84,7 +78,7 @@ Parameter Store prefix: `bluetape4k.aws.parameter-store`
 - `refreshInterval: Duration? = null`
 - `sources: List<Source> = emptyList()`
 
-Parameter source:
+파라미터 소스:
 
 - `name: String? = null`
 - `path: String`
@@ -93,92 +87,85 @@ Parameter source:
 - `withDecryption: Boolean = true`
 - `optional: Boolean = false`
 
-Validation:
+검증:
 
-- `endpointOverride` requires `region`.
-- Source names and prefixes must not be blank when present.
-- Secret sources require non-blank `secretId`.
-- Parameter sources require a non-blank absolute path starting with `/`.
-- Remote lookup is skipped when a feature is disabled or has no sources.
-- `refreshInterval`, when present, must be positive.
+- `endpointOverride`에는 `region`이 필요하다.
+- 소스 이름과 접두사가 있으면 공백이 아니어야 한다.
+- 시크릿 소스에는 공백이 아닌 `secretId`가 필요하다.
+- 파라미터 소스에는 `/`로 시작하며 공백이 아닌 절대 경로가 필요하다.
+- 기능이 비활성화되었거나 소스가 없으면 원격 조회를 건너뛴다.
+- `refreshInterval`이 있으면 양수여야 한다.
 
-## Property Mapping
+## 프로퍼티 매핑
 
 Secrets Manager:
 
-- `JSON` secrets are flattened using dot notation.
-- `TEXT` secrets require either `prefix` or `name`; the full secret string is
-  assigned to that key.
-- `prefix` is prepended to all generated keys.
+- `JSON` 시크릿은 점 표기법으로 평탄화한다.
+- `TEXT` 시크릿에는 `prefix` 또는 `name`이 필요하며, 전체 시크릿 문자열을 해당 키에 할당한다.
+- 생성한 모든 키 앞에 `prefix`를 붙인다.
 
 Parameter Store:
 
-- `getParametersByPath` is paged until `nextToken` is empty.
-- Each parameter name has the configured source path stripped.
-- Remaining path segments are converted to dot-separated property keys.
-- `prefix` is prepended when configured.
+- `nextToken`이 빌 때까지 `getParametersByPath`를 페이지 단위로 호출한다.
+- 각 파라미터 이름에서 구성한 소스 경로를 제거한다.
+- 남은 경로 세그먼트를 점으로 구분한 프로퍼티 키로 변환한다.
+- `prefix`가 구성되었으면 앞에 붙인다.
 
-Property source order:
+프로퍼티 소스 순서:
 
-- Add remote property sources after command-line arguments when present, else at
-  the beginning of the `MutablePropertySources`.
-- Later configured sources should not unexpectedly override earlier configured
-  sources with the same key; each source remains a separate named property
-  source and Spring property source order controls resolution.
+- 명령줄 인수가 있으면 그 뒤에 원격 프로퍼티 소스를 추가하고, 그렇지 않으면
+  `MutablePropertySources`의 맨 앞에 추가한다.
+- 나중에 구성한 소스가 동일한 키를 가진 이전 소스를 예기치 않게 재정의하면 안 된다.
+  각 소스는 별도의 이름 있는 프로퍼티 소스로 유지하며, Spring 프로퍼티 소스 순서가
+  해석을 제어한다.
 
-## Startup And Failure Behavior
+## 시작 및 실패 동작
 
-- If SDK classes are missing while sources are configured and enabled, fail with
-  an actionable `IllegalStateException`.
-- If an optional source cannot be loaded, skip it.
-- If `failFast=false`, log and skip failing sources.
-- AWS clients are created inside the post-processor and closed immediately after
-  loading sources.
-- Post-processors use synchronous AWS SDK clients because Spring Environment
-  mutation is a blocking startup phase.
-- When `refreshInterval` is set, a refreshable `PropertySource` reloads lazily
-  after the interval has elapsed. Successful reloads replace the in-memory map;
-  skipped or failed reloads keep the previous map.
+- 소스가 구성되고 활성화되었는데 SDK 클래스가 없으면 조치 방법이 분명한
+  `IllegalStateException`으로 실패한다.
+- 선택적 소스를 로딩할 수 없으면 건너뛴다.
+- `failFast=false`이면 실패한 소스를 로그에 기록하고 건너뛴다.
+- AWS 클라이언트는 후처리기 내부에서 만들고 소스 로딩 직후 닫는다.
+- Spring Environment 변경은 블로킹 시작 단계이므로 후처리기는 동기식 AWS SDK 클라이언트를 사용한다.
+- `refreshInterval`을 설정하면 갱신 가능 `PropertySource`가 해당 간격이 지난 뒤 지연 재로딩한다.
+  재로딩에 성공하면 메모리 내 맵을 교체하고, 건너뛰거나 실패하면 이전 맵을 유지한다.
 
-## Tests
+## 테스트
 
-ApplicationContextRunner tests:
+ApplicationContextRunner 테스트:
 
-- No remote lookup when no sources are configured.
-- Missing SDK classes fail only when sources are configured.
-- Endpoint override without region fails binding.
-- JSON secret values become Environment properties.
-- Text secret requires an explicit key.
-- Parameter path values become Environment properties.
-- Disabled feature skips remote lookup.
-- Optional source skips missing remote value.
+- 소스를 구성하지 않으면 원격 조회가 발생하지 않는다.
+- 소스를 구성했을 때만 SDK 클래스 누락으로 실패한다.
+- 리전 없이 엔드포인트를 재정의하면 바인딩에 실패한다.
+- JSON 시크릿 값이 Environment 프로퍼티가 된다.
+- 텍스트 시크릿에는 명시적인 키가 필요하다.
+- 파라미터 경로 값이 Environment 프로퍼티가 된다.
+- 비활성화된 기능은 원격 조회를 건너뛴다.
+- 선택적 소스는 누락된 원격 값을 건너뛴다.
 
-LocalStack tests:
+LocalStack 테스트:
 
-- Create a secret, load it as JSON, and bind it into the Environment.
-- Create SSM parameters under a path, load them recursively, and bind them into
-  the Environment.
-- Update a LocalStack secret/parameter and verify the refreshable property
-  source observes the new value after `refreshInterval`.
+- 시크릿을 만들고 JSON으로 로딩해 Environment에 바인딩한다.
+- 한 경로 아래에 SSM 파라미터를 만들고 재귀적으로 로딩해 Environment에 바인딩한다.
+- LocalStack 시크릿/파라미터를 갱신한 뒤 `refreshInterval`이 지나면 갱신 가능 프로퍼티
+  소스가 새 값을 읽는지 검증한다.
 
-## README Updates
+## README 갱신
 
-Update both `README.md` and `README.ko.md`:
+`README.md`와 `README.ko.md`를 모두 다음과 같이 갱신한다.
 
-- Add `software.amazon.awssdk:secretsmanager` and `software.amazon.awssdk:ssm`
-  runtime dependencies for `aws-spring-boot`.
-- Add Secrets Manager and Parameter Store configuration snippets.
-- Show `@ConfigurationProperties` and composed value annotations consuming
-  remotely loaded values.
+- `aws-spring-boot`에 필요한 `software.amazon.awssdk:secretsmanager`와
+  `software.amazon.awssdk:ssm` 런타임 의존성을 추가한다.
+- Secrets Manager와 Parameter Store 구성 코드 조각을 추가한다.
+- `@ConfigurationProperties`와 조합 값 애너테이션이 원격에서 로딩한 값을 사용하는 예제를 보여 준다.
 
-## Acceptance Criteria
+## 수용 기준
 
-- `aws-spring-boot` compiles with Secrets Manager and SSM SDKs as `compileOnly`.
-- Environment post-processors are registered in `META-INF/spring.factories`.
-- No AWS lookup happens by default when no sources are configured.
-- `refresh-interval` reloads configured sources lazily while preserving previous
-  values on reload failure.
-- `@SecretsValue` and `@ParameterStoreValue` resolve normal Spring placeholders.
-- Public API KDoc is English.
-- Targeted issue #6 tests pass.
-- `./gradlew :aws-spring-boot:test` passes.
+- Secrets Manager와 SSM SDK를 `compileOnly`로 두고 `aws-spring-boot`가 컴파일된다.
+- Environment 후처리기가 `META-INF/spring.factories`에 등록된다.
+- 소스를 구성하지 않으면 기본적으로 AWS 조회가 발생하지 않는다.
+- `refresh-interval`이 구성한 소스를 지연 재로딩하고, 재로딩에 실패하면 이전 값을 유지한다.
+- `@SecretsValue`와 `@ParameterStoreValue`가 일반 Spring 자리표시자를 해석한다.
+- 공개 API KDoc은 영어다.
+- 대상 이슈 #6 테스트가 통과한다.
+- `./gradlew :aws-spring-boot:test`가 통과한다.

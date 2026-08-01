@@ -1,222 +1,142 @@
-# Issue #269 RDS IAM Core Helper Design
+# 이슈 #269 RDS IAM core helper 설계
 
-Date: 2026-06-30
-Repository: `bluetape4k-aws`
-Issue: #269
-Branch: `feat/aws-rds-iam-core`
+작성일: 2026-06-30
+저장소: `bluetape4k-aws`
+이슈: #269
+브랜치: `feat/aws-rds-iam-core`
 
-## Problem
+## 문제
 
-`bluetape4k-aws-exposed` already generates Amazon RDS IAM authentication
-tokens for JDBC connection creation, but the token request, generator, and
-redaction-safe failure contract live inside the Exposed module. The root README
-and service coverage chart now list RDS IAM as an AWS feature, so Java SDK v2
-consumers should be able to use the framework-neutral RDS IAM token helper
-without depending on Exposed, HikariCP, or JDBC data source creation.
+`bluetape4k-aws-exposed`는 이미 JDBC connection 생성을 위한 Amazon RDS IAM authentication token을 생성하지만 token request, generator, redaction-safe failure 계약은 Exposed module 내부에 있다. 루트 README와 service coverage chart가 이제 RDS IAM을 AWS 기능으로 나열하므로 Java SDK v2 consumer는 Exposed, HikariCP, JDBC data source 생성에 의존하지 않고 framework-neutral RDS IAM token helper를 사용할 수 있어야 한다.
 
-Issue #269 promotes the RDS IAM token-generation boundary into core AWS modules
-while keeping `aws-exposed` responsible for JDBC integration, refresh-aware
-password providers, and Hikari/DriverManager behavior.
+이슈 #269는 RDS IAM token-generation 경계를 core AWS module로 승격하면서 `aws-exposed`가 JDBC integration, refresh-aware password provider, Hikari/DriverManager 동작을 계속 담당하게 한다.
 
-## Current Evidence
+## 현재 근거
 
-- Live GitHub issue #269 is assigned to `debop`, milestone `0.5.0`, and asks
-  for a framework-neutral RDS IAM helper API, redaction-safe request/exception
-  handling, tests, `aws-exposed` reuse, and README service coverage updates.
-- Prior issue #77 and PR #163 added RDS IAM support in `aws-exposed` with:
+- live GitHub 이슈 #269는 `debop`에게 할당되고 milestone은 `0.5.0`이며 framework-neutral RDS IAM helper API, redaction-safe request/exception handling, test, `aws-exposed` 재사용, README service coverage 갱신을 요청한다.
+- 이전 이슈 #77과 PR #163은 다음 항목으로 `aws-exposed`에 RDS IAM 지원을 추가했다.
   `AwsRdsIamAuthenticationProperties`, `AwsRdsIamAuthTokenRequest`,
   `AwsRdsIamAuthTokenGenerator`, `AwsSdkRdsIamAuthTokenGenerator`,
   `AwsRdsIamAuthTokenException`, `AwsDatabasePasswordProvider`, and
   `RdsIamRefreshingDataSource`.
-- The existing Exposed implementation calls AWS SDK Java v2
-  `RdsUtilities.generateAuthenticationToken(...)` with hostname, port,
-  username, and region.
-- Local AWS SDK Java v2 artifact `software.amazon.awssdk:rds:2.46.17`
-  confirms `RdsUtilities.generateAuthenticationToken(...)` accepts
-  `GenerateAuthenticationTokenRequest`, and that request exposes hostname,
-  port, username, region, and credentials-provider fields.
-- `aws-java` declares AWS service modules as `compileOnly`; consumers add the
-  service SDKs they use at runtime. `aws-java` currently has no RDS dependency.
-- `aws-kotlin` has no source helper for RDS IAM and the repo catalog contains
-  no AWS Kotlin SDK RDS alias. The available implementation should therefore be
-  Java SDK-backed unless a future AWS Kotlin RDS API is added.
-- CodeGraph did not resolve the RDS IAM symbols in the worktree, so source
-  inspection, GNO results, local Gradle catalog, and local SDK bytecode
-  inspection are the current evidence path.
+- 기존 Exposed 구현은 hostname, port, username, region과 함께 AWS SDK Java v2 `RdsUtilities.generateAuthenticationToken(...)`을 호출한다.
+- local AWS SDK Java v2 artifact `software.amazon.awssdk:rds:2.46.17`은 `RdsUtilities.generateAuthenticationToken(...)`이 `GenerateAuthenticationTokenRequest`를 받고 해당 request가 hostname, port, username, region, credentials-provider field를 제공함을 확인해 준다.
+- `aws-java`는 AWS service module을 `compileOnly`로 선언하고 consumer는 runtime에 사용하는 service SDK를 추가한다. 현재 `aws-java`에는 RDS dependency가 없다.
+- `aws-kotlin`에는 RDS IAM source helper가 없고 repo catalog에도 AWS Kotlin SDK RDS alias가 없다. 따라서 향후 AWS Kotlin RDS API가 추가되기 전까지 Java SDK 기반으로 구현해야 한다.
+- CodeGraph가 worktree의 RDS IAM symbol을 resolve하지 못했으므로 source inspection, GNO 결과, local Gradle catalog, local SDK bytecode inspection이 현재 evidence 경로다.
 
-## Constraints
+## 제약 조건
 
-- Keep framework-neutral token generation in `:bluetape4k-aws-java`.
-- Keep JDBC password refresh, Hikari, DriverManager, and Exposed `Database`
-  creation in `:bluetape4k-aws-exposed`.
-- Do not implement issue #295 here. `bluetape4k-jdbc` extraction remains a
-  separate upstream/design task.
-- Do not add a new AWS Kotlin SDK RDS dependency unless the catalog and SDK
-  surface prove a native RDS IAM API is available.
-- Preserve `compileOnly` service SDK policy: `aws-java` should compile against
-  `software.amazon.awssdk:rds`, and consumers using RDS IAM add it at runtime.
-- Preserve token redaction. Raw token strings may be revealed only at explicit
-  caller/JDBC boundaries.
-- Keep public API KDoc in English.
-- Keep `README.md` and `README.ko.md` source-equivalent.
-- If the service coverage chart changes, update SVG and PNG together and run
-  rendered visual validation.
+- framework-neutral token 생성을 `:bluetape4k-aws-java`에 유지한다.
+- JDBC password refresh, Hikari, DriverManager, Exposed `Database` 생성을 `:bluetape4k-aws-exposed`에 유지한다.
+- 여기서 이슈 #295를 구현하지 않는다. `bluetape4k-jdbc` 추출은 별도 upstream/design 작업으로 남긴다.
+- catalog와 SDK surface에서 native RDS IAM API를 사용할 수 있음이 입증되지 않는 한 새 AWS Kotlin SDK RDS dependency를 추가하지 않는다.
+- `compileOnly` service SDK policy를 유지한다. `aws-java`는 `software.amazon.awssdk:rds`를 대상으로 compile하고 RDS IAM을 사용하는 consumer가 runtime에 이를 추가한다.
+- token redaction을 유지한다. raw token string은 명시적인 caller/JDBC 경계에서만 드러낼 수 있다.
+- public API KDoc을 영문으로 유지한다.
+- `README.md`와 `README.ko.md`를 source-equivalent하게 유지한다.
+- service coverage chart가 바뀌면 SVG와 PNG를 함께 갱신하고 rendered visual validation을 실행한다.
 
-## Design Options
+## 설계 선택지
 
-### Option A: Move Existing Exposed Types Into `aws-java`
+### 선택지 A: 기존 Exposed type을 `aws-java`로 이동
 
-Move `AwsRdsIamAuthTokenRequest`, `AwsRdsIamAuthTokenGenerator`,
-`AwsSdkRdsIamAuthTokenGenerator`, and `AwsRdsIamAuthTokenException` from
-`io.bluetape4k.aws.exposed` to `io.bluetape4k.aws.rds`, then update
-`aws-exposed` imports.
+`AwsRdsIamAuthTokenRequest`, `AwsRdsIamAuthTokenGenerator`, `AwsSdkRdsIamAuthTokenGenerator`, `AwsRdsIamAuthTokenException`을 `io.bluetape4k.aws.exposed`에서 `io.bluetape4k.aws.rds`로 옮기고 `aws-exposed` import를 갱신한다.
 
-Rejected as the direct implementation shape because it would remove or rename
-public `aws-exposed` types abruptly. It is acceptable only if compatibility
-aliases or wrappers are kept.
+public `aws-exposed` type을 갑자기 제거하거나 이름을 바꾸므로 직접적인 구현 형태로 기각한다. compatibility alias 또는 wrapper를 유지할 때만 허용할 수 있다.
 
-### Option B: Add A Core Generator That Returns `String`
+### 선택지 B: `String`을 반환하는 core generator 추가
 
-Add `aws-java` helpers that return a raw token string and let downstream modules
-wrap or redact it.
+raw token string을 반환하고 downstream module이 wrapping하거나 redact하게 하는 `aws-java` helper를 추가한다.
 
-Rejected. Returning `String` as the primary API weakens the redaction contract
-that #269 explicitly wants to preserve and makes accidental diagnostic leakage
-easier.
+기각한다. `String`을 주요 API로 반환하면 #269에서 명시적으로 보존하려는 redaction 계약이 약해지고 실수로 diagnostic leakage가 발생하기 쉬워진다.
 
-### Option C: Add A Core Redacted Token API And Adapt `aws-exposed`
+### 선택지 C: core redacted token API 추가 및 `aws-exposed` adaptation
 
-Selected. Add a framework-neutral `io.bluetape4k.aws.rds` package in
-`aws-java` with a redacted token value, request model, generator interface,
-AWS SDK Java v2 generator, and redaction-safe exception. Then update
-`aws-exposed` so its default generator delegates token generation to the core
-generator while retaining its existing JDBC-facing `AwsSecretString`,
-refresh-aware provider APIs, and source-facing public names where practical.
+선택한다. `aws-java`에 redacted token value, request model, generator interface, AWS SDK Java v2 generator, redaction-safe exception을 포함한 framework-neutral `io.bluetape4k.aws.rds` package를 추가한다. 그다음 `aws-exposed`의 기본 generator가 token 생성을 core generator에 위임하도록 갱신하면서 기존 JDBC-facing `AwsSecretString`, refresh-aware provider API, 가능한 source-facing public name을 유지한다.
 
-This preserves existing Exposed user-facing JDBC behavior, avoids raw token
-strings as the core API, and gives non-Exposed Java SDK v2 consumers a direct
-RDS IAM helper.
+기존 Exposed user-facing JDBC 동작을 보존하고 raw token string을 core API로 사용하지 않으며 non-Exposed Java SDK v2 consumer에게 직접 사용할 RDS IAM helper를 제공한다.
 
-## API Shape
+## API 형태
 
-Package: `io.bluetape4k.aws.rds`
+패키지: `io.bluetape4k.aws.rds`
 
 - `AwsRdsIamAuthToken`
-  - Redacted serializable value object.
-  - `reveal(): String` exposes the token only for explicit caller boundaries.
-  - `toString()` always returns a redacted marker.
-  - Equality compares raw values in constant-time style as far as the JVM
-    byte-array comparison allows.
+  - redacted serializable 값 object.
+  - `reveal(): String`은 명시적인 caller 경계에서만 token을 제공한다.
+  - `toString()`은 항상 redacted marker를 반환한다.
+  - equality는 JVM byte-array 비교가 허용하는 범위에서 constant-time style로 raw value를 비교한다.
 - `awsRdsIamAuthTokenOf(value: String)`
-  - Convenience factory with nonblank validation.
+  - nonblank validation이 있는 편의 factory.
 - `AwsRdsIamAuthTokenRequest`
-  - Serializable request shape with `region`, `hostname`, `port`, and
-    `username`.
-  - Validates nonblank region/hostname/username and `port in 1..65535`.
+  - `region`, `hostname`, `port`, `username`을 갖는 serializable request 형태.
+  - nonblank region/hostname/username과 `port in 1..65535`를 validation한다.
 - `AwsRdsIamAuthTokenGenerator`
-  - Blocking `fun interface` returning `AwsRdsIamAuthToken`.
-  - KDoc documents that token signing may resolve credentials and callers
-    choose where to execute it.
+  - `AwsRdsIamAuthToken`을 반환하는 blocking `fun interface`.
+  - KDoc은 token signing에서 credential을 resolve할 수 있고 caller가 실행 위치를 선택한다고 문서화한다.
 - `AwsSdkRdsIamAuthTokenGenerator`
-  - AWS SDK Java v2 implementation backed by `RdsUtilities`.
-  - Default constructor builds `RdsUtilities` with
-    `DefaultCredentialsProvider`.
-  - Constructor accepting caller-managed `RdsUtilities` remains available for
-    tests and custom lifecycle.
-  - Wraps runtime failures in `AwsRdsIamAuthTokenException` without including
-    token values or credentials.
+  - `RdsUtilities` 기반 AWS SDK Java v2 구현.
+  - 기본 constructor는 `DefaultCredentialsProvider`로 `RdsUtilities`를 구성한다.
+  - caller-managed `RdsUtilities`를 받는 constructor는 test와 custom lifecycle에 계속 제공한다.
+  - token value나 credential을 포함하지 않고 runtime failure를 `AwsRdsIamAuthTokenException`으로 감싼다.
 - `AwsRdsIamAuthTokenException`
-  - Extends `AwsBluetapeException`, the repo-standard AWS exception base.
-  - Message includes endpoint host/port context, not token or credential data.
+  - repo-standard AWS exception base인 `AwsBluetapeException`을 확장한다.
+  - message에는 token 또는 credential data가 아니라 endpoint host/port context를 포함한다.
 
-Package: `io.bluetape4k.aws.exposed`
+패키지: `io.bluetape4k.aws.exposed`
 
-- Keep `AwsRdsIamAuthenticationProperties`, `AwsDatabasePasswordProvider`,
-  `AwsDatabasePasswordProviders`, and `RdsIamRefreshingDataSource` in
-  `aws-exposed`.
-- Keep existing Exposed public generator/request/exception names as
-  compatibility adapters unless implementation proves a type alias has no JVM
-  or Kotlin overload ambiguity.
-- Update `AwsSdkRdsIamAuthTokenGenerator` in `aws-exposed` to delegate to the
-  core `io.bluetape4k.aws.rds.AwsSdkRdsIamAuthTokenGenerator` and adapt
-  `AwsRdsIamAuthToken.reveal()` into `AwsSecretString`.
-- Keep `AwsDatabasePasswordProviders.rdsIam(...)` accepting the Exposed
-  generator interface to avoid ambiguous lambda overloads for existing Kotlin
-  callers.
-- Add an overload or helper for the core generator only if it does not make
-  lambda call sites ambiguous; otherwise the default Exposed SDK generator is
-  the reuse point and the spec review records that compatibility constraint.
+- `AwsRdsIamAuthenticationProperties`, `AwsDatabasePasswordProvider`, `AwsDatabasePasswordProviders`, `RdsIamRefreshingDataSource`를 `aws-exposed`에 유지한다.
+- type alias에 JVM 또는 Kotlin overload ambiguity가 없음이 구현에서 입증되지 않는 한 기존 Exposed public generator/request/exception name을 compatibility adapter로 유지한다.
+- `aws-exposed`의 `AwsSdkRdsIamAuthTokenGenerator`가 core `io.bluetape4k.aws.rds.AwsSdkRdsIamAuthTokenGenerator`에 위임하고 `AwsRdsIamAuthToken.reveal()`을 `AwsSecretString`으로 adapt하도록 갱신한다.
+- 기존 Kotlin caller의 모호한 lambda overload를 피하도록 `AwsDatabasePasswordProviders.rdsIam(...)`가 Exposed generator interface를 받게 유지한다.
+- lambda 호출 위치를 모호하게 만들지 않을 때만 core generator용 overload 또는 helper를 추가한다. 그렇지 않으면 기본 Exposed SDK generator가 재사용 지점이며 명세 검토에서 해당 compatibility 제약을 기록한다.
 
-## Behavior
+## 동작
 
-- Core token generation signs for the exact RDS endpoint hostname and port
-  supplied by the caller.
-- Core token generation does not own JDBC connection creation, token caching,
-  Hikari pool configuration, or refresh scheduling.
-- `aws-exposed` remains the only module that decides when to refresh a token for
-  physical JDBC connections.
-- Missing `software.amazon.awssdk:rds` at runtime fails with a redaction-safe
-  message telling consumers to add the RDS SDK module.
-- Generator failures preserve the original cause while keeping messages free of
-  raw token, username password, and credential secret material.
-- The default generator may use AWS default credentials provider resolution.
-  Tests use fake generators or caller-supplied `RdsUtilities`; no test contacts
-  production AWS.
+- core token generation은 caller가 제공한 정확한 RDS endpoint hostname과 port에 서명한다.
+- core token generation은 JDBC connection 생성, token caching, Hikari pool configuration, refresh scheduling을 소유하지 않는다.
+- `aws-exposed`는 physical JDBC connection의 token refresh 시점을 결정하는 유일한 module로 유지된다.
+- runtime에 `software.amazon.awssdk:rds`가 없으면 consumer에게 RDS SDK module 추가를 알리는 redaction-safe message로 실패한다.
+- generator failure는 original cause를 보존하면서 message에서 raw token, username password, credential secret material을 제외한다.
+- 기본 generator는 AWS default credentials provider resolution을 사용할 수 있다. test는 fake generator 또는 caller-supplied `RdsUtilities`를 사용하며 production AWS에 연결하지 않는다.
 
-## Documentation
+## 문서
 
-- Root `README.md` and `README.ko.md` module table should state that
-  `bluetape4k-aws-java` includes Java SDK-backed RDS IAM token helpers.
-- Installation snippets for `bluetape4k-aws-java` should include optional
-  `software.amazon.awssdk:rds` for RDS IAM users.
-- `bluetape4k-aws-kotlin` documentation should not claim a native AWS Kotlin
-  RDS IAM facade unless implementation is added.
-- `aws-exposed/README.md` and `aws-exposed/README.ko.md` should point to the
-  shared core generator and still document JDBC refresh behavior, endpoint
-  exactness, SSL/TLS caller responsibility, and runtime RDS SDK dependency.
-- The root service coverage chart must reflect the new `aws-java` RDS IAM
-  support. Update SVG and PNG together when the visual matrix currently marks
-  RDS IAM as Exposed-only or otherwise omits the Java module.
+- 루트 `README.md`와 `README.ko.md` module table에는 `bluetape4k-aws-java`가 Java SDK 기반 RDS IAM token helper를 포함한다고 명시해야 한다.
+- `bluetape4k-aws-java` 설치 snippet에는 RDS IAM 사용자를 위한 선택형 `software.amazon.awssdk:rds`를 포함해야 한다.
+- 구현을 추가하지 않는 한 `bluetape4k-aws-kotlin` 문서에서 native AWS Kotlin RDS IAM facade를 제공한다고 주장하면 안 된다.
+- `aws-exposed/README.md`와 `aws-exposed/README.ko.md`는 shared core generator를 가리키면서 JDBC refresh 동작, endpoint exactness, SSL/TLS caller 책임, runtime RDS SDK dependency를 계속 문서화해야 한다.
+- 루트 service coverage chart는 새 `aws-java` RDS IAM 지원을 반영해야 한다. visual matrix가 현재 RDS IAM을 Exposed 전용으로 표시하거나 Java module을 누락하면 SVG와 PNG를 함께 갱신한다.
 
-## Acceptance Criteria
+## 인수 기준
 
-- `:bluetape4k-aws-java` exposes a framework-neutral RDS IAM token helper API
-  with English KDoc.
-- `:bluetape4k-aws-java` declares `libs.aws2.rds` as `compileOnly` and uses it
-  in tests without changing the runtime service dependency policy.
-- Core tests cover request validation, request-to-AWS-SDK mapping, redacted
-  token `toString()`, factory validation, and failure wrapping without token
-  leakage.
-- `:bluetape4k-aws-exposed` reuses the core SDK-backed generator through a
-  compatibility adapter and records why legacy Exposed generator signatures
-  remain.
-- Existing Exposed RDS IAM tests still pass, including refresh-boundary,
-  single-flight, failure-redaction, and JDBC connection-opening behavior.
-- Root README, Korean README, and Exposed README locale pair describe the new
-  module boundary consistently.
-- Changed diagram/chart assets have matching SVG/PNG output and rendered
-  inspection evidence.
-- No production AWS calls are required for local verification.
+- `:bluetape4k-aws-java`가 영문 KDoc과 framework-neutral RDS IAM token helper API를 제공한다.
+- `:bluetape4k-aws-java`가 `libs.aws2.rds`를 `compileOnly`로 선언하고 runtime service dependency policy를 바꾸지 않으면서 test에서 사용한다.
+- core test가 request validation, request-to-AWS-SDK mapping, redacted token `toString()`, factory validation, token leakage 없는 failure wrapping을 다룬다.
+- `:bluetape4k-aws-exposed`가 compatibility adapter를 통해 core SDK 기반 generator를 재사용하고 legacy Exposed generator signature를 유지하는 이유를 기록한다.
+- refresh-boundary, single-flight, failure-redaction, JDBC connection-opening 동작을 포함한 기존 Exposed RDS IAM test가 계속 통과한다.
+- 루트 README, 한국어 README, Exposed README locale pair가 새 module 경계를 일관되게 설명한다.
+- 변경한 diagram/chart asset은 일치하는 SVG/PNG output과 rendered inspection evidence를 갖는다.
+- local 검증에는 production AWS 호출이 필요하지 않다.
 
-## Out Of Scope
+## 범위 제외
 
-- Extracting DriverManager/DataSource token refresh behavior into
-  `bluetape4k-jdbc` (#295).
-- Spring Boot or Ktor RDS IAM auto-configuration.
-- A native AWS Kotlin SDK RDS facade.
-- Secrets Manager and Parameter Store wrappers (#268).
-- Kinesis auto-configuration (#270).
-- SES/v2 and SNS Ktor integrations (#271).
+- DriverManager/DataSource token refresh 동작을 `bluetape4k-jdbc`로 추출(#295).
+- Spring Boot 또는 Ktor RDS IAM auto-configuration.
+- native AWS Kotlin SDK RDS facade 제외.
+- Secrets Manager 및 Parameter Store wrapper(#268).
+- Kinesis auto-configuration 제외(#270).
+- SES/v2 및 SNS Ktor integration(#271).
 
-## Step 2-R Review Notes
+## 단계 2-R 검토 기록
 
-### Codex Spec Review
+### Codex 명세 검토
 
-| Priority | Finding | Decision |
+| 우선순위 | 발견 사항 | 결정 |
 |---|---|---|
-| P0 | Removing or moving existing `aws-exposed` public RDS IAM types would create avoidable API breakage for users already on 0.4.x. | Accepted. Keep Exposed public names as compatibility wrappers/adapters and delegate the SDK-backed implementation to the new core helper. |
-| P1 | Adding both core and Exposed `rdsIam(..., tokenGenerator)` overloads may make Kotlin lambda call sites ambiguous. | Accepted. Keep the existing Exposed generator signature for provider factories unless a non-ambiguous helper shape is proven during implementation. |
-| P1 | The exception base should not be left implementation-dependent in the spec. | Accepted. Core `AwsRdsIamAuthTokenException` extends `AwsBluetapeException`; Exposed compatibility exceptions may extend or wrap it while preserving redaction. |
-| P1 | README/chart work can expand into visual redraw churn. | Accepted. Chart updates are limited to the service coverage semantics required by #269, with SVG/PNG parity and rendered validation only for changed assets. |
+| P0 | 기존 `aws-exposed` public RDS IAM type을 제거하거나 옮기면 이미 0.4.x를 사용하는 사용자에게 피할 수 있는 API breakage가 발생한다. | 수용. Exposed public name을 compatibility wrapper/adapter로 유지하고 SDK 기반 구현을 새 core helper에 위임한다. |
+| P1 | core 및 Exposed `rdsIam(..., tokenGenerator)` overload를 모두 추가하면 Kotlin lambda 호출 위치가 모호해질 수 있다. | 수용. 구현 중 모호하지 않은 helper 형태가 입증되지 않는 한 provider factory에 기존 Exposed generator signature를 유지한다. |
+| P1 | 명세에서 exception base를 구현에 따라 달라지게 두면 안 된다. | 수용. core `AwsRdsIamAuthTokenException`은 `AwsBluetapeException`을 확장하고 Exposed compatibility exception은 redaction을 보존하면서 이를 확장하거나 감쌀 수 있다. |
+| P1 | README/chart 작업이 visual redraw churn으로 확장될 수 있다. | 수용. chart 갱신은 #269가 요구하는 service coverage 의미로 제한하며 변경한 asset에만 SVG/PNG parity와 rendered validation을 적용한다. |
 
-Convergence: P0 = 0, P1 = 0 after accepted edits.
+수용한 수정 후 수렴 상태: P0 = 0, P1 = 0.

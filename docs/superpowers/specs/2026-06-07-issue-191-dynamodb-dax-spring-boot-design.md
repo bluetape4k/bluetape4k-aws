@@ -1,65 +1,62 @@
-# Issue #191 DynamoDB DAX Spring Boot Design
+# 이슈 #191 DynamoDB DAX Spring Boot 설계
 
-Date: 2026-06-07
-Issue: https://github.com/bluetape4k/bluetape4k-aws/issues/191
+작성일: 2026-06-07
+이슈: https://github.com/bluetape4k/bluetape4k-aws/issues/191
 
-## Context
+## 배경
 
-`bluetape4k-aws-spring-boot` already auto-configures DynamoDB through
-`DynamoDbAsyncClient`, `DynamoDbEnhancedAsyncClient`, and
-`DynamoDbTableNameResolver`. Repository users depend on
-`DynamoDbEnhancedAsyncClient`, so DAX support should plug into the client layer
-without changing repository classes.
+`bluetape4k-aws-spring-boot`는 이미 `DynamoDbAsyncClient`,
+`DynamoDbEnhancedAsyncClient`, `DynamoDbTableNameResolver`로 DynamoDB를 자동
+구성한다. 저장소 사용자는 `DynamoDbEnhancedAsyncClient`에 의존하므로 DAX 지원은
+저장소 클래스를 변경하지 않고 클라이언트 계층에 연결해야 한다.
 
-External reference points:
+외부 참고 사항은 다음과 같다.
 
-- Spring Cloud AWS 4.0.2 exposes DynamoDB DAX properties under its DynamoDB
-  integration, including endpoint URL, timeout, retry, and concurrency knobs.
-- AWS DynamoDB DAX Java 2.x documentation uses
-  `software.amazon.dax:amazon-dax-client` and `ClusterDaxAsyncClient`, which
-  implements the AWS SDK v2 `DynamoDbAsyncClient` contract.
-- Maven metadata checked on 2026-06-07 KST reports
-  `software.amazon.dax:amazon-dax-client` latest/release `2.0.9`.
-- Local `javap` inspection of `amazon-dax-client-2.0.9.jar` shows
-  `ClusterDaxAsyncClient.Builder` accepts only
-  `overrideConfiguration(software.amazon.dax.Configuration)` and
-  `Configuration.Builder` directly supports URL, region, credentials, timeout,
-  retry, concurrency, hostname-verification, and metrics options.
-- Local `ApplicationContextRunner` feedback showed `Configuration.Builder`
-  resolves credentials during bean construction, so DAX-enabled tests and
-  applications need a resolvable `AwsCredentialsProvider`.
+- Spring Cloud AWS 4.0.2는 endpoint URL, timeout, retry, concurrency 설정을 포함한
+  DynamoDB DAX 프로퍼티를 DynamoDB 통합 아래에 노출한다.
+- AWS DynamoDB DAX Java 2.x 문서는 `software.amazon.dax:amazon-dax-client`와
+  AWS SDK v2 `DynamoDbAsyncClient` 계약을 구현하는 `ClusterDaxAsyncClient`를 사용한다.
+- 2026-06-07 KST에 확인한 Maven 메타데이터에서
+  `software.amazon.dax:amazon-dax-client`의 latest/release는 `2.0.9`였다.
+- `amazon-dax-client-2.0.9.jar`를 로컬 `javap`으로 검사한 결과,
+  `ClusterDaxAsyncClient.Builder`는
+  `overrideConfiguration(software.amazon.dax.Configuration)`만 받는다.
+  `Configuration.Builder`는 URL, region, credentials, timeout, retry, concurrency,
+  hostname verification, metrics 옵션을 직접 지원한다.
+- 로컬 `ApplicationContextRunner` 피드백에서 `Configuration.Builder`가 빈 생성 중
+  credentials를 확인했다. 따라서 DAX가 활성화된 테스트와 애플리케이션에는 확인 가능한
+  `AwsCredentialsProvider`가 필요하다.
 
-## Problem
+## 문제
 
-DAX is currently invisible to bluetape4k Spring Boot users:
+현재 bluetape4k Spring Boot 사용자에게 DAX는 노출되지 않는다.
 
-- no `bluetape4k.aws.dynamodb.dax.*` properties
-- no optional DAX client bean
-- no automatic way for `DynamoDbEnhancedAsyncClient` to use DAX
-- no user documentation explaining DAX caveats or why LocalStack/DynamoDB Local
-  tests remain separate from DAX
+- `bluetape4k.aws.dynamodb.dax.*` 프로퍼티가 없다.
+- 선택적 DAX 클라이언트 빈이 없다.
+- `DynamoDbEnhancedAsyncClient`가 DAX를 사용하도록 자동 설정할 방법이 없다.
+- DAX 주의 사항이나 LocalStack/DynamoDB Local 테스트를 DAX와 분리하는 이유를 설명하는
+  사용자 문서가 없다.
 
-## Goals
+## 목표
 
-1. Keep default DynamoDB behavior unchanged when DAX is disabled or absent.
-2. Add opt-in DAX client wiring guarded by the DAX SDK classpath.
-3. Build `DynamoDbEnhancedAsyncClient` on the selected `DynamoDbAsyncClient`, so
-   existing repository code uses DAX without API changes.
-4. Cover classpath absence, enabled endpoint binding, and enhanced-client
-   selection with `ApplicationContextRunner` tests.
-5. Document configuration and operational caveats in `README.md` and
-   `README.ko.md`.
+1. DAX가 비활성화되거나 없을 때 기본 DynamoDB 동작을 그대로 유지한다.
+2. DAX SDK 클래스 경로로 보호되는 opt-in DAX 클라이언트 연결을 추가한다.
+3. 선택된 `DynamoDbAsyncClient` 위에 `DynamoDbEnhancedAsyncClient`를 만들어 기존
+   저장소 코드가 API 변경 없이 DAX를 사용하도록 한다.
+4. 클래스 경로 누락, 활성 endpoint 바인딩, enhanced client 선택을
+   `ApplicationContextRunner` 테스트로 검증한다.
+5. `README.md`와 `README.ko.md`에 구성 및 운영상 주의 사항을 문서화한다.
 
-## Non-Goals
+## 제외 범위
 
-- No real AWS DAX cluster in local or CI tests.
-- No repository API that hides DAX consistency or cache behavior.
-- No awspring template/Spring Integration adapter cloning.
-- No broad DynamoDB repository refactor.
+- 로컬 또는 CI 테스트에서 실제 AWS DAX 클러스터를 사용하지 않는다.
+- DAX 일관성이나 cache 동작을 숨기는 저장소 API를 만들지 않는다.
+- awspring 템플릿/Spring Integration 어댑터를 복제하지 않는다.
+- 광범위한 DynamoDB 저장소 refactor를 하지 않는다.
 
-## Proposed User API
+## 제안 사용자 API
 
-Properties stay under the existing bluetape4k namespace:
+프로퍼티는 기존 bluetape4k 네임스페이스 아래에 둔다.
 
 ```yaml
 bluetape4k:
@@ -82,114 +79,107 @@ bluetape4k:
         skip-host-name-verification: false
 ```
 
-`dax.url` is required only when `dax.enabled=true`. Region and credentials come
-from existing DynamoDB/global AWS configuration.
+`dax.enabled=true`일 때만 `dax.url`이 필요하다. Region과 credentials는 기존
+DynamoDB/전역 AWS 구성을 사용한다.
 
-## Design
+## 설계
 
-### Properties
+### 프로퍼티
 
-Extend `DynamoDbProperties` with a nested `DynamoDbDaxProperties` value.
+`DynamoDbProperties`에 중첩된 `DynamoDbDaxProperties` 값을 추가한다.
 
-Validation:
+검증 규칙은 다음과 같다.
 
-- `dax.url` must be present when DAX is enabled.
-- retry and concurrency values must be non-negative.
-- timeout durations must be non-negative.
-- existing `endpointOverride` + `region` validation remains unchanged.
-- DAX validation should run only when the DAX auto-configuration is active, so
-  default users without the DAX SDK do not fail property binding.
+- DAX가 활성화되면 `dax.url`이 있어야 한다.
+- retry와 concurrency 값은 음수가 아니어야 한다.
+- timeout duration은 음수가 아니어야 한다.
+- 기존 `endpointOverride` + `region` 검증을 유지한다.
+- DAX SDK가 없는 기본 사용자가 프로퍼티 바인딩에 실패하지 않도록 DAX 자동 구성이
+  활성화된 경우에만 DAX 검증을 실행한다.
 
-### Auto-Configuration
+### 자동 구성
 
-Split DAX wiring into a separate auto-configuration class:
+DAX 연결을 별도 자동 구성 클래스로 분리한다.
 
 - `DynamoDbAutoConfiguration`
-  - keeps default `DynamoDbAsyncClient` bean behavior
-  - keeps `DynamoDbEnhancedAsyncClient` over the available
-    `DynamoDbAsyncClient`
+  - 기본 `DynamoDbAsyncClient` 빈 동작을 유지한다.
+  - 사용 가능한 `DynamoDbAsyncClient` 위에 `DynamoDbEnhancedAsyncClient`를 유지한다.
 - `DynamoDbDaxAutoConfiguration`
-  - guarded with `@ConditionalOnClass(name = ["software.amazon.dax.ClusterDaxAsyncClient"])`
-  - guarded with
-    `@ConditionalOnProperty(prefix = "bluetape4k.aws.dynamodb.dax", name = ["enabled"], havingValue = "true")`
-  - defines `DynamoDbAsyncClient` with `ClusterDaxAsyncClient` when no custom
-    `DynamoDbAsyncClient` bean exists
-  - applies existing credentials resolution
-  - does not apply `AwsAsyncClientCustomizer` or
-    `AwsClientCustomizer<DynamoDbAsyncClientBuilder>` because the DAX builder is
-    not an AWS SDK `AwsAsyncClientBuilder`; DAX-specific tuning is represented
-    through typed properties instead
+  - `@ConditionalOnClass(name = ["software.amazon.dax.ClusterDaxAsyncClient"])`로 보호한다.
+  - `@ConditionalOnProperty(prefix = "bluetape4k.aws.dynamodb.dax", name = ["enabled"], havingValue = "true")`로 보호한다.
+  - 사용자 `DynamoDbAsyncClient` 빈이 없을 때 `ClusterDaxAsyncClient`로
+    `DynamoDbAsyncClient`를 정의한다.
+  - 기존 credentials resolution을 적용한다.
+  - DAX builder가 AWS SDK `AwsAsyncClientBuilder`가 아니므로
+    `AwsAsyncClientCustomizer`나 `AwsClientCustomizer<DynamoDbAsyncClientBuilder>`를
+    적용하지 않는다. DAX 전용 조정은 타입 지정 프로퍼티로 표현한다.
 
-Ordering:
+순서는 다음과 같다.
 
-- register `DynamoDbDaxAutoConfiguration` before `DynamoDbAutoConfiguration`
-  so the DAX `DynamoDbAsyncClient` can satisfy the enhanced-client bean.
-- keep both classes independently guarded by
-  `bluetape4k.aws.dynamodb.enabled`.
+- DAX `DynamoDbAsyncClient`가 enhanced client 빈을 충족하도록
+  `DynamoDbDaxAutoConfiguration`을 `DynamoDbAutoConfiguration`보다 먼저 등록한다.
+- 두 클래스 모두 `bluetape4k.aws.dynamodb.enabled`로 독립적으로 보호한다.
 
-### Dependency Boundary
+### 의존성 경계
 
-Add `software.amazon.dax:amazon-dax-client:2.0.9` as `compileOnly` and
-`testImplementation` in `aws-spring-boot`.
+`software.amazon.dax:amazon-dax-client:2.0.9`를 `aws-spring-boot`의
+`compileOnly`와 `testImplementation`으로 추가한다.
 
-Consumers opt in by adding the same dependency at runtime. Without it, the DAX
-auto-configuration class must not load and default DynamoDB behavior must remain
-unchanged.
+소비자는 같은 의존성을 런타임에 추가해 opt-in한다. 이 의존성이 없으면 DAX 자동 구성
+클래스가 로드되지 않아야 하며 기본 DynamoDB 동작은 바뀌지 않아야 한다.
 
-`amazon-dax-client:2.0.9` declares a transitive dependency on
-`software.amazon.awssdk:dynamodb:2.38.5`. The implementation must run
-`dependencyInsight` after adding the dependency and verify the repo's AWS SDK
-BOM/catalog line still selects the intended AWS SDK version.
+`amazon-dax-client:2.0.9`는 `software.amazon.awssdk:dynamodb:2.38.5`에
+전이 의존한다. 의존성을 추가한 뒤 `dependencyInsight`를 실행해 저장소의 AWS SDK
+BOM/catalog 버전이 의도한 AWS SDK 버전을 계속 선택하는지 확인해야 한다.
 
-### Repository Selection
+### 저장소 선택
 
-No repository code changes are required. `AbstractCoroutinesDynamoDbRepository`
-already depends on `DynamoDbEnhancedAsyncClient`, and the enhanced async client
-is built with the currently selected `DynamoDbAsyncClient`.
+저장소 코드를 변경할 필요가 없다. `AbstractCoroutinesDynamoDbRepository`는 이미
+`DynamoDbEnhancedAsyncClient`에 의존하며, enhanced async client는 현재 선택된
+`DynamoDbAsyncClient`로 생성된다.
 
-### Tests
+### 테스트
 
-Use `ApplicationContextRunner` only; no live DAX cluster.
+실제 DAX 클러스터 없이 `ApplicationContextRunner`만 사용한다.
 
-Required tests:
+필수 테스트는 다음과 같다.
 
-- default DynamoDB beans remain regular SDK clients when DAX is disabled
-- DAX classpath absence backs off even when `dax.enabled=true`
-- `dax.enabled=true` without `dax.url` fails with a clear validation message
-- `dax.enabled=true` with URL registers a single `DynamoDbAsyncClient`
-- enhanced client is still registered and uses the selected async client path
-- custom `DynamoDbAsyncClient` still wins over default/DAX auto-configuration
+- DAX가 비활성화되면 기본 DynamoDB 빈은 일반 SDK 클라이언트를 유지한다.
+- `dax.enabled=true`여도 DAX 클래스 경로가 없으면 백오프한다.
+- `dax.url` 없이 `dax.enabled=true`이면 명확한 검증 메시지와 함께 실패한다.
+- URL이 있는 `dax.enabled=true`는 `DynamoDbAsyncClient` 하나를 등록한다.
+- enhanced client도 계속 등록되고 선택된 async client 경로를 사용한다.
+- 사용자 `DynamoDbAsyncClient`가 기본/DAX 자동 구성보다 우선한다.
 
-Because `ClusterDaxAsyncClient.builder().build()` validates configuration and
-resolves credentials during bean construction, tests must provide dummy
-credentials, avoid network calls, and assert bean shape/selection only.
+`ClusterDaxAsyncClient.builder().build()`는 구성을 검증하고 빈 생성 중 credentials를
+확인하므로 테스트는 dummy credentials를 제공하고 네트워크 호출을 피하며 빈 형태/선택만
+검증해야 한다.
 
-## Risks
+## 위험
 
-- The DAX client API is not managed by the AWS SDK BOM and has a separate
-  version line.
-- DAX client builder APIs differ from normal AWS SDK builders, so global/service
-  AWS SDK customizers cannot be applied directly.
-- The DAX client POM pins an older AWS SDK DynamoDB dependency; Gradle dependency
-  management must keep the repository AWS SDK line in control.
-- DAX is a read-through/write-through cache with consistency tradeoffs; docs
-  must avoid implying it is equivalent to DynamoDB Local or LocalStack.
+- DAX 클라이언트 API는 AWS SDK BOM이 관리하지 않으며 별도 버전 계열을 사용한다.
+- DAX client builder API는 일반 AWS SDK builder와 다르므로 전역/서비스 AWS SDK
+  customizer를 직접 적용할 수 없다.
+- DAX 클라이언트 POM은 이전 AWS SDK DynamoDB 의존성을 고정한다. Gradle 의존성 관리가
+  저장소 AWS SDK 버전 계열을 계속 제어해야 한다.
+- DAX는 일관성 tradeoff가 있는 read-through/write-through cache다. 문서에서 DAX가
+  DynamoDB Local 또는 LocalStack과 같다고 암시하면 안 된다.
 
-## Acceptance Mapping
+## 수용 기준 매핑
 
-| Acceptance Criteria | Design Coverage |
+| 수용 기준 | 설계 범위 |
 |---|---|
-| No DAX dependency required unless opt in | `compileOnly`, classpath guard, docs |
-| Default behavior unchanged | missing/disabled DAX tests |
-| Classpath absence covered | `FilteredClassLoader("software.amazon.dax")` test |
-| Enabled endpoint covered | DAX URL property and context-runner test |
-| Repository/client selection covered | enhanced client uses selected async client path |
-| README examples/caveats | root and module locale README updates |
+| opt-in하지 않으면 DAX 의존성 불필요 | `compileOnly`, 클래스 경로 guard, 문서 |
+| 기본 동작 유지 | DAX 누락/비활성 테스트 |
+| 클래스 경로 누락 검증 | `FilteredClassLoader("software.amazon.dax")` 테스트 |
+| 활성 endpoint 검증 | DAX URL 프로퍼티와 context runner 테스트 |
+| 저장소/클라이언트 선택 검증 | enhanced client가 선택된 async client 경로 사용 |
+| README 예제/주의 사항 | 루트 및 모듈 locale README 갱신 |
 
-## DoD
+## 완료 조건
 
-- Spec review: `P0=0`, `P1=0`.
-- Plan review: `P0=0`, `P1=0`.
-- Targeted tests pass for `:bluetape4k-aws-spring-boot:test`.
-- `git diff --check` passes.
-- PR body ends with `## DoD Status`.
+- 명세 검토: `P0=0`, `P1=0`.
+- 계획 검토: `P0=0`, `P1=0`.
+- `:bluetape4k-aws-spring-boot:test` 대상 테스트 통과.
+- `git diff --check` 통과.
+- PR 본문은 `## DoD Status`로 끝난다.

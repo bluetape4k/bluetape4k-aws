@@ -1,144 +1,130 @@
-# Issue #227 Spring S3 Access Grants Plan
+# 이슈 #227 Spring S3 Access Grants 계획
 
-## Objective
+## 목표
 
-Deliver optional Spring Boot S3 Access Grants support for `aws-spring-boot`
-without adding runtime dependencies or default beans for basic S3 users.
+기본 S3 사용자에게 runtime dependency나 기본 bean을 추가하지 않으면서 `aws-spring-boot`에 선택형 Spring Boot S3 Access Grants 지원을 제공한다.
 
-## Gate Order
+## gate 순서
 
-1. Issue intake and update.
-2. Spec.
-3. Spec review, required `P0=0`, `P1=0`.
-4. Plan.
-5. Plan review, required `P0=0`, `P1=0`.
-6. Implementation.
-7. Local verification.
-8. 7-tier code review, required `P0=0`, `P1=0`.
-9. PR body verification and CI.
+1. 이슈 접수 및 갱신.
+2. 명세 작성.
+3. 명세 검토, `P0=0`, `P1=0` 필수.
+4. 계획 작성.
+5. 계획 검토, `P0=0`, `P1=0` 필수.
+6. 구현.
+7. 로컬 검증.
+8. 7단계 code review, `P0=0`, `P1=0` 필수.
+9. PR 본문 검증 및 CI.
 
-## Implementation Steps
+## 구현 단계
 
-### Step 1 - Dependency Alias
+### 단계 1 - dependency alias
 
-- Add `aws2-s3control` to `gradle/libs.versions.toml`.
-- Add `compileOnly(libs.aws2.s3control)` and
-  `testImplementation(libs.aws2.s3control)` to
-  `aws-spring-boot/build.gradle.kts`.
-- Verify with:
+- `gradle/libs.versions.toml`에 `aws2-s3control`을 추가한다.
+- `aws-spring-boot/build.gradle.kts`에 `compileOnly(libs.aws2.s3control)`과 `testImplementation(libs.aws2.s3control)`을 추가한다.
+- 다음 명령으로 검증한다.
   `./gradlew :bluetape4k-aws-spring-boot:dependencyInsight --dependency s3control --configuration compileClasspath`.
 
 DoD:
 
-- `s3control` appears only through compile/test scopes.
-- No `api` or `runtimeOnly` dependency is added.
+- `s3control`이 compile/test scope에만 나타난다.
+- `api` 또는 `runtimeOnly` dependency를 추가하지 않는다.
 
-### Step 2 - Properties
+### 단계 2 - property
 
-- Add `S3AccessGrantsProperties` under
-  `io.bluetape4k.aws.spring.s3.accessgrants`.
-- Prefix: `bluetape4k.aws.s3.access-grants`.
-- Defaults:
+- `io.bluetape4k.aws.spring.s3.accessgrants` 아래에 `S3AccessGrantsProperties`를 추가한다.
+- 접두사: `bluetape4k.aws.s3.access-grants`.
+- 기본값:
   - `enabled=false`
   - `region=null`
   - `endpointOverride=null`
-- Add validation for blank region if a string value is present.
-- Keep the data class `Serializable` with `serialVersionUID`.
+- string value가 있으면 blank region을 validation한다.
+- data class를 `serialVersionUID`가 있는 `Serializable`로 유지한다.
 
 DoD:
 
-- Properties are isolated from `S3Properties` to avoid enabling Access Grants
-  with basic S3.
+- 기본 S3와 함께 Access Grants가 활성화되지 않도록 property를 `S3Properties`와 분리한다.
 
-### Step 3 - Operations and Template
+### 단계 3 - operation과 template
 
-- Add `S3AccessGrantsOperations`.
-- Add `S3AccessGrantsCoroutinesTemplate` backed by `S3ControlAsyncClient`.
-- Use `CompletableFuture.await()` from `kotlinx-coroutines-jdk8` transitively
-  available through existing AWS Java support.
-- Expose minimal application access workflow methods:
+- `S3AccessGrantsOperations`를 추가한다.
+- `S3ControlAsyncClient` 기반 `S3AccessGrantsCoroutinesTemplate`을 추가한다.
+- 기존 AWS Java 지원을 통해 transitively 사용할 수 있는 `kotlinx-coroutines-jdk8`의 `CompletableFuture.await()`를 사용한다.
+- 최소한의 application access workflow method를 제공한다.
   - `getDataAccess(GetDataAccessRequest)`
   - `listCallerAccessGrants(ListCallerAccessGrantsRequest)`
   - `listAccessGrants(ListAccessGrantsRequest)`
   - `listAccessGrantsInstances(ListAccessGrantsInstancesRequest)`
   - `listAccessGrantsLocations(ListAccessGrantsLocationsRequest)`
-- Keep administrative create/delete/update operations available through raw
-  caller-owned `S3ControlClient` / `S3ControlAsyncClient` beans.
+- 관리용 create/delete/update operation은 raw caller-owned `S3ControlClient` / `S3ControlAsyncClient` bean을 통해 사용할 수 있게 유지한다.
 
 DoD:
 
-- Template methods are suspend functions and rethrow coroutine cancellation by
-  not wrapping suspend calls in `runCatching`.
-- No broad S3 Control compatibility surface is committed in this issue.
+- template method는 suspend function이며, suspend 호출을 `runCatching`으로 감싸지 않아 coroutine cancellation을 다시 던진다.
+- 이 이슈에서는 광범위한 S3 Control compatibility surface를 확정하지 않는다.
 
-### Step 4 - Auto-Configuration
+### 단계 4 - auto-configuration
 
-- Add `S3AccessGrantsAutoConfiguration`.
-- Register it in
-  `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
-  after `S3AutoConfiguration`.
-- Use string `@ConditionalOnClass` guards for:
+- `S3AccessGrantsAutoConfiguration`을 추가한다.
+- `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`에서 `S3AutoConfiguration` 뒤에 등록한다.
+- 다음 항목에 string `@ConditionalOnClass` guard를 사용한다.
   - `software.amazon.awssdk.services.s3control.S3ControlClient`
   - `software.amazon.awssdk.services.s3control.S3ControlAsyncClient`
-- Use property guards:
-  - `bluetape4k.aws.s3.enabled=true` or missing.
+- 다음 property guard를 사용한다.
+  - `bluetape4k.aws.s3.enabled=true` 또는 누락.
   - `bluetape4k.aws.s3.access-grants.enabled=true`.
-- Create sync and async S3 Control clients with:
-  - shared AWS defaults
-  - credentials provider fallback
-  - optional sync/async HTTP client beans
-  - global customizers using service name `s3control`
-  - service-specific customizers for `S3ControlClientBuilder` and
-    `S3ControlAsyncClientBuilder`
-- Add `S3AccessGrantsOperations` bean when missing.
+- 다음 조건으로 sync 및 async S3 Control client를 생성한다.
+  - 공유 AWS 기본값
+  - 자격 증명 provider fallback
+  - 선택형 sync/async HTTP client bean
+  - service name `s3control`을 사용하는 global customizer
+  - `S3ControlClientBuilder`와 `S3ControlAsyncClientBuilder`를 위한 service-specific customizer
+- 없을 때 `S3AccessGrantsOperations` bean을 추가한다.
 
 DoD:
 
-- Caller-provided clients and operations back off correctly.
-- Owned clients are closed by Spring through `destroyMethod="close"`.
+- caller-provided client와 operation이 올바르게 back off한다.
+- 소유한 client는 Spring이 `destroyMethod="close"`를 통해 닫는다.
 
-### Step 5 - Tests
+### 단계 5 - test
 
-Add `S3AccessGrantsAutoConfigurationTest` and
-`S3AccessGrantsCoroutinesTemplateTest`.
+`S3AccessGrantsAutoConfigurationTest`와 `S3AccessGrantsCoroutinesTemplateTest`를 추가한다.
 
-Auto-configuration test cases:
+auto-configuration test 사례:
 
-- Disabled by default.
-- Enabled registers `S3ControlClient`, `S3ControlAsyncClient`,
-  `S3AccessGrantsProperties`, `S3AccessGrantsOperations`, and template.
-- Missing `s3control` classes backs off with `FilteredClassLoader`.
-- Basic S3 disabled also disables Access Grants.
-- Caller-provided sync/async clients are reused.
-- Caller-provided operations backs off the template.
-- Endpoint override without region fails through shared defaults.
-- Global and service customizers apply in deterministic order.
+- 기본적으로 비활성화된다.
+- 활성화하면 `S3ControlClient`, `S3ControlAsyncClient`, `S3AccessGrantsProperties`, `S3AccessGrantsOperations`, template을 등록한다.
+- `s3control` class가 없으면 `FilteredClassLoader`로 back off한다.
+- 기본 S3가 비활성화되면 Access Grants도 비활성화된다.
+- caller-provided sync/async client를 재사용한다.
+- caller-provided operation이 있으면 template이 back off한다.
+- region 없는 endpoint override는 공유 기본값을 통해 실패한다.
+- global 및 service customizer를 결정적인 순서로 적용한다.
 
-Template test cases:
+template test 사례:
 
-- `getDataAccess` delegates to async client and awaits result.
-- List methods delegate to async client and await result.
+- `getDataAccess`가 async client에 위임하고 결과를 기다린다.
+- list method가 async client에 위임하고 결과를 기다린다.
 
 DoD:
 
-- Tests use bluetape4k assertions, MockK, and `runSuspendIO` or a suitable
-  existing coroutine test helper.
-- No emulator or real AWS dependency is introduced.
+- test는 bluetape4k assertion, MockK, `runSuspendIO` 또는 적합한 기존 coroutine test helper를 사용한다.
+- emulator 또는 실제 AWS dependency를 도입하지 않는다.
 
-### Step 6 - Documentation and Lesson
+### 단계 6 - 문서와 lesson
 
-- Update root `README.md` and `README.ko.md`.
-- Mention the optional `software.amazon.awssdk:s3control` consumer dependency.
-- Add a short `docs/lessons/2026-06-08-issue-227-s3-access-grants-spring.md`.
+- 루트 `README.md`와 `README.ko.md`를 갱신한다.
+- 선택형 `software.amazon.awssdk:s3control` consumer dependency를 언급한다.
+- 짧은 `docs/lessons/2026-06-08-issue-227-s3-access-grants-spring.md`를 추가한다.
 
 DoD:
 
-- English and Korean README entries are consistent.
-- Lesson records the `s3control` discovery and optional dependency guard.
+- 영문 및 한국어 README 항목이 일치한다.
+- lesson에 `s3control` 발견과 optional dependency guard를 기록한다.
 
-## Validation Commands
+## 검증 명령
 
-Run in order:
+순서대로 실행한다.
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:dependencyInsight --dependency s3control --configuration compileClasspath
@@ -148,16 +134,15 @@ Run in order:
 git diff --check
 ```
 
-If CI snapshot metadata returns Sonatype 403, retry failed CI jobs once and
-classify the failure from logs before treating it as code failure.
+CI snapshot metadata가 Sonatype 403을 반환하면 실패한 CI job을 한 번 재시도하고, code failure로 처리하기 전에 log에서 failure를 분류한다.
 
-## Review Checklist
+## 검토 확인 목록
 
-- P0/P1 workflow gate compliance.
-- Optional dependency remains optional.
-- `@ConditionalOnClass(name = [...])` protects every compileOnly bean signature.
-- `@ConditionalOnProperty` applies to the new auto-configuration class.
-- Existing S3 users do not get Access Grants beans unless explicitly enabled.
-- Coroutine cancellation is not swallowed.
-- Public KDoc is English.
-- README locale set is updated.
+- P0/P1 workflow gate 준수.
+- optional dependency가 선택 사항으로 유지됨.
+- `@ConditionalOnClass(name = [...])`가 모든 compileOnly bean signature를 보호함.
+- 새 auto-configuration class에 `@ConditionalOnProperty` 적용.
+- 명시적으로 활성화하지 않으면 기존 S3 사용자에게 Access Grants bean을 제공하지 않음.
+- coroutine cancellation을 삼키지 않음.
+- public KDoc은 영문으로 작성.
+- README locale set 갱신.

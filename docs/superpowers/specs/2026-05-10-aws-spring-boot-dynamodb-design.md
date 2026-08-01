@@ -1,160 +1,149 @@
-# aws-spring-boot DynamoDB Repository Design
+# aws-spring-boot DynamoDB 저장소 설계
 
-Date: 2026-05-10
-Repo: `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository`
-Issue: https://github.com/bluetape4k/bluetape4k-aws/issues/3
+날짜: 2026-05-10
+저장소: `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository`
+이슈: https://github.com/bluetape4k/bluetape4k-aws/issues/3
 
-## Problem
+## 문제
 
-`aws-spring-boot` currently provides the common `AwsAutoConfiguration` and S3
-auto-configuration. Issue #3 asks for a Spring Boot 4 DynamoDB integration that
-does not depend on awspring:
+`aws-spring-boot`는 현재 공통 `AwsAutoConfiguration`과 S3 자동 구성을 제공한다.
+이슈 #3은 awspring에 의존하지 않는 다음 Spring Boot 4 DynamoDB 통합을 요구한다.
 
 - `DynamoDbAutoConfiguration`
-- `DynamoDbAsyncClient` and `DynamoDbEnhancedAsyncClient` beans
-- `DynamoDbProperties` bound to `bluetape4k.aws.dynamodb`
-- `CoroutinesDynamoDbRepository<T, ID>` interface
-- `AbstractCoroutinesDynamoDbRepository<T, ID>` base implementation
-- `@DynamoDbBean` mapping support
-- paging, scan, query as Kotlin `Flow`
-- secondary index query support
-- LocalStack + Testcontainers CRUD, paging, query coverage
+- `DynamoDbAsyncClient` 및 `DynamoDbEnhancedAsyncClient` 빈
+- `bluetape4k.aws.dynamodb`에 바인딩되는 `DynamoDbProperties`
+- `CoroutinesDynamoDbRepository<T, ID>` 인터페이스
+- `AbstractCoroutinesDynamoDbRepository<T, ID>` 기반 구현
+- `@DynamoDbBean` 매핑 지원
+- Kotlin `Flow` 기반 페이징, 스캔, 쿼리
+- 보조 인덱스 쿼리 지원
+- LocalStack + Testcontainers CRUD, 페이징, 쿼리 검증
 
-The public Spring API should be coroutine-first and should reuse the existing
-`aws` module DynamoDB Enhanced Async helpers where they already fit.
+공개 Spring API는 코루틴 우선이어야 하며, 적합한 곳에서 기존 `aws` 모듈의
+DynamoDB Enhanced Async 도우미를 재사용해야 한다.
 
-## Evidence
+## 근거
 
-### Current Repo
+### 현재 저장소
 
 - `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository/aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfiguration.kt`
-  is the nearest auto-configuration pattern: `@AutoConfiguration`,
-  `@ConditionalOnClass`, `@ConditionalOnProperty`, `@EnableConfigurationProperties`,
-  `ObjectProvider<AwsCredentialsProvider>`, optional HTTP client beans, and
-  `@ConditionalOnMissingBean`.
+  는 가장 가까운 자동 구성 패턴이다. `@AutoConfiguration`, `@ConditionalOnClass`,
+  `@ConditionalOnProperty`, `@EnableConfigurationProperties`,
+  `ObjectProvider<AwsCredentialsProvider>`, 선택적 HTTP 클라이언트 빈,
+  `@ConditionalOnMissingBean`을 사용한다.
 - `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository/aws/src/main/kotlin/io/bluetape4k/aws/dynamodb/repository/DynamoDbCoroutineRepository.kt`
-  already provides a coroutine repository for entities implementing
-  `DynamoDbEntity`, but it is tied to that entity model and has no Spring Boot
-  auto-configuration.
+  는 `DynamoDbEntity`를 구현하는 엔티티용 코루틴 저장소를 이미 제공하지만 해당
+  엔티티 모델에 결합돼 있고 Spring Boot 자동 구성이 없다.
 - `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository/aws/src/main/kotlin/io/bluetape4k/aws/dynamodb/enhanced/DynamoDbAsyncTableExtensions.kt`
-  already provides coroutine/Flow helpers for `DynamoDbAsyncTable<T>`:
+  는 `DynamoDbAsyncTable<T>`용 코루틴/Flow 도우미를 이미 제공한다.
   `getItem`, `putItem`, `deleteItem`, `scanAll`, `queryAll`, `queryByPartition`,
   `findAll`, `findByPartition`, and `exists`.
 - `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository/aws/src/main/kotlin/io/bluetape4k/aws/dynamodb/enhanced/DynamoDbEnhancedAsyncClientSupport.kt`
-  wraps `DynamoDbEnhancedAsyncClient.builder().dynamoDbClient(client).build()`.
+  는 `DynamoDbEnhancedAsyncClient.builder().dynamoDbClient(client).build()`를 감싼다.
 - `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository/aws/src/test/kotlin/io/bluetape4k/aws/dynamodb/examples/food/repository/CustomerRepository.kt`
-  shows current repository usage through `DynamoDbEnhancedAsyncClient.table(...)`,
-  `QueryEnhancedRequest`, and `QueryConditional`.
-- `gradle/libs.versions.toml` already exposes
-  `libs.aws2.dynamodb.enhanced` for `software.amazon.awssdk:dynamodb-enhanced`.
+  는 `DynamoDbEnhancedAsyncClient.table(...)`, `QueryEnhancedRequest`,
+  `QueryConditional`을 통한 현재 저장소 사용법을 보여 준다.
+- `gradle/libs.versions.toml`은 `software.amazon.awssdk:dynamodb-enhanced`용
+  `libs.aws2.dynamodb.enhanced`를 이미 노출한다.
 
-### Official Docs
+### 공식 문서
 
-- AWS SDK for Java 2.x builds `DynamoDbEnhancedAsyncClient` from a
-  `DynamoDbAsyncClient`.
-- Enhanced async single-item operations return `CompletableFuture`.
-- Enhanced async scan/query operations return `PagePublisher<T>` / `SdkPublisher`
-  and should be consumed asynchronously.
-- `TableSchema.fromBean(MyClass::class.java)` supports `@DynamoDbBean` mapping.
-- Table and index query support is exposed through `DynamoDbAsyncTable<T>` and
-  `DynamoDbAsyncIndex<T>` with `QueryEnhancedRequest` and `QueryConditional`.
-- Spring Boot auto-configuration should use classpath conditions,
-  `@ConditionalOnMissingBean`, and typed configuration properties.
+- AWS SDK for Java 2.x는 `DynamoDbAsyncClient`에서 `DynamoDbEnhancedAsyncClient`를 만든다.
+- Enhanced 비동기 단일 항목 연산은 `CompletableFuture`를 반환한다.
+- Enhanced 비동기 스캔/쿼리 연산은 `PagePublisher<T>` / `SdkPublisher`를 반환하며
+  비동기로 소비해야 한다.
+- `TableSchema.fromBean(MyClass::class.java)`은 `@DynamoDbBean` 매핑을 지원한다.
+- 테이블 및 인덱스 쿼리 지원은 `QueryEnhancedRequest`, `QueryConditional`과 함께
+  `DynamoDbAsyncTable<T>`, `DynamoDbAsyncIndex<T>`를 통해 노출된다.
+- Spring Boot 자동 구성은 클래스패스 조건, `@ConditionalOnMissingBean`, 타입 지정
+  구성 속성을 사용해야 한다.
 
-## Goals
+## 목표
 
-1. Auto-configure DynamoDB beans when the AWS DynamoDB Enhanced SDK is present:
+1. AWS DynamoDB Enhanced SDK가 있을 때 다음 DynamoDB 빈을 자동 구성한다.
    - `DynamoDbAsyncClient`
    - `DynamoDbEnhancedAsyncClient`
-2. Bind `bluetape4k.aws.dynamodb.*` properties:
+2. 다음 `bluetape4k.aws.dynamodb.*` 속성을 바인딩한다.
    - `enabled`
    - `region`
    - `endpoint-override`
-   - table prefix/default capacity/test-friendly defaults when needed
-3. Provide Spring-friendly coroutine repository base types:
+   - 필요할 때 테이블 접두사/기본 용량/테스트 친화적 기본값
+3. Spring 친화적인 코루틴 저장소 기반 타입을 제공한다.
    - `CoroutinesDynamoDbRepository<T, ID>`
    - `AbstractCoroutinesDynamoDbRepository<T, ID>`
-4. Support `@DynamoDbBean` entities through `TableSchema.fromBean(...)`.
-5. Support common operations:
-   - save, find by id, delete by id
-   - update/delete item overloads
-   - scan as `Flow<T>`
-   - query as `Flow<T>`
-   - index query as `Flow<T>`
-   - bounded first page helpers where useful
-6. Add LocalStack tests for bean registration, CRUD, scan paging, query, and
-   index query.
-7. Sync README.md and README.ko.md.
+4. `TableSchema.fromBean(...)`을 통해 `@DynamoDbBean` 엔티티를 지원한다.
+5. 다음 공통 연산을 지원한다.
+   - 저장, ID로 조회, ID로 삭제
+   - 항목 갱신/삭제 오버로드
+   - `Flow<T>` 기반 스캔
+   - `Flow<T>` 기반 쿼리
+   - `Flow<T>` 기반 인덱스 쿼리
+   - 유용한 경우 크기가 제한된 첫 페이지 도우미
+6. 빈 등록, CRUD, 스캔 페이징, 쿼리, 인덱스 쿼리를 검증하는 LocalStack 테스트를 추가한다.
+7. README.md와 README.ko.md를 동기화한다.
 
-## Non-Goals
+## 제외 범위
 
-- Do not add awspring or Spring Data DynamoDB.
-- Do not implement annotation scanning that auto-discovers every repository
-  interface in this first PR.
-- Do not build a full Spring Data repository factory, derived query parser, or
-  transaction abstraction.
-- Do not require entities to implement the existing `DynamoDbEntity`; the new
-  Spring repository must work with ordinary `@DynamoDbBean` classes.
-- Do not auto-create production tables on application startup. Tests may create
-  tables explicitly.
-- Do not hide DynamoDB consistency/capacity trade-offs behind magic defaults.
+- awspring 또는 Spring Data DynamoDB를 추가하지 않는다.
+- 첫 PR에서 모든 저장소 인터페이스를 자동 발견하는 어노테이션 스캔을 구현하지 않는다.
+- 완전한 Spring Data 저장소 팩토리, 파생 쿼리 파서 또는 트랜잭션 추상화를 만들지 않는다.
+- 엔티티가 기존 `DynamoDbEntity`를 구현하도록 요구하지 않는다. 새 Spring 저장소는
+  일반 `@DynamoDbBean` 클래스와 함께 동작해야 한다.
+- 애플리케이션 시작 시 운영 테이블을 자동 생성하지 않는다. 테스트는 테이블을
+  명시적으로 생성할 수 있다.
+- DynamoDB 일관성/용량 절충을 마법 같은 기본값으로 숨기지 않는다.
 
-## Approach Options
+## 접근 선택지
 
-### Option A: Reuse Existing `DynamoDbCoroutineRepository`
+### 선택지 A: 기존 `DynamoDbCoroutineRepository` 재사용
 
-Use the existing `aws` module repository interface directly.
+기존 `aws` 모듈 저장소 인터페이스를 직접 사용한다.
 
-Pros:
-- Very small surface.
-- Reuses tested code.
+장점:
+- API 표면이 매우 작다.
+- 검증된 코드를 재사용한다.
 
-Cons:
-- Requires `T : DynamoDbEntity`, which conflicts with issue #3's generic
-  `@DynamoDbBean` mapping goal.
-- Does not model `ID`.
-- Does not give Spring users a clean abstract repository base.
+단점:
+- `T : DynamoDbEntity`를 요구해 이슈 #3의 일반 `@DynamoDbBean` 매핑 목표와 충돌한다.
+- `ID`를 모델링하지 않는다.
+- Spring 사용자에게 깔끔한 추상 저장소 기반을 제공하지 않는다.
 
-Decision: reject as the primary Spring API, but reuse its ideas and enhanced
-async extension functions.
+결정: 기본 Spring API로는 거부하지만 그 아이디어와 Enhanced 비동기 확장 함수는 재사용한다.
 
-### Option B: Spring Data-Like Repository Factory
+### 선택지 B: Spring Data 형태의 저장소 팩토리
 
-Implement repository interface scanning, generated proxies, and method-name
-query derivation.
+저장소 인터페이스 스캔, 생성 프록시, 메서드 이름 기반 쿼리 파생을 구현한다.
 
-Pros:
-- Familiar Spring user experience.
+장점:
+- Spring 사용자에게 익숙한 경험을 제공한다.
 
-Cons:
-- Large blast radius.
-- Query derivation is a separate product surface.
-- Hard to finish safely in a first DynamoDB PR.
+단점:
+- 영향 범위가 크다.
+- 쿼리 파생은 별도의 제품 API다.
+- 첫 DynamoDB PR에서 안전하게 완성하기 어렵다.
 
-Decision: reject for #3. Leave it as a future issue after the base repository
-is proven.
+결정: #3에서는 거부한다. 기반 저장소를 검증한 뒤 향후 이슈로 남긴다.
 
-### Option C: Explicit Abstract Repository Base
+### 선택지 C: 명시적 추상 저장소 기반
 
-Provide a small generic interface and abstract class. Applications define
-repository beans by extending the base and supplying table name, schema, and key
-mapping.
+작은 제네릭 인터페이스와 추상 클래스를 제공한다. 애플리케이션은 기반 클래스를
+확장하고 테이블 이름, 스키마, 키 매핑을 제공해 저장소 빈을 정의한다.
 
-Pros:
-- Works with plain `@DynamoDbBean`.
-- Keeps mapping/key/index decisions explicit.
-- Easy to test with LocalStack.
-- Reuses AWS Enhanced Async client directly.
+장점:
+- 일반 `@DynamoDbBean`과 동작한다.
+- 매핑/키/인덱스 결정을 명시적으로 유지한다.
+- LocalStack으로 테스트하기 쉽다.
+- AWS Enhanced Async 클라이언트를 직접 재사용한다.
 
-Cons:
-- Slightly more boilerplate per repository.
-- No derived query methods.
+단점:
+- 저장소마다 상용구가 조금 더 많다.
+- 파생 쿼리 메서드가 없다.
 
-Decision: accept for #3.
+결정: #3에서 채택한다.
 
-## Proposed API
+## 제안 API
 
-Package:
+패키지:
 
 ```text
 io.bluetape4k.aws.spring.dynamodb
@@ -166,7 +155,7 @@ io.bluetape4k.aws.spring.dynamodb
   DefaultDynamoDbTableNameResolver
 ```
 
-Repository contract:
+저장소 계약:
 
 ```kotlin
 interface CoroutinesDynamoDbRepository<T: Any, ID: Any> {
@@ -193,7 +182,7 @@ interface CoroutinesDynamoDbRepository<T: Any, ID: Any> {
 }
 ```
 
-Abstract base:
+추상 기반:
 
 ```kotlin
 abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
@@ -207,48 +196,47 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
 }
 ```
 
-`table` is derived from:
+`table`은 다음에서 만든다.
 
 ```kotlin
 enhancedClient.table(tableNameResolver.resolve(tableName), TableSchema.fromBean(entityClass))
 ```
 
-For entities better represented by static schemas, allow a protected constructor
-or overridable `tableSchema`:
+정적 스키마로 표현하는 편이 나은 엔티티에는 protected 생성자 또는 재정의 가능한
+`tableSchema`를 허용한다.
 
 ```kotlin
 protected open val tableSchema: TableSchema<T> = TableSchema.fromBean(entityClass)
 ```
 
-## Auto-Configuration
+## 자동 구성
 
-`DynamoDbAutoConfiguration` should mirror S3/SQS patterns:
+`DynamoDbAutoConfiguration`은 S3/SQS 패턴을 따라야 한다.
 
 - `@AutoConfiguration(after = [AwsAutoConfiguration::class])`
-- `@ConditionalOnClass` strings:
+- `@ConditionalOnClass` 문자열:
   - `software.amazon.awssdk.http.async.SdkAsyncHttpClient`
   - `software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient`
   - `software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient`
 - `@ConditionalOnProperty(prefix = "bluetape4k.aws.dynamodb", name = ["enabled"], havingValue = "true", matchIfMissing = true)`
 - `@EnableConfigurationProperties(DynamoDbProperties::class)`
 
-Beans:
+빈:
 
 - `DynamoDbAsyncClient`, `@ConditionalOnMissingBean`, `destroyMethod = "close"`
 - `DynamoDbEnhancedAsyncClient`, `@ConditionalOnMissingBean`
 - `DynamoDbTableNameResolver`, `@ConditionalOnMissingBean`
 
-Builder rules:
+빌더 규칙:
 
-- Use `AwsCredentialsProvider` from `ObjectProvider`, fallback to
-  `DefaultCredentialsProvider.builder().build()`.
-- Apply `Region.of(properties.region)` only when configured.
-- Apply `endpointOverride` only when configured.
-- Accept optional `SdkAsyncHttpClient`.
-- Reject `endpointOverride` without `region`, because the AWS signer still
-  needs a region.
+- `ObjectProvider`의 `AwsCredentialsProvider`를 사용하고, 없으면
+  `DefaultCredentialsProvider.builder().build()`를 사용한다.
+- 구성됐을 때만 `Region.of(properties.region)`을 적용한다.
+- 구성됐을 때만 `endpointOverride`를 적용한다.
+- 선택적 `SdkAsyncHttpClient`를 받는다.
+- AWS 서명자에는 여전히 리전이 필요하므로 `region` 없는 `endpointOverride`를 거부한다.
 
-## Properties
+## 속성
 
 ```kotlin
 @ConfigurationProperties(prefix = "bluetape4k.aws.dynamodb")
@@ -260,46 +248,43 @@ data class DynamoDbProperties(
 )
 ```
 
-`tablePrefix` is used only by `DynamoDbTableNameResolver`; it lets tests and
-multi-environment apps keep repository code stable.
+`tablePrefix`는 `DynamoDbTableNameResolver`에서만 사용한다. 테스트와 다중 환경
+애플리케이션이 저장소 코드를 안정적으로 유지할 수 있게 한다.
 
-## Risks And Failure Modes
+## 위험과 실패 모드
 
-1. **Kotlin `@DynamoDbBean` mutability requirements.** Enhanced Client bean
-   mapping needs compatible getters/setters and no-arg construction. Tests must
-   use realistic mutable bean classes rather than immutable data classes.
-2. **Index creation mismatch.** Repository index query support is only useful
-   when the LocalStack test table has a GSI with matching annotations and table
-   creation metadata.
-3. **Publisher conversion and cancellation.** Query/scan must use reactive
-   `asFlow()` over AWS publishers and avoid blocking collection.
-4. **Table auto-creation temptation.** Auto-creating tables in auto-config would
-   create production side effects. Keep table creation explicit in tests.
-5. **Compile-only AWS dependency boundary.** Main code must add
-   `compileOnly(libs.aws2.dynamodb.enhanced)` and tests must add
-   `testImplementation(libs.aws2.dynamodb.enhanced)`.
+1. **Kotlin `@DynamoDbBean` 가변성 요구 사항.** Enhanced Client 빈 매핑에는 호환되는
+   getter/setter와 인자 없는 생성자가 필요하다. 테스트는 불변 데이터 클래스가 아니라
+   현실적인 가변 빈 클래스를 사용해야 한다.
+2. **인덱스 생성 불일치.** LocalStack 테스트 테이블에 일치하는 어노테이션과 테이블
+   생성 메타데이터를 가진 GSI가 있을 때만 저장소 인덱스 쿼리 지원이 유용하다.
+3. **Publisher 변환과 취소.** 쿼리/스캔은 AWS publisher에 reactive `asFlow()`를
+   사용하고 블로킹 수집을 피해야 한다.
+4. **테이블 자동 생성 유혹.** 자동 구성에서 테이블을 자동 생성하면 운영 부작용이
+   생긴다. 테스트에서 테이블 생성을 명시적으로 유지한다.
+5. **컴파일 전용 AWS 의존성 경계.** 운영 코드에는
+   `compileOnly(libs.aws2.dynamodb.enhanced)`, 테스트에는
+   `testImplementation(libs.aws2.dynamodb.enhanced)`를 추가해야 한다.
 
-## Acceptance Criteria
+## 인수 기준
 
-- `DynamoDbAutoConfiguration` registers the async and enhanced async clients
-  when SDK classes are present.
-- Custom user beans back off auto-configured defaults.
-- Disabled property prevents DynamoDB beans.
-- Endpoint override without region fails binding/startup.
-- Repository base supports `@DynamoDbBean` CRUD against LocalStack.
-- Scan/query return `Flow<T>`.
-- GSI query works against a test table.
-- README.md and README.ko.md document dependency, properties, and repository
-  usage.
+- SDK 클래스가 있으면 `DynamoDbAutoConfiguration`이 비동기 및 Enhanced 비동기
+  클라이언트를 등록한다.
+- 사용자 정의 빈이 있으면 자동 구성 기본값이 물러난다.
+- 비활성화 속성은 DynamoDB 빈 등록을 막는다.
+- 리전 없는 엔드포인트 재정의는 바인딩/시작에 실패한다.
+- 저장소 기반이 LocalStack에서 `@DynamoDbBean` CRUD를 지원한다.
+- 스캔/쿼리가 `Flow<T>`를 반환한다.
+- 테스트 테이블에서 GSI 쿼리가 동작한다.
+- README.md와 README.ko.md에 의존성, 속성, 저장소 사용법을 문서화한다.
 
-## Definition Of Done
+## 완료 정의
 
-- Spec and plan committed before implementation.
-- Advisor review attempted with full absolute paths and accepted findings
-  integrated.
+- 구현 전에 명세와 계획을 커밋한다.
+- 전체 절대 경로로 자문 리뷰를 시도하고 수용한 지적을 반영한다.
 - `./gradlew :aws-spring-boot:compileKotlin :aws-spring-boot:compileTestKotlin --no-daemon`
 - `./gradlew :aws-spring-boot:test --no-daemon`
 - `./gradlew :aws-spring-boot:koverHtmlReport detekt :aws-spring-boot:build -x test --no-daemon`
 - `git diff --check`
-- PR title uses `[feat]`, not `[codex]`.
-- PR body is Korean and includes `Closes #3`.
+- PR 제목은 `[codex]`가 아니라 `[feat]`를 사용한다.
+- PR 본문은 한국어로 작성하고 `Closes #3`을 포함한다.

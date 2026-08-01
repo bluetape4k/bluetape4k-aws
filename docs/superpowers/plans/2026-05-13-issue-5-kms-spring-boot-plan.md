@@ -1,81 +1,81 @@
-# Issue #5 KMS Spring Boot Support Plan
+# 이슈 #5 KMS Spring Boot 지원 계획
 
-Date: 2026-05-13
+날짜: 2026-05-13
 Spec: `docs/superpowers/specs/2026-05-13-issue-5-kms-spring-boot-design.md`
-Issue: https://github.com/bluetape4k/bluetape4k-aws/issues/5
+이슈: https://github.com/bluetape4k/bluetape4k-aws/issues/5
 
-## Scope
+## 범위
 
-Implement the first KMS Spring Boot slice:
+첫 KMS Spring Boot 작업을 구현한다.
 
-1. Auto-configure `KmsAsyncClient`.
-2. Bind `bluetape4k.aws.kms`.
-3. Provide coroutine encrypt/decrypt and data-key generation.
-4. Provide bounded in-memory data key cache.
-5. Provide optional Spring Security `TextEncryptor` adapter.
-6. Expand README/README.ko.md with user-oriented explanation and UML diagrams.
+1. `KmsAsyncClient`를 자동 설정한다.
+2. `bluetape4k.aws.kms`를 binding한다.
+3. coroutine encrypt/decrypt와 data-key 생성을 제공한다.
+4. 크기가 제한된 in-memory data key cache를 제공한다.
+5. 선택적 Spring Security `TextEncryptor` adapter를 제공한다.
+6. README/README.ko.md에 사용자 중심 설명과 UML 다이어그램을 추가한다.
 
-## Tasks
+## 작업
 
-### T0 - Baseline
+### T0 - 기준선
 
-- Confirm no existing #5 spec/plan exists.
-- Create worktree from `origin/develop`.
-- Inspect S3/SQS/DynamoDB Spring Boot patterns.
-- Check Spring Boot auto-configuration documentation and AWS SDK v2 KMS behavior.
+- 기존 #5 spec/plan이 없는지 확인한다.
+- `origin/develop`에서 worktree를 만든다.
+- S3/SQS/DynamoDB Spring Boot pattern을 검사한다.
+- Spring Boot 자동 설정 문서와 AWS SDK v2 KMS 동작을 확인한다.
 
-### T1 - Build Wiring
+### T1 - Build 연결
 
-- Add `libs.aws2.kms` to `aws-spring-boot` compile/test dependencies.
-- Add `spring-security-crypto` alias and optional compile/test dependency.
-- Register KMS auto-configuration classes in `AutoConfiguration.imports`.
+- `aws-spring-boot` compile/test 의존성에 `libs.aws2.kms`를 추가한다.
+- `spring-security-crypto` alias와 선택적 compile/test 의존성을 추가한다.
+- `AutoConfiguration.imports`에 KMS 자동 설정 class를 등록한다.
 
-### T2 - Core API
+### T2 - 핵심 API
 
-- Add `KmsProperties`.
-- Add `KmsOperations`.
-- Add `KmsDataKey`, `KmsDataKeyCacheKey`, `DataKeyCache`, and default in-memory cache.
-- Add `KmsCoroutinesEncryptor`.
+- `KmsProperties`를 추가한다.
+- `KmsOperations`를 추가한다.
+- `KmsDataKey`, `KmsDataKeyCacheKey`, `DataKeyCache`, 기본 in-memory cache를 추가한다.
+- `KmsCoroutinesEncryptor`를 추가한다.
 
-### T3 - Spring Configuration
+### T3 - Spring 설정
 
-- Add `KmsAutoConfiguration`.
-- Add optional `KmsTextEncryptorAutoConfiguration`.
-- Ensure custom user beans back off.
-- Keep direct AWS SDK service references guarded by `@ConditionalOnClass`.
+- `KmsAutoConfiguration`을 추가한다.
+- 선택적 `KmsTextEncryptorAutoConfiguration`을 추가한다.
+- custom 사용자 bean이 있으면 자동 설정이 물러나는지 확인한다.
+- AWS SDK 서비스 직접 참조를 `@ConditionalOnClass`로 보호한다.
 
-### T4 - Tests
+### T4 - 테스트
 
-- Add `ApplicationContextRunner` tests for auto-config, disable flag, custom beans, and endpoint-region validation.
-- Add LocalStack test for encrypt/decrypt and data-key caching.
-- Add TextEncryptor adapter test when `spring-security-crypto` is on the test classpath.
+- 자동 설정, 비활성화 flag, custom bean, endpoint-region 검증을 위한 `ApplicationContextRunner` 테스트를 추가한다.
+- encrypt/decrypt와 data-key caching을 위한 LocalStack 테스트를 추가한다.
+- `spring-security-crypto`가 test classpath에 있을 때 TextEncryptor adapter 테스트를 추가한다.
 
-### T5 - Documentation
+### T5 - 문서
 
-- Update README.md and README.ko.md dependency snippets.
-- Add KMS configuration section.
-- Add user-facing examples for small secret encryption and TextEncryptor.
-- Add UML diagrams for component and runtime flows.
-- State KMS payload limit caveat and data-key cache security tradeoff.
+- README.md와 README.ko.md 의존성 snippet을 갱신한다.
+- KMS 설정 절을 추가한다.
+- 작은 secret 암호화와 TextEncryptor의 사용자 예제를 추가한다.
+- component와 runtime 흐름 UML 다이어그램을 추가한다.
+- KMS payload 제한 주의 사항과 data-key cache 보안 tradeoff를 명시한다.
 
-### T6 - Verification and PR
+### T6 - 검증 및 PR
 
-- Run targeted compile/tests.
-- Run full `:aws-spring-boot:test`.
-- Run `git diff --check`.
-- Commit with Lore trailers.
-- Push branch, open PR assigned to `debop`, monitor CI, mark ready when green.
+- 범위가 좁은 compile/test를 실행한다.
+- 전체 `:aws-spring-boot:test`를 실행한다.
+- `git diff --check`를 실행한다.
+- Lore trailer를 포함해 commit한다.
+- branch를 push하고 `debop`을 담당자로 지정한 PR을 생성한다. CI를 모니터링하고 성공하면 ready로 표시한다.
 
-## Risks
+## 위험
 
-- `TextEncryptor` is blocking while KMS client calls are async/suspend. Mitigation: document intended small-secret use and keep it as optional adapter.
-- Plaintext data-key caching is sensitive. Mitigation: conservative defaults, bounded TTL and size, explicit documentation.
-- LocalStack KMS behavior may differ from AWS. Mitigation: keep tests focused on SDK request/response behavior and report real AWS as not tested.
+- KMS client 호출은 async/suspend이지만 `TextEncryptor`는 blocking이다. 대응: 의도한 작은 secret 용도를 문서화하고 선택적 adapter로 유지한다.
+- Plaintext data-key caching은 민감하다. 대응: 보수적 기본값, 제한된 TTL과 크기, 명시적인 문서를 제공한다.
+- LocalStack KMS 동작은 AWS와 다를 수 있다. 대응: 테스트를 SDK request/response 동작에 집중하고 실제 AWS는 테스트하지 않았다고 보고한다.
 
-## Acceptance Criteria
+## 인수 조건
 
-- `KmsOperations` can encrypt/decrypt bytes through LocalStack KMS.
-- `generateDataKey` uses cache when enabled and bypasses it when disabled.
-- `KmsTextEncryptor` round-trips text and emits Base64 ciphertext.
-- `aws-spring-boot` tests pass locally and in GitHub Actions.
-- README files explain the feature from a user perspective and include UML diagrams.
+- `KmsOperations`가 LocalStack KMS를 통해 byte를 encrypt/decrypt할 수 있다.
+- `generateDataKey`는 cache가 활성화되면 사용하고 비활성화되면 우회한다.
+- `KmsTextEncryptor`가 text를 round trip하고 Base64 ciphertext를 생성한다.
+- `aws-spring-boot` 테스트가 로컬과 GitHub Actions에서 통과한다.
+- README 파일이 사용자 관점에서 기능을 설명하고 UML 다이어그램을 포함한다.

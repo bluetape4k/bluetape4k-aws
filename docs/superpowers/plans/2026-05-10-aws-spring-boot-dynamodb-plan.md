@@ -1,66 +1,63 @@
-# aws-spring-boot DynamoDB Repository Plan
+# aws-spring-boot DynamoDB repository 계획
 
-Date: 2026-05-10
-Spec: `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository/docs/superpowers/specs/2026-05-10-aws-spring-boot-dynamodb-design.md`
-Issue: https://github.com/bluetape4k/bluetape4k-aws/issues/3
+작성일: 2026-05-10
+명세: `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository/docs/superpowers/specs/2026-05-10-aws-spring-boot-dynamodb-design.md`
+이슈: https://github.com/bluetape4k/bluetape4k-aws/issues/3
 
-## Execution Rules
+## 실행 규칙
 
-- Work inside `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository`.
-- Keep #3 independent from PR #30 (`aws #2`) unless a direct dependency is
-  discovered.
-- Do not use awspring.
-- Keep AWS service SDK dependencies `compileOnly` in main and explicit
-  `testImplementation` for tests.
-- Public APIs get Korean KDoc.
-- README.md and README.ko.md stay in sync.
+- `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository`에서 작업한다.
+- 직접 dependency가 발견되지 않는 한 #3을 PR #30(`aws #2`)과 독립적으로 유지한다.
+- awspring을 사용하지 않는다.
+- AWS service SDK dependency는 main에서 `compileOnly`, test에서 명시적인 `testImplementation`으로 유지한다.
+- public API에 한국어 KDoc을 작성한다.
+- README.md와 README.ko.md를 동기화한다.
 
-## Step 1: Build And Registration
+## 단계 1: build와 등록
 
-1. Update `aws-spring-boot/build.gradle.kts`.
-   - Add `compileOnly(libs.aws2.dynamodb.enhanced)`.
-   - Add `testImplementation(libs.aws2.dynamodb.enhanced)`.
-2. Add `DynamoDbAutoConfiguration` to
-   `aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
-3. Compile early:
+1. `aws-spring-boot/build.gradle.kts`를 갱신한다.
+   - `compileOnly(libs.aws2.dynamodb.enhanced)`를 추가한다.
+   - `testImplementation(libs.aws2.dynamodb.enhanced)`를 추가한다.
+2. `aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`에 `DynamoDbAutoConfiguration`을 추가한다.
+3. 일찍 compile한다.
    - `./gradlew :aws-spring-boot:compileKotlin --no-daemon`
 
-## Step 2: Properties And Table Name Resolver
+## 단계 2: property와 table name resolver
 
-Create package `io.bluetape4k.aws.spring.dynamodb`.
+`io.bluetape4k.aws.spring.dynamodb` package를 생성한다.
 
-Files:
+파일:
 
 - `DynamoDbProperties.kt`
 - `DynamoDbTableNameResolver.kt`
 - `DefaultDynamoDbTableNameResolver.kt`
 
-Tasks:
+작업:
 
-1. Implement `DynamoDbProperties` with prefix `bluetape4k.aws.dynamodb`.
-2. Enforce `endpointOverride == null || region is not blank`.
-3. Add `tablePrefix: String = ""`.
-4. Implement resolver as `tablePrefix + tableName`.
-5. Add Korean KDoc to public types.
+1. prefix `bluetape4k.aws.dynamodb`를 사용하는 `DynamoDbProperties`를 구현한다.
+2. `endpointOverride == null || region is not blank`를 강제한다.
+3. `tablePrefix: String = ""`를 추가한다.
+4. resolver를 `tablePrefix + tableName`으로 구현한다.
+5. public type에 한국어 KDoc을 추가한다.
 
-Tests:
+테스트:
 
-- Property binding success.
-- Endpoint override without region fails.
-- Resolver applies prefix.
+- property binding 성공.
+- region 없는 endpoint override 실패.
+- resolver가 prefix 적용.
 
-## Step 3: Auto-Configuration
+## 단계 3: auto-configuration
 
-Create `DynamoDbAutoConfiguration.kt`.
+`DynamoDbAutoConfiguration.kt`를 생성한다.
 
-Bean methods:
+bean 메서드:
 
 1. `dynamoDbAsyncClient(...)`
    - `@Bean(destroyMethod = "close")`
    - `@ConditionalOnMissingBean`
    - `DynamoDbAsyncClient.builder()`
-   - credentials provider fallback
-   - optional region, endpoint, async HTTP client
+   - 자격 증명 provider fallback
+   - 선택형 region, endpoint, async HTTP client
 2. `dynamoDbEnhancedAsyncClient(dynamoDbAsyncClient)`
    - `@ConditionalOnMissingBean`
    - `DynamoDbEnhancedAsyncClient.builder().dynamoDbClient(dynamoDbAsyncClient).build()`
@@ -68,23 +65,23 @@ Bean methods:
    - `@ConditionalOnMissingBean`
    - `DefaultDynamoDbTableNameResolver(properties.tablePrefix)`
 
-ContextRunner tests:
+ContextRunner 테스트:
 
-- all beans registered by default.
-- `enabled=false` backs off.
-- custom `DynamoDbAsyncClient` backs off.
-- custom `DynamoDbEnhancedAsyncClient` backs off.
-- custom resolver backs off.
-- classpath absence backs off with `FilteredClassLoader`.
+- 기본적으로 모든 bean 등록.
+- `enabled=false`이면 back off.
+- custom `DynamoDbAsyncClient`가 있으면 back off.
+- custom `DynamoDbEnhancedAsyncClient`가 있으면 back off.
+- custom resolver가 있으면 back off.
+- classpath에 없으면 `FilteredClassLoader`로 back off.
 
-## Step 4: Repository Contract And Base Class
+## 단계 4: repository 계약과 base class
 
-Files:
+파일:
 
 - `CoroutinesDynamoDbRepository.kt`
 - `AbstractCoroutinesDynamoDbRepository.kt`
 
-Contract:
+계약:
 
 - `save(item): T`
 - `findById(id): T?`
@@ -96,90 +93,87 @@ Contract:
 - `query(...): Flow<T>`
 - `queryIndex(...): Flow<T>`
 
-Base class:
+기반 class:
 
-1. Constructor receives:
+1. constructor가 다음을 받는다.
    - `DynamoDbEnhancedAsyncClient`
    - `DynamoDbTableNameResolver`
    - `entityClass: Class<T>`
-2. Subclasses provide:
+2. subclass가 다음을 제공한다.
    - `tableName`
    - `keyFromId(id: ID)`
-   - optionally `keyFromItem(item: T)`
-   - optionally `tableSchema`
-3. Build table lazily with resolved table name and schema.
-4. Use `CompletableFuture.await()` for single operations.
-5. Use `table.scan(request).items().asFlow()`.
-6. Use `table.query(request).items().asFlow()`.
-7. Use `table.index(indexName).query(request).items().asFlow()`.
-8. Rethrow `CancellationException` if any catch boundary is introduced.
+    - 선택형 `keyFromItem(item: T)`
+    - 선택형 `tableSchema`
+3. resolve한 table name과 schema로 table을 lazy하게 구성한다.
+4. 단일 operation에 `CompletableFuture.await()`를 사용한다.
+5. `table.scan(request).items().asFlow()`를 사용한다.
+6. `table.query(request).items().asFlow()`를 사용한다.
+7. `table.index(indexName).query(request).items().asFlow()`를 사용한다.
+8. catch boundary를 도입하면 `CancellationException`을 다시 던진다.
 
-## Step 5: LocalStack Test Model
+## 단계 5: LocalStack test model
 
-Create test-only model under
-`aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/dynamodb`.
+`aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/dynamodb` 아래에 test 전용 model을 생성한다.
 
-Model:
+모델:
 
 - `OrderDocument`
 - `@DynamoDbBean`
-- partition key: `orderId`
-- sort key: `createdAt`
-- GSI partition key: `customerId`
-- GSI sort key: `createdAt`
-- mutable properties and public no-arg constructor compatible with Enhanced
-  Client.
+- partition key 필드: `orderId`
+- sort key 필드: `createdAt`
+- GSI partition key 필드: `customerId`
+- GSI sort key 필드: `createdAt`
+- Enhanced Client와 호환되는 mutable property와 public no-arg constructor.
 
-Repository:
+저장소:
 
 - `OrderRepository : AbstractCoroutinesDynamoDbRepository<OrderDocument, OrderId>`
 - `OrderId(orderId: String, createdAt: String)`
-- helper `findByCustomer(customerId): Flow<OrderDocument>` using `queryIndex`.
+- `queryIndex`를 사용하는 helper `findByCustomer(customerId): Flow<OrderDocument>`.
 
-Table setup:
+table 설정:
 
-- Use `DynamoDbAsyncClient.createTable` or enhanced table `createTable`.
-- Include primary key schema and `customer-createdAt-index` GSI.
-- Wait until table exists/active with bounded Awaitility.
+- `DynamoDbAsyncClient.createTable` 또는 enhanced table `createTable`을 사용한다.
+- primary key schema와 `customer-createdAt-index` GSI를 포함한다.
+- bounded Awaitility로 table이 존재하고 active 상태가 될 때까지 기다린다.
 
-## Step 6: Tests
+## 단계 6: test
 
-ApplicationContextRunner:
+ApplicationContextRunner 검증:
 
-1. registers `DynamoDbAsyncClient`, `DynamoDbEnhancedAsyncClient`,
-   `DynamoDbTableNameResolver`, `DynamoDbProperties`.
-2. disabled property registers no DynamoDB beans.
-3. custom beans back off.
-4. endpoint override requires region.
-5. table prefix binds and resolver applies it.
-6. classpath absence backs off.
+1. `DynamoDbAsyncClient`, `DynamoDbEnhancedAsyncClient`, `DynamoDbTableNameResolver`, `DynamoDbProperties`를 등록한다.
+2. disabled property는 DynamoDB bean을 등록하지 않는다.
+3. custom bean이 있으면 back off한다.
+4. endpoint override에는 region이 필요하다.
+5. table prefix를 binding하고 resolver가 적용한다.
+6. classpath에 없으면 back off한다.
 
-LocalStack:
+LocalStack 검증:
 
-1. CRUD: save -> findById -> existsById -> update -> deleteById.
-2. Scan Flow returns all inserted items.
-3. Query Flow returns items for a partition key.
-4. GSI query Flow returns items for a customer.
-5. Table prefix works by using a prefixed table name in test properties.
+1. CRUD 순서: save -> findById -> existsById -> update -> deleteById.
+2. scan Flow가 삽입한 모든 item을 반환한다.
+3. query Flow가 partition key의 item을 반환한다.
+4. GSI query Flow가 customer의 item을 반환한다.
+5. test property에서 prefix를 붙인 table name을 사용해 table prefix 동작을 검증한다.
 
-## Step 7: Documentation
+## 단계 7: 문서
 
-Update root docs:
+루트 문서를 갱신한다.
 
 - `README.md`
 - `README.ko.md`
 
-Document:
+문서화 항목:
 
-- AWS SDK runtime dependency: `software.amazon.awssdk:dynamodb-enhanced`
-- auto-configured beans
-- `bluetape4k.aws.dynamodb.*` properties
-- repository extension example with `@DynamoDbBean`
-- note that table creation is explicit and not performed by auto-config
+- AWS SDK runtime dependency 항목: `software.amazon.awssdk:dynamodb-enhanced`
+- 자동 구성된 bean
+- `bluetape4k.aws.dynamodb.*` 속성
+- `@DynamoDbBean`을 사용하는 repository extension example
+- table 생성은 명시적이며 auto-config가 수행하지 않는다는 참고
 
-## Step 8: Verification
+## 단계 8: 검증
 
-Run in order:
+순서대로 실행한다.
 
 1. `./gradlew :aws-spring-boot:compileKotlin :aws-spring-boot:compileTestKotlin --no-daemon`
 2. `./gradlew :aws-spring-boot:test --no-daemon`
@@ -187,30 +181,28 @@ Run in order:
 4. `rg 'runBlocking|Thread\\.sleep|GlobalScope' aws-spring-boot/src/main/kotlin`
 5. `git diff --check`
 
-If LocalStack fails for environmental reasons, inspect the concrete failure and
-retry once before classifying it as environment-only.
+환경 문제로 LocalStack이 실패하면 구체적인 failure를 검사하고 한 번 재시도한 뒤 environment-only로 분류한다.
 
-## Step 9: Review, Commit, PR
+## 단계 9: 검토, commit, PR
 
-1. Run local self-review focused on:
-   - AWS publisher Flow cancellation
-   - repository key mapping
-   - GSI schema/query mismatch
-   - Spring conditional back-off
-2. Attempt Claude advisor review with full absolute paths and save artifact.
-3. Commit implementation with Lore trailers and
-   `Co-authored-by: OmX <omx@oh-my-codex.dev>`.
-4. Push `feat/3-dynamodb-repository`.
-5. Create PR title:
+1. 다음 항목에 집중해 local self-review를 실행한다.
+   - AWS publisher Flow cancellation 검증
+   - repository key mapping 검증
+   - GSI schema/query mismatch 검증
+   - Spring conditional back-off 검증
+2. 전체 absolute path로 Claude advisor 검토를 시도하고 artifact를 저장한다.
+3. Lore trailer와 `Co-authored-by: OmX <omx@oh-my-codex.dev>`를 포함해 구현을 commit한다.
+4. `feat/3-dynamodb-repository`를 push한다.
+5. PR title을 생성한다.
    - `[feat] aws-spring-boot DynamoDB coroutine repository`
-6. PR body in Korean and include `Closes #3`.
+6. PR 본문은 한국어로 작성하고 `Closes #3`을 포함한다.
 
-## Checklist
+## 확인 목록
 
-| Item | Status | Notes |
+| 항목 | 상태 | 기록 |
 |---|---|---|
-| Worktree scoped | Done | `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository` |
-| Existing repo reuse identified | Done | Existing `aws` DynamoDB Enhanced Async helpers inform implementation. |
-| Official docs checked | Done | AWS SDK Java v2 Enhanced Async Client and Spring Boot auto-config patterns. |
-| Implementation order dependency-safe | Done | Build/properties/autoconfig before repository/tests/docs. |
-| Verification commands listed | Done | Compile, tests, kover/build, static scans, diff check. |
+| worktree 범위 지정 | 완료 | `/Users/debop/work/bluetape4k/bluetape4k-aws/.worktrees/feat/3-dynamodb-repository` |
+| 기존 저장소 재사용 확인 | 완료 | 기존 `aws` DynamoDB Enhanced Async helper를 구현에 반영. |
+| 공식 문서 확인 | 완료 | AWS SDK Java v2 Enhanced Async Client와 Spring Boot auto-config pattern. |
+| 구현 순서의 dependency 안전성 | 완료 | repository/test/docs 전에 build/property/autoconfig 수행. |
+| 검증 명령 나열 | 완료 | compile, test, kover/build, static scan, diff check. |

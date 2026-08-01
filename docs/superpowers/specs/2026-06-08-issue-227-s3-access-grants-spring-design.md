@@ -1,71 +1,56 @@
-# Issue #227 Spring S3 Access Grants Design
+# 이슈 #227 Spring S3 Access Grants 설계
 
-## Context
+## 배경
 
-Issue #227 is the 0.4.0 follow-up for the S3 Access Grants slice that was
-deferred from issue #192. The 0.3.0 S3 Spring Boot work intentionally delivered
-S3 config reload and KMS-backed client-side encryption only, because Access
-Grants introduces a separate optional AWS SDK control-plane surface.
+이슈 #227은 이슈 #192에서 연기한 S3 Access Grants 범위의 0.4.0 후속 작업이다. Access Grants가 별도의 선택형 AWS SDK control-plane surface를 도입하므로 0.3.0 S3 Spring Boot 작업에서는 의도적으로 S3 config reload와 KMS 기반 client-side encryption만 제공했다.
 
-The current AWS SDK for Java v2 surface exposes S3 Access Grants operations on
-`software.amazon.awssdk.services.s3control.S3ControlClient` and
-`S3ControlAsyncClient`. The repository currently declares `aws2-s3` and
-`aws2-s3-transfer-manager`, but it does not yet declare an `aws2-s3control`
-catalog alias.
+현재 AWS SDK for Java v2 surface는 `software.amazon.awssdk.services.s3control.S3ControlClient`와 `S3ControlAsyncClient`에서 S3 Access Grants operation을 제공한다. 저장소는 현재 `aws2-s3`와 `aws2-s3-transfer-manager`를 선언하지만 아직 `aws2-s3control` catalog alias는 선언하지 않는다.
 
-## Current Evidence
+## 현재 근거
 
-- GitHub issue #227 was updated on 2026-06-08 with the `s3control` direction.
-- AWS SDK Java API reference lists Access Grants methods such as
-  `createAccessGrant`, `createAccessGrantsInstance`, `getDataAccess`, and
-  `listCallerAccessGrants` on `S3ControlClient`.
-- The AWS SDK BOM 2.46.0 includes the `software.amazon.awssdk:s3control`
-  artifact.
-- `./gradlew -q :bluetape4k-aws-spring-boot:dependencyInsight --dependency s3control --configuration compileClasspath`
-  currently reports no matching dependency.
-- CodeGraph is not initialized for this worktree, so source discovery used GNO,
-  Gradle dependency inspection, official AWS SDK docs, and direct source reads.
+- GitHub 이슈 #227은 2026-06-08 `s3control` 방향으로 갱신됐다.
+- AWS SDK Java API reference는 `S3ControlClient`에 `createAccessGrant`, `createAccessGrantsInstance`, `getDataAccess`, `listCallerAccessGrants` 같은 Access Grants method가 있음을 보여준다.
+- AWS SDK BOM 2.46.0은 `software.amazon.awssdk:s3control` artifact를 포함한다.
+- `./gradlew -q :bluetape4k-aws-spring-boot:dependencyInsight --dependency s3control --configuration compileClasspath`는 현재 일치하는 dependency가 없다고 보고한다.
+- 이 worktree에는 CodeGraph가 초기화되지 않아 source 탐색에 GNO, Gradle dependency 검사, 공식 AWS SDK 문서, 직접 source 읽기를 사용했다.
 
-## Goals
+## 목표
 
-- Add optional Spring Boot auto-configuration for S3 Access Grants.
-- Keep basic S3 users free from the `s3control` runtime dependency.
-- Reuse existing AWS core defaults and client customizer infrastructure.
-- Provide a coroutine-first operations/template surface over
-  `S3ControlAsyncClient`.
-- Document user-facing properties and usage in `README.md` and `README.ko.md`.
+- S3 Access Grants를 위한 선택형 Spring Boot auto-configuration을 추가한다.
+- 기본 S3 사용자에게 `s3control` runtime dependency를 요구하지 않는다.
+- 기존 AWS core 기본값과 client customizer infrastructure를 재사용한다.
+- `S3ControlAsyncClient` 기반 coroutine-first operation/template surface를 제공한다.
+- user-facing property와 사용법을 `README.md`와 `README.ko.md`에 문서화한다.
 
-## Non-Goals
+## 목표가 아닌 항목
 
-- Do not implement Ktor Access Grants helpers; issue #228 owns that.
-- Do not implement S3 Vector support; issue #229 owns that.
-- Do not run real AWS Access Grants integration tests requiring account-level
-  IAM Identity Center or Access Grants resources.
-- Do not fold Access Grants into `S3Operations`; it is a control-plane feature
-  with different lifecycle and permissions.
+- Ktor Access Grants helper는 구현하지 않는다. 이슈 #228의 범위다.
+- S3 Vector 지원은 구현하지 않는다. 이슈 #229의 범위다.
+- account-level IAM Identity Center 또는 Access Grants resource가 필요한 실제 AWS Access Grants integration test는 실행하지 않는다.
+- Access Grants를 `S3Operations`에 합치지 않는다. lifecycle과 permission이 다른 control-plane 기능이다.
 
-## Proposed API
+## 제안 API
 
-Add a new package under `io.bluetape4k.aws.spring.s3.accessgrants`:
+`io.bluetape4k.aws.spring.s3.accessgrants` 아래에 새 package를 추가한다.
 
 - `S3AccessGrantsProperties`
 - `S3AccessGrantsAutoConfiguration`
 - `S3AccessGrantsOperations`
 - `S3AccessGrantsCoroutinesTemplate`
 
-The property prefix is:
+property 접두사:
 
 ```properties
 bluetape4k.aws.s3.access-grants
 ```
 
-Initial properties:
+초기 property:
 
-- `enabled`: default `false`.
-- `region`: optional service-specific override.
-- `endpointOverride`: optional service-specific endpoint override.
+- `enabled`: 기본값 `false`.
+- `region`: 선택형 service-specific override.
+- `endpointOverride`: 선택형 service-specific endpoint override.
 
-The template should expose a minimal stable operation set:
+template은 최소한의 안정적인 operation set을 제공해야 한다.
 
 - `getDataAccess(...)`
 - `listCallerAccessGrants(...)`
@@ -73,16 +58,13 @@ The template should expose a minimal stable operation set:
 - `listAccessGrantsInstances(...)`
 - `listAccessGrantsLocations(...)`
 
-Administrative create/delete/update APIs remain accessible through caller-owned
-`S3ControlClient`/`S3ControlAsyncClient` beans. This keeps the first Spring
-surface focused on application access workflows rather than account bootstrap.
+관리용 create/delete/update API는 caller-owned `S3ControlClient`/`S3ControlAsyncClient` bean을 통해 계속 사용할 수 있다. 첫 Spring surface의 초점을 account bootstrap이 아니라 application access workflow에 맞춘다.
 
-## Auto-Configuration Contract
+## auto-configuration 계약
 
-Register `S3AccessGrantsAutoConfiguration` after `AwsAutoConfiguration` and
-after `S3AutoConfiguration`.
+`S3AccessGrantsAutoConfiguration`을 `AwsAutoConfiguration`과 `S3AutoConfiguration` 뒤에 등록한다.
 
-Use string class guards:
+string class guard를 사용한다.
 
 ```kotlin
 @ConditionalOnClass(
@@ -93,86 +75,76 @@ Use string class guards:
 )
 ```
 
-Use property guards:
+property guard를 사용한다.
 
-- `bluetape4k.aws.s3.enabled=true` or missing.
+- `bluetape4k.aws.s3.enabled=true` 또는 누락.
 - `bluetape4k.aws.s3.access-grants.enabled=true`.
 
-Beans:
+등록할 bean:
 
-- `S3ControlClient`, `destroyMethod = "close"`, backs off on caller bean.
-- `S3ControlAsyncClient`, `destroyMethod = "close"`, backs off on caller bean.
-- `S3AccessGrantsOperations`, backs off on caller bean.
+- `S3ControlClient`, `destroyMethod = "close"`, caller bean이 있으면 back off.
+- `S3ControlAsyncClient`, `destroyMethod = "close"`, caller bean이 있으면 back off.
+- `S3AccessGrantsOperations`, caller bean이 있으면 back off.
 
-Client builders must reuse:
+client builder는 다음 항목을 재사용해야 한다.
 
 - `AwsProperties.resolveClientDefaults(...)`
 - `applyAwsDefaults(...)`
 - `applyGlobalCustomizers("s3control", ...)`
 - `applyServiceCustomizers(...)`
 
-## Dependency Contract
+## dependency 계약
 
-Add to `gradle/libs.versions.toml`:
+`gradle/libs.versions.toml`에 추가한다.
 
 ```toml
 aws2-s3control = { module = "software.amazon.awssdk:s3control", version.ref = "aws2" }
 ```
 
-Add to `aws-spring-boot/build.gradle.kts`:
+`aws-spring-boot/build.gradle.kts`에 추가한다.
 
 - `compileOnly(libs.aws2.s3control)`
 - `testImplementation(libs.aws2.s3control)`
 
-Do not add `api` or `runtimeOnly` for `s3control`.
+`s3control`을 위한 `api` 또는 `runtimeOnly`를 추가하지 않는다.
 
-## Testing Strategy
+## test 전략
 
-Use `ApplicationContextRunner`, MockK, and bluetape4k assertions.
+`ApplicationContextRunner`, MockK, bluetape4k assertion을 사용한다.
 
-Required tests:
+필수 test:
 
-- Access Grants auto-configuration is disabled by default.
-- Enabling Access Grants registers sync/async S3 Control clients and operations.
-- Missing `s3control` classes back off cleanly via `FilteredClassLoader`.
-- Caller-provided `S3ControlClient` / `S3ControlAsyncClient` beans are reused.
-- Caller-provided `S3AccessGrantsOperations` backs off the template.
-- Global and service-specific client customizers apply with service name
-  `s3control`.
-- Endpoint override without region fails through the shared AWS defaults rule.
-- Template delegates async SDK calls and awaits completion.
+- Access Grants auto-configuration은 기본적으로 비활성화된다.
+- Access Grants를 활성화하면 sync/async S3 Control client와 operation을 등록한다.
+- `s3control` class가 없으면 `FilteredClassLoader`를 통해 정상적으로 back off한다.
+- caller-provided `S3ControlClient` / `S3ControlAsyncClient` bean을 재사용한다.
+- caller-provided `S3AccessGrantsOperations`가 있으면 template이 back off한다.
+- global 및 service-specific client customizer를 service name `s3control`로 적용한다.
+- region 없는 endpoint override는 공유 AWS 기본값 규칙을 통해 실패한다.
+- template이 async SDK 호출을 위임하고 완료를 기다린다.
 
-Do not add emulator tests for Access Grants in this issue; no local emulator in
-this repository currently proves the account-level Access Grants workflow.
+이 이슈에서는 Access Grants emulator test를 추가하지 않는다. 현재 이 저장소의 local emulator로는 account-level Access Grants workflow를 입증할 수 없다.
 
-## Documentation
+## 문서
 
-Update:
+갱신 대상:
 
-- Root `README.md`
-- Root `README.ko.md`
+- 루트 `README.md`
+- 루트 `README.ko.md`
 
-Documentation should state that Access Grants is opt-in, requires the caller to
-add `software.amazon.awssdk:s3control`, and is separate from basic S3 object
-operations.
+문서에는 Access Grants가 opt-in이고 호출자가 `software.amazon.awssdk:s3control`을 추가해야 하며 기본 S3 object operation과 분리된다고 명시해야 한다.
 
-## Risks
+## 위험
 
-- `S3Control` covers many S3 control-plane APIs beyond Access Grants. The
-  public template should keep the first surface narrow to avoid accidentally
-  committing broad S3 Control compatibility.
-- Access Grants setup often needs account-level permissions and IAM Identity
-  Center association. Unit/slice tests can prove wiring, but real AWS behavior
-  remains out of scope.
-- Adding the catalog alias locally duplicates a centrally governed AWS artifact
-  alias until `bluetape4k-dependencies` grows a generated alias. This is
-  acceptable because the version remains the existing `aws2` line.
+- `S3Control`은 Access Grants 외에도 많은 S3 control-plane API를 다룬다. 광범위한 S3 Control compatibility를 실수로 확정하지 않도록 public template의 첫 surface를 좁게 유지해야 한다.
+- Access Grants 설정에는 account-level permission과 IAM Identity Center 연결이 필요한 경우가 많다. unit/slice test로 wiring을 입증할 수 있지만 실제 AWS 동작은 범위에서 제외한다.
+- `bluetape4k-dependencies`에 생성된 alias가 추가될 때까지 local catalog alias 추가는 중앙에서 관리하는 AWS artifact alias를 중복한다. version은 기존 `aws2` line을 유지하므로 허용한다.
 
 ## DoD
 
-- Spec review reports `P0=0`, `P1=0`.
-- Plan review reports `P0=0`, `P1=0`.
-- Compile and targeted tests pass for `:bluetape4k-aws-spring-boot`.
-- README locale set is updated.
-- A concise lesson is added under `docs/lessons/`.
-- Final code review reports `P0=0`, `P1=0`.
+- 명세 검토에서 `P0=0`, `P1=0`을 보고한다.
+- 계획 검토에서 `P0=0`, `P1=0`을 보고한다.
+- `:bluetape4k-aws-spring-boot` compile 및 targeted test가 통과한다.
+- README locale set을 갱신한다.
+- `docs/lessons/` 아래에 간결한 lesson을 추가한다.
+- 최종 code review에서 `P0=0`, `P1=0`을 보고한다.

@@ -1,121 +1,98 @@
-# Issue #196 - Spring Boot IMDS Integration Spec
+# 이슈 #196 - Spring Boot IMDS 통합 명세
 
-Date: 2026-06-07
-Issue: #196 `feat(aws-spring-boot): add optional EC2 Instance Metadata Service integration`
-Work type: Type A full feature
+날짜: 2026-06-07
+이슈: #196 `feat(aws-spring-boot): add optional EC2 Instance Metadata Service integration`
+작업 유형: Type A 전체 기능
 
-## Context
+## 배경
 
-`aws-spring-boot` already has shared AWS defaults and optional service
-auto-configurations for S3, SQS, SNS, KMS, DynamoDB, SES, and CloudWatch. It
-does not expose an EC2 Instance Metadata Service facade yet. Applications that
-run on EC2 still need to bind directly to AWS SDK IMDS calls when they want
-metadata such as instance id, region, availability zone, instance type, or IAM
-role names.
+`aws-spring-boot`는 이미 공유 AWS 기본값과 S3, SQS, SNS, KMS, DynamoDB, SES, CloudWatch의 선택적 서비스 자동 설정을 제공한다. 아직 EC2 Instance Metadata Service facade는 노출하지 않는다. EC2에서 실행하는 애플리케이션이 instance id, region, availability zone, instance type, IAM role 이름 같은 metadata를 사용하려면 여전히 AWS SDK IMDS 호출에 직접 binding해야 한다.
 
-Current evidence:
+현재 근거:
 
-- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring` has no `imds`
-  package.
-- `gradle/libs.versions.toml` has AWS SDK v2 aliases for `ec2`, `sts`, and
-  service clients, but not `software.amazon.awssdk:imds`.
-- Maven Central serves `software.amazon.awssdk:imds:2.46.0`, matching the
-  repository AWS SDK v2 version line.
-- AWS SDK v2 `Ec2MetadataAsyncClient` exposes `get(String)`,
-  `endpoint(URI)`, `endpointMode(EndpointMode)`, `tokenTtl(Duration)`,
-  `retryPolicy(Ec2MetadataRetryPolicy)`, and async HTTP client configuration.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring`에는 `imds` package가 없다.
+- `gradle/libs.versions.toml`에는 `ec2`, `sts`, 서비스 client용 AWS SDK v2 alias가 있지만 `software.amazon.awssdk:imds`는 없다.
+- Maven Central은 저장소 AWS SDK v2 version line과 일치하는 `software.amazon.awssdk:imds:2.46.0`을 제공한다.
+- AWS SDK v2 `Ec2MetadataAsyncClient`는 `get(String)`, `endpoint(URI)`, `endpointMode(EndpointMode)`, `tokenTtl(Duration)`, `retryPolicy(Ec2MetadataRetryPolicy)`, async HTTP client 설정을 노출한다.
 
-## Goals
+## 목표
 
-- Add optional Spring Boot auto-configuration for AWS SDK v2 IMDS.
-- Provide a coroutine-friendly `ImdsOperations` facade over
-  `Ec2MetadataAsyncClient`.
-- Keep application startup safe outside EC2: creating beans must not call IMDS.
-- Bound all metadata calls with an operation timeout and conservative retry
-  defaults.
-- Document EC2-only behavior and make credential non-exposure explicit.
+- AWS SDK v2 IMDS용 선택적 Spring Boot 자동 설정을 추가한다.
+- `Ec2MetadataAsyncClient`를 감싼 coroutine 친화적인 `ImdsOperations` facade를 제공한다.
+- EC2 밖에서도 application startup이 안전하게 유지되도록 bean 생성 시 IMDS를 호출하지 않는다.
+- 모든 metadata 호출을 operation timeout과 보수적인 retry 기본값으로 제한한다.
+- EC2 전용 동작을 문서화하고 자격 증명 비노출을 명시한다.
 
-## Non-Goals
+## 제외 범위
 
-- Do not replace `DefaultCredentialsProvider` with IMDS-specific credential
-  logic.
-- Do not expose temporary credential values through APIs, logs, actuator data,
-  examples, or README snippets.
-- Do not add Ktor IMDS support; issue #200 owns that adapter.
-- Do not require live EC2 or real AWS credential integration tests.
+- `DefaultCredentialsProvider`를 IMDS 전용 자격 증명 logic으로 교체하지 않는다.
+- API, log, actuator data, 예제, README snippet을 통해 임시 자격 증명 값을 노출하지 않는다.
+- Ktor IMDS 지원을 추가하지 않는다. 해당 adapter는 이슈 #200이 담당한다.
+- 실제 EC2 또는 AWS 자격 증명 통합 테스트를 요구하지 않는다.
 
-## Public API
+## 공개 API
 
-Add package `io.bluetape4k.aws.spring.imds`.
+`io.bluetape4k.aws.spring.imds` package를 추가한다.
 
-Expected types:
+예상 type:
 
 - `ImdsProperties`
-  - Prefix: `bluetape4k.aws.imds`
-  - Fields: `enabled`, `endpoint`, `endpointMode`, `tokenTtl`,
+  - 접두사: `bluetape4k.aws.imds`
+  - 필드: `enabled`, `endpoint`, `endpointMode`, `tokenTtl`,
     `requestTimeout`, `retries`.
-  - Defaults: enabled, IPv4 endpoint mode, six-hour token TTL, short operation
-    timeout, zero or very small retry count.
+  - 기본값: 활성화, IPv4 endpoint mode, 6시간 token TTL, 짧은 operation timeout, 0 또는 매우 적은 retry 수.
 - `ImdsOperations`
   - `suspend fun get(path: String): String`
   - `suspend fun getList(path: String): List<String>`
-  - common helpers: `instanceId`, `availabilityZone`, `region`,
+  - 공통 helper: `instanceId`, `availabilityZone`, `region`,
     `instanceType`, `localIpv4`, `iamRoleNames`.
 - `ImdsCoroutinesTemplate`
-  - Delegates to `Ec2MetadataAsyncClient`.
-  - Applies `withTimeout(properties.requestTimeout)` around every call.
-  - Validates caller paths with bluetape4k validation helpers.
+  - `Ec2MetadataAsyncClient`에 위임한다.
+  - 모든 호출에 `withTimeout(properties.requestTimeout)`을 적용한다.
+  - bluetape4k 검증 helper로 호출자 경로를 검증한다.
 - `ImdsAutoConfiguration`
-  - Guarded by `Ec2MetadataAsyncClient` and `SdkAsyncHttpClient` classes.
-  - Creates `Ec2MetadataAsyncClient` and `ImdsOperations` when enabled.
-  - Backs off for user-provided client or operations beans.
+  - `Ec2MetadataAsyncClient`와 `SdkAsyncHttpClient` class를 조건으로 보호한다.
+  - 활성화되면 `Ec2MetadataAsyncClient`와 `ImdsOperations`를 생성한다.
+  - 사용자가 제공한 client 또는 operation bean이 있으면 물러난다.
 
-## Design Rules
+## 설계 규칙
 
-- Use `compileOnly(libs.aws2.imds)` and matching `testImplementation`.
-- Prefer the existing AWS Spring Boot pattern: one properties class, one
-  auto-configuration class, operations interface, coroutine template, and
-  `AutoConfiguration.imports` registration.
-- Do not perform a metadata probe during auto-configuration.
-- Use `Ec2MetadataRetryPolicy.none()` or an equivalent bounded retry policy by
-  default.
-- Let `SdkAsyncHttpClient` beans be reused when available.
-- Keep the IMDS path helpers low-level and explicit. Do not infer credentials
-  from the IAM security-credentials endpoint.
+- `compileOnly(libs.aws2.imds)`와 이에 대응하는 `testImplementation`을 사용한다.
+- property class 하나, 자동 설정 class 하나, operation interface, coroutine template, `AutoConfiguration.imports` 등록으로 구성된 기존 AWS Spring Boot pattern을 우선한다.
+- 자동 설정 중에 metadata probe를 실행하지 않는다.
+- 기본적으로 `Ec2MetadataRetryPolicy.none()` 또는 이에 상응하는 제한된 retry policy를 사용한다.
+- 사용할 수 있으면 `SdkAsyncHttpClient` bean을 재사용한다.
+- IMDS 경로 helper를 low-level이며 명시적인 형태로 유지한다. IAM security-credentials endpoint에서 자격 증명을 추론하지 않는다.
 
-## Tests
+## 테스트
 
-Required tests:
+필수 테스트:
 
-- Auto-configuration registers client and operations when enabled.
-- Auto-configuration backs off when disabled.
-- User-provided `Ec2MetadataAsyncClient` and `ImdsOperations` beans win.
-- Filtered class loader disables IMDS wiring when SDK IMDS classes are absent.
-- Properties bind endpoint, endpoint mode, token TTL, request timeout, and
-  retry count.
-- `ImdsCoroutinesTemplate` validates blank paths.
-- `ImdsCoroutinesTemplate` converts string and list responses.
-- Timeout handling turns a non-completing future into a timeout failure without
-  hanging.
+- 활성화되면 자동 설정이 client와 operation을 등록한다.
+- 비활성화되면 자동 설정이 물러난다.
+- 사용자가 제공한 `Ec2MetadataAsyncClient`와 `ImdsOperations` bean이 우선한다.
+- SDK IMDS class가 없으면 filtered class loader가 IMDS 연결을 비활성화한다.
+- Property가 endpoint, endpoint mode, token TTL, request timeout, retry 수를 binding한다.
+- `ImdsCoroutinesTemplate`이 빈 경로를 검증한다.
+- `ImdsCoroutinesTemplate`이 string 및 list 응답을 변환한다.
+- Timeout 처리가 완료되지 않는 future를 hang 없이 timeout 실패로 바꾼다.
 
-## Documentation
+## 문서
 
-Update the root and module README locale set:
+root 및 모듈 README locale 세트를 갱신한다.
 
-- Mention Spring Boot IMDS support in the service coverage and dependency
-  sections.
-- Add a short configuration snippet for `bluetape4k.aws.imds`.
-- Add a usage example with `ImdsOperations`.
-- Explain that IMDS is EC2-only and should not be used as an EKS/IRSA
-  replacement.
+- 서비스 커버리지 및 의존성 절에서 Spring Boot IMDS 지원을 언급한다.
+- `bluetape4k.aws.imds`의 짧은 설정 snippet을 추가한다.
+- `ImdsOperations` 사용 예제를 추가한다.
+- IMDS는 EC2 전용이며 EKS/IRSA 대체품으로 사용해서는 안 된다고 설명한다.
 
-## DoD
+## 완료 조건
 
-- Spec review: `P0=0`, `P1=0`.
-- Plan review: `P0=0`, `P1=0`.
-- Focused IMDS tests pass.
-- Full `:bluetape4k-aws-spring-boot:test` passes.
-- `:bluetape4k-aws-spring-boot:compileKotlin` passes.
-- `dependencyInsight` confirms `software.amazon.awssdk:imds:2.46.0`.
-- `git diff --check` passes.
-- PR body ends with `## DoD Status`.
+- Spec 검토: `P0=0`, `P1=0`.
+- Plan 검토: `P0=0`, `P1=0`.
+- 범위가 좁은 IMDS 테스트를 통과한다.
+- 전체 `:bluetape4k-aws-spring-boot:test`를 통과한다.
+- `:bluetape4k-aws-spring-boot:compileKotlin`을 통과한다.
+- `dependencyInsight`에서 `software.amazon.awssdk:imds:2.46.0`을 확인한다.
+- `git diff --check`를 통과한다.
+- PR 본문이 `## DoD Status`로 끝난다.
