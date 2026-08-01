@@ -160,6 +160,27 @@ class AwsExposedDatabaseFactoryTest {
     }
 
     @Test
+    fun `factory preserves connection and provisional close failures`() = runTest {
+        val closeFailure = IllegalStateException("close failed")
+        val dataSource = CloseTrackingDataSource(closeFailure)
+        val connectFailure = IllegalStateException("connect failed")
+        val factory = AwsExposedDatabaseFactory(
+            resolver = NoopAwsDatabaseSettingsResolver,
+            dataSourceFactory = AwsJdbcDataSourceFactory { _, _ -> dataSource },
+            databaseConnector = { throw connectFailure },
+            testing = Unit,
+        )
+
+        val actual = assertFailsWith<IllegalStateException> {
+            factory.create(properties = h2Properties("cleanup_failure"))
+        }
+
+        actual shouldBeSameInstanceAs connectFailure
+        actual.suppressed.single() shouldBeSameInstanceAs closeFailure
+        dataSource.closed.shouldBeTrue()
+    }
+
+    @Test
     fun `resolver can provide final database settings`() = runTest {
         val resolver = AwsDatabaseSettingsResolver { databaseName, properties ->
             databaseName shouldBeEqualTo AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME
@@ -296,12 +317,15 @@ class AwsExposedDatabaseFactoryTest {
         override val primaryKey = PrimaryKey(id)
     }
 
-    private class CloseTrackingDataSource: DataSource, AutoCloseable {
+    private class CloseTrackingDataSource(
+        private val closeFailure: Throwable? = null,
+    ): DataSource, AutoCloseable {
         var closed: Boolean = false
             private set
 
         override fun close() {
             closed = true
+            closeFailure?.let { throw it }
         }
 
         override fun getConnection(): Connection =
