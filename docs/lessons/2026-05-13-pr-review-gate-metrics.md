@@ -1,93 +1,90 @@
-# PR Review Gate Metrics
+# PR 검토 게이트 지표
 
-## Context
+## 배경
 
-PR #60 was the first bluetape4k-aws PR that applied the new post-PR review
-gate: Codex review plus Claude Code CLI review before merge. The PR had already
-passed local tests and GitHub CI before the gate started.
+PR #60은 병합 전에 Codex 검토와 Claude Code CLI 검토를 수행하는 새 PR 이후 검토
+게이트를 처음 적용한 bluetape4k-aws PR이다. 게이트를 시작하기 전에 로컬 테스트와
+GitHub CI는 이미 통과한 상태였다.
 
-## Metrics
+## 지표
 
-| Metric | Count | Notes |
+| 지표 | 수치 | 설명 |
 |---|---:|---|
-| Formal review rounds | 8 | From first post-PR review to final dual approval. |
-| Review-driven corrective iterations | 6 | Iterations triggered by Codex/Claude `REQUEST_CHANGES` or high-value `COMMENT`. |
-| User-directed test robustness iteration | 1 | Replaced flaky raw `delay` waiting with Awaitility / `untilSuspending`. |
-| P0 findings | 0 | No data-loss/security-critical immediate blocker was labeled P0. |
-| Raw P1 findings | 11 | Counts duplicate findings when both reviewers caught the same issue. |
-| Unique P1 defects | 10 | Deduplicated by root cause. |
-| P2/P3 findings fixed before merge | 3 | Awaitility hold-window misuse, lifecycle race during stop, `deleted` visibility. |
-| New regression tests added after review | 4 | Backpressure, heartbeat during drain, shutdown timeout/heartbeat cancellation, start-during-stop. |
-| Final targeted SQS tests | 14 | `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'`. |
-| Final module tests | 33 | `./gradlew :aws-ktor:test`. |
+| 공식 검토 횟수 | 8 | 첫 PR 이후 검토부터 두 검토자 모두 최종 승인할 때까지의 횟수 |
+| 검토에서 시작된 수정 반복 | 6 | Codex/Claude의 `REQUEST_CHANGES` 또는 가치가 높은 `COMMENT`로 시작한 반복 |
+| 사용자 지시에 따른 테스트 안정화 반복 | 1 | 불안정한 원시 `delay` 대기를 Awaitility / `untilSuspending`으로 교체 |
+| P0 지적 | 0 | 데이터 손실/보안에 치명적인 즉시 차단 항목은 P0로 분류되지 않음 |
+| 원시 P1 지적 | 11 | 두 검토자가 같은 문제를 찾은 중복 지적 포함 |
+| 고유 P1 결함 | 10 | 근본 원인 기준으로 중복 제거 |
+| 병합 전 수정한 P2/P3 지적 | 3 | Awaitility hold-window 오용, 종료 중 수명 주기 race, `deleted` 가시성 |
+| 검토 후 추가한 새 회귀 테스트 | 4 | Backpressure, drain 중 heartbeat, shutdown timeout/heartbeat cancellation, start-during-stop |
+| 최종 SQS 대상 테스트 | 14 | `./gradlew :aws-ktor:test --tests 'io.bluetape4k.aws.ktor.sqs.*'` |
+| 최종 모듈 테스트 | 33 | `./gradlew :aws-ktor:test` |
 
-## P1 Defects Caught
+## 발견한 P1 결함
 
-1. Receive-loop failures were not observable enough for operators.
-2. Queue-name resolution failure could kill the poller instead of retrying.
-3. Test code used the wrong assertion helper family.
-4. Ktor stopping hook used an unsafe blocking boundary before being moved to IO.
-5. Successful handler delete failure could be routed to manual DLQ incorrectly.
-6. Slow handlers had no backpressure, allowing unbounded in-flight work.
-7. Broad `Throwable` catches could hide fatal JVM errors.
-8. Visibility heartbeat stopped during graceful shutdown drain.
-9. `shutdownTimeout` was not a real upper bound for non-cooperative handlers.
-10. Timeout-cancelled handlers could later auto-delete messages after `stop()` returned.
+1. Receive loop 실패를 운영자가 충분히 관찰할 수 없었다.
+2. Queue name 해석 실패가 재시도 대신 poller를 종료할 수 있었다.
+3. 테스트 코드가 잘못된 assertion helper 계열을 사용했다.
+4. Ktor stopping hook가 안전하지 않은 blocking 경계를 사용해 IO로 옮겼다.
+5. Handler가 성공한 뒤 delete에 실패하면 message가 manual DLQ로 잘못 전달될 수 있었다.
+6. 느린 handler에 backpressure가 없어 처리 중 작업이 무제한 증가할 수 있었다.
+7. 광범위한 `Throwable` catch가 치명적인 JVM 오류를 숨길 수 있었다.
+8. Graceful shutdown drain 중 visibility heartbeat가 중단됐다.
+9. `shutdownTimeout`이 협조하지 않는 handler의 실제 상한이 아니었다.
+10. Timeout으로 취소된 handler가 `stop()` 반환 후 message를 자동 삭제할 수 있었다.
 
-## Decision
+## 결정
 
-Keep the post-PR external review gate mandatory for runtime, security,
-auto-configuration, coroutine, and persistence work. Treat `COMMENT` as
-merge-blocking when the comment identifies a cheap, high-confidence correctness
-improvement, even if it is not P1.
+Runtime, 보안, 자동 구성, coroutine, persistence 작업에는 PR 이후 외부 검토 게이트를
+필수로 유지한다. `COMMENT`가 비용이 낮고 확신도 높은 정확성 개선을 지적하면 P1이
+아니어도 병합 차단 항목으로 취급한다.
 
-## Outcome
+## 결과
 
-PR #60 merged only after:
+PR #60은 다음 조건을 모두 충족한 뒤 병합했다.
 
-- Codex final verdict: `APPROVE`
-- Claude Code CLI final verdict: `APPROVE`
-- GitHub CI: green
-- Merge commit: `631d4278bdf448acf14866691a2f422b38f5a590`
+- Codex 최종 판정: `APPROVE`
+- Claude Code CLI 최종 판정: `APPROVE`
+- GitHub CI: 성공
+- 병합 commit: `631d4278bdf448acf14866691a2f422b38f5a590`
 
-## Module-Sliced Review Series
+## 모듈별 검토 시리즈
 
-After PR #60 established the gate, four module-sliced hardening PRs applied the
-same discipline to `:aws`, `:aws-kotlin`, `:aws-spring-boot`, and `:aws-ktor`.
+PR #60에서 게이트를 확립한 뒤 모듈별 강화 PR 네 개가 `:aws`, `:aws-kotlin`,
+`:aws-spring-boot`, `:aws-ktor`에 같은 원칙을 적용했다.
 
-| Module | PR | Files touched | Review rounds | P0 | P1 | P2 fixed/accepted | Local test evidence | CI evidence |
+| 모듈 | PR | 변경 파일 | 검토 횟수 | P0 | P1 | P2 수정/수용 | 로컬 테스트 증거 | CI 증거 |
 |---|---:|---:|---:|---:|---:|---:|---|---|
-| `:aws` | #64 | 14 tests + 1 lesson | 3 | 0 | 0 | 3 | 252 passing, 2 pending | `Test / aws` passed |
-| `:aws-kotlin` | #65 | 37 tests + 1 lesson | 3 | 0 | 0 | 4 | 443 passing, 5 pending | `Test / aws-kotlin` passed |
-| `:aws-spring-boot` | #66 | 8 tests + 1 lesson | 2 | 0 | 0 | 3 | 68 passing | `Test / aws-spring-boot` passed |
-| `:aws-ktor` | #67 | 5 tests + 1 lesson | 2 | 0 | 0 | 2 | 33 passing | `Test / aws-ktor` passed |
+| `:aws` | #64 | 테스트 14개 + 교훈 1개 | 3 | 0 | 0 | 3 | 252개 통과, 2개 pending | `Test / aws` 통과 |
+| `:aws-kotlin` | #65 | 테스트 37개 + 교훈 1개 | 3 | 0 | 0 | 4 | 443개 통과, 5개 pending | `Test / aws-kotlin` 통과 |
+| `:aws-spring-boot` | #66 | 테스트 8개 + 교훈 1개 | 2 | 0 | 0 | 3 | 68개 통과 | `Test / aws-spring-boot` 통과 |
+| `:aws-ktor` | #67 | 테스트 5개 + 교훈 1개 | 2 | 0 | 0 | 2 | 33개 통과 | `Test / aws-ktor` 통과 |
 
-Series totals:
+시리즈 합계:
 
-- 4 PRs merged after module-local tests, GitHub CI, and external review.
-- 64 test files plus 4 lesson files touched.
-- 10 local/advisor review rounds before or during PR gates.
-- P0 findings: 0.
-- P1 findings: 0.
-- Documented P2 findings fixed or explicitly accepted before merge: 12.
-- Local module evidence covered 796 passing tests and 7 pending tests across
-  separate module runs.
-- GitHub CI passed for every affected module slice.
+- 모듈 로컬 테스트, GitHub CI, 외부 검토 후 PR 네 개를 병합했다.
+- 테스트 파일 64개와 교훈 파일 4개를 변경했다.
+- PR 게이트 전후에 로컬/조언자 검토를 10회 수행했다.
+- P0 지적: 0개
+- P1 지적: 0개
+- 병합 전 수정하거나 명시적으로 수용했다고 기록한 P2 지적: 12개
+- 개별 모듈 실행에서 로컬 증거로 통과한 테스트 796개와 pending 테스트 7개를 확인했다.
+- 영향받은 모든 모듈 범위의 GitHub CI가 통과했다.
 
-Repeated rules promoted:
+반복해서 확인한 규칙:
 
-- Use `bluetape4k-assertions` in touched tests; scan for `kotlin.test.*`,
-  AssertJ, Kluent, and JUnit assertion imports before review.
-- Prefer Awaitility or `untilSuspending {}` over fixed sleeps in asynchronous
-  consumer tests.
-- Use `runSuspendIO` for LocalStack, AWS SDK, Ktor, and other blocking I/O
-  boundaries; keep `runTest` for virtual-time or pure coroutine lifecycle tests.
-- When framework callbacks are synchronous, document why
-  `runBlocking(Dispatchers.IO)` remains instead of hiding the blocking bridge.
+- 변경한 테스트에서는 `bluetape4k-assertions`를 사용한다. 검토 전에 `kotlin.test.*`,
+  AssertJ, Kluent, JUnit assertion import를 scan한다.
+- 비동기 consumer 테스트에서 고정 sleep보다 Awaitility 또는 `untilSuspending {}`을
+  우선한다.
+- LocalStack, AWS SDK, Ktor, 기타 blocking I/O 경계에는 `runSuspendIO`를 사용하고,
+  가상 시간 또는 순수 coroutine 수명 주기 테스트에는 `runTest`를 유지한다.
+- Framework callback이 동기식이면 blocking bridge를 숨기지 말고
+  `runBlocking(Dispatchers.IO)`을 유지하는 이유를 문서화한다.
 
-## Future Guidance
+## 향후 지침
 
-Run this gate before merge, not after merge. The review cost is lower than the
-cost of discovering coroutine lifecycle, visibility, or acknowledgement bugs
-after adoption. Record numeric review metrics in the related lesson whenever a
-gate catches P0/P1 defects.
+이 게이트는 병합 후가 아니라 병합 전에 실행한다. Coroutine 수명 주기, visibility,
+acknowledgement 결함을 도입 후에 발견하는 비용보다 검토 비용이 낮다. 게이트에서 P0/P1
+결함을 찾으면 관련 교훈에 정량 검토 지표를 기록한다.
