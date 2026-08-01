@@ -19,14 +19,13 @@ import software.amazon.dax.Configuration
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Auto-configures a DAX-backed [DynamoDbAsyncClient] when the DAX SDK is present
- * and DAX is explicitly enabled.
+ * DAX SDK가 있고 DAX를 명시적으로 활성화하면 DAX 기반 [DynamoDbAsyncClient]를 자동 구성합니다.
  *
- * ## Contract
+ * ## 계약
  *
- * The bean type remains [DynamoDbAsyncClient], allowing the existing
- * [software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient] and
- * coroutine repositories to use DAX without repository API changes.
+ * Bean 타입은 [DynamoDbAsyncClient]로 유지되므로 기존
+ * [software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient]와 코루틴 리포지토리가
+ * 리포지토리 API 변경 없이 DAX를 사용할 수 있습니다.
  */
 @AutoConfiguration(
     after = [AwsAutoConfiguration::class],

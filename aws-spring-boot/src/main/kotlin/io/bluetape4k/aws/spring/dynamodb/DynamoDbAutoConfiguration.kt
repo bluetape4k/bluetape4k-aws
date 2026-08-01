@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for DynamoDB.
+ * DynamoDB용 Spring Boot 4 자동 구성입니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

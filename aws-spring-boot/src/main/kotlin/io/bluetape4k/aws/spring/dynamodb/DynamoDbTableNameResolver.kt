@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.spring.dynamodb
 
 /**
- * Resolves logical DynamoDB table names to physical table names.
+ * 논리 DynamoDB 테이블 이름을 물리 테이블 이름으로 해석합니다.
  */
 fun interface DynamoDbTableNameResolver {
 
     /**
-     * Returns the physical table name for the current configuration and runtime environment.
+     * 현재 구성과 런타임 환경에 맞는 물리 테이블 이름을 반환합니다.
      */
     fun resolve(tableName: String): String
 }

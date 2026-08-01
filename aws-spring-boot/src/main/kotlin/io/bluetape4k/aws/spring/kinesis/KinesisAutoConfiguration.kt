@@ -23,13 +23,12 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for AWS Kinesis.
+ * AWS Kinesis용 Spring Boot 4 자동 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Registers a [KinesisAsyncClient] and [KinesisOperations] when the AWS Kinesis
- * SDK is on the runtime classpath and `bluetape4k.aws.kinesis.enabled` is not
- * disabled.
+ * 런타임 클래스패스에 AWS Kinesis SDK가 있고 `bluetape4k.aws.kinesis.enabled`를
+ * 비활성화하지 않았으면 [KinesisAsyncClient]와 [KinesisOperations]를 등록합니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

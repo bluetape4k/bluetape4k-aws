@@ -15,7 +15,7 @@ internal const val DYNAMODB_PROPERTIES_PREFIX: String = "bluetape4k.aws.dynamodb
 internal const val DYNAMODB_DAX_PROPERTIES_PREFIX: String = "$DYNAMODB_PROPERTIES_PREFIX.dax"
 
 /**
- * Configuration properties for DynamoDB auto-configuration.
+ * DynamoDB 자동 구성용 구성 속성입니다.
  */
 @ConfigurationProperties(prefix = DYNAMODB_PROPERTIES_PREFIX)
 data class DynamoDbProperties(
@@ -37,13 +37,13 @@ data class DynamoDbProperties(
 }
 
 /**
- * DAX client properties for DynamoDB Accelerator integration.
+ * DynamoDB Accelerator 통합용 DAX 클라이언트 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * These properties are used only when DAX auto-configuration is active. The DAX
- * SDK is optional; applications must add `software.amazon.dax:amazon-dax-client`
- * at runtime before enabling this section.
+ * 이 속성은 DAX 자동 구성이 활성화된 경우에만 사용합니다. DAX SDK는 선택 사항이므로
+ * 이 구성을 활성화하기 전에 애플리케이션이 런타임에
+ * `software.amazon.dax:amazon-dax-client`를 추가해야 합니다.
  */
 data class DynamoDbDaxProperties(
     val enabled: Boolean = false,

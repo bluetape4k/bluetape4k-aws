@@ -5,12 +5,12 @@ import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import java.io.Serializable
 
 /**
- * Request for publishing one record to a Kinesis stream.
+ * Kinesis 스트림에 레코드 하나를 게시하는 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Wraps the same-typed stream and partition-key values in named properties so
- * callers do not accidentally swap positional arguments.
+ * 호출자가 타입이 같은 위치 인수의 순서를 실수로 바꾸지 않도록 스트림과 파티션 키 값을
+ * 명명된 속성으로 감쌉니다.
  */
 data class KinesisPutRecordRequest(
     val streamName: String,
@@ -23,12 +23,12 @@ data class KinesisPutRecordRequest(
 }
 
 /**
- * Request for obtaining a shard iterator.
+ * 샤드 반복자를 가져오는 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Mirrors the AWS SDK shard iterator request while keeping stream and shard
- * identifiers explicit for Spring application code.
+ * AWS SDK 샤드 반복자 요청을 반영하면서 Spring 애플리케이션 코드에서 스트림과 샤드 식별자를
+ * 명시적으로 유지합니다.
  */
 data class KinesisShardIteratorRequest(
     val streamName: String,
@@ -42,12 +42,12 @@ data class KinesisShardIteratorRequest(
 }
 
 /**
- * Request for collecting records from one Kinesis shard as a cold Flow.
+ * Kinesis 샤드 하나에서 레코드를 cold Flow로 수집하는 요청입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * The Flow is single-shard and caller-collected. This request does not imply
- * listener containers, lease coordination, or checkpoint persistence.
+ * Flow는 호출자가 수집하는 단일 샤드 흐름입니다. 이 요청은 리스너 컨테이너, 임대 조정,
+ * 체크포인트 영속화를 제공하지 않습니다.
  */
 data class KinesisRecordFlowRequest(
     val streamName: String,

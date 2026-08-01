@@ -7,57 +7,57 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest
 
 /**
- * Coroutine-based DynamoDB repository contract for Spring applications.
+ * Spring 애플리케이션을 위한 코루틴 기반 DynamoDB 리포지토리 계약입니다.
  */
 interface CoroutinesDynamoDbRepository<T: Any, ID: Any> {
 
     /**
-     * Logical table name used by the repository.
+     * 리포지토리가 사용하는 논리 테이블 이름입니다.
      */
     val tableName: String
 
     /**
-     * Enhanced async table used by the repository.
+     * 리포지토리가 사용하는 Enhanced 비동기 테이블입니다.
      */
     val table: DynamoDbAsyncTable<T>
 
     /**
-     * Saves an item and returns the saved item.
+     * 항목을 저장하고 저장된 항목을 반환합니다.
      */
     suspend fun save(item: T): T
 
     /**
-     * Finds an item by its identifier.
+     * 식별자로 항목을 조회합니다.
      */
     suspend fun findById(id: ID): T?
 
     /**
-     * Returns whether an item exists for the identifier.
+     * 식별자에 해당하는 항목이 있는지 반환합니다.
      */
     suspend fun existsById(id: ID): Boolean
 
     /**
-     * Deletes an item by identifier and returns the deleted item.
+     * 식별자로 항목을 삭제하고 삭제된 항목을 반환합니다.
      */
     suspend fun deleteById(id: ID): T?
 
     /**
-     * Deletes an item by its key and returns the deleted item.
+     * 키로 항목을 삭제하고 삭제된 항목을 반환합니다.
      */
     suspend fun delete(item: T): T?
 
     /**
-     * Updates an item and returns the latest item returned by DynamoDB.
+     * 항목을 갱신하고 DynamoDB가 반환한 최신 항목을 반환합니다.
      */
     suspend fun update(item: T): T?
 
     /**
-     * Returns table scan results as a [Flow].
+     * 테이블 스캔 결과를 [Flow]로 반환합니다.
      */
     fun scan(builder: ScanEnhancedRequest.Builder.() -> Unit = {}): Flow<T>
 
     /**
-     * Returns table query results as a [Flow].
+     * 테이블 쿼리 결과를 [Flow]로 반환합니다.
      */
     fun query(
         queryConditional: QueryConditional,
@@ -65,7 +65,7 @@ interface CoroutinesDynamoDbRepository<T: Any, ID: Any> {
     ): Flow<T>
 
     /**
-     * Returns secondary-index query results as a [Flow].
+     * 보조 인덱스 쿼리 결과를 [Flow]로 반환합니다.
      */
     fun queryIndex(
         indexName: String,

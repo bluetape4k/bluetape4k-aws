@@ -33,13 +33,12 @@ import java.time.Duration
 import kotlin.random.Random
 
 /**
- * Coroutine-friendly [KinesisOperations] implementation backed by AWS SDK v2 [KinesisAsyncClient].
+ * AWS SDK v2 [KinesisAsyncClient]를 사용하는 코루틴 친화적인 [KinesisOperations] 구현입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Wraps `CompletableFuture` Kinesis APIs with suspending functions, applies
- * configured stream properties from [KinesisProperties], and exposes a cold
- * single-shard [Flow] for explicit polling use cases.
+ * `CompletableFuture` Kinesis API를 suspend 함수로 감싸고 [KinesisProperties]의 구성된 스트림
+ * 속성을 적용하며, 명시적인 폴링 사용 사례를 위한 단일 샤드 cold [Flow]를 제공합니다.
  */
 class KinesisCoroutinesTemplate(
     private val kinesisAsyncClient: KinesisAsyncClient,
