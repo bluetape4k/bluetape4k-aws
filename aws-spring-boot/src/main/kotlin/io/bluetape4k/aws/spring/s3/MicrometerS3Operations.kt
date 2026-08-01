@@ -14,7 +14,7 @@ import java.nio.charset.Charset
 import java.time.Duration
 
 /**
- * Micrometer-instrumented [S3Operations] decorator.
+ * Micrometer로 계측하는 [S3Operations] 데코레이터입니다.
  */
 class MicrometerS3Operations(
     private val delegate: S3Operations,

@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsReq
 import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsResponse
 
 /**
- * Coroutine-friendly [S3AccessGrantsOperations] backed by AWS SDK v2 [S3ControlAsyncClient].
+ * AWS SDK v2 [S3ControlAsyncClient]를 사용하는 코루틴 친화적인 [S3AccessGrantsOperations]입니다.
  */
 class S3AccessGrantsCoroutinesTemplate(
     private val s3ControlAsyncClient: S3ControlAsyncClient,

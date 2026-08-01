@@ -8,12 +8,12 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * Configuration properties for S3-backed Spring Environment sources.
+ * S3 기반 Spring Environment 소스용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Binds `bluetape4k.aws.s3.config` and defines S3 objects loaded during Spring
- * Environment post-processing. No AWS request is made when [sources] is empty.
+ * `bluetape4k.aws.s3.config`를 바인딩하고 Spring Environment 후처리 중 로드할 S3 객체를
+ * 정의합니다. [sources]가 비어 있으면 AWS를 요청하지 않습니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.s3.config")
 data class S3ConfigProperties(
@@ -33,7 +33,7 @@ data class S3ConfigProperties(
     }
 
     /**
-     * Single S3 object source.
+     * 단일 S3 객체 소스입니다.
      */
     data class Source(
         val name: String? = null,
@@ -64,7 +64,7 @@ data class S3ConfigProperties(
 }
 
 /**
- * Supported S3 config object formats.
+ * 지원하는 S3 구성 객체 형식입니다.
  */
 enum class S3ConfigFormat {
     AUTO,

@@ -6,7 +6,7 @@ import java.net.URI
 import java.time.Duration
 
 /**
- * Configuration properties for Spring Boot S3 support.
+ * Spring Boot S3 지원용 구성 속성입니다.
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.s3")
 data class S3Properties(
@@ -48,7 +48,7 @@ data class S3Properties(
     }
 
     /**
-     * Client-side envelope encryption settings for S3 object payloads.
+     * S3 객체 페이로드의 클라이언트 측 봉투 암호화 설정입니다.
      */
     data class ClientSideEncryption(
         val enabled: Boolean = false,

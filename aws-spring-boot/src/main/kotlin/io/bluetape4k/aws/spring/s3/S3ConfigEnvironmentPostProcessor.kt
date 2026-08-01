@@ -9,12 +9,12 @@ import org.springframework.core.Ordered
 import org.springframework.core.env.ConfigurableEnvironment
 
 /**
- * Loads configured S3 objects into the Spring Environment.
+ * 구성된 S3 객체를 Spring Environment에 로드합니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Runs before the application context is refreshed. It does nothing unless
- * `bluetape4k.aws.s3.config.sources` contains at least one source.
+ * 애플리케이션 컨텍스트를 새로 고치기 전에 실행됩니다. `bluetape4k.aws.s3.config.sources`에
+ * 소스가 하나 이상 있지 않으면 아무 작업도 하지 않습니다.
  */
 class S3ConfigEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered {
 

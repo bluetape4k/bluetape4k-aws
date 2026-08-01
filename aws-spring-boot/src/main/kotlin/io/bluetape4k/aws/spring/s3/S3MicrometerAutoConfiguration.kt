@@ -11,11 +11,10 @@ import org.springframework.context.annotation.Primary
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Auto-configures Micrometer instrumentation for Spring S3 operations.
+ * Spring S3 작업의 Micrometer 계측을 자동 구성합니다.
  *
- * The observed [S3Operations] bean is primary, while the underlying
- * [S3CoroutinesTemplate] remains available for applications that inject the
- * concrete template type.
+ * 관찰되는 [S3Operations] Bean이 primary이며, 구체적인 템플릿 타입을 주입하는 애플리케이션에서는
+ * 하위 [S3CoroutinesTemplate]도 계속 사용할 수 있습니다.
  */
 @AutoConfiguration(after = [S3AutoConfiguration::class])
 @ConditionalOnAwsEnabled

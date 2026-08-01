@@ -11,12 +11,12 @@ import java.time.Duration
 internal const val IMDS_PROPERTIES_PREFIX = "bluetape4k.aws.imds"
 
 /**
- * Configuration properties for EC2 Instance Metadata Service access.
+ * EC2 Instance Metadata Service 접근용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * IMDS access is passive during startup. Bean creation does not call the
- * metadata endpoint; each operation is bounded by [requestTimeout].
+ * 시작 중 IMDS 접근은 수동적입니다. Bean을 생성해도 메타데이터 엔드포인트를 호출하지 않으며
+ * 각 작업은 [requestTimeout]으로 제한됩니다.
  */
 @ConfigurationProperties(prefix = IMDS_PROPERTIES_PREFIX)
 data class ImdsProperties(

@@ -18,8 +18,8 @@ import software.amazon.awssdk.transfer.s3.model.UploadRequest
 import java.nio.file.Path
 
 /**
- * Default [S3TransferOperations] implementation that delegates to the `aws`
- * module's coroutine extensions for `S3TransferManager`.
+ * `aws` 모듈의 `S3TransferManager` 코루틴 확장에 위임하는 기본
+ * [S3TransferOperations] 구현입니다.
  */
 class S3TransferTemplate(
     private val transferManager: S3TransferManager,
