@@ -1,27 +1,27 @@
-# Post 0.3.0 Next Development Line
+# 0.3.0 릴리스 후 다음 개발 버전
 
-## Context
+## 배경
 
-AWS 0.3.0 was published to Maven Central and GitHub Releases. The repository
-needed to reopen development on the next patch line without changing public
-README snippets that should continue to show the latest stable release.
+AWS 0.3.0을 Maven Central과 GitHub Releases에 게시했다. 최신 안정 릴리스를 계속
+표시해야 하는 공개 README 코드 조각은 변경하지 않으면서 다음 패치 버전 개발을
+다시 시작해야 했다.
 
-## Decision
+## 결정
 
-Set `baseVersion=0.3.1` and keep `snapshotVersion=` empty. Snapshot publication
-continues to inject `-PsnapshotVersion=-SNAPSHOT` from the workflow.
+`baseVersion=0.3.1`을 설정하고 `snapshotVersion=`은 비워 둔다. 스냅샷 게시는
+계속 workflow에서 `-PsnapshotVersion=-SNAPSHOT`을 주입한다.
 
-## Outcome
+## 결과
 
-Future development snapshots resolve as `0.3.1-SNAPSHOT`, while README install
-examples still point users at stable `0.3.0` artifacts.
+이후 개발 스냅샷은 `0.3.1-SNAPSHOT`으로 해석되며, README 설치 예제는 계속 안정
+버전인 `0.3.0` 아티팩트를 안내한다.
 
-## Verification
+## 검증
 
 - `./gradlew help --refresh-dependencies --no-daemon --no-configuration-cache --no-build-cache`
 - `git diff --check`
 
-## Future Guard
+## 향후 보호 장치
 
-After each stable release, advance `baseVersion` to the next patch development
-line in a separate PR before starting feature work.
+각 안정 릴리스 후 기능 개발을 시작하기 전에 별도 PR에서 `baseVersion`을 다음
+패치 개발 버전으로 올린다.

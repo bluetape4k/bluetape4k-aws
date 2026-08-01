@@ -1,39 +1,37 @@
-# AWS 0.3.0 Release Prep
+# AWS 0.3.0 릴리스 준비
 
-## Context
+## 배경
 
-The AWS 0.3.0 milestone closed the S3/SQS production-hardening slice for Spring
-Boot and Ktor, including advanced examples and documentation refresh work.
+AWS 0.3.0 마일스톤에서는 고급 예제와 문서 갱신을 포함해 Spring Boot 및 Ktor의
+S3/SQS 운영 환경 강화 작업을 마무리했다.
 
-## Decision
+## 결정
 
-Prepare the release tag with `baseVersion=0.3.0`, `snapshotVersion=`, README
-dependency snippets at `0.3.0`, and upstream BOM imports pinned to
-`bluetape4k-bom:1.9.2` plus `bluetape4k-exposed-bom:1.9.2`.
+`baseVersion=0.3.0`, `snapshotVersion=`, `0.3.0`을 사용하는 README 의존성
+코드 조각, 그리고 `bluetape4k-bom:1.9.2`와 `bluetape4k-exposed-bom:1.9.2`로
+고정한 상위 BOM import로 릴리스 태그를 준비한다.
 
-## Outcome
+## 결과
 
-Release metadata and public install snippets now point at the immutable 0.3.0
-line. Stable publication still requires a fresh Nightly(full), snapshot
-validation, release tag, and release workflow dispatch from the merged prep
-state.
+릴리스 메타데이터와 공개 설치 코드 조각은 이제 변경할 수 없는 0.3.0 버전을
+가리킨다. 안정 버전을 게시하려면 병합한 준비 상태에서 최신 Nightly(full),
+스냅샷 검증, 릴리스 태그, release workflow dispatch가 여전히 필요하다.
 
-## Verification
+## 검증
 
 - `./gradlew help --refresh-dependencies --no-daemon --no-configuration-cache --no-build-cache`
 - `./gradlew clean generatePomFileForBluetapeAwsPublication --no-daemon --no-configuration-cache --no-build-cache`
-- Generated POM scan found no `SNAPSHOT`, example, demo, or benchmark artifact
-  leakage.
-- Generated POMs contain `0.3.0` for AWS artifacts and `1.9.2` for the upstream
-  bluetape4k and Exposed BOM imports.
+- 생성한 POM을 검사한 결과 `SNAPSHOT`, 예제, 데모, 벤치마크 아티팩트가
+  유출되지 않았다.
+- 생성한 POM은 AWS 아티팩트에 `0.3.0`, 상위 bluetape4k 및 Exposed BOM
+  import에 `1.9.2`를 포함한다.
 - `./gradlew publishToMavenLocal -x collectReachabilityMetadata --no-daemon --no-configuration-cache --no-build-cache -Dorg.gradle.parallel=false`
 - `./gradlew build -x test -x koverVerify -x collectReachabilityMetadata --no-daemon --no-configuration-cache --no-build-cache -Dorg.gradle.parallel=false`
 
-## Future Guard
+## 향후 보호 장치
 
-Do not create the `0.3.0` tag until the release-prep PR is merged and the
-current `develop` SHA has fresh Nightly(full) and snapshot publication evidence.
-The full combined `build publishToMavenLocal` path can still hit Gradle's
-GraalVM reachability metadata exclusive-lock guard when `org.gradle.parallel`
-is enabled, so keep release-prep compile and publish checks separated or disable
-parallel execution.
+릴리스 준비 PR이 병합되고 현재 `develop` SHA에 최신 Nightly(full) 및 스냅샷 게시
+증거가 생길 때까지 `0.3.0` 태그를 만들지 않는다. `org.gradle.parallel`을
+활성화하면 전체 `build publishToMavenLocal` 결합 경로가 여전히 Gradle의 GraalVM
+reachability metadata exclusive-lock 보호 장치에 걸릴 수 있다. 따라서 릴리스
+준비용 컴파일과 게시 검사를 분리하거나 병렬 실행을 비활성화한다.
