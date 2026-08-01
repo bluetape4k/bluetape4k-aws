@@ -1,43 +1,40 @@
-# Issue #196 IMDS Spring Boot Integration
+# Issue #196 IMDS Spring Boot 통합
 
-Date: 2026-06-07
-Issue: #196
+날짜: 2026-06-07
+이슈: #196
 
-## Context
+## 배경
 
-`aws-spring-boot` had service auto-configuration for S3, SQS, SNS, SES, KMS,
-DynamoDB, and CloudWatch but no Spring Boot-facing facade for EC2 Instance
-Metadata Service reads.
+`aws-spring-boot`에는 S3, SQS, SNS, SES, KMS, DynamoDB, CloudWatch 서비스
+자동 구성이 있었지만 EC2 Instance Metadata Service 조회를 위한 Spring Boot
+퍼사드는 없었다.
 
-## Decision
+## 결정
 
-Add optional IMDS support as a passive Spring Boot auto-configuration:
+수동적인 Spring Boot 자동 구성으로 선택적 IMDS 지원을 추가한다.
 
-- Keep `software.amazon.awssdk:imds` as an optional AWS SDK v2 dependency.
-- Provide `ImdsOperations` and `ImdsCoroutinesTemplate` for coroutine metadata
-  reads.
-- Bound every metadata call with `bluetape4k.aws.imds.request-timeout`.
-- Expose safe metadata helpers and IAM role names only; do not expose temporary
-  credential documents.
+- `software.amazon.awssdk:imds`를 선택적 AWS SDK v2 의존성으로 유지한다.
+- 코루틴 메타데이터 조회를 위한 `ImdsOperations`와 `ImdsCoroutinesTemplate`을 제공한다.
+- 모든 메타데이터 호출을 `bluetape4k.aws.imds.request-timeout`으로 제한한다.
+- 안전한 메타데이터 도우미와 IAM 역할 이름만 제공하고 임시 자격 증명 문서는 노출하지 않는다.
 
-## Outcome
+## 결과
 
-The module now registers `Ec2MetadataAsyncClient` and `ImdsOperations` when the
-IMDS SDK dependency is present and `bluetape4k.aws.imds.enabled` is true. It
-backs off for disabled state, missing SDK classes, custom client beans, and
-custom operations beans.
+이제 IMDS SDK 의존성이 있고 `bluetape4k.aws.imds.enabled`가 true이면 모듈이
+`Ec2MetadataAsyncClient`와 `ImdsOperations`를 등록한다. 비활성 상태, 누락된 SDK 클래스,
+사용자 정의 클라이언트 빈, 사용자 정의 연산 빈이 있으면 물러난다.
 
-## Verification
+## 검증
 
 - `./gradlew :bluetape4k-aws-spring-boot:dependencyInsight --dependency imds --configuration compileClasspath`
-  confirmed `software.amazon.awssdk:imds:2.46.0`.
+  `software.amazon.awssdk:imds:2.46.0`을 확인했다.
 - `./gradlew :bluetape4k-aws-spring-boot:compileKotlin :bluetape4k-aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.imds.*'`
-  passed with 12 focused IMDS tests.
-- `./gradlew :bluetape4k-aws-spring-boot:test` passed with 190 tests.
-- `git diff --check` passed.
+  IMDS 대상 테스트 12개가 통과했다.
+- `./gradlew :bluetape4k-aws-spring-boot:test`에서 테스트 190개가 통과했다.
+- `git diff --check`가 통과했다.
 
-## Future Guard
+## 향후 보호 장치
 
-Do not add an IMDS startup probe to prove EC2 presence. Non-EC2 applications
-must pay no startup network penalty, and credential retrieval should remain on
-the AWS SDK credential provider chain or explicit STS web identity support.
+EC2 존재를 입증하기 위한 IMDS 시작 탐색을 추가하지 않는다. EC2가 아닌 애플리케이션에는
+시작 시 네트워크 비용이 없어야 한다. 자격 증명 조회는 AWS SDK 자격 증명 제공자 체인
+또는 명시적 STS 웹 아이덴티티 지원에 유지한다.
