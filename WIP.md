@@ -1,4 +1,4 @@
-# WIP - bluetape4k-aws
+# 진행 중인 작업 - bluetape4k-aws
 
 스냅샷: 2026-07-28 KST
 범위: 진행 중인 0.5.0 한국어 문서 및 KDoc 표준화.
@@ -35,7 +35,7 @@ AWS emulator 정책은 Floci-first를 유지합니다. 새로 만들거나 migra
 
 ## 열린 PR
 
-| PR | Branch | Notes |
+| PR | 브랜치 | 설명 |
 |---|---|---|
 | [#415](https://github.com/bluetape4k/bluetape4k-aws/pull/415) | `docs/issue-409-korean-scope-inventory` -> `develop` | 한국어 표준화 inventory입니다. |
 | [#416](https://github.com/bluetape4k/bluetape4k-aws/pull/416) | `docs/issue-410-korean-dokka` -> `develop` | Dokka module guide를 한국어로 재작성합니다. |
@@ -52,7 +52,7 @@ AWS emulator 정책은 Floci-first를 유지합니다. 새로 만들거나 migra
   [#295](https://github.com/bluetape4k/bluetape4k-aws/issues/295)는 RDS IAM helper를
   core AWS module로 승격하고 JDBC refresh를 shared helper boundary로 위임했습니다.
 - [#270](https://github.com/bluetape4k/bluetape4k-aws/issues/270)은 Spring Boot
-  Kinesis auto-configuration과 coroutine operation을 추가했습니다.
+  Kinesis 자동 구성과 coroutine operation을 추가했습니다.
 - [#271](https://github.com/bluetape4k/bluetape4k-aws/issues/271)은 Ktor SES v2 및
   SNS integration support를 추가했습니다.
 - [#180](https://github.com/bluetape4k/bluetape4k-aws/issues/180)과
@@ -60,18 +60,18 @@ AWS emulator 정책은 Floci-first를 유지합니다. 새로 만들거나 migra
   `aws-exposed` settings integration을 완료했습니다.
 - [#308](https://github.com/bluetape4k/bluetape4k-aws/issues/308)과
   [#309](https://github.com/bluetape4k/bluetape4k-aws/issues/309)는 EventBridge core wrapper,
-  coroutine DSL, Spring Boot integration, Ktor integration, README diagram을 추가했습니다.
+  coroutine DSL, Spring Boot 통합, Ktor 통합, README diagram을 추가했습니다.
 - [#272](https://github.com/bluetape4k/bluetape4k-aws/issues/272)는 Ktor Kinesis 및 STS helper를 추가했습니다.
 - [#273](https://github.com/bluetape4k/bluetape4k-aws/issues/273)는 남은 service coverage gap을 위한
   Ktor example을 추가했습니다.
 - [#275](https://github.com/bluetape4k/bluetape4k-aws/issues/275)는 gitleaks release asset lookup을 강화했습니다.
 - [#284](https://github.com/bluetape4k/bluetape4k-aws/issues/284),
-  [#285](https://github.com/bluetape4k/bluetape4k-aws/issues/285), and
+  [#285](https://github.com/bluetape4k/bluetape4k-aws/issues/285) 및
   [#286](https://github.com/bluetape4k/bluetape4k-aws/issues/286)은 남은 0.5.0 hygiene review item을 닫았습니다.
 
 ## Backlog
 
-| Issue | Notes |
+| 이슈 | 설명 |
 |---|---|
 | [#311](https://github.com/bluetape4k/bluetape4k-aws/issues/311) | S3 Tables support입니다. |
 | [#313](https://github.com/bluetape4k/bluetape4k-aws/issues/313) | Step Functions execution helper입니다. |

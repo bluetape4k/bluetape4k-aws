@@ -151,7 +151,7 @@
   customizer 기반을 추가했습니다 ([#190](https://github.com/bluetape4k/bluetape4k-aws/issues/190)).
 - 암호화, config reload, access grant, vector operation, content helper를 지원하는
   고급 Spring Boot S3 기능을 추가했습니다 ([#192](https://github.com/bluetape4k/bluetape4k-aws/issues/192)).
-- typed conversion, manual acknowledgement, retry policy, listener interceptor,
+- 타입 변환, 수동 승인, 재시도 정책, listener interceptor,
   observability hook을 지원하는 고급 Spring Boot SQS 기능을 추가했습니다
   ([#193](https://github.com/bluetape4k/bluetape4k-aws/issues/193)).
 - 공통 Ktor AWS 기본값과 client customizer hook을 추가했습니다
@@ -242,7 +242,7 @@
 - Ktor S3 coroutine client와 LocalStack 중심 example coverage를 추가하고 Nightly에
   포함했습니다 ([PR #28](https://github.com/bluetape4k/bluetape4k-aws/pull/28)).
 - Spring Boot 4 S3 auto-configuration과 coroutine operation template을 추가했습니다 ([PR #29](https://github.com/bluetape4k/bluetape4k-aws/pull/29)).
-- Spring Boot 4 SQS coroutine operation template, listener annotation, polling
+- Spring Boot 4 SQS coroutine operation template, listener annotation, polling 기능을 갖춘
   container를 추가했습니다 ([PR #30](https://github.com/bluetape4k/bluetape4k-aws/pull/30)).
 - Spring Boot 4 DynamoDB enhanced async client auto-configuration과 coroutine
   repository 기반을 추가했습니다 ([PR #31](https://github.com/bluetape4k/bluetape4k-aws/pull/31)).
