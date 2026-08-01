@@ -47,7 +47,7 @@
   coverage 관련 README 다이어그램을 갱신했습니다
   ([#326](https://github.com/bluetape4k/bluetape4k-aws/pull/326)).
 
-### 수정
+### 버그 수정
 
 - CI가 불안정한 URL 형식에 의존하지 않고 metadata에서 release artifact를 찾도록
   gitleaks release asset 조회를 강화했습니다
@@ -110,7 +110,7 @@
   ([#292](https://github.com/bluetape4k/bluetape4k-aws/issues/292),
   [#294](https://github.com/bluetape4k/bluetape4k-aws/issues/294)).
 
-### 수정
+### 버그 수정
 
 - injected-operation validation과 DAX concurrency validation을 포함한 최종 IMDS 및
   DAX review gap을 해소했습니다
@@ -171,7 +171,7 @@
 - AWS Java, AWS Kotlin, AWS Ktor, AWS Spring Boot, AWS Exposed 및 example 전반의
   README architecture, flow, sequence 다이어그램을 갱신했습니다.
 
-### 수정
+### 버그 수정
 
 - SNS-to-SQS fanout의 LocalStack coverage를 안정화했습니다
   ([#182](https://github.com/bluetape4k/bluetape4k-aws/issues/182)).
@@ -197,7 +197,7 @@
 - 0.2.0 release line에서 `io.github.bluetape4k:bluetape4k-bom:1.9.0`과 `io.github.bluetape4k.exposed:bluetape4k-exposed-bom:1.9.0`을 사용하도록 준비했습니다.
 - Exposed helper artifact 버전을 직접 고정하는 대신 `bluetape4k-exposed-bom`을 가져오도록 변경했습니다.
 
-### 수정
+### 버그 수정
 
 - AWS Exposed serialization 경로 전반에서 secret redaction을 강화했습니다.
 
@@ -211,7 +211,7 @@
 
 - 0.1.1 patch release line에서 `io.github.bluetape4k:bluetape4k-bom:1.9.0`을 사용하도록 준비했습니다.
 
-### 수정
+### 버그 수정
 
 - versioning을 사용하는 S3 bucket이 bucket 삭제 전에 object version과 delete marker를 제거하도록 `forceDeleteBucket`을 수정했습니다 ([#147](https://github.com/bluetape4k/bluetape4k-aws/issues/147)).
 
@@ -276,7 +276,7 @@
   retry 구성을 적용했습니다 ([PR #23](https://github.com/bluetape4k/bluetape4k-aws/pull/23)).
 - test code를 Kluent에서 `bluetape4k-assertions`로 이전했습니다 ([PR #22](https://github.com/bluetape4k/bluetape4k-aws/pull/22)).
 
-### 수정
+### 버그 수정
 
 - remote Environment refresh가 reload 중 안정적인 snapshot을 유지하고 refresh race
   regression을 방지하도록 수정했습니다 ([PR #86](https://github.com/bluetape4k/bluetape4k-aws/pull/86)).
