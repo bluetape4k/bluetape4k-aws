@@ -1,21 +1,20 @@
-## Context
-AWS post-merge CI still failed after the initial retry guard because Central
-Portal returned repeated HTTP 403 responses for exposed snapshot metadata.
+## 배경
+Central Portal이 Exposed snapshot metadata에 대해 HTTP 403 response를 반복해서 반환해
+초기 retry guard 적용 후에도 AWS post-merge CI가 실패했습니다.
 
-## Decision
-Use a longer bounded retry window and disable configuration cache for the
-snapshot-dependent compile gate. This keeps the workflow resilient to transient
-Central edge failures without changing source or dependency versions.
+## 결정
+더 길지만 횟수가 제한된 retry window를 사용하고 snapshot dependency가 있는 compile
+gate에서는 configuration cache를 비활성화합니다. source나 dependency version을 바꾸지
+않으면서 일시적인 Central edge failure에 workflow가 견딜 수 있게 합니다.
 
-## Outcome
-The workflow now retries compile-only builds five times with a 30-second backoff
-and avoids configuration-cache serialization failures while classpaths are
-unresolved.
+## 결과
+workflow는 compile-only build를 30초 backoff로 최대 다섯 번 실행하며, classpath가
+해석되지 않은 동안 configuration-cache serialization failure를 방지합니다.
 
-## Verification
+## 검증
 - `git diff --check`
 - `actionlint .github/workflows/ci.yml .github/workflows/nightly-tests.yml`
 
-## Future Guidance
-When Central snapshot metadata returns HTTP 403 repeatedly in one runner, extend
-the bounded retry window before treating it as a code regression.
+## 향후 지침
+한 runner에서 Central snapshot metadata가 HTTP 403을 반복해서 반환하면 code
+regression으로 판단하기 전에 제한된 retry window를 늘립니다.
