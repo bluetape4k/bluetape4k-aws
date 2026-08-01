@@ -1,17 +1,17 @@
-# Issue #180 Spring Exposed Settings Resolver Lesson
+# Issue #180 Spring Exposed 설정 해석기 교훈
 
-## Context
+## 배경
 
-#180 asked for Spring Boot integration that resolves `aws-exposed` database settings through Secrets Manager and Parameter Store.
+#180에서는 Secrets Manager와 Parameter Store를 통해 `aws-exposed` 데이터베이스 설정을 해석하는 Spring Boot 통합을 요청했다.
 
-## Decision
+## 결정
 
-Reuse the existing Spring Environment post-processors instead of creating another AWS client path inside Exposed auto-configuration. The Exposed resolver reads the configured `secret-source` / `parameter-source` prefix and overlays only keys that actually exist in the Environment.
+Exposed auto-configuration 내부에 별도 AWS 클라이언트 경로를 만들지 않고 기존 Spring Environment 후처리기를 재사용한다. Exposed 해석기는 설정한 `secret-source` / `parameter-source` 접두사를 읽고 Environment에 실제로 존재하는 키만 덮어쓴다.
 
-## Outcome
+## 결과
 
-This keeps AWS loading, refresh, and fail-fast behavior in the existing Environment source layer while allowing `AwsExposedAutoConfiguration` to create a registry even when `default-database.url` is supplied only by a remote source.
+이 방식은 AWS 로딩, 갱신, 즉시 실패 동작을 기존 Environment 소스 계층에 유지한다. 동시에 `default-database.url`이 원격 소스에서만 제공되더라도 `AwsExposedAutoConfiguration`이 레지스트리를 생성할 수 있다.
 
-## Future Guard
+## 향후 보호 장치
 
-When adding framework adapters for remote settings, first check whether the framework already has a configuration-source lifecycle. Prefer a resolver that consumes that lifecycle over direct service-client calls from the adapter.
+원격 설정용 프레임워크 어댑터를 추가할 때는 프레임워크에 이미 구성 소스 수명 주기가 있는지 먼저 확인한다. 어댑터에서 서비스 클라이언트를 직접 호출하기보다 해당 수명 주기를 사용하는 해석기를 우선한다.
