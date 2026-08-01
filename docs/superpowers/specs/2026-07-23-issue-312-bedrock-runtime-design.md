@@ -1,9 +1,9 @@
-# Issue #312 Bedrock Runtime Minimal Facade Design
+# 이슈 #312 Bedrock Runtime 최소 Facade 설계
 
-Date: 2026-07-23
-Issue: #312 `feat(aws): add Bedrock Runtime minimal facade`
-Milestone: 0.5.0
-Repository: `bluetape4k-aws`
+작성일: 2026-07-23
+이슈: #312 `feat(aws): add Bedrock Runtime minimal facade`
+마일스톤: 0.5.0
+저장소: `bluetape4k-aws`
 
 ## 문제
 
@@ -49,7 +49,7 @@ AWS SDK의 `Converse` 계약을 보존하면서 bluetape4k의 coroutine-first �
   - `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`
   - `--no-configuration-cache`
   - `:bluetape4k-aws-java:test`와 `:bluetape4k-aws-kotlin:test`:
-    306 passing, 14 pending
+    통과 306건, 보류 14건
 
 ## 제약
 
@@ -60,7 +60,7 @@ AWS SDK의 `Converse` 계약을 보존하면서 bluetape4k의 coroutine-first �
 - Bedrock Runtime service dependency는 기존 정책대로 production에서
   `compileOnly`로 둔다.
 - 일반 `Converse` 호출과 `ConverseStream`만 이번 범위에 포함한다.
-- `InvokeModel`, Agents for Bedrock, Knowledge Bases, guardrail orchestration,
+- `InvokeModel`, Agents for Bedrock, Knowledge Bases, guardrail 오케스트레이션,
   tool execution loop, prompt persistence는 포함하지 않는다.
 - 외부에서 전달받은 client는 닫지 않는다.
 - Kotlin의 `withBedrockRuntimeClient { }`만 자신이 만든 client를 닫는다.
@@ -119,22 +119,22 @@ core wrapper의 책임을 벗어난다. 이번 변경에서는 제외한다.
 ### Dependency 및 package
 
 - Version catalog에 다음 service alias를 추가한다.
-  - AWS Java SDK v2 Bedrock Runtime
-  - AWS Kotlin SDK Bedrock Runtime
+  - AWS Java SDK v2용 Bedrock Runtime
+  - AWS Kotlin SDK용 Bedrock Runtime
 - 새 version 상수를 만들지 않고 repository의 기존 `aws2` 및 `aws-kotlin`
   version authority를 그대로 사용한다.
 - root `build.gradle.kts`의 dependency-management/constraint 목록에도 Java와
   Kotlin Bedrock Runtime artifact를 각각 등록한다.
 - `aws-java`
-  - production: Java Bedrock Runtime SDK `compileOnly`
+  - 프로덕션: Java Bedrock Runtime SDK `compileOnly`
   - test: 같은 SDK `testImplementation`
-  - package: `io.bluetape4k.aws.bedrock`
-  - model helper package: `io.bluetape4k.aws.bedrock.model`
+  - 패키지: `io.bluetape4k.aws.bedrock`
+  - 모델 도우미 패키지: `io.bluetape4k.aws.bedrock.model`
 - `aws-kotlin`
-  - production: Kotlin Bedrock Runtime SDK `compileOnly`
+  - 프로덕션: Kotlin Bedrock Runtime SDK `compileOnly`
   - test: 같은 SDK `testImplementation`
-  - package: `io.bluetape4k.aws.kotlin.bedrock`
-  - model helper package: `io.bluetape4k.aws.kotlin.bedrock.model`
+  - 패키지: `io.bluetape4k.aws.kotlin.bedrock`
+  - 모델 도우미 패키지: `io.bluetape4k.aws.kotlin.bedrock.model`
 
 Bedrock control-plane client가 아니라 Bedrock Runtime client만 추가한다.
 `compileOnly` service SDK는 published runtime dependency가 아니므로, 이
@@ -153,8 +153,8 @@ README에는 `bluetape4k-dependencies`와 함께 이 consumer dependency 계약�
 
 `aws-java`에는 기존 service support 패턴과 같은 helper를 둔다.
 
-- sync `BedrockRuntimeClient`
-- async `BedrockRuntimeAsyncClient`
+- 동기 `BedrockRuntimeClient`
+- 비동기 `BedrockRuntimeAsyncClient`
 - endpoint, region, `AwsCredentialsProvider`, HTTP client, 추가 builder block
   지원
 - helper가 생성한 Java client는 기존 `ShutdownQueue` 정책에 등록하고
@@ -184,7 +184,7 @@ README에는 `bluetape4k-dependencies`와 함께 이 consumer dependency 계약�
 - endpoint helper는 HTTPS를 기본 허용하며 plain HTTP는 loopback 기반 test
   endpoint에서만 명시적으로 허용한다.
 
-### Request helper
+### 요청 도우미
 
 request helper는 새로운 DTO를 만들지 않고 SDK model을 조립한다.
 
@@ -217,9 +217,9 @@ SDK request로 조립하는 overload만 제공한다.
 
 `aws-java`는 기존 naming convention에 따라 세 경로를 제공한다.
 
-- sync client: `converse(...)`
-- async future: `converseAsync(...)`
-- async client coroutine adapter: suspend `converse(...)`
+- 동기 클라이언트: `converse(...)`
+- 비동기 future: `converseAsync(...)`
+- 비동기 클라이언트 코루틴 어댑터: suspend `converse(...)`
 
 `aws-kotlin`은 native suspend SDK member를 호출하는 편의 인자
 `converse(...)`만 추가한다. 결과는 모두 SDK `ConverseResponse` 그대로다.
@@ -229,7 +229,7 @@ SDK request로 조립하는 overload만 제공한다.
 아래 선언은 이번 변경의 호환성 기준이다. import는 각 module의 native SDK
 package를 사용하며 생략된 visibility는 public이다.
 
-Java SDK module client API:
+Java SDK 모듈 클라이언트 API:
 
 ```kotlin
 inline fun bedrockRuntimeClient(
@@ -391,9 +391,9 @@ raw request 호출은 native SDK member를 사용하고 같은 signature의 exte
 만들지 않는다. `converseStreamFlow` 이름은 Java response-handler overload와
 Kotlin generated streaming function의 import/호출 혼동을 피한다.
 
-### Streaming Converse
+### 스트리밍 Converse
 
-#### Java SDK v2
+#### Java SDK v2 구현
 
 `BedrockRuntimeAsyncClient` extension은
 `Flow<ConverseStreamOutput>`을 반환한다.
@@ -456,7 +456,7 @@ future 최종 실패와 collector 취소는 즉시 terminal authority다. termin
 신호가 경쟁하면 원자적 first-terminal-wins 규칙을 적용하고 모든 terminal
 transition은 남은 active subscription을 cancel-once한다.
 
-#### AWS Kotlin SDK
+#### AWS Kotlin SDK 구현
 
 `BedrockRuntimeClient` extension은
 `Flow<ConverseStreamOutput>`을 반환한다.
@@ -495,7 +495,7 @@ AWS SDK interop에 필요한 최소 경계만 SDK별 방식으로 처리하고, 
 - `mapParallel`/`async`: 모델 event 순서가 공개 계약이므로 기본 text delta
   처리에 병렬 변환을 적용하지 않는다.
 
-### Response mapping
+### 응답 매핑
 
 Java/Kotlin 양쪽에 같은 의미의 작은 response helper를 추가한다.
 
@@ -550,12 +550,12 @@ Flow로 전달되고, 완료·오류·취소·backpressure는 어디까지 전�
 
 ### 참여자와 흐름
 
-- Application collector
-- Bedrock coroutine extension
-- `bluetape4k-coroutines` Flow pipeline
+- 애플리케이션 collector
+- Bedrock 코루틴 확장
+- `bluetape4k-coroutines` Flow 파이프라인
 - Java `SdkPublisher` bridge 또는 Kotlin native SDK Flow
-- Bedrock Runtime client
-- Amazon Bedrock
+- Bedrock Runtime 클라이언트
+- Amazon Bedrock 서비스
 
 sequence는 다음을 표현한다.
 
@@ -576,12 +576,12 @@ diagram에는 “각 collection은 새 Bedrock invocation이며 비용과 서로
 
 ### 산출물
 
-- English:
-  - editable SVG
-  - CairoSVG `-s 2` authoritative PNG
-- Korean:
+- 영문:
+  - 편집 가능한 SVG
+  - CairoSVG `-s 2` 기준 PNG
+- 한국어:
   - 별도 reader-facing text를 갖는 editable SVG
-  - CairoSVG `-s 2` authoritative PNG
+  - CairoSVG `-s 2` 기준 PNG
 - 저장 위치: `docs/images/readme-diagrams/`
 - 영문 README는 영문 asset, 한글 README는 한글 asset을 참조한다.
 - Amazon Bedrock card에는 repository에 포함된 AWS 공식 architecture icon을
@@ -592,7 +592,7 @@ diagram에는 “각 collection은 새 Bedrock invocation이며 비용과 서로
 - 기존 sequence family 두 개를 full-size PNG로 확인하고 palette와 message
   표현을 맞춘다.
 - XML parse 및 CairoSVG render
-- connector, geometry, endpoint, mixed-corner, sequence-style audit
+- connector, geometry, endpoint, mixed-corner, sequence-style 감사
 - visible numbered message, marker color, branch frame, label collision 검증
 - 영문 및 한글 PNG 각각 full-size 육안 검사
 - SVG와 PNG의 canonical path 및 README link 확인
@@ -615,8 +615,8 @@ diagram에는 “각 collection은 새 Bedrock invocation이며 비용과 서로
 
 ### Request 및 response
 
-- model ID, user message, content block, inference config mapping
-- blank model ID, blank text, empty message validation
+- 모델 ID, 사용자 message, content block, inference config 매핑
+- 빈 모델 ID, 빈 text, 빈 message 검증
 - advanced builder field 보존 및 helper-owned text/role/model/messages의
   builder 재정의 차단
 - Java/Kotlin 모두 non-null `inferenceConfig` 인자가 builder 값을
@@ -635,7 +635,7 @@ diagram에는 “각 collection은 새 Bedrock invocation이며 비용과 서로
 - Java suspend `.await()` 결과와 cancellation
 - Kotlin native suspend request 전달 및 raw response 반환
 
-### Streaming Flow
+### 스트리밍 Flow
 
 - collection 전에는 SDK 호출이 시작되지 않음
 - collector마다 새 SDK 호출
@@ -691,12 +691,12 @@ local emulator는 mandatory gate로 두지 않는다.
 ## 문서
 
 - `aws-java/README.md`와 `README.ko.md`
-  - Bedrock Runtime dependency
-  - sync, async, suspend `Converse`
+  - Bedrock Runtime 의존성
+  - 동기, 비동기, suspend `Converse`
   - streaming raw event 및 text delta Flow
-  - caller-owned client lifecycle
+  - 호출자 소유 클라이언트 생명주기
 - `aws-kotlin/README.md`와 `README.ko.md`
-  - native suspend `Converse`
+  - 네이티브 suspend `Converse`
   - native streaming Flow와 text delta pipeline
   - `withBedrockRuntimeClient`
 - 공개 API에는 영어 KDoc을 작성한다.
@@ -773,7 +773,7 @@ local emulator는 mandatory gate로 두지 않는다.
    - 완화: raw SDK event Flow를 주 API로 두고 text delta는 선택적 mapping
      helper로 둔다.
 
-4. **Java/Kotlin facade drift**
+4. **Java/Kotlin facade 불일치**
    - 위험: 같은 이름의 helper가 다른 validation 또는 lifecycle 의미를 가질
      수 있다.
    - 완화: 의미 기반 parity 테스트와 README 예제를 함께 검토한다.
@@ -806,10 +806,9 @@ local emulator는 mandatory gate로 두지 않는다.
 Developer/API, stability, operator/ops, security, user/caller, performance의
 6개 lens로 독립 검토하고 main session에서 통합했다.
 
-첫 검토에서 나온 P1은 exact public signature, consumer dependency,
-backpressure, future/publisher terminal race, retry generation, client
-ownership, Flow escape, endpoint trust, timeout ownership, per-collection
-cost와 diagram/user warning에 집중됐다. P2/P3는 observability allowlist,
+첫 검토에서 나온 P1은 정확한 공개 signature, 소비자 의존성, backpressure,
+future/publisher terminal 경쟁, retry generation, 클라이언트 소유권, Flow 이탈,
+endpoint 신뢰, timeout 소유권, collection별 비용과 diagram/사용자 경고에 집중됐다. P2/P3는 observability allowlist,
 opt-in smoke, release/rollback, prerequisites, compatibility까지 포함했다.
 
 수정 후 affected lens를 다시 검토한 결과는 다음과 같다.
