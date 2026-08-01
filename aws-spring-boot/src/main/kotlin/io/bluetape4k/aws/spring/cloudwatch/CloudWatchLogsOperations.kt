@@ -8,17 +8,17 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
 
 /**
- * Coroutine-based CloudWatch Logs operations for Spring applications.
+ * Spring 애플리케이션을 위한 코루틴 기반 CloudWatch Logs 작업입니다.
  */
 interface CloudWatchLogsOperations {
 
     /**
-     * Creates a CloudWatch Logs log group named [logGroupName].
+     * [logGroupName]이라는 CloudWatch Logs 로그 그룹을 생성합니다.
      */
     suspend fun createLogGroup(logGroupName: String): CreateLogGroupResponse
 
     /**
-     * Creates a log stream named [logStreamName] inside [logGroupName].
+     * [logGroupName] 안에 [logStreamName]이라는 로그 스트림을 생성합니다.
      */
     suspend fun createLogStream(
         logGroupName: String,
@@ -26,12 +26,12 @@ interface CloudWatchLogsOperations {
     ): CreateLogStreamResponse
 
     /**
-     * Publishes [logEvents] to the configured default log group and stream.
+     * [logEvents]를 구성된 기본 로그 그룹과 스트림에 게시합니다.
      */
     suspend fun putLogEvents(logEvents: List<InputLogEvent>): List<PutLogEventsResponse>
 
     /**
-     * Publishes [logEvents] to the given [logGroupName] and [logStreamName].
+     * [logEvents]를 지정한 [logGroupName]과 [logStreamName]에 게시합니다.
      */
     suspend fun putLogEvents(
         logGroupName: String,
@@ -40,12 +40,12 @@ interface CloudWatchLogsOperations {
     ): List<PutLogEventsResponse>
 
     /**
-     * Lists log groups, optionally restricted by [logGroupNamePrefix].
+     * 로그 그룹 목록을 조회하며, 선택적으로 [logGroupNamePrefix]로 제한합니다.
      */
     suspend fun describeLogGroups(logGroupNamePrefix: String? = null): DescribeLogGroupsResponse
 
     /**
-     * Lists log streams in [logGroupName], optionally restricted by [logStreamNamePrefix].
+     * [logGroupName]의 로그 스트림 목록을 조회하며, 선택적으로 [logStreamNamePrefix]로 제한합니다.
      */
     suspend fun describeLogStreams(
         logGroupName: String,

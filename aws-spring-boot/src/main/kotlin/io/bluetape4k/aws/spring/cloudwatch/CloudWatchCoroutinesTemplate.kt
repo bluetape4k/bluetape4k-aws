@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
 
 /**
- * Coroutine-friendly [CloudWatchOperations] backed by AWS SDK v2 [CloudWatchAsyncClient].
+ * AWS SDK v2 [CloudWatchAsyncClient]를 사용하는 코루틴 친화적인 [CloudWatchOperations]입니다.
  */
 class CloudWatchCoroutinesTemplate(
     private val cloudWatchAsyncClient: CloudWatchAsyncClient,

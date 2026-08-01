@@ -9,7 +9,7 @@ import java.util.Arrays
 internal const val MAX_SES_MESSAGE_BYTES: Int = 40 * 1024 * 1024
 
 /**
- * Recipient address set used by SES email requests.
+ * SES 이메일 요청에서 사용하는 수신자 주소 집합입니다.
  */
 data class SesEmailAddressSet(
     val to: List<String>,
@@ -30,7 +30,7 @@ data class SesEmailAddressSet(
 }
 
 /**
- * Text and/or HTML body for SES simple email content.
+ * SES 단순 이메일 콘텐츠의 텍스트 및 HTML 본문입니다.
  */
 data class SesEmailBody(
     val text: String? = null,
@@ -52,7 +52,7 @@ data class SesEmailBody(
 }
 
 /**
- * SES v2 attachment value object for simple and templated messages.
+ * 단순 및 템플릿 메시지용 SES v2 첨부 파일 값 객체입니다.
  */
 class SesEmailAttachment(
     val fileName: String,
@@ -106,7 +106,7 @@ class SesEmailAttachment(
 }
 
 /**
- * SES simple email request.
+ * SES 단순 이메일 요청입니다.
  */
 data class SesEmailRequest(
     val destination: SesEmailAddressSet,
@@ -136,7 +136,7 @@ data class SesEmailRequest(
 }
 
 /**
- * SES template email request.
+ * SES 템플릿 이메일 요청입니다.
  */
 data class SesTemplateEmailRequest(
     val destination: SesEmailAddressSet,
@@ -172,7 +172,7 @@ data class SesTemplateEmailRequest(
 }
 
 /**
- * SES raw email request.
+ * SES 원본 이메일 요청입니다.
  */
 class SesRawEmailRequest(
     rawContent: ByteArray,

@@ -23,12 +23,12 @@ import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Spring Boot 4 auto-configuration for AWS SES.
+ * AWS SES용 Spring Boot 4 자동 구성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Registers an [SesV2AsyncClient] and [SesOperations] when the SES v2 SDK is
- * on the runtime classpath and `bluetape4k.aws.ses.enabled` is not disabled.
+ * 런타임 클래스패스에 SES v2 SDK가 있고 `bluetape4k.aws.ses.enabled`를 비활성화하지 않았으면
+ * [SesV2AsyncClient]와 [SesOperations]를 등록합니다.
  */
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled

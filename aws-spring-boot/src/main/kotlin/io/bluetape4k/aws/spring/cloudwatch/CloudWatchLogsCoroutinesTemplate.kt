@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
 
 /**
- * Coroutine-friendly [CloudWatchLogsOperations] backed by AWS SDK v2 [CloudWatchLogsAsyncClient].
+ * AWS SDK v2 [CloudWatchLogsAsyncClient]를 사용하는 코루틴 친화적인 [CloudWatchLogsOperations]입니다.
  */
 class CloudWatchLogsCoroutinesTemplate(
     private val cloudWatchLogsAsyncClient: CloudWatchLogsAsyncClient,

@@ -9,13 +9,13 @@ internal const val CLOUDWATCH_PROPERTIES_PREFIX = "bluetape4k.aws.cloudwatch"
 internal const val CLOUDWATCH_LOGS_PROPERTIES_PREFIX = "bluetape4k.aws.cloudwatch-logs"
 
 /**
- * Configuration properties for CloudWatch metric publishing.
+ * CloudWatch 메트릭 게시용 구성 속성입니다.
  *
- * ## Contract
+ * ## 계약
  *
- * Service-specific region and endpoint settings override shared
- * `bluetape4k.aws` defaults. The namespace is optional for methods that pass a
- * namespace explicitly and required for default-namespace publishing methods.
+ * 서비스별 리전과 엔드포인트 설정은 공유 `bluetape4k.aws` 기본값보다 우선합니다.
+ * 네임스페이스를 명시적으로 전달하는 메서드에는 선택 사항이며 기본 네임스페이스 게시
+ * 메서드에는 필수입니다.
  */
 @ConfigurationProperties(prefix = CLOUDWATCH_PROPERTIES_PREFIX)
 data class CloudWatchProperties(
@@ -48,7 +48,7 @@ data class CloudWatchProperties(
 }
 
 /**
- * Configuration properties for CloudWatch Logs event publishing.
+ * CloudWatch Logs 이벤트 게시용 구성 속성입니다.
  */
 @ConfigurationProperties(prefix = CLOUDWATCH_LOGS_PROPERTIES_PREFIX)
 data class CloudWatchLogsProperties(

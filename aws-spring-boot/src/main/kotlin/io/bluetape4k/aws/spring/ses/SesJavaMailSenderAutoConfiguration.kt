@@ -10,7 +10,7 @@ import org.springframework.mail.javamail.JavaMailSender
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
- * Auto-configuration for the optional Spring [JavaMailSender] SES adapter.
+ * 선택적인 Spring [JavaMailSender] SES 어댑터의 자동 구성입니다.
  */
 @AutoConfiguration(after = [SesAutoConfiguration::class])
 @ConditionalOnAwsEnabled
