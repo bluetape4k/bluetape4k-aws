@@ -1,21 +1,20 @@
-# Projects 1.10.0 BOM handoff
+# Projects 1.10.0 BOM 인계
 
-## Context
+## 배경
 
-`bluetape4k-projects` 1.10.0 was released and `bluetape4k-bom:1.10.0` is visible
-from Maven Central.
+`bluetape4k-projects` 1.10.0이 출시됐고 Maven Central에서
+`bluetape4k-bom:1.10.0`을 확인할 수 있습니다.
 
-## Decision
+## 결정
 
-Update the local catalog's projects BOM version from 1.9.2 to 1.10.0 while
-leaving the exposed BOM and AWS release line unchanged.
+Exposed BOM과 AWS release line은 유지하면서 local catalog의 projects BOM version을
+기존 1.9.2 버전에서 1.10.0으로 갱신합니다.
 
-## Outcome
+## 결과
 
-AWS builds now consume the stable projects 1.10.0 BOM for shared bluetape4k
-module versions.
+AWS build는 공통 bluetape4k module version에 안정 버전인 projects 1.10.0 BOM을
+사용합니다.
 
-## Verification
+## 검증
 
-- Maven Central HTTP 200 for `bluetape4k-bom:1.10.0`.
-
+- `bluetape4k-bom:1.10.0`에 대한 Maven Central HTTP 200.
