@@ -53,6 +53,10 @@ inline fun sendMessageRequestOf(
         messageBody(messageBody)
         delaySeconds?.let { delaySeconds(it) }
         builder()
+    }.also { request ->
+        request.queueUrl().requireNotBlank("queueUrl")
+        request.messageBody().requireNotBlank("messageBody")
+        request.delaySeconds()?.validateSqsDelaySeconds("delaySeconds")
     }
 }
 
