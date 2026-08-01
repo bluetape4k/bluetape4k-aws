@@ -29,7 +29,7 @@
 
 ## 선택한 설계
 
-### Kinesis
+### Kinesis 통합
 
 `io.bluetape4k.aws.ktor.kinesis` package를 추가한다.
 
@@ -46,7 +46,7 @@
 
 Template은 간단한 stream 및 공개 호출을 `aws-java` coroutine helper에 위임한다. `recordFlow`는 Ktor application 수명 주기에 관한 기능이며 Spring에 의존하지 않아야 하므로 로컬에서 구현한다.
 
-### STS
+### STS 통합
 
 `io.bluetape4k.aws.ktor.sts` package를 추가한다.
 
@@ -74,7 +74,7 @@ Template은 Ktor 로컬 request 객체를 AWS SDK v2 request로 mapping하고 �
 - `aws-ktor`가 Kinesis 및 STS SDK 의존성을 `compileOnly`와 `testImplementation`으로 선언한다.
 - README locale 쌍이 Kinesis 및 STS Ktor 커버리지를 문서화한다.
 
-## DoD
+## 완료 조건
 
 - production 소스를 편집하기 전에 spec과 plan이 있다.
 - #272의 담당자가 `debop`이고 milestone은 `0.6.0`으로 유지된다.

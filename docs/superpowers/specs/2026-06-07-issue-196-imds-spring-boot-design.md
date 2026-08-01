@@ -37,8 +37,8 @@
 예상 type:
 
 - `ImdsProperties`
-  - Prefix: `bluetape4k.aws.imds`
-  - Field: `enabled`, `endpoint`, `endpointMode`, `tokenTtl`,
+  - 접두사: `bluetape4k.aws.imds`
+  - 필드: `enabled`, `endpoint`, `endpointMode`, `tokenTtl`,
     `requestTimeout`, `retries`.
   - 기본값: 활성화, IPv4 endpoint mode, 6시간 token TTL, 짧은 operation timeout, 0 또는 매우 적은 retry 수.
 - `ImdsOperations`
@@ -86,7 +86,7 @@ root 및 모듈 README locale 세트를 갱신한다.
 - `ImdsOperations` 사용 예제를 추가한다.
 - IMDS는 EC2 전용이며 EKS/IRSA 대체품으로 사용해서는 안 된다고 설명한다.
 
-## DoD
+## 완료 조건
 
 - Spec 검토: `P0=0`, `P1=0`.
 - Plan 검토: `P0=0`, `P1=0`.

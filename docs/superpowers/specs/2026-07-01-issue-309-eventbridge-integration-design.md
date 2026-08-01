@@ -37,9 +37,9 @@
 
 ## 선택한 설계
 
-### Spring Boot
+### Spring Boot 통합
 
-Add package `io.bluetape4k.aws.spring.eventbridge`.
+`io.bluetape4k.aws.spring.eventbridge` 패키지를 추가한다.
 
 공개 API:
 
@@ -67,9 +67,9 @@ Add package `io.bluetape4k.aws.spring.eventbridge`.
 호출자가 `eventBusName`을 생략했을 때만 구성된 `defaultEventBusName`을 사용한다. 각 항목이
 이벤트 버스 선택을 소유하므로 `PutEvents` 항목은 다시 쓰지 않는다.
 
-### Ktor
+### Ktor 통합
 
-Add package `io.bluetape4k.aws.ktor.eventbridge`.
+`io.bluetape4k.aws.ktor.eventbridge` 패키지를 추가한다.
 
 공개 API:
 
@@ -81,7 +81,7 @@ Add package `io.bluetape4k.aws.ktor.eventbridge`.
 - `Application.eventBridge()`
 - `Application.eventBridgeOrNull()`
 
-Extend `AwsKtorCore` with `AwsKtorEventBridgeAsyncClientCustomizer`.
+`AwsKtorCore`를 `AwsKtorEventBridgeAsyncClientCustomizer`로 확장한다.
 
 플러그인은 다음을 지원한다.
 
@@ -109,7 +109,7 @@ Ktor 템플릿은 Spring operation 계약을 반영하고 #308 코어 도우미�
 - 프로덕션 소스 편집 전에 설계와 구현 계획이 존재한다.
 - #309는 마일스톤 `0.5.0`과 담당자 `debop`을 유지한다.
 - `git diff --check`가 통과한다.
-- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all` passes.
+- `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin :bluetape4k-aws-ktor:compileTestKotlin --warning-mode all`이 통과한다.
 - `aws-spring-boot`와 `aws-ktor`의 대상 EventBridge 테스트가 통과한다.
 - 에뮬레이터 지원을 검증하거나 미지원으로 명시적으로 기록한다.
 - PR 메타데이터가 이슈 담당자, 마일스톤, 레이블과 일치하며 마지막에 `## DoD Status` 섹션을 둔다.

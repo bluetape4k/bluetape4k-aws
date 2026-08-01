@@ -2,7 +2,7 @@
 
 날짜: 2026-05-13
 이슈: https://github.com/bluetape4k/bluetape4k-aws/issues/5
-Branch: `issue-5-kms-spring-boot`
+브랜치: `issue-5-kms-spring-boot`
 
 ## 목표
 
@@ -13,9 +13,9 @@ Branch: `issue-5-kms-spring-boot`
 - `software.amazon.awssdk:kms`가 있으면 `KmsAutoConfiguration`이 `KmsAsyncClient`를 생성한다.
 - `KmsProperties`는 `bluetape4k.aws.kms`를 binding한다.
 - `KmsCoroutinesEncryptor`는 다음 작업의 suspend 함수를 노출한다.
-  - KMS `Encrypt`
-  - KMS `Decrypt`
-  - KMS `GenerateDataKey`
+  - KMS `Encrypt` 작업
+  - KMS `Decrypt` 작업
+  - KMS `GenerateDataKey` 작업
 - `DataKeyCache`는 envelope encryption을 수행하는 호출자에게 크기가 제한되고 TTL에 기반한 plaintext data key 재사용 기능을 제공한다.
 - `KmsTextEncryptor`는 coroutine encryptor를 Spring Security Crypto `TextEncryptor`에 맞게 조정한다.
 
