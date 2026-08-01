@@ -1,23 +1,23 @@
-# 2026-06-01 Open 0.4.0 Development
+# 2026-06-01 0.4.0 개발선 시작
 
-## Context
+## 배경
 
-`bluetape4k-aws` `0.3.1` was published for release-train dependency alignment.
+release train의 dependency를 맞추기 위해 `bluetape4k-aws` `0.3.1`을 발행했습니다.
 
-## Decision
+## 결정
 
-Move the committed `baseVersion` to `0.4.0` while keeping `snapshotVersion=`
-empty so release workflows can inject snapshot qualifiers explicitly.
-Align direct bluetape4k BOM references to the next catalog-train snapshots:
+commit에 기록한 `baseVersion`을 `0.4.0`으로 올리고 `snapshotVersion=`는 비워 둬
+release workflow가 snapshot qualifier를 명시적으로 주입하게 합니다.
+직접 참조하는 bluetape4k BOM은 다음 catalog train snapshot에 맞춥니다.
 `bluetape4k-bom:1.11.0-SNAPSHOT` and
 `bluetape4k-exposed-bom:1.11.0-SNAPSHOT`.
 
-## Outcome
+## 결과
 
-The repository is ready for the next minor development line.
+저장소가 다음 minor 개발선을 시작할 준비를 마쳤습니다.
 
-## Verification
+## 검증
 
-- `gradle.properties` uses `baseVersion=0.4.0`.
-- `snapshotVersion=` remains empty.
-- `./gradlew help --no-daemon --console=plain` resolves the updated catalog.
+- `gradle.properties`는 `baseVersion=0.4.0`을 사용합니다.
+- `snapshotVersion=`는 빈 값으로 유지됩니다.
+- `./gradlew help --no-daemon --console=plain`이 갱신된 catalog를 해석합니다.

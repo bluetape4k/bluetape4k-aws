@@ -1,30 +1,30 @@
-# Issue 207 Ktor advanced examples
+# Issue 207 Ktor 고급 예제
 
-## Context
+## 배경
 
-Issue #207 asked for Ktor-native examples that make the advanced S3 and SQS
-features usable without copying Spring examples.
+Issue #207에서는 Spring 예제를 복사하지 않고 고급 S3 및 SQS 기능을 사용할 수 있는
+Ktor native 예제를 요청했다.
 
-## Decision
+## 결정
 
-Extend the existing `aws-ktor-s3-examples` and `aws-ktor-sqs-examples` modules
-instead of adding a new example module. This keeps CI and README entry points
-small while proving the new advanced APIs from #203 and #199.
+새 예제 모듈을 추가하지 않고 기존 `aws-ktor-s3-examples`와
+`aws-ktor-sqs-examples` 모듈을 확장한다. 이렇게 하면 CI와 README 진입점을 작게
+유지하면서 #203 및 #199의 새 고급 API를 입증할 수 있다.
 
-## Outcome
+## 결과
 
-- S3 examples now cover content-type detection, S3-backed config objects, and a
-  local in-memory data-key provider for client-side encryption demos.
-- SQS examples now run in manual acknowledgement mode and expose retry-once,
-  interceptor, and observer evidence through Ktor routes.
-- Module READMEs and `aws-ktor` README files link the advanced examples.
+- 이제 S3 예제에서 content-type 감지, S3 기반 config object, client-side 암호화 데모용
+  로컬 in-memory data-key provider를 다룬다.
+- 이제 SQS 예제는 수동 acknowledgement mode로 실행하며 Ktor route를 통해 1회 재시도,
+  interceptor, observer 증거를 제공한다.
+- 모듈 README와 `aws-ktor` README가 고급 예제를 연결한다.
 
-## Verification
+## 검증
 
-Pending in this branch: run targeted example tests and local review before PR.
+이 branch의 남은 작업: PR 전에 대상 예제 테스트와 로컬 검토를 실행한다.
 
-## Future Guard
+## 향후 보호 장치
 
-When adding Ktor example coverage for AWSpring parity, prefer extending the
-existing Ktor example modules first. Keep unsupported AWS-only scenarios clearly
-documented rather than adding non-runnable examples.
+AWSpring parity를 위한 Ktor 예제 커버리지를 추가할 때는 먼저 기존 Ktor 예제 모듈을
+확장한다. 실행할 수 없는 예제를 추가하지 말고 지원하지 않는 AWS 전용 scenario를
+명확히 문서화한다.

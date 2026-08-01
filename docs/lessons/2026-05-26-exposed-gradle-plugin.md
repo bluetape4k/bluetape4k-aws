@@ -1,19 +1,24 @@
-## Context
+## 배경
 
-Adopted the JetBrains Exposed Gradle plugin for AWS Exposed example modules after the shared dependency catalog added a central plugin alias.
+공통 dependency catalog에 중앙 plugin alias가 추가된 뒤 AWS Exposed example 모듈에
+JetBrains Exposed Gradle plugin을 적용했습니다.
 
-## Decision
+## 결정
 
-Library repositories should consume the plugin alias from the managed `bt4k` catalog and pin the default catalog ref to `catalog/2026-05-26-00`.
+library 저장소는 관리형 `bt4k` catalog의 plugin alias를 사용하고 기본 catalog ref를
+`catalog/2026-05-26-00`으로 고정합니다.
 
-## Outcome
+## 결과
 
-`aws-spring-boot-exposed-examples` and `aws-ktor-exposed-examples` now expose the `generateMigrations` task with explicit table package and H2 migration database settings.
+`aws-spring-boot-exposed-examples`와 `aws-ktor-exposed-examples`는 명시적인 table
+package 및 H2 migration database 설정과 함께 `generateMigrations` task를 제공합니다.
 
-## Verification
+## 검증
 
-Ran `git diff --check`, `./gradlew -q help`, and `tasks --all` for both Exposed example modules.
+두 Exposed example 모듈에서 `git diff --check`, `./gradlew -q help`, `tasks --all`을
+실행했습니다.
 
-## Future Guard
+## 향후 지침
 
-Keep workshop-style repositories independent from the managed catalog; only bluetape4k library repos should consume `bt4k.plugins.exposed.plugin`.
+workshop형 저장소는 관리형 catalog와 독립적으로 유지합니다. bluetape4k library 저장소만
+`bt4k.plugins.exposed.plugin`을 사용합니다.

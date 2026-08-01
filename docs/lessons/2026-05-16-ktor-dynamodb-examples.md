@@ -1,26 +1,27 @@
 ---
 name: ktor-dynamodb-examples
-description: Lessons from implementing the aws-ktor-dynamodb-examples module (issue #17)
+description: aws-ktor-dynamodb-examples 모듈 구현에서 얻은 교훈(issue #17)
 metadata:
   type: project
 ---
 
-# Ktor DynamoDB Examples Module (Issue #17)
+# Ktor DynamoDB 예제 모듈(Issue #17)
 
-## Summary
+## 요약
 
-Added `examples/aws-ktor-dynamodb-examples` — a Ktor 3 application demonstrating DynamoDB CRUD via
-the `aws-ktor` `DynamoDbKtorPlugin`. Covers save, findById, scan, and delete via HTTP routes backed
-by LocalStack integration tests using the AWS Kotlin SDK.
+`aws-ktor`의 `DynamoDbKtorPlugin`을 통해 DynamoDB CRUD를 보여 주는 Ktor 3 애플리케이션
+`examples/aws-ktor-dynamodb-examples`를 추가했다. AWS Kotlin SDK와 LocalStack 통합
+테스트를 사용해 HTTP route의 save, findById, scan, delete를 다룬다.
 
-## Root Cause / Context
+## 근본 원인 / 배경
 
-Pre-release gap: the `aws-ktor` DynamoDB integration had no end-to-end example showing how to wire up
-the `DynamoDbKtorPlugin` inside a Ktor application with full CRUD and concurrent access tests.
+출시 전까지 `aws-ktor` DynamoDB 통합에는 Ktor 애플리케이션에
+`DynamoDbKtorPlugin`을 연결하고 전체 CRUD와 동시 접근을 테스트하는 end-to-end 예제가
+없었다.
 
-## Key Decisions
+## 주요 결정
 
-### DynamoDbKtorPlugin wiring
+### DynamoDbKtorPlugin 연결
 
 ```kotlin
 install(DynamoDbKtorPlugin) {
@@ -32,9 +33,10 @@ install(DynamoDbKtorPlugin) {
 }
 ```
 
-Access repository via `application.dynamoDb().repository("orders", mapper, reader, keyMapper)`.
+Repository에는 `application.dynamoDb().repository("orders", mapper, reader, keyMapper)`로
+접근한다.
 
-### AWS Kotlin SDK credentials
+### AWS Kotlin SDK 자격 증명
 
 ```kotlin
 val credentialsProvider = StaticCredentialsProvider {
@@ -44,37 +46,41 @@ val credentialsProvider = StaticCredentialsProvider {
 val endpointUrl = Url.parse(localStack.endpoint.toString())
 ```
 
-### Test structure
+### 테스트 구조
 
-- `@TestInstance(TestInstance.Lifecycle.PER_CLASS)` on the test class.
-- Private `testModule(block)` helper wraps `testApplication {}` with `dynamoDbExampleModule(...)`.
-- Each `@Test` calls `testModule { ... }` directly as the test return value (not `runSuspendIO`).
-- JSON content negotiation via Jackson: `createClient { install(ContentNegotiation) { jackson() } }`.
-- Concurrent test uses `SuspendedJobTester().workers(4).rounds(3).add {...}.run()` inside
-  `testModule {}`.
+- Test class에 `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`를 적용한다.
+- Private `testModule(block)` helper가 `testApplication {}`을
+  `dynamoDbExampleModule(...)`과 함께 감싼다.
+- 각 `@Test`는 `runSuspendIO`로 감싸지 않고 `testModule { ... }`을 test return value로
+  직접 호출한다.
+- Jackson으로 JSON content negotiation을 설정한다.
+  `createClient { install(ContentNegotiation) { jackson() } }`
+- 동시성 테스트는 `testModule {}` 안에서
+  `SuspendedJobTester().workers(4).rounds(3).add {...}.run()`을 사용한다.
 
-### Assertion style
+### Assertion 방식
 
-Use bluetape4k assertions: `shouldBeEqualTo`, `shouldBeTrue`. HTTP status comparisons use
-`status shouldBeEqualTo HttpStatusCode.Created` etc.
+`shouldBeEqualTo`, `shouldBeTrue` 등 bluetape4k assertion을 사용한다. HTTP status는
+`status shouldBeEqualTo HttpStatusCode.Created` 등으로 비교한다.
 
-## Pitfalls Avoided
+## 피한 함정
 
-- Do NOT wrap `testApplication {}` inside `runSuspendIO {}`.
-- `testModule` helper must return the result of `testApplication {}` directly.
+- `testApplication {}`을 `runSuspendIO {}` 안에서 감싸지 않는다.
+- `testModule` helper는 `testApplication {}`의 결과를 직접 반환해야 한다.
 
-## Verification
+## 검증
 
-Routes tested:
+검증한 route:
+
 - `POST /dynamodb/orders` → 201 Created
-- `GET /dynamodb/orders/{id}` → 200 OK or 404 Not Found
-- `GET /dynamodb/orders` → 200 OK (list)
+- `GET /dynamodb/orders/{id}` → 200 OK 또는 404 Not Found
+- `GET /dynamodb/orders` → 200 OK(list)
 - `DELETE /dynamodb/orders/{id}` → 204 No Content
 
-Concurrent test: 4 workers × 3 rounds, each saving a unique order and immediately finding it by id.
+동시성 테스트에서는 worker 4개가 3회씩 서로 다른 order를 저장하고 즉시 id로 조회했다.
 
-## Future Guidance
+## 향후 지침
 
-- When extending DynamoDB Ktor examples, add routes and corresponding test cases here.
-- The `Url.parse(localStack.endpoint.toString())` + `StaticCredentialsProvider` pattern is the
-  canonical AWS Kotlin SDK LocalStack wiring.
+- DynamoDB Ktor 예제를 확장할 때 이 모듈에 route와 대응하는 test case를 추가한다.
+- `Url.parse(localStack.endpoint.toString())` + `StaticCredentialsProvider` pattern을 AWS
+  Kotlin SDK용 표준 LocalStack 연결 방식으로 사용한다.

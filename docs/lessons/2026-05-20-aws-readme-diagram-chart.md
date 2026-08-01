@@ -1,39 +1,38 @@
-# AWS README Diagram And Chart
+# AWS README 다이어그램 및 차트
 
-## Context
+## 배경
 
-The 2026 `bluetape4k_part4-2_aws.pptx` deck explains the AWS Java SDK v2 bridge,
-AWS Kotlin SDK suspend helpers, Spring Boot operations, Ktor integration, and
-service coverage. The README already had architecture diagrams, but the module
-table lacked a concise component map and service coverage chart.
+2026 `bluetape4k_part4-2_aws.pptx` deck에서는 AWS Java SDK v2 bridge, AWS Kotlin SDK
+suspend helper, Spring Boot operation, Ktor 통합, service coverage를 설명한다. README에
+architecture diagram은 있었지만 module table에는 간결한 component map과 service
+coverage chart가 없었다.
 
-## Decision
+## 결정
 
-Add two pastel README assets under `docs/images/readme-diagrams/`:
+`docs/images/readme-diagrams/` 아래에 pastel README asset 두 개를 추가한다.
 
-- `bluetape4k-aws-components-04.{svg,png}` for module/component composition.
-- `bluetape4k-aws-service-coverage-chart-05.{svg,png}` for service coverage by module.
+- Module/component composition용 `bluetape4k-aws-components-04.{svg,png}`
+- Module별 service coverage용 `bluetape4k-aws-service-coverage-chart-05.{svg,png}`
 
-Keep SVG source files next to PNG outputs and place both images after the module
-table in `README.md` and `README.ko.md`.
+SVG source file은 PNG output 옆에 두고 `README.md`와 `README.ko.md`의 module table 뒤에
+image 두 개를 모두 배치한다.
 
-## Outcome
+## 결과
 
-The README module section now shows both the integration shape and the service
-coverage matrix before the detailed architecture diagrams.
+이제 README module section에서 상세 architecture diagram보다 먼저 integration 구조와
+service coverage matrix를 볼 수 있다.
 
-## Verification
+## 검증
 
-- SVG XML parsed successfully.
-- PNG files rendered with `rsvg-convert` at 1200x720.
-- README local image links resolved with no missing files.
+- SVG XML parse에 성공했다.
+- `rsvg-convert`로 1200x720 PNG 파일을 rendering했다.
+- README local image link가 모두 존재했다.
 
-## Future Note
+## 향후 참고
 
-When adding more AWS README visuals, keep the same pastel near-white frame,
-Architects Daughter-style section labels, and SVG+PNG asset pair convention.
-For component maps, verify arrows against the actual module dependency story:
-Kotlin services use both `aws-java` and `aws-kotlin`, Spring Boot uses
-`aws-java` and `aws-spring-boot`, and Ktor uses `aws-kotlin` and `aws-ktor`.
-The physical source directory can remain `aws/`; the public Gradle module and
-artifact-facing label is `bluetape4k-aws-java`.
+AWS README 시각 자료를 더 추가할 때는 같은 pastel near-white frame, Architects
+Daughter style section label, SVG+PNG asset pair 관례를 유지한다. Component map의 arrow는
+실제 module dependency와 대조한다. Kotlin service는 `aws-java`와 `aws-kotlin`, Spring
+Boot는 `aws-java`와 `aws-spring-boot`, Ktor는 `aws-kotlin`과 `aws-ktor`를 사용한다.
+Physical source directory는 `aws/`로 유지할 수 있지만 공개 Gradle module 및 artifact
+label은 `bluetape4k-aws-java`다.

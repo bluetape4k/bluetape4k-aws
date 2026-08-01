@@ -1,64 +1,56 @@
-# Issues #59 and #13 KMS Field Encryption and Spring SQS Examples
+# Issues #59 및 #13 KMS 필드 암호화와 Spring SQS 예제
 
-Date: 2026-05-14
-Issues:
+날짜: 2026-05-14
+이슈:
 
 - https://github.com/bluetape4k/bluetape4k-aws/issues/59
 - https://github.com/bluetape4k/bluetape4k-aws/issues/13
 
-## Context
+## 배경
 
-Issue #59 asked for KMS-backed field encryption after the initial KMS Spring
-Boot support. Issue #13 asked for Spring Boot SQS usage examples. Both had to
-fit the repository rule that AWS service SDK dependencies stay consumer-provided
-`compileOnly` surfaces.
+Issue #59에서는 초기 KMS Spring Boot 지원에 이어 KMS 기반 필드 암호화를 요청했다.
+Issue #13에서는 Spring Boot SQS 사용 예제를 요청했다. 두 작업 모두 AWS 서비스 SDK
+의존성을 소비자가 제공하는 `compileOnly` surface로 유지한다는 저장소 규칙을 따라야 했다.
 
-## Decision or Finding
+## 결정 또는 발견
 
-For #59, use an explicit field codec instead of transparent persistence
-encryption:
+#59에서는 투명한 persistence 암호화 대신 명시적인 필드 codec을 사용한다.
 
-- `@KmsEncrypted` is field-only and runtime-retained.
-- `KmsEncryptedFieldCodec` encrypts/decrypts `String` and nullable `String`
-  values only.
-- Ciphertext is versioned with `b4k-kms:v1:` and Base64 URL encoding.
-- Validation is deliberately limited to directly declared Java fields in this
-  first slice.
+- `@KmsEncrypted`는 필드에만 적용하고 runtime에 유지한다.
+- `KmsEncryptedFieldCodec`은 `String` 및 nullable `String` 값만 암호화하고 복호화한다.
+- 암호문은 `b4k-kms:v1:`과 Base64 URL encoding으로 versioning한다.
+- 첫 범위에서는 직접 선언한 Java 필드만 검증하도록 의도적으로 제한한다.
 
-For #13, add a dedicated example module under `examples/` instead of folding
-sample controllers into `aws-spring-boot`:
+#13에서는 sample controller를 `aws-spring-boot`에 넣지 않고 `examples/` 아래에 전용 예제
+모듈을 추가한다.
 
-- Queue create/send/receive examples use `SqsOperations`.
-- SNS fanout and DLQ setup examples use SDK async clients with coroutine
-  `await()`.
-- Listener examples use the Spring Boot listener auto-configuration through
-  `@SqsListener`.
+- Queue 생성/전송/수신 예제는 `SqsOperations`를 사용한다.
+- SNS fanout 및 DLQ 설정 예제는 SDK async client와 coroutine `await()`을 사용한다.
+- Listener 예제는 `@SqsListener`를 통해 Spring Boot listener 자동 구성을 사용한다.
 
-## Outcome
+## 결과
 
-Claude review found several P1/P2 risks before publishing. The final code:
+Claude 검토에서 게시 전에 P1/P2 위험 여러 개를 발견했다. 최종 코드는 다음과 같다.
 
-- avoids blocking `CompletableFuture.get()` inside suspend services;
-- separates service encryption failures from usage errors in the KMS exception
-  hierarchy;
-- uses an SNS service principal in generated queue policies;
-- rejects duplicate KMS encryption-context entries;
-- extends LocalStack listener polling enough for CI-grade startup variance.
+- suspend service 안에서 blocking `CompletableFuture.get()`을 사용하지 않는다.
+- KMS exception hierarchy에서 service 암호화 실패와 사용 오류를 구분한다.
+- 생성한 queue policy에서 SNS service principal을 사용한다.
+- 중복 KMS encryption-context entry를 거부한다.
+- CI 환경의 시작 편차를 감당하도록 LocalStack listener polling 시간을 늘린다.
 
-## Verification
+## 검증
 
 - `./gradlew :aws-spring-boot:test --tests 'io.bluetape4k.aws.spring.kms.KmsEncryptedFieldCodecTest' --tests 'io.bluetape4k.aws.spring.kms.KmsAutoConfigurationTest' --tests 'io.bluetape4k.aws.spring.kms.KmsCoroutinesEncryptorLocalStackTest' -Dbluetape4k.aws.emulator=localstack`
 - `./gradlew :aws-spring-boot-sqs-examples:test -Dbluetape4k.aws.emulator=localstack`
 - `./gradlew :aws-spring-boot:build -x test :aws-spring-boot-sqs-examples:build -x test detekt`
 - `git diff --check`
 
-## Future Guidance
+## 향후 지침
 
-Keep `@KmsEncrypted` field-only until a broader Kotlin property/reflection and
-persistence lifecycle contract is designed. Do not silently recurse through
-inherited fields or nested graphs without tests for annotation precedence and
-mapper lifecycle behavior.
+더 넓은 Kotlin property/reflection 및 persistence 수명 주기 계약을 설계할 때까지
+`@KmsEncrypted`는 필드에만 적용한다. Annotation 우선순위와 mapper 수명 주기 동작을
+검증하지 않고 상속 필드나 중첩 graph를 암묵적으로 순회하지 않는다.
 
-For Spring SQS/SNS examples, prefer coroutine `await()` on AWS SDK async calls
-and keep generated IAM policies narrow. Example modules should prove behavior
-with LocalStack tests before README snippets are expanded.
+Spring SQS/SNS 예제에서는 AWS SDK async 호출에 coroutine `await()`을 사용하고 생성하는
+IAM policy 범위를 좁게 유지한다. README snippet을 늘리기 전에 예제 모듈의 LocalStack
+테스트로 동작을 입증한다.

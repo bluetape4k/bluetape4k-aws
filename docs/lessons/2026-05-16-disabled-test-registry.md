@@ -1,42 +1,39 @@
-# Disabled Test Registry Pattern
+# 비활성화 테스트 등록부 패턴
 
-**Date**: 2026-05-16
-**Issue**: #104
-**Branch**: feat/issue-104-disabled-registry
+**날짜**: 2026-05-16
+**이슈**: #104
+**브랜치**: feat/issue-104-disabled-registry
 
-## Context
+## 배경
 
-Tests annotated with `@Disabled` in `bluetape4k-aws` have historically lacked a
-centralized record. This makes it hard to audit which tests are skipped, why, and
-whether they are tracked in an issue.
+과거 `bluetape4k-aws`에서 `@Disabled`로 표시한 테스트는 중앙 기록이 없었다. 어떤
+테스트를 왜 건너뛰는지, 관련 이슈로 추적하는지 감사하기 어려웠다.
 
-## Decision
+## 결정
 
-Create `docs/disabled-tests.md` as the canonical registry of all `@Disabled` tests.
-Each entry records: module, file path, test name, scope (class/method), category,
-tracking issue, and reason.
+모든 `@Disabled` 테스트의 표준 등록부로 `docs/disabled-tests.md`를 만든다. 각 항목에
+모듈, 파일 경로, 테스트 이름, 범위(class/method), 범주, 추적 이슈, 사유를 기록한다.
 
-Enforce a format convention for `@Disabled` annotations:
+`@Disabled` annotation에는 다음 형식 규칙을 적용한다.
 
 ```
 @Disabled("#NNN — <one-sentence reason>")
 ```
 
-## Categories Defined
+## 정의한 범주
 
-- `unsupported-emulator` — service/API not implemented by LocalStack or floci
-- `out-of-band-protocol` — flow requires input delivered outside the emulator
-  (SMS token, email callback, webhook)
+- `unsupported-emulator` — LocalStack 또는 floci가 구현하지 않은 service/API
+- `out-of-band-protocol` — emulator 밖에서 전달되는 입력이 필요한 flow(SMS token,
+  email callback, webhook 같은 입력)
 
-## Deferred
+## 연기한 작업
 
-A CI check that rejects `@Disabled` annotations without a `#NNN — ` prefix was
-originally planned. This is deferred to a follow-up item in issue #104. The format
-is currently enforced by convention and PR review.
+`#NNN — ` 접두사가 없는 `@Disabled` annotation을 거부하는 CI 검사를 처음에는 계획했다.
+이 작업은 issue #104의 후속 항목으로 연기했다. 현재는 규칙과 PR review로 형식을
+강제한다.
 
-## Lesson
+## 교훈
 
-Establish the registry NOW rather than after tests accumulate. Retroactive audits
-are more expensive than keeping the registry current at annotation time. The PR
-description should remind reviewers to update `docs/disabled-tests.md` when
-adding a new `@Disabled` annotation.
+테스트가 쌓인 뒤가 아니라 **지금** 등록부를 만든다. 사후 audit는 annotation을 추가할
+때 등록부를 갱신하는 것보다 비용이 크다. 새 `@Disabled` annotation을 추가하는 PR의
+설명에는 reviewer가 `docs/disabled-tests.md` 갱신을 확인하도록 안내한다.

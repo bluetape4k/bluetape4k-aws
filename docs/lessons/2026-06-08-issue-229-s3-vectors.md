@@ -1,64 +1,57 @@
-# Issue #229 S3 Vectors optional boundary
+# Issue #229 S3 Vectors 선택적 경계
 
-## Context
+## 배경
 
-Issue #229 added optional Amazon S3 Vectors support across `aws-java`,
-`aws-spring-boot`, and `aws-ktor`.
+Issue #229에서는 `aws-java`, `aws-spring-boot`, `aws-ktor` 전반에 선택적 Amazon S3
+Vectors 지원을 추가했다.
 
-## Decision
+## 결정
 
-Keep S3 Vectors separate from the ordinary S3 object API because AWS exposes it
-through the separate `s3vectors` SDK service and IAM namespace. Reuse the
-`aws-java` coroutine facade from Spring Boot and Ktor instead of creating
-adapter-specific operation interfaces.
+AWS는 별도의 `s3vectors` SDK service와 IAM namespace를 통해 S3 Vectors를 제공하므로
+일반 S3 object API와 분리한다. Adapter별 operation interface를 만들지 않고 Spring
+Boot와 Ktor에서 `aws-java` coroutine facade를 재사용한다.
 
-## Outcome
+## 결과
 
-- `software.amazon.awssdk:s3vectors` stays `compileOnly` plus test scope in the
-  library modules.
-- Consumers add `runtimeOnly("software.amazon.awssdk:s3vectors")` only when they
-  enable or install S3 Vectors support.
-- Spring Boot activation requires `bluetape4k.aws.s3-vectors.enabled=true`.
-- Ktor activation requires explicit `S3VectorsKtorPlugin` installation.
-- README diagrams and service coverage prose must reflect S3 Vectors as
-  optional and must not imply emulator support.
-- README diagram revisions must preserve the existing pastel card/badge
-  decoration language. When route density or labels crowd, enlarge the canvas
-  and use semantic route colors instead of collapsing the image into a
-  different visual shape.
+- Library module에서 `software.amazon.awssdk:s3vectors`는 `compileOnly`와 test scope로
+  유지한다.
+- 소비자는 S3 Vectors 지원을 활성화하거나 설치할 때만
+  `runtimeOnly("software.amazon.awssdk:s3vectors")`를 추가한다.
+- Spring Boot 활성화에는 `bluetape4k.aws.s3-vectors.enabled=true`가 필요하다.
+- Ktor 활성화에는 명시적인 `S3VectorsKtorPlugin` 설치가 필요하다.
+- README diagram과 service coverage prose는 S3 Vectors가 선택 사항임을 나타내야 하며
+  emulator 지원을 암시하면 안 된다.
+- README diagram을 수정할 때 기존 pastel card/badge decoration language를 보존한다.
+  Route density나 label이 빽빽하면 image를 다른 visual shape로 축소하지 말고 canvas를
+  키우고 semantic route color를 사용한다.
 
-## Verification
+## 검증
 
-- Maven Central artifact probe confirmed `software.amazon.awssdk:s3vectors`.
-- `javap` confirmed `S3VectorsAsyncClient` operation names before API wrapping.
-- Focused Gradle compile/test runs covered `aws-java`, `aws-spring-boot`, and
-  `aws-ktor` S3 Vectors paths.
-- PR review follow-up regenerated the root README component map and service
-  coverage chart through `tools/generate-root-readme-diagrams.py`, including
-  DOT/plain/sketch evidence, final SVG/PNG assets, geometry-gate summaries,
-  font scans, XML parsing, and rendered PNG inspection.
-- Diagram re-review changed the component map connectors from multi-segment
-  orthogonal routes to direct straight routes, centered service coverage badges
-  inside each matrix cell, and made the coverage sketch PNG render the actual
-  matrix instead of a placeholder label.
-- Later diagram review restored the previously visible runtime targets as a
-  layered component map. The final component diagram now separates
-  application/examples, framework adapters, shared foundations, and runtime
-  targets, including AWS or emulator services plus JDBC stores and managed
-  configuration.
+- Maven Central artifact probe로 `software.amazon.awssdk:s3vectors` 확인
+- API wrapping 전에 `javap`로 `S3VectorsAsyncClient` operation name 확인
+- `aws-java`, `aws-spring-boot`, `aws-ktor`의 S3 Vectors 경로를 대상 Gradle compile/test
+  실행으로 검증
+- PR review 후속 작업에서 `tools/generate-root-readme-diagrams.py`로 root README component
+  map과 service coverage chart를 다시 생성했다. DOT/plain/sketch evidence, 최종 SVG/PNG
+  asset, geometry gate summary, font scan, XML parsing, rendering PNG 검사를 포함했다.
+- Diagram 재검토에서 component map connector를 여러 segment의 orthogonal route에서 직접
+  straight route로 바꾸고, 각 matrix cell 안에 service coverage badge를 중앙 정렬했으며,
+  coverage sketch PNG가 placeholder label 대신 실제 matrix를 rendering하게 했다.
+- 이후 diagram review에서 이전에 보이던 runtime target을 계층화한 component map으로
+  복원했다. 최종 component diagram은 application/example, framework adapter, shared
+  foundation, runtime target을 분리하며 AWS 또는 emulator service, JDBC store, managed
+  configuration을 포함한다.
 
-## Future Rule
+## 향후 규칙
 
-When AWS introduces a new service-specific SDK artifact, start with an optional
-facade in the lowest shared module, reuse it in framework adapters, and document
-runtime dependency ownership clearly in all README locale files.
+AWS가 새 service 전용 SDK artifact를 도입하면 가장 낮은 공통 module에 선택적 facade를
+먼저 만들고 framework adapter에서 재사용한다. 모든 README 언어 파일에 runtime
+dependency ownership을 명확히 문서화한다.
 
-For root README diagram updates, keep the existing card/badge decoration unless
-the user explicitly requests a redesign. Relationship-heavy component maps need
-free-style or layered placement, semantic connector colors, and generator-level
-geometry proof before PNG preview.
-If a reviewer asks for straight routes, validate them as explicit
-boundary-to-boundary connectors and still check non-endpoint card intersections.
-If prior runtime or database targets were part of the reviewed architecture
-story, preserve them in a layered layout instead of replacing them with a
-module-only map.
+Root README diagram을 갱신할 때 사용자가 redesign을 명시적으로 요청하지 않았다면 기존
+card/badge decoration을 유지한다. Relationship이 많은 component map은 자유 배치 또는
+계층형 배치, semantic connector color, generator 수준 geometry proof가 필요하다.
+Reviewer가 straight route를 요청하면 명시적인 boundary-to-boundary connector로 검증하고
+endpoint가 아닌 card intersection도 계속 확인한다. 이전 runtime 또는 database target이
+검토한 architecture story의 일부였다면 module-only map으로 교체하지 말고 계층형 layout에
+보존한다.

@@ -1,29 +1,35 @@
-# Issue 199 Ktor SQS Advanced Controls
+# Issue 199 Ktor SQS 고급 제어
 
-## Context
+## 배경
 
-Issue #199 expands the Ktor SQS consumer from the initial coroutine poller into a production hardening surface: typed conversion failure policy, manual ack/nack, retry visibility strategy, lifecycle interceptors, and observation hooks.
+Issue #199에서는 Ktor SQS consumer를 초기 coroutine poller에서 운영 환경 강화 API로
+확장한다. Typed 변환 실패 policy, 수동 ack/nack, 재시도 visibility 전략, 수명 주기
+interceptor, 관찰 hook을 포함한다.
 
-## Decision
+## 결정
 
-Keep the existing `onMessage<T>` and `deleteOnSuccess = true` behavior as the default. Add advanced controls as opt-in runtime configuration so existing users keep source and behavior compatibility.
+기존 `onMessage<T>`와 `deleteOnSuccess = true` 동작을 기본값으로 유지한다. 고급 제어는
+opt-in runtime 설정으로 추가해 기존 사용자의 source 및 동작 호환성을 보존한다.
 
-Use lightweight observer events instead of adding a Micrometer dependency to `aws-ktor`; applications can bridge observations to Micrometer, OpenTelemetry, logs, or tests.
+`aws-ktor`에 Micrometer 의존성을 추가하지 않고 가벼운 observer event를 사용한다.
+애플리케이션은 관찰 결과를 Micrometer, OpenTelemetry, log 또는 테스트에 연결할 수 있다.
 
-## Outcome
+## 결과
 
-The SQS runtime now supports:
+이제 SQS runtime은 다음 기능을 지원한다.
 
-- `SqsConversionFailurePolicy` for conversion failures before handler invocation.
-- `SqsMessageContext.ack()` and `nack(timeoutSeconds)` for manual acknowledgement flows.
-- `SqsFailureVisibilityStrategy` with fixed and receive-count linear implementations.
-- `SqsConsumerInterceptor` hooks around receive, invoke, ack, and nack.
-- `SqsConsumerObserver` events for receive, convert, invoke, ack, and nack outcomes.
+- Handler 호출 전 변환 실패를 위한 `SqsConversionFailurePolicy`
+- 수동 acknowledgement flow를 위한 `SqsMessageContext.ack()` 및 `nack(timeoutSeconds)`
+- 고정 및 receive-count 선형 구현을 포함한 `SqsFailureVisibilityStrategy`
+- receive, invoke, ack, nack 전후의 `SqsConsumerInterceptor` hook
+- receive, convert, invoke, ack, nack 결과를 위한 `SqsConsumerObserver` event
 
-## Verification
+## 검증
 
-Targeted verification covered runtime configuration validation, conversion failure delete policy, manual ack/nack, interceptor ordering, and observer/failure visibility behavior.
+대상 검증에서 runtime 설정 validation, 변환 실패 delete policy, 수동 ack/nack,
+interceptor 순서, observer/failure visibility 동작을 확인했다.
 
-## Future Guard
+## 향후 보호 장치
 
-Keep SQS advanced controls opt-in. Do not add Spring-style annotations or metrics dependencies to the Ktor module; expose small runtime hooks and let applications adapt them.
+SQS 고급 제어는 opt-in으로 유지한다. Ktor 모듈에 Spring형 annotation이나 metric
+의존성을 추가하지 않는다. 작은 runtime hook을 제공하고 애플리케이션이 적용하게 한다.

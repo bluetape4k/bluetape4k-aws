@@ -1,6 +1,6 @@
 # Issue #312 Bedrock Runtime 최소 facade
 
-## Context
+## 배경
 
 Issue #312는 AWS Java SDK v2와 AWS Kotlin SDK의 Bedrock Runtime `Converse` 및
 `ConverseStream`을 bluetape4k 방식으로 제공하는 Type A 작업이었다. 새 SDK
@@ -12,7 +12,7 @@ Issue #312는 AWS Java SDK v2와 AWS Kotlin SDK의 Bedrock Runtime `Converse` �
 검증 실패는 구현 결함이 아니라 Colima Docker socket과 JDK self-attach
 환경의 차이에서 발생했다.
 
-## Decision or Finding
+## 결정 및 발견
 
 ### workflow 상태는 저장소 증거로 복구한다
 
@@ -76,7 +76,7 @@ PNG를 함께 저장했다. SVG 구조 검사, connector/geometry/style 검사, 
 축소 renderer의 캐시 때문에 발생한 오탐은 현재 PNG hash와 새 crop을
 대조해 해소했다.
 
-## Outcome
+## 결과
 
 - Java sync, `CompletableFuture`, coroutine, streaming facade와 Kotlin native
   suspend/streaming facade를 네이티브 SDK 응답 계약 위에 추가했다.
@@ -87,7 +87,7 @@ PNG를 함께 저장했다. SVG 구조 검사, connector/geometry/style 검사, 
 - raw prompt/output logging을 추가하지 않았고 endpoint는 HTTPS 또는 literal
   loopback HTTP만 허용했다.
 
-## Verification
+## 검증
 
 - Java/Kotlin 전체 모듈 테스트: Java 350건 통과·14건 pending, Kotlin
   562건 통과·12건 pending
@@ -109,7 +109,7 @@ credentialed Bedrock smoke는 기본 검증에서 실행하지 않았다. `-Pbed
 `BEDROCK_REGION`, `BEDROCK_MODEL_ID`가 모두 있을 때만 client를 만들도록
 gate를 두었고, 입력이 없으면 client 생성 전에 skip되는 것을 확인했다.
 
-## Future Guidance
+## 향후 지침
 
 - AWS SDK를 올릴 때 생성형 union과 stream callback 순서를 pinned source에서
   다시 확인하고 공개 helper를 컴파일 fixture로 검증한다.

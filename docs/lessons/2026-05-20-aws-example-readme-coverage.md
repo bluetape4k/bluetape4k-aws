@@ -1,34 +1,31 @@
-# AWS Example README Coverage
+# AWS 예제 README Coverage
 
-## Context
+## 배경
 
-The AWS example modules `aws-ktor-dynamodb-examples`,
-`aws-ktor-sqs-examples`, and `aws-spring-boot-dynamodb-examples` were missing
-module READMEs while sibling examples already used multilingual README pairs
-with PNG architecture diagrams.
+AWS 예제 모듈 `aws-ktor-dynamodb-examples`, `aws-ktor-sqs-examples`,
+`aws-spring-boot-dynamodb-examples`에는 module README가 없었다. 반면 형제 예제는 이미
+PNG architecture diagram이 있는 다국어 README pair를 사용했다.
 
-## Decision
+## 결정
 
-Add source-verified `README.md` and `README.ko.md` files for each missing
-example module, and place matching SVG plus rendered PNG architecture diagrams
-under `docs/images/readme-diagrams/`.
+README가 빠진 각 예제 모듈에 source로 검증한 `README.md`와 `README.ko.md`를 추가하고,
+대응하는 SVG와 rendering PNG architecture diagram을 `docs/images/readme-diagrams/` 아래에
+배치한다.
 
-## Outcome
+## 결과
 
-The new READMEs describe only endpoints, configuration, and API names found in
-the current source. Diagram labels remain English-only and use the existing
-README diagram font/style family.
+새 README는 현재 source에서 확인한 endpoint, configuration, API name만 설명한다.
+Diagram label은 영문 전용으로 유지하고 기존 README diagram font/style 계열을 사용한다.
 
-## Verification
+## 검증
 
-- Inspected target build files, Ktor route modules, Spring Boot controller,
-  repository, application entrypoint, tests, resources, and sibling READMEs.
-- Verified README image links resolve and referenced API tokens exist in source.
-- Rendered all new SVG diagrams to PNG with `rsvg-convert`.
-- Verified PNG dimensions with `identify`.
+- 대상 build file, Ktor route module, Spring Boot controller, repository, application
+  entrypoint, test, resource, 형제 README를 검사했다.
+- README image link가 존재하고 언급한 API token이 source에 있는지 확인했다.
+- 모든 새 SVG diagram을 `rsvg-convert`로 PNG rendering했다.
+- `identify`로 PNG dimension을 확인했다.
 
-## Future Guard
+## 향후 보호 장치
 
-For module-missing-readme fixes, inspect sibling README structure first, then
-grep current source and tests for every endpoint, property, and public type
-mentioned before writing docs.
+Module README 누락을 수정할 때 먼저 형제 README 구조를 검사한다. 문서를 쓰기 전에 언급할
+모든 endpoint, property, public type을 현재 source와 test에서 grep한다.

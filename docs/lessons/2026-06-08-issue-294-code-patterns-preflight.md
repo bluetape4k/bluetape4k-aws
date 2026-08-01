@@ -1,32 +1,43 @@
-# Issue 294 Code Patterns Preflight
+# Issue 294 Code Patterns 사전 검증
 
-## Context
+## 배경
 
-The initial cleanup scope was too narrow. The user clarified that the listed examples were only signals, and the actual goal was repo-wide `bluetape4k-code-patterns` compliance plus stronger bluetape4k ecosystem reuse before 0.4.0.
+초기 cleanup 범위가 너무 좁았다. 사용자는 나열한 example이 signal일 뿐이고 실제 목표는
+0.4.0 전에 저장소 전체에서 `bluetape4k-code-patterns`를 준수하고 bluetape4k ecosystem
+재사용을 강화하는 것이라고 명확히 했다.
 
-## Decision
+## 결정
 
-- Keep the full workflow gate: spec review P0/P1=0, then plan review P0/P1=0, then implementation.
-- Treat data class serialization, coroutine blocking boundaries, raw assertions, and ecosystem helper reuse as separate scan lanes.
-- Use `bluetape4k-jdbc` where the replacement is exact (`hikariDataSourceOf`), but do not force the RDS IAM `DriverManager` custom `DataSource` into a risky abstraction in the same PR.
+- 전체 workflow gate를 유지한다. Spec review P0/P1=0, plan review P0/P1=0을 차례로
+  확인한 뒤 구현한다.
+- Data class 직렬화, coroutine blocking 경계, raw assertion, ecosystem helper 재사용을
+  별도 scan lane으로 취급한다.
+- 교체가 정확히 일치하는 곳에는 `bluetape4k-jdbc`의 `hikariDataSourceOf`를 사용한다.
+  RDS IAM `DriverManager` custom `DataSource`를 같은 PR에서 위험한 abstraction으로 억지로
+  바꾸지는 않는다.
 
-## Outcome
+## 결과
 
-- `AwsSecretString` construction now goes through guarded factories.
-- Published production and touched test data classes now implement `Serializable` with `serialVersionUID`.
-- Ktor close paths and selected blocking calls use `runInterruptible(Dispatchers.IO)`.
-- Raw assertion imports in touched/high-signal tests were replaced with `bluetape4k-assertions`.
-- Repo-wide Kotlin source `!!` scan now returns 0 results; AWS SDK nullable response tests use `shouldNotBeNull()`.
-- Follow-up #295 tracks the remaining RDS IAM JDBC abstraction.
+- `AwsSecretString`은 이제 보호된 factory를 통해 생성한다.
+- 게시하는 production 및 변경한 test data class는 `serialVersionUID`와 함께
+  `Serializable`을 구현한다.
+- Ktor 종료 경로와 선택한 blocking call은 `runInterruptible(Dispatchers.IO)`을 사용한다.
+- 변경했거나 중요한 test의 raw assertion import를 `bluetape4k-assertions`로 교체했다.
+- 저장소 전체 Kotlin source의 `!!` scan은 이제 0건을 반환한다. AWS SDK nullable response
+  test는 `shouldNotBeNull()`을 사용한다.
+- 남은 RDS IAM JDBC abstraction은 후속 #295에서 추적한다.
 
-## Verification
+## 검증
 
-- Published module compile: PASS.
-- Exposed/Kotlin/Spring targeted tests: PASS.
-- Full `aws-kotlin:test`: PASS, 489 passing + 12 pending.
-- Ktor targeted suite: PASS, 150 tests.
-- Static scans: data class missing marker 0, raw assertion imports 0, `!!` 0, nested `withContext(IO)+runInterruptible` 0.
+- 게시 module compile: PASS
+- Exposed/Kotlin/Spring 대상 test: PASS
+- 전체 `aws-kotlin:test`: PASS, 489개 통과 + 12개 pending
+- Ktor 대상 suite: PASS, 테스트 150개
+- Static scan: marker가 없는 data class 0, raw assertion import 0, `!!` 0,
+  중첩 `withContext(IO)+runInterruptible` 0
 
-## Future Rule
+## 향후 규칙
 
-For broad pre-release cleanup, do not stop at the user's examples. Build scan lanes from the skill rules, fix safe P0/P1/high-confidence P2 items, and create follow-up issues for behavior-changing ecosystem abstractions.
+광범위한 release 전 cleanup에서는 사용자가 든 example에서 멈추지 않는다. Skill rule에서
+scan lane을 구성해 안전한 P0/P1 및 확신도 높은 P2 항목을 수정하고, 동작을 바꾸는
+ecosystem abstraction은 후속 issue로 만든다.

@@ -1,42 +1,40 @@
-# README Diagram Image Validation
+# README 다이어그램 이미지 검증
 
-## Context
+## 배경
 
-README Mermaid diagrams were replaced with generated PNG embeds while keeping
-the generated SVG and README-facing PNG files under
-`docs/images/readme-diagrams`.
+README Mermaid diagram을 생성한 PNG embed로 교체하고 생성한 SVG와 README용 PNG 파일은
+`docs/images/readme-diagrams` 아래에 유지했다.
 
-## Decision
+## 결정
 
-Use the shared pastel infographic renderer for architecture, class, and sequence
-diagrams. Diagram text stays English-only, PNG is the README-facing artifact,
-and SVG remains available for future regeneration or inspection.
+Architecture, class, sequence diagram에는 공통 pastel infographic renderer를 사용한다.
+Diagram text는 영문 전용으로 유지하고 README에는 PNG를 사용하며, 향후 재생성 또는
+검사를 위해 SVG도 보존한다.
 
-Large diagram titles are fitted to the available width before rendering so
-module subtitles do not clip in root README assets.
+Root README asset에서 module subtitle이 잘리지 않도록 rendering 전에 큰 diagram title을
+사용 가능한 너비에 맞춘다.
 
-## Outcome
+## 결과
 
-The AWS README diagram set was regenerated with content-sized canvases:
+AWS README diagram 모음을 content 크기에 맞춘 canvas로 다시 생성했다.
 
-- 30 rendered artifacts
-- 15 PNG files
-- 15 SVG source files
-- no missing README image links
-- no local SVG image embeds in README files
-- no remaining Mermaid code blocks
+- Rendering한 artifact 30개
+- PNG 파일 15개
+- SVG source file 15개
+- 누락된 README image link 없음
+- README 파일의 local SVG image embed 없음
+- 남은 Mermaid code block 없음
 
-## Verification
+## 검증
 
 - `node /Users/debop/work/bluetape4k/.omx/scripts/refine-readme-diagrams.mjs .`
-- README image link and Mermaid residue checker
-- PNG/SVG shape checker
-- Visual sample sheet review
+- README image link 및 Mermaid residue checker
+- PNG/SVG 형상 검사
+- Visual sample sheet 검토
 - `git diff --check`
 
-## Future Guidance
+## 향후 지침
 
-When regenerating README diagrams, inspect a contact sheet before PR creation.
-Architecture diagrams should use content-driven dimensions, class diagrams need
-visible inheritance/use arrows, and sequence diagrams must not be forced into a
-fixed height.
+README diagram을 다시 생성할 때 PR을 만들기 전에 contact sheet를 검사한다. Architecture
+diagram은 content 기반 dimension을 사용하고, class diagram은 inheritance/use arrow가
+보여야 하며, sequence diagram을 고정 height에 맞추지 않는다.

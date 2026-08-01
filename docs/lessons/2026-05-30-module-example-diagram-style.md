@@ -1,38 +1,35 @@
-# Module And Example Diagram Style Refresh
+# 모듈 및 예제 다이어그램 스타일 갱신
 
-## Context
+## 배경
 
-The `aws-exposed`, `aws-java`, `aws-kotlin`, BOM, and example README diagrams
-still looked like direct Graphviz renders. Several operation flow and lifecycle
-sequence diagrams were too wide and shallow, making them harder to read in
-GitHub README view.
+`aws-exposed`, `aws-java`, `aws-kotlin`, BOM, 예제 README diagram은 여전히 Graphviz를
+직접 rendering한 모습이었다. Operation flow와 lifecycle sequence diagram 여러 개가
+너무 넓고 얕아 GitHub README 화면에서 읽기 어려웠다.
 
-## Decision
+## 결정
 
-Regenerate the module, BOM, and example README diagrams with the same pastel
-card-style visual language as the root README refresh. Use vertical layouts for
-operation flows, client lifecycle sequences, exposed configuration flow, and the
-BOM architecture.
+Module, BOM, 예제 README diagram을 root README 갱신과 같은 pastel card style visual
+language로 다시 생성한다. Operation flow, client lifecycle sequence, exposed
+configuration flow, BOM architecture에는 vertical layout을 사용한다.
 
-## Outcome
+## 결과
 
-The refreshed assets keep existing README image paths while adding in-image
-titles, subtitles, top chips, framed canvas, centered cards, clear connectors,
-and role footers. Graphviz DOT/plain/sketch evidence was generated for the
-updated assets, including examples that previously had only final SVG/PNG.
+갱신한 asset은 기존 README image path를 유지하면서 image 내부 title, subtitle, top
+chip, framed canvas, centered card, 명확한 connector, role footer를 추가한다. 이전에 최종
+SVG/PNG만 있던 예제를 포함해 갱신한 asset의 Graphviz DOT/plain/sketch 증거도 생성했다.
 
-## Verification
+## 검증
 
-- Rendered all updated SVG assets to PNG with `rsvg-convert`.
-- Rendered matching Graphviz sketch PNG files.
-- Inspected `.omx/artifacts/module-example-diagram-redesign-contact.png`.
-- `xmllint --noout` passed for README diagram SVG assets.
-- README image-link check passed with `missing=0` and `local_svg_embeds=0`.
-- SVG/PNG pair check passed with `png_pairs_missing=0`.
-- `git diff --check` passed.
+- 갱신한 모든 SVG asset을 `rsvg-convert`로 PNG rendering했다.
+- 대응하는 Graphviz sketch PNG 파일을 rendering했다.
+- `.omx/artifacts/module-example-diagram-redesign-contact.png`를 검사했다.
+- README diagram SVG asset에서 `xmllint --noout`이 통과했다.
+- README image link 검사에서 `missing=0`, `local_svg_embeds=0`으로 통과했다.
+- SVG/PNG pair 검사에서 `png_pairs_missing=0`으로 통과했다.
+- `git diff --check`가 통과했다.
 
-## Future Guidance
+## 향후 지침
 
-Do not publish direct Graphviz-style module or example README diagrams as final
-assets. Prefer vertical layouts for process, flow, and lifecycle diagrams; use
-wide layouts only when the content is a true component map.
+Graphviz style module 또는 example README diagram을 최종 asset으로 직접 게시하지 않는다.
+Process, flow, lifecycle diagram에는 vertical layout을 우선하고, content가 실제 component
+map일 때만 wide layout을 사용한다.

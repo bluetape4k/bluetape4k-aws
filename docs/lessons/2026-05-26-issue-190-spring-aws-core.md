@@ -1,31 +1,31 @@
-# Issue #190 Spring AWS Core Foundation
+# Issue #190 Spring AWS 핵심 기반
 
-## Context
+## 배경
 
-`aws-spring-boot` service auto-configurations repeated credentials, region,
-endpoint, and client-builder wiring. The 0.3.0 plan needs a shared foundation
-before S3/SQS hardening work.
+`aws-spring-boot`의 서비스 auto-configuration마다 credentials, region, endpoint,
+client-builder 연결을 반복했다. 0.3.0 계획에서 S3/SQS 강화 작업보다 먼저 공통 기반이
+필요했다.
 
-## Decision
+## 결정
 
-Add shared `bluetape4k.aws` defaults and builder customizer hooks while keeping
-service-specific properties higher precedence. Keep `AwsAutoConfiguration`
-behind `bluetape4k.aws.enabled`, matching the Spring Boot auto-configuration
-phase rule. Web-identity credentials remain opt-in and STS-classpath guarded.
+공통 `bluetape4k.aws` 기본값과 builder customizer hook을 추가하되 서비스별 property에
+더 높은 우선순위를 둔다. Spring Boot auto-configuration 단계 규칙에 맞춰
+`AwsAutoConfiguration`을 `bluetape4k.aws.enabled` 뒤에 둔다. Web-identity credentials는
+계속 opt-in이며 STS classpath 검사로 보호한다.
 
-## Outcome
+## 결과
 
-S3, SQS, SNS, SES, KMS, and DynamoDB auto-configured clients now resolve common
-region/endpoint defaults through the same helper. S3/SQS tests cover inheritance
-and customizer ordering because they are the immediate 0.3.0 priority services.
+이제 S3, SQS, SNS, SES, KMS, DynamoDB auto-configured client는 같은 helper를 통해
+공통 region/endpoint 기본값을 해석한다. S3/SQS는 0.3.0의 우선 서비스이므로 테스트에서
+상속과 customizer 순서를 검증한다.
 
-## Verification
+## 검증
 
 - `./gradlew --no-daemon --max-workers=1 :bluetape4k-aws-spring-boot:compileKotlin :bluetape4k-aws-spring-boot:compileTestKotlin`
 - `./gradlew --no-daemon --max-workers=1 :bluetape4k-aws-spring-boot:test --tests '*AwsAutoConfigurationTest' --tests '*S3AutoConfigurationTest' --tests '*SqsAutoConfigurationTest'`
 
-## Future Guard
+## 향후 보호 장치
 
-Add new Spring Boot AWS service clients through the shared defaults/customizer
-helper first, then add service-specific behavior. Do not reintroduce per-service
-credential/region/endpoint duplication.
+새 Spring Boot AWS 서비스 client는 먼저 공통 defaults/customizer helper를 통해 추가한
+뒤 서비스별 동작을 추가한다. 서비스마다 credential/region/endpoint 연결을 다시
+중복하지 않는다.
