@@ -1,32 +1,27 @@
-# README Diagram Checklist Review
+# README 다이어그램 체크리스트 검토
 
-## Scope
+## 범위
 
-Reviewed all 59 README diagram SVG/PNG assets under
-`docs/images/readme-diagrams`.
+`docs/images/readme-diagrams` 아래 README 다이어그램 SVG/PNG asset 59개를 모두 검토했다.
 
-## Findings
+## 결과
 
-- No remaining diagonal connector failures after the geometry audit pass.
-- No unresolved arrow-marker parity issues.
-- No duplicate icon candidates after the icon audit pass.
-- No remaining lane/layer floor-route candidates after the boundary-route pass.
-- Automated icon/text overlap candidates were inspected as full-size PNGs and
-  were false positives caused by table/header structures or conservative text
-  width estimation.
+- Geometry audit 뒤 diagonal connector 실패가 남지 않았다.
+- Arrow-marker parity 문제가 남지 않았다.
+- Icon audit 뒤 duplicate icon 후보가 남지 않았다.
+- Boundary-route 검사 뒤 lane/layer floor-route 후보가 남지 않았다.
+- 자동 icon/text overlap 후보를 full-size PNG로 검사했으며 table/header 구조 또는 보수적인 text width 추정에 의한 오탐이었다.
 
-## Verification Evidence
+## 검증 증거
 
 - `node docs/diagram-validation/validate-readme-diagram-svg.mjs docs/images/readme-diagrams/*.svg`
 - `python3 /Users/debop/.codex/skills/bluetape4k-diagram/references/diagram-geometry-audit.py --fail-diagonal docs/images/readme-diagrams/*.svg`
 - `for svg in docs/images/readme-diagrams/*.svg; do png="${svg%.svg}.png"; ~/.local/bin/cairosvg "$svg" -o "$png" -s 2 || exit 1; done`
-- Marker parity audit: `MARKER_AUDIT_TOTAL 0`
-- Duplicate icon audit: `DUPLICATE_ICON_CANDIDATES 0`
-- Layer floor route audit: `LAYER_FLOOR_ROUTE_CANDIDATES 0`
+- Marker parity: `MARKER_AUDIT_TOTAL 0`
+- Duplicate icon: `DUPLICATE_ICON_CANDIDATES 0`
+- Layer floor route: `LAYER_FLOOR_ROUTE_CANDIDATES 0`
 - `git diff --check`
 
-## Reviewer Verdict
+## 검토 판정
 
-PASS. The diagram set satisfies the current bluetape4k diagram checklist for
-orthogonal or rounded connectors, icon placement, arrow visibility, sequence
-style, translucent alternate regions, card bounds, and lane/layer relationships.
+PASS. 현재 bluetape4k 다이어그램 체크리스트의 직교/rounded connector, icon 배치, arrow 가시성, sequence style, translucent alternate region, card bounds, lane/layer 관계를 충족한다.

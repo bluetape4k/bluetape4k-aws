@@ -1,8 +1,8 @@
-# Issue 292 Release Documentation Review
+# Issue 292 Release 문서 검토
 
-Reviewed the documentation-only diff for 0.4.0 release preparation.
+0.4.0 release 준비의 documentation-only diff를 검토했다.
 
-## Scope
+## 범위
 
 - `CHANGELOG.md`
 - `README.md`
@@ -12,26 +12,22 @@ Reviewed the documentation-only diff for 0.4.0 release preparation.
 - `aws-kotlin/README.ko.md`
 - `docs/lessons/2026-06-08-issue-292-0-4-0-release-docs.md`
 
-## Findings
+## 결과
 
-| Priority | File | Finding | Resolution |
+| 우선순위 | 파일 | 결과 | 판정 |
 |---|---|---|---|
-| None | N/A | No broken release-docs blocker found. Public README examples now use 0.4.0 and the current AWS group coordinate. | PASS |
+| 없음 | N/A | Release 문서 차단 문제 없음. 공개 README 예시는 0.4.0과 현재 AWS group coordinate를 사용한다. | PASS |
 
-## Checks
+## 검사
 
-- `python3 tools/generate-root-readme-diagrams.py` passed geometry gates and
-  produced no tracked diagram changes.
-- Stale `0.3.1` scan across public README files returned no matches.
-- Stale `io.github.bluetape4k:bluetape4k-aws*` group coordinate scan returned
-  no matches.
-- Root README image existence and SVG-embed scan passed.
-- Feature keyword coverage scan found S3 Access Grants, S3 Vectors, DAX,
-  CloudWatch, IMDS, Micrometer, Floci-first, and `bluetape4k-ktor` references.
-- `git diff --check` passed.
+- `python3 tools/generate-root-readme-diagrams.py`가 geometry gate를 통과했고 tracked diagram 변경 없음.
+- 공개 README의 오래된 `0.3.1` 및 `io.github.bluetape4k:bluetape4k-aws*` scan 결과 없음.
+- Root README image 존재/SVG embed scan 통과.
+- S3 Access Grants, S3 Vectors, DAX, CloudWatch, IMDS, Micrometer, Floci-first, `bluetape4k-ktor` keyword coverage 확인.
+- `git diff --check` 통과.
 
 ## Gate
 
 - P0 = 0
 - P1 = 0
-- Decision: PASS
+- 판정: PASS
