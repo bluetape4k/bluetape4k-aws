@@ -1,68 +1,49 @@
-# Issue #230 Micrometer Observability Design
+# 이슈 #230 Micrometer 관측성 설계
 
-Date: 2026-06-07
-Issue: #230
+날짜: 2026-06-07
+이슈: #230
 
-## Goal
+## 목표
 
-Add Micrometer-backed observability adapters for SQS and selected S3 operations
-while preserving the existing Spring Boot and Ktor extension contracts.
+기존 Spring Boot 및 Ktor 확장 계약을 보존하면서 SQS와 선택한 S3 operation에 Micrometer 기반 관측성 adapter를 추가한다.
 
-## Current State
+## 현재 상태
 
-- `aws-spring-boot` already has `api(libs.micrometer.core)` and CloudWatch
-  meter publishing uses `MeterRegistry`.
-- `aws-ktor` has no Micrometer dependency; it should stay optional with
-  `compileOnly(libs.micrometer.core)` and test-only registry support.
-- Spring SQS exposes `SqsListenerInterceptor` for receive, handle, and
-  acknowledgement phases.
-- Ktor SQS exposes `SqsConsumerObserver` / `SqsConsumerObservation`; receive,
-  invoke, ack, nack, conversion failure, and retry/failure observations already
-  carry operation, outcome, queue URL, duration, and tags.
-- Spring S3 exposes `S3Operations`; Ktor S3 exposes `S3KtorClient` without a
-  common interface.
-- Micrometer Observation API supports low-cardinality key values. Direct
-  `Timer` recording remains the lightest fit for coroutine decorators where a
-  registry is present.
+- `aws-spring-boot`에는 이미 `api(libs.micrometer.core)`가 있고 CloudWatch meter 공개에 `MeterRegistry`를 사용한다.
+- `aws-ktor`에는 Micrometer 의존성이 없다. `compileOnly(libs.micrometer.core)`와 test-only registry 지원으로 선택 사항을 유지해야 한다.
+- Spring SQS는 receive, handle, acknowledgement phase에 `SqsListenerInterceptor`를 노출한다.
+- Ktor SQS는 `SqsConsumerObserver` / `SqsConsumerObservation`을 노출한다. receive, invoke, ack, nack, 변환 실패, retry/failure observation에는 이미 operation, outcome, queue URL, duration, tag가 있다.
+- Spring S3는 `S3Operations`를 노출하고 Ktor S3는 공통 interface 없이 `S3KtorClient`를 노출한다.
+- Micrometer Observation API는 low-cardinality key value를 지원한다. Registry가 있는 coroutine decorator에는 직접 `Timer`를 기록하는 방식이 가장 가볍다.
 
-## Design
+## 설계
 
-### Spring Boot SQS
+### Spring Boot SQS 계측
 
-- Add a Micrometer `SqsOperations` decorator for producer/administrative
-  operations.
-- Register the decorator from `SqsAutoConfiguration` when `MeterRegistry` is
-  present.
-- Add a Micrometer `SqsListenerInterceptor` for listener receive, handle, and
-  acknowledgement phases.
-- Register the listener interceptor automatically when `MeterRegistry` is
-  present so common Spring Boot users do not wire it manually.
+- producer/administrative operation용 Micrometer `SqsOperations` decorator를 추가한다.
+- `MeterRegistry`가 있으면 `SqsAutoConfiguration`에서 decorator를 등록한다.
+- listener receive, handle, acknowledgement phase용 Micrometer `SqsListenerInterceptor`를 추가한다.
+- `MeterRegistry`가 있으면 listener interceptor를 자동 등록하여 일반 Spring Boot 사용자가 직접 연결하지 않게 한다.
 
-### Spring Boot S3
+### Spring Boot S3 계측
 
-- Add a Micrometer `S3Operations` decorator for selected object operations:
-  upload, download, delete, list, resource, and presign.
-- Register the decorator from `S3AutoConfiguration` when `MeterRegistry` is
-  present.
+- 선택한 object operation인 upload, download, delete, list, resource, presign용 Micrometer `S3Operations` decorator를 추가한다.
+- `MeterRegistry`가 있으면 `S3AutoConfiguration`에서 decorator를 등록한다.
 
-### Ktor SQS
+### Ktor SQS 계측
 
-- Add `MicrometerSqsConsumerObserver`, an opt-in bridge from
-  `SqsConsumerObservation` to Micrometer timers/counters.
-- Add a DSL helper on `SqsConsumerPluginConfig` so users can install it through
-  the existing `observer` hook.
-- Extend `SqsConsumerRuntime.send` to emit `send` observations so producer
-  usage can be measured through the same observer.
+- `SqsConsumerObservation`을 Micrometer timer/counter에 연결하는 opt-in bridge `MicrometerSqsConsumerObserver`를 추가한다.
+- 사용자가 기존 `observer` hook을 통해 설치할 수 있도록 `SqsConsumerPluginConfig`에 DSL helper를 추가한다.
+- producer 사용량을 같은 observer로 측정할 수 있도록 `SqsConsumerRuntime.send`가 `send` observation을 생성하게 확장한다.
 
-### Ktor S3
+### Ktor S3 계측
 
-- Add a lightweight `MicrometerS3KtorClient` wrapper for selected operations
-  rather than changing `S3KtorClient` ownership or adding global state.
-- Provide `S3KtorClient.withMicrometer(...)` for opt-in usage.
+- `S3KtorClient` 소유권을 바꾸거나 전역 상태를 추가하지 않고 선택한 operation을 위한 가벼운 `MicrometerS3KtorClient` wrapper를 추가한다.
+- opt-in 사용을 위한 `S3KtorClient.withMicrometer(...)`를 제공한다.
 
-## Metrics
+## Metric
 
-Default meter names:
+기본 meter 이름:
 
 - `bluetape4k.aws.sqs.operation`
 - `bluetape4k.aws.sqs.listener`
@@ -70,32 +51,30 @@ Default meter names:
 - `bluetape4k.aws.ktor.sqs.operation`
 - `bluetape4k.aws.ktor.s3.operation`
 
-Default low-cardinality tags:
+기본 low-cardinality tag:
 
 - `service`
 - `operation`
 - `outcome`
 - `exception`
-- `listener.id` where available
-- `queue.name` only when safely derived or configured
-- `bucket` only when explicitly enabled by configuration
+- 사용할 수 있을 때 `listener.id`
+- 안전하게 도출하거나 설정한 경우에만 `queue.name`
+- 설정에서 명시적으로 활성화한 경우에만 `bucket`
 
-Queue URLs, message IDs, object keys, receipt handles, and raw exception
-messages must not be default tags.
+Queue URL, message ID, object key, receipt handle, raw exception message는 기본 tag로 사용하지 않아야 한다.
 
-## Non-Goals
+## 제외 범위
 
-- Do not add OpenTelemetry-specific dependencies.
-- Do not instrument every S3 multipart helper in this issue.
-- Do not introduce global registries.
-- Do not force Micrometer as a runtime dependency for `aws-ktor` users.
+- OpenTelemetry 전용 의존성을 추가하지 않는다.
+- 이 이슈에서 모든 S3 multipart helper를 instrument하지 않는다.
+- 전역 registry를 도입하지 않는다.
+- `aws-ktor` 사용자에게 Micrometer를 runtime 의존성으로 강제하지 않는다.
 
-## Validation
+## 검증
 
-- Dependency checks for Micrometer presence in `aws-spring-boot` and optional
-  compile/test scope in `aws-ktor`.
-- Focused Spring Boot tests for SQS/S3 decorators and conditional registration.
-- Focused Ktor tests for SQS observer mapping, send observation, and S3 wrapper.
+- `aws-spring-boot`의 Micrometer 존재 여부와 `aws-ktor`의 선택적 compile/test 범위를 의존성 검사로 확인한다.
+- SQS/S3 decorator와 조건부 등록을 집중적으로 검사하는 Spring Boot 테스트를 실행한다.
+- SQS observer mapping, send observation, S3 wrapper를 집중적으로 검사하는 Ktor 테스트를 실행한다.
 - `:bluetape4k-aws-spring-boot:test`
 - `:bluetape4k-aws-ktor:test`
 - `git diff --check`
