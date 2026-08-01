@@ -1,32 +1,30 @@
-# 2026-05-27 - Example README Diagram Fonts
+# 2026-05-27 - 예제 README 다이어그램 글꼴
 
-## Context
+## 배경
 
-The example module README diagrams still used Helvetica/Arial-era font stacks
-after the root and module diagrams were updated to the current diagram style.
+루트 및 모듈 다이어그램을 현재 스타일로 갱신한 뒤에도 예제 모듈 README
+다이어그램은 여전히 Helvetica/Arial 시대의 글꼴 stack을 사용했다.
 
-## Decision
+## 결정
 
-Use `Architects Daughter` for prominent component text and `Comic Mono` for
-edge labels and detail text across `examples-*` README diagram assets. Remove
-legacy Helvetica, Arial, and Comic Sans fallback stacks from the touched SVG/DOT
-sources so font drift is visible in text checks.
+`examples-*` README 다이어그램 asset 전체에서 눈에 띄는 component text에는
+`Architects Daughter`, edge label과 세부 text에는 `Comic Mono`를 사용한다. Text
+검사에서 글꼴 차이를 확인할 수 있도록 변경한 SVG/DOT source에서 이전 Helvetica,
+Arial, Comic Sans fallback stack을 제거한다.
 
-## Outcome
+## 결과
 
-All example README architecture PNGs were regenerated from updated SVG/DOT
-sources. Graphviz-backed diagrams keep the same layout and now emit the expected
-font families.
+갱신한 SVG/DOT source에서 모든 예제 README 아키텍처 PNG를 다시 생성했다. Graphviz
+기반 다이어그램은 같은 레이아웃을 유지하면서 예상한 글꼴 모음을 출력한다.
 
-## Verification
+## 검증
 
-- Checked `docs/images/readme-diagrams/examples-*` SVG/DOT assets for legacy
-  font strings.
-- Ran `xmllint --noout` for all touched example SVG files.
-- Rendered all example PNG assets with `rsvg-convert`.
-- Reviewed a contact sheet at `.omx/artifacts/examples-diagram-font-contact.png`.
+- `docs/images/readme-diagrams/examples-*` SVG/DOT asset에서 이전 글꼴 문자열을 검사했다.
+- 변경한 모든 예제 SVG 파일에 `xmllint --noout`을 실행했다.
+- `rsvg-convert`로 모든 예제 PNG asset을 렌더링했다.
+- `.omx/artifacts/examples-diagram-font-contact.png`의 contact sheet를 검토했다.
 
-## Future Guidance
+## 향후 지침
 
-When README diagram font feedback lands, scan every asset family by prefix, not
-only the diagrams touched in the most recent PR.
+README 다이어그램 글꼴에 대한 feedback을 받으면 가장 최근 PR에서 변경한 다이어그램만
+검사하지 말고 접두사별로 모든 asset family를 검사한다.
