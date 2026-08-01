@@ -1,40 +1,40 @@
-# Spring Boot Kinesis Implementation Plan
+# Spring Boot Kinesis 구현 계획
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **에이전트 작업자용:** 필수 하위 스킬: 이 계획을 작업별로 구현할 때 superpowers:subagent-driven-development(권장) 또는 superpowers:executing-plans를 사용한다. 단계 추적에는 체크박스(`- [ ]`) 구문을 사용한다.
 
-**Goal:** Add Spring Boot 4 Kinesis auto-configuration and coroutine operations to `bluetape4k-aws-spring-boot`.
+**목표:** `bluetape4k-aws-spring-boot`에 Spring Boot 4 Kinesis auto-configuration과 coroutine operation을 추가한다.
 
-**Architecture:** Follow the existing SNS/SQS pattern: configure a Java SDK v2 `KinesisAsyncClient`, expose a `KinesisOperations` interface, and implement it with a `KinesisCoroutinesTemplate`. Keep listener/checkpoint runtime out of this PR; expose only explicit operations plus a cold single-shard `Flow`.
+**아키텍처:** 기존 SNS/SQS pattern을 따라 Java SDK v2 `KinesisAsyncClient`를 구성하고 `KinesisOperations` interface를 노출하며 `KinesisCoroutinesTemplate`로 구현한다. listener/checkpoint runtime은 이 PR에서 제외하고 명시적인 operation과 cold single-shard `Flow`만 노출한다.
 
-**Tech Stack:** Kotlin 2.4, Spring Boot 4.1 auto-configuration, AWS SDK for Java v2 Kinesis, Kotlin coroutines Flow, JUnit 5, MockK, bluetape4k-assertions, ApplicationContextRunner, optional Floci/LocalStack smoke tests.
+**기술 스택:** Kotlin 2.4, Spring Boot 4.1 auto-configuration, AWS SDK for Java v2 Kinesis, Kotlin coroutines Flow, JUnit 5, MockK, bluetape4k-assertions, ApplicationContextRunner, 선택적 Floci/LocalStack smoke test.
 
 ---
 
-## File Structure
+## 파일 구조
 
-- Modify `aws-spring-boot/build.gradle.kts`: add `libs.aws2.kinesis` as `compileOnly` and `testImplementation`.
-- Create `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisProperties.kt`: service properties and validation.
-- Create `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisRequests.kt`: named request values to avoid same-typed parameter mistakes.
-- Create `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisStartingPosition.kt`: Spring-local Java SDK v2 shard iterator position model.
-- Create `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisRecordFlowOptions.kt`: Spring-local Flow polling and retry options.
-- Create `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisOperations.kt`: public coroutine API.
-- Create `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplate.kt`: Java SDK v2 async-client implementation.
-- Create `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisAutoConfiguration.kt`: conditional Spring Boot auto-configuration.
-- Modify `aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`: register Kinesis auto-configuration.
-- Create `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/NoopKinesisOperations.kt`: test override object.
-- Create `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisAutoConfigurationTest.kt`: conditional bean/property/customizer tests.
-- Create `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplateTest.kt`: deterministic MockK request-mapping tests.
-- Create `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplateAwsEmulatorTest.kt`: focused emulator smoke if reliable.
-- Modify root/module README locale set and service coverage chart after code/tests pass.
-- Create `docs/lessons/2026-06-30-issue-270-spring-kinesis.md`.
+- `aws-spring-boot/build.gradle.kts` 수정: `libs.aws2.kinesis`를 `compileOnly`와 `testImplementation`으로 추가.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisProperties.kt` 생성: service property와 validation.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisRequests.kt` 생성: 같은 타입의 parameter 실수를 방지하는 이름 있는 request 값.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisStartingPosition.kt` 생성: Spring 전용 Java SDK v2 shard iterator position model.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisRecordFlowOptions.kt` 생성: Spring 전용 Flow polling 및 retry option.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisOperations.kt` 생성: public coroutine API.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplate.kt` 생성: Java SDK v2 async-client 구현.
+- `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisAutoConfiguration.kt` 생성: 조건부 Spring Boot auto-configuration.
+- `aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 수정: Kinesis auto-configuration 등록.
+- `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/NoopKinesisOperations.kt` 생성: test override 객체.
+- `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisAutoConfigurationTest.kt` 생성: 조건부 bean/property/customizer test.
+- `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplateTest.kt` 생성: 결정론적 MockK request-mapping test.
+- `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplateAwsEmulatorTest.kt` 생성: 신뢰할 수 있는 경우 집중 emulator smoke.
+- code/test 통과 후 root/module README locale set와 service coverage chart 수정.
+- `docs/lessons/2026-06-30-issue-270-spring-kinesis.md` 생성.
 
-## Task 1: Dependency and Auto-Configuration Slice
+## 작업 1: 의존성 및 auto-configuration slice
 
-complexity: medium
-sub-skill: `bluetape4k-code-patterns`, `ecc-springboot-kotlin`, `ecc-kotlin-testing`
-verification: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisAutoConfigurationTest' --no-configuration-cache`
+복잡도: 중간
+하위 스킬: `bluetape4k-code-patterns`, `ecc-springboot-kotlin`, `ecc-kotlin-testing`
+검증: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisAutoConfigurationTest' --no-configuration-cache`
 
-**Files:**
+**파일:**
 - Modify: `aws-spring-boot/build.gradle.kts`
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisProperties.kt`
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisAutoConfiguration.kt`
@@ -42,18 +42,18 @@ verification: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisAutoC
 - Test: `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisAutoConfigurationTest.kt`
 - Test helper: `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/NoopKinesisOperations.kt`
 
-- [ ] **Step 1: Add Kinesis SDK dependency**
+- [ ] **1단계: Kinesis SDK 의존성 추가**
 
-Add to `aws-spring-boot/build.gradle.kts` near the other AWS SDK v2 dependencies:
+`aws-spring-boot/build.gradle.kts`에서 다른 AWS SDK v2 의존성 근처에 추가한다.
 
 ```kotlin
 compileOnly(libs.aws2.kinesis)
 testImplementation(libs.aws2.kinesis)
 ```
 
-- [ ] **Step 2: Write failing auto-configuration tests**
+- [ ] **2단계: 실패하는 auto-configuration test 작성**
 
-Create `KinesisAutoConfigurationTest` with tests named:
+다음 이름의 test를 포함하는 `KinesisAutoConfigurationTest`를 생성한다.
 
 ```kotlin
 class KinesisAutoConfigurationTest {
@@ -107,21 +107,21 @@ class KinesisAutoConfigurationTest {
 }
 ```
 
-Use bluetape4k assertions only, following `SqsAutoConfigurationTest` style. The remaining tests in this slice must cover endpoint override validation, shared default binding, global and service-specific customizer ordering, missing SDK classpath backoff, configured stream binding, and invalid consumer binding.
+`SqsAutoConfigurationTest` style에 따라 bluetape4k assertion만 사용한다. 이 slice의 나머지 test는 endpoint override validation, shared default binding, global/service-specific customizer 순서, SDK classpath 누락 시 backoff, 구성된 stream binding, 잘못된 consumer binding을 검증해야 한다.
 
-- [ ] **Step 3: Verify tests fail before implementation**
+- [ ] **3단계: 구현 전 test 실패 검증**
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisAutoConfigurationTest' --no-configuration-cache
 ```
 
-Expected: compilation fails because `KinesisAutoConfiguration`, `KinesisProperties`, and `KinesisOperations` do not exist.
+예상 결과: `KinesisAutoConfiguration`, `KinesisProperties`, `KinesisOperations`가 없으므로 compilation 실패.
 
-- [ ] **Step 4: Implement `KinesisProperties`**
+- [ ] **4단계: `KinesisProperties` 구현**
 
-Create `KinesisProperties`:
+`KinesisProperties`를 생성한다.
 
 ```kotlin
 @ConfigurationProperties(prefix = "bluetape4k.aws.kinesis")
@@ -172,9 +172,9 @@ data class KinesisProperties(
 }
 ```
 
-- [ ] **Step 5: Implement `KinesisAutoConfiguration`**
+- [ ] **5단계: `KinesisAutoConfiguration` 구현**
 
-Follow `SnsAutoConfiguration` and use:
+`SnsAutoConfiguration`을 따라 다음을 사용한다.
 
 ```kotlin
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
@@ -221,35 +221,35 @@ class KinesisAutoConfiguration {
 }
 ```
 
-Service name passed to global customizers must be `"kinesis"`.
+global customizer에 전달하는 service name은 `"kinesis"`여야 한다.
 
-- [ ] **Step 6: Register auto-configuration import**
+- [ ] **6단계: auto-configuration import 등록**
 
-Add:
+추가:
 
 ```text
 io.bluetape4k.aws.spring.kinesis.KinesisAutoConfiguration
 ```
 
-to `AutoConfiguration.imports` near the other service configurations.
+`AutoConfiguration.imports`에서 다른 service configuration 근처에 추가한다.
 
-- [ ] **Step 7: Run auto-configuration tests**
+- [ ] **7단계: auto-configuration test 실행**
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisAutoConfigurationTest' --no-configuration-cache
 ```
 
-Expected: all Kinesis auto-configuration tests pass.
+예상 결과: 모든 Kinesis auto-configuration test 통과.
 
-## Task 2: Operations API and Template Unit Tests
+## 작업 2: operation API 및 template unit test
 
-complexity: high
-sub-skill: `bluetape4k-code-patterns`, `ecc-springboot-kotlin`, `ecc-kotlin-testing`, `kotlin-coroutines-skill`
-verification: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCoroutinesTemplateTest' --no-configuration-cache`
+복잡도: 높음
+하위 스킬: `bluetape4k-code-patterns`, `ecc-springboot-kotlin`, `ecc-kotlin-testing`, `kotlin-coroutines-skill`
+검증: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCoroutinesTemplateTest' --no-configuration-cache`
 
-**Files:**
+**파일:**
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisRequests.kt`
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisStartingPosition.kt`
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisRecordFlowOptions.kt`
@@ -257,9 +257,9 @@ verification: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCorou
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplate.kt`
 - Test: `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplateTest.kt`
 
-- [ ] **Step 1: Write request value objects**
+- [ ] **1단계: request value object 작성**
 
-Create serializable request values:
+serializable request value를 생성한다.
 
 ```kotlin
 data class KinesisPutRecordRequest(
@@ -289,11 +289,11 @@ data class KinesisRecordFlowRequest(
 }
 ```
 
-Use private constructors/companion factories only if validation needs to prevent invalid `copy()` values; otherwise validate in template call paths to preserve simple data carriers.
+validation에서 잘못된 `copy()` 값을 막아야 할 때만 private constructor/companion factory를 사용한다. 그 외에는 단순한 data carrier를 유지하도록 template 호출 경로에서 검증한다.
 
-- [ ] **Step 2: Define Spring-local Flow position and options**
+- [ ] **2단계: Spring 전용 Flow position 및 option 정의**
 
-Create `KinesisStartingPosition` without depending on AWS Kotlin SDK types:
+AWS Kotlin SDK 타입에 의존하지 않는 `KinesisStartingPosition`을 생성한다.
 
 ```kotlin
 sealed interface KinesisStartingPosition : Serializable {
@@ -319,7 +319,7 @@ sealed interface KinesisStartingPosition : Serializable {
 }
 ```
 
-Create `KinesisRecordFlowOptions` with Java `Duration` values so property conversion stays Spring-native:
+property conversion이 Spring-native로 유지되도록 Java `Duration` 값을 사용하는 `KinesisRecordFlowOptions`를 생성한다.
 
 ```kotlin
 data class KinesisRecordFlowOptions(
@@ -336,7 +336,7 @@ data class KinesisRecordFlowOptions(
 }
 ```
 
-Map these values to Java SDK v2 `ShardIteratorType` in the template:
+template에서 이 값을 Java SDK v2 `ShardIteratorType`으로 mapping한다.
 
 - `TrimHorizon` -> `ShardIteratorType.TRIM_HORIZON`
 - `Latest` -> `ShardIteratorType.LATEST`
@@ -344,29 +344,29 @@ Map these values to Java SDK v2 `ShardIteratorType` in the template:
 - `AfterSequenceNumber` -> `ShardIteratorType.AFTER_SEQUENCE_NUMBER` plus `startingSequenceNumber`
 - `AtTimestamp` -> `ShardIteratorType.AT_TIMESTAMP` plus `timestamp`
 
-- [ ] **Step 3: Define operations interface**
+- [ ] **3단계: operation interface 정의**
 
-Create `KinesisOperations` with the exact API from the spec and English KDoc examples.
+명세의 정확한 API와 영문 KDoc 예제를 포함하는 `KinesisOperations`를 생성한다.
 
-- [ ] **Step 4: Write failing template tests**
+- [ ] **4단계: 실패하는 template test 작성**
 
-Use MockK to verify request mapping for:
+MockK로 다음 request mapping을 검증한다.
 
-- `createConfiguredStream` uses configured shard count.
-- missing configured stream fails fast.
-- `putRecord` maps stream, partition key, and bytes.
-- `putRecords` rejects an empty entry list.
-- `getShardIterator` maps iterator type and optional sequence number.
-- `recordFlow` maps every `KinesisStartingPosition` variant to the expected Java SDK iterator request.
-- `recordFlow` is cold and does not call AWS until collected.
-- `recordFlow` stops cleanly when `nextShardIterator()` is null.
-- `recordFlow` can be collected twice and refetches an iterator for each collection.
-- `recordFlow` propagates cancellation.
-- representative SDK future failures propagate without broad exception wrapping.
+- `createConfiguredStream`이 구성된 shard count 사용
+- 구성된 stream 누락 시 빠르게 실패
+- `putRecord`가 stream, partition key, byte mapping
+- `putRecords`가 빈 entry list 거부
+- `getShardIterator`가 iterator type과 선택적 sequence number mapping
+- `recordFlow`가 모든 `KinesisStartingPosition` variant를 예상 Java SDK iterator request로 mapping
+- `recordFlow`가 cold이며 collect 전에는 AWS를 호출하지 않음
+- `nextShardIterator()`가 null이면 `recordFlow`가 정상 종료
+- `recordFlow`를 두 번 collect할 수 있고 collection마다 iterator를 다시 조회
+- `recordFlow`가 취소를 전파
+- 대표 SDK future failure가 포괄적인 exception wrapping 없이 전파
 
-- [ ] **Step 5: Implement template**
+- [ ] **5단계: template 구현**
 
-Use existing Java SDK coroutine helpers where they fit:
+적합한 곳에서는 기존 Java SDK coroutine helper를 사용한다.
 
 ```kotlin
 class KinesisCoroutinesTemplate(
@@ -384,71 +384,71 @@ class KinesisCoroutinesTemplate(
 }
 ```
 
-For `recordFlow`, implement a Java SDK v2 version of the existing `aws-kotlin` loop:
+`recordFlow`에는 기존 `aws-kotlin` loop의 Java SDK v2 version을 구현한다.
 
-- call `getShardIterator` only inside collection
-- call `currentCoroutineContext().ensureActive()` at loop top
-- emit each `software.amazon.awssdk.services.kinesis.model.Record`
-- stop when `nextShardIterator()` is null
-- catch `CancellationException` and rethrow immediately
-- recover `ExpiredIteratorException` only when a last seen sequence number can preserve ordering
-- retry throttling errors using bounded jittered backoff
+- collection 내부에서만 `getShardIterator` 호출
+- loop 시작 시 `currentCoroutineContext().ensureActive()` 호출
+- 각 `software.amazon.awssdk.services.kinesis.model.Record` emit
+- `nextShardIterator()`가 null이면 중단
+- `CancellationException`을 catch한 뒤 즉시 다시 throw
+- 마지막으로 확인한 sequence number가 순서를 보존할 수 있을 때만 `ExpiredIteratorException` 복구
+- 제한된 jittered backoff로 throttling error retry
 
-- [ ] **Step 6: Run template tests**
+- [ ] **6단계: template test 실행**
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCoroutinesTemplateTest' --no-configuration-cache
 ```
 
-Expected: all deterministic template tests pass.
+예상 결과: 모든 결정론적 template test 통과.
 
-## Task 3: Emulator Smoke
+## 작업 3: emulator smoke
 
-complexity: medium
-sub-skill: `bluetape4k-code-patterns`, `ecc-kotlin-testing`
-verification: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCoroutinesTemplateAwsEmulatorTest' -Dbluetape4k.aws.emulator=floci --no-configuration-cache`
+복잡도: 중간
+하위 스킬: `bluetape4k-code-patterns`, `ecc-kotlin-testing`
+검증: `./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCoroutinesTemplateAwsEmulatorTest' -Dbluetape4k.aws.emulator=floci --no-configuration-cache`
 
-**Files:**
+**파일:**
 - Create: `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/kinesis/KinesisCoroutinesTemplateAwsEmulatorTest.kt`
 
-- [ ] **Step 1: Write emulator smoke test**
+- [ ] **1단계: emulator smoke test 작성**
 
-Follow `SnsCoroutinesTemplateAwsEmulatorTest` and `aws-kotlin` `KinesisRecordFlowTest`.
+`SnsCoroutinesTemplateAwsEmulatorTest`와 `aws-kotlin`의 `KinesisRecordFlowTest`를 따른다.
 
-The smoke should:
+smoke test는 다음을 수행한다.
 
-- create a unique stream
-- wait for ACTIVE with `untilSuspending`
-- put 3 records
-- get the first shard id through `describeStream`
-- collect 3 records from `recordFlow` with `TrimHorizon`
-- delete the stream at the end
+- 고유한 stream 생성
+- `untilSuspending`으로 ACTIVE 상태 대기
+- record 3개 저장
+- `describeStream`으로 첫 shard id 조회
+- `TrimHorizon`을 사용하는 `recordFlow`에서 record 3개 collect
+- 마지막에 stream 삭제
 
-- [ ] **Step 2: Run Floci smoke**
+- [ ] **2단계: Floci smoke 실행**
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCoroutinesTemplateAwsEmulatorTest' -Dbluetape4k.aws.emulator=floci --no-configuration-cache
 ```
 
-Expected: PASS. If Floci lacks Kinesis behavior, rerun once with LocalStack:
+예상 결과: PASS. Floci가 Kinesis 동작을 지원하지 않으면 LocalStack으로 한 번 재실행한다.
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test --tests '*KinesisCoroutinesTemplateAwsEmulatorTest' -Dbluetape4k.aws.emulator=localstack --no-configuration-cache
 ```
 
-If both fail due to emulator support rather than code behavior, disable only the emulator test with a documented `@Disabled("#270 — Kinesis emulator support is unreliable in current local matrix")` reason and keep deterministic template coverage.
+두 emulator가 code 동작이 아닌 emulator 지원 문제로 실패하면 문서화된 `@Disabled("#270 — Kinesis emulator support is unreliable in current local matrix")` 사유로 emulator test만 비활성화하고 결정론적 template coverage는 유지한다.
 
-## Task 4: README and Chart
+## 작업 4: README 및 chart
 
-complexity: medium
-sub-skill: `bluetape4k-code-patterns`, `bluetape4k-diagram`, `bluetape4k-blog`
-verification: README source grep, `xmllint`, CairoSVG render, visual inspection, `git diff --check`
+복잡도: 중간
+하위 스킬: `bluetape4k-code-patterns`, `bluetape4k-diagram`, `bluetape4k-blog`
+검증: README source grep, `xmllint`, CairoSVG render, visual inspection, `git diff --check`
 
-**Files:**
+**파일:**
 - Modify: `README.md`
 - Modify: `README.ko.md`
 - Modify: `aws-spring-boot/README.md`
@@ -456,11 +456,11 @@ verification: README source grep, `xmllint`, CairoSVG render, visual inspection,
 - Modify: `docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg`
 - Modify: `docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.png`
 
-- [ ] **Step 1: Update source-verified README text**
+- [ ] **1단계: source로 검증한 README text 갱신**
 
-Mention `KinesisOperations` and Spring Boot Kinesis auto-configuration in module descriptions and usage sections.
+module 설명과 사용 section에 `KinesisOperations` 및 Spring Boot Kinesis auto-configuration을 언급한다.
 
-Code example must use real source names:
+code 예제는 실제 source 이름을 사용해야 한다.
 
 ```kotlin
 class StreamPublisher(private val kinesis: KinesisOperations) {
@@ -476,13 +476,13 @@ class StreamPublisher(private val kinesis: KinesisOperations) {
 }
 ```
 
-- [ ] **Step 2: Update chart**
+- [ ] **2단계: chart 갱신**
 
-Change only `aws-spring-boot × Kinesis` from empty `-` to stable `S`.
+`aws-spring-boot × Kinesis`만 빈 `-`에서 stable `S`로 변경한다.
 
-- [ ] **Step 3: Validate docs and assets**
+- [ ] **3단계: 문서 및 asset 검증**
 
-Run:
+실행:
 
 ```bash
 xmllint --noout docs/images/readme-diagrams/bluetape4k-aws-service-coverage-chart-05.svg
@@ -491,22 +491,22 @@ rg -n "KinesisOperations|KinesisPutRecordRequest|KinesisAutoConfiguration" READM
 git diff --check
 ```
 
-Expected: XML valid, PNG regenerated, source names present, no whitespace errors.
+예상 결과: XML 유효, PNG 재생성, source 이름 존재, whitespace error 없음.
 
-## Task 5: Full Verification, Review, and Commit
+## 작업 5: 전체 검증, review 및 commit
 
-complexity: high
-sub-skill: `verification-before-completion`, `bluetape4k-code-patterns`
-verification: targeted tests, module test, warning compile, 7-tier review
+복잡도: 높음
+하위 스킬: `verification-before-completion`, `bluetape4k-code-patterns`
+검증: targeted test, module test, warning compile, 7-tier review
 
-**Files:**
-- Modify: plan checkbox statuses as tasks complete.
-- Create: `docs/lessons/2026-06-30-issue-270-spring-kinesis.md`
-- Create: `docs/review/2026-06-30-issue-270-code-review.md`
+**파일:**
+- 수정: 작업 완료에 따라 plan checkbox 상태 갱신.
+- 생성: `docs/lessons/2026-06-30-issue-270-spring-kinesis.md`
+- 생성: `docs/review/2026-06-30-issue-270-code-review.md`
 
-- [ ] **Step 1: Run targeted verification**
+- [ ] **1단계: targeted 검증 실행**
 
-Run:
+실행:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test --tests '*Kinesis*' --no-configuration-cache
@@ -515,73 +515,73 @@ Run:
 git diff --check
 ```
 
-Expected: PASS. If a warning appears in touched code, fix it before review.
+예상 결과: PASS. 변경한 code에 warning이 있으면 review 전에 수정한다.
 
-- [ ] **Step 2: Run Step 6-R local/native 7-tier code review**
+- [ ] **2단계: Step 6-R local/native 7-tier code review 실행**
 
-Read `bluetape4k-full-feature/references/step-6r-code-review.md` and `references/step-4p-perf-scan.md`.
+`bluetape4k-full-feature/references/step-6r-code-review.md`와 `references/step-4p-perf-scan.md`를 읽는다.
 
-Record findings in `docs/review/2026-06-30-issue-270-code-review.md` and converge to:
+finding을 `docs/review/2026-06-30-issue-270-code-review.md`에 기록하고 다음 상태로 수렴한다.
 
 - P0 = 0
 - P1 = 0
 
-- [ ] **Step 3: Add lesson**
+- [ ] **3단계: lesson 추가**
 
-Create `docs/lessons/2026-06-30-issue-270-spring-kinesis.md` with:
+`docs/lessons/2026-06-30-issue-270-spring-kinesis.md`에 다음을 작성한다.
 
 - context
-- decision
+- 결정
 - emulator evidence
-- validation commands
-- future listener/checkpoint follow-up note
+- validation command
+- 향후 listener/checkpoint 후속 작업 참고
 
-- [ ] **Step 4: Commit**
+- [ ] **4단계: commit**
 
-Use Lore protocol:
+Lore protocol 사용:
 
 ```bash
 git add aws-spring-boot README.md README.ko.md docs
 git commit -m "feat: add Spring Boot Kinesis operations"
 ```
 
-Commit body must include `Constraint`, `Rejected`, `Confidence`, `Scope-risk`, `Directive`, `Tested`, and `Not-tested` trailers.
+commit body에는 `Constraint`, `Rejected`, `Confidence`, `Scope-risk`, `Directive`, `Tested`, `Not-tested` trailer를 포함해야 한다.
 
-## Task 6: PR, PR Review, CI, and Merge Gate
+## 작업 6: PR, PR review, CI 및 merge gate
 
-complexity: medium
-sub-skill: `verification-before-completion`
-verification: live PR body, PR review threads, CI run, issue/PR metadata
+복잡도: 중간
+하위 스킬: `verification-before-completion`
+검증: live PR body, PR review thread, CI 실행, issue/PR metadata
 
-**Files:**
-- PR body temp file under `/tmp`.
+**파일:**
+- `/tmp` 아래 PR body 임시 파일.
 
-- [ ] **Step 1: Push and create PR**
+- [ ] **1단계: push 및 PR 생성**
 
-Push `feat/aws-spring-kinesis` and create PR against `develop`.
+`feat/aws-spring-kinesis`를 push하고 `develop` 대상 PR을 생성한다.
 
 PR metadata:
 
 - title: `feat(aws-spring-boot): add Kinesis auto-configuration and operations`
-- linked issue: `Fixes #270`
+- 연결 issue: `Fixes #270`
 - assignee: `debop`
 - milestone: `0.5.0`
-- labels mirrored from issue: `enhancement`, `aws-spring-boot`, `spring-boot`, `kinesis`
-- final Markdown `##` section: `## DoD Status`
+- issue에서 반영한 label: `enhancement`, `aws-spring-boot`, `spring-boot`, `kinesis`
+- 마지막 Markdown `##` section: `## DoD Status`
 
-- [ ] **Step 2: Verify live PR body and metadata**
+- [ ] **2단계: live PR body 및 metadata 검증**
 
-Run:
+실행:
 
 ```bash
 gh pr view <pr> --json body,assignees,milestone,labels,baseRefName,headRefName
 ```
 
-Expected: body is non-empty and final `##` heading is `## DoD Status`.
+예상 결과: body가 비어 있지 않고 마지막 `##` heading이 `## DoD Status`다.
 
-- [ ] **Step 3: Post-PR review gate**
+- [ ] **3단계: PR 생성 후 review gate**
 
-Reread reviews/comments/threads:
+review/comment/thread를 다시 읽는다.
 
 ```bash
 gh pr view <pr> --json reviews,comments,reviewDecision,mergeStateStatus
@@ -605,19 +605,19 @@ query($owner: String!, $name: String!, $number: Int!) {
 }'
 ```
 
-Expected: unresolved review threads = 0, P0/P1 = 0.
+예상 결과: unresolved review thread = 0, P0/P1 = 0.
 
-- [ ] **Step 4: CI gate**
+- [ ] **4단계: CI gate**
 
-Watch CI with `gh run view` when needed. Merge only after required jobs are `success` or non-blocking skipped.
+필요하면 `gh run view`로 CI를 관찰한다. 필수 job이 `success` 또는 non-blocking skipped 상태가 된 뒤에만 merge한다.
 
-- [ ] **Step 5: Merge only after explicit merge instruction**
+- [ ] **5단계: 명시적인 merge 지시 후에만 merge**
 
-Use rebase merge only when the user asks to merge after CI and review gates pass.
+CI와 review gate를 통과한 후 사용자가 merge를 요청한 경우에만 rebase merge를 사용한다.
 
-## Self-Review
+## 자체 검토
 
-- Spec coverage: Task 1 covers auto-configuration and dependency policy; Task 2 covers operations and Flow; Task 3 covers emulator smoke/fallback; Task 4 covers README/chart; Task 5 covers review/lessons/commit; Task 6 covers PR/CI/merge gate.
-- Placeholder scan: no `TBD`, `TODO`, or undefined task ownership remains.
-- Type consistency: API names use `KinesisOperations`, `KinesisCoroutinesTemplate`, `KinesisProperties`, `KinesisPutRecordRequest`, `KinesisShardIteratorRequest`, and `KinesisRecordFlowRequest` consistently.
-- Concurrency helper rationale: no ad hoc thread/coroutine stress test is planned. Flow cancellation is covered deterministically; no race/stress helper fits this API slice.
+- 명세 coverage: 작업 1은 auto-configuration 및 dependency 정책, 작업 2는 operation 및 Flow, 작업 3은 emulator smoke/fallback, 작업 4는 README/chart, 작업 5는 review/lesson/commit, 작업 6은 PR/CI/merge gate를 다룬다.
+- Placeholder 검사: `TBD`, `TODO`, 정의되지 않은 작업 소유권이 남아 있지 않다.
+- 타입 일관성: API 이름으로 `KinesisOperations`, `KinesisCoroutinesTemplate`, `KinesisProperties`, `KinesisPutRecordRequest`, `KinesisShardIteratorRequest`, `KinesisRecordFlowRequest`를 일관되게 사용한다.
+- Concurrency helper 근거: ad hoc thread/coroutine stress test는 계획하지 않는다. Flow 취소는 결정론적으로 검증하며 이 API slice에 맞는 race/stress helper는 없다.
