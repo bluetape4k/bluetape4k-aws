@@ -1,95 +1,89 @@
-# Issue #82 Exposed AWS Database Examples Design
+# 이슈 #82 Exposed AWS 데이터베이스 예제 설계
 
-## Context
+## 배경
 
-Issue #82 closes the `0.2.0` adoption gap for the Exposed AWS database stack.
-The foundation modules already exist:
+이슈 #82는 Exposed AWS 데이터베이스 스택의 `0.2.0` 도입 공백을 해소한다.
+기반 모듈은 이미 존재한다.
 
-- `bluetape4k-aws-exposed` creates Hikari-backed Exposed `Database` handles from
-  `AwsDatabaseProperties`.
-- `bluetape4k-aws-spring-boot` binds `bluetape4k.aws.exposed` properties and
-  exposes the default `AwsExposedDatabaseRegistry`, `AwsExposedDatabaseHandle`,
-  `DataSource`, and Exposed `Database` beans.
-- `bluetape4k-aws-ktor` installs `AwsExposedPlugin` and exposes
-  route/application helpers such as `awsExposedTransaction`.
+- `bluetape4k-aws-exposed`는 `AwsDatabaseProperties`에서 Hikari 기반 Exposed
+  `Database` 핸들을 생성한다.
+- `bluetape4k-aws-spring-boot`는 `bluetape4k.aws.exposed` 속성을 바인딩하고 기본
+  Exposed 구성 요소인 `AwsExposedDatabaseRegistry`, `AwsExposedDatabaseHandle`, `DataSource`,
+  `Database` 빈을 노출한다.
+- `bluetape4k-aws-ktor`는 `AwsExposedPlugin`을 설치하고 `awsExposedTransaction`
+  같은 라우트/애플리케이션 도우미를 노출한다.
 
-The missing piece is runnable, credential-free example coverage that shows how
-application code uses these adapters together with `bluetape4k-exposed`
-repository conventions.
+부족한 부분은 애플리케이션 코드가 이 어댑터를 `bluetape4k-exposed` 저장소 규칙과
+함께 사용하는 방법을 보여 주는, 자격 증명 없이 실행 가능한 예제다.
 
-## Goals
+## 목표
 
-- Add a Spring Boot 4 example module that uses the Spring Exposed
-  auto-configuration, a bluetape4k-exposed JDBC repository, and PostgreSQL
-  Testcontainers verification.
-- Add a Ktor 3 example module that installs `AwsExposedPlugin`, runs suspend
-  Exposed transactions from routes, and verifies the same create/read repository
-  path with PostgreSQL Testcontainers.
-- Keep both examples runnable without real AWS credentials by default.
-- Register new modules in Gradle settings, CI, and Nightly so example tests are
-  not skipped after merge.
-- Document runnable commands in `README.md` and `README.ko.md` for each module.
+- Spring Exposed 자동 구성, bluetape4k-exposed JDBC 저장소, PostgreSQL
+  Testcontainers 검증을 사용하는 Spring Boot 4 예제 모듈을 추가한다.
+- `AwsExposedPlugin`을 설치하고 라우트에서 suspend Exposed 트랜잭션을 실행하며,
+  같은 생성/조회 저장소 경로를 PostgreSQL Testcontainers로 검증하는 Ktor 3 예제
+  모듈을 추가한다.
+- 두 예제를 기본적으로 실제 AWS 자격 증명 없이 실행할 수 있게 유지한다.
+- 병합 후 예제 테스트가 누락되지 않도록 새 모듈을 Gradle 설정, CI, Nightly에 등록한다.
+- 각 모듈의 `README.md`와 `README.ko.md`에 실행 가능한 명령을 문서화한다.
 
-## Non-Goals
+## 제외 범위
 
-- Do not add a new production API to `aws-exposed`, `aws-spring-boot`, or
-  `aws-ktor`.
-- Do not use LocalStack for these examples. The database is verified with
-  PostgreSQL Testcontainers, and AWS remote configuration is represented by
-  local/static settings or a test resolver.
-- Do not require RDS IAM authentication in the first example path. Issue #77
-  already validates token generation; these examples focus on adoption.
-- Do not add schema migration tooling such as Flyway or Liquibase.
+- `aws-exposed`, `aws-spring-boot` 또는 `aws-ktor`에 새 운영 API를 추가하지 않는다.
+- 이 예제에 LocalStack을 사용하지 않는다. 데이터베이스는 PostgreSQL Testcontainers로
+  검증하고 AWS 원격 구성은 로컬/정적 설정이나 테스트 resolver로 표현한다.
+- 첫 예제 경로에서 RDS IAM 인증을 요구하지 않는다. 이슈 #77에서 토큰 생성을 이미
+  검증했으므로 이 예제는 도입 방법에 집중한다.
+- Flyway나 Liquibase 같은 스키마 마이그레이션 도구를 추가하지 않는다.
 
-## Module Shape
+## 모듈 형태
 
-Create two non-published example modules:
+게시하지 않는 예제 모듈 두 개를 만든다.
 
 - `examples/aws-spring-boot-exposed-examples`
-  - Gradle project path: `:aws-spring-boot-exposed-examples`
-  - Package: `io.bluetape4k.aws.examples.spring.exposed`
-  - Dependencies:
+  - Gradle 프로젝트 경로: `:aws-spring-boot-exposed-examples`
+  - 패키지: `io.bluetape4k.aws.examples.spring.exposed`
+  - 의존성:
     - `project(":bluetape4k-aws-spring-boot")`
     - `project(":bluetape4k-aws-exposed")`
     - `libs.bluetape4k.exposed.jdbc`
-    - Exposed JDBC/BOM dependencies as needed
-    - PostgreSQL JDBC driver
-    - Spring Boot MVC web and test support
+    - 필요한 Exposed JDBC/BOM 의존성
+    - PostgreSQL JDBC 드라이버
+    - Spring Boot MVC 웹 및 테스트 지원
     - `libs.testcontainers.postgresql`
 
 - `examples/aws-ktor-exposed-examples`
-  - Gradle project path: `:aws-ktor-exposed-examples`
-  - Package: `io.bluetape4k.aws.examples.ktor.exposed`
-  - Dependencies:
+  - Gradle 프로젝트 경로: `:aws-ktor-exposed-examples`
+  - 패키지: `io.bluetape4k.aws.examples.ktor.exposed`
+  - 의존성:
     - `project(":bluetape4k-aws-ktor")`
     - `project(":bluetape4k-aws-exposed")`
     - `libs.bluetape4k.exposed.jdbc`
-    - Ktor server/test/Jackson dependencies
-    - PostgreSQL JDBC driver
+    - Ktor 서버/테스트/Jackson 의존성
+    - PostgreSQL JDBC 드라이버
     - `libs.testcontainers.postgresql`
 
-Both modules include:
+두 모듈은 다음을 포함한다.
 
 - `src/test/resources/junit-platform.properties`
 - `src/test/resources/logback-test.xml`
-- English and Korean README files with matching structure.
+- 구조가 일치하는 영문 및 한글 README 파일
 
-## Domain Model
+## 도메인 모델
 
-Use a small order model in both examples:
+두 예제에서 작은 주문 모델을 사용한다.
 
 - `OrderRecord(id: Long = 0, customerId: String, status: String, description: String = "") : Serializable`
 - `OrdersTable : LongIdTable("example_orders")`
 - `OrderRepository : LongJdbcRepository<OrderRecord>`
 
-`OrderRecord` is a Kotlin `data class`, so it must implement
-`java.io.Serializable` and define `serialVersionUID`. Its init block validates
-caller input with bluetape4k helpers, for example
-`customerId.requireNotBlank("customerId")` and
-`status.requireNotBlank("status")`.
+`OrderRecord`는 Kotlin `data class`이므로 `java.io.Serializable`을 구현하고
+`serialVersionUID`를 정의해야 한다. init 블록은 예를 들어
+`customerId.requireNotBlank("customerId")`와 `status.requireNotBlank("status")`
+같은 bluetape4k 도우미로 호출자 입력을 검증한다.
 
-The repository must use `bluetape4k-exposed` `LongJdbcRepository` instead of a
-standalone raw Exposed-only repository. It implements:
+저장소는 독립적인 원시 Exposed 전용 저장소 대신 `bluetape4k-exposed`
+`LongJdbcRepository`를 사용해야 한다. 다음을 구현한다.
 
 - `override val table`
 - `override fun extractId(entity)`
@@ -98,32 +92,28 @@ standalone raw Exposed-only repository. It implements:
 - `fun save(entity): OrderRecord`
 - `fun findByCustomerId(customerId): List<OrderRecord>`
 
-Inherited `JdbcRepository` read helpers such as `findById`, `findByIdOrNull`,
-and `findAll` remain part of the example surface and are used through an
-explicit transaction boundary.
+상속받은 `JdbcRepository` 조회 도우미인 `findById`, `findByIdOrNull`, `findAll`도
+예제 API의 일부로 유지하며 명시적 트랜잭션 경계를 통해 사용한다.
 
-The repository may still use Exposed DSL inside repository methods, because that
-is how `JdbcRepository` implementations are expected to map writes and reads.
-Repository methods are never called outside one of the framework transaction
-wrappers:
+`JdbcRepository` 구현은 이 방식으로 쓰기와 읽기를 매핑하므로 저장소 메서드 안에서
+Exposed DSL을 계속 사용할 수 있다. 저장소 메서드는 다음 프레임워크 트랜잭션 래퍼
+밖에서 호출하지 않는다.
 
-- Spring: `OrderService` wraps calls in `transaction(database) { ... }`.
-- Ktor: routes wrap calls in `call.awsExposedTransaction { ... }`.
+- Spring: `OrderService`가 호출을 `transaction(database) { ... }`로 감싼다.
+- Ktor: 라우트가 호출을 `call.awsExposedTransaction { ... }`로 감싼다.
 
-`findByCustomerId` is intentionally unbounded for the small example contract;
-production code should paginate with bluetape4k-exposed paging APIs such as
-`ExposedPage`.
+`findByCustomerId`는 작은 예제 계약을 위해 의도적으로 제한을 두지 않는다. 운영
+코드는 `ExposedPage` 같은 bluetape4k-exposed 페이징 API로 페이지를 나눠야 한다.
 
-## Spring Boot Example
+## Spring Boot 예제
 
-`SpringBootExposedExampleApplication` loads a standard Spring Boot MVC app. Use
-`spring-boot-starter-web`, not WebFlux, because this example is JDBC-backed and
-the bluetape4k-exposed `LongJdbcRepository` methods are blocking Exposed JDBC
-operations.
+`SpringBootExposedExampleApplication`은 표준 Spring Boot MVC 애플리케이션을
+로드한다. 이 예제는 JDBC 기반이고 bluetape4k-exposed `LongJdbcRepository`
+메서드는 블로킹 Exposed JDBC 연산이므로 WebFlux가 아니라
+`spring-boot-starter-web`을 사용한다.
 
-`OrderService` owns the transaction boundary. It receives the Spring-provided
-Exposed `Database` bean from `AwsExposedDefaultDatabaseAutoConfiguration` and
-wraps every repository call:
+`OrderService`가 트랜잭션 경계를 소유한다. `AwsExposedDefaultDatabaseAutoConfiguration`이
+제공하는 Exposed `Database` 빈을 받아 모든 저장소 호출을 감싼다.
 
 ```kotlin
 transaction(database) {
@@ -131,27 +121,24 @@ transaction(database) {
 }
 ```
 
-Controller methods call `OrderService` and do not call repository methods
-directly. This avoids running `JdbcRepository` methods outside an active Exposed
-transaction and keeps blocking JDBC work off a Reactor event loop by not using
-WebFlux.
+컨트롤러 메서드는 `OrderService`를 호출하고 저장소 메서드를 직접 호출하지 않는다.
+따라서 활성 Exposed 트랜잭션 밖에서 `JdbcRepository` 메서드가 실행되지 않으며,
+WebFlux를 사용하지 않아 블로킹 JDBC 작업이 Reactor 이벤트 루프에서 실행되지 않는다.
 
-`OrderController` exposes:
+`OrderController`는 다음을 노출한다.
 
-| Method | Path | Behavior |
+| 메서드 | 경로 | 동작 |
 |---|---|---|
-| `POST` | `/orders` | Creates one order and returns `201`. |
-| `GET` | `/orders/{id}` | Returns one order or `404`. |
-| `GET` | `/orders` | Lists orders, optionally filtered by `customerId`. |
+| `POST` | `/orders` | 주문 하나를 생성하고 `201`을 반환한다. |
+| `GET` | `/orders/{id}` | 주문 하나 또는 `404`를 반환한다. |
+| `GET` | `/orders` | 주문 목록을 반환하며 선택적으로 `customerId`로 필터링한다. |
 
-`OrderRepository` does not own a `Database` and does not rely on
-`TransactionManager.defaultDatabase`. It assumes callers invoke it inside the
-transaction opened by `OrderService`.
+`OrderRepository`는 `Database`를 소유하지 않고 `TransactionManager.defaultDatabase`에
+의존하지 않는다. 호출자가 `OrderService`가 연 트랜잭션 안에서 실행한다고 가정한다.
 
-`OrderSchemaInitializer` creates `OrdersTable` on application startup using the
-Spring-provided Exposed `Database`. Implement it as an `ApplicationRunner` that
-runs after the `Database` bean is wired and before example users send normal
-requests:
+`OrderSchemaInitializer`는 애플리케이션 시작 시 Spring이 제공하는 Exposed
+`Database`로 `OrdersTable`을 생성한다. `Database` 빈 연결 후, 예제 사용자가 일반
+요청을 보내기 전에 실행되는 `ApplicationRunner`로 구현한다.
 
 ```kotlin
 transaction(database) {
@@ -159,58 +146,56 @@ transaction(database) {
 }
 ```
 
-This keeps the example self-contained without adding migrations.
+이렇게 하면 마이그레이션을 추가하지 않고도 예제를 독립적으로 실행할 수 있다.
 
-Tests use `@SpringBootTest(webEnvironment = RANDOM_PORT)` with
-`TestRestTemplate` and the shared bluetape4k Testcontainers launcher. The test
-class uses `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`. Do not instantiate
-`PostgreSQLContainer` directly; use `PostgreSQLServer.Launcher.postgres` from
-`bluetape4k-testcontainers`. The Kotlin `@DynamicPropertySource` method is a
-`@JvmStatic` companion-object function that reads values from that launcher
-singleton before Spring property binding:
+테스트는 `TestRestTemplate` 및 공통 bluetape4k Testcontainers launcher와 함께
+`@SpringBootTest(webEnvironment = RANDOM_PORT)`를 사용한다. 테스트 클래스는
+`@TestInstance(TestInstance.Lifecycle.PER_CLASS)`를 사용한다. `PostgreSQLContainer`를
+직접 생성하지 말고 `bluetape4k-testcontainers`의 `PostgreSQLServer.Launcher.postgres`를
+사용한다. Kotlin `@DynamicPropertySource` 메서드는 Spring 속성 바인딩 전에 이 launcher
+싱글턴에서 값을 읽는 `@JvmStatic` companion-object 함수다.
 
 - `bluetape4k.aws.exposed.default-database.url`
 - `bluetape4k.aws.exposed.default-database.driver-class-name`
 - `bluetape4k.aws.exposed.default-database.username`
 - `bluetape4k.aws.exposed.default-database.password`
-- small pool settings such as `maximum-pool-size=2` and `minimum-idle=0`
+- `maximum-pool-size=2`, `minimum-idle=0` 같은 작은 풀 설정
 
-The Spring context includes:
+Spring 컨텍스트는 다음을 포함한다.
 
 - `AwsAutoConfiguration`
 - `AwsExposedAutoConfiguration`
 - `AwsExposedDefaultDatabaseAutoConfiguration`
 
-The test proves:
+테스트는 다음을 입증한다.
 
-- the Spring auto-configuration creates `AwsExposedDatabaseRegistry`,
-  `DataSource`, and Exposed `Database` from Testcontainers properties.
-- the controller/repository creates an order and reads it back.
+- Spring 자동 구성이 Testcontainers 속성에서 `AwsExposedDatabaseRegistry`,
+  `DataSource`, Exposed `Database`를 생성한다.
+- 컨트롤러/저장소가 주문을 생성하고 다시 조회한다.
 
-Optional auto-configuration slice coverage may use `ApplicationContextRunner`,
-but HTTP create/read verification must use the Spring Boot web test context.
+선택적인 자동 구성 슬라이스 검증에는 `ApplicationContextRunner`를 사용할 수 있지만,
+HTTP 생성/조회 검증은 Spring Boot 웹 테스트 컨텍스트를 사용해야 한다.
 
-## Ktor Example
+## Ktor 예제
 
-`exposedExampleModule(database: ExampleDatabaseConfig)` installs:
+`exposedExampleModule(database: ExampleDatabaseConfig)`은 다음을 설치한다.
 
 - `ContentNegotiation { jackson() }`
 - `AwsExposedPlugin`
-- routes backed by `call.awsExposedTransaction { ... }`
+- `call.awsExposedTransaction { ... }` 기반 라우트
 
-Routes:
+라우트:
 
-| Method | Path | Behavior |
+| 메서드 | 경로 | 동작 |
 |---|---|---|
-| `POST` | `/exposed/orders` | Creates one order and returns `201`. |
-| `GET` | `/exposed/orders/{id}` | Returns one order or `404`. |
-| `GET` | `/exposed/orders` | Lists orders, optionally filtered by `customerId`. |
+| `POST` | `/exposed/orders` | 주문 하나를 생성하고 `201`을 반환한다. |
+| `GET` | `/exposed/orders/{id}` | 주문 하나 또는 `404`를 반환한다. |
+| `GET` | `/exposed/orders` | 주문 목록을 반환하며 선택적으로 `customerId`로 필터링한다. |
 
-Application startup initializes `OrdersTable` through the plugin runtime after
-the plugin has created the registry. Inside the `Application` extension, call
-`monitor.subscribe(ApplicationStarted) { ... }` after installing
-`AwsExposedPlugin`, then bridge the synchronous lifecycle event to the plugin
-transaction helper:
+애플리케이션 시작 시 플러그인이 레지스트리를 생성한 뒤 플러그인 런타임을 통해
+`OrdersTable`을 초기화한다. `Application` 확장 안에서 `AwsExposedPlugin` 설치 후
+`monitor.subscribe(ApplicationStarted) { ... }`를 호출하고, 동기 생명주기 이벤트를
+플러그인 트랜잭션 도우미에 연결한다.
 
 ```kotlin
 monitor.subscribe(ApplicationStarted) {
@@ -222,48 +207,43 @@ monitor.subscribe(ApplicationStarted) {
 }
 ```
 
-This is a tightly controlled startup bridge, mirroring `AwsExposedPlugin`'s own
-synchronous Ktor lifecycle bridge. It is allowed only for one-time schema
-initialization during example startup; route handlers must not use
-`runBlocking`.
+이는 `AwsExposedPlugin` 자체의 동기 Ktor 생명주기 브리지를 따르는 엄격히 통제된
+시작 브리지다. 예제 시작 중 일회성 스키마 초기화에만 허용하며 라우트 핸들러는
+`runBlocking`을 사용하면 안 된다.
 
-`awsExposedTransaction` runs the block on the plugin transaction context, which
-defaults to `Dispatchers.IO`, so route code must call repository methods inside
-`call.awsExposedTransaction { ... }` instead of calling the blocking JDBC
-repository directly from the event loop.
+`awsExposedTransaction`은 기본값이 `Dispatchers.IO`인 플러그인 트랜잭션 컨텍스트에서
+블록을 실행한다. 따라서 라우트 코드는 이벤트 루프에서 블로킹 JDBC 저장소를 직접
+호출하지 않고 `call.awsExposedTransaction { ... }` 안에서 저장소 메서드를 호출해야 한다.
 
-Tests use `testApplication` with PostgreSQL Testcontainers properties, a
-`@TestInstance(TestInstance.Lifecycle.PER_CLASS)` test class, and prove
-create/read through HTTP.
+테스트는 PostgreSQL Testcontainers 속성을 사용하는 `testApplication`과
+`@TestInstance(TestInstance.Lifecycle.PER_CLASS)` 테스트 클래스로 HTTP를 통한
+생성/조회를 입증한다.
 
-## Credential and Emulator Strategy
+## 자격 증명 및 에뮬레이터 전략
 
-- Default example configuration uses direct JDBC settings and does not require
-  AWS credentials.
-- Remote AWS config source descriptors may be documented as optional snippets,
-  but tests should not call AWS, LocalStack, or Floci.
-- Tests use direct dynamic JDBC properties or direct Ktor DSL values from the
-  shared `PostgreSQLServer.Launcher.postgres` instance. Do not add a competing
-  `AwsDatabaseSettingsResolver` test path unless a separate resolver example is
-  explicitly needed later.
-- Use `PostgreSQLServer.Launcher.postgres` from `bluetape4k-testcontainers` for
-  both Spring and Ktor tests. The launcher owns the image/start lifecycle and
-  avoids duplicate per-test-class Postgres containers in Nightly.
-- The Ktor test helper derives `ExampleDatabaseConfig` from the same launcher,
-  for example `ExampleDatabaseConfig.from(postgres)`, and maps launcher values
-  to the Ktor `defaultDatabase { url/driverClassName/username/password/pool }`
-  DSL.
+- 기본 예제 구성은 직접 JDBC 설정을 사용하며 AWS 자격 증명을 요구하지 않는다.
+- 원격 AWS 구성 소스 서술자는 선택적 코드 조각으로 문서화할 수 있지만 테스트는
+  AWS, LocalStack 또는 Floci를 호출하지 않아야 한다.
+- 테스트는 공통 `PostgreSQLServer.Launcher.postgres` 인스턴스의 직접 동적 JDBC
+  속성이나 직접 Ktor DSL 값을 사용한다. 나중에 별도 resolver 예제가 명시적으로
+  필요하지 않으면 경쟁하는 `AwsDatabaseSettingsResolver` 테스트 경로를 추가하지 않는다.
+- Spring과 Ktor 테스트 모두 `bluetape4k-testcontainers`의
+  `PostgreSQLServer.Launcher.postgres`를 사용한다. launcher가 이미지/시작 생명주기를
+  소유하고 Nightly에서 테스트 클래스별 Postgres 컨테이너 중복을 방지한다.
+- Ktor 테스트 도우미는 `ExampleDatabaseConfig.from(postgres)`처럼 같은 launcher에서
+  `ExampleDatabaseConfig`를 만들고, launcher 값을 Ktor
+  `defaultDatabase { url/driverClassName/username/password/pool }` DSL에 매핑한다.
 
-## CI and Nightly
+## CI와 Nightly
 
-New example modules must be registered in:
+새 예제 모듈은 다음에 등록해야 한다.
 
 - `settings.gradle.kts`
 - `.github/workflows/ci.yml`
 - `.github/workflows/nightly-tests.yml`
 
-CI should deliberately extend the current repository policy for these examples.
-Add path filters for the example modules and their upstream adapter modules:
+CI는 이 예제를 위해 현재 저장소 정책을 의도적으로 확장해야 한다. 예제 모듈과 상위
+어댑터 모듈에 다음 경로 필터를 추가한다.
 
 - `examples/aws-spring-boot-exposed-examples/**`
 - `examples/aws-ktor-exposed-examples/**`
@@ -271,21 +251,19 @@ Add path filters for the example modules and their upstream adapter modules:
 - `aws-spring-boot/**`
 - `aws-ktor/**`
 
-Then add targeted test jobs that run when those paths change or on
-`workflow_dispatch`. This is required because Issue #82 acceptance says examples
-compile in CI as well as Nightly, and upstream adapter regressions should not
-wait for Nightly only.
+그런 다음 이 경로가 바뀌거나 `workflow_dispatch`로 실행할 때 동작하는 대상 테스트
+job을 추가한다. 이슈 #82 인수 조건은 예제가 Nightly뿐 아니라 CI에서도 컴파일돼야
+한다고 규정하며, 상위 어댑터 회귀 검증이 Nightly까지 기다리면 안 되기 때문이다.
 
-Nightly should run both modules in the full scope because the tests use
-container-backed PostgreSQL.
+테스트가 컨테이너 기반 PostgreSQL을 사용하므로 Nightly는 전체 범위에서 두 모듈을 실행해야 한다.
 
-## Acceptance Criteria
+## 인수 기준
 
-- `./gradlew projects` shows both new modules.
-- `./gradlew :aws-spring-boot-exposed-examples:test` passes.
-- `./gradlew :aws-ktor-exposed-examples:test` passes.
-- `./gradlew build -x test --parallel` compiles both modules.
-- README files contain runnable commands and no real AWS credential requirement.
-- Local workflow artifacts under `.omx/artifacts` and the final lesson record
-  show Claude Code CLI spec/plan/code review gates reached `P0=0` and `P1=0`
-  before implementation moved to the next phase.
+- `./gradlew projects`에 새 모듈 두 개가 표시된다.
+- `./gradlew :aws-spring-boot-exposed-examples:test`가 통과한다.
+- `./gradlew :aws-ktor-exposed-examples:test`가 통과한다.
+- `./gradlew build -x test --parallel`이 두 모듈을 컴파일한다.
+- README 파일에 실행 가능한 명령이 있고 실제 AWS 자격 증명을 요구하지 않는다.
+- `.omx/artifacts` 아래 로컬 워크플로 산출물과 최종 교훈 기록은 구현이 다음 단계로
+  이동하기 전에 Claude Code CLI 명세/계획/코드 리뷰 게이트가 `P0=0`, `P1=0`에
+  도달했음을 보여 준다.
