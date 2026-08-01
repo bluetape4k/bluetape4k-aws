@@ -57,6 +57,21 @@ suspend fun <R> withSesClient(
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (SesClient) -> R,
-): R = sesClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
+): R = withSesClient(
+    clientFactory = { sesClientOf(endpointUrl, region, credentialsProvider) },
+    block = block,
+)
+
+/**
+ * Runs a block with a client created by [clientFactory] and closes that client
+ * on normal return, failure, and coroutine cancellation.
+ *
+ * This internal seam keeps the public helper tied to the same ownership path
+ * while allowing deterministic lifecycle regression tests without network I/O.
+ */
+internal suspend fun <R> withSesClient(
+    clientFactory: () -> SesClient,
+    block: suspend (SesClient) -> R,
+): R = clientFactory().useSafe { client ->
     block(client)
 }

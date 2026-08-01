@@ -1,14 +1,25 @@
 package io.bluetape4k.aws.kotlin.lifecycle
 
 import io.bluetape4k.aws.kotlin.http.crtHttpEngineOf
-import io.bluetape4k.aws.kotlin.s3.s3ClientOf
 import io.bluetape4k.aws.kotlin.s3.withS3Client
+import io.bluetape4k.aws.kotlin.s3.s3ClientOf
 import io.bluetape4k.aws.kotlin.ses.sesClientOf
 import io.bluetape4k.aws.kotlin.ses.withSesClient
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.closeSafe
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import aws.sdk.kotlin.services.s3.S3Client
+import aws.sdk.kotlin.services.ses.SesClient
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
@@ -57,6 +68,82 @@ class ClientLifecycleTest {
         withSesClient(region = "us-east-1") { client ->
             client.shouldNotBeNull()
         }
+    }
+
+    @Test
+    fun `withS3Client closes exactly once after normal return`() = runTest {
+        val client = mockk<S3Client>(relaxed = true)
+        every { client.close() } returns Unit
+
+        withS3Client(clientFactory = { client }) { it shouldBeSameInstanceAs client }
+
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `withS3Client closes exactly once after block failure`() = runTest {
+        val client = mockk<S3Client>(relaxed = true)
+        every { client.close() } returns Unit
+        val expected = IllegalStateException("boom")
+
+        val actual = assertFailsWith<IllegalStateException> {
+            withS3Client(clientFactory = { client }) { throw expected }
+        }
+
+        actual shouldBeSameInstanceAs expected
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `withS3Client closes exactly once after cancellation`() = runTest {
+        val client = mockk<S3Client>(relaxed = true)
+        every { client.close() } returns Unit
+        val job = launch {
+            withS3Client(clientFactory = { client }) { awaitCancellation() }
+        }
+        runCurrent()
+
+        job.cancelAndJoin()
+
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `withSesClient closes exactly once after normal return`() = runTest {
+        val client = mockk<SesClient>(relaxed = true)
+        every { client.close() } returns Unit
+
+        withSesClient(clientFactory = { client }) { it shouldBeSameInstanceAs client }
+
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `withSesClient closes exactly once after block failure`() = runTest {
+        val client = mockk<SesClient>(relaxed = true)
+        every { client.close() } returns Unit
+        val expected = IllegalStateException("boom")
+
+        val actual = assertFailsWith<IllegalStateException> {
+            withSesClient(clientFactory = { client }) { throw expected }
+        }
+
+        actual shouldBeSameInstanceAs expected
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `withSesClient closes exactly once after cancellation`() = runTest {
+        val client = mockk<SesClient>(relaxed = true)
+        every { client.close() } returns Unit
+        val job = launch {
+            withSesClient(clientFactory = { client }) { awaitCancellation() }
+        }
+        runCurrent()
+
+        job.cancelAndJoin()
+
+        verify(exactly = 1) { client.close() }
     }
 
     @Test

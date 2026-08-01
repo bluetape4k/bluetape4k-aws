@@ -60,6 +60,21 @@ suspend fun <R> withS3Client(
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (S3Client) -> R,
-): R = s3ClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
+): R = withS3Client(
+    clientFactory = { s3ClientOf(endpointUrl, region, credentialsProvider) },
+    block = block,
+)
+
+/**
+ * Runs a block with a client created by [clientFactory] and closes that client
+ * on normal return, failure, and coroutine cancellation.
+ *
+ * This internal seam keeps the public helper tied to the same ownership path
+ * while allowing deterministic lifecycle regression tests without network I/O.
+ */
+internal suspend fun <R> withS3Client(
+    clientFactory: () -> S3Client,
+    block: suspend (S3Client) -> R,
+): R = clientFactory().useSafe { client ->
     block(client)
 }
