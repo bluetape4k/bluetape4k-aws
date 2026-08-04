@@ -16,10 +16,10 @@ dependencies {
     api(bt4k.aws.kotlin.core)
     api(libs.aws.kotlin.aws.config)
     api(libs.aws.kotlin.aws.endpoint)
-    api(libs.aws.smithy.kotlin.http)
-    api(libs.aws.smithy.kotlin.http.client.engine.crt)
-    implementation(libs.aws.smithy.kotlin.http.client.engine.default)
-    implementation(libs.aws.smithy.kotlin.http.client.engine.okhttp)
+    api(bt4k.aws.smithy.kotlin.http)
+    api(bt4k.aws.smithy.kotlin.http.client.engine.crt)
+    implementation(bt4k.aws.smithy.kotlin.http.client.engine.default)
+    implementation(bt4k.aws.smithy.kotlin.http.client.engine.okhttp)
 
     // AWS Kotlin SDK Services (compileOnly — consumer adds runtime deps)
     compileOnly(libs.aws.kotlin.bedrock.runtime)
@@ -40,12 +40,12 @@ dependencies {
     compileOnly(libs.aws.kotlin.sts)
 
     // Resilience4j
-    compileOnly(libs.resilience4j.retry)
-    compileOnly(libs.resilience4j.kotlin)
+    compileOnly(bt4k.resilience4j.retry)
+    compileOnly(bt4k.resilience4j.kotlin)
 
     // Jackson
-    compileOnly(libs.jackson.module.kotlin)
-    compileOnly(libs.jackson.module.blackbird)
+    compileOnly(libs.jackson3.module.kotlin)
+    compileOnly(libs.jackson3.module.blackbird)
 
     // Coroutines
     compileOnly(libs.kotlinx.coroutines.core)
@@ -58,7 +58,7 @@ dependencies {
     testImplementation(libs.aws.kotlin.eventbridge)
     testImplementation(libs.aws.kotlin.scheduler)
     testImplementation(libs.testcontainers.localstack)
-    testImplementation(libs.mockk)
+    testImplementation(bt4k.mockk)
     testImplementation(libs.awaitility.kotlin)
 }
 

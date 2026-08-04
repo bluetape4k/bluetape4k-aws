@@ -5,47 +5,30 @@
 bluetape4k = "1.11.1-SNAPSHOT"  # https://mvnrepository.com/artifact/io.github.bluetape4k/bluetape4k-bom
 bluetape4k-exposed = "1.12.0-SNAPSHOT"  # https://mvnrepository.com/artifact/io.github.bluetape4k.exposed/bluetape4k-exposed-bom
 
-kotlinx-atomicfu = "0.32.1"  # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/atomicfu
 
 # AWS SDK v2 (Java)
-aws2-crt = "0.45.4"  # https://mvnrepository.com/artifact/software.amazon.awssdk.crt/aws-crt
-dax-client = "2.0.9"  # https://mvnrepository.com/artifact/software.amazon.dax/amazon-dax-client
 
 # AWS Kotlin SDK
 aws-smithy-kotlin = "1.6.14"  # https://mvnrepository.com/artifact/aws.smithy.kotlin/http-jvm
 
 # Spring
-spring-cloud-aws = "4.0.2"  # https://mvnrepository.com/artifact/io.awspring.cloud/spring-cloud-aws-dependencies
 
 # Ktor
 
 # Exposed / JDBC
-h2-v2 = "2.4.240"  # https://mvnrepository.com/artifact/com.h2database/h2
 
-logback = "1.5.32"  # https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
 
-jackson3-compat = "3.1.3"  # Compatibility pin; central Jackson 3 line is newer.
 resilience4j = "2.4.0"  # https://mvnrepository.com/artifact/io.github.resilience4j/resilience4j-retry
 
-junit-jupiter = "6.0.3"  # https://mvnrepository.com/artifact/org.junit/junit-bom
-mockk = "1.14.9"  # https://mvnrepository.com/artifact/io.mockk/mockk
 
 # Plugin versions
-detekt = "2.0.0-alpha.5"  # https://mvnrepository.com/artifact/dev.detekt/detekt-gradle-plugin
-graalvm-native = "1.1.0"  # https://mvnrepository.com/artifact/org.graalvm.buildtools.native/org.graalvm.buildtools.native.gradle.plugin
-test-logger = "4.0.0"  # https://mvnrepository.com/artifact/com.adarshr/gradle-test-logger-plugin
 
 # ────────────────────────────────────────────────────────────────────────────
 [plugins]
-kotlinx-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "kotlinx-atomicfu" }
 
-detekt = { id = "dev.detekt", version.ref = "detekt" }
-test-logger = { id = "com.adarshr.test-logger", version.ref = "test-logger" }
-graalvm-native = { id = "org.graalvm.buildtools.native", version.ref = "graalvm-native" }
 
 # ────────────────────────────────────────────────────────────────────────────
 [libraries]
-jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.1.0" }  # https://mvnrepository.com/artifact/org.jetbrains/annotations
 
 # Kotlin
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom" }
@@ -60,7 +43,6 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test" }
-kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "kotlinx-atomicfu" }
 
 # bluetape4k — consumed from Maven Central snapshots
 
@@ -68,16 +50,12 @@ kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "k
 jcl-over-slf4j = { module = "org.slf4j:jcl-over-slf4j" }
 jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j" }
 log4j-over-slf4j = { module = "org.slf4j:log4j-over-slf4j" }
-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 # Jackson
-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3-compat" }
-jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
-jackson-module-blackbird = { module = "tools.jackson.module:jackson-module-blackbird" }
+jackson3-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
+jackson3-module-blackbird = { module = "tools.jackson.module:jackson-module-blackbird" }
 
 # Resilience4j
-resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version.ref = "resilience4j" }
-resilience4j-kotlin = { module = "io.github.resilience4j:resilience4j-kotlin", version.ref = "resilience4j" }
 
 # Spring Boot
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies" }
@@ -94,7 +72,6 @@ angus-mail = { module = "org.eclipse.angus:angus-mail" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 
 # Spring Cloud AWS
-spring-cloud-aws-bom = { module = "io.awspring.cloud:spring-cloud-aws-dependencies", version.ref = "spring-cloud-aws" }
 spring-cloud-aws-starter = { module = "io.awspring.cloud:spring-cloud-aws-starter" }
 spring-cloud-aws-starter-s3 = { module = "io.awspring.cloud:spring-cloud-aws-starter-s3" }
 spring-cloud-aws-starter-sqs = { module = "io.awspring.cloud:spring-cloud-aws-starter-sqs" }
@@ -112,7 +89,6 @@ aws2-apache-client = { module = "software.amazon.awssdk:apache-client" }
 aws2-aws-crt-client = { module = "software.amazon.awssdk:aws-crt-client" }
 aws2-netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client" }
 aws2-url-connection-client = { module = "software.amazon.awssdk:url-connection-client" }
-aws2-aws-crt = { module = "software.amazon.awssdk.crt:aws-crt", version.ref = "aws2-crt" }
 aws2-bedrock-runtime = { module = "software.amazon.awssdk:bedrockruntime" }
 aws2-dynamodb-enhanced = { module = "software.amazon.awssdk:dynamodb-enhanced" }
 aws2-s3 = { module = "software.amazon.awssdk:s3" }
@@ -137,7 +113,6 @@ aws2-sts = { module = "software.amazon.awssdk:sts" }
 aws2-ec2 = { module = "software.amazon.awssdk:ec2" }
 aws2-utils = { module = "software.amazon.awssdk:utils" }
 aws2-test-utils = { module = "software.amazon.awssdk:test-utils" }
-aws-dax-client = { module = "software.amazon.dax:amazon-dax-client", version.ref = "dax-client" }
 
 # AWS Kotlin SDK
 aws-kotlin-aws-config = { module = "aws.sdk.kotlin:aws-config" }
@@ -162,16 +137,10 @@ aws-kotlin-sts = { module = "aws.sdk.kotlin:sts" }
 aws-kotlin-http-client-engine-crt = { module = "aws.sdk.kotlin:http-client-engine-crt" }
 
 # AWS Smithy Kotlin
-aws-smithy-kotlin-http = { module = "aws.smithy.kotlin:http-jvm", version.ref = "aws-smithy-kotlin" }
-aws-smithy-kotlin-http-client-engine-crt = { module = "aws.smithy.kotlin:http-client-engine-crt", version.ref = "aws-smithy-kotlin" }
-aws-smithy-kotlin-http-client-engine-default = { module = "aws.smithy.kotlin:http-client-engine-default", version.ref = "aws-smithy-kotlin" }
-aws-smithy-kotlin-http-client-engine-okhttp = { module = "aws.smithy.kotlin:http-client-engine-okhttp", version.ref = "aws-smithy-kotlin" }
 
 # Test
-junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-jupiter" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-engine = { module = "org.junit.platform:junit-platform-engine" }
-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 awaitility-kotlin = { module = "org.awaitility:awaitility-kotlin" }
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom" }
 testcontainers = { module = "org.testcontainers:testcontainers" }
@@ -181,7 +150,6 @@ testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgr
 
 # Exposed / JDBC
 exposed-bom = { module = "org.jetbrains.exposed:exposed-bom" }
-h2-v2 = { module = "com.h2database:h2", version.ref = "h2-v2" }
 
 # Ktor
 ktor-server-core = { module = "io.ktor:ktor-server-core" }

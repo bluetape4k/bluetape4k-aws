@@ -60,9 +60,9 @@ dependencies {
     testImplementation(libs.aws.kotlin.dynamodb)
     testImplementation(platform(bt4k.spring.boot4.dependencies))
     testImplementation(libs.micrometer.core)
-    testImplementation(libs.h2.v2)
+    testImplementation(bt4k.h2.v2)
     testImplementation(libs.testcontainers.localstack)
-    testImplementation(libs.mockk)
+    testImplementation(bt4k.mockk)
     testImplementation(libs.awaitility.kotlin)
 }
 
