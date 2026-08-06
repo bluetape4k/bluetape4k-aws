@@ -30,7 +30,7 @@ dependencies {
     compileOnly(libs.aws2.s3)
     compileOnly(libs.aws2.s3vectors)
     compileOnly(libs.aws2.s3.transfer.manager)
-    compileOnly(libs.aws2.aws.crt)
+    compileOnly(bt4k.aws2.aws.crt)
     compileOnly(libs.aws2.ses)
     compileOnly(libs.aws2.sesv2)
     compileOnly(libs.aws2.secretsmanager)
@@ -64,7 +64,7 @@ dependencies {
     testImplementation(libs.aws2.scheduler)
     testImplementation(libs.aws2.test.utils)
     testImplementation(libs.testcontainers.localstack)
-    testImplementation(libs.mockk)
+    testImplementation(bt4k.mockk)
     testImplementation(libs.awaitility.kotlin)
 
     // Spring Boot (DynamoDB 예제 테스트용)

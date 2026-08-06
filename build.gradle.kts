@@ -71,23 +71,24 @@ plugins {
     alias(bt4k.plugins.kotlin.spring) apply false
     alias(bt4k.plugins.kotlin.allopen) apply false
     alias(bt4k.plugins.kotlin.noarg) apply false
-    alias(libs.plugins.kotlinx.atomicfu)
+    alias(bt4k.plugins.kotlinx.atomicfu)
 
-    alias(libs.plugins.detekt) apply false
+    alias(bt4k.plugins.detekt.dev) apply false
     alias(bt4k.plugins.dependency.management)
 
     alias(bt4k.plugins.dokka)
-    alias(libs.plugins.test.logger)
+    alias(bt4k.plugins.test.logger)
 
     alias(bt4k.plugins.nmcp.aggregation)
     alias(bt4k.plugins.nmcp) apply false
 
     alias(bt4k.plugins.kover) apply false
-    alias(libs.plugins.graalvm.native) apply false
+    alias(bt4k.plugins.graalvm.native) apply false
     alias(bt4k.plugins.exposed.plugin) apply false
 }
 
 val rootLibs = libs
+val rootBt4k = bt4k
 val rootDependencies = dependencies
 val bt4kCatalog = extensions.getByType<org.gradle.api.artifacts.VersionCatalogsExtension>().named("bt4k")
 fun bt4kLibrary(alias: String) = bt4kCatalog.findLibrary(alias).get()
@@ -468,7 +469,7 @@ subprojects {
             mavenBom(bt4kLibrary("bluetape4k-bom").get().toString())
             mavenBom("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${bt4kVersion("kotlinx-coroutines")}")
             mavenBom("org.jetbrains.kotlin:kotlin-bom:${bt4kVersion("kotlin")}")
-            mavenBom(rootLibs.junit.bom.get().toString())
+            mavenBom(rootBt4k.junit.bom.get().toString())
             mavenBom("org.testcontainers:testcontainers-bom:${bt4kVersion("testcontainers")}")
             mavenBom(bt4kLibrary("aws2-bom").get().toString())
         }
@@ -630,7 +631,7 @@ subprojects {
     }
 
     dependencies {
-        add("api", rootLibs.jetbrains.annotations)
+        add("api", rootBt4k.jetbrains.annotations)
 
         add("implementation", rootLibs.kotlin.stdlib)
         add("implementation", rootLibs.kotlin.reflect)
@@ -638,10 +639,10 @@ subprojects {
         add("testImplementation", rootLibs.kotlin.test.junit5)
 
         add("implementation", rootLibs.kotlinx.coroutines.core)
-        add("implementation", rootLibs.kotlinx.atomicfu)
+        add("implementation", rootBt4k.kotlinx.atomicfu)
 
         add("api", bt4kLibrary("slf4j-api"))
-        add("testImplementation", rootLibs.logback)
+        add("testImplementation", rootBt4k.logback.asProvider())
         add("testImplementation", rootLibs.jcl.over.slf4j)
         add("testImplementation", rootLibs.jul.to.slf4j)
         add("testImplementation", rootLibs.log4j.over.slf4j)
@@ -650,7 +651,7 @@ subprojects {
         add("testRuntimeOnly", rootLibs.junit.platform.engine)
 
         add("testImplementation", rootLibs.awaitility.kotlin)
-        add("testImplementation", rootLibs.mockk)
+        add("testImplementation", rootBt4k.mockk)
     }
 
     publishing {

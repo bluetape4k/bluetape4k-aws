@@ -15,7 +15,7 @@ dependencies {
     testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.aws2.rds)
-    testImplementation(libs.h2.v2)
+    testImplementation(bt4k.h2.v2)
     testImplementation(bt4k.postgresql)
     testImplementation(libs.testcontainers.postgresql)
 }

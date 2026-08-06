@@ -7,6 +7,8 @@
 
 ## [미출시]
 
+## [0.5.0] - 2026-08-06
+
 ### 추가
 
 - Java 및 Kotlin SDK 모듈에 모델 중립적인 Amazon Bedrock Runtime `Converse`와
