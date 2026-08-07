@@ -6,13 +6,13 @@ locale: "en"
 kind: "example"
 gradlePath: ":aws-spring-boot-dynamodb-examples"
 sourceDir: "examples/aws-spring-boot-dynamodb-examples"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 artifact: null
 ---
 
 # Spring Boot DynamoDB Workshop
 
-> A runnable workshop grounded in the 0.4.0 release source.
+> A runnable workshop grounded in the 0.5.0 release source.
 
 ## Learning goal {#problem}
 
@@ -77,13 +77,13 @@ The workshop uses a single-key table and scan. It does not cover indexes, transa
 <!-- release-readme-diagrams:start -->
 ## Release diagrams {#release-diagrams}
 
-These diagrams are loaded directly from README assets published with the `0.4.0` release and pinned to its immutable commit. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG at the same release commit.
+These diagrams are loaded directly from README assets published with the `0.5.0` release and pinned to its immutable commit. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG at the same release commit.
 
 ### aws spring boot dynamodb examples Architecture diagram
 
-[![aws spring boot dynamodb examples Architecture diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.svg)
+[![aws spring boot dynamodb examples Architecture diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/664e4dfb544a3c19db484b0f9a8e023a73774b49/docs/images/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/664e4dfb544a3c19db484b0f9a8e023a73774b49/docs/images/readme-diagrams/examples-aws-spring-boot-dynamodb-examples-architecture-01.svg)
 
-_Release README: [`examples/aws-spring-boot-dynamodb-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-spring-boot-dynamodb-examples/README.md)_
+_Release README: [`examples/aws-spring-boot-dynamodb-examples/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/664e4dfb544a3c19db484b0f9a8e023a73774b49/examples/aws-spring-boot-dynamodb-examples/README.md)_
 
 <!-- release-readme-diagrams:end -->
 

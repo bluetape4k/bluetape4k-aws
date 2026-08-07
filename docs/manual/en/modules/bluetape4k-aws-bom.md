@@ -6,13 +6,13 @@ locale: "en"
 kind: "library"
 gradlePath: ":bluetape4k-aws-bom"
 sourceDir: "bom"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 artifact: io.github.bluetape4k.aws:bluetape4k-aws-bom
 ---
 
 # AWS Bill of Materials
 
-> Library manual grounded in the 0.4.0 release source.
+> Library manual grounded in the 0.5.0 release source.
 
 ## Problem {#problem}
 
@@ -90,13 +90,13 @@ This BOM does not add AWS SDK service jars, create clients, or configure credent
 <!-- release-readme-diagrams:start -->
 ## Release diagrams {#release-diagrams}
 
-These diagrams are loaded directly from README assets published with the `0.4.0` release and pinned to its immutable commit. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG at the same release commit.
+These diagrams are loaded directly from README assets published with the `0.5.0` release and pinned to its immutable commit. They describe this manual's released structure and runtime flows, not later Snapshot changes. Select a preview to open the SVG at the same release commit.
 
 ### bom Architecture diagram
 
-[![bom Architecture diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bom-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/bom-architecture-01.svg)
+[![bom Architecture diagram](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/664e4dfb544a3c19db484b0f9a8e023a73774b49/docs/images/readme-diagrams/bom-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/664e4dfb544a3c19db484b0f9a8e023a73774b49/docs/images/readme-diagrams/bom-architecture-01.svg)
 
-_Release README: [`bom/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/bom/README.md)_
+_Release README: [`bom/README.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/664e4dfb544a3c19db484b0f9a8e023a73774b49/bom/README.md)_
 
 <!-- release-readme-diagrams:end -->
 

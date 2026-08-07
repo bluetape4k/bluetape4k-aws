@@ -2,7 +2,7 @@
 manualId: "spring-vs-ktor"
 title: "AWS 연동에서 Spring Boot와 Ktor 선택"
 locale: "ko"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # AWS 연동에서 Spring Boot와 Ktor 선택

@@ -2,7 +2,7 @@
 manualId: "database-with-exposed"
 title: "AWS-backed Configuration to Exposed JDBC"
 locale: "en"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # AWS-backed Configuration to Exposed JDBC

@@ -2,7 +2,7 @@
 manualId: "database-with-exposed"
 title: "AWS 설정을 Exposed JDBC로 연결하기"
 locale: "ko"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # AWS 설정을 Exposed JDBC로 연결하기

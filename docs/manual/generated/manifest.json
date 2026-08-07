@@ -460,8 +460,8 @@
       ]
     }
   },
-  "releaseCommit": "be4e6daea5654f84579955307ec56a58c8f405be",
-  "releaseRef": "0.4.0",
+  "releaseCommit": "664e4dfb544a3c19db484b0f9a8e023a73774b49",
+  "releaseRef": "0.5.0",
   "repository": "bluetape4k/bluetape4k-aws",
   "schemaVersion": 2
 }

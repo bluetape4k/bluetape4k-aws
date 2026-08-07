@@ -2,7 +2,7 @@
 manualId: "getting-started"
 title: "Getting Started with Bluetape4k AWS"
 locale: "en"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # Getting Started with Bluetape4k AWS
@@ -20,7 +20,7 @@ dependencies {
 }
 ```
 
-Replace `<version>` with the `bluetape4k-dependencies` release selected by the application. The `0.4.0` label in this manual identifies the AWS source baseline; it is not a second version the application must coordinate.
+Replace `<version>` with the `bluetape4k-dependencies` release selected by the application. The `0.5.0` label in this manual identifies the AWS source baseline; it is not a second version the application must coordinate.
 
 AWS service SDKs are `compileOnly` in the wrapper libraries. Add the runtime service artifacts you actually call. For example, an S3 service needs `software.amazon.awssdk:s3` on the Java SDK path or `aws.sdk.kotlin:s3` on the Kotlin SDK path. This keeps unrelated AWS services out of the runtime classpath.
 
