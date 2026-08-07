@@ -2,7 +2,7 @@
 manualId: "spring-vs-ktor"
 title: "Spring Boot or Ktor for AWS Integration"
 locale: "en"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # Spring Boot or Ktor for AWS Integration

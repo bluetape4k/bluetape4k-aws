@@ -2,7 +2,7 @@
 manualId: "runtime-boundaries"
 title: "Runtime and Client Ownership Boundaries"
 locale: "en"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # Runtime and Client Ownership Boundaries

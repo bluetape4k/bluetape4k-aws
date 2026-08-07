@@ -6,13 +6,13 @@ locale: "ko"
 kind: "example"
 gradlePath: ":aws-ktor-exposed-examples"
 sourceDir: "examples/aws-ktor-exposed-examples"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 artifact: null
 ---
 
 # Ktor Exposed 워크숍
 
-> 0.4.0 릴리스 소스로 직접 실행하는 워크숍입니다.
+> 0.5.0 릴리스 소스로 직접 실행하는 워크숍입니다.
 
 ## 학습 목표 {#problem}
 
@@ -76,13 +76,13 @@ Secrets Manager, Parameter Store, RDS IAM, TLS, credential rotation, migration�
 <!-- release-readme-diagrams:start -->
 ## 배포본 다이어그램 {#release-diagrams}
 
-아래 그림은 `0.4.0` 배포본의 README 자산을 해당 배포 커밋에서 직접 불러옵니다. 이후 SNAPSHOT이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 같은 배포 커밋의 SVG 원본이 열립니다.
+아래 그림은 `0.5.0` 배포본의 README 자산을 해당 배포 커밋에서 직접 불러옵니다. 이후 SNAPSHOT이 아니라 이 매뉴얼 버전의 구조와 실행 흐름을 보여 줍니다. 미리보기를 누르면 같은 배포 커밋의 SVG 원본이 열립니다.
 
 ### Bluetape4k AWS ktor exposed examples 아키텍처
 
-[![Bluetape4k AWS ktor exposed examples 아키텍처](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.svg)
+[![Bluetape4k AWS ktor exposed examples 아키텍처](https://raw.githubusercontent.com/bluetape4k/bluetape4k-aws/664e4dfb544a3c19db484b0f9a8e023a73774b49/docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.png)](https://github.com/bluetape4k/bluetape4k-aws/blob/664e4dfb544a3c19db484b0f9a8e023a73774b49/docs/images/readme-diagrams/examples-aws-ktor-exposed-examples-architecture-01.svg)
 
-_배포본 README: [`examples/aws-ktor-exposed-examples/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/be4e6daea5654f84579955307ec56a58c8f405be/examples/aws-ktor-exposed-examples/README.ko.md)_
+_배포본 README: [`examples/aws-ktor-exposed-examples/README.ko.md`](https://github.com/bluetape4k/bluetape4k-aws/blob/664e4dfb544a3c19db484b0f9a8e023a73774b49/examples/aws-ktor-exposed-examples/README.ko.md)_
 
 <!-- release-readme-diagrams:end -->
 

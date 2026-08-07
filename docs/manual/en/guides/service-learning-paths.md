@@ -2,7 +2,7 @@
 manualId: "service-learning-paths"
 title: "AWS Service Learning Paths"
 locale: "en"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # AWS Service Learning Paths

@@ -2,7 +2,7 @@
 manualId: "service-learning-paths"
 title: "AWS Service별 학습 경로"
 locale: "ko"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # AWS Service별 학습 경로

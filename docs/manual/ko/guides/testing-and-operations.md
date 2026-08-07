@@ -2,7 +2,7 @@
 manualId: "testing-and-operations"
 title: "AWS 연동 테스트와 운영"
 locale: "ko"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # AWS 연동 테스트와 운영

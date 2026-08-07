@@ -2,7 +2,7 @@
 manualId: "repository-overview"
 title: "Bluetape4k AWS Manual"
 locale: "en"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # Bluetape4k AWS Manual
@@ -24,10 +24,10 @@ This manual is organized around decisions rather than package names. Start by ch
 
 Applications select one central BOM version: `io.github.bluetape4k:bluetape4k-dependencies:<version>`. They do not need to coordinate the `bluetape4k-aws`, AWS SDK, and related bluetape4k library versions independently.
 
-The technical baseline of this manual is `bluetape4k-aws 0.4.0`. It covers the 6 published projects and 8 runnable example projects present in that stable tag. Develop-only projects are intentionally excluded.
+The technical baseline of this manual is `bluetape4k-aws 0.5.0`. It covers the 6 published projects and 8 runnable example projects present in that stable tag. Develop-only projects are intentionally excluded.
 
-- Release tag: [`0.4.0`](https://github.com/bluetape4k/bluetape4k-aws/tree/0.4.0)
-- Release commit: [`be4e6daea5654f84579955307ec56a58c8f405be`](https://github.com/bluetape4k/bluetape4k-aws/commit/be4e6daea5654f84579955307ec56a58c8f405be)
+- Release tag: [`0.5.0`](https://github.com/bluetape4k/bluetape4k-aws/tree/0.5.0)
+- Release commit: [`664e4dfb544a3c19db484b0f9a8e023a73774b49`](https://github.com/bluetape4k/bluetape4k-aws/commit/664e4dfb544a3c19db484b0f9a8e023a73774b49)
 - Runtime baseline: JDK 21, Kotlin 2.3, Spring Boot 4, and Ktor 3
 
 ## Where to start

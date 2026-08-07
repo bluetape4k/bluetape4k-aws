@@ -2,7 +2,7 @@
 manualId: "repository-overview"
 title: "Bluetape4k AWS 매뉴얼"
 locale: "ko"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # Bluetape4k AWS 매뉴얼
@@ -24,10 +24,10 @@ releaseRef: "0.4.0"
 
 애플리케이션이 직접 선택할 버전은 중앙 BOM인 `io.github.bluetape4k:bluetape4k-dependencies:<version>` 하나다. `bluetape4k-aws`, AWS SDK와 다른 bluetape4k 라이브러리의 버전을 따로 맞출 필요는 없다.
 
-이 매뉴얼의 기술 기준은 `bluetape4k-aws 0.4.0`이다. 이 안정 릴리스에 포함된 배포 프로젝트 6개와 실행 예제 8개, 모두 14개 Gradle 프로젝트만 다룬다. 이후 `develop`에 추가된 프로젝트는 의도적으로 제외했다.
+이 매뉴얼의 기술 기준은 `bluetape4k-aws 0.5.0`이다. 이 안정 릴리스에 포함된 배포 프로젝트 6개와 실행 예제 8개, 모두 14개 Gradle 프로젝트만 다룬다. 이후 `develop`에 추가된 프로젝트는 의도적으로 제외했다.
 
-- 릴리스 태그: [`0.4.0`](https://github.com/bluetape4k/bluetape4k-aws/tree/0.4.0)
-- 릴리스 커밋: [`be4e6daea5654f84579955307ec56a58c8f405be`](https://github.com/bluetape4k/bluetape4k-aws/commit/be4e6daea5654f84579955307ec56a58c8f405be)
+- 릴리스 태그: [`0.5.0`](https://github.com/bluetape4k/bluetape4k-aws/tree/0.5.0)
+- 릴리스 커밋: [`664e4dfb544a3c19db484b0f9a8e023a73774b49`](https://github.com/bluetape4k/bluetape4k-aws/commit/664e4dfb544a3c19db484b0f9a8e023a73774b49)
 - 실행 환경 기준: JDK 21, Kotlin 2.3, Spring Boot 4, Ktor 3
 
 ## 어디서 시작할까

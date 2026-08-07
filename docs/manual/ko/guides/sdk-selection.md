@@ -2,7 +2,7 @@
 manualId: "sdk-selection"
 title: "AWS Java SDK와 Kotlin SDK 선택"
 locale: "ko"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # AWS Java SDK와 Kotlin SDK 선택

@@ -2,7 +2,7 @@
 manualId: "getting-started"
 title: "Bluetape4k AWS 시작하기"
 locale: "ko"
-releaseRef: "0.4.0"
+releaseRef: "0.5.0"
 ---
 
 # Bluetape4k AWS 시작하기
@@ -20,7 +20,7 @@ dependencies {
 }
 ```
 
-`<version>`에는 애플리케이션에서 사용할 `bluetape4k-dependencies` 릴리스 버전을 넣는다. 이 매뉴얼에 표시한 `0.4.0`은 문서를 검증한 AWS 소스 기준일 뿐, 사용자가 따로 맞춰야 할 두 번째 버전이 아니다.
+`<version>`에는 애플리케이션에서 사용할 `bluetape4k-dependencies` 릴리스 버전을 넣는다. 이 매뉴얼에 표시한 `0.5.0`은 문서를 검증한 AWS 소스 기준일 뿐, 사용자가 따로 맞춰야 할 두 번째 버전이 아니다.
 
 AWS 서비스 SDK는 래퍼 라이브러리에서 `compileOnly`로 선언한다. 실제로 호출하는 서비스 아티팩트는 애플리케이션에 직접 추가해야 한다. S3를 예로 들면 Java SDK 경로에서는 `software.amazon.awssdk:s3`, Kotlin SDK 경로에서는 `aws.sdk.kotlin:s3`가 필요하다. 쓰지 않는 AWS 서비스가 런타임 클래스패스에 따라오는 것을 막기 위한 구조다.
 
