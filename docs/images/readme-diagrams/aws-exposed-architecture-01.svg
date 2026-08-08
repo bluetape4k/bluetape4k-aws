@@ -2,7 +2,7 @@
   <title id="title">AWS Exposed Module Architecture</title>
   <desc id="desc">Framework adapters resolve AWS configuration and pass final JDBC settings to the shared Exposed foundation, which creates Hikari-backed Exposed database handles.</desc>
   <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse" viewBox="0 0 10 10" data-role="secondary" data-tip-direction="positive-x">
       <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2563eb" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="none"/>
     </marker>
     <filter id="shadow" x="-12%" y="-12%" width="124%" height="130%">

@@ -3,20 +3,20 @@
   <filter id="shadow" x="-12%" y="-12%" width="124%" height="132%">
     <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#AAB7C6" flood-opacity="0.20" />
   </filter>
-  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
-    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" />
+  <marker id="arrow-blue" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse" data-role="secondary" data-tip-direction="positive-x">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F6DE0" stroke-dasharray="none" />
   </marker>
-  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
-    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" />
+  <marker id="arrow-green" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse" data-role="secondary" data-tip-direction="positive-x">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#2F8B57" stroke-dasharray="none" />
   </marker>
-  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
-    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" />
+  <marker id="arrow-teal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse" data-role="secondary" data-tip-direction="positive-x">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#168E86" stroke-dasharray="none" />
   </marker>
-  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
-    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" />
+  <marker id="arrow-orange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse" data-role="secondary" data-tip-direction="positive-x">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#EA580C" stroke-dasharray="none" />
   </marker>
-  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
-    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569" />
+  <marker id="arrow-slate" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse" data-role="secondary" data-tip-direction="positive-x">
+    <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569" stroke-dasharray="none" />
   </marker>
 </defs>
 <style>
@@ -108,7 +108,7 @@
   <path class="edge" d="M 622 284 L 680 284" stroke="#2F8B57" marker-end="url(#arrow-green)" />
   <path class="edge" d="M 890 284 L 948 284" stroke="#EA580C" marker-end="url(#arrow-orange)" />
   <path class="soft-edge" d="M 1158 284 L 1216 284" stroke="#475569" marker-end="url(#arrow-slate)" />
-  <path class="soft-edge" d="M 1275 322 V 456 Q 1275 468 1263 468 H 1202 Q 1190 468 1190 480 V 486" stroke="#475569" marker-end="url(#arrow-slate)" />
+  <path class="soft-edge" d="M 1275 322 V 456 Q 1275 468 1263 468 H 1202 Q 1190 467 1190 475 V 486" stroke="#475569" marker-end="url(#arrow-slate)" />
 
   <path class="edge" d="M 1074 528 L 1004 528" stroke="#2F6DE0" marker-end="url(#arrow-blue)" />
   <path class="edge" d="M 772 528 L 702 528" stroke="#168E86" marker-end="url(#arrow-teal)" />
