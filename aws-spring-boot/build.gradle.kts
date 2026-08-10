@@ -15,7 +15,7 @@ noArg {
 dependencyManagement {
     imports {
         mavenBom("org.springframework.boot:spring-boot-dependencies:${bt4k.versions.spring.boot.get()}")
-        // Override Spring Boot's kotlin.version=2.2.x back to 2.3.21
+        // Override Spring Boot's kotlin.version=2.2.x back to the catalog Kotlin version
         mavenBom("org.jetbrains.kotlin:kotlin-bom:${bt4k.versions.kotlin.get()}")
         mavenBom("org.jetbrains.kotlinx:kotlinx-coroutines-bom:${bt4k.versions.kotlinx.coroutines.get()}")
     }
