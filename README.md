@@ -1,8 +1,8 @@
 # bluetape4k-aws
 
 [![CI](https://github.com/bluetape4k/bluetape4k-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/bluetape4k/bluetape4k-aws/actions/workflows/ci.yml)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin)](https://kotlinlang.org)
-[![JVM](https://img.shields.io/badge/JVM-21-ED8B00?logo=openjdk)](https://openjdk.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4-7F52FF?logo=kotlin)](https://kotlinlang.org)
+[![JVM](https://img.shields.io/badge/JVM-25-ED8B00?logo=openjdk)](https://openjdk.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 English | [한국어](./README.ko.md)
@@ -106,9 +106,14 @@ READMEs.
 
 ## Requirements
 
-- **JDK**: 21+
-- **Kotlin**: 2.3+
-- **Gradle**: 9.5+
+- **JDK**: 25+
+- **Kotlin**: 2.4+
+- **Gradle**: 9.7.0 (checked-in Wrapper)
+
+The regular modules target JDK 25. `bluetape4k-aws-java`,
+`bluetape4k-aws-kotlin`, and `bluetape4k-aws-ktor` intentionally remain on
+the JDK 21 compatibility line because the repository compiles external Java
+21/Kotlin consumer fixtures against their API variants.
 
 ---
 

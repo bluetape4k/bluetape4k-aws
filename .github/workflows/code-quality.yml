@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  JAVA_VERSION: '21'
+  JAVA_VERSION: '25'
   JAVA_DISTRIBUTION: 'temurin'
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
@@ -46,21 +46,9 @@ jobs:
           gradle-version: wrapper
           cache-provider: basic
 
-      - name: Pin Kotlin for CodeQL extractor
-        if: matrix.language == 'java-kotlin'
-        run: |
-          ./gradlew help --no-daemon
-          catalog="$(find .gradle/bluetape4k-dependencies -type f -name libs.versions.toml -print -quit)"
-          test -n "$catalog"
-          codeql_catalog="$GITHUB_WORKSPACE/.gradle/codeql-libs.versions.toml"
-          cp "$catalog" "$codeql_catalog"
-          perl -0pi -e 's/^kotlin\s*=\s*"2\.4\.0"/kotlin = "2.3.21"/m' "$codeql_catalog"
-          grep -n '^kotlin\s*=\s*"2.3.21"' "$codeql_catalog"
-          git diff --exit-code -- gradle/libs.versions.toml settings.gradle.kts
-
       - name: Build with Gradle
         if: matrix.language == 'java-kotlin'
-        run: ./gradlew build -x test --no-daemon -Pbluetape4kDependenciesCatalogPath="$GITHUB_WORKSPACE/.gradle/codeql-libs.versions.toml"
+        run: ./gradlew build -x test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 

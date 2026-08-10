@@ -99,6 +99,16 @@ fun bt4kVersion(alias: String): String {
         .ifBlank { version.strictVersion }
 }
 
+// These API modules stay Java 21-compatible because the repository verifies
+// external Java 21/Kotlin consumer fixtures against their published variants.
+// Other modules use the Java 25 default.
+private val java21CompatibilityProjects = setOf(
+    "bluetape4k-aws-java",
+    "bluetape4k-aws-kotlin",
+    "bluetape4k-aws-exposed",
+    "bluetape4k-aws-ktor",
+)
+
 val requestedTaskNames = gradle.startParameter.taskNames
 val shouldApplyDetekt = requestedTaskNames.any { it.contains("detekt", ignoreCase = true) }
 val shouldApplyKover = requestedTaskNames.any {
@@ -291,6 +301,10 @@ allprojects {
 }
 
 subprojects {
+    val javaCompatibilityVersion = if (project.name in java21CompatibilityProjects) 21 else 25
+    tasks.withType<JavaCompile>().configureEach {
+        options.release.set(javaCompatibilityVersion)
+    }
     if (!path.contains("examples")) {
         apply(plugin = "com.gradleup.nmcp")
     }
@@ -350,11 +364,14 @@ subprojects {
     }
 
     pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+        val kotlinCompatibilityVersion = if (project.name in java21CompatibilityProjects) 21 else 25
+        val kotlinJvmTarget = if (kotlinCompatibilityVersion == 21) JvmTarget.JVM_21 else JvmTarget.JVM_25
         kotlin {
-            jvmToolchain(21)
+            jvmToolchain(kotlinCompatibilityVersion)
             compilerOptions {
-                languageVersion.set(KotlinVersion.KOTLIN_2_3)
-                apiVersion.set(KotlinVersion.KOTLIN_2_3)
+                languageVersion.set(KotlinVersion.KOTLIN_2_4)
+                apiVersion.set(KotlinVersion.KOTLIN_2_4)
+                jvmTarget.set(kotlinJvmTarget)
                 freeCompilerArgs = listOf(
                     "-Xjsr305=strict",
                     "-jvm-default=enable",

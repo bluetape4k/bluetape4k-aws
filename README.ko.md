@@ -1,8 +1,8 @@
 # bluetape4k-aws
 
 [![CI](https://github.com/bluetape4k/bluetape4k-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/bluetape4k/bluetape4k-aws/actions/workflows/ci.yml)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin)](https://kotlinlang.org)
-[![JVM](https://img.shields.io/badge/JVM-21-ED8B00?logo=openjdk)](https://openjdk.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4-7F52FF?logo=kotlin)](https://kotlinlang.org)
+[![JVM](https://img.shields.io/badge/JVM-25-ED8B00?logo=openjdk)](https://openjdk.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [English](./README.md) | 한국어
@@ -96,9 +96,14 @@ core client 모듈에서만 제공하는 서비스는 위 모듈 표와 각 모�
 
 ## 요구사항
 
-- **JDK**: 21 이상
-- **Kotlin**: 2.3 이상
-- **Gradle**: 9.5 이상
+- **JDK**: 25 이상
+- **Kotlin**: 2.4 이상
+- **Gradle**: 9.7.0 (체크인된 Wrapper)
+
+일반 모듈은 JDK 25를 대상으로 합니다. `bluetape4k-aws-java`,
+`bluetape4k-aws-kotlin`, `bluetape4k-aws-ktor`는 API variant에 대해 외부
+Java 21/Kotlin consumer fixture를 컴파일하므로 JDK 21 호환성 라인을
+의도적으로 유지합니다.
 
 ---
 
