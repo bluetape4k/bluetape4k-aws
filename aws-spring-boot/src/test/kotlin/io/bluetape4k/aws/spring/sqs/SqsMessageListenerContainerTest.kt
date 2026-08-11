@@ -30,6 +30,7 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
+@Suppress("LargeClass")
 class SqsMessageListenerContainerTest {
 
     @Test
@@ -461,6 +462,54 @@ class SqsMessageListenerContainerTest {
     }
 
     @Test
+    fun `single message heartbeat stops after manual acknowledgement`() = runTest {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val handlerStarted = CompletableDeferred<Unit>()
+        val acknowledgementCompleted = CompletableDeferred<Unit>()
+        val handlerRelease = CompletableDeferred<Unit>()
+        val receiveCalls = AtomicInteger()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+        }
+        coEvery { operations.changeVisibility(QUEUE_URL, "receipt-message-1", 30) } returns
+            software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse.builder().build()
+        coEvery { operations.delete(QUEUE_URL, "receipt-message-1") } returns
+            DeleteMessageResponse.builder().build()
+        every { invoker.manualAcknowledgement } returns true
+        coEvery { invoker.invoke(any(), any()) } coAnswers {
+            handlerStarted.complete(Unit)
+            secondArg<SqsAcknowledgement>().acknowledge()
+            acknowledgementCompleted.complete(Unit)
+            handlerRelease.await()
+        }
+        val container = container(
+            operations = operations,
+            invoker = invoker,
+            dispatcher = dispatcher,
+            messageVisibilityHeartbeatIntervalSeconds = 1,
+            messageVisibilityHeartbeatSeconds = 30,
+        )
+
+        container.start()
+        runCurrent()
+        handlerStarted.await()
+        acknowledgementCompleted.await()
+        advanceTimeBy(1_000)
+        runCurrent()
+        coVerify(exactly = 1) { operations.delete(QUEUE_URL, "receipt-message-1") }
+        coVerify(exactly = 0) { operations.changeVisibility(QUEUE_URL, "receipt-message-1", 30) }
+
+        handlerRelease.complete(Unit)
+        runCurrent()
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        runCurrent()
+        stopped.await()
+    }
+
+    @Test
     fun `heartbeat failure does not change successful handler outcome`() = runTest {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
@@ -468,6 +517,7 @@ class SqsMessageListenerContainerTest {
         val handlerStarted = CompletableDeferred<Unit>()
         val handlerRelease = CompletableDeferred<Unit>()
         val heartbeatFailed = CompletableDeferred<Unit>()
+        val deleteCalled = CompletableDeferred<Unit>()
         val receiveCalls = AtomicInteger()
         coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
             if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
@@ -476,8 +526,10 @@ class SqsMessageListenerContainerTest {
             heartbeatFailed.complete(Unit)
             throw IllegalStateException("heartbeat unavailable")
         }
-        coEvery { operations.delete(QUEUE_URL, "receipt-message-1") } returns
+        coEvery { operations.delete(QUEUE_URL, "receipt-message-1") } coAnswers {
+            deleteCalled.complete(Unit)
             DeleteMessageResponse.builder().build()
+        }
         every { invoker.manualAcknowledgement } returns false
         coEvery { invoker.invoke(any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
@@ -502,6 +554,9 @@ class SqsMessageListenerContainerTest {
         }
         handlerRelease.complete(Unit)
         runCurrent()
+        withContext(Dispatchers.Default.limitedParallelism(1)) {
+            withTimeout(2_000) { deleteCalled.await() }
+        }
         coVerify(exactly = 1) { operations.delete(QUEUE_URL, "receipt-message-1") }
 
         val stopped = CompletableDeferred<Unit>()

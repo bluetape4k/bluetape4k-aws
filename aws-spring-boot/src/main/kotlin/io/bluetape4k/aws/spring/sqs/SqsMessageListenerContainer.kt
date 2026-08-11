@@ -17,6 +17,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.springframework.context.SmartLifecycle
@@ -260,18 +262,19 @@ class SqsMessageListenerContainer internal constructor(
         handlerJob.join()
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun handle(
         queueUrl: String,
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
     ) {
+        var heartbeatAcknowledgement: HeartbeatAwareSqsAcknowledgement? = null
         withVisibilityHeartbeat(
             generation = generation,
-            target = "messageId=${message.messageId}",
+            target = "single",
+            shouldContinue = { heartbeatAcknowledgement?.completed != true },
             operation = { timeoutSeconds ->
-                withContext(Dispatchers.IO) {
-                    operations.changeVisibility(queueUrl, message.receiptHandle, timeoutSeconds)
-                }
+                heartbeatAcknowledgement?.heartbeat(timeoutSeconds) ?: Unit
             },
         ) {
             var attempt = 1
@@ -283,16 +286,18 @@ class SqsMessageListenerContainer internal constructor(
                     interceptors = interceptors,
                     operationGuard = { generation.ensureActiveOperation() },
                 )
+                val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement)
+                heartbeatAcknowledgement = currentAcknowledgement
                 var observationStarted = false
                 var observationCompleted = false
                 try {
                     observationStarted = true
                     interceptors.forEach { it.beforeHandle(context) }
-                    invoker.invoke(message, acknowledgement)
+                    invoker.invoke(message, currentAcknowledgement)
                     interceptors.forEach { it.afterHandle(context, null) }
                     observationCompleted = true
                     if (!invoker.manualAcknowledgement) {
-                        acknowledgement.acknowledge()
+                        currentAcknowledgement.acknowledge()
                     }
                     return@withVisibilityHeartbeat
                 } catch (e: CancellationException) {
@@ -360,6 +365,7 @@ class SqsMessageListenerContainer internal constructor(
         withVisibilityHeartbeat(
             generation = generation,
             target = "batchSize=${messages.size}",
+            shouldContinue = { !acknowledgement.completed },
             operation = { timeoutSeconds ->
                 changeBatchVisibilityForHeartbeat(queueUrl, acknowledgement, timeoutSeconds)
             },
@@ -374,20 +380,9 @@ class SqsMessageListenerContainer internal constructor(
         timeoutSeconds: Int,
     ) {
         val pending = acknowledgement.pending
-        if (pending.isEmpty()) {
-            return
-        }
+        if (pending.isEmpty()) return
         val result = withContext(Dispatchers.IO) {
-            operations.changeVisibilityBatch(
-                queueUrl,
-                pending.map { message ->
-                    SqsChangeVisibilityRequest(
-                        messageId = message.messageId,
-                        receiptHandle = message.receiptHandle,
-                        timeoutSeconds = timeoutSeconds,
-                    )
-                },
-            )
+            acknowledgement.changeVisibility(pending, timeoutSeconds)
         }
         if (result.failed.isNotEmpty()) {
             log.warn(
@@ -458,6 +453,7 @@ class SqsMessageListenerContainer internal constructor(
     private suspend fun <T> withVisibilityHeartbeat(
         generation: ListenerGeneration,
         target: String,
+        shouldContinue: () -> Boolean = { true },
         operation: suspend (timeoutSeconds: Int) -> Unit,
         block: suspend () -> T,
     ): T {
@@ -473,6 +469,9 @@ class SqsMessageListenerContainer internal constructor(
                     try {
                         delay(Duration.ofSeconds(intervalSeconds.toLong()).toMillis())
                         if (!isActive) {
+                            return@launch
+                        }
+                        if (!shouldContinue()) {
                             return@launch
                         }
                         generation.ensureActiveOperation()
@@ -594,6 +593,44 @@ class SqsMessageListenerContainer internal constructor(
             generation.set(null)
             lifecycleState.set(LifecycleState.STOPPED)
             current.scope.cancel()
+        }
+    }
+}
+
+private class HeartbeatAwareSqsAcknowledgement(
+    private val delegate: SqsAcknowledgement,
+) : SqsAcknowledgement {
+
+    private val operationMutex = Mutex()
+
+    override val completed: Boolean
+        get() = delegate.completed
+
+    override suspend fun acknowledge() {
+        operationMutex.withLock {
+            delegate.acknowledge()
+        }
+    }
+
+    override suspend fun nack(timeoutSeconds: Int) {
+        operationMutex.withLock {
+            delegate.nack(timeoutSeconds)
+        }
+    }
+
+    override suspend fun changeVisibility(timeoutSeconds: Int) {
+        operationMutex.withLock {
+            delegate.changeVisibility(timeoutSeconds)
+        }
+    }
+
+    suspend fun heartbeat(timeoutSeconds: Int) {
+        operationMutex.withLock {
+            if (!delegate.completed) {
+                withContext(Dispatchers.IO) {
+                    delegate.changeVisibility(timeoutSeconds)
+                }
+            }
         }
     }
 }
