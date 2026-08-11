@@ -8,6 +8,10 @@ package io.bluetape4k.aws.spring.sqs
  *   [errorVisibilityTimeoutSeconds]가 음수이면 전역 리스너 설정을 사용합니다.
  * - 리스너 메서드는 `String`, AWS SDK [software.amazon.awssdk.services.sqs.model.Message],
  *   [SqsReceivedMessage] 중 하나의 인자를 받을 수 있습니다.
+ * - [batch]를 활성화하면 하나의 poll 응답을 `List<SqsReceivedMessage>`, AWS SDK `List<Message>`,
+ *   또는 concrete `List<T>`로 전달합니다. SQS batch 상한은 10개입니다.
+ * - batch endpoint의 확인 방식은 [acknowledgementMode]로 선택하며 partial 처리는
+ *   [SqsBatchAcknowledgement]를 사용합니다.
  *
  * ```kotlin
  * import org.springframework.stereotype.Component

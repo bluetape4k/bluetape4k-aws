@@ -733,6 +733,20 @@ observe receive, handler, ack/nack, and failure phases with Micrometer or a
 logging/tracing library. `stop-timeout-millis` bounds container shutdown after
 poller cancellation.
 
+Batch delivery is opt-in with `batch = true` and accepts one `List<SqsReceivedMessage>`,
+`List<software.amazon.awssdk.services.sqs.model.Message>`, or concrete `List<T>` payload plus
+an optional `SqsBatchAcknowledgement`. `maxMessages` remains within the AWS limit of 1..10.
+`acknowledgementMode` supports `INHERIT`, `ON_SUCCESS`, and `MANUAL`; partial handling uses
+`acknowledge(messages)`, `nack(messages, timeoutSeconds = 0)`, or `changeVisibility` and returns
+`SqsBatchAcknowledgementResult` with per-item status. `SqsOperations.deleteBatch` and
+`changeVisibilityBatch` use one optimized AWS request when available and a sequential fallback
+otherwise. FIFO groups preserve a contiguous successful prefix, and at-least-once delivery still
+requires idempotent side effects or message-id deduplication. Receipt handles, bodies, and raw
+message identifiers are not emitted in result `toString()`, logs, metric tags, or correlation
+values. Use the [storage and messaging manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)
+for the canary/rollback sequence (`STOPPING_RECEIVE -> DRAINING -> STOPPED`, DLQ redrive, and
+idempotency checks).
+
 FIFO queue metadata is preserved in `SqsReceivedMessage` when messages are
 received. Use `SqsSendRequest` to publish FIFO messages with group and
 deduplication IDs:

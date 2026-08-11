@@ -48,7 +48,7 @@ class SqsListenerAnnotationBeanPostProcessor(
 
         val effective = properties.listener
         val maxMessages = listener.maxMessages.takeIf { it != -1 } ?: effective.maxMessages
-        require(maxMessages in 1..10) {
+        require(maxMessages in 1..MAX_SQS_BATCH_SIZE) {
             "maxMessages must be between 1 and 10."
         }
         val invoker = SqsListenerMethodInvoker(
@@ -82,8 +82,12 @@ class SqsListenerAnnotationBeanPostProcessor(
     ): SqsAcknowledgementMode {
         if (listener.batch) {
             require(invoker.hasListPayload) { "batch=true requires a List payload" }
+            invoker.validateBatchSignature()
         } else {
             require(!invoker.hasListPayload) { "batch=false does not accept List payload" }
+            require(!invoker.hasBatchAcknowledgement) {
+                "SqsBatchAcknowledgement requires batch=true"
+            }
         }
 
         require(!(invoker.hasSingleAcknowledgement && invoker.hasBatchAcknowledgement)) {
@@ -115,11 +119,6 @@ class SqsListenerAnnotationBeanPostProcessor(
                 }
             }
             SqsAcknowledgementMode.INHERIT -> error("INHERIT must be resolved")
-        }
-        if (!listener.batch) {
-            require(!invoker.hasBatchAcknowledgement) {
-                "SqsBatchAcknowledgement requires batch=true"
-            }
         }
         return resolved
     }

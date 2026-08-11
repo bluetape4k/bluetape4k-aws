@@ -37,6 +37,7 @@ internal class DefaultSqsAcknowledgement(
     private val context: SqsListenerInvocationContext,
     private val operations: SqsOperations,
     private val interceptors: List<SqsListenerInterceptor>,
+    private val operationGuard: () -> Unit = {},
 ) : SqsAcknowledgement {
 
     private val terminal = AtomicBoolean(false)
@@ -47,6 +48,7 @@ internal class DefaultSqsAcknowledgement(
 
     override suspend fun acknowledge() {
         runTerminalAcknowledgement(SqsAcknowledgementAction.ACK) {
+            operationGuard()
             operations.delete(context.queueUrl, context.message.receiptHandle)
         }
     }
@@ -54,6 +56,7 @@ internal class DefaultSqsAcknowledgement(
     override suspend fun nack(timeoutSeconds: Int) {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
         runTerminalAcknowledgement(SqsAcknowledgementAction.NACK) {
+            operationGuard()
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
     }
@@ -68,6 +71,7 @@ internal class DefaultSqsAcknowledgement(
     ) {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
         runAcknowledgement(action) {
+            operationGuard()
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
     }

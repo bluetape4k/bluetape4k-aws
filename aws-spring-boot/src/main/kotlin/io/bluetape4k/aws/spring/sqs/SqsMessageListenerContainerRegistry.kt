@@ -14,6 +14,7 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
 
     private val running = AtomicBoolean(false)
     private val containerMap = ConcurrentHashMap<String, SqsMessageListenerContainer>()
+    private val stoppingIds = ConcurrentHashMap.newKeySet<String>()
     private val lifecycleLock = ReentrantLock()
 
     val containers: List<SqsMessageListenerContainer>
@@ -32,6 +33,36 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
 
     internal fun getContainer(id: String): SqsMessageListenerContainer? =
         containerMap[id]
+
+    /** 등록된 하나의 listener를 시작합니다. asynchronous stop 중에는 새 generation을 만들지 않습니다. */
+    fun start(id: String) {
+        val container = lifecycleLock.withLock {
+            check(!stoppingIds.contains(id)) { "listener is stopping" }
+            containerMap[id] ?: error("Unknown SQS listener id: $id")
+        }
+        running.set(true)
+        container.start()
+    }
+
+    /** 등록된 하나의 listener를 중지하고 callback을 정확히 한 번 호출합니다. */
+    fun stop(id: String, callback: Runnable = Runnable {}) {
+        val container = lifecycleLock.withLock {
+            val value = containerMap[id] ?: error("Unknown SQS listener id: $id")
+            if (!stoppingIds.add(id)) {
+                callback.run()
+                return
+            }
+            running.set(false)
+            value
+        }
+        container.stop {
+            try {
+                callback.run()
+            } finally {
+                stoppingIds.remove(id)
+            }
+        }
+    }
 
     override fun start() {
         val toStart: List<SqsMessageListenerContainer>
@@ -54,6 +85,7 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
                 return
             }
             snapshot = containers.toList()
+            containerMap.keys.forEach { stoppingIds.add(it) }
         }
         if (snapshot.isEmpty()) {
             callback.run()
@@ -63,7 +95,11 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
         snapshot.forEach {
             it.stop {
                 if (remaining.decrementAndGet() == 0) {
-                    callback.run()
+                    try {
+                        callback.run()
+                    } finally {
+                        stoppingIds.clear()
+                    }
                 }
             }
         }

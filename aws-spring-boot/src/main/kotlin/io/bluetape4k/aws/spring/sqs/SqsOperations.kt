@@ -97,6 +97,25 @@ interface SqsOperations {
     ): DeleteMessageResponse
 
     /**
+     * 여러 메시지를 삭제합니다. 기존 구현체는 단건 삭제 fallback을 사용합니다.
+     */
+    suspend fun deleteBatch(
+        queueUrl: String,
+        receiptHandles: Collection<String>,
+    ): SqsBatchDeleteResult {
+        val handles = receiptHandles.toList()
+        validateDeleteBatchHandles(handles)
+        if (handles.isEmpty()) {
+            return SqsBatchDeleteResult(emptyList(), emptyList())
+        }
+        val successful = handles.mapIndexed { index, handle ->
+            delete(queueUrl, handle)
+            "entry-$index"
+        }
+        return SqsBatchDeleteResult(successful, emptyList())
+    }
+
+    /**
      * 메시지 visibility timeout을 변경합니다.
      */
     suspend fun changeVisibility(
@@ -104,6 +123,25 @@ interface SqsOperations {
         receiptHandle: String,
         timeoutSeconds: Int,
     ): ChangeMessageVisibilityResponse
+
+    /**
+     * 여러 메시지의 visibility timeout을 변경합니다. 기존 구현체는 단건 fallback을 사용합니다.
+     */
+    suspend fun changeVisibilityBatch(
+        queueUrl: String,
+        requests: Collection<SqsChangeVisibilityRequest>,
+    ): SqsBatchVisibilityResult {
+        val batch = requests.toList()
+        validateVisibilityBatchRequests(batch)
+        if (batch.isEmpty()) {
+            return SqsBatchVisibilityResult(emptyList(), emptyList())
+        }
+        val successful = batch.map {
+            changeVisibility(queueUrl, it.receiptHandle, it.timeoutSeconds)
+            it.messageId
+        }
+        return SqsBatchVisibilityResult(successful, emptyList())
+    }
 
     /**
      * 큐 수신 결과를 차가운 무한 [Flow]로 제공합니다.
@@ -126,4 +164,20 @@ interface SqsOperations {
         waitTimeSeconds: Int = 20,
         visibilityTimeoutSeconds: Int? = null,
     ): Flow<SqsReceivedMessage>
+}
+
+private fun validateDeleteBatchHandles(handles: List<String>) {
+    requireBatchSize(handles.size)
+    require(handles.distinct().size == handles.size) {
+        "duplicate batch delete receipt handle"
+    }
+}
+
+private fun validateVisibilityBatchRequests(requests: List<SqsChangeVisibilityRequest>) {
+    requireBatchSize(requests.size, "batch visibility supports at most 10 messages")
+    require(requests.map { it.messageId }.distinct().size == requests.size &&
+        requests.map { it.receiptHandle }.distinct().size == requests.size) {
+        "duplicate batch visibility request"
+    }
+    requests.forEach { requireVisibilityTimeout(it.timeoutSeconds) }
 }

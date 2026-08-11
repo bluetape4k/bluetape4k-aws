@@ -712,6 +712,20 @@ backoff와 optional jitter를 지원합니다. `SqsListenerInterceptor` bean을 
 receive, handler, ack/nack, failure 단계를 Micrometer나 logging/tracing library로
 관찰할 수 있습니다. `stop-timeout-millis`는 poller 취소 후 컨테이너 종료 대기 시간을 제한합니다.
 
+배치 전달은 `batch = true`로 명시적으로 활성화하며 `List<SqsReceivedMessage>`,
+`List<software.amazon.awssdk.services.sqs.model.Message>`, 또는 concrete `List<T>` 하나와
+선택적인 `SqsBatchAcknowledgement`를 받습니다. AWS 제한에 따라 `maxMessages`는 1..10입니다.
+`acknowledgementMode`는 `INHERIT`, `ON_SUCCESS`, `MANUAL`을 지원하고, 부분 처리는
+`acknowledge(messages)`, `nack(messages, timeoutSeconds = 0)`, `changeVisibility`로 수행하며
+항목별 상태를 담은 `SqsBatchAcknowledgementResult`를 반환합니다. `SqsOperations.deleteBatch`와
+`changeVisibilityBatch`는 가능하면 AWS batch 요청 1회, 아니면 순차 fallback을 사용합니다.
+FIFO group에서는 연속해서 성공한 prefix를 보존하며, at-least-once 전달이므로 외부 side effect는
+멱등하게 만들거나 message-id deduplication을 적용해야 합니다. receipt handle, body, raw
+message identifier는 결과 `toString()`, 로그, metric tag, correlation 값에 기록하지 않습니다.
+[storage와 messaging manual](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)에서
+canary/rollback 순서(`STOPPING_RECEIVE -> DRAINING -> STOPPED`, DLQ redrive, idempotency 확인)를
+확인하세요.
+
 FIFO 큐 메타데이터는 수신 시 `SqsReceivedMessage`에 유지됩니다. FIFO 메시지는
 `SqsSendRequest`로 group/deduplication ID를 지정해 발송합니다.
 
