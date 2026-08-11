@@ -47,10 +47,19 @@ class SqsListenerAnnotationBeanPostProcessor(
             ?: "$beanName.${method.name}.$queue"
 
         val effective = properties.listener
+        val maxMessages = listener.maxMessages.takeIf { it != -1 } ?: effective.maxMessages
+        require(maxMessages in 1..10) {
+            "maxMessages must be between 1 and 10."
+        }
+        val invoker = SqsListenerMethodInvoker(
+            bean,
+            AopUtils.selectInvocableMethod(method, bean.javaClass),
+            messageConverter,
+        )
         val endpoint = SqsListenerEndpoint(
             id = id,
             queue = properties.queues[queue]?.url ?: queue,
-            maxMessages = listener.maxMessages.takeIf { it > 0 } ?: effective.maxMessages,
+            maxMessages = maxMessages,
             waitTimeSeconds = listener.waitTimeSeconds.takeIf { it >= 0 } ?: effective.waitTimeSeconds,
             visibilityTimeoutSeconds = listener.visibilityTimeoutSeconds.takeIf { it >= 0 }
                 ?: effective.visibilityTimeoutSeconds,
@@ -61,9 +70,58 @@ class SqsListenerAnnotationBeanPostProcessor(
             concurrency = effective.concurrency,
             stopTimeoutMillis = effective.stopTimeoutMillis,
             retry = effective.retry,
+            batch = listener.batch,
+            acknowledgementMode = resolveAcknowledgementMode(listener, invoker),
         )
-        val invoker = SqsListenerMethodInvoker(bean, AopUtils.selectInvocableMethod(method, bean.javaClass), messageConverter)
         registry.register(id, SqsMessageListenerContainer(endpoint, operations, invoker, interceptors))
+    }
+
+    private fun resolveAcknowledgementMode(
+        listener: SqsListener,
+        invoker: SqsListenerMethodInvoker,
+    ): SqsAcknowledgementMode {
+        if (listener.batch) {
+            require(invoker.hasListPayload) { "batch=true requires a List payload" }
+        } else {
+            require(!invoker.hasListPayload) { "batch=false does not accept List payload" }
+        }
+
+        require(!(invoker.hasSingleAcknowledgement && invoker.hasBatchAcknowledgement)) {
+            "@SqsListener method supports only one acknowledgement parameter"
+        }
+
+        val hasAcknowledgement = invoker.hasSingleAcknowledgement || invoker.hasBatchAcknowledgement
+        val resolved = when (listener.acknowledgementMode) {
+            SqsAcknowledgementMode.INHERIT ->
+                if (hasAcknowledgement) SqsAcknowledgementMode.MANUAL else SqsAcknowledgementMode.ON_SUCCESS
+            else -> listener.acknowledgementMode
+        }
+
+        when (resolved) {
+            SqsAcknowledgementMode.ON_SUCCESS -> {
+                require(!hasAcknowledgement) {
+                    "ON_SUCCESS cannot declare SqsAcknowledgement"
+                }
+            }
+            SqsAcknowledgementMode.MANUAL -> {
+                if (listener.batch) {
+                    require(invoker.hasBatchAcknowledgement) {
+                        "MANUAL requires SqsBatchAcknowledgement"
+                    }
+                } else {
+                    require(invoker.hasSingleAcknowledgement) {
+                        "MANUAL requires SqsAcknowledgement"
+                    }
+                }
+            }
+            SqsAcknowledgementMode.INHERIT -> error("INHERIT must be resolved")
+        }
+        if (!listener.batch) {
+            require(!invoker.hasBatchAcknowledgement) {
+                "SqsBatchAcknowledgement requires batch=true"
+            }
+        }
+        return resolved
     }
 
     private fun resolveValue(value: String, name: String): String {

@@ -35,4 +35,6 @@ annotation class SqsListener(
     val visibilityTimeoutSeconds: Int = -1,
     val errorVisibilityTimeoutSeconds: Int = -1,
     val autoStartup: Boolean = true,
+    val batch: Boolean = false,
+    val acknowledgementMode: SqsAcknowledgementMode = SqsAcknowledgementMode.INHERIT,
 )

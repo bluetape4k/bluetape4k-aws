@@ -28,6 +28,15 @@ internal class SqsListenerMethodInvoker(
     val manualAcknowledgement: Boolean
         get() = parameterPlan.manualAcknowledgement
 
+    internal val hasListPayload: Boolean
+        get() = parameterPlan.hasListPayload
+
+    internal val hasBatchAcknowledgement: Boolean
+        get() = parameterPlan.hasBatchAcknowledgement
+
+    internal val hasSingleAcknowledgement: Boolean
+        get() = parameterPlan.hasSingleAcknowledgement
+
     suspend fun invoke(message: SqsReceivedMessage, acknowledgement: SqsAcknowledgement) {
         val arguments = parameterPlan.arguments(message, acknowledgement, messageConverter)
         try {
@@ -57,6 +66,9 @@ internal class SqsListenerMethodInvoker(
     ): Serializable {
         val manualAcknowledgement: Boolean =
             parameters.any { it == Parameter.ACKNOWLEDGEMENT }
+        val hasListPayload: Boolean = parameters.any { it == Parameter.LIST_PAYLOAD }
+        val hasBatchAcknowledgement: Boolean = parameters.any { it == Parameter.BATCH_ACKNOWLEDGEMENT }
+        val hasSingleAcknowledgement: Boolean = parameters.any { it == Parameter.ACKNOWLEDGEMENT }
 
         fun arguments(
             message: SqsReceivedMessage,
@@ -101,6 +113,8 @@ internal class SqsListenerMethodInvoker(
         data object AwsMessage: Parameter()
         data object ReceivedMessage: Parameter()
         data object Acknowledgement: Parameter()
+        data object BatchAcknowledgement: Parameter()
+        data object ListPayload: Parameter()
         data class Converted(val targetType: Class<*>): Parameter() {
             companion object {
                 private const val serialVersionUID: Long = 1L
@@ -117,11 +131,15 @@ internal class SqsListenerMethodInvoker(
                 AwsMessage      -> message.message
                 ReceivedMessage -> message
                 Acknowledgement -> acknowledgement
+                BatchAcknowledgement -> throw IllegalStateException("Batch acknowledgement is not available yet")
+                ListPayload      -> converter.convert(message, List::class.java)
                 is Converted    -> converter.convert(message, targetType)
             }
 
         companion object {
             val ACKNOWLEDGEMENT: Parameter = Acknowledgement
+            val BATCH_ACKNOWLEDGEMENT: Parameter = BatchAcknowledgement
+            val LIST_PAYLOAD: Parameter = ListPayload
 
             fun from(parameterType: Class<*>): Parameter =
                 when (parameterType) {
@@ -129,7 +147,11 @@ internal class SqsListenerMethodInvoker(
                     Message::class.java -> AwsMessage
                     SqsReceivedMessage::class.java -> ReceivedMessage
                     SqsAcknowledgement::class.java -> Acknowledgement
-                    else -> Converted(parameterType)
+                    else -> when {
+                        List::class.java.isAssignableFrom(parameterType) -> ListPayload
+                        parameterType.simpleName == "SqsBatchAcknowledgement" -> BatchAcknowledgement
+                        else -> Converted(parameterType)
+                    }
                 }
             }
         }
