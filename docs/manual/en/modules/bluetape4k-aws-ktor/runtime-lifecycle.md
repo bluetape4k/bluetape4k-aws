@@ -32,6 +32,17 @@ environment.monitor.subscribe(ApplicationStopping) {
 }
 ```
 
+## SQS consumer one-shot lifecycle
+
+`SqsConsumerRuntime` is a one-shot runtime because it may own the
+`SqsAsyncClient` created during plugin configuration. The first `start()` call
+starts the pollers. Duplicate `start()` calls while the runtime is running or
+draining are ignored, while `stop()` before or after startup permanently moves
+the runtime to `STOPPED`. A `start()` call after `STOPPED` fails fast with
+`IllegalStateException` instead of reusing a closed client. The runtime closes
+an owned client once and never closes an injected client. Create a new plugin
+instance when a fresh consumer lifecycle is required.
+
 ## SQS visibility during shutdown
 
 If a handler can outlive visibility, enable heartbeat extension or choose a longer timeout. On forced shutdown, immediate redelivery can be safer than waiting for visibility expiry, but only when handlers are idempotent.
@@ -42,11 +53,13 @@ Record poll, receive, convert, invoke, acknowledge, and failure phases with boun
 
 ## Verification
 
-A lifecycle test should start and stop the application repeatedly, assert no job remains active, prove an injected client stays open, prove a plugin-created client closes, and exercise timeout cancellation.
+A lifecycle test should cover stop-before-start, start-stop-start, duplicate
+start/stop calls, assert no job remains active, prove an injected client stays
+open, prove a plugin-created client closes once, and exercise timeout
+cancellation.
 
 ## Sources
 
 - [SQS runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/sqs/SqsConsumerRuntime.kt)
 - [Exposed runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/exposed/AwsExposedKtorRuntime.kt)
 - [CloudWatch runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/cloudwatch/CloudWatchKtorRuntime.kt)
-

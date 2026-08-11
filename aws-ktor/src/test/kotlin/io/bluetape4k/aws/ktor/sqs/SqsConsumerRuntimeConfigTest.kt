@@ -9,11 +9,18 @@ import io.ktor.http.Url
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Consumer
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeConfigTest {
@@ -158,6 +165,101 @@ class SqsConsumerRuntimeConfigTest {
         runtime.stop()
 
         verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `stop before start rejects restart and never polls with closed owned client`() = runSuspendIO {
+        val client = mockk<SqsAsyncClient>(relaxed = true)
+        val receiveCalls = AtomicInteger()
+        every { client.close() } returns Unit
+        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+            receiveCalls.incrementAndGet()
+            CompletableFuture.completedFuture(ReceiveMessageResponse.builder().build())
+        }
+        val runtime = SqsConsumerRuntime(
+            runtimeConfig(client = client, ownsClient = true)
+        )
+
+        runtime.stop()
+
+        assertFailsWith<IllegalStateException> { runtime.start() }
+        runtime.isRunning shouldBeEqualTo false
+        receiveCalls.get() shouldBeEqualTo 0
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `stopped runtime rejects restart without reusing closed owned client`() = runSuspendIO {
+        val client = mockk<SqsAsyncClient>(relaxed = true)
+        val receiveCalls = AtomicInteger()
+        val receiveStarted = CountDownLatch(1)
+        val pendingReceive = CompletableFuture<ReceiveMessageResponse>()
+        every { client.close() } returns Unit
+        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+            receiveCalls.incrementAndGet()
+            receiveStarted.countDown()
+            pendingReceive
+        }
+        val runtime = SqsConsumerRuntime(
+            runtimeConfig(client = client, ownsClient = true)
+        )
+
+        try {
+            runtime.start()
+            await.atMost(Duration.ofSeconds(2)).untilAsserted {
+                receiveStarted.count shouldBeEqualTo 0L
+            }
+
+            runtime.stop()
+            val receiveCallsAfterStop = receiveCalls.get()
+
+            assertFailsWith<IllegalStateException> { runtime.start() }
+            await.during(Duration.ofMillis(200))
+                .atMost(Duration.ofSeconds(2))
+                .untilAsserted {
+                    receiveCalls.get() shouldBeEqualTo receiveCallsAfterStop
+                }
+            verify(exactly = 1) { client.close() }
+        } finally {
+            pendingReceive.cancel(true)
+            runtime.stop()
+        }
+    }
+
+    @Test
+    fun `duplicate start creates one poller and injected client stays open after duplicate stop`() = runSuspendIO {
+        val client = mockk<SqsAsyncClient>(relaxed = true)
+        val receiveCalls = AtomicInteger()
+        val receiveStarted = CountDownLatch(1)
+        val pendingReceive = CompletableFuture<ReceiveMessageResponse>()
+        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+            receiveCalls.incrementAndGet()
+            receiveStarted.countDown()
+            pendingReceive
+        }
+        val runtime = SqsConsumerRuntime(
+            runtimeConfig(client = client, ownsClient = false)
+        )
+
+        try {
+            runtime.start()
+            runtime.start()
+            await.atMost(Duration.ofSeconds(2)).untilAsserted {
+                receiveStarted.count shouldBeEqualTo 0L
+            }
+            await.during(Duration.ofMillis(200))
+                .atMost(Duration.ofSeconds(2))
+                .untilAsserted {
+                    receiveCalls.get() shouldBeEqualTo 1
+                }
+
+            runtime.stop()
+            runtime.stop()
+            verify(exactly = 0) { client.close() }
+        } finally {
+            pendingReceive.cancel(true)
+            runtime.stop()
+        }
     }
 
     @Test
