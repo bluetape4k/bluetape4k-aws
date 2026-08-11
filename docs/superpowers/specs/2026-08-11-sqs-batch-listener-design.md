@@ -93,6 +93,22 @@ enum class SqsAcknowledgementMode {
 }
 ~~~
 
+batch 관측성의 correlation은 다음 opaque 값으로 고정한다. 값에는 queue URL, receipt handle,
+message body 또는 message ID를 넣지 않는다.
+
+~~~kotlin
+data class SqsListenerBatchCorrelation(
+    val generation: Long,
+    val pollerId: Int,
+    val batchSequence: Long,
+)
+~~~
+
+`SqsListenerInterceptor`에는 `beforeReceive`/`afterReceive`와 acknowledgement 단계에
+correlation-aware overload를 추가하고, 기존 메서드를 호출하는 Kotlin default bridge를 둔다.
+기존 구현체는 재컴파일 없이 동작하며, built-in Micrometer는 overload에서 correlation을
+사용하고 구 메서드의 per-message timer/span은 batch 경로에서 생성하지 않는다.
+
 INHERIT가 기본값이므로 기존 애너테이션의 source/binary 사용 형태를 보존한다.
 MANUAL은 batch에서는 SqsBatchAcknowledgement, 단건에서는 SqsAcknowledgement 매개변수를
 요구한다. ON_SUCCESS와 수동 acknowledgement 매개변수의 조합, batch endpoint와
@@ -113,6 +129,8 @@ batch = true인 메서드는 payload 목록 하나와 선택적 SqsBatchAcknowle
 있다. 지원하는 payload는 다음과 같다.
 
 ~~~kotlin
+import software.amazon.awssdk.services.sqs.model.Message
+
 @SqsListener(queue = "orders", batch = true)
 suspend fun handle(messages: List<SqsReceivedMessage>)
 
@@ -148,12 +166,11 @@ suspend fun handle(
     messages: List<SqsReceivedMessage>,
     acknowledgement: SqsBatchAcknowledgement,
 ) {
-    val accepted = messages.filter(::isAccepted)
+    fun isAccepted(message: SqsReceivedMessage): Boolean = message.body.isNotBlank()
+    val (accepted, rejected) = messages.partition(::isAccepted)
     val result = acknowledgement.acknowledge(accepted)
-    if (result.status == SqsBatchAcknowledgementStatus.PARTIAL_FAILURE) {
-        logger.warn("SQS batch acknowledgement partially failed: failed=${result.failed.size}")
-    }
-    val rejected = messages.filterNot(accepted::contains)
+    check(result.operation == SqsBatchAcknowledgementOperation.ACKNOWLEDGE)
+    check(result.status != SqsBatchAcknowledgementStatus.PARTIAL_FAILURE || result.failed.isNotEmpty())
     if (rejected.isNotEmpty()) {
         acknowledgement.nack(rejected, timeoutSeconds = 30)
     }
@@ -276,7 +293,7 @@ suspend fun deleteBatch(
 
 ~~~kotlin
 data class SqsBatchDeleteResult(
-    val successfulEntryIds: Set<String>,
+    val successfulEntryIds: List<String>,
     val failed: List<SqsBatchDeleteFailure>,
 )
 
@@ -300,7 +317,8 @@ AWS item-level 오류만 entry ID별 failed 항목으로 모은다. 인증·권�
 성공 결과를 보존한다. 이 기본 구현은 source/binary 호환성용 fallback이며 현재 저장소의
 Kotlin JVM default ABI 설정과 precompiled 구현체 fixture로 검증한다. AWS template 경로는
 DeleteMessageBatch 1회만 호출한다. MicrometerSqsOperations는 delete_batch 작업으로
-위임·계측하되 queue URL, receipt handle, body를 tag나 log에 넣지 않는다.
+위임·계측하되 queue URL, receipt handle, body를 tag나 log에 넣지 않는다. optimized SDK
+경로와 ABI fallback은 bounded `implementation.path`(`optimized`/`fallback`)으로만 구분한다.
 
 ### SqsOperations.changeVisibilityBatch
 
@@ -331,10 +349,16 @@ data class SqsBatchVisibilityResult(
 template은 `ChangeMessageVisibilityBatch`를 최대 10개에 대해 한 번 호출한다. entry ID는
 `entry-0..entry-9`로 bounded하게 만들며 Successful/Failed ID 집합이 입력과 정확히 일치하지
 않으면 `SqsBatchVisibilityProtocolException`을 던져 결과를 terminal로 처리하지 않는다.
+requests가 비어 있으면 AWS 호출 없이 빈 성공 결과를 반환하고, 10개 초과·중복 message ID/
+receipt handle은 `batch visibility supports at most 10 messages` 또는
+`duplicate batch visibility request` fragment로 호출 전에 거부한다. 각
+`timeoutSeconds`는 0..43_200만 허용하며 범위 오류는
+`timeoutSeconds must be between 0 and 43200` fragment를 사용한다.
 transport·unknown exception과 `CancellationException`은 재전파하고, SDK의 명시적 item
 failure만 결과에 담아 실패 항목을 `PENDING`으로 보존한다. metric operation은
 `change_visibility_batch`로 구분하되 receipt handle/body/message ID/queue URL을 raw tag로
-사용하지 않는다.
+사용하지 않는다. optimized SDK 경로와 ABI fallback은 bounded `implementation.path`
+(`optimized`/`fallback`)으로만 구분해 fallback round-trip degradation을 운영에서 식별한다.
 
 ## 런타임 흐름
 
@@ -360,24 +384,41 @@ FIFO 큐에서는 수신 순서와 batch 경계를 보존한다. 같은 message 
 group scheduler는 도입하지 않으며, visibility가 만료된 뒤의 최종 순서는 SQS 계약에 맡긴다.
 
 처음 전달된 batch를 attempt 1로 세고, 기존 `retry.maxAttempts`가 handler, converter, delete
-transport, visibility transport 실패에 공통으로 적용된다. retry 시에는 아직 `ACKED`/`DEFERRED`
+transport, visibility transport 실패에 공통으로 적용된다. receive transport failure는 이
+batch budget에 포함하지 않고 기존 retry 설정의 initial/max backoff, multiplier, jitter를
+사용해 bounded poll retry를 수행한다. `CancellationException`은 즉시 전파하고, `Error`를
+포함한 fatal throwable은 retry하지 않고 listener를 중지한 뒤 상위로 전파한다. retry 시에는 아직 `ACKED`/`DEFERRED`
 되지 않은 항목만 재변환·재호출한다. MANUAL handler가 정상 반환했지만 acknowledgement를
 호출하지 않은 항목은 자동 삭제하지 않고 현재 attempt를 성공으로 끝내며 visibility 만료 후
 재배달된다. 삭제 응답이 유실된 경우에도 서버에서 이미 삭제되었을 가능성을 숨기지 않는
 at-least-once 계약을 따르므로, handler의 외부 side effect와 소비자 DTO는 idempotent 또는
 message-id deduplication을 전제로 한다.
 
+`CancellationException`과 `Error`는 receive·converter·handler·delete·visibility의 모든
+phase에서 fatal이다. 이 두 종류는 retry/backoff, error visibility, 보상 acknowledgement를
+시작하지 않고 원래 throwable을 보존해 전파한다. listener는 `STOPPING_RECEIVE`로 전환한 뒤
+in-flight operation을 drain하고, 같은 batch에 대해 duplicate handler/AWS call을 만들지 않는다.
+일반 `Exception`만 공통 batch attempt budget을 소비하며, fatal phase 테스트는 no-retry·no-new-AWS-call·
+no-visibility·no-duplicate-ack를 각각 확인한다.
+
 interceptor는 기존 SqsListenerInvocationContext를 메시지별로 생성해 기존 metric/trace
 계약을 유지한다. batch에는 수신 response마다 `generation + pollerId + batchSequence` 내부
-correlation id를 만들고, metric tag는 `listenerId`, `operation`, `outcome`,
-`batchSizeBucket`처럼 bounded 값만 사용한다. 기본 계측 단위는 poll response invocation 1회와
-public acknowledgement call 1회이며, per-message hook/span은 명시적 sampling/opt-in에서만
-생성한다. batch handler/ack latency, retry count, partial failure count, visibility failure,
+`SqsListenerBatchCorrelation`을 만들고, 기존 interceptor 메서드를 보존한 default bridge와
+correlation-aware overload를 추가한다. metric tag는 `listener.id`, bounded `queue.name`,
+`operation`, `outcome`, `batch.size.bucket`, bounded `implementation.path`처럼 허용 목록의
+값만 사용한다. 기본 계측 단위는 poll response invocation 1회와
+public acknowledgement call 1회이며, built-in Micrometer의 per-message timer/span allocation은
+batch에서 생성하지 않는다. custom interceptor의 기존 per-message callback은 호환성 목적으로
+호출하되, per-message observation은 해당 interceptor가 명시적으로 선택할 때만 수행한다.
+batch handler/ack latency, retry count, partial failure count, visibility failure,
 cancellation은 별도 counter/timer로 기록하되 body, message id, receipt handle, queue URL을
-tag·trace attribute·로그에 넣지 않는다. 기존 per-message ack interceptor는 성공·실패 항목에
-대해 한 번씩 호출하고, batch span은 per-message span의 parent로만 추가한다. metric 이름,
-`batchSizeBucket` 경계(`0`, `1`, `2-5`, `6-10`), 집계 단위와 alert owner/threshold는 운영
-runbook에서 고정한다.
+tag·trace attribute·로그에 넣지 않는다. batch span은 per-message span의 parent로 추가하지
+않으며, correlation-aware batch span 하나만 만든다. metric 이름과 집계 단위는 아래
+canonical 표로 고정하고, `batch.size.bucket` 경계(`0`, `1`, `2-5`, `6-10`)와 alert
+owner/threshold는 다음 runbook 값으로 고정한다: `stopTimeoutMillis=30_000`, partial failure
+`>1%/5m`, retry exhaustion `>0.1%/5m`, redelivery-age p95 `>80% of visibility timeout/5m`,
+DLQ visible count `>0/5m`; owner `bluetape4k-sqs-oncall`, approver
+`bluetape4k-release-approvers`.
 
 ## 실패와 복구
 
@@ -387,23 +428,38 @@ redacted reference만 structured log correlation으로 사용하며, 원문 body
    pending 전체에 error visibility 정책을 적용하며, 설정된 retry 횟수 동안 같은 batch 경로를
    재시도한다. 기존 `SqsMessageConverter`가 허용한 concrete target type만 사용하며 Java
    serialization, 임의 polymorphic type metadata, 압축 해제 후 무제한 payload를 도입하지 않는다.
-2. **handler 예외**: CancellationException은 즉시 전파한다. 그 밖의 예외는 pending을
-   삭제하지 않고 기존 backoff/retry를 사용한다. 최종 실패 시 pending에만 error visibility를
-   적용한다.
-3. **partial delete**: AWS 응답이 200이어도 Failed entry를 result에 기록한다. 성공 entry는
+2. **handler 예외**: `CancellationException`과 `Error`는 즉시 전파하고 listener를 중지한다.
+   retry/backoff, error visibility, 새 acknowledgement를 시작하지 않는다. 그 밖의 예외는
+   pending을 삭제하지 않고 기존 backoff/retry를 사용한다. 최종 실패 시 pending에만 error
+   visibility를 적용한다.
+3. **converter/ack/visibility fatal**: converter, acknowledgement, visibility phase의
+   `CancellationException`/`Error`도 동일한 fatal taxonomy를 적용한다. 이미 성공한 delete는
+   되돌리지 않되, 남은 항목에 대한 추가 AWS call과 visibility 보상을 시작하지 않고 원래
+   throwable을 전파한다.
+4. **partial delete**: AWS 응답이 200이어도 Failed entry를 result에 기록한다. 성공 entry는
    재배달되지 않으며 실패 entry만 SQS에 남긴다. error visibility가 설정되면 실패 entry에만
    적용하고, visibility 호출의 명시적 SDK item failure만 typed per-item failure로 보존한다.
    visibility transport/unknown exception과 cancellation은 재전파하며, 성공 삭제는 되돌리지
    않는다. 실패 visibility는 pending과 retry/backoff 대상으로 남긴다.
-4. **중복 receipt/빈 batch**: batch 내부 중복 receipt handle은 AWS 호출 전에 거부하여
+5. **중복 receipt/빈 batch**: batch 내부 중복 receipt handle은 AWS 호출 전에 거부하여
    entry mapping ambiguity를 없앤다. 빈 목록은 no-op이며 handler와 AWS batch delete를
    호출하지 않는다.
-5. **중지/취소**: `RUNNING -> STOPPING_RECEIVE -> DRAINING -> STOPPED` 상태를 사용한다.
+6. **중지/취소**: `RUNNING -> STOPPING_RECEIVE -> DRAINING -> STOPPED` 상태를 사용한다.
    stop은 receive coroutine을 먼저 취소하고, generation의 handler/ack/visibility operation을
    registry로 추적해 `stopTimeoutMillis`까지 기다린 뒤 강제 취소한다. operation-start fence는
    stop 이후 새 AWS call을 금지하고, 강제 취소된 작업은 원래 CancellationException을 보존한다.
-   generation token이 다른 완료 callback은 결과·metric·visibility를 갱신하지 않는다. stop 뒤
-   start는 새 generation으로 시작하며 이전 generation의 작업을 재사용하지 않는다.
+   generation token이 다른 완료 callback은 결과·metric·visibility를 갱신하지 않는다. 모든
+   receive/handler/ack/visibility job과 interceptor timing map은 `finally`에서 정리한다.
+   `STOPPING_RECEIVE` 또는 `DRAINING` 중 `start()`는 `listener is stopping`으로 거부하고,
+   callback 이후 `STOPPED`가 된 뒤에만 새 generation으로 시작하며 이전 generation의 작업을
+   재사용하지 않는다.
+
+   container registry도 동일한 phase gate를 원자적으로 적용한다. registry의 `start(id)`는
+   해당 container가 `STOPPING_RECEIVE`/`DRAINING`이거나 stop callback이 아직 완료되지 않은
+   동안 `listener is stopping`으로 거부한다. registry `stop(id)` callback은 정확히 한 번만
+   실행되고, `running` 조회는 `STOPPED` callback 이후에만 false가 된다. `start`와 `stop`을
+   동시에 호출하는 테스트는 STOPPED 이전 새 generation·중복 callback·old AWS call이 모두
+   0회인지, STOPPED 이후 한 번의 새 generation만 생성되는지 확인한다.
 
 ## 호환성·경계
 
@@ -427,7 +483,8 @@ redacted reference만 structured log correlation으로 사용하며, 원문 body
   receive 중지와 in-flight drain 뒤 이전 단건 handler를 재배포하거나 별도 canary endpoint로
   전환하는 구성 변경을 rollback 절차로 사용한다. 이미 삭제된 메시지는 rollback으로 복구되지
   않으므로 redrive/DLQ와 consumer idempotency를 함께 운영한다.
-- 이번 작업은 README/README.ko 및 관련 KDoc만 갱신한다. release note, PR, merge는 별도 gate다.
+- 이번 작업은 README/README.ko, 영문·국문 manual, 관련 KDoc과 승인된 연구/lesson artifact를
+  갱신한다. release note, PR, merge는 별도 gate다.
 
 ## 검증 수용 기준
 
@@ -461,22 +518,81 @@ redacted reference만 structured log correlation으로 사용하며, 원문 body
   새 batch 내부 병렬 실행을 만들지 않는지 검증한다.
 - 에뮬레이터가 DeleteMessageBatch 항목별 실패를 제공하지 않으면 fake 테스트를 authoritative
   partial-failure proof로 유지하고, capability gap을 기록한다.
-- 실행한 Floci image/version, 명령, capability 결과를 고정 capability-gap record에 기록하고,
-  record에는 owner, tracking issue, authoritative proof, unsupported behavior, expiry/recheck
-  date, release-blocking 여부를 포함한다. 미지원 항목은 fake authoritative proof와 후속 owner를
-  연결한다.
+- 실행한 Floci image/version, 명령, capability 결과를
+  `.bluetape/evidence/issue-454/floci/capability-gap.json`에 기록한다. 이 JSON의 schema는
+  `issue`, `status`, `retrievedAt`, `emulator.name`, `emulator.image`, `emulator.version`,
+  `command`, `capabilities[]`를 필수로 하며 root `status`는 `PASS`, `PENDING`, `FAIL` 중
+  하나로 고정한다. 각 capability에 `operation`, `status`, `authoritativeProof`,
+  `unsupportedBehavior`, `owner`, `trackingIssue`, `expiryDate`, `recheckDate`,
+  `releaseBlocking`을 요구한다. 이슈 값은 `454`, 운영 owner alias는
+  `bluetape4k-sqs-oncall`, 승인자 alias는 `bluetape4k-release-approvers`로 고정한다.
+  미지원 항목은 fake authoritative proof와 후속 owner를 연결한다. capability gap 판정은
+  stdout/stderr 정규식이나 임의의 Docker 오류 코드로 추론하지 않는다. 각 preflight/scenario는
+  `capability-marker.json`을 생성해야 하며, marker는
+  `kind=floci-capability-gap`, `status=UNAVAILABLE|UNSUPPORTED`, 정확한 `operation`,
+  현재 실행의 `runNonce`, 현재 명령의 `commandSha256`, 현재 실행 evidence 파일을 가리키는
+  `authoritativeProof`와 그 파일의 `proofSha256`, `unsupportedBehavior`, `owner`,
+  `trackingIssue`, `expiryDate`, `recheckDate`,
+  `releaseBlocking`을 포함해야 한다. 실행 시작 시 이전 marker는 삭제하지 않고
+  `stale/`로 이동하며, nonce·명령 hash가 현재 실행과 일치하지 않는 marker는 없는 것과
+  동일하게 처리한다. marker가 없거나 schema·operation·nonce·command hash·proof 경로·proof hash가
+  일치하지 않는 실패는 assertion/auth/permission을 포함한 일반 실패로 분류해 exit 1로
+  fail-closed한다. 따라서 `docker image inspect` 실패도 유효한 preflight marker가 없는 한
+  PENDING/LocalStack fallback으로 우회하지 않는다. capture command는
+  `: "${FLOCI_IMAGE:?set exact Floci image reference}"`, `docker info`,
+  `docker image inspect "$FLOCI_IMAGE"`, 그리고 각 Floci test command를 실행하고
+  `template|listener|batch.stdout`, `.stderr`, `.exit`와 대응하는
+  `template|listener|batch.capability-marker.json`을 같은 evidence directory에 보존한다.
+  Floci 미설치·image pull 실패·operation 미지원으로 실행하는 LocalStack fallback도
+  `localstack.stdout`, `localstack.stderr`, `localstack.exit`,
+  `localstack-capability-gap.json`을 같은 schema와 상태 필드로 성공·실패 모두 기록하되
+  권위 증거로 승격하지 않는다. `command`는 실제 재현 가능한 전체 launcher/Gradle 명령을
+  shell-escaped 문자열로 보존하고, exit 0이면 `status=PASS`, 그 밖에는 `status=FAIL`로
+  기록한 뒤 원래 exit code를 재전파한다. metric/trace contract assertion은
+  `listener.id`만 허용하고 `listenerId`는 금지한다.
 
 ### 문서/품질
 
 - aws-spring-boot/README.md, README.ko.md, 공개 KDoc 및 대응하는
   `docs/manual/en|ko/modules/` 페이지에 payload 유형, partial result, AWS 10개 제한,
   FIFO/재배달 의미와 실제 coroutine 예제를 기록한다. 상세 페이지에는 at-least-once,
-  idempotency/DLQ, batch endpoint disable/canary/rollback runbook을 포함한다.
-- metric/trace 검증은 listener/operation/outcome/batch-size bucket만 허용하고 message id,
-  receipt handle, body가 tag·attribute·로그에 없는지 확인한다.
+  idempotency/DLQ, receive 중지·drain·old handler 재배포·canary/rollback runbook을 포함한다.
+- metric/trace는 아래 canonical 계약을 사용한다. `queue.name`은 설정된 논리 queue 이름을
+  정규화한 bounded identity이며 queue URL은 허용하지 않는다.
+
+  | Metric | 집계 단위 | 허용 tag |
+  |---|---|---|
+  | `bluetape4k.sqs.batch.invocations` | poll response 1회 | `listener.id`, `queue.name`, `operation`, `outcome`, `batch.size.bucket` |
+  | `bluetape4k.sqs.batch.acknowledgements` | public ack/nack/visibility call 1회 | 위 tags + `implementation.path` |
+  | `bluetape4k.sqs.batch.handler.duration` | handler invocation 1회 | `listener.id`, `queue.name`, `outcome`, `batch.size.bucket` |
+  | `bluetape4k.sqs.batch.retry` | batch attempt 1회 | `listener.id`, `queue.name`, `outcome`, `batch.size.bucket` |
+  | `bluetape4k.sqs.batch.partial.failures` | partial result 1회 | `listener.id`, `queue.name`, `operation`, `batch.size.bucket`, `implementation.path` |
+  | `bluetape4k.sqs.batch.visibility.failures` | explicit item failure 1회 | `listener.id`, `queue.name`, `operation`, `outcome`, `implementation.path` |
+  | `bluetape4k.sqs.batch.cancellations` | cancellation 1회 | `listener.id`, `queue.name`, `operation`, `batch.size.bucket` |
+  | `bluetape4k.sqs.batch.redelivery.age` | redelivery age histogram observation 1회 | `listener.id`, `queue.name`, `outcome`, `batch.size.bucket` |
+
+  `batch.size.bucket`은 `0`, `1`, `2-5`, `6-10`, `implementation.path`는 `optimized` 또는
+  `fallback`만 허용한다. redelivery age는 SQS `ApproximateFirstReceiveTimestamp`를 이용한
+  애플리케이션 histogram `bluetape4k.sqs.batch.redelivery.age`로 기록하고, DLQ visible count는
+  DLQ CloudWatch/SQS `ApproximateNumberOfMessagesVisible`를 source로 사용한다. 두 값 모두
+  message id, receipt handle, body, queue URL을 tag·trace attribute·로그에 넣지 않는다.
+
+  metric/trace 검증은 위 allowlist와 cancellation metric, redelivery-age/DLQ source를 모두
+  확인한다.
+- 운영 rollback runbook은 테스트 명령과 control-plane 명령을 분리한다. deployment adapter는
+  `POST $CONTROL_PLANE_URL/v1/listeners/$LISTENER_ID/stop`에
+  `{"timeoutMillis":30000,"waitFor":"STOPPED"}`를 보내고
+  `state=STOPPED`, `drained=true`, `inFlight=0`, `generation`을 반환해야 한다. 응답이
+  이 contract를 만족하지 않으면 receive 중지→drain 단계에서 rollback을 중단한다. 이후
+  old handler 배포, DLQ redrive, idempotency 확인을 순서대로 수행하며, partial failure
+  `>1%/5m`, retry exhaustion `>0.1%/5m`, redelivery-age p95 `>80% of visibility timeout/5m`,
+  DLQ visible count `>0/5m`을 canary 중단 기준으로 삼는다. evidence는
+  `.bluetape/evidence/issue-454/rollback/`에 명령·응답·threshold snapshot으로 보존한다.
 - README 예제와 Kotlin 공개 KDoc 예제는 실제 API surface로 compile-check하고, 영문/국문
   README 및 manual module 페이지의 heading·예제·migration/오류/partial ack 항목 parity를
-  비교한다.
+  비교한다. 공개 KDoc와 consumer fixture에는 `SqsListenerBatchCorrelation` 및
+  correlation-aware interceptor overload/default bridge 예제를 포함하고, correlation에는
+  generation·poller·sequence 외 metadata를 넣지 않는다.
 - 대상 테스트, detekt, 전체 모듈 compile/test, git diff --check를 순차 실행한다.
 - Kotlin checklist에서 validation/exception, cancellation/dispatcher, API compatibility,
   Spring test, 문서 drift를 모두 확인하고 P0/P1을 0으로 수렴한다.
