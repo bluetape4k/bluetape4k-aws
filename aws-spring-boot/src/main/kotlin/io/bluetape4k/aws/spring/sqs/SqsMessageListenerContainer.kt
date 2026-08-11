@@ -7,11 +7,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.springframework.context.SmartLifecycle
 import java.time.Duration
@@ -60,10 +62,6 @@ class SqsMessageListenerContainer internal constructor(
     private var resolvedQueueUrl: String? = null
 
     override fun start() {
-        if (!endpoint.autoStartup) {
-            return
-        }
-
         val current: ListenerGeneration
         synchronized(lifecycleLock) {
             when (lifecycleState.get()) {
@@ -186,27 +184,36 @@ class SqsMessageListenerContainer internal constructor(
         queueUrl: String,
         correlation: SqsListenerBatchCorrelation,
         receiveAttempt: Int,
-    ): List<SqsReceivedMessage>? = try {
-        interceptors.forEach { it.beforeReceive(endpoint.id, queueUrl, correlation) }
-        val received = operations.receive(
-            queueUrl = queueUrl,
-            maxMessages = endpoint.maxMessages,
-            waitTimeSeconds = endpoint.waitTimeSeconds,
-            visibilityTimeoutSeconds = endpoint.visibilityTimeoutSeconds,
-        )
-        interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, received, null, correlation) }
-        received
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Error) {
-        interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
-        failGeneration(current)
-        throw e
-    } catch (e: Throwable) {
-        interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
-        log.warn("SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl", e)
-        delay(endpoint.retry.nextDelay(receiveAttempt))
-        null
+    ): List<SqsReceivedMessage>? {
+        var observationStarted = false
+        return try {
+            observationStarted = true
+            interceptors.forEach { it.beforeReceive(endpoint.id, queueUrl, correlation) }
+            val received = operations.receive(
+                queueUrl = queueUrl,
+                maxMessages = endpoint.maxMessages,
+                waitTimeSeconds = endpoint.waitTimeSeconds,
+                visibilityTimeoutSeconds = endpoint.visibilityTimeoutSeconds,
+            )
+            interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, received, null, correlation) }
+            received
+        } catch (e: CancellationException) {
+            if (observationStarted) {
+                runCancellationCleanup(e) {
+                    interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
+                }
+            }
+            throw e
+        } catch (e: Error) {
+            interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
+            failGeneration(current)
+            throw e
+        } catch (e: Throwable) {
+            interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
+            log.warn("SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl", e)
+            delay(endpoint.retry.nextDelay(receiveAttempt))
+            null
+        }
     }
 
     private suspend fun dispatchMessages(
@@ -264,15 +271,24 @@ class SqsMessageListenerContainer internal constructor(
                 interceptors = interceptors,
                 operationGuard = { generation?.ensureActiveOperation() },
             )
+            var observationStarted = false
+            var observationCompleted = false
             try {
+                observationStarted = true
                 interceptors.forEach { it.beforeHandle(context) }
                 invoker.invoke(message, acknowledgement)
                 interceptors.forEach { it.afterHandle(context, null) }
+                observationCompleted = true
                 if (!invoker.manualAcknowledgement) {
                     acknowledgement.acknowledge()
                 }
                 return
             } catch (e: CancellationException) {
+                if (observationStarted && !observationCompleted) {
+                    runCancellationCleanup(e) {
+                        interceptors.forEach { it.afterHandle(context, e) }
+                    }
+                }
                 throw e
             } catch (e: Error) {
                 generation?.let(::failGeneration)
@@ -288,6 +304,21 @@ class SqsMessageListenerContainer internal constructor(
                 }
                 delay(endpoint.retry.nextDelay(attempt))
                 attempt++
+            }
+        }
+    }
+
+    private suspend fun runCancellationCleanup(
+        cancellation: CancellationException,
+        cleanup: suspend () -> Unit,
+    ) {
+        try {
+            withContext(NonCancellable) {
+                cleanup()
+            }
+        } catch (cleanupFailure: Throwable) {
+            if (cleanupFailure !== cancellation) {
+                cancellation.addSuppressed(cleanupFailure)
             }
         }
     }

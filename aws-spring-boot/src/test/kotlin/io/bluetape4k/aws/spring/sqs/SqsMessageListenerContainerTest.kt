@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -8,9 +9,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Test
@@ -159,6 +162,94 @@ class SqsMessageListenerContainerTest {
             dispatcher.close()
             executor.shutdownNow()
         }
+    }
+
+    @Test
+    fun `explicit start starts listener when automatic startup is disabled`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val pollerStarted = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            pollerStarted.complete(Unit)
+            awaitCancellation()
+        }
+        every { invoker.manualAcknowledgement } returns false
+        val container = container(operations, invoker, autoStartup = false)
+
+        try {
+            container.start()
+            withTimeout(2_000) { pollerStarted.await() }
+            container.isRunning.shouldBeTrue()
+        } finally {
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+        }
+    }
+
+    @Test
+    fun `receive cancellation invokes terminal interceptor hook`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val interceptor = mockk<SqsListenerInterceptor>(relaxed = true)
+        val receiveStarted = CompletableDeferred<Unit>()
+        val cancellation = slot<Throwable>()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            receiveStarted.complete(Unit)
+            awaitCancellation()
+        }
+        every { invoker.manualAcknowledgement } returns false
+        val container = container(operations, invoker, interceptors = listOf(interceptor))
+
+        try {
+            container.start()
+            withTimeout(2_000) { receiveStarted.await() }
+        } finally {
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+        }
+
+        coVerify(exactly = 1) {
+            interceptor.afterReceive(
+                "listener",
+                QUEUE_URL,
+                emptyList(),
+                capture(cancellation),
+                any(),
+            )
+        }
+        cancellation.captured.shouldBeInstanceOf(CancellationException::class)
+    }
+
+    @Test
+    fun `handler cancellation invokes terminal interceptor hook`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val interceptor = mockk<SqsListenerInterceptor>(relaxed = true)
+        val handlerStarted = CompletableDeferred<Unit>()
+        val cancellation = slot<Throwable>()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
+        every { invoker.manualAcknowledgement } returns false
+        coEvery { invoker.invoke(any(), any()) } coAnswers {
+            handlerStarted.complete(Unit)
+            awaitCancellation()
+        }
+        val container = container(
+            operations,
+            invoker,
+            stopTimeoutMillis = 50,
+            interceptors = listOf(interceptor),
+        )
+
+        container.start()
+        withTimeout(2_000) { handlerStarted.await() }
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        withTimeout(2_000) { stopped.await() }
+
+        coVerify(exactly = 1) { interceptor.afterHandle(any(), capture(cancellation)) }
+        cancellation.captured.shouldBeInstanceOf(CancellationException::class)
     }
 
     @Test
@@ -312,6 +403,8 @@ class SqsMessageListenerContainerTest {
         maxMessages: Int = 1,
         acknowledgementMode: SqsAcknowledgementMode = SqsAcknowledgementMode.INHERIT,
         retry: SqsProperties.Retry = SqsProperties.Retry(),
+        autoStartup: Boolean = true,
+        interceptors: List<SqsListenerInterceptor> = emptyList(),
     ): SqsMessageListenerContainer {
         return SqsMessageListenerContainer(
             endpoint = SqsListenerEndpoint(
@@ -321,7 +414,7 @@ class SqsMessageListenerContainerTest {
                 waitTimeSeconds = 0,
                 visibilityTimeoutSeconds = null,
                 errorVisibilityTimeoutSeconds = null,
-                autoStartup = true,
+                autoStartup = autoStartup,
                 phase = 0,
                 concurrency = 1,
                 stopTimeoutMillis = stopTimeoutMillis,
@@ -331,7 +424,7 @@ class SqsMessageListenerContainerTest {
             ),
             operations = operations,
             invoker = invoker,
-            interceptors = emptyList(),
+            interceptors = interceptors,
             dispatcher = dispatcher,
         )
     }
