@@ -779,6 +779,9 @@ The application owns the injected `SqsAsyncClient`; the plugin never closes it.
 Close the client when the application scope ends. When no client is injected,
 `SqsConsumer` can create a plugin-owned client from `AwsKtorCore` or
 service-local settings and closes that client on `ApplicationStopping`.
+The consumer runtime is one-shot: repeated `start()`/`stop()` calls are
+idempotent, `stop()` before `start()` permanently stops the runtime, and a
+`start()` after `STOPPED` fails fast with `IllegalStateException`.
 
 Runnable SQS examples live in
 [`examples/aws-ktor-sqs-examples`](../examples/aws-ktor-sqs-examples) and cover
