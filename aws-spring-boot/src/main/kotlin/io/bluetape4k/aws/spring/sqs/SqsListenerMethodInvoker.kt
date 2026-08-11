@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
@@ -18,6 +19,7 @@ internal class SqsListenerMethodInvoker(
     private val bean: Any,
     private val method: Method,
     private val messageConverter: SqsMessageConverter,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val kotlinFunction: KFunction<*>? = method.kotlinFunction
     private val parameterPlan: ParameterPlan = ParameterPlan.from(method, kotlinFunction)
@@ -30,11 +32,11 @@ internal class SqsListenerMethodInvoker(
         val arguments = parameterPlan.arguments(message, acknowledgement, messageConverter)
         try {
             if (suspendFunction) {
-                withContext(Dispatchers.IO) {
+                withContext(dispatcher) {
                     requireNotNull(kotlinFunction).callSuspend(bean, *arguments)
                 }
             } else {
-                runInterruptible(Dispatchers.IO) {
+                runInterruptible(dispatcher) {
                     method.isAccessible = true
                     method.invoke(bean, *arguments)
                 }

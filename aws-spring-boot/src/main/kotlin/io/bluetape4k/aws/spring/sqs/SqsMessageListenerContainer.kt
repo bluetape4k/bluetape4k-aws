@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,7 @@ class SqsMessageListenerContainer internal constructor(
     private val operations: SqsOperations,
     private val invoker: SqsListenerMethodInvoker,
     private val interceptors: List<SqsListenerInterceptor>,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): SmartLifecycle {
 
     companion object : KLogging()
@@ -45,7 +47,7 @@ class SqsMessageListenerContainer internal constructor(
             return
         }
 
-        val current = ListenerGeneration(CoroutineScope(SupervisorJob() + Dispatchers.IO))
+        val current = ListenerGeneration(CoroutineScope(SupervisorJob() + dispatcher))
         if (!generation.compareAndSet(null, current)) {
             current.scope.cancel()
             return
@@ -69,7 +71,7 @@ class SqsMessageListenerContainer internal constructor(
             return
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(dispatcher).launch {
             try {
                 current.pollerJobs.forEach { it.cancel() }
                 current.pollerJobs.joinAll()

@@ -2,19 +2,50 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 class SqsMessageListenerContainerTest {
+
+    @Test
+    fun `container runs poller on injected dispatcher`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val pollerStarted = CompletableDeferred<String>()
+        val executor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "sqs-container-test")
+        }
+        val dispatcher = executor.asCoroutineDispatcher()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            pollerStarted.complete(Thread.currentThread().name)
+            awaitCancellation()
+        }
+        every { invoker.manualAcknowledgement } returns false
+        val container = container(operations, invoker, dispatcher = dispatcher)
+
+        try {
+            container.start()
+            withTimeout(2_000) { pollerStarted.await() } shouldContain "sqs-container-test"
+        } finally {
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+            dispatcher.close()
+            executor.shutdownNow()
+        }
+    }
 
     @Test
     fun `stop drains active handler without waiting for a restarted generation`() = runSuspendIO {
@@ -105,6 +136,7 @@ class SqsMessageListenerContainerTest {
         operations: SqsOperations,
         invoker: SqsListenerMethodInvoker,
         stopTimeoutMillis: Long = 1_000,
+        dispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
     ): SqsMessageListenerContainer {
         return SqsMessageListenerContainer(
             endpoint = SqsListenerEndpoint(
@@ -123,6 +155,7 @@ class SqsMessageListenerContainerTest {
             operations = operations,
             invoker = invoker,
             interceptors = emptyList(),
+            dispatcher = dispatcher,
         )
     }
 
