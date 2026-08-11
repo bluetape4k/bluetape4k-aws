@@ -21,7 +21,7 @@ Spring Cloud AWS 호환 계층은 포함하지 않는다.
 - SqsListenerMethodInvoker.kt의 ParameterPlan은 payload를 하나만 허용하고 List payload와
   batch acknowledgement를 알지 못한다.
 - SqsAcknowledgement.kt는 한 receipt handle에 대해 delete 또는 changeVisibility를 수행한다.
-- SqsOperations.kt는 단건 delete만 요구한다. MicrometerSqsOperations와 테스트용
+- SqsOperations.kt는 단건 delete와 visibility 변경만 요구한다. MicrometerSqsOperations와 테스트용
   NoopSqsOperations가 이 계약을 구현한다.
 - 기준선 검증에서 ./gradlew :bluetape4k-aws-spring-boot:test가 271개 테스트를 통과했다.
 - AWS ReceiveMessage는 한 요청에서 1~10개 메시지를 반환하며, 요청한 수보다 적게 반환할 수 있다.
@@ -97,6 +97,12 @@ INHERIT가 기본값이므로 기존 애너테이션의 source/binary 사용 형
 MANUAL은 batch에서는 SqsBatchAcknowledgement, 단건에서는 SqsAcknowledgement 매개변수를
 요구한다. ON_SUCCESS와 수동 acknowledgement 매개변수의 조합, batch endpoint와
 SqsAcknowledgement의 조합은 context 초기화 시 IllegalArgumentException으로 거부한다.
+명시적 MANUAL에 acknowledgement 매개변수가 없거나 단건 endpoint에
+SqsBatchAcknowledgement가 있으면 `MANUAL requires SqsBatchAcknowledgement` 또는
+`SqsBatchAcknowledgement requires batch=true` fragment로 거부한다. `INHERIT` 무ack은
+ON_SUCCESS, `INHERIT` + 단건 ack는 기존 MANUAL, `INHERIT` + batch ack는 batch MANUAL로
+해석한다. `maxMessages`의 0·-2·11 이상과 property override도 동일한 context fail-fast
+경계를 갖는다.
 annotation의 `maxMessages = -1`은 `SqsProperties.Listener.maxMessages`를 상속한다. 유효한
 batch 값은 최종 해석 후 1..10이며, 0·-2·11 이상은 context 초기화 시 거부한다. 따라서
 ReceiveMessage의 AWS 상한을 annotation 값으로 우회하지 않는다.
@@ -164,7 +170,8 @@ JSON 배열 단건 payload를 받는 `OrderPayload`와 `List<OrderPayload>`는 r
 잘못된 endpoint/매개변수 조합은 context 초기화 시 `IllegalArgumentException`으로 fail-fast
 하며, 오류 메시지는 다음 stable fragment를 포함한다: `batch=true requires a List payload`,
 `batch=false does not accept List payload`, `raw List payload is not supported`,
-`SqsBatchAcknowledgement requires batch=true`, `batch delete supports at most 10 messages`.
+`SqsBatchAcknowledgement requires batch=true`, `ON_SUCCESS cannot declare SqsAcknowledgement`,
+`MANUAL requires SqsBatchAcknowledgement`, `batch delete supports at most 10 messages`.
 `List<T>` generic 오류는 `unsupported batch element type` fragment와 parameter name/type을
 포함한다. 변환 오류는 `SqsMessageConversionException(index, targetType, cause)`로 감싸고
 message body와 receipt handle은 예외 문자열에 포함하지 않는다.
@@ -206,12 +213,23 @@ interface SqsBatchAcknowledgement {
 건너뛰는 delete를 허용하지 않는다. visibility 변경도 항목별 결과를 반환하고 실패 항목은
 재시도 가능한 `PENDING`으로 보존한다.
 
+`timeoutSeconds`는 AWS SQS가 허용하는 0..43_200 범위만 허용하며, 범위를 벗어나면
+`timeoutSeconds must be between 0 and 43200` fragment와 함께 AWS 호출 전에
+`IllegalArgumentException`을 던진다. `nack`의 기본 timeout은 0이다.
+
 ~~~kotlin
 data class SqsBatchAcknowledgementResult(
+    val operation: SqsBatchAcknowledgementOperation,
     val status: SqsBatchAcknowledgementStatus,
     val successfulMessageIds: List<String>,
     val failed: List<SqsBatchAcknowledgementFailure>,
 )
+
+enum class SqsBatchAcknowledgementOperation {
+    ACKNOWLEDGE,
+    NACK,
+    CHANGE_VISIBILITY,
+}
 
 enum class SqsBatchAcknowledgementStatus {
     SUCCESS,
@@ -234,10 +252,14 @@ SqsBatchAcknowledgementResult는 AWS DeleteMessageBatch와 visibility 변경의 
 응답의 entry ID 불일치·중복·누락은 결과로 위장하지 않고 typed exception으로 다시 던져
 현재 batch의 미확인 항목을 `PENDING`으로 남기고 기존 retry 정책을 적용한다. 이 결과 타입은
 애플리케이션 직렬화 계약이 아니므로 `Serializable`을 구현하지 않고, 로그·trace·metric
-label에는 body와 receipt handle을 절대 기록하지 않는다.
-대상이 빈 snapshot이면 AWS 호출 없이 `SUCCESS`와 빈 목록을 반환하고, 이미 terminal인
-항목만 지정한 호출도 동일한 cached result를 반환한다. `successfulMessageIds`와 `failed`의
-순서는 호출 입력의 batch 순서를 따른다.
+label에는 body와 receipt handle을 절대 기록하지 않는다. 결과·실패·예외 타입의 `toString()`도
+body, receipt handle, message ID, queue URL, SDK detail/cause를 포함하지 않으며, API 조회 필드는
+명시적 accessor로만 사용한다.
+대상이 빈 snapshot이면 AWS 호출 없이 해당 operation의 `SUCCESS`와 빈 목록을 반환하고, 이미
+같은 operation에서 terminal인 항목만 지정한 호출도 동일한 cached result를 반환한다. 다른
+operation의 terminal 결과를 재사용하지 않으며, `pending`과 result 내부 컬렉션은 방어적
+read-only snapshot으로 반환해 caller mutation이 내부 상태를 바꾸지 못한다.
+`successfulMessageIds`와 `failed`의 순서는 호출 입력의 batch 순서를 따른다.
 
 ### SqsOperations.deleteBatch
 
@@ -267,9 +289,10 @@ data class SqsBatchDeleteFailure(
 ~~~
 
 receiptHandles가 비어 있으면 AWS 호출 없이 빈 성공 결과를 반환하고, 10개를 초과하거나
-중복 handle이 있으면 `IllegalArgumentException`을 던진다. 내부 entry ID는 입력 순서의
-`entry-0`부터 `entry-9`까지 bounded하게 생성하고 `entryId -> receiptHandle` mapping을
-보존한다. SDK 응답의 Successful/Failed ID가 제출한 ID와 정확히 한 번씩 일치하지 않으면
+중복 handle이 있으면 `IllegalArgumentException`을 던진다. `entry-0`부터 `entry-9`까지의
+entry ID는 입력 순서로 생성되는 공개 결과 correlation key이며, `entryId -> receiptHandle`
+mapping은 내부에만 보존한다. `successfulEntryIds`와 `failed.entryId`는 입력 순서를 유지하고,
+호출자는 entry ID를 통해서만 결과를 상관시킨다. SDK 응답의 Successful/Failed ID가 제출한 ID와 정확히 한 번씩 일치하지 않으면
 `SqsBatchDeleteProtocolException`을 던져 어떤 항목도 terminal 처리하지 않는다.
 기본 구현은 기존 구현체가 반환하는 단건 `DeleteMessageResponse`를 성공으로 보고, 명시적인
 AWS item-level 오류만 entry ID별 failed 항목으로 모은다. 인증·권한·네트워크·알 수 없는
@@ -278,6 +301,40 @@ AWS item-level 오류만 entry ID별 failed 항목으로 모은다. 인증·권�
 Kotlin JVM default ABI 설정과 precompiled 구현체 fixture로 검증한다. AWS template 경로는
 DeleteMessageBatch 1회만 호출한다. MicrometerSqsOperations는 delete_batch 작업으로
 위임·계측하되 queue URL, receipt handle, body를 tag나 log에 넣지 않는다.
+
+### SqsOperations.changeVisibilityBatch
+
+partial acknowledgement와 error visibility가 10개 항목마다 단건 round-trip을 만들지 않도록
+`SqsOperations`는 다음 batch visibility 계약도 제공한다.
+
+~~~kotlin
+suspend fun changeVisibilityBatch(
+    queueUrl: String,
+    requests: Collection<SqsChangeVisibilityRequest>,
+): SqsBatchVisibilityResult
+~~~
+
+~~~kotlin
+data class SqsChangeVisibilityRequest(
+    val messageId: String,
+    val receiptHandle: String,
+    val timeoutSeconds: Int,
+)
+
+data class SqsBatchVisibilityResult(
+    val successfulMessageIds: List<String>,
+    val failed: List<SqsBatchAcknowledgementFailure>,
+)
+~~~
+
+기존 구현체를 위한 기본 구현은 입력 순서대로 단건 `changeVisibility`를 호출하고, AWS
+template은 `ChangeMessageVisibilityBatch`를 최대 10개에 대해 한 번 호출한다. entry ID는
+`entry-0..entry-9`로 bounded하게 만들며 Successful/Failed ID 집합이 입력과 정확히 일치하지
+않으면 `SqsBatchVisibilityProtocolException`을 던져 결과를 terminal로 처리하지 않는다.
+transport·unknown exception과 `CancellationException`은 재전파하고, SDK의 명시적 item
+failure만 결과에 담아 실패 항목을 `PENDING`으로 보존한다. metric operation은
+`change_visibility_batch`로 구분하되 receipt handle/body/message ID/queue URL을 raw tag로
+사용하지 않는다.
 
 ## 런타임 흐름
 
@@ -311,12 +368,16 @@ at-least-once 계약을 따르므로, handler의 외부 side effect와 소비자
 message-id deduplication을 전제로 한다.
 
 interceptor는 기존 SqsListenerInvocationContext를 메시지별로 생성해 기존 metric/trace
-계약을 유지한다. batch에는 수신 response마다 내부 batch correlation id를 만들고, metric tag는
-`listenerId`, `operation`, `outcome`, `batchSizeBucket`처럼 bounded 값만 사용한다. batch
-handler/ack latency, retry count, partial failure count, visibility failure, cancellation은
-별도 counter/timer로 기록하되 body, message id, receipt handle, queue URL을 tag·trace
-attribute·로그에 넣지 않는다. 기존 per-message ack interceptor는 성공·실패 항목에 대해
-한 번씩 호출하고, batch span은 per-message span의 parent로만 추가한다.
+계약을 유지한다. batch에는 수신 response마다 `generation + pollerId + batchSequence` 내부
+correlation id를 만들고, metric tag는 `listenerId`, `operation`, `outcome`,
+`batchSizeBucket`처럼 bounded 값만 사용한다. 기본 계측 단위는 poll response invocation 1회와
+public acknowledgement call 1회이며, per-message hook/span은 명시적 sampling/opt-in에서만
+생성한다. batch handler/ack latency, retry count, partial failure count, visibility failure,
+cancellation은 별도 counter/timer로 기록하되 body, message id, receipt handle, queue URL을
+tag·trace attribute·로그에 넣지 않는다. 기존 per-message ack interceptor는 성공·실패 항목에
+대해 한 번씩 호출하고, batch span은 per-message span의 parent로만 추가한다. metric 이름,
+`batchSizeBucket` 경계(`0`, `1`, `2-5`, `6-10`), 집계 단위와 alert owner/threshold는 운영
+runbook에서 고정한다.
 
 ## 실패와 복구
 
@@ -331,24 +392,26 @@ redacted reference만 structured log correlation으로 사용하며, 원문 body
    적용한다.
 3. **partial delete**: AWS 응답이 200이어도 Failed entry를 result에 기록한다. 성공 entry는
    재배달되지 않으며 실패 entry만 SQS에 남긴다. error visibility가 설정되면 실패 entry에만
-   적용하고, visibility 호출의 transport 오류도 typed per-item failure로 보존한다. 성공 삭제는
-   되돌리지 않으며, 실패 visibility는 pending과 retry/backoff 대상으로 남긴다.
+   적용하고, visibility 호출의 명시적 SDK item failure만 typed per-item failure로 보존한다.
+   visibility transport/unknown exception과 cancellation은 재전파하며, 성공 삭제는 되돌리지
+   않는다. 실패 visibility는 pending과 retry/backoff 대상으로 남긴다.
 4. **중복 receipt/빈 batch**: batch 내부 중복 receipt handle은 AWS 호출 전에 거부하여
    entry mapping ambiguity를 없앤다. 빈 목록은 no-op이며 handler와 AWS batch delete를
    호출하지 않는다.
 5. **중지/취소**: `RUNNING -> STOPPING_RECEIVE -> DRAINING -> STOPPED` 상태를 사용한다.
-   stop은 receive coroutine을 먼저 취소하고, generation의 handler/ack를
-   `stopTimeoutMillis`까지 기다린 뒤 강제 취소한다. 강제 취소된 작업은 ack/visibility를 새로
-   시작하지 않고 원래 CancellationException을 보존한다. generation token이 다른 완료
-   callback은 결과·metric·visibility를 갱신하지 않는다. stop 뒤 start는 새 generation으로
-   시작하며 이전 generation의 작업을 재사용하지 않는다.
+   stop은 receive coroutine을 먼저 취소하고, generation의 handler/ack/visibility operation을
+   registry로 추적해 `stopTimeoutMillis`까지 기다린 뒤 강제 취소한다. operation-start fence는
+   stop 이후 새 AWS call을 금지하고, 강제 취소된 작업은 원래 CancellationException을 보존한다.
+   generation token이 다른 완료 callback은 결과·metric·visibility를 갱신하지 않는다. stop 뒤
+   start는 새 generation으로 시작하며 이전 generation의 작업을 재사용하지 않는다.
 
 ## 호환성·경계
 
 - 기존 단건 @SqsListener에 새 속성 기본값을 적용하지 않는다.
 - 기존 SqsAcknowledgement, SqsListenerInterceptor, SqsOperations 구현체는 새 batch API를
-  사용하지 않아도 컴파일·동작해야 한다. SqsOperations.deleteBatch는 기본 구현으로 보호한다.
-- `SqsOperations.deleteBatch`의 JVM default method ABI와 precompiled 구버전 구현체 호출을
+  사용하지 않아도 컴파일·동작해야 한다. SqsOperations.deleteBatch와
+  SqsOperations.changeVisibilityBatch는 기본 구현으로 보호한다.
+- `SqsOperations.deleteBatch`/`changeVisibilityBatch`의 JVM default method ABI와 precompiled 구버전 구현체 호출을
   compatibility fixture로 검증한다. annotation trailing default와 `INHERIT` 해석도 기존
   consumer bytecode/source fixture로 검증한다.
 - 기존 `SqsAutoConfiguration`의 `AutoConfiguration.imports`, `@ConditionalOnClass`,
@@ -361,9 +424,9 @@ redacted reference만 structured log correlation으로 사용하며, 원문 body
 - batch 결과에는 본문·receipt handle을 자동 로그로 남기지 않고, message id도 metric/trace
   label에서 제외한다. 운영 로그에는 bounded batch correlation과 redacted message reference,
   operation/outcome만 사용한다. batch는 `batch=true` 명시 endpoint의 opt-in이며, 장애 시
-  해당 endpoint를 `batch=false` 또는 단건 handler로 되돌리는 구성 변경을 canary/rollback
-  절차로 사용한다. 이미 삭제된 메시지는 rollback으로 복구되지 않으므로 redrive/DLQ와
-  consumer idempotency를 함께 운영한다.
+  receive 중지와 in-flight drain 뒤 이전 단건 handler를 재배포하거나 별도 canary endpoint로
+  전환하는 구성 변경을 rollback 절차로 사용한다. 이미 삭제된 메시지는 rollback으로 복구되지
+  않으므로 redrive/DLQ와 consumer idempotency를 함께 운영한다.
 - 이번 작업은 README/README.ko 및 관련 KDoc만 갱신한다. release note, PR, merge는 별도 gate다.
 
 ## 검증 수용 기준
@@ -375,6 +438,7 @@ redacted reference만 structured log correlation으로 사용하며, 원문 body
   converter 실패의 message id/index가 검증된다.
 - 전체 성공, 전체 실패, partial delete 성공/실패가 result와 completed에 반영된다.
 - 기본 deleteBatch의 단건 fallback과 실제 template의 SDK batch mapping이 검증된다.
+- 기본 changeVisibilityBatch의 단건 fallback과 실제 template의 SDK batch mapping이 검증된다.
 - entry ID 순서 변경·unknown·duplicate·missing response가 protocol exception으로 fail-closed
   되고, raw receipt handle이 result/log/metric/trace에 노출되지 않는지 검증한다.
 - 동일 group의 앞 항목 실패·뒤 항목 성공에서 prefix 규칙이 지켜지고, 중복·foreign batch·
@@ -397,8 +461,10 @@ redacted reference만 structured log correlation으로 사용하며, 원문 body
   새 batch 내부 병렬 실행을 만들지 않는지 검증한다.
 - 에뮬레이터가 DeleteMessageBatch 항목별 실패를 제공하지 않으면 fake 테스트를 authoritative
   partial-failure proof로 유지하고, capability gap을 기록한다.
-- 실행한 Floci image/version, 명령, capability 결과를 `docs/lessons/` 또는 issue comment에
-  기록하고, 미지원 항목은 fake authoritative proof와 후속 owner를 연결한다.
+- 실행한 Floci image/version, 명령, capability 결과를 고정 capability-gap record에 기록하고,
+  record에는 owner, tracking issue, authoritative proof, unsupported behavior, expiry/recheck
+  date, release-blocking 여부를 포함한다. 미지원 항목은 fake authoritative proof와 후속 owner를
+  연결한다.
 
 ### 문서/품질
 
