@@ -158,6 +158,8 @@ bluetape4k:
         wait-time-seconds: 20         # 0..20
         visibility-timeout-seconds: 60
         error-visibility-timeout-seconds: 0
+        message-visibility-heartbeat-interval-seconds: 20
+        message-visibility-heartbeat-seconds: 60
         concurrency: 2
         stop-timeout-millis: 25000
         retry:
@@ -701,7 +703,13 @@ data class OrderEvent(val id: String, val total: Long)
 
 @Component
 class OrderListener {
-    @SqsListener(queue = "orders", maxMessages = 10, waitTimeSeconds = 20)
+    @SqsListener(
+        queue = "orders",
+        maxMessages = 10,
+        waitTimeSeconds = 20,
+        messageVisibilityHeartbeatIntervalSeconds = 20,
+        messageVisibilityHeartbeatSeconds = 60,
+    )
     suspend fun onMessage(message: SqsReceivedMessage) {
         // process; throw to re-deliver
     }
@@ -732,6 +740,18 @@ jitter before the final failure path. Register `SqsListenerInterceptor` beans to
 observe receive, handler, ack/nack, and failure phases with Micrometer or a
 logging/tracing library. `stop-timeout-millis` bounds container shutdown after
 poller cancellation.
+
+The opt-in visibility heartbeat requires both `message-visibility-heartbeat-interval-seconds`
+and `message-visibility-heartbeat-seconds`; it is disabled by default. The interval must be
+positive, shorter than the heartbeat timeout, and no greater than 43,200 seconds. The annotation
+properties with the same names in camelCase override the global listener values. Each heartbeat
+is an additional `ChangeMessageVisibility` request, so choose an interval that leaves margin
+before expiry and account for SQS request cost and throttling. A heartbeat failure is logged and
+observed through the existing Micrometer operations without changing the handler result.
+
+For batch listeners, only messages still pending acknowledgement are extended. A partial
+acknowledgement removes completed messages from later heartbeat requests, while FIFO ordering
+metadata remains under the existing batch acknowledgement rules.
 
 Batch delivery is opt-in with `batch = true` and accepts one `List<SqsReceivedMessage>`,
 `List<software.amazon.awssdk.services.sqs.model.Message>`, or concrete `List<T>` payload plus

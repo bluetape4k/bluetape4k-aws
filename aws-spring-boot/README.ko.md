@@ -154,6 +154,8 @@ bluetape4k:
         wait-time-seconds: 20         # 0..20
         visibility-timeout-seconds: 60
         error-visibility-timeout-seconds: 0
+        message-visibility-heartbeat-interval-seconds: 20
+        message-visibility-heartbeat-seconds: 60
         concurrency: 2
         stop-timeout-millis: 25000
         retry:
@@ -684,7 +686,13 @@ data class OrderEvent(val id: String, val total: Long)
 
 @Component
 class OrderListener {
-    @SqsListener(queue = "orders", maxMessages = 10, waitTimeSeconds = 20)
+    @SqsListener(
+        queue = "orders",
+        maxMessages = 10,
+        waitTimeSeconds = 20,
+        messageVisibilityHeartbeatIntervalSeconds = 20,
+        messageVisibilityHeartbeatSeconds = 60,
+    )
     suspend fun onMessage(message: SqsReceivedMessage) {
         // 처리. 예외 throw 시 재배달.
     }
@@ -711,6 +719,18 @@ manual acknowledgement 모드가 되어 handler가 `acknowledge()`를 호출할 
 backoff와 optional jitter를 지원합니다. `SqsListenerInterceptor` bean을 등록하면
 receive, handler, ack/nack, failure 단계를 Micrometer나 logging/tracing library로
 관찰할 수 있습니다. `stop-timeout-millis`는 poller 취소 후 컨테이너 종료 대기 시간을 제한합니다.
+
+선택적 visibility heartbeat를 사용하려면 `message-visibility-heartbeat-interval-seconds`와
+`message-visibility-heartbeat-seconds`를 모두 설정해야 하며 기본값은 비활성화입니다. 두 값은
+양수이고 interval은 heartbeat timeout보다 짧아야 하며, 43,200초를 넘을 수 없습니다. 같은
+이름의 camelCase 애노테이션 속성은 전역 listener 값을 덮어씁니다. 각 heartbeat는 추가
+`ChangeMessageVisibility` 요청이므로 만료 전에 여유가 남는 interval을 선택하고 SQS 요청 비용과
+throttling을 고려해야 합니다. heartbeat 실패는 로그와 기존 Micrometer operation으로 관찰되며
+handler 결과를 변경하지 않습니다.
+
+배치 listener에서는 아직 acknowledgement가 완료되지 않은 메시지만 연장합니다. 부분
+acknowledgement로 완료된 메시지는 다음 heartbeat 요청에서 제외되고, FIFO ordering metadata는
+기존 batch acknowledgement 규칙을 따릅니다.
 
 배치 전달은 `batch = true`로 명시적으로 활성화하며 `List<SqsReceivedMessage>`,
 `List<software.amazon.awssdk.services.sqs.model.Message>`, 또는 concrete `List<T>` 하나와

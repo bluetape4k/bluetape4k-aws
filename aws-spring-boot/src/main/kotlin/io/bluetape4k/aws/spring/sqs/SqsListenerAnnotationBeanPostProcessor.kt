@@ -65,6 +65,10 @@ class SqsListenerAnnotationBeanPostProcessor(
                 ?: effective.visibilityTimeoutSeconds,
             errorVisibilityTimeoutSeconds = listener.errorVisibilityTimeoutSeconds.takeIf { it >= 0 }
                 ?: effective.errorVisibilityTimeoutSeconds,
+            messageVisibilityHeartbeatIntervalSeconds = listener.messageVisibilityHeartbeatIntervalSeconds
+                .takeIf { it >= 0 } ?: effective.messageVisibilityHeartbeatIntervalSeconds,
+            messageVisibilityHeartbeatSeconds = listener.messageVisibilityHeartbeatSeconds
+                .takeIf { it >= 0 } ?: effective.messageVisibilityHeartbeatSeconds,
             autoStartup = listener.autoStartup && effective.autoStartup,
             phase = effective.phase,
             concurrency = effective.concurrency,

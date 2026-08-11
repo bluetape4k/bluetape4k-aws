@@ -9,6 +9,8 @@ internal data class SqsListenerEndpoint(
     val waitTimeSeconds: Int,
     val visibilityTimeoutSeconds: Int?,
     val errorVisibilityTimeoutSeconds: Int?,
+    val messageVisibilityHeartbeatIntervalSeconds: Int?,
+    val messageVisibilityHeartbeatSeconds: Int?,
     val autoStartup: Boolean,
     val phase: Int,
     val concurrency: Int,
@@ -17,6 +19,10 @@ internal data class SqsListenerEndpoint(
     val batch: Boolean = false,
     val acknowledgementMode: SqsAcknowledgementMode = SqsAcknowledgementMode.INHERIT,
 ): Serializable {
+    init {
+        requireVisibilityHeartbeat(messageVisibilityHeartbeatIntervalSeconds, messageVisibilityHeartbeatSeconds)
+    }
+
     companion object {
         private const val serialVersionUID: Long = 1L
     }
