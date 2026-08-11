@@ -99,4 +99,7 @@ dependencies {
 
 tasks.test {
     systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
+    if (providers.gradleProperty("skipAwsEmulatorTests").map(String::toBoolean).orElse(false).get()) {
+        exclude("**/*AwsEmulatorTest.class")
+    }
 }

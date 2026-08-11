@@ -33,4 +33,29 @@ class MicrometerSqsOperationsTest {
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L
     }
+
+    @Test
+    fun `record bounded batch delete operation path`() = runSuspendIO {
+        val registry = SimpleMeterRegistry()
+        val delegate = mockk<SqsOperations>()
+        coEvery {
+            delegate.deleteBatch("https://sqs.ap-northeast-2.amazonaws.com/000000000000/orders", any())
+        } returns SqsBatchDeleteResult(listOf("entry-0"), emptyList())
+        val operations = MicrometerSqsOperations(delegate, registry)
+
+        operations.deleteBatch(
+            "https://sqs.ap-northeast-2.amazonaws.com/000000000000/orders",
+            listOf("receipt-1"),
+        )
+
+        val timer = registry.find(MicrometerSqsOperations.DEFAULT_METER_NAME)
+            .tag(AwsMetricContract.TAG_OPERATION, MicrometerSqsOperations.OPERATION_DELETE_BATCH)
+            .tag(AwsMetricContract.TAG_OUTCOME, AwsMetricContract.OUTCOME_SUCCESS)
+            .tag(AwsMetricContract.TAG_QUEUE_NAME, "orders")
+            .tag(MicrometerSqsOperations.TAG_BATCH_SIZE_BUCKET, "1")
+            .tag(MicrometerSqsOperations.TAG_IMPLEMENTATION_PATH, "fallback")
+            .timer()
+        timer.shouldNotBeNull()
+        timer.count() shouldBeEqualTo 1L
+    }
 }

@@ -14,6 +14,15 @@ interface SqsMessageConverter {
 }
 
 /**
+ * batch 항목 변환 실패를 index와 concrete target type으로 표현합니다.
+ */
+class SqsMessageConversionException(
+    val index: Int,
+    val targetType: Class<*>,
+    cause: Throwable,
+) : IllegalArgumentException("SQS message conversion failed at batch index $index for ${targetType.name}", cause)
+
+/**
  * 네이티브가 아닌 리스너 매개변수 타입에서 실패하는 변환기입니다.
  */
 object NoopSqsMessageConverter: SqsMessageConverter {

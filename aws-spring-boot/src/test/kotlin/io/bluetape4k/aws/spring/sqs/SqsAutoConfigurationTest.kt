@@ -180,6 +180,52 @@ class SqsAutoConfigurationTest {
     }
 
     @Test
+    fun `batch endpoint accepts inherited max messages within SQS limit`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.listener.max-messages=7")
+            .withUserConfiguration(BatchListenerConfig::class.java)
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+            }
+    }
+
+    @Test
+    fun `batch manual endpoint accepts batch acknowledgement`() {
+        contextRunner
+            .withUserConfiguration(BatchManualListenerConfig::class.java)
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+            }
+    }
+
+    @Test
+    fun `batch endpoint rejects max messages above SQS limit`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.listener.max-messages=11")
+            .withUserConfiguration(BatchListenerConfig::class.java)
+            .run { context ->
+                context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "maxMessages"
+            }
+    }
+
+    @Test
+    fun `on success rejects acknowledgement parameter`() {
+        contextRunner
+            .withUserConfiguration(OnSuccessAcknowledgementListenerConfig::class.java)
+            .run { context ->
+                context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "ON_SUCCESS cannot declare SqsAcknowledgement"
+            }
+    }
+
+    @Test
     fun `Jackson message converter registers when ObjectMapper is available`() {
         contextRunner
             .withBean(ObjectMapper::class.java, { ObjectMapper() })
@@ -255,6 +301,30 @@ class SqsAutoConfigurationTest {
         }
     }
 
+    @Test
+    fun `single endpoint rejects batch acknowledgement`() {
+        contextRunner
+            .withUserConfiguration(SingleBatchAcknowledgementListenerConfig::class.java)
+            .run { context ->
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "SqsBatchAcknowledgement requires batch=true"
+            }
+    }
+
+    @Test
+    fun `manual batch endpoint rejects single acknowledgement`() {
+        contextRunner
+            .withUserConfiguration(BatchSingleAcknowledgementListenerConfig::class.java)
+            .run { context ->
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "MANUAL requires SqsBatchAcknowledgement"
+            }
+    }
+
     @Configuration(proxyBeanMethods = false)
     internal class UnresolvedPlaceholderListenerConfig {
         @Bean
@@ -277,6 +347,78 @@ class SqsAutoConfigurationTest {
     internal class UnsupportedListener {
         @SqsListener("queue")
         fun handle() = Unit
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class BatchListenerConfig {
+        @Bean
+        fun listener(): BatchListener = BatchListener()
+    }
+
+    internal class BatchListener {
+        @SqsListener(queue = "orders", batch = true)
+        fun handle(messages: List<String>) {
+            check(messages.isNotEmpty())
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class BatchManualListenerConfig {
+        @Bean
+        fun listener(): BatchManualListener = BatchManualListener()
+    }
+
+    internal class BatchManualListener {
+        @SqsListener(
+            queue = "orders",
+            batch = true,
+            acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+        )
+        fun handle(messages: List<String>, acknowledgement: SqsBatchAcknowledgement) {
+            check(messages.isNotEmpty())
+            check(!acknowledgement.completed)
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class OnSuccessAcknowledgementListenerConfig {
+        @Bean
+        fun listener(): OnSuccessAcknowledgementListener = OnSuccessAcknowledgementListener()
+    }
+
+    internal class OnSuccessAcknowledgementListener {
+        @SqsListener(queue = "orders", acknowledgementMode = SqsAcknowledgementMode.ON_SUCCESS)
+        fun handle(body: String, acknowledgement: SqsAcknowledgement) {
+            check(body.isNotBlank())
+            check(!acknowledgement.completed)
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class SingleBatchAcknowledgementListenerConfig {
+        @Bean
+        fun listener(): SingleBatchAcknowledgementListener = SingleBatchAcknowledgementListener()
+    }
+
+    internal class SingleBatchAcknowledgementListener {
+        @SqsListener("orders")
+        fun handle(acknowledgement: SqsBatchAcknowledgement) {
+            check(!acknowledgement.completed)
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class BatchSingleAcknowledgementListenerConfig {
+        @Bean
+        fun listener(): BatchSingleAcknowledgementListener = BatchSingleAcknowledgementListener()
+    }
+
+    internal class BatchSingleAcknowledgementListener {
+        @SqsListener(queue = "orders", batch = true, acknowledgementMode = SqsAcknowledgementMode.MANUAL)
+        fun handle(messages: List<String>, acknowledgement: SqsAcknowledgement) {
+            check(messages.isNotEmpty())
+            check(!acknowledgement.completed)
+        }
     }
 
     @Configuration(proxyBeanMethods = false)

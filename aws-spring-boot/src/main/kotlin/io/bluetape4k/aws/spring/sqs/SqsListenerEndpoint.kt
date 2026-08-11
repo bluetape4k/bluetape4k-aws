@@ -14,6 +14,8 @@ internal data class SqsListenerEndpoint(
     val concurrency: Int,
     val stopTimeoutMillis: Long,
     val retry: SqsProperties.Retry,
+    val batch: Boolean = false,
+    val acknowledgementMode: SqsAcknowledgementMode = SqsAcknowledgementMode.INHERIT,
 ): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
