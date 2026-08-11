@@ -10,6 +10,8 @@ import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import io.bluetape4k.assertions.shouldBeEqualTo
+import kotlinx.coroutines.delay
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
 import org.springframework.aop.framework.ProxyFactory
@@ -18,6 +20,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import tools.jackson.databind.ObjectMapper
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
@@ -88,6 +91,44 @@ class SqsListenerAwsEmulatorTest {
                         operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    fun `visibility heartbeat prevents redelivery during a long handler`() {
+        val bootstrap = contextRunner(queueUrl = "bootstrap", NoListenerConfig::class.java)
+            .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
+
+        bootstrap.run { bootstrapContext ->
+            val bootstrapOperations = bootstrapContext.getBean(SqsOperations::class.java)
+            lateinit var queueUrl: String
+            runSuspendIO {
+                queueUrl = bootstrapOperations.createQueue(
+                    "listener-heartbeat-${Base58.randomString(8)}",
+                    mapOf(QueueAttributeName.VISIBILITY_TIMEOUT to "2"),
+                )
+            }
+
+            contextRunner(
+                queueUrl,
+                HeartbeatListenerConfig::class.java,
+                "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-interval-seconds=1",
+                "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-seconds=3",
+            ).run { context ->
+                val operations = context.getBean(SqsOperations::class.java)
+                val listener = context.getBean(HeartbeatListener::class.java)
+                runSuspendIO { operations.send(queueUrl, "listener-heartbeat") }
+
+                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                    listener.attempts.get() shouldBeGreaterOrEqualTo 1
+                }
+                runSuspendIO {
+                    await.atMost(Duration.ofSeconds(12)).untilSuspending {
+                        operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
+                    }
+                }
+                listener.attempts.get() shouldBeEqualTo 1
             }
         }
     }
@@ -280,6 +321,23 @@ class SqsListenerAwsEmulatorTest {
         @SqsListener("\${test.queue-url}")
         fun handle(body: String) {
             bodies += body
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class HeartbeatListenerConfig {
+        @Bean
+        fun listener(): HeartbeatListener = HeartbeatListener()
+    }
+
+    internal class HeartbeatListener {
+        val attempts = AtomicInteger()
+
+        @SqsListener("\${test.queue-url}")
+        suspend fun handle(body: String) {
+            attempts.incrementAndGet()
+            check(body == "listener-heartbeat")
+            delay(3_500)
         }
     }
 

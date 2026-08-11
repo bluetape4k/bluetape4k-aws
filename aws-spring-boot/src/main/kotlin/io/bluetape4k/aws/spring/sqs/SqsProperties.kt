@@ -24,6 +24,10 @@ data class SqsProperties(
         val waitTimeSeconds: Int = 20,
         val visibilityTimeoutSeconds: Int? = null,
         val errorVisibilityTimeoutSeconds: Int? = null,
+        /** 핸들러 실행 중 visibility를 연장할 heartbeat 호출 간격(초)입니다. */
+        val messageVisibilityHeartbeatIntervalSeconds: Int? = null,
+        /** heartbeat가 설정할 visibility timeout(초)입니다. */
+        val messageVisibilityHeartbeatSeconds: Int? = null,
         val concurrency: Int = 1,
         val stopTimeoutMillis: Long = 25_000,
         val retry: Retry = Retry(),
@@ -33,6 +37,10 @@ data class SqsProperties(
             require(waitTimeSeconds in 0..20) { "waitTimeSeconds must be between 0 and 20." }
             visibilityTimeoutSeconds?.let { requireVisibilityTimeout(it, "visibilityTimeoutSeconds") }
             errorVisibilityTimeoutSeconds?.let { requireVisibilityTimeout(it, "errorVisibilityTimeoutSeconds") }
+            requireVisibilityHeartbeat(
+                messageVisibilityHeartbeatIntervalSeconds,
+                messageVisibilityHeartbeatSeconds,
+            )
             require(concurrency >= 1) { "concurrency must be greater than or equal to 1." }
             require(stopTimeoutMillis >= 1) { "stopTimeoutMillis must be greater than or equal to 1." }
         }
@@ -97,4 +105,26 @@ data class SqsProperties(
 
 private fun requireVisibilityTimeout(value: Int, name: String) {
     require(value in 0..43_200) { "$name must be between 0 and 43200." }
+}
+
+internal fun requireVisibilityHeartbeat(
+    intervalSeconds: Int?,
+    heartbeatSeconds: Int?,
+) {
+    if (intervalSeconds == null && heartbeatSeconds == null) {
+        return
+    }
+    require(intervalSeconds != null && heartbeatSeconds != null) {
+        "messageVisibilityHeartbeatIntervalSeconds and messageVisibilityHeartbeatSeconds " +
+            "must be configured together."
+    }
+    require(intervalSeconds in 1..43_200) {
+        "messageVisibilityHeartbeatIntervalSeconds must be between 1 and 43200."
+    }
+    require(heartbeatSeconds in 1..43_200) {
+        "messageVisibilityHeartbeatSeconds must be between 1 and 43200."
+    }
+    require(intervalSeconds < heartbeatSeconds) {
+        "messageVisibilityHeartbeatIntervalSeconds must be less than messageVisibilityHeartbeatSeconds."
+    }
 }

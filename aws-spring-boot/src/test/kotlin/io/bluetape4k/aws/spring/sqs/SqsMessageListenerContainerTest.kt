@@ -11,11 +11,17 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
@@ -31,13 +37,16 @@ class SqsMessageListenerContainerTest {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
         val invocation = CompletableDeferred<List<SqsReceivedMessage>>()
+        val deleteBatchCalled = CompletableDeferred<Unit>()
         val receiveCalls = AtomicInteger(0)
         val messages = listOf(message(), message("message-2"))
         coEvery { operations.receive(QUEUE_URL, 2, 0, null) } coAnswers {
             if (receiveCalls.incrementAndGet() == 1) messages else awaitCancellation()
         }
-        coEvery { operations.deleteBatch(QUEUE_URL, any()) } returns
+        coEvery { operations.deleteBatch(QUEUE_URL, any()) } coAnswers {
+            deleteBatchCalled.complete(Unit)
             SqsBatchDeleteResult(listOf("entry-0", "entry-1"), emptyList())
+        }
         coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>()) } coAnswers {
             invocation.complete(firstArg<List<SqsReceivedMessage>>())
         }
@@ -53,6 +62,7 @@ class SqsMessageListenerContainerTest {
             container.start()
             withTimeout(2_000) { invocation.await() }.map { it.messageId } shouldBeEqualTo
                 listOf("message-1", "message-2")
+            withTimeout(2_000) { deleteBatchCalled.await() }
             coVerify(exactly = 1) { invoker.invokeBatch(any(), null) }
             coVerify(exactly = 1) { operations.deleteBatch(QUEUE_URL, any()) }
         } finally {
@@ -393,6 +403,173 @@ class SqsMessageListenerContainerTest {
         coVerify(exactly = 0) { operations.delete(any(), any()) }
     }
 
+    @Test
+    fun `single message heartbeat repeats while handler is active and stops after success`() = runTest {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val handlerStarted = CompletableDeferred<Unit>()
+        val handlerRelease = CompletableDeferred<Unit>()
+        val secondHeartbeat = CompletableDeferred<Unit>()
+        val heartbeatCalls = AtomicInteger()
+        val receiveCalls = AtomicInteger()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+        }
+        coEvery { operations.changeVisibility(QUEUE_URL, "receipt-message-1", 30) } coAnswers {
+            if (heartbeatCalls.incrementAndGet() >= 2) {
+                secondHeartbeat.complete(Unit)
+            }
+            software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse.builder().build()
+        }
+        coEvery { operations.delete(QUEUE_URL, "receipt-message-1") } returns
+            DeleteMessageResponse.builder().build()
+        every { invoker.manualAcknowledgement } returns false
+        coEvery { invoker.invoke(any(), any()) } coAnswers {
+            handlerStarted.complete(Unit)
+            handlerRelease.await()
+        }
+        val container = container(
+            operations = operations,
+            invoker = invoker,
+            dispatcher = dispatcher,
+            messageVisibilityHeartbeatIntervalSeconds = 1,
+            messageVisibilityHeartbeatSeconds = 30,
+        )
+
+        container.start()
+        runCurrent()
+        handlerStarted.await()
+        advanceTimeBy(2_000)
+        runCurrent()
+        withContext(Dispatchers.Default.limitedParallelism(1)) {
+            withTimeout(2_000) { secondHeartbeat.await() }
+        }
+        (heartbeatCalls.get() >= 2).shouldBeTrue()
+
+        handlerRelease.complete(Unit)
+        runCurrent()
+        coVerify(exactly = 1) { operations.delete(QUEUE_URL, "receipt-message-1") }
+        val callsAfterSuccess = heartbeatCalls.get()
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        runCurrent()
+        stopped.await()
+        advanceTimeBy(2_000)
+        runCurrent()
+        heartbeatCalls.get() shouldBeEqualTo callsAfterSuccess
+    }
+
+    @Test
+    fun `heartbeat failure does not change successful handler outcome`() = runTest {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val handlerStarted = CompletableDeferred<Unit>()
+        val handlerRelease = CompletableDeferred<Unit>()
+        val heartbeatFailed = CompletableDeferred<Unit>()
+        val receiveCalls = AtomicInteger()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+        }
+        coEvery { operations.changeVisibility(QUEUE_URL, "receipt-message-1", 30) } coAnswers {
+            heartbeatFailed.complete(Unit)
+            throw IllegalStateException("heartbeat unavailable")
+        }
+        coEvery { operations.delete(QUEUE_URL, "receipt-message-1") } returns
+            DeleteMessageResponse.builder().build()
+        every { invoker.manualAcknowledgement } returns false
+        coEvery { invoker.invoke(any(), any()) } coAnswers {
+            handlerStarted.complete(Unit)
+            heartbeatFailed.await()
+            handlerRelease.await()
+        }
+        val container = container(
+            operations = operations,
+            invoker = invoker,
+            dispatcher = dispatcher,
+            messageVisibilityHeartbeatIntervalSeconds = 1,
+            messageVisibilityHeartbeatSeconds = 30,
+        )
+
+        container.start()
+        runCurrent()
+        handlerStarted.await()
+        advanceTimeBy(1_000)
+        runCurrent()
+        withContext(Dispatchers.Default.limitedParallelism(1)) {
+            withTimeout(2_000) { heartbeatFailed.await() }
+        }
+        handlerRelease.complete(Unit)
+        runCurrent()
+        coVerify(exactly = 1) { operations.delete(QUEUE_URL, "receipt-message-1") }
+
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        runCurrent()
+        stopped.await()
+    }
+
+    @Test
+    fun `batch heartbeat protects pending messages and excludes manually acknowledged items`() = runTest {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val handlerStarted = CompletableDeferred<Unit>()
+        val handlerRelease = CompletableDeferred<Unit>()
+        val heartbeatObserved = CompletableDeferred<List<SqsChangeVisibilityRequest>>()
+        val receiveCalls = AtomicInteger()
+        val messages = listOf(message(), message("message-2"))
+        coEvery { operations.receive(QUEUE_URL, 2, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) messages else awaitCancellation()
+        }
+        coEvery { operations.changeVisibilityBatch(QUEUE_URL, any()) } coAnswers {
+            val requests = secondArg<Collection<SqsChangeVisibilityRequest>>().toList()
+            heartbeatObserved.complete(requests)
+            SqsBatchVisibilityResult(
+                successfulMessageIds = requests.map { it.messageId },
+                failed = emptyList(),
+            )
+        }
+        coEvery { operations.deleteBatch(QUEUE_URL, any()) } returns
+            SqsBatchDeleteResult(listOf("entry-0"), emptyList())
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>()) } coAnswers {
+            secondArg<SqsBatchAcknowledgement>().acknowledge(listOf(firstArg<List<SqsReceivedMessage>>().first()))
+            handlerStarted.complete(Unit)
+            handlerRelease.await()
+        }
+        every { invoker.manualAcknowledgement } returns true
+        val container = container(
+            operations = operations,
+            invoker = invoker,
+            dispatcher = dispatcher,
+            batch = true,
+            maxMessages = 2,
+            acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+            messageVisibilityHeartbeatIntervalSeconds = 1,
+            messageVisibilityHeartbeatSeconds = 30,
+        )
+
+        container.start()
+        runCurrent()
+        handlerStarted.await()
+        advanceTimeBy(1_000)
+        runCurrent()
+        val requests = withContext(Dispatchers.Default.limitedParallelism(1)) {
+            withTimeout(2_000) { heartbeatObserved.await() }
+        }
+        requests.map { it.messageId } shouldBeEqualTo listOf("message-2")
+        requests.single().timeoutSeconds shouldBeEqualTo 30
+
+        handlerRelease.complete(Unit)
+        runCurrent()
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        runCurrent()
+        stopped.await()
+        coVerify(atLeast = 1) { operations.changeVisibilityBatch(QUEUE_URL, any()) }
+    }
+
     private fun container(
         operations: SqsOperations,
         invoker: SqsListenerMethodInvoker,
@@ -405,6 +582,8 @@ class SqsMessageListenerContainerTest {
         retry: SqsProperties.Retry = SqsProperties.Retry(),
         autoStartup: Boolean = true,
         interceptors: List<SqsListenerInterceptor> = emptyList(),
+        messageVisibilityHeartbeatIntervalSeconds: Int? = null,
+        messageVisibilityHeartbeatSeconds: Int? = null,
     ): SqsMessageListenerContainer {
         return SqsMessageListenerContainer(
             endpoint = SqsListenerEndpoint(
@@ -414,6 +593,8 @@ class SqsMessageListenerContainerTest {
                 waitTimeSeconds = 0,
                 visibilityTimeoutSeconds = null,
                 errorVisibilityTimeoutSeconds = null,
+                messageVisibilityHeartbeatIntervalSeconds = messageVisibilityHeartbeatIntervalSeconds,
+                messageVisibilityHeartbeatSeconds = messageVisibilityHeartbeatSeconds,
                 autoStartup = autoStartup,
                 phase = 0,
                 concurrency = 1,

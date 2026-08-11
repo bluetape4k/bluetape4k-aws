@@ -65,6 +65,8 @@ internal class SqsBatchPerformanceRuntimeAdapter(
             waitTimeSeconds = 0,
             visibilityTimeoutSeconds = null,
             errorVisibilityTimeoutSeconds = null,
+            messageVisibilityHeartbeatIntervalSeconds = null,
+            messageVisibilityHeartbeatSeconds = null,
             autoStartup = true,
             phase = 0,
             concurrency = workerCount,

@@ -5,7 +5,9 @@ package io.bluetape4k.aws.spring.sqs
  *
  * - [queue]는 큐 이름, 큐 URL, 또는 `${...}` 플레이스홀더입니다. SpEL은 지원하지 않습니다.
  * - [maxMessages], [waitTimeSeconds], [visibilityTimeoutSeconds],
- *   [errorVisibilityTimeoutSeconds]가 음수이면 전역 리스너 설정을 사용합니다.
+ *   [errorVisibilityTimeoutSeconds], [messageVisibilityHeartbeatIntervalSeconds],
+ *   [messageVisibilityHeartbeatSeconds]가 음수이면 전역 리스너 설정을 사용합니다.
+ * - heartbeat는 두 설정이 모두 유효한 양수일 때만 활성화되며, interval은 heartbeat timeout보다 짧아야 합니다.
  * - 리스너 메서드는 `String`, AWS SDK [software.amazon.awssdk.services.sqs.model.Message],
  *   [SqsReceivedMessage] 중 하나의 인자를 받을 수 있습니다.
  * - [batch]를 활성화하면 하나의 poll 응답을 `List<SqsReceivedMessage>`, AWS SDK `List<Message>`,
@@ -38,6 +40,8 @@ annotation class SqsListener(
     val waitTimeSeconds: Int = -1,
     val visibilityTimeoutSeconds: Int = -1,
     val errorVisibilityTimeoutSeconds: Int = -1,
+    val messageVisibilityHeartbeatIntervalSeconds: Int = -1,
+    val messageVisibilityHeartbeatSeconds: Int = -1,
     val autoStartup: Boolean = true,
     val batch: Boolean = false,
     val acknowledgementMode: SqsAcknowledgementMode = SqsAcknowledgementMode.INHERIT,
