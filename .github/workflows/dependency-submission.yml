@@ -20,14 +20,14 @@ env:
 jobs:
   dependency-submission:
     name: Dependency Submission
-    if: github.event_name == 'push' || github.ref == 'refs/heads/develop'
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: refs/heads/develop
+          ref: ${{ github.sha }}
 
       - name: Setup Java
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -35,7 +35,40 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
 
+      - name: Detect Dependency Graph capability
+        id: dependency-graph-capability
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          status="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.security_and_analysis.dependency_graph.status // "disabled"')"
+          case "$status" in
+            enabled)
+              echo "enabled=true" >> "$GITHUB_OUTPUT"
+              {
+                echo "## Dependency Submission"
+                echo "Dependency Graph is enabled; the dependency snapshot will be submitted."
+              } >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            disabled)
+              echo "enabled=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::Dependency Graph is disabled; skipping Dependency Submission."
+              {
+                echo "## Dependency Submission"
+                echo "Dependency Graph is disabled for this repository."
+                echo "Dependency snapshot generation and submission were skipped by policy."
+              } >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "::error::Unexpected Dependency Graph status: $status"
+              exit 1
+              ;;
+          esac
+
       - name: Generate and submit dependency graph
+        if: ${{ steps.dependency-graph-capability.outputs.enabled == 'true' }}
         uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           additional-arguments: --no-configuration-cache --no-daemon

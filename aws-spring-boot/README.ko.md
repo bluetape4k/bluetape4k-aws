@@ -291,6 +291,8 @@ S3 config, Secrets Manager, Parameter Store source는 `EnvironmentPostProcessor`
 지난 뒤 property 접근 시점에 lazy reload하며, reload 실패 시에는 이전 값을 유지합니다.
 여러 원격 source가 같은 key를 제공하면 먼저 설정된 source가 더 높은 Spring
 property-source 우선순위를 가집니다.
+`bluetape4k.aws.enabled=false`로 설정하면 AWS 자동 구성뿐 아니라 startup
+Environment source도 비활성화되어, 설정된 원격 source에 접근하지 않습니다.
 `bluetape4k.aws.exposed.default-database.url`이 있을 때 Exposed registry가
 활성화됩니다. URL이 없으면 Exposed auto-configuration은 property binding만 제공하고
 registry나 database pool은 만들지 않습니다.

@@ -303,6 +303,8 @@ the parser from the object key extension and defaults to `properties`. When
 after the interval has elapsed; failed reloads keep the previous values. When
 multiple remote sources define the same key, the earlier configured source has
 higher Spring property-source precedence.
+Setting `bluetape4k.aws.enabled=false` disables these startup Environment sources
+as well as AWS auto-configuration, so configured remote sources are not accessed.
 `bluetape4k.aws.exposed.default-database.url` activates the Exposed registry.
 If the URL is absent, the Exposed auto-configuration contributes only property
 binding and does not create a registry or database pool.

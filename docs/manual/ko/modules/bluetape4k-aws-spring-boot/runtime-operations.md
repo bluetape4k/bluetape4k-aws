@@ -24,6 +24,7 @@ consumer 수, long-poll 시간, 한 번에 받을 메시지 수, visibility time
 ## 원격 설정
 
 Secrets Manager, Parameter Store, S3 config loader는 환경 준비 단계에서 실행됩니다. 필수 source 조회가 실패하면 시작을 실패시키세요. 요청마다 AWS를 호출하지 말고 해석한 설정을 environment에 보관합니다.
+`bluetape4k.aws.enabled=false`로 설정하면 이 startup loader와 AWS 자동 구성이 함께 비활성화되어 설정된 원격 source에 접근하지 않습니다.
 
 ## Graceful shutdown
 
@@ -43,4 +44,3 @@ Secrets Manager, Parameter Store, S3 config loader는 환경 준비 단계에서
 - [SQS listener container](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsMessageListenerContainer.kt)
 - [Micrometer SQS interceptor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsListenerInterceptor.kt)
 - [Secrets environment processor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/secretsmanager/SecretsManagerEnvironmentPostProcessor.kt)
-

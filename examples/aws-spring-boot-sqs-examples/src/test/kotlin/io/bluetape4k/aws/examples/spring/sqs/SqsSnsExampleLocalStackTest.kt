@@ -11,21 +11,27 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
-import kotlinx.coroutines.delay
+import org.awaitility.core.ConditionTimeoutException
+import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import java.time.Duration
 
 class SqsSnsExampleLocalStackTest {
 
     companion object {
+        private val CONDITION_TIMEOUT = Duration.ofSeconds(30)
+        private val CONDITION_POLL_INTERVAL = Duration.ofMillis(100)
+
         private val localStack: LocalStackServer by lazy {
             LocalStackServer.Launcher.getLocalStack("sns", "sqs")
         }
@@ -160,10 +166,22 @@ class SqsSnsExampleLocalStackTest {
     }
 
     private suspend fun waitUntil(description: String, predicate: suspend () -> Boolean) {
-        repeat(60) {
-            if (predicate()) return
-            delay(500)
+        var lastResult = false
+        try {
+            await
+                .alias(description)
+                .atMost(CONDITION_TIMEOUT)
+                .pollInterval(CONDITION_POLL_INTERVAL)
+                .untilSuspending {
+                    lastResult = predicate()
+                    lastResult
+                }
+        } catch (e: ConditionTimeoutException) {
+            throw IllegalStateException(
+                "Condition '$description' was not met within $CONDITION_TIMEOUT " +
+                    "(poll interval=$CONDITION_POLL_INTERVAL, last result=$lastResult).",
+                e,
+            )
         }
-        check(predicate()) { "Condition was not met before timeout: $description." }
     }
 }

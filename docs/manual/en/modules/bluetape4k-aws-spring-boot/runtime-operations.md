@@ -24,6 +24,7 @@ When a `MeterRegistry` is available, S3/SQS operations and listener phases can e
 ## Remote configuration
 
 Secrets Manager, Parameter Store, and S3 config loaders run during environment preparation. Treat a required source failure as startup failure. Cache resolved configuration in the environment instead of making AWS calls for every request.
+Set `bluetape4k.aws.enabled=false` to disable these startup loaders together with AWS auto-configuration; configured remote sources are not accessed.
 
 ## Graceful shutdown
 
@@ -43,4 +44,3 @@ Stop ingress, stop listener polling, await handlers up to a configured timeout, 
 - [SQS listener container](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsMessageListenerContainer.kt)
 - [Micrometer SQS interceptor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsListenerInterceptor.kt)
 - [Secrets environment processor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/secretsmanager/SecretsManagerEnvironmentPostProcessor.kt)
-

@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.env.addAwsPropertySource
 import io.bluetape4k.aws.spring.env.bindOrCreate
+import io.bluetape4k.aws.spring.env.isAwsEnabled
 import io.bluetape4k.aws.spring.env.requireAwsSdkClass
 import org.springframework.boot.EnvironmentPostProcessor
 import org.springframework.boot.SpringApplication
@@ -24,6 +25,10 @@ class S3ConfigEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered {
         environment: ConfigurableEnvironment,
         application: SpringApplication,
     ) {
+        if (!environment.isAwsEnabled()) {
+            return
+        }
+
         val properties = environment.bindOrCreate<S3ConfigProperties>("bluetape4k.aws.s3.config")
         if (!properties.enabled || properties.sources.isEmpty()) {
             return

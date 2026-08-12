@@ -16,6 +16,10 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 internal const val COMMAND_LINE_PROPERTY_SOURCE_NAME = "commandLineArgs"
+private const val AWS_ENABLED_PROPERTY = "bluetape4k.aws.enabled"
+
+internal fun ConfigurableEnvironment.isAwsEnabled(): Boolean =
+    getProperty(AWS_ENABLED_PROPERTY, Boolean::class.java, true)
 
 internal data class AwsLoadedPropertySource(
     val name: String,

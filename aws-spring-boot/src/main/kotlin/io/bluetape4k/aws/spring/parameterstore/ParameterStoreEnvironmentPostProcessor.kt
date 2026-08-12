@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.parameterstore
 
 import io.bluetape4k.aws.spring.env.addAwsPropertySource
 import io.bluetape4k.aws.spring.env.bindOrCreate
+import io.bluetape4k.aws.spring.env.isAwsEnabled
 import io.bluetape4k.aws.spring.env.requireAwsSdkClass
 import org.springframework.boot.EnvironmentPostProcessor
 import org.springframework.boot.SpringApplication
@@ -24,6 +25,10 @@ class ParameterStoreEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered 
         environment: ConfigurableEnvironment,
         application: SpringApplication,
     ) {
+        if (!environment.isAwsEnabled()) {
+            return
+        }
+
         val properties = environment.bindOrCreate<ParameterStoreProperties>("bluetape4k.aws.parameter-store")
         if (!properties.enabled || properties.sources.isEmpty()) {
             return
