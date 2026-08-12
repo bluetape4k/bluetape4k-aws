@@ -100,11 +100,9 @@ core client 모듈에서만 제공하는 서비스는 위 모듈 표와 각 모�
 - **Kotlin**: 2.4 이상
 - **Gradle**: 9.7.0 (체크인된 Wrapper)
 
-일반 모듈은 JDK 25를 대상으로 합니다. `bluetape4k-aws-java`,
-`bluetape4k-aws-kotlin`, `bluetape4k-aws-exposed`, `bluetape4k-aws-ktor`는
-API variant에 대해 외부
-Java 21/Kotlin consumer fixture를 컴파일하므로 JDK 21 호환성 라인을
-의도적으로 유지합니다.
+모든 published 모듈과 외부 Java/Kotlin consumer fixture는 JDK 25를
+대상으로 합니다. 이 release line을 사용하는 consumer는 JDK 25 이상에서
+실행해야 합니다.
 
 ---
 

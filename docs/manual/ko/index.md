@@ -28,7 +28,7 @@ releaseRef: "0.5.0"
 
 - 릴리스 태그: [`0.5.0`](https://github.com/bluetape4k/bluetape4k-aws/tree/0.5.0)
 - 릴리스 커밋: [`664e4dfb544a3c19db484b0f9a8e023a73774b49`](https://github.com/bluetape4k/bluetape4k-aws/commit/664e4dfb544a3c19db484b0f9a8e023a73774b49)
-- 실행 환경 기준: JDK 21, Kotlin 2.3, Spring Boot 4, Ktor 3
+- 실행 환경 기준: JDK 25, Kotlin 2.3, Spring Boot 4, Ktor 3
 
 ## 어디서 시작할까
 

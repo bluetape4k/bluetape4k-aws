@@ -28,7 +28,7 @@ The technical baseline of this manual is `bluetape4k-aws 0.5.0`. It covers the 6
 
 - Release tag: [`0.5.0`](https://github.com/bluetape4k/bluetape4k-aws/tree/0.5.0)
 - Release commit: [`664e4dfb544a3c19db484b0f9a8e023a73774b49`](https://github.com/bluetape4k/bluetape4k-aws/commit/664e4dfb544a3c19db484b0f9a8e023a73774b49)
-- Runtime baseline: JDK 21, Kotlin 2.3, Spring Boot 4, and Ktor 3
+- Runtime baseline: JDK 25, Kotlin 2.3, Spring Boot 4, and Ktor 3
 
 ## Where to start
 

@@ -110,11 +110,8 @@ READMEs.
 - **Kotlin**: 2.4+
 - **Gradle**: 9.7.0 (checked-in Wrapper)
 
-The regular modules target JDK 25. `bluetape4k-aws-java`,
-`bluetape4k-aws-kotlin`, `bluetape4k-aws-exposed`, and `bluetape4k-aws-ktor`
-intentionally remain on
-the JDK 21 compatibility line because the repository compiles external Java
-21/Kotlin consumer fixtures against their API variants.
+All published modules and external Java/Kotlin consumer fixtures target JDK
+25. Consumers must run on JDK 25 or newer when using this release line.
 
 ---
 
