@@ -771,6 +771,10 @@ tag에는 queue URL, message ID, receipt handle을 넣지 않습니다.
 않으므로 애플리케이션 scope 종료 시 직접 닫아야 합니다. client를 주입하지 않으면
 `SqsConsumer`가 `AwsKtorCore` 또는 서비스 로컬 설정으로 plugin-owned client를 만들 수
 있고, 이 client는 `ApplicationStopping` 시 닫힙니다.
+consumer runtime은 one-shot으로 동작합니다. 중복 `start()`/`stop()` 호출은
+idempotent하게 무시하고, `start()` 전에 호출한 `stop()`은 runtime을 영구적으로
+종료합니다. `STOPPED` 이후 `start()`를 호출하면 `IllegalStateException`으로
+즉시 실패합니다.
 
 실행 가능한 SQS 예제는
 [`examples/aws-ktor-sqs-examples`](../examples/aws-ktor-sqs-examples)에 있으며

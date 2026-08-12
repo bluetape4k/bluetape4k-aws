@@ -274,9 +274,10 @@ class SqsMessageContext internal constructor(
  * Ktor plugin이 사용하는 coroutine 기반 SQS consumer runtime입니다.
  *
  * 계약:
- * - [start]는 idempotent하며 [SqsConsumerRuntimeConfig.coroutines]개 poller를 시작합니다.
+ * - [start]는 처음 한 번만 [SqsConsumerRuntimeConfig.coroutines]개 poller를 시작합니다. 이미 실행 중이거나
+ *   종료 중인 호출은 idempotent하게 무시하고, [stop] 이후 호출은 `IllegalStateException`으로 실패합니다.
  * - [stop]은 새 receive를 중단하고 [SqsConsumerRuntimeConfig.shutdownTimeout]까지 처리 중인 handler를 기다린 뒤
- *   남은 handler를 취소합니다.
+ *   남은 handler를 취소합니다. 시작 전 호출도 runtime을 영구적으로 종료합니다.
  * - [SqsAsyncClient]는 plugin이 생성한 경우에만 닫습니다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -286,12 +287,14 @@ class SqsConsumerRuntime(
     companion object: KLogging()
 
     private enum class LifecycleState {
-        STOPPED,
+        NEW,
         RUNNING,
         STOPPING,
+        STOPPED,
     }
 
-    private val lifecycleState = AtomicReference(LifecycleState.STOPPED)
+    private val lifecycleState = AtomicReference(LifecycleState.NEW)
+    private val lifecycleLock = Any()
     private val pollerJobs = CopyOnWriteArrayList<Job>()
     private val handlerJobs = ConcurrentHashMap.newKeySet<Job>()
     private val handlerPermitReleases = ConcurrentHashMap<Job, AtomicBoolean>()
@@ -309,26 +312,57 @@ class SqsConsumerRuntime(
     val isRunning: Boolean
         get() = lifecycleState.get() == LifecycleState.RUNNING
 
-    /** runtime이 아직 실행 중이 아니면 polling을 시작합니다. */
+    /** runtime을 시작합니다. 종료된 runtime은 다시 시작할 수 없습니다. */
     fun start() {
-        if (!lifecycleState.compareAndSet(LifecycleState.STOPPED, LifecycleState.RUNNING)) {
-            return
-        }
+        synchronized(lifecycleLock) {
+            when (lifecycleState.get()) {
+                LifecycleState.NEW -> {
+                    lifecycleState.set(LifecycleState.RUNNING)
+                    val dispatcher = config.dispatcher ?: Dispatchers.IO.limitedParallelism(config.coroutines)
+                    val currentScope = CoroutineScope(SupervisorJob() + dispatcher + CoroutineName("sqs-consumer"))
+                    scope = currentScope
+                    pollerJobs.clear()
+                    repeat(config.coroutines) { index ->
+                        pollerJobs += currentScope.launch(CoroutineName("sqs-poller-$index")) {
+                            pollLoop()
+                        }
+                    }
+                }
 
-        val dispatcher = config.dispatcher ?: Dispatchers.IO.limitedParallelism(config.coroutines)
-        val currentScope = CoroutineScope(SupervisorJob() + dispatcher + CoroutineName("sqs-consumer"))
-        scope = currentScope
-        pollerJobs.clear()
-        repeat(config.coroutines) { index ->
-            pollerJobs += currentScope.launch(CoroutineName("sqs-poller-$index")) {
-                pollLoop()
+                LifecycleState.RUNNING,
+                LifecycleState.STOPPING,
+                -> return
+
+                LifecycleState.STOPPED ->
+                    throw IllegalStateException("SqsConsumerRuntime cannot be started after it has stopped.")
             }
         }
     }
 
     /** shutdown 계약에 따라 poller를 중지하고 처리 중인 handler를 drain합니다. */
     suspend fun stop() {
-        if (!lifecycleState.compareAndSet(LifecycleState.RUNNING, LifecycleState.STOPPING)) {
+        val closeBeforeStart = synchronized(lifecycleLock) {
+            when (lifecycleState.get()) {
+                LifecycleState.NEW -> {
+                    lifecycleState.set(LifecycleState.STOPPED)
+                    true
+                }
+
+                LifecycleState.RUNNING -> {
+                    lifecycleState.set(LifecycleState.STOPPING)
+                    false
+                }
+
+                LifecycleState.STOPPING,
+                LifecycleState.STOPPED,
+                -> null
+            }
+        }
+
+        if (closeBeforeStart == null) {
+            return
+        }
+        if (closeBeforeStart) {
             closeOwnedClient()
             return
         }

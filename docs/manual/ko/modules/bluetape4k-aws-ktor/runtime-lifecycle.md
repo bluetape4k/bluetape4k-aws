@@ -32,6 +32,16 @@ environment.monitor.subscribe(ApplicationStopping) {
 }
 ```
 
+## SQS consumer one-shot 수명 주기
+
+`SqsConsumerRuntime`은 plugin 설정 중 생성한 `SqsAsyncClient`를 소유할 수
+있으므로 one-shot runtime으로 동작합니다. 첫 `start()`가 poller를 시작하고,
+실행 중이거나 drain 중인 중복 `start()`는 무시합니다. 시작 전 또는 시작 후
+`stop()`을 호출하면 runtime은 영구적으로 `STOPPED`가 됩니다. `STOPPED` 이후의
+`start()`는 닫힌 client를 재사용하지 않고 `IllegalStateException`으로 즉시
+실패합니다. runtime은 소유한 client를 한 번만 닫으며 주입받은 client는 닫지
+않습니다. 새 consumer 수명 주기가 필요하면 새 plugin instance를 만드세요.
+
 ## 종료 중 SQS visibility
 
 handler가 visibility보다 오래 실행될 수 있다면 heartbeat 연장이나 더 긴 timeout을 사용하세요. 강제 종료 시 즉시 redelivery가 만료를 기다리는 것보다 나을 수 있지만 handler가 멱등할 때만 안전합니다.
@@ -42,11 +52,10 @@ poll, receive, convert, invoke, acknowledge, failure 단계를 제한된 tag로 
 
 ## 검증
 
-수명 주기 테스트는 애플리케이션을 반복해서 시작·종료하고 남은 job이 없는지 확인해야 합니다. 주입한 client는 열린 채로 남고 plugin이 만든 client는 닫히는지, timeout 취소가 동작하는지도 검증하세요.
+수명 주기 테스트는 시작 전 stop, start-stop-start, 중복 start/stop을 검증하고 남은 job이 없는지 확인해야 합니다. 주입한 client는 열린 채로 남고 plugin이 만든 client는 한 번 닫히는지, timeout 취소가 동작하는지도 검증하세요.
 
 ## 근거 자료
 
 - [SQS runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/sqs/SqsConsumerRuntime.kt)
 - [Exposed runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/exposed/AwsExposedKtorRuntime.kt)
 - [CloudWatch runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/cloudwatch/CloudWatchKtorRuntime.kt)
-
