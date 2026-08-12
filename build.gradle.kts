@@ -441,8 +441,6 @@ subprojects {
                     "-Xjsr305=strict",
                     "-jvm-default=enable",
                     "-Xstring-concat=indy",
-                    "-Xcontext-parameters",
-                    "-Xannotation-default-target=param-property"
                 )
                 val experimentalAnnotations = listOf(
                     "kotlin.RequiresOptIn",
