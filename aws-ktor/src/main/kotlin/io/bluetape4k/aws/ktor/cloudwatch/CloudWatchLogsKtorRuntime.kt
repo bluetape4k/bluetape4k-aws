@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
@@ -32,7 +34,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ## 계약
  *
  * 게시 작업은 명시적입니다. 애플리케이션 코드가 이벤트를 추가하거나 작업을 직접 호출한 뒤에만
- * 이벤트를 전송합니다. 종료 시 flush 시간은 [shutdownFlushTimeout]으로 제한됩니다.
+ * 이벤트를 전송합니다. 종료 시 flush 시간은 [shutdownFlushTimeout]으로 제한되며,
+ * 기본 [CloudWatchLogsShutdownPolicy.WarnAndContinue] 정책은 timeout을 관찰 이벤트와 warning으로
+ * 남기고 종료를 계속합니다. [CloudWatchLogsShutdownPolicy.ThrowOnTimeout]은 owned client를 닫은
+ * 뒤 [CloudWatchLogsShutdownTimeoutException]을 전파합니다.
  */
 class CloudWatchLogsKtorRuntime(
     val operations: CloudWatchLogsKtorOperations,
@@ -43,6 +48,8 @@ class CloudWatchLogsKtorRuntime(
     private val shutdownFlushTimeout: Duration = Duration.ofSeconds(5),
     private val createLogGroupOnStart: Boolean = false,
     private val createLogStreamOnStart: Boolean = false,
+    private val shutdownPolicy: CloudWatchLogsShutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue,
+    shutdownObservers: List<CloudWatchLogsShutdownObserver> = emptyList(),
 ) {
     companion object: KLoggingChannel()
 
@@ -50,12 +57,36 @@ class CloudWatchLogsKtorRuntime(
     private val started = AtomicBoolean(false)
     private val bufferMutex = Mutex()
     private val buffer = mutableListOf<InputLogEvent>()
+    private val shutdownObservers = shutdownObservers.toList()
 
     @Volatile
     private var scope: CoroutineScope? = null
 
     @Volatile
     private var flushJob: Job? = null
+
+    /** 이전 버전의 생성자와 호환되는 기본 shutdown 정책 생성자입니다. */
+    constructor(
+        operations: CloudWatchLogsKtorOperations,
+        ownedClient: CloudWatchLogsAsyncClient?,
+        logStream: CloudWatchLogStream?,
+        batchSize: Int,
+        flushInterval: Duration,
+        shutdownFlushTimeout: Duration,
+        createLogGroupOnStart: Boolean,
+        createLogStreamOnStart: Boolean,
+    ) : this(
+        operations,
+        ownedClient,
+        logStream,
+        batchSize,
+        flushInterval,
+        shutdownFlushTimeout,
+        createLogGroupOnStart,
+        createLogStreamOnStart,
+        CloudWatchLogsShutdownPolicy.WarnAndContinue,
+        emptyList(),
+    )
 
     init {
         batchSize.requireInRange(CLOUDWATCH_LOGS_MIN_BATCH_SIZE, CLOUDWATCH_LOGS_MAX_BATCH_SIZE, "batchSize")
@@ -170,22 +201,73 @@ class CloudWatchLogsKtorRuntime(
     }
 
     /**
+     * 현재 buffer에 남은 CloudWatch Logs event 수를 반환합니다.
+     */
+    suspend fun pendingEventCount(): Int =
+        bufferMutex.withLock { buffer.size }
+
+    /**
      * 주기적 flush를 중지하고 남은 이벤트를 전송한 뒤 플러그인이 소유한 클라이언트를 닫습니다.
      */
     suspend fun stop() {
-        if (started.compareAndSet(true, false)) {
-            flushJob?.cancelAndJoin()
-            flushJob = null
-            scope?.cancel()
-            scope = null
-        }
+        var outcome = CloudWatchLogsShutdownOutcome.Success
+        var cause: Throwable? = null
+        var failure: Throwable? = null
+        var observation: CloudWatchLogsShutdownObservation? = null
 
         try {
-            withTimeoutOrNull(timeMillis = shutdownFlushTimeout.toMillis()) {
+            if (started.compareAndSet(true, false)) {
+                try {
+                    flushJob?.cancelAndJoin()
+                } finally {
+                    flushJob = null
+                    scope?.cancel()
+                    scope = null
+                }
+            }
+
+            val flushResult = withTimeoutOrNull(timeMillis = shutdownFlushTimeout.toMillis()) {
                 flush()
             }
+            if (flushResult == null) {
+                outcome = CloudWatchLogsShutdownOutcome.Timeout
+            }
+        } catch (e: CancellationException) {
+            outcome = CloudWatchLogsShutdownOutcome.Cancelled
+            cause = e
+            failure = e
+        } catch (e: Exception) {
+            outcome = CloudWatchLogsShutdownOutcome.Failure
+            cause = e
+            failure = e
         } finally {
-            closeOwnedClient()
+            withContext(NonCancellable) {
+                val pendingEventCount = pendingEventCount()
+                val shutdownObservation = CloudWatchLogsShutdownObservation(
+                    outcome = outcome,
+                    pendingEventCount = pendingEventCount,
+                    droppedEventCount = if (outcome == CloudWatchLogsShutdownOutcome.Success) {
+                        0
+                    } else {
+                        pendingEventCount
+                    },
+                    cause = cause,
+                )
+                observation = shutdownObservation
+                reportShutdown(shutdownObservation)
+                closeOwnedClient()
+            }
+        }
+
+        failure?.let { throw it }
+        val completedObservation = requireNotNull(observation)
+        if (completedObservation.outcome == CloudWatchLogsShutdownOutcome.Timeout &&
+            shutdownPolicy == CloudWatchLogsShutdownPolicy.ThrowOnTimeout
+        ) {
+            throw CloudWatchLogsShutdownTimeoutException(
+                timeout = shutdownFlushTimeout,
+                pendingEventCount = completedObservation.pendingEventCount,
+            )
         }
     }
 
@@ -196,12 +278,32 @@ class CloudWatchLogsKtorRuntime(
     }
 
     private suspend fun closeOwnedClient() {
-        if (closed.compareAndSet(false, true)) {
-            ownedClient?.let { client ->
-                runInterruptible(Dispatchers.IO) {
-                    client.close()
+        withContext(NonCancellable) {
+            if (closed.compareAndSet(false, true)) {
+                ownedClient?.let { client ->
+                    runInterruptible(Dispatchers.IO) {
+                        client.close()
+                    }
                 }
             }
+        }
+    }
+
+    private fun reportShutdown(observation: CloudWatchLogsShutdownObservation) {
+        if (observation.outcome != CloudWatchLogsShutdownOutcome.Success) {
+            val message = "CloudWatch Logs shutdown flush ${observation.outcome.name.lowercase()} " +
+                "with ${observation.pendingEventCount} pending event(s); " +
+                "${observation.droppedEventCount} event(s) will not be retried."
+            observation.cause?.let { cause ->
+                log.warn(cause) { message }
+            } ?: log.warn { message }
+        }
+
+        shutdownObservers.forEach { observer ->
+            runCatching { observer.observe(observation) }
+                .onFailure { error ->
+                    log.warn(error) { "CloudWatch Logs shutdown observer failed." }
+                }
         }
     }
 }

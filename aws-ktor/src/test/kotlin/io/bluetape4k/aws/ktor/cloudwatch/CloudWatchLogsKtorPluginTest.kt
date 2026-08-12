@@ -79,6 +79,21 @@ class CloudWatchLogsKtorPluginTest {
     }
 
     @Test
+    fun `shutdown policy and observer are passed to runtime`() = runSuspendIO {
+        val observations = mutableListOf<CloudWatchLogsShutdownObservation>()
+        val runtime = CloudWatchLogsKtorPluginConfig().apply {
+            cloudWatchLogsOperations = operations
+            shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout
+            shutdownObserver { observations += it }
+        }.toRuntime()
+        requireNotNull(runtime)
+
+        runtime.stop()
+
+        observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Success
+    }
+
+    @Test
     fun `partial default log stream configuration is rejected`() {
         val error = assertFailsWith<IllegalArgumentException> {
             CloudWatchLogsKtorPluginConfig().apply {

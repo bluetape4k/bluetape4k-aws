@@ -51,6 +51,9 @@ class CloudWatchLogsKtorPluginConfig {
     /** 종료 시 flush에 허용하는 최대 시간입니다. */
     var shutdownFlushTimeout: Duration = Duration.ofSeconds(5)
 
+    /** 종료 flush timeout을 warning으로 처리할지 예외로 전파할지 선택합니다. */
+    var shutdownPolicy: CloudWatchLogsShutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue
+
     /** 애플리케이션 시작 시 구성된 로그 그룹을 생성합니다. */
     var createLogGroupOnStart: Boolean = false
 
@@ -58,12 +61,18 @@ class CloudWatchLogsKtorPluginConfig {
     var createLogStreamOnStart: Boolean = false
 
     private val clientCustomizers = mutableListOf<AwsKtorCloudWatchLogsAsyncClientCustomizer>()
+    private val shutdownObservers = mutableListOf<CloudWatchLogsShutdownObserver>()
 
     /**
      * 플러그인이 생성한 클라이언트에 CloudWatch Logs 비동기 클라이언트 빌더 사용자 정의 설정을 추가합니다.
      */
     fun cloudWatchLogsAsyncClient(customizer: AwsKtorCloudWatchLogsAsyncClientCustomizer) {
         clientCustomizers += customizer
+    }
+
+    /** 종료 flush의 pending/dropped event를 관찰할 observer를 추가합니다. */
+    fun shutdownObserver(observer: CloudWatchLogsShutdownObserver) {
+        shutdownObservers += observer
     }
 
     internal fun toRuntime(defaults: AwsKtorDefaults = AwsKtorDefaults()): CloudWatchLogsKtorRuntime? {
@@ -79,6 +88,8 @@ class CloudWatchLogsKtorPluginConfig {
                 batchSize = batchSize,
                 flushInterval = flushInterval,
                 shutdownFlushTimeout = shutdownFlushTimeout,
+                shutdownPolicy = shutdownPolicy,
+                shutdownObservers = shutdownObservers.toList(),
                 createLogGroupOnStart = createLogGroupOnStart,
                 createLogStreamOnStart = createLogStreamOnStart,
             )
@@ -95,6 +106,8 @@ class CloudWatchLogsKtorPluginConfig {
             batchSize = batchSize,
             flushInterval = flushInterval,
             shutdownFlushTimeout = shutdownFlushTimeout,
+            shutdownPolicy = shutdownPolicy,
+            shutdownObservers = shutdownObservers.toList(),
             createLogGroupOnStart = createLogGroupOnStart,
             createLogStreamOnStart = createLogStreamOnStart,
         )

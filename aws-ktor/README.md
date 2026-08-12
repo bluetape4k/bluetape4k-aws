@@ -614,6 +614,29 @@ suspend fun Application.publishAudit(message: String) {
 }
 ```
 
+Shutdown flush is bounded by `shutdownFlushTimeout`. The default
+`CloudWatchLogsShutdownPolicy.WarnAndContinue` records the timeout as a warning
+and a `CloudWatchLogsShutdownObservation`, then continues shutdown. Register an
+observer to send pending/dropped event counts to an application metric or
+tracing backend.
+
+```kotlin
+install(CloudWatchLogsKtorPlugin) {
+    shutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue
+    shutdownObserver { observation ->
+        recordShutdownObservation(observation)
+    }
+}
+```
+
+`CloudWatchLogsShutdownObservation.pendingEventCount` is the number of events
+left in the buffer immediately before client close, while
+`droppedEventCount` records events this runtime will not retry during that
+shutdown. Caller cancellation rethrows the original `CancellationException`
+after cleanup. Set `shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout`
+when a timeout must fail shutdown; the plugin-owned client is closed and the
+observer is notified before `CloudWatchLogsShutdownTimeoutException` is thrown.
+
 Use `CloudWatchKtorMeterPublishingTemplate` when a service wants to publish a
 one-time Micrometer snapshot to CloudWatch. This helper reads an existing
 `MeterRegistry` only when invoked and does not register a scheduled CloudWatch
@@ -964,6 +987,8 @@ render as redacted in generated diagnostics.
 | `batchSize` | `10000` | CloudWatch Logs event batch size, validated as `1..10000`. |
 | `flushInterval` | `5s` | Periodic flush interval for explicitly appended events. Empty buffers do not call AWS. |
 | `shutdownFlushTimeout` | `5s` | Bounded shutdown flush timeout. Plugin-owned clients are closed even if flush times out. |
+| `shutdownPolicy` | `WarnAndContinue` | Timeout policy. `ThrowOnTimeout` propagates `CloudWatchLogsShutdownTimeoutException` after client cleanup. |
+| `shutdownObserver` | `none` | Optional observer for shutdown outcome and pending/dropped event counts. |
 | `createLogGroupOnStart` | `false` | Opt-in startup log group creation. Disabled by default. |
 | `createLogStreamOnStart` | `false` | Opt-in startup log stream creation. Disabled by default. |
 | `cloudWatchLogsAsyncClient` | `null` | Optional application-owned CloudWatch Logs client. Injected clients are not closed by the plugin. |

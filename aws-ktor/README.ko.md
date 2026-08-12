@@ -607,6 +607,29 @@ suspend fun Application.publishAudit(message: String) {
 }
 ```
 
+Shutdown flush는 `shutdownFlushTimeout`으로 제한합니다. 기본
+`CloudWatchLogsShutdownPolicy.WarnAndContinue`는 timeout을 warning과
+`CloudWatchLogsShutdownObservation`으로 기록하고 종료를 계속합니다. Observer를
+등록하면 pending/dropped event 수를 애플리케이션 metric이나 tracing backend로
+전달할 수 있습니다.
+
+```kotlin
+install(CloudWatchLogsKtorPlugin) {
+    shutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue
+    shutdownObserver { observation ->
+        recordShutdownObservation(observation)
+    }
+}
+```
+
+`CloudWatchLogsShutdownObservation`의 `pendingEventCount`는 client를 닫기 직전
+buffer에 남은 event 수이고, `droppedEventCount`는 해당 종료에서 다시 시도하지 않는
+event 수입니다. 호출자 취소는 cleanup 후 원래 `CancellationException`을 다시
+전파합니다. Timeout을 실패로 취급해야 하는 애플리케이션은
+`shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout`을 설정하세요.
+이 경우 plugin-owned client를 닫고 observer를 통지한 뒤
+`CloudWatchLogsShutdownTimeoutException`을 발생시킵니다.
+
 서비스가 Micrometer snapshot을 한 번 CloudWatch로 publish하고 싶을 때는
 `CloudWatchKtorMeterPublishingTemplate` 을 사용합니다. 이 helper는 호출된 시점에만
 기존 `MeterRegistry` 를 읽으며 scheduled CloudWatch registry exporter를 등록하지
@@ -955,6 +978,8 @@ redacted 문자열로 표시됩니다.
 | `batchSize` | `10000` | CloudWatch Logs event batch size이며 `1..10000` 범위로 검증합니다. |
 | `flushInterval` | `5s` | 명시적으로 append한 event의 periodic flush 주기입니다. Buffer가 비어 있으면 AWS를 호출하지 않습니다. |
 | `shutdownFlushTimeout` | `5s` | shutdown flush 제한 시간입니다. Flush가 timeout되어도 plugin-owned client는 닫습니다. |
+| `shutdownPolicy` | `WarnAndContinue` | Timeout 처리 정책입니다. `ThrowOnTimeout`은 client cleanup 후 `CloudWatchLogsShutdownTimeoutException`을 전파합니다. |
+| `shutdownObserver` | `none` | 종료 outcome과 pending/dropped event 수를 관찰할 선택적 observer입니다. |
 | `createLogGroupOnStart` | `false` | startup 시 log group을 생성할지 선택합니다. 기본값은 비활성입니다. |
 | `createLogStreamOnStart` | `false` | startup 시 log stream을 생성할지 선택합니다. 기본값은 비활성입니다. |
 | `cloudWatchLogsAsyncClient` | `null` | 선택적 application-owned CloudWatch Logs client입니다. 주입한 client는 plugin이 닫지 않습니다. |

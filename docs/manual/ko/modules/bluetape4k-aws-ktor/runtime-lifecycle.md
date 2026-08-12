@@ -46,6 +46,42 @@ environment.monitor.subscribe(ApplicationStopping) {
 
 handler가 visibility보다 오래 실행될 수 있다면 heartbeat 연장이나 더 긴 timeout을 사용하세요. 강제 종료 시 즉시 redelivery가 만료를 기다리는 것보다 나을 수 있지만 handler가 멱등할 때만 안전합니다.
 
+## CloudWatch Logs buffered shutdown
+
+`CloudWatchLogsKtorRuntime`은 periodic flush job을 중지한 뒤
+`shutdownFlushTimeout` 안에서 bounded flush를 한 번 시도합니다. 기본
+`CloudWatchLogsShutdownPolicy.WarnAndContinue`는 기존의 예외를 던지지 않는
+종료 계약을 유지합니다. Timeout은 warning으로 기록하고 buffered event를
+복원한 뒤 plugin-owned SDK client를 닫습니다. 주입한 client는 애플리케이션
+소유자가 계속 관리합니다.
+
+Pending 또는 dropped event 수를 metric이나 tracing backend로 전달하려면
+runtime에 metrics dependency를 추가하지 않고 observer를 등록하세요.
+
+```kotlin
+install(CloudWatchLogsKtorPlugin) {
+    logGroupName = "/app/orders"
+    logStreamName = "ktor"
+    shutdownObserver { observation ->
+        metrics.record(
+            outcome = observation.outcome.name,
+            pending = observation.pendingEventCount,
+            dropped = observation.droppedEventCount,
+        )
+    }
+}
+```
+
+`CloudWatchLogsShutdownObservation`은 `Success`, `Timeout`, `Failure`,
+`Cancelled` 결과를 전달합니다. 정상 종료가 아니면
+`pendingEventCount`는 client를 닫기 직전 buffer 크기이고,
+`droppedEventCount`는 이 runtime이 다시 시도하지 않는 event 수입니다.
+호출자 취소는 cleanup을 끝낸 뒤 원래 `CancellationException`을 다시
+전파합니다. Timeout을 shutdown 실패로 처리해야 하면
+`shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout`을 사용하세요.
+client cleanup과 observer 통지가 끝난 뒤
+`CloudWatchLogsShutdownTimeoutException`이 발생합니다.
+
 ## 관측성
 
 poll, receive, convert, invoke, acknowledge, failure 단계를 제한된 tag로 기록하세요. active job 수와 종료 시간도 관측합니다. queue URL, message body, object key를 제한 없는 metric tag로 사용하면 안 됩니다.
@@ -59,3 +95,4 @@ poll, receive, convert, invoke, acknowledge, failure 단계를 제한된 tag로 
 - [SQS runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/sqs/SqsConsumerRuntime.kt)
 - [Exposed runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/exposed/AwsExposedKtorRuntime.kt)
 - [CloudWatch runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/cloudwatch/CloudWatchKtorRuntime.kt)
+- [CloudWatch Logs runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/cloudwatch/CloudWatchLogsKtorRuntime.kt)
