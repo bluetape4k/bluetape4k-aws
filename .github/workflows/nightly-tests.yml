@@ -82,9 +82,9 @@ jobs:
           path: 'build/reports/detekt/*.xml'
           retention-days: 14
 
-  # ── 2. aws 모듈 (LocalStack) ──────────────────────────────────────────────
+  # ── 2. aws 모듈 (Floci) ───────────────────────────────────────────────────
   test-aws:
-    name: Test / aws (LocalStack)
+    name: Test / aws (Floci)
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest
@@ -137,9 +137,9 @@ jobs:
           path: '**/build/reports/kover/'
           retention-days: 14
 
-  # ── 3. aws-kotlin 모듈 (LocalStack) ──────────────────────────────────────
+  # ── 3. aws-kotlin 모듈 (Floci) ────────────────────────────────────────────
   test-aws-kotlin:
-    name: Test / aws-kotlin (LocalStack)
+    name: Test / aws-kotlin (Floci)
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest
@@ -300,9 +300,9 @@ jobs:
           path: '**/build/reports/kover/'
           retention-days: 14
 
-  # ── 6. aws-ktor 모듈 (LocalStack) ────────────────────────────────────────
+  # ── 6. aws-ktor 모듈 (Floci) ──────────────────────────────────────────────
   test-aws-ktor:
-    name: Test / aws-ktor (LocalStack)
+    name: Test / aws-ktor (Floci)
     if: ${{ (github.event_name == 'schedule' && github.event.schedule == '23 19 * * 0') || (github.event_name == 'workflow_dispatch' && inputs.scope == 'full') }}
 
     runs-on: ubuntu-latest

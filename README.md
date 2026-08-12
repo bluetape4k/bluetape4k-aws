@@ -111,7 +111,8 @@ READMEs.
 - **Gradle**: 9.7.0 (checked-in Wrapper)
 
 The regular modules target JDK 25. `bluetape4k-aws-java`,
-`bluetape4k-aws-kotlin`, and `bluetape4k-aws-ktor` intentionally remain on
+`bluetape4k-aws-kotlin`, `bluetape4k-aws-exposed`, and `bluetape4k-aws-ktor`
+intentionally remain on
 the JDK 21 compatibility line because the repository compiles external Java
 21/Kotlin consumer fixtures against their API variants.
 
