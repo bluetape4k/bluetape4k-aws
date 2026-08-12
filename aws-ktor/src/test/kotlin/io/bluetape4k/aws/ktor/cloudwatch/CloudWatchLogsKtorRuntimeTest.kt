@@ -7,10 +7,12 @@ import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import org.junit.jupiter.api.BeforeEach
@@ -97,20 +99,165 @@ class CloudWatchLogsKtorRuntimeTest {
     }
 
     @Test
-    fun `stop closes owned client when shutdown flush times out`() = runSuspendIO {
+    fun `stop reports timeout pending events and closes owned client`() = runSuspendIO {
+        val order = mutableListOf<String>()
+        val observations = mutableListOf<CloudWatchLogsShutdownObservation>()
+        every { client.close() } answers { order += "close" }
         coEvery { operations.putLogEvents(any(), any()) } coAnswers {
+            order += "flush"
             delay(250)
             listOf(PutLogEventsResponse.builder().build())
         }
         val runtime = runtime(
             ownedClient = client,
             shutdownFlushTimeout = Duration.ofMillis(10),
+            shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
         )
 
         runtime.append("message", Instant.EPOCH)
         runtime.stop()
 
+        observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Timeout
+        observations.single().pendingEventCount shouldBeEqualTo 1
+        observations.single().droppedEventCount shouldBeEqualTo 1
+        runtime.pendingEventCount() shouldBeEqualTo 1
+        order shouldBeEqualTo listOf("flush", "close")
         verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `strict shutdown timeout throws after reporting and closing`() = runSuspendIO {
+        val order = mutableListOf<String>()
+        val observations = mutableListOf<CloudWatchLogsShutdownObservation>()
+        every { client.close() } answers { order += "close" }
+        coEvery { operations.putLogEvents(any(), any()) } coAnswers {
+            order += "flush"
+            delay(250)
+            listOf(PutLogEventsResponse.builder().build())
+        }
+        val runtime = runtime(
+            ownedClient = client,
+            shutdownFlushTimeout = Duration.ofMillis(10),
+            shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout,
+            shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
+        )
+
+        runtime.append("message", Instant.EPOCH)
+        val error = assertFailsWith<CloudWatchLogsShutdownTimeoutException> {
+            runtime.stop()
+        }
+
+        error.pendingEventCount shouldBeEqualTo 1
+        observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Timeout
+        order shouldBeEqualTo listOf("flush", "close")
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `stop reports cancellation restores pending events and closes client`() = runSuspendIO {
+        val order = mutableListOf<String>()
+        val observations = mutableListOf<CloudWatchLogsShutdownObservation>()
+        every { client.close() } answers { order += "close" }
+        coEvery { operations.putLogEvents(any(), any()) } coAnswers {
+            order += "flush"
+            delay(250)
+            listOf(PutLogEventsResponse.builder().build())
+        }
+        val runtime = runtime(
+            ownedClient = client,
+            shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
+        )
+
+        runtime.append("message", Instant.EPOCH)
+        val stopping = async { runtime.stop() }
+        delay(20)
+        stopping.cancelAndJoin()
+
+        observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Cancelled
+        observations.single().pendingEventCount shouldBeEqualTo 1
+        runtime.pendingEventCount() shouldBeEqualTo 1
+        order shouldBeEqualTo listOf("flush", "close")
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `started stop cancellation still closes client`() = runSuspendIO {
+        val order = mutableListOf<String>()
+        val observations = mutableListOf<CloudWatchLogsShutdownObservation>()
+        every { client.close() } answers { order += "close" }
+        coEvery { operations.putLogEvents(any(), any()) } coAnswers {
+            order += "flush"
+            delay(250)
+            listOf(PutLogEventsResponse.builder().build())
+        }
+        val runtime = runtime(
+            ownedClient = client,
+            flushInterval = Duration.ofSeconds(5),
+            shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
+        )
+
+        runtime.start()
+        runtime.append("message", Instant.EPOCH)
+        val stopping = async { runtime.stop() }
+        delay(20)
+        stopping.cancelAndJoin()
+
+        observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Cancelled
+        runtime.pendingEventCount() shouldBeEqualTo 1
+        order shouldBeEqualTo listOf("flush", "close")
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `stop reports flush failure restores pending events and closes client`() = runSuspendIO {
+        val order = mutableListOf<String>()
+        val observations = mutableListOf<CloudWatchLogsShutdownObservation>()
+        val failure = IllegalStateException("flush failed")
+        every { client.close() } answers { order += "close" }
+        coEvery { operations.putLogEvents(any(), any()) } coAnswers {
+            order += "flush"
+            throw failure
+        }
+        val runtime = runtime(
+            ownedClient = client,
+            shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
+        )
+
+        runtime.append("message", Instant.EPOCH)
+        val error = assertFailsWith<IllegalStateException> {
+            runtime.stop()
+        }
+
+        error.message shouldBeEqualTo failure.message
+        observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Failure
+        observations.single().pendingEventCount shouldBeEqualTo 1
+        observations.single().droppedEventCount shouldBeEqualTo 1
+        runtime.pendingEventCount() shouldBeEqualTo 1
+        order shouldBeEqualTo listOf("flush", "close")
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `successful stop reports zero pending events before client close`() = runSuspendIO {
+        val order = mutableListOf<String>()
+        val observations = mutableListOf<CloudWatchLogsShutdownObservation>()
+        every { client.close() } answers { order += "close" }
+        coEvery { operations.putLogEvents(any(), any()) } coAnswers {
+            order += "flush"
+            listOf(PutLogEventsResponse.builder().build())
+        }
+        val runtime = runtime(
+            ownedClient = client,
+            shutdownObservers = listOf(CloudWatchLogsShutdownObserver { observations += it }),
+        )
+
+        runtime.append("message", Instant.EPOCH)
+        runtime.stop()
+
+        observations.single().outcome shouldBeEqualTo CloudWatchLogsShutdownOutcome.Success
+        observations.single().pendingEventCount shouldBeEqualTo 0
+        observations.single().droppedEventCount shouldBeEqualTo 0
+        order shouldBeEqualTo listOf("flush", "close")
     }
 
     @Test
@@ -195,6 +342,8 @@ class CloudWatchLogsKtorRuntimeTest {
         ownedClient: CloudWatchLogsAsyncClient? = null,
         flushInterval: Duration = Duration.ofSeconds(5),
         shutdownFlushTimeout: Duration = Duration.ofSeconds(5),
+        shutdownPolicy: CloudWatchLogsShutdownPolicy = CloudWatchLogsShutdownPolicy.WarnAndContinue,
+        shutdownObservers: List<CloudWatchLogsShutdownObserver> = emptyList(),
         createLogGroupOnStart: Boolean = false,
         createLogStreamOnStart: Boolean = false,
     ): CloudWatchLogsKtorRuntime =
@@ -205,6 +354,8 @@ class CloudWatchLogsKtorRuntimeTest {
             batchSize = 2,
             flushInterval = flushInterval,
             shutdownFlushTimeout = shutdownFlushTimeout,
+            shutdownPolicy = shutdownPolicy,
+            shutdownObservers = shutdownObservers,
             createLogGroupOnStart = createLogGroupOnStart,
             createLogStreamOnStart = createLogStreamOnStart,
         )

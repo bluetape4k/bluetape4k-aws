@@ -47,6 +47,42 @@ instance when a fresh consumer lifecycle is required.
 
 If a handler can outlive visibility, enable heartbeat extension or choose a longer timeout. On forced shutdown, immediate redelivery can be safer than waiting for visibility expiry, but only when handlers are idempotent.
 
+## CloudWatch Logs buffered shutdown
+
+`CloudWatchLogsKtorRuntime` stops its periodic flush job before attempting one
+bounded flush at `shutdownFlushTimeout`. The default
+`CloudWatchLogsShutdownPolicy.WarnAndContinue` preserves the existing
+non-throwing shutdown contract: a timeout is logged, the buffered events are
+restored, and a plugin-owned SDK client is closed. An injected client remains
+the application's responsibility.
+
+Register an observer when the pending or dropped event count must be exported
+to a metric or tracing backend without adding a metrics dependency to the
+runtime:
+
+```kotlin
+install(CloudWatchLogsKtorPlugin) {
+    logGroupName = "/app/orders"
+    logStreamName = "ktor"
+    shutdownObserver { observation ->
+        metrics.record(
+            outcome = observation.outcome.name,
+            pending = observation.pendingEventCount,
+            dropped = observation.droppedEventCount,
+        )
+    }
+}
+```
+
+`CloudWatchLogsShutdownObservation` reports `Success`, `Timeout`, `Failure`,
+or `Cancelled`. On a non-successful shutdown, `pendingEventCount` is the
+buffer size immediately before client close and `droppedEventCount` records
+events that will not be retried by this runtime. A caller cancellation still
+rethrows its original `CancellationException` after cleanup. Set
+`shutdownPolicy = CloudWatchLogsShutdownPolicy.ThrowOnTimeout` when a timeout
+must fail the shutdown with `CloudWatchLogsShutdownTimeoutException`; client
+cleanup and the observer notification happen before that exception is thrown.
+
 ## Observability
 
 Record poll, receive, convert, invoke, acknowledge, and failure phases with bounded tags. Track active jobs and shutdown duration. Do not use queue URLs, message bodies, or object keys as unbounded metric tags.
@@ -63,3 +99,4 @@ cancellation.
 - [SQS runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/sqs/SqsConsumerRuntime.kt)
 - [Exposed runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/exposed/AwsExposedKtorRuntime.kt)
 - [CloudWatch runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/cloudwatch/CloudWatchKtorRuntime.kt)
+- [CloudWatch Logs runtime](../../../../../aws-ktor/src/main/kotlin/io/bluetape4k/aws/ktor/cloudwatch/CloudWatchLogsKtorRuntime.kt)
