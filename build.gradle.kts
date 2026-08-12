@@ -99,16 +99,6 @@ fun bt4kVersion(alias: String): String {
         .ifBlank { version.strictVersion }
 }
 
-// These API modules stay Java 21-compatible because the repository verifies
-// external Java 21/Kotlin consumer fixtures against their published variants.
-// Other modules use the Java 25 default.
-private val java21CompatibilityProjects = setOf(
-    "bluetape4k-aws-java",
-    "bluetape4k-aws-kotlin",
-    "bluetape4k-aws-exposed",
-    "bluetape4k-aws-ktor",
-)
-
 val requestedTaskNames = gradle.startParameter.taskNames
 val shouldApplyDetekt = requestedTaskNames.any { it.contains("detekt", ignoreCase = true) }
 val shouldApplyKover = requestedTaskNames.any {
@@ -175,7 +165,7 @@ val awsKtorSqsConsumerFixtureClasspath = configurations.create("awsKtorSqsConsum
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
         attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
         attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
-        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
     }
 }
 
@@ -218,7 +208,7 @@ fun Configuration.configureBedrockConsumerFixtureVersions() {
         attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
         attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
         attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
-        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
     }
 }
 
@@ -261,8 +251,8 @@ val compileAwsKtorSqsConsumerFixture = tasks.register<JavaCompile>("compileAwsKt
     source(fileTree("aws-ktor/src/consumerFixture/java") { include("**/*.java") })
     classpath = awsKtorSqsConsumerFixtureClasspath
     destinationDirectory.set(layout.buildDirectory.dir("consumer-fixtures/aws-ktor-sqs/classes"))
-    sourceCompatibility = "21"
-    targetCompatibility = "21"
+    sourceCompatibility = "25"
+    targetCompatibility = "25"
     options.encoding = "UTF-8"
 }
 
@@ -322,13 +312,13 @@ fun registerBedrockConsumerFixtureCompile(
     val sourceSetName = name.removePrefix("compile").replaceFirstChar(Char::lowercase)
     val sourceSet: SourceSet = sourceSets.create(sourceSetName)
     tasks.named<JavaCompile>(sourceSet.compileJavaTaskName) {
-        options.release.set(21)
+        options.release.set(25)
     }
     val kotlinCompile = tasks.named<KotlinJvmCompile>(sourceSet.getCompileTaskName("kotlin")) {
         source(fileTree(sourcePath) { include("**/*.kt") })
         libraries.setFrom(classpath)
         destinationDirectory.set(layout.buildDirectory.dir(outputPath))
-        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
         dependsOn(moduleJarTask)
     }
     return tasks.register(name) {
@@ -376,7 +366,7 @@ allprojects {
 }
 
 subprojects {
-    val javaCompatibilityVersion = if (project.name in java21CompatibilityProjects) 21 else 25
+    val javaCompatibilityVersion = 25
     tasks.withType<JavaCompile>().configureEach {
         options.release.set(javaCompatibilityVersion)
     }
@@ -439,8 +429,8 @@ subprojects {
     }
 
     pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
-        val kotlinCompatibilityVersion = if (project.name in java21CompatibilityProjects) 21 else 25
-        val kotlinJvmTarget = if (kotlinCompatibilityVersion == 21) JvmTarget.JVM_21 else JvmTarget.JVM_25
+        val kotlinCompatibilityVersion = 25
+        val kotlinJvmTarget = JvmTarget.JVM_25
         kotlin {
             jvmToolchain(kotlinCompatibilityVersion)
             compilerOptions {
