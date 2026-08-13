@@ -8,6 +8,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import software.amazon.awssdk.core.async.SdkPublisher
@@ -30,9 +32,13 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRespon
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration
 import software.amazon.awssdk.services.bedrockruntime.model.Message
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
+import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock as withReentrantLock
 
 private sealed interface StreamTerminal {
     data object Active : StreamTerminal
@@ -41,33 +47,180 @@ private sealed interface StreamTerminal {
     data object Cancelled : StreamTerminal
 }
 
+private sealed interface AttemptCompletion {
+    data object Succeeded : AttemptCompletion
+    data class Failed(val cause: Throwable) : AttemptCompletion
+    data class Cancelled(val cleanupFailure: Throwable?) : AttemptCompletion
+}
+
+private const val MAX_RETAINED_SUPPRESSED_FAILURES = 16
+private const val MAX_OVERFLOW_COUNT = Long.MAX_VALUE
+
+private data class FailureSnapshot(
+    val primary: Throwable?,
+    val suppressed: List<Throwable>,
+    val overflowCount: Long,
+)
+
+private class SuppressedFailureOverflow(count: Long) :
+    RuntimeException("suppressed failure count exceeded bound; dropped=$count") {
+    override fun fillInStackTrace(): Throwable = this
+}
+
+/**
+ * Callback and terminal failure aggregation is intentionally bounded.
+ *
+ * The coordinator owns instances of this class behind its callback lock. A local instance
+ * used while rejecting or handing off one publisher has one owner and therefore needs no
+ * additional synchronization.
+ */
+private class BoundedFailureAccumulator(initialPrimary: Throwable? = null) {
+    private var primary: Throwable? = initialPrimary
+    private val suppressed = ArrayList<Throwable>(MAX_RETAINED_SUPPRESSED_FAILURES)
+    private var overflowCount = 0L
+    private val retainedIdentities =
+        Collections.newSetFromMap(IdentityHashMap<Throwable, Boolean>())
+    private var materialized: Throwable? = null
+
+    init {
+        initialPrimary?.let(retainedIdentities::add)
+    }
+
+    fun record(failure: Throwable?) {
+        check(materialized == null) { "failure accumulator is already materialized" }
+        if (failure == null || failure is CancellationException || retainedIdentities.contains(failure)) return
+        if (primary == null) {
+            primary = failure
+            retainedIdentities += failure
+        } else if (suppressed.size < MAX_RETAINED_SUPPRESSED_FAILURES) {
+            suppressed += failure
+            retainedIdentities += failure
+        } else {
+            overflowCount = saturatingAdd(overflowCount, 1)
+        }
+    }
+
+    /** Selects an authoritative operation, publisher, or collector cause. */
+    fun selectPrimary(authoritative: Throwable?) {
+        check(materialized == null) { "failure accumulator is already materialized" }
+        if (authoritative == null || primary === authoritative) return
+
+        val existingIndex = suppressed.indexOfFirst { it === authoritative }
+        if (primary == null) {
+            primary = authoritative
+            retainedIdentities += authoritative
+            return
+        }
+
+        val previous = primary
+        if (existingIndex >= 0) {
+            suppressed.removeAt(existingIndex)
+            retainedIdentities.remove(authoritative)
+        }
+        primary = authoritative
+        retainedIdentities += authoritative
+        if (previous != null) {
+            suppressed.add(0, previous)
+            retainedIdentities += previous
+            if (suppressed.size > MAX_RETAINED_SUPPRESSED_FAILURES) {
+                val dropped = suppressed.removeAt(suppressed.lastIndex)
+                retainedIdentities.remove(dropped)
+                overflowCount = saturatingAdd(overflowCount, 1)
+            }
+        }
+    }
+
+    fun merge(snapshot: FailureSnapshot) {
+        record(snapshot.primary)
+        snapshot.suppressed.forEach(::record)
+        overflowCount = saturatingAdd(overflowCount, snapshot.overflowCount)
+    }
+
+    fun snapshotAndClear(): FailureSnapshot {
+        check(materialized == null) { "failure accumulator is already materialized" }
+        return FailureSnapshot(primary, suppressed.toList(), overflowCount).also {
+            primary = null
+            suppressed.clear()
+            retainedIdentities.clear()
+            overflowCount = 0
+        }
+    }
+
+    fun throwable(): Throwable? {
+        if (materialized == null) {
+            primary?.let { current ->
+                suppressed.forEach(current::addSuppressed)
+                if (overflowCount > 0) current.addSuppressed(SuppressedFailureOverflow(overflowCount))
+                materialized = current
+            }
+        }
+        return materialized
+    }
+
+    private fun saturatingAdd(current: Long, increment: Long): Long =
+        if (increment > MAX_OVERFLOW_COUNT - current) MAX_OVERFLOW_COUNT else current + increment
+}
+
+private data class CallbackCompletion(
+    val sequence: Long,
+    val result: CompletableDeferred<FailureSnapshot?> = CompletableDeferred(),
+    var logicallyCompleted: Boolean = false,
+    var drainClaimed: Boolean = false,
+)
+
+private data class CallbackDrain(
+    val pending: List<CallbackCompletion>,
+    val completedFailure: FailureSnapshot,
+)
+
 private class StreamAttempt<T : Any>(
     val generation: Long,
     val publisher: SdkPublisher<T>,
 ) {
-    val completion = CompletableDeferred<Result<Unit>>()
-    val cancelled = AtomicBoolean()
+    val completion = CompletableDeferred<AttemptCompletion>()
+    private val cancellationStarted = AtomicBoolean()
+    private val cancellationResult = CompletableDeferred<Throwable?>()
+    val cancellationRequested = AtomicBoolean()
     val jobReady = CompletableDeferred<Job>()
 
-    fun cancelOnce() {
-        if (!cancelled.compareAndSet(false, true)) return
-        if (jobReady.isCompleted) {
-            jobReady.getCompleted().cancel()
-        } else {
-            publisher.cancelImmediately()
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun cancelOnce(): Throwable? {
+        if (cancellationStarted.compareAndSet(false, true)) {
+            val failure = withContext(NonCancellable) {
+                try {
+                    val job = jobReady.await()
+                    cancellationRequested.set(true)
+                    job.cancel()
+                    job.join()
+                    when (val outcome = completion.await()) {
+                        is AttemptCompletion.Cancelled -> outcome.cleanupFailure
+                        AttemptCompletion.Succeeded,
+                        is AttemptCompletion.Failed,
+                        -> null
+                    }
+                } catch (_: CancellationException) {
+                    null
+                } catch (cause: Throwable) {
+                    cause
+                }
+            }
+            cancellationResult.complete(failure)
         }
+        return withContext(NonCancellable) { cancellationResult.await() }
     }
 }
 
+@Suppress("TooManyFunctions")
 private class StreamCoordinator<T : Any>(
     private val scope: CoroutineScope,
     private val emit: suspend (T) -> Unit,
 ) {
     private val mutex = Mutex()
-    private val callbackLock = Any()
+    private val callbackLock = ReentrantLock()
     private val callbackSequence = AtomicLong()
-    private val callbackCompletions = mutableListOf<CompletableDeferred<Unit>>()
-    private val handlerFailures = mutableMapOf<Long, Throwable>()
+    private val callbackCompletions = LinkedHashMap<Long, CallbackCompletion>()
+    private val completedCallbackFailures = BoundedFailureAccumulator()
+    private val operationFailures = BoundedFailureAccumulator()
     private var acceptingCallbacks = true
     private var generation = 0L
     private var attempt: StreamAttempt<T>? = null
@@ -75,38 +228,40 @@ private class StreamCoordinator<T : Any>(
     private var terminal: StreamTerminal = StreamTerminal.Active
 
     fun replaceFromCallback(publisher: SdkPublisher<T>) {
-        var sequence = 0L
-        val callbackCompleted = CompletableDeferred<Unit>()
-        val accepted = synchronized(callbackLock) {
+        val callback = callbackLock.withReentrantLock {
             if (!acceptingCallbacks || !scope.isActive) {
-                false
+                null
             } else {
-                sequence = callbackSequence.incrementAndGet()
-                callbackCompletions += callbackCompleted
-                true
+                val sequence = callbackSequence.incrementAndGet()
+                CallbackCompletion(sequence).also { callbackCompletions[sequence] = it }
             }
         }
-        if (!accepted) {
-            publisher.cancelImmediately()
+        if (callback == null) {
+            val rejection = BoundedFailureAccumulator()
+            publisher.cancelImmediately()?.let(rejection::record)
+            rejection.throwable()?.let { throw it }
             return
         }
+
         val callbackStarted = AtomicBoolean()
         scope.launch {
-            callbackStarted.set(true)
-            try {
-                replace(sequence, publisher)
-            } finally {
-                callbackCompleted.complete(Unit)
+            if (!callbackStarted.compareAndSet(false, true)) return@launch
+            val result = replace(callback.sequence, publisher)
+            withContext(NonCancellable) {
+                completeCallback(callback, result)
             }
         }.invokeOnCompletion {
-            if (!callbackStarted.get()) {
-                publisher.cancelImmediately()
-                callbackCompleted.complete(Unit)
+            if (callbackStarted.compareAndSet(false, true)) {
+                val rejection = BoundedFailureAccumulator()
+                publisher.cancelImmediately()?.let(rejection::record)
+                completeCallback(callback, rejection.snapshotAndClear())
             }
         }
     }
 
-    private suspend fun replace(sequence: Long, publisher: SdkPublisher<T>) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "TooGenericExceptionCaught")
+    private suspend fun replace(sequence: Long, publisher: SdkPublisher<T>): FailureSnapshot? {
+        val failures = BoundedFailureAccumulator()
         var handedOff = false
         try {
             var previous: StreamAttempt<T>? = null
@@ -120,115 +275,204 @@ private class StreamCoordinator<T : Any>(
                     true
                 }
             }
-            if (!canClaim) return
+            if (canClaim) {
+                previous?.cancelOnce()?.let(failures::record)
 
-            previous?.cancelOnce()
-            previous?.jobReady?.await()?.join()
-
-            val current = StreamAttempt(sequence, publisher)
-            val canSubscribe = mutex.withLock {
-                if (terminal is StreamTerminal.Active && !futureSucceeded && generation == sequence) {
-                    attempt = current
-                    true
-                } else {
-                    false
+                val current = StreamAttempt(sequence, publisher)
+                val canSubscribe = mutex.withLock {
+                    if (terminal is StreamTerminal.Active && !futureSucceeded && generation == sequence) {
+                        attempt = current
+                        true
+                    } else {
+                        false
+                    }
                 }
-            }
-            if (!canSubscribe) return
-            handedOff = true
+                if (canSubscribe) {
+                    handedOff = true
 
-            val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                current.jobReady.complete(currentCoroutineContext().job)
-                if (current.cancelled.get()) return@launch
-                try {
-                    publisher.asFlow()
-                        .buffer(0)
-                        .collect { value ->
-                            val currentGeneration = mutex.withLock {
-                                terminal is StreamTerminal.Active &&
-                                    generation == sequence &&
-                                    attempt === current
-                            }
-                            if (currentGeneration) emit(value)
+                    val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                        current.jobReady.complete(currentCoroutineContext().job)
+                        if (current.cancellationRequested.get()) {
+                            current.completion.complete(AttemptCompletion.Cancelled(null))
+                            return@launch
                         }
-                    current.completion.complete(Result.success(Unit))
-                } catch (ce: CancellationException) {
-                    current.completion.complete(Result.failure(ce))
-                    throw ce
-                } catch (cause: Throwable) {
-                    current.completion.complete(Result.failure(cause))
+                        try {
+                            publisher.asFlow()
+                                .buffer(0)
+                                .collect { value ->
+                                    val currentGeneration = mutex.withLock {
+                                        terminal is StreamTerminal.Active &&
+                                            generation == sequence &&
+                                            attempt === current
+                                    }
+                                    if (currentGeneration) emit(value)
+                                }
+                            current.completion.complete(AttemptCompletion.Succeeded)
+                        } catch (ce: CancellationException) {
+                            current.completion.complete(
+                                if (current.cancellationRequested.get()) {
+                                    AttemptCompletion.Cancelled(null)
+                                } else {
+                                    AttemptCompletion.Failed(ce)
+                                },
+                            )
+                            throw ce
+                        } catch (cause: Throwable) {
+                            current.completion.complete(
+                                if (current.cancellationRequested.get()) {
+                                    AttemptCompletion.Cancelled(cause)
+                                } else {
+                                    AttemptCompletion.Failed(cause)
+                                },
+                            )
+                        } finally {
+                            if (!current.completion.isCompleted) {
+                                current.completion.complete(
+                                    if (current.cancellationRequested.get()) {
+                                        AttemptCompletion.Cancelled(null)
+                                    } else {
+                                        AttemptCompletion.Succeeded
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    if (!current.jobReady.isCompleted) current.jobReady.complete(job)
                 }
             }
-            if (!current.jobReady.isCompleted) current.jobReady.complete(job)
+        } catch (cause: Throwable) {
+            if (cause !is CancellationException) failures.record(cause)
         } finally {
-            if (!handedOff) publisher.cancelImmediately()
+            if (!handedOff) publisher.cancelImmediately()?.let(failures::record)
         }
+        return failures.snapshotAndClear()
     }
 
-    fun handlerFailureFromCallback(cause: Throwable) {
-        synchronized(callbackLock) {
-            if (acceptingCallbacks && scope.isActive) {
-                handlerFailures[callbackSequence.get()] = cause
-            }
-        }
-    }
+    fun handlerFailureFromCallback(@Suppress("UNUSED_PARAMETER") cause: Throwable) = Unit
 
     fun handlerCompletedFromCallback() = Unit
 
     suspend fun futureSucceeded() {
         val callbacks = closeCallbacks()
-        callbacks.forEach { it.await() }
+        drainCallbacks(callbacks)
         val current = mutex.withLock {
             if (terminal !is StreamTerminal.Active) return
             futureSucceeded = true
             attempt
         }
-        val result = current?.completion?.await()
-        val failure = mutex.withLock {
-            if (terminal !is StreamTerminal.Active) return
-            terminal = StreamTerminal.Completed
-            if (attempt === current) {
-                result?.exceptionOrNull()
-                    ?: synchronized(callbackLock) {
-                        handlerFailures[current?.generation ?: generation]
-                    }
-            } else {
-                null
+        var completion: AttemptCompletion? = null
+        try {
+            completion = current?.completion?.await()
+        } finally {
+            when (val outcome = completion) {
+                is AttemptCompletion.Failed -> selectOperationPrimary(outcome.cause)
+                is AttemptCompletion.Cancelled -> recordOperationFailure(outcome.cleanupFailure)
+                AttemptCompletion.Succeeded,
+                null,
+                -> Unit
             }
         }
-        failure?.let { throw it }
+        mutex.withLock {
+            if (terminal is StreamTerminal.Active && futureSucceeded) {
+                terminal = StreamTerminal.Completed
+            }
+        }
     }
 
     suspend fun futureFailed(cause: Throwable) {
-        closeCallbacks()
-        val current = mutex.withLock {
-            if (terminal !is StreamTerminal.Active) return
-            terminal = StreamTerminal.Failed(cause)
-            attempt.also { attempt = null }
+        withContext(NonCancellable) {
+            selectOperationPrimary(cause)
+            val callbacks = closeCallbacks()
+            val shouldDrain = mutex.withLock {
+                if (terminal !is StreamTerminal.Active) {
+                    false
+                } else {
+                    terminal = StreamTerminal.Failed(cause)
+                    true
+                }
+            }
+            if (shouldDrain) {
+                cancelActiveAttempt()
+                drainCallbacks(callbacks)
+            }
         }
-        current?.cancelOnce()
     }
 
-    suspend fun cancel() {
-        closeCallbacks()
-        val current = mutex.withLock {
-            if (terminal !is StreamTerminal.Active) return
-            terminal = StreamTerminal.Cancelled
-            attempt.also { attempt = null }
+    suspend fun cancel(cause: CancellationException) {
+        withContext(NonCancellable) {
+            selectOperationPrimary(cause)
+            val callbacks = closeCallbacks()
+            val shouldDrain = mutex.withLock {
+                if (terminal !is StreamTerminal.Active) {
+                    false
+                } else {
+                    terminal = StreamTerminal.Cancelled
+                    true
+                }
+            }
+            if (shouldDrain) {
+                cancelActiveAttempt()
+                drainCallbacks(callbacks)
+            }
         }
-        current?.cancelOnce()
     }
 
     suspend fun cancelActiveAttempt() {
-        val current = mutex.withLock { attempt.also { attempt = null } }
-        current?.cancelOnce()
+        withContext(NonCancellable) {
+            val current = mutex.withLock { attempt.also { attempt = null } }
+            current?.cancelOnce()?.let(::recordOperationFailure)
+        }
     }
 
-    private fun closeCallbacks(): List<CompletableDeferred<Unit>> =
-        synchronized(callbackLock) {
-            acceptingCallbacks = false
-            callbackCompletions.toList()
+    fun materializeOperationFailure(): Throwable? =
+        callbackLock.withReentrantLock { operationFailures.throwable() }
+
+    private fun completeCallback(callback: CallbackCompletion, failure: FailureSnapshot?) {
+        val shouldSignal = callbackLock.withReentrantLock {
+            if (callback.logicallyCompleted) {
+                false
+            } else {
+                callback.logicallyCompleted = true
+                if (callback.drainClaimed) {
+                    true
+                } else {
+                    callbackCompletions.remove(callback.sequence)
+                    failure?.let(completedCallbackFailures::merge)
+                    true
+                }
+            }
         }
+        if (shouldSignal) callback.result.complete(failure)
+    }
+
+    private fun closeCallbacks(): CallbackDrain = callbackLock.withReentrantLock {
+        acceptingCallbacks = false
+        val pending = callbackCompletions.values.toList()
+        pending.forEach { it.drainClaimed = true }
+        callbackCompletions.clear()
+        CallbackDrain(pending, completedCallbackFailures.snapshotAndClear())
+    }
+
+    private suspend fun drainCallbacks(drain: CallbackDrain) {
+        withContext(NonCancellable) {
+            mergeOperationFailures(drain.completedFailure)
+            drain.pending.forEach { callback ->
+                callback.result.await()?.let(::mergeOperationFailures)
+            }
+        }
+    }
+
+    private fun recordOperationFailure(failure: Throwable?) {
+        callbackLock.withReentrantLock { operationFailures.record(failure) }
+    }
+
+    private fun selectOperationPrimary(failure: Throwable?) {
+        callbackLock.withReentrantLock { operationFailures.selectPrimary(failure) }
+    }
+
+    private fun mergeOperationFailures(snapshot: FailureSnapshot) {
+        callbackLock.withReentrantLock { operationFailures.merge(snapshot) }
+    }
 }
 
 /**
@@ -260,19 +504,20 @@ fun BedrockRuntimeAsyncClient.converseStreamFlow(
     }
 
     var operation: CompletableFuture<Void>? = null
+    var terminalFailure: Throwable? = null
     try {
         operation = converseStream(request, handler)
         operation.await()
         coordinator.futureSucceeded()
     } catch (ce: CancellationException) {
-        coordinator.cancel()
-        throw ce
+        coordinator.cancel(ce)
     } catch (cause: Throwable) {
         coordinator.futureFailed(cause)
-        throw cause
     } finally {
         coordinator.cancelActiveAttempt()
+        terminalFailure = coordinator.materializeOperationFailure()
     }
+    terminalFailure?.let { failure -> throw failure }
 }.buffer(0)
 
 /**
@@ -298,16 +543,21 @@ inline fun BedrockRuntimeAsyncClient.converseStreamFlow(
 fun Flow<ConverseStreamOutput>.textDeltaFlow(): Flow<String> =
     map(ConverseStreamOutput::textDeltaOrNull).castNotNull<String>()
 
-private fun <T : Any> SdkPublisher<T>.cancelImmediately() {
-    subscribe(
-        object : Subscriber<T> {
-            override fun onSubscribe(subscription: Subscription) {
-                subscription.cancel()
-            }
+@Suppress("TooGenericExceptionCaught")
+private fun <T : Any> SdkPublisher<T>.cancelImmediately(): Throwable? =
+    try {
+        subscribe(
+            object : Subscriber<T> {
+                override fun onSubscribe(subscription: Subscription) {
+                    subscription.cancel()
+                }
 
-            override fun onNext(item: T) = Unit
-            override fun onError(throwable: Throwable) = Unit
-            override fun onComplete() = Unit
-        },
-    )
-}
+                override fun onNext(item: T) = Unit
+                override fun onError(throwable: Throwable) = Unit
+                override fun onComplete() = Unit
+            },
+        )
+        null
+    } catch (failure: Throwable) {
+        failure
+    }

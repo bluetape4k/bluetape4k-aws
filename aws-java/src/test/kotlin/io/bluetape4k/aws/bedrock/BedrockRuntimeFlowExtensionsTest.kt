@@ -13,6 +13,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient
@@ -42,6 +44,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+@Suppress("LargeClass")
 class BedrockRuntimeFlowExtensionsTest {
 
     private val client = mockk<BedrockRuntimeAsyncClient>()
@@ -529,6 +532,458 @@ class BedrockRuntimeFlowExtensionsTest {
 
         actual shouldBeSameInstanceAs expected
         publisher.cancelCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun operationFailureRemainsPrimaryWhenPostHandoffCancellationFails() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val operationFailure = ValidationException.builder().message("operation").build()
+        val cancellationFailure = IllegalStateException("cancel")
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw cancellationFailure })
+        handler.captured.onEventStream(publisher)
+        runCurrent()
+
+        future.completeExceptionally(operationFailure)
+
+        val actual = withTimeout(1_000) { terminal.await() }
+        actual shouldBeSameInstanceAs operationFailure
+        actual.suppressed.toList() shouldBeEqualTo listOf(cancellationFailure)
+        collector.join()
+    }
+
+    @Test
+    fun collectorCancellationPreservesPrimaryWhenPostHandoffCancellationFails() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CancelCountingFuture()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val cancellationFailure = IllegalStateException("cancel")
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw cancellationFailure })
+        val collector = launch {
+            client.converseStreamFlow(request).toList()
+        }
+        runCurrent()
+        handler.captured.onEventStream(publisher)
+        runCurrent()
+
+        collector.cancel(CancellationException("collector"))
+        collector.join()
+
+        future.cancelCount shouldBeEqualTo 1
+        publisher.cancelCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun successfulCancellationHasNoSuppressedCleanupFailure() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CancelCountingFuture()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
+        val collector = launch {
+            client.converseStreamFlow(request).toList()
+        }
+        runCurrent()
+        handler.captured.onEventStream(publisher)
+        runCurrent()
+
+        collector.cancel(CancellationException("collector"))
+        collector.join()
+
+        future.cancelCount shouldBeEqualTo 1
+        publisher.cancelCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun cancelOnceNormalCancellationDoesNotSuppressDeferredCancellationException() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CancelCountingFuture()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
+        val collector = launch {
+            client.converseStreamFlow(request).toList()
+        }
+        runCurrent()
+        handler.captured.onEventStream(publisher)
+        runCurrent()
+
+        collector.cancel(CancellationException("collector"))
+        collector.join()
+
+        publisher.cancelCount shouldBeEqualTo 1
+        future.cancelCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun outerFinallyDoesNotDuplicateCancellationSuppression() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val operationFailure = ValidationException.builder().message("operation").build()
+        val cancellationFailure = IllegalStateException("cancel")
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw cancellationFailure })
+        handler.captured.onEventStream(publisher)
+        runCurrent()
+        future.completeExceptionally(operationFailure)
+
+        val actual = withTimeout(1_000) { terminal.await() }
+        actual shouldBeSameInstanceAs operationFailure
+        actual.suppressed.count { it === cancellationFailure } shouldBeEqualTo 1
+        collector.join()
+    }
+
+    @Test
+    fun rejectedCallbackReportsPreHandoffCancellationFailure() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CancelCountingFuture()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val collector = launch { client.converseStreamFlow(request).toList() }
+        runCurrent()
+        collector.cancelAndJoin()
+
+        val cancellationFailure = IllegalStateException("late-cancel")
+        val late = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw cancellationFailure })
+        val thrown = assertFailsWith<IllegalStateException> {
+            handler.captured.onEventStream(late)
+        }
+        thrown shouldBeSameInstanceAs cancellationFailure
+        late.cancelCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun replacementCancellationFailuresPreserveFirstFailure() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val firstFailure = IllegalStateException("first")
+        val secondFailure = IllegalStateException("second")
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        val first = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw firstFailure })
+        val second = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw secondFailure })
+        handler.captured.onEventStream(first)
+        runCurrent()
+        handler.captured.onEventStream(second)
+        runCurrent()
+        future.completeExceptionally(ValidationException.builder().message("operation").build())
+
+        val actual = withTimeout(1_000) { terminal.await() }
+        actual.suppressed.any { it === firstFailure }.shouldBeTrue()
+        actual.suppressed.any { it === secondFailure }.shouldBeTrue()
+        collector.join()
+    }
+
+    @Test
+    fun boundedCancellationFailuresRetainBoundedSamplesAndOverflowCount() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val operationFailure = ValidationException.builder().message("operation").build()
+        val failures = (0 until 20).map { index -> IllegalStateException("cancel-$index") }
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        failures.forEach { failure ->
+            handler.captured.onEventStream(
+                RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw failure }),
+            )
+            runCurrent()
+        }
+        future.completeExceptionally(operationFailure)
+
+        val actual = withTimeout(1_000) { terminal.await() }
+        actual shouldBeSameInstanceAs operationFailure
+        actual.suppressed.count {
+            it is RuntimeException && it.message?.startsWith("suppressed failure count") == true
+        } shouldBeEqualTo 1
+        actual.suppressed.filterNot {
+            it.message?.startsWith("suppressed failure count") == true
+        }.size shouldBeEqualTo 16
+        collector.join()
+    }
+
+    @Test
+    fun repeatedCancellationFailureDoesNotDuplicateRetainedThrowable() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val operationFailure = ValidationException.builder().message("operation").build()
+        val cancellationFailure = IllegalStateException("same")
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        repeat(4) {
+            handler.captured.onEventStream(
+                RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw cancellationFailure }),
+            )
+            runCurrent()
+        }
+        future.completeExceptionally(operationFailure)
+
+        val actual = withTimeout(1_000) { terminal.await() }
+        actual.suppressed.count { it === cancellationFailure } shouldBeEqualTo 1
+        collector.join()
+    }
+
+    @Test
+    fun boundedFailureAccumulatorMaterializesOverflowOnce() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val operationFailure = ValidationException.builder().message("operation").build()
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        repeat(20) { index ->
+            handler.captured.onEventStream(
+                RecordingSdkPublisher<ConverseStreamOutput>(
+                    onCancelled = { throw IllegalStateException("cancel-$index") },
+                ),
+            )
+            runCurrent()
+        }
+        future.completeExceptionally(operationFailure)
+
+        val actual = withTimeout(1_000) { terminal.await() }
+        actual.suppressed.count { it.message?.startsWith("suppressed failure count") == true } shouldBeEqualTo 1
+        collector.join()
+    }
+
+    @Test
+    fun completedCallbackFailureIsClearedAfterClose() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>(
+            onCancelled = { throw IllegalStateException("callback") },
+        )
+        handler.captured.onEventStream(publisher)
+        runCurrent()
+        future.completeExceptionally(ValidationException.builder().message("operation").build())
+        withTimeout(1_000) { terminal.await() }
+        collector.join()
+
+        val late = RecordingSdkPublisher<ConverseStreamOutput>()
+        handler.captured.onEventStream(late)
+        late.cancelCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun currentHandlerFailureUsesOperationFutureCause() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val expected = ValidationException.builder().message("handler").build()
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        handler.captured.exceptionOccurred(expected)
+        future.completeExceptionally(expected)
+
+        val actual = withTimeout(1_000) { terminal.await() }
+        actual shouldBeSameInstanceAs expected
+        collector.join()
+    }
+
+    @Test
+    fun lateOldGenerationHandlerFailureDoesNotContaminateReplacementSuccess() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val seen = mutableListOf<ConverseStreamOutput>()
+        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        runCurrent()
+        val old = RecordingSdkPublisher<ConverseStreamOutput>()
+        val replacement = RecordingSdkPublisher<ConverseStreamOutput>()
+        handler.captured.onEventStream(old)
+        runCurrent()
+        handler.captured.onEventStream(replacement)
+        runCurrent()
+        handler.captured.exceptionOccurred(IllegalStateException("late-old"))
+        val event = contentDelta("replacement")
+        replacement.emitOne(event)
+        runCurrent()
+        replacement.complete()
+        future.complete(null)
+        collector.join()
+
+        seen shouldBeEqualTo listOf(event)
+    }
+
+    @Test
+    fun acceptedCallbackIsDrainedWhenOperationFailsBeforeHandoff() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        runCurrent()
+        handler.captured.onEventStream(publisher)
+        future.completeExceptionally(ValidationException.builder().message("operation").build())
+        runCurrent()
+
+        withTimeout(1_000) { terminal.await() }
+        publisher.cancelCount shouldBeEqualTo 1
+        collector.join()
+    }
+
+    @Test
+    fun closeDrainsSuspendedCallbackCompletion() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val release = CompletableDeferred<Unit>()
+        val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
+        val collector = launch {
+            client.converseStreamFlow(request).collect {
+                release.await()
+            }
+        }
+        runCurrent()
+        handler.captured.onEventStream(publisher)
+        runCurrent()
+        publisher.emitOne(contentDelta("suspended"))
+        runCurrent()
+        future.complete(null)
+        runCurrent()
+        release.complete(Unit)
+        publisher.complete()
+        collector.join()
+    }
+
+    @Test
+    fun lateCallbackIsRejectedAfterClose() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val collector = launch { client.converseStreamFlow(request).toList() }
+        runCurrent()
+        future.complete(null)
+        runCurrent()
+        collector.join()
+        val late = RecordingSdkPublisher<ConverseStreamOutput>()
+        handler.captured.onEventStream(late)
+        late.cancelCount shouldBeEqualTo 1
+    }
+
+    @Test
+    fun highVolumeReplacementDrainsCompletedCallbacks() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        every { client.converseStream(request, capture(handler)) } returns future
+        val seen = mutableListOf<ConverseStreamOutput>()
+        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        runCurrent()
+        repeat(100) {
+            handler.captured.onEventStream(RecordingSdkPublisher())
+            runCurrent()
+        }
+        val latest = RecordingSdkPublisher<ConverseStreamOutput>()
+        handler.captured.onEventStream(latest)
+        runCurrent()
+        val event = contentDelta("latest")
+        latest.emitOne(event)
+        runCurrent()
+        latest.complete()
+        future.complete(null)
+        withTimeout(1_000) { collector.join() }
+        seen shouldBeEqualTo listOf(event)
+    }
+
+    @Test
+    fun concurrentReplacementCleanupAndTerminalFailureIsSerialized() = runTest {
+        val handler = slot<ConverseStreamResponseHandler>()
+        val future = CompletableFuture<Void>()
+        val handlerReady = CountDownLatch(1)
+        every { client.converseStream(request, capture(handler)) } answers {
+            handlerReady.countDown()
+            future
+        }
+        val operationFailure = ValidationException.builder().message("operation").build()
+        val terminal = CompletableDeferred<Throwable>()
+        val collector = launch(Dispatchers.Default) {
+            try {
+                client.converseStreamFlow(request).toList()
+            } catch (cause: Throwable) {
+                terminal.complete(cause)
+            }
+        }
+        check(handlerReady.await(5, TimeUnit.SECONDS)) { "handler was not captured" }
+        val first = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw IllegalStateException("cancel") })
+        handler.captured.onEventStream(first)
+        handler.captured.onEventStream(RecordingSdkPublisher())
+        future.completeExceptionally(operationFailure)
+
+        val actual = withContext(Dispatchers.Default.limitedParallelism(2)) {
+            withTimeout(5_000) { terminal.await() }
+        }
+        actual shouldBeSameInstanceAs operationFailure
+        collector.join()
     }
 
     @Test
