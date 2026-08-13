@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.document.Document
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration
-import kotlin.test.assertFailsWith
+import io.bluetape4k.assertions.assertFailsWith
 
 class BedrockRuntimeRequestSupportTest {
 
