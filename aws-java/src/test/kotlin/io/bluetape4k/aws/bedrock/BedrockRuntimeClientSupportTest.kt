@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClientB
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClientBuilder
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeServiceClientConfiguration
-import kotlin.test.assertFailsWith
+import io.bluetape4k.assertions.assertFailsWith
 import java.net.URI
 import java.util.Optional
 

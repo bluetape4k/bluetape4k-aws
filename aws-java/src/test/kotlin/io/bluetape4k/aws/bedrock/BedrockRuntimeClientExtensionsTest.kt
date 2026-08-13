@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse
-import kotlin.test.assertFailsWith
+import io.bluetape4k.assertions.assertFailsWith
 
 class BedrockRuntimeClientExtensionsTest {
 

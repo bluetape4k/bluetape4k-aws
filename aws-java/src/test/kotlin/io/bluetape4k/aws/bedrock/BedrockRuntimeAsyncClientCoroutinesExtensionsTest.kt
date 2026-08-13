@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse
 import software.amazon.awssdk.services.bedrockruntime.model.ValidationException
 import java.util.concurrent.CompletableFuture
-import kotlin.test.assertFailsWith
+import io.bluetape4k.assertions.assertFailsWith
 
 class BedrockRuntimeAsyncClientCoroutinesExtensionsTest {
 
