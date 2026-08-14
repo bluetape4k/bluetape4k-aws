@@ -99,6 +99,7 @@ aws2-ses = { module = "software.amazon.awssdk:ses" }
 aws2-sesv2 = { module = "software.amazon.awssdk:sesv2" }
 aws2-secretsmanager = { module = "software.amazon.awssdk:secretsmanager" }
 aws2-sns = { module = "software.amazon.awssdk:sns" }
+aws2-sns-message-manager = { module = "software.amazon.awssdk:sns-message-manager" }
 aws2-sqs = { module = "software.amazon.awssdk:sqs" }
 aws2-ssm = { module = "software.amazon.awssdk:ssm" }
 aws2-rds = { module = "software.amazon.awssdk:rds" }
