@@ -150,4 +150,5 @@ bluetape4k:
 - SPW-02: PASS — scope, alternatives, API, components, failures, compatibility, acceptance, and DoD included.
 - SPW-03: PASS — Korean technical register checked with `korean-naturalness-checklist.md`; identifiers, URLs, commands, and exact property keys preserved.
 - SPW-04: PASS — design claims mapped to current parser/auto-config source and AWS SDK primary references.
-- SPW-05: PASS — rendered Markdown read-back completed; headings, code fence, table, property key, source links, acceptance mapping, and declared network/Floci gaps are internally consistent. User spec review remains a workflow hold before plan gate.
+- SPW-05: PASS — rendered Markdown read-back completed; headings, code fence, table, property key, source links, acceptance mapping, and declared network/Floci gaps are internally consistent.
+- User spec review: PASS — 2026-08-15 사용자 승인으로 plan gate를 진행한다.
