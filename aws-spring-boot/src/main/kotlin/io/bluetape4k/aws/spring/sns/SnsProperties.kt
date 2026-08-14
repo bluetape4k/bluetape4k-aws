@@ -29,6 +29,7 @@ data class SnsProperties(
     val region: String? = null,
     val endpointOverride: URI? = null,
     val topics: Map<String, Topic> = emptyMap(),
+    val verification: Verification = Verification(),
 ): Serializable {
     init {
         require(endpointOverride == null || !region.isNullOrBlank()) {
@@ -45,6 +46,19 @@ data class SnsProperties(
         val fifoThroughputScope: SnsFifoThroughputScope? = null,
         val attributes: Map<String, String> = emptyMap(),
     ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
+
+    /**
+     * SNS HTTP 메시지 서명 검증 자동 구성 속성입니다.
+     *
+     * 기본값은 활성화이며, 비활성화하면 자동 구성 verifier bean이 등록되지 않습니다.
+     */
+    data class Verification(
+        val enabled: Boolean = true,
+    ) : Serializable {
         companion object {
             private const val serialVersionUID: Long = 1L
         }
