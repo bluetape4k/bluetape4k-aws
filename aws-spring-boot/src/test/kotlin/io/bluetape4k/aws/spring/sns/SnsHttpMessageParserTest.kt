@@ -104,6 +104,47 @@ class SnsHttpMessageParserTest {
             "SNS HTTP message SigningCertURL must use an Amazon SNS host."
     }
 
+    @Test
+    fun `reject non string required fields`() {
+        assertFailsWith<IllegalArgumentException> {
+            SnsHttpMessageParser.parse(
+                notificationJson.replace(
+                    "\"MessageId\" : \"22b80b92-fdea-4c2c-8f9d-bdfb0c7bf324\"",
+                    "\"MessageId\" : 1",
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `reject hostile signing certificate URL variants`() {
+        listOf(
+            "https://user@sns.us-west-2.amazonaws.com/SimpleNotificationService.pem",
+            "https://sns.us-west-2.amazonaws.com:444/SimpleNotificationService.pem",
+            "https://sns.us-west-2.amazonaws.com/SimpleNotificationService.pem?x=1",
+            "https://sns.us-west-2.amazonaws.com/SimpleNotificationService.pem#fragment",
+            "https://sns.us-west-2.amazonaws.com/SimpleNotificationService.txt",
+            "https://sns.us-east-1.amazonaws.com/SimpleNotificationService.pem",
+            "https://sns.us-west-2.amazonaws.com.cn/SimpleNotificationService.pem",
+        ).forEach { badUrl ->
+            assertFailsWith<IllegalArgumentException> {
+                SnsHttpMessageParser.parse(
+                    notificationJson.replace(
+                        "https://sns.us-west-2.amazonaws.com/SimpleNotificationService.pem",
+                        badUrl,
+                    )
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `reject oversized payload`() {
+        assertFailsWith<IllegalArgumentException> {
+            SnsHttpMessageParser.parse(notificationJson + " ".repeat(256 * 1024))
+        }
+    }
+
     private val subscriptionConfirmationJson: String =
         """
         {
