@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sns
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -44,7 +45,7 @@ class SnsHttpMessageVerifierTest {
 
     @Test
     fun `expected topic mismatch rejects before manager`() {
-        every { manager.parseMessage(any<String>()) } returns mockk(relaxed = true)
+        clearMocks(manager)
 
         val actual = assertFailsWith<IllegalArgumentException> {
             verifier.verify(
@@ -60,6 +61,7 @@ class SnsHttpMessageVerifierTest {
 
     @Test
     fun `parser rejection happens before manager`() {
+        clearMocks(manager)
         val invalidJson = notificationJson.replace(
             "https://sns.us-west-2.amazonaws.com/SimpleNotificationService.pem",
             "http://sns.us-west-2.amazonaws.com/SimpleNotificationService.pem",
