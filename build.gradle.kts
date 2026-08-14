@@ -221,6 +221,49 @@ val bedrockKotlinConsumerFixtureClasspath =
         configureBedrockConsumerFixtureVersions()
     }
 
+val omittedConsumerFixtureService = providers.gradleProperty("consumerFixtureOmit").orNull
+
+fun Configuration.configureAwsServiceConsumerFixtureVersions() {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "software.amazon.awssdk" -> useVersion(bt4kVersion("aws2"))
+            "aws.sdk.kotlin" -> useVersion(bt4kVersion("aws-kotlin"))
+            "org.jetbrains.kotlinx" -> if (requested.name.startsWith("kotlinx-coroutines")) {
+                useVersion(bt4kVersion("kotlinx-coroutines"))
+            }
+        }
+        because("consumer fixture resolves versions from the central bt4k catalog")
+    }
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+    }
+}
+
+val awsJavaServiceConsumerFixtureClasspath =
+    configurations.create("awsJavaServiceConsumerFixtureClasspath") {
+        configureAwsServiceConsumerFixtureVersions()
+    }
+val awsKotlinServiceConsumerFixtureClasspath =
+    configurations.create("awsKotlinServiceConsumerFixtureClasspath") {
+        configureAwsServiceConsumerFixtureVersions()
+    }
+
+fun addConsumerFixtureDependency(
+    configuration: Configuration,
+    serviceKey: String,
+    dependency: Any,
+) {
+    if (omittedConsumerFixtureService != serviceKey) {
+        rootDependencies.add(configuration.name, dependency)
+    }
+}
+
 dependencies {
     awsKtorSqsConsumerFixtureClasspath(project(":bluetape4k-aws-ktor"))
     awsKtorSqsConsumerFixtureClasspath(libs.ktor.server.core)
@@ -243,6 +286,36 @@ dependencies {
     bedrockKotlinConsumerFixtureClasspath(libs.aws.kotlin.bedrock.runtime)
     bedrockKotlinConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
     bedrockKotlinConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
+
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:module", project(":bluetape4k-aws-java"))
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:s3", libs.aws2.s3)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:s3-transfer", libs.aws2.s3.transfer.manager)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:crt", bt4k.aws2.aws.crt)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:dynamodb", libs.aws2.dynamodb.enhanced)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:sns", libs.aws2.sns)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:sqs", libs.aws2.sqs)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:kms", libs.aws2.kms)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:ses", libs.aws2.ses)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:cloudwatch", libs.aws2.cloudwatch)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:kinesis", libs.aws2.kinesis)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:scheduler", libs.aws2.scheduler)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:sts", libs.aws2.sts)
+    awsJavaServiceConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
+    awsJavaServiceConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
+
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:module", project(":bluetape4k-aws-kotlin"))
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:s3", libs.aws.kotlin.s3)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:dynamodb", libs.aws.kotlin.dynamodb)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sns", libs.aws.kotlin.sns)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sqs", libs.aws.kotlin.sqs)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:kms", libs.aws.kotlin.kms)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:ses", libs.aws.kotlin.ses)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:cloudwatch", libs.aws.kotlin.cloudwatch)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:kinesis", libs.aws.kotlin.kinesis)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:scheduler", libs.aws.kotlin.scheduler)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sts", libs.aws.kotlin.sts)
+    awsKotlinServiceConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
+    awsKotlinServiceConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
 }
 
 val compileAwsKtorSqsConsumerFixture = tasks.register<JavaCompile>("compileAwsKtorSqsConsumerFixture") {
@@ -315,7 +388,7 @@ fun registerBedrockConsumerFixtureCompile(
         options.release.set(25)
     }
     val kotlinCompile = tasks.named<KotlinJvmCompile>(sourceSet.getCompileTaskName("kotlin")) {
-        source(fileTree(sourcePath) { include("**/*.kt") })
+        source(fileTree(sourcePath) { include("**/*Bedrock*.kt") })
         libraries.setFrom(classpath)
         destinationDirectory.set(layout.buildDirectory.dir(outputPath))
         compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
@@ -323,6 +396,33 @@ fun registerBedrockConsumerFixtureCompile(
     }
     return tasks.register(name) {
         description = "Compiles a minimal external Bedrock consumer."
+        group = "verification"
+        dependsOn(kotlinCompile)
+    }
+}
+
+fun registerAwsServiceConsumerFixtureCompile(
+    name: String,
+    sourceFile: String,
+    classpath: Configuration,
+    outputPath: String,
+    moduleJarTask: String,
+): TaskProvider<out Task> {
+    val sourceSetName = name.removePrefix("compile").replaceFirstChar(Char::lowercase)
+    val sourceSet: SourceSet = sourceSets.create(sourceSetName)
+    tasks.named<JavaCompile>(sourceSet.compileJavaTaskName) {
+        options.release.set(25)
+    }
+    val kotlinCompile = tasks.named<KotlinJvmCompile>(sourceSet.getCompileTaskName("kotlin")) {
+        source(file(sourceFile))
+        inputs.property("consumerFixtureOmit", omittedConsumerFixtureService ?: "")
+        libraries.setFrom(classpath)
+        destinationDirectory.set(layout.buildDirectory.dir(outputPath))
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
+        dependsOn(moduleJarTask)
+    }
+    return tasks.register(name) {
+        description = "Compiles the AWS Java/Kotlin service consumer fixture matrix locally without emulator or network access."
         group = "verification"
         dependsOn(kotlinCompile)
     }
@@ -343,10 +443,111 @@ val compileBedrockKotlinConsumerFixture = registerBedrockConsumerFixtureCompile(
     ":bluetape4k-aws-kotlin:jar",
 )
 
+val compileAwsJavaServiceConsumerFixture = registerAwsServiceConsumerFixtureCompile(
+    "compileAwsJavaServiceConsumerFixture",
+    "aws-java/src/consumerFixture/kotlin/io/bluetape4k/aws/consumer/JavaServiceConsumerFixture.kt",
+    awsJavaServiceConsumerFixtureClasspath,
+    "consumer-fixtures/aws-java-services/classes",
+    ":bluetape4k-aws-java:jar",
+)
+val compileAwsKotlinServiceConsumerFixture = registerAwsServiceConsumerFixtureCompile(
+    "compileAwsKotlinServiceConsumerFixture",
+    "aws-kotlin/src/consumerFixture/kotlin/io/bluetape4k/aws/kotlin/consumer/KotlinServiceConsumerFixture.kt",
+    awsKotlinServiceConsumerFixtureClasspath,
+    "consumer-fixtures/aws-kotlin-services/classes",
+    ":bluetape4k-aws-kotlin:jar",
+)
+
+val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixturePublication") {
+    description = "Verifies AWS service SDKs remain compileOnly in generated Java/Kotlin publication metadata."
+    group = "verification"
+    dependsOn(
+        ":bluetape4k-aws-java:generatePomFileForBluetapeAwsPublication",
+        ":bluetape4k-aws-java:generateMetadataFileForBluetapeAwsPublication",
+        ":bluetape4k-aws-kotlin:generatePomFileForBluetapeAwsPublication",
+        ":bluetape4k-aws-kotlin:generateMetadataFileForBluetapeAwsPublication",
+    )
+    doLast {
+        val publicationFiles = listOf(
+            file("aws-java/build/publications/BluetapeAws/pom-default.xml"),
+            file("aws-java/build/publications/BluetapeAws/module.json"),
+            file("aws-kotlin/build/publications/BluetapeAws/pom-default.xml"),
+            file("aws-kotlin/build/publications/BluetapeAws/module.json"),
+        )
+        val forbiddenDependencies = listOf(
+            "software.amazon.awssdk" to listOf(
+                "s3",
+                "dynamodb-enhanced",
+                "sns",
+                "sqs",
+                "kms",
+                "ses",
+                "cloudwatch",
+                "kinesis",
+                "scheduler",
+                "sts",
+            ),
+            "aws.sdk.kotlin" to listOf(
+                "s3",
+                "dynamodb",
+                "sns",
+                "sqs",
+                "kms",
+                "ses",
+                "cloudwatch",
+                "kinesis",
+                "scheduler",
+                "sts",
+            ),
+        )
+
+        fun containsPublishedDependency(text: String, group: String, module: String): Boolean {
+            val pomDependencies = text
+                .substringAfter("</dependencyManagement>", "")
+                .substringAfter("<dependencies>", "")
+                .substringBefore("</dependencies>", "")
+            val pomPattern = Regex(
+                "<groupId>${Regex.escape(group)}</groupId>\\s*<artifactId>${Regex.escape(module)}</artifactId>",
+            )
+            if (pomPattern.containsMatchIn(pomDependencies)) {
+                return true
+            }
+
+            val metadataDependencyArrays = Regex(
+                "\\\"dependencies\\\"\\s*:\\s*\\[(.*?)]",
+                setOf(RegexOption.DOT_MATCHES_ALL),
+            ).findAll(text).map { it.groupValues[1] }
+            val metadataPattern = Regex(
+                "\\\"group\\\"\\s*:\\s*\\\"${Regex.escape(group)}\\\"\\s*,\\s*\\\"module\\\"\\s*:\\s*\\\"${Regex.escape(module)}\\\"",
+            )
+            return metadataDependencyArrays.any(metadataPattern::containsMatchIn)
+        }
+
+        publicationFiles.forEach { publicationFile ->
+            require(publicationFile.isFile) {
+                "Publication metadata was not generated: ${publicationFile.path}"
+            }
+        }
+        val leaks = publicationFiles.flatMap { publicationFile ->
+            val text = publicationFile.readText()
+            forbiddenDependencies.flatMap { (group, modules) ->
+                modules.filter { module -> containsPublishedDependency(text, group, module) }
+                    .map { module -> "${publicationFile.path}:$group:$module" }
+            }
+        }
+        require(leaks.isEmpty()) {
+            "AWS service SDKs must remain compileOnly, but publication metadata contains: ${leaks.joinToString()}"
+        }
+    }
+}
+
 tasks.named("check") {
     dependsOn(compileAwsKtorSqsConsumerFixture)
     dependsOn(compileBedrockJavaConsumerFixture)
     dependsOn(compileBedrockKotlinConsumerFixture)
+    dependsOn(compileAwsJavaServiceConsumerFixture)
+    dependsOn(compileAwsKotlinServiceConsumerFixture)
+    dependsOn(verifyAwsConsumerFixturePublication)
 }
 
 allprojects {
