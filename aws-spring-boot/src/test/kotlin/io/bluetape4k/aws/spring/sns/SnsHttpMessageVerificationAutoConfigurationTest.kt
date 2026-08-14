@@ -2,6 +2,8 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -44,6 +46,25 @@ class SnsHttpMessageVerificationAutoConfigurationTest {
             "bluetape4k.aws.sns.enabled=false",
         ).run { context ->
             context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 0
+        }
+    }
+
+    @Test
+    fun `backs off when global AWS is disabled`() {
+        contextRunner.withPropertyValues(
+            "bluetape4k.aws.enabled=false",
+        ).run { context ->
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 0
+        }
+    }
+
+    @Test
+    fun `backs off when a verifier bean already exists`() {
+        val customVerifier = mockk<SnsHttpMessageVerifier>(relaxed = true)
+
+        contextRunner.withBean(SnsHttpMessageVerifier::class.java, { customVerifier }).run { context ->
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 1
+            context.getBean(SnsHttpMessageVerifier::class.java) shouldBeSameInstanceAs customVerifier
         }
     }
 
