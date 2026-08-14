@@ -85,6 +85,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3vectors")
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
+    implementation("software.amazon.awssdk:sns-message-manager") // required for SNS HTTP signature verification
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:sts") // optional web-identity credentials support
     implementation("software.amazon.awssdk:dynamodb-enhanced")
@@ -549,14 +550,17 @@ Angus Mail provider are on the runtime classpath.
 ### SNS — publish, SMS, and HTTP endpoint messages
 
 ```kotlin
-import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
 import io.bluetape4k.aws.spring.sns.SnsSmsRequest
 import io.bluetape4k.aws.spring.sns.SnsSmsType
 
-class OrderNotifications(private val sns: SnsOperations) {
+class OrderNotifications(
+    private val sns: SnsOperations,
+    private val verifier: SnsHttpMessageVerifier,
+) {
     suspend fun publishOrder(topicArn: String, json: String) {
         sns.publish(SnsPublishRequest(topicArn = topicArn, message = json))
     }
@@ -572,9 +576,12 @@ class OrderNotifications(private val sns: SnsOperations) {
         )
     }
 
-    suspend fun handleHttpEndpoint(body: String, messageTypeHeader: String?) {
-        val message = SnsHttpMessageParser.parse(body, messageTypeHeader)
-        // Verify Signature, SigningCertURL, SignatureVersion, and expected TopicArn here.
+    suspend fun handleHttpEndpoint(
+        body: String,
+        messageTypeHeader: String?,
+        expectedTopicArn: String,
+    ) {
+        val message = verifier.verify(body, messageTypeHeader, expectedTopicArn)
         when (message.type) {
             SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION,
             SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION -> sns.confirmSubscription(message)
@@ -589,9 +596,29 @@ class OrderNotifications(private val sns: SnsOperations) {
 SNS can publish to an SQS subscription when the queue policy allows
 `sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` maps SNS HTTP JSON,
 checks the optional `x-amz-sns-message-type` header, and rejects non-HTTPS or
-non-SNS `SigningCertURL` hosts. It does not validate SNS signatures; validate
-the certificate chain, signature, signature version, and expected `TopicArn`
-before processing notifications or confirming subscriptions.
+non-SNS `SigningCertURL` hosts. `SnsHttpMessageVerifier` must run after the
+parser and before notification processing or subscription confirmation; it
+delegates Signature v1/v2, certificate chain, and SNS host verification to the
+AWS SDK message manager and fails closed on an exception.
+
+### SNS HTTP message signature verification
+
+Add `software.amazon.awssdk:sns-message-manager` to the application runtime
+because this module keeps it `compileOnly`. Verification is enabled by default:
+
+```yaml
+bluetape4k:
+  aws:
+    sns:
+      verification:
+        enabled: true
+```
+
+Setting `verification.enabled=false` removes the auto-configured verifier and is
+an explicit security opt-out; parser output alone is not authenticated. Floci
+does not create signed SNS HTTP payloads, so fixture or manager-mock tests cover
+this boundary. Certificate-fetch timeout/cleanup telemetry and real AWS smoke
+measurement are tracked separately from this contract.
 
 ### Kinesis — stream operations and record Flow
 

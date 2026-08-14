@@ -21,6 +21,8 @@ import java.net.URI
  *         orders:
  *           attributes:
  *             Environment: prod
+ *       verification:
+ *         enabled: true
  * ```
  */
 @ConfigurationProperties(prefix = "bluetape4k.aws.sns")

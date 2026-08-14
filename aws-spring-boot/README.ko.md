@@ -82,6 +82,7 @@ dependencies {
     implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
+    implementation("software.amazon.awssdk:sns-message-manager") // SNS HTTP 서명 검증에 필요
     implementation("software.amazon.awssdk:sqs")
     implementation("software.amazon.awssdk:sts") // 선택적 web-identity credentials 지원
     implementation("software.amazon.awssdk:dynamodb-enhanced")
@@ -532,14 +533,17 @@ Jakarta Mail, Angus Mail provider가 런타임 classpath에 있을 때만 등록
 ### SNS — Publish, SMS, HTTP endpoint message
 
 ```kotlin
-import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
 import io.bluetape4k.aws.spring.sns.SnsSmsRequest
 import io.bluetape4k.aws.spring.sns.SnsSmsType
 
-class OrderNotifications(private val sns: SnsOperations) {
+class OrderNotifications(
+    private val sns: SnsOperations,
+    private val verifier: SnsHttpMessageVerifier,
+) {
     suspend fun publishOrder(topicArn: String, json: String) {
         sns.publish(SnsPublishRequest(topicArn = topicArn, message = json))
     }
@@ -555,9 +559,12 @@ class OrderNotifications(private val sns: SnsOperations) {
         )
     }
 
-    suspend fun handleHttpEndpoint(body: String, messageTypeHeader: String?) {
-        val message = SnsHttpMessageParser.parse(body, messageTypeHeader)
-        // 여기서 Signature, SigningCertURL, SignatureVersion, expected TopicArn 검증.
+    suspend fun handleHttpEndpoint(
+        body: String,
+        messageTypeHeader: String?,
+        expectedTopicArn: String,
+    ) {
+        val message = verifier.verify(body, messageTypeHeader, expectedTopicArn)
         when (message.type) {
             SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION,
             SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION -> sns.confirmSubscription(message)
@@ -572,9 +579,28 @@ class OrderNotifications(private val sns: SnsOperations) {
 SNS는 queue policy가 topic ARN의 `sqs:SendMessage`를 허용하면 SQS subscription으로
 fanout할 수 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과 선택적
 `x-amz-sns-message-type` header를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
-`SigningCertURL`은 거부합니다. Signature 검증은 수행하지 않으므로 notification 처리나
-subscription confirmation 전에 certificate chain, signature, signature version, 기대한
-`TopicArn`을 검증해야 합니다.
+`SigningCertURL`은 거부합니다. `SnsHttpMessageVerifier`는 parser 다음,
+notification 처리나 subscription confirmation 전에 실행해야 하며 Signature v1/v2,
+certificate chain, SNS host 검증을 AWS SDK message manager에 위임하고 예외가 발생하면
+fail-closed로 거부합니다.
+
+### SNS HTTP 메시지 서명 검증
+
+이 모듈은 `software.amazon.awssdk:sns-message-manager`를 `compileOnly`로 유지하므로
+애플리케이션 runtime에 해당 의존성을 추가해야 합니다. 검증은 기본적으로 활성화됩니다.
+
+```yaml
+bluetape4k:
+  aws:
+    sns:
+      verification:
+        enabled: true
+```
+
+`verification.enabled=false`는 자동 구성 verifier를 제거하는 명시적 보안 opt-out이며
+parser 결과만으로는 인증되지 않습니다. Floci는 서명된 SNS HTTP payload를 생성하지
+않으므로 fixture 또는 manager mock으로 이 경계를 검증합니다. 인증서 요청 timeout·정리
+telemetry와 실제 AWS smoke 측정은 이 계약과 분리한 후속 이슈로 추적합니다.
 
 ### Kinesis — stream operations와 record Flow
 
