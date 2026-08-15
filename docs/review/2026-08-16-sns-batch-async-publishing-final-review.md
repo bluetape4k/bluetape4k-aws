@@ -3,7 +3,7 @@
 > 대상 이슈: #456
 > Epic: #499
 > 기준: `bd97ef16357a5cea93c10c60916d9bd54138409f`
-> 구현 기준 HEAD: `0a22566`
+> 구현 기준 HEAD: `69260b0`
 > 리뷰일: 2026-08-16
 
 ## 범위와 판정
@@ -34,7 +34,12 @@ latency/cleanup telemetry와 heap·throughput 측정으로 [#515](https://github
 
 ## 테스트·정적 검증 증거
 
-- 명시적 SNS targeted 목록(`.lane-evidence/issue-456-targeted-final-v5.log`):
+- 명시적 SNS assertion-audit targeted 목록:
+  Java `15` (`issue-456-java-sns-assertion-audit-final.log`), AWS Kotlin `9`
+  (`issue-456-kotlin-sns-assertion-audit-final.log`), Spring `40`
+  (`issue-456-sns-spring-full-assertion-audit-final.log`)으로 총 **64 passing**,
+  각 `BUILD SUCCESSFUL`.
+- 기존 구현 경계의 명시적 SNS targeted 목록(`.lane-evidence/issue-456-targeted-final-v5.log`):
   **24 passing**, `BUILD SUCCESSFUL`.
 - security/API remediation(`issue-456-security-remediation-final-v2.log`):
   **16 passing**, `BUILD SUCCESSFUL`; AWS Kotlin `compileTestKotlin` 포함.
@@ -50,10 +55,13 @@ latency/cleanup telemetry와 heap·throughput 측정으로 [#515](https://github
   이는 이번 변경에서 새로 발생한 오류로 단정하지 않고 저장소 기존 검증 제한으로
   보존하며, no-cache 결과를 대체 증거로 사용했다.
 - `git diff --check`: PASS.
-- 변경된 SNS 테스트 전수 scan: `check(`, JUnit `assertThrows`, generic
-  `assert(` 잔존 0건. `bluetape4k-assertions`의
-  `shouldBeEqualTo`, `shouldBeLessOrEqualTo`, `shouldNotContain`,
-  `assertFailsWith` 등을 사용했다.
+- Java·AWS Kotlin·Spring SNS 테스트 전수 scan: `check(`, JUnit
+  `assertThrows`, generic `assert(`, AssertJ/Kluent/kotlin.test assertion 잔존
+  0건. `bluetape4k-projects/testing/assertions` 공개 API에 맞춰
+  `shouldBeEqualTo`, `shouldBeLessOrEqualTo`, `shouldHaveSize`, `shouldBeEmpty`,
+  `shouldBeSameInstanceAs`, `shouldNotContain`, `assertFailsWith`를 의미에 맞게
+  사용했다. 기존 Spring auto-configuration 테스트의 `Map.size` 비교도
+  `shouldHaveSize`로 정렬했다.
 - ABI fixture SHA-256:
   `b8814d524f38f624ad8c51401286a694d64785ab352ecc1d301d186711c7d177`.
   `SnsOperationsBatchCompatibilityTest`가 hash와 isolated classloader identity,
@@ -104,7 +112,7 @@ latency/cleanup telemetry와 heap·throughput 측정으로 [#515](https://github
 - [x] 설계·계획·리뷰 artifact와 구현 변경을 Lore commit으로 고정
 - [x] Java/Kotlin/Spring API, ABI, redaction, cancellation, bounded concurrency 구현
 - [x] `bluetape4k-assertions`/`bluetape4k-projects` 패턴으로 변경 테스트 전수 점검
-- [x] 명시적 SNS targeted 24 passing 및 모듈 전체 359 passing
+- [x] SNS assertion-audit targeted 64 passing 및 모듈 전체 359 passing
 - [x] detekt, Kotlin test compile, no-cache build, diff check, ABI hash 검증
 - [x] #514/#515 후속 이슈와 실제 성능 측정 미검증 범위 기록
 - [ ] PR 생성 및 Korean `## DoD Status` body read-back
