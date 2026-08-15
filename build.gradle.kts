@@ -190,6 +190,27 @@ val awsSpringSqsConsumerFixtureClasspath = configurations.create("awsSpringSqsCo
     }
 }
 
+val awsSpringSnsConsumerFixtureClasspath = configurations.create("awsSpringSnsConsumerFixtureClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "software.amazon.awssdk" -> useVersion(bt4kVersion("aws2"))
+            "org.jetbrains.kotlinx" -> if (requested.name.startsWith("kotlinx-coroutines")) {
+                useVersion(bt4kVersion("kotlinx-coroutines"))
+            }
+        }
+        because("consumer fixture resolves versions from the central bt4k catalog")
+    }
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+    }
+}
+
 fun Configuration.configureBedrockConsumerFixtureVersions() {
     isCanBeConsumed = false
     isCanBeResolved = true
@@ -276,6 +297,14 @@ dependencies {
     awsSpringSqsConsumerFixtureClasspath(bt4k.bluetape4k.io)
     awsSpringSqsConsumerFixtureClasspath(bt4k.bluetape4k.coroutines)
 
+    awsSpringSnsConsumerFixtureClasspath(project(":bluetape4k-aws-spring-boot"))
+    awsSpringSnsConsumerFixtureClasspath(platform(bt4k.spring.boot4.dependencies))
+    awsSpringSnsConsumerFixtureClasspath(libs.aws2.sns)
+    awsSpringSnsConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
+    awsSpringSnsConsumerFixtureClasspath(libs.spring.context.support)
+    awsSpringSnsConsumerFixtureClasspath(bt4k.bluetape4k.io)
+    awsSpringSnsConsumerFixtureClasspath(bt4k.bluetape4k.coroutines)
+
     bedrockJavaConsumerFixtureClasspath(project(":bluetape4k-aws-java"))
     bedrockJavaConsumerFixtureClasspath(libs.aws2.bedrock.runtime)
     bedrockJavaConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
@@ -354,6 +383,31 @@ fun registerSqsConsumerFixtureCompile(
     }
 }
 
+fun registerSnsConsumerFixtureCompile(
+    name: String,
+    sourceFile: String,
+    outputPath: String,
+): TaskProvider<out Task> {
+    val sourceSetName = name.removePrefix("compile").replaceFirstChar(Char::lowercase)
+    val sourceSet: SourceSet = sourceSets.create(sourceSetName)
+    tasks.named<JavaCompile>(sourceSet.compileJavaTaskName) {
+        options.release.set(25)
+    }
+    val kotlinCompile = tasks.named<KotlinJvmCompile>(sourceSet.getCompileTaskName("kotlin")) {
+        source(fileTree("aws-spring-boot/src/consumerFixture/kotlin") { include(sourceFile) })
+        libraries.setFrom(awsSpringSnsConsumerFixtureClasspath)
+        destinationDirectory.set(layout.buildDirectory.dir(outputPath))
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
+        compilerOptions.freeCompilerArgs.add("-jvm-default=enable")
+        dependsOn(":bluetape4k-aws-spring-boot:jar")
+    }
+    return tasks.register(name) {
+        description = "Compiles an external SNS consumer compatibility fixture."
+        group = "verification"
+        dependsOn(kotlinCompile)
+    }
+}
+
 val compileSqsOperationsLegacyConsumerFixture = registerSqsConsumerFixtureCompile(
     name = "compileSqsOperationsLegacyConsumerFixture",
     sourceFile = "io/bluetape4k/aws/spring/sqs/consumer/LegacySqsOperationsFixture.kt",
@@ -373,6 +427,11 @@ val compileSqsBatchConsumerFixture = registerSqsConsumerFixtureCompile(
     name = "compileSqsBatchConsumerFixture",
     sourceFile = "io/bluetape4k/aws/spring/sqs/consumer/SqsBatchConsumerFixture.kt",
     outputPath = "consumer-fixtures/aws-spring-sqs/batch/classes",
+)
+val compileSnsOperationsLegacyConsumerFixture = registerSnsConsumerFixtureCompile(
+    name = "compileSnsOperationsLegacyConsumerFixture",
+    sourceFile = "io/bluetape4k/aws/spring/sns/consumer/LegacySnsOperationsFixture.kt",
+    outputPath = "consumer-fixtures/aws-spring-sns/operations-legacy/classes",
 )
 
 fun registerBedrockConsumerFixtureCompile(
