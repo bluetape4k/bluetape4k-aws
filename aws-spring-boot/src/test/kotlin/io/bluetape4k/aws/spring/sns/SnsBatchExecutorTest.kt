@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeLessOrEqualTo
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
@@ -31,9 +32,9 @@ class SnsBatchExecutorTest {
             val publisher = RecordingPublisher()
             val result = SnsBatchExecutor(publisher::publish).execute(request(size), SnsBatchExecutionOptions(4))
 
-            publisher.chunks.size shouldBeEqualTo if (size == 0) 0 else (size + 9) / 10
-            result.successful.size shouldBeEqualTo size
-            result.failed shouldHaveSize 0
+            publisher.chunks shouldHaveSize (if (size == 0) 0 else (size + 9) / 10)
+            result.successful shouldHaveSize size
+            result.failed.shouldBeEmpty()
         }
     }
 
@@ -68,7 +69,7 @@ class SnsBatchExecutorTest {
         result.failed.single().entryId shouldBeEqualTo batchRequest.entries[0].id
         result.failed.single().code shouldBeEqualTo "AccessDenied"
         result.failed.single().message shouldBeEqualTo "safe failure"
-        result.failed.single().senderFault shouldBeEqualTo true
+        result.failed.single().senderFault.shouldBeTrue()
     }
 
     @Test
@@ -221,7 +222,7 @@ class SnsBatchExecutorTest {
         }
 
         firstCancelled.await()
-        error.completedEntryIds shouldHaveSize 0
+        error.completedEntryIds.shouldBeEmpty()
         calls.distinct().size shouldBeEqualTo calls.size
         error.toString() shouldNotContain "transport-secret"
     }

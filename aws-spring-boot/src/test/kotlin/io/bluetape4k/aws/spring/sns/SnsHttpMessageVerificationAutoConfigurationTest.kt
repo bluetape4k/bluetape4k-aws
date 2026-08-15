@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldHaveSize
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
@@ -27,7 +27,7 @@ class SnsHttpMessageVerificationAutoConfigurationTest {
     @Test
     fun `registers verifier when conditions are enabled`() {
         contextRunner.run { context ->
-            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java) shouldHaveSize 1
         }
     }
 
@@ -36,7 +36,7 @@ class SnsHttpMessageVerificationAutoConfigurationTest {
         contextRunner.withPropertyValues(
             "bluetape4k.aws.sns.verification.enabled=false",
         ).run { context ->
-            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java) shouldHaveSize 0
         }
     }
 
@@ -45,7 +45,7 @@ class SnsHttpMessageVerificationAutoConfigurationTest {
         contextRunner.withPropertyValues(
             "bluetape4k.aws.sns.enabled=false",
         ).run { context ->
-            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java) shouldHaveSize 0
         }
     }
 
@@ -54,7 +54,7 @@ class SnsHttpMessageVerificationAutoConfigurationTest {
         contextRunner.withPropertyValues(
             "bluetape4k.aws.enabled=false",
         ).run { context ->
-            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java) shouldHaveSize 0
         }
     }
 
@@ -63,7 +63,7 @@ class SnsHttpMessageVerificationAutoConfigurationTest {
         val customVerifier = mockk<SnsHttpMessageVerifier>(relaxed = true)
 
         contextRunner.withBean(SnsHttpMessageVerifier::class.java, { customVerifier }).run { context ->
-            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java) shouldHaveSize 1
             context.getBean(SnsHttpMessageVerifier::class.java) shouldBeSameInstanceAs customVerifier
         }
     }
@@ -73,7 +73,7 @@ class SnsHttpMessageVerificationAutoConfigurationTest {
         contextRunner.withClassLoader(
             FilteredClassLoader("software.amazon.awssdk.messagemanager.sns"),
         ).run { context ->
-            context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType(SnsHttpMessageVerifier::class.java) shouldHaveSize 0
         }
     }
 }
