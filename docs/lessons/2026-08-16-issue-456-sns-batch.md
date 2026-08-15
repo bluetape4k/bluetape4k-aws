@@ -52,8 +52,8 @@ Issue #456은 Java SDK v2, AWS Kotlin SDK, `aws-spring-boot` 템플릿에 SNS
 
 ## 결과와 검증
 
-- 기준 구현 commit: `d0690d324a0a36ac08ce1ba295b19cc3afcc7576` 이후의 최종
-  remediation 변경은 구현 커밋과 통합 review 커밋으로 고정한다.
+- 최종 구현·remediation은 `0a22566`에 고정했고, 통합 review artifact는 별도
+  Lore commit으로 고정한다.
 - 명시적 SNS assertion-audit targeted 실행은 `24 passing`, `BUILD SUCCESSFUL`을
   기록했다. Java·Kotlin·Spring 모듈 전체 테스트는 `359 passing`,
   `BUILD SUCCESSFUL`이었다.
