@@ -28,6 +28,11 @@ class MicrometerS3Operations(
             delegate.existsBucket(bucket)
         }
 
+    override suspend fun headObject(bucket: String, key: String): S3ObjectMetadata =
+        record(OPERATION_HEAD, bucket) {
+            delegate.headObject(bucket, key)
+        }
+
     override suspend fun upload(
         bucket: String,
         key: String,
@@ -117,6 +122,7 @@ class MicrometerS3Operations(
     companion object {
         const val DEFAULT_METER_NAME: String = "bluetape4k.aws.s3.operation"
         const val OPERATION_EXISTS_BUCKET: String = "exists_bucket"
+        const val OPERATION_HEAD: String = "head_object"
         const val OPERATION_UPLOAD: String = "upload"
         const val OPERATION_DOWNLOAD: String = "download"
         const val OPERATION_DELETE: String = "delete"

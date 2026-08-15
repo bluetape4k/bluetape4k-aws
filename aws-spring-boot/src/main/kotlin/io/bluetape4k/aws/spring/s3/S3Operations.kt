@@ -31,6 +31,18 @@ import java.time.Duration
 interface S3Operations {
 
     /**
+     * bucket/key 객체의 metadata를 단일 HEAD snapshot으로 조회합니다.
+     *
+     * 기존 custom 구현체가 갑자기 source/ABI에서 깨지지 않도록 기본 구현은
+     * unsupported로 fail closed합니다. 지원하지 않는 구현체는 resource 또는
+     * list fallback으로 성공한 것처럼 응답하지 않아야 합니다.
+     */
+    suspend fun headObject(bucket: String, key: String): S3ObjectMetadata =
+        throw UnsupportedOperationException(
+            "S3Operations.headObject is not supported by this implementation",
+        )
+
+    /**
      * [bucket]이 존재하면 `true`, 존재하지 않으면 `false`를 반환합니다.
      */
     suspend fun existsBucket(bucket: String): Boolean
