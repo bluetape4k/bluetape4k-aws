@@ -63,6 +63,7 @@ interface SnsOperations {
      * 기존 구현체는 단건 [publish]를 순차 호출하는 호환 fallback을 사용합니다.
      * 이 경로는 원자적 batch가 아니며 첫 실패에서 중단하고 자동 재시도하지 않습니다.
      */
+    @Suppress("TooGenericExceptionCaught")
     suspend fun publishBatch(
         request: SnsPublishBatchRequest,
         options: SnsBatchExecutionOptions = SnsBatchExecutionOptions(),
@@ -92,7 +93,7 @@ interface SnsOperations {
                 )
             } catch (cause: CancellationException) {
                 throw cause
-            } catch (cause: Exception) {
+            } catch (cause: RuntimeException) {
                 throw SnsBatchTransportException.from(cause, successful.map { it.entryId })
             }
         }

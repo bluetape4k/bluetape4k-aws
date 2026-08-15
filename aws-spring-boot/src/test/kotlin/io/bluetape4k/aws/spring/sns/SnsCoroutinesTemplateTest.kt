@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sns
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.codec.Base58
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -12,12 +13,88 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
+import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchResponse
 import software.amazon.awssdk.services.sns.model.PublishRequest
 import software.amazon.awssdk.services.sns.model.PublishResponse
+import software.amazon.awssdk.services.sns.model.PublishBatchResultEntry
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
 class SnsCoroutinesTemplateTest {
+
+    @Test
+    fun `publishBatch uses SDK batch calls and preserves entry fields`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val capturedRequests = mutableListOf<PublishBatchRequest>()
+        every { client.publishBatch(any<PublishBatchRequest>()) } answers {
+            val request = firstArg<PublishBatchRequest>()
+            capturedRequests += request
+            CompletableFuture.completedFuture(
+                PublishBatchResponse.builder()
+                    .successful(
+                        request.publishBatchRequestEntries().map { entry ->
+                            PublishBatchResultEntry.builder()
+                                .id(entry.id())
+                                .messageId("message-${entry.id()}")
+                                .sequenceNumber(entry.messageGroupId())
+                                .build()
+                        },
+                    )
+                    .build(),
+            )
+        }
+
+        val attributes = mapOf(
+            "trace" to MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue("trace-${Base58.randomString(16)}")
+                .build(),
+        )
+        val request = SnsPublishBatchRequest(
+            topicArn = "arn:aws:sns:us-east-1:000000000000:orders.fifo",
+            entries = (1..11).map { index ->
+                SnsPublishBatchEntry(
+                    id = "entry-$index-${Base58.randomString(16)}",
+                    message = "message-$index-${Base58.randomString(16)}",
+                    subject = "subject-$index",
+                    messageAttributes = attributes,
+                    messageGroupId = "group-$index",
+                    messageDeduplicationId = "dedup-$index",
+                )
+            },
+        )
+
+        val result = template(client).publishBatch(request, SnsBatchExecutionOptions(maxInFlightBatches = 2))
+
+        capturedRequests.size shouldBeEqualTo 2
+        capturedRequests.flatMap { it.publishBatchRequestEntries() }.map { it.id() } shouldBeEqualTo
+            request.entries.map { it.id }
+        val firstEntry = capturedRequests.first().publishBatchRequestEntries().first()
+        firstEntry.subject() shouldBeEqualTo "subject-1"
+        firstEntry.messageAttributes()["trace"]?.stringValue() shouldBeEqualTo
+            attributes.getValue("trace").stringValue()
+        firstEntry.messageGroupId() shouldBeEqualTo "group-1"
+        firstEntry.messageDeduplicationId() shouldBeEqualTo "dedup-1"
+        result.successful.map { it.entryId } shouldBeEqualTo request.entries.map { it.id }
+        verify(exactly = 2) { client.publishBatch(any<PublishBatchRequest>()) }
+    }
+
+    @Test
+    fun `publishBatch empty request avoids SDK call`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val request = SnsPublishBatchRequest(
+            topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
+            entries = emptyList(),
+        )
+
+        val result = template(client).publishBatch(request)
+
+        result.successful shouldBeEqualTo emptyList()
+        result.failed shouldBeEqualTo emptyList()
+        verify(exactly = 0) { client.publishBatch(any<PublishBatchRequest>()) }
+        verify(exactly = 0) { client.publish(any<PublishRequest>()) }
+    }
 
     @Test
     fun `publishSms maps phone number and explicit SMS attributes`() = runTest {
