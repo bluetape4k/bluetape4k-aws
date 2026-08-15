@@ -244,7 +244,7 @@ suspend inline fun SnsClient.publishBatch(
     entries: List<PublishBatchRequestEntry>,
     crossinline builder: PublishBatchRequest.Builder.() -> Unit = {},
 ): PublishBatchResponse {
-    topicArn.requireNotBlank("topicArn")
+    validatePublishBatchRequest(topicArn, entries)
 
     return publishBatch {
         this.topicArn = topicArn
