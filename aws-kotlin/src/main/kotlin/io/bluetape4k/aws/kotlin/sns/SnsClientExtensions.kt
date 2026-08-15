@@ -246,11 +246,13 @@ suspend inline fun SnsClient.publishBatch(
 ): PublishBatchResponse {
     validatePublishBatchRequest(topicArn, entries)
 
-    return publishBatch {
+    val request = PublishBatchRequest {
         this.topicArn = topicArn
         this.publishBatchRequestEntries = entries
         builder()
     }
+    validatePublishBatchRequest(request.topicArn.orEmpty(), request.publishBatchRequestEntries.orEmpty())
+    return publishBatch(request)
 }
 
 

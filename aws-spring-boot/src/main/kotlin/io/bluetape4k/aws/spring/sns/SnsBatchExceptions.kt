@@ -1,6 +1,10 @@
 package io.bluetape4k.aws.spring.sns
 
 import kotlinx.coroutines.CancellationException
+import software.amazon.awssdk.core.exception.ApiCallAttemptTimeoutException
+import software.amazon.awssdk.core.exception.ApiCallTimeoutException
+import software.amazon.awssdk.core.exception.SdkClientException
+import software.amazon.awssdk.core.exception.SdkServiceException
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.concurrent.TimeoutException
@@ -47,10 +51,12 @@ class SnsBatchTransportException private constructor(
         }
 
         private fun classify(cause: Throwable): SnsBatchFailureType = when {
-            cause is TimeoutException || cause::class.simpleName?.contains("Timeout", ignoreCase = true) == true ->
+            cause is ApiCallTimeoutException ||
+                cause is ApiCallAttemptTimeoutException ||
+                cause is TimeoutException ->
                 SnsBatchFailureType.TIMEOUT
-            cause::class.qualifiedName?.contains("SdkServiceException") == true -> SnsBatchFailureType.SDK_SERVICE
-            cause::class.qualifiedName?.contains("SdkClientException") == true -> SnsBatchFailureType.CLIENT
+            cause is SdkServiceException -> SnsBatchFailureType.SDK_SERVICE
+            cause is SdkClientException -> SnsBatchFailureType.CLIENT
             else -> SnsBatchFailureType.UNKNOWN
         }
 

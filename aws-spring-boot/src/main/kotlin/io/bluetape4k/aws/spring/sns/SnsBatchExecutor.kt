@@ -1,13 +1,15 @@
 package io.bluetape4k.aws.spring.sns
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sns.model.PublishBatchResponse
 import java.util.concurrent.atomic.AtomicReference
 
@@ -35,12 +37,11 @@ internal class SnsBatchExecutor(
         val workerCount = minOf(options.maxInFlightBatches, chunkCount)
         val iterator = request.entries.iterator()
         val claimMutex = Mutex()
-        val resultMutex = Mutex()
         val completedMutex = Mutex()
-        val permits = Semaphore(workerCount)
-        val chunks = mutableListOf<ChunkResult>()
         val completedEntryIds = mutableListOf<String>()
         val cancellationCause = AtomicReference<CancellationException?>()
+        val inFlight = Semaphore(workerCount)
+        val resultChannel = Channel<ChunkResult>(capacity = 0)
         var nextSequence = 0
 
         suspend fun claimChunk(): Chunk? = claimMutex.withLock {
@@ -59,17 +60,21 @@ internal class SnsBatchExecutor(
             completedMutex.withLock { completedEntryIds += ids }
         }
 
-        try {
+        return try {
             suspend fun runWorker() {
                 try {
                     while (true) {
-                        val chunk = claimChunk() ?: break
-                        val response = permits.withPermit {
-                            publishChunk(request.topicArn, chunk.entries)
+                        inFlight.acquire()
+                        val chunk = claimChunk()
+                        if (chunk == null) {
+                            inFlight.release()
+                            break
                         }
-                        val result = mapResponse(chunk.entries, response)
-                        recordCompleted(chunk.entries.map { it.id })
-                        resultMutex.withLock { chunks += ChunkResult(chunk.sequence, result) }
+                        val response = publishChunk(request.topicArn, chunk.entries)
+                        withContext(NonCancellable) {
+                            recordCompleted(chunk.entries.map { it.id })
+                        }
+                        resultChannel.send(ChunkResult(chunk.sequence, mapResponse(chunk.entries, response)))
                     }
                 } catch (cause: CancellationException) {
                     cancellationCause.compareAndSet(null, cause)
@@ -78,7 +83,15 @@ internal class SnsBatchExecutor(
             }
 
             coroutineScope {
-                (0 until workerCount).map { async { runWorker() } }.awaitAll()
+                val workers = (0 until workerCount).map { async { runWorker() } }
+                val ordered = async { collectResults(resultChannel, chunkCount, inFlight) }
+                try {
+                    workers.awaitAll()
+                    resultChannel.close()
+                    ordered.await()
+                } finally {
+                    resultChannel.cancel()
+                }
             }
         } catch (cause: CancellationException) {
             throw cancellationCause.get() ?: cause
@@ -90,12 +103,30 @@ internal class SnsBatchExecutor(
             val completed = completedMutex.withLock { completedEntryIds.toList() }
             throw SnsBatchTransportException.from(cause, completed)
         }
+    }
 
-        val ordered = chunks.sortedBy { it.sequence }.map { it.result }
-        return SnsPublishBatchResult(
-            successful = ordered.flatMap { it.successful },
-            failed = ordered.flatMap { it.failed },
-        )
+    private suspend fun collectResults(
+        resultChannel: Channel<ChunkResult>,
+        chunkCount: Int,
+        inFlight: Semaphore,
+    ): SnsPublishBatchResult {
+        val pending = sortedMapOf<Int, ChunkResultData>()
+        val successful = mutableListOf<SnsPublishBatchSuccess>()
+        val failed = mutableListOf<SnsPublishBatchFailure>()
+        var nextSequence = 0
+
+        repeat(chunkCount) {
+            val chunk = resultChannel.receive()
+            pending[chunk.sequence] = chunk.result
+            while (pending[nextSequence] != null) {
+                val result = pending.remove(nextSequence) ?: break
+                successful += result.successful
+                failed += result.failed
+                nextSequence++
+                inFlight.release()
+            }
+        }
+        return SnsPublishBatchResult(successful, failed)
     }
 
     private fun mapResponse(

@@ -2,7 +2,9 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -10,9 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import software.amazon.awssdk.services.sns.model.PublishResponse
-import java.net.URLClassLoader
-import java.nio.file.Files
-import java.nio.file.Path
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 
 class SnsOperationsBatchCompatibilityTest {
@@ -30,7 +30,7 @@ class SnsOperationsBatchCompatibilityTest {
         error.failureType shouldBeEqualTo SnsBatchFailureType.UNKNOWN
         operations.publishedIds shouldBeEqualTo listOf("message-1", "message-2")
         operations.maxActive shouldBeEqualTo 1
-        check("secret" !in error.toString())
+        error.toString() shouldNotContain "secret"
     }
 
     @Test
@@ -53,18 +53,16 @@ class SnsOperationsBatchCompatibilityTest {
         val noopResult = NoopSnsOperations.publishBatch(request(1))
         noopResult.successful.single().entryId shouldBeEqualTo "entry-1"
 
-        val classes = listOf(
-            Path.of("build/consumer-fixtures/aws-spring-sns/operations-legacy/classes"),
-            Path.of("../build/consumer-fixtures/aws-spring-sns/operations-legacy/classes"),
-        ).firstOrNull(Files::isDirectory)
-            ?: Path.of("build/consumer-fixtures/aws-spring-sns/operations-legacy/classes")
-        check(Files.isDirectory(classes)) { "legacy fixture classes are missing: $classes" }
-        URLClassLoader(arrayOf(classes.toUri().toURL()), javaClass.classLoader).use { loader ->
-            val type = loader.loadClass("io.bluetape4k.aws.spring.sns.consumer.LegacySnsOperationsFixture")
-            val operations = type.getDeclaredConstructor().newInstance() as SnsOperations
-            val result = operations.publishBatch(request(1))
-            result.successful.single().messageId shouldBeEqualTo "legacy"
-        }
+        val fixtureBytes = requireNotNull(javaClass.getResourceAsStream(LEGACY_FIXTURE_RESOURCE)) {
+            "legacy fixture resource is missing: $LEGACY_FIXTURE_RESOURCE"
+        }.use { it.readBytes() }
+        sha256(fixtureBytes) shouldBeEqualTo LEGACY_FIXTURE_SHA256
+        val loader = LegacyFixtureClassLoader(javaClass.classLoader, LEGACY_FIXTURE_CLASS_NAME, fixtureBytes)
+        val type = loader.loadClass(LEGACY_FIXTURE_CLASS_NAME)
+        type.classLoader shouldBeSameInstanceAs loader
+        val operations = type.getDeclaredConstructor().newInstance() as SnsOperations
+        val result = operations.publishBatch(request(1))
+        result.successful.single().messageId shouldBeEqualTo "legacy"
     }
 
     private fun request(size: Int): SnsPublishBatchRequest =
@@ -122,4 +120,31 @@ class SnsOperationsBatchCompatibilityTest {
             authenticateOnUnsubscribe: Boolean,
         ): ConfirmSubscriptionResponse = ConfirmSubscriptionResponse.builder().build()
     }
+
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString(separator = "") { byte -> "%02x".format(byte) }
+
+    private companion object {
+        const val LEGACY_FIXTURE_RESOURCE =
+            "/sns-abi/io/bluetape4k/aws/spring/sns/consumer/LegacySnsOperationsFixture.class"
+        const val LEGACY_FIXTURE_CLASS_NAME =
+            "io.bluetape4k.aws.spring.sns.consumer.LegacySnsOperationsFixture"
+        const val LEGACY_FIXTURE_SHA256 =
+            "b8814d524f38f624ad8c51401286a694d64785ab352ecc1d301d186711c7d177"
+    }
+}
+
+private class LegacyFixtureClassLoader(
+    parent: ClassLoader,
+    private val fixtureClassName: String,
+    private val fixtureBytes: ByteArray,
+) : ClassLoader(parent) {
+
+    protected override fun findClass(name: String): Class<*> =
+        if (name == fixtureClassName) {
+            defineClass(name, fixtureBytes, 0, fixtureBytes.size)
+        } else {
+            super.findClass(name)
+        }
 }

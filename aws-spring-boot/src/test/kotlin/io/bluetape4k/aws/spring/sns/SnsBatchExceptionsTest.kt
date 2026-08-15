@@ -2,7 +2,14 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldNotContain
 import org.junit.jupiter.api.Test
+import software.amazon.awssdk.core.exception.ApiCallAttemptTimeoutException
+import software.amazon.awssdk.core.exception.ApiCallTimeoutException
+import software.amazon.awssdk.services.sns.model.SnsException
+import java.util.concurrent.TimeoutException
 
 class SnsBatchExceptionsTest {
 
@@ -13,8 +20,8 @@ class SnsBatchExceptionsTest {
 
         exception.failureType shouldBeEqualTo SnsBatchFailureType.UNKNOWN
         exception.completedEntryIds shouldBeEqualTo listOf("entry-secret")
-        check(exception.cause == null)
-        check(exception.suppressed.isEmpty())
+        exception.cause.shouldBeNull()
+        exception.suppressed.shouldBeEmpty()
 
         val rendered = buildString {
             append(exception.message)
@@ -22,10 +29,40 @@ class SnsBatchExceptionsTest {
             exception.stackTrace.forEach { append(it) }
             exception.suppressed.forEach { append(it) }
         }
-        check("payload-secret" !in rendered)
-        check("arn-secret" !in rendered)
-        check("\r" !in rendered)
-        check("\n" !in rendered)
+        rendered shouldNotContain "payload-secret"
+        rendered shouldNotContain "arn-secret"
+        rendered shouldNotContain "\r"
+        rendered shouldNotContain "\n"
+    }
+
+    @Test
+    fun `transport exception classifies concrete SNS service exceptions`() {
+        val exception = SnsBatchTransportException.from(
+            SnsException.builder().message("service-secret").build(),
+            emptyList(),
+        )
+
+        exception.failureType shouldBeEqualTo SnsBatchFailureType.SDK_SERVICE
+        exception.toString() shouldNotContain "service-secret"
+    }
+
+    @Test
+    fun `transport exception classifies only explicit timeout types`() {
+        SnsBatchTransportException.from(
+            ApiCallTimeoutException.create(100),
+            emptyList(),
+        ).failureType shouldBeEqualTo SnsBatchFailureType.TIMEOUT
+
+        SnsBatchTransportException.from(
+            ApiCallAttemptTimeoutException.create(100),
+            emptyList(),
+        ).failureType shouldBeEqualTo SnsBatchFailureType.TIMEOUT
+
+        SnsBatchTransportException.from(TimeoutException("timeout"), emptyList())
+            .failureType shouldBeEqualTo SnsBatchFailureType.TIMEOUT
+
+        SnsBatchTransportException.from(NamedTimeoutFailure(), emptyList())
+            .failureType shouldBeEqualTo SnsBatchFailureType.UNKNOWN
     }
 
     @Test
@@ -43,7 +80,9 @@ class SnsBatchExceptionsTest {
         exception.completedEntryIds shouldHaveSize 0
 
         val rendered = "${exception.message}$exception"
-        check("entry-1" !in rendered)
-        check("entry-secret" !in rendered)
+        rendered shouldNotContain "entry-1"
+        rendered shouldNotContain "entry-secret"
     }
 }
+
+private class NamedTimeoutFailure : RuntimeException("timeout")

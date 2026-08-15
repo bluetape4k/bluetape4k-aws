@@ -757,6 +757,48 @@ class PropertyProtector(
 `TextEncryptor` is synchronous, so this adapter is best for short administrative flows or startup-time
 secret handling. Prefer `KmsOperations` in coroutine services.
 
+### SNS — AWS SDK wrappers
+
+The low-level `bluetape4k-aws-java` extensions keep AWS SDK responses and exceptions visible while
+validating the topic ARN, entry IDs, duplicate IDs, and the ten-entry `PublishBatch` limit. The sync,
+`CompletableFuture`, and coroutine APIs share the same request model; the AWS Kotlin SDK wrapper
+provides the native suspend equivalent.
+
+```kotlin
+import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.sns.model.publishBatchRequestOf
+import io.bluetape4k.aws.sns.publishBatch
+import io.bluetape4k.aws.sns.publishBatchAsync
+import io.bluetape4k.aws.sns.publishBatchSuspend
+
+val javaEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val request = publishBatchRequestOf(topicArn, javaEntries)
+
+val syncResponse = snsClient.publishBatch(topicArn, javaEntries)
+val futureResponse = snsAsyncClient.publishBatchAsync(request)
+val suspendResponse = snsAsyncClient.publishBatchSuspend(request)
+```
+
+The AWS Kotlin SDK wrapper uses its native request-entry model:
+
+```kotlin
+import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.kotlin.sns.publishBatch
+
+val kotlinEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val kotlinResponse = kotlinSnsClient.publishBatch(topicArn, kotlinEntries)
+```
+
+Each raw response can contain both successful and failed entries, so reconcile by entry ID. These
+wrappers do not retry or roll back a partial send; cancellation is propagated (and the Java coroutine
+extension cancels its underlying future). FIFO group/deduplication fields and an external idempotency
+key remain caller responsibilities. Use the Spring wrapper below when a redacted transport/protocol
+exception boundary is preferred.
+
 ### SNS — Spring Boot Coroutines Template
 
 SNS support centers on `SnsOperations`: create standard or FIFO topics, publish
@@ -849,9 +891,10 @@ If a sibling request fails after another chunk has returned a mixed result, do
 not replay the whole input blindly. Reconcile by entry ID, use FIFO
 deduplication or an external idempotency store, and manually resolve entries
 whose terminal response is unknown. Business rollback or compensation is not
-provided. Follow-up measurement work is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)
-for publisher cleanup/latency telemetry and [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)
-for heap/throughput evidence.
+provided. Spring Cloud AWS-style public `BatchExecutionStrategy` and converter
+expansion research is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514).
+Publisher cleanup/latency telemetry and heap/throughput measurement are tracked in
+[#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
 ![SNS publish and HTTP endpoint flow](docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)
 

@@ -3,7 +3,7 @@
 > 대상 이슈: #456
 > Epic: #499
 > 계획: docs/superpowers/plans/2026-08-15-sns-batch-async-publishing-plan.md
-> 리뷰일: 2026-08-15
+> 리뷰일: 2026-08-15 (계획 단계; 구현 후 상태는 최종 리뷰 artifact에 기록)
 
 ## 리뷰 범위와 게이트
 
@@ -43,9 +43,9 @@ TDD RED→GREEN, exact-head CI, merge 승인, local sync와 cleanup은 별도 �
 
 ## 사용자 승인과 다음 게이트
 
-현재 계획은 독립 리뷰 PASS 상태지만 사용자의 구현 계획 승인은 아직 남아 있다.
-계획 승인 전에는 production/test code와 build.gradle.kts를 변경하지 않는다.
-계획 승인이 이루어지면 다음 순서를 지킨다.
+계획은 독립 리뷰 PASS 후 사용자 승인을 받았고, 명세·계획·review artifact를 먼저
+커밋한 뒤 TDD 구현과 모듈 검증까지 완료했다. PR·CI·merge·local sync·cleanup은
+별도 최종 게이트로 남아 있다. 다음 순서를 유지한다.
 
 1. 설계 명세, 구현 계획, 설계 review, 본 plan-review를 Lore commit protocol로
    먼저 커밋한다.
@@ -62,10 +62,9 @@ TDD RED→GREEN, exact-head CI, merge 승인, local sync와 cleanup은 별도 �
 - [x] 구현 계획 작성
 - [x] 여섯 독립 plan-review lane PASS
 - [x] plan whitespace/placeholder 자체 검증
-- [ ] 사용자 구현 계획 승인
-- [ ] 승인된 명세·계획·review artifact Lore commit
-- [ ] TDD 구현·검증
+- [x] 사용자 구현 계획 승인
+- [x] 승인된 명세·계획·review artifact Lore commit
+- [x] TDD 구현·검증
 - [ ] PR·CI·merge·local sync·cleanup
 
-**상태: PENDING — 구현 계획 사용자 승인을 기다린다.**
-
+**상태: PENDING — PR·CI·merge·local sync·cleanup 게이트가 남아 있다.**

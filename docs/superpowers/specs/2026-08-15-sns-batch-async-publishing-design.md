@@ -273,8 +273,11 @@ chunking과 bounded concurrency를 구현한다. chunk transport 실패도
 4. 더 큰 값이면 `coroutineScope` 안에 `min(maxInFlightBatches, chunkCount)`개의
    고정 worker만 만든다. worker는 공용 `Mutex`로 iterator에서 다음 chunk를
    하나씩 가져온 뒤 외부 호출을 수행하며, chunk마다 `launch`하거나 무제한
-   queue를 만들지 않는다. 외부 호출은 `Semaphore.withPermit`으로 감싸고
-   permit은 `finally`에서 반환한다.
+   queue를 만들지 않는다. worker가 `Semaphore` credit을 먼저 확보하고
+   ordered collector가 해당 sequence를 최종 반영한 뒤 credit을 반환한다.
+   결과 채널은 rendezvous(`capacity = 0`)로 두어 collector가 순서를 확인하기
+   전 결과를 추가로 적재하지 않으며, 이 credit과 채널 조합이 외부 호출·pending
+   window를 worker 수 이내로 제한한다.
 5. 각 worker는 자신이 처리한 chunk 결과만 반환하고, 최종 조립 단계에서
    원본 index와 entry ID로 검증·변환한 뒤 입력 순서로 재조합한다. 이 결과
    조립은 호출자에게 반환하는 O(N) 출력이며 pending task/queue와 분리한다.
@@ -286,9 +289,12 @@ chunk가 transport 예외로 실패하면 structured concurrency가 sibling chun
 `publishBatchSuspend`는 SDK `CompletableFuture.await()`를 사용하므로 caller가
 취소하면 underlying future도 취소한다. Spring template도 같은 await 경계를
 사용한다. coroutine 취소 시에는 `CancellationException`을 먼저 전파하고 child 작업과
-underlying `CompletableFuture`를 취소한다. semaphore permit과 chunk
-buffer는 `finally`에서 정리한다. 별도의 재시도나 unbounded parallelism은
-이번 범위에 포함하지 않는다.
+underlying `CompletableFuture`를 취소한다. worker와 rendezvous result channel은
+구조화된 scope 종료 시 정리한다. 정상 경로에서는 ordered collector가 각
+semaphore credit을 반환하고, 빈 claim은 worker가 자신의 credit을 반환한 뒤
+종료한다. 취소·transport failure에서는 operation-local scope가 worker와
+collector를 함께 종료하므로 남은 credit은 재사용 대상이 아니다. 별도의 재시도나
+unbounded parallelism은 이번 범위에 포함하지 않는다.
 
 취소는 best-effort이며, 취소 시점에 이미 SNS에 도달한 in-flight publish를
 rollback하거나 보상할 수 없다. `CancellationException`에는 완료 ID 집합을
@@ -352,7 +358,7 @@ SNS batch에는 rollback이나 보상 트랜잭션이 없다. 이미 SNS에 도�
 | transport 예외 | 결과로 숨기지 않고 Spring 경계에서 안전한 `SnsBatchTransportException`으로 전파 | failed future/redaction 테스트 |
 | 단건 fallback 중간 실패 | 성공 prefix를 기록하고 즉시 중단, 자동 재시도 금지 | prefix failure/retry safety 테스트 |
 | coroutine cancellation | `CancellationException` 보존 및 child 취소 | `runTest` 취소 테스트 |
-| underlying future/permit 정리 | 취소·transport failure 뒤 future 취소와 permit 반환 | cancellation/race 테스트 |
+| underlying future/worker 정리 | 취소·transport failure 뒤 future 취소와 worker/collector 종료 | cancellation/race 테스트 |
 | sibling chunk transport failure | sibling 취소 후 safe wrapper 전파, 완료 목록 밖 selective retry 금지 | structured concurrency/retry safety 테스트 |
 | partial send 후 rollback 요청 | rollback/보상 트랜잭션을 제공하지 않고 caller reconciliation으로 전환 | rollback boundary 문서·테스트 |
 | emulator의 PublishBatch 미지원 | 결정성 mock 테스트를 필수로 하고 real smoke는 opt-in | 테스트 분류/skip 증거 |
@@ -385,7 +391,7 @@ SNS batch에는 rollback이나 보상 트랜잭션이 없다. 이미 SNS에 도�
 - `maxInFlightBatches`가 실제 동시 호출 수를 넘지 않음
 - 중간 chunk/entry resident 수가 `10 * maxInFlightBatches`를 넘지 않음
 - cancellation이 원래 `CancellationException`을 보존
-- cancellation 시 underlying future 취소와 semaphore permit 반환
+- cancellation 시 underlying future 취소와 operation-local worker/collector 종료
 - transport 실패가 항목별 결과로 숨겨지지 않음
 - sibling chunk 취소와 원 transport 예외 전파
 - 병렬 실패에서 완료 목록 밖 entry를 재시도하지 않는 sibling partial-send 안전성

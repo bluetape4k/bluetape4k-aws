@@ -596,6 +596,48 @@ class OrderNotifications(
 }
 ```
 
+### SNS — AWS SDK wrappers
+
+The sibling `bluetape4k-aws-java` extensions keep AWS SDK responses and exceptions visible while
+validating the topic ARN, entry IDs, duplicate IDs, and the ten-entry `PublishBatch` limit. The sync,
+`CompletableFuture`, and coroutine APIs share one request model; the AWS Kotlin SDK wrapper provides
+the native suspend equivalent.
+
+```kotlin
+import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.sns.model.publishBatchRequestOf
+import io.bluetape4k.aws.sns.publishBatch
+import io.bluetape4k.aws.sns.publishBatchAsync
+import io.bluetape4k.aws.sns.publishBatchSuspend
+
+val javaEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val request = publishBatchRequestOf(topicArn, javaEntries)
+
+val syncResponse = snsClient.publishBatch(topicArn, javaEntries)
+val futureResponse = snsAsyncClient.publishBatchAsync(request)
+val suspendResponse = snsAsyncClient.publishBatchSuspend(request)
+```
+
+The AWS Kotlin SDK wrapper uses its native request-entry model:
+
+```kotlin
+import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.kotlin.sns.publishBatch
+
+val kotlinEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val kotlinResponse = kotlinSnsClient.publishBatch(topicArn, kotlinEntries)
+```
+
+Raw responses can contain successful and failed entries together; reconcile by entry ID. These
+wrappers do not retry or roll back partial sends, and cancellation is propagated (the Java coroutine
+extension also cancels its underlying future). FIFO group/deduplication fields and an external
+idempotency key remain caller responsibilities. Use the Spring API below when a redacted
+transport/protocol exception boundary is preferred.
+
 #### SNS batch publishing
 
 `SnsCoroutinesTemplate.publishBatch` maps `SnsPublishBatchEntry` to AWS
@@ -628,13 +670,20 @@ the caller's responsibility. The low-level Java/Kotlin SDK APIs pass raw SDK
 responses and exceptions through, while this Spring template provides the safe
 transport/protocol boundary.
 
+Existing `SnsOperations` implementations that do not override `publishBatch`
+use the additive default implementation. It invokes the existing single-message
+`publish` operation sequentially, stops at the first non-cancellation failure,
+records only the successful prefix in `completedEntryIds`, and treats
+`maxInFlightBatches` as 1. It does not retry or roll back a partial send.
+
 When a sibling chunk fails after a preceding chunk returned mixed results, do
 not replay the complete input blindly. Reconcile by entry ID, use FIFO
 deduplication or an external idempotency store, and manually resolve entries
 without a known terminal response. Business rollback and compensation are not
-provided. Follow-up measurement work is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)
-for publisher cleanup/latency telemetry and [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)
-for heap/throughput evidence.
+provided. Spring Cloud AWS-style public `BatchExecutionStrategy` and converter
+expansion research is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514).
+Publisher cleanup/latency telemetry and heap/throughput measurement are tracked in
+[#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
 SNS can publish to an SQS subscription when the queue policy allows
 `sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` maps SNS HTTP JSON,

@@ -9,12 +9,12 @@ import io.bluetape4k.logging.debug
 import io.bluetape4k.support.hashOf
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.assertFailsWith
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import software.amazon.awssdk.services.sns.model.SubscribeResponse
@@ -124,17 +124,23 @@ class SnsClientTest: AbstractSnsTest() {
             publishBatchRequestEntryOf("entry-$index", "message-$index")
         }
 
-        assertThrows<IllegalArgumentException> { client.publishBatch(" ", listOf(validEntry)) }
-        assertThrows<IllegalArgumentException> { client.publishBatch(topicArn, emptyList()) }
-        assertThrows<IllegalArgumentException> { client.publishBatch(topicArn, elevenEntries) }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(" ", listOf(validEntry)) }
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, emptyList()) }
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, elevenEntries) }
+        assertFailsWith<IllegalArgumentException> {
             client.publishBatch(topicArn, listOf(validEntry, validEntry))
         }
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             client.publishBatch(
                 topicArn,
                 listOf(publishBatchRequestEntryOf(" ", "message-1")),
             )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            publishBatchRequestEntryOf("entry-1", "message-1") { id(" ") }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            publishBatchRequestOf(topicArn, listOf(validEntry)) { topicArn(" ") }
         }
     }
 

@@ -746,6 +746,48 @@ class PropertyProtector(
 `TextEncryptor`는 동기식 인터페이스이므로 짧은 관리 흐름이나 startup 시점 secret 처리에
 적합합니다. Coroutine service 안에서는 `KmsOperations`를 우선 사용하세요.
 
+### SNS — AWS SDK 래퍼
+
+하위 수준 `bluetape4k-aws-java` 확장은 AWS SDK 응답과 예외를 그대로 노출하면서 topic ARN,
+entry ID, 중복 ID, `PublishBatch`의 10개 제한을 검증합니다. 동기, `CompletableFuture`,
+coroutine API는 같은 request 모델을 공유하며 AWS Kotlin SDK 래퍼는 native suspend API를
+제공합니다.
+
+```kotlin
+import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.sns.model.publishBatchRequestOf
+import io.bluetape4k.aws.sns.publishBatch
+import io.bluetape4k.aws.sns.publishBatchAsync
+import io.bluetape4k.aws.sns.publishBatchSuspend
+
+val javaEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val request = publishBatchRequestOf(topicArn, javaEntries)
+
+val syncResponse = snsClient.publishBatch(topicArn, javaEntries)
+val futureResponse = snsAsyncClient.publishBatchAsync(request)
+val suspendResponse = snsAsyncClient.publishBatchSuspend(request)
+```
+
+AWS Kotlin SDK 래퍼는 native request-entry 모델을 사용합니다.
+
+```kotlin
+import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.kotlin.sns.publishBatch
+
+val kotlinEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val kotlinResponse = kotlinSnsClient.publishBatch(topicArn, kotlinEntries)
+```
+
+각 raw response에는 성공·실패 entry가 함께 포함될 수 있으므로 entry ID를 기준으로
+대조하세요. 이 래퍼는 partial send를 자동 재시도하거나 rollback하지 않으며 cancellation을
+전파합니다(Java coroutine 확장은 underlying future도 취소합니다). FIFO group/deduplication
+값과 외부 idempotency key는 호출자의 책임입니다. payload를 노출하지 않는
+transport/protocol 예외 경계가 필요하면 아래 Spring 래퍼를 사용하세요.
+
 ### SNS — Spring Boot Coroutines 템플릿
 
 SNS 지원의 중심은 `SnsOperations`입니다. Standard/FIFO topic 생성, topic message
@@ -838,9 +880,9 @@ Java/Kotlin SDK 확장은 SDK 응답과 예외를 그대로 전달하고, 이 Sp
 무조건 재처리하지 마세요. entry ID를 기준으로 대조하고 FIFO deduplication
 또는 외부 idempotency 저장소를 사용하며, terminal 응답이 불명확한 entry는
 수동으로 조정해야 합니다. 비즈니스 rollback이나 보상 트랜잭션은 제공하지
-않습니다. 후속 측정 작업은 publisher cleanup/latency telemetry의
-[#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)와
-heap/throughput 증거의
+않습니다. Spring Cloud AWS 방식의 공개 `BatchExecutionStrategy`·converter
+확장 조사는 [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)에서
+추적합니다. Publisher cleanup/latency telemetry와 heap/throughput 측정은
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서 추적합니다.
 
 ![SNS publish and HTTP endpoint flow](docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)

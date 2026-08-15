@@ -80,7 +80,7 @@ inline fun publishBatchRequestEntryOf(
     id.requireNotBlank("id")
     message.requireNotBlank("message")
 
-    return publishBatchRequestEntry {
+    val requestEntry = publishBatchRequestEntry {
         id(id)
         message(message)
         messageAttributes?.let { this.messageAttributes(it) }
@@ -88,6 +88,9 @@ inline fun publishBatchRequestEntryOf(
         messageGroupId?.let(::messageGroupId)
         builder()
     }
+    requestEntry.id().requireNotBlank("entry.id")
+    requestEntry.message().requireNotBlank("entry.message")
+    return requestEntry
 }
 
 /** SNS 배치 발행 요청을 생성하고 SNS의 1..10개·고유 ID 계약을 검증합니다. */
@@ -99,10 +102,12 @@ inline fun publishBatchRequestOf(
 ): PublishBatchRequest {
     validatePublishBatchRequest(topicArn, entries)
 
-    return PublishBatchRequest.builder().apply {
+    val request = PublishBatchRequest.builder().apply {
         topicArn(topicArn)
         publishBatchRequestEntries(entries)
         overrideConfiguration?.let(::overrideConfiguration)
         builder()
     }.build()
+    request.validatePublishBatchRequest()
+    return request
 }

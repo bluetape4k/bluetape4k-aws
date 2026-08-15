@@ -13,7 +13,8 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
  * ## 계약
  *
  * `CompletableFuture` SNS API를 suspend 함수로 감싸고 [SnsProperties]의 구성된 주제 속성을
- * 적용하며 AWS SDK 예외를 호출자에게 전파합니다.
+ * 적용합니다. 단건 API는 AWS SDK 예외를 그대로 전파하고, batch API는
+ * [SnsBatchTransportException] 또는 [SnsBatchProtocolException]으로 안전하게 정규화합니다.
  *
  * ```kotlin
  * val topicArn = sns.createConfiguredTopic("orders")
