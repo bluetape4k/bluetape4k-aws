@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldNotContain
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.ByteArrayInputStream
@@ -41,7 +42,7 @@ class SnsBatchModelsTest {
 
         val rendered = "$entry$request$result$success$failure"
         listOf("entry-secret", "payload-secret", "topic-secret", "message-secret", "raw-failure")
-            .forEach { secret -> check(secret !in rendered) }
+            .forEach { secret -> rendered shouldNotContain secret }
     }
 
     @Test

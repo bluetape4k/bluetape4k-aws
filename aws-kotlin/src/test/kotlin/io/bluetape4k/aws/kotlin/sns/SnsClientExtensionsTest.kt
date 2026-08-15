@@ -203,6 +203,9 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
         assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, elevenEntries) }
         assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, listOf(blankEntry)) }
         assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, listOf(validEntry, validEntry)) }
+        assertFailsWith<IllegalArgumentException> {
+            client.publishBatch(topicArn, listOf(validEntry)) { this.topicArn = " " }
+        }
 
         coVerify(exactly = 0) { client.publishBatch(any<PublishBatchRequest>()) }
     }

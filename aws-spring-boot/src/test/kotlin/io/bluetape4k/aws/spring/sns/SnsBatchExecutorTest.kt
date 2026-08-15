@@ -2,13 +2,20 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeLessOrEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.model.PublishBatchResultEntry
@@ -65,6 +72,29 @@ class SnsBatchExecutorTest {
     }
 
     @Test
+    fun `executor records terminal entries before response mapping`() = runTest {
+        val batchRequest = request(2)
+        val publisher = SnsBatchExecutor { _, entries ->
+            PublishBatchResponse.builder()
+                .successful(
+                    entries.map { entry ->
+                        PublishBatchResultEntry.builder()
+                            .id(entry.id)
+                            .messageId("")
+                            .build()
+                    },
+                )
+                .build()
+        }
+
+        val error = assertFailsWith<SnsBatchTransportException> {
+            publisher.execute(batchRequest)
+        }
+
+        error.completedEntryIds shouldBeEqualTo batchRequest.entries.map { it.id }
+    }
+
+    @Test
     fun `executor bounds active workers and does not retry transport failures`() = runTest {
         val publisher = RecordingPublisher { entries ->
             if (entries.first().id.startsWith("entry-11-")) {
@@ -77,10 +107,37 @@ class SnsBatchExecutorTest {
             SnsBatchExecutor(publisher::publish).execute(request(100), SnsBatchExecutionOptions(4))
         }
 
-        check(publisher.maxActive <= 4)
-        check(publisher.chunks.size <= 10)
-        check(publisher.chunks.flatten().distinct().size == publisher.chunks.flatten().size)
-        check("payload-secret" !in error.toString())
+        publisher.maxActive shouldBeLessOrEqualTo 4
+        publisher.chunks.size shouldBeLessOrEqualTo 10
+        publisher.chunks.flatten().distinct().size shouldBeEqualTo publisher.chunks.flatten().size
+        error.toString() shouldNotContain "payload-secret"
+    }
+
+    @Test
+    fun `executor keeps pending chunks bounded while first sequence stalls`() = runTest {
+        val batchRequest = request(100)
+        val firstStarted = CompletableDeferred<Unit>()
+        val releaseFirst = CompletableDeferred<Unit>()
+        val calls = CopyOnWriteArrayList<List<String>>()
+        val executor = SnsBatchExecutor { _, entries ->
+            calls += entries.map { it.id }
+            if (entries.first().id == batchRequest.entries.first().id) {
+                firstStarted.complete(Unit)
+                releaseFirst.await()
+            }
+            successResponseFor(entries)
+        }
+
+        val result = async {
+            executor.execute(batchRequest, SnsBatchExecutionOptions(maxInFlightBatches = 4))
+        }
+
+        firstStarted.await()
+        repeat(100) { yield() }
+        calls.size shouldBeLessOrEqualTo 4
+
+        releaseFirst.complete(Unit)
+        result.await().successful shouldHaveSize 100
     }
 
     @Test
@@ -90,7 +147,7 @@ class SnsBatchExecutorTest {
         val actual = assertFailsWith<CancellationException> {
             SnsBatchExecutor(canceled::publish).execute(request(1), SnsBatchExecutionOptions())
         }
-        check(actual === cancellation)
+        actual shouldBeSameInstanceAs cancellation
 
         val protocol = RecordingPublisher {
             PublishBatchResponse.builder()
@@ -107,6 +164,7 @@ class SnsBatchExecutorTest {
     fun `executor propagates caller cancellation through an active publisher`() = runTest {
         val started = CompletableDeferred<Unit>()
         val stopped = CompletableDeferred<Unit>()
+        val observed = CompletableDeferred<Throwable>()
         val publisher = SnsBatchExecutor { _, _ ->
             started.complete(Unit)
             try {
@@ -116,8 +174,11 @@ class SnsBatchExecutorTest {
             }
         }
         val call = launch {
-            assertFailsWith<CancellationException> {
+            try {
                 publisher.execute(request(11), SnsBatchExecutionOptions(maxInFlightBatches = 2))
+            } catch (cause: Throwable) {
+                observed.complete(cause)
+                throw cause
             }
         }
 
@@ -127,7 +188,10 @@ class SnsBatchExecutorTest {
         call.join()
 
         stopped.await()
-        check(call.isCompleted)
+        val observedCause = observed.await()
+        observedCause.shouldBeInstanceOf<CancellationException>()
+        observedCause.message shouldBeEqualTo cancellation.message
+        call.isCompleted.shouldBeTrue()
     }
 
     @Test
@@ -158,8 +222,8 @@ class SnsBatchExecutorTest {
 
         firstCancelled.await()
         error.completedEntryIds shouldHaveSize 0
-        check(calls.distinct().size == calls.size)
-        check("transport-secret" !in error.toString())
+        calls.distinct().size shouldBeEqualTo calls.size
+        error.toString() shouldNotContain "transport-secret"
     }
 
     @Test

@@ -1,15 +1,18 @@
 package io.bluetape4k.aws.sns
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestOf
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointRequest
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse
@@ -80,8 +83,27 @@ class SnsAsyncClientCoroutinesExtensionsTest {
         val future = CompletableFuture<PublishBatchResponse>().also { it.cancel(false) }
         every { client.publishBatch(request) } returns future
 
-        assertThrows<CancellationException> {
+        assertFailsWith<CancellationException> {
             client.publishBatchSuspend(request)
         }
+    }
+
+    @Test
+    fun `publishBatchSuspend는 caller cancellation을 underlying future에 전달한다`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val request = publishBatchRequestOf(
+            topicArn = "arn:aws:sns:ap-northeast-2:000000000000:topic",
+            entries = listOf(publishBatchRequestEntryOf("entry-1", "message-1")),
+        )
+        val future = CompletableFuture<PublishBatchResponse>()
+        every { client.publishBatch(request) } returns future
+
+        val call = launch { client.publishBatchSuspend(request) }
+        yield()
+        call.cancel(CancellationException("caller-cancelled"))
+        call.join()
+
+        future.isCancelled.shouldBeTrue()
+        verify(exactly = 1) { client.publishBatch(request) }
     }
 }

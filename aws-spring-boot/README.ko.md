@@ -579,6 +579,48 @@ class OrderNotifications(
 }
 ```
 
+### SNS — AWS SDK 래퍼
+
+같은 저장소의 `bluetape4k-aws-java` 확장은 topic ARN, entry ID, 중복 ID와
+`PublishBatch` 10개 제한을 검증하면서 AWS SDK 응답과 예외를 그대로 노출합니다. 동기,
+`CompletableFuture`, coroutine API는 하나의 request 모델을 공유하고 AWS Kotlin SDK 래퍼는
+native suspend API를 제공합니다.
+
+```kotlin
+import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.sns.model.publishBatchRequestOf
+import io.bluetape4k.aws.sns.publishBatch
+import io.bluetape4k.aws.sns.publishBatchAsync
+import io.bluetape4k.aws.sns.publishBatchSuspend
+
+val javaEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val request = publishBatchRequestOf(topicArn, javaEntries)
+
+val syncResponse = snsClient.publishBatch(topicArn, javaEntries)
+val futureResponse = snsAsyncClient.publishBatchAsync(request)
+val suspendResponse = snsAsyncClient.publishBatchSuspend(request)
+```
+
+AWS Kotlin SDK 래퍼는 native request-entry 모델을 사용합니다.
+
+```kotlin
+import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.kotlin.sns.publishBatch
+
+val kotlinEntries = listOf(
+    publishBatchRequestEntryOf(id = "order-001", message = "created"),
+)
+val kotlinResponse = kotlinSnsClient.publishBatch(topicArn, kotlinEntries)
+```
+
+Raw response에는 성공·실패 entry가 함께 포함될 수 있으므로 entry ID를 기준으로 대조하세요.
+이 래퍼는 partial send를 재시도하거나 rollback하지 않으며 cancellation을 전파합니다(Java
+coroutine 확장은 underlying future도 취소합니다). FIFO group/deduplication 값과 외부
+idempotency key는 호출자의 책임입니다. payload를 숨긴 transport/protocol 예외 경계가
+필요하면 아래 Spring API를 사용하세요.
+
 #### SNS 배치 발행
 
 `SnsCoroutinesTemplate.publishBatch`는 `SnsPublishBatchEntry`를 AWS
@@ -611,13 +653,19 @@ idempotency는 호출자의 책임입니다. 하위 수준 Java/Kotlin SDK API�
 응답과 예외를 그대로 전달하고, 이 Spring template은 안전한
 transport/protocol 경계를 제공합니다.
 
+`publishBatch`를 재정의하지 않는 기존 `SnsOperations` 구현체는 additive
+기본 구현을 사용합니다. 기존 단건 `publish`를 순차 호출하고 첫 번째
+non-cancellation 실패에서 중단하며, 성공한 prefix만
+`completedEntryIds`에 기록하고 `maxInFlightBatches`는 1로 처리합니다.
+partial send를 자동 재시도하거나 rollback하지 않습니다.
+
 앞선 chunk가 혼합 결과를 반환한 뒤 형제 chunk가 실패해도 전체 입력을
 무조건 재처리하지 마세요. entry ID를 기준으로 대조하고 FIFO
 deduplication 또는 외부 idempotency 저장소를 사용하며 terminal 응답이
 없는 entry는 수동으로 조정해야 합니다. 비즈니스 rollback과 보상 처리는
-제공하지 않습니다. 후속 측정 작업은 publisher cleanup/latency telemetry의
-[#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)와
-heap/throughput 증거의
+제공하지 않습니다. Spring Cloud AWS 방식의 공개 `BatchExecutionStrategy`·converter
+확장 조사는 [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)에서
+추적합니다. Publisher cleanup/latency telemetry와 heap/throughput 측정은
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서 추적합니다.
 
 SNS는 queue policy가 topic ARN의 `sqs:SendMessage`를 허용하면 SQS subscription으로

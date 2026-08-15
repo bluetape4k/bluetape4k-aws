@@ -28,6 +28,17 @@ object NoopSnsOperations: SnsOperations {
     override suspend fun publish(request: SnsPublishRequest): PublishResponse =
         PublishResponse.builder().messageId("noop").build()
 
+    override suspend fun publishBatch(
+        request: SnsPublishBatchRequest,
+        options: SnsBatchExecutionOptions,
+    ): SnsPublishBatchResult =
+        SnsPublishBatchResult(
+            successful = request.entries.map { entry ->
+                SnsPublishBatchSuccess(entryId = entry.id, messageId = "noop-${entry.id}")
+            },
+            failed = emptyList(),
+        )
+
     override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
         PublishResponse.builder().messageId("noop-sms").build()
 
