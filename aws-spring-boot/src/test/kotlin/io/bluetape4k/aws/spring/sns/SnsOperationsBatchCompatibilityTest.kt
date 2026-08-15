@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.CancellationException
@@ -41,11 +41,11 @@ class SnsOperationsBatchCompatibilityTest {
         val error = assertFailsWith<CancellationException> {
             operations.publishBatch(request(1))
         }
-        error shouldBeEqualTo cancellation
+        error shouldBeSameInstanceAs cancellation
 
         val empty = RecordingLegacyOperations().publishBatch(request(0), SnsBatchExecutionOptions(4))
-        empty.successful shouldHaveSize 0
-        empty.failed shouldHaveSize 0
+        empty.successful.shouldBeEmpty()
+        empty.failed.shouldBeEmpty()
     }
 
     @Test

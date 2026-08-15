@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.mockk
@@ -29,10 +30,10 @@ class SnsAutoConfigurationTest {
     @Test
     fun `register SNS client and operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SnsProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SnsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 1
+            context.getBeansOfType(SnsProperties::class.java) shouldHaveSize 1
+            context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
+            context.getBeansOfType(SnsCoroutinesTemplate::class.java) shouldHaveSize 1
         }
     }
 
@@ -41,8 +42,8 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sns.enabled=false")
             .run { context ->
-                context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 0
+                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 0
             }
     }
 
@@ -53,9 +54,9 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withBean(SnsAsyncClient::class.java, { customClient })
             .run { context ->
-                context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 1
                 context.getBean(SnsAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
             }
     }
 
@@ -64,8 +65,8 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withBean(SnsOperations::class.java, { NoopSnsOperations })
             .run { context ->
-                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(SnsCoroutinesTemplate::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
+                context.getBeansOfType(SnsCoroutinesTemplate::class.java) shouldHaveSize 0
                 context.getBean(SnsOperations::class.java) shouldBeSameInstanceAs NoopSnsOperations
             }
     }
@@ -100,8 +101,8 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.sns"))
             .run { context ->
-                context.getBeansOfType(SnsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SnsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 0
+                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 0
             }
     }
 

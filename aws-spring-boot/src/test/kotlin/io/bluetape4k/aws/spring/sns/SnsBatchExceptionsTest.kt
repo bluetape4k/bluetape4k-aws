@@ -1,7 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldNotContain
@@ -77,7 +76,7 @@ class SnsBatchExceptionsTest {
         exception.unknownEntryCount shouldBeEqualTo 1
         exception.duplicateEntryCount shouldBeEqualTo 1
         exception.missingEntryCount shouldBeEqualTo 1
-        exception.completedEntryIds shouldHaveSize 0
+        exception.completedEntryIds.shouldBeEmpty()
 
         val rendered = "${exception.message}$exception"
         rendered shouldNotContain "entry-1"

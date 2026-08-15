@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
 import io.mockk.every
 import io.mockk.mockk
@@ -67,7 +69,7 @@ class SnsCoroutinesTemplateTest {
 
         val result = template(client).publishBatch(request, SnsBatchExecutionOptions(maxInFlightBatches = 2))
 
-        capturedRequests.size shouldBeEqualTo 2
+        capturedRequests shouldHaveSize 2
         capturedRequests.flatMap { it.publishBatchRequestEntries() }.map { it.id() } shouldBeEqualTo
             request.entries.map { it.id }
         val firstEntry = capturedRequests.first().publishBatchRequestEntries().first()
@@ -90,8 +92,8 @@ class SnsCoroutinesTemplateTest {
 
         val result = template(client).publishBatch(request)
 
-        result.successful shouldBeEqualTo emptyList()
-        result.failed shouldBeEqualTo emptyList()
+        result.successful.shouldBeEmpty()
+        result.failed.shouldBeEmpty()
         verify(exactly = 0) { client.publishBatch(any<PublishBatchRequest>()) }
         verify(exactly = 0) { client.publish(any<PublishRequest>()) }
     }

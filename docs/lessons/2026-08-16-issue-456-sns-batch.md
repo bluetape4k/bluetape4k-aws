@@ -43,19 +43,25 @@ Issue #456은 Java SDK v2, AWS Kotlin SDK, `aws-spring-boot` 템플릿에 SNS
 5. 첫 detekt 실행에서 magic number, 복잡도, broad catch, 테스트 line-length가
    드러났다. named constant와 경계별 suppression, `RuntimeException` catch, 테스트
    정리로 의도를 코드에 남겼다.
-6. 테스트 assertion을 다시 전수 점검하면서 `bluetape4k-projects`의
-   `bluetape4k-assertions` 사용 패턴으로 통일했다. 변경된 SNS 테스트에서는
-   `shouldBeEqualTo`, `shouldBeLessOrEqualTo`, `shouldNotContain`,
-   `assertFailsWith` 등을 사용하고 generic `check`·JUnit `assertThrows`를
-   제거했다. 단순 client 생성·close smoke 테스트는 반환값이 non-null인 Kotlin
-   계약 자체가 대상이므로 별도 assertion을 추가하지 않았다.
+6. 테스트 assertion을 다시 전수 점검하면서 `bluetape4k-projects/testing/assertions`
+   실제 API와 GNO의 assertion migration 기록을 대조했다. 숫자 상한은 현재
+   공개된 `shouldBeLessOrEqualTo`를 사용하고, 문자열 비노출은
+   `shouldNotContain`, 빈 컬렉션은 `shouldBeEmpty`, 정확한 컬렉션 개수는
+   `shouldHaveSize`, 예외는 `assertFailsWith`, cancellation identity는
+   `shouldBeSameInstanceAs`로 표현했다. Boolean 프로퍼티는 `shouldBeTrue`/
+   `shouldBeFalse`를 사용하고, 구조적 값 비교만 `shouldBeEqualTo`로 남겼다.
+   generic `check`·JUnit `assertThrows`와 `contains(...).shouldBeFalse()` 같은
+   우회 단언은 변경된 SNS 테스트에서 제거했다. 단순 client 생성·close smoke
+   테스트는 반환값이 non-null인 Kotlin 계약 자체가 대상이므로 별도 assertion을
+   추가하지 않았다.
 
 ## 결과와 검증
 
 - 최종 구현·remediation은 `0a22566`에 고정했고, 통합 review artifact는 별도
   Lore commit으로 고정한다.
-- 명시적 SNS assertion-audit targeted 실행은 `24 passing`, `BUILD SUCCESSFUL`을
-  기록했다. Java·Kotlin·Spring 모듈 전체 테스트는 `359 passing`,
+- 명시적 SNS assertion-audit targeted 실행은 Java `15` + AWS Kotlin `9` +
+  Spring `40`으로 총 `64 passing`, 각 `BUILD SUCCESSFUL`을 기록했다.
+  assertion 보정 전후의 Java·Kotlin·Spring 모듈 전체 테스트는 `359 passing`,
   `BUILD SUCCESSFUL`이었다.
 - `publishBatchSuspend` caller cancellation이 underlying `CompletableFuture`를
   취소하는 테스트와, Spring executor가 terminal entry를 매핑 전에 보존하는 테스트를
