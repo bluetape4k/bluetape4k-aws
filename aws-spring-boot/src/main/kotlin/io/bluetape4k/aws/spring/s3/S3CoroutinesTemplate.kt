@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Object
@@ -54,6 +55,24 @@ class S3CoroutinesTemplate(
 
     override suspend fun existsBucket(bucket: String): Boolean =
         s3AsyncClient.existsBucket(bucket)
+
+    override suspend fun headObject(bucket: String, key: String): S3ObjectMetadata {
+        val response = s3AsyncClient.headObject(
+            HeadObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build(),
+        ).await()
+
+        return S3ObjectMetadata(
+            sizeBytes = requireNotNull(response.contentLength()) {
+                "S3 HEAD response did not include Content-Length."
+            },
+            etag = response.eTag(),
+            contentType = response.contentType(),
+            lastModified = response.lastModified(),
+        )
+    }
 
     override suspend fun upload(
         bucket: String,
