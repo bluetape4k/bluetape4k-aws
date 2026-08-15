@@ -29,8 +29,8 @@ Exposed database wiring.
   `Resource` view, and presigned GET/PUT URLs.
 - **S3 Vectors** — optional `S3VectorsOperations` for vector bucket/index
   discovery and vector put/get/list/query calls.
-- **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, topic publish,
-  FIFO publish fields, direct SMS publish options, and HTTP(S) notification
+- **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, single and batch
+  topic publishing, FIFO publish fields, direct SMS publish options, and HTTP(S) notification
   JSON parsing plus token-based subscription confirmation.
 - **Kinesis** — `KinesisCoroutinesTemplate` for stream creation, record
   publishing, shard iterator lookup, bounded `GetRecords` polling, and a cold
@@ -554,6 +554,9 @@ import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.aws.spring.sns.SnsPublishBatchEntry
+import io.bluetape4k.aws.spring.sns.SnsPublishBatchRequest
+import io.bluetape4k.aws.spring.sns.SnsBatchExecutionOptions
 import io.bluetape4k.aws.spring.sns.SnsSmsRequest
 import io.bluetape4k.aws.spring.sns.SnsSmsType
 
@@ -592,6 +595,46 @@ class OrderNotifications(
     private fun processNotification(message: String) = Unit
 }
 ```
+
+#### SNS batch publishing
+
+`SnsCoroutinesTemplate.publishBatch` maps `SnsPublishBatchEntry` to AWS
+`PublishBatchRequestEntry` and sends at most 10 entries per SDK request. Set
+`maxInFlightBatches` to bound concurrent requests; an empty request avoids an
+SDK call.
+
+```kotlin
+val result = sns.publishBatch(
+    SnsPublishBatchRequest(
+        topicArn = topicArn,
+        entries = orders.map { order ->
+            SnsPublishBatchEntry(
+                id = order.id,
+                message = order.json,
+                messageGroupId = order.groupId,       // FIFO topics only
+                messageDeduplicationId = order.deduplicationId,
+            )
+        },
+    ),
+    options = SnsBatchExecutionOptions(maxInFlightBatches = 4),
+)
+```
+
+`result.successful` and `result.failed` keep input order within each list and
+include the entry ID for reconciliation. Transport or protocol failures use a
+redacted Spring exception; cancellation is propagated and no automatic retry
+is attempted. FIFO group/deduplication values and external idempotency remain
+the caller's responsibility. The low-level Java/Kotlin SDK APIs pass raw SDK
+responses and exceptions through, while this Spring template provides the safe
+transport/protocol boundary.
+
+When a sibling chunk fails after a preceding chunk returned mixed results, do
+not replay the complete input blindly. Reconcile by entry ID, use FIFO
+deduplication or an external idempotency store, and manually resolve entries
+without a known terminal response. Business rollback and compensation are not
+provided. Follow-up measurement work is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)
+for publisher cleanup/latency telemetry and [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)
+for heap/throughput evidence.
 
 SNS can publish to an SQS subscription when the queue policy allows
 `sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` maps SNS HTTP JSON,

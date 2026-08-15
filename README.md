@@ -770,6 +770,9 @@ import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.aws.spring.sns.SnsPublishBatchEntry
+import io.bluetape4k.aws.spring.sns.SnsPublishBatchRequest
+import io.bluetape4k.aws.spring.sns.SnsBatchExecutionOptions
 import io.bluetape4k.aws.spring.sns.SnsSmsRequest
 import io.bluetape4k.aws.spring.sns.SnsSmsType
 
@@ -809,6 +812,46 @@ class OrderTopic(
     private fun processNotification(message: String) = Unit
 }
 ```
+
+#### SNS batch publishing
+
+`SnsCoroutinesTemplate.publishBatch` maps `SnsPublishBatchEntry` to AWS
+`PublishBatchRequestEntry` and sends at most 10 entries per SDK request. Use
+`maxInFlightBatches` to bound concurrent requests; an empty request returns
+without an SDK call.
+
+```kotlin
+val result = sns.publishBatch(
+    SnsPublishBatchRequest(
+        topicArn = topicArn,
+        entries = orders.map { order ->
+            SnsPublishBatchEntry(
+                id = order.id,
+                message = order.json,
+                messageGroupId = order.groupId,       // FIFO topics only
+                messageDeduplicationId = order.deduplicationId,
+            )
+        },
+    ),
+    options = SnsBatchExecutionOptions(maxInFlightBatches = 4),
+)
+```
+
+`result.successful` and `result.failed` preserve input order within their own
+lists and carry the entry ID for reconciliation. A transport or malformed
+response raises a redacted Spring exception; cancellation is propagated and
+requests are never retried automatically. FIFO group/deduplication values and
+an external idempotency key remain the caller's responsibility. The low-level
+Java/Kotlin SDK extensions pass SDK responses and exceptions through directly,
+while this Spring API provides the safe transport/protocol boundary.
+
+If a sibling request fails after another chunk has returned a mixed result, do
+not replay the whole input blindly. Reconcile by entry ID, use FIFO
+deduplication or an external idempotency store, and manually resolve entries
+whose terminal response is unknown. Business rollback or compensation is not
+provided. Follow-up measurement work is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)
+for publisher cleanup/latency telemetry and [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)
+for heap/throughput evidence.
 
 ![SNS publish and HTTP endpoint flow](docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)
 

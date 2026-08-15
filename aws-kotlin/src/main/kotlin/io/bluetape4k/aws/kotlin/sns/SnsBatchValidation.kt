@@ -3,6 +3,8 @@ package io.bluetape4k.aws.kotlin.sns
 import aws.sdk.kotlin.services.sns.model.PublishBatchRequestEntry
 import io.bluetape4k.support.requireNotBlank
 
+private const val SNS_BATCH_MAX_SIZE: Int = 10
+
 @PublishedApi
 internal fun validatePublishBatchRequest(
     topicArn: String,
@@ -10,7 +12,7 @@ internal fun validatePublishBatchRequest(
 ) {
     topicArn.requireNotBlank("topicArn")
     require(entries.isNotEmpty()) { "entries must not be empty." }
-    require(entries.size <= 10) { "entries must contain at most 10 items." }
+    require(entries.size <= SNS_BATCH_MAX_SIZE) { "entries must contain at most 10 items." }
 
     val ids = entries.map { entry ->
         entry.id.requireNotBlank("entry.id")

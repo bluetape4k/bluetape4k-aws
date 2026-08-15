@@ -31,6 +31,7 @@ class SnsBatchTransportException private constructor(
 
     companion object {
         private const val serialVersionUID: Long = 1L
+        private const val FINGERPRINT_BYTE_COUNT: Int = 6
 
         /** 원본 throwable을 보관하지 않고 허용된 분류만 남깁니다. */
         fun from(cause: Throwable, completedEntryIds: Collection<String>): SnsBatchTransportException {
@@ -56,7 +57,8 @@ class SnsBatchTransportException private constructor(
         private fun fingerprint(ids: List<String>): String {
             val digest = MessageDigest.getInstance("SHA-256")
             val bytes = digest.digest(ids.joinToString("\u0000").toByteArray(StandardCharsets.UTF_8))
-            return bytes.take(6).joinToString(separator = "") { byte -> "%02x".format(byte) }
+            return bytes.take(FINGERPRINT_BYTE_COUNT)
+                .joinToString(separator = "") { byte -> "%02x".format(byte) }
         }
     }
 }

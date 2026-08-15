@@ -3,6 +3,8 @@ package io.bluetape4k.aws.spring.sns
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
+import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
@@ -18,6 +20,7 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
  * sns.publish(SnsPublishRequest(topicArn = topicArn, message = orderJson))
  * ```
  */
+@Suppress("TooManyFunctions")
 class SnsCoroutinesTemplate(
     private val snsAsyncClient: SnsAsyncClient,
     private val properties: SnsProperties,
@@ -103,6 +106,19 @@ class SnsCoroutinesTemplate(
             request.messageDeduplicationId?.let(it::messageDeduplicationId)
         }.await()
 
+    override suspend fun publishBatch(
+        request: SnsPublishBatchRequest,
+        options: SnsBatchExecutionOptions,
+    ): SnsPublishBatchResult =
+        SnsBatchExecutor { topicArn, entries ->
+            snsAsyncClient.publishBatch(
+                PublishBatchRequest.builder()
+                    .topicArn(topicArn)
+                    .publishBatchRequestEntries(entries.map(::toPublishBatchRequestEntry))
+                    .build()
+            ).await()
+        }.execute(request, options)
+
     override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
         snsAsyncClient.publish {
             it.phoneNumber(request.phoneNumber)
@@ -145,4 +161,18 @@ class SnsCoroutinesTemplate(
     private fun String.requireTopicName() {
         require(isNotBlank()) { "topicName must not be blank." }
     }
+
+    private fun toPublishBatchRequestEntry(entry: SnsPublishBatchEntry): PublishBatchRequestEntry =
+        PublishBatchRequestEntry.builder()
+            .id(entry.id)
+            .message(entry.message)
+            .apply {
+                entry.subject?.let(::subject)
+                if (entry.messageAttributes.isNotEmpty()) {
+                    messageAttributes(entry.messageAttributes)
+                }
+                entry.messageGroupId?.let(::messageGroupId)
+                entry.messageDeduplicationId?.let(::messageDeduplicationId)
+            }
+            .build()
 }

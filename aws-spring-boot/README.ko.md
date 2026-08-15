@@ -29,8 +29,8 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
   GET/PUT URL 발급을 지원합니다.
 - **S3 Vectors** — 선택적 `S3VectorsOperations`로 vector bucket/index 조회와
   vector put/get/list/query 호출을 지원합니다.
-- **SNS** — `SnsCoroutinesTemplate`로 topic 생성/조회, topic publish, FIFO publish
-  필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
+- **SNS** — `SnsCoroutinesTemplate`로 topic 생성/조회, 단건·배치 topic publish,
+  FIFO publish 필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
   confirmation을 지원합니다.
 - **Kinesis** — `KinesisCoroutinesTemplate`로 stream 생성, record publish, shard
   iterator 조회, 제한된 `GetRecords` polling, single-shard cold `Flow<Record>`를
@@ -537,6 +537,9 @@ import io.bluetape4k.aws.spring.sns.SnsHttpMessageType
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.aws.spring.sns.SnsPublishBatchEntry
+import io.bluetape4k.aws.spring.sns.SnsPublishBatchRequest
+import io.bluetape4k.aws.spring.sns.SnsBatchExecutionOptions
 import io.bluetape4k.aws.spring.sns.SnsSmsRequest
 import io.bluetape4k.aws.spring.sns.SnsSmsType
 
@@ -575,6 +578,47 @@ class OrderNotifications(
     private fun processNotification(message: String) = Unit
 }
 ```
+
+#### SNS 배치 발행
+
+`SnsCoroutinesTemplate.publishBatch`는 `SnsPublishBatchEntry`를 AWS
+`PublishBatchRequestEntry`로 매핑하고 SDK 요청 하나당 최대 10개 entry를
+전송합니다. `maxInFlightBatches`로 동시 요청 수를 제한할 수 있으며 빈
+요청은 SDK 호출 없이 반환합니다.
+
+```kotlin
+val result = sns.publishBatch(
+    SnsPublishBatchRequest(
+        topicArn = topicArn,
+        entries = orders.map { order ->
+            SnsPublishBatchEntry(
+                id = order.id,
+                message = order.json,
+                messageGroupId = order.groupId,       // FIFO topic에서만 사용
+                messageDeduplicationId = order.deduplicationId,
+            )
+        },
+    ),
+    options = SnsBatchExecutionOptions(maxInFlightBatches = 4),
+)
+```
+
+`result.successful`과 `result.failed`는 각 목록에서 입력 순서를 유지하고
+대조에 사용할 entry ID를 포함합니다. 전송·프로토콜 실패는 payload를
+노출하지 않는 Spring 예외로 전달하며 cancellation은 원본을 전파하고
+자동 재시도는 수행하지 않습니다. FIFO group/deduplication 값과 외부
+idempotency는 호출자의 책임입니다. 하위 수준 Java/Kotlin SDK API는 raw SDK
+응답과 예외를 그대로 전달하고, 이 Spring template은 안전한
+transport/protocol 경계를 제공합니다.
+
+앞선 chunk가 혼합 결과를 반환한 뒤 형제 chunk가 실패해도 전체 입력을
+무조건 재처리하지 마세요. entry ID를 기준으로 대조하고 FIFO
+deduplication 또는 외부 idempotency 저장소를 사용하며 terminal 응답이
+없는 entry는 수동으로 조정해야 합니다. 비즈니스 rollback과 보상 처리는
+제공하지 않습니다. 후속 측정 작업은 publisher cleanup/latency telemetry의
+[#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)와
+heap/throughput 증거의
+[#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서 추적합니다.
 
 SNS는 queue policy가 topic ARN의 `sqs:SendMessage`를 허용하면 SQS subscription으로
 fanout할 수 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과 선택적
