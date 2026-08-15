@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import kotlinx.coroutines.CancellationException
 import software.amazon.awssdk.services.sns.model.PublishResponse
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 
@@ -55,6 +56,48 @@ interface SnsOperations {
      * SNS 주제에 메시지를 게시합니다.
      */
     suspend fun publish(request: SnsPublishRequest): PublishResponse
+
+    /**
+     * SNS 배치 발행을 수행합니다.
+     *
+     * 기존 구현체는 단건 [publish]를 순차 호출하는 호환 fallback을 사용합니다.
+     * 이 경로는 원자적 batch가 아니며 첫 실패에서 중단하고 자동 재시도하지 않습니다.
+     */
+    suspend fun publishBatch(
+        request: SnsPublishBatchRequest,
+        options: SnsBatchExecutionOptions = SnsBatchExecutionOptions(),
+    ): SnsPublishBatchResult {
+        // Legacy implementations intentionally remain sequential regardless of this option.
+        require(options.maxInFlightBatches > 0) { "maxInFlightBatches must be positive." }
+        if (request.entries.isEmpty()) {
+            return SnsPublishBatchResult(emptyList(), emptyList())
+        }
+
+        val successful = mutableListOf<SnsPublishBatchSuccess>()
+        request.entries.forEach { entry ->
+            try {
+                val response = publish(
+                    SnsPublishRequest(
+                        topicArn = request.topicArn,
+                        message = entry.message,
+                        subject = entry.subject,
+                        messageAttributes = entry.messageAttributes,
+                        messageGroupId = entry.messageGroupId,
+                        messageDeduplicationId = entry.messageDeduplicationId,
+                    )
+                )
+                successful += SnsPublishBatchSuccess(
+                    entryId = entry.id,
+                    messageId = response.messageId(),
+                )
+            } catch (cause: CancellationException) {
+                throw cause
+            } catch (cause: Exception) {
+                throw SnsBatchTransportException.from(cause, successful.map { it.entryId })
+            }
+        }
+        return SnsPublishBatchResult(successful, emptyList())
+    }
 
     /**
      * 전화번호로 SMS 메시지를 직접 게시합니다.
