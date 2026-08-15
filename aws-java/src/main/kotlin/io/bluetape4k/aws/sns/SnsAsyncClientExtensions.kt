@@ -4,6 +4,8 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse
+import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchResponse
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -78,4 +80,12 @@ fun SnsAsyncClient.createFIFOTopicAsync(
         it.name(topicName)
             .attributes(attributes)
     }
+}
+
+/** 준비된 SNS 배치 요청을 비동기로 실행합니다. */
+fun SnsAsyncClient.publishBatchAsync(
+    request: PublishBatchRequest,
+): CompletableFuture<PublishBatchResponse> {
+    request.validatePublishBatchRequest()
+    return publishBatch(request)
 }
