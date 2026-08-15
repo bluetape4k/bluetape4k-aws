@@ -4,6 +4,8 @@ import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse
+import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchResponse
 
 /**
  * 디바이스 토큰과 플랫폼 ARN으로 SNS 플랫폼 엔드포인트를 코루틴으로 생성합니다.
@@ -59,3 +61,9 @@ suspend fun SnsAsyncClient.createFIFOTopic(
     attributes: Map<String, String> = mapOf("FifoTopic" to "true", "ContentBasedDeduplication" to "true"),
 ): CreateTopicResponse =
     createFIFOTopicAsync(topicName, attributes).await()
+
+/** 준비된 SNS 배치 요청을 suspend API로 실행합니다. */
+suspend fun SnsAsyncClient.publishBatchSuspend(
+    request: PublishBatchRequest,
+): PublishBatchResponse =
+    publishBatchAsync(request).await()

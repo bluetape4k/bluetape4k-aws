@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.sns
 
 import io.bluetape4k.aws.sns.model.subscribeRequest
+import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.sns.model.publishBatchRequestOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import software.amazon.awssdk.services.sns.model.SubscribeResponse
@@ -111,5 +114,27 @@ class SnsAsyncClientTest: AbstractSnsTest() {
 
         response.messageId().shouldNotBeEmpty()
         log.debug { "response=$response" }
+    }
+
+    @Test
+    @Order(7)
+    fun `publish batch request validates count and duplicate ids before async sdk call`() = runSuspendIO {
+        val validEntry = publishBatchRequestEntryOf("entry-1", "message-1")
+
+        assertThrows<IllegalArgumentException> {
+            publishBatchRequestOf(topicArn = " ", entries = listOf(validEntry))
+        }
+        assertThrows<IllegalArgumentException> {
+            publishBatchRequestOf(topicArn = topicArn, entries = emptyList())
+        }
+        assertThrows<IllegalArgumentException> {
+            publishBatchRequestOf(
+                topicArn = topicArn,
+                entries = List(11) { index -> publishBatchRequestEntryOf("entry-$index", "message-$index") },
+            )
+        }
+        assertThrows<IllegalArgumentException> {
+            publishBatchRequestOf(topicArn = topicArn, entries = listOf(validEntry, validEntry))
+        }
     }
 }

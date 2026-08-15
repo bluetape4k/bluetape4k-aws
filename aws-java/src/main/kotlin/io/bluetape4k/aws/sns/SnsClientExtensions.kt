@@ -1,10 +1,14 @@
 package io.bluetape4k.aws.sns
 
 import io.bluetape4k.aws.sns.model.createPlatformEndpointRequest
+import io.bluetape4k.aws.sns.model.publishBatchRequestOf
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse
+import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
+import software.amazon.awssdk.services.sns.model.PublishBatchResponse
 
 
 /**
@@ -71,3 +75,11 @@ fun SnsClient.createFIFOTopic(
     topicName.requireNotBlank("topicName")
     return createTopic { it.name(topicName).attributes(attributes) }
 }
+
+/** 토픽 ARN과 최대 10개의 항목으로 SNS 배치 발행을 수행합니다. */
+fun SnsClient.publishBatch(
+    topicArn: String,
+    entries: List<PublishBatchRequestEntry>,
+    builder: PublishBatchRequest.Builder.() -> Unit = {},
+): PublishBatchResponse =
+    publishBatch(publishBatchRequestOf(topicArn, entries, builder = builder))

@@ -1,8 +1,11 @@
 package io.bluetape4k.aws.sns.model
 
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.aws.sns.validatePublishBatchRequest
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
+import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 import software.amazon.awssdk.services.sns.model.PublishRequest
 
 /**
@@ -57,4 +60,49 @@ inline fun publishRequestOf(
 
         builder()
     }
+}
+
+/** DSL 블록으로 [PublishBatchRequestEntry]를 빌드합니다. */
+inline fun publishBatchRequestEntry(
+    builder: PublishBatchRequestEntry.Builder.() -> Unit,
+): PublishBatchRequestEntry =
+    PublishBatchRequestEntry.builder().apply(builder).build()
+
+/** SNS 배치 발행 항목을 생성하고 로컬 입력 불변식을 검증합니다. */
+inline fun publishBatchRequestEntryOf(
+    id: String,
+    message: String,
+    messageAttributes: Map<String, MessageAttributeValue>? = null,
+    messageDeduplicationId: String? = null,
+    messageGroupId: String? = null,
+    builder: PublishBatchRequestEntry.Builder.() -> Unit = {},
+): PublishBatchRequestEntry {
+    id.requireNotBlank("id")
+    message.requireNotBlank("message")
+
+    return publishBatchRequestEntry {
+        id(id)
+        message(message)
+        messageAttributes?.let { this.messageAttributes(it) }
+        messageDeduplicationId?.let(::messageDeduplicationId)
+        messageGroupId?.let(::messageGroupId)
+        builder()
+    }
+}
+
+/** SNS 배치 발행 요청을 생성하고 SNS의 1..10개·고유 ID 계약을 검증합니다. */
+inline fun publishBatchRequestOf(
+    topicArn: String,
+    entries: List<PublishBatchRequestEntry>,
+    overrideConfiguration: AwsRequestOverrideConfiguration? = null,
+    builder: PublishBatchRequest.Builder.() -> Unit = {},
+): PublishBatchRequest {
+    validatePublishBatchRequest(topicArn, entries)
+
+    return PublishBatchRequest.builder().apply {
+        topicArn(topicArn)
+        publishBatchRequestEntries(entries)
+        overrideConfiguration?.let(::overrideConfiguration)
+        builder()
+    }.build()
 }

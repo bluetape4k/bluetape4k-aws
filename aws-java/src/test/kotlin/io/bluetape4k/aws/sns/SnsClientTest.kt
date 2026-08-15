@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.sns
 
 import io.bluetape4k.aws.sns.model.subscribeRequest
+import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
+import io.bluetape4k.aws.sns.model.publishBatchRequestOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -12,9 +14,13 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import software.amazon.awssdk.services.sns.model.SubscribeResponse
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue
+import java.time.Duration
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 
 @Execution(ExecutionMode.SAME_THREAD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -108,5 +114,57 @@ class SnsClientTest: AbstractSnsTest() {
 
         response.messageId().shouldNotBeEmpty()
         log.debug { "response=$response" }
+    }
+
+    @Test
+    @Order(7)
+    fun `publish batch validates count ids and topic before sdk call`() {
+        val validEntry = publishBatchRequestEntryOf("entry-1", "message-1")
+        val elevenEntries = List(11) { index ->
+            publishBatchRequestEntryOf("entry-$index", "message-$index")
+        }
+
+        assertThrows<IllegalArgumentException> { client.publishBatch(" ", listOf(validEntry)) }
+        assertThrows<IllegalArgumentException> { client.publishBatch(topicArn, emptyList()) }
+        assertThrows<IllegalArgumentException> { client.publishBatch(topicArn, elevenEntries) }
+        assertThrows<IllegalArgumentException> {
+            client.publishBatch(topicArn, listOf(validEntry, validEntry))
+        }
+        assertThrows<IllegalArgumentException> {
+            client.publishBatch(
+                topicArn,
+                listOf(publishBatchRequestEntryOf(" ", "message-1")),
+            )
+        }
+    }
+
+    @Test
+    @Order(8)
+    fun `publish batch request helpers preserve entries attributes fifo and override`() {
+        val attributes = mapOf(
+            "trace" to MessageAttributeValue.builder().dataType("String").stringValue("trace-1").build(),
+        )
+        val entry = publishBatchRequestEntryOf(
+            id = "entry-1",
+            message = "message-1",
+            messageAttributes = attributes,
+            messageDeduplicationId = "dedup-1",
+            messageGroupId = "group-1",
+        )
+        val override = AwsRequestOverrideConfiguration.builder()
+            .apiCallTimeout(Duration.ofSeconds(1))
+            .build()
+        val request = publishBatchRequestOf(
+            topicArn = topicArn,
+            entries = listOf(entry),
+            overrideConfiguration = override,
+        )
+
+        request.topicArn() shouldBeEqualTo topicArn
+        request.publishBatchRequestEntries() shouldBeEqualTo listOf(entry)
+        request.overrideConfiguration().orElseThrow() shouldBeEqualTo override
+        request.publishBatchRequestEntries().single().messageAttributes() shouldBeEqualTo attributes
+        request.publishBatchRequestEntries().single().messageGroupId() shouldBeEqualTo "group-1"
+        request.publishBatchRequestEntries().single().messageDeduplicationId() shouldBeEqualTo "dedup-1"
     }
 }
