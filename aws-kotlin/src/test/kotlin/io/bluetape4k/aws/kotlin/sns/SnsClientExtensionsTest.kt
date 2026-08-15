@@ -2,14 +2,19 @@ package io.bluetape4k.aws.kotlin.sns
 
 import aws.sdk.kotlin.services.sns.confirmSubscription
 import aws.sdk.kotlin.services.sns.listSubscriptions
+import aws.sdk.kotlin.services.sns.model.PublishBatchRequest
+import aws.sdk.kotlin.services.sns.model.PublishBatchResponse
+import aws.sdk.kotlin.services.sns.model.PublishBatchRequestEntry
 import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
 import io.bluetape4k.aws.kotlin.sns.model.publishRequestOf
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.hashOf
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
@@ -18,6 +23,9 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
@@ -168,6 +176,61 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
             }
             response.successful.shouldNotBeNull() shouldHaveSize messageSize
         }
+    }
+
+    @Test
+    @Order(10)
+    fun `publishBatch validates topic count entry id and duplicate ids before sdk call`() = runSuspendIO {
+        val client = mockk<aws.sdk.kotlin.services.sns.SnsClient>()
+        val topicArn = "arn:aws:sns:ap-northeast-2:000000000000:batch-topic"
+        val validEntry = publishBatchRequestEntryOf(
+            id = "entry-${Base58.randomString(16)}",
+            message = "message-${Base58.randomString(16)}",
+        )
+        val elevenEntries = List(11) { index ->
+            publishBatchRequestEntryOf(
+                id = "entry-$index-${Base58.randomString(16)}",
+                message = "message-$index-${Base58.randomString(16)}",
+            )
+        }
+        val blankEntry = PublishBatchRequestEntry {
+            id = " "
+            message = "message-${Base58.randomString(16)}"
+        }
+
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(" ", listOf(validEntry)) }
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, emptyList()) }
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, elevenEntries) }
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, listOf(blankEntry)) }
+        assertFailsWith<IllegalArgumentException> { client.publishBatch(topicArn, listOf(validEntry, validEntry)) }
+
+        coVerify(exactly = 0) { client.publishBatch(any<PublishBatchRequest>()) }
+    }
+
+    @Test
+    @Order(11)
+    fun `publishBatch accepts one and ten entries`() = runSuspendIO {
+        val client = mockk<aws.sdk.kotlin.services.sns.SnsClient>()
+        val topicArn = "arn:aws:sns:ap-northeast-2:000000000000:batch-topic"
+        val oneEntry = listOf(
+            publishBatchRequestEntryOf(
+                id = "entry-${Base58.randomString(16)}",
+                message = "message-${Base58.randomString(16)}",
+            ),
+        )
+        val tenEntries = List(10) { index ->
+            publishBatchRequestEntryOf(
+                id = "entry-$index-${Base58.randomString(16)}",
+                message = "message-$index-${Base58.randomString(16)}",
+            )
+        }
+        val response = PublishBatchResponse { }
+        coEvery { client.publishBatch(any<PublishBatchRequest>()) } returns response
+
+        client.publishBatch(topicArn, oneEntry) shouldBeEqualTo response
+        client.publishBatch(topicArn, tenEntries) shouldBeEqualTo response
+
+        coVerify(exactly = 2) { client.publishBatch(any<PublishBatchRequest>()) }
     }
 
     @Test
