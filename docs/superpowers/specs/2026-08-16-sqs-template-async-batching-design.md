@@ -599,6 +599,70 @@ application context와 표준 transport가 시작되는지 검증하고, enabled
 현재 listener message converter는 inbound payload 변환 책임만 가진다. outbound
 body converter나 공개 `BatchExecutionStrategy` SPI는 추가하지 않는다.
 
+## Coordinator와 close 책임 경계
+
+`SqsBatchCoordinator`는 entry admission과 accepted placeholder registry를 소유하고,
+Task 5의 `SqsBatchCoroutinesTemplate`은 전체 close deadline과 manager/executor 정리를
+소유한다. 두 책임은 다음 internal API로 연결한다.
+
+```kotlin
+internal class SqsBatchCoordinator(
+    properties: SqsBatchProperties,
+    transport: SqsBatchTransport,
+) {
+    suspend fun sendMany(
+        entries: Collection<SqsBatchSendEntry>,
+        strategy: SendBatchFailureStrategy = SendBatchFailureStrategy.RETURN,
+    ): SqsSendManyResult
+
+    suspend fun deleteMany(entries: Collection<SqsBatchDeleteEntry>): SqsDeleteManyResult
+
+    fun beginClose(): SqsBatchCloseClaim
+
+    fun finishClose(outcome: SqsBatchCloseOutcome)
+}
+
+internal sealed interface SqsBatchCloseClaim {
+    val completion: CompletableFuture<SqsBatchCloseOutcome>
+
+    data class Owner(
+        val accepted: List<SqsAcceptedBatchEntry>,
+        override val completion: CompletableFuture<SqsBatchCloseOutcome>,
+    ) : SqsBatchCloseClaim
+
+    data class Observer(
+        override val completion: CompletableFuture<SqsBatchCloseOutcome>,
+    ) : SqsBatchCloseClaim
+}
+
+internal interface SqsAcceptedBatchEntry {
+    val completion: CompletableFuture<Unit>
+
+    fun cancelIfIncomplete(): Boolean
+}
+
+internal sealed interface SqsBatchCloseOutcome {
+    data object Success : SqsBatchCloseOutcome
+
+    data class Failure(val exception: SqsBatchCloseException) : SqsBatchCloseOutcome
+}
+```
+
+`beginClose()`만 lifecycle lock 아래에서 `OPEN -> CLOSING`, close signal 완료 소유권,
+accepted placeholder 스냅숏과 shared completion owner를 함께 결정한다. lock 안에서는
+`CompletableFuture.complete`, 외부 cancel, suspend 호출을 수행하지 않는다. `Owner`가
+lock 밖에서 accepted completion을 기다리고 timeout이면 `cancelIfIncomplete()`를 호출한다.
+`Observer`는 같은 shared completion만 기다린다. `finishClose()`만 `CLOSING -> CLOSED`로
+전환하고 shared completion을 정확히 한 번 완료한다. 실패 outcome은 정규화한
+`SqsBatchCloseException` 인스턴스를 그대로 보유하므로 concurrent/repeated close caller는
+같은 exception identity를 관찰한다.
+
+새 operation은 시작 시 caller job cancellation을 먼저 확인한다. 이미 취소됐다면 원래
+`CancellationException` identity가 lifecycle 오류보다 우선한다. 그 다음 bounded snapshot과
+validation을 수행하고 `OPEN`을 확인한다. empty 입력도 `CLOSING`이나 `CLOSED`에서는 성공으로
+우회하지 않고 고정된 민감정보 없는 `IllegalStateException`으로 실패한다. `OPEN` 확인 뒤
+close가 경합하면 permit/placeholder 선형화 결과가 승자를 결정한다.
+
 ## 실행 흐름과 backpressure
 
 호출은 iterator에서 최대 `maxEntriesPerCall + 1`개까지만 읽는 bounded snapshot을
@@ -639,7 +703,9 @@ batch가 최대 크기에 도달하지 못하는 설정을 조기에 거부한�
 않으며 payload byte validation은 기존 `SqsSendRequest`, AWS SDK와 SQS service limit에
 위임한다. 따라서 이 API는 신뢰할 수 있는 애플리케이션 호출자를 전제로 한다. template
 전역 permit은 활성 SDK future를 제한하고, admission window는 호출별 대기 child 수를
-제한한다. 동시 호출 수 자체는 애플리케이션 coroutine scope가 소유한다.
+제한한다. accepted placeholder와 active future는 coordinator 전체에서
+`maxInFlightEntries` 이하이고, resident child와 pending outcome map은 호출별로 같은 상한
+이하다. 동시 호출 수 자체는 애플리케이션 coroutine scope가 소유한다.
 
 ## 취소와 lifecycle
 

@@ -378,32 +378,37 @@ data class SqsBatchProperties(
 
 ### Step 4.1: deterministic RED
 
-- [ ] N=0, 1, `maxInFlightEntries`, `maxInFlightEntries+1`, `maxEntriesPerCall`,
+- [x] N=0, 1, `maxInFlightEntries`, `maxInFlightEntries+1`, `maxEntriesPerCall`,
       `maxEntriesPerCall+1` matrix를 고정한다. oversized/custom collection은 iterator가
       상한+1 뒤 더 읽히면 실패하도록 만들어 bounded materialization을 증명한다. empty와
-      invalid/overflow 설정은 resource 생성·transport 0회다.
-- [ ] caller가 넘긴 mutable collection과 `messageAttributes` map을 admission 뒤 변경해도
+      invalid/overflow 입력은 child·placeholder·transport submit 0회다. manager/executor
+      생성 0회는 Task 6 Spring/factory 검증으로 남긴다.
+- [x] caller가 넘긴 mutable collection과 `messageAttributes` map을 admission 뒤 변경해도
       transport request가 최초 snapshot을 유지하는지 검증한다.
-- [ ] active future와 accepted placeholder max가 설정 상한 이하인지
+- [x] active future와 accepted placeholder max가 설정 상한 이하인지
       `shouldBeLessOrEqualTo`, window 이후 다음 window가 진행되는지
       `shouldBeGreaterOrEqualTo`로 검사한다.
-- [ ] 첫 sequence 결과를 지연한 상태에서 resident child, pending result map peak도 각각
-      `maxInFlightEntries` 이하이고 완료 뒤 0인지 deterministic counter로 단언한다.
-- [ ] `supervisorScope` entry별 service/transport failure를 모두 수집하고 send RETURN/THROW와
+- [x] 첫 sequence 결과를 지연한 상태에서 resident child, pending result map peak도 각각
+      호출별 `maxInFlightEntries` 이하이고 완료 뒤 0인지 deterministic counter로 단언한다.
+      accepted placeholder와 active future는 coordinator 전체 상한 이하인지 별도로 검증한다.
+- [x] `supervisorScope` entry별 service/transport failure를 모두 수집하고 send RETURN/THROW와
       delete result 계약, input-relative order, no-retry를 검증한다.
-- [ ] 동일 FIFO group 요청도 fake transport의 실제 submit 순서를 API 계약으로 단언하지
+- [x] 동일 FIFO group 요청도 fake transport의 실제 submit 순서를 API 계약으로 단언하지
       않고, 결과 상대 순서만 고정한다.
-- [ ] 서로 다른 동시 호출이 같은 public entry ID를 사용해도 monotonic internal token과
+- [x] 서로 다른 동시 호출이 같은 public entry ID를 사용해도 monotonic internal token과
       registry가 충돌하지 않고 두 result를 독립적으로 반환하는지 검증한다.
-- [ ] barrier로 permit 획득 직후 close, placeholder 등록 직후 caller cancel, submit 수락 전
+- [x] barrier로 permit 획득 직후 close, placeholder 등록 직후 caller cancel, submit 수락 전
       future 실패, accepted 뒤 submit throw, response 직후 cancel interleaving을 고정한다.
-- [ ] root caller `CancellationException` identity, incomplete future `cancel(false)` 정확히
+- [x] root caller `CancellationException` identity, incomplete future `cancel(false)` 정확히
       1회, permit과 registry exactly-once release, caller active 상태의 SDK cancellation이
       `TRANSPORT` result인 것을 검증한다. cancel count를 기록하는 fake future와 실제 job
       cancellation을 사용하고 `runCatching`을 쓰지 않는다.
-- [ ] 모든 permit이 점유된 barrier에서 다음 child가 close-aware acquire를 기다리게 한 뒤
+- [x] 모든 permit이 점유된 barrier에서 다음 child가 close-aware acquire를 기다리게 한 뒤
       close한다. waiter 종료, 외부 submit 0회, permit 누수 0, orphan child 0을 검증한다.
-- [ ] close-timeout과 caller cancellation을 같은 future 앞에서 경합시킨다. 두 경로가
+- [x] caller cancellation을 먼저 관찰한 operation은 원래 `CancellationException` identity를
+      lifecycle failure보다 우선한다. 그 외 `CLOSING/CLOSED`의 새 operation은 empty 입력도
+      고정된 안전한 `IllegalStateException`으로 실패하는지 검증한다.
+- [x] close-timeout과 caller cancellation을 같은 future 앞에서 경합시킨다. 두 경로가
       entry의 유일한 `cancelIfIncomplete()` atomic guard를 통과해 fake future의
       `cancel(false)` count가 1이고 원래 `CancellationException` identity가 유지되는지
       검증한다.
@@ -418,26 +423,33 @@ data class SqsBatchProperties(
 
 ### Step 4.2: GREEN
 
-- [ ] operation 입구에서 iterator를 최대 `maxEntriesPerCall + 1`까지만 읽어 초과를
+- [x] `SqsBatchCoordinator`는 승인 명세의 `beginClose(): SqsBatchCloseClaim`과
+      `finishClose(SqsBatchCloseOutcome)`를 구현한다. `Owner`만 accepted placeholder
+      스냅숏을 받고, `Observer`는 같은 shared completion만 관찰한다. accepted entry는
+      completion과 atomic `cancelIfIncomplete()`만 노출한다.
+- [x] operation 입구에서 iterator를 최대 `maxEntriesPerCall + 1`까지만 읽어 초과를
       거부하고, 허용된 snapshot을 validate한 뒤 `maxInFlightEntries` 크기의 admission
       window만 materialize한다.
-- [ ] 각 child는 permit 획득 후 lock 아래 `OPEN` 확인과 monotonic token placeholder 등록만
+- [x] 각 child는 permit 획득 후 lock 아래 `OPEN` 확인과 monotonic token placeholder 등록만
       수행한다. lock 밖 submit 뒤 같은 token에 future를 handoff하고 await한다.
-- [ ] close가 accepted-before-handoff placeholder도 기다릴 수 있도록 registration,
+- [x] close가 accepted-before-handoff placeholder도 기다릴 수 있도록 registration,
       handoff, completion removal, close snapshot/claim을 같은 `ReentrantLock`에서
       linearize한다. deferred signal은 lock 밖에서 완료한다.
-- [ ] internal custom cancellable await, child `finally`, close-timeout은 entry별 유일한
+- [x] internal custom cancellable await, child `finally`, close-timeout은 entry별 유일한
       `cancelIfIncomplete()` atomic once guard를 공유한다. 어느 경로가 먼저 와도 incomplete
       future `cancel(false)`는 1회이고 registry 제거와 permit release도 exactly once다. stock
       `CompletionStage.await()`와 별도 cancel을 함께 쓰지 않으며 원래 cancellation을 교체하지
       않는다.
-- [ ] synchronization order는 permit→짧은 lifecycle lock만 허용하고 lock→permit은
+- [x] synchronization order는 permit→짧은 lifecycle lock만 허용하고 lock→permit은
       금지한다. permit과 close signal을 함께 기다리는 cancellable acquire gate를 사용해
       permit 대기 중 close/caller cancellation은 placeholder 없이 종료한다. permit을 먼저
       얻은 경로도 lifecycle lock의 `OPEN` 검사에서 close와 선형화한다. permit+lock 구간에는
       suspension·signal·외부 호출이 없다. barrier와 lock ownership test로 역순 대기,
       외부 호출 0회, permit 누수와 orphan child 0을 검증한다.
-- [ ] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
+- [x] operation 시작은 caller cancellation을 먼저 확인한다. 이후 `OPEN`이 아니면 empty
+      입력도 고정된 안전한 `IllegalStateException`으로 거부하고, `finishClose()`만
+      `CLOSING -> CLOSED`와 shared completion 완료를 정확히 한 번 수행한다.
+- [x] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
 
 ## Task 5: template API와 close lifecycle
 
