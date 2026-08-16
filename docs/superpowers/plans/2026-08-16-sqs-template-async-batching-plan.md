@@ -249,13 +249,13 @@ enum class SqsBatchFailureKind { SERVICE, TRANSPORT }
 
 ### Step 2.1: RED
 
-- [ ] defaults와 각 범위, `batch.enabled=true`에서만
+- [x] defaults와 각 범위, `batch.enabled=true`에서만
       `maxInFlightEntries >= maxBatchSize`, `shutdownTimeout >= flushInterval`을 검증한다.
       direct mode에서는 사용하지 않는 batch 크기 때문에 유효한 작은 in-flight 값을
       거부하지 않는다.
-- [ ] direct transport가 `SqsSendRequest`의 delay/FIFO/attributes와 delete receipt handle을
+- [x] direct transport가 `SqsSendRequest`의 delay/FIFO/attributes와 delete receipt handle을
       그대로 매핑하고 single future를 반환하며 client를 닫지 않는지 capture한다.
-- [ ] success, `SqsException`, transport exception, future cancellation을 공통 outcome으로
+- [x] success, `SqsException`, transport exception, future cancellation을 공통 outcome으로
       변환하되 SDK future cancellation은 caller cancellation과 분리한다.
 
 ~~~text
@@ -268,7 +268,7 @@ enum class SqsBatchFailureKind { SERVICE, TRANSPORT }
 
 ### Step 2.2: GREEN
 
-- [ ] 기존 `SqsProperties`는 한 줄도 변경하지 않고 별도 설정을 추가한다.
+- [x] 기존 `SqsProperties`는 한 줄도 변경하지 않고 별도 설정을 추가한다.
 
 ~~~kotlin
 internal const val SQS_BATCH_PROPERTIES_PREFIX = "bluetape4k.aws.sqs.batch"
@@ -310,15 +310,15 @@ data class SqsBatchProperties(
 }
 ~~~
 
-- [ ] `init`은 기존 `io.bluetape4k.support.requireInRange`를 사용하고 property token만 가진
+- [x] `init`은 기존 `io.bluetape4k.support.requireInRange`를 사용하고 property token만 가진
       message로 위 범위를 검증한다. `ApplicationContextRunner`는 각 invalid binding에서 bean
       생성 전 실패하고 raw 설정값을 failure message에 남기지 않는지 검증한다.
-- [ ] internal `SqsBatchTransport`는 submit 시점의 future만 반환하고 public SDK/manager
+- [x] internal `SqsBatchTransport`는 submit 시점의 future만 반환하고 public SDK/manager
       타입을 노출하지 않는다. `DirectSqsBatchTransport`는 caller-owned
       `SqsAsyncClient`를 닫지 않는다.
-- [ ] transport factory와 response adapter는 공개 `BatchExecutionStrategy` 또는 converter가
+- [x] transport factory와 response adapter는 공개 `BatchExecutionStrategy` 또는 converter가
       아니라 test-injectable internal seam으로 둔다.
-- [ ] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
+- [x] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
 
 ## Task 3: SDK batch manager adapter와 construction rollback
 
