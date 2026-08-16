@@ -413,6 +413,11 @@ val compileSqsOperationsLegacyConsumerFixture = registerSqsConsumerFixtureCompil
     sourceFile = "io/bluetape4k/aws/spring/sqs/consumer/LegacySqsOperationsFixture.kt",
     outputPath = "consumer-fixtures/aws-spring-sqs/operations-legacy/classes",
 )
+val compileSqsPropertiesLegacyConsumerFixture = registerSqsConsumerFixtureCompile(
+    name = "compileSqsPropertiesLegacyConsumerFixture",
+    sourceFile = "io/bluetape4k/aws/spring/sqs/consumer/LegacySqsPropertiesFixture.kt",
+    outputPath = "consumer-fixtures/aws-spring-sqs/properties-legacy/classes",
+)
 val compileSqsListenerAnnotationLegacyConsumerFixture = registerSqsConsumerFixtureCompile(
     name = "compileSqsListenerAnnotationLegacyConsumerFixture",
     sourceFile = "io/bluetape4k/aws/spring/sqs/consumer/LegacySqsListenerAnnotationFixture.kt",

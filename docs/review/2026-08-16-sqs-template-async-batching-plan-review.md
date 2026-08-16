@@ -150,6 +150,6 @@ live GitHub metadata, sibling assertions API, 문서 diff/fence/placeholder와 �
 - [x] actual bluetape4k assertions와 `Base58.randomString(16)`을 source에서 확인했다.
 - [x] GNO와 live GitHub 상태를 재조회했다.
 - [x] 계획·통합 리뷰를 Lore commit으로 보존한다.
-- [ ] 사용자가 구현 계획을 승인한다.
+- [x] 사용자가 구현 계획을 승인했다.
 
-Final status: PENDING — Step 3-R은 PASS이며 사용자 구현 계획 승인이 남았다.
+Final status: DONE — Step 3-R은 PASS이며 사용자가 구현 계획을 승인했다.

@@ -59,9 +59,9 @@ bluetape4k-assertions, Gradle, Floci 선택 검증.
 - [x] 기존 `SqsOperationsBatchTest`와 `SqsAutoConfigurationTest` 28개 baseline이
       `BUILD SUCCESSFUL`임을 격리 worktree에서 확인했다.
 - [x] 여섯 독립 plan review에서 P0=0/P1=0을 확인한다.
-- [ ] 본 계획·plan review를 Lore commit으로 보존하고 사용자 구현 계획 승인을
+- [x] 본 계획·plan review를 Lore commit으로 보존하고 사용자 구현 계획 승인을
       받은 뒤에만 production/test code를 변경한다.
-- [ ] 구현 시작 직전에 `origin/develop`과 승인 commit의 drift를 재확인한다. build,
+- [x] 구현 시작 직전에 `origin/develop`과 승인 commit의 drift를 재확인한다. build,
       dependency, SQS source가 변했으면 plan review를 다시 연다.
 
 ## Task 0: resolved SDK와 변경 전 ABI 기준선 보존
@@ -76,10 +76,10 @@ bluetape4k-assertions, Gradle, Floci 선택 검증.
 
 ### Step 0.1: SDK evidence를 구현 전 고정
 
-- [ ] 다음 결과를 `.lane-evidence/issue-461-sdk-dependency.txt`에 먼저 저장하고,
+- [x] 다음 결과를 `.lane-evidence/issue-461-sdk-dependency.txt`에 먼저 저장하고,
       임의의 최신 Gradle cache 파일이 아니라 resolved version directory의 유일한 jar를
       검사한다.
-- [ ] fixture provenance에는 승인 기준 `bae9344a502eff9f1fb65188fd08a704823bc147`,
+- [x] fixture provenance에는 승인 기준 `bae9344a502eff9f1fb65188fd08a704823bc147`,
       baseline parent `2ff6b957fee97ffbdca6ca842af3d98bdbeaddf5`, 당시
       `SqsProperties.kt` SHA-256, `git status --short`와 `git diff --exit-code --
       aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsProperties.kt` 결과를
@@ -107,16 +107,34 @@ SQS_JAR=$(find "$SQS_JAR_DIR" -type f -name "sqs-$SQS_VERSION.jar")
 } | tee .lane-evidence/issue-461-sdk-api.txt
 ~~~
 
-- [ ] `sendMessage`, `deleteMessage`, builder/close, flush/size configuration과 반환
+- [x] `sendMessage`, `deleteMessage`, builder/close, flush/size configuration과 반환
       `CompletableFuture` signature를 실제 output에서 확인한다.
 
-### Step 0.2: legacy `SqsProperties` fixture를 먼저 RED/GREEN으로 고정
+### Step 0.2: legacy `SqsProperties` fixture를 RED -> 보존 -> GREEN으로 고정
 
-- [ ] `LegacySqsPropertiesFixture`는 현재 primary constructor와 `copy`를 호출하고
+- [x] `LegacySqsPropertiesFixture`는 현재 primary constructor와 `copy`를 호출하고
       batch 속성을 전혀 모르는 pre-change consumer로 작성한다.
-- [ ] `registerSqsConsumerFixtureCompile`을 재사용해
-      `compileSqsPropertiesLegacyConsumerFixture` task를 추가한다. production API를
-      바꾸기 전에 다음 명령으로 compile/hash/javap를 보존한다.
+- [x] `registerSqsConsumerFixtureCompile`을 재사용해
+      `compileSqsPropertiesLegacyConsumerFixture` task를 추가하고, isolated
+      `ClassLoader`로 fixture를 읽어 기존 constructor/copy 호출 결과와 hash를 검증하는
+      테스트를 먼저 추가한다. 보존 resource와 SHA-256 상수가 아직 없으므로 다음
+      명령이 RED가 되는 것을 기록한다.
+
+~~~text
+./gradlew :bluetape4k-aws-spring-boot:test --no-daemon \
+  --tests "io.bluetape4k.aws.spring.sqs.SqsPropertiesBinaryCompatibilityTest"
+~~~
+
+- [x] RED 뒤에 `compileSqsPropertiesLegacyConsumerFixture`를 실행해 변경 전 fixture의
+      compile/hash/javap와 provenance를 보존한다. provenance에는 승인 기준
+      `bae9344a502eff9f1fb65188fd08a704823bc147`, baseline parent
+      `2ff6b957fee97ffbdca6ca842af3d98bdbeaddf5`, 구현 branch head
+      `17dae6a0a5e5e55c1fad37abf75f97993608af9e`, head parent
+      `bae9344a502eff9f1fb65188fd08a704823bc147`, 당시 `SqsProperties.kt` SHA-256,
+      `git status --short`와 `git diff --exit-code --
+      aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsProperties.kt`
+      결과를 `.lane-evidence/issue-461-properties-abi-provenance.txt`에 보존한다.
+      source path가 dirty면 fixture를 만들지 않는다.
 
 ~~~text
 ./gradlew compileSqsPropertiesLegacyConsumerFixture --no-daemon
@@ -136,7 +154,7 @@ SQS_JAR=$(find "$SQS_JAR_DIR" -type f -name "sqs-$SQS_VERSION.jar")
 } | tee .lane-evidence/issue-461-properties-abi.txt
 ~~~
 
-- [ ] 생성 class를 `sqs-properties-abi` test resource에 보존하고 SHA-256 상수를
+- [x] 생성 class를 `sqs-properties-abi` test resource에 보존하고 SHA-256 상수를
       기록한다. 이후 이 compile task는 다시 실행하지 않는다.
 
 ~~~text
@@ -149,17 +167,16 @@ shasum -a 256 \
   aws-spring-boot/src/test/resources/sqs-properties-abi/io/bluetape4k/aws/spring/sqs/consumer/LegacySqsPropertiesFixture.class
 ~~~
 
-- [ ] RED: isolated `ClassLoader`로 fixture를 읽고 기존 constructor/copy 호출 결과와
-      hash를 검증하는 테스트를 먼저 추가한다. resource가 아직 없거나 상수가 없어서
-      실패하는 것을 기록한다.
+- [x] GREEN: 보존한 변경 전 class resource만 사용해 테스트를 통과시킨다. 새
+      `SqsBatchProperties` 구현 뒤에도 fixture compile task는 재실행하지 않는다.
 
 ~~~text
 ./gradlew :bluetape4k-aws-spring-boot:test --no-daemon \
   --tests "io.bluetape4k.aws.spring.sqs.SqsPropertiesBinaryCompatibilityTest"
 ~~~
 
-- [ ] GREEN: 보존한 변경 전 class resource만 사용해 테스트를 통과시킨다. 새
-      `SqsBatchProperties` 구현 뒤에도 fixture compile task는 재실행하지 않는다.
+- [x] `.lane-inputs/`와 `.lane-evidence/`는 workflow와 실행의 runtime 산출물이므로
+      커밋하지 않는다.
 
 ## Task 1: public batch 모델·validation·redaction
 
@@ -830,6 +847,6 @@ Not-tested: Floci integration
 - [x] RED가 해당 production 변경보다 앞서고 cancellation/race/lifecycle/ABI가 포함된다.
 - [x] Kotlin, Spring Boot, coroutine, bluetape4k-assertions와 writer 계약을 반영했다.
 - [x] 계획·통합 review를 Lore commit으로 보존했다.
-- [ ] 사용자가 구현 계획을 승인했다.
+- [x] 사용자가 구현 계획을 승인했다.
 
-**상태: PENDING — Step 3-R은 PASS이며 사용자 구현 계획 승인이 남아 있다.**
+**상태: DONE — Step 3-R은 PASS이며 사용자가 구현 계획을 승인했다.**
