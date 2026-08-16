@@ -189,16 +189,16 @@ shasum -a 256 \
 
 ### Step 1.1: RED
 
-- [ ] `SqsBatchSendEntry`, `SqsBatchDeleteEntry`, `SqsBatchSendSuccess`,
+- [x] `SqsBatchSendEntry`, `SqsBatchDeleteEntry`, `SqsBatchSendSuccess`,
       `SqsBatchEntryFailure`, `SqsSendManyResult`, `SqsDeleteManyResult`의
       serialization round-trip, defensive snapshot, `serialVersionUID=1L`, blank/duplicate
       validation, status 계산과 redacted `toString()`을 먼저 고정한다.
-- [ ] `SqsBatchSendSuccess.sequenceNumber`가 non-null이면 nonblank여야 한다.
+- [x] `SqsBatchSendSuccess.sequenceNumber`가 non-null이면 nonblank여야 한다.
       모든 string invariant는 `requireNotBlank` 계열 기존 helper를 우선 사용한다.
-- [ ] service code allow-list/64자 상한, transport `code == null`, wrapper 반복 unwrap,
+- [x] service code allow-list/64자 상한, transport `code == null`, wrapper 반복 unwrap,
       response unknown/duplicate/missing ID, null/blank `messageId`, input-relative order를
       테스트한다.
-- [ ] exception의 message, `toString()`, cause, suppressed에 body, queue URL, receipt
+- [x] exception의 message, `toString()`, cause, suppressed에 body, queue URL, receipt
       handle, entry ID, attribute, raw SDK error, CR/LF가 없음을 `shouldNotContain`으로
       검사한다. `SqsBatchStartupException`은 startup component와 cleanup component
       kind/count만 보유하고 `cause == null`, `suppressed.isEmpty()`이며 serialization 뒤에도
@@ -215,7 +215,7 @@ assertion이 실패한다.
 
 ### Step 1.2: GREEN
 
-- [ ] 승인 명세의 public model·enum shape를 구현한다. operations interface는 Task 5 RED
+- [x] 승인 명세의 public model·enum shape를 구현한다. operations interface는 Task 5 RED
       뒤에 추가한다.
 
 ~~~kotlin
@@ -224,19 +224,19 @@ enum class SqsBatchResultStatus { SUCCESS, PARTIAL_FAILURE, FAILURE }
 enum class SqsBatchFailureKind { SERVICE, TRANSPORT }
 ~~~
 
-- [ ] 모든 public data class는 private primary constructor,
+- [x] 모든 public data class는 private primary constructor,
       `@ConsistentCopyVisibility`, validating public secondary constructor, `val`, defensive
       collection snapshot, Korean KDoc와 explicit `serialVersionUID`를 사용한다.
-- [ ] internal `BatchResultNormalizer`는 expected ID/outcome을 property에 보관하지 않고
+- [x] internal `BatchResultNormalizer`는 expected ID/outcome을 property에 보관하지 않고
       성공·실패 목록을 input-relative order로 생성한다. protocol exception도 raw outcome을
       보유하지 않는다.
-- [ ] `SqsSendBatchFailedException(result)`는 동일 normalized result만 보유하고,
+- [x] `SqsSendBatchFailedException(result)`는 동일 normalized result만 보유하고,
       `SqsBatchCloseException`은 deduplicated `MANAGER`, `EXECUTOR`, `TIMEOUT`만 고정
       순서로 보유한다.
-- [ ] `SqsBatchStartupException`은 `MANAGER`, `TRANSPORT`, `TEMPLATE` startup component와
+- [x] `SqsBatchStartupException`은 `MANAGER`, `TRANSPORT`, `TEMPLATE` startup component와
       deduplicated cleanup component kind/count만 보유한다. raw startup/cleanup throwable을
       property, cause, suppressed에 보관하지 않고 안전한 exception identity만 전달한다.
-- [ ] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
+- [x] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
 
 ## Task 2: properties와 direct transport seam
 
