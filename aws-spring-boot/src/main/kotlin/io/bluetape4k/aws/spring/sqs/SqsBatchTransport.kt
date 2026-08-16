@@ -56,7 +56,7 @@ internal class DirectSqsBatchTransport(
 }
 
 @Suppress("TooGenericExceptionCaught")
-private fun <T: Any> submitBatchOutcome(
+internal fun <T: Any> submitBatchOutcome(
     entryId: String,
     submit: () -> CompletableFuture<T>,
     success: (T) -> SqsBatchOutcome,
@@ -68,7 +68,7 @@ private fun <T: Any> submitBatchOutcome(
     }
 
 @Suppress("TooGenericExceptionCaught")
-private fun <T: Any> CompletableFuture<T>.mapBatchOutcome(
+internal fun <T: Any> CompletableFuture<T>.mapBatchOutcome(
     entryId: String,
     success: (T) -> SqsBatchOutcome,
 ): CompletableFuture<SqsBatchOutcome> {

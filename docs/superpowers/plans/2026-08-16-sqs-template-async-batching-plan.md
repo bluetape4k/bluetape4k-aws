@@ -330,19 +330,19 @@ data class SqsBatchProperties(
 
 ### Step 3.1: RED
 
-- [ ] fake/captured manager seam으로 size/flush 설정, send/delete request mapping, 부분 실패,
+- [x] fake/captured manager seam으로 size/flush 설정, send/delete request mapping, 부분 실패,
       shared transport failure와 exact future handoff를 먼저 검증한다.
-- [ ] 실제 `SqsAsyncBatchManager`와 mock `SqsAsyncClient`, 제어 가능한 scheduler를 연결해
+- [x] 실제 `SqsAsyncBatchManager`와 mock `SqsAsyncClient`, 제어 가능한 scheduler를 연결해
       batch size 도달 전 호출 0회, size 도달 즉시 1회, flush interval 뒤 작은 batch 1회,
       서로 다른 coroutine의 같은 queue 요청 병합, 다른 queue URL 분리, send/delete 혼합
       buffer 분리와 많은 queue URL의 pending 상한을 검증한다. wall-clock sleep은 쓰지 않는다.
-- [ ] scheduler 생성 뒤 manager build 실패 시 같은 stack에서 `shutdownNow()`가 호출되고
+- [x] scheduler 생성 뒤 manager build 실패 시 같은 stack에서 `shutdownNow()`가 호출되고
       표준 client는 닫히지 않는 construction rollback을 검증한다.
-- [ ] manager 생성 뒤 transport adapter 조립이 실패하는 fake 경로도 추가한다. manager
+- [x] manager 생성 뒤 transport adapter 조립이 실패하는 fake 경로도 추가한다. manager
       close → scheduler shutdown 순서와 각각 exactly once, 표준 client 미종료, 한 번 만든
       safe `SqsBatchStartupException` identity 보존, raw startup/cleanup throwable graph 제거,
       cleanup failure의 component-only 기록을 검증한다.
-- [ ] manager class 없는 classloader에서는 direct types가 load되고, manager transport
+- [x] manager class 없는 classloader에서는 direct types가 load되고, manager transport
       경로만 load 실패하는 optional-class isolation을 검증한다.
 
 ~~~text
@@ -355,17 +355,18 @@ data class SqsBatchProperties(
 
 ### Step 3.2: GREEN
 
-- [ ] `SqsAsyncBatchManager.builder()`에 caller-owned `SqsAsyncClient`, 전용 daemon
+- [x] `SqsAsyncBatchManager.builder()`에 caller-owned `SqsAsyncClient`, 전용 daemon
       `ScheduledThreadPoolExecutor`, `maxBatchSize`, `flushInterval`을 연결한다.
-- [ ] thread 이름에는 고정 prefix와 내부 sequence만 사용하고 queue URL/entry ID를 넣지
+- [x] thread 이름에는 고정 prefix와 내부 sequence만 사용하고 queue URL/entry ID를 넣지
       않는다. `setRemoveOnCancelPolicy(true)`와 rejected cleanup을 설정한다.
-- [ ] `SqsBatchTransportFactory.create(properties, client)`는 manager build 실패 시 executor를
+- [x] `SqsBatchTransportFactory.create(properties, client)`는 manager build 실패 시 executor를
       닫고 raw error graph를 보관하지 않는 `SqsBatchStartupException`으로 한 번 바꾼다.
       message/`toString()`에는 startup/cleanup kind/count만 있고 `cause=null`, suppressed는
       빈 배열이다.
-- [ ] manager SDK class를 import하는 production file과 enabled nested configuration에만
-      `@ConditionalOnClass(name=...)` 경계를 둔다.
-- [ ] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
+- [x] manager SDK class import를 manager transport production file에만 격리한다.
+- [ ] enabled nested configuration의 `@ConditionalOnClass(name=...)` 경계는 Task 6에서
+      auto-configuration RED 뒤에 추가한다.
+- [x] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
 
 ## Task 4: coordinator admission·부분 결과·취소
 
