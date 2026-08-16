@@ -570,7 +570,12 @@ template과 기본 decorator가 모두 back off하며 custom bean의 관측성�
 manager 생성은 internal `SqsBatchTransportFactory` seam으로 격리한다. scheduler 생성
 뒤 manager 생성이 실패하면 factory가 같은 stack에서 scheduler를 `shutdownNow()`하고
 종료를 확인한다. manager 생성 뒤 transport나 template 조립이 실패하면 이미 만든 manager를
-닫고 scheduler를 종료한다. 두 경로 모두 raw startup/cleanup `Throwable` graph를 버리고
+닫고 scheduler를 종료한다. 특히 batch resources 생성 뒤 template 조립이 실패하는 rollback은
+정상 close와 같은 `shutdownTimeout` 및 internal `SqsBatchCloseRuntime`을 사용한다. manager
+cleanup은 이름 있는 daemon thread에서 실행하고, 남은 monotonic 시간만 기다리며, executor
+종료는 최상위 `finally`에서 정확히 한 번 수행한다. manager가 영구 block하거나 cleanup 중
+예외를 던져도 startup caller는 deadline 안에 반환하고 표준 `SqsAsyncClient`는 닫지 않는다.
+두 경로 모두 raw startup/cleanup `Throwable` graph를 버리고
 `SqsBatchStartupException`을 한 번 만든 뒤 같은 safe exception identity만 상위 Spring
 경계까지 전달한다. 이 exception은 `SqsBatchStartupComponent { MANAGER, TRANSPORT,
 TEMPLATE }`와 deduplicated cleanup component kind/count만 보유하며 고정 message,
@@ -652,7 +657,12 @@ internal sealed interface SqsBatchCloseOutcome {
 accepted placeholder 스냅숏과 shared completion owner를 함께 결정한다. lock 안에서는
 `CompletableFuture.complete`, 외부 cancel, suspend 호출을 수행하지 않는다. `Owner`가
 lock 밖에서 accepted completion을 기다리고 timeout이면 `cancelIfIncomplete()`를 호출한다.
-`Observer`는 같은 shared completion만 기다린다. `finishClose()`만 `CLOSING -> CLOSED`로
+`Observer`는 별도 deadline을 만들거나 owner deadline publication을 기다리지 않고 같은
+shared completion만 기다린다. owner만 `beginClose()` claim을 얻은 직후 외부 대기 전에
+operation-local monotonic deadline을 만들고, bounded cleanup과 최상위 `finally`로
+shared completion을 반드시 완료한다. 따라서 `CLOSING` 전환 직후 owner cleanup이 아직
+시작되지 않은 경합에서도 observer는 owner가 확정한 동일 결과만 관찰한다.
+`finishClose()`만 `CLOSING -> CLOSED`로
 전환하고 shared completion을 정확히 한 번 완료한다. 실패 outcome은 정규화한
 `SqsBatchCloseException` 인스턴스를 그대로 보유하므로 concurrent/repeated close caller는
 같은 exception identity를 관찰한다.
@@ -737,14 +747,40 @@ batch가 최대 크기에 도달하지 못하는 설정을 조기에 거부한�
 `SqsBatchCoroutinesTemplate`은 `AutoCloseable`이며 Spring bean destroy method로
 `close()`를 사용한다. lifecycle state는 `OPEN`, `CLOSING`, `CLOSED`다.
 
-1. 명시적 `ReentrantLock` 아래에서 최초 caller만 `OPEN -> CLOSING`으로 바꾸고 신규
-   admission을 차단한다. 이때 close signal을 완료하고 accepted placeholder 스냅숏과 공유
+시간과 blocking 대기를 결정적으로 검증하기 위해 template은 다음 internal seam을 받는다.
+공개 API나 dependency는 늘리지 않는다.
+
+```kotlin
+internal interface SqsBatchCloseRuntime {
+    fun nanoTime(): Long
+
+    @Throws(InterruptedException::class, TimeoutException::class, ExecutionException::class)
+    fun awaitCompletion(future: CompletableFuture<*>, remainingNanos: Long)
+
+    fun awaitTermination(executor: ExecutorService, remainingNanos: Long): Boolean
+
+    fun newManagerCleanupThread(task: Runnable): Thread
+}
+```
+
+production 구현은 `System.nanoTime()`, nanosecond 단위 `CompletableFuture.get`,
+`ExecutorService.awaitTermination`, 이름 있는 daemon thread를 사용한다. test 구현은 clock
+증분, 각 wait에 전달된 `remainingNanos`, cleanup thread 시작·종료를 기록한다.
+
+1. 각 caller는 먼저 `beginClose()`를 호출한다. 명시적 `ReentrantLock` 아래에서 최초 caller만
+   `OPEN -> CLOSING`으로
+   바꾸고 신규 admission을 차단한다. 이때 close signal을 완료하고 accepted placeholder
+   스냅숏과 공유
    `closeCompletion`의 owner를 정한다. permit 획득 대기 child는 permit과 close signal을
    함께 기다리는 cancellable acquire gate를 사용한다. close가 먼저 선택되면 placeholder나
    외부 submit 없이 종료하고, permit을 먼저 얻었더라도 lifecycle lock의 `OPEN` 검사에서
-   close와 선형화한다.
-2. 최초 caller는 `System.nanoTime()` 기준의 monotonic shutdown deadline을 한 번 만든다.
-   각 drain/cleanup 대기 직전에 `max(0, deadlineNanos - System.nanoTime())`로 남은 시간을
+   close와 선형화한다. `Owner`만 claim 직후 외부 대기 전에
+   `SqsBatchCloseRuntime.nanoTime()`으로 canonical operation-local deadline을 만든다.
+   `Observer`는 clock을 읽거나 별도 timeout을 만들지 않고 shared completion만 기다린다. owner의 모든
+   경로가 bounded cleanup과 최상위 `finally`로 completion을 끝내므로 observer도 별도
+   deadline publication 없이 같은 결과로 반환한다.
+2. 최초 caller는 각 drain/cleanup 대기 직전에
+   `max(0, deadlineNanos - SqsBatchCloseRuntime.nanoTime())`로 남은 시간을
    다시 계산하며 단계별 timeout을 새로 시작하지 않는다. lock 밖에서 placeholder가 future
    연결 또는 submit failure로 완료될 때까지 이 남은 시간만 사용한다.
 3. 정상 drain이면 manager close를 시작하고 scheduler를 `shutdown()`한다. timeout이면
@@ -757,14 +793,17 @@ batch가 최대 크기에 도달하지 못하는 설정을 조기에 거부한�
    scheduler도 `awaitTermination`을 남은 시간으로 기다린다. deadline이 끝나면 cleanup
    thread를 interrupt하고 scheduler를 `shutdownNow()`한 뒤 기다리지 않는다. daemon
    cleanup thread는 process 종료를 막지 않지만 전달/cleanup 완료도 보장하지 않으므로
-   timeout failure를 기록한다.
+   timeout failure를 기록한다. deadline cutoff에서 현재까지 관찰한 cleanup component와
+   `TIMEOUT`으로 canonical outcome을 한 번 확정한다. 그 뒤 manager thread가 늦게 실패해도
+   확정된 outcome과 exception identity를 변경하지 않으며 raw detail 없는 telemetry/log만
+   남긴다.
 5. owner 전체 경로는 최상위 `try/finally`로 감싼다. interrupt를 받으면 interrupt status를
    복원하고 manager·executor cleanup을 각각 계속 시도한다. manager failure, executor
    failure, timeout 순으로 component kind/count만 가진 `SqsBatchCloseException`을 만들며
    raw cause/message/suppressed는 caller에게 노출하지 않는다.
 6. 최상위 `finally`는 어떤 unexpected failure에서도 lock 아래 `CLOSED` 전환과 lock 밖
    `closeCompletion` 완료를 정확히 한 번 보장한다. `CLOSING` 중 들어온 다른 `close()`는
-   같은 completion을 lock 밖에서 deadline까지 기다린 뒤 같은 성공 또는 정규화한 실패를
+   별도 timeout 없이 같은 completion을 lock 밖에서 기다린 뒤 같은 성공 또는 정규화한 실패를
    관찰한다. `CLOSED` 뒤 호출은 이미 기록된 결과를 재관찰하고 새 cleanup을 시작하지
    않는다.
 

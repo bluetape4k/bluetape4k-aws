@@ -5,6 +5,7 @@ import software.amazon.awssdk.services.sqs.batchmanager.BatchOverrideConfigurati
 import software.amazon.awssdk.services.sqs.batchmanager.SqsAsyncBatchManager
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -54,6 +55,8 @@ internal class SqsBatchTransportResources(
     fun shutdownExecutorNow() {
         executor.shutdownNow()
     }
+
+    fun executorService(): ExecutorService = executor
 
     fun awaitExecutorTermination(timeout: Long, unit: TimeUnit): Boolean =
         executor.awaitTermination(timeout, unit)

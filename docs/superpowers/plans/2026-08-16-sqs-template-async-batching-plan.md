@@ -457,35 +457,49 @@ data class SqsBatchProperties(
 
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchOperations.kt`
 - Create: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchCoroutinesTemplate.kt`
+- Modify: `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsAsyncBatchManagerTransport.kt`
 - Create: `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchCoroutinesTemplateTest.kt`
 - Create: `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchLifecycleTest.kt`
 
 ### Step 5.1: RED
 
-- [ ] direct/batch mode의 same-result parity, request field preservation, send RETURN/THROW,
+- [x] direct/batch mode의 same-result parity, request field preservation, send RETURN/THROW,
       delete always-return, validation-before-call을 검증한다.
-- [ ] close owner만 transition하는지, `CLOSING` admission rejection, 정상 drain 뒤 manager
+- [x] close owner만 transition하는지, `CLOSING` admission rejection, 정상 drain 뒤 manager
       close, timeout의 `cancelIfIncomplete()` 뒤 close, executor shutdown 순서를 fake
       clock/barrier로 고정한다.
-- [ ] drain/manager/executor가 각각 전체 deadline을 새로 받지 않고 남은 monotonic duration만
-      받는지 검증한다.
-- [ ] manager `close()` block, cleanup thread interrupt 무시, scheduler 종료 실패, owner
+- [x] owner가 `CLOSING`으로 전환한 직후 cleanup을 시작하기 전 barrier에서 observer
+      `close()`를 진입시킨다. observer는 별도 deadline을 만들지 않고 shared completion을
+      기다리며, barrier 해제 뒤 owner의 남은 budget과 동일 success/exception identity로
+      반환하는지 검증한다.
+- [x] drain/manager/executor가 각각 전체 deadline을 새로 받지 않고 남은 monotonic duration만
+      받는지 internal `SqsBatchCloseRuntime` fake의 `nanoTime`, `awaitCompletion`,
+      `awaitTermination` 기록으로 검증한다.
+- [x] manager `close()` block, cleanup thread interrupt 무시, scheduler 종료 실패, owner
       interrupt, unexpected throwable에서도 bounded return, daemon thread, 최종 `CLOSED`,
       completion 완료를 검증한다. 외부 publisher latency 자체의 상한을 주장하지 않는다.
-- [ ] 반복 timeout에서 orphan daemon cleanup thread의 현재 수와 eventual termination을
+- [x] 반복 timeout에서 orphan daemon cleanup thread의 현재 수와 eventual termination을
       관찰한다. fake manager가 영구 block하는 한계까지 실제 측정하지 않으면 Task 10의 SQS
       성능 후속 이슈 acceptance에 cleanup thread 누적 telemetry를 포함한다.
-- [ ] concurrent/repeated close caller가 동일 success 또는 동일
+- [x] concurrent/repeated close caller가 동일 success 또는 동일
       `SqsBatchCloseException` instance를 관찰하고 cleanup component가 중복되지 않는지
       실제 multithread tester로 검증한다.
-- [ ] manager와 executor cleanup이 각각 또는 동시에 실패해도 나머지 cleanup이 진행되고,
+- [x] manager와 executor cleanup이 각각 또는 동시에 실패해도 나머지 cleanup이 진행되고,
       component는 `MANAGER`, `EXECUTOR`, `TIMEOUT` 고정 순서·중복 없음으로 정규화되는지
       검증한다.
-- [ ] batch resources 생성 뒤 template 조립이 실패하는 injected factory 경로에서 manager
+- [x] batch resources 생성 뒤 template 조립이 실패하는 injected factory 경로에서 manager
       close → scheduler shutdown을 각각 1회 수행하고 표준 client는 닫지 않으며 같은 safe
       `SqsBatchStartupException` identity를 유지하는지 검증한다. raw startup/cleanup
       throwable의 message, cause, suppressed, `toString()` token은 외부 exception graph에 없어야
       한다.
+- [x] 위 startup rollback에서 manager가 interrupt를 무시하고 block하거나 예외를 던져도
+      정상 close와 같은 `shutdownTimeout` 안에 반환한다. manager cleanup은 daemon thread,
+      executor `shutdownNow()`는 최상위 `finally`에서 정확히 1회, 표준 client close는 0회이며
+      최초 safe `SqsBatchStartupException` identity가 유지되는지 검증한다.
+- [x] manager cleanup wait가 deadline을 넘긴 뒤 manager thread가 늦게 실패하는 barrier를
+      해제한다. 최초 timeout close와 repeated close가 같은 exception identity와 cutoff 당시의
+      immutable component 목록을 유지하고, 늦은 실패는 raw detail 없는 telemetry 외에는
+      결과를 변경하지 않는지 검증한다.
 
 ~~~text
 ./gradlew :bluetape4k-aws-spring-boot:test --no-daemon \
@@ -497,7 +511,7 @@ data class SqsBatchProperties(
 
 ### Step 5.2: GREEN
 
-- [ ] 승인 명세의 exact operations declaration을 추가한다.
+- [x] 승인 명세의 exact operations declaration을 추가한다.
 
 ~~~kotlin
 interface SqsBatchOperations {
@@ -510,20 +524,33 @@ interface SqsBatchOperations {
 }
 ~~~
 
-- [ ] `SqsBatchCoroutinesTemplate`은 `SqsBatchOperations, AutoCloseable`이며 표준 client는
+- [x] `SqsBatchCoroutinesTemplate`은 `SqsBatchOperations, AutoCloseable`이며 표준 client는
       빌리지만 transport/manager/executor만 소유한다.
-- [ ] companion/internal factory는 batch resources를 만든 뒤 template constructor가
-      실패하면 manager와 scheduler를 역순 정리한다. cleanup failure는 한 번 만든 safe
-      `SqsBatchStartupException`을 교체하지 않으며 raw throwable graph를 부착하지 않는다.
-- [ ] close owner는 lock 아래 state/snapshot/shared completion 소유권만 정하고, lock 밖에서
+- [x] companion/internal factory는 batch resources를 만든 뒤 template constructor가
+      실패하면 정상 close와 같은 `shutdownTimeout`·daemon manager cleanup 경계로 manager와
+      scheduler를 역순 정리한다. executor 종료는 최상위 `finally`에서 exactly once이고,
+      cleanup failure는 한 번 만든 safe `SqsBatchStartupException`을 교체하지 않으며 raw
+      throwable graph를 부착하지 않는다.
+- [x] internal `SqsBatchCloseRuntime` seam은 `nanoTime()`, remaining-nanos 기반
+      `awaitCompletion`, `awaitTermination`, 이름 있는 daemon manager cleanup thread 생성을
+      제공한다. production은 `System.nanoTime()`과 nanosecond wait를 사용하고 test fake는
+      단계별 남은 budget을 기록한다.
+- [x] `SqsBatchTransportResources`는 새 public API 없이 기존 executor의 internal
+      `ExecutorService` handle만 template에 제공해 runtime의 `awaitTermination`을 연결한다.
+- [x] close owner는 lock 아래 state/snapshot/shared completion 소유권만 정하고, lock 밖에서
       monotonic deadline을 적용해 drain → manager cleanup daemon thread → executor cleanup을
-      수행한다.
-- [ ] 최상위 `try/finally`가 unexpected failure와 interrupt에서도 `CLOSED` 전환과
+      수행한다. owner만 `beginClose()` claim 직후 외부 대기 전에 operation-local deadline을
+      만들며 observer는 clock을 읽거나 별도 deadline을 만들지 않고 owner가 반드시 완료하는
+      shared completion만 기다린다.
+- [x] 최상위 `try/finally`가 unexpected failure와 interrupt에서도 `CLOSED` 전환과
       shared completion 완료를 보장한다. interrupt status를 복원하고 raw failure는 버린 뒤
       cleanup component kind/count만 materialize한다.
-- [ ] manager `close()`는 accepted future drain 뒤에만 호출한다. timeout 뒤에는 delivery를
+- [x] deadline cutoff에서 canonical close outcome을 한 번 확정한다. cutoff 뒤 manager failure는
+      민감정보 없는 telemetry만 남기고 최초/repeated caller가 공유하는 outcome과 exception
+      identity를 변경하지 않는다.
+- [x] manager `close()`는 accepted future drain 뒤에만 호출한다. timeout 뒤에는 delivery를
       보장하지 않으며 cancel은 rollback이 아님을 KDoc에 명시한다.
-- [ ] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
+- [x] RED 명령을 그대로 다시 실행해 GREEN을 확인한다.
 
 ## Task 6: Spring auto-configuration·optional class·ABI
 
