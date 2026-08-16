@@ -63,7 +63,8 @@ P2는 아래와 같이 명세에서 직접 해소했으며 별도 미처리 항�
 - manager close는 이름 있는 daemon cleanup thread에서 실행한다. 이 thread는 늦은
   `Throwable`을 내부에서 정규화해 uncaught exception이나 raw cause 로그를 남기지 않는다.
 - scheduler 뒤 manager 생성, manager 뒤 transport/template 조립 중 어느 단계가 실패해도
-  이미 만든 resource를 역순으로 정리하고 원래 startup failure를 보존한다.
+  이미 만든 resource를 역순으로 정리한다. raw throwable graph는 버리고 kind/count만 가진
+  safe `SqsBatchStartupException` identity를 보존한다.
 
 ### API와 호환성
 
@@ -146,6 +147,6 @@ performance/stability scan에서 수치 측정이 필요한 회귀 신호가 확
 - [x] 모든 P2 권고를 명세에 반영하거나 구현 검증 항목으로 책임과 시점을 고정했다.
 - [x] 첫 review wave의 liveness 순서 오류를 fencing과 replacement로 복구했다.
 - [x] 설계·리뷰 문서의 한국어 기술 문체와 근거 추적성을 검증했다.
-- [ ] 사용자가 최종 설계를 승인한다.
+- [x] 사용자가 최종 설계를 승인했다.
 
-Final status: PENDING — Step 2-R은 PASS이며 사용자 설계 승인이 남아 있다.
+Final status: DONE — Step 2-R PASS와 사용자 최종 설계를 확인했다.

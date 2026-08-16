@@ -189,8 +189,9 @@ data class SqsBatchDeleteEntry private constructor(
 public secondary constructor는 `request.messageAttributes.toMap()`으로 request를
 복사해 admission 전에 snapshot을 고정한다. private primary constructor와
 `@ConsistentCopyVisibility`로 generated `copy`가 snapshot 경계를 우회하지 못하게
-한다. `sendMany`/`deleteMany`도 입력 collection을 첫 suspension 전에 `toList()`로
-복사한다.
+한다. `sendMany`/`deleteMany`는 입력 iterator를 첫 suspension 전에 최대
+`maxEntriesPerCall + 1`개까지만 읽는다. 초과 입력은 나머지를 materialize하지 않고
+거부하며, 허용된 항목만 immutable list로 고정한다.
 
 두 entry 타입의 public constructor는 entry ID 형식과 request 필수 값을 즉시 검증한다.
 `SqsBatchDeleteEntry`는 queue URL과 receipt handle의 blank 여부를 생성 시점에 거부한다.
@@ -381,11 +382,15 @@ transport failure 뒤 수동 retry 전에는 이미 전달됐을 가능성과 �
 
 - `SqsSendBatchFailedException`: public, 정규화한 `SqsSendManyResult`만 제공한다.
 - `SqsBatchCloseException`: public, 실패한 cleanup component kind와 개수만 제공한다.
+- `SqsBatchStartupException`: public, 실패한 startup component kind와 cleanup failure
+  component kind/count만 제공한다.
 - `SqsBatchProtocolException`: internal이며 count만 보유한다.
 
-세 타입 모두 raw cause/suppressed를 보유하지 않는다. `TRANSPORT` failure의 `code`는
-항상 `null`이고, `SERVICE` failure만 정규화한 service code 또는 `UNKNOWN`을 갖는다.
-두 public exception은 `serialVersionUID=1L`을 명시한다.
+네 타입 모두 raw cause/suppressed를 보유하지 않는다. public exception의 message와
+`toString()`은 고정 token과 안전한 kind/count만 출력하며 `cause=null`,
+`suppressed.isEmpty()`다. `TRANSPORT` failure의 `code`는 항상 `null`이고, `SERVICE`
+failure만 정규화한 service code 또는 `UNKNOWN`을 갖는다. 세 public exception은
+`serialVersionUID=1L`을 명시한다.
 
 `SqsBatchCloseException.components`는
 `SqsBatchCleanupComponent { MANAGER, EXECUTOR, TIMEOUT }`의 immutable list다. 중복을
@@ -428,6 +433,8 @@ bluetape4k:
         flush-interval: 200ms
         max-entries-per-call: 1000
         max-in-flight-entries: 100
+        scheduler-threads: 1
+        shutdown-timeout: 5s
 ```
 
 ```kotlin
@@ -466,6 +473,9 @@ entry 실패를 항상 result로 반환한다. 기존 `SqsOperations.send(reques
 `@ConfigurationProperties("bluetape4k.aws.sqs.batch")` 타입을 추가한다.
 
 ```kotlin
+internal const val SQS_BATCH_PROPERTIES_PREFIX = "bluetape4k.aws.sqs.batch"
+
+@ConfigurationProperties("bluetape4k.aws.sqs.batch")
 data class SqsBatchProperties(
     val enabled: Boolean = false,
     val maxBatchSize: Int = 10,
@@ -475,6 +485,29 @@ data class SqsBatchProperties(
     val schedulerThreads: Int = 1,
     val shutdownTimeout: Duration = Duration.ofSeconds(5),
 ) : Serializable {
+    init {
+        maxBatchSize.requireInRange(1, 10, "$SQS_BATCH_PROPERTIES_PREFIX.max-batch-size")
+        flushInterval.requireInRange(
+            Duration.ofMillis(1),
+            Duration.ofMinutes(1),
+            "$SQS_BATCH_PROPERTIES_PREFIX.flush-interval",
+        )
+        maxEntriesPerCall.requireInRange(1, 10_000, "$SQS_BATCH_PROPERTIES_PREFIX.max-entries-per-call")
+        maxInFlightEntries.requireInRange(1, 10_000, "$SQS_BATCH_PROPERTIES_PREFIX.max-in-flight-entries")
+        schedulerThreads.requireInRange(1, 16, "$SQS_BATCH_PROPERTIES_PREFIX.scheduler-threads")
+        shutdownTimeout.requireInRange(
+            Duration.ofMillis(1),
+            Duration.ofMinutes(1),
+            "$SQS_BATCH_PROPERTIES_PREFIX.shutdown-timeout",
+        )
+        require(!enabled || maxInFlightEntries >= maxBatchSize) {
+            "$SQS_BATCH_PROPERTIES_PREFIX.max-in-flight-entries must cover max-batch-size"
+        }
+        require(!enabled || shutdownTimeout >= flushInterval) {
+            "$SQS_BATCH_PROPERTIES_PREFIX.shutdown-timeout must cover flush-interval"
+        }
+    }
+
     companion object {
         private const val serialVersionUID: Long = 1L
     }
@@ -513,18 +546,21 @@ manual은 다음 trade-off를 설정 표로 설명한다.
 `SqsAutoConfiguration`과 `SqsMicrometerAutoConfiguration`은 다음 bean 경계를
 사용한다.
 
-1. custom `SqsBatchOperations`가 없으면 concrete
-   `SqsBatchCoroutinesTemplate` bean을 `destroyMethod="close"`로 등록한다. 이 raw
-   bean이 manager/executor lifecycle을 소유한다.
+1. custom `SqsBatchOperations`가 없으면 property-exclusive direct configuration과
+   enabled-manager-present configuration 중 하나가 concrete `SqsBatchCoroutinesTemplate`
+   bean을 `destroyMethod="close"`로 등록한다. 이 raw bean이 manager/executor lifecycle을
+   소유한다.
 2. template은 표준 `SqsAsyncClient`를 사용하지만 이를 닫지 않는다.
 3. `batch.enabled=true`일 때 template이 전용 `ScheduledExecutorService`와
    `SqsAsyncBatchManager`를 생성하고 소유한다.
 4. batching adapter를 `SqsAsyncClient` bean으로 등록하지 않는다.
 5. custom `SqsBatchOperations`가 있으면 template과 내부 manager/executor 생성을 모두
    back off한다.
-6. `MeterRegistry`와 원본 template이 있으면 `MicrometerSqsBatchOperations`를
-   `@Primary`로 추가한다. decorator가 수명 주기를 소유하거나 원본 template의 close를
-   대체하지 않는다.
+6. 두 default raw configuration만 internal `DefaultSqsBatchOperationsMarker` bean을 함께
+   등록한다. `MeterRegistry`, marker와 원본 template이 모두 있을 때만
+   `MicrometerSqsBatchOperations`를 `@Primary`로 추가한다. custom concrete
+   `SqsBatchCoroutinesTemplate`에는 marker가 없으므로 decorator가 생성되지 않는다.
+   decorator가 수명 주기를 소유하거나 원본 template의 close를 대체하지 않는다.
 
 일반 caller는 `SqsBatchOperations`를 주입해 Micrometer decorator를 받는다. raw
 template이 필요한 infrastructure/test만 concrete `SqsBatchCoroutinesTemplate` 타입을
@@ -533,11 +569,15 @@ template과 기본 decorator가 모두 back off하며 custom bean의 관측성�
 
 manager 생성은 internal `SqsBatchTransportFactory` seam으로 격리한다. scheduler 생성
 뒤 manager 생성이 실패하면 factory가 같은 stack에서 scheduler를 `shutdownNow()`하고
-종료를 확인한 뒤 startup failure를 다시 던진다. manager 생성 뒤 transport나 template
-조립이 실패하면 이미 만든 manager를 닫고 scheduler를 종료한 뒤 원래 startup failure를
-다시 던진다. 이 rollback cleanup의 실패는 원래 실패를 바꾸지 않고 component kind/count만
-운영 로그에 남긴다. fake transport/manager와 deterministic scheduler도 이 internal
-seam으로 주입하며 공개 `BatchExecutionStrategy`는 만들지 않는다.
+종료를 확인한다. manager 생성 뒤 transport나 template 조립이 실패하면 이미 만든 manager를
+닫고 scheduler를 종료한다. 두 경로 모두 raw startup/cleanup `Throwable` graph를 버리고
+`SqsBatchStartupException`을 한 번 만든 뒤 같은 safe exception identity만 상위 Spring
+경계까지 전달한다. 이 exception은 `SqsBatchStartupComponent { MANAGER, TRANSPORT,
+TEMPLATE }`와 deduplicated cleanup component kind/count만 보유하며 고정 message,
+`cause=null`, 빈 `suppressed`, 안전한 `toString()`을 사용한다. rollback cleanup 실패도 raw
+cause/message를 기록하지 않고 component kind/count만 운영 로그에 남긴다. fake
+transport/manager와 deterministic scheduler도 이 internal seam으로 주입하며 공개
+`BatchExecutionStrategy`는 만들지 않는다.
 
 `batch.enabled=false`에서도 `SqsBatchOperations` bean은 존재한다. 이 모드는
 `sendMessage`/`deleteMessage` 단건 future를 같은 bounded execution 경계에서 실행한다.
@@ -546,18 +586,26 @@ seam으로 주입하며 공개 `BatchExecutionStrategy`는 만들지 않는다.
 AWS SDK SQS의 지원 최소 버전은 `2.51.3`이다. manager 타입을 참조하는 구현은 internal
 batch transport class와 `enabled=true` 전용 nested configuration에만 둔다. 상위
 auto-configuration의 bean method signature, condition, field에는 manager 타입을 노출하지
-않아 direct mode가 해당 class를 link하지 않게 한다. direct mode classpath 테스트는 manager
-class를 숨긴 isolated classloader에서 전체 application context와 표준 transport가 시작되는지
-검증한다. `enabled=true`인데 manager class가 없으면 민감정보 없는 명시적 startup failure를
-낸다. 중앙 catalog보다 낮은 service SDK는 지원 범위가 아니다.
+않아 direct mode가 해당 class를 link하지 않게 한다. direct configuration은
+`enabled=false` 또는 missing property에서 활성화된다. enabled-manager-present configuration은
+`@ConditionalOnProperty(... havingValue="true")`와 manager `@ConditionalOnClass(name=...)`를
+함께 사용한다. 별도 manager-missing guard는 같은 property 조건,
+`@ConditionalOnMissingClass(name=...)`, `@ConditionalOnMissingBean(SqsBatchOperations::class)`를
+사용해 자원이나 raw template을 만들지 않고 safe `SqsBatchStartupException`을 던진다.
+direct mode classpath 테스트는 manager class를 숨긴 isolated classloader에서 전체
+application context와 표준 transport가 시작되는지 검증하고, enabled mode는 같은 loader에서
+명시적으로 실패하는지 검증한다. 중앙 catalog보다 낮은 service SDK는 지원 범위가 아니다.
 
 현재 listener message converter는 inbound payload 변환 책임만 가진다. outbound
 body converter나 공개 `BatchExecutionStrategy` SPI는 추가하지 않는다.
 
 ## 실행 흐름과 backpressure
 
-호출은 먼저 `snapshot = entries.toList()`를 만든 뒤 `snapshot.size`와 각 entry를
-검증하고, snapshot을 `maxInFlightEntries` 이하의 admission window로 나눈다. 각
+호출은 iterator에서 최대 `maxEntriesPerCall + 1`개까지만 읽는 bounded snapshot을
+첫 suspension 전에 만든다. `maxEntriesPerCall`을 넘으면 즉시 거부하며 나머지 입력은
+materialize하지 않고 외부 호출도 수행하지 않는다. 설정 상한은 `Int.MAX_VALUE`보다
+작게 제한해 `+ 1` overflow를 막는다. 허용된 snapshot의 entry ID와 request를 검증한 뒤
+`maxInFlightEntries` 이하의 admission window로 나눈다. 각
 window는 `supervisorScope` 아래 bounded child만 만들고, 각 child는 template 전역
 `Semaphore(maxInFlightEntries)` permit을 얻은 뒤 transport에 제출한다. child는 permit을
 얻자마자 lifecycle lock 아래에서 `OPEN`을 확인하고 caller entry ID와 무관한 단조 증가
@@ -600,16 +648,19 @@ batch가 최대 크기에 도달하지 못하는 설정을 조기에 거부한�
 - operation 입구에서 root caller cancellation을 `AtomicReference`로 한 번만 포착한다.
   caller job이 취소되면 suspend 함수는 그 원래 `CancellationException` 인스턴스를
   그대로 다시 던진다.
-- `CompletionStage.await()`의 kotlinx-coroutines 1.10.2 계약과 같이 아직 완료되지
-  않은 entry future에 `cancel(false)`를 요청한다. lifecycle thread를 interrupt하지
-  않는다.
+- internal cancellable await가 entry별 `cancelIfIncomplete()` atomic once guard를 소유한다.
+  caller cancellation handler, child `finally`, close-timeout cleanup은 이 함수만 통해 아직
+  완료되지 않은 future에 `cancel(false)`를 요청하므로 library가 시작하는 실제 호출은
+  정확히 한 번이다. stock
+  `CompletionStage.await()`와 별도 `finally` cancel을 함께 사용하지 않는다. lifecycle
+  thread를 interrupt하지 않는다.
 - caller job이 active인 상태에서 SDK future 자체가 `CancellationException`으로
   완료되면 caller cancellation로 오인하지 않고 해당 entry의 `TRANSPORT` failure로
   정규화한다. non-cancellation child failure도 sibling을 취소하지 않고 entry outcome으로
   바꾼다.
 - caller cancellation cleanup은 각 child의 `finally`에서 non-suspending registry 제거,
-  future `cancel(false)`, permit release를 정확히 한 번 수행한다. 필요한 suspend cleanup은
-  `NonCancellable`에서 실행하되 원래 caller cancellation을 교체하지 않는다.
+  guarded future cancel 요청, permit release를 정확히 한 번 수행한다. 필요한 suspend
+  cleanup은 `NonCancellable`에서 실행하되 원래 caller cancellation을 교체하지 않는다.
 - future 취소는 대기 중단 요청이며 이미 manager가 batch에 포함한 메시지의 전달을
   취소하거나 회수한다는 보장이 아니다.
 - 취소 경로는 partial result를 반환하지 않고 자동 retry나 보상 전송을 수행하지
@@ -621,15 +672,18 @@ batch가 최대 크기에 도달하지 못하는 설정을 조기에 거부한�
 `close()`를 사용한다. lifecycle state는 `OPEN`, `CLOSING`, `CLOSED`다.
 
 1. 명시적 `ReentrantLock` 아래에서 최초 caller만 `OPEN -> CLOSING`으로 바꾸고 신규
-   admission을 차단한다. 이때 accepted placeholder 스냅숏과 공유 `closeCompletion`의
-   owner를 정한다.
+   admission을 차단한다. 이때 close signal을 완료하고 accepted placeholder 스냅숏과 공유
+   `closeCompletion`의 owner를 정한다. permit 획득 대기 child는 permit과 close signal을
+   함께 기다리는 cancellable acquire gate를 사용한다. close가 먼저 선택되면 placeholder나
+   외부 submit 없이 종료하고, permit을 먼저 얻었더라도 lifecycle lock의 `OPEN` 검사에서
+   close와 선형화한다.
 2. 최초 caller는 `System.nanoTime()` 기준의 monotonic shutdown deadline을 한 번 만든다.
    각 drain/cleanup 대기 직전에 `max(0, deadlineNanos - System.nanoTime())`로 남은 시간을
    다시 계산하며 단계별 timeout을 새로 시작하지 않는다. lock 밖에서 placeholder가 future
    연결 또는 submit failure로 완료될 때까지 이 남은 시간만 사용한다.
 3. 정상 drain이면 manager close를 시작하고 scheduler를 `shutdown()`한다. timeout이면
-   남은 future에 `cancel(false)`를 요청한 뒤 manager close를 시작하고 scheduler를
-   `shutdownNow()`한다.
+   남은 future의 유일한 `cancelIfIncomplete()` 경계를 호출한 뒤 manager close를 시작하고
+   scheduler를 `shutdownNow()`한다.
 4. manager close는 close 시점에 만든 이름 있는 daemon cleanup thread에서 실행한다.
    이 thread는 모든 `Throwable`을 내부에서 포착해 raw cause/message를 버리고 manager
    cleanup component failure만 공유 상태에 기록하므로 timeout 뒤 늦게 실패해도 uncaught
@@ -649,7 +703,10 @@ batch가 최대 크기에 도달하지 못하는 설정을 조기에 거부한�
    않는다.
 
 외부 future 대기, `manager.close()`, executor 종료는 lock 안에서 호출하지 않는다.
-`Semaphore`와 lifecycle lock도 서로 중첩하지 않는다. 표준 `SqsAsyncClient`는 기존
+synchronization order는 permit 획득 후 짧은 lifecycle lock 임계 구역으로 한정한다.
+lifecycle lock을 가진 채 permit을 기다리는 역순 경로는 없고, permit과 lock을 함께 가진
+동안 suspension, completion signal, 외부 submit/cancel/close를 수행하지 않는다. 따라서
+순환 대기 없이 `OPEN` 확인과 placeholder 등록만 원자화한다. 표준 `SqsAsyncClient`는 기존
 auto-configuration 또는 caller가 소유하므로 template이 닫지 않는다.
 
 SDK manager의 `close()`가 pending future를 취소하므로 반드시 wrapper drain 뒤에만
@@ -690,7 +747,7 @@ active count, timeout 같은 낮은 cardinality 값을 사용하며 raw throwabl
 ## Micrometer
 
 `MeterRegistry`가 있으면 `MicrometerSqsBatchOperations`를 등록해 원본 template을
-감싼다. timer 이름은 기존 SQS meter naming을 따르되 `queueNameTag()`와 기존
+감싼다. timer 이름은 `bluetape4k.aws.sqs.batch.operation`이며 `queueNameTag()`와 기존
 exception tag helper를 재사용하지 않는다. tag key 집합은 정확히 다음으로 제한한다.
 
 - service: 고정값 `sqs`
@@ -700,6 +757,14 @@ exception tag helper를 재사용하지 않는다. tag key 집합은 정확히 �
 
 entry ID, queue URL, message ID, error message는 tag에 넣지 않는다. 성공/실패 entry
 수는 counter 또는 summary로 기록하되 호출별 고유 식별자는 생성하지 않는다.
+mode는 생성 시점의 transport mode를 그대로 사용한다. outcome은 다음처럼 고정한다.
+
+| 동작 | 결과/예외 | outcome |
+|---|---|---|
+| `send_many` + `RETURN` | `SUCCESS` / `PARTIAL_FAILURE` / `FAILURE` | `success` / `partial_failure` / `failure` |
+| `send_many` + `THROW` | success / mixed-result exception / all-failed exception | `success` / `partial_failure` / `failure` |
+| `delete_many` | `SUCCESS` / `PARTIAL_FAILURE` / `FAILURE` | `success` / `partial_failure` / `failure` |
+| 어느 동작이든 | caller cancellation / validation·protocol·lifecycle failure | `cancelled` / `failure` |
 
 ## 호환성과 migration
 
@@ -803,9 +868,12 @@ fake manager contract test를 기준 증거로 사용하고 emulator capability 
   않는다.
 - KDoc은 한국어로 작성하고 API name, 설정 key, exception type은 그대로 유지한다.
 - README/manual의 주입, YAML, `RETURN`/`THROW`, `deleteMany`, before/after 예제는
-  `SqsBatchDocumentationExampleTest` 안의 컴파일되는 canonical source region을 기준으로
-  작성한다. manual contract script는 각 Markdown fenced snippet을 이 region의 정규화한
-  source와 비교해 문서가 별도로 표류하지 않게 한다. 검증 명령은
+  `SqsBatchDocumentationExampleTest`의 `sqs-batch-kotlin` source region과
+  `src/test/resources/documentation/sqs-batch/application.yaml`을 기준으로 작성한다. 여섯
+  Markdown 문서는 `<!-- sqs-batch-kotlin:start|end -->`과
+  `<!-- sqs-batch-yaml:start|end -->` marker 사이에 fenced snippet을 둔다. manual contract
+  script는 Kotlin region에서 marker·공통 들여쓰기만 제거하고 YAML은 UTF-8/LF·끝 newline로
+  정규화해 각 fenced body와 exact compare한다. 검증 명령은
   `./gradlew :bluetape4k-aws-spring-boot:test --tests '*SqsBatchDocumentationExampleTest'`로
   컴파일 검증한다. `ruby scripts/manual/manual_contract_test.rb`로 locale/manual contract도
   검증한다.
@@ -856,6 +924,6 @@ fake manager contract test를 기준 증거로 사용하고 emulator capability 
 - [x] concurrency, cancellation, close와 resource ownership을 정의했다.
 - [x] 호환성, failure modes, 테스트, 문서와 제외 범위를 정의했다.
 - [x] 여섯 관점의 독립 spec review에서 P0=0/P1=0을 확인했다.
-- [ ] 사용자가 review 결과와 최종 명세를 승인한다.
+- [x] 사용자가 review 결과와 최종 명세를 승인했다.
 
-Final status: PENDING — 독립 spec review는 PASS했고 사용자 설계 승인이 남아 있다.
+Final status: DONE — 독립 spec review PASS와 사용자 설계 승인을 확인했다.
