@@ -33,7 +33,26 @@ dependencies {
 }
 ```
 
-AWS 서비스 SDK는 `compileOnly` 정책 때문에 실제 사용하는 모듈을 런타임 의존성으로 별도 추가해야 합니다.
+`aws-ktor`는 API aggregator이므로 게시된 POM이 Java/Kotlin wrapper, Ktor
+client core, public plugin에서 사용하는 AWS SDK 모듈을 노출합니다. 이 모듈은
+generated POM을 기준으로 의존성 소유권을 판단합니다.
+
+| 구분 | 게시 scope | 애플리케이션에서 할 일 |
+| --- | --- | --- |
+| Bluetape wrapper, Ktor core, public Java SDK 타입 | `compile` | `bluetape4k-aws-ktor`만 추가하고 `aws-ktor` plugin 설치만을 위해 wrapper나 서비스 SDK를 다시 선언하지 않음 |
+| AWS Kotlin DynamoDB public 타입 | `compile` | `DynamoDbKtorPlugin`에는 별도의 Kotlin DynamoDB SDK 선언이 필요하지 않음 |
+| Ktor engine, Jackson, Micrometer, Exposed, JDBC와 기타 runtime 선택 | `compileOnly` 또는 애플리케이션 소유 | 애플리케이션이 실제로 설치하는 통합과 driver만 추가 |
+
+하위 `bluetape4k-aws-java`와 `bluetape4k-aws-kotlin` wrapper 모듈에는 일반적인
+`compileOnly` 규칙이 적용됩니다. 그러나 그 규칙을 `aws-ktor` aggregator에
+그대로 적용하지 말고 현재 `build.gradle.kts`와 generated POM을 확인하세요.
+애플리케이션 코드가 `aws-ktor` plugin API 밖에서 SDK를 직접 호출할 때만
+서비스 SDK를 직접 선언하면 됩니다.
+
+선택 기준은 plugin API입니다. `SqsConsumer`를 비롯한 Java 서비스 plugin은
+AWS SDK for Java v2를 사용하고, `DynamoDbKtorPlugin`은 AWS Kotlin SDK를
+사용합니다. 두 SDK 선택 모두 aggregator의 transitive dependency에 이미
+반영되어 있습니다.
 
 ## 핵심 개념 {#concepts}
 
@@ -61,7 +80,11 @@ client와 백그라운드 작업의 소유자를 한 곳으로 정하고, region
 
 ## 연동 {#integrations}
 
-`bluetape4k-dependencies`를 통해 이 라이브러리를 추가하고, 설치할 plugin이 사용하는 Java 또는 Kotlin AWS 서비스 SDK만 더하세요.
+`bluetape4k-dependencies`를 통해 이 라이브러리를 추가하고, 애플리케이션이
+소유하는 runtime 통합만 더하세요. 기본 plugin이 사용하는 Java SQS와 Kotlin
+DynamoDB SDK 타입은 이미 transitive로 게시되므로, plugin 설치만을 위해
+서비스 SDK를 다시 추가할 필요가 없습니다. SDK를 직접 호출한다면 해당
+서비스 모듈을 명시적으로 선언할 수 있습니다.
 
 ## 설정 {#configuration}
 

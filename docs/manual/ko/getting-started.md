@@ -65,16 +65,21 @@ dependencies {
 }
 ```
 
-Ktor에서는 `bluetape4k-aws-ktor`로 SigV4, S3 REST 클라이언트, SQS 소비자, DynamoDB 저장소, CloudWatch, IMDS와 AWS 설정 기반 Exposed 연동을 구성한다. 설치할 플러그인이 요구하는 서비스 SDK도 함께 선언한다.
+Ktor에서는 `bluetape4k-aws-ktor`로 SigV4, S3 REST 클라이언트, SQS 소비자, DynamoDB 저장소, CloudWatch, IMDS와 AWS 설정 기반 Exposed 연동을 구성한다. 이 public plugin API가 사용하는 Java SQS와 Kotlin DynamoDB SDK 타입은 `aws-ktor`가 이미 transitive로 노출하므로, 애플리케이션이 소유하는 runtime 통합만 추가한다.
 
 ```kotlin
 dependencies {
     implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-ktor")
-    implementation("software.amazon.awssdk:sqs")
-    implementation("aws.sdk.kotlin:dynamodb")
+    implementation("io.ktor:ktor-server-core") // server plugin을 설치할 때
+    implementation("io.ktor:ktor-client-cio") // CIO client engine을 사용할 때
 }
 ```
+
+애플리케이션 코드가 `aws-ktor` plugin API 밖에서 SDK를 직접 호출할 때만
+`software.amazon.awssdk:sqs` 또는 `aws.sdk.kotlin:dynamodb`를 직접 선언한다.
+`bluetape4k-jackson3`, Micrometer, Exposed와 JDBC driver도 해당 선택적 통합을
+사용할 때만 추가한다.
 
 문법 취향보다는 설정과 자원의 수명 주기를 누가 맡는지 보고 선택해야 한다. [Spring Boot와 Ktor 비교](guides/spring-vs-ktor.md)에 차이를 정리했다.
 
