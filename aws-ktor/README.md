@@ -54,62 +54,46 @@ taking ownership away from the application.
 
 ## Dependency
 
-`aws-ktor` uses shared `bluetape4k-ktor-core` helpers for the common Ktor
-baseline and exposes Ktor client core, AWS auth, and the AWS service SDK types
-that appear in its public plugin/config APIs. Ktor engines, Jackson content
-negotiation, Micrometer, Exposed, and JDBC drivers remain explicit application
-dependencies where runtime choice matters.
+`aws-ktor` is an API aggregator. Its published POM exposes the Java/Kotlin
+wrappers, the AWS SDK modules used by its public plugin/configuration APIs, and
+Ktor client core transitively. This is intentionally different from the
+general `bluetape4k-aws-java` and `bluetape4k-aws-kotlin` wrapper rule, where
+service SDKs are normally `compileOnly` and are selected by the application.
+
+| Dependency group | `aws-ktor` POM contract | Application action |
+| --- | --- | --- |
+| Bluetape wrappers and shared Ktor helpers | `bluetape4k-aws-java`, `bluetape4k-aws-kotlin`, `bluetape4k-io`, `bluetape4k-coroutines`, and `bluetape4k-ktor-core` are `compile` dependencies | Add `bluetape4k-aws-ktor`; do not repeat these modules unless an explicit version override is required |
+| Java SDK public plugin types | AWS auth, CloudWatch/Logs, EventBridge, IMDS, Kinesis, S3 Control/Vectors, SES v2, SNS, SQS, and STS are `compile` dependencies | No extra Java service SDK is needed for the corresponding `aws-ktor` plugin |
+| Kotlin SDK public plugin types | AWS Kotlin DynamoDB is a `compile` dependency | No extra Kotlin DynamoDB SDK is needed for `DynamoDbKtorPlugin` |
+| Runtime choices and optional integrations | Ktor engines, content negotiation/Jackson, Micrometer, Exposed, JDBC drivers, and the Spring Boot BOM are `compileOnly` or application-owned | Add only the integration and runtime driver the application installs |
+
+The published scope is the source of truth: `api(...)` entries are present as
+`compile` dependencies in the generated POM, while `compileOnly(...)` entries
+are absent. Keep the central `bluetape4k-dependencies` catalog as the version
+owner for any dependency that the application adds directly.
 
 ```kotlin
 dependencies {
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-ktor:${bluetape4kAwsVersion}")
 
-    // SigV4/S3 client usage
+    // Runtime engine is application-owned.
     implementation("io.ktor:ktor-client-cio")
 
-    // S3 Access Grants plugin usage
+    // Add the server/runtime integration used by the application.
     implementation("io.ktor:ktor-server-core")
 
-    // S3 Vectors plugin usage
-    implementation("io.ktor:ktor-server-core")
-
-    // EventBridge plugin usage
-    implementation("io.ktor:ktor-server-core")
-
-    // Kinesis stream and record Flow usage
-    implementation("io.ktor:ktor-server-core")
-
-    // STS caller identity and temporary session usage
-    implementation("io.ktor:ktor-server-core")
-
-    // SQS consumer/publisher usage
-    implementation("io.ktor:ktor-server-core")
-
-    // EC2 IMDS metadata usage
-    implementation("io.ktor:ktor-server-core")
-
-    // CloudWatch metrics and CloudWatch Logs usage
-    implementation("io.ktor:ktor-server-core")
-
-    // SES v2 email usage
-    implementation("io.ktor:ktor-server-core")
-
-    // SNS topic, SMS, and HTTP endpoint message usage
-    implementation("io.ktor:ktor-server-core")
+    // Optional integrations are application-owned.
     implementation("io.github.bluetape4k:bluetape4k-jackson3:${bluetape4kVersion}")
-
-    // Optional Micrometer bridge for SQS/S3/CloudWatch Ktor helpers
     implementation("io.micrometer:micrometer-core")
-
-    // DynamoDB Ktor server usage
-    implementation("io.ktor:ktor-server-core")
-
-    // AWS-backed Exposed Ktor server usage
-    implementation("io.ktor:ktor-server-core")
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:${bluetape4kAwsVersion}")
     runtimeOnly("com.h2database:h2") // or the production JDBC driver
 }
 ```
+
+For example, `SqsConsumer` uses the transitive AWS Java SQS API, while
+`DynamoDbKtorPlugin` uses the transitive AWS Kotlin DynamoDB API. Add a service
+SDK explicitly only when application code calls that SDK directly or needs a
+runtime integration that `aws-ktor` deliberately leaves optional.
 
 ## Usage
 

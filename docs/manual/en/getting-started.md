@@ -65,16 +65,21 @@ dependencies {
 }
 ```
 
-Ktor applications use `bluetape4k-aws-ktor` for SigV4, S3 REST access, SQS consumers, DynamoDB repositories, CloudWatch, IMDS, and AWS-backed Exposed configuration. Add the service SDK required by the installed plugin.
+Ktor applications use `bluetape4k-aws-ktor` for SigV4, S3 REST access, SQS consumers, DynamoDB repositories, CloudWatch, IMDS, and AWS-backed Exposed configuration. The Java SQS and Kotlin DynamoDB SDK types used by these public plugin APIs are already exposed transitively by `aws-ktor`; add only application-owned runtime integrations.
 
 ```kotlin
 dependencies {
     implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-ktor")
-    implementation("software.amazon.awssdk:sqs")
-    implementation("aws.sdk.kotlin:dynamodb")
+    implementation("io.ktor:ktor-server-core") // when installing server plugins
+    implementation("io.ktor:ktor-client-cio") // when using the CIO client engine
 }
 ```
+
+Declare `software.amazon.awssdk:sqs` or `aws.sdk.kotlin:dynamodb` directly only
+when application code calls those SDKs outside the `aws-ktor` plugin API. Add
+`bluetape4k-jackson3`, Micrometer, Exposed, and a JDBC driver only for the
+corresponding optional integration.
 
 Use [Spring Boot or Ktor](guides/spring-vs-ktor.md) to choose by lifecycle and configuration ownership, not by syntax preference.
 
@@ -101,4 +106,3 @@ The default emulator is Floci. Use LocalStack only when the operation or integra
 - [Kotlin SDK module dependencies](../../../aws-kotlin/build.gradle.kts)
 - [Spring Boot module dependencies](../../../aws-spring-boot/build.gradle.kts)
 - [Ktor module dependencies](../../../aws-ktor/build.gradle.kts)
-

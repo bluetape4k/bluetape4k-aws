@@ -53,61 +53,47 @@ S3 Access Grants, S3 Vectors, EventBridge, Kinesis, STS, IMDS, CloudWatch, Cloud
 
 ## 의존성
 
-`aws-ktor`는 공통 Ktor baseline에 `bluetape4k-ktor-core` helper를 사용하고, Ktor
-client core, AWS auth, public plugin/config API에 등장하는 AWS service SDK 타입을
-노출합니다. Ktor engine, Jackson content negotiation, Micrometer, Exposed, JDBC driver는
-runtime 선택이 중요하므로 애플리케이션 의존성으로 명시합니다.
+`aws-ktor`는 API aggregator입니다. 게시된 POM은 Java/Kotlin wrapper, public
+plugin/configuration API에서 사용하는 AWS SDK 모듈, Ktor client core를
+transitive dependency로 노출합니다. 이는 서비스 SDK를 보통 `compileOnly`로
+두고 애플리케이션이 선택하는 일반적인 `bluetape4k-aws-java`·
+`bluetape4k-aws-kotlin` wrapper 규칙과 의도적으로 다릅니다.
+
+| 의존성 그룹 | `aws-ktor` POM 계약 | 애플리케이션에서 할 일 |
+| --- | --- | --- |
+| Bluetape wrapper와 공통 Ktor helper | `bluetape4k-aws-java`, `bluetape4k-aws-kotlin`, `bluetape4k-io`, `bluetape4k-coroutines`, `bluetape4k-ktor-core`가 `compile` 의존성 | `bluetape4k-aws-ktor`만 추가하고, 명시적인 버전 override가 필요하지 않으면 다시 선언하지 않음 |
+| Java SDK public plugin 타입 | AWS auth, CloudWatch/Logs, EventBridge, IMDS, Kinesis, S3 Control/Vectors, SES v2, SNS, SQS, STS가 `compile` 의존성 | 해당 `aws-ktor` plugin에는 별도의 Java 서비스 SDK를 추가하지 않음 |
+| Kotlin SDK public plugin 타입 | AWS Kotlin DynamoDB가 `compile` 의존성 | `DynamoDbKtorPlugin`에는 별도의 Kotlin DynamoDB SDK를 추가하지 않음 |
+| Runtime 선택과 선택적 통합 | Ktor engine, content negotiation/Jackson, Micrometer, Exposed, JDBC driver, Spring Boot BOM은 `compileOnly` 또는 애플리케이션 소유 | 애플리케이션이 설치하는 통합과 runtime driver만 추가 |
+
+게시된 scope가 기준입니다. `api(...)` 항목은 generated POM에 `compile`
+의존성으로 기록되고, `compileOnly(...)` 항목은 POM에서 빠집니다. 애플리케이션이
+직접 추가하는 의존성의 버전은 중앙 `bluetape4k-dependencies` catalog가
+소유하도록 유지하세요.
 
 ```kotlin
 dependencies {
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-ktor:${bluetape4kAwsVersion}")
 
-    // SigV4/S3 client 사용 시
+    // Runtime engine은 애플리케이션이 소유합니다.
     implementation("io.ktor:ktor-client-cio")
 
-    // S3 Access Grants plugin 사용 시
+    // 애플리케이션에서 사용하는 server/runtime 통합을 추가합니다.
     implementation("io.ktor:ktor-server-core")
 
-    // S3 Vectors plugin 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // EventBridge plugin 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // Kinesis stream 및 record Flow 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // STS caller identity 및 임시 session 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // SQS consumer/publisher 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // EC2 IMDS metadata 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // CloudWatch metrics 및 CloudWatch Logs 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // SES v2 email 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // SNS topic, SMS, HTTP endpoint message 사용 시
-    implementation("io.ktor:ktor-server-core")
+    // 선택적 통합은 애플리케이션이 소유합니다.
     implementation("io.github.bluetape4k:bluetape4k-jackson3:${bluetape4kVersion}")
-
-    // SQS/S3/CloudWatch Ktor helper용 선택적 Micrometer bridge
     implementation("io.micrometer:micrometer-core")
-
-    // DynamoDB Ktor server 사용 시
-    implementation("io.ktor:ktor-server-core")
-
-    // AWS-backed Exposed Ktor server 사용 시
-    implementation("io.ktor:ktor-server-core")
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:${bluetape4kAwsVersion}")
     runtimeOnly("com.h2database:h2") // 또는 운영 JDBC driver
 }
 ```
+
+예를 들어 `SqsConsumer`는 transitive AWS Java SQS API를 사용하고,
+`DynamoDbKtorPlugin`은 transitive AWS Kotlin DynamoDB API를 사용합니다.
+애플리케이션 코드가 해당 SDK를 직접 호출하거나 `aws-ktor`가 의도적으로
+선택 사항으로 둔 runtime 통합이 필요할 때만 서비스 SDK를 명시적으로
+추가하세요.
 
 ## 사용법
 
