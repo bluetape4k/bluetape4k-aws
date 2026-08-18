@@ -131,6 +131,9 @@ jobs:
       aws-spring-boot-exposed-examples: ${{ steps.filter.outputs.aws-spring-boot-exposed-examples }}
       aws-spring-boot-sqs-examples: ${{ steps.filter.outputs.aws-spring-boot-sqs-examples }}
       aws-spring-boot-dynamodb-examples: ${{ steps.filter.outputs.aws-spring-boot-dynamodb-examples }}
+      aws-ktor-s3-examples: ${{ steps.filter.outputs.aws-ktor-s3-examples }}
+      aws-ktor-sqs-examples: ${{ steps.filter.outputs.aws-ktor-sqs-examples }}
+      aws-ktor-dynamodb-examples: ${{ steps.filter.outputs.aws-ktor-dynamodb-examples }}
       aws-ktor-exposed-examples: ${{ steps.filter.outputs.aws-ktor-exposed-examples }}
       aws-ktor-service-coverage-examples: ${{ steps.filter.outputs.aws-ktor-service-coverage-examples }}
     steps:
@@ -172,6 +175,21 @@ jobs:
             aws-spring-boot-dynamodb-examples:
               - 'examples/aws-spring-boot-dynamodb-examples/**'
               - 'aws-spring-boot/**'
+            aws-ktor-s3-examples:
+              - 'examples/aws-ktor-s3-examples/**'
+              - 'aws-ktor/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
+            aws-ktor-sqs-examples:
+              - 'examples/aws-ktor-sqs-examples/**'
+              - 'aws-ktor/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
+            aws-ktor-dynamodb-examples:
+              - 'examples/aws-ktor-dynamodb-examples/**'
+              - 'aws-ktor/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-ktor-exposed-examples:
               - 'examples/aws-ktor-exposed-examples/**'
               - 'aws-exposed/**'
@@ -661,6 +679,72 @@ jobs:
           path: '**/build/test-results/test/*.xml'
           retention-days: 7
 
+  test-aws-ktor-emulator-examples:
+    name: Test / aws-ktor emulator examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, changes]
+    if: >-
+      ${{
+        needs.changes.outputs['aws-ktor-s3-examples'] == 'true' ||
+        needs.changes.outputs['aws-ktor-sqs-examples'] == 'true' ||
+        needs.changes.outputs['aws-ktor-dynamodb-examples'] == 'true' ||
+        github.event_name == 'workflow_dispatch'
+      }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5.7.0
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+          cache-provider: basic
+          cache-read-only: true
+      - name: Test Ktor emulator examples
+        run: |
+          set -euo pipefail
+
+          modules=(
+            aws-ktor-s3-examples
+            aws-ktor-sqs-examples
+            aws-ktor-dynamodb-examples
+          )
+
+          for module in "${modules[@]}"; do
+            echo "::group::${module} (Floci)"
+            if ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=floci --no-daemon --max-workers=1 --no-configuration-cache; then
+              echo "::endgroup::"
+              echo "- ${module}: Floci PASS" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            echo "::endgroup::"
+
+            echo "::warning::${module} failed with Floci; retrying once with LocalStack fallback"
+            echo "- ${module}: Floci FAIL; LocalStack fallback started" >> "$GITHUB_STEP_SUMMARY"
+            echo "::group::${module} (LocalStack fallback)"
+            if ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=localstack --no-daemon --max-workers=1 --no-configuration-cache; then
+              echo "::endgroup::"
+              echo "- ${module}: LocalStack fallback PASS" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::endgroup::"
+              echo "- ${module}: LocalStack fallback FAIL" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          done
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-aws-ktor-emulator-examples
+          path: '**/build/test-results/test/*.xml'
+          retention-days: 7
+
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
@@ -744,6 +828,7 @@ jobs:
       - test-aws-spring-boot-emulator-examples
       - test-aws-ktor-exposed-examples
       - test-aws-ktor-service-coverage-examples
+      - test-aws-ktor-emulator-examples
     if: always()
     steps:
       - name: Check all jobs
