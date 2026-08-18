@@ -42,6 +42,9 @@ env:
   GITLEAKS_VERSION: '8.30.1'
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   BLUETAPE4K_DEPENDENCIES_CATALOG_REF: '45235aa22184b6a2280f530fb90c82a94e31c59d'
+  # Retry once only for classified emulator/infra failures; preserve first-failure evidence.
+  BLUETAPE4K_RETRY_MAX_ATTEMPTS: '2'
+  BLUETAPE4K_RETRY_DELAY_SECONDS: '15'
 
 jobs:
   gitleaks:
@@ -138,6 +141,8 @@ jobs:
       aws-ktor-service-coverage-examples: ${{ steps.filter.outputs.aws-ktor-service-coverage-examples }}
     steps:
       - uses: actions/checkout@v7
+      - name: Test classified retry helper
+        run: python3 .github/scripts/run_gradle_with_classified_retry_test.py
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -165,16 +170,24 @@ jobs:
             aws-spring-boot-s3-examples:
               - 'examples/aws-spring-boot-s3-examples/**'
               - 'aws-spring-boot/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-spring-boot-exposed-examples:
               - 'examples/aws-spring-boot-exposed-examples/**'
               - 'aws-exposed/**'
               - 'aws-spring-boot/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-spring-boot-sqs-examples:
               - 'examples/aws-spring-boot-sqs-examples/**'
               - 'aws-spring-boot/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-spring-boot-dynamodb-examples:
               - 'examples/aws-spring-boot-dynamodb-examples/**'
               - 'aws-spring-boot/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-ktor-s3-examples:
               - 'examples/aws-ktor-s3-examples/**'
               - 'aws-ktor/**'
@@ -194,9 +207,13 @@ jobs:
               - 'examples/aws-ktor-exposed-examples/**'
               - 'aws-exposed/**'
               - 'aws-ktor/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
             aws-ktor-service-coverage-examples:
               - 'examples/aws-ktor-service-coverage-examples/**'
               - 'aws-ktor/**'
+              - '.github/workflows/ci.yml'
+              - '.github/scripts/**'
 
   catalog-governance:
     name: Central Catalog Governance
@@ -251,14 +268,11 @@ jobs:
           cache-provider: basic
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Build (compile only)
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew build -x test --parallel --no-configuration-cache && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew build -x test --parallel --no-configuration-cache
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+          BLUETAPE4K_RETRY_JOB: build
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/build
 
       - name: Validate publication POMs
         run: |
@@ -267,6 +281,14 @@ jobs:
           ./gradlew generatePomFileForBluetapeAwsPublication -PsnapshotVersion=-SNAPSHOT \
             --no-daemon --no-configuration-cache --no-build-cache
           ruby scripts/publication/validate_poms.rb
+
+      - name: Upload retry evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: retry-evidence-build
+          path: ci-retry-artifacts/build/
+          retention-days: 7
 
   test-aws:
     name: Test / aws
@@ -286,16 +308,13 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :bluetape4k-aws-java:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :bluetape4k-aws-java:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws
       - name: Generate Kover XML report
         if: always()
         run: ./gradlew :bluetape4k-aws-java:koverXmlReport --no-daemon
@@ -314,7 +333,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws/**
           retention-days: 7
 
   test-aws-kotlin:
@@ -335,16 +356,13 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws-kotlin
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :bluetape4k-aws-kotlin:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :bluetape4k-aws-kotlin:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws-kotlin
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-kotlin
       - name: Generate Kover XML report
         if: always()
         run: ./gradlew :bluetape4k-aws-kotlin:koverXmlReport --no-daemon
@@ -363,7 +381,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-kotlin
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-kotlin/**
           retention-days: 7
 
   test-aws-spring-boot:
@@ -384,16 +404,13 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws-spring-boot
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :bluetape4k-aws-spring-boot:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :bluetape4k-aws-spring-boot:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws-spring-boot
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-spring-boot
       - name: Generate Kover XML report
         if: always()
         run: ./gradlew :bluetape4k-aws-spring-boot:koverXmlReport --no-daemon
@@ -412,7 +429,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-spring-boot
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-spring-boot/**
           retention-days: 7
 
   test-aws-exposed:
@@ -433,16 +452,13 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws-exposed
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :bluetape4k-aws-exposed:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :bluetape4k-aws-exposed:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws-exposed
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-exposed
       - name: Generate Kover XML report
         if: always()
         run: ./gradlew :bluetape4k-aws-exposed:koverXmlReport --no-daemon
@@ -461,7 +477,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-exposed
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-exposed/**
           retention-days: 7
 
   test-aws-ktor:
@@ -482,16 +500,13 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws-ktor
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :bluetape4k-aws-ktor:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :bluetape4k-aws-ktor:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws-ktor
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-ktor
       - name: Generate Kover XML report
         if: always()
         run: ./gradlew :bluetape4k-aws-ktor:koverXmlReport --no-daemon
@@ -510,7 +525,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-ktor
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-ktor/**
           retention-days: 7
 
   test-aws-spring-boot-exposed-examples:
@@ -531,22 +548,21 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws-spring-boot-exposed-examples
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :aws-spring-boot-exposed-examples:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :aws-spring-boot-exposed-examples:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws-spring-boot-exposed-examples
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-spring-boot-exposed-examples
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-spring-boot-exposed-examples
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-spring-boot-exposed-examples/**
           retention-days: 7
 
   test-aws-spring-boot-emulator-examples:
@@ -583,17 +599,11 @@ jobs:
           )
 
           for module in "${modules[@]}"; do
-            echo "::group::${module} (Floci)"
-            if ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=floci --no-daemon; then
-              echo "::endgroup::"
-              continue
-            fi
-            echo "::endgroup::"
-
-            echo "::warning::${module} failed with Floci; retrying once with LocalStack fallback"
-            echo "::group::${module} (LocalStack fallback)"
-            ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=localstack --no-daemon
-            echo "::endgroup::"
+            export BLUETAPE4K_RETRY_JOB="${module}"
+            export BLUETAPE4K_RETRY_ARTIFACT_DIR="ci-retry-artifacts/${module}"
+            .github/scripts/run-gradle-with-classified-retry.sh \
+              --fallback-emulator localstack -- \
+              ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=floci --no-daemon
           done
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
@@ -604,7 +614,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-spring-boot-emulator-examples
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-spring-boot-s3-examples/**
+            ci-retry-artifacts/aws-spring-boot-sqs-examples/**
+            ci-retry-artifacts/aws-spring-boot-dynamodb-examples/**
           retention-days: 7
 
   test-aws-ktor-exposed-examples:
@@ -625,22 +639,21 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws-ktor-exposed-examples
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :aws-ktor-exposed-examples:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :aws-ktor-exposed-examples:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws-ktor-exposed-examples
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-ktor-exposed-examples
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-ktor-exposed-examples
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-ktor-exposed-examples/**
           retention-days: 7
 
   test-aws-ktor-service-coverage-examples:
@@ -661,22 +674,21 @@ jobs:
           cache-provider: basic
           cache-read-only: true
       - name: Test aws-ktor-service-coverage-examples
-        run: |
-          for attempt in 1 2 3 4 5; do
-            ./gradlew :aws-ktor-service-coverage-examples:test --no-daemon && break
-            echo "Attempt $attempt failed"
-            [ $attempt -lt 5 ] && sleep 30 || exit 1
-          done
+        run: .github/scripts/run-gradle-with-classified-retry.sh -- ./gradlew :aws-ktor-service-coverage-examples:test --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
           TESTCONTAINERS_RYUK_DISABLED: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          BLUETAPE4K_RETRY_JOB: aws-ktor-service-coverage-examples
+          BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-ktor-service-coverage-examples
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-ktor-service-coverage-examples
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-ktor-service-coverage-examples/**
           retention-days: 7
 
   test-aws-ktor-emulator-examples:
@@ -713,25 +725,11 @@ jobs:
           )
 
           for module in "${modules[@]}"; do
-            echo "::group::${module} (Floci)"
-            if ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=floci --no-daemon --max-workers=1 --no-configuration-cache; then
-              echo "::endgroup::"
-              echo "- ${module}: Floci PASS" >> "$GITHUB_STEP_SUMMARY"
-              continue
-            fi
-            echo "::endgroup::"
-
-            echo "::warning::${module} failed with Floci; retrying once with LocalStack fallback"
-            echo "- ${module}: Floci FAIL; LocalStack fallback started" >> "$GITHUB_STEP_SUMMARY"
-            echo "::group::${module} (LocalStack fallback)"
-            if ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=localstack --no-daemon --max-workers=1 --no-configuration-cache; then
-              echo "::endgroup::"
-              echo "- ${module}: LocalStack fallback PASS" >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "::endgroup::"
-              echo "- ${module}: LocalStack fallback FAIL" >> "$GITHUB_STEP_SUMMARY"
-              exit 1
-            fi
+            export BLUETAPE4K_RETRY_JOB="${module}"
+            export BLUETAPE4K_RETRY_ARTIFACT_DIR="ci-retry-artifacts/${module}"
+            .github/scripts/run-gradle-with-classified-retry.sh \
+              --fallback-emulator localstack -- \
+              ./gradlew ":${module}:test" -Dbluetape4k.aws.emulator=floci --no-daemon --max-workers=1 --no-configuration-cache
           done
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
@@ -742,7 +740,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-ktor-emulator-examples
-          path: '**/build/test-results/test/*.xml'
+          path: |
+            **/build/test-results/test/*.xml
+            ci-retry-artifacts/aws-ktor-s3-examples/**
+            ci-retry-artifacts/aws-ktor-sqs-examples/**
+            ci-retry-artifacts/aws-ktor-dynamodb-examples/**
           retention-days: 7
 
   coverage-report:
