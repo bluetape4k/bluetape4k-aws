@@ -28,6 +28,7 @@ import java.time.Duration
  * }
  * ```
  */
+@Suppress("TooManyFunctions")
 interface S3Operations {
 
     /**
