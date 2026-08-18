@@ -46,6 +46,7 @@ import java.time.Duration
  * }
  * ```
  */
+@Suppress("TooManyFunctions")
 class S3CoroutinesTemplate(
     private val s3AsyncClient: S3AsyncClient,
     private val s3Client: S3Client,
