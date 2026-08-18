@@ -699,6 +699,28 @@ converter is auto-registered when an `ObjectMapper` bean is present. Declaring
 retry, backoff, jitter, and `SqsListenerInterceptor` hooks cover production
 redelivery and observability scenarios.
 
+When an SNS topic fans out to SQS, the default Jackson converter recognizes the
+SNS `Notification` envelope. A listener can receive a typed
+`SnsNotification<OrderEvent>` and access the SNS subject, topic ARN, timestamp,
+signature metadata, SNS message attributes, and original `SqsReceivedMessage`:
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SnsNotification
+
+@SqsListener("\${orders.queue-url}")
+suspend fun handle(notification: SnsNotification<OrderEvent>) {
+    process(notification.message)
+    val topicArn = notification.topicArn
+    val sqsGroup = notification.sqs.messageGroupId
+}
+```
+
+Non-SNS bodies retain the existing SQS conversion path. A malformed
+`Notification` falls back to that path by default; use
+`SnsMalformedEnvelopeStrategy.THROW` when the listener must reject malformed
+envelopes. `SnsNotification.rawEnvelope` is preserved by default and can be
+disabled when the original JSON is not needed.
+
 ### KMS — Spring Boot Coroutines Encryptor
 
 KMS support is centered on `KmsOperations`. Auto-configuration registers the SDK

@@ -20,6 +20,7 @@ import kotlin.reflect.KVariance
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.valueParameters
 import kotlin.reflect.jvm.jvmErasure
+import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.kotlinFunction
 
 internal class SqsListenerMethodInvoker(
@@ -151,7 +152,7 @@ internal class SqsListenerMethodInvoker(
                             name = parameter.name,
                             rawType = parameter.type.jvmErasure.java,
                             kType = parameter.type,
-                            genericType = null,
+                            genericType = parameter.type.javaType,
                         )
                     }
                 } else {
@@ -271,7 +272,10 @@ internal class SqsListenerMethodInvoker(
             }
         }
 
-        data class Converted(val targetType: Class<*>): Parameter() {
+        data class Converted(
+            val targetType: Class<*>,
+            val genericType: Type?,
+        ): Parameter() {
             companion object {
                 private const val serialVersionUID: Long = 1L
             }
@@ -292,7 +296,7 @@ internal class SqsListenerMethodInvoker(
                 Acknowledgement -> acknowledgement
                 BatchAcknowledgement -> throw IllegalArgumentException("SqsBatchAcknowledgement requires batch=true")
                 is ListPayload -> throw IllegalArgumentException("batch=false does not accept List payload")
-                is Converted -> converter.convert(message, targetType)
+                is Converted -> converter.convert(message, targetType, genericType)
             }
 
         fun batchArgument(
@@ -318,7 +322,7 @@ internal class SqsListenerMethodInvoker(
                 else -> if (List::class.java.isAssignableFrom(spec.rawType)) {
                     ListPayload(spec.name, spec.kType, spec.genericType)
                 } else {
-                    Converted(spec.rawType)
+                    Converted(spec.rawType, spec.genericType)
                 }
             }
         }
