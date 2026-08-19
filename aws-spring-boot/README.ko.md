@@ -832,6 +832,28 @@ manual acknowledgement 모드가 되어 handler가 `acknowledge()`를 호출할 
 삭제합니다. `queue`에는 SpEL을 지원하지 않으며 `${...}` 플레이스홀더는 지원합니다.
 `bluetape4k.aws.sqs.queues.orders.url`을 설정하면 `queue = "orders"`는 해당 URL을
 직접 사용합니다.
+
+SNS topic을 SQS queue로 fanout하면 기본 Jackson converter가 SNS `Notification`
+envelope를 인식합니다. 리스너는 `SnsNotification<OrderEvent>`를 받아 SNS subject,
+topic ARN, timestamp, signature metadata, SNS message attributes와 원본
+`SqsReceivedMessage`를 함께 사용할 수 있습니다.
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SnsNotification
+
+@SqsListener("\${orders.queue-url}")
+suspend fun handle(notification: SnsNotification<OrderEvent>) {
+    process(notification.message)
+    val topicArn = notification.topicArn
+    val sqsGroup = notification.sqs.messageGroupId
+}
+```
+
+SNS envelope가 아닌 본문은 기존 SQS 변환 경로를 그대로 사용합니다. 손상된
+`Notification`은 기본적으로 기존 경로로 fallback하며, 손상된 envelope를 반드시 거부하려면
+`SnsMalformedEnvelopeStrategy.THROW`를 사용합니다. 원본 JSON은 기본적으로
+`SnsNotification.rawEnvelope`에 보존되며, 필요하지 않으면 보존 옵션을 끌 수 있습니다.
+
 리스너 ack는 성공 시 삭제 방식입니다. 리스너 메서드가 정상 반환된 뒤에만 메시지를
 삭제하고, 예외가 발생하면 삭제하지 않습니다. `error-visibility-timeout-seconds`를
 설정하면 실패 메시지의 visibility를 명시적으로 바꿔 재시도 타이밍을 제어합니다.
