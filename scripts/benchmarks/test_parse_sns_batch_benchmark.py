@@ -35,6 +35,14 @@ def record(
             "peakHeapBytes": {"score": 100, "rawData": [[100]]},
             "completedEntries": {"score": entry_count, "rawData": [[entry_count]]},
             "completedEntryIds": {"score": entry_count, "rawData": [[entry_count]]},
+            "observedChunks": {
+                "score": (entry_count + 9) // 10,
+                "rawData": [[(entry_count + 9) // 10]],
+            },
+            "resultEntries": {
+                "score": entry_count if scenario == "success" else 0,
+                "rawData": [[entry_count if scenario == "success" else 0]],
+            },
         },
     }
 
@@ -47,6 +55,8 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(row["latency"]["p95_ns"], 1200.0)
         self.assertEqual(row["cleanup"]["max_active"], 2.0)
         self.assertEqual(row["cleanup"]["completed_entry_id_observations"], 11.0)
+        self.assertEqual(row["cleanup"]["observed_chunk_observations"], 2.0)
+        self.assertEqual(row["cleanup"]["result_entry_observations"], 11.0)
 
     def test_combine_keeps_transport_retention_row_separate(self) -> None:
         summary = combine(
