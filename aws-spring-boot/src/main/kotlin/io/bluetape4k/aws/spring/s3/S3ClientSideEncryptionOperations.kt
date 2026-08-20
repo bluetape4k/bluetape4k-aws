@@ -1,15 +1,21 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.kms.KmsOperations
+import io.bluetape4k.aws.spring.sqs.SqsExtendedPayloadReadException
 import io.bluetape4k.support.requireNotBlank
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
+import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
+import java.security.MessageDigest
 import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -76,7 +82,22 @@ class S3ClientSideEncryptionTemplate(
     private val kmsOperations: KmsOperations,
     private val properties: S3Properties,
     private val random: SecureRandom = SecureRandom(),
-) : S3ClientSideEncryptionOperations {
+) : S3BoundedEncryptedReadOperations, S3ClientSideEncryptionIdentity {
+
+    override val canonicalKeyIdentity: String
+        get() = canonicalKeyIdentity()
+
+    override val keyFingerprint: String
+        get() {
+            val context = properties.clientSideEncryption.encryptionContext
+                .toSortedMap()
+                .entries
+                .joinToString(";") { (name, value) -> "$name=$value" }
+            val source = "bluetape4k.s3.cse.identity/v1\u0000$canonicalKeyIdentity\u0000$context"
+            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
+                MessageDigest.getInstance("SHA-256").digest(source.toByteArray(StandardCharsets.UTF_8)),
+            )
+        }
 
     override suspend fun uploadEncrypted(
         bucket: String,
@@ -147,6 +168,65 @@ class S3ClientSideEncryptionTemplate(
         )
 
         return decrypt(response.asByteArray(), plaintextKey, nonce)
+    }
+
+    override suspend fun downloadEncryptedBytesBounded(
+        bucket: String,
+        key: String,
+        encryptionContext: Map<String, String>,
+        maxCiphertextBytes: Int,
+    ): ByteArray {
+        require(maxCiphertextBytes in 1..S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
+            "maxCiphertextBytes must be between 1 and ${S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES}."
+        }
+        val publisher = s3AsyncClient.getObject(
+            { request ->
+                request.bucket(bucket)
+                request.key(key)
+            },
+            AsyncResponseTransformer.toPublisher(),
+        ).await()
+        val output = ByteArrayOutputStream(minOf(maxCiphertextBytes, 8 * 1024))
+        var size = 0
+        publisher.asFlow().collect { chunk ->
+            val copy = chunk.slice()
+            val chunkSize = copy.remaining()
+            if (chunkSize > maxCiphertextBytes - size) {
+                throw SqsExtendedPayloadReadException.create(pointerPresent = true, retryable = false)
+            }
+            val bytes = ByteArray(copy.remaining())
+            copy.get(bytes)
+            output.write(bytes)
+            size += chunkSize
+        }
+
+        val metadata = publisher.response().metadata()
+        val algorithm = metadata.requiredMetadata(METADATA_ALGORITHM)
+        require(algorithm == ENCRYPTION_ALGORITHM) {
+            "Unsupported S3 client-side encryption algorithm: $algorithm"
+        }
+        val encryptedKey = Base64.getDecoder().decode(metadata.requiredMetadata(METADATA_ENCRYPTED_KEY))
+        val keyId = metadata[METADATA_KEY_ID] ?: properties.clientSideEncryption.keyId
+        val nonce = Base64.getDecoder().decode(metadata.requiredMetadata(METADATA_NONCE))
+        val plaintextKey = kmsOperations.decrypt(
+            ciphertext = encryptedKey,
+            keyId = keyId,
+            encryptionContext = effectiveEncryptionContext(encryptionContext),
+        )
+        return decrypt(output.toByteArray(), plaintextKey, nonce)
+    }
+
+    private fun canonicalKeyIdentity(): String {
+        val value = requireNotNull(properties.clientSideEncryption.keyId) {
+            "client-side encryption keyId is required."
+        }
+        require(value.startsWith("arn:aws:kms:") && value.contains(":key/")) {
+            "client-side encryption keyId must be a canonical KMS key ARN."
+        }
+        require(value.none { it == '*' || it == '\r' || it == '\n' || it == '\u0000' }) {
+            "client-side encryption keyId must not contain wildcard or control characters."
+        }
+        return value
     }
 
     private fun effectiveEncryptionContext(

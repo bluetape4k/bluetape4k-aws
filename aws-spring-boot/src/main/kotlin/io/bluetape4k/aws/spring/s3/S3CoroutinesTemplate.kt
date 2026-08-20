@@ -4,9 +4,14 @@ import io.bluetape4k.aws.s3.existsBucket
 import io.bluetape4k.aws.s3.getAsByteArray
 import io.bluetape4k.aws.s3.putAsByteArray
 import io.bluetape4k.aws.s3.putAsString
+import io.bluetape4k.aws.spring.sqs.SqsExtendedPayloadReadException
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.future.await
+import software.amazon.awssdk.core.async.AsyncRequestBody
+import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
@@ -15,12 +20,18 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Object
+import software.amazon.awssdk.services.s3.model.S3Exception
+import java.io.ByteArrayOutputStream
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
 import java.net.URL
 import java.nio.charset.Charset
 import java.time.Duration
+
+private const val BOUNDED_SCRATCH_BUFFER_BYTES = 8 * 1024
+private const val HTTP_CONFLICT = 409
+private const val HTTP_PRECONDITION_FAILED = 412
 
 /**
  * Spring Boot 애플리케이션에서 S3 작업을 Coroutines API로 제공하는 기본 구현체.
@@ -52,7 +63,7 @@ class S3CoroutinesTemplate(
     private val s3Client: S3Client,
     private val s3Presigner: S3Presigner,
     private val properties: S3Properties,
-): S3Operations {
+): S3ObjectMetadataOperations, S3BoundedObjectReadOperations {
 
     override suspend fun existsBucket(bucket: String): Boolean =
         s3AsyncClient.existsBucket(bucket)
@@ -73,6 +84,73 @@ class S3CoroutinesTemplate(
             contentType = response.contentType(),
             lastModified = response.lastModified(),
         )
+    }
+
+    override suspend fun headObjectWithMetadata(bucket: String, key: String): S3HeadMetadata {
+        val response = s3AsyncClient.headObject(
+            HeadObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build(),
+        ).await()
+
+        return S3HeadMetadata(
+            sizeBytes = response.contentLength() ?: 0L,
+            etag = response.eTag(),
+            contentType = response.contentType(),
+            userMetadata = response.metadata().orEmpty().toMap(),
+        )
+    }
+
+    override suspend fun putObjectIfAbsentWithMetadata(
+        bucket: String,
+        key: String,
+        bytes: ByteArray,
+        contentType: String,
+        metadata: Map<String, String>,
+    ): S3PutIfAbsentResult {
+        try {
+            s3AsyncClient.putObject(
+                PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .contentType(contentType)
+                    .metadata(metadata)
+                    .ifNoneMatch("*")
+                    .build(),
+                AsyncRequestBody.fromBytes(bytes),
+            ).await()
+            return S3PutIfAbsentResult.Created
+        } catch (error: S3Exception) {
+            if (error.statusCode() == HTTP_CONFLICT || error.statusCode() == HTTP_PRECONDITION_FAILED) {
+                return S3PutIfAbsentResult.AlreadyExists(headObjectWithMetadata(bucket, key))
+            }
+            throw error
+        }
+    }
+
+    override suspend fun downloadBytesBounded(bucket: String, key: String, maxBytes: Int): ByteArray {
+        require(maxBytes in 1..S3BoundedObjectReadOperations.MAX_BYTES) {
+            "maxBytes must be between 1 and ${S3BoundedObjectReadOperations.MAX_BYTES}."
+        }
+        val publisher = s3AsyncClient.getObject(
+            GetObjectRequest.builder().bucket(bucket).key(key).build(),
+            AsyncResponseTransformer.toPublisher(),
+        ).await()
+        val output = ByteArrayOutputStream(minOf(maxBytes, BOUNDED_SCRATCH_BUFFER_BYTES))
+        var size = 0
+        publisher.asFlow().collect { chunk ->
+            val copy = chunk.slice()
+            val chunkSize = copy.remaining()
+            if (chunkSize > maxBytes - size) {
+                throw SqsExtendedPayloadReadException.create(pointerPresent = true, retryable = false)
+            }
+            val bytes = ByteArray(copy.remaining())
+            copy.get(bytes)
+            output.write(bytes)
+            size += chunkSize
+        }
+        return output.toByteArray()
     }
 
     override suspend fun upload(
