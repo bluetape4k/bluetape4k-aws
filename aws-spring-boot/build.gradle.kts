@@ -1,7 +1,70 @@
 plugins {
+    kotlin("plugin.allopen")
     alias(bt4k.plugins.kotlin.spring)
     alias(bt4k.plugins.kotlin.noarg)
+    alias(bt4k.plugins.kotlinx.benchmark)
     alias(bt4k.plugins.spring.boot) apply false
+}
+
+allOpen {
+    annotation("org.openjdk.jmh.annotations.State")
+}
+
+sourceSets {
+    create("benchmark")
+}
+
+kotlin {
+    target {
+        compilations.getByName("benchmark")
+            .associateWith(compilations.getByName("main"))
+    }
+}
+
+configurations {
+    named("benchmarkImplementation") {
+        extendsFrom(
+            configurations.getByName("implementation"),
+            configurations.getByName("compileOnly"),
+        )
+    }
+    named("benchmarkRuntimeOnly") {
+        extendsFrom(
+            configurations.getByName("runtimeOnly"),
+            configurations.getByName("testRuntimeOnly"),
+        )
+    }
+}
+
+benchmark {
+    targets {
+        register("benchmark") {
+            this as kotlinx.benchmark.gradle.JvmBenchmarkTarget
+            jmhVersion = bt4k.versions.managed.jmh.core.h350a653f63e5.get()
+        }
+    }
+    configurations {
+        register("snsBatchThroughput") {
+            include("io.bluetape4k.aws.spring.sns.SnsBatchBenchmark.publishBatch")
+            warmups = 1
+            iterations = 3
+            iterationTime = 1
+            iterationTimeUnit = "s"
+            mode = "thrpt"
+            outputTimeUnit = "s"
+            reportFormat = "json"
+        }
+        register("snsBatchLatency") {
+            include("io.bluetape4k.aws.spring.sns.SnsBatchBenchmark.publishBatch")
+            warmups = 1
+            iterations = 3
+            iterationTime = 1
+            iterationTimeUnit = "s"
+            mode = "avgt"
+            outputTimeUnit = "ns"
+            reportFormat = "json"
+        }
+    }
 }
 
 configurations {
@@ -114,6 +177,13 @@ dependencies {
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(bt4k.mockk)
     testImplementation(libs.awaitility.kotlin)
+
+    // Deterministic SNS batch benchmark source set
+    add("benchmarkImplementation", bt4k.kotlinx.benchmark.runtime)
+    add("benchmarkImplementation", bt4k.kotlinx.benchmark.runtime.jvm)
+    add("benchmarkImplementation", bt4k.jmh.core)
+    add("benchmarkImplementation", libs.aws2.sns)
+    add("benchmarkImplementation", libs.kotlinx.coroutines.core)
 }
 
 tasks.withType<Test>().configureEach {

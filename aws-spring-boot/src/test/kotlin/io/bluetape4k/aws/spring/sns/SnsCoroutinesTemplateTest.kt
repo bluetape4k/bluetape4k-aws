@@ -4,6 +4,8 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
 import io.mockk.coEvery
@@ -12,6 +14,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest
@@ -100,6 +105,46 @@ class SnsCoroutinesTemplateTest {
         result.failed.shouldBeEmpty()
         verify(exactly = 0) { client.publishBatch(any<PublishBatchRequest>()) }
         verify(exactly = 0) { client.publish(any<PublishRequest>()) }
+    }
+
+    @Test
+    fun `publishBatch caller cancellation preserves identity and cancels SDK future`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val futureStarted = CompletableDeferred<Unit>()
+        val sdkFuture = TrackingPublishBatchFuture()
+        every { client.publishBatch(any<PublishBatchRequest>()) } answers {
+            futureStarted.complete(Unit)
+            sdkFuture
+        }
+        val request = SnsPublishBatchRequest(
+            topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
+            entries = listOf(
+                SnsPublishBatchEntry(
+                    id = "entry-${Base58.randomString(16)}",
+                    message = "message-${Base58.randomString(16)}",
+                ),
+            ),
+        )
+        val cancellation = CancellationException("caller-${Base58.randomString(16)}")
+        val observed = CompletableDeferred<Throwable>()
+        val call = launch {
+            try {
+                template(client).publishBatch(request)
+            } catch (cause: Throwable) {
+                observed.complete(cause)
+            }
+        }
+
+        futureStarted.await()
+        call.cancel(cancellation)
+        call.join()
+
+        val actual = observed.await()
+        actual.cause shouldBeSameInstanceAs cancellation
+        sdkFuture.cancelled.shouldBeTrue()
+        sdkFuture.cancelArgument shouldBeEqualTo false
+        sdkFuture.isCancelled.shouldBeTrue()
+        verify(exactly = 1) { client.publishBatch(any<PublishBatchRequest>()) }
     }
 
     @Test
@@ -329,4 +374,17 @@ class SnsCoroutinesTemplateTest {
             value.dataType() shouldBeEqualTo "String"
             value.stringValue()
         }
+
+    private class TrackingPublishBatchFuture : CompletableFuture<PublishBatchResponse>() {
+        var cancelled: Boolean = false
+            private set
+        var cancelArgument: Boolean? = null
+            private set
+
+        override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
+            cancelled = true
+            cancelArgument = mayInterruptIfRunning
+            return super.cancel(mayInterruptIfRunning)
+        }
+    }
 }
