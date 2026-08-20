@@ -78,6 +78,8 @@ def parse_record(record: dict[str, Any]) -> dict[str, Any]:
     max_active_metric = metric(record, "maxActive")
     completed_metric = metric(record, "completedEntries")
     completed_ids_metric = metric(record, "completedEntryIds")
+    observed_chunks_metric = metric(record, "observedChunks")
+    result_entries_metric = metric(record, "resultEntries")
     peak_heap_metric = metric(record, "peakHeapBytes")
     alloc_metric = metric(record, "gc.alloc.rate.norm")
 
@@ -85,6 +87,8 @@ def parse_record(record: dict[str, Any]) -> dict[str, Any]:
     max_active = max(raw_values(max_active_metric), default=0.0) if max_active_metric else None
     completed_entries = max(raw_values(completed_metric), default=0.0) if completed_metric else None
     completed_entry_ids = max(raw_values(completed_ids_metric), default=0.0) if completed_ids_metric else None
+    observed_chunks = max(raw_values(observed_chunks_metric), default=0.0) if observed_chunks_metric else None
+    result_entries = max(raw_values(result_entries_metric), default=0.0) if result_entries_metric else None
     peak_heap = max(raw_values(peak_heap_metric), default=0.0) if peak_heap_metric else None
     allocation = finite_number(alloc_metric.get("score"), "gc.alloc.rate.norm.score") if alloc_metric else None
 
@@ -118,6 +122,8 @@ def parse_record(record: dict[str, Any]) -> dict[str, Any]:
             "max_active": max_active,
             "completed_entry_observations": completed_entries,
             "completed_entry_id_observations": completed_entry_ids,
+            "observed_chunk_observations": observed_chunks,
+            "result_entry_observations": result_entries,
             "pending_roots": None,
             "completed_entry_roots": None,
         },
@@ -207,6 +213,16 @@ def validate_complete_matrix(summary: dict[str, Any]) -> None:
             raise ValueError(f"active publisher cleanup failed for {row['key']}")
         if row["cleanup"]["max_active"] is not None and row["cleanup"]["max_active"] > row["max_in_flight"]:
             raise ValueError(f"maxInFlight bound failed for {row['key']}")
+        observed_chunks = row["cleanup"].get("observed_chunk_observations")
+        if observed_chunks is not None and observed_chunks > row["expected_chunks"]:
+            raise ValueError(f"chunk count exceeded expected chunks for {row['key']}")
+        if row["scenario"] == "success" and observed_chunks is not None and observed_chunks != row["expected_chunks"]:
+            raise ValueError(f"success chunk count mismatch for {row['key']}")
+        result_entries = row["cleanup"].get("result_entry_observations")
+        if result_entries is not None:
+            expected_results = float(row["entry_count"] if row["scenario"] == "success" else 0)
+            if result_entries != expected_results:
+                raise ValueError(f"result entry count mismatch for {row['key']}")
 
 
 def compare(candidate: dict[str, Any], baseline: dict[str, Any], minimum_improvement: float, regression_threshold: float) -> dict[str, Any]:
