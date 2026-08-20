@@ -26,6 +26,69 @@ consumer 수, long-poll 시간, 한 번에 받을 메시지 수, visibility time
 Secrets Manager, Parameter Store, S3 config loader는 환경 준비 단계에서 실행됩니다. 필수 source 조회가 실패하면 시작을 실패시키세요. 요청마다 AWS를 호출하지 말고 해석한 설정을 environment에 보관합니다.
 `bluetape4k.aws.enabled=false`로 설정하면 이 startup loader와 AWS 자동 구성이 함께 비활성화되어 설정된 원격 source에 접근하지 않습니다.
 
+## ConfigData import
+
+원격 source를 startup 시점에만 읽어야 한다면 Spring Boot ConfigData import를
+사용하세요.
+
+```properties
+spring.config.import=optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml,aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true,optional:aws-secretsmanager:application?prefix=app&format=json
+```
+
+같은 import를 YAML list로 선언할 수도 있습니다.
+
+```yaml
+spring:
+  config:
+    import:
+      - optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml
+      - aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true
+      - optional:aws-secretsmanager:application?prefix=app&format=json
+```
+
+지원하는 prefix는 `aws-s3:`, `aws-parameterstore:`,
+`aws-secretsmanager:`입니다. `optional:`은 해당 backend의 not-found 결과만
+억제합니다. 인증, network, parsing 및 그 밖의 service 오류는 startup 실패로
+남습니다. `bluetape4k.aws.enabled=false`는 SDK classpath 확인보다 먼저
+판정되므로, 비활성화하면 ConfigData가 AWS client를 만들지 않고 원격에도
+접근하지 않습니다. 로컬 emulator는 Floci를 우선 사용하고 LocalStack은 명시적인
+fallback으로 사용하세요. ConfigData는 runtime refresh를 수행하지 않습니다. 기존
+`EnvironmentPostProcessor` source는 기존 refresh와 precedence 동작을 계속
+제공합니다.
+
+### Import precedence
+
+| 상황 | 결과 |
+| --- | --- |
+| 하나의 comma-separated 또는 YAML list에서 뒤에 선언한 항목 | 뒤 import가 앞 값을 override합니다. |
+| profile-specific document | Spring Boot가 profile document를 선택하며 resolver는 원격 profile suffix를 붙이지 않습니다. |
+| import한 데이터와 import를 선언한 document | import한 데이터가 선언 document보다 우선합니다. |
+| legacy `EnvironmentPostProcessor` | refresh나 기존 property-source 순서가 필요하면 계속 사용합니다. |
+
+### Failure policy
+
+| 조건 | 필수 import | `optional:` import |
+| --- | --- | --- |
+| backend별 not-found | startup 실패 | import를 건너뜁니다. |
+| 인증, credential, network, parse 또는 `SecretString` 없음 | startup 실패 | startup 실패입니다. |
+| `bluetape4k.aws.enabled=false` 또는 backend 비활성 | client·network 호출 없는 빈 no-op source | 같은 동작입니다. |
+
+서비스별 region과 endpoint override가 공유 AWS 기본값보다 우선합니다. Web
+Identity를 활성화하면 STS와 설정한 role ARN, session name, 읽을 수 있는 token
+file이 모두 필요합니다. 설정이 잘못되면 default credential chain으로 우회하지 않고
+fail-closed합니다. ConfigData startup client는 application bean customizer를 자동으로
+찾지 않습니다. 필요하면 `BootstrapRegistryInitializer`에서
+`AwsSyncClientCustomizer`를 명시 등록하세요.
+
+### Legacy source에서 migration
+
+| 요구 사항 | 권장 경로 |
+| --- | --- |
+| startup 때 원격 값을 한 번 읽기 | `spring.config.import` ConfigData |
+| startup 이후 값 갱신 | 기존 `EnvironmentPostProcessor` 속성 |
+| 기존 legacy property-source winner 유지 | 기존 `EnvironmentPostProcessor` 속성 |
+| 없는 optional backend source만 건너뛰기 | 해당 location 앞에 `optional:` 추가 |
+
 ## Graceful shutdown
 
 새 요청을 막고 listener polling을 멈춘 다음 설정한 timeout까지 handler를 기다립니다. 그 뒤 소유한 서비스 client와 database pool 순서로 닫으세요. 같은 순서를 테스트에서도 검증해야 합니다.

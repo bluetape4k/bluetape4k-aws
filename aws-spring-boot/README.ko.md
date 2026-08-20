@@ -294,6 +294,26 @@ S3 config, Secrets Manager, Parameter Store source는 `EnvironmentPostProcessor`
 property-source 우선순위를 가집니다.
 `bluetape4k.aws.enabled=false`로 설정하면 AWS 자동 구성뿐 아니라 startup
 Environment source도 비활성화되어, 설정된 원격 source에 접근하지 않습니다.
+
+### ConfigData import
+
+Spring Boot ConfigData import는 `aws-s3:`, `aws-parameterstore:`,
+`aws-secretsmanager:` 위치를 startup 시점에 한 번 로드합니다. 예시는 다음과
+같습니다.
+
+```properties
+spring.config.import=optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml,aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true,optional:aws-secretsmanager:application?prefix=app&format=json
+```
+
+`optional:`은 backend별 not-found 결과만 건너뜁니다. 인증, network, parsing 및
+그 밖의 service 오류는 startup을 실패시킵니다. 같은
+`bluetape4k.aws.enabled=false` 설정은 ConfigData client 생성과 원격 접근도
+막습니다. 로컬 emulator는 Floci를 우선 사용하고, LocalStack은 명시적인 fallback으로
+사용하세요. ConfigData는 startup 전용이며 기존
+`EnvironmentPostProcessor` source의 refresh와 precedence 동작은 그대로 유지됩니다.
+전체 계약은 [runtime 운영 manual](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md)에서
+확인할 수 있습니다.
+
 `bluetape4k.aws.exposed.default-database.url`이 있을 때 Exposed registry가
 활성화됩니다. URL이 없으면 Exposed auto-configuration은 property binding만 제공하고
 registry나 database pool은 만들지 않습니다.

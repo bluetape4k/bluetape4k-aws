@@ -2,3 +2,11 @@ org.springframework.boot.EnvironmentPostProcessor=\
 io.bluetape4k.aws.spring.secretsmanager.SecretsManagerEnvironmentPostProcessor,\
 io.bluetape4k.aws.spring.s3.S3ConfigEnvironmentPostProcessor,\
 io.bluetape4k.aws.spring.parameterstore.ParameterStoreEnvironmentPostProcessor
+org.springframework.boot.context.config.ConfigDataLocationResolver=\
+io.bluetape4k.aws.spring.s3.S3ConfigDataLocationResolver,\
+io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLocationResolver,\
+io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLocationResolver
+org.springframework.boot.context.config.ConfigDataLoader=\
+io.bluetape4k.aws.spring.s3.S3ConfigDataLoader,\
+io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLoader,\
+io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLoader

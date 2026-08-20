@@ -306,6 +306,25 @@ multiple remote sources define the same key, the earlier configured source has
 higher Spring property-source precedence.
 Setting `bluetape4k.aws.enabled=false` disables these startup Environment sources
 as well as AWS auto-configuration, so configured remote sources are not accessed.
+
+### ConfigData imports
+
+Spring Boot ConfigData imports provide startup-only loading for `aws-s3:`,
+`aws-parameterstore:`, and `aws-secretsmanager:` locations. For example:
+
+```properties
+spring.config.import=optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml,aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true,optional:aws-secretsmanager:application?prefix=app&format=json
+```
+
+`optional:` skips only a backend-specific not-found result. Authentication,
+network, parsing, and other service failures still fail startup. The same
+`bluetape4k.aws.enabled=false` switch prevents ConfigData client creation and
+remote access. Floci is the preferred local emulator; use LocalStack only as an
+explicit fallback. ConfigData is startup-only, while the legacy
+`EnvironmentPostProcessor` sources retain their existing refresh and precedence
+behavior. See the [runtime operations manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md)
+for the complete contract.
+
 `bluetape4k.aws.exposed.default-database.url` activates the Exposed registry.
 If the URL is absent, the Exposed auto-configuration contributes only property
 binding and does not create a registry or database pool.
