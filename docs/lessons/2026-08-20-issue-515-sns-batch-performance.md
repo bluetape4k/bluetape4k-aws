@@ -51,6 +51,28 @@ rule을 적용했다. 따라서 winner는 없고 기준선 커밋과 benchmark h
 - 위 두 항목은 Issue #515의 후속 범위로 계속 추적하며, 이 lesson만으로 Issue #515를
   완료 또는 성능 개선 완료로 닫지 않는다.
 
+## Issue #529 Floci 후속 결과
+
+Issue [#529](https://github.com/bluetape4k/bluetape4k-aws/issues/529)에서 fake
+publisher 기준선을 실제 `SnsAsyncClient.publishBatch(...).await()` 호출과 분리해
+Floci로 재측정했다. `success`·`transport` 2개 시나리오와
+`entryCount={1,10,11,20,21,100}`, `maxInFlightBatches={1,2,4}`의 36셀을
+warm-up 1회·측정 3회로 실행했다.
+
+- run-id: `issue-529-floci-20260820-final`
+- 측정 커밋: `a83b6f5acf633bca114e66dbb8c92149f0d670d2`
+- 최대 p95: `29,370,375 ns`
+- 최대 peak heap sample: `69,161,008 bytes`
+- cleanup 위반: `0` (`activeAfter=0`, `maxActive<=maxInFlight`)
+
+이는 Floci backend에서 실제 SDK publisher 경계를 관측한 결과이며, fake 기준선과
+직접 합산하거나 운영 성능 개선율로 해석하지 않는다. 실제 AWS publisher, 실제 heap
+profile·allocation·장기 retention, 외부 mixed/protocol/cancellation 행렬은 여전히
+**PENDING**이다. 상세 실행 결과와 검토는
+[`Issue #529 lesson`](2026-08-20-issue-529-sns-real-publisher-measurement.md)과
+[`Issue #529 review`](../review/2026-08-20-issue-529-sns-real-publisher-measurement-review.md)에
+보존했다.
+
 ## 검증과 운영 방어선
 
 - parser unittest 5개, benchmark compile/jar, smoke benchmark, SNS Spring targeted

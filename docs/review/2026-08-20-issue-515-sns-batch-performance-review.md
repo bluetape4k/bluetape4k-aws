@@ -51,6 +51,23 @@ throughput 최소 개선과 heap guard가 실패했다. 각 결과는
 `tracking/baseline.json`을 마지막 유효 checkpoint로 보존한다. 다음 후보는 새
 approach family와 rollback 증거를 먼저 추가해야 한다.
 
+## Issue #529 Floci 후속 검토
+
+Issue [#529](https://github.com/bluetape4k/bluetape4k-aws/issues/529)는 위 fake
+기준선의 후속으로 실제 `SnsAsyncClient.publishBatch(...).await()` 호출을 Floci
+backend에 연결했다. 36셀 측정에서 `activeAfter=0`,
+`maxActive<=maxInFlight`, cleanup 위반 0을 확인했고, 최대 p95는
+`29,370,375 ns`, 최대 peak heap sample은 `69,161,008 bytes`였다. 결과는
+run-id `issue-529-floci-20260820-final`, commit
+`a83b6f5acf633bca114e66dbb8c92149f0d670d2`에 고정했다.
+
+Floci 결과는 fake 기준선과 publisher/backend 경계가 다르므로 winner나 운영 성능
+개선율을 선언하는 근거가 아니다. 실제 AWS publisher, heap profile·allocation·장기
+retention, 외부 mixed/protocol/cancellation 행렬은 아직 **PENDING**이며, 상세
+증거는 [`Issue #529 review`](2026-08-20-issue-529-sns-real-publisher-measurement-review.md)와
+[`Issue #529 lesson`](../lessons/2026-08-20-issue-529-sns-real-publisher-measurement.md)에
+보존했다.
+
 ## DoD Status
 
 - [x] 기준선·후보 raw evidence와 parser summary 보존
