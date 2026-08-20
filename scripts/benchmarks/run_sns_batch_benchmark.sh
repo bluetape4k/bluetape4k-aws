@@ -21,7 +21,10 @@ COMMON_ARGS=(
 "$ROOT_DIR/gradlew" :bluetape4k-aws-spring-boot:benchmarkBenchmarkJar \
     --no-daemon --max-workers=1 --no-configuration-cache \
     >"$RESULT_DIR/benchmark-build.log" 2>&1
-mapfile -t JARS < <(find "$JAR_DIR" -maxdepth 1 -type f -name '*-JMH.jar' -print | sort)
+JARS=()
+while IFS= read -r jar_path; do
+    JARS+=("$jar_path")
+done < <(find "$JAR_DIR" -maxdepth 1 -type f -name '*-JMH.jar' -print | sort)
 if [[ "${#JARS[@]}" -ne 1 ]]; then
     printf 'JMH jar를 정확히 하나 찾지 못했습니다: %s\n' "${#JARS[@]}" >&2
     exit 2
