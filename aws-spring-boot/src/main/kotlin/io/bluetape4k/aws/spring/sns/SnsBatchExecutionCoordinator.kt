@@ -19,6 +19,7 @@ private const val SNS_BATCH_SIZE: Int = 10
 internal class SnsBatchExecutionCoordinator<T>(
     private val publishChunk: suspend (topicArn: String, entries: List<SnsPublishBatchEntry>) -> T,
     private val mapChunk: (entries: List<SnsPublishBatchEntry>, response: T) -> SnsBatchChunkResult,
+    private val onCompletedEntryIds: (List<String>) -> Unit = {},
 ) {
 
     /**
@@ -47,6 +48,7 @@ internal class SnsBatchExecutionCoordinator<T>(
 
         suspend fun recordCompleted(ids: List<String>) {
             completedMutex.withLock { completedEntryIds += ids }
+            onCompletedEntryIds(ids)
         }
 
         return try {

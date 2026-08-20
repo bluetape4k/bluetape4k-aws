@@ -8,11 +8,13 @@ internal class SnsBatchExecutor(
         topicArn: String,
         entries: List<SnsPublishBatchEntry>,
     ) -> PublishBatchResponse,
+    onCompletedEntryIds: (List<String>) -> Unit = {},
 ) {
 
     private val coordinator = SnsBatchExecutionCoordinator(
         publishChunk = publishChunk,
         mapChunk = SnsBatchResponseMapper::map,
+        onCompletedEntryIds = onCompletedEntryIds,
     )
 
     suspend fun execute(

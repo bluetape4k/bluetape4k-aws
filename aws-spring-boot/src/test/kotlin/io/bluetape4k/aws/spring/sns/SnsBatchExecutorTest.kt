@@ -110,6 +110,28 @@ class SnsBatchExecutorTest {
     }
 
     @Test
+    fun `executor exposes completed id observation for success and transport retention comparison`() = runTest {
+        val batchRequest = request(20)
+        val successfulIds = CopyOnWriteArrayList<String>()
+        SnsBatchExecutor(
+            onCompletedEntryIds = { successfulIds.addAll(it) },
+            publishChunk = { _, entries -> successResponseFor(entries) },
+        ).execute(batchRequest, SnsBatchExecutionOptions(maxInFlightBatches = 2))
+
+        successfulIds shouldHaveSize batchRequest.entries.size
+
+        val transportIds = CopyOnWriteArrayList<String>()
+        assertFailsWith<SnsBatchTransportException> {
+            SnsBatchExecutor(
+                onCompletedEntryIds = { transportIds.addAll(it) },
+                publishChunk = { _, _ -> throw IllegalStateException("transport-${Base58.randomString(16)}") },
+            ).execute(batchRequest, SnsBatchExecutionOptions(maxInFlightBatches = 1))
+        }
+
+        transportIds.shouldBeEmpty()
+    }
+
+    @Test
     fun `executor bounds active workers and does not retry transport failures`() = runTest {
         val publisher = RecordingPublisher { entries ->
             if (entries.first().id.startsWith("entry-11-")) {
