@@ -1,0 +1,25 @@
+bluetape4k:
+  aws:
+    enabled: true
+    sqs:
+      region: ap-northeast-2
+      extended:
+        enabled: true
+        producer-enabled: true
+        consumer-enabled: true
+        shutdown-drain-timeout-seconds: 20
+        default-queue-urls:
+          - https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders
+        default-policy:
+          bucket: orders-extended-payloads
+          key-prefix: bluetape4k/sqs/orders
+          offload-threshold-bytes: 262144
+          max-inline-bytes: 1048576
+          max-offload-payload-bytes: 67108864
+          delete-on-ack: false
+          orphan-retention-hours: 168
+          minimum-visibility-timeout-seconds: 30
+          pointer-signing-key-ref: default
+        security:
+          pointer-signing-keys-base64-url:
+            default: replace-with-a-32-byte-base64url-secret

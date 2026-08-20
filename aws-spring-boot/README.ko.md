@@ -469,6 +469,39 @@ class OrderQueue(private val sqs: SqsOperations) {
 }
 ```
 
+### SQS Extended Client — S3 offload opt-in
+
+payload가 SQS `256 KiB` 제한을 넘을 수 있을 때 coroutine-native Extended
+Client를 명시적으로 활성화합니다. 작은 메시지는 기존 SQS body를 유지하고,
+큰 메시지는 인증된 S3 object pointer로 전달합니다.
+
+```yaml
+bluetape4k:
+  aws:
+    sqs:
+      extended:
+        enabled: true
+        producer-enabled: true
+        consumer-enabled: true
+        default-queue-urls:
+          - https://sqs.us-east-1.amazonaws.com/123456789012/orders
+        default-policy:
+          bucket: my-extended-payloads
+          key-prefix: bluetape4k/sqs/orders
+          pointer-signing-key-ref: orders
+          delete-on-ack: true
+```
+
+`SqsExtendedClientOperations`의 `send`, bounded `receive`/`receiveFlow`,
+identity-bound `acknowledge`, retry 가능한 `cleanup` handle을 사용합니다. 이
+pointer message가 들어오는 queue에 legacy `@SqsListener` consumer를 연결하면
+안 됩니다. 선택적 Jackson 3 module은 safe DTO field만 직렬화하며 raw AWS
+request, body, pointer, receipt handle은 직렬화하지 않습니다. client-side
+encryption은 Bluetape4k 전용 wire format이므로 AWS Java Extended Client와
+상호운용되지 않습니다. 외부 publisher latency·cleanup telemetry와
+heap/throughput 측정은 후속 이슈 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서
+추적합니다.
+
 ### SES — Simple, Template, Raw, JavaMail 발송
 
 ```kotlin

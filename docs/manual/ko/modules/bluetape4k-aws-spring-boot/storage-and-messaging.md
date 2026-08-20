@@ -78,6 +78,73 @@ failure가 `1%/5m`, retry exhaustion이 `0.1%/5m`, redelivery age p95가 visibil
 또는 DLQ visible count가 `0/5m` 기준을 넘으면 canary를 중단합니다. 온콜 owner는
 `bluetape4k-sqs-oncall`, release approval은 `bluetape4k-release-approvers`입니다.
 
+## SQS Extended Client
+
+Extended Client는 opt-in 기능입니다. 작은 메시지는 SQS 본문에 그대로 두고,
+threshold를 넘는 payload만 인증된 pointer 뒤의 S3 객체로 offload합니다.
+producer와 consumer gate는 분리되어 있지만, 배포 순서는 consumer 활성화와
+drain을 먼저 수행한 뒤 producer offload를 켜는 방식으로 고정하세요.
+
+```yaml
+bluetape4k:
+  aws:
+    sqs:
+      extended:
+        enabled: true
+        producer-enabled: true
+        consumer-enabled: true
+        default-queue-urls:
+          - https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders
+        default-policy:
+          bucket: orders-extended-payloads
+          key-prefix: bluetape4k/sqs/orders
+          offload-threshold-bytes: 262144
+          max-inline-bytes: 1048576
+          max-offload-payload-bytes: 67108864
+          orphan-retention-hours: 168
+          delete-on-ack: false
+          pointer-signing-key-ref: default
+```
+
+threshold를 넘는 payload는 `SqsExtendedClientOperations`에 idempotency key와
+함께 전달하세요. 수신한 extended message는 같은 identity-bound
+`SqsExtendedReceivedMessage` instance로만 acknowledge해야 합니다.
+`delete-on-ack`은 marker를 조건부로 생성·검증한 뒤 S3 payload를 삭제하며,
+삭제 실패 시 불투명한 retry handle을 반환합니다. 기본값은 lifecycle cleanup을
+위해 payload를 보존하므로 marker와 payload가 같은 prefix와 retention age를
+사용해야 합니다.
+
+지원되는 Jackson 3 module은 safe DTO 필드만 직렬화합니다. raw AWS
+request/response, pointer bucket/key/signature, receipt handle, encryption
+context, cleanup handle은 직렬화하지 않습니다. 일반 `@SqsListener` legacy
+consumer와 AWS Java Extended Client는 이 pointer 형식을 복원하지 않으므로
+extended pointer queue에 연결하지 마세요.
+
+선택적 client-side encryption은 기존 bounded S3 encryption capability를
+재사용하며 key identity와 context가 정확히 일치해야 합니다. 이 wire format은
+이 모듈 전용이며 AWS Java Extended Client와 상호운용되지 않습니다.
+
+rollback은 producer 비활성화, legacy consumer 중지, extended adapter drain,
+두 번의 visibility-window empty probe 순서로 수행합니다. `ApproximateReceiveCount`,
+`RedrivePolicy`, DLQ/quarantine count, 전체 rollback deadline을 확인한 뒤에만
+pointer를 inline legacy-safe queue로 rehydrate합니다. deadline 또는 redrive
+budget 실패는 `ROLLBACK_BLOCKED`로 고정하고 legacy consumer를 시작하지 않습니다.
+
+Floci 우선 로컬 검증 명령은 다음과 같습니다.
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests '*SqsExtendedClientAwsEmulatorTest' \
+  -Dbluetape4k.aws.emulator=floci --no-daemon
+```
+
+LocalStack은 명시적인 fallback으로만 사용합니다. 저카디널리티 counter는
+`bluetape4k.aws.sqs.extended.offload.total`, `...orphan.total`,
+`...payload-read.failure`, `...cleanup.failure` 네 개이며 queue URL,
+bucket/key, payload, diagnostic code는 tag에 넣지 않습니다. 외부 publisher
+latency·cleanup telemetry와 heap/throughput 측정은 후속 이슈 #515에서 추적하며
+이번 기능의 완료 근거로 주장하지 않습니다.
+
 ## SNS와 SES
 
 SNS publish와 HTTP parsing은 서로 다른 작업입니다. callback을 처리하기 전에 SNS 서명을 검증해야 합니다. SES sender는 coroutine과 JavaMail 방식 adapter를 제공하지만 멱등하지 않은 전송을 무작정 재시도하면 안 됩니다.

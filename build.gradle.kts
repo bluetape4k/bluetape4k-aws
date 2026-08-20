@@ -10,11 +10,14 @@ import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
 import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
@@ -23,6 +26,8 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+import java.security.MessageDigest
+import java.util.jar.JarFile
 import java.util.concurrent.TimeUnit
 
 abstract class VerifyDetektCoverage : DefaultTask() {
@@ -58,6 +63,101 @@ abstract class VerifyDetektCoverage : DefaultTask() {
         }
         require(mergedReport.get().asFile.isFile) {
             "Merged Detekt report was not created."
+        }
+    }
+}
+
+abstract class VerifyLegacyAbiTask : DefaultTask() {
+    @get:Internal
+    abstract val repositoryDirectory: DirectoryProperty
+
+    @get:Input
+    abstract val moduleDirectory: Property<String>
+
+    @get:Input
+    abstract val className: Property<String>
+
+    @get:Input
+    abstract val classEntry: Property<String>
+
+    @get:Input
+    abstract val fixturePath: Property<String>
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sourceFile: RegularFileProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val fixtureDirectory: DirectoryProperty
+
+    @get:OutputFile
+    abstract val reportFile: RegularFileProperty
+
+    private fun sha256Hex(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString("") { byte -> "%02x".format(byte) }
+
+    private fun normalizeJavap(output: String): String = output
+        .lineSequence()
+        .filterNot { line -> line.startsWith("Compiled from ") }
+        .filter { line -> line.isNotBlank() }
+        .joinToString("\n") { line -> line.trimEnd() }
+
+    @TaskAction
+    fun verifyLegacyAbi() {
+        val fixtureDirectory = fixtureDirectory.get().asFile
+        val repositoryDirectory = repositoryDirectory.get().asFile
+        val jar = File(repositoryDirectory, "${moduleDirectory.get()}/build/libs")
+            .listFiles { candidate -> candidate.extension == "jar" }
+            ?.toList()
+            ?.singleOrNull()
+            ?: error("Expected one ${moduleDirectory.get()} JAR under build/libs")
+        val sourceHash = sha256Hex(sourceFile.get().asFile.readBytes())
+        val expectedSourceHash = File(fixtureDirectory, "source.sha256").readText().trim()
+        require(sourceHash == expectedSourceHash) {
+            "${className.get()} source ABI changed: expected $expectedSourceHash, actual $sourceHash"
+        }
+        val bytecode = JarFile(jar).use { archive ->
+            val entry = archive.getJarEntry(classEntry.get())
+                ?: error("Missing ${classEntry.get()} in ${jar.name}")
+            archive.getInputStream(entry).use { it.readBytes() }
+        }
+        val bytecodeHash = sha256Hex(bytecode)
+        val expectedBytecodeHash = File(fixtureDirectory, "bytecode.sha256").readText().trim()
+        require(bytecodeHash == expectedBytecodeHash) {
+            "${className.get()} bytecode ABI changed: expected $expectedBytecodeHash, actual $bytecodeHash"
+        }
+        val javap = ProcessBuilder("javap", "-classpath", jar.absolutePath, "-public", className.get())
+            .redirectErrorStream(true)
+            .start()
+        val javapOutput = javap.inputStream.bufferedReader().use { it.readText() }
+        require(javap.waitFor() == 0) { "javap failed for ${className.get()}: $javapOutput" }
+        val expectedSignature = normalizeJavap(File(fixtureDirectory, "javap.txt").readText())
+        val actualSignature = normalizeJavap(javapOutput)
+        require(actualSignature == expectedSignature) {
+            "${className.get()} public signature changed.\nExpected:\n$expectedSignature\nActual:\n$actualSignature"
+        }
+        require("SqsExtended" !in actualSignature && "S3Extended" !in actualSignature) {
+            "Legacy ABI fixture unexpectedly references Issue #455 extension types"
+        }
+        reportFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(
+                groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(
+                        linkedMapOf(
+                            "issue" to 455,
+                            "className" to className.get(),
+                            "sourceSha256" to sourceHash,
+                            "bytecodeSha256" to bytecodeHash,
+                            "publicSignature" to "matched",
+                            "optionalSdkIsolation" to "legacy-signature-only",
+                            "fixture" to fixturePath.get(),
+                        ),
+                    ),
+                ) + "\n",
+            )
         }
     }
 }
@@ -604,6 +704,54 @@ val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixtu
         }
     }
 }
+
+data class LegacyAbiFixture(
+    val taskName: String,
+    val modulePath: String,
+    val moduleDirectory: String,
+    val className: String,
+    val sourcePath: String,
+    val fixturePath: String,
+    val classEntry: String,
+)
+
+fun registerLegacyAbiVerification(fixture: LegacyAbiFixture): TaskProvider<VerifyLegacyAbiTask> =
+    tasks.register<VerifyLegacyAbiTask>(fixture.taskName) {
+        description = "Verifies the Issue #455 legacy ABI fixture for ${fixture.className}."
+        group = "verification"
+        dependsOn("${fixture.modulePath}:jar")
+        moduleDirectory.set(fixture.moduleDirectory)
+        className.set(fixture.className)
+        classEntry.set(fixture.classEntry)
+        fixturePath.set(fixture.fixturePath)
+        repositoryDirectory.set(layout.projectDirectory)
+        sourceFile.set(layout.projectDirectory.file(fixture.sourcePath))
+        fixtureDirectory.set(layout.projectDirectory.dir(fixture.fixturePath))
+        reportFile.set(layout.buildDirectory.file("reports/abi/issue-455/${fixture.taskName}.json"))
+    }
+
+val verifySqsExtendedLegacyAbi = registerLegacyAbiVerification(
+    LegacyAbiFixture(
+        taskName = "verifySqsExtendedLegacyAbi",
+        modulePath = ":bluetape4k-aws-spring-boot",
+        moduleDirectory = "aws-spring-boot",
+        className = "io.bluetape4k.aws.spring.sqs.SqsOperations",
+        sourcePath = "aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsOperations.kt",
+        fixturePath = "src/abi-fixtures/sqs-pre-change",
+        classEntry = "io/bluetape4k/aws/spring/sqs/SqsOperations.class",
+    ),
+)
+val verifyS3ExtendedLegacyAbi = registerLegacyAbiVerification(
+    LegacyAbiFixture(
+        taskName = "verifyS3ExtendedLegacyAbi",
+        modulePath = ":bluetape4k-aws-spring-boot",
+        moduleDirectory = "aws-spring-boot",
+        className = "io.bluetape4k.aws.spring.s3.S3Operations",
+        sourcePath = "aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3Operations.kt",
+        fixturePath = "src/abi-fixtures/s3-pre-change",
+        classEntry = "io/bluetape4k/aws/spring/s3/S3Operations.class",
+    ),
+)
 
 tasks.named("check") {
     dependsOn(compileAwsKtorSqsConsumerFixture)

@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
  * 데코레이터는 카디널리티가 낮은 작업 타이머를 기록하고 모든 SQS 동작을 감싼 [delegate]에 위임합니다.
  */
 @Suppress("TooManyFunctions")
-class MicrometerSqsOperations(
+open class MicrometerSqsOperations(
     private val delegate: SqsOperations,
     private val meterRegistry: MeterRegistry,
     private val meterName: String = DEFAULT_METER_NAME,
@@ -167,3 +167,9 @@ class MicrometerSqsOperations(
         }
     }
 }
+
+/** 전체 SQS request 필드를 유지하는 template-bound Micrometer wrapper입니다. */
+class MicrometerFullRequestSqsOperations(
+    delegate: SqsFullRequestOperations,
+    meterRegistry: MeterRegistry,
+): MicrometerSqsOperations(delegate, meterRegistry), SqsFullRequestOperations
