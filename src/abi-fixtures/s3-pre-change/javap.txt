@@ -1,0 +1,23 @@
+public interface io.bluetape4k.aws.spring.s3.S3Operations {
+  public default java.lang.Object headObject(java.lang.String, java.lang.String, kotlin.coroutines.Continuation<? super io.bluetape4k.aws.spring.s3.S3ObjectMetadata>);
+  public static java.lang.Object headObject$suspendImpl(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, kotlin.coroutines.Continuation<? super io.bluetape4k.aws.spring.s3.S3ObjectMetadata>);
+  public abstract java.lang.Object existsBucket(java.lang.String, kotlin.coroutines.Continuation<? super java.lang.Boolean>);
+  public abstract java.lang.Object upload(java.lang.String, java.lang.String, byte[], java.lang.String, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.s3.model.PutObjectResponse>);
+  public static java.lang.Object upload$default(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, byte[], java.lang.String, kotlin.coroutines.Continuation, int, java.lang.Object);
+  public abstract java.lang.Object upload(java.lang.String, java.lang.String, java.lang.String, java.nio.charset.Charset, java.lang.String, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.s3.model.PutObjectResponse>);
+  public static java.lang.Object upload$default(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, java.lang.String, java.nio.charset.Charset, java.lang.String, kotlin.coroutines.Continuation, int, java.lang.Object);
+  public abstract java.lang.Object downloadBytes(java.lang.String, java.lang.String, kotlin.coroutines.Continuation<? super byte[]>);
+  public abstract java.lang.Object downloadText(java.lang.String, java.lang.String, java.nio.charset.Charset, kotlin.coroutines.Continuation<? super java.lang.String>);
+  public static java.lang.Object downloadText$default(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, java.nio.charset.Charset, kotlin.coroutines.Continuation, int, java.lang.Object);
+  public abstract java.lang.Object delete(java.lang.String, java.lang.String, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.s3.model.DeleteObjectResponse>);
+  public abstract java.lang.Object listPage(java.lang.String, java.lang.String, int, java.lang.String, kotlin.coroutines.Continuation<? super io.bluetape4k.aws.spring.s3.S3ListPage>);
+  public static java.lang.Object listPage$default(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, int, java.lang.String, kotlin.coroutines.Continuation, int, java.lang.Object);
+  public abstract kotlinx.coroutines.flow.Flow<software.amazon.awssdk.services.s3.model.S3Object> listFlow(java.lang.String, java.lang.String, int);
+  public static kotlinx.coroutines.flow.Flow listFlow$default(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, int, int, java.lang.Object);
+  public abstract io.bluetape4k.aws.spring.s3.S3Resource resource(java.lang.String, java.lang.String);
+  public abstract java.net.URL presignGet(java.lang.String, java.lang.String, java.time.Duration);
+  public static java.net.URL presignGet$default(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, java.time.Duration, int, java.lang.Object);
+  public abstract java.net.URL presignPut(java.lang.String, java.lang.String, java.time.Duration, java.lang.String);
+  public static java.net.URL presignPut$default(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, java.time.Duration, java.lang.String, int, java.lang.Object);
+  public static java.lang.Object access$headObject$jd(io.bluetape4k.aws.spring.s3.S3Operations, java.lang.String, java.lang.String, kotlin.coroutines.Continuation);
+}

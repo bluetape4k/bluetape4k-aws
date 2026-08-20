@@ -485,6 +485,39 @@ class OrderQueue(private val sqs: SqsOperations) {
 }
 ```
 
+### SQS Extended Client — opt-in S3 offload
+
+Enable the coroutine-native Extended Client explicitly when payloads can exceed
+the SQS `256 KiB` limit. Small messages keep the existing SQS body; larger
+messages are authenticated pointers to an S3 object.
+
+```yaml
+bluetape4k:
+  aws:
+    sqs:
+      extended:
+        enabled: true
+        producer-enabled: true
+        consumer-enabled: true
+        default-queue-urls:
+          - https://sqs.us-east-1.amazonaws.com/123456789012/orders
+        default-policy:
+          bucket: my-extended-payloads
+          key-prefix: bluetape4k/sqs/orders
+          pointer-signing-key-ref: orders
+          delete-on-ack: true
+```
+
+Use `SqsExtendedClientOperations` for `send`, bounded `receive`/`receiveFlow`,
+identity-bound `acknowledge`, and retryable `cleanup` handles. The legacy
+`@SqsListener` consumer must not be attached to a queue carrying these pointer
+messages. The optional Jackson 3 module serializes safe DTO fields only; raw
+AWS requests, bodies, pointers, and receipt handles are never serialized.
+Client-side encryption is an opt-in Bluetape4k wire format and is not
+interoperable with the AWS Java Extended Client library. External publisher
+latency/cleanup telemetry and heap/throughput measurements remain tracked in
+follow-up issue [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
+
 ### SES — simple, template, raw, and JavaMail sends
 
 ```kotlin

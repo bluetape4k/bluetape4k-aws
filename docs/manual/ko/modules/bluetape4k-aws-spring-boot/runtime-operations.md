@@ -30,6 +30,38 @@ Secrets Manager, Parameter Store, S3 config loader는 환경 준비 단계에서
 
 새 요청을 막고 listener polling을 멈춘 다음 설정한 timeout까지 handler를 기다립니다. 그 뒤 소유한 서비스 client와 database pool 순서로 닫으세요. 같은 순서를 테스트에서도 검증해야 합니다.
 
+## Extended Client 종료와 rollback
+
+`SqsExtendedClientLifecycle`은 관리되는 AWS client보다 먼저 실행됩니다.
+drain timeout은 `shutdown-drain-timeout-seconds`와 Spring shutdown phase 예산의
+범위 안에 있어야 합니다. timeout이 나면 client를 닫지 않고 실행 중 상태와
+제한된 진단을 보존하므로 명시적인 stop 재시도를 수행할 수 있습니다.
+
+rollback coordinator는 producer 비활성화, legacy consumer 중지, extended
+작업 drain, 최대 visibility/retry window 동안 두 번의 empty raw probe 순서를
+지킵니다(`max=1`, `visibility=0`, `wait=0`). malformed 또는 소진된
+`RedrivePolicy`/DLQ budget은 거부하고, quarantine pointer를 inline message로
+rehydrate한 뒤 count와 idempotency를 검증해야 legacy consumer를 시작합니다.
+pointer가 다시 나타나도 전체 rollback deadline은 늘어나지 않습니다.
+`DEADLINE_EXCEEDED` 또는 `REDRIVE_BUDGET_EXHAUSTED`는
+`ROLLBACK_BLOCKED`로 남기며 extended pointer queue에서 `@SqsListener`를
+시작하지 않습니다.
+
+최소 권한 정책은 대상 queue와 payload prefix에만 한정합니다.
+
+```json
+{
+  "Action": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage"],
+  "Resource": "arn:aws:sqs:ap-northeast-2:123456789012:orders"
+}
+```
+
+`s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`는
+`arn:aws:s3:::orders-extended-payloads/bluetape4k/sqs/orders/*`에만 추가하세요.
+암호화 정책은 정확한 CMK ARN과 encryption-context 조건의
+`kms:GenerateDataKey`, `kms:Decrypt`가 추가로 필요합니다. wildcard 또는
+다른 bucket/key/CMK identity는 설정 검증에서 거부합니다.
+
 ## 운영 점검표
 
 - 배포 환경과 region·endpoint가 맞는가
@@ -38,6 +70,8 @@ Secrets Manager, Parameter Store, S3 config loader는 환경 준비 단계에서
 - 재시도 예산이 제한되어 있는가
 - metric·로그에 비밀 값과 높은 cardinality 식별자가 없는가
 - 로컬 기본 emulator는 Floci이고 LocalStack은 명시적 fallback인가
+- 외부 publisher latency·cleanup telemetry와 heap/throughput 측정은 후속 이슈
+  #515가 담당하며 Extended Client 완료 근거로 포함하지 않았는가
 
 ## 근거 자료
 

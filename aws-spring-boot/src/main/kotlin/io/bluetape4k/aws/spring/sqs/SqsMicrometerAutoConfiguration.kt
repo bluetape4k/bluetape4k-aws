@@ -26,11 +26,32 @@ class SqsMicrometerAutoConfiguration {
     @Primary
     @ConditionalOnBean(value = [MeterRegistry::class, SqsCoroutinesTemplate::class])
     @ConditionalOnMissingBean(MicrometerSqsOperations::class)
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.sqs.extended",
+        name = ["enabled"],
+        havingValue = "false",
+        matchIfMissing = true,
+    )
     fun micrometerSqsOperations(
         sqsCoroutinesTemplate: SqsCoroutinesTemplate,
         meterRegistry: MeterRegistry,
     ): MicrometerSqsOperations =
         MicrometerSqsOperations(sqsCoroutinesTemplate, meterRegistry)
+
+    @Bean
+    @Primary
+    @ConditionalOnBean(value = [MeterRegistry::class, SqsCoroutinesTemplate::class])
+    @ConditionalOnMissingBean(MicrometerFullRequestSqsOperations::class)
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.sqs.extended",
+        name = ["enabled"],
+        havingValue = "true",
+    )
+    fun micrometerFullRequestSqsOperations(
+        sqsCoroutinesTemplate: SqsCoroutinesTemplate,
+        meterRegistry: MeterRegistry,
+    ): MicrometerFullRequestSqsOperations =
+        MicrometerFullRequestSqsOperations(sqsCoroutinesTemplate, meterRegistry)
 
     @Bean
     @ConditionalOnBean(MeterRegistry::class)
