@@ -8,7 +8,8 @@
 ## 기준과 범위
 
 - 구현 전 기준 HEAD: `3b1d4e2525d665fcc12bcc95edff95df80693efe`
-- `origin/develop` merge-base: `91feafa97fd289d0dbd22f59d7a518bb80b8143c`
+- 구현 시점 `origin/develop` merge-base: `91feafa97fd289d0dbd22f59d7a518bb80b8143c`
+- 최신 `origin/develop` 기준 `1.0.0` commit `7e97398f`를 구현 후 non-FF merge로 반영했다.
 - 설계: `docs/superpowers/specs/2026-08-20-issue-467-configdata-design.md`
 - 계획: `docs/superpowers/plans/2026-08-20-issue-467-configdata-plan.md`
 - 독립 review: `docs/review/2026-08-20-issue-467-configdata-spec-review.md`,
@@ -82,6 +83,7 @@ recursive + decryption, Secrets Manager JSON/prefix를 순차 검증했다. Dock
 | 명령 | 결과 |
 | --- | --- |
 | `./gradlew :bluetape4k-aws-spring-boot:test --no-configuration-cache` | **539 passing** |
+| 최신 `origin/develop` sync 후 `./gradlew :bluetape4k-aws-spring-boot:test detekt --no-configuration-cache` | **539 passing**, BUILD SUCCESSFUL |
 | `./gradlew :bluetape4k-aws-spring-boot:compileKotlin --no-configuration-cache` | 성공 |
 | `./gradlew detekt --no-configuration-cache` | 성공 |
 | `ruby scripts/manual/manual_contract_test.rb` | **9 runs, 44 assertions, 0 failures** |
@@ -103,6 +105,7 @@ recursive + decryption, Secrets Manager JSON/prefix를 순차 검증했다. Dock
 SDK 없는 경계는 다음 명령으로 확인했다.
 
 ```text
+jars: aws-spring-boot/build/libs/bluetape4k-aws-spring-boot-1.0.0.jar
 jdeps -v -filter:none -include '.*AwsConfigDataBootstrapBridge.*' <jar>
 jdeps -v -filter:none -include '.*AwsConfigDataSupport.*' <jar>
 ```
@@ -132,8 +135,9 @@ bootstrap customizer 경계에만 존재한다. Gradle dependency 선언 변경�
 
 ## Rollback checkpoint
 
-구현 변경은 계획·설계 문서 커밋과 분리한 단일 ConfigData 구현 커밋
-(`HEAD`, 최종 보고에서 실제 SHA를 기록)으로 묶었다.
+구현 변경은 계획·설계 문서 커밋과 분리한 단일 ConfigData 구현 커밋으로 묶었고,
+이후 최신 `origin/develop`의 `1.0.0` 기준을 별도 non-FF merge commit으로
+반영했다.
 별도 detached rollback worktree에서 이 커밋을 `revert --no-commit`한 상태로
 다음 legacy 회귀를 실행했다.
 
@@ -153,7 +157,7 @@ rollback worktree는 원래 커밋으로 복원하여 제거했고 구현 worktr
 - 계획 1–3: **완료**
 - 계획 4 RED→GREEN 구현 및 검증: **완료**
 - 계획 5/6 문서·emulator·전체 테스트·detekt·ABI: **완료**
-- 구현 commit 및 rollback checkpoint: **완료** (현재 `HEAD`, legacy 16 passing)
+- 구현 commit 및 rollback checkpoint: **완료** (implementation commit + baseline sync merge, legacy 16 passing)
 - PR/CI/exact-head/merge: **대기** (사용자 merge 승인 별도)
 - 최종 상태: **PENDING** — 로컬 구현·검증과 rollback은 GREEN이며, PR delivery gate가 남아 있다.
 
