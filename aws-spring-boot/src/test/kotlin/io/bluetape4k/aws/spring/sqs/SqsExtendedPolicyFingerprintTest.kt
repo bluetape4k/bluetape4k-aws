@@ -12,7 +12,7 @@ class SqsExtendedPolicyFingerprintTest {
         val queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/${Base58.randomString(16)}"
         val base = SqsExtendedClientProperties.Policy(
             bucket = "bucket-${Base58.randomString(16)}",
-            keyPrefix = "bluetape4k/sqs",
+            keyPrefix = "extended/payloads",
             configuredSqsRetentionSeconds = 14 * 3_600,
             configuredMaxVisibilityRetryWindowSeconds = 7 * 3_600,
             rollbackDeadlineSeconds = 24 * 3_600,
