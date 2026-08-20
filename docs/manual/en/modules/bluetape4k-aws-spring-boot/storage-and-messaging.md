@@ -79,6 +79,73 @@ exceed `1%/5m`, retry exhaustion exceeds `0.1%/5m`, redelivery age p95 exceeds `
 or DLQ visible count is non-zero. The on-call owner is `bluetape4k-sqs-oncall` and release approval
 belongs to `bluetape4k-release-approvers`.
 
+## SQS Extended Client
+
+The Extended Client is opt-in. It keeps small messages inline and stores larger
+payloads in S3 behind an authenticated pointer. The producer and consumer gates
+are independent, but enable the consumer and drain it before enabling producer
+offload during a rollout.
+
+```yaml
+bluetape4k:
+  aws:
+    sqs:
+      extended:
+        enabled: true
+        producer-enabled: true
+        consumer-enabled: true
+        default-queue-urls:
+          - https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders
+        default-policy:
+          bucket: orders-extended-payloads
+          key-prefix: bluetape4k/sqs/orders
+          offload-threshold-bytes: 262144
+          max-inline-bytes: 1048576
+          max-offload-payload-bytes: 67108864
+          orphan-retention-hours: 168
+          delete-on-ack: false
+          pointer-signing-key-ref: default
+```
+
+Use `SqsExtendedClientOperations` with an idempotency key for payloads above
+the threshold. A received extended message must be acknowledged through the
+same identity-bound `SqsExtendedReceivedMessage` instance. `delete-on-ack`
+creates and verifies a marker before deleting the S3 payload; a failed delete
+returns an opaque retry handle. The default keeps payloads for lifecycle
+cleanup, so the S3 marker and payload must share a prefix and retention age.
+
+The supported Jackson 3 module serializes only safe DTO fields. It does not
+serialize raw AWS requests/responses, pointer bucket/key/signature, receipt
+handles, encryption context, or cleanup handles. An ordinary `@SqsListener`
+legacy consumer and the AWS Java Extended Client do not restore this pointer
+format; do not attach either to an extended pointer queue.
+
+Optional client-side encryption reuses the existing bounded S3 encryption
+capability and requires an exact key identity/context match. Its wire format is
+local to this module and is not interoperable with the AWS Java Extended Client.
+
+For rollback, disable the producer, stop the legacy consumer, drain the
+extended adapter, and wait for two empty visibility-window probes. Verify
+`ApproximateReceiveCount`, `RedrivePolicy`, DLQ/quarantine counts, and the
+global rollback deadline before rehydrating pointers into an inline legacy-safe
+queue. A deadline or redrive-budget failure remains `ROLLBACK_BLOCKED` and does
+not start the legacy consumer.
+
+The Floci-first local check is:
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests '*SqsExtendedClientAwsEmulatorTest' \
+  -Dbluetape4k.aws.emulator=floci --no-daemon
+```
+
+Use LocalStack only as an explicit fallback. The low-cardinality counters are
+`bluetape4k.aws.sqs.extended.offload.total`, `...orphan.total`,
+`...payload-read.failure`, and `...cleanup.failure`; queue URLs, bucket/key,
+payload, and diagnostic codes are never tags. External publisher latency and
+cleanup telemetry, plus heap/throughput measurements, are tracked separately
+in follow-up issue #515 and are not completion evidence for this feature.
+
 ## SNS and SES
 
 SNS publish helpers and HTTP parsing are separate concerns. Verify SNS signatures before processing callbacks. SES senders expose coroutine and JavaMail-style adapters; do not retry non-idempotent sends blindly.

@@ -699,6 +699,44 @@ converter is auto-registered when an `ObjectMapper` bean is present. Declaring
 retry, backoff, jitter, and `SqsListenerInterceptor` hooks cover production
 redelivery and observability scenarios.
 
+#### SQS Extended Client
+
+The opt-in Extended Client keeps messages up to the configured threshold inline
+and stores larger payloads in S3 behind an authenticated pointer. Enable the
+consumer and complete a drain before enabling producer offload:
+
+```yaml
+bluetape4k:
+  aws:
+    sqs:
+      extended:
+        enabled: true
+        producer-enabled: true
+        consumer-enabled: true
+        default-queue-urls:
+          - https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders
+        default-policy:
+          bucket: orders-extended-payloads
+          key-prefix: bluetape4k/sqs/orders
+          offload-threshold-bytes: 262144
+          max-offload-payload-bytes: 67108864
+          orphan-retention-hours: 168
+          delete-on-ack: false
+          pointer-signing-key-ref: default
+```
+
+Use `SqsExtendedClientOperations` with an idempotency key and acknowledge the
+same identity-bound `SqsExtendedReceivedMessage` instance. The safe Jackson 3
+module omits raw AWS models, pointer location/signature, receipt handles, and
+cleanup handles. This pointer format is not restored by a plain `@SqsListener`
+or the AWS Java Extended Client. Rollback waits for drain and two empty
+visibility-window probes, verifies redrive/DLQ and retention gates, and leaves
+the legacy consumer stopped on `ROLLBACK_BLOCKED`.
+
+The four low-cardinality counters never use queue URL, bucket/key, payload, or
+diagnostic code as tags. External publisher latency/cleanup telemetry and
+heap/throughput measurements remain tracked in follow-up issue #515.
+
 When an SNS topic fans out to SQS, the default Jackson converter recognizes the
 SNS `Notification` envelope. A listener can receive a typed
 `SnsNotification<OrderEvent>` and access the SNS subject, topic ARN, timestamp,

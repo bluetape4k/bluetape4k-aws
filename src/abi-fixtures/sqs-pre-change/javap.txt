@@ -1,0 +1,23 @@
+public interface io.bluetape4k.aws.spring.sqs.SqsOperations {
+  public abstract java.lang.Object getQueueUrl(java.lang.String, kotlin.coroutines.Continuation<? super java.lang.String>);
+  public abstract java.lang.Object createQueue(java.lang.String, java.util.Map<software.amazon.awssdk.services.sqs.model.QueueAttributeName, java.lang.String>, kotlin.coroutines.Continuation<? super java.lang.String>);
+  public static java.lang.Object createQueue$default(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, java.util.Map, kotlin.coroutines.Continuation, int, java.lang.Object);
+  public abstract java.lang.Object createConfiguredQueue(java.lang.String, kotlin.coroutines.Continuation<? super java.lang.String>);
+  public abstract java.lang.Object send(java.lang.String, java.lang.String, java.lang.Integer, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.sqs.model.SendMessageResponse>);
+  public static java.lang.Object send$default(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, java.lang.String, java.lang.Integer, kotlin.coroutines.Continuation, int, java.lang.Object);
+  public default java.lang.Object send(io.bluetape4k.aws.spring.sqs.SqsSendRequest, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.sqs.model.SendMessageResponse>);
+  public static java.lang.Object send$suspendImpl(io.bluetape4k.aws.spring.sqs.SqsOperations, io.bluetape4k.aws.spring.sqs.SqsSendRequest, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.sqs.model.SendMessageResponse>);
+  public abstract java.lang.Object receive(java.lang.String, int, int, java.lang.Integer, kotlin.coroutines.Continuation<? super java.util.List<io.bluetape4k.aws.spring.sqs.SqsReceivedMessage>>);
+  public static java.lang.Object receive$default(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, int, int, java.lang.Integer, kotlin.coroutines.Continuation, int, java.lang.Object);
+  public abstract java.lang.Object delete(java.lang.String, java.lang.String, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.sqs.model.DeleteMessageResponse>);
+  public default java.lang.Object deleteBatch(java.lang.String, java.util.Collection<java.lang.String>, kotlin.coroutines.Continuation<? super io.bluetape4k.aws.spring.sqs.SqsBatchDeleteResult>);
+  public static java.lang.Object deleteBatch$suspendImpl(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, java.util.Collection<java.lang.String>, kotlin.coroutines.Continuation<? super io.bluetape4k.aws.spring.sqs.SqsBatchDeleteResult>);
+  public abstract java.lang.Object changeVisibility(java.lang.String, java.lang.String, int, kotlin.coroutines.Continuation<? super software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse>);
+  public default java.lang.Object changeVisibilityBatch(java.lang.String, java.util.Collection<io.bluetape4k.aws.spring.sqs.SqsChangeVisibilityRequest>, kotlin.coroutines.Continuation<? super io.bluetape4k.aws.spring.sqs.SqsBatchVisibilityResult>);
+  public static java.lang.Object changeVisibilityBatch$suspendImpl(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, java.util.Collection<io.bluetape4k.aws.spring.sqs.SqsChangeVisibilityRequest>, kotlin.coroutines.Continuation<? super io.bluetape4k.aws.spring.sqs.SqsBatchVisibilityResult>);
+  public abstract kotlinx.coroutines.flow.Flow<io.bluetape4k.aws.spring.sqs.SqsReceivedMessage> receiveFlow(java.lang.String, int, int, java.lang.Integer);
+  public static kotlinx.coroutines.flow.Flow receiveFlow$default(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, int, int, java.lang.Integer, int, java.lang.Object);
+  public static java.lang.Object access$send$jd(io.bluetape4k.aws.spring.sqs.SqsOperations, io.bluetape4k.aws.spring.sqs.SqsSendRequest, kotlin.coroutines.Continuation);
+  public static java.lang.Object access$deleteBatch$jd(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, java.util.Collection, kotlin.coroutines.Continuation);
+  public static java.lang.Object access$changeVisibilityBatch$jd(io.bluetape4k.aws.spring.sqs.SqsOperations, java.lang.String, java.util.Collection, kotlin.coroutines.Continuation);
+}

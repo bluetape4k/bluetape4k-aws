@@ -687,6 +687,44 @@ Typed listener payload는 `SqsMessageConverter`가 처리합니다. Jackson 3
 backoff, jitter, `SqsListenerInterceptor` hook으로 redelivery와 observability
 흐름을 구성할 수 있습니다.
 
+#### SQS Extended Client
+
+opt-in Extended Client는 설정한 threshold 이하의 메시지를 inline으로 보내고,
+더 큰 payload를 인증된 pointer 뒤의 S3 객체로 offload합니다. producer offload를
+켜기 전에 consumer를 활성화하고 drain을 완료하세요.
+
+```yaml
+bluetape4k:
+  aws:
+    sqs:
+      extended:
+        enabled: true
+        producer-enabled: true
+        consumer-enabled: true
+        default-queue-urls:
+          - https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders
+        default-policy:
+          bucket: orders-extended-payloads
+          key-prefix: bluetape4k/sqs/orders
+          offload-threshold-bytes: 262144
+          max-offload-payload-bytes: 67108864
+          orphan-retention-hours: 168
+          delete-on-ack: false
+          pointer-signing-key-ref: default
+```
+
+`SqsExtendedClientOperations`에는 idempotency key를 전달하고 동일한
+identity-bound `SqsExtendedReceivedMessage` instance로 acknowledge하세요.
+지원되는 Jackson 3 module은 raw AWS model, pointer 위치·signature, receipt
+handle, cleanup handle을 직렬화하지 않습니다. 일반 `@SqsListener`와 AWS Java
+Extended Client는 이 pointer 형식을 복원하지 않습니다. rollback은 drain과
+두 번의 visibility-window empty probe, redrive/DLQ와 retention gate를 확인하며
+`ROLLBACK_BLOCKED`이면 legacy consumer를 중지한 채 유지합니다.
+
+네 개의 저카디널리티 counter에는 queue URL, bucket/key, payload,
+diagnostic code를 tag로 넣지 않습니다. 외부 publisher latency·cleanup
+telemetry와 heap/throughput 측정은 후속 이슈 #515에서 추적합니다.
+
 ### KMS — Spring Boot Coroutines Encryptor
 
 KMS 지원의 중심은 `KmsOperations`입니다. Auto-configuration은 SDK client,
