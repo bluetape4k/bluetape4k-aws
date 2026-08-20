@@ -169,11 +169,23 @@ spring:
    supplier나 close listener를 다시 추가하지 않는다.
 
 Resource는 backend, source, optional, bound properties, safe property-source
-name을 불변 값으로 보관한다. `equals`/`hashCode`는
+name을 불변 값으로 보관한다. query key는 사전순으로 정렬한 canonical serializer를
+사용한다. `equals`/`hashCode`는
 `(backend, canonical decoded source, query options, optional)`만 사용하고
 bound properties, client instance, raw identifier, deferred logger는 identity에
 포함하지 않는다. `toString`도 opaque identity와 query key만 출력한다.
 Resolver는 startup metadata만 만들고 원격 I/O는 loader 단계까지 미룬다.
+
+Spring SPI generic 경계는 공통 public `AwsConfigDataResource` 하나로 고정한다.
+세 resolver는 `ConfigDataLocationResolver<AwsConfigDataResource>`를, 세 loader는
+`ConfigDataLoader<AwsConfigDataResource>`를 구현한다. Resolver constructor는
+Spring Boot가 지원하는 `DeferredLogFactory`, `Binder`,
+`ConfigurableBootstrapContext`만 받고, loader constructor는
+`DeferredLogFactory`, `ConfigurableBootstrapContext`만 받는다. SDK 없는
+classpath에서도 `spring.factories`가 이 SPI를 먼저 읽을 수 있도록 concrete
+SPI descriptor에는 SDK type을 넣지 않고 SDK adapter는 classpath guard 이후에
+지연 로드한다. `AwsConfigDataResource`는 Spring SPI carrier일 뿐 소비자 확장
+API가 아니며, constructor와 backend/query 내부 모델은 internal로 둔다.
 
 ### Loader
 
@@ -183,7 +195,7 @@ Resolver는 startup metadata만 만들고 원격 I/O는 loader 단계까지 미�
    client 생성과 네트워크 호출이 없다.
 2. 활성 resource면 `ConfigDataLoaderContext`의 Bootstrap client를 가져와
    기존 `*PropertySourceLoader`의 `internal load(client, source,
-   strictPolicy)` 단일-source 경계에 전달한다. 기존 EPP용 `load(properties)`
+   failurePolicy)` 단일-source 경계에 전달한다. 기존 EPP용 `load(properties)`
    facade는 client 생성·legacy policy를 유지하고, ConfigData adapter만
    injectable client와 strict policy를 사용한다. 같은 backend의 여러 import는
    하나의 client를 공유한다.
@@ -205,8 +217,20 @@ Resolver는 startup metadata만 만들고 원격 I/O는 loader 단계까지 미�
 
 서비스별 region/endpoint가 있으면 전역 `bluetape4k.aws` 값보다 우선한다.
 endpoint override에는 region이 필요하다는 기존 검증을 유지한다. Bootstrap
-단계에서는 기존 AWS SDK default credential chain을 사용하고, 이미 제공되는
-web identity 설정을 해석할 수 있는 공통 helper를 재사용한다.
+단계에서는 SDK type이 없는 bridge가 classpath를 먼저 확인하고, 통과한 경우에만
+서비스 adapter가 client를 lazy 생성한다. web identity가 활성인 경우에는
+role ARN/session/token file을 검증한 provider를 사용하며 잘못된 설정은
+default chain으로 fallback하지 않고 fail-closed한다. 비활성일 때만 기존 AWS
+SDK default credential chain을 사용한다. Web identity provider를 만들기 전
+STS class 존재도 확인하며, 없으면 provider를 만들지 않고 sanitized dependency
+failure를 반환한다. client holder가 실제로 생성한 instance만 bootstrap close
+listener에서 한 번 닫는다.
+
+Resolver/loader와 disabled path가 참조하는 `AwsConfigDataSupport`와
+`AwsConfigDataBootstrapBridge`에는 AWS SDK import, typed builder, customizer
+descriptor, static initializer를 두지 않는다. SDK 의존 adapter는 문자열 class
+name으로 guard를 통과한 뒤에만 `Class.forName`으로 로드한다. 이 transitive
+reachability 경계는 filtered ClassLoader와 `jdeps`/bytecode 확인으로 검증한다.
 
 애플리케이션 bean customizer는 아직 ApplicationContext가 만들어지기 전인
 ConfigData 단계에서 자동 주입할 수 없다. 따라서 기존 `AwsSyncClientCustomizer`는
@@ -220,8 +244,11 @@ converter/strategy API는 추가하지 않는다.
 
 ConfigData의 resource/property-source 이름과 startup warning은
 `bluetape4k.aws.configdata.<backend>.<sha256-12>` 형태의 opaque identity를
-사용한다. hash input은 `backend + "\u0000" + decodedLocation`을 UTF-8로
-인코딩한 SHA-256의 소문자 앞 12자리로 고정한다. 원문 location은 메모리의
+사용한다. hash input은
+`backend + "\u0000" + optional + "\u0000" + canonicalDecodedLocation`을
+UTF-8로 인코딩한 SHA-256의 소문자 앞 12자리로 고정한다. 여기서
+`canonicalDecodedLocation`은 decoded source와 query options를 허용된 key의
+사전순으로 정렬한 canonical form이다. 원문 location은 메모리의
 source 모델에서만 사용하고 로그·예외 메시지·`Throwable` cause message에
 복사하지 않는다. legacy property-source
 이름은 호환성을 위해 유지할 수 있지만 skip, refresh failure, 합성 예외의
@@ -247,9 +274,11 @@ Resolver는 활성 backend마다 `BootstrapRegistry.isRegistered(clientType)`를
 확인한 뒤 `registerIfAbsent(clientType)`, `addCloseListener`를 한 쌍으로
 한 번만 실행한다. supplier는 전역/service region·endpoint를 병합하고,
 web identity가 활성인데 provider 생성에 필요한 값이 잘못되면 default chain으로
-fallback하지 않고 sanitized configuration error로 fail-closed 한다. close
-listener는 `event.getBootstrapContext().get(clientType)?.close()`를 한 번만
-호출하며 loader에는 close 권한이 없다. 이 registration·provider·close 순서를
+fallback하지 않고 sanitized configuration error로 fail-closed 한다. STS class가
+없는 경우에도 별도의 sanitized dependency error로 fail-closed한다. close listener는
+resolver가 보관한 initialized-client holder의 `closeIfInitialized()`만 한 번
+호출하며, supplier가 아직 호출되지 않은 경우 shutdown에서 client를 새로 만들지
+않는다. loader에는 close 권한이 없다. 이 registration·provider·close 순서를
 resolver 단위 테스트와 동일 backend 다중 import 통합 테스트로 고정한다.
 
 ### Precedence와 호환성
@@ -274,7 +303,7 @@ resolver 단위 테스트와 동일 backend 다중 import 통합 테스트로 �
 | 실패 모드 | 대응 |
 |---|---|
 | AWS SDK service class가 runtime classpath에 없음 | resolver가 dependency notation을 포함한 명시적 오류를 반환하고 client를 만들지 않는다. disabled 경로는 class 검증 전에 종료한다. |
-| 필수 location이 없거나 이름/ARN이 잘못됨 | `optional:`이면 not-found만 빈 ConfigData로 생략하고, 필수 location은 `ConfigDataResourceNotFoundException`으로 보존한다. 빈/control-character location은 resolver configuration error로 즉시 거부하고, 나머지 SDK ARN/name 오류는 raw identifier 없이 보존한다. |
+| 필수 location이 없거나 이름/ARN이 잘못됨 | `optional:`이면 not-found만 loader가 `null`을 반환해 생략하고, 필수 location은 `ConfigDataResourceNotFoundException`으로 보존한다. 빈/control-character location은 resolver configuration error로 즉시 거부하고, 나머지 SDK ARN/name 오류는 raw identifier 없이 보존한다. |
 | query 문법 오류·지원하지 않는 key·잘못된 enum/Boolean | resolver 단계에서 안전한 configuration error로 조기 거부하며 secret value를 로그에 남기지 않는다. |
 | global/backend `enabled=false` | disabled resource와 빈 property source만 반환한다. SDK client 생성·외부 호출 횟수는 0이다. |
 | 여러 import가 같은 backend client를 반복 생성하거나 닫지 않음 | BootstrapRegistry에 backend별 lazy client를 한 번만 등록하고 bootstrap lifecycle에 close를 위임한다. loader는 client ownership을 갖지 않는다. |
@@ -293,8 +322,11 @@ resolver 단위 테스트와 동일 backend 다중 import 통합 테스트로 �
    disabled, SDK class guard, bound region/endpoint/credentials, bootstrap
    registration exactly-once, `resolveProfileSpecific`의 empty 결과, source
    mapping, resource equality/toString의 opaque identity.
+   `AwsConfigDataBootstrapBridgeTest`는 SDK 없는 filtered ClassLoader에서도
+   SPI class loading이 가능하고, 활성 경로에서만 adapter/provider가 로드되는지
+   검증한다.
 3. loader 테스트(`AwsConfigDataLoaderTest`): 기존 facade와
-   `internal load(client, source, strictPolicy)` 경계, MapPropertySource 변환,
+   `internal load(client, source, failurePolicy)` 경계, MapPropertySource 변환,
    backend별 not-found 분류, required 예외, auth/parse/network 예외 보존,
    disabled에서 client/network 0회, 같은 backend import의 client 1회 생성과
    bootstrap close, opaque redaction.
