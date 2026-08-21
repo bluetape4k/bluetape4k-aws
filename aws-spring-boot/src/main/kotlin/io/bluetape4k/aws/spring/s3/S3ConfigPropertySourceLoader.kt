@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.s3
 import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.flattenJsonObject
 import io.bluetape4k.aws.spring.env.joinPropertyKey
+import io.bluetape4k.aws.spring.env.opaqueAwsDiagnosticIdentity
 import io.bluetape4k.logging.KLogging
 import org.springframework.boot.env.PropertiesPropertySourceLoader
 import org.springframework.boot.env.YamlPropertySourceLoader
@@ -62,11 +63,7 @@ internal object S3ConfigPropertySourceLoader: KLogging() {
         source: S3ConfigProperties.Source,
     ): Map<String, Any>? =
         try {
-            val content = client.getObjectAsBytes {
-                it.bucket(source.bucket)
-                it.key(source.key)
-            }.asString(StandardCharsets.UTF_8)
-            parse(content, source)
+            load(client, source)
         } catch (e: NoSuchBucketException) {
             handleFailure(properties, source, e)
         } catch (e: NoSuchKeyException) {
@@ -78,6 +75,18 @@ internal object S3ConfigPropertySourceLoader: KLogging() {
         } catch (e: RuntimeException) {
             handleFailure(properties, source, e)
         }
+
+    /** ConfigData adapter가 소유한 client로 단일 source를 읽는 throw-only 경계입니다. */
+    internal fun load(
+        client: S3Client,
+        source: S3ConfigProperties.Source,
+    ): Map<String, Any> {
+        val content = client.getObjectAsBytes {
+            it.bucket(source.bucket)
+            it.key(source.key)
+        }.asString(StandardCharsets.UTF_8)
+        return parse(content, source)
+    }
 
     private fun parse(
         content: String,
@@ -127,10 +136,9 @@ internal object S3ConfigPropertySourceLoader: KLogging() {
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
             log.warn(
-                "Skipping S3 config source '${source.propertySourceName}'" +
-                    " [bucket=${source.bucket}, key=${source.key}, region=${properties.region}," +
-                    " endpoint=${properties.endpointOverride}].",
-                error,
+                "Skipping S3 config source " +
+                    "${opaqueAwsDiagnosticIdentity("s3", source.propertySourceName)} " +
+                    "(${error::class.java.simpleName}).",
             )
             return null
         }

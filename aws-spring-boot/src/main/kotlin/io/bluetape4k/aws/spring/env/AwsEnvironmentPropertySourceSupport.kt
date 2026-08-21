@@ -9,6 +9,8 @@ import org.springframework.core.env.MapPropertySource
 import org.springframework.util.ClassUtils
 import java.io.Serializable
 import java.net.URI
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -55,6 +57,29 @@ internal fun requireAwsSdkClass(
             "AWS SDK class '$className' is required. Add runtime dependency '$dependencyNotation'."
         )
     }
+}
+
+/** legacy 진단에서 property-source 이름과 원격 식별자를 opaque 값으로 바꿉니다. */
+internal fun opaqueAwsDiagnosticIdentity(
+    backend: String,
+    identifier: String,
+): String {
+    val input = "$backend\u0000$identifier"
+    val digest = MessageDigest.getInstance("SHA-256")
+        .digest(input.toByteArray(StandardCharsets.UTF_8))
+        .joinToString(separator = "") { byte -> "%02x".format(byte) }
+        .take(12)
+    return "bluetape4k.aws.configdata.$backend.$digest"
+}
+
+internal fun opaqueAwsPropertySourceIdentity(name: String): String {
+    val backend = when {
+        name.startsWith("bluetape4k.aws.s3.config.") -> "s3"
+        name.startsWith("bluetape4k.aws.parameter-store.") -> "parameter-store"
+        name.startsWith("bluetape4k.aws.secrets-manager.") -> "secrets-manager"
+        else -> "legacy"
+    }
+    return opaqueAwsDiagnosticIdentity(backend, name)
 }
 
 internal inline fun <reified T: Any> ConfigurableEnvironment.bindOrCreate(prefix: String): T =
@@ -147,7 +172,10 @@ internal class RefreshingAwsMapPropertySource(
                     currentValues = values.toMap()
                 }
             } catch (e: RuntimeException) {
-                log.warn("Keeping previous AWS property source values after refresh failure: $name", e)
+                log.warn(
+                    "Keeping previous AWS property source values after refresh failure: " +
+                        "${opaqueAwsPropertySourceIdentity(name)} (${e::class.java.simpleName}).",
+                )
             }
             nextRefreshAt = lockedNow.plus(refreshInterval)
         }

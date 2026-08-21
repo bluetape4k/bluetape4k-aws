@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.parameterstore
 
 import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.parameterPathPropertyKey
+import io.bluetape4k.aws.spring.env.opaqueAwsDiagnosticIdentity
 import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssm.SsmClient
@@ -45,12 +46,18 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
         source: ParameterStoreProperties.Source,
     ): Map<String, Any>? =
         try {
-            loadPath(client, source)
+            load(client, source)
         } catch (e: ParameterNotFoundException) {
             handleFailure(properties, source, e)
         } catch (e: RuntimeException) {
             handleFailure(properties, source, e)
         }
+
+    /** ConfigData adapter가 소유한 client로 단일 source를 읽는 throw-only 경계입니다. */
+    internal fun load(
+        client: SsmClient,
+        source: ParameterStoreProperties.Source,
+    ): Map<String, Any> = loadPath(client, source)
 
     private fun loadPath(
         client: SsmClient,
@@ -83,9 +90,9 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
             log.warn(
-                "Skipping Parameter Store source '${source.propertySourceName}'" +
-                    " [path=${source.path}, region=${properties.region}, endpoint=${properties.endpointOverride}].",
-                error,
+                "Skipping Parameter Store source " +
+                    "${opaqueAwsDiagnosticIdentity("parameter-store", source.propertySourceName)} " +
+                    "(${error::class.java.simpleName}).",
             )
             return null
         }

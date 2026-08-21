@@ -26,6 +26,68 @@ When a `MeterRegistry` is available, S3/SQS operations and listener phases can e
 Secrets Manager, Parameter Store, and S3 config loaders run during environment preparation. Treat a required source failure as startup failure. Cache resolved configuration in the environment instead of making AWS calls for every request.
 Set `bluetape4k.aws.enabled=false` to disable these startup loaders together with AWS auto-configuration; configured remote sources are not accessed.
 
+## ConfigData import
+
+Use Spring Boot ConfigData imports when a remote source is needed only during startup:
+
+```properties
+spring.config.import=optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml,aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true,optional:aws-secretsmanager:application?prefix=app&format=json
+```
+
+The same imports can be declared as a YAML list:
+
+```yaml
+spring:
+  config:
+    import:
+      - optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml
+      - aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true
+      - optional:aws-secretsmanager:application?prefix=app&format=json
+```
+
+The supported prefixes are `aws-s3:`, `aws-parameterstore:`, and
+`aws-secretsmanager:`. `optional:` suppresses only the matching backend's
+not-found result. Authentication, network, parsing, and other service failures
+remain startup failures. `bluetape4k.aws.enabled=false` is evaluated before
+SDK classpath checks, so ConfigData creates no AWS client and performs no remote
+access when disabled. Floci is the preferred emulator; LocalStack is an explicit
+fallback. ConfigData does not refresh during runtime. The legacy
+`EnvironmentPostProcessor` sources remain available for their existing refresh
+and precedence behavior.
+
+### Import precedence
+
+| Situation | Result |
+| --- | --- |
+| Later entry in one comma-separated or YAML list | Later import overrides an earlier value. |
+| Profile-specific document | Spring Boot selects the profile document; the resolver does not append a remote profile suffix. |
+| Imported data versus the declaring document | Imported data takes precedence over the document that declares the import. |
+| Legacy `EnvironmentPostProcessor` | Keep it when refresh or its existing property-source order is required. |
+
+### Failure policy
+
+| Condition | Required import | `optional:` import |
+| --- | --- | --- |
+| Backend-specific not-found | Startup failure | Import is skipped. |
+| Authentication, credential, network, parse, or missing `SecretString` | Startup failure | Startup failure. |
+| `bluetape4k.aws.enabled=false` or backend disabled | Empty no-op source; no client or network call | Same behavior. |
+
+Service region and endpoint override take precedence over shared AWS defaults.
+When Web Identity is enabled, STS and the configured role ARN, session name, and
+readable token file are required; malformed settings fail closed instead of
+falling back to the default credential chain. ConfigData startup clients do not
+discover application bean customizers. An application may register an explicit
+`AwsSyncClientCustomizer` through `BootstrapRegistryInitializer`.
+
+### Migration from the legacy source
+
+| Requirement | Recommended path |
+| --- | --- |
+| Read a remote value once during startup | `spring.config.import` ConfigData. |
+| Refresh values after startup | Existing `EnvironmentPostProcessor` properties. |
+| Preserve an established legacy property-source winner | Existing `EnvironmentPostProcessor` properties. |
+| Skip only a missing optional backend source | Prefix that location with `optional:`. |
+
 ## Graceful shutdown
 
 Stop ingress, stop listener polling, await handlers up to a configured timeout, close owned service clients, then close database pools. Verify the same sequence in tests.

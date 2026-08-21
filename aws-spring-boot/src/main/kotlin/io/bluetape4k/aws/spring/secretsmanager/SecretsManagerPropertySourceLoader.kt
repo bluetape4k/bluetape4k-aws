@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.secretsmanager
 
 import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.flattenJsonObject
+import io.bluetape4k.aws.spring.env.opaqueAwsDiagnosticIdentity
 import io.bluetape4k.aws.spring.env.textSecretProperty
 import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.regions.Region
@@ -46,19 +47,27 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
         source: SecretsManagerProperties.Source,
     ): Map<String, Any>? =
         try {
-            val response = client.getSecretValue { it.secretId(source.secretId) }
-            val secretString = response.secretString()
-                ?: throw IllegalStateException("Secret '${source.secretId}' has no SecretString.")
-
-            when (source.format) {
-                SecretFormat.JSON -> flattenJsonObject(secretString, source.prefix)
-                SecretFormat.TEXT -> textSecretProperty(secretString, source.prefix, source.name)
-            }
+            load(client, source)
         } catch (e: ResourceNotFoundException) {
             handleFailure(properties, source, e)
         } catch (e: RuntimeException) {
             handleFailure(properties, source, e)
         }
+
+    /** ConfigData adapter가 소유한 client로 단일 source를 읽는 throw-only 경계입니다. */
+    internal fun load(
+        client: SecretsManagerClient,
+        source: SecretsManagerProperties.Source,
+    ): Map<String, Any> {
+        val response = client.getSecretValue { it.secretId(source.secretId) }
+        val secretString = response.secretString()
+            ?: throw IllegalStateException("Secret has no SecretString.")
+
+        return when (source.format) {
+            SecretFormat.JSON -> flattenJsonObject(secretString, source.prefix)
+            SecretFormat.TEXT -> textSecretProperty(secretString, source.prefix, source.name)
+        }
+    }
 
     private fun handleFailure(
         properties: SecretsManagerProperties,
@@ -67,9 +76,9 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
             log.warn(
-                "Skipping Secrets Manager source '${source.propertySourceName}'" +
-                    " [secretId=${source.secretId}, region=${properties.region}, endpoint=${properties.endpointOverride}].",
-                error,
+                "Skipping Secrets Manager source " +
+                    "${opaqueAwsDiagnosticIdentity("secrets-manager", source.propertySourceName)} " +
+                    "(${error::class.java.simpleName}).",
             )
             return null
         }
