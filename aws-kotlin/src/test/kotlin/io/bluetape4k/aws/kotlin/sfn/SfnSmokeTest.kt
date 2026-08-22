@@ -29,77 +29,81 @@ class SfnSmokeTest : AbstractSfnTest() {
 
         val stateMachines = mutableListOf<String>()
         val executions = mutableListOf<String>()
-        var primaryFailure: Throwable? = null
+        runLifecycleWithCleanup(stateMachines, executions)
+    }
 
-        try {
-            withTimeout(30.seconds) {
-                withSfnClient(
-                    endpointUrl = sfnEmulator.endpointUrl,
-                    region = sfnEmulator.region,
-                    credentialsProvider = sfnEmulator.credentialsProvider,
-                ) { client ->
-                    val passMachine = client.createStateMachine(
-                        CreateStateMachineRequest {
-                            name = "issue-313-pass-${UUID.randomUUID()}"
-                            definition = PASS_DEFINITION
-                            roleArn = ROLE_ARN
-                            type = StateMachineType.Standard
-                        },
-                    ).stateMachineArn.orEmpty().also(stateMachines::add)
-
-                    val executionArn = client.startExecution(
-                        startExecutionRequestOf(passMachine, input = "{\"source\":\"issue-313\"}"),
-                    ).executionArn.orEmpty().also(executions::add)
-
-                    val responses = client.describeExecutionFlow(executionArn).toList()
-                    check(responses.lastOrNull()?.status == ExecutionStatus.Succeeded) {
-                        "Step Functions pass execution did not succeed"
-                    }
-
-                    val listed = client.listExecutionsByStateMachine(passMachine)
-                    check(listed.executions.orEmpty().any { it.executionArn == executionArn }) {
-                        "Step Functions execution was not returned by ListExecutions"
-                    }
-
-                    val waitMachine = client.createStateMachine(
-                        CreateStateMachineRequest {
-                            name = "issue-313-wait-${UUID.randomUUID()}"
-                            definition = WAIT_DEFINITION
-                            roleArn = ROLE_ARN
-                            type = StateMachineType.Standard
-                        },
-                    ).stateMachineArn.orEmpty().also(stateMachines::add)
-
-                    val waitExecutionArn = client.startExecution(
-                        startExecutionRequestOf(waitMachine, input = "{}"),
-                    ).executionArn.orEmpty().also(executions::add)
-                    client.stopExecution(stopExecutionRequestOf(waitExecutionArn))
-                }
-            }
-        } catch (failure: Throwable) {
-            primaryFailure = failure
+    private suspend fun runLifecycleWithCleanup(
+        stateMachines: MutableList<String>,
+        executions: MutableList<String>,
+    ) {
+        val primaryFailure = runCatching {
+            executeLifecycle(stateMachines, executions)
+        }.exceptionOrNull()?.let { failure ->
             if (failure.isLocalStackUnsupported()) {
-                throw TestAbortedException(
+                TestAbortedException(
                     "live integration unverified: LocalStack does not support Step Functions: " +
                         failure.javaClass.simpleName,
                     failure,
                 )
-            }
-            throw failure
-        } finally {
-            val cleanupFailure = withContext(NonCancellable) {
-                withTimeoutOrNull(30.seconds) {
-                    cleanup(stateMachines, executions)
-                }
-            }
-            if (cleanupFailure != null && primaryFailure != null) {
-                primaryFailure.addSuppressed(cleanupFailure)
-            } else if (cleanupFailure != null) {
-                throw cleanupFailure
+            } else {
+                failure
             }
         }
-        Unit
+        val cleanupFailure = withContext(NonCancellable) {
+            withTimeoutOrNull(30.seconds) { cleanup(stateMachines, executions) }
+        }
+        if (primaryFailure != null) {
+            cleanupFailure?.let(primaryFailure::addSuppressed)
+            throw primaryFailure
+        }
+        cleanupFailure?.let { throw it }
     }
+
+    private suspend fun executeLifecycle(
+        stateMachines: MutableList<String>,
+        executions: MutableList<String>,
+    ) {
+        withTimeout(30.seconds) {
+            withSfnClient(
+                endpointUrl = sfnEmulator.endpointUrl,
+                region = sfnEmulator.region,
+                credentialsProvider = sfnEmulator.credentialsProvider,
+            ) { client ->
+                val passMachine = client.createIssue313StateMachine(PASS_DEFINITION, "pass")
+                    .also(stateMachines::add)
+                val executionArn = client.startExecution(
+                    startExecutionRequestOf(passMachine, input = "{\"source\":\"issue-313\"}"),
+                ).executionArn.orEmpty().also(executions::add)
+                val responses = client.describeExecutionFlow(executionArn).toList()
+                check(responses.lastOrNull()?.status == ExecutionStatus.Succeeded) {
+                    "Step Functions pass execution did not succeed"
+                }
+                check(client.listExecutionsByStateMachine(passMachine).executions.orEmpty()
+                    .any { it.executionArn == executionArn }) {
+                    "Step Functions execution was not returned by ListExecutions"
+                }
+
+                val waitMachine = client.createIssue313StateMachine(WAIT_DEFINITION, "wait")
+                    .also(stateMachines::add)
+                val waitExecutionArn = client.startExecution(
+                    startExecutionRequestOf(waitMachine, input = "{}"),
+                ).executionArn.orEmpty().also(executions::add)
+                client.stopExecution(stopExecutionRequestOf(waitExecutionArn))
+            }
+        }
+    }
+
+    private suspend fun aws.sdk.kotlin.services.sfn.SfnClient.createIssue313StateMachine(
+        definition: String,
+        label: String,
+    ): String = createStateMachine(
+        CreateStateMachineRequest {
+            name = "issue-313-$label-${UUID.randomUUID()}"
+            this.definition = definition
+            roleArn = ROLE_ARN
+            type = StateMachineType.Standard
+        },
+    ).stateMachineArn.orEmpty()
 
     private suspend fun cleanup(stateMachines: List<String>, executions: List<String>): Throwable? {
         var firstFailure: Throwable? = null
