@@ -890,7 +890,7 @@ Not-tested: emulator
 - Modify: `aws-kotlin/src/consumerFixture/kotlin/io/bluetape4k/aws/kotlin/consumer/KotlinServiceConsumerFixture.kt`
 - Modify: `build.gradle.kts`
 
-- [ ] **Step 1: 실제 public helper 사용을 fixture에 추가한다**
+- [x] **Step 1: 실제 public helper 사용을 fixture에 추가한다**
 
 Java fixture는 `sfnClient(builder)`, `sfnClientOf`, `withSfnClient`, `sfnAsyncClient(builder)`,
 `sfnAsyncClientOf`, `withSfnAsyncClient`, custom sync/async HTTP client, 그리고
@@ -920,7 +920,7 @@ suspend {
 
 상수 ARN은 compile-only fixture 내부 `const val`로 두고 lambda는 실행하지 않는다.
 
-- [ ] **Step 2: public API fixture와 omission을 검증한다**
+- [x] **Step 2: public API fixture와 omission을 검증한다**
 
 ```bash
 ./gradlew compileAwsJavaServiceConsumerFixture compileAwsKotlinServiceConsumerFixture verifyAwsConsumerFixturePublication --no-daemon --console=plain

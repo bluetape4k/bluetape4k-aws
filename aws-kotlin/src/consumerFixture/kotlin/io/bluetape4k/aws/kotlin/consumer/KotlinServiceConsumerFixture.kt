@@ -17,16 +17,29 @@ import io.bluetape4k.aws.kotlin.kinesis.kinesisClientOf
 import io.bluetape4k.aws.kotlin.kms.kmsClientOf
 import io.bluetape4k.aws.kotlin.s3.s3ClientOf
 import io.bluetape4k.aws.kotlin.ses.sesClientOf
+import io.bluetape4k.aws.kotlin.sfn.listExecutionsByMapRun
+import io.bluetape4k.aws.kotlin.sfn.listExecutionsByStateMachine
+import io.bluetape4k.aws.kotlin.sfn.sfnClientOf
+import io.bluetape4k.aws.kotlin.sfn.withSfnClient
 import io.bluetape4k.aws.kotlin.sns.snsClientOf
 import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
 import io.bluetape4k.aws.kotlin.sts.stsClientOf
+import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
+
+private const val FIXTURE_STATE_MACHINE_ARN =
+    "arn:aws:states:ap-northeast-2:123456789012:stateMachine:consumer"
+private const val FIXTURE_MAP_RUN_ARN =
+    "arn:aws:states:ap-northeast-2:123456789012:mapRun:consumer/map-1"
+
+private suspend fun kotlinSfnCustomHttpClient(engine: HttpClientEngine): SfnClient =
+    withSfnClient(httpClient = engine) { it }
 
 /**
  * AWS Kotlin SDK wrapper의 대표 compileOnly 서비스 표면을 외부 consumer 관점에서 확인합니다.
  *
  * 이 fixture는 실행하지 않고 컴파일만 하므로 AWS client를 생성하지 않습니다.
  */
-fun kotlinServiceConsumerFixture(): List<Any> = listOf(
+fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
     S3Client::class.java,
     DynamoDbClient::class.java,
     SnsClient::class.java,
@@ -48,5 +61,23 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf(
     { kinesisClientOf() },
     { SchedulerClient { } },
     { SfnClient { } },
+    { sfnClientOf(region = "ap-northeast-2") },
+    suspend {
+        withSfnClient(region = "ap-northeast-2") { client ->
+            client.listExecutionsByStateMachine(
+                FIXTURE_STATE_MACHINE_ARN,
+                builder = { maxResults = 10 },
+            )
+        }
+    },
+    suspend {
+        withSfnClient(region = "ap-northeast-2") { client ->
+            client.listExecutionsByMapRun(
+                FIXTURE_MAP_RUN_ARN,
+                builder = { maxResults = 10 },
+            )
+        }
+    },
+    ::kotlinSfnCustomHttpClient,
     { stsClientOf() },
 )
