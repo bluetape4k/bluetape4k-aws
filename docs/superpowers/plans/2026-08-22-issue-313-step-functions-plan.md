@@ -131,7 +131,7 @@ Not-tested: Step Functions production code
 - Modify: `aws-java/src/consumerFixture/kotlin/io/bluetape4k/aws/consumer/JavaServiceConsumerFixture.kt`
 - Modify: `aws-kotlin/src/consumerFixture/kotlin/io/bluetape4k/aws/kotlin/consumer/KotlinServiceConsumerFixture.kt`
 
-- [ ] **Step 1: raw SDK consumer fixture를 먼저 추가한다**
+- [x] **Step 1: raw SDK consumer fixture를 먼저 추가한다**
 
 Java fixture에 `SfnClient::class.java`, Kotlin fixture에 Kotlin SDK `SfnClient::class.java`를 추가한다. 아직 classpath alias를 추가하지 않는다.
 
@@ -155,7 +155,7 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf(
 )
 ```
 
-- [ ] **Step 2: SDK 누락으로 RED인지 확인한다**
+- [x] **Step 2: SDK 누락으로 RED인지 확인한다**
 
 Run:
 
@@ -165,7 +165,7 @@ Run:
 
 Expected: 두 fixture 중 해당 SDK import가 `Unresolved reference 'sfn'`으로 실패한다.
 
-- [ ] **Step 3: catalog, module dependency, root consumer/BOM 검증을 추가한다**
+- [x] **Step 3: catalog, module dependency, root consumer/BOM 검증을 추가한다**
 
 ```toml
 # gradle/libs.versions.toml
@@ -200,7 +200,7 @@ dependency("aws.sdk.kotlin:sfn:${bt4kVersion("aws-kotlin")}")
 dependency("software.amazon.awssdk:sfn:${bt4kVersion("aws2")}")
 ```
 
-- [ ] **Step 4: 정상 consumer와 negative omission을 검증한다**
+- [x] **Step 4: 정상 consumer와 negative omission을 검증한다**
 
 Run:
 
@@ -212,7 +212,7 @@ Run:
 
 Expected: 첫 명령은 PASS. 두 omission 명령은 각각 Sfn SDK type 미해결로 FAIL하며 compileOnly 소비자 계약을 증명한다.
 
-- [ ] **Step 5: Task 1을 Lore commit으로 기록한다**
+- [x] **Step 5: Task 1을 Lore commit으로 기록한다**
 
 ```text
 Step Functions 소비자가 SDK 의존성을 명시하도록 경계를 고정한다

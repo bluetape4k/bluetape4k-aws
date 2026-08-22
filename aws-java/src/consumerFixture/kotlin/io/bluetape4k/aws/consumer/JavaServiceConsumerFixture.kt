@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.scheduler.SchedulerClient
 import software.amazon.awssdk.services.ses.SesClient
+import software.amazon.awssdk.services.sfn.SfnClient
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sts.StsClient
@@ -35,6 +36,7 @@ fun javaServiceConsumerFixture(): List<Any> = listOf(
     CloudWatchClient::class.java,
     KinesisClient::class.java,
     SchedulerClient::class.java,
+    SfnClient::class.java,
     StsClient::class.java,
     { S3ClientFactory.Sync.create { } },
     { dynamoDbClient { } },
@@ -45,5 +47,6 @@ fun javaServiceConsumerFixture(): List<Any> = listOf(
     { cloudWatchClient { } },
     { kinesisClient { } },
     { SchedulerClient.builder().build() },
+    { SfnClient.builder().build() },
     { stsClient { } },
 )

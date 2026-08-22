@@ -43,6 +43,7 @@ dependencies {
     compileOnly(libs.aws2.kinesis)
     compileOnly(libs.aws2.eventbridge)
     compileOnly(libs.aws2.scheduler)
+    compileOnly(libs.aws2.sfn)
     compileOnly(libs.aws2.rds)
     compileOnly(libs.aws2.sts)
 
@@ -62,6 +63,7 @@ dependencies {
     testImplementation(libs.aws2.ssm)
     testImplementation(libs.aws2.eventbridge)
     testImplementation(libs.aws2.scheduler)
+    testImplementation(libs.aws2.sfn)
     testImplementation(libs.aws2.test.utils)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(bt4k.mockk)

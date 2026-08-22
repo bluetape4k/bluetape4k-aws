@@ -11,6 +11,20 @@
 
 Base commit: `c9350bc1ae14cd72056fb358d8f3a427467848f9`.
 
+## Task 1 SDK dependency boundary
+
+| Command | Exit | 결과 |
+|---|---:|---|
+| raw SDK fixture RED: `compileAwsJavaServiceConsumerFixture compileAwsKotlinServiceConsumerFixture` | 1 | 의도한 `Unresolved reference 'sfn'` 및 `SfnClient` 확인 |
+| `compileAwsJavaServiceConsumerFixture compileAwsKotlinServiceConsumerFixture verifyAwsConsumerFixturePublication --no-configuration-cache` | 0 | 두 consumer fixture와 publication compileOnly 검증 PASS |
+| `compileAwsJavaServiceConsumerFixture -PconsumerFixtureOmit=aws-java:sfn --no-configuration-cache` | 1 | Java `SfnClient` 미해결 확인 |
+| `compileAwsKotlinServiceConsumerFixture -PconsumerFixtureOmit=aws-kotlin:sfn --no-configuration-cache` | 1 | Kotlin `SfnClient` 미해결 확인 |
+
+configuration cache를 켠 정상 publication 명령은 기존 `GenerateMavenPom`의 `withXml()` 오류
+(`Cannot invoke ... ConfigurationContainer.detachedConfiguration ... delegate is null`)로 exit 1이었다.
+이는 SDK fixture와 무관한 Gradle infrastructure 경로이므로 `--no-configuration-cache`로 재실행해 publication
+검증을 PASS로 분리했다.
+
 ## Emulator
 
 | SDK | Backend | 결과 | XML/근거 |

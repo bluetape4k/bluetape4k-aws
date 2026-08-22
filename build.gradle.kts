@@ -428,6 +428,7 @@ dependencies {
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:cloudwatch", libs.aws2.cloudwatch)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:kinesis", libs.aws2.kinesis)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:scheduler", libs.aws2.scheduler)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:sfn", libs.aws2.sfn)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:sts", libs.aws2.sts)
     awsJavaServiceConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
     awsJavaServiceConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
@@ -442,6 +443,7 @@ dependencies {
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:cloudwatch", libs.aws.kotlin.cloudwatch)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:kinesis", libs.aws.kotlin.kinesis)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:scheduler", libs.aws.kotlin.scheduler)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sfn", libs.aws.kotlin.sfn)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sts", libs.aws.kotlin.sts)
     awsKotlinServiceConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
     awsKotlinServiceConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
@@ -649,6 +651,7 @@ val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixtu
                 "cloudwatch",
                 "kinesis",
                 "scheduler",
+                "sfn",
                 "sts",
             ),
             "aws.sdk.kotlin" to listOf(
@@ -661,6 +664,7 @@ val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixtu
                 "cloudwatch",
                 "kinesis",
                 "scheduler",
+                "sfn",
                 "sts",
             ),
         )
@@ -997,6 +1001,8 @@ subprojects {
 
             dependency("aws.sdk.kotlin:scheduler:${bt4kVersion("aws-kotlin")}")
 
+            dependency("aws.sdk.kotlin:sfn:${bt4kVersion("aws-kotlin")}")
+
             dependency("aws.sdk.kotlin:secretsmanager:${bt4kVersion("aws-kotlin")}")
 
             dependency("aws.sdk.kotlin:ses:${bt4kVersion("aws-kotlin")}")
@@ -1096,6 +1102,8 @@ subprojects {
             dependency("software.amazon.awssdk:scheduler:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:sdk-core:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:sfn:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:secretsmanager:${bt4kVersion("aws2")}")
 

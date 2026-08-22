@@ -110,6 +110,7 @@ aws2-imds = { module = "software.amazon.awssdk:imds" }
 aws2-kinesis = { module = "software.amazon.awssdk:kinesis" }
 aws2-eventbridge = { module = "software.amazon.awssdk:eventbridge" }
 aws2-scheduler = { module = "software.amazon.awssdk:scheduler" }
+aws2-sfn = { module = "software.amazon.awssdk:sfn" }
 aws2-sts = { module = "software.amazon.awssdk:sts" }
 aws2-ec2 = { module = "software.amazon.awssdk:ec2" }
 aws2-utils = { module = "software.amazon.awssdk:utils" }
@@ -134,6 +135,7 @@ aws-kotlin-cloudwatchlogs = { module = "aws.sdk.kotlin:cloudwatchlogs" }
 aws-kotlin-kinesis = { module = "aws.sdk.kotlin:kinesis" }
 aws-kotlin-eventbridge = { module = "aws.sdk.kotlin:eventbridge" }
 aws-kotlin-scheduler = { module = "aws.sdk.kotlin:scheduler" }
+aws-kotlin-sfn = { module = "aws.sdk.kotlin:sfn" }
 aws-kotlin-sts = { module = "aws.sdk.kotlin:sts" }
 aws-kotlin-http-client-engine-crt = { module = "aws.sdk.kotlin:http-client-engine-crt" }
 

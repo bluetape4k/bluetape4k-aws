@@ -7,6 +7,7 @@ import aws.sdk.kotlin.services.kms.KmsClient
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.scheduler.SchedulerClient
 import aws.sdk.kotlin.services.ses.SesClient
+import aws.sdk.kotlin.services.sfn.SfnClient
 import aws.sdk.kotlin.services.sns.SnsClient
 import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sts.StsClient
@@ -35,6 +36,7 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf(
     CloudWatchClient::class.java,
     KinesisClient::class.java,
     SchedulerClient::class.java,
+    SfnClient::class.java,
     StsClient::class.java,
     { s3ClientOf() },
     { dynamoDbClientOf(region = "ap-northeast-2") },
@@ -45,5 +47,6 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf(
     { cloudWatchClientOf() },
     { kinesisClientOf() },
     { SchedulerClient { } },
+    { SfnClient { } },
     { stsClientOf() },
 )
