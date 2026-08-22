@@ -41,10 +41,10 @@ configuration cache를 켠 정상 publication 명령은 기존 `GenerateMavenPom
 
 | SDK | Backend | 결과 | XML/근거 |
 |---|---|---|---|
-| Java v2 | Floci | UNVERIFIED | exit 0, tests=1, failures=0, errors=0, skipped=1; exact skip `live integration unverified: Floci does not support Step Functions`; `build/test-results/issue-313/floci-java.xml`; SHA-256 `cb145001fdf9d1077105bebd16db3e271a5639109d11ea6cb02c7ffd759d15d9` |
-| Kotlin | Floci | UNVERIFIED | exit 0, tests=1, failures=0, errors=0, skipped=1; exact skip `live integration unverified: Floci does not support Step Functions`; `build/test-results/issue-313/floci-kotlin.xml`; SHA-256 `32a2afdd6ace16785af44de7ba3cf0ea523fc54728ddce6a828518d94f09e883` |
-| Java v2 | LocalStack | PASS | exit 0, tests=1, failures=0, errors=0, skipped=0; `build/test-results/issue-313/localstack-java.xml`; SHA-256 `5498f2107733cec2a2eb8fbdb0a487508934065c132ccae514f67d86beea086f` |
-| Kotlin | LocalStack | PASS | exit 0, tests=1, failures=0, errors=0, skipped=0; `build/test-results/issue-313/localstack-kotlin.xml`; SHA-256 `8aa49d7148f397174106f1800e9323e8f2e2337bdb7853a4875ec162f5fe529d` |
+| Java v2 | Floci | UNVERIFIED | exit 0, tests=1, failures=0, errors=0, skipped=1; exact skip `live integration unverified: Floci does not support Step Functions`; `build/test-results/issue-313/floci-java.xml`; SHA-256 `b9ac07f6668c7656990a0682b457939c70e664739f0dc078d6bb4670c1f69a87` |
+| Kotlin | Floci | UNVERIFIED | exit 0, tests=1, failures=0, errors=0, skipped=1; exact skip `live integration unverified: Floci does not support Step Functions`; `build/test-results/issue-313/floci-kotlin.xml`; SHA-256 `9282f1e1065dd9dfb53bc004240b5522aeb7f2358b6f5feac1f93b9e728fed18` |
+| Java v2 | LocalStack | PASS | exit 0, tests=1, failures=0, errors=0, skipped=0; `build/test-results/issue-313/localstack-java.xml`; SHA-256 `5cb1d8102ec99dbd779b70eb9e460a6409ffd78b05108fd7795f91c5d8dd6d3a` |
+| Kotlin | LocalStack | PASS | exit 0, tests=1, failures=0, errors=0, skipped=0; `build/test-results/issue-313/localstack-kotlin.xml`; SHA-256 `4cef315855ce800377fb4f9e032923ab553f4ed63fe5897d27c4a94ea7173f51` |
 
 네 실행은 다음 순서로 `--rerun-tasks`와 `--no-configuration-cache`를 사용해 fresh XML과 receipt를 만들었다.
 
@@ -58,6 +58,23 @@ configuration cache를 켠 정상 publication 명령은 기존 `GenerateMavenPom
 receipt 원본은 `build/test-results/issue-313/{floci-java,floci-kotlin,localstack-java,localstack-kotlin}.receipt.txt`에
 남겼다. Floci의 `UNVERIFIED`는 기능 미지원으로 인한 skip이며 live PASS가 아니다. LocalStack PASS는
 생성·시작·조회·목록·중지·삭제 lifecycle만 증명하며 실제 AWS IAM/KMS 권한을 증명하지 않는다.
+
+## 최종 회귀 검증
+
+| 영역 | Exit | 결과 |
+|---|---:|---|
+| Java `io.bluetape4k.aws.sfn.*` targeted | 0 | 39 tests, 0 failures, 0 errors, 1 Floci smoke skip; `BUILD SUCCESSFUL` |
+| Kotlin `io.bluetape4k.aws.kotlin.sfn.*` targeted | 0 | 37 tests, 0 failures, 0 errors, 1 Floci smoke skip; `BUILD SUCCESSFUL` |
+| Java module 전체 | 0 | 436 tests, 0 failures, 0 errors, 15 skipped; baseline 397/0/0/14 대비 Issue #313 추가 39 tests와 1 documented Floci skip |
+| Kotlin module 전체 | 0 | 619 tests, 0 failures, 0 errors, 13 skipped; baseline 582/0/0/12 대비 Issue #313 추가 37 tests와 1 documented Floci skip |
+| `detekt --no-configuration-cache` | 0 | `BUILD SUCCESSFUL`, `verifyDetektCoverage` PASS |
+| consumer/publication compile | 0 | Java/Kotlin public fixture와 publication metadata PASS (`--no-configuration-cache`) |
+| manual/manifest contract | 0 | manual contract 9 runs/44 assertions, manifest check PASS, EN/KO anchors PASS, releaseRef 4개·release SHA 36개 보존 |
+
+Korean terminology audit는 기존 문서 baseline 10건만 보고했으며 Issue #313 추가 diff에는 새 finding이 없다.
+기존 finding은 관련 없는 기존 문서 표현이므로 이 작업에서 임의로 변경하지 않았다. configuration cache를
+활성화한 publication 명령은 기존 `GenerateMavenPom` infrastructure 오류가 재현되어, 해당 검증만
+`--no-configuration-cache`로 분리했다.
 
 ## Security boundary
 

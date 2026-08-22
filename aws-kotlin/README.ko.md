@@ -34,6 +34,7 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 | **CloudWatch Logs** | 로그 이벤트 전송, DSL(`inputLogEvent {}`)                |
 | **Kinesis**         | 스트림 레코드 전송, `recordFlow {}` 샤드별 cold Flow, DSL(`putRecordRequestOf {}`) |
 | **EventBridge**     | Event bus, rule, target, list, `PutEvents` suspend helper |
+| **Step Functions**  | 실행 시작/중지/조회/목록과 native suspend `Flow` polling |
 | **Bedrock Runtime** | native suspend `Converse`, `ConverseStream`, cold text-delta `Flow` |
 | **STS**             | AssumeRole, CallerIdentity, DSL(`stsClientOf {}`) |
 | **Secrets Manager** | Redacted secret value, client lifecycle helper, 요청 DSL |
@@ -330,6 +331,36 @@ EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK �
 global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은
 이 모듈 범위에 포함하지 않습니다.
 
+### Step Functions 실행 helper (미출시/develop)
+
+develop 개발선에는 `StartExecution`, `StopExecution`, `DescribeExecution`,
+`ListExecutions`를 위한 native suspend helper가 추가됩니다. Polling은 AWS Kotlin SDK의
+`SfnClient`를 사용하며 raw 응답을 `Flow<DescribeExecutionResponse>` cold Flow로
+전달합니다. client, timeout과 cancellation 정책은 호출자가 소유합니다.
+
+```kotlin
+import io.bluetape4k.aws.kotlin.sfn.describeExecutionFlow
+import io.bluetape4k.aws.kotlin.sfn.withSfnClient
+import aws.sdk.kotlin.services.sfn.model.DescribeExecutionResponse
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun awaitExecution(executionArn: String): DescribeExecutionResponse =
+    withSfnClient(region = "ap-northeast-2") { client ->
+        withTimeout(30.seconds) {
+            client.describeExecutionFlow(executionArn).last()
+        }
+    }
+```
+
+이 예제는 Standard execution을 대상으로 합니다. Cancellation은 그대로 전파되며
+`StopExecution`을 자동 호출하지 않습니다. 범위 지정 helper는 service client만 닫고 주입한
+HTTP engine은 호출자 소유로 남깁니다. 서비스 SDK는 `compileOnly`로 유지되므로 런타임에
+`aws.sdk.kotlin:sfn`을 직접 추가하세요. 의존성, Standard/Express/Map Run, IAM/KMS, quota와
+emulator 경계는 [Step Functions Kotlin 모듈 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-kotlin.md)에서
+확인할 수 있습니다.
+
 ### Secrets Manager와 Parameter Store
 
 ```kotlin
@@ -439,6 +470,7 @@ dependencies {
     implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:sfn:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:bedrockruntime:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... 필요한 서비스 추가

@@ -57,6 +57,151 @@ try {
 
 S3 객체·전송, DynamoDB Enhanced 저장소·배치, SQS/SNS 메시징, KMS, CloudWatch, Kinesis, SES, STS와 요청 모델 빌더를 제공합니다.
 
+## Step Functions 실행 helper {#step-functions}
+
+> 미출시/develop: 이 절은 Issue #313 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+Java SDK v2 경로는 `io.bluetape4k.aws.sfn` 패키지에
+`StartExecution`, `StopExecution`, `DescribeExecution`, `ListExecutions`를 위한 얇은
+helper를 추가합니다. 동기와 단발성 async/coroutine 연산은 AWS SDK raw 응답을
+반환합니다. Polling은 `SfnAsyncClient`에서만 제공하므로 event loop나 Flow collector에서
+blocking `SfnClient`를 사용하지 않습니다.
+
+### Dependency boundary {#step-functions-dependency}
+
+모듈은 Step Functions SDK를 `compileOnly`로 유지합니다. 애플리케이션은 모듈과 함께
+서비스 SDK를 compile/runtime classpath에 직접 추가해야 합니다.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:sfn")
+}
+```
+
+버전은 중앙 Bluetape4k BOM으로 맞추세요. Region, credentials provider, endpoint, HTTP
+client와 close 경계도 애플리케이션이 소유합니다.
+
+### Standard, Express, and Map Run {#step-functions-capabilities}
+
+Helper는 실행을 새로운 domain type으로 변환하지 않고 AWS 서비스 의미를 그대로 유지합니다.
+
+| Helper/API | Standard | Express | Map Run child |
+| --- | --- | --- | --- |
+| `StartExecution` | 지원 | 지원 | child를 직접 시작하는 API가 아님 |
+| `DescribeExecution` | 지원 | 일반 Express 실행에는 미지원 | AWS가 지원하는 child execution ARN에서 조건부 지원 |
+| `ListExecutions` | state machine ARN | 일반 Express 실행에는 미지원 | `mapRunArn`으로 조건부 지원 |
+| `StopExecution` | 지원 | 미지원 | Standard child에서 조건부 지원, Express child는 미지원 |
+| `describeExecutionFlow` | `DescribeExecution`과 같은 범위 | 미지원 | `DescribeExecution`과 같은 조건부 범위 |
+
+`StartExecution`에서 Standard 실행은 같은 name과 input이면 idempotent하지만 Express
+실행은 그렇지 않습니다. Retry 시 Express 실행의 중복 시작을 막는 책임은 호출자에게 있습니다.
+
+Java request builder는 `listExecutionsByStateMachine`과
+`listExecutionsByMapRun`을 분리합니다. 전체 페이지가 필요하면 raw SDK paginator를
+직접 사용할 수 있습니다. `PENDING_REDRIVE`는 raw terminal 응답이지 business success
+결과가 아닙니다. Express 실행 관찰을 CloudWatch Logs로 수행하는 경로는 이 helper 범위
+밖에 둡니다.
+
+### Polling and cancellation {#step-functions-polling}
+
+`SfnAsyncClient.describeExecutionFlow(...)`는 cold
+`Flow<DescribeExecutionResponse>`를 반환합니다. Collect를 시작하면
+`DescribeExecution`을 즉시 한 번 호출하고, `RUNNING` 응답을 emit한 뒤
+`SUCCEEDED`, `FAILED`, `TIMED_OUT`, `ABORTED`, `PENDING_REDRIVE` 중 알려진 terminal
+응답을 emit하고 종료합니다. `SfnExecutionPollingOptions.pollInterval` 기본값과 최솟값은
+1초입니다. 1초는 collector 하나의 하한일 뿐 account/Region quota를 보장하지 않습니다.
+
+```kotlin
+import io.bluetape4k.aws.sfn.describeExecutionFlow
+import io.bluetape4k.aws.sfn.withSfnAsyncClient
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.withTimeout
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sfn.model.DescribeExecutionResponse
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun awaitExecution(executionArn: String): DescribeExecutionResponse =
+    withSfnAsyncClient(region = Region.AP_NORTHEAST_2) { client ->
+        withTimeout(30.seconds) {
+            client.describeExecutionFlow(executionArn).last()
+        }
+    }
+```
+
+제한 시간이나 deadline은 호출자가 지정합니다. Cancellation은
+`CancellationException`으로 그대로 전파되며 Flow가 `StopExecution`을 자동 호출하거나
+호출자가 소유한 client를 닫지 않습니다. SDK가 반환한 상태를 알 수 없으면 응답을 emit하지
+않고 fail-closed로 종료합니다. `withSfnAsyncClient` 블록 또는 애플리케이션이 소유한
+client 범위 안에서 collect를 완료하세요.
+
+### IAM and KMS {#step-functions-iam-kms}
+
+Operation과 resource 종류별로 최소 권한 statement를 분리합니다. State machine alias와
+version, Standard execution, Express execution, labelled Map Run child, Map Run resource는
+서로 다른 ARN 형태를 사용하므로 하나의 넓은 wildcard statement로 합치지 않습니다.
+
+| Statement | IAM action | Resource 경계 |
+| --- | --- | --- |
+| Start execution | `states:StartExecution` | 대상 state machine: unqualified `statemachine`, qualified `statemachinealias` 또는 `statemachineversion` ARN |
+| Start execution의 dependent describe | `states:DescribeExecution` | 생성되는 Standard `execution` 또는 Express `express` execution ARN pattern을 위한 별도 statement |
+| Describe execution | `states:DescribeExecution` | Standard `execution`, 지원되는 Express `express` 또는 지원되는 labelled Map Run child (`labelled execution`/`labelled express`) ARN |
+| Stop execution | `states:StopExecution` | Standard `execution` 또는 labelled Standard child ARN만 허용하며 Express execution stop은 부여하지 않음 |
+| State machine 기준 목록 | `states:ListExecutions` | state-machine ARN만 허용 |
+| Map Run 기준 목록 | `states:ListExecutions` | Map Run `maprun` ARN만 허용 |
+
+Qualified state machine, Standard execution, Express execution, labelled Map Run
+child와 Map Run resource pattern은 statement를 분리합니다. 하나의 wildcard로 합치지
+말고, dependent `states:DescribeExecution` grant도 `states:StartExecution`과 별도
+statement로 둡니다.
+
+`StopExecution(error = null, cause = null)`이면 암호화할 오류 상세를 보내지 않으므로
+execution role의 추가 KMS data-key grant를 피할 수 있습니다. 암호화된 execution data를
+`includedData = ALL_DATA`로 요청하면 caller의 KMS key policy와 `kms:Decrypt` 권한이
+여전히 trust boundary입니다. Helper가 이 경계를 우회하지 않으며 KMS service error도
+변환하지 않고 유지합니다.
+
+Raw ARN, execution name, input, output, error, cause, trace header와 raw SDK response
+payload는 기본적으로 log나 저장소에 남기지 않습니다. 안정적인 상관관계 key가 필요하면
+민감한 식별자에는 plain hash 대신 caller가 관리하는 HMAC을 사용하세요. Custom `endpoint`
+override, credentials provider와 HTTP client는 caller가 소유한 trust boundary입니다. 신뢰하는
+emulator 또는 private endpoint에만 사용하고 production credential이나 payload를 신뢰하지
+않는 endpoint, non-TLS endpoint로 보내지 않습니다.
+
+### Quotas and observability {#step-functions-operations}
+
+Step Functions API quota는 account와 Region 기준이며 Region이나 AWS 정책에 따라 달라질 수
+있습니다. 운영 polling budget을 정하기 전에 [현재 service
+quota](https://docs.aws.amazon.com/step-functions/latest/dg/service-quotas.html)를
+다시 확인하세요. Helper는 rate limiter, retry policy, jitter와 내부 timeout을 추가하지
+않습니다.
+
+- 모든 collector에 `withTimeout` 또는 외부 deadline을 적용합니다.
+- account/Region별 collector 수와 전체 polling rate를 제한하고, 동기화된 burst를 피하도록
+  시작 시점을 분산하거나 caller 소유 jitter/rate limiter를 적용합니다.
+- 같은 execution을 여러 consumer가 관찰하면 `shareIn` 또는 `stateIn`으로 하나의 polling
+  source를 공유합니다.
+- Service, operation, outcome/status, latency, retry 횟수, throttle 횟수와 SDK response
+  metadata의 AWS request ID를 기록합니다. Request/response payload는 기록하지 않습니다.
+- Raw execution ARN 대신 제한된 logical identity로 CloudWatch execution 및 throttling
+  metric을 관찰합니다.
+
+### Emulator evidence {#step-functions-emulator}
+
+저장소의 Floci-first selector로 Step Functions smoke를 먼저 실행하고, 필요한 경우
+LocalStack을 명시적으로 선택합니다. Floci가 이 service를 지원하지 않으면 정확한
+assumption message인
+`live integration unverified: Floci does not support Step Functions`와 skipped test
+result를 보존합니다. LocalStack이 미지원이거나 실패하면 test result XML과 함께
+`live integration unverified: LocalStack Step Functions smoke failed: <error>`를 기록하며
+어느 결과도 live-integration PASS로 바꾸지 않습니다. Unit, consumer compile과
+dependency-publication 검증은 별도 local evidence로 유지합니다.
+
+Emulator smoke가 증명하는 범위는 endpoint 호환성과 기본 request/response serialization뿐입니다.
+Production IAM resource policy, KMS key policy, quota, latency와 managed-service 동작은
+증명하지 않습니다. 별도 credential-gated AWS 검증이 없으면 IAM/KMS integration 상태는
+계속 `UNVERIFIED`입니다.
+
 ## 권장 패턴 {#patterns}
 
 client와 백그라운드 작업의 소유자를 한 곳으로 정하고, region·credentials·endpoint를 호출마다 만들지 말고 애플리케이션 경계에서 구성하세요.

@@ -5,7 +5,8 @@ English | [한국어](./README.ko.md)
 A unified integration module built on AWS Java SDK v2. It keeps AWS SDK model
 types visible while adding sync helpers, async `CompletableFuture` extensions,
 and coroutine APIs for DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS,
-CloudWatch, Kinesis, EventBridge, STS, Secrets Manager, and Parameter Store.
+CloudWatch, Kinesis, EventBridge, Step Functions, STS, Secrets Manager, and
+Parameter Store.
 
 ## Diagrams
 
@@ -41,6 +42,7 @@ request DSLs, async extensions, coroutine wrappers, and repository helpers.
 | **CloudWatch Logs** | Log group/stream management, event publishing, Coroutines extensions         |
 | **Kinesis**         | Stream record send/receive, Coroutines extensions                            |
 | **EventBridge**     | Event bus, rule, target, list, and `PutEvents` helpers                       |
+| **Step Functions**  | Execution start/stop/describe/list, async coroutine `Flow` polling           |
 | **Bedrock Runtime** | Model-neutral `Converse`, `ConverseStream`, and cold text-delta `Flow`       |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines extensions              |
 | **Secrets Manager** | Redacted secret values, request DSLs, sync/async/coroutine helpers           |
@@ -324,6 +326,40 @@ Add `software.amazon.awssdk:eventbridge` at runtime. Scheduler, framework
 integrations, global endpoints, cross-account target orchestration, and
 target-specific validation beyond SDK model types are outside this module.
 
+### Step Functions Execution Helpers (unreleased/develop)
+
+The develop line adds thin `StartExecution`, `StopExecution`,
+`DescribeExecution`, and `ListExecutions` extensions. Sync and one-shot async
+operations return raw AWS SDK responses. Polling is available only on
+`SfnAsyncClient` and returns a cold `Flow<DescribeExecutionResponse>`; the
+caller owns the client, timeout, and cancellation policy.
+
+```kotlin
+import io.bluetape4k.aws.sfn.withSfnAsyncClient
+import io.bluetape4k.aws.sfn.describeExecutionFlow
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sfn.model.DescribeExecutionResponse
+import kotlin.time.Duration.Companion.seconds
+
+fun awaitExecution(executionArn: String): DescribeExecutionResponse = runBlocking {
+    withSfnAsyncClient(region = Region.AP_NORTHEAST_2) { client ->
+        withTimeout(30.seconds) {
+            client.describeExecutionFlow(executionArn).last()
+        }
+    }
+}
+```
+
+The example targets a Standard execution. The helper does not call
+`StopExecution` when collection is cancelled, and it does not close a client
+that the caller supplied. Add `software.amazon.awssdk:sfn` directly at runtime
+because service SDKs remain `compileOnly`. See the [Step Functions Java module
+manual](../docs/manual/en/modules/bluetape4k-aws-java.md) for dependency,
+Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
+
 ## Not Provided by This Module
 
 This module does not provide Spring Environment loading, JSON flattening,
@@ -392,6 +428,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:eventbridge")
+    implementation("software.amazon.awssdk:sfn")
     implementation("software.amazon.awssdk:bedrockruntime")
     implementation("software.amazon.awssdk:sts")
     // ... add other services as needed

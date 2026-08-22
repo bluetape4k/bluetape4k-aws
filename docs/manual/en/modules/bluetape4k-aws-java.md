@@ -55,6 +55,160 @@ try {
 
 S3 object and transfer helpers, DynamoDB enhanced repositories and batch execution, SQS/SNS messaging, KMS, CloudWatch, Kinesis, SES, STS, and request-model builders.
 
+## Step Functions execution helpers {#step-functions}
+
+> Unreleased/develop: this section describes the Issue #313 API and is not part of the `0.5.0` release source.
+
+The Java SDK v2 path adds thin helpers for `StartExecution`, `StopExecution`,
+`DescribeExecution`, and `ListExecutions` under `io.bluetape4k.aws.sfn`. Sync
+and one-shot async/coroutine operations return the raw AWS SDK response. Polling
+is available only on `SfnAsyncClient` so a blocking `SfnClient` is not used from
+an event loop or a Flow collector.
+
+### Dependency boundary {#step-functions-dependency}
+
+The module keeps the Step Functions SDK `compileOnly`. Add the service SDK to
+the consumer's compile and runtime classpaths alongside the module:
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:sfn")
+}
+```
+
+Use the central Bluetape4k BOM to align versions. The application also owns the
+region, credentials provider, endpoint, HTTP client, and close boundary.
+
+### Standard, Express, and Map Run {#step-functions-capabilities}
+
+The helpers preserve AWS service semantics rather than mapping executions to a
+new domain type.
+
+| Helper/API | Standard | Express | Map Run child |
+| --- | --- | --- | --- |
+| `StartExecution` | Supported | Supported | Not a direct child-start API |
+| `DescribeExecution` | Supported | Not supported for a normal Express execution | Conditional; use the AWS-supported child execution ARN |
+| `ListExecutions` | State-machine ARN | Not supported for a normal Express execution | Conditional with `mapRunArn` |
+| `StopExecution` | Supported | Not supported | Conditional for a Standard child; Express children remain unsupported |
+| `describeExecutionFlow` | Same boundary as `DescribeExecution` | Not supported | Same conditional boundary as `DescribeExecution` |
+
+For `StartExecution`, Standard executions are idempotent for the same name and
+input, while Express executions are not. The caller must prevent duplicate
+Express starts when it retries.
+
+The Java request builder separates `listExecutionsByStateMachine` and
+`listExecutionsByMapRun`, while the raw SDK paginator remains available for
+callers that need all pages. `PENDING_REDRIVE` is a raw terminal response, not
+a business-success result. Express execution observation through CloudWatch
+Logs is outside this helper.
+
+### Polling and cancellation {#step-functions-polling}
+
+`SfnAsyncClient.describeExecutionFlow(...)` returns a cold
+`Flow<DescribeExecutionResponse>`. Each collection starts with an immediate
+`DescribeExecution` call, emits `RUNNING` responses, and ends after emitting a
+known terminal response (`SUCCEEDED`, `FAILED`, `TIMED_OUT`, `ABORTED`, or
+`PENDING_REDRIVE`). `SfnExecutionPollingOptions.pollInterval` defaults to and
+must be at least one second. The one-second value is a per-collector lower
+bound, not an account or Region quota guarantee.
+
+```kotlin
+import io.bluetape4k.aws.sfn.describeExecutionFlow
+import io.bluetape4k.aws.sfn.withSfnAsyncClient
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.withTimeout
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sfn.model.DescribeExecutionResponse
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun awaitExecution(executionArn: String): DescribeExecutionResponse =
+    withSfnAsyncClient(region = Region.AP_NORTHEAST_2) { client ->
+        withTimeout(30.seconds) {
+            client.describeExecutionFlow(executionArn).last()
+        }
+    }
+```
+
+The caller supplies the timeout or deadline. Cancellation is rethrown as
+`CancellationException`; the Flow never calls `StopExecution` implicitly and
+never closes a caller-owned client. Unknown SDK statuses fail closed without
+emitting a response. Keep collection inside the `withSfnAsyncClient` block or
+inside an application-owned client scope.
+
+### IAM and KMS {#step-functions-iam-kms}
+
+Create separate least-privilege statements for the operation and resource
+kind. State-machine aliases and versions, Standard executions, Express
+executions, labelled Map Run children, and Map Run resources have different ARN
+shapes; do not combine them under one broad wildcard.
+
+| Statement | IAM action | Resource boundary |
+| --- | --- | --- |
+| Start execution | `states:StartExecution` | Target state machine: unqualified `statemachine`, qualified `statemachinealias`, or `statemachineversion` ARN |
+| Start execution's dependent describe | `states:DescribeExecution` | A separate statement for the resulting Standard `execution` or Express `express` execution ARN pattern |
+| Describe execution | `states:DescribeExecution` | Standard `execution`, supported Express `express`, or a supported labelled Map Run child (`labelled execution`/`labelled express`) ARN |
+| Stop execution | `states:StopExecution` | Standard `execution` or labelled Standard child ARN only; do not grant Express execution stop |
+| List executions by state machine | `states:ListExecutions` | State-machine ARN only |
+| List executions by Map Run | `states:ListExecutions` | Map Run `maprun` ARN only |
+
+Keep the qualified state-machine, Standard execution, Express execution,
+labelled Map Run child, and Map Run resource patterns in separate statements.
+Do not collapse them into one wildcard, and keep the dependent
+`states:DescribeExecution` grant separate from `states:StartExecution`.
+
+For `StopExecution(error = null, cause = null)`, no error detail is sent for
+encryption, which can avoid an additional execution-role KMS data-key grant.
+When encrypted execution data is requested with `includedData = ALL_DATA`,
+the caller's KMS key policy and `kms:Decrypt` permission remain part of the
+trust boundary; the helper does not bypass them. Preserve KMS service errors
+instead of translating them.
+
+Do not log or persist raw ARNs, execution names, input, output, error, cause,
+trace headers, or raw SDK response payloads by default. If a stable correlation
+key is required, use a caller-managed HMAC rather than a plain hash when the
+identifier is sensitive. Custom `endpoint` overrides, credentials providers,
+and HTTP clients are caller-owned trust boundaries; use them only for trusted emulator
+or private endpoints and never send production credentials or payloads to an
+untrusted or non-TLS endpoint.
+
+### Quotas and observability {#step-functions-operations}
+
+Step Functions API quotas apply at the account and Region level and can vary by
+Region or AWS service policy. Recheck the [current service
+quotas](https://docs.aws.amazon.com/step-functions/latest/dg/service-quotas.html)
+before setting a production polling budget. The helper does not add a rate
+limiter, retry policy, jitter, or internal timeout.
+
+- Bound every collector with `withTimeout` or an external deadline.
+- Limit collector count and aggregate polling rate per account and Region;
+  distribute start times or add caller-owned jitter/rate limiting to avoid a
+  synchronized burst.
+- Share one polling source with `shareIn` or `stateIn` when several consumers
+  observe the same execution.
+- Record service, operation, outcome/status, latency, retry count, throttle
+  count, and the AWS request ID from SDK response metadata. Do not record the
+  request or response payload.
+- Use CloudWatch execution and throttling metrics with a bounded logical
+  identity, not a raw execution ARN.
+
+### Emulator evidence {#step-functions-emulator}
+
+Run the module's Step Functions smoke checks with the repository's Floci-first
+selector, then select LocalStack explicitly for a fallback. If Floci lacks the
+service, retain the exact assumption message
+`live integration unverified: Floci does not support Step Functions` and the
+skipped test result. If LocalStack is unsupported or fails, report
+`live integration unverified: LocalStack Step Functions smoke failed: <error>`
+with the test result XML; do not turn either result into a live-integration
+PASS. Unit, consumer compile, and dependency-publication checks still provide
+useful local evidence.
+
+An emulator smoke proves endpoint compatibility and basic request/response
+serialization only. It does not prove production IAM resource policies, KMS
+key policies, quotas, latency, or managed-service behavior. Until a separate
+credential-gated AWS check exists, IAM/KMS integration remains `UNVERIFIED`.
+
 ## Recommended patterns {#patterns}
 
 Put client and background-job ownership at one application boundary. Configure region, credentials, and endpoints once instead of rebuilding them per call.

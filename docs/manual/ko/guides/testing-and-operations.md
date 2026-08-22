@@ -35,6 +35,57 @@ releaseRef: "0.5.0"
 
 Emulator가 지원하지 않는다고 assertion을 빼서 통과시키면 안 된다. 지원 범위를 기록하고 mock 또는 fallback 테스트를 그 빈틈에 연결한다. 어느 emulator에서 성공하더라도 운영 IAM과 service limit까지 검증된 것은 아니다.
 
+## Step Functions 증거 {#step-functions-evidence}
+
+Issue #313 Step Functions helper는 미출시/develop 표면입니다. Floci-first selector로 전용
+smoke를 먼저 실행한 뒤 LocalStack fallback을 사용합니다.
+
+```bash
+./gradlew :bluetape4k-aws-java:test \
+  --tests "*Sfn*SmokeTest" \
+  -Dbluetape4k.aws.emulator=floci \
+  --no-daemon --max-workers=1 --console=plain
+
+./gradlew :bluetape4k-aws-kotlin:test \
+  --tests "*Sfn*SmokeTest" \
+  -Dbluetape4k.aws.emulator=floci \
+  --no-daemon --max-workers=1 --console=plain
+```
+
+현재 Floci guard는 정확한
+`live integration unverified: Floci does not support Step Functions` 문구와 skipped
+test result를 남깁니다. 이 결과는 `UNVERIFIED`이며 live integration PASS가 아닙니다.
+Coverage gap을 확인하려면 전용 fixture를 LocalStack에서 순차 실행합니다.
+
+```bash
+./gradlew :bluetape4k-aws-java:test \
+  --tests "*Sfn*SmokeTest" \
+  -Dbluetape4k.aws.emulator=localstack \
+  --no-daemon --max-workers=1 --console=plain
+
+./gradlew :bluetape4k-aws-kotlin:test \
+  --tests "*Sfn*SmokeTest" \
+  -Dbluetape4k.aws.emulator=localstack \
+  --no-daemon --max-workers=1 --console=plain
+```
+
+LocalStack이 operation을 지원하지 않거나 smoke가 실패하면 test result XML과 함께
+`live integration unverified: LocalStack Step Functions smoke failed: <error>`를 기록합니다.
+결과를 PASS로 바꾸지 않습니다. Emulator 성공이 증명하는 것은 endpoint와 기본 serialization
+호환성뿐이며 AWS IAM resource policy, KMS key policy, service quota, latency와 managed-service
+동작까지 증명하지 않습니다. 별도 credential-gated AWS 검증이 생길 때까지 IAM/KMS integration은
+`UNVERIFIED`로 유지합니다.
+
+운영 polling에는 호출자 소유 timeout 또는 deadline을 적용하고 helper의 1초 간격 하한을
+지킵니다. Account/Region 전체 polling을 현재 [Step Functions service
+quota](https://docs.aws.amazon.com/step-functions/latest/dg/service-quotas.html)보다 낮게
+제한하며, 같은 execution을 여러 consumer가 관찰하면 `shareIn` 또는 `stateIn`으로 합칩니다.
+Collector가 동시에 시작되면 caller 소유 jitter나 rate limiter를 추가합니다. Service, operation,
+status, outcome, latency, retry/throttle 횟수와 AWS request ID를 기록하되 ARN, 이름, input,
+output, error, cause, trace header와 raw SDK payload는 redaction합니다. Cancellation은
+암묵적인 `StopExecution` 없이 collection만 멈추며, service client는 소유자 경계에서 닫고 주입한
+HTTP client 또는 engine은 호출자가 닫습니다.
+
 ## 필요한 예제만 실행한다
 
 ```bash

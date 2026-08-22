@@ -233,7 +233,7 @@ Not-tested: production Step Functions helper
 - Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/model/SfnRequestSupport.kt`
 - Create: `aws-java/src/test/kotlin/io/bluetape4k/aws/sfn/model/SfnRequestSupportTest.kt`
 
-- [ ] **Step 1: local invariant의 실패 테스트를 작성한다**
+- [x] **Step 1: local invariant의 실패 테스트를 작성한다**
 
 테스트 이름과 입력을 다음 표 그대로 사용한다.
 
@@ -277,7 +277,7 @@ fun `state machine 목록에 pending redrive를 허용하지 않는다`() {
 }
 ```
 
-- [ ] **Step 2: request test RED를 확인한다**
+- [x] **Step 2: request test RED를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.sfn.model.SfnRequestSupportTest" --no-daemon --console=plain
@@ -285,7 +285,7 @@ fun `state machine 목록에 pending redrive를 허용하지 않는다`() {
 
 Expected: `SfnRequestSupport` 함수가 없어 compilation FAIL.
 
-- [ ] **Step 3: Java request builder를 최소 구현한다**
+- [x] **Step 3: Java request builder를 최소 구현한다**
 
 `SfnRequestSupport.kt`에 다음 public API를 구현한다.
 
@@ -352,7 +352,7 @@ private fun ListExecutionsRequest.validate(): ListExecutionsRequest = apply {
 }
 ```
 
-- [ ] **Step 4: Java request tests를 GREEN으로 만든다**
+- [x] **Step 4: Java request tests를 GREEN으로 만든다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.sfn.model.SfnRequestSupportTest" --no-daemon --console=plain
@@ -360,7 +360,7 @@ private fun ListExecutionsRequest.validate(): ListExecutionsRequest = apply {
 
 Expected: PASS, 0 failed.
 
-- [ ] **Step 5: Task 2를 Lore commit으로 기록한다**
+- [x] **Step 5: Task 2를 Lore commit으로 기록한다**
 
 ```text
 Step Functions 요청의 모호한 입력을 호출 전에 차단한다
@@ -385,7 +385,7 @@ Not-tested: SDK client 호출
 - Create: `aws-java/src/test/kotlin/io/bluetape4k/aws/sfn/SfnAsyncClientSupportTest.kt`
 - Create: `aws-java/src/test/kotlin/io/bluetape4k/aws/sfn/SfnExtensionsTest.kt`
 
-- [ ] **Step 1: lifecycle과 request 전달의 실패 테스트를 작성한다**
+- [x] **Step 1: lifecycle과 request 전달의 실패 테스트를 작성한다**
 
 다음을 MockK로 고정한다.
 
@@ -438,7 +438,7 @@ Operation test는 Start/Stop/Describe/List의 exact request와 raw response/SDK 
 유지하는지 확인한다. Async coroutine cancellation은 `CancellationException`을 재전파하고 자동
 `StopExecution`을 호출하지 않아야 한다.
 
-- [ ] **Step 2: Java client test RED를 확인한다**
+- [x] **Step 2: Java client test RED를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.sfn.Sfn*Test" --no-daemon --console=plain
@@ -446,7 +446,7 @@ Operation test는 Start/Stop/Describe/List의 exact request와 raw response/SDK 
 
 Expected: lifecycle/extension symbol 미정의로 compilation FAIL.
 
-- [ ] **Step 3: lifecycle helper를 구현한다**
+- [x] **Step 3: lifecycle helper를 구현한다**
 
 두 support 파일은 explicit 설정 후 builder를 마지막에 실행한다. `sfnClient`/`sfnAsyncClient`와
 각 `*Of` application factory만 `ShutdownQueue`에 등록하고, `withSfn*Client`는 같은 internal builder로
@@ -481,7 +481,7 @@ Async support에는 `sfnAsyncClient(builder)`와 `sfnAsyncClientOf(...)`를 같�
 `SdkAsyncHttpClient`와 `SfnAsyncClientBuilder`를 사용하고 `withSfnAsyncClient`는
 `try/finally { client.close() }`로 suspend block을 감싼다.
 
-- [ ] **Step 4: sync/future/coroutine extension을 구현한다**
+- [x] **Step 4: sync/future/coroutine extension을 구현한다**
 
 Start/Stop/Describe는 request builder로 위임한다. 목록은 target별 이름을 사용하고 callback 후 source를 pin한다.
 
@@ -527,7 +527,7 @@ suspend fun SfnAsyncClient.startExecution(
 ): StartExecutionResponse = startExecutionAsync(stateMachineArn, name, input, traceHeader, builder).await()
 ```
 
-- [ ] **Step 5: Java lifecycle/operation tests를 GREEN으로 만든다**
+- [x] **Step 5: Java lifecycle/operation tests를 GREEN으로 만든다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.sfn.Sfn*Test" --no-daemon --console=plain
@@ -535,7 +535,7 @@ suspend fun SfnAsyncClient.startExecution(
 
 Expected: PASS. Sync/future/coroutine raw response가 동일하고 callback source-switch가 client 호출 전에 실패한다.
 
-- [ ] **Step 6: Task 3을 Lore commit으로 기록한다**
+- [x] **Step 6: Task 3을 Lore commit으로 기록한다**
 
 ```text
 Step Functions 호출 계층의 수명과 source를 예측 가능하게 만든다
@@ -556,7 +556,7 @@ Not-tested: polling과 emulator
 - Create: `aws-java/src/main/kotlin/io/bluetape4k/aws/sfn/SfnExecutionFlow.kt`
 - Create: `aws-java/src/test/kotlin/io/bluetape4k/aws/sfn/SfnExecutionFlowTest.kt`
 
-- [ ] **Step 1: polling state machine의 실패 테스트를 작성한다**
+- [x] **Step 1: polling state machine의 실패 테스트를 작성한다**
 
 ```kotlin
 @Test
@@ -584,7 +584,7 @@ Request overload는 `includedData=METADATA_ONLY`와 `ALL_DATA` 각각에 대해 
 같은 cold Flow를 두 collector가 수집하면 collector별 SDK 호출이 발생하고, caller가 `shareIn`/`stateIn`으로
 공유한 경우 upstream polling 호출이 하나로 합쳐지는지 virtual time과 exact invocation count로 검증한다.
 
-- [ ] **Step 2: Flow test RED를 확인한다**
+- [x] **Step 2: Flow test RED를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.sfn.SfnExecutionFlowTest" --no-daemon --console=plain
@@ -592,7 +592,7 @@ Request overload는 `includedData=METADATA_ONLY`와 `ALL_DATA` 각각에 대해 
 
 Expected: `SfnExecutionPollingOptions`와 `describeExecutionFlow` 미정의로 compilation FAIL.
 
-- [ ] **Step 3: options와 cold Flow를 최소 구현한다**
+- [x] **Step 3: options와 cold Flow를 최소 구현한다**
 
 ```kotlin
 data class SfnExecutionPollingOptions(
@@ -637,7 +637,7 @@ fun SfnAsyncClient.describeExecutionFlow(
 
 ARN overload는 immutable `describeExecutionRequestOf(executionArn)`를 한 번 만들어 request overload로 위임한다. Flow는 timeout, retry, jitter, client close, `StopExecution`을 추가하지 않는다.
 
-- [ ] **Step 4: Java Flow tests를 GREEN으로 만든다**
+- [x] **Step 4: Java Flow tests를 GREEN으로 만든다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.sfn.SfnExecutionFlowTest" --no-daemon --console=plain
@@ -645,7 +645,7 @@ ARN overload는 immutable `describeExecutionRequestOf(executionArn)`를 한 번 
 
 Expected: PASS. Virtual time로 delay를 검증하고 cancellation 이후 추가 describe/stop 호출이 없다.
 
-- [ ] **Step 5: Task 4를 Lore commit으로 기록한다**
+- [x] **Step 5: Task 4를 Lore commit으로 기록한다**
 
 ```text
 Step Functions 완료 대기를 구조화된 취소 안에 둔다
@@ -666,7 +666,7 @@ Not-tested: LocalStack
 - Create: `aws-kotlin/src/main/kotlin/io/bluetape4k/aws/kotlin/sfn/model/SfnRequestSupport.kt`
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sfn/model/SfnRequestSupportTest.kt`
 
-- [ ] **Step 1: Java와 대칭인 Kotlin SDK 실패 테스트를 작성한다**
+- [x] **Step 1: Java와 대칭인 Kotlin SDK 실패 테스트를 작성한다**
 
 Task 2 표의 모든 case를 Kotlin SDK enum/type으로 반복한다. Unknown status는 request builder 범위가 아니므로 제외한다.
 
@@ -687,7 +687,7 @@ fun `state machine과 map run을 함께 지정할 수 없다`() {
 }
 ```
 
-- [ ] **Step 2: Kotlin request test RED를 확인한다**
+- [x] **Step 2: Kotlin request test RED를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests "io.bluetape4k.aws.kotlin.sfn.model.SfnRequestSupportTest" --no-daemon --console=plain
@@ -695,7 +695,7 @@ fun `state machine과 map run을 함께 지정할 수 없다`() {
 
 Expected: request helper 미정의로 compilation FAIL.
 
-- [ ] **Step 3: Kotlin SDK DSL builder를 구현한다**
+- [x] **Step 3: Kotlin SDK DSL builder를 구현한다**
 
 Java와 같은 네 public signature를 Kotlin SDK model로 제공한다. `StartExecutionRequest {}` 내부에서 explicit field, callback, final validation, null-to-`{}` 정규화 순으로 처리한다.
 
@@ -721,7 +721,7 @@ inline fun startExecutionRequestOf(
 
 `listExecutionsRequestOf`는 `ExecutionStatus.PendingRedrive`와 Kotlin `ExecutionRedriveFilter`를 사용하고 callback 뒤 exact-one/source/filter/page invariant를 검사한다.
 
-- [ ] **Step 4: Kotlin request tests를 GREEN으로 만든다**
+- [x] **Step 4: Kotlin request tests를 GREEN으로 만든다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests "io.bluetape4k.aws.kotlin.sfn.model.SfnRequestSupportTest" --no-daemon --console=plain
@@ -729,7 +729,7 @@ inline fun startExecutionRequestOf(
 
 Expected: PASS, Java request test와 같은 behavior matrix.
 
-- [ ] **Step 5: Task 5를 Lore commit으로 기록한다**
+- [x] **Step 5: Task 5를 Lore commit으로 기록한다**
 
 ```text
 Kotlin SDK 요청도 Java facade와 같은 경계로 제한한다
@@ -754,7 +754,7 @@ Not-tested: Kotlin client와 Flow
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnExtensionsTest.kt`
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnExecutionFlowTest.kt`
 
-- [ ] **Step 1: lifecycle, operation, Flow 실패 테스트를 작성한다**
+- [x] **Step 1: lifecycle, operation, Flow 실패 테스트를 작성한다**
 
 Java와 같은 request/source/response/cancellation/lifecycle matrix에 Kotlin 전용
 `ExecutionStatus.SdkUnknown("FUTURE")`를 추가한다. request overload의 `includedData` 보존,
@@ -791,7 +791,7 @@ caller timeout까지 완료된 뒤 client가 닫히는 순서를 검증한다. G
 terminal 전용 API를 추가하지 않으며, block 밖으로 반환된 cold Flow는 닫힌 client를 참조하므로 지원하지
 않는다는 KDoc/README compile example을 고정한다.
 
-- [ ] **Step 2: Kotlin client/Flow RED를 확인한다**
+- [x] **Step 2: Kotlin client/Flow RED를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests "io.bluetape4k.aws.kotlin.sfn.Sfn*Test" --no-daemon --console=plain
@@ -799,7 +799,7 @@ terminal 전용 API를 추가하지 않으며, block 밖으로 반환된 cold Fl
 
 Expected: lifecycle/extension/Flow symbol 미정의로 compilation FAIL.
 
-- [ ] **Step 3: native client lifecycle과 one-shot API를 구현한다**
+- [x] **Step 3: native client lifecycle과 one-shot API를 구현한다**
 
 ```kotlin
 inline fun sfnClientOf(
@@ -828,7 +828,7 @@ suspend fun <R> withSfnClient(
 
 Start/Stop/Describe와 target별 List는 request builder를 native suspend member에 전달한다. Callback source pinning은 Java와 동일하게 client 호출 전에 확인한다.
 
-- [ ] **Step 4: Kotlin cold Flow를 구현한다**
+- [x] **Step 4: Kotlin cold Flow를 구현한다**
 
 ```kotlin
 fun SfnClient.describeExecutionFlow(
@@ -860,7 +860,7 @@ fun SfnClient.describeExecutionFlow(
 }
 ```
 
-- [ ] **Step 5: Kotlin lifecycle/operation/Flow tests를 GREEN으로 만든다**
+- [x] **Step 5: Kotlin lifecycle/operation/Flow tests를 GREEN으로 만든다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests "io.bluetape4k.aws.kotlin.sfn.Sfn*Test" --no-daemon --console=plain
@@ -868,7 +868,7 @@ fun SfnClient.describeExecutionFlow(
 
 Expected: PASS. Java와 같은 raw response/cancellation behavior이며 Kotlin에는 null status branch가 없다.
 
-- [ ] **Step 6: Task 6을 Lore commit으로 기록한다**
+- [x] **Step 6: Task 6을 Lore commit으로 기록한다**
 
 ```text
 Kotlin Step Functions 호출을 native suspend 수명 안에 둔다
@@ -930,7 +930,7 @@ suspend {
 
 Expected: 정상 fixture PASS. SDK omission은 각각 public SDK type 미해결로 FAIL.
 
-- [ ] **Step 3: Task 7을 Lore commit으로 기록한다**
+- [x] **Step 3: Task 7을 Lore commit으로 기록한다**
 
 ```text
 외부 소비자가 Step Functions API를 정확히 해석하도록 보장한다
@@ -1145,7 +1145,7 @@ Step 5에서 네 receipt의 값을 evidence Markdown에 `apply_patch`로 옮기�
 그 밖의 실패면 `FAIL`이어야 한다. evidence collection 또는 live integration이 FAIL이면 증거는 보존하되
 Task 8은 완료 처리하지 않고 제품·인프라를 분리한다. `UNVERIFIED`는 기능 미검증 상태로 명시하며 PASS로 쓰지 않는다.
 
-- [ ] **Step 6: Task 8을 Lore commit으로 기록한다**
+- [x] **Step 6: Task 8을 Lore commit으로 기록한다**
 
 ```text
 Step Functions emulator 한계를 검증 결과에 드러낸다
@@ -1258,9 +1258,10 @@ test "$(rg -o '664e4dfb544a3c19db484b0f9a8e023a73774b49' docs/manual/{en,ko}/mod
 git diff --check
 ```
 
-Expected: terminology finding 0, manifest check PASS, manual contract PASS, whitespace 오류 0.
+Expected: 기존 terminology baseline 10건을 보존하고 Issue #313 diff 추가 finding 0건, manifest check PASS,
+manual contract PASS, whitespace 오류 0.
 
-- [ ] **Step 5: targeted test와 정적 분석을 실행한다**
+- [x] **Step 5: targeted test와 정적 분석을 실행한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests "io.bluetape4k.aws.sfn.*" --no-daemon --max-workers=1 --console=plain
@@ -1271,7 +1272,7 @@ Expected: terminology finding 0, manifest check PASS, manual contract PASS, whit
 
 Expected: all PASS. Raw process exit code와 전체 output의 final status를 evidence에 기록한다.
 
-- [ ] **Step 6: 양 모듈 전체 테스트를 순차 실행한다**
+- [x] **Step 6: 양 모듈 전체 테스트를 순차 실행한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --no-daemon --max-workers=1 --console=plain
@@ -1282,7 +1283,7 @@ Expected: 두 task 모두 PASS. timeout/infra failure가 나면 제품 실패와
 Task 0의 동일 command·XML aggregate와 비교해 새 failure/error/skipped 증가를 회귀로 분류한다. baseline에 있던
 실패도 exact 상태를 다시 기록하며, 새 targeted/public consumer/detekt/manual failure는 completion을 차단한다.
 
-- [ ] **Step 7: 최종 diff와 worktree 상태를 검증한다**
+- [x] **Step 7: 최종 diff와 worktree 상태를 검증한다**
 
 ```bash
 git diff --stat
@@ -1307,7 +1308,7 @@ done < <(git ls-files --others --exclude-standard)
 
 Expected: Issue #313 범위 파일만 변경, whitespace 오류 0, 예상하지 않은 generated/credential 파일 0.
 
-- [ ] **Step 8: Task 9를 Lore commit으로 기록한다**
+- [x] **Step 8: Task 9를 Lore commit으로 기록한다**
 
 ```text
 Step Functions helper를 소비자와 운영자가 안전하게 채택하도록 설명한다
