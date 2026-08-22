@@ -106,7 +106,7 @@ ruby -rrexml/document -e '
 Expected: targeted lifecycle PASS. Full module tests와 detekt는 PASS가 목표다. 실패하면 baseline evidence를
 고정한 뒤 원인이 Issue #313 범위인지 분류하고, final verification에서 동일 command/aggregate와 비교한다.
 
-- [ ] **Step 4: Task 0을 Lore commit으로 기록한다**
+- [x] **Step 4: Task 0을 Lore commit으로 기록한다**
 
 ```text
 Step Functions 구현 경계를 승인된 설계와 검증 계획에 고정한다

@@ -17,7 +17,7 @@
 - Design: `docs/superpowers/specs/2026-08-22-issue-313-step-functions-design.md`
 - Design SHA-256: `627e5c6f73f2a8ebbfbf6109b28c5558855e47ae635e24e3c266cfee7aa2618c`
 - Plan: `docs/superpowers/plans/2026-08-22-issue-313-step-functions-plan.md`
-- Plan SHA-256: `c84409d5414bfb1f8fc0aa3770e056fd9b13bacbd103ad246375bc2946094d31`
+- Plan SHA-256: `6090260555dbb6ccf63378971063b43b3b6f72fb2deef5605dd3c49aef59480d`
 
 SHA가 달라지면 이 판정은 무효이며 구현 전에 영향받은 관점 검토를 다시 실행한다.
 
@@ -70,9 +70,9 @@ branch 삭제, release는 포함하지 않는다.
 
 ## 실행 전 남은 gate
 
-- 사용자 구현 계획 승인: `PENDING`
-- Task 0 pinned-base baseline 재실행: `PENDING`
+- 사용자 구현 계획 승인: `PASS` (사용자 승인 메시지 확인, 2026-08-23)
+- Task 0 pinned-base baseline 재실행: `PASS` (Java 397, Kotlin 582, detekt PASS)
 - production/test/docs 구현: `PENDING`
 - PR/merge/release: 현재 범위 밖
 
-최종 상태는 `PENDING`이다. 사용자가 위 Plan SHA-256을 승인한 뒤에만 Task 0부터 실행한다.
+최종 상태는 `READY`이다. 사용자 승인과 Task 0 기준선 기록을 마쳤으므로 계획 순서대로 구현을 진행한다.
