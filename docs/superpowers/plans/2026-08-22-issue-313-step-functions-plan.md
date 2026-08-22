@@ -954,7 +954,7 @@ Not-tested: emulator
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/sfn/SfnSmokeTest.kt`
 - Modify: `docs/review/evidence/2026-08-22-issue-313-step-functions.md`
 
-- [ ] **Step 1: Floci exact skip의 실패 테스트를 작성한다**
+- [x] **Step 1: Floci exact skip의 실패 테스트를 작성한다**
 
 두 `AbstractSfnTest`는 `bluetape4k.aws.emulator=floci`에서 다음 exact assumption message를 사용한다.
 
@@ -964,7 +964,7 @@ live integration unverified: Floci does not support Step Functions
 
 Java/Kotlin smoke test는 이 guard를 호출한 뒤에만 client를 만든다. 현재 guard가 없으므로 첫 targeted run은 unsupported call 또는 assertion mismatch로 RED여야 한다.
 
-- [ ] **Step 2: Sfn 전용 fixture를 구현한다**
+- [x] **Step 2: Sfn 전용 fixture를 구현한다**
 
 전역 `AbstractAwsTest.services`를 바꾸지 않는다. LocalStack 선택 시에만 전용 service를 시작한다.
 
@@ -994,7 +994,7 @@ abstract class AbstractSfnTest: AbstractAwsTest() {
 
 Kotlin module도 같은 service selection과 exact message를 사용하고 SDK별 endpoint/credentials 변환만 다르게 둔다.
 
-- [ ] **Step 3: LocalStack smoke를 구현한다**
+- [x] **Step 3: LocalStack smoke를 구현한다**
 
 각 SDK에서 다음 순서를 한 테스트 class 안에서 공유 client로 실행한다.
 
@@ -1017,7 +1017,7 @@ LocalStack 호출이 HTTP 501 또는 error code `NotImplemented`/`NotImplemented
 `live integration unverified: LocalStack does not support Step Functions: <status/code>` exact prefix로 assumption
 skip한다. 다른 `SfnException`, timeout, assertion, container 오류는 그대로 실패시켜 제품/인프라 문제를 숨기지 않는다.
 
-- [ ] **Step 4: evidence 골격을 만들고 Floci skip과 LocalStack fallback을 순차 검증한다**
+- [x] **Step 4: evidence 골격을 만들고 Floci skip과 LocalStack fallback을 순차 검증한다**
 
 먼저 Step 5 표와 security boundary를 가진 evidence 파일을 `apply_patch`로 만든다. 아래 함수는 각 Gradle
 process 직후 raw exit code를 잡고, fresh XML 여부·XML 사본·count·exact message·SHA-256을 backend별 receipt에
@@ -1118,7 +1118,7 @@ Skip/unsupported를 live PASS로 쓰지 않는다.
 Step 5에서 네 receipt의 값을 evidence Markdown에 `apply_patch`로 옮기고 read-back한다.
 `build/test-results/issue-313/` XML 사본과 receipt는 로컬 증거이며 commit하지 않는다.
 
-- [ ] **Step 5: evidence artifact를 최종화한다**
+- [x] **Step 5: evidence artifact를 최종화한다**
 
 ```markdown
 # Issue #313 Step Functions 검증 증거
@@ -1172,7 +1172,7 @@ Not-tested: 실제 AWS IAM/KMS
 - Modify: `CHANGELOG.md`
 - Inspect only: `WIP.md`
 
-- [ ] **Step 1: README와 KDoc compile 예제를 추가한다**
+- [x] **Step 1: README와 KDoc compile 예제를 추가한다**
 
 문서에는 다음 Gradle dependency와 bounded lifecycle 예제를 정확히 넣는다.
 
@@ -1195,7 +1195,7 @@ runBlocking {
 
 Kotlin 문서는 `aws.sdk.kotlin:sfn`, `withSfnClient`, native suspend Flow 예제를 사용한다. README는 요약과 manual link만 두고 상세 quota/IAM/KMS는 manual에 둔다.
 
-- [ ] **Step 2: EN/KO manual을 구조적으로 맞춘다**
+- [x] **Step 2: EN/KO manual을 구조적으로 맞춘다**
 
 두 locale에 같은 anchor 순서를 사용한다.
 
@@ -1230,7 +1230,7 @@ Capability 표에는 Standard/Express/Map Run 차이와 Express에서 Describe/S
   외부 HTTP client/engine도 caller-owned trust boundary임을 KDoc와 manual에 명시한다.
 - emulator 기능 smoke는 IAM resource policy, KMS key policy, production credential 경계를 증명하지 않는다.
 
-- [ ] **Step 3: CHANGELOG 미출시 항목을 추가한다**
+- [x] **Step 3: CHANGELOG 미출시 항목을 추가한다**
 
 ```markdown
 ## [미출시]
@@ -1246,7 +1246,7 @@ Capability 표에는 Standard/Express/Map Run 차이와 Express에서 Describe/S
 `WIP.md`의 #313 Backlog 행은 issue/PR이 아직 병합되지 않았으므로 이 작업 범위에서는 유지한다.
 PR 병합 뒤 별도 canonical sync에서 제거 또는 완료 이력 반영 여부를 판단한다.
 
-- [ ] **Step 4: 문서 계약을 검증한다**
+- [x] **Step 4: 문서 계약을 검증한다**
 
 ```bash
 node /Users/debop/.codex/skills/bluetape-writer/scripts/audit-korean-terms.mjs README.ko.md aws-java/README.ko.md aws-kotlin/README.ko.md docs/manual/ko/modules/bluetape4k-aws-java.md docs/manual/ko/modules/bluetape4k-aws-kotlin.md docs/manual/ko/guides/testing-and-operations.md CHANGELOG.md
