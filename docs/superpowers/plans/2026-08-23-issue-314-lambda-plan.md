@@ -25,7 +25,7 @@
 
 **Files:** read-only `aws-java/src/test/kotlin/io/bluetape4k/aws/AbstractAwsTest.kt`, `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/AbstractAwsTest.kt`, migration spec; create `docs/review/evidence/2026-08-23-issue-314-lambda-readiness.md`.
 
-- [ ] **Step 1: Docker/Colima 상태를 확인한다**
+- [x] **Step 1: Docker/Colima 상태를 확인한다**
 
 ```bash
 colima status
@@ -36,7 +36,7 @@ docker images --format '{{.Repository}}:{{.Tag}}' | rg -i 'floci|localstack|test
 
 Expected: healthy Colima, `default` context, Docker server evidence를 기록한다. 현재 확인값은 Colima running, Docker `29.2.1`, Floci `1.6.0` image다.
 
-- [ ] **Step 2: Lambda capability와 fixture 부재를 확인한다**
+- [x] **Step 2: Lambda capability와 fixture 부재를 확인한다**
 
 ```bash
 rg -n "Lambda|lambda|FlociServer|LocalStackServer" aws-java/src/test aws-kotlin/src/test ../../../bluetape4k-projects/docs/superpowers/specs/2026-04-26-aws-emulator-migration-design.md
@@ -44,7 +44,7 @@ rg -n "Lambda|lambda|FlociServer|LocalStackServer" aws-java/src/test aws-kotlin/
 
 Expected: 공용 test base에 Lambda function 생성·invoke fixture가 없음을 기록한다. function 생성·배포·IAM mutation은 하지 않는다.
 
-- [ ] **Step 3: evidence를 검증한다**
+- [x] **Step 3: evidence를 검증한다**
 
 ```bash
 git diff --check
@@ -57,7 +57,7 @@ Expected: whitespace와 Korean terminology findings가 0이다.
 
 **Files:** `gradle/libs.versions.toml`, 두 module `build.gradle.kts`, root `build.gradle.kts`; consumer fixture source는 Task 9에서 수정한다.
 
-- [ ] **Step 1: aliases를 추가한다**
+- [x] **Step 1: aliases를 추가한다**
 
 ```toml
 aws2-lambda = { module = "software.amazon.awssdk:lambda" }
@@ -66,11 +66,11 @@ aws-kotlin-lambda = { module = "aws.sdk.kotlin:lambda" }
 
 버전 숫자는 입력하지 않고 기존 service alias 정렬을 유지한다.
 
-- [ ] **Step 2: dependency 경계를 추가한다**
+- [x] **Step 2: dependency 경계를 추가한다**
 
 Java module에 `compileOnly(libs.aws2.lambda)`와 `testImplementation(libs.aws2.lambda)`, Kotlin module에 `compileOnly(libs.aws.kotlin.lambda)`와 `testImplementation(libs.aws.kotlin.lambda)`를 추가한다. Jackson/coroutine 기존 정책은 변경하지 않는다.
 
-- [ ] **Step 3: root fixture classpath와 source를 추가한다**
+- [x] **Step 3: root fixture classpath와 source를 추가한다**
 
 ```kotlin
 addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:lambda", libs.aws2.lambda)
@@ -79,7 +79,7 @@ addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotl
 
 이 단계에서는 classpath registration만 추가하고 consumer fixture source는 아직 건드리지 않는다. 실제 fixture API surface는 구현 type이 존재하는 Task 9에서 추가한다.
 
-- [ ] **Step 4: 기존 source와 fixture를 컴파일한다**
+- [x] **Step 4: 기존 source와 fixture를 컴파일한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:compileKotlin :bluetape4k-aws-kotlin:compileKotlin --no-daemon
@@ -91,7 +91,7 @@ Expected: 기존 code가 compile되고 Lambda service가 module runtime 전이 �
 
 **Files:** `aws-java/src/test/kotlin/io/bluetape4k/aws/lambda/LambdaPayloadCodecTest.kt`; `LambdaPayloadCodec.kt`; `LambdaInvocationResult.kt`.
 
-- [ ] **Step 1: 실패 테스트를 작성한다**
+- [x] **Step 1: 실패 테스트를 작성한다**
 
 ```kotlin
 @Test fun `bytes codec copies input and decoded output`()
@@ -105,7 +105,7 @@ Expected: 기존 code가 compile되고 Lambda service가 module runtime 전이 �
 
 `InvokeResponse.builder()`에 `SdkBytes`, `functionError("Handled")`, base64 `logResult`를 넣고 raw response·copied payload·decoded value·`hasFunctionError`·UTF-8 tail을 assertion한다. 대형 payload test는 4 MiB 배열에서 codec 경계 외의 반복 copy가 없는지 content equality와 단일 변환 횟수로 확인한다.
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.LambdaPayloadCodecTest' --no-daemon
@@ -113,7 +113,7 @@ Expected: 기존 code가 compile되고 Lambda service가 module runtime 전이 �
 
 Expected: 미정의 type/function으로 FAIL.
 
-- [ ] **Step 3: 최소 구현을 작성한다**
+- [x] **Step 3: 최소 구현을 작성한다**
 
 ```kotlin
 interface LambdaPayloadCodec<T> {
@@ -130,7 +130,7 @@ object LambdaPayloadCodecs {
 
 `bytes` encode/decode는 `copyOf()`, `utf8`은 UTF-8, Jackson은 `writeValueAsBytes`/`readValue(payload, valueType)`만 사용한다. unsafe default typing이나 global mapper를 설치하지 않는다. result는 `SdkBytes.asByteArray().copyOf()`를 저장하고 base64 decode 실패를 wrapping하지 않는다.
 
-- [ ] **Step 4: targeted test를 통과시킨다**
+- [x] **Step 4: targeted test를 통과시킨다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.LambdaPayloadCodecTest' --no-daemon
@@ -140,7 +140,7 @@ object LambdaPayloadCodecs {
 
 **Files:** `aws-java/src/test/kotlin/io/bluetape4k/aws/lambda/model/LambdaRequestSupportTest.kt`; `aws-java/src/main/kotlin/io/bluetape4k/aws/lambda/model/LambdaRequestSupport.kt`.
 
-- [ ] **Step 1: 실패 테스트를 작성한다**
+- [x] **Step 1: 실패 테스트를 작성한다**
 
 ```kotlin
 @Test fun `request maps function ARN qualifier invocation log and payload`()
@@ -150,13 +150,13 @@ object LambdaPayloadCodecs {
 @Test fun `tail log is rejected for event and dry run`()
 ```
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.model.LambdaRequestSupportTest' --no-daemon
 ```
 
-- [ ] **Step 3: builder를 구현한다**
+- [x] **Step 3: builder를 구현한다**
 
 ```kotlin
 inline fun invokeRequestOf(
@@ -176,7 +176,7 @@ inline fun invokeRequestOf(
 
 `validateInvokeRequest`는 blank function/qualifier와 `Tail + non-RequestResponse`만 검사하고 ARN 형식·payload 크기·IAM·function existence는 검사하지 않는다.
 
-- [ ] **Step 4: targeted request test를 통과시킨다**
+- [x] **Step 4: targeted request test를 통과시킨다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.model.LambdaRequestSupportTest' --no-daemon
@@ -186,21 +186,21 @@ inline fun invokeRequestOf(
 
 **Files:** Java lifecycle tests 2개와 `LambdaClientSupport.kt`, `LambdaAsyncClientSupport.kt`.
 
-- [ ] **Step 1: 실패 테스트를 작성한다**
+- [x] **Step 1: 실패 테스트를 작성한다**
 
 기존 `SfnClientSupportTest` 패턴으로 explicit endpoint/region/credentials/http client와 callback override, `ShutdownQueue` registration, `with...` success/exception/cancellation close, external HTTP client 미종료를 검증한다. async에는 block 안에서 future를 await한 뒤 client가 닫히는 계약을 추가한다.
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.LambdaClientSupportTest' --tests 'io.bluetape4k.aws.lambda.LambdaAsyncClientSupportTest' --no-daemon
 ```
 
-- [ ] **Step 3: factory를 구현한다**
+- [x] **Step 3: factory를 구현한다**
 
 `SfnClientSupport.kt`와 같은 explicit argument → callback → build 순서를 사용한다. application factory는 `ShutdownQueue.register(client)`, bounded helper는 `try/finally { client.close() }`를 사용한다. async helper는 `suspend (LambdaAsyncClient) -> R` block을 받아 미완료 future가 client close 뒤로 나가지 않게 한다.
 
-- [ ] **Step 4: lifecycle test를 통과시킨다**
+- [x] **Step 4: lifecycle test를 통과시킨다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.LambdaClientSupportTest' --tests 'io.bluetape4k.aws.lambda.LambdaAsyncClientSupportTest' --no-daemon
@@ -212,7 +212,7 @@ Expected: service client close exactly once, external HTTP client close 0회.
 
 **Files:** `LambdaExtensionsTest.kt`, `LambdaClientExtensions.kt`, `LambdaAsyncClientExtensions.kt`, `LambdaAsyncClientCoroutinesExtensions.kt`.
 
-- [ ] **Step 1: 실패 테스트를 작성한다**
+- [x] **Step 1: 실패 테스트를 작성한다**
 
 ```kotlin
 @Test fun `sync bytes and string preserve final request and raw response`()
@@ -226,17 +226,17 @@ Expected: service client close exactly once, external HTTP client close 0회.
 @Test fun `await overload propagates CancellationException`()
 ```
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.LambdaExtensionsTest' --no-daemon
 ```
 
-- [ ] **Step 3: extension을 구현한다**
+- [x] **Step 3: extension을 구현한다**
 
 sync는 `invoke(invokeRequestOf(...)).toLambdaInvocationResult(codec)`로 만들고 async는 SDK future와 result future를 분리한다. `whenComplete`는 error를 그대로 exceptional completion하고 response를 한 번만 complete한다. result future cancellation은 `sdkFuture.cancel(true)`를 호출하며 `await()`는 `kotlinx.coroutines.future.await`를 사용한다. raw `invoke(InvokeRequest)`는 가리지 않는다.
 
-- [ ] **Step 4: targeted test를 통과시킨다**
+- [x] **Step 4: targeted test를 통과시킨다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.LambdaExtensionsTest' --no-daemon
@@ -246,17 +246,17 @@ sync는 `invoke(invokeRequestOf(...)).toLambdaInvocationResult(codec)`로 만들
 
 **Files:** Kotlin codec/result/request tests와 `LambdaPayloadCodec.kt`, `LambdaInvocationResult.kt`, `model/LambdaRequestSupport.kt`.
 
-- [ ] **Step 1: 실패 테스트를 작성한다**
+- [x] **Step 1: 실패 테스트를 작성한다**
 
 Kotlin `InvokeResponse`/`InvokeRequest.Builder` property DSL로 bytes/string/Jackson, null/empty, FunctionError/log tail, callback override, blank fields, Tail + Event/DryRun를 Java 테스트와 대칭 의미로 검증한다.
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests 'io.bluetape4k.aws.kotlin.lambda.LambdaPayloadCodecTest' --tests 'io.bluetape4k.aws.kotlin.lambda.model.LambdaRequestSupportTest' --no-daemon
 ```
 
-- [ ] **Step 3: Kotlin SDK-specific 구현을 작성한다**
+- [x] **Step 3: Kotlin SDK-specific 구현을 작성한다**
 
 ```kotlin
 inline fun invokeRequestOf(
@@ -278,7 +278,7 @@ inline fun invokeRequestOf(
 
 Kotlin codec/result는 Java 타입을 import하지 않고 caller mapper, `copyOf`, base64 decode, raw response 보존을 동일한 의미로 구현한다.
 
-- [ ] **Step 4: Kotlin targeted test를 통과시킨다**
+- [x] **Step 4: Kotlin targeted test를 통과시킨다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests 'io.bluetape4k.aws.kotlin.lambda.LambdaPayloadCodecTest' --tests 'io.bluetape4k.aws.kotlin.lambda.model.LambdaRequestSupportTest' --no-daemon
@@ -288,21 +288,21 @@ Kotlin codec/result는 Java 타입을 import하지 않고 caller mapper, `copyOf
 
 **Files:** `LambdaClientSupportTest.kt`, `LambdaExtensionsTest.kt`, `LambdaClientSupport.kt`, `LambdaExtensions.kt`.
 
-- [ ] **Step 1: 실패 테스트를 작성한다**
+- [x] **Step 1: 실패 테스트를 작성한다**
 
 `SfnClientSupportTest`/`SfnExtensionsTest`의 `coEvery`/`coVerify` 패턴으로 success/failure/cancellation close, caller-owned `HttpClientEngine` 미종료, request mapping, FunctionError result, codec error, suspend cancellation을 검증한다.
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests 'io.bluetape4k.aws.kotlin.lambda.LambdaClientSupportTest' --tests 'io.bluetape4k.aws.kotlin.lambda.LambdaExtensionsTest' --no-daemon
 ```
 
-- [ ] **Step 3: lifecycle와 native suspend API를 구현한다**
+- [x] **Step 3: lifecycle와 native suspend API를 구현한다**
 
 `lambdaClientOf`는 endpoint/region/credentials/http engine을 설정하고 callback을 마지막에 실행한다. `withLambdaClient`는 `useSafe`로 service client만 닫는다. `invokeBytes`/`invokeString`/`invokeTyped`는 native suspend `invoke`를 직접 호출하며 dispatcher를 강제하지 않는다.
 
-- [ ] **Step 4: Kotlin test를 통과시킨다**
+- [x] **Step 4: Kotlin test를 통과시킨다**
 
 ```bash
 ./gradlew :bluetape4k-aws-kotlin:test --tests 'io.bluetape4k.aws.kotlin.lambda.LambdaClientSupportTest' --tests 'io.bluetape4k.aws.kotlin.lambda.LambdaExtensionsTest' --no-daemon
@@ -312,7 +312,7 @@ Kotlin codec/result는 Java 타입을 import하지 않고 caller mapper, `copyOf
 
 **Files:** 두 consumer fixture, 두 `build.gradle.kts`, 두 `LambdaSmokeTest.kt`, readiness evidence.
 
-- [ ] **Step 1: fixture compile proof를 실행한다**
+- [x] **Step 1: fixture compile proof를 실행한다**
 
 ```bash
 ./gradlew compileAwsJavaServiceConsumerFixture compileAwsKotlinServiceConsumerFixture --no-daemon
@@ -320,11 +320,15 @@ Kotlin codec/result는 Java 타입을 import하지 않고 caller mapper, `copyOf
 
 Expected: 외부 runtime service dependency를 명시한 fixture가 PASS한다.
 
-- [ ] **Step 2: smoke input/gate를 구현한다**
+- [x] **Step 2: smoke input/gate를 구현한다**
 
-필수 입력은 `-PlambdaSmoke`, `LAMBDA_SMOKE_FUNCTION_NAME`, `LAMBDA_SMOKE_REGION`, `LAMBDA_SMOKE_EMULATOR`이고 optional qualifier를 둔다. 기본 emulator `floci`, explicit fallback `localstack`; capability/function/credential가 없으면 client 생성 전에 skip한다. XML/logger에 `lambda-smoke: SKIP before client creation; missing=...`를 기록한다.
+필수 입력은 `-PlambdaSmoke`, `LAMBDA_SMOKE_FUNCTION_NAME`, `LAMBDA_SMOKE_REGION`이고,
+emulator selector `LAMBDA_SMOKE_EMULATOR`는 선택 입력으로 기본값 `floci`를 사용하며
+`localstack`을 explicit fallback으로 둔다. optional qualifier를 지원하고,
+capability/function/credential가 없으면 client 생성 전에 skip한다. XML/logger에
+`lambda-smoke: SKIP before client creation; missing=...`를 기록한다.
 
-- [ ] **Step 3: opt-in smoke를 순차 실행한다**
+- [x] **Step 3: opt-in smoke를 순차 실행한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test -PlambdaSmoke --tests '*LambdaSmokeTest' --no-daemon
@@ -337,7 +341,7 @@ function 생성·배포·삭제는 하지 않는다. unsupported 결과는 `live
 
 **Files:** root/module README 6개, Java/Kotlin manual EN·KO 4개, `CHANGELOG.md`.
 
-- [ ] **Step 1: service matrix와 runtime dependency 예제를 추가한다**
+- [x] **Step 1: service matrix와 runtime dependency 예제를 추가한다**
 
 ```kotlin
 dependencies {
@@ -348,7 +352,7 @@ dependencies {
 
 Kotlin 예제는 `aws.sdk.kotlin:lambda`를 사용한다. root/module matrix에 Lambda를 추가한다.
 
-- [ ] **Step 2: manual에 호출·운영 경계를 추가한다**
+- [x] **Step 2: manual에 호출·운영 경계를 추가한다**
 
 develop/unreleased 장에 bytes/string/Jackson mapper, FunctionError result semantics, raw SDK escape hatch, `with...Client` scope, no retry/deployment, sensitive payload/log 비기록, Floci/LocalStack N/A를 설명한다. 다음 실제 호출 예제를 양 언어에 각각 넣는다.
 
@@ -372,7 +376,7 @@ withLambdaClient(region = "ap-northeast-2") { client ->
 
 예제에는 consumer가 `software.amazon.awssdk:lambda` 또는 `aws.sdk.kotlin:lambda` runtime dependency를 직접 추가해야 한다는 문장도 포함한다. EN/KO heading·anchor·API link 구조를 정렬한다.
 
-- [ ] **Step 3: CHANGELOG와 writer 계약을 검증한다**
+- [x] **Step 3: CHANGELOG와 writer 계약을 검증한다**
 
 `[미출시] > 추가`에 #314 링크와 Java sync/async/coroutine, Kotlin suspend, codec/result, compileOnly, emulator boundary를 한국어로 기록한다.
 
@@ -388,11 +392,11 @@ Expected: audit/manual contract PASS, manual `releaseRef: 0.5.0`는 변경하지
 
 **File:** `/Users/debop/work/bluetape4k/bluetape4k-wiki/research/2026-08-23-aws-lambda-invoke-helper.md` (worktree-relative path: `../../../bluetape4k-wiki/research/2026-08-23-aws-lambda-invoke-helper.md`).
 
-- [ ] **Step 1: 공식 URL과 retrieval date를 Korean decision note로 요약한다**
+- [x] **Step 1: 공식 URL과 retrieval date를 Korean decision note로 요약한다**
 
 Java example, Kotlin Invoke API, Lambda Invoke API의 URL, FunctionError/base64 LogResult/invocation type, compileOnly·raw response·emulator implications, Assets section을 저작권 안전하게 기록한다.
 
-- [ ] **Step 2: wiki index와 search를 검증한다**
+- [x] **Step 2: wiki index와 search를 검증한다**
 
 ```bash
 cd /Users/debop/work/bluetape4k/bluetape4k-wiki
@@ -408,7 +412,7 @@ Expected: note가 collection search에 나타난다. AWS branch와 wiki branch c
 
 **Files:** create `docs/review/evidence/2026-08-23-issue-314-lambda-plan.md`; all implementation files are read-only inputs.
 
-- [ ] **Step 1: targeted tests와 compile proof를 순차 실행한다**
+- [x] **Step 1: targeted tests와 compile proof를 순차 실행한다**
 
 ```bash
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.*' --no-daemon
@@ -416,7 +420,7 @@ Expected: note가 collection search에 나타난다. AWS branch와 wiki branch c
 ./gradlew :bluetape4k-aws-java:compileKotlin :bluetape4k-aws-kotlin:compileKotlin compileAwsJavaServiceConsumerFixture compileAwsKotlinServiceConsumerFixture detekt --no-daemon
 ```
 
-- [ ] **Step 2: repository build와 manual contract를 실행한다**
+- [x] **Step 2: repository build와 manual contract를 실행한다**
 
 ```bash
 ./gradlew build -x test --parallel --no-daemon
@@ -428,17 +432,17 @@ git diff --check
 
 Expected: build/detekt/manual/diff check PASS. real AWS IAM/function fidelity는 `UNVERIFIED`로 evidence에 남긴다.
 
-- [ ] **Step 3: DoD evidence를 작성한다**
+- [x] **Step 3: DoD evidence를 작성한다**
 
 evidence에 alias/compileOnly, public API, error/log/cancellation/lifecycle tests, emulator exact N/A/opt-in XML, bilingual docs/audit, compile/detekt/build 결과와 SHA를 연결한다. unchecked DoD 없이 known gaps를 별도 표로 둔다.
 
 ### Task 13: commit·PR·merge를 별도 gate로 종료한다
 
-- [ ] **Step 1: atomic Lore commit을 확인한다**
+- [x] **Step 1: atomic Lore commit을 확인한다**
 
 설계/검토 commit 이후 dependency, Java API, Kotlin API, docs/evidence를 기능 단위로 분리하고 각 commit에 intent line, `Constraint`, `Rejected`, `Confidence`, `Scope-risk`, `Directive`, `Tested`, `Not-tested`를 넣는다.
 
-- [ ] **Step 2: branch/head를 확인한다**
+- [x] **Step 2: branch/head를 확인한다**
 
 ```bash
 git status --short
@@ -449,7 +453,7 @@ git merge-base --is-ancestor origin/develop HEAD
 
 Expected: feature branch clean, base ancestor 유지.
 
-- [ ] **Step 3: PR 전 live issue/metadata와 exact head를 fresh-read한다**
+- [x] **Step 3: PR 전 live issue/metadata와 exact head를 fresh-read한다**
 
 ```bash
 gh issue view 314 --repo bluetape4k/bluetape4k-aws --json number,state,title,body,labels,milestone,assignees
@@ -465,11 +469,11 @@ merge 직전 exact head SHA, required checks, review threads, mergeability, meta
 
 ## 계획 자체 점검
 
-- [ ] **Spec coverage:** codec bytes/string/Jackson, copy/null/empty, FunctionError/error payload/log tail, function/ARN/qualifier/invocation, callback final override, Java sync/async/coroutine, Kotlin suspend, lifecycle, compileOnly, consumer, emulator N/A, docs, no retry/deployment를 Task 2~12에 매핑했다.
-- [ ] **Placeholder scan:** unresolved placeholder, 임의 파일, 미정 명령 없이 실제 경로·signature·명령·expected result를 적었다.
-- [ ] **Type consistency:** Java는 `software.amazon.awssdk.services.lambda.*`, Kotlin은 `aws.sdk.kotlin.services.lambda.*`만 사용하고 codec/result 타입을 공유하지 않는다.
-- [ ] **Order:** dependency → codec/result → request → lifecycle → invocation → consumer/smoke → docs/wiki → verification → PR gate; 구현 task는 실패 test → 최소 구현 → PASS 순서다.
-- [ ] **Known gaps:** real AWS IAM/function 및 production fidelity는 `UNVERIFIED`; Spring Boot/Ktor/deployment/retry/polling은 별도 이슈다.
+- [x] **Spec coverage:** codec bytes/string/Jackson, copy/null/empty, FunctionError/error payload/log tail, function/ARN/qualifier/invocation, callback final override, Java sync/async/coroutine, Kotlin suspend, lifecycle, compileOnly, consumer, emulator N/A, docs, no retry/deployment를 Task 2~12에 매핑했다.
+- [x] **Placeholder scan:** unresolved placeholder, 임의 파일, 미정 명령 없이 실제 경로·signature·명령·expected result를 적었다.
+- [x] **Type consistency:** Java는 `software.amazon.awssdk.services.lambda.*`, Kotlin은 `aws.sdk.kotlin.services.lambda.*`만 사용하고 codec/result 타입을 공유하지 않는다.
+- [x] **Order:** dependency → codec/result → request → lifecycle → invocation → consumer/smoke → docs/wiki → verification → PR gate; 구현 task는 실패 test → 최소 구현 → PASS 순서다.
+- [x] **Known gaps:** real AWS IAM/function 및 production fidelity는 `UNVERIFIED`; Spring Boot/Ktor/deployment/retry/polling은 별도 이슈다.
 
 ## 승인 후 실행 정지선
 

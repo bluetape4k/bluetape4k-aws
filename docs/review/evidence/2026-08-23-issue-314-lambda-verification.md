@@ -4,7 +4,7 @@
 
 - 대상: `feat/issue-314-lambda`의 Java SDK v2·AWS SDK for Kotlin Lambda helper
 - 기준: `origin/develop` (`502bee2ea7e864fd8a7ed0b7e923961843a7bf30`)
-- 검증 기준 커밋: `068e165` 및 해당 커밋 이후의 구현·문서 worktree 변경
+- 검증 기준 커밋: `2a99090` 및 해당 커밋까지의 구현·문서 변경
 - 범위 제외: 함수 배포, IAM mutation, retry/polling, Spring Boot/Ktor facade, merge
 
 ## 계획·체크리스트 상태
@@ -12,12 +12,19 @@
 | 항목 | 상태 | 증거 |
 |---|---|---|
 | SDK alias·compileOnly·consumer 경계 | PASS | `libs.aws2.lambda`, `libs.aws.kotlin.lambda`, 두 모듈 compileOnly와 fixture compile |
-| Java sync/async/coroutine API | PASS | codec·request·lifecycle·extension 테스트 29건 통과 |
+| Java sync/async/coroutine API | PASS | codec·request·lifecycle·extension 테스트 30건 통과 |
 | Kotlin native suspend API | PASS | codec·request·lifecycle·extension 테스트 24건 통과 |
 | cancellation·FunctionError·payload/log 계약 | PASS | targeted 및 전체 모듈 테스트, raw response/copy/null-empty 테스트 |
 | public 문서·manual·CHANGELOG | PASS | EN/KO 문서 반영, manual contract·manifest·inventory 통과 |
 | emulator smoke 경계 | N/A | 필수 function/region 입력 부재로 client 생성 전 skip; Floci Lambda 호출 미지원 |
 | 실제 AWS function/IAM fidelity | UNVERIFIED | 실행 가능한 함수·권한 입력이 없어 live 호출을 수행하지 않음 |
+
+계획 문서의 실행 checkbox는 merge gate를 제외하고 모두 `[x]`로 갱신했다. 마지막
+merge 단계는 fresh exact-head·CI·review와 별도 사용자 승인이 필요하므로 `[ ]`로
+남겼다. 독립 구현 리뷰는 P0/P1=0으로 판정했고, async scoped exception close와 Kotlin
+최종 request field assertion의 P2 공백은 보강 테스트로 닫았다. cancellation과 response
+mapping 사이의 극소 concurrency race는 P2 후속 위험으로 남기며 merge blocker로
+확대하지 않는다.
 
 ## 실행 결과
 
@@ -27,7 +34,7 @@
 
 ```text
 ./gradlew :bluetape4k-aws-java:test --tests 'io.bluetape4k.aws.lambda.*' --no-daemon
-29 passing
+30 passing
 
 ./gradlew :bluetape4k-aws-kotlin:test --tests 'io.bluetape4k.aws.kotlin.lambda.*' --no-daemon
 24 passing
@@ -42,7 +49,7 @@ BUILD SUCCESSFUL
 BUILD SUCCESSFUL
 
 ./gradlew :bluetape4k-aws-java:test --no-configuration-cache --no-daemon
-450 passing, 15 pending; BUILD SUCCESSFUL
+451 passing, 15 pending; BUILD SUCCESSFUL
 
 ./gradlew :bluetape4k-aws-kotlin:test --no-configuration-cache --no-daemon
 630 passing, 13 pending; BUILD SUCCESSFUL
