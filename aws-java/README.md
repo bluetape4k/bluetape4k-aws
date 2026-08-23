@@ -5,8 +5,8 @@ English | [한국어](./README.ko.md)
 A unified integration module built on AWS Java SDK v2. It keeps AWS SDK model
 types visible while adding sync helpers, async `CompletableFuture` extensions,
 and coroutine APIs for DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS,
-CloudWatch, Kinesis, EventBridge, Step Functions, STS, Secrets Manager, and
-Parameter Store.
+CloudWatch, Kinesis, EventBridge, Step Functions, Lambda, STS, Secrets Manager,
+and Parameter Store.
 
 ## Diagrams
 
@@ -43,6 +43,7 @@ request DSLs, async extensions, coroutine wrappers, and repository helpers.
 | **Kinesis**         | Stream record send/receive, Coroutines extensions                            |
 | **EventBridge**     | Event bus, rule, target, list, and `PutEvents` helpers                       |
 | **Step Functions**  | Execution start/stop/describe/list, async coroutine `Flow` polling           |
+| **Lambda**          | Sync, async `CompletableFuture`, coroutine invocation, typed payload codecs  |
 | **Bedrock Runtime** | Model-neutral `Converse`, `ConverseStream`, and cold text-delta `Flow`       |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines extensions              |
 | **Secrets Manager** | Redacted secret values, request DSLs, sync/async/coroutine helpers           |
@@ -360,6 +361,33 @@ because service SDKs remain `compileOnly`. See the [Step Functions Java module
 manual](../docs/manual/en/modules/bluetape4k-aws-java.md) for dependency,
 Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
 
+### Lambda invocation helpers (unreleased/develop)
+
+The develop line adds sync, async, and coroutine `Invoke` helpers under
+`io.bluetape4k.aws.lambda`. The helpers preserve the raw `InvokeResponse`, copy
+the response payload, expose `functionError` as result data, and decode optional
+tail logs. `LambdaPayloadCodecs.jackson(...)` is available when the consumer
+chooses Jackson.
+
+```kotlin
+import io.bluetape4k.aws.lambda.invokeString
+import io.bluetape4k.aws.lambda.withLambdaClient
+import software.amazon.awssdk.regions.Region
+
+fun invokeOrder(): String = withLambdaClient(region = Region.AP_NORTHEAST_2) { client ->
+    val result = client.invokeString("orders-handler", "{\"id\":1}")
+    check(!result.hasFunctionError)
+    result.value.orEmpty()
+}
+```
+
+Add `software.amazon.awssdk:lambda` directly at runtime because the service SDK
+is `compileOnly`. For async callers, `invokeStringAsync` returns a future and
+the coroutine overload uses `.await()`; cancelling the result future also
+cancels the underlying AWS SDK future. The helper does not add retry,
+deployment, polling, logging, or IAM policy management. Use an application
+owned codec for typed payloads and keep invocation inside the client scope.
+
 ## Not Provided by This Module
 
 This module does not provide Spring Environment loading, JSON flattening,
@@ -429,6 +457,7 @@ dependencies {
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:sfn")
+    implementation("software.amazon.awssdk:lambda")
     implementation("software.amazon.awssdk:bedrockruntime")
     implementation("software.amazon.awssdk:sts")
     // ... add other services as needed

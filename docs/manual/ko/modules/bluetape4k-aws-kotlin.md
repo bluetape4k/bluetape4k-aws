@@ -52,7 +52,69 @@ withS3Client(region = region) { s3 ->
 
 ## 작업별 API {#api-by-task}
 
-DynamoDB 모델 DSL·배치, S3 객체 작업, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, STS와 HTTP engine provider를 제공합니다.
+DynamoDB 모델 DSL·배치, S3 객체 작업, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, Lambda, STS와 HTTP engine provider를 제공합니다.
+
+## Lambda 호출 helper {#lambda}
+
+> 미출시/develop: 이 절은 Issue #314 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+AWS Kotlin SDK 모듈은 `io.bluetape4k.aws.kotlin.lambda` 아래에 native suspend `Invoke`
+helper를 제공합니다. `LambdaInvocationResult<T>`는 raw SDK response, 복사한 payload,
+status, 선택적 `FunctionError`, 디코드한 tail log를 함께 보존합니다. 함수 오류는 반환
+데이터이고 transport와 SDK 오류는 예외로 남습니다.
+
+### 의존성과 client 경계 {#lambda-dependency}
+
+Lambda SDK는 `compileOnly`로 유지합니다. Consumer classpath에 직접 추가하고 짧은 호출에는
+범위가 지정된 client helper를 사용하세요.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin")
+    implementation("aws.sdk.kotlin:lambda")
+}
+```
+
+```kotlin
+import io.bluetape4k.aws.kotlin.lambda.invokeString
+import io.bluetape4k.aws.kotlin.lambda.withLambdaClient
+
+suspend fun invokeOrder(): String =
+    withLambdaClient(region = "ap-northeast-2") { client ->
+        val result = client.invokeString("orders-handler", "{\"id\":1}")
+        check(!result.hasFunctionError)
+        result.value.orEmpty()
+    }
+```
+
+Typed payload는 mapper와 codec을 애플리케이션 경계에서 선택하세요.
+
+```kotlin
+data class OrderRequest(val id: Int)
+data class OrderResponse(val accepted: Boolean)
+val mapper = tools.jackson.databind.ObjectMapper()
+
+withLambdaClient(region = "ap-northeast-2") { client ->
+    val result = client.invokeTyped(
+        "orders-handler",
+        OrderRequest(1),
+        LambdaPayloadCodecs.jackson(mapper, OrderResponse::class.java),
+    )
+    check(result.value != null)
+}
+```
+
+`invokeBytes`, `invokeString`, `invokeTyped` 중 필요한 API와 애플리케이션이 소유한
+`LambdaPayloadCodec`을 사용하세요. Null과 빈 payload는 구분합니다. Request DSL은 blank
+function/qualifier를 검사하고 `RequestResponse`에서만 tail log를 허용합니다. ARN, 크기,
+IAM, 함수 존재 여부는 AWS 계약으로 남깁니다.
+
+Native suspend cancellation은 그대로 전달되며 `withLambdaClient`는 service client만
+닫고 주입한 HTTP engine은 호출자 소유로 남깁니다. Retry, 배포, polling, 로깅, IAM policy
+관리는 추가하지 않습니다. Opt-in smoke lane은 사전 배포된 함수와 명시적인 function/region
+입력이 필요하며 Floci Lambda는 미지원으로 기록하고 입력이 없으면 client 생성 전에
+건너뜁니다. Raw payload, 디코드한 tail log, SDK response body는 기본적으로 기록하거나
+저장하지 마세요.
 
 ## Step Functions 실행 helper {#step-functions}
 

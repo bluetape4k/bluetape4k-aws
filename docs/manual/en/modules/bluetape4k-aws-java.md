@@ -53,7 +53,72 @@ try {
 
 ## API by task {#api-by-task}
 
-S3 object and transfer helpers, DynamoDB enhanced repositories and batch execution, SQS/SNS messaging, KMS, CloudWatch, Kinesis, SES, STS, and request-model builders.
+S3 object and transfer helpers, DynamoDB enhanced repositories and batch execution, SQS/SNS messaging, KMS, CloudWatch, Kinesis, Lambda, SES, STS, and request-model builders.
+
+## Lambda invocation helpers {#lambda}
+
+> Unreleased/develop: this section describes the Issue #314 API and is not part of the `0.5.0` release source.
+
+The Java SDK v2 module adds `io.bluetape4k.aws.lambda` helpers for sync,
+`CompletableFuture`, and coroutine invocation. `LambdaInvocationResult<T>` keeps
+the raw `InvokeResponse`, a copied payload, status code, optional
+`FunctionError`, and a decoded `LogType.Tail` value. A function error is result
+data; transport and SDK failures remain exceptions.
+
+### Dependency and client boundary {#lambda-dependency}
+
+The Lambda SDK remains `compileOnly`. Add it to the consumer's compile and
+runtime classpaths, and close clients at the application boundary:
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:lambda")
+}
+```
+
+```kotlin
+import io.bluetape4k.aws.lambda.invokeString
+import io.bluetape4k.aws.lambda.withLambdaClient
+import software.amazon.awssdk.regions.Region
+
+fun invokeOrder(): String = withLambdaClient(region = Region.AP_NORTHEAST_2) { client ->
+    val result = client.invokeString("orders-handler", "{\"id\":1}")
+    check(!result.hasFunctionError)
+    result.value.orEmpty()
+}
+```
+
+For typed payloads, choose the mapper and codec at the application boundary:
+
+```kotlin
+data class OrderRequest(val id: Int)
+data class OrderResponse(val accepted: Boolean)
+val mapper = tools.jackson.databind.ObjectMapper()
+
+withLambdaClient(region = Region.AP_NORTHEAST_2) { client ->
+    val result = client.invokeTyped(
+        "orders-handler",
+        OrderRequest(1),
+        LambdaPayloadCodecs.jackson(mapper, OrderResponse::class.java),
+    )
+    check(result.value != null)
+}
+```
+
+Use `invokeBytes`, `invokeString`, or `invokeTyped` with an application-owned
+`LambdaPayloadCodec`. Null payload and empty payload remain distinct. The
+request builder validates blank function/qualifier values and rejects tail logs
+unless the invocation type is `RequestResponse`; ARN, size, IAM, and function
+existence remain AWS contracts.
+
+Async cancellation is propagated to the AWS SDK future and coroutine
+`CancellationException` is not translated. The helper does not add retries,
+deployment, polling, logging, or IAM policy management. An opt-in smoke test
+requires a pre-deployed function and explicit function/region inputs; the
+repository records Floci Lambda as unsupported and skips before client creation
+when those inputs are absent. Do not log or persist raw payloads, decoded tail
+logs, or SDK response bodies by default.
 
 ## Step Functions execution helpers {#step-functions}
 

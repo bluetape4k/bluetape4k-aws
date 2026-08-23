@@ -35,6 +35,7 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 | **Kinesis**         | 스트림 레코드 전송, `recordFlow {}` 샤드별 cold Flow, DSL(`putRecordRequestOf {}`) |
 | **EventBridge**     | Event bus, rule, target, list, `PutEvents` suspend helper |
 | **Step Functions**  | 실행 시작/중지/조회/목록과 native suspend `Flow` polling |
+| **Lambda**          | native suspend 호출, typed payload codec, raw response metadata |
 | **Bedrock Runtime** | native suspend `Converse`, `ConverseStream`, cold text-delta `Flow` |
 | **STS**             | AssumeRole, CallerIdentity, DSL(`stsClientOf {}`) |
 | **Secrets Manager** | Redacted secret value, client lifecycle helper, 요청 DSL |
@@ -361,6 +362,30 @@ HTTP engine은 호출자 소유로 남깁니다. 서비스 SDK는 `compileOnly`�
 emulator 경계는 [Step Functions Kotlin 모듈 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-kotlin.md)에서
 확인할 수 있습니다.
 
+### Lambda 호출 helper (미출시/develop)
+
+develop 개발선에는 `io.bluetape4k.aws.kotlin.lambda` 아래에 native suspend
+`Invoke` helper가 추가됩니다. `LambdaInvocationResult`는 raw response, 복사한 payload,
+status, 선택적 `FunctionError`, 디코드한 tail log를 함께 보존합니다. Typed payload에는
+소비자가 Jackson을 선택한 경우에만 `LambdaPayloadCodecs.jackson(...)`을 사용하세요.
+
+```kotlin
+import io.bluetape4k.aws.kotlin.lambda.invokeString
+import io.bluetape4k.aws.kotlin.lambda.withLambdaClient
+
+suspend fun invokeOrder(): String =
+    withLambdaClient(region = "ap-northeast-2") { client ->
+        val result = client.invokeString("orders-handler", "{\"id\":1}")
+        check(!result.hasFunctionError)
+        result.value.orEmpty()
+    }
+```
+
+서비스 SDK는 `compileOnly`로 유지되므로 런타임에 `aws.sdk.kotlin:lambda`를 직접
+추가하세요. `withLambdaClient`는 service client만 닫고 주입한 HTTP engine은 호출자 소유로
+남깁니다. Native suspend cancellation을 그대로 전달하며 retry, 배포, polling, 로깅,
+IAM policy 관리는 추가하지 않습니다.
+
 ### Secrets Manager와 Parameter Store
 
 ```kotlin
@@ -471,6 +496,7 @@ dependencies {
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sfn:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:lambda:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:bedrockruntime:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... 필요한 서비스 추가

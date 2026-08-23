@@ -4,6 +4,13 @@ import io.bluetape4k.aws.cloudwatch.cloudWatchClient
 import io.bluetape4k.aws.dynamodb.dynamoDbClient
 import io.bluetape4k.aws.kinesis.kinesisClient
 import io.bluetape4k.aws.kms.kmsClient
+import io.bluetape4k.aws.lambda.lambdaAsyncClient
+import io.bluetape4k.aws.lambda.lambdaAsyncClientOf
+import io.bluetape4k.aws.lambda.lambdaClient
+import io.bluetape4k.aws.lambda.lambdaClientOf
+import io.bluetape4k.aws.lambda.invokeString
+import io.bluetape4k.aws.lambda.withLambdaAsyncClient
+import io.bluetape4k.aws.lambda.withLambdaClient
 import io.bluetape4k.aws.s3.S3ClientFactory
 import io.bluetape4k.aws.ses.sesClient
 import io.bluetape4k.aws.sfn.listExecutionsByMapRun
@@ -24,6 +31,8 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import software.amazon.awssdk.services.kinesis.KinesisClient
 import software.amazon.awssdk.services.kms.KmsClient
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient
+import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.scheduler.SchedulerClient
 import software.amazon.awssdk.services.ses.SesClient
@@ -63,6 +72,8 @@ fun javaServiceConsumerFixture(): List<Any> = listOf<Any>(
     KinesisClient::class.java,
     SchedulerClient::class.java,
     SfnClient::class.java,
+    LambdaClient::class.java,
+    LambdaAsyncClient::class.java,
     StsClient::class.java,
     { S3ClientFactory.Sync.create { } },
     { dynamoDbClient { } },
@@ -96,5 +107,15 @@ fun javaServiceConsumerFixture(): List<Any> = listOf<Any>(
         }
     },
     ::javaSfnCustomHttpClients,
+    { lambdaClient { region(Region.AP_NORTHEAST_2) } },
+    { lambdaClientOf(endpoint = URI.create("http://localhost:4566"), region = Region.AP_NORTHEAST_2) },
+    { withLambdaClient(region = Region.AP_NORTHEAST_2) { client -> client.invokeString("orders", "{}") } },
+    { lambdaAsyncClient { region(Region.AP_NORTHEAST_2) } },
+    { lambdaAsyncClientOf(endpoint = URI.create("http://localhost:4566"), region = Region.AP_NORTHEAST_2) },
+    suspend {
+        withLambdaAsyncClient(region = Region.AP_NORTHEAST_2) { client ->
+            client.invokeString("orders", "{}").value
+        }
+    },
     { stsClient { } },
 )

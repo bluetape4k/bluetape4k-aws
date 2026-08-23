@@ -38,6 +38,7 @@ dependencies {
     compileOnly(libs.aws.kotlin.eventbridge)
     compileOnly(libs.aws.kotlin.scheduler)
     compileOnly(libs.aws.kotlin.sfn)
+    compileOnly(libs.aws.kotlin.lambda)
     compileOnly(libs.aws.kotlin.sts)
 
     // Resilience4j
@@ -59,6 +60,7 @@ dependencies {
     testImplementation(libs.aws.kotlin.eventbridge)
     testImplementation(libs.aws.kotlin.scheduler)
     testImplementation(libs.aws.kotlin.sfn)
+    testImplementation(libs.aws.kotlin.lambda)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(bt4k.mockk)
     testImplementation(libs.awaitility.kotlin)
@@ -69,13 +71,24 @@ tasks.test {
     val missingSmokeInputs = listOf("BEDROCK_REGION", "BEDROCK_MODEL_ID")
         .filter { providers.environmentVariable(it).orNull.isNullOrBlank() }
     val smokeEnabled = smokeRequested && missingSmokeInputs.isEmpty()
+    val lambdaSmokeRequested = providers.gradleProperty("lambdaSmoke").isPresent
+    val missingLambdaSmokeInputs = listOf("LAMBDA_SMOKE_FUNCTION_NAME", "LAMBDA_SMOKE_REGION")
+        .filter { providers.environmentVariable(it).orNull.isNullOrBlank() }
+    val lambdaSmokeEnabled = lambdaSmokeRequested && missingLambdaSmokeInputs.isEmpty()
 
     systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
+    systemProperty("bluetape4k.lambda.smoke.functionName", providers.environmentVariable("LAMBDA_SMOKE_FUNCTION_NAME").orNull.orEmpty())
+    systemProperty("bluetape4k.lambda.smoke.region", providers.environmentVariable("LAMBDA_SMOKE_REGION").orNull.orEmpty())
+    systemProperty("bluetape4k.lambda.smoke.emulator", providers.environmentVariable("LAMBDA_SMOKE_EMULATOR").orNull ?: "floci")
+    systemProperty("bluetape4k.lambda.smoke.qualifier", providers.environmentVariable("LAMBDA_SMOKE_QUALIFIER").orNull.orEmpty())
     useJUnitPlatform {
         if (smokeEnabled) {
             includeTags("bedrock-smoke")
         } else {
             excludeTags("bedrock-smoke")
+        }
+        if (!lambdaSmokeEnabled) {
+            excludeTags("lambda-smoke")
         }
     }
     onlyIf(
@@ -88,5 +101,14 @@ tasks.test {
             )
         }
         !smokeRequested || smokeEnabled
+    }
+    onlyIf("lambda-smoke: SKIP before client creation; missing=${missingLambdaSmokeInputs.joinToString(",")}") { task ->
+        if (lambdaSmokeRequested && !lambdaSmokeEnabled) {
+            task.logger.lifecycle(
+                "lambda-smoke: SKIP before client creation; missing={}",
+                missingLambdaSmokeInputs.joinToString(","),
+            )
+        }
+        !lambdaSmokeRequested || lambdaSmokeEnabled
     }
 }

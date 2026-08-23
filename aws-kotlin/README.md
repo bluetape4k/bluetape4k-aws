@@ -37,6 +37,7 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 | **Kinesis**         | Stream record publishing, `recordFlow {}` cold Flow per shard, DSL (`putRecordRequestOf {}`) |
 | **EventBridge**     | Event bus, rule, target, list, and `PutEvents` suspend helpers |
 | **Step Functions**  | Execution start/stop/describe/list and native suspend `Flow` polling |
+| **Lambda**          | Native suspend invocation, typed payload codecs, raw response metadata |
 | **Bedrock Runtime** | Native suspend `Converse`, `ConverseStream`, and cold text-delta `Flow` |
 | **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)      |
 | **Secrets Manager** | Redacted secret values, client lifecycle helpers, request DSLs |
@@ -367,6 +368,32 @@ service client and leaves an injected HTTP engine under caller ownership. Add
 manual](../docs/manual/en/modules/bluetape4k-aws-kotlin.md) for dependency,
 Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
 
+### Lambda invocation helpers (unreleased/develop)
+
+The develop line adds native suspend `Invoke` helpers under
+`io.bluetape4k.aws.kotlin.lambda`. A `LambdaInvocationResult` keeps the raw
+response, copied payload, status, optional `FunctionError`, and decoded tail
+log together. Use `LambdaPayloadCodecs.jackson(...)` only when the consumer
+chooses Jackson for typed payloads.
+
+```kotlin
+import io.bluetape4k.aws.kotlin.lambda.invokeString
+import io.bluetape4k.aws.kotlin.lambda.withLambdaClient
+
+suspend fun invokeOrder(): String =
+    withLambdaClient(region = "ap-northeast-2") { client ->
+        val result = client.invokeString("orders-handler", "{\"id\":1}")
+        check(!result.hasFunctionError)
+        result.value.orEmpty()
+    }
+```
+
+Add `aws.sdk.kotlin:lambda` directly at runtime because service SDKs remain
+`compileOnly`. The helper preserves native suspend cancellation and closes only
+the service client in `withLambdaClient`; an injected HTTP engine remains
+caller-owned. It does not add retry, deployment, polling, logging, or IAM
+policy management.
+
 ### Secrets Manager and Parameter Store
 
 ```kotlin
@@ -481,6 +508,7 @@ dependencies {
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sfn:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:lambda:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:bedrockruntime:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... add other services as needed
