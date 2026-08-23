@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.config
 
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.appconfig.AppConfigProperties
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreProperties
 import io.bluetape4k.aws.spring.s3.S3ConfigProperties
 import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerProperties
@@ -30,9 +31,10 @@ internal object AwsConfigDataSupport {
         },
         clientCloser: (Any) -> Unit = { },
     ): AwsConfigDataResource {
-        val parsed = AwsConfigDataLocationParser().parse(location)
-        check(parsed.backend == backend) { "ConfigData backend does not match resolver." }
         val configuration = bindConfiguration(binder, bootstrapContext, backend)
+        val separator = (configuration.backend as? AppConfigProperties)?.separator ?: "#"
+        val parsed = AwsConfigDataLocationParser().parse(location, separator)
+        check(parsed.backend == backend) { "ConfigData backend does not match resolver." }
         val disabled = !configuration.aws.enabled || !backendEnabled(configuration.backend)
         if (!disabled) {
             AwsConfigDataBootstrapBridge.requireClass(clientClassName, dependency)
@@ -80,6 +82,9 @@ internal object AwsConfigDataSupport {
 
             AwsConfigDataBackend.SECRETS_MANAGER ->
                 binder.bindOrCreate("bluetape4k.aws.secrets-manager", SecretsManagerProperties::class.java)
+
+            AwsConfigDataBackend.APP_CONFIG ->
+                binder.bindOrCreate("bluetape4k.aws.app-config", AppConfigProperties::class.java)
         }
         return ResolverConfiguration(aws, backendProperties, bootstrapContext)
     }
@@ -88,6 +93,7 @@ internal object AwsConfigDataSupport {
         is S3ConfigProperties -> properties.enabled
         is ParameterStoreProperties -> properties.enabled
         is SecretsManagerProperties -> properties.enabled
+        is AppConfigProperties -> properties.enabled
         else -> error("Unsupported AWS ConfigData backend properties.")
     }
 }

@@ -148,8 +148,8 @@ spring:
     import: aws-app-config:orders|production|prod
 ```
 
-separator는 비어 있지 않아야 하며 CR/LF/NUL을 포함할 수 없다. `Pattern.quote`로
-분리하므로 정규식 metacharacter도 값 그대로 동작한다. component가 정확히 세
+separator는 비어 있지 않아야 하며 CR/LF/NUL을 포함할 수 없다. 정규식이 아닌
+문자열 구분으로 분리하므로 metacharacter도 값 그대로 동작한다. component가 정확히 세
 개가 아니거나 빈 값이면 resolver 단계에서 안전한 configuration error를 낸다.
 `optional:`은 Spring Boot location prefix로만 지정한다.
 

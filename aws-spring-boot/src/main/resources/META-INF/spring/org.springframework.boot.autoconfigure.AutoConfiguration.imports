@@ -25,3 +25,4 @@ io.bluetape4k.aws.spring.sqs.SqsExtendedClientAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsExtendedClientJacksonAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsMicrometerAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsJacksonMessageConverterAutoConfiguration
+io.bluetape4k.aws.spring.appconfig.AppConfigAutoConfiguration
