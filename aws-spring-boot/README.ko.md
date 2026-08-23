@@ -459,6 +459,42 @@ AES-GCM으로 암호화한 뒤 encrypted data key와 nonce를 S3 metadata에 저
 이 helper는 byte-array object용입니다. multipart 또는 streaming client-side
 encryption은 지원하지 않으며, metadata format은 AWS Encryption SDK와 호환되지 않습니다.
 
+### S3 — ResourceLoader와 패턴
+
+S3 자동 설정은 exact Spring Resource protocol도 등록합니다.
+
+```kotlin
+val resource = applicationContext.getResource(
+    "s3://order-config/config/application.yml",
+)
+```
+
+같은 exact 형식은 `@Value("s3://order-config/config/application.yml")`로 주입할
+수 있습니다. `ApplicationContext.getResources(...)`는 이 pattern resolver가 자동으로
+가로채지 않습니다. `S3ResourcePatternResolver` concrete type을 직접 주입하거나,
+`@Qualifier("s3ResourcePatternResolver")`를 붙인 `ResourcePatternResolver`를
+주입하세요.
+
+```kotlin
+class ConfigReader(
+    @Qualifier("s3ResourcePatternResolver")
+    private val resources: ResourcePatternResolver,
+) {
+    fun yamlFiles(): Array<Resource> =
+        resources.getResources("s3://order-config/config/**/*.yml")
+}
+```
+
+패턴은 literal bucket 한 개, 비어 있지 않은 prefix, `*`, `?`, `**`만 지원합니다.
+cross-bucket 패턴, `s3://order-config/*.json`나 `s3://order-config/**`처럼 root를
+조회하는 패턴, object write/output stream은 지원하지 않습니다. 기본 bean 이름
+`s3ResourcePatternResolver`는 기본 또는 custom S3 pattern 구현을 위한 예약 이름이며,
+교체 구현도 이 이름을 유지해야 합니다. unrelated resolver가 이 이름을 재사용하면
+안 됩니다. 반환된 stream은 caller가 닫고 resource는 owning client와
+ApplicationContext가 살아 있는 동안만 사용하세요. 기본 protocol·pattern resolver만
+parser guard를 제공하며, 직접 만든 `S3Resource`와 custom resolver replacement의
+입력 검증 및 IAM enforcement는 caller가 책임집니다.
+
 ### S3 Vectors — Spring Boot operations
 
 S3 Vectors 지원은 기본적으로 비활성화되어 있고 별도 AWS SDK v2 `s3vectors` 서비스를

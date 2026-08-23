@@ -13,6 +13,77 @@ Operational correctness comes from lifecycle, bounded concurrency, observability
 
 Auto-configured clients are Spring-owned. Application-provided clients remain application-owned unless registered as closeable beans. Listener containers must stop before their clients. Do not close a shared client from a request handler.
 
+## S3 ResourceLoader
+
+The S3 auto-configuration resolves an exact object through Spring's resource
+protocol:
+
+```kotlin
+val resource = applicationContext.getResource(
+    "s3://order-config/config/application.yml",
+)
+```
+
+The exact form is also valid for `@Value("s3://order-config/config/application.yml")`.
+`ApplicationContext.getResources(...)` is not automatically intercepted by the
+S3 pattern resolver. Inject the fixed-name pattern bean directly instead:
+
+```kotlin
+class ConfigReader(
+    @Qualifier("s3ResourcePatternResolver")
+    private val resources: ResourcePatternResolver,
+) {
+    fun yamlFiles(): Array<Resource> =
+        resources.getResources("s3://order-config/config/**/*.yml")
+}
+```
+
+Patterns are intentionally narrow: one literal bucket, a non-empty prefix, and
+only `*`, `?`, and `**`. Cross-bucket patterns and root listings such as
+`s3://order-config/*.json` or `s3://order-config/**` fail before AWS is called.
+Writes and output streams are not supported. The default bean name
+`s3ResourcePatternResolver` is reserved for the default or custom S3 pattern
+implementation; a custom replacement must keep that name, and an unrelated
+resolver must not claim it.
+
+Exact reads require `s3:GetObject` on the same bucket/key prefix; S3 HEAD
+metadata checks use that permission as well. Pattern listing additionally needs
+`s3:ListBucket` with an `s3:prefix` condition for the same prefix. A minimal
+policy therefore names only one bucket and its `config/` prefix, for example:
+
+```json
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::order-config/config/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::order-config",
+      "Condition": { "StringLike": { "s3:prefix": ["config/*"] } }
+    }
+  ]
+}
+```
+
+Do not add `s3:ListAllMyBuckets` or permissions for another bucket. The
+`bluetape4k.aws.s3.enabled=false` switch disables the complete S3 backend
+auto-configuration, including these resolvers; it is not a resolver-only
+switch. Custom replacements and direct `S3Resource` construction leave input
+validation and IAM enforcement to the caller.
+
+Pattern calls synchronously consume every paginator page on the caller thread.
+The resolver adds no retry, cache, coalescing, or executor and uses the injected
+client's timeout and transport settings. A short prefix can still scan many
+objects and increase cost and heap, so keep the prefix non-empty and align it
+with the IAM `s3:prefix` condition. Callers close each returned stream and use
+resources only while the owning client and application context are alive. Error
+diagnostics contain only bounded bucket/prefix values; secrets, credentials,
+headers, and unrestricted cause text must not be logged or placed in metrics.
+
 ## SQS runtime
 
 Tune concurrent consumers, long-poll duration, maximum messages, visibility timeout, failure visibility, and shutdown timeout together. More pollers can increase throughput but also raise in-flight messages and downstream pressure. Prefer native SQS redrive policies over ad-hoc endless retries.

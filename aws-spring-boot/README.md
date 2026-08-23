@@ -472,6 +472,42 @@ helper is for byte-array objects; it does not support multipart or streaming
 client-side encryption, and the metadata format is not AWS Encryption SDK
 compatible.
 
+### S3 — ResourceLoader and patterns
+
+The S3 auto-configuration also registers an exact Spring Resource protocol:
+
+```kotlin
+val resource = applicationContext.getResource(
+    "s3://order-config/config/application.yml",
+)
+```
+
+The same exact form can be injected with `@Value("s3://order-config/config/application.yml")`.
+`ApplicationContext.getResources(...)` is not automatically intercepted by this
+pattern resolver. Inject the concrete `S3ResourcePatternResolver`, or inject a
+`ResourcePatternResolver` with `@Qualifier("s3ResourcePatternResolver")`:
+
+```kotlin
+class ConfigReader(
+    @Qualifier("s3ResourcePatternResolver")
+    private val resources: ResourcePatternResolver,
+) {
+    fun yamlFiles(): Array<Resource> =
+        resources.getResources("s3://order-config/config/**/*.yml")
+}
+```
+
+Patterns use one literal bucket, a non-empty prefix, and only `*`, `?`, and
+`**`. Cross-bucket patterns, root listings such as `s3://order-config/*.json`
+or `s3://order-config/**`, and object writes/output streams are unsupported.
+The default bean name `s3ResourcePatternResolver` is reserved for the default or
+custom S3 pattern implementation; a replacement must keep that name and an
+unrelated resolver must not reuse it. The caller closes each returned stream and
+uses resources only while the owning client and application context are alive.
+The default protocol and pattern resolvers provide parser guards. Direct
+`S3Resource` construction, custom resolver replacements, and IAM enforcement
+remain the caller's responsibility.
+
 ### S3 Vectors — Spring Boot operations
 
 S3 Vectors support is disabled by default and uses the separate AWS SDK v2

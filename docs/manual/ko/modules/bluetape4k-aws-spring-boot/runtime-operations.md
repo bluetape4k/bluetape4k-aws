@@ -13,6 +13,74 @@ chapterId: runtime-operations
 
 자동 설정이 만든 client는 Spring이 소유합니다. 애플리케이션이 제공한 client는 closeable bean으로 등록하지 않는 한 애플리케이션 소유입니다. listener container가 client보다 먼저 멈춰야 하며 요청 handler에서 공유 client를 닫으면 안 됩니다.
 
+## S3 ResourceLoader
+
+S3 자동 설정은 Spring resource protocol을 통해 exact object를 해석합니다.
+
+```kotlin
+val resource = applicationContext.getResource(
+    "s3://order-config/config/application.yml",
+)
+```
+
+exact 형식은 `@Value("s3://order-config/config/application.yml")`로도 주입할 수
+있습니다. `ApplicationContext.getResources(...)`는 S3 pattern resolver가 자동으로
+가로채지 않습니다. 고정 이름의 pattern bean을 직접 주입하세요.
+
+```kotlin
+class ConfigReader(
+    @Qualifier("s3ResourcePatternResolver")
+    private val resources: ResourcePatternResolver,
+) {
+    fun yamlFiles(): Array<Resource> =
+        resources.getResources("s3://order-config/config/**/*.yml")
+}
+```
+
+패턴은 의도적으로 좁게 제한됩니다. literal bucket 한 개, 비어 있지 않은 prefix,
+`*`, `?`, `**`만 사용할 수 있습니다. cross-bucket 패턴과
+`s3://order-config/*.json`, `s3://order-config/**` 같은 root listing은 AWS 호출 전에
+실패합니다. write와 output stream은 지원하지 않습니다. 기본 bean 이름
+`s3ResourcePatternResolver`는 기본 또는 custom S3 pattern 구현을 위한 예약 이름입니다.
+custom replacement도 이 이름을 유지해야 하며 unrelated resolver가 이 이름을 차지하면
+안 됩니다.
+
+exact read에는 같은 bucket/key prefix에 대한 `s3:GetObject`가 필요하고, S3 HEAD
+metadata 확인도 같은 권한을 사용합니다. pattern listing에는 같은 prefix를 조건으로
+하는 `s3:ListBucket`과 `s3:prefix` 조건이 추가로 필요합니다. 따라서 최소 권한 정책은
+한 bucket의 `config/` prefix만 가리키도록 작성합니다.
+
+```json
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::order-config/config/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::order-config",
+      "Condition": { "StringLike": { "s3:prefix": ["config/*"] } }
+    }
+  ]
+}
+```
+
+`s3:ListAllMyBuckets`나 다른 bucket에 대한 권한은 추가하지 마세요.
+`bluetape4k.aws.s3.enabled=false`는 resolver만이 아니라 S3 backend 전체 자동 설정을
+끄는 기존 switch입니다. custom replacement와 직접 만든 `S3Resource`의 입력 검증 및
+IAM enforcement 책임은 caller에게 있습니다.
+
+pattern 호출은 caller thread에서 paginator의 모든 page를 동기로 소비합니다. resolver는
+retry, cache, coalescing, executor를 추가하지 않으며 주입된 client의 timeout과 transport
+설정을 그대로 사용합니다. 짧은 prefix도 많은 object를 읽어 비용과 heap을 늘릴 수 있으므로
+non-empty prefix와 IAM `s3:prefix` 조건을 함께 설계하세요. 반환 stream은 caller가 닫고
+resource는 owning client와 ApplicationContext가 살아 있는 동안만 사용합니다. 오류 진단에는
+bounded bucket/prefix만 포함하며 secret, credential, header, 제한 없는 cause text는 로그나
+metric에 기록하지 마세요.
+
 ## SQS runtime
 
 consumer 수, long-poll 시간, 한 번에 받을 메시지 수, visibility timeout, 실패 visibility, 종료 timeout을 함께 조정하세요. poller를 늘리면 처리량뿐 아니라 실행 중인 메시지와 downstream 압력도 커집니다. 끝없는 사용자 정의 재시도보다 SQS native redrive policy를 우선하세요.
