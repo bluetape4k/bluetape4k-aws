@@ -36,6 +36,7 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 | **CloudWatch Logs** | Log event publishing, DSL (`inputLogEvent {}`)          |
 | **Kinesis**         | Stream record publishing, `recordFlow {}` cold Flow per shard, DSL (`putRecordRequestOf {}`) |
 | **EventBridge**     | Event bus, rule, target, list, and `PutEvents` suspend helpers |
+| **Step Functions**  | Execution start/stop/describe/list and native suspend `Flow` polling |
 | **Bedrock Runtime** | Native suspend `Converse`, `ConverseStream`, and cold text-delta `Flow` |
 | **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)      |
 | **Secrets Manager** | Redacted secret values, client lifecycle helpers, request DSLs |
@@ -335,6 +336,37 @@ Add `aws.sdk.kotlin:eventbridge` at runtime. Scheduler, framework integrations,
 global endpoints, cross-account target orchestration, and target-specific
 validation beyond SDK model types are outside this module.
 
+### Step Functions Execution Helpers (unreleased/develop)
+
+The develop line adds native suspend helpers for `StartExecution`,
+`StopExecution`, `DescribeExecution`, and `ListExecutions`. Polling uses the
+AWS Kotlin SDK `SfnClient` and returns a cold `Flow<DescribeExecutionResponse>`
+of raw responses. The caller owns the client, timeout, and cancellation policy.
+
+```kotlin
+import io.bluetape4k.aws.kotlin.sfn.describeExecutionFlow
+import io.bluetape4k.aws.kotlin.sfn.withSfnClient
+import aws.sdk.kotlin.services.sfn.model.DescribeExecutionResponse
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun awaitExecution(executionArn: String): DescribeExecutionResponse =
+    withSfnClient(region = "ap-northeast-2") { client ->
+        withTimeout(30.seconds) {
+            client.describeExecutionFlow(executionArn).last()
+        }
+    }
+```
+
+The example targets a Standard execution. Cancellation is rethrown and does
+not trigger an implicit `StopExecution`; the scoped helper closes only the
+service client and leaves an injected HTTP engine under caller ownership. Add
+`aws.sdk.kotlin:sfn` directly at runtime because service SDKs remain
+`compileOnly`. See the [Step Functions Kotlin module
+manual](../docs/manual/en/modules/bluetape4k-aws-kotlin.md) for dependency,
+Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
+
 ### Secrets Manager and Parameter Store
 
 ```kotlin
@@ -448,6 +480,7 @@ dependencies {
     implementation("aws.sdk.kotlin:cloudwatchlogs:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:kinesis:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:eventbridge:${awsKotlinSdkVersion}")
+    implementation("aws.sdk.kotlin:sfn:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:bedrockruntime:${awsKotlinSdkVersion}")
     implementation("aws.sdk.kotlin:sts:${awsKotlinSdkVersion}")
     // ... add other services as needed
