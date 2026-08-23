@@ -13,6 +13,11 @@
   async/coroutine 또는 native suspend 호출, typed payload codec, raw response와
   `FunctionError` 보존, 명시적 client 수명과 Floci-first smoke 경계를 제공합니다
   ([#314](https://github.com/bluetape4k/bluetape4k-aws/issues/314)).
+- Java SDK v2와 AWS SDK for Kotlin에 S3 Tables table bucket·namespace·table 관리 API,
+  request DSL, sync/async/coroutine 및 native suspend lifecycle helper를 추가했습니다.
+  S3 Tables service SDK는 compileOnly이며 Iceberg data plane과 Athena·Glue·Redshift 연동은
+  애플리케이션 경계로 남깁니다
+  ([#311](https://github.com/bluetape4k/bluetape4k-aws/issues/311)).
 - Java SDK v2와 AWS SDK for Kotlin에 Step Functions 실행 시작·중지·조회·목록 및
   coroutine `Flow` polling helper를 추가했습니다. compileOnly SDK, caller-owned
   client 수명, 명시적 cancellation, Floci/LocalStack 검증 경계를 포함합니다

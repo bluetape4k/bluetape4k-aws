@@ -119,6 +119,41 @@ smoke test는 사전 배포된 함수와 명시적인 function/region 입력이 
 Lambda를 미지원으로 기록하고 입력이 없으면 client 생성 전에 건너뜁니다. Raw payload,
 디코드한 tail log, SDK response body는 기본적으로 기록하거나 저장하지 마세요.
 
+## S3 Tables 관리 {#s3-tables}
+
+> 미출시/develop: 이 절은 Issue #311 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+Java SDK v2 확장은 raw S3 Tables request·response·exception 타입을 유지하면서 table bucket,
+namespace, table의 생성·목록·조회·삭제를 제공합니다. 목록 helper는 service의 한 페이지만
+반환하므로 다음 페이지가 필요하면 호출자가 `continuationToken`을 전달합니다.
+`ListTables`의 `namespace`는 선택 사항이므로 bucket 범위 목록에도 사용할 수 있습니다.
+`CreateTable` 기본값은 `ICEBERG`이고 `GetTable`은 table ARN 또는 bucket/namespace/name
+selector 중 하나를 사용합니다.
+
+서비스 SDK는 `compileOnly`이므로 consumer가 직접 추가해야 합니다.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:s3tables")
+}
+```
+
+```kotlin
+withS3TablesClient(region = Region.AP_NORTHEAST_2) { client ->
+    val bucketArn = client.createTableBucket("orders-tables").arn()
+    client.createNamespace(bucketArn, listOf("analytics"))
+    client.createTable(bucketArn, "analytics", "orders")
+}
+```
+
+`s3TablesClient`와 `s3TablesClientOf`는 application-scoped client를 만들고 `ShutdownQueue`에
+등록합니다. 일찍 닫거나 주입한 HTTP client를 관리하는 책임은 호출자에게 있습니다.
+`withS3TablesClient`는 등록하지 않은 단기 client를 만들어 block이 끝날 때 service client만 닫습니다.
+이 모듈은 S3 Tables management surface만 제공하며 Iceberg data plane, SQL, Athena, Glue,
+Redshift, Apache Iceberg 통합 facade를 구현하지 않습니다. 로컬 emulator의 S3 Tables fidelity도
+보장한다고 주장하지 않습니다.
+
 ## Step Functions 실행 helper {#step-functions}
 
 > 미출시/develop: 이 절은 Issue #313 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
