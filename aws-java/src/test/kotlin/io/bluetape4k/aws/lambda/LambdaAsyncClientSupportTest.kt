@@ -91,6 +91,33 @@ class LambdaAsyncClientSupportTest {
     }
 
     @Test
+    fun `with async factory closes service client when block fails`() = runTest {
+        val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
+        val client = mockk<LambdaAsyncClient>(relaxed = true)
+        val httpClient = mockk<SdkAsyncHttpClient>()
+        val expected = IllegalStateException("block failed")
+
+        mockkStatic(LambdaAsyncClient::class)
+        mockkObject(ShutdownQueue)
+        try {
+            every { LambdaAsyncClient.builder() } returns builder
+            every { builder.build() } returns client
+            every { builder.httpClient(httpClient) } returns builder
+
+            val actual = assertFailsWith<IllegalStateException> {
+                withLambdaAsyncClient<Unit>(httpClient = httpClient) { throw expected }
+            }
+
+            actual shouldBeSameInstanceAs expected
+            verify(exactly = 1) { client.close() }
+            verify(exactly = 0) { httpClient.close() }
+        } finally {
+            unmockkObject(ShutdownQueue)
+            unmockkStatic(LambdaAsyncClient::class)
+        }
+    }
+
+    @Test
     fun `with async factory closes service client when coroutine is cancelled`() = runTest {
         val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
         val client = mockk<LambdaAsyncClient>(relaxed = true)

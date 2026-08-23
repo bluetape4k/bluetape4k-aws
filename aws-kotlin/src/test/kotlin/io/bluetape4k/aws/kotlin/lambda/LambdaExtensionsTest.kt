@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.kotlin.lambda
 
 import aws.sdk.kotlin.services.lambda.LambdaClient
+import aws.sdk.kotlin.services.lambda.model.InvocationType
 import aws.sdk.kotlin.services.lambda.model.InvokeRequest
 import aws.sdk.kotlin.services.lambda.model.InvokeResponse
 import io.bluetape4k.assertions.assertFailsWith
@@ -44,6 +45,14 @@ class LambdaExtensionsTest {
         bytesResult.value?.toList() shouldBeEqualTo listOf(111.toByte(), 107)
         stringResult.value shouldBeEqualTo "ok"
         coVerify(exactly = 2) { client.invoke(any<InvokeRequest>()) }
+        coVerify(exactly = 1) {
+            client.invoke(match { request ->
+                request.functionName == "orders" &&
+                    request.qualifier == "live" &&
+                    request.invocationType == InvocationType.RequestResponse &&
+                    request.payload?.contentEquals(byteArrayOf(1, 2)) == true
+            })
+        }
     }
 
     @Test
