@@ -429,6 +429,7 @@ dependencies {
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:kinesis", libs.aws2.kinesis)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:scheduler", libs.aws2.scheduler)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:sfn", libs.aws2.sfn)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:lambda", libs.aws2.lambda)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:sts", libs.aws2.sts)
     awsJavaServiceConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
     awsJavaServiceConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
@@ -444,6 +445,7 @@ dependencies {
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:kinesis", libs.aws.kotlin.kinesis)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:scheduler", libs.aws.kotlin.scheduler)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sfn", libs.aws.kotlin.sfn)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:lambda", libs.aws.kotlin.lambda)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sts", libs.aws.kotlin.sts)
     awsKotlinServiceConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
     awsKotlinServiceConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
@@ -993,6 +995,8 @@ subprojects {
 
             dependency("aws.sdk.kotlin:http-client-engine-crt:${bt4kVersion("aws-kotlin")}")
 
+            dependency("aws.sdk.kotlin:lambda:${bt4kVersion("aws-kotlin")}")
+
             dependency("aws.sdk.kotlin:kinesis:${bt4kVersion("aws-kotlin")}")
 
             dependency("aws.sdk.kotlin:kms:${bt4kVersion("aws-kotlin")}")
@@ -1084,6 +1088,8 @@ subprojects {
             dependency("software.amazon.awssdk:imds:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:kinesis:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:lambda:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:kms:${bt4kVersion("aws2")}")
 
