@@ -36,7 +36,7 @@ P0/P1/P2: 0. Java application-scoped factory가 `ShutdownQueue`에 등록하고 
 구현 문서·evidence에 반영했다. 실제 AWS credential/resource smoke와 emulator fidelity는
 의도적으로 미실행 상태다.
 
-## 후속 검토 (commit `fc49270`)
+## 후속 검토 (commit `3490088`)
 
 최신 구현과 검증 증거를 다시 읽은 결과 아키텍처 차단사항은 없다.
 

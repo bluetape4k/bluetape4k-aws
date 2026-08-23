@@ -16,7 +16,7 @@
 - local emulator fidelity는 검증하지 않고 `N/A/UNVERIFIED`로 evidence에 남긴다.
 - stale `WIP.md`는 live GitHub 상태를 조회한 뒤 전면 갱신 여부를 결정한다.
 
-## Fresh 실행 증거 (commit `fc49270`)
+## Fresh 실행 증거 (commit `3490088`)
 
 - Java S3 Tables targeted 21건과 Kotlin targeted 17건이 모두 통과했다.
 - 전체 모듈 테스트는 Java 457건/15 skipped, Kotlin 636건/13 skipped로 통과했다. failure/error는 0이다.
