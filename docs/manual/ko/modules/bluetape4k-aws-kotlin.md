@@ -116,6 +116,37 @@ Native suspend cancellation은 그대로 전달되며 `withLambdaClient`는 serv
 건너뜁니다. Raw payload, 디코드한 tail log, SDK response body는 기본적으로 기록하거나
 저장하지 마세요.
 
+## S3 Tables 관리 {#s3-tables}
+
+> 미출시/develop: 이 절은 Issue #311 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+native AWS SDK for Kotlin 확장은 S3 Tables request·response·exception 타입을 유지하면서 table
+bucket, namespace, table의 생성·목록·조회·삭제를 제공합니다. 목록은 raw service의 한 페이지를
+반환하므로 다음 페이지에는 `continuationToken`을 호출자가 전달합니다. `CreateTable` 기본값은
+`OpenTableFormat.Iceberg`이고 `GetTable`은 table ARN 또는 bucket/namespace/name selector를
+사용합니다.
+
+서비스 SDK는 `compileOnly`이므로 consumer가 직접 추가해야 합니다.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin")
+    implementation("aws.sdk.kotlin:s3tables")
+}
+```
+
+```kotlin
+withS3TablesClient(region = "ap-northeast-2") { client ->
+    val bucketArn = client.createTableBucket("orders-tables").arn
+    client.createNamespace(bucketArn, listOf("analytics"))
+    client.createTable(bucketArn, "analytics", "orders")
+}
+```
+
+`withS3TablesClient`는 service client만 닫고 주입한 HTTP engine은 호출자가 소유합니다. 이 모듈은
+management operation만 제공하며 Iceberg data plane, SQL, Athena, Glue, Redshift, Apache Iceberg
+통합 facade를 구현하지 않습니다. 로컬 emulator의 S3 Tables fidelity도 보장하지 않습니다.
+
 ## Step Functions 실행 helper {#step-functions}
 
 > 미출시/develop: 이 절은 Issue #313 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.

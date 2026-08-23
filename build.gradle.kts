@@ -418,6 +418,7 @@ dependencies {
 
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:module", project(":bluetape4k-aws-java"))
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:s3", libs.aws2.s3)
+    addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:s3tables", libs.aws2.s3tables)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:s3-transfer", libs.aws2.s3.transfer.manager)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:crt", bt4k.aws2.aws.crt)
     addConsumerFixtureDependency(awsJavaServiceConsumerFixtureClasspath, "aws-java:dynamodb", libs.aws2.dynamodb.enhanced)
@@ -436,6 +437,7 @@ dependencies {
 
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:module", project(":bluetape4k-aws-kotlin"))
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:s3", libs.aws.kotlin.s3)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:s3tables", libs.aws.kotlin.s3tables)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:dynamodb", libs.aws.kotlin.dynamodb)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sns", libs.aws.kotlin.sns)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sqs", libs.aws.kotlin.sqs)
@@ -645,6 +647,7 @@ val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixtu
         val forbiddenDependencies = listOf(
             "software.amazon.awssdk" to listOf(
                 "s3",
+                "s3tables",
                 "dynamodb-enhanced",
                 "sns",
                 "sqs",
@@ -659,6 +662,7 @@ val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixtu
             ),
             "aws.sdk.kotlin" to listOf(
                 "s3",
+                "s3tables",
                 "dynamodb",
                 "sns",
                 "sqs",
@@ -1005,6 +1009,8 @@ subprojects {
 
             dependency("aws.sdk.kotlin:s3:${bt4kVersion("aws-kotlin")}")
 
+            dependency("aws.sdk.kotlin:s3tables:${bt4kVersion("aws-kotlin")}")
+
             dependency("aws.sdk.kotlin:scheduler:${bt4kVersion("aws-kotlin")}")
 
             dependency("aws.sdk.kotlin:sfn:${bt4kVersion("aws-kotlin")}")
@@ -1106,6 +1112,8 @@ subprojects {
             dependency("software.amazon.awssdk:s3control:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:s3vectors:${bt4kVersion("aws2")}")
+
+            dependency("software.amazon.awssdk:s3tables:${bt4kVersion("aws2")}")
 
             dependency("software.amazon.awssdk:scheduler:${bt4kVersion("aws2")}")
 

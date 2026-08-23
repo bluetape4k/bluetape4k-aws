@@ -120,6 +120,40 @@ repository records Floci Lambda as unsupported and skips before client creation
 when those inputs are absent. Do not log or persist raw payloads, decoded tail
 logs, or SDK response bodies by default.
 
+## S3 Tables management {#s3-tables}
+
+> Unreleased/develop: this section describes the Issue #311 API and is not part of the `0.5.0` release source.
+
+The Java SDK v2 extension keeps the raw S3 Tables request, response, and
+exception types visible for table bucket, namespace, and table
+create/list/get/delete operations. A list helper returns one service page;
+callers pass `continuationToken` when they need another page. `CreateTable`
+defaults to `ICEBERG`, and `GetTable` accepts either a table ARN or the
+bucket/namespace/name selector.
+
+Add the service SDK to the consumer because it remains `compileOnly`:
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:s3tables")
+}
+```
+
+```kotlin
+withS3TablesClient(region = Region.AP_NORTHEAST_2) { client ->
+    val bucketArn = client.createTableBucket("orders-tables").arn()
+    client.createNamespace(bucketArn, listOf("analytics"))
+    client.createTable(bucketArn, "analytics", "orders")
+}
+```
+
+`withS3TablesClient` closes only its service client. Application-scoped
+clients remain caller-owned. This module covers the S3 Tables management
+surface only; it does not implement an Iceberg data plane, SQL, or Athena,
+Glue, Redshift, or Apache Iceberg integration facade. Local emulator fidelity
+for S3 Tables is not asserted.
+
 ## Step Functions execution helpers {#step-functions}
 
 > Unreleased/develop: this section describes the Issue #313 API and is not part of the `0.5.0` release source.

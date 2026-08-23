@@ -26,6 +26,7 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 |---------------------|---------------------------------------------------|
 | **DynamoDB**        | 테이블 CRUD, 스캔/쿼리, DSL 빌더                           |
 | **S3**              | 객체 업로드/다운로드, 멀티파트, 버킷 관리                          |
+| **S3 Tables**       | table bucket, namespace, table 관리와 native suspend helper          |
 | **SES / SESv2**     | 이메일 발송, 템플릿 메일                                    |
 | **SNS**             | 토픽 발행, SMS, 구독 관리                                 |
 | **SQS**             | 메시지 발송/수신/삭제, FIFO 큐                              |
@@ -331,6 +332,41 @@ EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK �
 런타임에는 `aws.sdk.kotlin:eventbridge`를 추가해야 합니다. Scheduler, framework integration,
 global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은
 이 모듈 범위에 포함하지 않습니다.
+
+### S3 Tables 관리 (미출시/develop)
+
+S3 Tables helper는 native AWS Kotlin SDK request·response 타입을 유지하면서 table bucket,
+namespace, table의 생성·목록·조회·삭제를 native suspend로 제공합니다. 목록은 raw service의
+한 페이지를 반환하므로 다음 페이지에는 `continuationToken`을 명시합니다. `CreateTable`의
+기본값은 `OpenTableFormat.Iceberg`이고, `GetTable`은 table ARN 또는
+bucket/namespace/name selector를 사용합니다.
+
+서비스 SDK는 `compileOnly`이므로 애플리케이션이 직접 추가해야 합니다.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin")
+    implementation("aws.sdk.kotlin:s3tables")
+}
+```
+
+```kotlin
+import io.bluetape4k.aws.kotlin.s3tables.createNamespace
+import io.bluetape4k.aws.kotlin.s3tables.createTable
+import io.bluetape4k.aws.kotlin.s3tables.createTableBucket
+import io.bluetape4k.aws.kotlin.s3tables.withS3TablesClient
+
+suspend fun createOrdersTable() = withS3TablesClient(region = "ap-northeast-2") { client ->
+    val bucketArn = client.createTableBucket("orders-tables").arn
+    client.createNamespace(bucketArn, listOf("analytics"))
+    client.createTable(bucketArn, "analytics", "orders")
+}
+```
+
+범위가 지정된 helper는 S3 Tables service client만 닫고 application-scoped client는 호출자가
+관리합니다. 이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다.
+Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의
+S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
 
 ### Step Functions 실행 helper (미출시/develop)
 

@@ -4,7 +4,7 @@
 
 AWS Java SDK v2 기반 통합 모듈입니다. AWS SDK 모델 타입은 그대로 드러내고,
 동기 helper, 비동기 `CompletableFuture` 확장, coroutine API를 더합니다.
-DynamoDB, S3, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis,
+DynamoDB, S3, S3 Tables, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis,
 EventBridge, Step Functions, Lambda, STS, Secrets Manager, Parameter Store 같은 주요
 서비스를 대상으로 합니다.
 
@@ -33,6 +33,7 @@ repository helper의 역할을 함께 확인할 수 있습니다.
 |---------------------|---------------------------------------------------------|
 | **DynamoDB**        | 테이블 CRUD, Enhanced Client, Coroutines 확장                |
 | **S3**              | 객체 업로드/다운로드, TransferManager(대용량), Coroutines 확장        |
+| **S3 Tables**       | table bucket, namespace, table 생성·목록·조회·삭제와 sync/async/coroutine 확장 |
 | **S3 Vectors**      | 선택적 vector bucket/index 조회와 vector put/get/list/query facade |
 | **SES**             | 이메일 발송, Coroutines 확장                                   |
 | **SNS**             | 토픽 발행, SMS, 푸시 알림, Coroutines 확장                        |
@@ -182,6 +183,42 @@ class SemanticIndexReader(
 S3 Vectors는 별도 AWS SDK v2 `s3vectors` 서비스를 사용합니다. 이 모듈은 해당 의존성을
 선택으로 유지하고 discovery, put/get/list, query 작업용 작은 suspend facade만 제공합니다.
 파괴적 관리, tagging, policy 호출은 raw `S3VectorsAsyncClient` 로 그대로 사용할 수 있습니다.
+
+### S3 Tables 관리 (미출시/develop)
+
+S3 Tables helper는 AWS SDK v2 request·response 타입을 그대로 노출하면서 table bucket,
+namespace, table의 생성·목록·조회·삭제를 sync/async/coroutine으로 제공합니다. 목록은 raw
+service의 한 페이지를 반환하므로 다음 페이지가 필요하면 `continuationToken`을 호출자가
+명시합니다. `CreateTable`의 기본 format은 SDK의 `ICEBERG`이며, `GetTable`은 table ARN 또는
+bucket/namespace/name selector 중 하나를 사용합니다.
+
+서비스 SDK는 `compileOnly`이므로 애플리케이션이 직접 추가해야 합니다.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:s3tables")
+}
+```
+
+```kotlin
+import io.bluetape4k.aws.s3tables.createNamespace
+import io.bluetape4k.aws.s3tables.createTable
+import io.bluetape4k.aws.s3tables.createTableBucket
+import io.bluetape4k.aws.s3tables.withS3TablesClient
+import software.amazon.awssdk.regions.Region
+
+suspend fun createOrdersTable() = withS3TablesClient(region = Region.AP_NORTHEAST_2) { client ->
+    val bucketArn = client.createTableBucket("orders-tables").arn()
+    client.createNamespace(bucketArn, listOf("analytics"))
+    client.createTable(bucketArn, "analytics", "orders")
+}
+```
+
+범위가 지정된 helper는 S3 Tables service client만 닫고 application-scoped client는 호출자가
+관리합니다. 이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다.
+Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의
+S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
 
 ### Secrets Manager와 Parameter Store
 

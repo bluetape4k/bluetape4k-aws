@@ -4,9 +4,9 @@ English | [한국어](./README.ko.md)
 
 A unified integration module built on AWS Java SDK v2. It keeps AWS SDK model
 types visible while adding sync helpers, async `CompletableFuture` extensions,
-and coroutine APIs for DynamoDB, S3, optional S3 Vectors, SES, SNS, SQS, KMS,
-CloudWatch, Kinesis, EventBridge, Step Functions, Lambda, STS, Secrets Manager,
-and Parameter Store.
+and coroutine APIs for DynamoDB, S3, S3 Tables, optional S3 Vectors, SES, SNS, SQS, KMS,
+CloudWatch, Kinesis, EventBridge, Step Functions, Lambda, STS, Secrets Manager, and
+Parameter Store.
 
 ## Diagrams
 
@@ -33,6 +33,7 @@ request DSLs, async extensions, coroutine wrappers, and repository helpers.
 |---------------------|------------------------------------------------------------------------------|
 | **DynamoDB**        | Table CRUD, Enhanced Client, Coroutines extensions                           |
 | **S3**              | Object upload/download, TransferManager (large files), Coroutines extensions |
+| **S3 Tables**       | Table bucket, namespace, and table management with sync/async/coroutine extensions |
 | **S3 Vectors**      | Optional vector bucket/index discovery and vector put/get/list/query facade  |
 | **SES**             | Email sending, Coroutines extensions                                         |
 | **SNS**             | Topic publishing, SMS, push notifications, Coroutines extensions             |
@@ -187,6 +188,44 @@ S3 Vectors uses the separate AWS SDK v2 `s3vectors` service. This module keeps
 the dependency optional and exposes a small suspend facade for discovery,
 put/get/list, and query operations. Destructive administration, tagging, and
 policy calls remain available through the raw `S3VectorsAsyncClient`.
+
+### S3 Tables management (unreleased/develop)
+
+S3 Tables helpers keep the AWS SDK v2 request and response types visible while
+covering table bucket, namespace, and table create/list/get/delete operations.
+Lists return one raw service page; pass `continuationToken` explicitly when a
+caller needs the next page. `CreateTable` defaults to the SDK's `ICEBERG`
+format, and `GetTable` accepts either a table ARN or the bucket/namespace/name
+selector.
+
+Add the service SDK directly because it remains `compileOnly`:
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:s3tables")
+}
+```
+
+```kotlin
+import io.bluetape4k.aws.s3tables.createNamespace
+import io.bluetape4k.aws.s3tables.createTable
+import io.bluetape4k.aws.s3tables.createTableBucket
+import io.bluetape4k.aws.s3tables.withS3TablesClient
+import software.amazon.awssdk.regions.Region
+
+suspend fun createOrdersTable() = withS3TablesClient(region = Region.AP_NORTHEAST_2) { client ->
+    val bucketArn = client.createTableBucket("orders-tables").arn()
+    client.createNamespace(bucketArn, listOf("analytics"))
+    client.createTable(bucketArn, "analytics", "orders")
+}
+```
+
+The scoped helper closes only the S3 Tables service client; an application-
+scoped client is caller-owned. This is a management API surface, not an
+Iceberg data-plane or SQL engine. Athena, Glue, Redshift, and Apache Iceberg
+integration remain application concerns, and local emulator fidelity for S3
+Tables is not asserted by this module.
 
 ### Secrets Manager and Parameter Store
 

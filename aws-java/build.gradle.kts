@@ -29,6 +29,7 @@ dependencies {
     compileOnly(libs.aws2.dynamodb.enhanced)
     compileOnly(libs.aws2.s3)
     compileOnly(libs.aws2.s3vectors)
+    compileOnly(libs.aws2.s3tables)
     compileOnly(libs.aws2.s3.transfer.manager)
     compileOnly(bt4k.aws2.aws.crt)
     compileOnly(libs.aws2.ses)
@@ -61,6 +62,7 @@ dependencies {
     testImplementation(libs.aws2.rds)
     testImplementation(libs.aws2.secretsmanager)
     testImplementation(libs.aws2.s3vectors)
+    testImplementation(libs.aws2.s3tables)
     testImplementation(libs.aws2.ssm)
     testImplementation(libs.aws2.eventbridge)
     testImplementation(libs.aws2.scheduler)
@@ -83,9 +85,29 @@ dependencies {
 }
 
 tasks.test {
-    val smokeRequested = providers.gradleProperty("bedrockSmoke").isPresent
-    val missingSmokeInputs = listOf("BEDROCK_REGION", "BEDROCK_MODEL_ID")
+    val bedrockSmokeRequested = providers.gradleProperty("bedrockSmoke").isPresent
+    val bedrockMissingInputs = listOf("BEDROCK_REGION", "BEDROCK_MODEL_ID")
         .filter { providers.environmentVariable(it).orNull.isNullOrBlank() }
+    val readOnlySmokeRequested = providers.gradleProperty("s3TablesReadOnlySmoke").isPresent
+    val readOnlyMissingInputs = listOf("S3_TABLES_READ_ONLY_REGION", "S3_TABLES_READ_ONLY_TABLE_BUCKET_ARN")
+        .filter { providers.environmentVariable(it).orNull.isNullOrBlank() }
+    val mutatingSmokeRequested = providers.gradleProperty("s3TablesMutatingSmoke").isPresent
+    val mutatingMissingInputs = listOf(
+        "S3_TABLES_EXPECTED_ACCOUNT_ID",
+        "S3_TABLES_MUTATING_REGION",
+        "S3_TABLES_MUTATING_PREFIX",
+    ).filter { providers.environmentVariable(it).orNull.isNullOrBlank() }
+    val requestedSmokeTags = buildList {
+        if (bedrockSmokeRequested) add("bedrock-smoke")
+        if (readOnlySmokeRequested) add("s3-tables-read-only-smoke")
+        if (mutatingSmokeRequested) add("s3-tables-mutating-smoke")
+    }
+    val missingSmokeInputs = buildList {
+        if (bedrockSmokeRequested) addAll(bedrockMissingInputs)
+        if (readOnlySmokeRequested) addAll(readOnlyMissingInputs)
+        if (mutatingSmokeRequested) addAll(mutatingMissingInputs)
+    }
+    val smokeRequested = requestedSmokeTags.isNotEmpty()
     val smokeEnabled = smokeRequested && missingSmokeInputs.isEmpty()
     val lambdaSmokeRequested = providers.gradleProperty("lambdaSmoke").isPresent
     val missingLambdaSmokeInputs = listOf("LAMBDA_SMOKE_FUNCTION_NAME", "LAMBDA_SMOKE_REGION")
@@ -99,20 +121,20 @@ tasks.test {
     systemProperty("bluetape4k.lambda.smoke.qualifier", providers.environmentVariable("LAMBDA_SMOKE_QUALIFIER").orNull.orEmpty())
     useJUnitPlatform {
         if (smokeEnabled) {
-            includeTags("bedrock-smoke")
+            includeTags(*requestedSmokeTags.toTypedArray())
         } else {
-            excludeTags("bedrock-smoke")
+            excludeTags("bedrock-smoke", "s3-tables-read-only-smoke", "s3-tables-mutating-smoke")
         }
         if (!lambdaSmokeEnabled) {
             excludeTags("lambda-smoke")
         }
     }
     onlyIf(
-        "bedrock-smoke: SKIP before client creation; missing=${missingSmokeInputs.joinToString(",")}",
+        "credential-gated smoke: SKIP before client creation; missing=${missingSmokeInputs.joinToString(",")}",
     ) { task ->
         if (smokeRequested && !smokeEnabled) {
             task.logger.lifecycle(
-                "bedrock-smoke: SKIP before client creation; missing={}",
+                "credential-gated smoke: SKIP before client creation; missing={}",
                 missingSmokeInputs.joinToString(","),
             )
         }

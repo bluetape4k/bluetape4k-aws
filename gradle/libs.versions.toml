@@ -94,6 +94,7 @@ aws2-dynamodb-enhanced = { module = "software.amazon.awssdk:dynamodb-enhanced" }
 aws2-s3 = { module = "software.amazon.awssdk:s3" }
 aws2-s3control = { module = "software.amazon.awssdk:s3control" }
 aws2-s3vectors = { module = "software.amazon.awssdk:s3vectors" }
+aws2-s3tables = { module = "software.amazon.awssdk:s3tables" }
 aws2-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-manager" }
 aws2-ses = { module = "software.amazon.awssdk:ses" }
 aws2-sesv2 = { module = "software.amazon.awssdk:sesv2" }
@@ -124,6 +125,7 @@ aws-kotlin-aws-http = { module = "aws.sdk.kotlin:aws-http" }
 aws-kotlin-bedrock-runtime = { module = "aws.sdk.kotlin:bedrockruntime" }
 aws-kotlin-dynamodb = { module = "aws.sdk.kotlin:dynamodb" }
 aws-kotlin-s3 = { module = "aws.sdk.kotlin:s3" }
+aws-kotlin-s3tables = { module = "aws.sdk.kotlin:s3tables" }
 aws-kotlin-ses = { module = "aws.sdk.kotlin:ses" }
 aws-kotlin-sesv2 = { module = "aws.sdk.kotlin:sesv2" }
 aws-kotlin-secretsmanager = { module = "aws.sdk.kotlin:secretsmanager" }

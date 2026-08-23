@@ -6,6 +6,7 @@ import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.sdk.kotlin.services.lambda.LambdaClient
 import aws.sdk.kotlin.services.kms.KmsClient
 import aws.sdk.kotlin.services.s3.S3Client
+import aws.sdk.kotlin.services.s3tables.S3TablesClient
 import aws.sdk.kotlin.services.scheduler.SchedulerClient
 import aws.sdk.kotlin.services.ses.SesClient
 import aws.sdk.kotlin.services.sfn.SfnClient
@@ -20,6 +21,7 @@ import io.bluetape4k.aws.kotlin.lambda.invokeString
 import io.bluetape4k.aws.kotlin.lambda.lambdaClientOf
 import io.bluetape4k.aws.kotlin.lambda.withLambdaClient
 import io.bluetape4k.aws.kotlin.s3.s3ClientOf
+import io.bluetape4k.aws.kotlin.s3tables.s3TablesClientOf
 import io.bluetape4k.aws.kotlin.ses.sesClientOf
 import io.bluetape4k.aws.kotlin.sfn.listExecutionsByMapRun
 import io.bluetape4k.aws.kotlin.sfn.listExecutionsByStateMachine
@@ -45,6 +47,7 @@ private suspend fun kotlinSfnCustomHttpClient(engine: HttpClientEngine): SfnClie
  */
 fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
     S3Client::class.java,
+    S3TablesClient::class.java,
     DynamoDbClient::class.java,
     SnsClient::class.java,
     SqsClient::class.java,
@@ -57,6 +60,7 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
     LambdaClient::class.java,
     StsClient::class.java,
     { s3ClientOf() },
+    { s3TablesClientOf(region = "ap-northeast-2") },
     { dynamoDbClientOf(region = "ap-northeast-2") },
     { snsClientOf() },
     { sqsClientOf() },

@@ -31,4 +31,7 @@ continuation/max/filter 한 페이지 계약, read-only/mutating smoke 분리와
 | 개발자/API | PASS | Java/Kotlin 대칭 public surface와 compileOnly 경계를 명시함 |
 | 사용자/호출자 | PASS | 관리 API와 Iceberg data-plane 경계를 설명함 |
 
-P0/P1: 0. P2: Java application-scoped `ShutdownQueue` 등록 의미와 stale `WIP.md`는 구현 evidence에서 다시 확인한다.
+P0/P1/P2: 0. Java application-scoped factory가 `ShutdownQueue`에 등록하고 caller가
+필요 시 조기 종료한다는 문구와, stale `WIP.md`를 부분 수정하지 않는다는 판단을
+구현 문서·evidence에 반영했다. 실제 AWS credential/resource smoke와 emulator fidelity는
+의도적으로 미실행 상태다.

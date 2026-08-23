@@ -12,6 +12,7 @@ import io.bluetape4k.aws.lambda.invokeString
 import io.bluetape4k.aws.lambda.withLambdaAsyncClient
 import io.bluetape4k.aws.lambda.withLambdaClient
 import io.bluetape4k.aws.s3.S3ClientFactory
+import io.bluetape4k.aws.s3tables.s3TablesClient
 import io.bluetape4k.aws.ses.sesClient
 import io.bluetape4k.aws.sfn.listExecutionsByMapRun
 import io.bluetape4k.aws.sfn.listExecutionsByStateMachine
@@ -34,6 +35,7 @@ import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3tables.S3TablesClient
 import software.amazon.awssdk.services.scheduler.SchedulerClient
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.sfn.SfnClient
@@ -63,6 +65,7 @@ private fun javaSfnCustomHttpClients(
  */
 fun javaServiceConsumerFixture(): List<Any> = listOf<Any>(
     S3Client::class.java,
+    S3TablesClient::class.java,
     DynamoDbClient::class.java,
     SnsClient::class.java,
     SqsClient::class.java,
@@ -76,6 +79,7 @@ fun javaServiceConsumerFixture(): List<Any> = listOf<Any>(
     LambdaAsyncClient::class.java,
     StsClient::class.java,
     { S3ClientFactory.Sync.create { } },
+    { s3TablesClient { region(Region.AP_NORTHEAST_2) } },
     { dynamoDbClient { } },
     { snsClient { } },
     { sqsClient { } },

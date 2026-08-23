@@ -28,6 +28,7 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 |---------------------|---------------------------------------------------------|
 | **DynamoDB**        | Table CRUD, scan/query, DSL builders                    |
 | **S3**              | Object upload/download, multipart, bucket management    |
+| **S3 Tables**       | Table bucket, namespace, and table management with native suspend helpers |
 | **SES / SESv2**     | Email sending, templated email                          |
 | **SNS**             | Topic publishing, SMS, subscription management          |
 | **SQS**             | Message send/receive/delete, FIFO queues                |
@@ -336,6 +337,42 @@ EventBridge helpers keep one SDK request per call and return raw SDK responses.
 Add `aws.sdk.kotlin:eventbridge` at runtime. Scheduler, framework integrations,
 global endpoints, cross-account target orchestration, and target-specific
 validation beyond SDK model types are outside this module.
+
+### S3 Tables management (unreleased/develop)
+
+S3 Tables helpers expose native AWS Kotlin SDK request and response types for
+table bucket, namespace, and table create/list/get/delete operations. Lists
+return one raw service page; pass `continuationToken` for the next page.
+`CreateTable` defaults to `OpenTableFormat.Iceberg`, and `GetTable` accepts
+either a table ARN or the bucket/namespace/name selector.
+
+Add the service SDK directly because it remains `compileOnly`:
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-kotlin")
+    implementation("aws.sdk.kotlin:s3tables")
+}
+```
+
+```kotlin
+import io.bluetape4k.aws.kotlin.s3tables.createNamespace
+import io.bluetape4k.aws.kotlin.s3tables.createTable
+import io.bluetape4k.aws.kotlin.s3tables.createTableBucket
+import io.bluetape4k.aws.kotlin.s3tables.withS3TablesClient
+
+suspend fun createOrdersTable() = withS3TablesClient(region = "ap-northeast-2") { client ->
+    val bucketArn = client.createTableBucket("orders-tables").arn
+    client.createNamespace(bucketArn, listOf("analytics"))
+    client.createTable(bucketArn, "analytics", "orders")
+}
+```
+
+The scoped helper closes only the S3 Tables service client; an application-
+scoped client is caller-owned. This is a management API surface, not an
+Iceberg data-plane or SQL engine. Athena, Glue, Redshift, and Apache Iceberg
+integration remain application concerns, and local emulator fidelity for S3
+Tables is not asserted by this module.
 
 ### Step Functions Execution Helpers (unreleased/develop)
 
