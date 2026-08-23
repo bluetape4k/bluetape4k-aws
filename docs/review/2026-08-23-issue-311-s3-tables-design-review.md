@@ -35,3 +35,18 @@ P0/P1/P2: 0. Java application-scoped factory가 `ShutdownQueue`에 등록하고 
 필요 시 조기 종료한다는 문구와, stale `WIP.md`를 부분 수정하지 않는다는 판단을
 구현 문서·evidence에 반영했다. 실제 AWS credential/resource smoke와 emulator fidelity는
 의도적으로 미실행 상태다.
+
+## 후속 검토 (commit `fc49270`)
+
+최신 구현과 검증 증거를 다시 읽은 결과 아키텍처 차단사항은 없다.
+
+| 항목 | 상태 | 근거 |
+|---|---|---|
+| Java smoke timeout/cleanup | PASS | 비선점 `assertTimeout`으로 cleanup이 timeout 경계에서 실행되며, table·namespace·bucket 삭제를 독립 시도한다. |
+| `GetTable` selector 계약 | PASS | non-null blank selector를 먼저 거부하고 ARN 또는 완전한 path 중 하나만 허용한다. |
+| 공개 request factory 문서 | PASS | Java/Kotlin S3 Tables public factory 12개 모두 한국어 KDoc를 제공한다. |
+| Kotlin smoke PASS 시점 | PASS | read-only lane을 제외한 mutating PASS는 cleanup 완료 후 한 번만 기록한다. |
+| 최신 로컬 검증 | PASS | targeted Java 21/Kotlin 17, full Java 457/15 skipped 및 Kotlin 636/13 skipped, failure/error 0. |
+
+후속 잔여사항은 실제 AWS credential/resource smoke와 emulator fidelity의 의도적 미실행뿐이며,
+이는 Issue #311 범위 제한이다. P0/P1은 0건이다.
