@@ -127,9 +127,10 @@ logs, or SDK response bodies by default.
 The Java SDK v2 extension keeps the raw S3 Tables request, response, and
 exception types visible for table bucket, namespace, and table
 create/list/get/delete operations. A list helper returns one service page;
-callers pass `continuationToken` when they need another page. `CreateTable`
-defaults to `ICEBERG`, and `GetTable` accepts either a table ARN or the
-bucket/namespace/name selector.
+callers pass `continuationToken` when they need another page. `ListTables`
+keeps `namespace` optional for bucket-level listing. `CreateTable` defaults to
+`ICEBERG`, and `GetTable` accepts either a table ARN or the bucket/namespace/name
+selector.
 
 Add the service SDK to the consumer because it remains `compileOnly`:
 
@@ -148,8 +149,10 @@ withS3TablesClient(region = Region.AP_NORTHEAST_2) { client ->
 }
 ```
 
-`withS3TablesClient` closes only its service client. Application-scoped
-clients remain caller-owned. This module covers the S3 Tables management
+`s3TablesClient` and `s3TablesClientOf` create application-scoped clients and
+register them with `ShutdownQueue`; callers still own early close and any
+injected HTTP client. `withS3TablesClient` creates an unregistered short-lived
+client and closes only the service client when the block ends. This module covers the S3 Tables management
 surface only; it does not implement an Iceberg data plane, SQL, or Athena,
 Glue, Redshift, or Apache Iceberg integration facade. Local emulator fidelity
 for S3 Tables is not asserted.

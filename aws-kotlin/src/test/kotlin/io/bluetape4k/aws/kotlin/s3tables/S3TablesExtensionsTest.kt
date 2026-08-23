@@ -26,10 +26,12 @@ import aws.sdk.kotlin.services.s3tables.model.ListTableBucketsResponse
 import aws.sdk.kotlin.services.s3tables.model.ListTablesRequest
 import aws.sdk.kotlin.services.s3tables.model.ListTablesResponse
 import aws.sdk.kotlin.services.s3tables.model.TableBucketType
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
@@ -37,6 +39,7 @@ class S3TablesExtensionsTest {
 
     private companion object {
         const val BUCKET_ARN = "arn:aws:s3tables:ap-northeast-2:123456789012:bucket/test"
+        const val TABLE_ARN = "$BUCKET_ARN/table/analytics/orders"
     }
 
     @Test
@@ -76,8 +79,8 @@ class S3TablesExtensionsTest {
         client.getNamespace(BUCKET_ARN, "analytics") shouldBeSameInstanceAs getNamespace
         client.deleteNamespace(BUCKET_ARN, "analytics") shouldBeSameInstanceAs deleteNamespace
         client.createTable(BUCKET_ARN, "analytics", "orders") shouldBeSameInstanceAs createTable
-        client.listTables(BUCKET_ARN, "analytics", maxTables = 10) shouldBeSameInstanceAs listTables
-        client.getTable(tableArn = "$BUCKET_ARN/table/analytics/orders") shouldBeSameInstanceAs getTable
+        client.listTables(BUCKET_ARN, maxTables = 10) shouldBeSameInstanceAs listTables
+        client.getTable(tableArn = TABLE_ARN) shouldBeSameInstanceAs getTable
         client.deleteTable(BUCKET_ARN, "analytics", "orders", versionToken = "v1") shouldBeSameInstanceAs deleteTable
 
         verifyBucketRequests(client)
@@ -124,13 +127,20 @@ class S3TablesExtensionsTest {
             client.listTables(
                 match {
                     it.tableBucketArn == BUCKET_ARN &&
-                        it.namespace == "analytics" &&
+                        it.namespace == null &&
                         it.maxTables == 10
                 },
             )
         }
         coVerify(exactly = 1) {
-            client.getTable(match { it.tableArn != null && it.tableBucketArn == null })
+            client.getTable(
+                match {
+                    it.tableArn == TABLE_ARN &&
+                        it.tableBucketArn == null &&
+                        it.namespace == null &&
+                        it.name == null
+                },
+            )
         }
         coVerify(exactly = 1) {
             client.deleteTable(
@@ -142,5 +152,32 @@ class S3TablesExtensionsTest {
                 },
             )
         }
+    }
+
+    @Test
+    fun `suspend operation rethrows operation failure`() = runTest {
+        val client = mockk<S3TablesClient>()
+        val expected = IllegalStateException("operation-failed")
+        coEvery { client.getTable(any<GetTableRequest>()) } throws expected
+
+        val actual = assertFailsWith<IllegalStateException> {
+            client.getTable(tableArn = TABLE_ARN)
+        }
+
+        actual shouldBeSameInstanceAs expected
+        coVerify(exactly = 1) { client.getTable(any<GetTableRequest>()) }
+    }
+
+    @Test
+    fun `suspend operation propagates cancellation`() = runTest {
+        val client = mockk<S3TablesClient>()
+        val expected = CancellationException("cancelled")
+        coEvery { client.getTable(any<GetTableRequest>()) } throws expected
+
+        val actual = assertFailsWith<CancellationException> {
+            client.getTable(tableArn = TABLE_ARN)
+        }
+
+        actual shouldBeSameInstanceAs expected
     }
 }

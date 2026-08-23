@@ -343,7 +343,8 @@ validation beyond SDK model types are outside this module.
 S3 Tables helpers expose native AWS Kotlin SDK request and response types for
 table bucket, namespace, and table create/list/get/delete operations. Lists
 return one raw service page; pass `continuationToken` for the next page.
-`CreateTable` defaults to `OpenTableFormat.Iceberg`, and `GetTable` accepts
+`ListTables` keeps `namespace` optional for bucket-level listing. `CreateTable`
+defaults to `OpenTableFormat.Iceberg`, and `GetTable` accepts
 either a table ARN or the bucket/namespace/name selector.
 
 Add the service SDK directly because it remains `compileOnly`:
@@ -368,8 +369,9 @@ suspend fun createOrdersTable() = withS3TablesClient(region = "ap-northeast-2") 
 }
 ```
 
-The scoped helper closes only the S3 Tables service client; an application-
-scoped client is caller-owned. This is a management API surface, not an
+`s3TablesClientOf` returns an application-scoped client that the caller must
+close. `withS3TablesClient` closes only its service client when the block ends;
+an injected HTTP engine remains caller-owned. This is a management API surface, not an
 Iceberg data-plane or SQL engine. Athena, Glue, Redshift, and Apache Iceberg
 integration remain application concerns, and local emulator fidelity for S3
 Tables is not asserted by this module.

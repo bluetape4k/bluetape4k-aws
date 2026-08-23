@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import java.util.UUID
@@ -24,6 +25,57 @@ import java.util.UUID
  * 만든 resource만 삭제한다.
  */
 class S3TablesSmokeTest {
+
+    @Test
+    fun `bucket name normalization preserves unique suffix and bucket alphabet`() {
+        val suffix = "bucket-0123456789abcdef"
+
+        val actual = normalizedTableBucketName("Issue #311 / Production", suffix)
+
+        assertTrue(actual.endsWith("-$suffix"))
+        assertTrue(actual.matches(Regex("[a-z0-9][a-z0-9-]{1,61}[a-z0-9]")))
+    }
+
+    @Test
+    fun `bucket name normalization avoids reserved aws prefix`() {
+        val actual = normalizedTableBucketName("AWS", "bucket-0123456789abcdef")
+
+        assertTrue(actual.startsWith("bt-"))
+    }
+
+    @Test
+    fun `namespace and table normalization preserves unique suffix and identifier alphabet`() {
+        val suffix = "namespace_0123456789abcdef"
+
+        val actual = normalizedTableIdentifierName("Issue #311 / Production", suffix)
+
+        assertTrue(actual.endsWith("_$suffix"))
+        assertTrue(actual.matches(Regex("[a-z0-9_]+")))
+    }
+
+    @Test
+    fun `namespace and table normalization avoids reserved aws prefix`() {
+        val actual = normalizedTableIdentifierName("AWS", "namespace_0123456789abcdef")
+
+        assertTrue(actual.first().isLetterOrDigit())
+        assertTrue(!actual.startsWith("aws"))
+    }
+
+    @Test
+    fun `cleanup continues with later resources after an earlier deletion fails`() = runSuspendIO {
+        val failures = mutableListOf<Throwable>()
+        val attempted = mutableListOf<String>()
+
+        cleanupIndependently(failures) {
+            attempted += "table"
+            error("table-delete-failed")
+        }
+        cleanupIndependently(failures) { attempted += "namespace" }
+        cleanupIndependently(failures) { attempted += "bucket" }
+
+        assertTrue(attempted == listOf("table", "namespace", "bucket"))
+        assertTrue(failures.single().message == "table-delete-failed")
+    }
 
     @Test
     @Tag(READ_ONLY_TAG)
@@ -82,6 +134,28 @@ class S3TablesSmokeTest {
                 verifyExpectedAccount(region, expectedAccountId)
                 createResources(region, prefix, created)
             }
+        } catch (ce: CancellationException) {
+            primaryFailure = ce
+        } catch (failure: Throwable) {
+            primaryFailure = failure
+        } finally {
+            val cleanupFailures = withContext(NonCancellable) {
+                cleanupResources(
+                    region = region,
+                    created = created,
+                )
+            }
+            if (cleanupFailures.isNotEmpty()) {
+                if (primaryFailure != null) {
+                    cleanupFailures.forEach(primaryFailure::addSuppressed)
+                } else {
+                    val cleanupFailure = cleanupFailures.first()
+                    cleanupFailures.drop(1).forEach(cleanupFailure::addSuppressed)
+                    primaryFailure = cleanupFailure
+                }
+            }
+        }
+        if (primaryFailure == null) {
             println(
                 smokeEvidence(
                     lane = MUTATING_TAG,
@@ -91,22 +165,6 @@ class S3TablesSmokeTest {
                     detail = "created=table-bucket,namespace,table cleanup=reverse-order",
                 ),
             )
-        } catch (ce: CancellationException) {
-            primaryFailure = ce
-        } catch (failure: Throwable) {
-            primaryFailure = failure
-        } finally {
-            val cleanupFailure = withContext(NonCancellable) {
-                runCatching {
-                    cleanupResources(
-                        region = region,
-                        created = created,
-                    )
-                }.exceptionOrNull()
-            }
-            if (cleanupFailure != null) {
-                primaryFailure?.addSuppressed(cleanupFailure) ?: run { primaryFailure = cleanupFailure }
-            }
         }
         return primaryFailure
     }
@@ -122,38 +180,75 @@ class S3TablesSmokeTest {
 
     private data class CreatedResources(
         var tableBucketArn: String? = null,
+        var tableBucketName: String = "",
+        var tableBucketCreationAttempted: Boolean = false,
         var namespace: String = "",
         var tableName: String = "",
-        var namespaceCreated: Boolean = false,
-        var tableCreated: Boolean = false,
+        var namespaceCreationAttempted: Boolean = false,
+        var tableCreationAttempted: Boolean = false,
     )
 
     private suspend fun createResources(region: String, prefix: String, created: CreatedResources) {
         val suffix = UUID.randomUUID().toString().replace("-", "").take(16)
-        val bucketName = normalizedName(prefix, "bucket-$suffix")
-        created.namespace = normalizedName(prefix, "ns-$suffix")
-        created.tableName = normalizedName(prefix, "table-$suffix")
+        created.tableBucketName = normalizedTableBucketName(prefix, "bucket-$suffix")
+        created.namespace = normalizedTableIdentifierName(prefix, "namespace_$suffix")
+        created.tableName = normalizedTableIdentifierName(prefix, "table_$suffix")
         withS3TablesClient(region = region, builder = { callTimeout = 30.seconds }) { client ->
-            val createdBucketArn = client.createTableBucket(createTableBucketRequestOf(bucketName)).arn
-            created.tableBucketArn = createdBucketArn
-            client.createNamespace(createdBucketArn, listOf(created.namespace))
-            created.namespaceCreated = true
-            client.createTable(createdBucketArn, created.namespace, created.tableName)
-            created.tableCreated = true
+            created.tableBucketCreationAttempted = true
+            val createdBucketArn = client.createTableBucket(createTableBucketRequestOf(created.tableBucketName)).arn
+            created.tableBucketArn = createdBucketArn.takeIf(String::isNotBlank)
+            val bucketArn = requireNotNull(created.tableBucketArn) {
+                "createTableBucket returned a blank ARN"
+            }
+            created.namespaceCreationAttempted = true
+            client.createNamespace(bucketArn, listOf(created.namespace))
+            created.tableCreationAttempted = true
+            client.createTable(bucketArn, created.namespace, created.tableName)
         }
     }
 
     private suspend fun cleanupResources(
         region: String,
         created: CreatedResources,
-    ) {
-        created.tableBucketArn?.let { arn ->
+    ): List<Throwable> {
+        if (created.tableBucketArn == null && !created.tableBucketCreationAttempted) return emptyList()
+
+        val cleanupFailures = mutableListOf<Throwable>()
+        runCatching {
             withS3TablesClient(region = region, builder = { callTimeout = 30.seconds }) { client ->
-                if (created.tableCreated) client.deleteTable(arn, created.namespace, created.tableName)
-                if (created.namespaceCreated) client.deleteNamespace(arn, created.namespace)
-                client.deleteTableBucket(arn)
+                var resolvedTableBucketArn = created.tableBucketArn
+                if (resolvedTableBucketArn == null && created.tableBucketCreationAttempted) {
+                    runCatching {
+                        resolvedTableBucketArn = client
+                            .listTableBuckets(prefix = created.tableBucketName, maxBuckets = 10)
+                            .tableBuckets
+                            .firstOrNull { it.name == created.tableBucketName }
+                            ?.arn
+                    }.exceptionOrNull()?.takeUnless(::isAlreadyAbsent)?.let(cleanupFailures::add)
+                }
+                resolvedTableBucketArn?.let { arn ->
+                    cleanupIndependently(cleanupFailures) {
+                        if (created.tableCreationAttempted) {
+                            client.deleteTable(arn, created.namespace, created.tableName)
+                        }
+                    }
+                    cleanupIndependently(cleanupFailures) {
+                        if (created.namespaceCreationAttempted) client.deleteNamespace(arn, created.namespace)
+                    }
+                    cleanupIndependently(cleanupFailures) {
+                        client.deleteTableBucket(arn)
+                    }
+                }
             }
-        }
+        }.exceptionOrNull()?.takeUnless(::isAlreadyAbsent)?.let(cleanupFailures::add)
+        return cleanupFailures
+    }
+
+    private suspend fun cleanupIndependently(
+        failures: MutableList<Throwable>,
+        action: suspend () -> Unit,
+    ) {
+        runCatching { action() }.exceptionOrNull()?.takeUnless(::isAlreadyAbsent)?.let(failures::add)
     }
 
     private companion object {
@@ -174,10 +269,48 @@ private fun requiredInput(name: String): String =
         ?.takeIf { it.isNotEmpty() && '\n' !in it && '\r' !in it }
         ?: throw AssertionError("s3-tables-smoke: missing or invalid input=$name")
 
-private fun normalizedName(prefix: String, suffix: String): String {
-    val normalizedPrefix = prefix.lowercase().replace(Regex("[^a-z0-9-]"), "-").trim('-')
+private fun normalizedTableBucketName(prefix: String, suffix: String): String {
+    var normalizedPrefix = prefix.lowercase().replace(Regex("[^a-z0-9-]"), "-")
+        .replace(Regex("-+"), "-")
+        .trim('-')
+    val normalizedSuffix = suffix.lowercase().replace(Regex("[^a-z0-9-]"), "-")
+        .replace(Regex("-+"), "-")
+        .trim('-')
     require(normalizedPrefix.length >= 3) { "S3_TABLES_MUTATING_PREFIX must contain at least three valid characters" }
-    return "$normalizedPrefix-$suffix".take(63).trimEnd('-')
+    require(normalizedSuffix.isNotEmpty()) { "S3 Tables resource suffix must not be blank" }
+    if (listOf("xn--", "sthree-", "amzn-s3-demo-", "aws").any(normalizedPrefix::startsWith)) {
+        normalizedPrefix = "bt-$normalizedPrefix"
+    }
+    val prefixLimit = 63 - normalizedSuffix.length - 1
+    require(prefixLimit >= 3) { "S3 Tables resource suffix is too long" }
+    return "${normalizedPrefix.take(prefixLimit).trimEnd('-')}-$normalizedSuffix"
+}
+
+private fun normalizedTableIdentifierName(prefix: String, suffix: String): String {
+    var normalizedPrefix = prefix.lowercase().replace(Regex("[^a-z0-9_]"), "_")
+        .replace(Regex("_+"), "_")
+        .trim('_')
+    val normalizedSuffix = suffix.lowercase().replace(Regex("[^a-z0-9_]"), "_")
+        .replace(Regex("_+"), "_")
+        .trim('_')
+    require(normalizedPrefix.length >= 3) { "S3_TABLES_MUTATING_PREFIX must contain at least three valid characters" }
+    require(normalizedSuffix.isNotEmpty()) { "S3 Tables resource suffix must not be blank" }
+    if (normalizedPrefix.startsWith("aws")) {
+        normalizedPrefix = "bt_$normalizedPrefix"
+    }
+    val prefixLimit = 255 - normalizedSuffix.length - 1
+    require(prefixLimit >= 3) { "S3 Tables resource suffix is too long" }
+    return "${normalizedPrefix.take(prefixLimit).trimEnd('_')}_$normalizedSuffix"
+}
+
+private fun isAlreadyAbsent(failure: Throwable): Boolean {
+    val serviceFailure = failure as? ServiceException ?: return false
+    return serviceFailure.sdkErrorMetadata.errorCode in setOf(
+        "NoSuchTableBucket",
+        "NoSuchNamespace",
+        "NoSuchTable",
+        "ResourceNotFoundException",
+    )
 }
 
 private fun elapsedMillis(startedAt: Long): Long =

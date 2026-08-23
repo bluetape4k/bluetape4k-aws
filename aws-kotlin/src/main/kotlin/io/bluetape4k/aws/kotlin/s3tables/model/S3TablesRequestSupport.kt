@@ -17,6 +17,7 @@ import aws.sdk.kotlin.services.s3tables.model.ListTablesRequest
 import aws.sdk.kotlin.services.s3tables.model.OpenTableFormat
 import aws.sdk.kotlin.services.s3tables.model.TableBucketType
 
+/** table bucket 생성 요청을 구성합니다. */
 fun createTableBucketRequestOf(
     name: String,
     builder: CreateTableBucketRequest.Builder.() -> Unit = {},
@@ -25,6 +26,7 @@ fun createTableBucketRequestOf(
     builder()
 }.also { it.name.requireNotBlank("name") }
 
+/** table bucket 목록 조회 요청을 구성합니다. */
 fun listTableBucketsRequestOf(
     prefix: String? = null,
     continuationToken: String? = null,
@@ -39,6 +41,7 @@ fun listTableBucketsRequestOf(
     builder()
 }.also { it.validateList(it.maxBuckets, "maxBuckets") }
 
+/** table bucket ARN으로 조회 요청을 구성합니다. */
 fun getTableBucketRequestOf(
     tableBucketArn: String,
     builder: GetTableBucketRequest.Builder.() -> Unit = {},
@@ -47,6 +50,7 @@ fun getTableBucketRequestOf(
     builder()
 }.also { it.tableBucketArn.requireNotBlank("tableBucketArn") }
 
+/** table bucket ARN으로 삭제 요청을 구성합니다. */
 fun deleteTableBucketRequestOf(
     tableBucketArn: String,
     builder: DeleteTableBucketRequest.Builder.() -> Unit = {},
@@ -55,6 +59,7 @@ fun deleteTableBucketRequestOf(
     builder()
 }.also { it.tableBucketArn.requireNotBlank("tableBucketArn") }
 
+/** table bucket에 namespace를 생성하는 요청을 구성합니다. */
 fun createNamespaceRequestOf(
     tableBucketArn: String,
     namespace: List<String>,
@@ -68,6 +73,7 @@ fun createNamespaceRequestOf(
     it.namespace.requireNamespace()
 }
 
+/** namespace 목록 조회 요청을 구성합니다. */
 fun listNamespacesRequestOf(
     tableBucketArn: String,
     prefix: String? = null,
@@ -85,6 +91,7 @@ fun listNamespacesRequestOf(
     it.validateList(it.maxNamespaces, "maxNamespaces")
 }
 
+/** table bucket ARN과 namespace로 조회 요청을 구성합니다. */
 fun getNamespaceRequestOf(
     tableBucketArn: String,
     namespace: String,
@@ -98,6 +105,7 @@ fun getNamespaceRequestOf(
     it.namespace.requireNotBlank("namespace")
 }
 
+/** table bucket ARN과 namespace로 삭제 요청을 구성합니다. */
 fun deleteNamespaceRequestOf(
     tableBucketArn: String,
     namespace: String,
@@ -111,6 +119,7 @@ fun deleteNamespaceRequestOf(
     it.namespace.requireNotBlank("namespace")
 }
 
+/** namespace에 table을 생성하는 요청을 구성합니다. */
 fun createTableRequestOf(
     tableBucketArn: String,
     namespace: String,
@@ -130,9 +139,10 @@ fun createTableRequestOf(
     require(it.format != null) { "format must not be null" }
 }
 
+/** table 목록 조회 요청을 구성합니다. [namespace]는 선택적 필터입니다. */
 fun listTablesRequestOf(
     tableBucketArn: String,
-    namespace: String,
+    namespace: String? = null,
     prefix: String? = null,
     continuationToken: String? = null,
     maxTables: Int? = null,
@@ -146,10 +156,11 @@ fun listTablesRequestOf(
     builder()
 }.also {
     it.tableBucketArn.requireNotBlank("tableBucketArn")
-    it.namespace.requireNotBlank("namespace")
+    it.namespace?.requireNotBlank("namespace")
     it.validateList(it.maxTables, "maxTables")
 }
 
+/** table ARN 또는 table bucket/namespace/name selector로 조회 요청을 구성합니다. */
 fun getTableRequestOf(
     tableBucketArn: String? = null,
     namespace: String? = null,
@@ -164,6 +175,7 @@ fun getTableRequestOf(
     builder()
 }.also { it.requireTableLookup() }
 
+/** table bucket/namespace/name으로 삭제 요청을 구성합니다. */
 fun deleteTableRequestOf(
     tableBucketArn: String,
     namespace: String,
@@ -184,6 +196,10 @@ fun deleteTableRequestOf(
 
 private fun String?.requireNotBlank(field: String) {
     require(!isNullOrBlank()) { "$field must not be blank" }
+}
+
+private fun String?.requireSelector(field: String) {
+    require(this == null || !isNullOrBlank()) { "$field must not be blank when provided" }
 }
 
 private fun List<String>?.requireNamespace() {
@@ -212,13 +228,18 @@ private fun validatePage(value: Int?, field: String) {
 }
 
 private fun GetTableRequest.requireTableLookup() {
-    val byArn = !tableArn.isNullOrBlank()
-    val byPath = !tableBucketArn.isNullOrBlank() && !namespace.isNullOrBlank() && !name.isNullOrBlank()
+    tableArn.requireSelector("tableArn")
+    tableBucketArn.requireSelector("tableBucketArn")
+    namespace.requireSelector("namespace")
+    name.requireSelector("name")
+
+    val byArn = tableArn != null
+    val byPath = tableBucketArn != null && namespace != null && name != null
     require(byArn.xor(byPath)) {
         "table lookup requires either tableArn or tableBucketArn, namespace, and name"
     }
     if (byArn) {
-        require(tableBucketArn.isNullOrBlank() && namespace.isNullOrBlank() && name.isNullOrBlank()) {
+        require(tableBucketArn == null && namespace == null && name == null) {
             "table lookup must not mix tableArn with tableBucketArn, namespace, or name"
         }
     }

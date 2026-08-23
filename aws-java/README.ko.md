@@ -189,7 +189,8 @@ S3 Vectors는 별도 AWS SDK v2 `s3vectors` 서비스를 사용합니다. 이 �
 S3 Tables helper는 AWS SDK v2 request·response 타입을 그대로 노출하면서 table bucket,
 namespace, table의 생성·목록·조회·삭제를 sync/async/coroutine으로 제공합니다. 목록은 raw
 service의 한 페이지를 반환하므로 다음 페이지가 필요하면 `continuationToken`을 호출자가
-명시합니다. `CreateTable`의 기본 format은 SDK의 `ICEBERG`이며, `GetTable`은 table ARN 또는
+명시합니다. `ListTables`의 `namespace`는 선택 사항이므로 bucket 범위 목록에도 사용할 수 있습니다.
+`CreateTable`의 기본 format은 SDK의 `ICEBERG`이며, `GetTable`은 table ARN 또는
 bucket/namespace/name selector 중 하나를 사용합니다.
 
 서비스 SDK는 `compileOnly`이므로 애플리케이션이 직접 추가해야 합니다.
@@ -215,8 +216,10 @@ suspend fun createOrdersTable() = withS3TablesClient(region = Region.AP_NORTHEAS
 }
 ```
 
-범위가 지정된 helper는 S3 Tables service client만 닫고 application-scoped client는 호출자가
-관리합니다. 이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다.
+`s3TablesClient`와 `s3TablesClientOf`는 application-scoped client를 만들고 `ShutdownQueue`에
+등록합니다. 일찍 닫거나 주입한 HTTP client를 관리하는 책임은 호출자에게 있습니다.
+`withS3TablesClient`는 등록하지 않은 단기 client를 만들어 block이 끝날 때 service client만 닫습니다.
+이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다.
 Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의
 S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
 

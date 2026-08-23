@@ -43,10 +43,22 @@ class S3TablesRequestSupportTest {
     @Test
     fun `get table accepts exactly one selector`() {
         getTableRequestOf(tableArn = TABLE_ARN).tableArn shouldBeEqualTo TABLE_ARN
-        getTableRequestOf(BUCKET_ARN, "analytics", "orders").name shouldBeEqualTo "orders"
+        val byPath = getTableRequestOf(BUCKET_ARN, "analytics", "orders")
+        byPath.tableBucketArn shouldBeEqualTo BUCKET_ARN
+        byPath.namespace shouldBeEqualTo "analytics"
+        byPath.name shouldBeEqualTo "orders"
         assertFailsWith<IllegalArgumentException> { getTableRequestOf() }
         assertFailsWith<IllegalArgumentException> {
             getTableRequestOf(tableArn = TABLE_ARN) { name = "orders" }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            getTableRequestOf(BUCKET_ARN, "analytics", "orders", tableArn = " ")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            getTableRequestOf(tableArn = TABLE_ARN) { namespace = " " }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            getTableRequestOf(tableBucketArn = BUCKET_ARN, namespace = "analytics")
         }
     }
 
@@ -55,12 +67,15 @@ class S3TablesRequestSupportTest {
         val buckets = listTableBucketsRequestOf(prefix = "prod-", continuationToken = "next", maxBuckets = 10)
         val namespaces = listNamespacesRequestOf(BUCKET_ARN, maxNamespaces = 20)
         val tables = listTablesRequestOf(BUCKET_ARN, "analytics", maxTables = 30)
+        val tablesWithoutNamespace = listTablesRequestOf(BUCKET_ARN, maxTables = 40)
 
         buckets.prefix shouldBeEqualTo "prod-"
         buckets.continuationToken shouldBeEqualTo "next"
         buckets.maxBuckets shouldBeEqualTo 10
         namespaces.maxNamespaces shouldBeEqualTo 20
         tables.maxTables shouldBeEqualTo 30
+        tablesWithoutNamespace.namespace shouldBeEqualTo null
+        tablesWithoutNamespace.maxTables shouldBeEqualTo 40
         assertFailsWith<IllegalArgumentException> { listTablesRequestOf(BUCKET_ARN, "analytics", maxTables = 0) }
         assertFailsWith<IllegalArgumentException> { listNamespacesRequestOf(BUCKET_ARN, continuationToken = " ") }
     }
@@ -85,6 +100,9 @@ class S3TablesRequestSupportTest {
         }
         assertFailsWith<IllegalArgumentException> {
             listTablesRequestOf(BUCKET_ARN, "analytics") { tableBucketArn = " " }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            listTablesRequestOf(BUCKET_ARN) { namespace = " " }
         }
         assertFailsWith<IllegalArgumentException> {
             deleteTableRequestOf(BUCKET_ARN, "analytics", "orders") { name = " " }

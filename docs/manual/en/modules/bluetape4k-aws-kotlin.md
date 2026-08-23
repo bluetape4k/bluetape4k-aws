@@ -123,8 +123,9 @@ bodies by default.
 The native AWS SDK for Kotlin extension keeps S3 Tables request, response, and
 exception types visible for table bucket, namespace, and table
 create/list/get/delete operations. Lists return one raw service page, so the
-caller supplies `continuationToken` for the next page. `CreateTable` defaults
-to `OpenTableFormat.Iceberg`, and `GetTable` accepts either a table ARN or the
+caller supplies `continuationToken` for the next page. `ListTables` keeps
+`namespace` optional for bucket-level listing. `CreateTable` defaults to
+`OpenTableFormat.Iceberg`, and `GetTable` accepts either a table ARN or the
 bucket/namespace/name selector.
 
 Add the service SDK to the consumer because it remains `compileOnly`:
@@ -144,8 +145,9 @@ withS3TablesClient(region = "ap-northeast-2") { client ->
 }
 ```
 
-`withS3TablesClient` closes only its service client; an injected HTTP engine
-remains caller-owned. This module covers management operations only. It does
+`s3TablesClientOf` returns an application-scoped client that the caller must
+close. `withS3TablesClient` closes only its service client when the block ends;
+an injected HTTP engine remains caller-owned. This module covers management operations only. It does
 not implement an Iceberg data plane, SQL, or an Athena, Glue, Redshift, or
 Apache Iceberg integration facade. Local emulator fidelity for S3 Tables is
 not asserted.

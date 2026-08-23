@@ -36,11 +36,13 @@ import software.amazon.awssdk.services.s3tables.model.ListTablesResponse
 import software.amazon.awssdk.services.s3tables.model.TableBucketType
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
 
 class S3TablesExtensionsTest {
 
     private companion object {
         const val BUCKET_ARN = "arn:aws:s3tables:ap-northeast-2:123456789012:bucket/test"
+        const val TABLE_ARN = "$BUCKET_ARN/table/analytics/orders"
     }
 
     @Test
@@ -80,8 +82,8 @@ class S3TablesExtensionsTest {
         client.getNamespace(BUCKET_ARN, "analytics") shouldBeSameInstanceAs getNamespace
         client.deleteNamespace(BUCKET_ARN, "analytics") shouldBeSameInstanceAs deleteNamespace
         client.createTable(BUCKET_ARN, "analytics", "orders") shouldBeSameInstanceAs createTable
-        client.listTables(BUCKET_ARN, "analytics", maxTables = 10) shouldBeSameInstanceAs listTables
-        client.getTable(tableArn = "$BUCKET_ARN/table/analytics/orders") shouldBeSameInstanceAs getTable
+        client.listTables(BUCKET_ARN, maxTables = 10) shouldBeSameInstanceAs listTables
+        client.getTable(tableArn = TABLE_ARN) shouldBeSameInstanceAs getTable
         client.deleteTable(BUCKET_ARN, "analytics", "orders", versionToken = "v1") shouldBeSameInstanceAs deleteTable
 
         verifySyncBucketOperations(client)
@@ -156,7 +158,7 @@ class S3TablesExtensionsTest {
             client.listTables(
                 match<ListTablesRequest> { request ->
                     request.tableBucketARN() == BUCKET_ARN &&
-                        request.namespace() == "analytics" &&
+                        request.namespace() == null &&
                         request.maxTables() == 10
                 },
             )
@@ -164,7 +166,10 @@ class S3TablesExtensionsTest {
         verify(exactly = 1) {
             client.getTable(
                 match<GetTableRequest> { request ->
-                    request.tableArn() != null && request.tableBucketARN() == null
+                    request.tableArn() == TABLE_ARN &&
+                        request.tableBucketARN() == null &&
+                        request.namespace() == null &&
+                        request.name() == null
                 },
             )
         }
@@ -262,8 +267,8 @@ class S3TablesExtensionsTest {
         client.getNamespaceAsync(BUCKET_ARN, "analytics").get() shouldBeSameInstanceAs expected.getNamespace
         client.deleteNamespaceAsync(BUCKET_ARN, "analytics").get() shouldBeSameInstanceAs expected.deleteNamespace
         client.createTableAsync(BUCKET_ARN, "analytics", "orders").get() shouldBeSameInstanceAs expected.createTable
-        client.listTablesAsync(BUCKET_ARN, "analytics", maxTables = 10).get() shouldBeSameInstanceAs expected.listTables
-        client.getTableAsync(tableArn = "$BUCKET_ARN/table/analytics/orders").get() shouldBeSameInstanceAs
+        client.listTablesAsync(BUCKET_ARN, maxTables = 10).get() shouldBeSameInstanceAs expected.listTables
+        client.getTableAsync(tableArn = TABLE_ARN).get() shouldBeSameInstanceAs
             expected.getTable
         client.deleteTableAsync(BUCKET_ARN, "analytics", "orders", versionToken = "v1").get() shouldBeSameInstanceAs
             expected.deleteTable
@@ -280,8 +285,8 @@ class S3TablesExtensionsTest {
         client.getNamespace(BUCKET_ARN, "analytics") shouldBeSameInstanceAs expected.getNamespace
         client.deleteNamespace(BUCKET_ARN, "analytics") shouldBeSameInstanceAs expected.deleteNamespace
         client.createTable(BUCKET_ARN, "analytics", "orders") shouldBeSameInstanceAs expected.createTable
-        client.listTables(BUCKET_ARN, "analytics", maxTables = 10) shouldBeSameInstanceAs expected.listTables
-        client.getTable(tableArn = "$BUCKET_ARN/table/analytics/orders") shouldBeSameInstanceAs expected.getTable
+        client.listTables(BUCKET_ARN, maxTables = 10) shouldBeSameInstanceAs expected.listTables
+        client.getTable(tableArn = TABLE_ARN) shouldBeSameInstanceAs expected.getTable
         client.deleteTable(BUCKET_ARN, "analytics", "orders", versionToken = "v1") shouldBeSameInstanceAs
             expected.deleteTable
     }
@@ -351,7 +356,7 @@ class S3TablesExtensionsTest {
             client.listTables(
                 match<ListTablesRequest> {
                     it.tableBucketARN() == BUCKET_ARN &&
-                        it.namespace() == "analytics" &&
+                        it.namespace() == null &&
                         it.maxTables() == 10
                 },
             )
@@ -359,7 +364,10 @@ class S3TablesExtensionsTest {
         verify(exactly = 2) {
             client.getTable(
                 match<GetTableRequest> {
-                    it.tableArn() != null && it.tableBucketARN() == null
+                    it.tableArn() == TABLE_ARN &&
+                        it.tableBucketARN() == null &&
+                        it.namespace() == null &&
+                        it.name() == null
                 },
             )
         }
@@ -383,7 +391,37 @@ class S3TablesExtensionsTest {
         every { client.getTable(any<GetTableRequest>()) } returns cancelled
 
         assertFailsWith<CancellationException> {
-            client.getTable(tableArn = "$BUCKET_ARN/table/analytics/orders")
+            client.getTable(tableArn = TABLE_ARN)
         }
+    }
+
+    @Test
+    fun `async operation preserves exceptional future and operation failure`() {
+        val client = mockk<S3TablesAsyncClient>()
+        val expected = IllegalStateException("operation-failed")
+        val future = CompletableFuture<GetTableResponse>()
+        future.completeExceptionally(expected)
+        every { client.getTable(any<GetTableRequest>()) } returns future
+
+        val actual = client.getTableAsync(tableArn = TABLE_ARN)
+
+        actual shouldBeSameInstanceAs future
+        val failure = assertFailsWith<ExecutionException> { actual.get() }
+        failure.cause shouldBeSameInstanceAs expected
+    }
+
+    @Test
+    fun `coroutine await rethrows operation failure`() = runTest {
+        val client = mockk<S3TablesAsyncClient>()
+        val expected = IllegalStateException("operation-failed")
+        val future = CompletableFuture<GetTableResponse>()
+        future.completeExceptionally(expected)
+        every { client.getTable(any<GetTableRequest>()) } returns future
+
+        val actual = assertFailsWith<IllegalStateException> {
+            client.getTable(tableArn = TABLE_ARN)
+        }
+
+        actual shouldBeSameInstanceAs expected
     }
 }

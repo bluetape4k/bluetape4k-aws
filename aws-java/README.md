@@ -194,9 +194,9 @@ policy calls remain available through the raw `S3VectorsAsyncClient`.
 S3 Tables helpers keep the AWS SDK v2 request and response types visible while
 covering table bucket, namespace, and table create/list/get/delete operations.
 Lists return one raw service page; pass `continuationToken` explicitly when a
-caller needs the next page. `CreateTable` defaults to the SDK's `ICEBERG`
-format, and `GetTable` accepts either a table ARN or the bucket/namespace/name
-selector.
+caller needs the next page. `ListTables` keeps `namespace` optional for
+bucket-level listing. `CreateTable` defaults to the SDK's `ICEBERG` format, and
+`GetTable` accepts either a table ARN or the bucket/namespace/name selector.
 
 Add the service SDK directly because it remains `compileOnly`:
 
@@ -221,8 +221,10 @@ suspend fun createOrdersTable() = withS3TablesClient(region = Region.AP_NORTHEAS
 }
 ```
 
-The scoped helper closes only the S3 Tables service client; an application-
-scoped client is caller-owned. This is a management API surface, not an
+`s3TablesClient` and `s3TablesClientOf` create application-scoped clients and
+register them with `ShutdownQueue`; callers still own early close and any
+injected HTTP client. `withS3TablesClient` creates an unregistered short-lived
+client and closes only the service client when the block ends. This is a management API surface, not an
 Iceberg data-plane or SQL engine. Athena, Glue, Redshift, and Apache Iceberg
 integration remain application concerns, and local emulator fidelity for S3
 Tables is not asserted by this module.

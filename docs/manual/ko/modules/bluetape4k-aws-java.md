@@ -126,6 +126,7 @@ Lambda를 미지원으로 기록하고 입력이 없으면 client 생성 전에 
 Java SDK v2 확장은 raw S3 Tables request·response·exception 타입을 유지하면서 table bucket,
 namespace, table의 생성·목록·조회·삭제를 제공합니다. 목록 helper는 service의 한 페이지만
 반환하므로 다음 페이지가 필요하면 호출자가 `continuationToken`을 전달합니다.
+`ListTables`의 `namespace`는 선택 사항이므로 bucket 범위 목록에도 사용할 수 있습니다.
 `CreateTable` 기본값은 `ICEBERG`이고 `GetTable`은 table ARN 또는 bucket/namespace/name
 selector 중 하나를 사용합니다.
 
@@ -146,7 +147,9 @@ withS3TablesClient(region = Region.AP_NORTHEAST_2) { client ->
 }
 ```
 
-`withS3TablesClient`는 service client만 닫고 application-scoped client는 호출자가 관리합니다.
+`s3TablesClient`와 `s3TablesClientOf`는 application-scoped client를 만들고 `ShutdownQueue`에
+등록합니다. 일찍 닫거나 주입한 HTTP client를 관리하는 책임은 호출자에게 있습니다.
+`withS3TablesClient`는 등록하지 않은 단기 client를 만들어 block이 끝날 때 service client만 닫습니다.
 이 모듈은 S3 Tables management surface만 제공하며 Iceberg data plane, SQL, Athena, Glue,
 Redshift, Apache Iceberg 통합 facade를 구현하지 않습니다. 로컬 emulator의 S3 Tables fidelity도
 보장한다고 주장하지 않습니다.
