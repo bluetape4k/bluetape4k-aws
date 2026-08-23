@@ -654,6 +654,7 @@ val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixtu
                 "kinesis",
                 "scheduler",
                 "sfn",
+                "lambda",
                 "sts",
             ),
             "aws.sdk.kotlin" to listOf(
@@ -667,6 +668,7 @@ val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixtu
                 "kinesis",
                 "scheduler",
                 "sfn",
+                "lambda",
                 "sts",
             ),
         )

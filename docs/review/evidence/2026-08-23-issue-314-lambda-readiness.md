@@ -49,6 +49,22 @@ smoke를 수행하지 않는다.
 - SDK codec, request builder, client lifecycle, raw response 보존은 deterministic
   unit/consumer 검증으로 완료한다.
 
+구현 후에도 필수 입력이 없는 상태에서 두 모듈의 smoke 태스크가 client 생성 전에
+건너뛰는 것을 확인했다.
+
+```text
+./gradlew :bluetape4k-aws-java:test -PlambdaSmoke --tests '*LambdaSmokeTest' --no-daemon
+lambda-smoke: SKIP before client creation; missing=LAMBDA_SMOKE_FUNCTION_NAME,LAMBDA_SMOKE_REGION
+BUILD SUCCESSFUL
+
+./gradlew :bluetape4k-aws-kotlin:test -PlambdaSmoke --tests '*LambdaSmokeTest' --no-daemon
+lambda-smoke: SKIP before client creation; missing=LAMBDA_SMOKE_FUNCTION_NAME,LAMBDA_SMOKE_REGION
+BUILD SUCCESSFUL
+```
+
+이 환경에서는 실행 가능한 함수/권한 입력이 없으므로 live Lambda 호출 증거는 계속
+`N/A`이며, 위 명령은 네트워크 호출이나 Lambda client 생성을 수행하지 않는다.
+
 ## 재검증 명령
 
 ```bash
@@ -60,4 +76,3 @@ rg -n "Lambda|lambda|FlociServer|LocalStackServer" \
   aws-java/src/test aws-kotlin/src/test \
   ../../../bluetape4k-projects/docs/superpowers/specs/2026-04-26-aws-emulator-migration-design.md
 ```
-

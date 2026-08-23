@@ -3,6 +3,7 @@ package io.bluetape4k.aws.kotlin.consumer
 import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.kinesis.KinesisClient
+import aws.sdk.kotlin.services.lambda.LambdaClient
 import aws.sdk.kotlin.services.kms.KmsClient
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.scheduler.SchedulerClient
@@ -15,6 +16,9 @@ import io.bluetape4k.aws.kotlin.cloudwatch.cloudWatchClientOf
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.kotlin.kinesis.kinesisClientOf
 import io.bluetape4k.aws.kotlin.kms.kmsClientOf
+import io.bluetape4k.aws.kotlin.lambda.invokeString
+import io.bluetape4k.aws.kotlin.lambda.lambdaClientOf
+import io.bluetape4k.aws.kotlin.lambda.withLambdaClient
 import io.bluetape4k.aws.kotlin.s3.s3ClientOf
 import io.bluetape4k.aws.kotlin.ses.sesClientOf
 import io.bluetape4k.aws.kotlin.sfn.listExecutionsByMapRun
@@ -50,6 +54,7 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
     KinesisClient::class.java,
     SchedulerClient::class.java,
     SfnClient::class.java,
+    LambdaClient::class.java,
     StsClient::class.java,
     { s3ClientOf() },
     { dynamoDbClientOf(region = "ap-northeast-2") },
@@ -79,5 +84,12 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
         }
     },
     ::kotlinSfnCustomHttpClient,
+    { LambdaClient { } },
+    { lambdaClientOf(region = "ap-northeast-2") },
+    suspend {
+        withLambdaClient(region = "ap-northeast-2") { client ->
+            client.invokeString("orders", "{}").value
+        }
+    },
     { stsClientOf() },
 )
