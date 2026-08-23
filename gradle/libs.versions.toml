@@ -110,6 +110,7 @@ aws2-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs" }
 aws2-imds = { module = "software.amazon.awssdk:imds" }
 aws2-kinesis = { module = "software.amazon.awssdk:kinesis" }
 aws2-eventbridge = { module = "software.amazon.awssdk:eventbridge" }
+aws2-appconfigdata = { module = "software.amazon.awssdk:appconfigdata" }
 aws2-scheduler = { module = "software.amazon.awssdk:scheduler" }
 aws2-sfn = { module = "software.amazon.awssdk:sfn" }
 aws2-lambda = { module = "software.amazon.awssdk:lambda" }

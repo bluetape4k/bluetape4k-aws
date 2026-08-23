@@ -63,6 +63,9 @@ Exposed database wiring.
 - **S3 / Secrets Manager / Parameter Store config** — startup Environment sources for
   S3 objects, remote secrets, and parameters, optional lazy refresh, and composed
   `@SecretsValue` / `@ParameterStoreValue` annotations over Spring `@Value`.
+- **AWS AppConfig Data ConfigData** — `aws-app-config:` imports for
+  application/profile/environment identifiers, properties/YAML/JSON decoding, and
+  opt-in token-aware runtime reload without Spring Cloud Context.
 - **Exposed databases** — auto-configures an AWS-backed
   `AwsExposedDatabaseRegistry`, default Exposed `Database`, and default
   `DataSource` from explicit properties or remote Environment values loaded
@@ -92,6 +95,7 @@ dependencies {
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
     implementation("software.amazon.awssdk:eventbridge")
+    implementation("software.amazon.awssdk:appconfigdata") // required for aws-app-config imports
     implementation("software.amazon.awssdk:imds")
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
@@ -250,6 +254,13 @@ bluetape4k:
           prefix: app
           recursive: true
           with-decryption: true
+    app-config:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:2772
+      separator: "#"
+      refresh-interval: 30s
+      required-minimum-poll-interval: 15s
     exposed:
       enabled: true
       default-database:
@@ -309,20 +320,30 @@ as well as AWS auto-configuration, so configured remote sources are not accessed
 
 ### ConfigData imports
 
-Spring Boot ConfigData imports provide startup-only loading for `aws-s3:`,
-`aws-parameterstore:`, and `aws-secretsmanager:` locations. For example:
+Spring Boot ConfigData imports provide startup loading for `aws-s3:`,
+`aws-parameterstore:`, `aws-secretsmanager:`, and `aws-app-config:` locations.
+For example:
 
 ```properties
 spring.config.import=optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml,aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true,optional:aws-secretsmanager:application?prefix=app&format=json
 ```
 
+For an AppConfig Data source, use the same property with the three identifiers:
+
+```properties
+# AWS AppConfig Data: application#profile#environment
+spring.config.import=aws-app-config:orders-api#production#ap-northeast-2?format=yaml&prefix=app
+```
+
 `optional:` skips only a backend-specific not-found result. Authentication,
 network, parsing, and other service failures still fail startup. The same
 `bluetape4k.aws.enabled=false` switch prevents ConfigData client creation and
-remote access. Floci is the preferred local emulator; use LocalStack only as an
-explicit fallback. ConfigData is startup-only, while the legacy
-`EnvironmentPostProcessor` sources retain their existing refresh and precedence
-behavior. See the [runtime operations manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md)
+remote access. AppConfig Data reload is disabled by default; set
+`bluetape4k.aws.app-config.refresh-interval` to enable one fixed-delay poller per
+resource. Empty responses and decode/transport failures retain the last good map,
+and `Environment` sees new values without automatic `@Value` or
+`@ConfigurationProperties` rebind. Floci is the preferred local emulator; use
+LocalStack only as an explicit fallback. See the [runtime operations manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md)
 for the complete contract.
 
 `bluetape4k.aws.exposed.default-database.url` activates the Exposed registry.

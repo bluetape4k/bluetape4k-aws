@@ -47,14 +47,81 @@ spring:
 ```
 
 지원하는 prefix는 `aws-s3:`, `aws-parameterstore:`,
-`aws-secretsmanager:`입니다. `optional:`은 해당 backend의 not-found 결과만
-억제합니다. 인증, network, parsing 및 그 밖의 service 오류는 startup 실패로
-남습니다. `bluetape4k.aws.enabled=false`는 SDK classpath 확인보다 먼저
-판정되므로, 비활성화하면 ConfigData가 AWS client를 만들지 않고 원격에도
+`aws-secretsmanager:`, `aws-app-config:`입니다. `optional:`은 해당 backend의
+not-found 결과만 억제합니다. 인증, network, parsing 및 그 밖의 service 오류는
+startup 실패로 남습니다. `bluetape4k.aws.enabled=false`는 SDK classpath 확인보다
+먼저 판정되므로, 비활성화하면 ConfigData가 AWS client를 만들지 않고 원격에도
 접근하지 않습니다. 로컬 emulator는 Floci를 우선 사용하고 LocalStack은 명시적인
-fallback으로 사용하세요. ConfigData는 runtime refresh를 수행하지 않습니다. 기존
-`EnvironmentPostProcessor` source는 기존 refresh와 precedence 동작을 계속
-제공합니다.
+fallback으로 사용하세요. S3, Parameter Store, Secrets Manager ConfigData는
+startup 전용입니다. 기존 `EnvironmentPostProcessor` source는 기존 refresh와
+precedence 동작을 계속 제공합니다.
+
+### AppConfig Data runtime reload
+
+AppConfig Data SDK를 runtime 의존성으로 추가하고 `application`, `profile`,
+`environment` 순서로 세 identifier를 import합니다.
+
+```kotlin
+implementation("software.amazon.awssdk:appconfigdata")
+```
+
+```properties
+spring.config.import=aws-app-config:orders-api#production#ap-northeast-2?format=yaml&prefix=app
+```
+
+기본 separator는 `#`이며 `bluetape4k.aws.app-config.separator`로 안전한 한 글자
+separator를 지정할 수 있습니다. 각 component는 AWS name 또는 identifier를
+사용할 수 있습니다. `auto`, `properties`, `yaml`, `json` 형식을 지원하고,
+`prefix`는 decode 이후 적용합니다. JSON/YAML 값은 Spring property key로
+flatten합니다.
+
+```yaml
+bluetape4k:
+  aws:
+    app-config:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:2772
+      fail-fast: true
+      refresh-interval: 30s       # 생략/null이면 startup 로딩만 수행
+      required-minimum-poll-interval: 15s
+```
+
+loader는 `StartConfigurationSession`을 한 번 호출한 뒤 각 응답의 최신 token으로
+`GetLatestConfiguration`을 호출합니다. 빈 응답은 마지막 map을 유지하면서 token을
+전진시킵니다. decode 또는 transport 오류가 나도 마지막 정상 map을 유지하며,
+transport/session 오류는 session을 버리고 제한된 full jitter로 재시도합니다.
+payload는 1 MiB, flatten 깊이 32, property 10,000개로 제한합니다. token,
+응답 body, 원격 identifier는 로그에 기록하지 않습니다.
+
+`refresh-interval`을 명시하지 않으면 reload는 비활성입니다. context 하나가 제한된
+scheduler 하나를 소유하고 AppConfig resource마다 fixed-delay self-rescheduling
+task 하나만 실행합니다. 초기 ConfigData 로딩이 끝나면 bootstrap client를 닫고,
+runtime client는 application context가 소유합니다. 종료할 때 새 예약을 막고
+task를 취소·drain한 다음 runtime client보다 먼저 scheduler를 멈춥니다. `Environment`는 최신 map을 읽지만 `@Value` field와
+`@ConfigurationProperties` instance는 자동 rebind하지 않습니다. 이 모듈은
+`Spring Cloud Context`, `RefreshScope`, event bus를 추가하지 않습니다.
+
+AppConfig Data 권한에는 다음 service action이 필요합니다. 이 API에는 resource ARN
+형식이 없으므로 IAM statement는 `Resource: "*"`를 사용해야 하며, role boundary,
+organization policy, network control로 account/region과 workload 범위를 제한하세요.
+
+```json
+{
+  "Action": [
+    "appconfig:StartConfigurationSession",
+    "appconfig:GetLatestConfiguration"
+  ],
+  "Resource": "*"
+}
+```
+
+Long poll은 AppConfig Data request를 소비하므로 비용과 poll interval을 함께
+검토하세요. local sidecar가 더 적합하면 AWS AppConfig Agent를 선택할 수 있지만,
+이 모듈이 Agent를 설치하거나 관리하지는 않습니다. Floci/LocalStack이 이 API를
+제공한다고 가정하지 말고 fake session contract로 결정론적 테스트를 수행하세요.
+`BLUETAPE4K_APPCONFIG_REAL_SMOKE=true`와 명시적인 AWS identifier·credential이
+모두 있을 때만 real smoke를 실행합니다.
 
 ### Import precedence
 

@@ -60,6 +60,9 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
 - **S3 / Secrets Manager / Parameter Store config** — S3 object, 원격 secret/parameter를
   시작 시점에 Spring Environment로 로드합니다. 선택적 lazy refresh와 Spring `@Value` 기반
   `@SecretsValue` / `@ParameterStoreValue` 조합 어노테이션도 제공합니다.
+- **AWS AppConfig Data ConfigData** — `aws-app-config:`으로
+  application/profile/environment identifier를 import하고 properties/YAML/JSON을
+  해석하며, Spring Cloud Context 없이 token 기반 runtime reload를 선택적으로 제공합니다.
 - **Exposed 데이터베이스** — 명시적 속성 또는 Secrets Manager / Parameter Store 로
   로드한 Environment 값으로 AWS-backed `AwsExposedDatabaseRegistry`, 기본 Exposed
   `Database`, 기본 `DataSource`를 자동 설정합니다.
@@ -80,6 +83,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3vectors")
     implementation("software.amazon.awssdk:eventbridge")
+    implementation("software.amazon.awssdk:appconfigdata") // aws-app-config import에 필요
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:sns")
     implementation("software.amazon.awssdk:sns-message-manager") // SNS HTTP 서명 검증에 필요
@@ -241,6 +245,13 @@ bluetape4k:
           prefix: app
           recursive: true
           with-decryption: true
+    app-config:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:2772
+      separator: "#"
+      refresh-interval: 30s
+      required-minimum-poll-interval: 15s
     exposed:
       enabled: true
       default-database:
@@ -298,19 +309,29 @@ Environment source도 비활성화되어, 설정된 원격 source에 접근하�
 ### ConfigData import
 
 Spring Boot ConfigData import는 `aws-s3:`, `aws-parameterstore:`,
-`aws-secretsmanager:` 위치를 startup 시점에 한 번 로드합니다. 예시는 다음과
-같습니다.
+`aws-secretsmanager:`, `aws-app-config:` 위치를 startup에 로드합니다. 예시는
+다음과 같습니다.
 
 ```properties
 spring.config.import=optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml,aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true,optional:aws-secretsmanager:application?prefix=app&format=json
 ```
 
+AppConfig Data source는 같은 속성에 세 identifier를 지정합니다.
+
+```properties
+# AWS AppConfig Data: application#profile#environment
+spring.config.import=aws-app-config:orders-api#production#ap-northeast-2?format=yaml&prefix=app
+```
+
 `optional:`은 backend별 not-found 결과만 건너뜁니다. 인증, network, parsing 및
 그 밖의 service 오류는 startup을 실패시킵니다. 같은
 `bluetape4k.aws.enabled=false` 설정은 ConfigData client 생성과 원격 접근도
-막습니다. 로컬 emulator는 Floci를 우선 사용하고, LocalStack은 명시적인 fallback으로
-사용하세요. ConfigData는 startup 전용이며 기존
-`EnvironmentPostProcessor` source의 refresh와 precedence 동작은 그대로 유지됩니다.
+막습니다. AppConfig Data reload는 기본 비활성이고
+`bluetape4k.aws.app-config.refresh-interval`을 지정할 때만 resource마다
+fixed-delay poller 하나를 만듭니다. 빈 응답과 decode/transport 오류는 마지막 정상
+map을 유지하며 `Environment`는 새 값을 읽지만 `@Value`나
+`@ConfigurationProperties`는 자동 rebind하지 않습니다. 로컬 emulator는 Floci를
+우선 사용하고, LocalStack은 명시적인 fallback으로 사용하세요.
 전체 계약은 [runtime 운영 manual](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md)에서
 확인할 수 있습니다.
 

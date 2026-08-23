@@ -31,9 +31,12 @@ class AwsConfigDataDocumentationParityTest {
             "aws-s3:",
             "aws-parameterstore:",
             "aws-secretsmanager:",
+            "aws-app-config:",
             "optional:",
             "Floci",
             "LocalStack",
+            "required-minimum-poll-interval",
+            "Spring Cloud Context",
         )
 
         requiredTokens.forEach { token ->

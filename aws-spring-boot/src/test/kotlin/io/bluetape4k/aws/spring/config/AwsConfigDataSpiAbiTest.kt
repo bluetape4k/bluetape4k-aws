@@ -4,6 +4,8 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLoader
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLocationResolver
+import io.bluetape4k.aws.spring.appconfig.AppConfigDataLoader
+import io.bluetape4k.aws.spring.appconfig.AppConfigDataLocationResolver
 import io.bluetape4k.aws.spring.s3.S3ConfigDataLoader
 import io.bluetape4k.aws.spring.s3.S3ConfigDataLocationResolver
 import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLoader
@@ -32,6 +34,7 @@ class AwsConfigDataSpiAbiTest {
             S3ConfigDataLocationResolver::class.java,
             ParameterStoreConfigDataLocationResolver::class.java,
             SecretsManagerConfigDataLocationResolver::class.java,
+            AppConfigDataLocationResolver::class.java,
         ).forEach { resolver ->
             resolver.constructors.single().parameterTypes.toList() shouldBeEqualTo listOf(
                 DeferredLogFactory::class.java,
@@ -45,6 +48,7 @@ class AwsConfigDataSpiAbiTest {
             S3ConfigDataLoader::class.java,
             ParameterStoreConfigDataLoader::class.java,
             SecretsManagerConfigDataLoader::class.java,
+            AppConfigDataLoader::class.java,
         ).forEach { loader ->
             loader.constructors.single().parameterTypes.toList() shouldBeEqualTo listOf(
                 DeferredLogFactory::class.java,

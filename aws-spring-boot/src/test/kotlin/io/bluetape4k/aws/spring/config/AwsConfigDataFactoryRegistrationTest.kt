@@ -18,11 +18,13 @@ class AwsConfigDataFactoryRegistrationTest {
             "io.bluetape4k.aws.spring.s3.S3ConfigDataLocationResolver",
             "io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLocationResolver",
             "io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLocationResolver",
+            "io.bluetape4k.aws.spring.appconfig.AppConfigDataLocationResolver",
         )
         val expectedLoaders = listOf(
             "io.bluetape4k.aws.spring.s3.S3ConfigDataLoader",
             "io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLoader",
             "io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLoader",
+            "io.bluetape4k.aws.spring.appconfig.AppConfigDataLoader",
         )
 
         resolverNames.count { it in expectedResolvers } shouldBeEqualTo expectedResolvers.size

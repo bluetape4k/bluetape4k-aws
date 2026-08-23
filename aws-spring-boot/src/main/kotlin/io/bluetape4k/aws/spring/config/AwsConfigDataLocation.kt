@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.config
 
+import io.bluetape4k.aws.spring.appconfig.AppConfigFormat
 import io.bluetape4k.aws.spring.s3.S3ConfigFormat
 import io.bluetape4k.aws.spring.secretsmanager.SecretFormat
 
@@ -11,6 +12,7 @@ internal enum class AwsConfigDataBackend(
     S3("aws-s3:", "s3"),
     PARAMETER_STORE("aws-parameterstore:", "parameter-store"),
     SECRETS_MANAGER("aws-secretsmanager:", "secrets-manager"),
+    APP_CONFIG("aws-app-config:", "app-config"),
 }
 
 /** Resolver가 검증한 backend별 원격 source입니다. */
@@ -44,6 +46,17 @@ internal sealed interface AwsConfigDataSource {
     ) : AwsConfigDataSource {
         override val canonicalSource: String
             get() = secretId
+    }
+
+    data class AppConfig(
+        val application: String,
+        val profile: String,
+        val environment: String,
+        val prefix: String?,
+        val format: AppConfigFormat,
+    ) : AwsConfigDataSource {
+        override val canonicalSource: String
+            get() = listOf(application, profile, environment).joinToString(separator = "\u0000")
     }
 }
 

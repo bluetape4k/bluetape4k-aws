@@ -45,15 +45,86 @@ spring:
       - optional:aws-secretsmanager:application?prefix=app&format=json
 ```
 
-The supported prefixes are `aws-s3:`, `aws-parameterstore:`, and
-`aws-secretsmanager:`. `optional:` suppresses only the matching backend's
-not-found result. Authentication, network, parsing, and other service failures
-remain startup failures. `bluetape4k.aws.enabled=false` is evaluated before
-SDK classpath checks, so ConfigData creates no AWS client and performs no remote
-access when disabled. Floci is the preferred emulator; LocalStack is an explicit
-fallback. ConfigData does not refresh during runtime. The legacy
-`EnvironmentPostProcessor` sources remain available for their existing refresh
-and precedence behavior.
+The supported prefixes are `aws-s3:`, `aws-parameterstore:`,
+`aws-secretsmanager:`, and `aws-app-config:`. `optional:` suppresses only the
+matching backend's not-found result. Authentication, network, parsing, and
+other service failures remain startup failures. `bluetape4k.aws.enabled=false`
+is evaluated before SDK classpath checks, so ConfigData creates no AWS client
+and performs no remote access when disabled. Floci is the preferred emulator;
+LocalStack is an explicit fallback. S3, Parameter Store, and Secrets Manager
+ConfigData remain startup-only. The legacy `EnvironmentPostProcessor` sources
+remain available for their existing refresh and precedence behavior.
+
+### AppConfig Data runtime reload
+
+Add the AppConfig Data SDK at runtime and import three identifiers in
+`application`, `profile`, `environment` order:
+
+```kotlin
+implementation("software.amazon.awssdk:appconfigdata")
+```
+
+```properties
+spring.config.import=aws-app-config:orders-api#production#ap-northeast-2?format=yaml&prefix=app
+```
+
+The default separator is `#`; configure one safe single character with
+`bluetape4k.aws.app-config.separator`. Each component can be an AWS name or
+identifier. Supported formats are `auto`, `properties`, `yaml`, and `json`;
+`prefix` is applied after decoding and JSON/YAML values are flattened into
+Spring property keys.
+
+```yaml
+bluetape4k:
+  aws:
+    app-config:
+      enabled: true
+      region: ap-northeast-2
+      endpoint-override: http://localhost:2772
+      fail-fast: true
+      refresh-interval: 30s       # omitted/null: startup load only
+      required-minimum-poll-interval: 15s
+```
+
+The loader calls `StartConfigurationSession` once, then `GetLatestConfiguration`
+with exactly the newest token from each response. Empty responses retain the
+last map and advance the token. Decode or transport failures retain the last
+good map; transport/session failures discard the session and retry with bounded
+full jitter. Payloads are bounded to 1 MiB, 32 flatten levels, and 10,000
+properties. Tokens, response bodies, and remote identifiers are not written to
+logs.
+
+Reload is disabled unless `refresh-interval` is explicitly set. A context owns
+one bounded scheduler and one fixed-delay self-rescheduling task per AppConfig
+resource. The bootstrap client is closed after the initial ConfigData load; the
+runtime client belongs to the application context. On shutdown, scheduling is
+blocked, tasks are cancelled and drained, and the scheduler stops before the
+runtime client is closed. `Environment` reads the newest map; `@Value` fields and
+`@ConfigurationProperties` instances are not automatically rebound. This module does not add Spring Cloud Context,
+`RefreshScope`, or an event bus.
+
+AWS AppConfig Data authorization uses the service actions below. The API does
+not expose a resource ARN for these actions, so the IAM statement must use
+`Resource: "*"`; restrict account/region and workload scope with role
+boundaries, organization policies, and network controls.
+
+```json
+{
+  "Action": [
+    "appconfig:StartConfigurationSession",
+    "appconfig:GetLatestConfiguration"
+  ],
+  "Resource": "*"
+}
+```
+
+Long polls consume AppConfig Data requests and can add cost; choose the service
+poll interval deliberately or use the AWS AppConfig Agent when its local
+sidecar model is a better operational fit. The module does not install or
+manage the Agent. Floci/LocalStack support for this API is not assumed: use the
+fake session contract for deterministic tests, and run a real smoke only when
+`BLUETAPE4K_APPCONFIG_REAL_SMOKE=true` and explicit AWS identifiers and
+credentials are present.
 
 ### Import precedence
 

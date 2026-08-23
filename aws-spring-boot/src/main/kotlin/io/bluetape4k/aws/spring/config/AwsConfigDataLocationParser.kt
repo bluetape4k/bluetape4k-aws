@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.config
 
+import io.bluetape4k.aws.spring.appconfig.AppConfigFormat
 import io.bluetape4k.aws.spring.s3.S3ConfigFormat
 import io.bluetape4k.aws.spring.secretsmanager.SecretFormat
 import org.springframework.boot.context.config.ConfigDataLocation
@@ -15,22 +16,33 @@ import java.nio.charset.StandardCharsets
 @Suppress("TooManyFunctions")
 internal class AwsConfigDataLocationParser {
 
-    fun parse(location: ConfigDataLocation): AwsConfigDataLocation {
+    fun parse(
+        location: ConfigDataLocation,
+        separator: String = "#",
+    ): AwsConfigDataLocation {
         val value = location.value
         require(value.isNotEmpty()) { "AWS ConfigData location must not be empty." }
         rejectControl(value)
+        require(separator.length == 1) { "AWS ConfigData separator must be one character." }
+        require(separator[0] !in "?%&=" && separator[0] !in CONTROL_CHARACTERS) {
+            "AWS ConfigData separator must be a safe character."
+        }
+        rejectControl(separator)
 
         val backend = AwsConfigDataBackend.entries.firstOrNull { value.startsWith(it.prefix) }
             ?: throw IllegalArgumentException("Unsupported AWS ConfigData location prefix.")
         val nonPrefixed = value.removePrefix(backend.prefix)
         val (rawSource, rawQuery) = nonPrefixed.splitQuery()
-        val source = decodeComponent(rawSource, "source")
-        require(source.isNotBlank()) { "AWS ConfigData source must not be blank." }
+        val source = if (backend == AwsConfigDataBackend.APP_CONFIG) {
+            rawSource
+        } else {
+            decodeComponent(rawSource, "source")
+        }
         val options = parseOptions(rawQuery, backend)
 
         return AwsConfigDataLocation(
             backend = backend,
-            source = parseSource(backend, source, options),
+            source = parseSource(backend, source, options, separator),
             optional = location.isOptional,
             options = options,
         )
@@ -40,10 +52,12 @@ internal class AwsConfigDataLocationParser {
         backend: AwsConfigDataBackend,
         source: String,
         options: Map<String, String>,
+        separator: String,
     ): AwsConfigDataSource = when (backend) {
         AwsConfigDataBackend.S3 -> parseS3(source, options)
         AwsConfigDataBackend.PARAMETER_STORE -> parseParameterStore(source, options)
         AwsConfigDataBackend.SECRETS_MANAGER -> parseSecretsManager(source, options)
+        AwsConfigDataBackend.APP_CONFIG -> parseAppConfig(source, options, separator)
     }
 
     private fun parseS3(source: String, options: Map<String, String>): AwsConfigDataSource.S3 {
@@ -78,13 +92,32 @@ internal class AwsConfigDataLocationParser {
         return AwsConfigDataSource.SecretsManager(source.requireNonBlank("Secrets Manager secret"), prefix, format)
     }
 
+    private fun parseAppConfig(
+        rawSource: String,
+        options: Map<String, String>,
+        separator: String,
+    ): AwsConfigDataSource.AppConfig {
+        val components = rawSource.split(separator, ignoreCase = false, limit = 0)
+        require(components.size == APP_CONFIG_COMPONENT_COUNT) {
+            "AWS AppConfig source must contain application, profile, and environment."
+        }
+        val decoded = components.mapIndexed { index, component ->
+            decodeComponent(component, "AppConfig component ${index + 1}")
+                .requireNonBlank("AppConfig component ${index + 1}")
+        }
+        val format = options[FORMAT]?.let(::parseAppConfigFormat) ?: AppConfigFormat.AUTO
+        return AwsConfigDataSource.AppConfig(
+            application = decoded[0],
+            profile = decoded[1],
+            environment = decoded[2],
+            prefix = options[PREFIX],
+            format = format,
+        )
+    }
+
     private fun parseOptions(rawQuery: String?, backend: AwsConfigDataBackend): Map<String, String> {
         if (rawQuery.isNullOrEmpty()) return emptyMap()
-        val allowed = when (backend) {
-            AwsConfigDataBackend.S3 -> setOf(PREFIX, FORMAT)
-            AwsConfigDataBackend.PARAMETER_STORE -> setOf(PREFIX, RECURSIVE, WITH_DECRYPTION)
-            AwsConfigDataBackend.SECRETS_MANAGER -> setOf(PREFIX, FORMAT)
-        }
+        val allowed = allowedOptions(backend)
         val parsed = linkedMapOf<String, String>()
         rawQuery.split('&').forEach { pair ->
             require(pair.isNotEmpty()) { "AWS ConfigData query option must not be empty." }
@@ -96,18 +129,35 @@ internal class AwsConfigDataLocationParser {
             val value = decodeComponent(pair.substring(separator + 1), "query value")
             require(key in allowed) { "Unsupported AWS ConfigData query option." }
             require(parsed.put(key, value) == null) { "Duplicate AWS ConfigData query option." }
-            when (key) {
-                FORMAT -> when (backend) {
-                    AwsConfigDataBackend.S3 -> parseS3Format(value)
-                    AwsConfigDataBackend.SECRETS_MANAGER -> parseSecretFormat(value)
-                    else -> error("format is not supported by this backend")
-                }
-
-                RECURSIVE, WITH_DECRYPTION -> parseBoolean(value)
-                PREFIX -> value.requireNonBlank("prefix")
-            }
+            validateOption(backend, key, value)
         }
         return parsed.toSortedMap()
+    }
+
+    private fun allowedOptions(backend: AwsConfigDataBackend): Set<String> = when (backend) {
+        AwsConfigDataBackend.S3,
+        AwsConfigDataBackend.SECRETS_MANAGER,
+        AwsConfigDataBackend.APP_CONFIG,
+        -> setOf(PREFIX, FORMAT)
+
+        AwsConfigDataBackend.PARAMETER_STORE -> setOf(PREFIX, RECURSIVE, WITH_DECRYPTION)
+    }
+
+    private fun validateOption(backend: AwsConfigDataBackend, key: String, value: String) {
+        when (key) {
+            FORMAT -> validateFormat(backend, value)
+            RECURSIVE, WITH_DECRYPTION -> parseBoolean(value)
+            PREFIX -> value.requireNonBlank("prefix")
+        }
+    }
+
+    private fun validateFormat(backend: AwsConfigDataBackend, value: String) {
+        when (backend) {
+            AwsConfigDataBackend.S3 -> parseS3Format(value)
+            AwsConfigDataBackend.SECRETS_MANAGER -> parseSecretFormat(value)
+            AwsConfigDataBackend.APP_CONFIG -> parseAppConfigFormat(value)
+            AwsConfigDataBackend.PARAMETER_STORE -> error("format is not supported by this backend")
+        }
     }
 
     private fun parseS3Format(value: String): S3ConfigFormat = when (value.lowercase()) {
@@ -122,6 +172,14 @@ internal class AwsConfigDataLocationParser {
         "json" -> SecretFormat.JSON
         "text" -> SecretFormat.TEXT
         else -> throw IllegalArgumentException("Unsupported Secrets Manager ConfigData format.")
+    }
+
+    private fun parseAppConfigFormat(value: String): AppConfigFormat = when (value.lowercase()) {
+        "auto" -> AppConfigFormat.AUTO
+        "properties" -> AppConfigFormat.PROPERTIES
+        "yaml", "yml" -> AppConfigFormat.YAML
+        "json" -> AppConfigFormat.JSON
+        else -> throw IllegalArgumentException("Unsupported AppConfig ConfigData format.")
     }
 
     private fun parseBoolean(value: String): Boolean = when (value.lowercase()) {
@@ -162,5 +220,7 @@ internal class AwsConfigDataLocationParser {
         const val FORMAT = "format"
         const val RECURSIVE = "recursive"
         const val WITH_DECRYPTION = "withDecryption"
+        const val APP_CONFIG_COMPONENT_COUNT = 3
+        val CONTROL_CHARACTERS: CharRange = '\u0000'..'\u001F'
     }
 }
