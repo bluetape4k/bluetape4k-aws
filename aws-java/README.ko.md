@@ -5,8 +5,8 @@
 AWS Java SDK v2 기반 통합 모듈입니다. AWS SDK 모델 타입은 그대로 드러내고,
 동기 helper, 비동기 `CompletableFuture` 확장, coroutine API를 더합니다.
 DynamoDB, S3, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis,
-EventBridge, Step Functions, STS, Secrets Manager, Parameter Store 같은 주요 서비스를
-대상으로 합니다.
+EventBridge, Step Functions, Lambda, STS, Secrets Manager, Parameter Store 같은 주요
+서비스를 대상으로 합니다.
 
 ## 다이어그램
 
@@ -43,6 +43,7 @@ repository helper의 역할을 함께 확인할 수 있습니다.
 | **Kinesis**         | 스트림 레코드 전송/조회, Coroutines 확장                            |
 | **EventBridge**     | Event bus, rule, target, list, `PutEvents` helper           |
 | **Step Functions**  | 실행 시작/중지/조회/목록, async coroutine `Flow` polling       |
+| **Lambda**          | 동기, async `CompletableFuture`, coroutine 호출, typed payload codec |
 | **Bedrock Runtime** | 모델 중립 `Converse`, `ConverseStream`, cold text-delta `Flow` |
 | **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines 확장 |
 | **Secrets Manager** | Redacted secret value, 요청 DSL, sync/async/coroutine helper |
@@ -354,6 +355,32 @@ fun awaitExecution(executionArn: String): DescribeExecutionResponse = runBlockin
 [Step Functions Java 모듈 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-java.md)에서
 확인할 수 있습니다.
 
+### Lambda 호출 helper (미출시/develop)
+
+develop 개발선에는 `io.bluetape4k.aws.lambda` 아래에 동기, async, coroutine
+`Invoke` helper가 추가됩니다. Raw `InvokeResponse`를 보존하고 response payload를
+복사하며, `functionError`를 결과 데이터로 노출하고 선택적 tail log를 디코드합니다.
+소비자가 Jackson을 선택한 경우 `LambdaPayloadCodecs.jackson(...)`으로 typed payload를
+디코드할 수 있습니다.
+
+```kotlin
+import io.bluetape4k.aws.lambda.invokeString
+import io.bluetape4k.aws.lambda.withLambdaClient
+import software.amazon.awssdk.regions.Region
+
+fun invokeOrder(): String = withLambdaClient(region = Region.AP_NORTHEAST_2) { client ->
+    val result = client.invokeString("orders-handler", "{\"id\":1}")
+    check(!result.hasFunctionError)
+    result.value.orEmpty()
+}
+```
+
+서비스 SDK는 `compileOnly`이므로 런타임에 `software.amazon.awssdk:lambda`를 직접
+추가하세요. Async 호출의 `invokeStringAsync`는 future를 반환하고 coroutine overload는
+`.await()`를 사용합니다. 결과 future를 취소하면 AWS SDK future에도 취소가 전달됩니다.
+이 helper는 retry, 배포, polling, 로깅, IAM policy 관리를 추가하지 않습니다. Typed
+payload에는 애플리케이션이 소유한 codec을 사용하고 client 범위 안에서 호출하세요.
+
 ## 이 모듈이 제공하지 않는 것
 
 이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책,
@@ -420,6 +447,7 @@ dependencies {
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:sfn")
+    implementation("software.amazon.awssdk:lambda")
     implementation("software.amazon.awssdk:bedrockruntime")
     implementation("software.amazon.awssdk:sts")
     // ... 필요한 서비스 추가

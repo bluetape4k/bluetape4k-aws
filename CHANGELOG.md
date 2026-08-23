@@ -9,6 +9,10 @@
 
 ### 추가
 
+- Java SDK v2와 AWS SDK for Kotlin에 Lambda `Invoke` helper를 추가했습니다. 동기,
+  async/coroutine 또는 native suspend 호출, typed payload codec, raw response와
+  `FunctionError` 보존, 명시적 client 수명과 Floci-first smoke 경계를 제공합니다
+  ([#314](https://github.com/bluetape4k/bluetape4k-aws/issues/314)).
 - Java SDK v2와 AWS SDK for Kotlin에 Step Functions 실행 시작·중지·조회·목록 및
   coroutine `Flow` polling helper를 추가했습니다. compileOnly SDK, caller-owned
   client 수명, 명시적 cancellation, Floci/LocalStack 검증 경계를 포함합니다

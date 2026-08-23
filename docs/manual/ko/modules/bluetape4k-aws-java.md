@@ -55,7 +55,69 @@ try {
 
 ## 작업별 API {#api-by-task}
 
-S3 객체·전송, DynamoDB Enhanced 저장소·배치, SQS/SNS 메시징, KMS, CloudWatch, Kinesis, SES, STS와 요청 모델 빌더를 제공합니다.
+S3 객체·전송, DynamoDB Enhanced 저장소·배치, SQS/SNS 메시징, KMS, CloudWatch, Kinesis, Lambda, SES, STS와 요청 모델 빌더를 제공합니다.
+
+## Lambda 호출 helper {#lambda}
+
+> 미출시/develop: 이 절은 Issue #314 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+Java SDK v2 모듈은 `io.bluetape4k.aws.lambda` 아래에 동기,
+`CompletableFuture`, coroutine 호출 helper를 제공합니다. `LambdaInvocationResult<T>`는
+raw `InvokeResponse`, 복사한 payload, status code, 선택적 `FunctionError`, 디코드한
+`LogType.Tail` 값을 함께 보존합니다. 함수 오류는 결과 데이터이며 transport와 SDK 오류는
+예외로 그대로 전달됩니다.
+
+### 의존성과 client 경계 {#lambda-dependency}
+
+Lambda SDK는 `compileOnly`로 유지합니다. Consumer의 compile/runtime classpath에 직접
+추가하고 client 수명은 애플리케이션 경계에서 닫으세요.
+
+```kotlin
+dependencies {
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
+    implementation("software.amazon.awssdk:lambda")
+}
+```
+
+```kotlin
+import io.bluetape4k.aws.lambda.invokeString
+import io.bluetape4k.aws.lambda.withLambdaClient
+import software.amazon.awssdk.regions.Region
+
+fun invokeOrder(): String = withLambdaClient(region = Region.AP_NORTHEAST_2) { client ->
+    val result = client.invokeString("orders-handler", "{\"id\":1}")
+    check(!result.hasFunctionError)
+    result.value.orEmpty()
+}
+```
+
+Typed payload는 mapper와 codec을 애플리케이션 경계에서 선택하세요.
+
+```kotlin
+data class OrderRequest(val id: Int)
+data class OrderResponse(val accepted: Boolean)
+val mapper = tools.jackson.databind.ObjectMapper()
+
+withLambdaClient(region = Region.AP_NORTHEAST_2) { client ->
+    val result = client.invokeTyped(
+        "orders-handler",
+        OrderRequest(1),
+        LambdaPayloadCodecs.jackson(mapper, OrderResponse::class.java),
+    )
+    check(result.value != null)
+}
+```
+
+`invokeBytes`, `invokeString`, `invokeTyped` 중 필요한 API와 애플리케이션이 소유한
+`LambdaPayloadCodec`을 사용하세요. Null payload와 빈 payload는 구분합니다. Request builder는
+blank function/qualifier를 검사하고 invocation type이 `RequestResponse`가 아니면 tail log를
+거부합니다. ARN, 크기, IAM, 함수 존재 여부는 AWS 계약으로 남깁니다.
+
+Async 취소는 AWS SDK future로 전달되고 coroutine `CancellationException`은 변환하지
+않습니다. Helper는 retry, 배포, polling, 로깅, IAM policy 관리를 추가하지 않습니다. Opt-in
+smoke test는 사전 배포된 함수와 명시적인 function/region 입력이 필요하며, 저장소는 Floci
+Lambda를 미지원으로 기록하고 입력이 없으면 client 생성 전에 건너뜁니다. Raw payload,
+디코드한 tail log, SDK response body는 기본적으로 기록하거나 저장하지 마세요.
 
 ## Step Functions 실행 helper {#step-functions}
 
