@@ -109,6 +109,41 @@ dependencies {
 > repositories { maven("https://central.sonatype.com/repository/maven-snapshots/") }
 > ```
 
+## Testcontainers ServiceConnection
+
+Floci 또는 LocalStack 통합 테스트에서는 endpoint와 credentials를
+`DynamicPropertySource`로 properties에 복사하던 경로를 Spring Boot의 named
+`@ServiceConnection` 계약으로 옮기는 것을 권장합니다. Boot 4.1 API는 단일
+service name 값을 사용합니다.
+
+```kotlin
+testImplementation(libs.spring.boot.testcontainers)
+testImplementation(bt4k.bluetape4k.testcontainers)
+
+@Container
+@ServiceConnection(name = "s3")
+val floci: FlociServer = FlociServer.Launcher.floci
+```
+
+이 연결은 endpoint, region, 테스트 credentials만 제공합니다. 선택적인
+Testcontainers 의존성이나 annotation이 없으면 기존 service properties 경로가
+properties-only fallback으로 유지됩니다. `bluetape4k.aws.emulator`는
+Floci/LocalStack backend 선택자이며 resource URL의 source가 아닙니다.
+
+이름 없는 `@ServiceConnection`은 명시적인 all-services opt-in이며 named
+선언과 함께 두지 않습니다. factory는 SQS queue, SNS topic, DynamoDB table,
+Kinesis stream을 만들지 않습니다. fixture가 resource를 생성하고 queue
+URL/topic ARN/table name/stream name을 주입한 뒤 owner-token resource만
+정리합니다.
+
+S3 통합 테스트는 하나의 bucket 안에서만 수행하고 bucket과 object key에
+`owner-token`을 포함하세요. wildcard 또는 외부 literal은 AWS 호출 전에
+거부해야 합니다. 정리 순서는 fixture cleanup, application context close,
+Testcontainers teardown이며 cleanup 실패는 secret-free 형태로 바꾸어
+suppressed 처리하고 cancellation은 다시 전파합니다. optional linkage가
+없으면 조용히 credentials fallback을 하지 않고 `FACTORY_LINKAGE` 오류를
+명확히 표시합니다.
+
 ## 설정
 
 ```yaml

@@ -12,3 +12,15 @@ io.bluetape4k.aws.spring.s3.S3ConfigDataLoader,\
 io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLoader,\
 io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLoader,\
 io.bluetape4k.aws.spring.appconfig.AppConfigDataLoader
+org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory=\
+io.bluetape4k.aws.spring.connection.S3ContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.SqsContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.SnsContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.DynamoDbContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.KinesisContainerConnectionDetailsFactory
+org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=\
+io.bluetape4k.aws.spring.connection.S3ContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.SqsContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.SnsContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.DynamoDbContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.KinesisContainerConnectionDetailsFactory

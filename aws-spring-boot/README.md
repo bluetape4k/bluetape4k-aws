@@ -113,6 +113,40 @@ dependencies {
 > repositories { maven("https://central.sonatype.com/repository/maven-snapshots/") }
 > ```
 
+## Testcontainers ServiceConnection
+
+For Floci or LocalStack integration tests, the preferred migration is from a
+`DynamicPropertySource` that copies endpoint and credentials into properties to
+Spring Boot's named `@ServiceConnection` contract. Boot 4.1 uses a single
+service name value:
+
+```kotlin
+testImplementation(libs.spring.boot.testcontainers)
+testImplementation(bt4k.bluetape4k.testcontainers)
+
+@Container
+@ServiceConnection(name = "s3")
+val floci: FlociServer = FlociServer.Launcher.floci
+```
+
+The connection supplies endpoint, region, and test credentials only. Existing
+service properties remain a properties-only fallback when the optional
+Testcontainers dependencies or annotation are absent. `bluetape4k.aws.emulator`
+selects the Floci/LocalStack backend; it is not a resource URL source.
+
+An unnamed `@ServiceConnection` is an explicit all-services opt-in and should
+not be added beside a named declaration. A factory never creates an SQS queue,
+SNS topic, DynamoDB table, or Kinesis stream. Fixtures create the resource,
+inject its queue URL/topic ARN/table name/stream name, and clean up only the
+owner-token resources.
+
+Keep S3 integration tests within one bucket and include an `owner-token` in the
+bucket and object key. Reject wildcard or foreign literals before an AWS call.
+The cleanup order is fixture cleanup, application context close, then
+Testcontainers teardown; cleanup failures are sanitized and suppressed, while
+cancellation is rethrown. Missing optional linkage is a clear
+`FACTORY_LINKAGE` failure, not a silent credential fallback.
+
 ## Configuration
 
 ```yaml

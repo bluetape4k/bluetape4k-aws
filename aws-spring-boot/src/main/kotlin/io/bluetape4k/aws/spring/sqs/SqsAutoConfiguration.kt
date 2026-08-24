@@ -7,7 +7,10 @@ import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
-import io.bluetape4k.aws.spring.resolveClientDefaults
+import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
+import io.bluetape4k.aws.spring.resolveServiceClientDefaults
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
+import io.bluetape4k.aws.spring.connection.SqsConnectionDetails
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -17,7 +20,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.core.env.Environment
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
@@ -44,14 +46,22 @@ class SqsAutoConfiguration {
         awsProperties: ObjectProvider<AwsProperties>,
         properties: SqsProperties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
+        connectionDetails: ObjectProvider<AwsServiceConnectionDetails>,
+        serviceConnectionDetails: ObjectProvider<SqsConnectionDetails>,
         httpClient: ObjectProvider<SdkAsyncHttpClient>,
         globalCustomizers: ObjectProvider<AwsAsyncClientCustomizer>,
         serviceCustomizers: ObjectProvider<AwsClientCustomizer<SqsAsyncClientBuilder>>,
     ): SqsAsyncClient =
         SqsAsyncClient.builder()
-            .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
+            .credentialsProvider(resolveAwsCredentialsProvider(credentialsProvider, connectionDetails))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveServiceClientDefaults(
+                    serviceConnectionDetails,
+                    awsProperties,
+                    "sqs",
+                    properties.region,
+                    properties.endpointOverride,
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
@@ -92,11 +102,4 @@ class SqsAutoConfiguration {
             interceptors = interceptors.orderedStream().toList(),
         )
 
-    private fun resolveCredentialsProvider(
-        provider: ObjectProvider<AwsCredentialsProvider>,
-    ): AwsCredentialsProvider =
-        provider.getIfAvailable { DefaultCredentialsProvider.builder().build() }
-
-    private fun resolveAwsProperties(provider: ObjectProvider<AwsProperties>): AwsProperties =
-        provider.getIfAvailable { AwsProperties() }
 }

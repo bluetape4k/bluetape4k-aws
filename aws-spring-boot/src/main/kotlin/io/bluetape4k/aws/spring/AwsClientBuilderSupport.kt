@@ -1,6 +1,10 @@
 package io.bluetape4k.aws.spring
 
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionConfigurationException
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionCredentialsResolver
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
 import org.springframework.beans.factory.ObjectProvider
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.awscore.client.builder.AwsAsyncClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder
@@ -33,6 +37,40 @@ internal fun AwsProperties.resolveClientDefaults(
         endpointOverride = resolvedEndpointOverride,
     )
 }
+
+internal fun <D: AwsServiceConnectionDetails> resolveServiceClientDefaults(
+    connectionDetails: ObjectProvider<D>,
+    awsProperties: ObjectProvider<AwsProperties>,
+    serviceName: String,
+    serviceRegion: String?,
+    serviceEndpointOverride: URI?,
+): AwsClientDefaults {
+    val candidates = connectionDetails.orderedStream().toList()
+    if (candidates.size > 1) {
+        throw AwsServiceConnectionConfigurationException(
+            reason = AwsServiceConnectionConfigurationException.Reason.DUPLICATE_DETAILS,
+            serviceNames = setOf(serviceName),
+            candidateCount = candidates.size,
+        )
+    }
+
+    val details = candidates.firstOrNull()
+    return if (details != null) {
+        AwsClientDefaults(
+            region = Region.of(details.region),
+            endpointOverride = details.endpoint,
+        )
+    } else {
+        awsProperties.getIfAvailable { AwsProperties() }
+            .resolveClientDefaults(serviceRegion, serviceEndpointOverride)
+    }
+}
+
+internal fun resolveAwsCredentialsProvider(
+    provider: ObjectProvider<AwsCredentialsProvider>,
+    connectionDetails: ObjectProvider<AwsServiceConnectionDetails>,
+): AwsCredentialsProvider =
+    provider.getIfAvailable { AwsServiceConnectionCredentialsResolver.resolve(connectionDetails) }
 
 internal fun <B, C> B.applyAwsDefaults(
     defaults: AwsClientDefaults,

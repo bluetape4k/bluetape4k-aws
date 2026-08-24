@@ -23,6 +23,7 @@ dependencies {
     testImplementation(bt4k.bluetape4k.junit5)
     testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.kotlinx.coroutines.test)
 }
