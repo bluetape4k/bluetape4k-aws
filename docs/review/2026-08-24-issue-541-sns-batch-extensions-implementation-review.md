@@ -6,6 +6,7 @@
 - 작업 브랜치: `feat/issue-541-sns-batch-extensions`
 - 기준 base: `origin/develop` (`fe24e602...`)
 - Phase 1 checkpoint: `0a3939fb`
+- Phase 2 implementation checkpoint: `8fe6211cb88135e19d446d1682bcaaeb47f95351`
 - 이번 구현은 기존 `SnsOperations` fallback과 `SnsCoroutinesTemplate` 2-인자 생성자를 보존하고, 명시적인 strategy와 opt-in Message converter를 추가한다.
 - PR 생성·push·merge·GitHub issue/metadata mutation은 수행하지 않았다.
 
