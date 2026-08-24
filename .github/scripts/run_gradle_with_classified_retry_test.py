@@ -109,6 +109,32 @@ class ClassifiedRetryTest(unittest.TestCase):
         self.assertTrue((artifacts / "attempt-2.log").is_file())
         self.assertTrue((artifacts / "first-failure/build/test-results/test/result.xml").is_file())
 
+    def test_mapped_port_startup_race_retries(self) -> None:
+        command = self.write_fake_command(
+            """
+            count_file="$PWD/count"
+            count=0
+            [[ -f "$count_file" ]] && count=$(<"$count_file")
+            count=$((count + 1))
+            printf '%s' "$count" > "$count_file"
+            if [[ "$count" == '1' ]]; then
+              printf '%s\n' 'java.lang.IllegalStateException: Mapped port can only be obtained after the container is started'
+              exit 1
+            fi
+            printf '%s\n' 'tests passed'
+            """
+        )
+
+        result, artifacts = self.run_helper(command, "test")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((Path(self.temp_dir.name) / "count").read_text(), "2")
+        self.assertEqual(
+            (artifacts / "classification.txt").read_text(encoding="utf-8").strip(),
+            "infra-retry-pass",
+        )
+        self.assertTrue((artifacts / "attempt-2.log").is_file())
+
     def test_known_infra_failure_uses_localstack_fallback(self) -> None:
         command = self.write_fake_command(
             """
