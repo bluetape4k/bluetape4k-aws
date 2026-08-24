@@ -407,7 +407,8 @@ verify_emulator_report() {
   ruby -rrexml/document -e '
     path = ARGV.fetch(0)
     suite = REXML::Document.new(File.read(path)).root
-    names = suite.elements.to_a("testcase").map { |testcase| testcase.attributes.fetch("name") }.sort
+    normalize = ->(name) { name.sub(/\(\)\z/, "").split(".").last }
+    names = suite.elements.to_a("testcase").map { |testcase| normalize.call(testcase.attributes.fetch("name")) }.sort
     expected = ["s3RoundTripStaysWithinOwnerBucket", "serviceConnectionUsesExpectedBackend"].sort
     tests = suite.attributes.fetch("tests").to_i
     skipped = suite.attributes.fetch("skipped", "0").to_i
@@ -524,8 +525,19 @@ ruby -e '
   texts = paths.to_h { |path| [path, File.read(path)] }
   levels = texts.values.map { |text| text.lines.grep(/^#+\s/).map { |line| line[/^#+/].length } }
   abort "README heading structure mismatch" unless levels.uniq.one?
-  %w[@ServiceConnection DynamicPropertySource FACTORY_LINKAGE owner-token].each do |token|
-    texts.each { |path, text| abort "README token missing: #{path}:#{token}" unless text.include?(token) }
+  concept_tokens = %w[
+    @ServiceConnection DynamicPropertySource bluetape4k.aws.emulator FACTORY_LINKAGE
+    owner-token wildcard cleanup SQS SNS DynamoDB Kinesis
+  ]
+  manual_paths = [
+    "docs/manual/en/modules/bluetape4k-aws-spring-boot/auto-configuration.md",
+    "docs/manual/ko/modules/bluetape4k-aws-spring-boot/auto-configuration.md",
+  ]
+  (texts.keys + manual_paths).each do |path|
+    text = texts[path] || File.read(path)
+    concept_tokens.each do |token|
+      abort "documentation concept missing: #{path}:#{token}" unless text.downcase.include?(token.downcase)
+    end
   end
 '
 git diff --check
