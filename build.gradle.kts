@@ -23,6 +23,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.publish.maven.tasks.GenerateMavenPom
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
@@ -1217,6 +1218,12 @@ subprojects {
                 }
             }
         }
+    }
+
+    tasks.withType<GenerateMavenPom>().configureEach {
+        notCompatibleWithConfigurationCache(
+            "Spring dependency-management 1.1.7 configures Maven POM generation through a detached configuration that Gradle 9.7 cannot restore from the configuration cache.",
+        )
     }
 
     configurePublishingSigning("BluetapeAws")

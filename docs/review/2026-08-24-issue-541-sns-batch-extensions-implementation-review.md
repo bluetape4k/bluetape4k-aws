@@ -7,8 +7,10 @@
 - 기준 base: `origin/develop` (`fe24e602...`)
 - Phase 1 checkpoint: `0a3939fb`
 - Phase 2 implementation checkpoint: `8fe6211cb88135e19d446d1682bcaaeb47f95351`
-- 후속 환경 재검증: 2026-08-25, Colima/Docker 정상, 직렬 Floci check와 publication/manual 경로 재실행
+- 후속 환경 재검증: 2026-08-25, Colima/Docker 정상, 공유 Floci 수명주기 수정 후 직렬 전체 check와 publication/manual 경로 재실행
 - 이번 구현은 기존 `SnsOperations` fallback과 `SnsCoroutinesTemplate` 2-인자 생성자를 보존하고, 명시적인 strategy와 opt-in Message converter를 추가한다.
+- `AwsServiceConnectionFlociAwsEmulatorTest`가 JVM 공유 싱글턴에 `@Container` 수명주기를 중복 적용하던 문제를 제거했다. Spring `@ServiceConnection`은 유지하고, Floci 종료는 JVM `ShutdownQueue`에 맡긴다.
+- Gradle 9.7과 Spring dependency-management 1.1.7의 POM `withXml` 직렬화 충돌은 `GenerateMavenPom`을 명시적으로 configuration-cache 비호환으로 선언해 캐시 상태를 폐기하고 매번 안전하게 실행하도록 경계를 고정했다.
 - PR 생성·push·merge·GitHub issue/metadata mutation은 수행하지 않았다.
 
 ## 구현 결과
@@ -35,7 +37,8 @@
 - 실행: `SnsBatchExecutionStrategy.kt`, `SnsBatchExecutionCoordinator.kt`, `SnsBatchExecutionGuard.kt`, `SnsBatchResponseMapper.kt`, `SnsBatchExecutor.kt`, `SnsCoroutinesTemplate.kt`
 - 변환: `SnsBatchMessageConverter.kt`
 - dependency: `gradle/libs.versions.toml`, `aws-spring-boot/build.gradle.kts`
-- 테스트: `SnsBatchExecutionStrategyTest.kt`, `SnsBatchExecutorTest.kt`, `SnsBatchMessageConverterTest.kt`, `SnsSpringMessagingClasspathTest.kt`, `SnsBatchExecutionFlociTest.kt`
+- 테스트: `SnsBatchExecutionStrategyTest.kt`, `SnsBatchExecutorTest.kt`, `SnsBatchMessageConverterTest.kt`, `SnsSpringMessagingClasspathTest.kt`, `SnsBatchExecutionFlociTest.kt`, `AwsServiceConnectionFlociAwsEmulatorTest.kt`
+- 빌드 경계: `build.gradle.kts`
 - 문서: `README.md`, `README.ko.md`, 양 언어 storage/messaging manual
 
 ## 검증 증거
@@ -54,9 +57,10 @@
 | Korean terminology | PASS | `audit-korean-terms.mjs`: `findings: []` |
 | EN/KO parity | PASS | README headings 50/fences 74/links 47; manual headings 10/fences 10/links 3 |
 | Generated Gradle metadata | PASS | `generateMetadataFileForBluetapeAwsPublication`; `module.json`에 `spring-messaging` 없음, runtimeClasspath에도 없음, compileClasspath에만 `org.springframework:spring-messaging -> 7.0.8` 존재 |
-| Maven POM generation | PASS (비캐시) / PENDING (config cache) | `--no-configuration-cache` 경로가 성공하고 19,053-byte `pom-default.xml`을 생성했으며 `spring-messaging`가 없다. config-cache 경로는 기존 `withXml`의 null `ConfigurationContainer.delegate` 오류로 계속 실패 |
+| Maven POM generation | PASS (cache-discarded) | 기본 configuration-cache 실행과 `--no-configuration-cache` 실행이 모두 성공한다. `GenerateMavenPom`은 Spring dependency-management의 비직렬화 detached configuration 때문에 명시적으로 cache-incompatible이며, Gradle이 8개 serialization diagnostic을 기록하고 캐시 상태를 폐기한다. 생성된 19,053-byte `pom-default.xml`에는 `spring-messaging`가 없다. |
 | Module metadata/manual inventory | PASS | `module.json` 생성 성공, `spring-messaging` runtime 누출 없음; `exportManualModuleInventory`도 성공 |
-| Full `check`/`build -x test` | PENDING (기존 환경) | Colima/Docker 정상과 직렬 실행에도 665개 중 32개가 공유 Floci lifecycle 경쟁으로 `Mapped port can only be obtained after the container is started` 실패; root build는 기존 POM config-cache 오류 영향 범위로 별도 재검증 필요 |
+| Floci shared lifecycle regression | PASS | 기존 `@Container` 중복 수명주기를 제거한 뒤 service-connection + SNS converter 쌍이 3/3 passing; 동일 조건의 전체 `check`가 672/672 passing, skipped/failures/errors 0 |
+| Full `check`/`build -x test` | PASS | `:bluetape4k-aws-spring-boot:check --no-configuration-cache`가 672 tests passing으로 성공하고, root `build -x test --no-configuration-cache`도 `BUILD SUCCESSFUL` |
 
 ## Public KDoc 선언 checklist
 
@@ -93,7 +97,7 @@
 | 문서·manual·release pin 검증 | PASS | manual contracts, release validator, parity, Korean audit |
 | Floci 실제 SNS PublishBatch | PASS | `SnsBatchExecutionFlociTest` 12 entries |
 | 정적 분석 | PASS | module detekt |
-| full repository check/build | PENDING | 직렬 재실행에서도 shared Floci test lifecycle 32건 실패; config-cache POM 경로 오류가 남아 있다 |
+| full repository check/build | PASS | shared Floci lifecycle 수정 후 672 tests passing; root `build -x test` 성공 |
 | PR/merge/release | PENDING | 별도 권한과 승인 범위 |
 
-최종 판정: `PENDING` — 구현과 대상 기능 검증 및 비캐시 publication 경로는 완료했지만, config-cache POM 오류와 공유 Floci lifecycle 안정성 문제는 별도 정리 후 재검증해야 한다.
+최종 판정: `DONE (로컬 구현·검증)` — 기능, 공유 Floci 수명주기, publication metadata, manual inventory, 전체 module check, root non-test build를 검증했다. POM 생성은 외부 Spring dependency-management 비직렬화 경계 때문에 configuration-cache 비호환으로 명시되어 캐시를 폐기하며 성공한다. PR/merge/release는 별도 승인 범위다.
