@@ -149,6 +149,41 @@ latency·cleanup telemetry와 heap/throughput 측정은 후속 이슈 #515에서
 
 SNS publish와 HTTP parsing은 서로 다른 작업입니다. callback을 처리하기 전에 SNS 서명을 검증해야 합니다. SES sender는 coroutine과 JavaMail 방식 adapter를 제공하지만 멱등하지 않은 전송을 무작정 재시도하면 안 됩니다.
 
+### SNS batch 변환 (Unreleased/develop)
+
+`SnsBatchMessageConverter`는 Spring `Message<*>`를 typed
+`SnsPublishBatchRequest`로 바꾸는 opt-in·무네트워크 변환 경계입니다. 인자가
+없는 생성자는 `String` payload만 허용하고, 두 번째 생성자는 구조화
+payload를 위한 명시적 suspend `SnsPayloadSerializer`를 받습니다. converter는
+허용 목록인 `SnsBatchMessageHeaders`의 `MESSAGE_ID`, `SUBJECT`,
+`MESSAGE_ATTRIBUTES`, `MESSAGE_GROUP_ID`, `MESSAGE_DEDUPLICATION_ID`만
+읽습니다. 명시적 ID는 `UUID`여야 하며, 없으면 `MessageHeaders.ID`의 UUID를
+사용합니다. 모든 entry를 변환한 뒤 request를 만들고 입력 순서를 유지하며,
+변환 오류가 SNS client를 호출하지 않도록 합니다. 오류는 cause-free로
+payload, header, ARN, serializer exception을 숨기고 취소 시 원래
+`CancellationException` instance를 다시 던집니다.
+
+```kotlin
+val converter = SnsBatchMessageConverter(SnsPayloadSerializer { payload ->
+    "{\"orderId\":\"${(payload as Order).id}\"}"
+})
+val request = converter.convertAll(
+    topicArn = topicArn,
+    messages = orders.map { order ->
+        MessageBuilder.withPayload(order)
+            .setHeader(SnsBatchMessageHeaders.SUBJECT, "order-created")
+            .build()
+    },
+)
+```
+
+이 모듈은 `compileOnly`를 유지하므로 converter를 사용하는 애플리케이션이
+런타임에 `org.springframework:spring-messaging`를 직접 추가해야 합니다.
+Guarded strategy port는 AWS client와 lifecycle을 노출하지 않고 상태가
+불확실한 partial publish를 자동 재시도하지 않습니다. 262,144-byte SNS
+byte-size preflight, Jackson 3 adapter, `ByteArray` payload 지원은 현재
+동작이 아니라 후속 범위입니다.
+
 ## 실패 경로를 테스트한다
 
 직렬화, queue 조회, redelivery, 중복 전달, DLQ, S3 pagination, multipart 취소, DynamoDB batch 일부 성공을 검증하세요. 성공적인 send만 확인하는 테스트로는 부족합니다.

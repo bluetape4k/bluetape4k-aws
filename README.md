@@ -990,6 +990,42 @@ expansion research is tracked in [#514](https://github.com/bluetape4k/bluetape4k
 Publisher cleanup/latency telemetry and heap/throughput measurement are tracked in
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
+#### SNS Message conversion (Unreleased/develop)
+
+`SnsBatchMessageConverter` is an opt-in, no-network adapter from Spring
+`Message<*>` values to the typed `SnsPublishBatchRequest`. The no-argument
+constructor accepts `String` payloads and the second constructor accepts an
+explicit suspend `SnsPayloadSerializer`; conversion completes every entry
+before constructing the request. The allowlisted headers are
+`SnsBatchMessageHeaders.MESSAGE_ID`, `SUBJECT`, `MESSAGE_ATTRIBUTES`,
+`MESSAGE_GROUP_ID`, and `MESSAGE_DEDUPLICATION_ID`. Explicit IDs must be
+`UUID`; otherwise the Spring `MessageHeaders.ID` UUID is used. Results keep
+input order and conversion failures are cause-free and redact payloads,
+headers, ARNs, and serializer exceptions. Cancellation preserves the original
+`CancellationException` instance, and a conversion failure never calls an SNS
+client.
+
+```kotlin
+val converter = SnsBatchMessageConverter(SnsPayloadSerializer { payload ->
+    "{\"orderId\":\"${(payload as Order).id}\"}"
+})
+val request = converter.convertAll(
+    topicArn = topicArn,
+    messages = orders.map { order ->
+        MessageBuilder.withPayload(order)
+            .setHeader(SnsBatchMessageHeaders.SUBJECT, "order-created")
+            .build()
+    },
+)
+```
+
+`spring-messaging` is `compileOnly`; applications using the converter must add
+`org.springframework:spring-messaging` directly at runtime. The guarded
+strategy port does not expose the AWS client or lifecycle and does not retry an
+uncertain partial publish. Byte-size preflight for the 262,144-byte SNS limit,
+Jackson 3 serialization, and `ByteArray` payload support are follow-up scope,
+not behavior supplied by this release.
+
 ![SNS publish and HTTP endpoint flow](docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)
 
 SNS can publish to an SQS subscription when the queue policy allows

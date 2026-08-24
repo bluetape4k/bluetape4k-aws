@@ -80,6 +80,7 @@ dependencies {
     compileOnly(libs.spring.boot.autoconfigure)
     compileOnly(libs.spring.boot.testcontainers)
     compileOnly(libs.spring.context.support)
+    compileOnly(libs.spring.messaging)
     compileOnly(libs.spring.security.crypto)
     compileOnly(libs.jakarta.mail.api)
     compileOnly(libs.angus.mail)

@@ -37,6 +37,7 @@ internal class SnsBatchExecutionGuard(
     private var activeChunkCount: Int = 0
     private var lifecycle: Lifecycle = Lifecycle.OPEN
 
+    @Suppress("ThrowsCount", "TooGenericExceptionCaught")
     override suspend fun publishChunk(entries: List<SnsPublishBatchEntry>): SnsPublishBatchResult {
         val chunk = claim(entries)
         var future: CompletableFuture<PublishBatchResponse>? = null
@@ -116,6 +117,7 @@ internal class SnsBatchExecutionGuard(
         }
     }
 
+    @Suppress("ThrowsCount")
     private suspend fun claim(entries: List<SnsPublishBatchEntry>): List<SnsPublishBatchEntry> {
         val chunk = mutex.withLock {
             when (lifecycle) {

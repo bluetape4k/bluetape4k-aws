@@ -758,6 +758,27 @@ Extended Client는 이 pointer 형식을 복원하지 않습니다. rollback은 
 diagnostic code를 tag로 넣지 않습니다. 외부 publisher latency·cleanup
 telemetry와 heap/throughput 측정은 후속 이슈 #515에서 추적합니다.
 
+SNS topic이 SQS로 fanout되면 기본 Jackson converter가 SNS `Notification`
+envelope를 인식합니다. listener는 typed `SnsNotification<OrderEvent>`를
+받아 SNS subject, topic ARN, timestamp, signature metadata, SNS message
+attributes와 원본 `SqsReceivedMessage`에 접근할 수 있습니다.
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SnsNotification
+
+@SqsListener("\${orders.queue-url}")
+suspend fun handle(notification: SnsNotification<OrderEvent>) {
+    process(notification.message)
+    val topicArn = notification.topicArn
+    val sqsGroup = notification.sqs.messageGroupId
+}
+```
+
+SNS가 아닌 body는 기존 SQS 변환 경로를 유지합니다. 잘못된 `Notification`은
+기본적으로 해당 경로로 fallback하며, 잘못된 envelope를 거부해야 하면
+`SnsMalformedEnvelopeStrategy.THROW`를 사용하세요. `SnsNotification.rawEnvelope`는
+기본적으로 보존하고 원본 JSON이 필요 없으면 비활성화할 수 있습니다.
+
 ### KMS — Spring Boot Coroutines Encryptor
 
 KMS 지원의 중심은 `KmsOperations`입니다. Auto-configuration은 SDK client,
@@ -955,6 +976,41 @@ Java/Kotlin SDK 확장은 SDK 응답과 예외를 그대로 전달하고, 이 Sp
 확장 조사는 [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514)에서
 추적합니다. Publisher cleanup/latency telemetry와 heap/throughput 측정은
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서 추적합니다.
+
+#### SNS Message 변환 (Unreleased/develop)
+
+`SnsBatchMessageConverter`는 Spring `Message<*>`를 typed
+`SnsPublishBatchRequest`로 바꾸는 opt-in·무네트워크 adapter입니다. 인자가
+없는 생성자는 `String` payload만 허용하고, 두 번째 생성자는 명시적인
+suspend `SnsPayloadSerializer`를 받습니다. 모든 entry 변환이 끝난 뒤에만
+request를 만들며, 허용하는 header는
+`SnsBatchMessageHeaders.MESSAGE_ID`, `SUBJECT`, `MESSAGE_ATTRIBUTES`,
+`MESSAGE_GROUP_ID`, `MESSAGE_DEDUPLICATION_ID`입니다. 명시적 ID는
+`UUID`여야 하고 없으면 `MessageHeaders.ID`의 UUID를 사용합니다. 결과는
+입력 순서를 유지하며 변환 예외는 cause-free로 payload, header, ARN,
+serializer exception을 숨깁니다. 취소 시 원래 `CancellationException`
+instance를 유지하고 변환 실패는 SNS client를 호출하지 않습니다.
+
+```kotlin
+val converter = SnsBatchMessageConverter(SnsPayloadSerializer { payload ->
+    "{\"orderId\":\"${(payload as Order).id}\"}"
+})
+val request = converter.convertAll(
+    topicArn = topicArn,
+    messages = orders.map { order ->
+        MessageBuilder.withPayload(order)
+            .setHeader(SnsBatchMessageHeaders.SUBJECT, "order-created")
+            .build()
+    },
+)
+```
+
+`spring-messaging`는 `compileOnly`이므로 converter를 사용하는 애플리케이션이
+런타임에 `org.springframework:spring-messaging`를 직접 추가해야 합니다.
+Guarded strategy port는 AWS client와 lifecycle을 노출하지 않으며, 상태가
+불확실한 partial publish를 자동 재시도하지 않습니다. 262,144-byte SNS
+제한의 byte-size preflight, Jackson 3 serialization, `ByteArray` payload
+지원은 이번 release에 포함하지 않는 후속 범위입니다.
 
 ![SNS publish and HTTP endpoint flow](docs/images/readme-diagrams/bluetape4k-aws-sns-flow-23.png)
 

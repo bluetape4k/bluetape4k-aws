@@ -150,6 +150,42 @@ in follow-up issue #515 and are not completion evidence for this feature.
 
 SNS publish helpers and HTTP parsing are separate concerns. Verify SNS signatures before processing callbacks. SES senders expose coroutine and JavaMail-style adapters; do not retry non-idempotent sends blindly.
 
+### SNS batch conversion (Unreleased/develop)
+
+`SnsBatchMessageConverter` is an opt-in, no-network conversion boundary from
+Spring `Message<*>` values to a typed `SnsPublishBatchRequest`. Its no-argument
+constructor accepts only `String` payloads; the second constructor accepts an
+explicit suspend `SnsPayloadSerializer` for structured payloads. The converter
+uses only the allowlisted `SnsBatchMessageHeaders` constants
+`MESSAGE_ID`, `SUBJECT`, `MESSAGE_ATTRIBUTES`, `MESSAGE_GROUP_ID`, and
+`MESSAGE_DEDUPLICATION_ID`. Explicit IDs must be `UUID`; otherwise the
+`MessageHeaders.ID` UUID is used. All entries are converted before the request
+is built, input order is preserved, and a conversion error never invokes an
+SNS client. Errors are cause-free and redact payloads, headers, ARNs, and
+serializer exceptions; cancellation rethrows the original
+`CancellationException` instance.
+
+```kotlin
+val converter = SnsBatchMessageConverter(SnsPayloadSerializer { payload ->
+    "{\"orderId\":\"${(payload as Order).id}\"}"
+})
+val request = converter.convertAll(
+    topicArn = topicArn,
+    messages = orders.map { order ->
+        MessageBuilder.withPayload(order)
+            .setHeader(SnsBatchMessageHeaders.SUBJECT, "order-created")
+            .build()
+    },
+)
+```
+
+The converter requires applications to add
+`org.springframework:spring-messaging` at runtime because this module keeps it
+`compileOnly`. The guarded strategy port does not expose the AWS client or its
+lifecycle and does not automatically retry an uncertain partial publish.
+262,144-byte SNS byte-size preflight, a Jackson 3 adapter, and `ByteArray`
+payload support are follow-up scope rather than current behavior.
+
 ## Test what can fail
 
 Test serialization, queue lookup, redelivery, duplicate delivery, DLQ behavior, S3 pagination, multipart cancellation, and DynamoDB partial batch success. A successful send-only test is insufficient.

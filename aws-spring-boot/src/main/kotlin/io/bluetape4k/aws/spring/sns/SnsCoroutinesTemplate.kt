@@ -123,6 +123,7 @@ class SnsCoroutinesTemplate private constructor(
             request.messageDeduplicationId?.let(it::messageDeduplicationId)
         }.await()
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun publishBatch(
         request: SnsPublishBatchRequest,
         options: SnsBatchExecutionOptions,
@@ -196,6 +197,7 @@ class SnsCoroutinesTemplate private constructor(
         require(isNotBlank()) { "topicName must not be blank." }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun normalizeStrategyFailure(cause: Throwable): Throwable = when (cause) {
         is CancellationException,
         is SnsBatchTransportException,
