@@ -176,6 +176,9 @@ class ClassifiedRetryTest(unittest.TestCase):
         self.assertEqual(workflow.count("BLUETAPE4K_RETRY_ARTIFACT_DIR"), 11)
         self.assertIn("BLUETAPE4K_RETRY_MAX_ATTEMPTS: '2'", workflow)
         self.assertIn("BLUETAPE4K_RETRY_DELAY_SECONDS: '15'", workflow)
+        kover_commands = [line for line in workflow.splitlines() if "koverXmlReport" in line]
+        self.assertEqual(len(kover_commands), 5)
+        self.assertTrue(all("koverXmlReport -x test --no-daemon" in line for line in kover_commands))
 
 
 if __name__ == "__main__":
