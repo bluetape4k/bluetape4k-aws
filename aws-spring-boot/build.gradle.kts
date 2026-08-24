@@ -51,6 +51,7 @@ dependencies {
     api(bt4k.bluetape4k.io)
     api(bt4k.bluetape4k.coroutines)
     api(libs.micrometer.core)
+    compileOnly(libs.micrometer.registry.cloudwatch2)
     compileOnly(bt4k.bluetape4k.jackson3)
     testImplementation(bt4k.bluetape4k.junit5)
     testImplementation(bt4k.bluetape4k.testcontainers)
@@ -91,6 +92,8 @@ dependencies {
 
     // Test
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.boot.micrometer.metrics)
+    testImplementation(libs.micrometer.registry.cloudwatch2)
     testImplementation(libs.spring.context.support)
     testImplementation(libs.spring.security.crypto)
     testImplementation(libs.jakarta.mail.api)

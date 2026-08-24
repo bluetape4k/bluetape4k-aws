@@ -50,8 +50,8 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
   async client는 선택적으로 DynamoDB Accelerator(DAX)로 구성할 수 있습니다.
 - **CloudWatch / CloudWatch Logs** — `CloudWatchCoroutinesTemplate`과
   `CloudWatchLogsCoroutinesTemplate`로 coroutine metric/log publishing을 제공하고,
-  Micrometer가 있을 때 application `MeterRegistry`를 읽는 선택적
-  `CloudWatchMeterPublishingOperations` helper를 제공합니다.
+  명시적 기준 데이터용 `CloudWatchMeterPublishingOperations` helper와 선택적 native
+  Micrometer `CloudWatchMeterRegistry` exporter를 제공합니다.
 - **EC2 IMDS** — `ImdsOperations`가 AWS SDK v2 IMDS 호출을 coroutine method와
   operation timeout으로 감싸 EC2 instance metadata 조회를 제공합니다.
 - **KMS** — `KmsOperations`로 coroutine 암호화/복호화와 data key 생성을
@@ -92,6 +92,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+    runtimeOnly("io.micrometer:micrometer-registry-cloudwatch2") // native scheduled export에만 필요
     implementation("software.amazon.awssdk:imds")
     implementation("software.amazon.awssdk:kinesis")
     implementation("software.amazon.awssdk:kms")
@@ -289,7 +290,7 @@ topic 생성 기본값입니다.
 AWS SQS `GetQueueUrl` 요청을 수행합니다.
 `cloudwatch.namespace`는 기본 namespace metric publishing method에서 사용됩니다.
 Micrometer helper는 application `MeterRegistry` bean이 있을 때만 등록되며,
-명시적 method 호출 시점에 meter snapshot을 읽습니다. 활성 registry를 대체하지는 않습니다.
+명시적 method 호출 시점에 meter 기준 데이터를 읽습니다. 활성 registry를 대체하지는 않습니다.
 `cloudwatch-logs.log-group-name`과 `cloudwatch-logs.log-stream-name`은 기본 log-event
 publishing method에서 사용됩니다.
 `imds.request-timeout`은 각 metadata operation을 제한합니다. IMDS bean 생성은 metadata
@@ -1102,11 +1103,46 @@ class OrderObservability(
 ```
 
 `bluetape4k-aws-spring-boot`는 Spring Boot 애플리케이션의 관측성 baseline에 맞춰
-`micrometer-core`를 일반 의존성으로 포함합니다. 단,
-`micrometer-registry-cloudwatch`를 자동 설정하지는 않습니다. registry 수준의
-scheduled publishing이 필요하면 애플리케이션에서 해당 registry를 추가합니다. 내장
-helper는 현재 `MeterRegistry`를 읽어 명시적으로 한 번 publish하는 snapshot
-publisher입니다.
+`micrometer-core`를 일반 의존성으로 포함합니다. native CloudWatch exporter는
+선택 기능이므로 runtime에 `io.micrometer:micrometer-registry-cloudwatch2`를 추가하고
+`bluetape4k.aws.cloudwatch.micrometer.registry.enabled=true`를 명시해야 합니다. 기존
+`CloudWatchMeterPublishingOperations` helper는 현재 `MeterRegistry`를 읽어 명시적으로
+한 번 publish하는 기준 데이터 publisher이며, `bluetape4k.aws.cloudwatch.micrometer.enabled`
+스위치와 native exporter 스위치는 서로 독립적입니다.
+
+```yaml
+bluetape4k:
+  aws:
+    cloudwatch:
+      enabled: true
+      region: ap-northeast-2
+      namespace: OrderApi
+      micrometer:
+        enabled: true                 # 기존 수동 기준 데이터 helper
+        registry:
+          enabled: true               # native scheduled exporter, 기본 false
+          namespace: OrderApiNative   # 없으면 cloudwatch.namespace 사용
+          step: 1m                    # 1분보다 짧으면 CloudWatch high resolution
+          batch-size: 20               # 요청당 PutMetricData datum 수
+          read-timeout: 10s
+          common-tags:
+            application: order-api
+          filters:
+            includes: ["orders.", "http.server.requests"]
+            excludes: ["jvm."]
+```
+
+애플리케이션이 `MeterRegistry`(`CompositeMeterRegistry` 포함)를 이미 제공하면
+native registry는 back-off하며, 공유 `CloudWatchAsyncClient`를 재사용하되 직접 닫지
+않습니다. `includes`가 비어 있으면 이 registry의 모든 meter를 허용하므로 낮은
+cardinality allow-list를 권장하며 secret, object key, request ID 등 제한 없는 식별자를
+tag에 넣지 마세요. `step < 1m`은 `storageResolution=1`을 전송해 CloudWatch 비용을
+늘릴 수 있습니다. 공식 Micrometer close lifecycle을 사용하므로 종료 시 각 batch가
+`read-timeout`까지 기다릴 수 있습니다. registry 자체 retry는 추가하지 않고 AWS SDK
+retry 설정은 consumer가 소유합니다. production endpoint는 HTTPS를 사용하고 role에는
+최소 `cloudwatch:PutMetricData` 권한만 부여하세요. `bluetape4k.aws.cloudwatch.enabled=false`
+또는 `bluetape4k.aws.enabled=false`로 client와 native exporter를 끌 수 있습니다.
+registry dependency가 없을 때의 조건 back-off는 `--debug`로 확인할 수 있습니다.
 
 `MeterRegistry` bean이 있으면 low-cardinality SQS/S3 operation timer도 자동으로
 등록됩니다. SQS instrumentation은 send, receive, listener handler, acknowledgement,

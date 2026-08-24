@@ -389,7 +389,7 @@ jobs:
   test-aws-spring-boot:
     name: Test / aws-spring-boot
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     needs: [build, changes]
     if: ${{ needs.changes.outputs['aws-spring-boot'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:

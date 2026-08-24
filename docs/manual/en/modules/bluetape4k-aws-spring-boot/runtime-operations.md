@@ -92,6 +92,65 @@ Tune concurrent consumers, long-poll duration, maximum messages, visibility time
 
 When a `MeterRegistry` is available, S3/SQS operations and listener phases can emit low-cardinality timers. Do not put bucket keys, message bodies, secret IDs, or unbounded exception text in metric tags. Correlate AWS request IDs in logs.
 
+## Native CloudWatch registry
+
+The module keeps two Micrometer paths separate:
+
+| Setting | Responsibility | Default |
+| --- | --- | --- |
+| `bluetape4k.aws.cloudwatch.micrometer.enabled` | Existing helper for an explicit snapshot publish | `true` |
+| `bluetape4k.aws.cloudwatch.micrometer.registry.enabled` | Scheduled native `CloudWatchMeterRegistry` exporter | `false` |
+
+Add the optional runtime exporter and opt in only for the application that owns
+the CloudWatch namespace:
+
+```kotlin
+implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:${bluetape4kAwsVersion}")
+runtimeOnly("io.micrometer:micrometer-registry-cloudwatch2")
+implementation("software.amazon.awssdk:cloudwatch")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    cloudwatch:
+      enabled: true
+      region: ap-northeast-2
+      namespace: OrderApi
+      micrometer:
+        registry:
+          enabled: true
+          namespace: OrderApiNative
+          step: 1m
+          batch-size: 20
+          read-timeout: 10s
+          common-tags:
+            application: order-api
+          filters:
+            includes: ["orders.", "http.server.requests"]
+            excludes: ["jvm."]
+```
+
+`registry.namespace` wins over `cloudwatch.namespace`; when both are absent,
+startup fails before an AWS request. An empty `includes` list is an explicit
+allow-all choice, so prefer a low-cardinality prefix allow-list and keep
+secrets, object keys, request IDs, and raw exception text out of tags. An
+existing application `MeterRegistry` (including `CompositeMeterRegistry`)
+causes the native bean to back off. The native bean reuses the shared
+`CloudWatchAsyncClient` and does not close it.
+
+Micrometer sends `storageResolution=1` when `step < 1m`; this is a higher-cost
+CloudWatch mode and emits a warning at startup. The official registry close
+lifecycle waits for in-flight calls; with `n` batches, the worst-case close
+wait is approximately `n * read-timeout`. Registry-level retry and cancellation
+are not added: a failed or timed-out future is logged by the registry, while
+AWS SDK retry policy remains the consumer's responsibility. Use production
+HTTPS endpoints, the standard AWS credential provider chain, and the minimum
+`cloudwatch:PutMetricData` permission. `--debug` condition output explains
+back-off when the optional registry dependency is absent. Set
+`bluetape4k.aws.cloudwatch.enabled=false` or `bluetape4k.aws.enabled=false` for
+rollback; the existing explicit helper remains governed by its own setting.
+
 ## Remote configuration
 
 Secrets Manager, Parameter Store, and S3 config loaders run during environment preparation. Treat a required source failure as startup failure. Cache resolved configuration in the environment instead of making AWS calls for every request.

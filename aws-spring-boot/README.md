@@ -52,9 +52,9 @@ Exposed database wiring.
   through `DynamoDbTableNameResolver` (default applies `tablePrefix`), and the
   async client can optionally be backed by DynamoDB Accelerator (DAX).
 - **CloudWatch / CloudWatch Logs** — `CloudWatchCoroutinesTemplate` and
-  `CloudWatchLogsCoroutinesTemplate` for coroutine metric/log publishing, plus
-  an opt-in `CloudWatchMeterPublishingOperations` helper that reads the
-  application `MeterRegistry` when Micrometer is present.
+  `CloudWatchLogsCoroutinesTemplate` for coroutine metric/log publishing, an
+  opt-in `CloudWatchMeterPublishingOperations` helper for explicit snapshots,
+  and an opt-in native Micrometer `CloudWatchMeterRegistry` exporter.
 - **EC2 IMDS** — `ImdsOperations` wraps AWS SDK v2 IMDS calls with coroutine
   methods and per-operation timeouts for EC2 instance metadata reads.
 - **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
@@ -94,6 +94,7 @@ dependencies {
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:cloudwatch")
     implementation("software.amazon.awssdk:cloudwatchlogs")
+    runtimeOnly("io.micrometer:micrometer-registry-cloudwatch2") // required only for native scheduled export
     implementation("software.amazon.awssdk:eventbridge")
     implementation("software.amazon.awssdk:appconfigdata") // required for aws-app-config imports
     implementation("software.amazon.awssdk:imds")
@@ -1104,10 +1105,48 @@ class OrderObservability(
 
 `bluetape4k-aws-spring-boot` includes `micrometer-core` as a normal dependency
 because Spring Boot applications already treat Micrometer as part of the
-observability baseline. It still does not auto-configure
-`micrometer-registry-cloudwatch`; add that registry in the application if you
-want scheduled registry-level publication. The built-in helper is an explicit
-snapshot publisher over the current `MeterRegistry`.
+observability baseline. The native CloudWatch exporter is optional: add
+`io.micrometer:micrometer-registry-cloudwatch2` at runtime and explicitly set
+`bluetape4k.aws.cloudwatch.micrometer.registry.enabled=true`. The existing
+`CloudWatchMeterPublishingOperations` helper remains an explicit snapshot
+publisher over the current `MeterRegistry`; its
+`bluetape4k.aws.cloudwatch.micrometer.enabled` switch is independent.
+
+```yaml
+bluetape4k:
+  aws:
+    cloudwatch:
+      enabled: true
+      region: ap-northeast-2
+      namespace: OrderApi
+      micrometer:
+        enabled: true                 # existing manual snapshot helper
+        registry:
+          enabled: true               # native scheduled exporter; default false
+          namespace: OrderApiNative   # falls back to cloudwatch.namespace
+          step: 1m                    # <1m uses CloudWatch high resolution
+          batch-size: 20               # PutMetricData datum limit per request
+          read-timeout: 10s
+          common-tags:
+            application: order-api
+          filters:
+            includes: ["orders.", "http.server.requests"]
+            excludes: ["jvm."]
+```
+
+The native registry backs off when the application already provides any
+`MeterRegistry` (including `CompositeMeterRegistry`), and it reuses the shared
+`CloudWatchAsyncClient` without closing it itself. An empty `includes` list
+allows every meter in this registry; use a low-cardinality allow-list and never
+put secrets, object keys, request IDs, or other unbounded identifiers in tags.
+`step < 1m` sends `storageResolution=1` and can increase CloudWatch cost. The
+publisher uses Micrometer's official close lifecycle; each batch may wait up to
+`read-timeout` during shutdown. Registry-level retry is not added; AWS SDK retry
+configuration remains the consumer's responsibility. Production endpoints must
+use HTTPS and the role needs the minimum `cloudwatch:PutMetricData` permission.
+Set `bluetape4k.aws.cloudwatch.enabled=false` or
+`bluetape4k.aws.enabled=false` to disable the client and native exporter. Use
+`--debug` to inspect condition back-off when the registry dependency is absent.
 
 When a `MeterRegistry` bean exists, the module also registers low-cardinality
 SQS/S3 operation timers automatically. SQS instrumentation covers send,

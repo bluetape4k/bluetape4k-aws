@@ -52,7 +52,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, S3, S3 Tables, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, EventBridge operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer snapshot publishing 을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, EventBridge operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer 기준 데이터 전송을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, EventBridge server plugin, Kinesis 및 STS server plugin, SES v2 및 SNS server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
 | `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
@@ -481,9 +481,9 @@ consistency 또는 latency 동작을 모델링하지 않습니다.
 
 ### CloudWatch — Spring Boot Metrics와 Logs
 
-CloudWatch metrics, CloudWatch Logs, Micrometer snapshot publishing은 각각 별도의
+CloudWatch metrics, CloudWatch Logs, Micrometer 기준 데이터 전송은 각각 별도의
 operation API로 분리되어 있습니다. Micrometer helper는 애플리케이션 코드가 명시적으로
-snapshot publish를 요청할 때만 기존 registry를 읽습니다.
+기준 데이터 publish를 요청할 때만 기존 registry를 읽습니다.
 
 ![CloudWatch metrics and logs components](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-components-12.png)
 
@@ -513,11 +513,40 @@ class OrderObservability(
 ![CloudWatch publish flow](docs/images/readme-diagrams/bluetape4k-aws-cloudwatch-flow-13.png)
 
 Micrometer helper는 `MeterRegistry` bean 이 있을 때만 등록됩니다. 이 helper는
-`CloudWatchOperations` 를 통해 명시적으로 snapshot 을 publish 하며, scheduled
+`CloudWatchOperations` 를 통해 명시적으로 기준 데이터를 publish 하며, scheduled
 Micrometer registry publication 을 대체하지 않습니다. SQS/S3 Micrometer adapter 도
 application `MeterRegistry` 가 있을 때 동작하며 SQS send/receive/listener phase 와
 S3 upload/download/delete/list/presign operation 을 측정합니다. 기본 tag 에 queue URL,
 message ID, object key, receipt handle 은 넣지 않습니다.
+
+scheduled native CloudWatch publishing이 필요하면 애플리케이션에
+`runtimeOnly("io.micrometer:micrometer-registry-cloudwatch2")`를 추가하고 명시적으로
+opt-in하세요.
+
+```yaml
+bluetape4k:
+  aws:
+    cloudwatch:
+      namespace: OrderApi
+      micrometer:
+        registry:
+          enabled: true
+          step: 1m
+          batch-size: 20
+          read-timeout: 10s
+          common-tags: { application: order-api }
+          filters:
+            includes: ["orders.", "http.server.requests"]
+            excludes: ["jvm."]
+```
+
+native registry는 기본적으로 비활성화되며 기존 `MeterRegistry` 또는
+`CompositeMeterRegistry`가 있으면 back-off합니다. 공유 AWS client를 재사용하고 1분보다
+짧은 step에는 `storageResolution=1`을 사용하며, close 대기는 설정한 batch 수와
+`read-timeout` 범위 안에 있습니다. 비어 있는 `includes`는 모든 meter를 허용하므로 tag는
+낮은 cardinality로 유지하고 secret이나 request identifier를 넣지 마세요. production에서는
+HTTPS와 `cloudwatch:PutMetricData` 최소 권한을 사용하고, optional registry dependency가
+없을 때는 `--debug` condition output으로 back-off 원인을 확인하세요.
 
 ### EC2 IMDS — Spring Boot Metadata Operations
 
