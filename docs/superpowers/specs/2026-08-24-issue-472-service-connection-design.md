@@ -353,16 +353,18 @@ class AwsServiceConnectionConfigurationException(
     val reason: Reason,
     val serviceNames: Set<String>,
     val candidateCount: Int,
-    cause: Throwable? = null,
-) : IllegalStateException(/* secret 없는 message */, cause) {
+    causeSummary: String? = null,
+) : IllegalStateException(/* secret 없는 message; causeSummary도 class name만 허용 */) {
     enum class Reason { FACTORY_LINKAGE, DUPLICATE_DETAILS, CREDENTIAL_CONFLICT, MALFORMED_DETAILS }
 }
 ```
 
 `reason`, `serviceNames`, `candidateCount`만 stable consumer contract이며
 `message`는 secret 없는 진단용 문자열로만 취급하고 parsing 대상이 아니다.
-message와 public fields에는 service name, reason, candidate count만 포함하며
-endpoint credential 값은 포함하지 않는다. linkage 오류는 두 optional test
+raw `cause`와 suppressed throwable의 message/stacktrace는 public exception에
+보존하지 않고 class name만 내부 summary로 남긴다. message와 public fields에는
+service name, reason, candidate count만 포함하며 endpoint credential 값은
+포함하지 않는다. linkage 오류는 두 optional test
 dependency를 추가하거나 annotation을 제거해 해결하고, duplicate 오류는
 service당 하나의 container만 선언하며, credential conflict는 하나의 emulator
 credential 값을 사용하고, malformed 오류는 Floci/LocalStack의 non-blank
@@ -485,8 +487,9 @@ SQS queue, SNS topic, DynamoDB table, Kinesis stream도 같은 소유권 규칙�
 고정한다. fixture cleanup은 context client가 이미 닫힌 경우에도 사용할 수 있는
 immutable details 기반의 독립 cleanup client를 사용하거나, fixture가 생성되지
 않은 startup failure에서는 빈 cleanup 단계로 종료한다. cleanup 실패는 primary
-cleanup client를 `use`/`finally`로 닫으며 close 실패도 primary failure에
-suppressed exception으로 붙인다. 전체 cleanup 실패는 primary failure에
+cleanup client를 `use`/`finally`로 닫으며 close 실패도 secret-free sanitized
+suppressed exception으로 primary failure에 붙인다. 전체 cleanup 실패는
+sanitized exception으로 primary failure에
 기존 primary failure가 없으면 close 또는 cleanup failure를 새 primary로
 승격한다. 정상·startup failure·cancellation 모두에서 이 규칙을 테스트하고,
 cancellation은 원래
@@ -526,16 +529,20 @@ cancellation은 원래
 
   ```bash
   ./gradlew :bluetape4k-aws-spring-boot:test \
-    --tests 'io.bluetape4k.aws.spring.connection.AwsServiceConnectionFlociTest' \
+    --tests 'io.bluetape4k.aws.spring.connection.AwsServiceConnectionFlociAwsEmulatorTest' \
     -Dbluetape4k.aws.emulator=floci --no-daemon --max-workers=1
   ./gradlew :bluetape4k-aws-spring-boot:test \
-    --tests 'io.bluetape4k.aws.spring.connection.AwsServiceConnectionLocalStackTest' \
+    --tests 'io.bluetape4k.aws.spring.connection.AwsServiceConnectionLocalStackAwsEmulatorTest' \
     -Dbluetape4k.aws.emulator=localstack --no-daemon --max-workers=1
   ```
 
   Floci lane은 `FlociServer` static declaration, LocalStack lane은
   `LocalStackServer` static declaration과 실제 backend type assertion을 각각
-  갖는다. Floci 실패 시 LocalStack은 compatibility 참고 결과로만 남긴다.
+  갖는다. 각 클래스의 필수 test ID는
+  `serviceConnectionUsesExpectedBackend`와
+  `s3RoundTripStaysWithinOwnerBucket` 두 개이며, lane마다 정확히 2개가
+  실행되어야 한다. Floci 실패 시 LocalStack은 compatibility 참고 결과로만
+  남긴다.
   MiniStack은 비교 평가 외 acceptance에서 제외한다. 각 lane은 해당 backend
   test의 실제 실행 test 수를 기록하고 canonical S3 round-trip 및 wiring
   assertions가 모두 실행됐는지 확인한다. no-match 또는 전부 skipped인 결과는
@@ -585,7 +592,7 @@ context startup에서 드러나야 한다.
 | `AwsServiceConnectionDetailsFactoryTest.kt` | 5개 factory의 exact generic/constructor, Floci·LocalStack allow-list, unsupported source `null`, malformed supported source 예외, named/unnamed matching, `spring.factories` key |
 | `AwsServiceConnectionDetailsRedactionTest.kt` | 불변 값 복사, `[REDACTED]` `toString()`, log/exception/metric/serialization secret 부재 |
 | `AwsServiceConnectionAutoConfigurationTest.kt` | 5개 service endpoint/region precedence, 공통 credential resolver, duplicate/conflicting credential failure, custom provider/client back-off, `FilteredClassLoader` 및 properties-only matrix |
-| `AwsServiceConnectionFlociTest.kt`, `AwsServiceConnectionLocalStackTest.kt` | backend별 canonical `@JvmField`/`@Container`/`@ServiceConnection(name = ["s3"])` compile, 실제 container type assertion, S3 smoke와 명시적 fixture 경계 |
+| `AwsServiceConnectionFlociAwsEmulatorTest.kt`, `AwsServiceConnectionLocalStackAwsEmulatorTest.kt` | backend별 canonical `@JvmField`/`@Container`/`@ServiceConnection(name = ["s3"])` compile, 실제 container type assertion, S3 smoke와 명시적 fixture 경계 |
 
 단위/계약 테스트는 다음 순서로 TDD 실행한다.
 
@@ -626,7 +633,8 @@ Floci를 기본 backend로 사용하고, 같은 시나리오를 LocalStack fallb
 순차적으로 실행한다. 각 서비스 시나리오는 named ServiceConnection 하나와
 서비스별 명시적 resource fixture를 사용한다.
 
-`AwsServiceConnectionFlociTest.kt`와 `AwsServiceConnectionLocalStackTest.kt`는
+`AwsServiceConnectionFlociAwsEmulatorTest.kt`와
+`AwsServiceConnectionLocalStackAwsEmulatorTest.kt`는
 각각 `@Testcontainers` companion의 `@JvmField @Container
 @ServiceConnection(name = ["s3"])` 정적 선언을 갖고, 실제
 `FlociServer`/`LocalStackServer` type을 assert한다. S3는 실제
