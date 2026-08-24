@@ -83,7 +83,7 @@ snapshot_test_artifacts() {
 is_known_infrastructure_failure() {
   local log_file="$1"
   grep -Eiq \
-    'Could not start container|ContainerLaunchException|Could not connect to Ryuk|DockerClientException|Error response from daemon|Cannot connect to the Docker daemon|operation not supported|Wait strategy[^[:cntrl:]]*(failed|timed out)|timed out waiting for|Connection (refused|reset)|Failed to connect to|Network is unreachable|Temporary failure in name resolution|Could not resolve host|Could not GET|Read timed out|HTTP (429|502|503|504)' \
+    'Could not start container|ContainerLaunchException|Could not connect to Ryuk|DockerClientException|Error response from daemon|Cannot connect to the Docker daemon|Mapped port can only be obtained after the container is started|operation not supported|Wait strategy[^[:cntrl:]]*(failed|timed out)|timed out waiting for|Connection (refused|reset)|Failed to connect to|Network is unreachable|Temporary failure in name resolution|Could not resolve host|Could not GET|Read timed out|HTTP (429|502|503|504)' \
     "$log_file"
 }
 
