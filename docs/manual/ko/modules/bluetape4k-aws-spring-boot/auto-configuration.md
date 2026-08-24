@@ -29,6 +29,38 @@ dependencies {
 
 예상한 bean이 없다면 수동 bean부터 추가하지 말고 condition report를 확인하세요. 흔한 원인은 `compileOnly` 서비스 SDK 누락, disabled property, 또는 애플리케이션이 같은 타입의 bean을 제공해 자동 설정이 물러난 경우입니다.
 
+## Testcontainers ServiceConnection
+
+Floci와 LocalStack 테스트에서는 endpoint와 credentials를
+`DynamicPropertySource`로 주입하던 코드를 named Spring Boot
+`@ServiceConnection`으로 옮깁니다. Boot 4.1 annotation은 하나의 service name을
+받으며 테스트 classpath에는 선택적 dependency alias를 추가합니다.
+
+```kotlin
+testImplementation(libs.spring.boot.testcontainers)
+testImplementation(bt4k.bluetape4k.testcontainers)
+
+@Container
+@ServiceConnection(name = "s3")
+val floci: FlociServer = FlociServer.Launcher.floci
+```
+
+details에는 endpoint, region, 테스트 credentials만 들어갑니다. 선택적 의존성이나
+annotation이 없으면 기존 properties-only fallback이 계속 동작합니다.
+`bluetape4k.aws.emulator`는 backend launcher를 선택할 뿐 resource URL을
+제공하지 않습니다. 이름 없는 `@ServiceConnection`은 명시적인 all-services
+opt-in이며 named 선언과 함께 사용하지 않습니다.
+
+factory는 애플리케이션 resource를 만들지 않습니다. fixture가 SQS queue URL,
+SNS topic ARN, DynamoDB table name, Kinesis stream name을 만들고 소유한 literal만
+정리합니다. S3 테스트는 하나의 bucket에서만 실행하고 bucket과 object key에
+`owner-token`을 넣습니다. `wildcard` 또는 외부 literal은 AWS 호출 전에
+거부합니다. lifecycle 순서는 fixture `cleanup`, application context close,
+Testcontainers teardown입니다. cleanup 오류는 secret-free 형태로 바꾸어
+suppressed 처리하고 cancellation은 다시 전파합니다. optional factory
+dependency가 없으면 조용히 credentials를 바꾸지 말고 `FACTORY_LINKAGE` 오류로
+실패시킨 뒤 테스트 classpath를 고치거나 annotation을 제거하세요.
+
 ## 사용자 정의
 
 region과 endpoint 설정만으로 부족하면 제공된 client builder customization hook을 사용하세요. 서비스 bean마다 나중에 손대기보다 한 곳에서 builder를 조정하는 편이 안전합니다.
@@ -42,4 +74,3 @@ region과 endpoint 설정만으로 부족하면 제공된 client builder customi
 - [자동 설정 목록](../../../../../aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports)
 - [공통 AWS properties](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/AwsProperties.kt)
 - [AWS 자동 설정](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/AwsAutoConfiguration.kt)
-

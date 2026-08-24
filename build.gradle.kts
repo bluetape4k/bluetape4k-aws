@@ -204,7 +204,11 @@ val shouldApplyDetekt = requestedTaskNames.any { it.contains("detekt", ignoreCas
 val shouldApplyKover = requestedTaskNames.any {
     it.contains("kover", ignoreCase = true) || it.contains("coverage", ignoreCase = true)
 }
-val shouldApplyNative = requestedTaskNames.any { it.contains("native", ignoreCase = true) }
+val shouldApplyNative = requestedTaskNames.any {
+    it.contains("native", ignoreCase = true) ||
+        it.contains("processAot", ignoreCase = true) ||
+        it.contains("processTestAot", ignoreCase = true)
+}
 
 if (shouldApplyKover) {
     apply(plugin = "org.jetbrains.kotlinx.kover")

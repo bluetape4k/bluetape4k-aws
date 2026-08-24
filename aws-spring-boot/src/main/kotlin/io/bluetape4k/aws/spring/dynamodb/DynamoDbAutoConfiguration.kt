@@ -7,7 +7,10 @@ import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
-import io.bluetape4k.aws.spring.resolveClientDefaults
+import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
+import io.bluetape4k.aws.spring.resolveServiceClientDefaults
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
+import io.bluetape4k.aws.spring.connection.DynamoDbConnectionDetails
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -44,14 +47,19 @@ class DynamoDbAutoConfiguration {
         awsProperties: ObjectProvider<AwsProperties>,
         properties: DynamoDbProperties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
+        connectionDetails: ObjectProvider<AwsServiceConnectionDetails>,
+        serviceConnectionDetails: ObjectProvider<DynamoDbConnectionDetails>,
         httpClient: ObjectProvider<SdkAsyncHttpClient>,
         globalCustomizers: ObjectProvider<AwsAsyncClientCustomizer>,
         serviceCustomizers: ObjectProvider<AwsClientCustomizer<DynamoDbAsyncClientBuilder>>,
     ): DynamoDbAsyncClient =
         DynamoDbAsyncClient.builder()
-            .credentialsProvider(resolveDynamoDbCredentialsProvider(credentialsProvider))
+            .credentialsProvider(resolveAwsCredentialsProvider(credentialsProvider, connectionDetails))
             .applyAwsDefaults(
-                resolveDynamoDbAwsProperties(awsProperties).resolveClientDefaults(
+                resolveServiceClientDefaults(
+                    serviceConnectionDetails,
+                    awsProperties,
+                    "dynamodb",
                     properties.region,
                     properties.endpointOverride,
                 )

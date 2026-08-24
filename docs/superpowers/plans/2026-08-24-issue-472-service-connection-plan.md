@@ -17,7 +17,7 @@ details의 credential tuple을 한 번 검증한 뒤 static provider를 만든�
 connection을 기본값으로 하고 unnamed all-services는 명시적 opt-in으로만
 허용한다. factory는 리소스 URL이나 container lifecycle을 소유하지 않는다.
 
-**Tech Stack:** Kotlin, Spring Boot 4.0.x, Spring Boot Testcontainers,
+**Tech Stack:** Kotlin, Spring Boot 4.1.x, Spring Boot Testcontainers,
 Testcontainers JUnit 5, AWS SDK v2, Gradle version catalog, JUnit 5,
 ApplicationContextRunner, FilteredClassLoader, Floci, LocalStack, Spring AOT.
 
@@ -41,7 +41,8 @@ ApplicationContextRunner, FilteredClassLoader, Floci, LocalStack, Spring AOT.
     `libs.testcontainers.junit.jupiter`를 명시한다.
   - 모든 Test task에서 `filter.setFailOnNoMatchingTests(true)`를 고정한다.
 - `aws-spring-boot/src/main/resources/META-INF/spring.factories`
-  - `ContainerConnectionDetailsFactory` key에 5개 factory를 등록한다.
+  - Boot 4.1 runtime이 읽는 `ConnectionDetailsFactory` key와 호환 계약인
+    `ContainerConnectionDetailsFactory` key에 5개 factory를 등록한다.
   - 기존 EnvironmentPostProcessor와 ConfigData key는 변경하지 않는다.
 - `aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/connection/AwsServiceConnectionDetails.kt`
   - `ConnectionDetails`, 공통 `AwsServiceConnectionDetails`, 그리고 정확히
@@ -102,7 +103,7 @@ ApplicationContextRunner, FilteredClassLoader, Floci, LocalStack, Spring AOT.
   - cleanup/context/container 순서, cancellation 재전파, close 실패 승격과
     재시작 시 새 기준 값 생성을 emulator acceptance count와 분리해 검증한다.
 - `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/connection/AwsServiceConnectionFlociAwsEmulatorTest.kt`
-  - `@JvmField @Container @ServiceConnection(name = ["s3"])`와
+  - `@JvmField @Container @ServiceConnection(name = "s3")`와
     `FlociServer.Launcher.floci`를 사용해 S3 single-bucket round-trip을
     수행한다.
 - `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/connection/AwsServiceConnectionLocalStackAwsEmulatorTest.kt`
@@ -152,11 +153,9 @@ ApplicationContextRunner, FilteredClassLoader, Floci, LocalStack, Spring AOT.
   명시한다. 기존 `testImplementation(bt4k.bluetape4k.testcontainers)`는
   compileOnly 상속으로 중복되지 않게 정리한다.
 - [ ] `tasks.withType<Test>().configureEach { filter.setFailOnNoMatchingTests(true) }`
-  를 두고, `skipAwsEmulatorTests`가 있을 때 다음 두 exact class를
-  `excludeTestsMatching`으로 제외한다.
-  `io.bluetape4k.aws.spring.connection.AwsServiceConnectionFlociAwsEmulatorTest`,
-  `io.bluetape4k.aws.spring.connection.AwsServiceConnectionLocalStackAwsEmulatorTest`.
-  suffix만 확인하는 방식으로 대체하지 않는다.
+  를 두고, `skipAwsEmulatorTests`가 있을 때 `**/*AwsEmulatorTest.class`를
+  제외한다. 이 저장소의 두 canonical emulator test만 해당 suffix를 사용하며,
+  no-match selector는 별도 fail-closed gate로 고정한다.
 - [ ] 세 example build file에 `testImplementation(libs.spring.boot.testcontainers)`를
   추가한다. production `implementation`이나 settings/BOM module은 추가하지
   않는다.
@@ -177,7 +176,7 @@ Expected: runtime classpath/outgoing runtime variant에
 `spring-boot-testcontainers`와 `bluetape4k-testcontainers`가 없고, Gradle
 configuration이 성공한다. `spring-boot-testcontainers`의 resolved version은
 독립적으로 pin하지 않고 workspace의 `bt4k.versions.spring.boot` 및
-`spring-boot-dependencies`가 선택한 동일한 Boot 4.0.x version으로 고정되며,
+`spring-boot-dependencies`가 선택한 동일한 Boot 4.1.x version으로 고정되며,
 dependencyInsight 출력에 그 exact version을 증거로 남긴다.
 
 ### Task 2 — RED contract tests와 public API
@@ -220,8 +219,8 @@ dependencyInsight 출력에 그 exact version을 증거로 남긴다.
       companion object {
           @JvmField
           @Container
-          @ServiceConnection(name = ["s3"])
-          val floci: FlociServer = FlociServer.Launcher.floci
+          @ServiceConnection(name = "s3")
+          val floci: FlociServer = FlociServer()
       }
   }
 
@@ -231,13 +230,13 @@ dependencyInsight 출력에 그 exact version을 증거로 남긴다.
           @JvmField
           @Container
           @ServiceConnection
-          val allServices: FlociServer = FlociServer.Launcher.floci
+          val allServices: FlociServer = FlociServer()
       }
   }
   ```
 - [ ] `AwsServiceConnectionDetailsFactoryTest`에 5개 factory service name,
   required SDK class name, exact `spring.factories` line, Kotlin
-  `@ServiceConnection(name = ["s3"])`/unnamed declaration compile contract,
+  `@ServiceConnection(name = "s3")`/unnamed declaration compile contract,
   Floci/LocalStack allow-list, GenericContainer/MiniStack rejection,
   malformed supported container failure을 추가한다.
 - [ ] `AwsServiceConnectionDetailsRedactionTest`에 immutable value copy,
@@ -309,7 +308,7 @@ Expected: target test가 없거나 구현 assertion이 실패한다. no-match가
   ```
 
   나머지 4개 factory도 같은 중첩 위치와 `ContainerConnectionSource` import를
-  사용하며, Boot 4.0.x의 resolved artifact가 제공하는 위 constructor overload와
+  사용하며, Boot 4.1.x의 resolved artifact가 제공하는 위 constructor overload와
   protected nested type을 compile test로 고정한다.
 - [ ] `spring.factories`에 5개 fully-qualified factory를 comma-separated로
   등록한다. `AutoConfiguration.imports`에는 testcontainers factory를 넣지
@@ -453,8 +452,8 @@ leaves any later LocalStack result compatibility-only.
 
 - [ ] 세 example build file에 Spring Boot Testcontainers test dependency를
     추가하고, 위 세 exact AOT test source에 `@ServiceConnection` static
-    declaration을 둔다. S3는 `name = ["s3"]`, SQS는 `name = ["sqs"]`,
-    DynamoDB는 `name = ["dynamodb"]`를 사용하며, Floci와 LocalStack source
+    declaration을 둔다. S3는 `name = "s3"`, SQS는 `name = "sqs"`,
+    DynamoDB는 `name = "dynamodb"`를 사용하며, Floci와 LocalStack source
     type을 섞지 않는다. 해당 declaration은 AOT compile contract만 검증하고,
     emulator smoke lifecycle은 Task 6의 library test가 소유한다.
 - [ ] README EN/KO와 manual EN/KO에 다음 before/after를 같은 구조로 추가한다.

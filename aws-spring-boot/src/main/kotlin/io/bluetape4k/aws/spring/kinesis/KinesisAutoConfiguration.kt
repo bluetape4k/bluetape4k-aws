@@ -7,7 +7,10 @@ import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
-import io.bluetape4k.aws.spring.resolveClientDefaults
+import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
+import io.bluetape4k.aws.spring.resolveServiceClientDefaults
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
+import io.bluetape4k.aws.spring.connection.KinesisConnectionDetails
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -16,7 +19,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
@@ -48,14 +50,22 @@ class KinesisAutoConfiguration {
         awsProperties: ObjectProvider<AwsProperties>,
         properties: KinesisProperties,
         credentialsProvider: ObjectProvider<AwsCredentialsProvider>,
+        connectionDetails: ObjectProvider<AwsServiceConnectionDetails>,
+        serviceConnectionDetails: ObjectProvider<KinesisConnectionDetails>,
         httpClient: ObjectProvider<SdkAsyncHttpClient>,
         globalCustomizers: ObjectProvider<AwsAsyncClientCustomizer>,
         serviceCustomizers: ObjectProvider<AwsClientCustomizer<KinesisAsyncClientBuilder>>,
     ): KinesisAsyncClient =
         KinesisAsyncClient.builder()
-            .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
+            .credentialsProvider(resolveAwsCredentialsProvider(credentialsProvider, connectionDetails))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveServiceClientDefaults(
+                    serviceConnectionDetails,
+                    awsProperties,
+                    "kinesis",
+                    properties.region,
+                    properties.endpointOverride,
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
@@ -72,11 +82,4 @@ class KinesisAutoConfiguration {
     ): KinesisCoroutinesTemplate =
         KinesisCoroutinesTemplate(kinesisAsyncClient, properties)
 
-    private fun resolveCredentialsProvider(
-        provider: ObjectProvider<AwsCredentialsProvider>,
-    ): AwsCredentialsProvider =
-        provider.getIfAvailable { DefaultCredentialsProvider.builder().build() }
-
-    private fun resolveAwsProperties(provider: ObjectProvider<AwsProperties>): AwsProperties =
-        provider.getIfAvailable { AwsProperties() }
 }

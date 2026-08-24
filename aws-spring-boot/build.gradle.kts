@@ -53,8 +53,8 @@ dependencies {
     api(libs.micrometer.core)
     compileOnly(libs.micrometer.registry.cloudwatch2)
     compileOnly(bt4k.bluetape4k.jackson3)
+    compileOnly(bt4k.bluetape4k.testcontainers)
     testImplementation(bt4k.bluetape4k.junit5)
-    testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(project(":bluetape4k-aws-exposed"))
     testImplementation(bt4k.aws.dax.client)
     testImplementation(libs.aws2.cloudwatch)
@@ -78,6 +78,7 @@ dependencies {
 
     // Spring Boot (autoconfigure only — no runtime dep)
     compileOnly(libs.spring.boot.autoconfigure)
+    compileOnly(libs.spring.boot.testcontainers)
     compileOnly(libs.spring.context.support)
     compileOnly(libs.spring.security.crypto)
     compileOnly(libs.jakarta.mail.api)
@@ -100,12 +101,14 @@ dependencies {
     testImplementation(libs.angus.mail)
     testImplementation(bt4k.h2.v2)
     testImplementation(libs.testcontainers.localstack)
+    testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(bt4k.mockk)
     testImplementation(libs.awaitility.kotlin)
 }
 
-tasks.test {
+tasks.withType<Test>().configureEach {
     systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
+    filter.setFailOnNoMatchingTests(true)
     if (providers.gradleProperty("skipAwsEmulatorTests").map(String::toBoolean).orElse(false).get()) {
         exclude("**/*AwsEmulatorTest.class")
     }

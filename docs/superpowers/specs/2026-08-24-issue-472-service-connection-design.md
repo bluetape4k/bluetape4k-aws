@@ -19,7 +19,7 @@ compile classpath로만 참조하고, 실제 테스트 소비자가 test classpa
 `AwsEmulatorServer`를 구현한 Floci 또는 LocalStack 컨테이너만 인식하는
 서비스별 `ContainerConnectionDetailsFactory`를 등록한다. 한 컨테이너에서
 S3, SQS, SNS, DynamoDB, Kinesis용 endpoint, region, access key, secret key
-details를 만들 수 있으며, `@ServiceConnection(name = ["s3"])`처럼 서비스
+details를 만들 수 있으며, `@ServiceConnection(name = "s3")`처럼 서비스
 이름으로 범위를 제한할 수 있다.
 
 기존 AWS auto-configuration은 ConnectionDetails를 endpoint/region의 우선
@@ -73,8 +73,8 @@ region/endpoint를 결정하고, `AwsAutoConfiguration`이 기본
 Spring Boot는 `ContainerConnectionDetailsFactory`를 `spring.factories`에서
 발견하고, 생성된 ConnectionDetails bean을 기존 connection property보다
 우선하는 계약을 제공한다. 근거는 [Spring Boot Testcontainers
-문서](https://docs.spring.io/spring-boot/4.0-SNAPSHOT/reference/testing/testcontainers.html),
-[ContainerConnectionDetailsFactory API](https://docs.spring.io/spring-boot/4.0/api/java/org/springframework/boot/testcontainers/service/connection/ContainerConnectionDetailsFactory.html),
+문서](https://docs.spring.io/spring-boot/reference/testing/testcontainers.html),
+[ContainerConnectionDetailsFactory API](https://docs.spring.io/spring-boot/4.1/api/java/org/springframework/boot/testcontainers/service/connection/ContainerConnectionDetailsFactory.html),
 그리고 [ConnectionDetails 우선순위 release note](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.1-Release-Notes/841ac6d3467b41f1b0538bfdfcc864748818041f)다.
 
 ## 2. 목표와 범위 경계
@@ -175,7 +175,7 @@ Testcontainers가 소유한다.
 
 ### 4.2 Factory 등록과 이름 범위
 
-Spring Boot `4.0.x` API를 기준으로 서비스별 factory를 다음 정확한 형태로
+Spring Boot `4.1.x` API를 기준으로 서비스별 factory를 다음 정확한 형태로
 구현하고 다음 key로 `META-INF/spring.factories`에 등록한다. `ConnectionDetails`,
 `ContainerConnectionDetailsFactory`, `ContainerConnectionSource`의 import는
 각각 `org.springframework.boot.autoconfigure.service.connection.ConnectionDetails`,
@@ -236,6 +236,13 @@ io.bluetape4k.aws.spring.connection.SqsContainerConnectionDetailsFactory,\
 io.bluetape4k.aws.spring.connection.SnsContainerConnectionDetailsFactory,\
 io.bluetape4k.aws.spring.connection.DynamoDbContainerConnectionDetailsFactory,\
 io.bluetape4k.aws.spring.connection.KinesisContainerConnectionDetailsFactory
+
+org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=\
+io.bluetape4k.aws.spring.connection.S3ContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.SqsContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.SnsContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.DynamoDbContainerConnectionDetailsFactory,\
+io.bluetape4k.aws.spring.connection.KinesisContainerConnectionDetailsFactory
 ```
 
 각 factory는 다음 순서로 판단한다.
@@ -259,7 +266,7 @@ class S3ServiceConnectionTest {
     companion object {
         @JvmField
         @Container
-        @ServiceConnection(name = ["s3"])
+        @ServiceConnection(name = "s3")
         val floci: FlociServer = FlociServer.Launcher.floci
     }
 }
@@ -375,7 +382,7 @@ details를 고쳐 해결한다. 이 예외는 annotation 없는 properties-only 
 
 | 기존 경로 | ServiceConnection 경로 | 유지되는 경계 |
 | --- | --- | --- |
-| `DynamicPropertySource`로 endpoint/region/credentials 주입 | named `@ServiceConnection(name = ["s3"])`를 기본 사용 | resource URL은 fixture가 생성·주입·정리 |
+| `DynamicPropertySource`로 endpoint/region/credentials 주입 | named `@ServiceConnection(name = "s3")`를 기본 사용 | resource URL은 fixture가 생성·주입·정리 |
 | `-Dbluetape4k.aws.emulator=floci` 또는 `localstack` selector | 동일 selector로 launcher backend만 선택하고 details가 실제 container에서 읽음 | annotation과 selector는 충돌하지 않으며, annotation 없는 경우에만 properties fallback |
 | unnamed test container | unnamed `@ServiceConnection`은 명시적 all-services opt-in | 불필요한 service client/details와 resource 자동 생성 금지 |
 | optional dependency 누락 | dependency를 test classpath에 보강하거나 annotation 제거 | factory linkage 누락은 guard startup failure, 조용한 default provider 전환 금지 |
@@ -592,7 +599,7 @@ context startup에서 드러나야 한다.
 | `AwsServiceConnectionDetailsFactoryTest.kt` | 5개 factory의 exact generic/constructor, Floci·LocalStack allow-list, unsupported source `null`, malformed supported source 예외, named/unnamed matching, `spring.factories` key |
 | `AwsServiceConnectionDetailsRedactionTest.kt` | 불변 값 복사, `[REDACTED]` `toString()`, log/exception/metric/serialization secret 부재 |
 | `AwsServiceConnectionAutoConfigurationTest.kt` | 5개 service endpoint/region precedence, 공통 credential resolver, duplicate/conflicting credential failure, custom provider/client back-off, `FilteredClassLoader` 및 properties-only matrix |
-| `AwsServiceConnectionFlociAwsEmulatorTest.kt`, `AwsServiceConnectionLocalStackAwsEmulatorTest.kt` | backend별 canonical `@JvmField`/`@Container`/`@ServiceConnection(name = ["s3"])` compile, 실제 container type assertion, S3 smoke와 명시적 fixture 경계 |
+| `AwsServiceConnectionFlociAwsEmulatorTest.kt`, `AwsServiceConnectionLocalStackAwsEmulatorTest.kt` | backend별 canonical `@JvmField`/`@Container`/`@ServiceConnection(name = "s3")` compile, 실제 container type assertion, S3 smoke와 명시적 fixture 경계 |
 
 단위/계약 테스트는 다음 순서로 TDD 실행한다.
 
@@ -636,7 +643,7 @@ Floci를 기본 backend로 사용하고, 같은 시나리오를 LocalStack fallb
 `AwsServiceConnectionFlociAwsEmulatorTest.kt`와
 `AwsServiceConnectionLocalStackAwsEmulatorTest.kt`는
 각각 `@Testcontainers` companion의 `@JvmField @Container
-@ServiceConnection(name = ["s3"])` 정적 선언을 갖고, 실제
+@ServiceConnection(name = "s3")` 정적 선언을 갖고, 실제
 `FlociServer`/`LocalStackServer` type을 assert한다. S3는 실제
 endpoint/credential로 한 bucket의 read/write smoke를 수행하고,
 SQS/SNS/DynamoDB/Kinesis는 각각 fake details context에서 client

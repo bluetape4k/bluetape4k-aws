@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring
 
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionCredentialsResolver
+import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
 import io.bluetape4k.logging.KLogging
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -7,8 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.beans.factory.ObjectProvider
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 
 /**
@@ -45,8 +47,10 @@ class AwsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun defaultAwsCredentialsProvider(): AwsCredentialsProvider {
+    fun defaultAwsCredentialsProvider(
+        connectionDetails: ObjectProvider<AwsServiceConnectionDetails>,
+    ): AwsCredentialsProvider {
         log.debug("Registering DefaultCredentialsProvider")
-        return DefaultCredentialsProvider.builder().build()
+        return AwsServiceConnectionCredentialsResolver.resolve(connectionDetails)
     }
 }
