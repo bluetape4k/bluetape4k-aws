@@ -89,6 +89,63 @@ consumer 수, long-poll 시간, 한 번에 받을 메시지 수, visibility time
 
 `MeterRegistry`가 있으면 S3·SQS 작업과 listener 단계에 낮은 cardinality timer를 붙일 수 있습니다. bucket key, message body, secret ID, 제한 없는 예외 문자열을 metric tag로 사용하지 마세요. 로그에는 AWS request ID를 남겨 상관관계를 추적합니다.
 
+## Native CloudWatch registry
+
+Micrometer 경로는 두 가지를 서로 분리합니다.
+
+| 설정 | 책임 | 기본값 |
+| --- | --- | --- |
+| `bluetape4k.aws.cloudwatch.micrometer.enabled` | 명시적 기준 데이터 publish를 수행하는 기존 helper | `true` |
+| `bluetape4k.aws.cloudwatch.micrometer.registry.enabled` | 주기적으로 동작하는 native `CloudWatchMeterRegistry` exporter | `false` |
+
+CloudWatch namespace를 소유하는 애플리케이션에서만 선택적 runtime exporter를
+추가하고 opt-in하세요.
+
+```kotlin
+implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot:${bluetape4kAwsVersion}")
+runtimeOnly("io.micrometer:micrometer-registry-cloudwatch2")
+implementation("software.amazon.awssdk:cloudwatch")
+```
+
+```yaml
+bluetape4k:
+  aws:
+    cloudwatch:
+      enabled: true
+      region: ap-northeast-2
+      namespace: OrderApi
+      micrometer:
+        registry:
+          enabled: true
+          namespace: OrderApiNative
+          step: 1m
+          batch-size: 20
+          read-timeout: 10s
+          common-tags:
+            application: order-api
+          filters:
+            includes: ["orders.", "http.server.requests"]
+            excludes: ["jvm."]
+```
+
+`registry.namespace`가 `cloudwatch.namespace`보다 우선하며 둘 다 없으면 AWS 요청 전에
+startup이 실패합니다. 빈 `includes`는 모든 meter를 허용하는 명시적 선택이므로 낮은
+cardinality prefix allow-list를 우선하고 secret, object key, request ID, raw exception
+text를 tag에 넣지 마세요. 애플리케이션이 `MeterRegistry`(`CompositeMeterRegistry` 포함)를
+이미 제공하면 native bean은 back-off합니다. native bean은 공유
+`CloudWatchAsyncClient`를 재사용하지만 직접 닫지 않습니다.
+
+`step < 1m`이면 Micrometer가 `storageResolution=1`을 전송하며 CloudWatch 비용이
+높아질 수 있고 startup warning을 남깁니다. 공식 registry close lifecycle은 진행 중인
+호출을 기다리며, batch가 `n`개이면 최악의 close 대기는 대략 `n * read-timeout`입니다.
+registry 자체 retry나 강제 cancellation은 추가하지 않습니다. 실패·timeout future는
+registry가 log로 남기고 AWS SDK retry 정책은 consumer가 소유합니다. production에서는
+HTTPS endpoint, 표준 AWS credential provider chain, 최소 `cloudwatch:PutMetricData`
+권한을 사용하세요. optional registry dependency가 없을 때는 `--debug` condition output에서
+back-off 원인을 확인할 수 있습니다. rollback은
+`bluetape4k.aws.cloudwatch.enabled=false` 또는 `bluetape4k.aws.enabled=false`로 수행하며,
+기존 명시적 helper는 자체 설정을 따릅니다.
+
 ## 원격 설정
 
 Secrets Manager, Parameter Store, S3 config loader는 환경 준비 단계에서 실행됩니다. 필수 source 조회가 실패하면 시작을 실패시키세요. 요청마다 AWS를 호출하지 말고 해석한 설정을 environment에 보관합니다.

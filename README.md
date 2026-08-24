@@ -529,6 +529,36 @@ the application `MeterRegistry` when present: SQS send/receive/listener phases
 and S3 upload/download/delete/list/presign operations are timed without adding
 queue URLs, message IDs, object keys, or receipt handles as default tags.
 
+For scheduled native CloudWatch publication, add
+`runtimeOnly("io.micrometer:micrometer-registry-cloudwatch2")` to the application
+and opt in explicitly:
+
+```yaml
+bluetape4k:
+  aws:
+    cloudwatch:
+      namespace: OrderApi
+      micrometer:
+        registry:
+          enabled: true
+          step: 1m
+          batch-size: 20
+          read-timeout: 10s
+          common-tags: { application: order-api }
+          filters:
+            includes: ["orders.", "http.server.requests"]
+            excludes: ["jvm."]
+```
+
+The native registry is disabled by default and backs off for an existing
+`MeterRegistry` or `CompositeMeterRegistry`. It reuses the shared AWS client,
+uses `storageResolution=1` for steps below one minute, and keeps close waits
+bounded by the configured batch count and `read-timeout`. Empty `includes`
+allows all meters, so keep tags low-cardinality and free of secrets or request
+identifiers. Use HTTPS in production, grant only `cloudwatch:PutMetricData`, and
+inspect `--debug` condition output when the optional registry dependency is not
+present.
+
 ### EC2 IMDS — Spring Boot Metadata Operations
 
 Spring Boot auto-configuration and the Ktor plugin share the same passive

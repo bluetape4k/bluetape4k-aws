@@ -154,12 +154,79 @@ class CloudWatchAutoConfigurationTest {
             .withPropertyValues(
                 "bluetape4k.aws.cloudwatch.batch-size=250",
                 "bluetape4k.aws.cloudwatch.micrometer.enabled=false",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.enabled=true",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.namespace=orders-native",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.step=59s",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.batch-size=20",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.read-timeout=15s",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.common-tags.application=orders",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.filters.includes=orders.,http.server.requests",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.filters.excludes=jvm.",
             )
             .run { context ->
                 val properties = context.getBean(CloudWatchProperties::class.java)
                 properties.namespace shouldBeEqualTo "Test/App"
                 properties.batchSize shouldBeEqualTo 250
                 properties.micrometer.enabled shouldBeEqualTo false
+                properties.micrometer.registry.enabled shouldBeEqualTo true
+                properties.micrometer.registry.namespace shouldBeEqualTo "orders-native"
+                properties.micrometer.registry.step shouldBeEqualTo java.time.Duration.ofSeconds(59)
+                properties.micrometer.registry.batchSize shouldBeEqualTo 20
+                properties.micrometer.registry.readTimeout shouldBeEqualTo java.time.Duration.ofSeconds(15)
+                properties.micrometer.registry.commonTags["application"] shouldBeEqualTo "orders"
+                properties.micrometer.registry.filters.includes shouldContain "orders."
+                properties.micrometer.registry.filters.excludes shouldContain "jvm."
+            }
+    }
+
+    @Test
+    fun `native registry property defaults to disabled`() {
+        contextRunner.run { context ->
+            val properties = context.getBean(CloudWatchProperties::class.java)
+            properties.micrometer.registry.enabled shouldBeEqualTo false
+            properties.micrometer.registry.batchSize shouldBeEqualTo 20
+        }
+    }
+
+    @Test
+    fun `native registry rejects invalid step and read timeout`() {
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(CloudWatchAutoConfiguration::class.java))
+            .withPropertyValues(
+                "bluetape4k.aws.cloudwatch.micrometer.registry.step=500ms",
+                "bluetape4k.aws.cloudwatch.micrometer.registry.read-timeout=6m",
+            )
+            .run { context ->
+                context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "micrometer.registry"
+        }
+    }
+
+    @Test
+    fun `native registry rejects an invalid batch size`() {
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(CloudWatchAutoConfiguration::class.java))
+            .withPropertyValues("bluetape4k.aws.cloudwatch.micrometer.registry.batch-size=0")
+            .run { context ->
+                context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "micrometer.registry.batch-size"
+            }
+    }
+
+    @Test
+    fun `native registry property accepts top level namespace as fallback`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.cloudwatch.micrometer.registry.enabled=true")
+            .run { context ->
+                val properties = context.getBean(CloudWatchProperties::class.java)
+                properties.micrometer.registry.namespace shouldBeEqualTo null
+                properties.namespace shouldBeEqualTo "Test/App"
             }
     }
 

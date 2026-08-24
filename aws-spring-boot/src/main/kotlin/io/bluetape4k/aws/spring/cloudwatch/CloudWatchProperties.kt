@@ -4,6 +4,7 @@ import io.bluetape4k.support.requireInRange
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
+import java.time.Duration
 
 internal const val CLOUDWATCH_PROPERTIES_PREFIX = "bluetape4k.aws.cloudwatch"
 internal const val CLOUDWATCH_LOGS_PROPERTIES_PREFIX = "bluetape4k.aws.cloudwatch-logs"
@@ -36,7 +37,64 @@ data class CloudWatchProperties(
 
     data class Micrometer(
         val enabled: Boolean = true,
+        val registry: Registry = Registry(),
     ): Serializable {
+        data class Registry(
+            val enabled: Boolean = false,
+            val namespace: String? = null,
+            val step: Duration = Duration.ofMinutes(DEFAULT_STEP_MINUTES),
+            val batchSize: Int = DEFAULT_BATCH_SIZE,
+            val readTimeout: Duration = Duration.ofSeconds(DEFAULT_READ_TIMEOUT_SECONDS),
+            val commonTags: Map<String, String> = emptyMap(),
+            val filters: Filters = Filters(),
+        ): Serializable {
+            init {
+                batchSize.requireInRange(
+                    MIN_BATCH_SIZE,
+                    MAX_BATCH_SIZE,
+                    "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.batch-size",
+                )
+                require(step >= MIN_STEP) {
+                    "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.step must be at least 1s."
+                }
+                require(readTimeout >= MIN_READ_TIMEOUT && readTimeout <= MAX_READ_TIMEOUT) {
+                    "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.read-timeout must be between 1s and 5m."
+                }
+                commonTags.forEach { (key, value) ->
+                    require(key.isNotBlank() && value.isNotBlank()) {
+                        "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.common-tags must not contain " +
+                            "blank keys or values."
+                    }
+                }
+                (filters.includes + filters.excludes).forEach { prefix ->
+                    require(prefix.isNotBlank()) {
+                        "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.filters prefixes must not be blank."
+                    }
+                }
+            }
+
+            companion object {
+                private const val DEFAULT_STEP_MINUTES: Long = 1
+                private const val DEFAULT_BATCH_SIZE: Int = 20
+                private const val DEFAULT_READ_TIMEOUT_SECONDS: Long = 10
+                private const val MIN_BATCH_SIZE: Int = 1
+                private const val MAX_BATCH_SIZE: Int = 1_000
+                private val MIN_STEP: Duration = Duration.ofSeconds(1)
+                private val MIN_READ_TIMEOUT: Duration = Duration.ofSeconds(1)
+                private val MAX_READ_TIMEOUT: Duration = Duration.ofMinutes(5)
+                private const val serialVersionUID: Long = -3585477261009725865L
+            }
+        }
+
+        data class Filters(
+            val includes: List<String> = emptyList(),
+            val excludes: List<String> = emptyList(),
+        ): Serializable {
+            companion object {
+                private const val serialVersionUID: Long = 7100803681444627909L
+            }
+        }
+
         companion object {
             private const val serialVersionUID: Long = 5942778323434698764L
         }

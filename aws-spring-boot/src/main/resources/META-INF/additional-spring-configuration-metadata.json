@@ -1,0 +1,60 @@
+{
+  "groups": [
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry",
+      "type": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties$Micrometer$Registry",
+      "sourceType": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties"
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.filters",
+      "type": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties$Micrometer$Filters",
+      "sourceType": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "Opt in to the scheduled native Micrometer CloudWatch exporter."
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.namespace",
+      "type": "java.lang.String",
+      "description": "CloudWatch namespace for the native registry; falls back to cloudwatch.namespace."
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.step",
+      "type": "java.time.Duration",
+      "defaultValue": "PT1M",
+      "description": "Micrometer publishing interval."
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.batch-size",
+      "type": "java.lang.Integer",
+      "defaultValue": 20,
+      "description": "Maximum metric datum count per PutMetricData request."
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.read-timeout",
+      "type": "java.time.Duration",
+      "defaultValue": "PT10S",
+      "description": "Maximum wait for one CloudWatch PutMetricData future."
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.common-tags",
+      "type": "java.util.Map<java.lang.String,java.lang.String>",
+      "description": "Low-cardinality tags applied only to the native registry meters."
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.filters.includes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Optional meter-name prefixes to allow. An empty list allows all meters."
+    },
+    {
+      "name": "bluetape4k.aws.cloudwatch.micrometer.registry.filters.excludes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Meter-name prefixes to deny after include filtering."
+    }
+  ]
+}
