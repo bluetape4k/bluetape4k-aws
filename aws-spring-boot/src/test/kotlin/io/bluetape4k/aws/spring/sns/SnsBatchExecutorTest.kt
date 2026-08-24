@@ -39,6 +39,20 @@ class SnsBatchExecutorTest {
     }
 
     @Test
+    fun `executor keeps successful resident work bounded for large input`() = runTest {
+        listOf(1, 2, 8).forEach { concurrency ->
+            val publisher = RecordingPublisher()
+            val result = SnsBatchExecutor(publisher::publish)
+                .execute(request(1_000), SnsBatchExecutionOptions(concurrency))
+
+            publisher.chunks shouldHaveSize 100
+            publisher.maxActive shouldBeLessOrEqualTo concurrency
+            publisher.chunks.flatten().distinct().size shouldBeEqualTo 1_000
+            result.successful shouldHaveSize 1_000
+        }
+    }
+
+    @Test
     fun `executor restores input order and preserves mixed result fields`() = runTest {
         val batchRequest = request(2)
         val publisher = RecordingPublisher { entries ->
@@ -159,6 +173,7 @@ class SnsBatchExecutorTest {
             SnsBatchExecutor(protocol::publish).execute(request(1), SnsBatchExecutionOptions())
         }
         protocolError.unknownEntryCount shouldBeEqualTo 1
+        protocolError.completedEntryIds.shouldBeEmpty()
     }
 
     @Test
