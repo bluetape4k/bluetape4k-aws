@@ -7,6 +7,7 @@
 - 기준 base: `origin/develop` (`fe24e602...`)
 - Phase 1 checkpoint: `0a3939fb`
 - Phase 2 implementation checkpoint: `8fe6211cb88135e19d446d1682bcaaeb47f95351`
+- 후속 환경 재검증: 2026-08-25, Colima/Docker 정상, 직렬 Floci check와 publication/manual 경로 재실행
 - 이번 구현은 기존 `SnsOperations` fallback과 `SnsCoroutinesTemplate` 2-인자 생성자를 보존하고, 명시적인 strategy와 opt-in Message converter를 추가한다.
 - PR 생성·push·merge·GitHub issue/metadata mutation은 수행하지 않았다.
 
@@ -53,8 +54,9 @@
 | Korean terminology | PASS | `audit-korean-terms.mjs`: `findings: []` |
 | EN/KO parity | PASS | README headings 50/fences 74/links 47; manual headings 10/fences 10/links 3 |
 | Generated Gradle metadata | PASS | `generateMetadataFileForBluetapeAwsPublication`; `module.json`에 `spring-messaging` 없음, runtimeClasspath에도 없음, compileClasspath에만 `org.springframework:spring-messaging -> 7.0.8` 존재 |
-| Maven POM generation | PENDING (환경) | `generatePomFileForBluetapeAwsPublication`가 저장소 기존 `withXml`의 null `ConfigurationContainer.delegate` 오류로 실패; `--no-configuration-cache` 경로는 Dokka `kotlinx/serialization/StringFormat` 오류로 초기화 실패. zero-byte POM은 증거로 사용하지 않음 |
-| Full `check`/`build -x test` | PENDING (기존 환경) | 전체 check는 공유 Floci lifecycle 경쟁으로 32개 `Mapped port can only be obtained after the container is started` 실패; build는 동일 POM `withXml` 오류에서 중단 |
+| Maven POM generation | PASS (비캐시) / PENDING (config cache) | `--no-configuration-cache` 경로가 성공하고 19,053-byte `pom-default.xml`을 생성했으며 `spring-messaging`가 없다. config-cache 경로는 기존 `withXml`의 null `ConfigurationContainer.delegate` 오류로 계속 실패 |
+| Module metadata/manual inventory | PASS | `module.json` 생성 성공, `spring-messaging` runtime 누출 없음; `exportManualModuleInventory`도 성공 |
+| Full `check`/`build -x test` | PENDING (기존 환경) | Colima/Docker 정상과 직렬 실행에도 665개 중 32개가 공유 Floci lifecycle 경쟁으로 `Mapped port can only be obtained after the container is started` 실패; root build는 기존 POM config-cache 오류 영향 범위로 별도 재검증 필요 |
 
 ## Public KDoc 선언 checklist
 
@@ -91,7 +93,7 @@
 | 문서·manual·release pin 검증 | PASS | manual contracts, release validator, parity, Korean audit |
 | Floci 실제 SNS PublishBatch | PASS | `SnsBatchExecutionFlociTest` 12 entries |
 | 정적 분석 | PASS | module detekt |
-| full repository check/build | PENDING | 기존 shared Floci test lifecycle 및 Maven/Dokka 환경 오류 |
+| full repository check/build | PENDING | 직렬 재실행에서도 shared Floci test lifecycle 32건 실패; config-cache POM 경로 오류가 남아 있다 |
 | PR/merge/release | PENDING | 별도 권한과 승인 범위 |
 
-최종 판정: `PENDING` — 구현과 대상 기능 검증은 완료했지만, 저장소 전체 환경의 기존 POM/Dokka 및 병렬 Floci 안정성 문제는 별도 정리 후 재검증해야 한다.
+최종 판정: `PENDING` — 구현과 대상 기능 검증 및 비캐시 publication 경로는 완료했지만, config-cache POM 오류와 공유 Floci lifecycle 안정성 문제는 별도 정리 후 재검증해야 한다.
