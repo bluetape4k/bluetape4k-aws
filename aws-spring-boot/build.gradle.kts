@@ -81,6 +81,10 @@ dependencies {
     compileOnly(libs.spring.boot.testcontainers)
     compileOnly(libs.spring.context.support)
     compileOnly(libs.spring.messaging)
+    compileOnly("org.springframework:spring-web")
+    compileOnly("org.springframework:spring-webmvc")
+    compileOnly("org.springframework:spring-webflux")
+    compileOnly("jakarta.servlet:jakarta.servlet-api")
     compileOnly(libs.spring.security.crypto)
     compileOnly(libs.jakarta.mail.api)
     compileOnly(libs.angus.mail)
@@ -94,6 +98,9 @@ dependencies {
 
     // Test
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.boot.starter.web)
+    testImplementation(libs.spring.boot.starter.webflux)
+    testImplementation("io.projectreactor:reactor-test")
     testImplementation(libs.spring.boot.micrometer.metrics)
     testImplementation(libs.micrometer.registry.cloudwatch2)
     testImplementation(libs.spring.context.support)
