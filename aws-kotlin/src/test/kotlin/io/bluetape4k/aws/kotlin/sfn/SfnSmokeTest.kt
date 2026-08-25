@@ -7,6 +7,8 @@ import aws.sdk.kotlin.services.sfn.model.ExecutionStatus
 import aws.sdk.kotlin.services.sfn.model.StateMachineType
 import io.bluetape4k.aws.kotlin.sfn.model.startExecutionRequestOf
 import io.bluetape4k.aws.kotlin.sfn.model.stopExecutionRequestOf
+import io.bluetape4k.idgenerators.uuid.Uuid
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -16,7 +18,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.opentest4j.TestAbortedException
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
@@ -36,10 +37,13 @@ class SfnSmokeTest : AbstractSfnTest() {
         stateMachines: MutableList<String>,
         executions: MutableList<String>,
     ) {
-        val primaryFailure = runCatching {
+        var primaryFailure: Throwable? = null
+        try {
             executeLifecycle(stateMachines, executions)
-        }.exceptionOrNull()?.let { failure ->
-            if (failure.isLocalStackUnsupported()) {
+        } catch (ce: CancellationException) {
+            primaryFailure = ce
+        } catch (failure: Throwable) {
+            primaryFailure = if (failure.isLocalStackUnsupported()) {
                 TestAbortedException(
                     "live integration unverified: LocalStack does not support Step Functions: " +
                         failure.javaClass.simpleName,
@@ -98,7 +102,7 @@ class SfnSmokeTest : AbstractSfnTest() {
         label: String,
     ): String = createStateMachine(
         CreateStateMachineRequest {
-            name = "issue-313-$label-${UUID.randomUUID()}"
+            name = "issue-313-$label-${Uuid.V7.nextIdAsString()}"
             this.definition = definition
             roleArn = ROLE_ARN
             type = StateMachineType.Standard
@@ -107,34 +111,51 @@ class SfnSmokeTest : AbstractSfnTest() {
 
     private suspend fun cleanup(stateMachines: List<String>, executions: List<String>): Throwable? {
         var firstFailure: Throwable? = null
-        runCatching {
+        try {
             withSfnClient(
                 endpointUrl = sfnEmulator.endpointUrl,
                 region = sfnEmulator.region,
                 credentialsProvider = sfnEmulator.credentialsProvider,
             ) { client ->
                 executions.forEach { executionArn ->
-                    runCatching {
+                    runCleanupStep({ failure -> firstFailure = firstFailure ?: failure }) {
                         val status = client.describeExecution(
                             DescribeExecutionRequest { this.executionArn = executionArn },
                         ).status
                         if (status == ExecutionStatus.Running) {
                             client.stopExecution(stopExecutionRequestOf(executionArn))
                         }
-                    }.onFailure { firstFailure = firstFailure ?: it }
+                    }
                 }
                 stateMachines.forEach { stateMachineArn ->
-                    runCatching {
+                    runCleanupStep({ failure -> firstFailure = firstFailure ?: failure }) {
                         client.deleteStateMachine(
                             DeleteStateMachineRequest {
                                 this.stateMachineArn = stateMachineArn
                             },
                         )
-                    }.onFailure { firstFailure = firstFailure ?: it }
+                    }
                 }
             }
-        }.onFailure { firstFailure = firstFailure ?: it }
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (failure: Throwable) {
+            firstFailure = firstFailure ?: failure
+        }
         return firstFailure
+    }
+
+    private suspend fun runCleanupStep(
+        recordFailure: (Throwable) -> Unit,
+        action: suspend () -> Unit,
+    ) {
+        try {
+            action()
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (failure: Throwable) {
+            recordFailure(failure)
+        }
     }
 
     private companion object {
