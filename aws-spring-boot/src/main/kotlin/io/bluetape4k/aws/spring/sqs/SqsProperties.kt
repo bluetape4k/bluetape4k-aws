@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
@@ -33,16 +36,16 @@ data class SqsProperties(
         val retry: Retry = Retry(),
     ) : Serializable {
         init {
-            require(maxMessages in 1..10) { "maxMessages must be between 1 and 10." }
-            require(waitTimeSeconds in 0..20) { "waitTimeSeconds must be between 0 and 20." }
+            maxMessages.requireInRange(1, 10, "maxMessages")
+            waitTimeSeconds.requireInRange(0, 20, "waitTimeSeconds")
             visibilityTimeoutSeconds?.let { requireVisibilityTimeout(it, "visibilityTimeoutSeconds") }
             errorVisibilityTimeoutSeconds?.let { requireVisibilityTimeout(it, "errorVisibilityTimeoutSeconds") }
             requireVisibilityHeartbeat(
                 messageVisibilityHeartbeatIntervalSeconds,
                 messageVisibilityHeartbeatSeconds,
             )
-            require(concurrency >= 1) { "concurrency must be greater than or equal to 1." }
-            require(stopTimeoutMillis >= 1) { "stopTimeoutMillis must be greater than or equal to 1." }
+            concurrency.requireGe(1, "concurrency")
+            stopTimeoutMillis.requireGe(1, "stopTimeoutMillis")
         }
 
         companion object {
@@ -61,13 +64,11 @@ data class SqsProperties(
         val jitterRatio: Double = 0.0,
     ) : Serializable {
         init {
-            require(maxAttempts >= 1) { "maxAttempts must be greater than or equal to 1." }
-            require(!initialBackoff.isNegative) { "initialBackoff must not be negative." }
-            maxBackoff?.let {
-                require(!it.isNegative) { "maxBackoff must not be negative." }
-            }
-            require(multiplier >= 1.0) { "multiplier must be greater than or equal to 1.0." }
-            require(jitterRatio in 0.0..1.0) { "jitterRatio must be between 0.0 and 1.0." }
+            maxAttempts.requireGe(1, "maxAttempts")
+            initialBackoff.requireGe(Duration.ZERO, "initialBackoff")
+            maxBackoff?.requireGe(Duration.ZERO, "maxBackoff")
+            multiplier.requireGe(1.0, "multiplier")
+            jitterRatio.requireInRange(0.0, 1.0, "jitterRatio")
         }
 
         companion object {
@@ -89,8 +90,8 @@ data class SqsProperties(
         val maxReceiveCount: Int,
     ) : Serializable {
         init {
-            require(deadLetterTargetArn.isNotBlank()) { "deadLetterTargetArn must not be blank." }
-            require(maxReceiveCount >= 1) { "maxReceiveCount must be greater than or equal to 1." }
+            deadLetterTargetArn.requireNotBlank("deadLetterTargetArn")
+            maxReceiveCount.requireGe(1, "maxReceiveCount")
         }
 
         companion object {
@@ -104,7 +105,7 @@ data class SqsProperties(
 }
 
 private fun requireVisibilityTimeout(value: Int, name: String) {
-    require(value in 0..43_200) { "$name must be between 0 and 43200." }
+    value.requireInRange(0, 43_200, name)
 }
 
 internal fun requireVisibilityHeartbeat(
@@ -118,12 +119,8 @@ internal fun requireVisibilityHeartbeat(
         "messageVisibilityHeartbeatIntervalSeconds and messageVisibilityHeartbeatSeconds " +
             "must be configured together."
     }
-    require(intervalSeconds in 1..43_200) {
-        "messageVisibilityHeartbeatIntervalSeconds must be between 1 and 43200."
-    }
-    require(heartbeatSeconds in 1..43_200) {
-        "messageVisibilityHeartbeatSeconds must be between 1 and 43200."
-    }
+    intervalSeconds.requireInRange(1, 43_200, "messageVisibilityHeartbeatIntervalSeconds")
+    heartbeatSeconds.requireInRange(1, 43_200, "messageVisibilityHeartbeatSeconds")
     require(intervalSeconds < heartbeatSeconds) {
         "messageVisibilityHeartbeatIntervalSeconds must be less than messageVisibilityHeartbeatSeconds."
     }
