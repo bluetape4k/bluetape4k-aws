@@ -8,7 +8,7 @@ import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component
 
 /**
- * Creates the example table after the AWS Exposed database bean is available.
+ * AWS Exposed database bean이 준비된 뒤 예제 테이블을 생성합니다.
  */
 @Component
 class OrderSchemaInitializer(

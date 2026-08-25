@@ -3,12 +3,18 @@ package io.bluetape4k.aws.examples.spring.sqs
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
 import io.bluetape4k.aws.spring.sqs.SqsOperations
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.future.await
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
+import java.io.Serializable
 
+/**
+ * Spring Boot AWS facade를 조합해 SQS/SNS 예제 작업을 제공하는 서비스입니다.
+ */
 @Service
 class SqsSnsExampleService(
     private val sqs: SqsOperations,
@@ -133,82 +139,132 @@ class SqsSnsExampleService(
         """.trimIndent()
 }
 
+/** 생성된 SQS queue의 이름과 endpoint를 반환합니다. */
 data class QueueResponse(
     val queueName: String,
     val queueUrl: String,
     val queueArn: String,
-)
-
-data class SendQueueMessageRequest(
-    val message: String,
-    val delaySeconds: Int? = null,
-) {
-    init {
-        require(message.isNotBlank()) { "message must not be blank." }
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
+/** SQS queue로 보낼 메시지 요청입니다. */
+data class SendQueueMessageRequest(
+    val message: String,
+    val delaySeconds: Int? = null,
+): Serializable {
+    init {
+        message.requireNotBlank("message")
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
+
+/** SQS 전송 결과입니다. */
 data class QueueSendResponse(
     val queueUrl: String,
     val messageId: String?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
+/** SQS에서 수신한 메시지 하나를 표현합니다. */
 data class QueueMessageResponse(
     val queueUrl: String,
     val messageId: String?,
     val body: String,
     val receiptHandle: String,
-)
-
-data class FanoutSetupRequest(
-    val topicName: String,
-    val queueName: String,
-) {
-    init {
-        require(topicName.isNotBlank()) { "topicName must not be blank." }
-        require(queueName.isNotBlank()) { "queueName must not be blank." }
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
+/** SNS topic과 SQS queue를 연결하는 fanout 설정 요청입니다. */
+data class FanoutSetupRequest(
+    val topicName: String,
+    val queueName: String,
+): Serializable {
+    init {
+        topicName.requireNotBlank("topicName")
+        queueName.requireNotBlank("queueName")
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
+
+/** SNS/SQS fanout 생성 결과입니다. */
 data class FanoutSetupResponse(
     val topicArn: String,
     val queueUrl: String,
     val queueArn: String,
     val subscriptionArn: String?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
+/** SNS topic으로 보낼 메시지 요청입니다. */
 data class PublishTopicMessageRequest(
     val topicArn: String,
     val message: String,
     val subject: String? = null,
-) {
+): Serializable {
     init {
-        require(topicArn.isNotBlank()) { "topicArn must not be blank." }
-        require(message.isNotBlank()) { "message must not be blank." }
-        subject?.let { require(it.isNotBlank()) { "subject must not be blank." } }
+        topicArn.requireNotBlank("topicArn")
+        message.requireNotBlank("message")
+        subject?.requireNotBlank("subject")
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
+/** SNS publish 결과입니다. */
 data class TopicPublishResponse(
     val topicArn: String,
     val messageId: String?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
+/** 원본 queue와 dead-letter queue를 함께 만드는 요청입니다. */
 data class DlqSetupRequest(
     val queueName: String,
     val dlqName: String,
     val maxReceiveCount: Int = 3,
-) {
+): Serializable {
     init {
-        require(queueName.isNotBlank()) { "queueName must not be blank." }
-        require(dlqName.isNotBlank()) { "dlqName must not be blank." }
-        require(maxReceiveCount > 0) { "maxReceiveCount must be greater than zero." }
+        queueName.requireNotBlank("queueName")
+        dlqName.requireNotBlank("dlqName")
+        maxReceiveCount.requireGt(0, "maxReceiveCount")
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
+/** dead-letter queue 설정 결과입니다. */
 data class DlqSetupResponse(
     val queueUrl: String,
     val dlqUrl: String,
     val dlqArn: String,
     val maxReceiveCount: Int,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}

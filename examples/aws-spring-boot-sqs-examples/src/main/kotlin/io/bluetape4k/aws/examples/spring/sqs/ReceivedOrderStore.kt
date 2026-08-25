@@ -10,6 +10,7 @@ import java.io.Serializable
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ConcurrentHashMap
 
+/** SQS listener 예제에서 수신한 메시지와 lifecycle event를 보관합니다. */
 @Component
 class ReceivedOrderStore {
     private val messages = CopyOnWriteArrayList<String>()
@@ -53,7 +54,7 @@ class ReceivedOrderStore {
 }
 
 /**
- * JSON payload consumed by the typed SQS listener example.
+ * typed SQS listener 예제가 소비하는 JSON payload입니다.
  */
 class OrderPayload: Serializable {
     var id: String = ""
@@ -65,7 +66,7 @@ class OrderPayload: Serializable {
 }
 
 /**
- * Listener lifecycle event captured through [SqsListenerInterceptor].
+ * [SqsListenerInterceptor]를 통해 수집한 listener lifecycle event입니다.
  */
 data class ListenerEvent(
     val listenerId: String,
@@ -77,6 +78,7 @@ data class ListenerEvent(
     }
 }
 
+/** 예제 SQS queue에 연결해 기본·typed·retry listener를 등록합니다. */
 @Component
 class OrderMessageListener(
     private val store: ReceivedOrderStore,
@@ -114,6 +116,7 @@ class OrderMessageListener(
     }
 }
 
+/** SQS listener lifecycle hook을 기록하는 interceptor입니다. */
 @Component
 class RecordingSqsListenerInterceptor(
     private val store: ReceivedOrderStore,

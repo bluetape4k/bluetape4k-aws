@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.io.Serializable
 import java.net.URL
 
 /**
@@ -150,7 +151,11 @@ data class S3DocumentUploadResponse(
     val bucket: String,
     val key: String,
     val eTag: String?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * S3 객체 목록 응답 항목입니다.
@@ -162,7 +167,11 @@ data class S3DocumentUploadResponse(
 data class S3DocumentObjectResponse(
     val key: String,
     val size: Long?,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
 
 /**
  * Presigned URL 응답입니다.
@@ -173,4 +182,8 @@ data class S3DocumentObjectResponse(
  */
 data class S3PresignedUrlResponse(
     val url: URL,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}
