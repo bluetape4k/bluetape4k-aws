@@ -3,8 +3,8 @@ package io.bluetape4k.aws.spring.config
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.assertions.assertFailsWith
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.context.config.ConfigDataLocation
 
 class AwsConfigDataLocationParserTest {
@@ -67,7 +67,7 @@ class AwsConfigDataLocationParserTest {
             "aws-s3:/bucket/key?format=toml",
             "aws-secretsmanager:secret?format=text",
         ).forEach { location ->
-            assertThrows<IllegalArgumentException> {
+            assertFailsWith<IllegalArgumentException> {
                 parser.parse(ConfigDataLocation.of(location))
             }
         }
@@ -82,7 +82,7 @@ class AwsConfigDataLocationParserTest {
             "aws-s3:/",
             "aws-secretsmanager:",
         ).forEach { location ->
-            assertThrows<IllegalArgumentException> {
+            assertFailsWith<IllegalArgumentException> {
                 parser.parse(ConfigDataLocation.of(location))
             }
         }
@@ -107,7 +107,7 @@ class AwsConfigDataLocationParserTest {
     @Test
     fun `keeps parser errors free of raw secret identifiers`() {
         val secretId = "arn:aws:secretsmanager:us-east-1:123456789012:secret/prod-secret"
-        val error = assertThrows<IllegalArgumentException> {
+        val error = assertFailsWith<IllegalArgumentException> {
             parser.parse(ConfigDataLocation.of("aws-secretsmanager:$secretId?format=text"))
         }
 
