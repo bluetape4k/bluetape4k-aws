@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.dynamodb.enhanced
 
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.future.await
@@ -15,7 +16,6 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import java.io.Serializable
-import java.util.*
 
 class EnhancedAsyncClientExtensionsTest: AbstractDynamodbTest() {
 
@@ -28,7 +28,7 @@ class EnhancedAsyncClientExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `table should create DynamoDbAsyncTable with type`() = runSuspendIO {
-        val tableName = "test-table-${UUID.randomUUID()}"
+        val tableName = "test-table-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         asyncClient
@@ -68,7 +68,7 @@ class EnhancedAsyncClientExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `batchWriteItems should write multiple items in batches`() = runSuspendIO {
-        val tableName = "batch-test-table-${UUID.randomUUID()}"
+        val tableName = "batch-test-table-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         asyncClient
@@ -98,7 +98,7 @@ class EnhancedAsyncClientExtensionsTest: AbstractDynamodbTest() {
             }.await()
 
         val table = enhancedAsyncClient.table<BatchTestEntity>(tableName)
-        val items = (1..30).map { BatchTestEntity(UUID.randomUUID().toString(), "Item-$it") }
+        val items = (1..30).map { BatchTestEntity(Uuid.V7.nextIdAsString(), "Item-$it") }
 
         val resultCount = enhancedAsyncClient.batchWriteItems(table, items).count()
 
@@ -110,7 +110,7 @@ class EnhancedAsyncClientExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `batchWriteItems with chunkSize should respect chunk size`() = runSuspendIO {
-        val tableName = "batch-test-table-2-${UUID.randomUUID()}"
+        val tableName = "batch-test-table-2-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         asyncClient
@@ -140,7 +140,7 @@ class EnhancedAsyncClientExtensionsTest: AbstractDynamodbTest() {
             }.await()
 
         val table = enhancedAsyncClient.table<BatchTestEntity>(tableName)
-        val items = (1..20).map { BatchTestEntity(UUID.randomUUID().toString(), "Item-$it") }
+        val items = (1..20).map { BatchTestEntity(Uuid.V7.nextIdAsString(), "Item-$it") }
 
         val resultCount = enhancedAsyncClient.batchWriteItems(table, items, chunkSize = 5).count()
 

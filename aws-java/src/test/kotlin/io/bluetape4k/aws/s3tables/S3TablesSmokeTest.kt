@@ -1,5 +1,12 @@
 package io.bluetape4k.aws.s3tables
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldEndWith
+import io.bluetape4k.assertions.shouldMatch
+import io.bluetape4k.assertions.shouldNotStartWith
+import io.bluetape4k.assertions.shouldStartWith
+import io.bluetape4k.idgenerators.uuid.Uuid
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeout
@@ -9,8 +16,6 @@ import software.amazon.awssdk.core.exception.SdkServiceException
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sts.StsClient
 import java.time.Duration
-import java.util.UUID
-import org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * 자격 증명 입력이 필요한 S3 Tables smoke 검증이다.
@@ -27,15 +32,15 @@ class S3TablesSmokeTest {
 
         val actual = normalizedTableBucketName("Issue #311 / Production", suffix)
 
-        assertTrue(actual.endsWith("-$suffix"))
-        assertTrue(actual.matches(Regex("[a-z0-9][a-z0-9-]{1,61}[a-z0-9]")))
+        actual shouldEndWith "-$suffix"
+        actual shouldMatch Regex("[a-z0-9][a-z0-9-]{1,61}[a-z0-9]")
     }
 
     @Test
     fun `bucket name normalization avoids reserved aws prefix`() {
         val actual = normalizedTableBucketName("AWS", "bucket-0123456789abcdef")
 
-        assertTrue(actual.startsWith("bt-"))
+        actual shouldStartWith "bt-"
     }
 
     @Test
@@ -44,16 +49,16 @@ class S3TablesSmokeTest {
 
         val actual = normalizedTableIdentifierName("Issue #311 / Production", suffix)
 
-        assertTrue(actual.endsWith("_$suffix"))
-        assertTrue(actual.matches(Regex("[a-z0-9_]+")))
+        actual shouldEndWith "_$suffix"
+        actual shouldMatch Regex("[a-z0-9_]+")
     }
 
     @Test
     fun `namespace and table normalization avoids reserved aws prefix`() {
         val actual = normalizedTableIdentifierName("AWS", "namespace_0123456789abcdef")
 
-        assertTrue(actual.first().isLetterOrDigit())
-        assertTrue(!actual.startsWith("aws"))
+        actual.first().isLetterOrDigit().shouldBeTrue()
+        actual shouldNotStartWith "aws"
     }
 
     @Test
@@ -68,8 +73,8 @@ class S3TablesSmokeTest {
         cleanupIndependently(failures) { attempted += "namespace" }
         cleanupIndependently(failures) { attempted += "bucket" }
 
-        assertTrue(attempted == listOf("table", "namespace", "bucket"))
-        assertTrue(failures.single().message == "table-delete-failed")
+        attempted shouldBeEqualTo listOf("table", "namespace", "bucket")
+        failures.single().message shouldBeEqualTo "table-delete-failed"
     }
 
     @Test
@@ -138,7 +143,7 @@ class S3TablesSmokeTest {
             assertTimeout(SMOKE_TIMEOUT) {
                 verifyExpectedAccount(region, expectedAccountId)
                 withS3TablesClient(region = region, builder = ::configureTimeout) { client ->
-                    val suffix = UUID.randomUUID().toString().replace("-", "").take(16)
+                    val suffix = Uuid.V7.nextId().toString().replace("-", "").take(16)
                     tableBucketName = normalizedTableBucketName(prefix, "bucket-$suffix")
                     namespace = normalizedTableIdentifierName(prefix, "namespace_$suffix")
                     tableName = normalizedTableIdentifierName(prefix, "table_$suffix")

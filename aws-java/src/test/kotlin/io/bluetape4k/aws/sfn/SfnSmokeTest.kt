@@ -2,6 +2,7 @@ package io.bluetape4k.aws.sfn
 
 import io.bluetape4k.aws.sfn.model.startExecutionRequestOf
 import io.bluetape4k.aws.sfn.model.stopExecutionRequestOf
+import io.bluetape4k.idgenerators.uuid.Uuid
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
@@ -17,7 +18,6 @@ import software.amazon.awssdk.services.sfn.model.DescribeExecutionRequest
 import software.amazon.awssdk.services.sfn.model.ExecutionStatus
 import software.amazon.awssdk.services.sfn.model.StateMachineType
 import software.amazon.awssdk.services.sfn.SfnAsyncClient
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
@@ -99,7 +99,7 @@ class SfnSmokeTest : AbstractSfnTest() {
         label: String,
     ): String = createStateMachine(
         CreateStateMachineRequest.builder()
-            .name("issue-313-$label-${UUID.randomUUID()}")
+            .name("issue-313-$label-${Uuid.V7.nextIdAsString()}")
             .definition(definition)
             .roleArn(ROLE_ARN)
             .type(StateMachineType.STANDARD)

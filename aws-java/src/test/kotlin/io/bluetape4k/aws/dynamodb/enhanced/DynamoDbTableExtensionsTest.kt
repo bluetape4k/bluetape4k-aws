@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.dynamodb.enhanced
 
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
@@ -14,7 +15,6 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import java.io.Serializable
-import java.util.*
 
 class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
     @DynamoDbBean
@@ -31,7 +31,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `getItem by partition key should return item`() = runSuspendIO {
-        val tableName = "sync-test-${UUID.randomUUID()}"
+        val tableName = "sync-test-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         client.createTable { builder ->
@@ -67,7 +67,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
                 .build()
         val table = enhancedClient.table<TestEntity>(tableName)
 
-        val entity = TestEntity(UUID.randomUUID().toString(), "John", 30)
+        val entity = TestEntity(Uuid.V7.nextIdAsString(), "John", 30)
         table.putItem(entity)
 
         val result = table.getItem(entity.id)
@@ -83,7 +83,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `getItem with non-existent key should return null`() = runSuspendIO {
-        val tableName = "sync-test-2-${UUID.randomUUID()}"
+        val tableName = "sync-test-2-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         client.createTable { builder ->
@@ -127,7 +127,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `deleteItem should remove item`() = runSuspendIO {
-        val tableName = "sync-test-3-${UUID.randomUUID()}"
+        val tableName = "sync-test-3-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         client.createTable { builder ->
@@ -162,7 +162,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
                 .build()
         val table = enhancedClient.table<TestEntity>(tableName)
 
-        val entity = TestEntity(UUID.randomUUID().toString(), "Jane", 25)
+        val entity = TestEntity(Uuid.V7.nextIdAsString(), "Jane", 25)
         table.putItem(entity)
 
         table.getItem(entity.id).shouldNotBeNull()
@@ -179,7 +179,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `findAll should return all items`() = runSuspendIO {
-        val tableName = "sync-test-4-${UUID.randomUUID()}"
+        val tableName = "sync-test-4-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         client.createTable { builder ->
@@ -216,7 +216,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
         val entities =
             (1..5).map {
-                TestEntity(UUID.randomUUID().toString(), "User-$it", 20 + it)
+                TestEntity(Uuid.V7.nextIdAsString(), "User-$it", 20 + it)
             }
         entities.forEach { table.putItem(it) }
 
@@ -231,7 +231,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `toList should convert PageIterable to List`() = runSuspendIO {
-        val tableName = "sync-test-5-${UUID.randomUUID()}"
+        val tableName = "sync-test-5-${Uuid.V7.nextIdAsString()}"
 
         // 테이블 생성
         client.createTable { builder ->
@@ -268,7 +268,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
 
         val entities =
             (1..3).map {
-                TestEntity(UUID.randomUUID().toString(), "User-$it", 20 + it)
+                TestEntity(Uuid.V7.nextIdAsString(), "User-$it", 20 + it)
             }
         entities.forEach { table.putItem(it) }
 

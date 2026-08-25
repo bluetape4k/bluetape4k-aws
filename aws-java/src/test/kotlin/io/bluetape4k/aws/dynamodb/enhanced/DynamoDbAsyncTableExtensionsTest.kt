@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -23,7 +24,6 @@ import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import software.amazon.awssdk.services.dynamodb.model.TableStatus
 import java.io.Serializable
 import java.time.Duration
-import java.util.*
 import kotlin.coroutines.cancellation.CancellationException
 
 class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
@@ -68,7 +68,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `getItem by partition key should return item`() = runSuspendIO {
-        val tableName = "async-test-${UUID.randomUUID()}"
+        val tableName = "async-test-${Uuid.V7.nextIdAsString()}"
         val table = enhancedAsyncClient.table<TestEntity>(tableName)
 
         // 테이블 생성
@@ -101,7 +101,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
         // 테이블 활성화 대기
         waitUntilTableActive(tableName)
 
-        val entity = TestEntity(UUID.randomUUID().toString(), "John", 30)
+        val entity = TestEntity(Uuid.V7.nextIdAsString(), "John", 30)
         table.putItem(entity)
         waitUntilItemExists(table, entity.id)
 
@@ -118,7 +118,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `getItem with non-existent key should return null`() = runSuspendIO {
-        val tableName = "async-test-2-${UUID.randomUUID()}"
+        val tableName = "async-test-2-${Uuid.V7.nextIdAsString()}"
         val table = enhancedAsyncClient.table<TestEntity>(tableName)
 
         // 테이블 생성
@@ -159,7 +159,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `deleteItem should remove item`() = runSuspendIO {
-        val tableName = "async-test-3-${UUID.randomUUID()}"
+        val tableName = "async-test-3-${Uuid.V7.nextIdAsString()}"
         val table = enhancedAsyncClient.table<TestEntity>(tableName)
 
         // 테이블 생성
@@ -191,7 +191,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
         waitUntilTableActive(tableName)
 
-        val entity = TestEntity(UUID.randomUUID().toString(), "Jane", 25)
+        val entity = TestEntity(Uuid.V7.nextIdAsString(), "Jane", 25)
         table.putItem(entity)
         waitUntilItemExists(table, entity.id)
 
@@ -213,7 +213,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `exists should return true for existing item`() = runSuspendIO {
-        val tableName = "async-test-5-${UUID.randomUUID()}"
+        val tableName = "async-test-5-${Uuid.V7.nextIdAsString()}"
         val table = enhancedAsyncClient.table<TestEntity>(tableName)
 
         // 테이블 생성
@@ -245,7 +245,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
         waitUntilTableActive(tableName)
 
-        val entity = TestEntity(UUID.randomUUID().toString(), "Test", 30)
+        val entity = TestEntity(Uuid.V7.nextIdAsString(), "Test", 30)
         table.putItem(entity)
         waitUntilItemExists(table, entity.id)
 
@@ -258,7 +258,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
 
     @Test
     fun `exists should return false for non-existing item`() = runSuspendIO {
-        val tableName = "async-test-6-${UUID.randomUUID()}"
+        val tableName = "async-test-6-${Uuid.V7.nextIdAsString()}"
         val table = enhancedAsyncClient.table<TestEntity>(tableName)
 
         // 테이블 생성
