@@ -5,6 +5,9 @@ import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenGenerator as CoreRdsIamAuthTokenG
 import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenRequest as CoreRdsIamAuthTokenRequest
 import io.bluetape4k.aws.rds.AwsSdkRdsIamAuthTokenGenerator as CoreAwsSdkRdsIamAuthTokenGenerator
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireLe
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.rds.RdsUtilities
@@ -55,12 +58,10 @@ data class AwsRdsIamAuthenticationProperties(
         region.requireNotBlank("region")
         hostname.requireNotBlank("hostname")
         username?.requireNotBlank("username")
-        require(port in MIN_PORT..MAX_PORT) { "port must be in $MIN_PORT..$MAX_PORT: $port" }
-        require(!tokenTtl.isZero && !tokenTtl.isNegative) { "tokenTtl must be positive: $tokenTtl" }
-        require(tokenTtl <= MAX_TOKEN_TTL) { "tokenTtl must not exceed $MAX_TOKEN_TTL: $tokenTtl" }
-        require(!refreshBeforeExpiry.isZero && !refreshBeforeExpiry.isNegative) {
-            "refreshBeforeExpiry must be positive: $refreshBeforeExpiry"
-        }
+        port.requireInRange(MIN_PORT, MAX_PORT, "port")
+        tokenTtl.requireGt(Duration.ZERO, "tokenTtl")
+        tokenTtl.requireLe(MAX_TOKEN_TTL, "tokenTtl")
+        refreshBeforeExpiry.requireGt(Duration.ZERO, "refreshBeforeExpiry")
         require(refreshBeforeExpiry < tokenTtl) {
             "refreshBeforeExpiry must be less than tokenTtl: $refreshBeforeExpiry >= $tokenTtl"
         }
@@ -108,7 +109,7 @@ data class AwsRdsIamAuthTokenRequest(
         region.requireNotBlank("region")
         hostname.requireNotBlank("hostname")
         username.requireNotBlank("username")
-        require(port in MIN_PORT..MAX_PORT) { "port must be in $MIN_PORT..$MAX_PORT: $port" }
+        port.requireInRange(MIN_PORT, MAX_PORT, "port")
     }
 
     companion object: KLogging() {
