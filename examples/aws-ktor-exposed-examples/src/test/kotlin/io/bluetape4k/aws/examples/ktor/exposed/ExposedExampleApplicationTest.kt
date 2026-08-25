@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.ktor.exposed
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.ktor.testing.shouldHaveStatus
@@ -58,6 +59,19 @@ class ExposedExampleApplicationTest {
 
         val missingResponse = client.get("/exposed/orders/${Long.MAX_VALUE}")
         missingResponse shouldHaveStatus HttpStatusCode.NotFound
+    }
+
+    @Test
+    fun `order record rejects negative id with bluetape assertion`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            OrderRecord(
+                id = -1L,
+                customerId = "customer",
+                status = OrderStatus.CREATED,
+            )
+        }
+
+        error.message shouldContain "id"
     }
 
     private companion object {

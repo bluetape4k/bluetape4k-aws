@@ -22,7 +22,7 @@ import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import java.io.Serializable
 
 /**
- * JDBC settings used by the Ktor Exposed example module.
+ * Ktor Exposed 예제 모듈에서 사용하는 JDBC 설정입니다.
  */
 data class ExampleDatabaseConfig(
     val url: String,
@@ -45,7 +45,7 @@ data class ExampleDatabaseConfig(
 }
 
 /**
- * Installs JSON, the AWS Exposed plugin, schema setup, and example order routes.
+ * JSON, AWS Exposed plugin, 스키마 초기화와 주문 예제 route를 등록합니다.
  */
 fun Application.exposedExampleModule(database: ExampleDatabaseConfig) {
     install(ContentNegotiation) {
@@ -66,7 +66,7 @@ fun Application.exposedExampleModule(database: ExampleDatabaseConfig) {
     }
 
     monitor.subscribe(ApplicationStarted) {
-        // Ktor startup events are synchronous; this mirrors AwsExposedPlugin's bounded startup bridge.
+        // Ktor startup event는 동기식이므로 AwsExposedPlugin의 제한된 startup bridge를 따릅니다.
         runBlocking(Dispatchers.IO) {
             awsExposedTransaction {
                 SchemaUtils.create(OrdersTable)
