@@ -12,6 +12,7 @@ import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
@@ -84,6 +85,9 @@ abstract class VerifyLegacyAbiTask : DefaultTask() {
     @get:Input
     abstract val fixturePath: Property<String>
 
+    @get:Input
+    abstract val enforceImplementationBaseline: Property<Boolean>
+
     @get:InputFile
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val sourceFile: RegularFileProperty
@@ -116,9 +120,7 @@ abstract class VerifyLegacyAbiTask : DefaultTask() {
             ?: error("Expected one ${moduleDirectory.get()} JAR under build/libs")
         val sourceHash = sha256Hex(sourceFile.get().asFile.readBytes())
         val expectedSourceHash = File(fixtureDirectory, "source.sha256").readText().trim()
-        require(sourceHash == expectedSourceHash) {
-            "${className.get()} source ABI changed: expected $expectedSourceHash, actual $sourceHash"
-        }
+        val sourceMatches = sourceHash == expectedSourceHash
         val bytecode = JarFile(jar).use { archive ->
             val entry = archive.getJarEntry(classEntry.get())
                 ?: error("Missing ${classEntry.get()} in ${jar.name}")
@@ -126,8 +128,14 @@ abstract class VerifyLegacyAbiTask : DefaultTask() {
         }
         val bytecodeHash = sha256Hex(bytecode)
         val expectedBytecodeHash = File(fixtureDirectory, "bytecode.sha256").readText().trim()
-        require(bytecodeHash == expectedBytecodeHash) {
-            "${className.get()} bytecode ABI changed: expected $expectedBytecodeHash, actual $bytecodeHash"
+        val bytecodeMatches = bytecodeHash == expectedBytecodeHash
+        if (enforceImplementationBaseline.get()) {
+            require(sourceMatches) {
+                "${className.get()} source implementation baseline changed: expected $expectedSourceHash, actual $sourceHash"
+            }
+            require(bytecodeMatches) {
+                "${className.get()} bytecode implementation baseline changed: expected $expectedBytecodeHash, actual $bytecodeHash"
+            }
         }
         val javap = ProcessBuilder("javap", "-classpath", jar.absolutePath, "-public", className.get())
             .redirectErrorStream(true)
@@ -150,11 +158,44 @@ abstract class VerifyLegacyAbiTask : DefaultTask() {
                         linkedMapOf(
                             "issue" to 455,
                             "className" to className.get(),
-                            "sourceSha256" to sourceHash,
-                            "bytecodeSha256" to bytecodeHash,
+                            "implementationBaseline" to linkedMapOf(
+                                "enforced" to enforceImplementationBaseline.get(),
+                                "sourceSha256" to sourceHash,
+                                "expectedSourceSha256" to expectedSourceHash,
+                                "sourceMatch" to sourceMatches,
+                                "bytecodeSha256" to bytecodeHash,
+                                "expectedBytecodeSha256" to expectedBytecodeHash,
+                                "bytecodeMatch" to bytecodeMatches,
+                            ),
                             "publicSignature" to "matched",
-                            "optionalSdkIsolation" to "legacy-signature-only",
                             "fixture" to fixturePath.get(),
+                        ),
+                    ),
+                ) + "\n",
+            )
+        }
+    }
+}
+
+abstract class WriteCompatibilityReportTask : DefaultTask() {
+    @get:Input
+    abstract val checks: ListProperty<String>
+
+    @get:OutputFile
+    abstract val reportFile: RegularFileProperty
+
+    @TaskAction
+    fun writeReport() {
+        reportFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(
+                groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(
+                        linkedMapOf(
+                            "status" to "passed",
+                            "checks" to checks.get(),
+                            "optionalSdkIsolation" to "aws-spring-boot:compatibilityTest",
+                            "baselinePolicy" to "public signature gate is separate from implementation baseline audit",
                         ),
                     ),
                 ) + "\n",
@@ -732,8 +773,12 @@ data class LegacyAbiFixture(
     val classEntry: String,
 )
 
-fun registerLegacyAbiVerification(fixture: LegacyAbiFixture): TaskProvider<VerifyLegacyAbiTask> =
-    tasks.register<VerifyLegacyAbiTask>(fixture.taskName) {
+fun registerLegacyAbiVerification(
+    fixture: LegacyAbiFixture,
+    taskName: String = fixture.taskName,
+    enforceImplementationBaseline: Boolean = false,
+): TaskProvider<VerifyLegacyAbiTask> =
+    tasks.register<VerifyLegacyAbiTask>(taskName) {
         description = "Verifies the Issue #455 legacy ABI fixture for ${fixture.className}."
         group = "verification"
         dependsOn("${fixture.modulePath}:jar")
@@ -744,7 +789,8 @@ fun registerLegacyAbiVerification(fixture: LegacyAbiFixture): TaskProvider<Verif
         repositoryDirectory.set(layout.projectDirectory)
         sourceFile.set(layout.projectDirectory.file(fixture.sourcePath))
         fixtureDirectory.set(layout.projectDirectory.dir(fixture.fixturePath))
-        reportFile.set(layout.buildDirectory.file("reports/abi/issue-455/${fixture.taskName}.json"))
+        this.enforceImplementationBaseline.set(enforceImplementationBaseline)
+        reportFile.set(layout.buildDirectory.file("reports/abi/issue-455/$taskName.json"))
     }
 
 val verifySqsExtendedLegacyAbi = registerLegacyAbiVerification(
@@ -770,6 +816,69 @@ val verifyS3ExtendedLegacyAbi = registerLegacyAbiVerification(
     ),
 )
 
+val verifySqsLegacyImplementationBaseline = registerLegacyAbiVerification(
+    LegacyAbiFixture(
+        taskName = "verifySqsExtendedLegacyAbi",
+        modulePath = ":bluetape4k-aws-spring-boot",
+        moduleDirectory = "aws-spring-boot",
+        className = "io.bluetape4k.aws.spring.sqs.SqsOperations",
+        sourcePath = "aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsOperations.kt",
+        fixturePath = "src/abi-fixtures/sqs-pre-change",
+        classEntry = "io/bluetape4k/aws/spring/sqs/SqsOperations.class",
+    ),
+    taskName = "verifySqsLegacyImplementationBaseline",
+    enforceImplementationBaseline = true,
+)
+val verifyS3LegacyImplementationBaseline = registerLegacyAbiVerification(
+    LegacyAbiFixture(
+        taskName = "verifyS3ExtendedLegacyAbi",
+        modulePath = ":bluetape4k-aws-spring-boot",
+        moduleDirectory = "aws-spring-boot",
+        className = "io.bluetape4k.aws.spring.s3.S3Operations",
+        sourcePath = "aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3Operations.kt",
+        fixturePath = "src/abi-fixtures/s3-pre-change",
+        classEntry = "io/bluetape4k/aws/spring/s3/S3Operations.class",
+    ),
+    taskName = "verifyS3LegacyImplementationBaseline",
+    enforceImplementationBaseline = true,
+)
+
+val implementationBaselineCheck = tasks.register("implementationBaselineCheck") {
+    description = "Audits source and bytecode implementation baselines separately from the public ABI gate."
+    group = "verification"
+    dependsOn(verifySqsLegacyImplementationBaseline, verifyS3LegacyImplementationBaseline)
+}
+
+val compatibilityCheck = tasks.register<WriteCompatibilityReportTask>("compatibilityCheck") {
+    description = "Runs the public ABI, legacy consumer, and optional SDK compatibility gate."
+    group = "verification"
+    checks.set(
+        listOf(
+            "verifySqsExtendedLegacyAbi",
+            "verifyS3ExtendedLegacyAbi",
+            ":bluetape4k-aws-spring-boot:compatibilityTest",
+            "compileSqsOperationsLegacyConsumerFixture",
+            "compileSqsPropertiesLegacyConsumerFixture",
+            "compileSqsListenerAnnotationLegacyConsumerFixture",
+            "compileSqsListenerInterceptorLegacyConsumerFixture",
+            "compileSqsBatchConsumerFixture",
+            "compileSnsOperationsLegacyConsumerFixture",
+        ),
+    )
+    dependsOn(
+        verifySqsExtendedLegacyAbi,
+        verifyS3ExtendedLegacyAbi,
+        ":bluetape4k-aws-spring-boot:compatibilityTest",
+        compileSqsOperationsLegacyConsumerFixture,
+        compileSqsPropertiesLegacyConsumerFixture,
+        compileSqsListenerAnnotationLegacyConsumerFixture,
+        compileSqsListenerInterceptorLegacyConsumerFixture,
+        compileSqsBatchConsumerFixture,
+        compileSnsOperationsLegacyConsumerFixture,
+    )
+    reportFile.set(layout.buildDirectory.file("reports/compatibility/compatibility-check.json"))
+}
+
 tasks.named("check") {
     dependsOn(compileAwsKtorSqsConsumerFixture)
     dependsOn(compileBedrockJavaConsumerFixture)
@@ -777,6 +886,7 @@ tasks.named("check") {
     dependsOn(compileAwsJavaServiceConsumerFixture)
     dependsOn(compileAwsKotlinServiceConsumerFixture)
     dependsOn(verifyAwsConsumerFixturePublication)
+    dependsOn(compatibilityCheck)
 }
 
 allprojects {

@@ -114,3 +114,18 @@ tasks.withType<Test>().configureEach {
         exclude("**/*AwsEmulatorTest.class")
     }
 }
+
+tasks.register<Test>("compatibilityTest") {
+    description = "Runs optional AWS SDK isolation tests used by the root compatibility gate."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching("io.bluetape4k.aws.spring.AwsAutoConfigurationTest")
+        includeTestsMatching("io.bluetape4k.aws.spring.cloudwatch.CloudWatchAutoConfigurationTest")
+        includeTestsMatching("io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfigurationTest")
+        includeTestsMatching("io.bluetape4k.aws.spring.s3vectors.S3VectorsAutoConfigurationTest")
+        includeTestsMatching("io.bluetape4k.aws.spring.ses.SesAutoConfigurationTest")
+    }
+}
