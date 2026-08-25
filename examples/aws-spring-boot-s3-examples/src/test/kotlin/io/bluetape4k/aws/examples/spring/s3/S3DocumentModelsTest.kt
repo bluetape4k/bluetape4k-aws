@@ -8,7 +8,7 @@ import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
-import java.net.URL
+import java.net.URI
 
 class S3DocumentModelsTest {
 
@@ -17,7 +17,7 @@ class S3DocumentModelsTest {
         val models = listOf<Serializable>(
             S3DocumentUploadResponse("bucket", "docs/readme.txt", "etag"),
             S3DocumentObjectResponse("docs/readme.txt", 128L),
-            S3PresignedUrlResponse(URL("https://s3.example.test/docs/readme.txt")),
+            S3PresignedUrlResponse(URI("https://s3.example.test/docs/readme.txt").toURL()),
         )
 
         models.forEach { model ->
