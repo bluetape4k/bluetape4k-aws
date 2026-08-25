@@ -39,6 +39,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
 import javax.sql.DataSource
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -269,6 +270,39 @@ class AwsExposedPluginTest {
         }
 
         error.message shouldContain "cannot be combined"
+    }
+
+    @Test
+    fun `config validation rejects non positive start timeout`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            AwsExposedPluginConfig().apply {
+                startTimeout = Duration.ZERO
+            }.toRuntimeConfig()
+        }
+
+        error.message shouldContain "startTimeout"
+    }
+
+    @Test
+    fun `config validation rejects non positive stop timeout`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            AwsExposedPluginConfig().apply {
+                stopTimeout = (-1).milliseconds
+            }.toRuntimeConfig()
+        }
+
+        error.message shouldContain "stopTimeout"
+    }
+
+    @Test
+    fun `config validation accepts positive timeout boundaries`() {
+        val config = AwsExposedPluginConfig().apply {
+            startTimeout = 1.milliseconds
+            stopTimeout = 1.milliseconds
+        }.toRuntimeConfig()
+
+        config.startTimeout shouldBeEqualTo 1.milliseconds
+        config.stopTimeout shouldBeEqualTo 1.milliseconds
     }
 
     private fun runtime(

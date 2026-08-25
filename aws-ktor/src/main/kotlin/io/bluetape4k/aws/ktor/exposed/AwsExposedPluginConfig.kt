@@ -12,6 +12,7 @@ import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
 import io.bluetape4k.aws.exposed.AwsRdsIamAuthenticationProperties
 import io.bluetape4k.aws.exposed.AwsSecretString
 import io.bluetape4k.aws.exposed.NoopAwsDatabaseSettingsResolver
+import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
@@ -104,8 +105,8 @@ class AwsExposedPluginConfig {
     }
 
     internal fun toRuntimeConfig(): AwsExposedKtorRuntimeConfig {
-        require(startTimeout.isPositive()) { "startTimeout must be positive." }
-        require(stopTimeout.isPositive()) { "stopTimeout must be positive." }
+        startTimeout.requireGt(Duration.ZERO, "startTimeout")
+        stopTimeout.requireGt(Duration.ZERO, "stopTimeout")
 
         val properties = explicitDatabaseProperties ?: AwsDatabaseProperties(
             defaultDatabase = defaultDatabaseConfig?.toConnectionProperties()
