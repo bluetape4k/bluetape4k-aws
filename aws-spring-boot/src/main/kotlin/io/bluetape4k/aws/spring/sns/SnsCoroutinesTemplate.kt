@@ -1,10 +1,11 @@
 package io.bluetape4k.aws.spring.sns
 
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
-import software.amazon.awssdk.services.sns.model.PublishBatchRequest
-import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
@@ -22,10 +23,25 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
  * ```
  */
 @Suppress("TooManyFunctions")
-class SnsCoroutinesTemplate(
+class SnsCoroutinesTemplate private constructor(
     private val snsAsyncClient: SnsAsyncClient,
     private val properties: SnsProperties,
+    private val batchExecutionStrategy: SnsBatchExecutionStrategy,
+    @Suppress("UNUSED_PARAMETER") private val constructorMarker: Unit,
 ): SnsOperations {
+
+    /** 기존 SNS template 경로를 사용하는 기본 bounded strategy 생성자입니다. */
+    constructor(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+    ) : this(snsAsyncClient, properties, DefaultSnsBatchExecutionStrategy, Unit)
+
+    /** guarded typed port를 사용하는 명시적 SNS batch strategy 생성자입니다. */
+    constructor(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+        batchExecutionStrategy: SnsBatchExecutionStrategy,
+    ) : this(snsAsyncClient, properties, batchExecutionStrategy, Unit)
 
     override suspend fun createTopic(
         topicName: String,
@@ -107,18 +123,36 @@ class SnsCoroutinesTemplate(
             request.messageDeduplicationId?.let(it::messageDeduplicationId)
         }.await()
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun publishBatch(
         request: SnsPublishBatchRequest,
         options: SnsBatchExecutionOptions,
-    ): SnsPublishBatchResult =
-        SnsBatchExecutor { topicArn, entries ->
-            snsAsyncClient.publishBatch(
-                PublishBatchRequest.builder()
-                    .topicArn(topicArn)
-                    .publishBatchRequestEntries(entries.map(::toPublishBatchRequestEntry))
-                    .build()
-            ).await()
-        }.execute(request, options)
+    ): SnsPublishBatchResult {
+        if (request.entries.isEmpty()) {
+            return SnsPublishBatchResult(emptyList(), emptyList())
+        }
+
+        val guard = SnsBatchExecutionGuard(snsAsyncClient, request, options)
+        var result: SnsPublishBatchResult? = null
+        var failure: Throwable? = null
+        try {
+            result = batchExecutionStrategy.execute(request, options, guard)
+            guard.validateAggregate(result, request)
+        } catch (cause: Throwable) {
+            failure = normalizeStrategyFailure(cause)
+        } finally {
+            try {
+                withContext(NonCancellable) {
+                    guard.closeAndDrain()
+                }
+            } catch (drainFailure: Throwable) {
+                failure = failure?.also { it.addSuppressed(drainFailure) } ?: drainFailure
+            }
+        }
+
+        failure?.let { throw it }
+        return requireNotNull(result)
+    }
 
     override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
         snsAsyncClient.publish {
@@ -163,17 +197,13 @@ class SnsCoroutinesTemplate(
         require(isNotBlank()) { "topicName must not be blank." }
     }
 
-    private fun toPublishBatchRequestEntry(entry: SnsPublishBatchEntry): PublishBatchRequestEntry =
-        PublishBatchRequestEntry.builder()
-            .id(entry.id)
-            .message(entry.message)
-            .apply {
-                entry.subject?.let(::subject)
-                if (entry.messageAttributes.isNotEmpty()) {
-                    messageAttributes(entry.messageAttributes)
-                }
-                entry.messageGroupId?.let(::messageGroupId)
-                entry.messageDeduplicationId?.let(::messageDeduplicationId)
-            }
-            .build()
+    @Suppress("TooGenericExceptionCaught")
+    private fun normalizeStrategyFailure(cause: Throwable): Throwable = when (cause) {
+        is CancellationException,
+        is SnsBatchTransportException,
+        is SnsBatchProtocolException,
+        is SnsBatchExecutionContractException,
+        is Error -> cause
+        else -> SnsBatchExecutionContractException(SnsBatchExecutionContractError.STRATEGY_FAILURE)
+    }
 }

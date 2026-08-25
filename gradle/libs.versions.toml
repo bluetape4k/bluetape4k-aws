@@ -68,6 +68,7 @@ spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-te
 spring-boot-micrometer-metrics = { module = "org.springframework.boot:spring-boot-micrometer-metrics" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
 spring-context-support = { module = "org.springframework:spring-context-support" }
+spring-messaging = { module = "org.springframework:spring-messaging" }
 spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
 jakarta-mail-api = { module = "jakarta.mail:jakarta.mail-api" }
 angus-mail = { module = "org.eclipse.angus:angus-mail" }

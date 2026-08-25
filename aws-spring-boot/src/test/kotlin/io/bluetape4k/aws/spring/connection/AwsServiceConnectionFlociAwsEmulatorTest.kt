@@ -9,11 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.context.ConfigurableApplicationContext
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import software.amazon.awssdk.services.s3.S3Client
 
-@Testcontainers
 @SpringBootTest(
     classes = [AwsServiceConnectionTestApplication::class],
     webEnvironment = WebEnvironment.NONE,
@@ -22,7 +19,6 @@ class AwsServiceConnectionFlociAwsEmulatorTest {
 
     companion object {
         @JvmField
-        @Container
         @ServiceConnection(name = "s3")
         val floci: FlociServer = FlociServer.Launcher.floci
     }
