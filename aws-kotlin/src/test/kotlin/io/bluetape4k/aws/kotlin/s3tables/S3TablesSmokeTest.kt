@@ -5,6 +5,14 @@ import aws.smithy.kotlin.runtime.ServiceException
 import io.bluetape4k.aws.kotlin.s3tables.model.createTableBucketRequestOf
 import io.bluetape4k.aws.kotlin.sts.getCallerIdentity
 import io.bluetape4k.aws.kotlin.sts.withStsClient
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldEndWith
+import io.bluetape4k.assertions.shouldMatch
+import io.bluetape4k.assertions.shouldNotStartWith
+import io.bluetape4k.assertions.shouldStartWith
+import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -12,10 +20,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import java.util.UUID
 
 /**
  * 자격 증명 입력이 필요한 S3 Tables smoke 검증이다.
@@ -32,15 +38,15 @@ class S3TablesSmokeTest {
 
         val actual = normalizedTableBucketName("Issue #311 / Production", suffix)
 
-        assertTrue(actual.endsWith("-$suffix"))
-        assertTrue(actual.matches(Regex("[a-z0-9][a-z0-9-]{1,61}[a-z0-9]")))
+        actual shouldEndWith "-$suffix"
+        actual shouldMatch Regex("[a-z0-9][a-z0-9-]{1,61}[a-z0-9]")
     }
 
     @Test
     fun `bucket name normalization avoids reserved aws prefix`() {
         val actual = normalizedTableBucketName("AWS", "bucket-0123456789abcdef")
 
-        assertTrue(actual.startsWith("bt-"))
+        actual shouldStartWith "bt-"
     }
 
     @Test
@@ -49,16 +55,16 @@ class S3TablesSmokeTest {
 
         val actual = normalizedTableIdentifierName("Issue #311 / Production", suffix)
 
-        assertTrue(actual.endsWith("_$suffix"))
-        assertTrue(actual.matches(Regex("[a-z0-9_]+")))
+        actual shouldEndWith "_$suffix"
+        actual shouldMatch Regex("[a-z0-9_]+")
     }
 
     @Test
     fun `namespace and table normalization avoids reserved aws prefix`() {
         val actual = normalizedTableIdentifierName("AWS", "namespace_0123456789abcdef")
 
-        assertTrue(actual.first().isLetterOrDigit())
-        assertTrue(!actual.startsWith("aws"))
+        actual.first().isLetterOrDigit().shouldBeTrue()
+        actual shouldNotStartWith "aws"
     }
 
     @Test
@@ -73,8 +79,19 @@ class S3TablesSmokeTest {
         cleanupIndependently(failures) { attempted += "namespace" }
         cleanupIndependently(failures) { attempted += "bucket" }
 
-        assertTrue(attempted == listOf("table", "namespace", "bucket"))
-        assertTrue(failures.single().message == "table-delete-failed")
+        attempted shouldBeEqualTo listOf("table", "namespace", "bucket")
+        failures.single().message shouldBeEqualTo "table-delete-failed"
+    }
+
+    @Test
+    fun `cleanup propagates cancellation`() = runSuspendIO {
+        val cancellation = assertFailsWith<CancellationException> {
+            cleanupIndependently(mutableListOf()) {
+                throw CancellationException("cleanup-cancelled")
+            }
+        }
+
+        cancellation.message shouldBeEqualTo "cleanup-cancelled"
     }
 
     @Test
@@ -189,7 +206,7 @@ class S3TablesSmokeTest {
     )
 
     private suspend fun createResources(region: String, prefix: String, created: CreatedResources) {
-        val suffix = UUID.randomUUID().toString().replace("-", "").take(16)
+        val suffix = Uuid.V7.nextId().toString().replace("-", "").take(16)
         created.tableBucketName = normalizedTableBucketName(prefix, "bucket-$suffix")
         created.namespace = normalizedTableIdentifierName(prefix, "namespace_$suffix")
         created.tableName = normalizedTableIdentifierName(prefix, "table_$suffix")
@@ -214,17 +231,21 @@ class S3TablesSmokeTest {
         if (created.tableBucketArn == null && !created.tableBucketCreationAttempted) return emptyList()
 
         val cleanupFailures = mutableListOf<Throwable>()
-        runCatching {
+        try {
             withS3TablesClient(region = region, builder = { callTimeout = 30.seconds }) { client ->
                 var resolvedTableBucketArn = created.tableBucketArn
                 if (resolvedTableBucketArn == null && created.tableBucketCreationAttempted) {
-                    runCatching {
+                    try {
                         resolvedTableBucketArn = client
                             .listTableBuckets(prefix = created.tableBucketName, maxBuckets = 10)
                             .tableBuckets
                             .firstOrNull { it.name == created.tableBucketName }
                             ?.arn
-                    }.exceptionOrNull()?.takeUnless(::isAlreadyAbsent)?.let(cleanupFailures::add)
+                    } catch (ce: CancellationException) {
+                        throw ce
+                    } catch (failure: Throwable) {
+                        failure.takeUnless(::isAlreadyAbsent)?.let(cleanupFailures::add)
+                    }
                 }
                 resolvedTableBucketArn?.let { arn ->
                     cleanupIndependently(cleanupFailures) {
@@ -240,7 +261,11 @@ class S3TablesSmokeTest {
                     }
                 }
             }
-        }.exceptionOrNull()?.takeUnless(::isAlreadyAbsent)?.let(cleanupFailures::add)
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (failure: Throwable) {
+            failure.takeUnless(::isAlreadyAbsent)?.let(cleanupFailures::add)
+        }
         return cleanupFailures
     }
 
@@ -248,7 +273,13 @@ class S3TablesSmokeTest {
         failures: MutableList<Throwable>,
         action: suspend () -> Unit,
     ) {
-        runCatching { action() }.exceptionOrNull()?.takeUnless(::isAlreadyAbsent)?.let(failures::add)
+        try {
+            action()
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (failure: Throwable) {
+            failure.takeUnless(::isAlreadyAbsent)?.let(failures::add)
+        }
     }
 
     private companion object {
