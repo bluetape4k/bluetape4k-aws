@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeTrue
@@ -23,7 +24,6 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import java.time.Duration
@@ -292,7 +292,7 @@ class SqsMessageListenerContainerTest {
             firstStopCallbacks.incrementAndGet()
             firstStopped.complete(Unit)
         }
-        assertThrows<IllegalStateException> { container.start() }
+        assertFailsWith<IllegalStateException> { container.start() }
         handlerRelease.complete(Unit)
 
         withTimeout(2_000) { firstStopped.await() }

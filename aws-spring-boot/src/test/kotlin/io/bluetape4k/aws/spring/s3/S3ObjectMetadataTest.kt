@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.time.Instant
 
 class S3ObjectMetadataTest {
@@ -26,14 +26,14 @@ class S3ObjectMetadataTest {
 
     @Test
     fun rejectsNegativeObjectSize() {
-        assertThrows<IllegalArgumentException> {
+        assertFailsWith<IllegalArgumentException> {
             S3ObjectMetadata(sizeBytes = -1)
         }
     }
 
     @Test
     fun legacyOperationsFailClosedWhenHeadIsUnsupported() {
-        assertThrows<UnsupportedOperationException> {
+        assertFailsWith<UnsupportedOperationException> {
             kotlinx.coroutines.test.runTest {
                 NoopS3Operations.headObject("bucket", "key")
             }

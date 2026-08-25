@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.config
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLoader
@@ -16,7 +17,6 @@ import io.mockk.runs
 import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import org.springframework.boot.context.config.ConfigDataLoaderContext
 import org.springframework.boot.context.config.ConfigDataResourceNotFoundException
@@ -77,7 +77,7 @@ class AwsConfigDataLoaderTest {
                 software.amazon.awssdk.services.s3.model.NoSuchKeyException.builder().build()
 
             S3ConfigDataLoader(mockk(relaxed = true), bootstrap).load(context, optional) shouldBeEqualTo null
-            val error = assertThrows<ConfigDataResourceNotFoundException> {
+            val error = assertFailsWith<ConfigDataResourceNotFoundException> {
                 S3ConfigDataLoader(mockk(relaxed = true), bootstrap).load(context, required)
             }
             error.resource shouldBeEqualTo required
@@ -99,7 +99,7 @@ class AwsConfigDataLoaderTest {
                     .message("transport-secret-bucket")
                     .build()
 
-            val error = assertThrows<AwsConfigDataLoadException> {
+            val error = assertFailsWith<AwsConfigDataLoadException> {
                 S3ConfigDataLoader(mockk(relaxed = true), bootstrap).load(context, resource)
             }
             error.toString() shouldNotContain "transport-secret-bucket"

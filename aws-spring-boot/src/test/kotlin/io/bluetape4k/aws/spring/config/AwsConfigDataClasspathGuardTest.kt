@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.spring.config
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 class AwsConfigDataClasspathGuardTest {
 
@@ -26,7 +26,7 @@ class AwsConfigDataClasspathGuardTest {
 
     @Test
     fun `missing SDK error is sanitized and contains dependency guidance`() {
-        val error = assertThrows<IllegalStateException> {
+        val error = assertFailsWith<IllegalStateException> {
             AwsConfigDataBootstrapBridge.requireClass(
                 className = "no.such.aws.Client",
                 dependency = "software.amazon.awssdk:missing",
