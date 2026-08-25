@@ -12,8 +12,9 @@ import kotlin.concurrent.withLock
  */
 class SqsMessageListenerContainerRegistry: SmartLifecycle {
 
-    private val running = AtomicBoolean(false)
+    private val lifecycleStarted = AtomicBoolean(false)
     private val containerMap = ConcurrentHashMap<String, SqsMessageListenerContainer>()
+    private val activeIds = ConcurrentHashMap.newKeySet<String>()
     private val stoppingIds = ConcurrentHashMap.newKeySet<String>()
     private val lifecycleLock = ReentrantLock()
 
@@ -21,14 +22,15 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
         get() = containerMap.values.toList()
 
     internal fun register(id: String, container: SqsMessageListenerContainer) {
-        val shouldStart: Boolean
         lifecycleLock.withLock {
             require(containerMap.putIfAbsent(id, container) == null) {
                 "Duplicate SQS listener id: $id"
             }
-            shouldStart = running.get() && container.isAutoStartup
+            if (lifecycleStarted.get() && container.isAutoStartup) {
+                container.start()
+                activeIds.add(id)
+            }
         }
-        if (shouldStart) container.start()
     }
 
     internal fun getContainer(id: String): SqsMessageListenerContainer? =
@@ -36,12 +38,13 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
 
     /** 등록된 하나의 listener를 시작합니다. asynchronous stop 중에는 새 generation을 만들지 않습니다. */
     fun start(id: String) {
-        val container = lifecycleLock.withLock {
+        lifecycleLock.withLock {
             check(!stoppingIds.contains(id)) { "listener is stopping" }
-            containerMap[id] ?: error("Unknown SQS listener id: $id")
+            val container = containerMap[id] ?: error("Unknown SQS listener id: $id")
+            container.start()
+            lifecycleStarted.set(true)
+            activeIds.add(id)
         }
-        running.set(true)
-        container.start()
     }
 
     /** 등록된 하나의 listener를 중지하고 callback을 정확히 한 번 호출합니다. */
@@ -52,7 +55,7 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
                 callback.run()
                 return
             }
-            running.set(false)
+            activeIds.remove(id)
             value
         }
         container.stop {
@@ -65,12 +68,15 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
     }
 
     override fun start() {
-        val toStart: List<SqsMessageListenerContainer>
         lifecycleLock.withLock {
-            if (!running.compareAndSet(false, true)) return
-            toStart = containers.filter { it.isAutoStartup }
+            if (!lifecycleStarted.compareAndSet(false, true)) return
+            containerMap.forEach { (id, container) ->
+                if (container.isAutoStartup) {
+                    container.start()
+                    activeIds.add(id)
+                }
+            }
         }
-        toStart.forEach { it.start() }
     }
 
     override fun stop() {
@@ -80,11 +86,12 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
     override fun stop(callback: Runnable) {
         val snapshot: List<SqsMessageListenerContainer>
         lifecycleLock.withLock {
-            if (!running.compareAndSet(true, false)) {
+            if (!lifecycleStarted.compareAndSet(true, false)) {
                 callback.run()
                 return
             }
             snapshot = containers.toList()
+            activeIds.clear()
             containerMap.keys.forEach { stoppingIds.add(it) }
         }
         if (snapshot.isEmpty()) {
@@ -105,7 +112,7 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
         }
     }
 
-    override fun isRunning(): Boolean = running.get()
+    override fun isRunning(): Boolean = activeIds.isNotEmpty()
 
     override fun getPhase(): Int =
         containers.maxOfOrNull { it.phase } ?: Int.MAX_VALUE
