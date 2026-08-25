@@ -80,11 +80,46 @@ class SnsAutoConfiguration {
             .build()
 
     @Bean
+    @ConditionalOnMissingBean(SnsTopicArnCache::class)
+    fun snsTopicArnCache(properties: SnsProperties): SnsTopicArnCache =
+        if (properties.topicArnCache.enabled) {
+            InMemorySnsTopicArnCache(
+                maxSize = properties.topicArnCache.maxSize,
+                ttl = properties.topicArnCache.ttl,
+            )
+        } else {
+            NoopSnsTopicArnCache
+        }
+
+    @Bean
+    @ConditionalOnMissingBean(SnsTopicArnResolver::class)
+    fun snsTopicArnResolver(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+        cache: SnsTopicArnCache,
+        serviceConnectionDetails: ObjectProvider<SnsConnectionDetails>,
+    ): SnsTopicArnResolver {
+        val details = serviceConnectionDetails.getIfAvailable()
+        val scope = SnsTopicArnResolverScope(
+            endpointOverride = details?.endpoint ?: properties.endpointOverride,
+            region = details?.region ?: properties.region,
+            accountId = properties.accountId,
+        )
+        return SnsTopicArnResolver(
+            snsAsyncClient = snsAsyncClient,
+            cache = cache,
+            scope = scope,
+            allowCrossAccountTopicArn = properties.allowCrossAccountTopicArn,
+        )
+    }
+
+    @Bean
     @ConditionalOnMissingBean(SnsOperations::class)
     fun snsCoroutinesTemplate(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
+        topicArnResolver: SnsTopicArnResolver,
     ): SnsCoroutinesTemplate =
-        SnsCoroutinesTemplate(snsAsyncClient, properties)
+        SnsCoroutinesTemplate(snsAsyncClient, properties, topicArnResolver)
 
 }

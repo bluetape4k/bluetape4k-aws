@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.connection.SnsConnectionDetails
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
@@ -15,6 +17,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.services.sns.SnsAsyncClient
+import java.net.URI
 
 class SnsAutoConfigurationTest {
 
@@ -34,7 +37,64 @@ class SnsAutoConfigurationTest {
             context.getBeansOfType(SnsProperties::class.java) shouldHaveSize 1
             context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
             context.getBeansOfType(SnsCoroutinesTemplate::class.java) shouldHaveSize 1
+            context.getBeansOfType(SnsTopicArnCache::class.java) shouldHaveSize 1
+            context.getBeansOfType(SnsTopicArnResolver::class.java) shouldHaveSize 1
         }
+    }
+
+    @Test
+    fun `topic arn cache properties bind and disabled cache uses noop`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.sns.account-id=123456789012",
+                "bluetape4k.aws.sns.allow-cross-account-topic-arn=true",
+                "bluetape4k.aws.sns.topic-arn-cache.enabled=false",
+                "bluetape4k.aws.sns.topic-arn-cache.max-size=8",
+                "bluetape4k.aws.sns.topic-arn-cache.ttl=10m",
+            )
+            .run { context ->
+                val properties = context.getBean(SnsProperties::class.java)
+                properties.accountId shouldBeEqualTo "123456789012"
+                properties.allowCrossAccountTopicArn shouldBeEqualTo true
+                properties.topicArnCache.enabled shouldBeEqualTo false
+                properties.topicArnCache.maxSize shouldBeEqualTo 8
+                properties.topicArnCache.ttl.toMinutes() shouldBeEqualTo 10
+                context.getBean(SnsTopicArnCache::class.java)
+                    .shouldBeInstanceOf<NoopSnsTopicArnCache>()
+            }
+    }
+
+    @Test
+    fun `custom cache and resolver beans take precedence`() {
+        val customCache = mockk<SnsTopicArnCache>(relaxed = true)
+        val customResolver = mockk<SnsTopicArnResolver>(relaxed = true)
+
+        contextRunner
+            .withBean(SnsTopicArnCache::class.java, { customCache })
+            .withBean(SnsTopicArnResolver::class.java, { customResolver })
+            .run { context ->
+                context.getBean(SnsTopicArnCache::class.java) shouldBeSameInstanceAs customCache
+                context.getBean(SnsTopicArnResolver::class.java) shouldBeSameInstanceAs customResolver
+            }
+    }
+
+    @Test
+    fun `connection details provide effective resolver endpoint and region`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.sns.region=us-east-1",
+                "bluetape4k.aws.sns.endpoint-override=http://properties:4566",
+                "bluetape4k.aws.sns.account-id=123456789012",
+            )
+            .withBean(SnsConnectionDetails::class.java, {
+                TestSnsDetails(URI.create("http://details:4566"), "eu-west-1", "access", "secret")
+            })
+            .run { context ->
+                val resolver = context.getBean(SnsTopicArnResolver::class.java)
+                resolver.scope.endpointOverride shouldBeEqualTo URI.create("http://details:4566")
+                resolver.scope.region shouldBeEqualTo "eu-west-1"
+                resolver.scope.accountId shouldBeEqualTo "123456789012"
+            }
     }
 
     @Test
@@ -150,4 +210,11 @@ class SnsAutoConfigurationTest {
             error.message.orEmpty() shouldContain "not configured"
         }
     }
+
+    private class TestSnsDetails(
+        override val endpoint: URI,
+        override val region: String,
+        override val accessKey: String,
+        override val secretKey: String,
+    ): SnsConnectionDetails
 }

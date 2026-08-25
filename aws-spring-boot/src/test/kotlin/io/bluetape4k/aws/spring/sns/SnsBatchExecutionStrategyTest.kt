@@ -30,6 +30,17 @@ class SnsBatchExecutionStrategyTest {
                 SnsProperties::class.java,
                 SnsBatchExecutionStrategy::class.java,
             ),
+            listOf(
+                SnsAsyncClient::class.java,
+                SnsProperties::class.java,
+                SnsTopicArnResolver::class.java,
+            ),
+            listOf(
+                SnsAsyncClient::class.java,
+                SnsProperties::class.java,
+                SnsTopicArnResolver::class.java,
+                SnsBatchExecutionStrategy::class.java,
+            ),
         )
     }
 

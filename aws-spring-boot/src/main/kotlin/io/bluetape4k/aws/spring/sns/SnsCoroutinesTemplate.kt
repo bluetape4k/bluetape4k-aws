@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
 class SnsCoroutinesTemplate private constructor(
     private val snsAsyncClient: SnsAsyncClient,
     private val properties: SnsProperties,
+    private val topicArnResolver: SnsTopicArnResolver,
     private val batchExecutionStrategy: SnsBatchExecutionStrategy,
     @Suppress("UNUSED_PARAMETER") private val constructorMarker: Unit,
 ): SnsOperations {
@@ -34,26 +35,55 @@ class SnsCoroutinesTemplate private constructor(
     constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
-    ) : this(snsAsyncClient, properties, DefaultSnsBatchExecutionStrategy, Unit)
+    ) : this(
+        snsAsyncClient,
+        properties,
+        defaultSnsTopicArnResolver(snsAsyncClient, properties),
+        DefaultSnsBatchExecutionStrategy,
+        Unit,
+    )
 
     /** guarded typed port를 사용하는 명시적 SNS batch strategy 생성자입니다. */
     constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
         batchExecutionStrategy: SnsBatchExecutionStrategy,
-    ) : this(snsAsyncClient, properties, batchExecutionStrategy, Unit)
+    ) : this(
+        snsAsyncClient,
+        properties,
+        defaultSnsTopicArnResolver(snsAsyncClient, properties),
+        batchExecutionStrategy,
+        Unit,
+    )
+
+    /** resolver를 주입해 name 조회 경계를 교체하는 생성자입니다. */
+    constructor(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+        topicArnResolver: SnsTopicArnResolver,
+    ) : this(snsAsyncClient, properties, topicArnResolver, DefaultSnsBatchExecutionStrategy, Unit)
+
+    /** resolver와 명시적 SNS batch strategy를 함께 주입하는 생성자입니다. */
+    constructor(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+        topicArnResolver: SnsTopicArnResolver,
+        batchExecutionStrategy: SnsBatchExecutionStrategy,
+    ) : this(snsAsyncClient, properties, topicArnResolver, batchExecutionStrategy, Unit)
 
     override suspend fun createTopic(
         topicName: String,
         attributes: Map<String, String>,
     ): String {
         topicName.requireTopicName()
-        return snsAsyncClient.createTopic {
+        val topicArn = snsAsyncClient.createTopic {
             it.name(topicName)
             if (attributes.isNotEmpty()) {
                 it.attributes(attributes)
             }
         }.await().topicArn()
+        topicArnResolver.invalidate(topicName)
+        return topicArn
     }
 
     override suspend fun createFifoTopic(
@@ -95,20 +125,7 @@ class SnsCoroutinesTemplate private constructor(
 
     override suspend fun findTopicArn(topicName: String): String? {
         topicName.requireTopicName()
-        val suffix = ":$topicName"
-        var nextToken: String? = null
-        do {
-            val response = snsAsyncClient.listTopics {
-                nextToken?.let(it::nextToken)
-            }.await()
-            response.topics().orEmpty()
-                .mapNotNull { it.topicArn() }
-                .firstOrNull { it.endsWith(suffix) }
-                ?.let { return it }
-            nextToken = response.nextToken()
-        } while (!nextToken.isNullOrBlank())
-
-        return null
+        return topicArnResolver.findTopicArn(topicName)
     }
 
     override suspend fun publish(request: SnsPublishRequest): PublishResponse =
@@ -207,3 +224,25 @@ class SnsCoroutinesTemplate private constructor(
         else -> SnsBatchExecutionContractException(SnsBatchExecutionContractError.STRATEGY_FAILURE)
     }
 }
+
+private fun defaultSnsTopicArnResolver(
+    snsAsyncClient: SnsAsyncClient,
+    properties: SnsProperties,
+): SnsTopicArnResolver =
+    SnsTopicArnResolver(
+        snsAsyncClient = snsAsyncClient,
+        cache = if (properties.topicArnCache.enabled) {
+            InMemorySnsTopicArnCache(
+                maxSize = properties.topicArnCache.maxSize,
+                ttl = properties.topicArnCache.ttl,
+            )
+        } else {
+            NoopSnsTopicArnCache
+        },
+        scope = SnsTopicArnResolverScope(
+            endpointOverride = properties.endpointOverride,
+            region = properties.region,
+            accountId = properties.accountId,
+        ),
+        allowCrossAccountTopicArn = properties.allowCrossAccountTopicArn,
+    )
