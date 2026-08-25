@@ -13,10 +13,13 @@ import io.bluetape4k.assertions.shouldNotContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
@@ -30,6 +33,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 class SnsTopicArnResolverTest {
@@ -605,4 +609,201 @@ class SnsTopicArnResolverTest {
         override fun withZone(zone: ZoneId): Clock = this
         override fun instant(): Instant = currentInstant
     }
+}
+
+class SnsTopicArnResolverConcurrencyStressTest {
+
+    @Test
+    fun `different topic flights remain parallel under repeated load`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val topicNames = (0 until 12).map { "topic-$it" }
+        val expectedArns = topicNames.map(::topicArn).toSet()
+        var pending = CompletableFuture<ListTopicsResponse>()
+        val calls = AtomicInteger()
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+            calls.incrementAndGet()
+            pending
+        }
+        val resolver = resolver(client, NoopSnsTopicArnCache)
+
+        repeat(20) {
+            pending = CompletableFuture()
+            calls.set(0)
+            val lookups = topicNames.map { topicName ->
+                async { resolver.resolve(topicName) }
+            }
+            repeat(topicNames.size) { yield() }
+
+            calls.get() shouldBeEqualTo topicNames.size
+            pending.complete(completedList(topicNames.map(::topicArn)).join())
+            lookups.awaitAll().toSet() shouldBeEqualTo expectedArns
+        }
+    }
+
+    @Test
+    fun `waiter cancellation preserves one owner flight under repeated load`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        var pending = CompletableFuture<ListTopicsResponse>()
+        val calls = AtomicInteger()
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+            calls.incrementAndGet()
+            pending
+        }
+        val resolver = resolver(client, NoopSnsTopicArnCache)
+        val expectedArn = topicArn("orders")
+
+        repeat(20) {
+            pending = CompletableFuture()
+            calls.set(0)
+            val owner = async { resolver.resolve("orders") }
+            val waiters = (0 until 8).map { async { resolver.resolve("orders") } }
+            repeat(waiters.size + 1) { yield() }
+
+            val cancelled = waiters.filterIndexed { index, _ -> index % 2 == 0 }
+            val active = waiters.filterIndexed { index, _ -> index % 2 != 0 }
+            cancelled.forEach { it.cancelAndJoin() }
+
+            calls.get() shouldBeEqualTo 1
+            pending.complete(completedList(expectedArn).join())
+            owner.await() shouldBeEqualTo expectedArn
+            active.awaitAll().forEach { it shouldBeEqualTo expectedArn }
+            calls.get() shouldBeEqualTo 1
+        }
+    }
+
+    @Test
+    fun `owner cancellation lets a waiter take over without an orphan flight`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        var pending = CompletableFuture<ListTopicsResponse>()
+        val calls = AtomicInteger()
+        val expectedArn = topicArn("orders")
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+            if (calls.incrementAndGet() == 1) pending else completedList(expectedArn)
+        }
+        val resolver = resolver(client, NoopSnsTopicArnCache)
+
+        repeat(20) {
+            pending = CompletableFuture()
+            calls.set(0)
+            val owner = async { resolver.resolve("orders") }
+            val waiter = async { resolver.resolve("orders") }
+            repeat(2) { yield() }
+
+            calls.get() shouldBeEqualTo 1
+            owner.cancelAndJoin()
+            waiter.await() shouldBeEqualTo expectedArn
+            calls.get() shouldBeEqualTo 2
+        }
+    }
+
+    @Test
+    fun `timeout cancellation preserves identity and does not poison the next lookup`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val pending = CompletableFuture<ListTopicsResponse>()
+        var calls = 0
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+            calls += 1
+            if (calls == 1) pending else completedList(topicArn("orders"))
+        }
+        val resolver = resolver(client, NoopSnsTopicArnCache)
+        val timedOut = async {
+            withTimeout(1) { resolver.resolve("orders") }
+        }
+        yield()
+
+        calls shouldBeEqualTo 1
+        assertFailsWith<TimeoutCancellationException> { timedOut.await() }
+        resolver.resolve("orders") shouldBeEqualTo topicArn("orders")
+        calls shouldBeEqualTo 2
+    }
+
+    @Test
+    fun `invalidate and clear prevent stale late writes under repeated load`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        var pending = CompletableFuture<ListTopicsResponse>()
+        val calls = AtomicInteger()
+        val freshArn = topicArn("orders")
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+            if (calls.incrementAndGet() == 1) pending else completedList(freshArn)
+        }
+        val resolver = resolver(client)
+
+        repeat(20) { round ->
+            pending = CompletableFuture()
+            calls.set(0)
+            val stale = async { resolver.resolve("orders") }
+            yield()
+
+            if (round % 2 == 0) resolver.invalidate("orders") else resolver.clear()
+            pending.complete(ListTopicsResponse.builder().build())
+            stale.await().shouldBeNull()
+            resolver.resolve("orders") shouldBeEqualTo freshArn
+            calls.get() shouldBeEqualTo 2
+            resolver.invalidate("orders")
+        }
+    }
+
+    @Test
+    fun `evicted entries keep overlapping flights single flight under repeated load`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        var pending = CompletableFuture<ListTopicsResponse>()
+        val calls = AtomicInteger()
+        val ordersArn = topicArn("orders")
+        val paymentsArn = topicArn("payments")
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+            when (calls.incrementAndGet()) {
+                1 -> completedList(ordersArn)
+                2 -> completedList(paymentsArn)
+                else -> pending
+            }
+        }
+
+        repeat(20) {
+            pending = CompletableFuture()
+            calls.set(0)
+            val resolver = resolver(
+                client,
+                InMemorySnsTopicArnCache(maxSize = 1, ttl = Duration.ofMinutes(5)),
+            )
+            resolver.resolve("orders") shouldBeEqualTo ordersArn
+            resolver.resolve("payments") shouldBeEqualTo paymentsArn
+
+            val first = async { resolver.resolve("orders") }
+            val second = async { resolver.resolve("orders") }
+            yield()
+            calls.get() shouldBeEqualTo 3
+
+            pending.complete(completedList(ordersArn).join())
+            first.await() shouldBeEqualTo ordersArn
+            second.await() shouldBeEqualTo ordersArn
+            calls.get() shouldBeEqualTo 3
+        }
+    }
+
+    private fun resolver(
+        client: SnsAsyncClient,
+        cache: SnsTopicArnCache = InMemorySnsTopicArnCache(maxSize = 16, ttl = Duration.ofMinutes(5)),
+    ): SnsTopicArnResolver =
+        SnsTopicArnResolver(
+            snsAsyncClient = client,
+            cache = cache,
+            scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "000000000123"),
+        )
+
+    private fun completedList(topicArn: String): CompletableFuture<ListTopicsResponse> =
+        CompletableFuture.completedFuture(
+            ListTopicsResponse.builder()
+                .topics(Topic.builder().topicArn(topicArn).build())
+                .build(),
+        )
+
+    private fun completedList(topicArns: List<String>): CompletableFuture<ListTopicsResponse> =
+        CompletableFuture.completedFuture(
+            ListTopicsResponse.builder()
+                .topics(topicArns.map { Topic.builder().topicArn(it).build() })
+                .build(),
+        )
+
+    private fun topicArn(topicName: String): String =
+        "arn:aws:sns:us-east-1:000000000123:$topicName"
 }
