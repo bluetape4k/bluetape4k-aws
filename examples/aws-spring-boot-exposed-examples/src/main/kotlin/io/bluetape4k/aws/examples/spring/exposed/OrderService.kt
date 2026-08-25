@@ -5,7 +5,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
 
 /**
- * Owns transaction boundaries for the Spring Boot Exposed example.
+ * Spring Boot Exposed 예제의 transaction 경계를 소유합니다.
  */
 @Service
 class OrderService(

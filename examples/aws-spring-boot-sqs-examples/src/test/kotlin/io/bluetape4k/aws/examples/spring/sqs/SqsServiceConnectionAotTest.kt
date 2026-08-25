@@ -9,7 +9,7 @@ import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.testcontainers.junit.jupiter.Container
 
-/** AOT-only declaration contract; this source deliberately has no Testcontainers extension. */
+/** AOT 전용 선언 계약이며 이 소스는 의도적으로 Testcontainers extension을 사용하지 않습니다. */
 @ExtendWith(SpringExtension::class)
 @ContextConfiguration(classes = [AwsServiceConnectionAotConfiguration::class])
 class SqsServiceConnectionAotTest {

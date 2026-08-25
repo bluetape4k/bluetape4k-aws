@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/** SQS queue, SNS fanout, DLQ와 listener 상태를 HTTP로 노출합니다. */
 @RestController
 @RequestMapping("/spring/sqs")
 class SqsSnsExampleController(

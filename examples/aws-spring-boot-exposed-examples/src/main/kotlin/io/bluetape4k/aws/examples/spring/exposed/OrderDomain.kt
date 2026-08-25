@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.examples.spring.exposed
 
 import io.bluetape4k.exposed.jdbc.repository.LongJdbcRepository
+import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireNotBlank
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
@@ -9,7 +10,7 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import java.io.Serializable
 
 /**
- * Lifecycle states used by the example order API.
+ * 예제 주문 API에서 사용하는 생명주기 상태입니다.
  */
 enum class OrderStatus {
     CREATED,
@@ -18,7 +19,7 @@ enum class OrderStatus {
 }
 
 /**
- * Request body used to create an example order.
+ * 예제 주문을 생성할 때 사용하는 요청 본문입니다.
  */
 data class OrderRequest(
     val customerId: String,
@@ -36,7 +37,7 @@ data class OrderRequest(
 }
 
 /**
- * Record returned by the example order repository.
+ * 예제 주문 저장소가 반환하는 주문 레코드입니다.
  */
 data class OrderRecord(
     val id: Long = 0L,
@@ -47,7 +48,7 @@ data class OrderRecord(
 
     init {
         customerId.requireNotBlank("customerId")
-        require(id >= 0L) { "id must be zero or greater: $id" }
+        id.requireGe(0L, "id")
     }
 
     companion object {
@@ -56,7 +57,7 @@ data class OrderRecord(
 }
 
 /**
- * Exposed table for the Spring Boot order example.
+ * Spring Boot 주문 예제가 사용하는 Exposed 테이블입니다.
  */
 object OrdersTable: LongIdTable("spring_example_orders") {
     val customerId = varchar("customer_id", 96)
@@ -65,7 +66,7 @@ object OrdersTable: LongIdTable("spring_example_orders") {
 }
 
 /**
- * JDBC repository used only inside caller-owned Exposed transactions.
+ * 호출자가 소유한 Exposed transaction 안에서만 사용하는 JDBC 저장소입니다.
  */
 object OrderRepository: LongJdbcRepository<OrderRecord> {
 

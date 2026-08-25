@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 
 /**
- * HTTP API for the Spring Boot Exposed order example.
+ * Spring Boot Exposed 주문 예제가 제공하는 HTTP API입니다.
  */
 @RestController
 @RequestMapping("/orders")

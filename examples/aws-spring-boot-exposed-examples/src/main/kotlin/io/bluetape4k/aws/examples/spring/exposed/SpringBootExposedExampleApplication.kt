@@ -4,13 +4,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 /**
- * Spring Boot application that demonstrates the AWS Exposed auto-configuration.
+ * AWS Exposed auto-configuration을 보여주는 Spring Boot 애플리케이션입니다.
  */
 @SpringBootApplication
 class SpringBootExposedExampleApplication
 
 /**
- * Starts the Spring Boot Exposed example application.
+ * Spring Boot Exposed 예제 애플리케이션을 실행합니다.
  */
 fun main(args: Array<String>) {
     runApplication<SpringBootExposedExampleApplication>(*args)
