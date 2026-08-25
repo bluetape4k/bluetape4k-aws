@@ -150,6 +150,43 @@ in follow-up issue #515 and are not completion evidence for this feature.
 
 SNS publish helpers and HTTP parsing are separate concerns. Verify SNS signatures before processing callbacks. SES senders expose coroutine and JavaMail-style adapters; do not retry non-idempotent sends blindly.
 
+### SNS topic ARN resolver and cache (Unreleased/develop)
+
+`SnsOperations.findTopicArn` accepts a topic name or an explicit SNS ARN. Name
+lookups use `SnsTopicArnResolver` with paginated `ListTopics`, a bounded
+scope-aware TTL/LRU cache, and a per-topic single-flight. The default cache is
+enabled with 256 entries and a five-minute TTL; `topic-arn-cache.enabled=false`
+disables persistent entries but not duplicate lookup suppression. A successful
+topic create invalidates the name entry so eventual consistency remains visible
+as a documented null or SDK failure instead of a stale negative value.
+
+Configure `account-id` to enforce same-account checks. Explicit ARN input fails
+closed when the account is unknown unless
+`allow-cross-account-topic-arn=true` is an intentional opt-in. `ListTopics`
+results are still checked for SNS ARN shape and configured region/account; an
+effective region is required for explicit ARN validation. A custom
+`SnsTopicArnCache` or `SnsTopicArnResolver` bean takes precedence as a scoped
+configuration override, but it is not a behavior-preserving rollback by itself.
+For rollback, provide a custom `SnsOperations` implementation or redeploy the
+last-known-good artifact; `bluetape4k.aws.sns.enabled=false` disables the
+complete SNS auto-configuration. Terminal lookup failures emit only hashed
+scope/topic dimensions and exception type; raw ARN, topic name, endpoint
+credentials, and AWS error messages are not logged.
+
+```yaml
+bluetape4k:
+  aws:
+    sns:
+      enabled: true
+      region: ap-northeast-2
+      account-id: 123456789012
+      allow-cross-account-topic-arn: false
+      topic-arn-cache:
+        enabled: true
+        max-size: 256
+        ttl: 5m
+```
+
 ### SNS batch conversion (Unreleased/develop)
 
 `SnsBatchMessageConverter` is an opt-in, no-network conversion boundary from

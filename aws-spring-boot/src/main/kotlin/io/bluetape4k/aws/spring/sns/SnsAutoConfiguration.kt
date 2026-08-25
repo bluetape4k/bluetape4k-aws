@@ -80,11 +80,84 @@ class SnsAutoConfiguration {
             .build()
 
     @Bean
+    @ConditionalOnMissingBean(SnsTopicArnCache::class)
+    fun snsTopicArnCache(properties: SnsProperties): SnsTopicArnCache =
+        if (properties.topicArnCache.enabled) {
+            InMemorySnsTopicArnCache(
+                maxSize = properties.topicArnCache.maxSize,
+                ttl = properties.topicArnCache.ttl,
+            )
+        } else {
+            NoopSnsTopicArnCache
+        }
+
+    /**
+     * 최종 SDK client identity와 resolver scope가 달라지지 않도록 검증합니다.
+     * 명시된 endpoint/region을 바꾸는 customizer는 fail-fast하며, region을
+     * 설정하지 않은 경우에는 AWS SDK가 선택한 최종 region을 resolver scope로 사용합니다.
+     * 그런 client에는 명시적인 custom resolver bean을 함께 제공해야 합니다.
+     */
+    @Bean
+    @ConditionalOnMissingBean(SnsTopicArnResolver::class)
+    fun snsTopicArnResolver(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+        awsProperties: ObjectProvider<AwsProperties>,
+        cache: SnsTopicArnCache,
+        serviceConnectionDetails: ObjectProvider<SnsConnectionDetails>,
+    ): SnsTopicArnResolver {
+        val defaults = resolveServiceClientDefaults(
+            connectionDetails = serviceConnectionDetails,
+            awsProperties = awsProperties,
+            serviceName = "sns",
+            serviceRegion = properties.region,
+            serviceEndpointOverride = properties.endpointOverride,
+        )
+        val clientIdentity = runCatching {
+            val clientConfiguration = snsAsyncClient.serviceClientConfiguration()
+            clientConfiguration.region() to clientConfiguration.endpointOverride().orElse(null)
+        }.getOrElse { cause ->
+            throw IllegalStateException(
+                "SNS client identity is unavailable; provide a custom SnsTopicArnResolver " +
+                    "for a client with an uninspectable configuration.",
+                cause,
+            )
+        }
+        val actualRegion = clientIdentity.first
+        val actualEndpointOverride = clientIdentity.second
+        require(
+            (defaults.region == null || actualRegion == defaults.region) &&
+                actualEndpointOverride == defaults.endpointOverride,
+        ) {
+            "SNS client customizer must not change explicitly configured endpoint or region after AWS defaults " +
+                "are applied; " +
+                "provide a custom SnsTopicArnResolver for a different client identity."
+        }
+        val scope = SnsTopicArnResolverScope(
+            endpointOverride = actualEndpointOverride,
+            region = actualRegion?.id(),
+            accountId = properties.accountId,
+        )
+        return SnsTopicArnResolver(
+            snsAsyncClient = snsAsyncClient,
+            cache = cache,
+            scope = scope,
+            allowCrossAccountTopicArn = properties.allowCrossAccountTopicArn,
+        )
+    }
+
+    @Bean
     @ConditionalOnMissingBean(SnsOperations::class)
     fun snsCoroutinesTemplate(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
+        topicArnResolver: SnsTopicArnResolver,
     ): SnsCoroutinesTemplate =
-        SnsCoroutinesTemplate(snsAsyncClient, properties)
+        SnsCoroutinesTemplate(
+            snsAsyncClient,
+            properties,
+            topicArnResolver,
+            DefaultSnsBatchExecutionStrategy,
+        )
 
 }

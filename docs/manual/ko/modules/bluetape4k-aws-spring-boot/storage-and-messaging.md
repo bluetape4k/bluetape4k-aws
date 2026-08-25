@@ -149,6 +149,43 @@ latency·cleanup telemetry와 heap/throughput 측정은 후속 이슈 #515에서
 
 SNS publish와 HTTP parsing은 서로 다른 작업입니다. callback을 처리하기 전에 SNS 서명을 검증해야 합니다. SES sender는 coroutine과 JavaMail 방식 adapter를 제공하지만 멱등하지 않은 전송을 무작정 재시도하면 안 됩니다.
 
+### SNS topic ARN resolver와 cache (Unreleased/develop)
+
+`SnsOperations.findTopicArn`은 topic name 또는 명시적 SNS ARN을 받습니다. name
+조회는 pagination을 사용하는 `SnsTopicArnResolver`, scope를 포함한 bounded
+TTL/LRU cache, topic별 single-flight를 통과합니다. 기본 cache는 활성화되어
+256 entry와 5분 TTL을 사용하며 `topic-arn-cache.enabled=false`로 영속 entry만
+끄고 중복 조회 억제는 유지할 수 있습니다. topic 생성이 성공하면 name entry를
+무효화하므로 eventual consistency에 따른 null 또는 SDK 오류가 stale negative
+값으로 숨겨지지 않습니다.
+
+같은 계정 검증을 적용하려면 `account-id`를 설정하세요. account를 모르는
+explicit ARN은 `allow-cross-account-topic-arn=true`를 의도적으로 opt-in하지
+않는 한 fail-closed 됩니다. explicit ARN 검증에는 wildcard와 미확인 region을
+막기 위한 유효한 `region`도 필요합니다. `ListTopics` 결과도 SNS ARN 형식과
+설정된 region/account를 검증합니다. 사용자 정의 `SnsTopicArnCache` 또는
+`SnsTopicArnResolver` bean은 범위를 좁힌 구성 override로 우선하지만, 그 자체로
+동작을 보존하는 rollback을 제공하지는 않습니다. rollback에는 custom
+`SnsOperations` 구현을 제공하거나 last-known-good artifact를 재배포하세요.
+전체 SNS 자동 설정을 끄려면 `bluetape4k.aws.sns.enabled=false`를 사용합니다.
+terminal 조회 실패는 hash 처리한 scope/topic 차원과 exception type만 기록하고
+raw ARN, topic name, endpoint credential, AWS error message는 로그에 남기지
+않습니다.
+
+```yaml
+bluetape4k:
+  aws:
+    sns:
+      enabled: true
+      region: ap-northeast-2
+      account-id: 123456789012
+      allow-cross-account-topic-arn: false
+      topic-arn-cache:
+        enabled: true
+        max-size: 256
+        ttl: 5m
+```
+
 ### SNS batch 변환 (Unreleased/develop)
 
 `SnsBatchMessageConverter`는 Spring `Message<*>`를 typed

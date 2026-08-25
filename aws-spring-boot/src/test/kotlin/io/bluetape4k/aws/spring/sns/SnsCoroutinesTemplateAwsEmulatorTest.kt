@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sns
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldEndWith
 import io.bluetape4k.assertions.shouldHaveSize
@@ -61,6 +62,22 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
                     )
                 )
                 published.messageId().shouldNotBeBlank()
+            }
+        }
+    }
+
+    @Test
+    fun `create invalidates a previously cached negative lookup`() {
+        contextRunner().run { context ->
+            val operations = context.getBean(SnsOperations::class.java)
+
+            runSuspendIO {
+                val topicName = "negative-${UUID.randomUUID()}"
+                operations.findTopicArn(topicName).shouldBeNull()
+
+                val topicArn = operations.createTopic(topicName)
+
+                operations.findTopicArn(topicName) shouldBeEqualTo topicArn
             }
         }
     }

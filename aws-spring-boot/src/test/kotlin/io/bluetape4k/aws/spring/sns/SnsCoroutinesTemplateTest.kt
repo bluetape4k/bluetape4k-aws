@@ -6,6 +6,8 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -14,6 +16,8 @@ import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
+import software.amazon.awssdk.services.sns.model.CreateTopicRequest
+import software.amazon.awssdk.services.sns.model.CreateTopicResponse
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import software.amazon.awssdk.services.sns.model.PublishBatchRequest
 import software.amazon.awssdk.services.sns.model.PublishBatchResponse
@@ -220,6 +224,67 @@ class SnsCoroutinesTemplateTest {
 
         error.message.orEmpty() shouldBeEqualTo
             "SNS HTTP message type Notification cannot confirm a subscription."
+    }
+
+    @Test
+    fun `findTopicArn delegates to injected resolver`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val resolver = mockk<SnsTopicArnResolver>()
+        val arn = "arn:aws:sns:us-east-1:000000000000:orders"
+        coEvery { resolver.findTopicArn("orders") } returns arn
+
+        val result = SnsCoroutinesTemplate(
+            snsAsyncClient = client,
+            properties = SnsProperties(region = "us-east-1"),
+            topicArnResolver = resolver,
+            batchExecutionStrategy = DefaultSnsBatchExecutionStrategy,
+        ).findTopicArn("orders")
+
+        result shouldBeEqualTo arn
+        coVerify(exactly = 1) { resolver.findTopicArn("orders") }
+        verify(exactly = 0) {
+            client.listTopics(any<Consumer<software.amazon.awssdk.services.sns.model.ListTopicsRequest.Builder>>())
+        }
+    }
+
+    @Test
+    fun `findTopicArn accepts explicit arn through resolver`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val resolver = mockk<SnsTopicArnResolver>()
+        val arn = "arn:aws:sns:us-east-1:000000000000:orders"
+        coEvery { resolver.resolve(arn) } returns arn
+
+        val result = SnsCoroutinesTemplate(
+            snsAsyncClient = client,
+            properties = SnsProperties(region = "us-east-1"),
+            topicArnResolver = resolver,
+            batchExecutionStrategy = DefaultSnsBatchExecutionStrategy,
+        ).findTopicArn(arn)
+
+        result shouldBeEqualTo arn
+        coVerify(exactly = 1) { resolver.resolve(arn) }
+        verify(exactly = 0) {
+            client.listTopics(any<Consumer<software.amazon.awssdk.services.sns.model.ListTopicsRequest.Builder>>())
+        }
+    }
+
+    @Test
+    fun `createTopic invalidates resolver after successful create`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val resolver = mockk<SnsTopicArnResolver>(relaxed = true)
+        val arn = "arn:aws:sns:us-east-1:000000000000:orders"
+        every { client.createTopic(any<Consumer<CreateTopicRequest.Builder>>()) } returns
+            CompletableFuture.completedFuture(CreateTopicResponse.builder().topicArn(arn).build())
+
+        val result = SnsCoroutinesTemplate(
+            snsAsyncClient = client,
+            properties = SnsProperties(region = "us-east-1"),
+            topicArnResolver = resolver,
+            batchExecutionStrategy = DefaultSnsBatchExecutionStrategy,
+        ).createTopic("orders")
+
+        result shouldBeEqualTo arn
+        verify(exactly = 1) { resolver.invalidate("orders") }
     }
 
     private fun template(client: SnsAsyncClient): SnsCoroutinesTemplate =

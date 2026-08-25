@@ -21,11 +21,20 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
  * val topicArn = sns.createConfiguredTopic("orders")
  * sns.publish(SnsPublishRequest(topicArn = topicArn, message = orderJson))
  * ```
+ *
+ * Java 호출부에서 세 번째 인자로 `null`을 전달하면 strategy와 resolver
+ * overload가 모호해질 수 있으므로, 명시적 cast를 사용하거나 4-인자 생성자를
+ * 선택하세요.
+ *
+ * resolver를 직접 주입하지 않는 생성자는 `SnsAsyncClient`의 endpoint/region이
+ * [SnsProperties]와 일치한다고 가정합니다. client identity가 다르거나 검사할 수
+ * 없으면 resolver를 명시적으로 주입하는 생성자를 사용하세요.
  */
 @Suppress("TooManyFunctions")
 class SnsCoroutinesTemplate private constructor(
     private val snsAsyncClient: SnsAsyncClient,
     private val properties: SnsProperties,
+    private val topicArnResolver: SnsTopicArnResolver,
     private val batchExecutionStrategy: SnsBatchExecutionStrategy,
     @Suppress("UNUSED_PARAMETER") private val constructorMarker: Unit,
 ): SnsOperations {
@@ -34,26 +43,55 @@ class SnsCoroutinesTemplate private constructor(
     constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
-    ) : this(snsAsyncClient, properties, DefaultSnsBatchExecutionStrategy, Unit)
+    ) : this(
+        snsAsyncClient,
+        properties,
+        defaultSnsTopicArnResolver(snsAsyncClient, properties),
+        DefaultSnsBatchExecutionStrategy,
+        Unit,
+    )
 
     /** guarded typed port를 사용하는 명시적 SNS batch strategy 생성자입니다. */
     constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
         batchExecutionStrategy: SnsBatchExecutionStrategy,
-    ) : this(snsAsyncClient, properties, batchExecutionStrategy, Unit)
+    ) : this(
+        snsAsyncClient,
+        properties,
+        defaultSnsTopicArnResolver(snsAsyncClient, properties),
+        batchExecutionStrategy,
+        Unit,
+    )
+
+    /** resolver를 주입하고 기본 bounded batch strategy를 사용하는 생성자입니다. */
+    constructor(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+        topicArnResolver: SnsTopicArnResolver,
+    ) : this(snsAsyncClient, properties, topicArnResolver, DefaultSnsBatchExecutionStrategy, Unit)
+
+    /** resolver와 명시적 SNS batch strategy를 함께 주입하는 생성자입니다. */
+    constructor(
+        snsAsyncClient: SnsAsyncClient,
+        properties: SnsProperties,
+        topicArnResolver: SnsTopicArnResolver,
+        batchExecutionStrategy: SnsBatchExecutionStrategy,
+    ) : this(snsAsyncClient, properties, topicArnResolver, batchExecutionStrategy, Unit)
 
     override suspend fun createTopic(
         topicName: String,
         attributes: Map<String, String>,
     ): String {
         topicName.requireTopicName()
-        return snsAsyncClient.createTopic {
+        val topicArn = snsAsyncClient.createTopic {
             it.name(topicName)
             if (attributes.isNotEmpty()) {
                 it.attributes(attributes)
             }
         }.await().topicArn()
+        topicArnResolver.invalidate(topicName)
+        return topicArn
     }
 
     override suspend fun createFifoTopic(
@@ -94,21 +132,11 @@ class SnsCoroutinesTemplate private constructor(
     }
 
     override suspend fun findTopicArn(topicName: String): String? {
-        topicName.requireTopicName()
-        val suffix = ":$topicName"
-        var nextToken: String? = null
-        do {
-            val response = snsAsyncClient.listTopics {
-                nextToken?.let(it::nextToken)
-            }.await()
-            response.topics().orEmpty()
-                .mapNotNull { it.topicArn() }
-                .firstOrNull { it.endsWith(suffix) }
-                ?.let { return it }
-            nextToken = response.nextToken()
-        } while (!nextToken.isNullOrBlank())
-
-        return null
+        return if (topicName.trim().startsWith("arn:")) {
+            topicArnResolver.resolve(topicName)
+        } else {
+            topicArnResolver.findTopicArn(topicName)
+        }
     }
 
     override suspend fun publish(request: SnsPublishRequest): PublishResponse =
@@ -207,3 +235,25 @@ class SnsCoroutinesTemplate private constructor(
         else -> SnsBatchExecutionContractException(SnsBatchExecutionContractError.STRATEGY_FAILURE)
     }
 }
+
+private fun defaultSnsTopicArnResolver(
+    snsAsyncClient: SnsAsyncClient,
+    properties: SnsProperties,
+): SnsTopicArnResolver =
+    SnsTopicArnResolver(
+        snsAsyncClient = snsAsyncClient,
+        cache = if (properties.topicArnCache.enabled) {
+            InMemorySnsTopicArnCache(
+                maxSize = properties.topicArnCache.maxSize,
+                ttl = properties.topicArnCache.ttl,
+            )
+        } else {
+            NoopSnsTopicArnCache
+        },
+        scope = SnsTopicArnResolverScope(
+            endpointOverride = properties.endpointOverride,
+            region = properties.region,
+            accountId = properties.accountId,
+        ),
+        allowCrossAccountTopicArn = properties.allowCrossAccountTopicArn,
+    )

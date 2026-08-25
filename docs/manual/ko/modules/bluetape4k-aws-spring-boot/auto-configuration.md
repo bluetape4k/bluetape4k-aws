@@ -25,6 +25,30 @@ dependencies {
 
 `bluetape4k.aws` 아래의 `AwsProperties`가 enabled, region, endpoint override, 선택적인 web identity credentials를 제공합니다. 서비스별 properties가 공통 기본값보다 우선합니다. 서명 scope에는 region이 필요하므로 endpoint override를 사용할 때도 region을 설정해야 합니다.
 
+SNS에서는 `bluetape4k.aws.sns.enabled`가 전체 자동 설정을 제어하며 기본값은
+`true`입니다. 애플리케이션 bean이 없으면 모듈이 `SnsTopicArnCache`,
+`SnsTopicArnResolver`, coroutine template을 등록합니다.
+`topic-arn-cache.enabled`의 기본값은 `true`이고 bounded cache는 256 entry와
+5분 TTL을 사용합니다. `false`로 설정해도 영속 entry만 끄고 topic별
+single-flight는 유지합니다. 같은 계정 ARN 검증을 사용하려면 `account-id`를
+설정하세요. account ID가 없으면 명시적 ARN은
+`allow-cross-account-topic-arn=true`를 의도적으로 켜지 않는 한 거부됩니다.
+명시적 ARN 검증에는 wildcard와 미확인 region을 막기 위한 유효한 `region`도
+필요합니다.
+사용자 정의 cache/resolver bean은 범위를 좁힌 구성 override일 뿐 동작을
+보존하는 rollback 경로는 아닙니다. rollback에는 custom `SnsOperations` 구현을
+제공하거나 last-known-good artifact를 재배포하세요. 전체 SNS bean을 끄려면
+`enabled=false`를 사용합니다. 조회 실패 로그에는 hash 처리한 scope/topic 차원과
+exception type만 기록됩니다.
+AWS client customizer는 명시적으로 설정한 SNS endpoint와 region identity를
+기본값 적용 후 바꾸면 안 됩니다. 설정한 region이 없으면 resolver가 AWS SDK
+provider chain이 최종 선택한 region을 scope로 사용합니다. identity를 바꾸는
+customizer가 의도된 경우 custom `SnsTopicArnResolver`를 함께 제공하세요.
+endpoint 또는 region을 확인할 수 없는 custom client도 fail-fast하며 명시적인
+resolver가 필요합니다. `SnsCoroutinesTemplate`을 직접 생성할 때는 client의
+endpoint/region이 `SnsProperties`와 일치해야 하며, 다른 client나 검사할 수 없는
+client에는 resolver 주입 생성자를 사용하세요.
+
 ## Back-off는 정상 동작이다
 
 예상한 bean이 없다면 수동 bean부터 추가하지 말고 condition report를 확인하세요. 흔한 원인은 `compileOnly` 서비스 SDK 누락, disabled property, 또는 애플리케이션이 같은 타입의 bean을 제공해 자동 설정이 물러난 경우입니다.
