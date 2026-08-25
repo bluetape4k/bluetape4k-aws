@@ -31,15 +31,16 @@ class AwsRdsIamAuthenticationTest {
 
     @Test
     fun `rds iam properties validate invalid settings`() {
-        assertFailsWith<IllegalArgumentException> {
+        val invalidPort = assertFailsWith<IllegalArgumentException> {
             AwsRdsIamAuthenticationProperties(
                 region = "ap-northeast-2",
                 hostname = "rds.example.com",
                 port = 0,
             )
         }
+        invalidPort.message.orEmpty() shouldContain "port"
 
-        assertFailsWith<IllegalArgumentException> {
+        val invalidTokenTtl = assertFailsWith<IllegalArgumentException> {
             AwsRdsIamAuthenticationProperties(
                 region = "ap-northeast-2",
                 hostname = "rds.example.com",
@@ -47,6 +48,27 @@ class AwsRdsIamAuthenticationTest {
                 tokenTtl = Duration.ofMinutes(16),
             )
         }
+        invalidTokenTtl.message.orEmpty() shouldContain "tokenTtl"
+
+        val invalidTokenTtlLowerBound = assertFailsWith<IllegalArgumentException> {
+            AwsRdsIamAuthenticationProperties(
+                region = "ap-northeast-2",
+                hostname = "rds.example.com",
+                port = 5432,
+                tokenTtl = Duration.ZERO,
+            )
+        }
+        invalidTokenTtlLowerBound.message.orEmpty() shouldContain "tokenTtl"
+
+        val invalidRefreshBeforeExpiry = assertFailsWith<IllegalArgumentException> {
+            AwsRdsIamAuthenticationProperties(
+                region = "ap-northeast-2",
+                hostname = "rds.example.com",
+                port = 5432,
+                refreshBeforeExpiry = Duration.ZERO,
+            )
+        }
+        invalidRefreshBeforeExpiry.message.orEmpty() shouldContain "refreshBeforeExpiry"
 
         assertFailsWith<IllegalArgumentException> {
             AwsDatabaseConnectionProperties(
@@ -61,6 +83,22 @@ class AwsRdsIamAuthenticationTest {
                 rdsIam = rdsIamProperties(),
             )
         }
+    }
+
+    @Test
+    fun `rds iam validation accepts port boundaries and rejects token request port`() {
+        rdsIamProperties().copy(port = 1).port shouldBeEqualTo 1
+        rdsIamProperties().copy(port = 65_535).port shouldBeEqualTo 65_535
+
+        val invalidTokenRequestPort = assertFailsWith<IllegalArgumentException> {
+            AwsRdsIamAuthTokenRequest(
+                region = "ap-northeast-2",
+                hostname = "database.example.com",
+                port = 65_536,
+                username = "app_user",
+            )
+        }
+        invalidTokenRequestPort.message.orEmpty() shouldContain "port"
     }
 
     @Test
