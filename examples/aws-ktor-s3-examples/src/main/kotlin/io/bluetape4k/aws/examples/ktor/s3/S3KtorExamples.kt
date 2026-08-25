@@ -107,12 +107,12 @@ object S3KtorExamples {
 }
 
 /**
- * In-memory [S3KtorDataKeyProvider] for local examples and tests.
+ * 로컬 예제와 테스트에서 사용하는 메모리 기반 [S3KtorDataKeyProvider]입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * This provider keeps plaintext data keys only in process memory and returns a
- * deterministic demo key. It is intentionally not a production KMS substitute.
+ * 이 provider는 평문 데이터 키를 프로세스 메모리에만 보관하고 결정적인 demo key를
+ * 반환합니다. production KMS를 대체하지 않도록 의도적으로 제한된 예제 구현입니다.
  */
 class InMemoryS3DataKeyProvider(
     private val keyId: String = "local-demo-key",

@@ -29,13 +29,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Ktor SQS consumer example module.
+ * Ktor SQS consumer 예제 모듈입니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * Installs [SqsConsumer] with manual acknowledgement enabled, exposes routes for
- * publishing and queue management, and records consumer lifecycle events so
- * example clients can inspect ack, nack, retry, interceptor, and observer flows.
+ * 수동 acknowledgement를 활성화한 [SqsConsumer]를 설치하고 publish/queue 관리 route를
+ * 노출합니다. consumer lifecycle event를 기록하므로 예제 client가 ack, nack, retry,
+ * interceptor와 observer 흐름을 확인할 수 있습니다.
  */
 fun Application.sqsExampleModule(
     sqsClient: SqsAsyncClient,

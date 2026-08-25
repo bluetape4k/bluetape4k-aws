@@ -42,14 +42,13 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.InputLogEvent
 import java.io.Serializable
 
 /**
- * Installs Ktor routes that exercise the remaining AWS service plugin coverage.
+ * 남은 AWS service plugin coverage를 실행하는 Ktor route를 설치합니다.
  *
- * ## Behavior / Contract
+ * ## 동작/계약
  *
- * The module installs SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, and
- * STS plugins with application-owned operation facades. Routes call the plugin
- * accessors, so tests and sample clients cover the same Ktor integration path
- * that production applications use.
+ * application-owned operation facade를 사용하는 SES/v2, SNS, CloudWatch, CloudWatch Logs,
+ * Kinesis와 STS plugin을 설치합니다. route는 plugin accessor를 호출하므로 테스트와
+ * sample client가 production application과 같은 Ktor integration path를 검증합니다.
  */
 fun Application.serviceCoverageExampleModule(
     sesOperations: SesKtorOperations,
@@ -176,7 +175,7 @@ fun Application.serviceCoverageExampleModule(
 }
 
 /**
- * Static resource names used by the service coverage routes.
+ * service coverage route에서 사용하는 고정 resource 이름입니다.
  */
 data class ServiceCoverageExampleOptions(
     val namespace: String = "Bluetape4k/AwsKtorExamples",
@@ -195,7 +194,7 @@ data class ServiceCoverageExampleOptions(
     }
 }
 
-/** Request body for the SES/v2 email route. */
+/** SES/v2 email route의 요청 본문입니다. */
 data class SendEmailExampleRequest(
     val to: String,
     val subject: String,
@@ -212,14 +211,14 @@ data class SendEmailExampleRequest(
     }
 }
 
-/** Response body for the SES/v2 email route. */
+/** SES/v2 email route의 응답 본문입니다. */
 data class SendEmailExampleResponse(val messageId: String): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
     }
 }
 
-/** Request body for the SNS publish route. */
+/** SNS publish route의 요청 본문입니다. */
 data class PublishNotificationExampleRequest(
     val message: String,
     val subject: String? = null,
@@ -234,14 +233,14 @@ data class PublishNotificationExampleRequest(
     }
 }
 
-/** Response body for the SNS publish route. */
+/** SNS publish route의 응답 본문입니다. */
 data class PublishNotificationExampleResponse(val messageId: String): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
     }
 }
 
-/** Request body for the CloudWatch metric route. */
+/** CloudWatch metric route의 요청 본문입니다. */
 data class MetricExampleRequest(
     val metricName: String,
     val value: Double,
@@ -255,7 +254,7 @@ data class MetricExampleRequest(
     }
 }
 
-/** Response body for the CloudWatch metric route. */
+/** CloudWatch metric route의 응답 본문입니다. */
 data class MetricExampleResponse(
     val namespace: String,
     val acceptedCount: Int,
@@ -265,7 +264,7 @@ data class MetricExampleResponse(
     }
 }
 
-/** Request body for the CloudWatch Logs route. */
+/** CloudWatch Logs route의 요청 본문입니다. */
 data class LogEventExampleRequest(val message: String): Serializable {
     fun validated(): LogEventExampleRequest = apply {
         message.requireNotBlank("message")
@@ -276,7 +275,7 @@ data class LogEventExampleRequest(val message: String): Serializable {
     }
 }
 
-/** Response body for the CloudWatch Logs route. */
+/** CloudWatch Logs route의 응답 본문입니다. */
 data class LogEventExampleResponse(
     val logGroupName: String,
     val logStreamName: String,
@@ -287,7 +286,7 @@ data class LogEventExampleResponse(
     }
 }
 
-/** Request body for the Kinesis put-record route. */
+/** Kinesis put-record route의 요청 본문입니다. */
 data class StreamRecordExampleRequest(
     val partitionKey: String,
     val data: String,
@@ -302,7 +301,7 @@ data class StreamRecordExampleRequest(
     }
 }
 
-/** Response body for the Kinesis put-record route. */
+/** Kinesis put-record route의 응답 본문입니다. */
 data class StreamRecordExampleResponse(
     val sequenceNumber: String,
     val shardId: String,
@@ -312,7 +311,7 @@ data class StreamRecordExampleResponse(
     }
 }
 
-/** Response body for the STS identity route. */
+/** STS identity route의 응답 본문입니다. */
 data class CallerIdentityExampleResponse(
     val account: String,
     val arn: String,
