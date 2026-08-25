@@ -324,6 +324,12 @@ bluetape4k:
     sns:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
+      account-id: 123456789012
+      allow-cross-account-topic-arn: false
+      topic-arn-cache:
+        enabled: true
+        max-size: 256
+        ttl: 5m
       topics:
         orders.fifo:
           fifo: true
@@ -948,6 +954,30 @@ class OrderTopic(
     private fun processNotification(message: String) = Unit
 }
 ```
+
+`SnsOperations.findTopicArn` accepts a topic name or an explicit SNS ARN. Name
+lookups use a bounded, scoped TTL/LRU cache (default: enabled, 256 entries,
+5 minutes) and per-topic single-flight; setting
+`bluetape4k.aws.sns.topic-arn-cache.enabled=false` disables persistent cache
+storage but keeps duplicate lookup suppression. Configure `account-id` to
+enforce same-account ARN validation. Without it, explicit ARN input fails
+closed unless `allow-cross-account-topic-arn=true` is an intentional opt-in.
+Explicit ARN resolution also requires an effective `region` so wildcard or
+unknown-region ARNs cannot bypass the scope boundary.
+An application-provided SNS client whose endpoint or region cannot be inspected
+fails fast and requires an explicitly supplied resolver. If no region is
+configured, the resolver uses the final region selected by the AWS SDK provider
+chain; explicitly configured endpoint/region values must still match the client.
+Directly constructed `SnsCoroutinesTemplate` instances require their client
+identity to match `SnsProperties`; inject a resolver explicitly for a different
+or uninspectable client.
+Define a custom `SnsTopicArnResolver` or `SnsTopicArnCache` bean for a scoped
+configuration override; these beans do not by themselves provide a behavior-preserving
+rollback. For that rollback, provide a custom `SnsOperations` implementation or
+redeploy the last-known-good artifact. Set `bluetape4k.aws.sns.enabled=false` to
+disable the complete SNS auto-configuration. Terminal lookup failures emit only
+hashed scope/topic dimensions and exception type; raw ARN and topic names are not
+logged.
 
 #### SNS batch publishing
 

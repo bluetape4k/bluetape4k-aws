@@ -1,9 +1,15 @@
 package io.bluetape4k.aws.spring.sns
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotContain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -13,6 +19,7 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ListTopicsResponse
 import software.amazon.awssdk.services.sns.model.ListTopicsRequest
@@ -35,11 +42,11 @@ class SnsTopicArnResolverTest {
         val second = key("second")
         val third = key("third")
 
-        cache.put(first, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:123:first"))
+        cache.put(first, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:000000000123:first"))
         cache.put(second, SnsTopicArnCacheEntry.NotFound)
         cache.get(second) shouldBeEqualTo SnsTopicArnCacheEntry.NotFound
 
-        cache.put(third, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:123:third"))
+        cache.put(third, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:000000000123:third"))
         cache.get(first).shouldBeNull()
 
         clock.currentInstant = clock.currentInstant.plus(Duration.ofMinutes(6))
@@ -52,7 +59,7 @@ class SnsTopicArnResolverTest {
         val cache = InMemorySnsTopicArnCache(maxSize = 2, ttl = Duration.ofMinutes(5))
         val first = key("first")
         val second = key("second")
-        cache.put(first, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:123:first"))
+        cache.put(first, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:000000000123:first"))
         cache.put(second, SnsTopicArnCacheEntry.NotFound)
 
         cache.invalidate(first)
@@ -69,15 +76,15 @@ class SnsTopicArnResolverTest {
             calls += 1
             when (calls) {
                 1 -> completedList(
-                    topicArn = "arn:aws:sns:us-east-1:123:other",
+                    topicArn = "arn:aws:sns:us-east-1:000000000123:other",
                     nextToken = "page-2",
                 )
-                else -> completedList(topicArn = "arn:aws:sns:us-east-1:123:orders.fifo")
+                else -> completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders.fifo")
             }
         }
         val resolver = resolver(client)
 
-        resolver.resolve(" orders.fifo ") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders.fifo"
+        resolver.resolve(" orders.fifo ") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders.fifo"
         calls shouldBeEqualTo 2
     }
 
@@ -112,6 +119,12 @@ class SnsTopicArnResolverTest {
         assertFailsWith<IllegalArgumentException> {
             resolver.resolve("arn:aws:sns:us-east-1:123456789012:orders*")
         }
+        assertFailsWith<IllegalArgumentException> {
+            resolver.resolve("arn:*:sns:us-east-1:123456789012:orders")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            resolver.resolve("arn:aws:sns:*:123456789012:orders")
+        }
 
         val crossAccount = SnsTopicArnResolver(
             snsAsyncClient = client,
@@ -121,6 +134,86 @@ class SnsTopicArnResolverTest {
         )
         crossAccount.resolve("arn:aws:sns:us-east-1:456456456456:orders") shouldBeEqualTo
             "arn:aws:sns:us-east-1:456456456456:orders"
+    }
+
+    @Test
+    fun `explicit arn fails closed when resolver account is unknown`() = runTest {
+        val resolver = SnsTopicArnResolver(
+            snsAsyncClient = mockk(),
+            cache = NoopSnsTopicArnCache,
+            scope = SnsTopicArnResolverScope(region = "us-east-1"),
+        )
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            resolver.resolve("arn:aws:sns:us-east-1:123456789012:orders")
+        }
+        error.message.orEmpty() shouldBeEqualTo
+            "scope.accountId must be configured before resolving an explicit ARN unless cross-account topicArn is enabled."
+    }
+
+    @Test
+    fun `explicit arn fails closed when resolver region is unknown`() = runTest {
+        val resolver = SnsTopicArnResolver(
+            snsAsyncClient = mockk(),
+            cache = NoopSnsTopicArnCache,
+            scope = SnsTopicArnResolverScope(accountId = "123456789012"),
+        )
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            resolver.resolve("arn:aws:sns:us-east-1:123456789012:orders")
+        }
+        error.message.orEmpty() shouldBeEqualTo
+            "resolver region must be configured before resolving an explicit ARN."
+    }
+
+    @Test
+    fun `list topics result is validated against resolver scope`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
+            completedList(topicArn = "arn:aws:sns:eu-west-1:456456456456:orders")
+        val resolver = resolver(client)
+
+        assertFailsWith<IllegalArgumentException> { resolver.resolve("orders") }
+    }
+
+    @Test
+    fun `list topics account mismatch cannot be bypassed by cross account opt in`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
+            completedList(topicArn = "arn:aws:sns:us-east-1:456456456456:orders")
+        val resolver = SnsTopicArnResolver(
+            snsAsyncClient = client,
+            cache = NoopSnsTopicArnCache,
+            scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "123456789012"),
+            allowCrossAccountTopicArn = true,
+        )
+
+        val error = assertFailsWith<IllegalArgumentException> { resolver.resolve("orders") }
+        error.message.orEmpty() shouldBeEqualTo
+            "ListTopics returned topicArn account '456456456456' that does not match resolver account '123456789012'."
+    }
+
+    @Test
+    fun `list topics rejects malformed account and poisoned cache entries`() = runTest {
+        assertFailsWith<IllegalArgumentException> {
+            SnsTopicArnResolverScope(accountId = "123")
+        }
+
+        val malformedClient = mockk<SnsAsyncClient>()
+        every { malformedClient.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
+            completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+        assertFailsWith<IllegalArgumentException> { resolver(malformedClient).resolve("orders") }
+
+        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5))
+        val scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "123456789012")
+        val key = SnsTopicArnCacheKey(scope, "orders")
+        cache.put(key, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:eu-west-1:123456789012:orders"))
+        val cachedClient = mockk<SnsAsyncClient>()
+        val cachedResolver = resolver(cachedClient, cache, scope)
+
+        assertFailsWith<IllegalArgumentException> { cachedResolver.resolve("orders") }
+        cache.get(key).shouldBeNull()
+        verify(exactly = 0) { cachedClient.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) }
     }
 
     @Test
@@ -176,18 +269,18 @@ class SnsTopicArnResolverTest {
         var calls = 0
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
             calls += 1
-            completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+            completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
         val clock = MutableClock(Instant.parse("2026-05-13T00:00:00Z"))
         val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5), clock = clock)
         val resolver = resolver(client, cache)
 
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 1
 
         clock.currentInstant = clock.currentInstant.plus(Duration.ofMinutes(6))
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
@@ -200,14 +293,40 @@ class SnsTopicArnResolverTest {
             if (calls == 1) {
                 CompletableFuture.failedFuture(IllegalStateException("list failed"))
             } else {
-                completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+                completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
             }
         }
         val resolver = resolver(client)
 
         assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
+    }
+
+    @Test
+    fun `terminal lookup failure emits one redacted warning`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
+            CompletableFuture.failedFuture(IllegalStateException("raw AWS failure"))
+        val resolver = resolver(client)
+        val resolverLogger = LoggerFactory.getLogger(SnsTopicArnResolver::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = resolverLogger.level
+        resolverLogger.addAppender(appender)
+        resolverLogger.level = Level.WARN
+        try {
+            assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
+            val event = appender.list.single()
+            val message = event.formattedMessage
+            message.startsWith("SNS topic ARN lookup failed (scopeHash=").shouldBeTrue()
+            message shouldContain ", topicNameHash="
+            message shouldContain ", exceptionType=IllegalStateException)"
+            message shouldNotContain "orders"
+            message shouldNotContain "raw AWS failure"
+        } finally {
+            resolverLogger.detachAppender(appender)
+            resolverLogger.level = previousLevel
+        }
     }
 
     @Test
@@ -225,7 +344,7 @@ class SnsTopicArnResolverTest {
         yield()
 
         calls shouldBeEqualTo 1
-        pending.complete(completedList(topicArn = "arn:aws:sns:us-east-1:123:orders").join())
+        pending.complete(completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders").join())
         listOf(first.await(), second.await()).shouldHaveSize(2)
     }
 
@@ -244,9 +363,9 @@ class SnsTopicArnResolverTest {
         yield()
 
         calls shouldBeEqualTo 1
-        pending.complete(completedList(topicArn = "arn:aws:sns:us-east-1:123:orders").join())
-        first.await() shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
-        second.await() shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        pending.complete(completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders").join())
+        first.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
+        second.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 1
     }
 
@@ -292,8 +411,8 @@ class SnsTopicArnResolverTest {
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
             calls += 1
             when (calls) {
-                1 -> completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
-                2 -> completedList(topicArn = "arn:aws:sns:us-east-1:123:payments")
+                1 -> completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
+                2 -> completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:payments")
                 else -> pending
             }
         }
@@ -309,9 +428,9 @@ class SnsTopicArnResolverTest {
         yield()
         calls shouldBeEqualTo 3
 
-        pending.complete(completedList(topicArn = "arn:aws:sns:us-east-1:123:orders").join())
-        first.await() shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
-        second.await() shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        pending.complete(completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders").join())
+        first.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
+        second.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 3
     }
 
@@ -331,10 +450,10 @@ class SnsTopicArnResolverTest {
         yield()
 
         calls shouldBeEqualTo 2
-        orders.complete(completedList(topicArn = "arn:aws:sns:us-east-1:123:orders").join())
-        payments.complete(completedList(topicArn = "arn:aws:sns:us-east-1:123:payments").join())
-        first.await() shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
-        second.await() shouldBeEqualTo "arn:aws:sns:us-east-1:123:payments"
+        orders.complete(completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders").join())
+        payments.complete(completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:payments").join())
+        first.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
+        second.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:payments"
     }
 
     @Test
@@ -344,7 +463,7 @@ class SnsTopicArnResolverTest {
         var calls = 0
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
             calls += 1
-            if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+            if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
         val resolver = resolver(client)
         val inFlight = async { resolver.resolve("orders") }
@@ -355,7 +474,7 @@ class SnsTopicArnResolverTest {
         pending.complete(ListTopicsResponse.builder().build())
         inFlight.await().shouldBeNull()
 
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
@@ -366,7 +485,7 @@ class SnsTopicArnResolverTest {
         var calls = 0
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
             calls += 1
-            if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+            if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
         val resolver = resolver(client)
         val inFlight = async { resolver.resolve("orders") }
@@ -375,7 +494,7 @@ class SnsTopicArnResolverTest {
         pending.complete(ListTopicsResponse.builder().build())
         inFlight.await().shouldBeNull()
 
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
@@ -388,13 +507,13 @@ class SnsTopicArnResolverTest {
             if (calls == 1) {
                 CompletableFuture.failedFuture(IllegalStateException("temporary"))
             } else {
-                completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+                completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
             }
         }
         val resolver = resolver(client)
 
         assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
@@ -405,14 +524,14 @@ class SnsTopicArnResolverTest {
         var calls = 0
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
             calls += 1
-            if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+            if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
         val resolver = resolver(client)
         val cancelled = async { resolver.resolve("orders") }
         yield()
         cancelled.cancelAndJoin()
 
-        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
@@ -422,14 +541,20 @@ class SnsTopicArnResolverTest {
         var calls = 0
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
             calls += 1
-            completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+            completedList(
+                topicArn = if (calls == 1) {
+                    "arn:aws:sns:us-east-1:000000000123:orders"
+                } else {
+                    "arn:aws:sns:us-east-1:000000000456:orders"
+                },
+            )
         }
         val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5))
-        val first = resolver(client, cache, SnsTopicArnResolverScope(URI("http://one"), "us-east-1", "123"))
-        val second = resolver(client, cache, SnsTopicArnResolverScope(URI("http://two"), "us-east-1", "456"))
+        val first = resolver(client, cache, SnsTopicArnResolverScope(URI("http://one"), "us-east-1", "000000000123"))
+        val second = resolver(client, cache, SnsTopicArnResolverScope(URI("http://two"), "us-east-1", "000000000456"))
 
-        first.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
-        second.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:123:orders"
+        first.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
+        second.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000456:orders"
         calls shouldBeEqualTo 2
     }
 
@@ -439,11 +564,11 @@ class SnsTopicArnResolverTest {
         var calls = 0
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
             calls += 1
-            completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
+            completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
         val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5))
-        val first = resolver(client, cache, SnsTopicArnResolverScope(URI("http://same"), "us-east-1", "123"))
-        val second = resolver(client, cache, SnsTopicArnResolverScope(URI("http://same"), "us-east-1", "123"))
+        val first = resolver(client, cache, SnsTopicArnResolverScope(URI("http://same"), "us-east-1", "000000000123"))
+        val second = resolver(client, cache, SnsTopicArnResolverScope(URI("http://same"), "us-east-1", "000000000123"))
 
         first.resolve("orders")
         second.resolve("orders")
@@ -453,12 +578,12 @@ class SnsTopicArnResolverTest {
     private fun resolver(
         client: SnsAsyncClient,
         cache: SnsTopicArnCache = InMemorySnsTopicArnCache(maxSize = 16, ttl = Duration.ofMinutes(5)),
-        scope: SnsTopicArnResolverScope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "123"),
+        scope: SnsTopicArnResolverScope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "000000000123"),
     ): SnsTopicArnResolver = SnsTopicArnResolver(client, cache, scope)
 
     private fun key(topicName: String): SnsTopicArnCacheKey =
         SnsTopicArnCacheKey(
-            scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "123"),
+            scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "000000000123"),
             topicName = topicName,
         )
 

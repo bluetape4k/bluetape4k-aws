@@ -25,6 +25,29 @@ The application chooses the central BOM version and service SDKs. It does not ch
 
 `AwsProperties` under `bluetape4k.aws` supplies enabled, region, endpoint override, and optional web-identity credentials. Service-specific properties override the shared defaults. An endpoint override requires a region because signed requests still need a credential scope.
 
+For SNS, `bluetape4k.aws.sns.enabled` controls the complete auto-configuration
+and defaults to `true`. When no application bean is present, the module creates
+an `SnsTopicArnCache`, an `SnsTopicArnResolver`, and the coroutine template.
+`topic-arn-cache.enabled` defaults to `true` with a 256-entry, five-minute
+bounded cache; setting it to `false` disables persistent entries but keeps
+per-topic single-flight. Set `account-id` to enable same-account ARN checks.
+When it is absent, an explicit ARN is rejected unless
+`allow-cross-account-topic-arn=true` is deliberately enabled; an effective
+`region` is also required for explicit ARN validation. A custom cache or
+resolver bean is a scoped configuration override, not a behavior-preserving
+rollback. For that rollback, provide a custom `SnsOperations` implementation or
+redeploy the last-known-good artifact; set `enabled=false` to disable all SNS
+beans. Lookup failures log only hashed scope/topic dimensions and exception type.
+AWS client customizers must preserve explicitly configured SNS endpoint and region
+after defaults are applied; an identity-changing customizer fails fast. When no
+region is configured, the resolver uses the final region selected by the AWS SDK
+provider chain. Provide a custom `SnsTopicArnResolver` when a different client
+identity is intentional. A custom client whose endpoint or region cannot be
+inspected also fails fast and requires an explicitly supplied resolver. Directly
+constructed `SnsCoroutinesTemplate` instances require the client endpoint/region
+to match `SnsProperties`; inject a resolver explicitly for a different or
+uninspectable client.
+
 ## Back-off is a feature
 
 If an expected bean is missing, inspect the condition report before adding manual beans. Common causes are a missing `compileOnly` service SDK, disabled property, or an application-provided bean that intentionally makes auto-configuration back off.

@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.connection.SnsConnectionDetails
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -11,12 +12,15 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.services.sns.SnsAsyncClient
+import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
+import software.amazon.awssdk.regions.Region
 import java.net.URI
 
 class SnsAutoConfigurationTest {
@@ -109,14 +113,54 @@ class SnsAutoConfigurationTest {
 
     @Test
     fun `custom client bean backs off auto configured client`() {
+        val customClient = SnsAsyncClient.builder()
+            .region(Region.US_EAST_1)
+            .build()
+
+        try {
+            contextRunner
+                .withBean(SnsAsyncClient::class.java, { customClient })
+                .run { context ->
+                    context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 1
+                    context.getBean(SnsAsyncClient::class.java) shouldBeSameInstanceAs customClient
+                    context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
+                }
+        } finally {
+            customClient.close()
+        }
+    }
+
+    @Test
+    fun `uninspectable custom client fails resolver creation fast`() {
         val customClient = mockk<SnsAsyncClient>(relaxed = true)
+        every { customClient.serviceClientConfiguration() } throws
+            IllegalStateException("configuration unavailable")
 
         contextRunner
             .withBean(SnsAsyncClient::class.java, { customClient })
             .run { context ->
-                context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 1
-                context.getBean(SnsAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                context.startupFailure.shouldNotBeNull()
+                messages shouldContain "SNS client identity is unavailable"
+                messages shouldContain "custom SnsTopicArnResolver"
+            }
+    }
+
+    @Test
+    fun `custom resolver permits uninspectable custom client`() {
+        val customClient = mockk<SnsAsyncClient>(relaxed = true)
+        every { customClient.serviceClientConfiguration() } throws
+            IllegalStateException("configuration unavailable")
+        val customResolver = mockk<SnsTopicArnResolver>(relaxed = true)
+
+        contextRunner
+            .withBean(SnsAsyncClient::class.java, { customClient })
+            .withBean(SnsTopicArnResolver::class.java, { customResolver })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBean(SnsTopicArnResolver::class.java) shouldBeSameInstanceAs customResolver
             }
     }
 
@@ -188,10 +232,10 @@ class SnsAutoConfigurationTest {
             .run { context ->
                 val operations = context.getBean(SnsOperations::class.java)
 
-            val error = assertFailsWith<IllegalArgumentException> {
-                runSuspendIO {
-                    operations.createConfiguredTopic("orders")
-                }
+                val error = assertFailsWith<IllegalArgumentException> {
+                    runSuspendIO {
+                        operations.createConfiguredTopic("orders")
+                    }
                 }
                 error.message.orEmpty() shouldContain "FIFO topic name"
             }
@@ -209,6 +253,63 @@ class SnsAutoConfigurationTest {
             }
             error.message.orEmpty() shouldContain "not configured"
         }
+    }
+
+    @Test
+    fun `global AWS defaults provide effective resolver endpoint and region`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsAutoConfiguration::class.java,
+                    SnsAutoConfiguration::class.java,
+                )
+            )
+            .withPropertyValues(
+                "bluetape4k.aws.region=ap-northeast-2",
+                "bluetape4k.aws.endpoint-override=http://global:4566",
+                "bluetape4k.aws.sns.account-id=123456789012",
+            )
+            .run { context ->
+                val resolver = context.getBean(SnsTopicArnResolver::class.java)
+                resolver.scope.endpointOverride shouldBeEqualTo URI.create("http://global:4566")
+                resolver.scope.region shouldBeEqualTo "ap-northeast-2"
+            }
+    }
+
+    @Test
+    fun `SDK default region becomes effective resolver scope`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsAutoConfiguration::class.java,
+                    SnsAutoConfiguration::class.java,
+                )
+            )
+            .withSystemProperties("aws.region=us-east-1")
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBean(SnsTopicArnResolver::class.java).scope.region shouldBeEqualTo "us-east-1"
+            }
+    }
+
+    @Test
+    fun `identity changing client customizer fails resolver scope fast`() {
+        contextRunner
+            .withBean(
+                AwsClientCustomizer::class.java,
+                {
+                    AwsClientCustomizer<SnsAsyncClientBuilder> { builder ->
+                        builder.endpointOverride(URI.create("http://customizer:4566"))
+                    }
+                },
+            )
+            .run { context ->
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                context.startupFailure.shouldNotBeNull()
+                messages shouldContain "must not change explicitly configured endpoint or region"
+            }
     }
 
     private class TestSnsDetails(

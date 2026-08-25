@@ -21,6 +21,14 @@ import software.amazon.awssdk.services.sns.model.PublishResponse
  * val topicArn = sns.createConfiguredTopic("orders")
  * sns.publish(SnsPublishRequest(topicArn = topicArn, message = orderJson))
  * ```
+ *
+ * Java 호출부에서 세 번째 인자로 `null`을 전달하면 strategy와 resolver
+ * overload가 모호해질 수 있으므로, 명시적 cast를 사용하거나 4-인자 생성자를
+ * 선택하세요.
+ *
+ * resolver를 직접 주입하지 않는 생성자는 `SnsAsyncClient`의 endpoint/region이
+ * [SnsProperties]와 일치한다고 가정합니다. client identity가 다르거나 검사할 수
+ * 없으면 resolver를 명시적으로 주입하는 생성자를 사용하세요.
  */
 @Suppress("TooManyFunctions")
 class SnsCoroutinesTemplate private constructor(
@@ -56,7 +64,7 @@ class SnsCoroutinesTemplate private constructor(
         Unit,
     )
 
-    /** resolver를 주입해 name 조회 경계를 교체하는 생성자입니다. */
+    /** resolver를 주입하고 기본 bounded batch strategy를 사용하는 생성자입니다. */
     constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
@@ -124,8 +132,11 @@ class SnsCoroutinesTemplate private constructor(
     }
 
     override suspend fun findTopicArn(topicName: String): String? {
-        topicName.requireTopicName()
-        return topicArnResolver.findTopicArn(topicName)
+        return if (topicName.trim().startsWith("arn:")) {
+            topicArnResolver.resolve(topicName)
+        } else {
+            topicArnResolver.findTopicArn(topicName)
+        }
     }
 
     override suspend fun publish(request: SnsPublishRequest): PublishResponse =

@@ -17,8 +17,9 @@
 - 명시적 ARN은 trim 후 그대로 반환하고 cache와 AWS 조회를 모두 우회한다.
   다만 `arn:*:sns:<region>:<12자리 account>:<topic>` 형식, wildcard 금지,
   effective region 일치를 검증한다. `.fifo` suffix를 포함한 ARN은 변형하지
-  않는다. 다른 account는 기본 거부하며 `allowCrossAccountTopicArn=true`일
-  때만 허용한다.
+  않는다. configured account와 다른 ARN은 기본 거부하며
+  `allowCrossAccountTopicArn=true`일 때만 허용한다. account를 모르는 resolver도
+  explicit ARN은 기본 거부하고 같은 opt-in이 있을 때만 허용한다.
 - topic 생성이 성공하면 해당 name을 invalidate해 create 직후 재조회가
   stale negative entry를 사용하지 않도록 한다.
 - endpoint, region, account 식별자가 다른 resolver scope는 동일한 cache를
@@ -131,14 +132,17 @@ class SnsTopicArnResolver(
 1. 공백을 제거하고 blank 입력은 `IllegalArgumentException`으로 거부한다.
 2. `arn:`으로 시작하면 SNS service, partition, region, 12자리 account,
    topic-name 문법과 wildcard를 검증한다. effective region과 다르면
-   거부하고, account가 다르면 `allowCrossAccountTopicArn` opt-in 없이는
-   거부한다. 검증 후 문자열을 즉시 반환하며 cache, flight, `ListTopics`를
-   호출하지 않는다.
+   거부하고, configured account와 다르거나 account가 미설정이면
+   `allowCrossAccountTopicArn` opt-in 없이는 거부한다. 검증 후 문자열을
+   즉시 반환하며 cache, flight, `ListTopics`를 호출하지 않는다.
 3. 그 외에는 AWS topic-name 문법을 검증하고 name을 scope와 합쳐 cache key를
    만든다.
-4. cache hit이면 `Resolved` ARN 또는 `NotFound`를 반환한다.
+4. cache hit이면 `Resolved` ARN을 현재 topic name·region·account scope와
+   다시 검증한 뒤 반환하고, 오염된 entry는 invalidate 후 fail-closed한다.
+   `NotFound`는 그대로 bounded negative hit으로 반환한다.
 5. miss이면 해당 key의 flight mutex를 획득하고 double-check 후 모든
-   `ListTopics` 페이지를 순회한다. flight는 transient outcome을 가지며,
+   `ListTopics` 페이지를 순회한다. 반환 ARN은 SNS ARN 형식과 effective
+   region을 검증하고 configured account가 있으면 account도 비교한다. flight는 transient outcome을 가지며,
    같은 flight의 waiter는 영속 cache에 쓰지 않아도 그 결과를 재사용한다.
 6. 성공한 ARN 또는 null만 cache에 저장하고, 예외는 동일 flight waiter에게
    공유한 뒤 다음 새 flight에서 재시도한다. 취소는 outcome으로 저장하지
@@ -167,10 +171,13 @@ bluetape4k:
 ```
 
 endpoint override, region, account-id가 모두 cache key에 들어간다. account
-ID를 모르는 구성은 null을 사용하며, 다른 endpoint/region/account-id를
-사용하는 resolver는 같은 cache bean을 공유해도 충돌하지 않는다. 기본
-cache namespace는 resolver마다 새로 발급하므로 `accountId`는 authorization
-증명이 아니라 cache isolation label이다. 자동 구성은 `SnsConnectionDetails`
+ID를 모르는 구성은 null을 사용하며 explicit ARN은 cross-account opt-in이
+없으면 fail-closed한다. name 조회의 `ListTopics` 응답은 선택한 SDK client의
+credential scope에서 온 것으로 취급하되 configured account가 있으면 반드시
+일치해야 한다. 다른 endpoint/region/account-id를 사용하는 resolver는 같은
+cache bean을 공유해도 충돌하지 않는다. 기본 cache namespace는 resolver마다
+새로 발급하며 `accountId`는 authorization 증명이 아니라 cache isolation과
+선택적 trust-boundary 검증을 위한 설정이다. 자동 구성은 `SnsConnectionDetails`
 가 제공하는 effective endpoint/region을 properties보다 우선 사용한다.
 endpoint URI에는 user-info, query, fragment를 허용하지 않는다.
 
@@ -192,14 +199,30 @@ endpoint URI에는 user-info, query, fragment를 허용하지 않는다.
 5. **scope 변경:** scope가 다른 key는 cache hit를 공유하지 않는다.
 6. **cache 경계:** TTL 만료 entry는 get 시 제거하고, max size 초과 시
    가장 오래 접근하지 않은 entry를 제거한다. 전역 무기한 보관은 없다.
+7. **운영 신호:** cancellation을 제외한 terminal `ListTopics` 실패는 원문
+   ARN/topic/endpoint를 남기지 않고 scope hash, topic hash, exception type의
+   저카디널리티 warning 한 건으로 기록한다. AWS 예외 자체는 호출자에게
+   그대로 전파한다.
 
 ## 호환성과 운영 영향
 
 - 기존 `SnsOperations` 구현체와 `SnsPublishRequest`는 변경하지 않는다.
 - 기존 template 생성자는 유지한다. 직접 생성한 template도 기본 resolver를
   사용하므로 기존 `findTopicArn` 동작을 유지하면서 cache를 얻는다.
+- 기존 `SnsProperties` 5-인자 JVM 생성자, component 1–5, 5-인자 `copy` 호출은
+  secondary constructor와 compatibility overload로 유지한다. 새 property는
+  primary constructor 뒤에 additive로 배치한다.
 - 자동 구성에서 사용자 정의 `SnsTopicArnCache` 또는
   `SnsTopicArnResolver` bean은 `@ConditionalOnMissingBean`으로 존중한다.
+- SDK client customizer가 명시된 endpoint/region identity를 기본값 적용 후
+  바꾸면 resolver scope와 실제 client가 달라질 수 있으므로 auto-configuration은
+  fail-fast한다. region이 명시되지 않으면 AWS SDK가 선택한 최종 region을 scope로
+  사용한다. 다른 identity가 필요하면 custom resolver bean을 함께 제공한다.
+- 최종 SDK client의 endpoint 또는 region을 introspection할 수 없는 custom client도
+  auto-configuration에서 fail-fast하며, 명시적인 custom resolver bean을 요구한다.
+- resolver를 직접 주입하지 않는 `SnsCoroutinesTemplate` 생성자는 client endpoint/region이
+  `SnsProperties`와 일치한다고 가정하며, 다른 identity나 uninspectable client에는
+  resolver 주입 생성자를 사용한다.
 - explicit ARN의 cross-account 사용은 `allow-cross-account-topic-arn`의
   명시적 opt-in이 필요하며, 이 설정은 IAM authorization을 대체하지 않는다.
 - 새 configuration property의 기본값은 cache 활성화, `max-size = 256`,
@@ -211,6 +234,12 @@ endpoint URI에는 user-info, query, fragment를 허용하지 않는다.
 - cache TTL은 `1ns`보다 크고 `24h` 이하로 제한한다. 기본값은 `5m`이며,
   긴 stale window가 필요하면 explicit invalidate와 context 재생성을 함께
   운영한다.
+- 전체 SNS 자동 구성 rollback은 `bluetape4k.aws.sns.enabled=false` 또는
+  last-known-good artifact 배포로 수행한다. custom `SnsTopicArnResolver`/cache
+  bean은 구성 override와 실험적 교체 경계일 뿐 기존 알고리즘의 rollback을
+  보장하지 않는다. 동작을 보존한 좁은 rollback은 custom `SnsOperations` bean으로
+  기존 구현을 선택하거나 이전 artifact를 재배포한다. cache만 비활성화하면
+  resolver와 single-flight는 계속 동작한다.
 
 ## 검증과 수용 기준 추적
 
@@ -222,7 +251,7 @@ endpoint URI에는 user-info, query, fragment를 허용하지 않는다.
 | fake client pagination/invalidate/동시 호출 | `SnsTopicArnResolverTest` |
 | Floci 실제 생성·조회·publish | 기존 `SnsCoroutinesTemplateAwsEmulatorTest` 확장 |
 | endpoint/region/account scope 분리 | 공유 cache를 사용하는 scope 테스트 |
-| explicit ARN trust boundary | malformed/non-SNS/wildcard/region mismatch/cross-account opt-in 테스트 |
+| explicit/list ARN trust boundary | malformed/non-SNS/wildcard/region mismatch/cross-account opt-in 및 ListTopics 응답 검증 테스트 |
 | effective connection scope | `SnsConnectionDetails` override auto-configuration 테스트 |
 
 ## DoD
@@ -231,7 +260,8 @@ endpoint URI에는 user-info, query, fragment를 허용하지 않는다.
 - [x] resolver/cache 단위 테스트가 RED→GREEN 순서로 통과한다.
 - [x] 기존 SNS template/auto-configuration 테스트와 Floci SNS smoke가 통과한다.
 - [x] `git diff --check`, Kotlin 정적 검사, 변경 module test가 통과한다.
-- [x] PR/merge/remote side effect는 사용자 요청 범위 밖으로 유지한다.
+- [x] PR/merge/remote side effect는 구현 검증과 분리된 fresh delivery gate로
+  유지하며, 이 설계 단계에서는 아직 실행하지 않는다.
 
 ## Writer gate 기록
 

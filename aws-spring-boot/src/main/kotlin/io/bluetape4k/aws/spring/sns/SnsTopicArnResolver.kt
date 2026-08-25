@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.sync.Mutex
@@ -13,6 +14,11 @@ import java.util.LinkedHashMap
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+
+private val AWS_ACCOUNT_ID_PATTERN: Regex = Regex("\\d{12}")
+
+private fun SnsTopicArnResolverScope.stableHash(): Int =
+    listOf(endpointOverride?.toString(), region, accountId).hashCode()
 
 /**
  * SNS topic ARN cache를 분리하는 실행 scope입니다.
@@ -34,7 +40,11 @@ data class SnsTopicArnResolverScope(
             require(it.fragment == null) { "endpointOverride must not contain a fragment." }
         }
         region?.let { require(it.isNotBlank()) { "region must not be blank." } }
-        accountId?.let { require(it.isNotBlank()) { "accountId must not be blank." } }
+        accountId?.let {
+            require(it.matches(AWS_ACCOUNT_ID_PATTERN)) {
+                "accountId must be a 12-digit AWS account ID."
+            }
+        }
         require(cacheNamespace.isNotBlank()) { "cacheNamespace must not be blank." }
     }
 
@@ -265,7 +275,19 @@ class SnsTopicArnResolver(
     @Suppress("ThrowsCount", "TooGenericExceptionCaught")
     private suspend fun resolveName(topicName: String): String? {
         val key = SnsTopicArnCacheKey(scope, topicName)
-        cache.get(key)?.let { return it.toNullableArn() }
+        cache.get(key)?.let { cached ->
+            return when (cached) {
+                is SnsTopicArnCacheEntry.Resolved -> {
+                    try {
+                        validateLookupArn(cached.topicArn, topicName)
+                    } catch (cause: IllegalArgumentException) {
+                        cache.invalidate(key)
+                        throw cause
+                    }
+                }
+                SnsTopicArnCacheEntry.NotFound -> null
+            }
+        }
 
         val flight = acquireFlight(key)
         try {
@@ -288,6 +310,12 @@ class SnsTopicArnResolver(
                             if (cause is CancellationException) {
                                 throw cause
                             }
+                            log.warn(
+                                "SNS topic ARN lookup failed (scopeHash={}, topicNameHash={}, exceptionType={})",
+                                scope.stableHash(),
+                                topicName.hashCode(),
+                                cause::class.java.simpleName,
+                            )
                             flight.outcome = FlightOutcome.Failure(cause)
                             throw cause
                         }
@@ -310,7 +338,7 @@ class SnsTopicArnResolver(
                 .asSequence()
                 .mapNotNull { it.topicArn() }
                 .firstOrNull { it.endsWith(suffix) }
-                ?.let { return it }
+                ?.let { return validateLookupArn(it, topicName) }
             nextToken = response.nextToken()
         } while (!nextToken.isNullOrBlank())
         return null
@@ -342,17 +370,35 @@ class SnsTopicArnResolver(
         }
     }
 
-    private fun SnsTopicArnCacheEntry.toNullableArn(): String? = when (this) {
-        is SnsTopicArnCacheEntry.Resolved -> topicArn
-        SnsTopicArnCacheEntry.NotFound -> null
+    private fun validateExplicitArn(arn: String): String {
+        val parsed = parseSnsArn(arn)
+        require(scope.region != null) {
+            "resolver region must be configured before resolving an explicit ARN."
+        }
+        validateRegion(parsed.region)
+        validateAccount(parsed.accountId, explicit = true)
+        return arn
     }
 
-    private fun validateExplicitArn(arn: String): String {
+    private fun validateLookupArn(arn: String, topicName: String): String {
+        val parsed = parseSnsArn(arn)
+        require(parsed.topicName == topicName) {
+            "ListTopics returned an ARN for a different topic name."
+        }
+        validateRegion(parsed.region)
+        validateAccount(parsed.accountId, explicit = false)
+        return arn
+    }
+
+    private fun parseSnsArn(
+        arn: String,
+        accountPattern: Regex = AWS_ACCOUNT_ID_PATTERN,
+    ): ParsedSnsArn {
         val parts = arn.split(':', limit = ARN_PART_COUNT)
         require(
             parts.size == ARN_PART_COUNT &&
                 parts[0] == "arn" &&
-                parts[1].isNotBlank() &&
+                parts[1].matches(PARTITION_PATTERN) &&
                 parts[2] == "sns",
         ) {
             "topicArn must be a valid SNS ARN."
@@ -360,23 +406,54 @@ class SnsTopicArnResolver(
         val region = parts[3]
         val accountId = parts[4]
         val topicName = parts[5]
-        require(region.isNotBlank() && accountId.matches(ACCOUNT_ID_PATTERN) && topicName.isValidSnsTopicName()) {
+        require(
+            region.matches(REGION_PATTERN) &&
+                accountId.matches(accountPattern) &&
+                topicName.isValidSnsTopicName(),
+        ) {
             "topicArn must be a valid SNS topic ARN."
         }
+        return ParsedSnsArn(region, accountId, topicName)
+    }
+
+    private fun validateRegion(region: String) {
         scope.region?.let {
             require(region == it) {
                 "topicArn region '$region' does not match resolver region '$it'."
             }
         }
-        scope.accountId?.let {
-            if (accountId != it) {
+    }
+
+    private fun validateAccount(accountId: String, explicit: Boolean) {
+        val configuredAccountId = scope.accountId
+        if (configuredAccountId == null) {
+            if (explicit) {
                 require(allowCrossAccountTopicArn) {
-                    "Cross-account topicArn is disabled for this resolver."
+                    "scope.accountId must be configured before resolving an explicit ARN " +
+                        "unless cross-account topicArn is enabled."
                 }
             }
+            return
         }
-        return arn
+        if (!explicit) {
+            require(accountId == configuredAccountId) {
+                "ListTopics returned topicArn account '$accountId' that does not match " +
+                    "resolver account '$configuredAccountId'."
+            }
+            return
+        }
+        if (accountId != configuredAccountId) {
+            require(allowCrossAccountTopicArn) {
+                "Cross-account topicArn is disabled for this resolver."
+            }
+        }
     }
+
+    private data class ParsedSnsArn(
+        val region: String,
+        val accountId: String,
+        val topicName: String,
+    )
 
     private fun String.requireTopicName(): String {
         require(isValidSnsTopicName()) {
@@ -388,11 +465,12 @@ class SnsTopicArnResolver(
     private fun String.isValidSnsTopicName(): Boolean =
         length in MIN_TOPIC_NAME_LENGTH..MAX_TOPIC_NAME_LENGTH && matches(TOPIC_NAME_PATTERN)
 
-    private companion object {
-        const val ARN_PART_COUNT: Int = 6
-        val ACCOUNT_ID_PATTERN: Regex = Regex("\\d{12}")
-        const val MIN_TOPIC_NAME_LENGTH: Int = 1
-        const val MAX_TOPIC_NAME_LENGTH: Int = 256
-        val TOPIC_NAME_PATTERN: Regex = Regex("[A-Za-z0-9_-]+(?:\\.fifo)?")
+    companion object : KLogging() {
+        private const val ARN_PART_COUNT: Int = 6
+        private val PARTITION_PATTERN: Regex = Regex("[A-Za-z0-9-]+")
+        private val REGION_PATTERN: Regex = Regex("[a-z0-9-]+")
+        private const val MIN_TOPIC_NAME_LENGTH: Int = 1
+        private const val MAX_TOPIC_NAME_LENGTH: Int = 256
+        private val TOPIC_NAME_PATTERN: Regex = Regex("[A-Za-z0-9_-]+(?:\\.fifo)?")
     }
 }

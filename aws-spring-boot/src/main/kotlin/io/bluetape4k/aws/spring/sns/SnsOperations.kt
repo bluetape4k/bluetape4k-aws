@@ -46,9 +46,11 @@ interface SnsOperations {
     suspend fun createConfiguredTopic(topicName: String): String
 
     /**
-     * 주제 이름으로 topic ARN을 찾습니다.
+     * 주제 이름 또는 explicit SNS ARN을 topic ARN으로 확인합니다.
      *
-     * 모든 `ListTopics` 페이지를 스캔하고 일치하는 주제가 없으면 null을 반환합니다.
+     * 이름 입력은 모든 `ListTopics` 페이지를 스캔하고 일치하는 주제가 없으면
+     * null을 반환합니다. explicit ARN 입력은 resolver의 SNS/region/account
+     * trust-boundary 검증을 통과한 뒤 AWS 목록 조회 없이 그대로 반환합니다.
      */
     suspend fun findTopicArn(topicName: String): String?
 

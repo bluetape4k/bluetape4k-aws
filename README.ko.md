@@ -315,6 +315,12 @@ bluetape4k:
     sns:
       region: ap-northeast-2
       endpoint-override: http://localhost:4566
+      account-id: 123456789012
+      allow-cross-account-topic-arn: false
+      topic-arn-cache:
+        enabled: true
+        max-size: 256
+        ttl: 5m
       topics:
         orders.fifo:
           fifo: true
@@ -935,6 +941,27 @@ class OrderTopic(
     private fun processNotification(message: String) = Unit
 }
 ```
+
+`SnsOperations.findTopicArn`은 topic name 또는 명시적 SNS ARN을 받습니다. name
+조회는 bounded scope별 TTL/LRU cache(기본값: 활성화, 256 entry, 5분)와
+topic별 single-flight를 사용합니다. `bluetape4k.aws.sns.topic-arn-cache.enabled=false`로
+영속 cache 저장만 끌 수 있으며 중복 조회 억제는 유지됩니다. 같은 계정 ARN
+검증을 적용하려면 `account-id`를 설정하세요. account ID가 없으면 명시적 ARN은
+`allow-cross-account-topic-arn=true`를 의도적으로 opt-in하지 않는 한 fail-closed
+됩니다. explicit ARN 조회에도 wildcard 또는 미확인 region을 막기 위해 유효한
+`region` 설정이 필요합니다. 사용자 정의 `SnsTopicArnResolver` 또는
+`SnsTopicArnCache` bean은 범위를 좁힌 구성 override이며, 그 자체로 동작을
+보존하는 rollback을 제공하지는 않습니다. 동작을 보존하려면 custom
+`SnsOperations` 구현을 제공하거나 last-known-good artifact를 재배포하세요.
+endpoint 또는 region을 확인할 수 없는 애플리케이션 제공 SNS client는
+fail-fast하며 명시적인 resolver가 필요합니다. region을 설정하지 않으면
+resolver는 AWS SDK provider chain이 최종 선택한 region을 scope로 사용하고,
+명시한 endpoint/region은 client와 일치해야 합니다. `SnsCoroutinesTemplate`을
+직접 생성할 때 client identity가 `SnsProperties`와 다르거나 검사할 수 없으면
+resolver 주입 생성자를 사용하세요.
+전체 SNS 자동 설정을 끄려면 `bluetape4k.aws.sns.enabled=false`를 사용합니다.
+terminal 조회 실패는 hash 처리한 scope/topic 차원과 exception type만 기록하며
+raw ARN과 topic name은 로그에 남기지 않습니다.
 
 #### SNS 배치 발행
 

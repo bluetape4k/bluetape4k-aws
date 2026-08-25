@@ -237,10 +237,32 @@ class SnsCoroutinesTemplateTest {
             snsAsyncClient = client,
             properties = SnsProperties(region = "us-east-1"),
             topicArnResolver = resolver,
+            batchExecutionStrategy = DefaultSnsBatchExecutionStrategy,
         ).findTopicArn("orders")
 
         result shouldBeEqualTo arn
         coVerify(exactly = 1) { resolver.findTopicArn("orders") }
+        verify(exactly = 0) {
+            client.listTopics(any<Consumer<software.amazon.awssdk.services.sns.model.ListTopicsRequest.Builder>>())
+        }
+    }
+
+    @Test
+    fun `findTopicArn accepts explicit arn through resolver`() = runTest {
+        val client = mockk<SnsAsyncClient>()
+        val resolver = mockk<SnsTopicArnResolver>()
+        val arn = "arn:aws:sns:us-east-1:000000000000:orders"
+        coEvery { resolver.resolve(arn) } returns arn
+
+        val result = SnsCoroutinesTemplate(
+            snsAsyncClient = client,
+            properties = SnsProperties(region = "us-east-1"),
+            topicArnResolver = resolver,
+            batchExecutionStrategy = DefaultSnsBatchExecutionStrategy,
+        ).findTopicArn(arn)
+
+        result shouldBeEqualTo arn
+        coVerify(exactly = 1) { resolver.resolve(arn) }
         verify(exactly = 0) {
             client.listTopics(any<Consumer<software.amazon.awssdk.services.sns.model.ListTopicsRequest.Builder>>())
         }
@@ -258,6 +280,7 @@ class SnsCoroutinesTemplateTest {
             snsAsyncClient = client,
             properties = SnsProperties(region = "us-east-1"),
             topicArnResolver = resolver,
+            batchExecutionStrategy = DefaultSnsBatchExecutionStrategy,
         ).createTopic("orders")
 
         result shouldBeEqualTo arn

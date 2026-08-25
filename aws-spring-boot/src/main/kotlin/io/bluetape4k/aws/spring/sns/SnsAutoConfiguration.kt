@@ -91,18 +91,51 @@ class SnsAutoConfiguration {
             NoopSnsTopicArnCache
         }
 
+    /**
+     * 최종 SDK client identity와 resolver scope가 달라지지 않도록 검증합니다.
+     * 명시된 endpoint/region을 바꾸는 customizer는 fail-fast하며, region을
+     * 설정하지 않은 경우에는 AWS SDK가 선택한 최종 region을 resolver scope로 사용합니다.
+     * 그런 client에는 명시적인 custom resolver bean을 함께 제공해야 합니다.
+     */
     @Bean
     @ConditionalOnMissingBean(SnsTopicArnResolver::class)
     fun snsTopicArnResolver(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
+        awsProperties: ObjectProvider<AwsProperties>,
         cache: SnsTopicArnCache,
         serviceConnectionDetails: ObjectProvider<SnsConnectionDetails>,
     ): SnsTopicArnResolver {
-        val details = serviceConnectionDetails.getIfAvailable()
+        val defaults = resolveServiceClientDefaults(
+            connectionDetails = serviceConnectionDetails,
+            awsProperties = awsProperties,
+            serviceName = "sns",
+            serviceRegion = properties.region,
+            serviceEndpointOverride = properties.endpointOverride,
+        )
+        val clientIdentity = runCatching {
+            val clientConfiguration = snsAsyncClient.serviceClientConfiguration()
+            clientConfiguration.region() to clientConfiguration.endpointOverride().orElse(null)
+        }.getOrElse { cause ->
+            throw IllegalStateException(
+                "SNS client identity is unavailable; provide a custom SnsTopicArnResolver " +
+                    "for a client with an uninspectable configuration.",
+                cause,
+            )
+        }
+        val actualRegion = clientIdentity.first
+        val actualEndpointOverride = clientIdentity.second
+        require(
+            (defaults.region == null || actualRegion == defaults.region) &&
+                actualEndpointOverride == defaults.endpointOverride,
+        ) {
+            "SNS client customizer must not change explicitly configured endpoint or region after AWS defaults " +
+                "are applied; " +
+                "provide a custom SnsTopicArnResolver for a different client identity."
+        }
         val scope = SnsTopicArnResolverScope(
-            endpointOverride = details?.endpoint ?: properties.endpointOverride,
-            region = details?.region ?: properties.region,
+            endpointOverride = actualEndpointOverride,
+            region = actualRegion?.id(),
             accountId = properties.accountId,
         )
         return SnsTopicArnResolver(
@@ -120,6 +153,11 @@ class SnsAutoConfiguration {
         properties: SnsProperties,
         topicArnResolver: SnsTopicArnResolver,
     ): SnsCoroutinesTemplate =
-        SnsCoroutinesTemplate(snsAsyncClient, properties, topicArnResolver)
+        SnsCoroutinesTemplate(
+            snsAsyncClient,
+            properties,
+            topicArnResolver,
+            DefaultSnsBatchExecutionStrategy,
+        )
 
 }
