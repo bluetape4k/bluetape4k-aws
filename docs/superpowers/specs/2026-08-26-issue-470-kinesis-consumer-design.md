@@ -2,7 +2,7 @@
 
 <!-- 이슈 #470 | bluetape4k-aws -->
 
-**상태**: 설계 검토 중
+**상태**: 설계 승인됨 (사용자 승인 메시지 `승인`)
 **작성일**: 2026-08-26
 **이슈**: [#470](https://github.com/bluetape4k/bluetape4k-aws/issues/470)
 **대상 모듈**: `aws-java`, `aws-kotlin`
@@ -68,7 +68,9 @@ KCL, Spring Cloud Stream Kinesis Binder 전체를 복제하지 않는다. KCL de
   검증하는 모델의 참고 자료다. KCL 자체는 dependency로 가져오지 않는다.
 - [Floci Kinesis service matrix](https://floci.io/floci/services/)와
   [Kinesis 환경 변수](https://floci.io/floci/configuration/environment-variables/)
-  (`FLOCI_SERVICES_KINESIS_ENABLED=true`)를 emulator 검증 근거로 사용한다.
+  를 emulator 검증 근거로 사용한다. pinned `FlociServer.Launcher.floci` wrapper는 모든
+  서비스를 활성화하므로 기본 test에는 `FLOCI_SERVICES_KINESIS_ENABLED=true` export가
+  필요하지 않으며, 외부 image를 직접 실행할 때만 해당 image 문서를 조건부로 따른다.
 
 외부 문서가 설명하는 실제 AWS quota·retention·reshard timing은 Floci가 재현한
 범위와 분리한다. 테스트가 통과했다는 사실만으로 실제 AWS 운영 동작을 주장하지
@@ -209,10 +211,18 @@ store를 주입해야 한다. Store의 lifecycle은 호출자 소유다. consume
 | `leaseReleaseTimeout` | 양수; cancellation cleanup 상한 |
 | `ownerId` | 비어 있지 않고 길이·control character·전역 유일성 검증 |
 
+`consumerFlow`의 `pollInterval`은 기존 `KinesisRecordFlowOptions`의 `MIN_POLL_INTERVAL`
+이상이어야 한다. 기존 `recordFlow`의 `emptyBackoff` 검증과 동작은 유지하되,
+`consumerFlow`가 사용하는 empty response 지연은 `max(emptyBackoff, MIN_POLL_INTERVAL)`로
+clamp하여 shard당 호출 간격 하한을 지킨다.
+
 `KinesisFlowEvent`는 payload·credential·request token을 포함하지 않는 sealed event
 타입이다. `KinesisFlowMetrics`는 `suspend fun onEvent(event)` callback과 no-op 구현을
 제공하며, shard 시작/완료, batch 크기, discovery page, lease acquire/renew/loss,
-retry, checkpoint 저장만 관측한다. callback 예외는 숨기지 않고 consumer를 실패시킨다.
+retry, checkpoint 저장만 관측한다. event label은 `eventKind/outcome/reason/retryClass` 같은
+유한 값만 허용하고 stream·shard·owner 식별자는 길이 제한 deterministic redacted token으로
+전달한다. callback 예외·지연·취소는 원래 cause를 보존하고 lease release를 한 번 수행한 뒤
+consumer를 실패·종료시킨다.
 
 ```kotlin
 fun KinesisClient.consumerFlow(
@@ -241,14 +251,14 @@ public 시그니처를 변경하지 않는다. 주입된 AWS client는 호출자
 
 1. `consumerFlow`는 `ListShards`를 페이지 단위로 읽고, 각 page에
    `maxListShardsPages`와 `maxDiscoveryRetries`를 적용한다. `ExpiredNextTokenException`
-   또는 token 만료가 의심되는 오류가 나면 현재 partial snapshot을 폐기하고 처음부터
-   새 snapshot을 만든다. page 상한을 넘거나 bounded retry가 소진되면 원래 예외를
-   전파하며 부분 graph를 적용하지 않는다. 중복 shard ID는 한 snapshot에서 병합한다.
-2. 완전한 snapshot을 `KinesisShardKey` graph로 만들고 `parentShardId`,
+   또는 token 만료가 의심되는 오류가 나면 현재 partial shard-list를 폐기하고 처음부터
+   새 전체 샤드 목록을 만든다. page 상한을 넘거나 bounded retry가 소진되면 원래 예외를
+   전파하며 부분 graph를 적용하지 않는다. 중복 shard ID는 한 전체 목록에서 병합한다.
+2. 완전한 샤드 목록을 `KinesisShardKey` graph로 만들고 `parentShardId`,
    `adjacentParentShardId`를 모두 dependency로 기록한다. parent ID가 명시적으로
-   `null`인 shard만 root다. parent ID가 있는데 snapshot에 해당 parent가 없으면
+   `null`인 shard만 root다. parent ID가 있는데 전체 샤드 목록에 해당 parent가 없으면
    절대 root로 승격하지 않고 `maxUnknownParentDiscoveries`까지 다음 완전한
-   snapshot에서 재시도한다. 한도를 넘으면 `KinesisShardGraphException`으로 전체
+   샤드 목록에서 재시도한다. 한도를 넘으면 `KinesisShardGraphException`으로 전체
    consumer를 실패시킨다.
 3. child는 process-local `completedShardIds`가 아니라 공용 checkpoint store의
    `KinesisCheckpoint.ShardEnd`를 조회해 dependency가 모두 완료된 경우에만 launch
@@ -270,9 +280,11 @@ public 시그니처를 변경하지 않는다. 주입된 AWS client는 호출자
    없는 record는 emit 전에 `KinesisCheckpointException`으로 실패한다.
 7. shard lifecycle마다 polling과 독립된 heartbeat coroutine을 둔다. heartbeat는
    `leaseRenewInterval`마다 `renew`하고, loss 시 shard job과 전체 consumer를 취소한다.
-   각 emit과 fenced checkpoint save 직전에 현재 lease token을 재검증하며, loss 이후에는
-   emit/save를 허용하지 않는다. 정상 종료와 취소의 release는 `NonCancellable` 안에서
-   `leaseReleaseTimeout`으로 제한한다.
+   각 새 emit과 fenced checkpoint save 직전에 현재 lease token을 재검증하며, lease loss를
+   관측한 뒤에는 새 emit/save를 시작하지 않는다. 검증 직후 takeover되는 TOCTOU 구간에서
+   이미 시작된 in-flight duplicate emit은 at-least-once 경계상 허용될 수 있고, fenced save는
+   거부되어 새 owner가 inclusive replay한다. 정상 종료와 취소의 release는 `NonCancellable`
+   안에서 `leaseReleaseTimeout`으로 제한한다.
 8. shard 완료는 `nextShardIterator == null`만으로 결정하지 않는다. Kinesis
    `SequenceNumberRange.endingSequenceNumber`가 있으면 마지막 처리 sequence까지
    도달했는지 확인해 `ShardEnd`를 저장하고, ending range가 없을 때만 null iterator를
@@ -297,10 +309,10 @@ public 시그니처를 변경하지 않는다. 주입된 AWS client는 호출자
 | `CancellationException` | 가장 먼저 재전파하고 discovery·shard job을 취소한다 |
 | retryable Kinesis service error | shard polling은 기존 full-jitter backoff와 bounded retry budget을 사용한다. `ListShards`도 page retry를 적용한다 |
 | non-retryable service error | 즉시 전파한다 |
-| `ExpiredNextTokenException` | partial snapshot을 폐기하고 전체 `ListShards` snapshot을 재시작한다. `maxDiscoveryRetries` 소진 뒤 원래 예외를 전파한다 |
+| `ExpiredNextTokenException` | partial shard-list를 폐기하고 전체 `ListShards` 샤드 목록 수집을 재시작한다. `maxDiscoveryRetries` 소진 뒤 원래 예외를 전파한다 |
 | `ExpiredIteratorException` | 같은 실행에서 local 마지막 emit 위치를 `AfterSequenceNumber`로 사용한다. 재시작에서는 durable checkpoint를 `AtSequenceNumber`로 사용한다. 둘 다 없고 `Latest`이면 즉시 전파한다 |
 | `KinesisLeaseStore.acquire == null` | 유효한 다른 owner로 간주해 해당 shard를 건너뛰고 다음 discovery에서 재시도한다 |
-| `renew == null` | `KinesisLeaseLostException`; 즉시 emit/save를 차단하고 전체 consumer를 실패시킨다 |
+| `renew == null` | `KinesisLeaseLostException`; 관측 이후 새 emit/save를 차단하고 전체 consumer를 실패시킨다. 이미 시작된 in-flight emit은 중복으로 남을 수 있다 |
 | checkpoint `save` 실패 또는 fenced 저장 거부 | Flow를 실패시키고 memory상 위치를 전진시키지 않는다 |
 | checkpoint 사용 중 nullable sequence | emit 전에 `KinesisCheckpointException`으로 실패한다 |
 | store `load`/`renew`/`release` 오류 | `acquire == null` 외에는 자동 재시도하지 않고 consumer 오류로 전파한다. release 오류는 원래 예외를 덮지 않는다 |
@@ -327,8 +339,8 @@ payload·credential·request token은 metrics와 로그에 남기지 않는다.
 
 `AbstractAwsTest`의 기본 `FlociServer.Launcher.floci` endpoint(고정 image
 `1.6.0`)에서 Java 모듈을 먼저, Kotlin 모듈을 다음에 순차 실행한다. 각 integration
-class는 `@Execution(SAME_THREAD)`와 고유 stream cleanup을 사용하고,
-`FLOCI_SERVICES_KINESIS_ENABLED=true` selector를 보존한다.
+class는 `@Execution(SAME_THREAD)`와 고유 stream cleanup을 사용한다. 해당 wrapper는 모든
+서비스를 활성화하므로 selector export를 기본 실행에 추가하지 않는다.
 
 Floci integration 범위:
 
@@ -344,7 +356,7 @@ Floci integration 범위:
 MockK fake + `runTest`/virtual time unit 범위:
 
 - `ListShards` token 누적, page limit, duplicate discovery, token expiry 후 전체
-  snapshot 재시작, partial graph 폐기와 bounded retry
+  샤드 목록 수집 재시작, partial graph 폐기와 bounded retry
 - parent가 뒤늦게 나타나는 경우, unknown-parent timeout, `adjacentParentShardId`
   포함 두 부모 `ShardEnd` gating, duplicate launch 방지
 - 정확한 `LATEST` 경계, closed shard `endingSequenceNumber`/null iterator 종료,
@@ -434,11 +446,11 @@ N/A와 Floci pinned-image gap을 같은 것으로 합치지 않는다.
   DoD)을 §3–§8에 작성했다.
 - [x] **SPW-03** — `bluetape-writer` Korean naturalness checklist
   `KO-01..KO-07`을 적용해 식별자·명령·URL·불확실성을 보존하고 번역투·홍보 문구를
-  제거했다.
+  제거했다. 변경 후 용어 audit에서 findings=0을 확인했다.
 - [x] **SPW-04** — 현재 소스, #469 재사용 패턴, AWS API, Floci capability와 설계
   결정을 source-to-claim으로 대조했다. 실제 AWS 동작은 주장하지 않는다.
 - [x] **SPW-05** — Markdown headings/table/code fence와 링크를 read-back했고,
   이 설계 명세가 `design` lane의 검토·승인 입력임을 기록했다.
 
-**다음 게이트**: 6개 관점 설계 review와 사용자 설계 승인 전에는 구현·plan artifact를
-시작하지 않는다.
+**다음 게이트**: 사용자 설계 승인을 완료했다. 이제 승인된 명세를 기준으로 Type-A
+구현 plan의 Step 3-R/3-P와 구현·검증 게이트를 진행한다.
