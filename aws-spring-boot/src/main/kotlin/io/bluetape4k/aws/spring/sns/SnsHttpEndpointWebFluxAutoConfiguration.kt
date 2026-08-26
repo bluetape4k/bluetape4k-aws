@@ -3,7 +3,9 @@ package io.bluetape4k.aws.spring.sns
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.ListableBeanFactory
+import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -12,10 +14,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ImportRuntimeHints
-import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer
 import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver
+import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping
 
 /** Spring WebFlux 애플리케이션에 SNS HTTP adapter를 자동 설정합니다. */
 @AutoConfiguration(after = [SnsAutoConfiguration::class])
@@ -24,6 +26,7 @@ import org.springframework.web.reactive.result.method.HandlerMethodArgumentResol
 @ConditionalOnClass(name = [
     "org.springframework.web.reactive.config.WebFluxConfigurer",
     "org.springframework.web.server.WebFilter",
+    "software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse",
 ])
 @ConditionalOnProperty(prefix = "bluetape4k.aws.sns", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @ConditionalOnProperty(
@@ -82,11 +85,12 @@ class SnsHttpEndpointWebFluxAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(name = ["snsHttpEndpointWebFluxHandlerMethodValidator"])
+    @ConditionalOnBean(RequestMappingHandlerMapping::class)
     fun snsHttpEndpointWebFluxHandlerMethodValidator(
         properties: SnsHttpEndpointProperties,
-    ): BeanPostProcessor = SnsHttpEndpointHandlerMethodValidator(
+        handlerMapping: RequestMappingHandlerMapping,
+    ): SmartInitializingSingleton = SnsHttpEndpointHandlerMethodValidator(
         support = SnsHttpMessageResolverSupport(properties = properties),
-        handlerMappingClassName =
-            "org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping",
+        handlerMethods = { handlerMapping.handlerMethods },
     )
 }

@@ -963,6 +963,11 @@ three mappings accept `POST` requests with the matching
 controllers, including Kotlin `suspend` handlers, can resolve the parsed envelope
 from one bounded, replayable request body:
 
+The endpoint adapter requires the AWS SNS service SDK at runtime, including for
+notification-only mappings, because the public `NotificationStatus` contract
+returns `ConfirmSubscriptionResponse`. Add `software.amazon.awssdk:sns` to the
+consumer runtime; the auto-configuration backs off when that SDK is absent.
+
 ```kotlin
 import io.bluetape4k.aws.spring.sns.SnsHttpMessage
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping

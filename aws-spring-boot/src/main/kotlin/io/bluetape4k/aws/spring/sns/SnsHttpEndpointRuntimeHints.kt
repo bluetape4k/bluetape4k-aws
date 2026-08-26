@@ -8,6 +8,7 @@ import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessageAttri
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
+import org.springframework.aot.hint.ExecutableMode
 import org.springframework.aot.hint.MemberCategory
 import org.springframework.aot.hint.RuntimeHints
 import org.springframework.aot.hint.RuntimeHintsRegistrar
@@ -31,6 +32,17 @@ class SnsHttpEndpointRuntimeHints : RuntimeHintsRegistrar {
                 MemberCategory.INVOKE_DECLARED_METHODS,
                 MemberCategory.INTROSPECT_DECLARED_CONSTRUCTORS,
             )
+        }
+
+        val mapperType = runCatching {
+            Class.forName(
+                "tools.jackson.databind.ObjectMapper",
+                false,
+                classLoader ?: Thread.currentThread().contextClassLoader,
+            )
+        }.getOrNull()
+        mapperType?.getMethod("readValue", String::class.java, Class::class.java)?.let { method ->
+            hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
         }
     }
 }

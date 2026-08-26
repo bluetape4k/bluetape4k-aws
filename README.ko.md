@@ -950,6 +950,12 @@ mapping은 일치하는 `x-amz-sns-message-type` header의 `POST` 요청을 받�
 handler를 포함해 하나의 bounded·replayable request body로 파싱된 envelope를
 재사용할 수 있습니다.
 
+endpoint adapter는 `NotificationStatus` 공개 계약이
+`ConfirmSubscriptionResponse`를 반환하므로 notification 전용 mapping을 사용할
+때도 런타임에 AWS SNS service SDK가 필요합니다. 소비자 runtime에
+`software.amazon.awssdk:sns`를 추가해야 하며, SDK가 없으면 auto-configuration이
+자동으로 back off합니다.
+
 ```kotlin
 import io.bluetape4k.aws.spring.sns.SnsHttpMessage
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping

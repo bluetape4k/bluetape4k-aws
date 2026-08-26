@@ -4,10 +4,14 @@ import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessageAttributes
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
 import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.core.MethodParameter
+import org.springframework.core.annotation.AnnotatedElementUtils
 import org.springframework.http.HttpStatus
 import org.springframework.web.server.ResponseStatusException
 import java.lang.reflect.ParameterizedType
@@ -59,9 +63,13 @@ class SnsHttpMessageResolverSupport(
     }
 
     fun validateHandlerMethod(method: java.lang.reflect.Method) {
+        val mappingType = resolveSnsHttpEndpointMessageType(method)
         method.parameters.indices
             .map { index -> MethodParameter(method, index) }
-            .forEach { parameter -> supportsParameter(parameter) }
+            .forEach { parameter ->
+                supportsParameter(parameter)
+                validateSnsHttpEndpointMappingParameter(parameter, mappingType)
+            }
     }
 
     /** Resolves one supported parameter from a previously parsed envelope. */
@@ -189,5 +197,63 @@ class SnsHttpMessageResolverSupport(
         const val WEBFLUX_MESSAGE_ATTRIBUTE: String = "io.bluetape4k.aws.spring.sns.message.mono"
         const val CONTENT_TYPE_ATTRIBUTE: String = "contentType"
         const val SNS_MESSAGE_TYPE_HEADER: String = SnsHttpMessageParser.MESSAGE_TYPE_HEADER
+    }
+
+}
+
+private enum class SnsHttpEndpointMessageType {
+    NOTIFICATION,
+    CONFIRMATION,
+}
+
+private fun resolveSnsHttpEndpointMessageType(method: java.lang.reflect.Method): SnsHttpEndpointMessageType? {
+    val mappingTypes = sequenceOf(method, method.declaringClass)
+        .flatMap { element ->
+            buildList {
+                if (AnnotatedElementUtils.hasAnnotation(element, NotificationMessageMapping::class.java)) {
+                    add(SnsHttpEndpointMessageType.NOTIFICATION)
+                }
+                if (AnnotatedElementUtils.hasAnnotation(element, NotificationSubscriptionMapping::class.java)) {
+                    add(SnsHttpEndpointMessageType.CONFIRMATION)
+                }
+                if (
+                    AnnotatedElementUtils.hasAnnotation(
+                        element,
+                        NotificationUnsubscribeConfirmationMapping::class.java,
+                    )
+                ) {
+                    add(SnsHttpEndpointMessageType.CONFIRMATION)
+                }
+            }.asSequence()
+        }
+        .toSet()
+    check(mappingTypes.size <= 1) {
+        "An SNS HTTP handler must not combine notification and confirmation mappings."
+    }
+    return mappingTypes.firstOrNull()
+}
+
+private fun validateSnsHttpEndpointMappingParameter(
+    parameter: MethodParameter,
+    mappingType: SnsHttpEndpointMessageType?,
+) {
+    when (mappingType) {
+        SnsHttpEndpointMessageType.NOTIFICATION -> {
+            check(parameter.parameterType != NotificationStatus::class.java) {
+                "NotificationStatus is only valid with confirmation mappings."
+            }
+        }
+
+        SnsHttpEndpointMessageType.CONFIRMATION -> {
+            val notificationParameter =
+                parameter.hasParameterAnnotation(NotificationMessage::class.java) ||
+                    parameter.hasParameterAnnotation(NotificationSubject::class.java) ||
+                    parameter.hasParameterAnnotation(NotificationMessageAttributes::class.java)
+            check(!notificationParameter) {
+                "Notification message parameters are only valid with NotificationMessageMapping."
+            }
+        }
+
+        null -> Unit
     }
 }
