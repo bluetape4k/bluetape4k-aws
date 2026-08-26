@@ -129,6 +129,7 @@ aws-kotlin-aws-endpoint = { module = "aws.sdk.kotlin:aws-endpoint" }
 aws-kotlin-aws-http = { module = "aws.sdk.kotlin:aws-http" }
 aws-kotlin-bedrock-runtime = { module = "aws.sdk.kotlin:bedrockruntime" }
 aws-kotlin-dynamodb = { module = "aws.sdk.kotlin:dynamodb" }
+aws-kotlin-dynamodbstreams = { module = "aws.sdk.kotlin:dynamodbstreams" }
 aws-kotlin-s3 = { module = "aws.sdk.kotlin:s3" }
 aws-kotlin-s3tables = { module = "aws.sdk.kotlin:s3tables" }
 aws-kotlin-ses = { module = "aws.sdk.kotlin:ses" }

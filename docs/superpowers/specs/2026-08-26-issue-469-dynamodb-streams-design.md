@@ -203,7 +203,7 @@ N/A는 실제 AWS 호출을 하지 않았다는 증거와 Floci가 제공하는 
 ## 7. 변경 표면과 문서 계약
 
 - `gradle/libs.versions.toml` 및 root dependency-management에
-  `aws.sdk.kotlin:dynamodbstreams-jvm` alias를 추가한다. Java Streams는 현재
+  `aws.sdk.kotlin:dynamodbstreams` alias를 추가한다. Java Streams는 현재
   `software.amazon.awssdk:dynamodb` artifact의 generated classes를 재사용하므로
   별도 `aws2-dynamodbstreams` alias를 만들지 않는다.
 - `aws-java`와 `aws-kotlin`의 source/test에 public KDoc, unit test, Floci capability

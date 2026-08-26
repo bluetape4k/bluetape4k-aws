@@ -13,7 +13,7 @@
   polling/retry/checkpoint/cancellation 계약을 잠근다.
 - Java SDK generated model은 `software.amazon.awssdk.services.dynamodb.model`을
   사용한다. 별도 Java Streams artifact alias를 만들지 않는다.
-- Kotlin SDK는 `aws.sdk.kotlin:dynamodbstreams-jvm`을 compileOnly/test fixture에
+- Kotlin SDK는 `aws.sdk.kotlin:dynamodbstreams`를 compileOnly/test fixture에
   등록한다. consumer가 실제 service dependency를 제공해야 하는 기존 BOM 정책을
   유지한다.
 - Flow에 주입된 client는 닫지 않는다. 소유 client helper만 `finally`/`useSafe`에서
@@ -27,10 +27,10 @@
 
 **파일**: `gradle/libs.versions.toml`, `build.gradle.kts`
 
-- `aws-kotlin-dynamodbstreams = { module = "aws.sdk.kotlin:dynamodbstreams-jvm" }`
+- `aws-kotlin-dynamodbstreams = { module = "aws.sdk.kotlin:dynamodbstreams" }`
   alias 추가
 - root `dependencyManagement.dependencies`에
-  `aws.sdk.kotlin:dynamodbstreams-jvm:${bt4kVersion("aws-kotlin")}` 추가
+  `aws.sdk.kotlin:dynamodbstreams:${bt4kVersion("aws-kotlin")}` 추가
 - `aws-kotlin/build.gradle.kts`에 `compileOnly(libs.aws.kotlin.dynamodbstreams)` 추가
 - `aws-java`는 이미 `compileOnly(libs.aws2.dynamodb.enhanced)`가 저수준
   `software.amazon.awssdk:dynamodb`를 제공하므로 `aws2-dynamodbstreams` alias를 만들지
