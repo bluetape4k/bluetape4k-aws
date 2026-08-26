@@ -230,7 +230,7 @@ class SnsHttpEndpointAutoConfigurationTest {
         val controllerMethod = NativeController::class.java
             .getDeclaredMethod("notification", NativePayload::class.java)
         ReflectiveRuntimeHintsRegistrar().registerRuntimeHints(hints, NativeController::class.java)
-        RuntimeHintsPredicates.reflection().onMethod(controllerMethod).test(hints) shouldBeEqualTo true
+        RuntimeHintsPredicates.reflection().onMethodInvocation(controllerMethod).test(hints) shouldBeEqualTo true
         RuntimeHintsPredicates.reflection().onType(NativePayload::class.java).test(hints) shouldBeEqualTo true
 
         val readValue = tools.jackson.databind.ObjectMapper::class.java.getMethod(
@@ -238,7 +238,7 @@ class SnsHttpEndpointAutoConfigurationTest {
             String::class.java,
             Class::class.java,
         )
-        RuntimeHintsPredicates.reflection().onMethod(readValue).test(hints) shouldBeEqualTo true
+        RuntimeHintsPredicates.reflection().onMethodInvocation(readValue).test(hints) shouldBeEqualTo true
     }
 
     @Configuration(proxyBeanMethods = false)
