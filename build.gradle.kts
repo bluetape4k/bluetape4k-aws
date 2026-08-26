@@ -357,6 +357,27 @@ val awsSpringSnsConsumerFixtureClasspath = configurations.create("awsSpringSnsCo
     }
 }
 
+val awsSpringModulithConsumerFixtureClasspath = configurations.create("awsSpringModulithConsumerFixtureClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "software.amazon.awssdk" -> useVersion(bt4kVersion("aws2"))
+            "org.jetbrains.kotlinx" -> if (requested.name.startsWith("kotlinx-coroutines")) {
+                useVersion(bt4kVersion("kotlinx-coroutines"))
+            }
+        }
+        because("consumer fixture resolves versions from the central bt4k catalog")
+    }
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_API))
+        attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+    }
+}
+
 fun Configuration.configureBedrockConsumerFixtureVersions() {
     isCanBeConsumed = false
     isCanBeResolved = true
@@ -450,6 +471,18 @@ dependencies {
     awsSpringSnsConsumerFixtureClasspath(libs.spring.context.support)
     awsSpringSnsConsumerFixtureClasspath(bt4k.bluetape4k.io)
     awsSpringSnsConsumerFixtureClasspath(bt4k.bluetape4k.coroutines)
+
+    awsSpringModulithConsumerFixtureClasspath(project(":bluetape4k-aws-spring-boot"))
+    awsSpringModulithConsumerFixtureClasspath(platform(bt4k.spring.boot4.dependencies))
+    awsSpringModulithConsumerFixtureClasspath(libs.aws2.sns)
+    awsSpringModulithConsumerFixtureClasspath(libs.aws2.sqs)
+    awsSpringModulithConsumerFixtureClasspath(libs.aws2.sns.message.manager)
+    awsSpringModulithConsumerFixtureClasspath(platform(bt4k.spring.modulith.bom))
+    awsSpringModulithConsumerFixtureClasspath(libs.spring.modulith.events.api)
+    awsSpringModulithConsumerFixtureClasspath(libs.spring.modulith.events.core)
+    awsSpringModulithConsumerFixtureClasspath(libs.spring.modulith.events.jackson)
+    awsSpringModulithConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
+    awsSpringModulithConsumerFixtureClasspath(libs.spring.context.support)
 
     bedrockJavaConsumerFixtureClasspath(project(":bluetape4k-aws-java"))
     bedrockJavaConsumerFixtureClasspath(libs.aws2.bedrock.runtime)
@@ -590,6 +623,37 @@ val compileSnsOperationsLegacyConsumerFixture = registerSnsConsumerFixtureCompil
     name = "compileSnsOperationsLegacyConsumerFixture",
     sourceFile = "io/bluetape4k/aws/spring/sns/consumer/LegacySnsOperationsFixture.kt",
     outputPath = "consumer-fixtures/aws-spring-sns/operations-legacy/classes",
+)
+
+fun registerSpringModulithConsumerFixtureCompile(
+    name: String,
+    sourceFile: String,
+    outputPath: String,
+): TaskProvider<out Task> {
+    val sourceSetName = name.removePrefix("compile").replaceFirstChar(Char::lowercase)
+    val sourceSet: SourceSet = sourceSets.create(sourceSetName)
+    tasks.named<JavaCompile>(sourceSet.compileJavaTaskName) {
+        options.release.set(25)
+    }
+    val kotlinCompile = tasks.named<KotlinJvmCompile>(sourceSet.getCompileTaskName("kotlin")) {
+        source(file(sourceFile))
+        libraries.setFrom(awsSpringModulithConsumerFixtureClasspath)
+        destinationDirectory.set(layout.buildDirectory.dir(outputPath))
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_25)
+        compilerOptions.freeCompilerArgs.add("-jvm-default=enable")
+        dependsOn(":bluetape4k-aws-spring-boot:jar")
+    }
+    return tasks.register(name) {
+        description = "Compiles an external Spring Modulith consumer compatibility fixture."
+        group = "verification"
+        dependsOn(kotlinCompile)
+    }
+}
+
+val compileAwsSpringModulithConsumerFixture = registerSpringModulithConsumerFixtureCompile(
+    name = "compileAwsSpringModulithConsumerFixture",
+    sourceFile = "aws-spring-boot/src/consumerFixture/kotlin/io/bluetape4k/aws/spring/modulith/consumer/AwsModulithConsumerFixture.kt",
+    outputPath = "consumer-fixtures/aws-spring-modulith/classes",
 )
 
 fun registerBedrockConsumerFixtureCompile(

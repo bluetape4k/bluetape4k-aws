@@ -70,6 +70,9 @@ spring-boot-configuration-processor = { module = "org.springframework.boot:sprin
 spring-context-support = { module = "org.springframework:spring-context-support" }
 spring-messaging = { module = "org.springframework:spring-messaging" }
 spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
+spring-modulith-events-api = { module = "org.springframework.modulith:spring-modulith-events-api" }
+spring-modulith-events-core = { module = "org.springframework.modulith:spring-modulith-events-core" }
+spring-modulith-events-jackson = { module = "org.springframework.modulith:spring-modulith-events-jackson" }
 jakarta-mail-api = { module = "jakarta.mail:jakarta.mail-api" }
 angus-mail = { module = "org.eclipse.angus:angus-mail" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
