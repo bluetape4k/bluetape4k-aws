@@ -3,7 +3,6 @@ package io.bluetape4k.aws.spring.sns
 import org.springframework.boot.json.JsonParserFactory
 import java.net.URI
 
-private const val DEFAULT_MAX_SNS_HTTP_MESSAGE_BYTES: Int = 256 * 1024
 private const val MIN_SNS_TOPIC_ARN_PARTS: Int = 6
 private const val MIN_SNS_SIGNING_CERT_HOST_LABELS: Int = 4
 private const val SNS_ARN_PREFIX_INDEX: Int = 0
@@ -27,7 +26,7 @@ object SnsHttpMessageParser {
 
     fun parse(json: String, messageTypeHeader: String? = null): SnsHttpMessage {
         require(json.isNotBlank()) { "json must not be blank." }
-        require(json.toByteArray(Charsets.UTF_8).size <= DEFAULT_MAX_SNS_HTTP_MESSAGE_BYTES) {
+        require(json.toByteArray(Charsets.UTF_8).size <= SnsHttpMessageLimits.MAX_BYTES) {
             "SNS HTTP message exceeds maxMessageBytes."
         }
 

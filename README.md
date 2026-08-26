@@ -955,6 +955,97 @@ class OrderTopic(
 }
 ```
 
+#### SNS HTTP endpoint annotations
+
+The Spring Boot module also provides composed mappings for SNS HTTP(S) delivery. The
+three mappings accept `POST` requests with the matching
+`x-amz-sns-message-type` header and return `204 No Content`. MVC and WebFlux
+controllers, including Kotlin `suspend` handlers, can resolve the parsed envelope
+from one bounded, replayable request body:
+
+The endpoint adapter requires the AWS SNS service SDK at runtime, including for
+notification-only mappings, because the public `NotificationStatus` contract
+returns `ConfirmSubscriptionResponse`. Add `software.amazon.awssdk:sns` to the
+consumer runtime; the auto-configuration backs off when that SDK is absent.
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsHttpMessage
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
+import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessage
+import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
+import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class SnsHttpController {
+    @NotificationMessageMapping(path = ["/sns/notifications"])
+    suspend fun notification(
+        @NotificationMessage payload: OrderPayload,
+        @NotificationSubject subject: String?,
+    ) {
+        // Process idempotently; SNS may redeliver a notification.
+    }
+
+    @NotificationSubscriptionMapping(path = ["/sns/subscriptions"])
+    suspend fun subscription(status: NotificationStatus) {
+        // Confirmation is explicit; the adapter never calls AWS automatically.
+        status.confirmSubscription()
+    }
+
+    @NotificationUnsubscribeConfirmationMapping(path = ["/sns/unsubscriptions"])
+    fun unsubscribe(status: NotificationStatus) {
+        // Unsubscribe confirmation is also explicit.
+    }
+
+    @NotificationMessageMapping(path = ["/sns/raw"])
+    fun raw(@io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage message: SnsHttpMessage) {
+        // The raw envelope is available when no typed payload is needed.
+    }
+}
+
+class OrderPayload {
+    var orderId: String = ""
+}
+```
+
+The adapter is fail-closed by default. Configure the expected topic ARN and keep
+the existing SNS verifier enabled before accepting traffic:
+
+```yaml
+bluetape4k:
+  aws:
+    sns:
+      http-endpoints:
+        enabled: true
+        verification-required: true
+        allow-structural-only: false
+        expected-topic-arns:
+          - arn:aws:sns:us-west-2:123456789012:orders
+```
+
+An empty allowlist rejects requests with `403`, and a missing verifier rejects
+requests with `503`; neither path invokes the handler. SNS commonly sends the
+outer HTTP body as `text/plain`, which is accepted. A non-`String`
+`@NotificationMessage` parameter requires the envelope attribute
+`MessageAttributes.contentType=application/json`; malformed JSON, signature,
+header/type, and size failures return `400` before handler invocation.
+
+`SnsHttpMessageVerifier` keeps `software.amazon.awssdk:sns-message-manager` as a
+`compileOnly` dependency, so applications must add it at runtime when signature
+verification is enabled. Certificate-fetch timeout and retry ownership remains
+with the AWS SDK message manager/application client configuration; this adapter
+does not retry rejected HTTP deliveries or handler invocations.
+
+`NotificationUnsubscribeConfirmationMapping` covers the unsubscribe confirmation
+message. It is intentionally separate from `NotificationSubscriptionMapping`,
+and both expose `NotificationStatus` for an explicit `confirmSubscription()` call.
+For a temporary diagnostic rollback only, set both
+`verification-required=false` and `allow-structural-only=true`; this bypasses
+signature verification and must not be used for production SNS traffic. Disable
+the adapter entirely with `bluetape4k.aws.sns.http-endpoints.enabled=false`.
+
 `SnsOperations.findTopicArn` accepts a topic name or an explicit SNS ARN. Name
 lookups use a bounded, scoped TTL/LRU cache (default: enabled, 256 entries,
 5 minutes) and per-topic single-flight; setting

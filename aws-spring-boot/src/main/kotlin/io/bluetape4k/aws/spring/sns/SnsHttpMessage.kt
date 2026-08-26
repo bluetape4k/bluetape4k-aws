@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
 import java.io.Serializable
 import java.net.URI
 
@@ -37,6 +38,32 @@ data class SnsHttpMessage(
     val canConfirmSubscription: Boolean
         get() = type == SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION ||
             type == SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
+
+    /** SNS와 SQS adapter가 공유하는 `SnsMessageAttribute` 타입의 방어적 snapshot입니다. */
+    val messageAttributes: Map<String, SnsMessageAttribute>
+        get() {
+            val attributes = raw["MessageAttributes"] ?: return emptyMap()
+            require(attributes is Map<*, *>) {
+                "SNS HTTP message field MessageAttributes must be an object."
+            }
+            return attributes.entries.associate { (key, value) ->
+                require(key is String && key.isNotBlank()) {
+                    "SNS HTTP message attribute names must be non-blank strings."
+                }
+                require(value is Map<*, *>) {
+                    "SNS HTTP message attribute $key must be an object."
+                }
+                val attributeType = value["Type"]
+                val attributeValue = value["Value"]
+                require(attributeType is String && attributeType.isNotBlank()) {
+                    "SNS HTTP message attribute $key Type must be a non-blank string."
+                }
+                require(attributeValue is String) {
+                    "SNS HTTP message attribute $key Value must be a string."
+                }
+                key to SnsMessageAttribute(attributeType, attributeValue)
+            }
+        }
 
     internal fun requireConfirmationToken(): String {
         require(canConfirmSubscription) {
