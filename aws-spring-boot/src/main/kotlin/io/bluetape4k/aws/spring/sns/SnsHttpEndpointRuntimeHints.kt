@@ -26,12 +26,9 @@ class SnsHttpEndpointRuntimeHints : RuntimeHintsRegistrar {
             NotificationRawMessage::class.java,
             NotificationStatus::class.java,
         ).forEach { type ->
-            hints.reflection().registerType(
-                type,
-                MemberCategory.INTROSPECT_DECLARED_METHODS,
-                MemberCategory.INVOKE_DECLARED_METHODS,
-                MemberCategory.INTROSPECT_DECLARED_CONSTRUCTORS,
-            )
+            hints.reflection().registerType(type) { typeHint ->
+                typeHint.withMembers(MemberCategory.INVOKE_DECLARED_METHODS)
+            }
         }
 
         val mapperType = runCatching {

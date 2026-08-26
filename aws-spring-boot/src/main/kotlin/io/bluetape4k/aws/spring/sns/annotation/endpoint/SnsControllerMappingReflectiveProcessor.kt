@@ -14,16 +14,14 @@ class SnsControllerMappingReflectiveProcessor : ReflectiveProcessor {
     override fun registerReflectionHints(hints: ReflectionHints, element: AnnotatedElement) {
         when (element) {
             is Method -> registerMethodHints(hints, element)
-            is Class<*> -> hints.registerType(element, MemberCategory.INTROSPECT_DECLARED_METHODS)
+            is Class<*> -> hints.registerType(element)
         }
     }
 
     private fun registerMethodHints(hints: ReflectionHints, method: Method) {
-        hints.registerType(
-            method.declaringClass,
-            MemberCategory.INTROSPECT_DECLARED_METHODS,
-            MemberCategory.INVOKE_DECLARED_METHODS,
-        )
+        hints.registerType(method.declaringClass) { typeHint ->
+            typeHint.withMembers(MemberCategory.INVOKE_DECLARED_METHODS)
+        }
         hints.registerMethod(method, ExecutableMode.INVOKE)
         BindingReflectionHintsRegistrar().registerReflectionHints(hints, *method.genericParameterTypes)
         BindingReflectionHintsRegistrar().registerReflectionHints(hints, method.genericReturnType)
