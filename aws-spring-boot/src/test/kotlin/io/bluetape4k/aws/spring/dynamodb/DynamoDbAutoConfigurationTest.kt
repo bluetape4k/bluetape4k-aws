@@ -47,6 +47,8 @@ class DynamoDbAutoConfigurationTest {
             context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(DynamoDbProperties::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(DynamoDbTableNameResolver::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(DynamoDbTableSchemaResolver::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
         }
     }
 
@@ -58,6 +60,8 @@ class DynamoDbAutoConfigurationTest {
                 context.getBeansOfType(DynamoDbAsyncClient::class.java).isEmpty().shouldBeTrue()
                 context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).isEmpty().shouldBeTrue()
                 context.getBeansOfType(DynamoDbTableNameResolver::class.java).isEmpty().shouldBeTrue()
+                context.getBeansOfType(DynamoDbTableSchemaResolver::class.java).isEmpty().shouldBeTrue()
+                context.getBeansOfType(DynamoDbTemplate::class.java).isEmpty().shouldBeTrue()
             }
     }
 
@@ -69,6 +73,7 @@ class DynamoDbAutoConfigurationTest {
                 context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
                 context.getBean(DynamoDbAsyncClient::class.java) shouldBeSameInstanceAs customClient
                 context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -84,6 +89,7 @@ class DynamoDbAutoConfigurationTest {
                 context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
                 context.getBean(DynamoDbAsyncClient::class.java) shouldBeSameInstanceAs customClient
                 context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -94,6 +100,7 @@ class DynamoDbAutoConfigurationTest {
             .run { context ->
                 context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
                 context.getBean(DynamoDbEnhancedAsyncClient::class.java) shouldBeSameInstanceAs customEnhancedClient
+                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -138,6 +145,7 @@ class DynamoDbAutoConfigurationTest {
                 context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
                 context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
                 (context.getBean(DynamoDbAsyncClient::class.java) !is ClusterDaxAsyncClient).shouldBeTrue()
+                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -204,6 +212,7 @@ class DynamoDbAutoConfigurationTest {
                 context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
                 (context.getBean(DynamoDbAsyncClient::class.java) is ClusterDaxAsyncClient).shouldBeTrue()
                 context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
             }
     }
 

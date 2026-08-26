@@ -84,4 +84,18 @@ class DynamoDbAutoConfiguration {
     @ConditionalOnMissingBean
     fun dynamoDbTableNameResolver(properties: DynamoDbProperties): DynamoDbTableNameResolver =
         DefaultDynamoDbTableNameResolver(properties.tablePrefix)
+
+    @Bean
+    @ConditionalOnMissingBean(DynamoDbTableSchemaResolver::class)
+    fun dynamoDbTableSchemaResolver(): DynamoDbTableSchemaResolver =
+        DefaultDynamoDbTableSchemaResolver()
+
+    @Bean
+    @ConditionalOnMissingBean(DynamoDbTemplate::class)
+    fun dynamoDbTemplate(
+        dynamoDbEnhancedAsyncClient: DynamoDbEnhancedAsyncClient,
+        tableNameResolver: DynamoDbTableNameResolver,
+        schemaResolver: DynamoDbTableSchemaResolver,
+    ): DynamoDbTemplate =
+        DynamoDbTemplate(dynamoDbEnhancedAsyncClient, tableNameResolver, schemaResolver)
 }
