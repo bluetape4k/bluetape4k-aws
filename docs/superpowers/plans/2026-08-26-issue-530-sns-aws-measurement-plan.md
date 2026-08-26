@@ -5,10 +5,22 @@
 - **문서 종류:** Type-E 측정 harness·운영 계획
 - **독자:** AWS SNS 성능 측정을 승인하고 결과를 재현할 bluetape4k 유지보수자
 - **목적:** Issue #529의 Floci 결과와 실제 AWS 결과를 섞지 않고, 승인된 계정에서만 실행할 측정 경계를 고정한다.
-- **현재 근거:** Issue #530 본문, `SnsBatchExecutor.kt`, `SnsCoroutinesTemplateAwsEmulatorTest.kt`, `parse_sns_batch_benchmark.py`, `run_sns_batch_floci_measurement.sh`
+- **현재 근거:** Issue #530 본문, `SnsBatchExecutor.kt`, `SnsCoroutinesTemplateAwsEmulatorTest.kt`, `parse_sns_batch_benchmark.py`, `run_sns_batch_floci_measurement.sh`, `issue-530-floci-20260826` 결과
 - **미확인 사항:** 실제 AWS 지연시간·처리량·heap/allocation·retention·caller cancellation 결과와 hosted CI 결과는 아직 없다.
 
 Issue #530에는 최적화 후보, 목표 개선율, 중단 기준이 없다. 따라서 Type-F 후보 경쟁으로 확장하지 않고 Type-E 준비 작업으로 분류한다. 이 계획은 생산 코드나 릴리스 기준선을 변경하지 않는다.
+
+## FlociServer 로컬 보조 측정
+
+`bluetape4k-testcontainers`의 `FlociServer.Launcher.floci`를 사용하는 기존
+`AwsSpringBootTestEmulator` 경로로 `issue-530-floci-20260826`을 실행했다. `success`와
+`transport` 2개 시나리오, `entryCount` 6개, `maxInFlightBatches` 3개를 조합한 36행이
+생성되었고, warmup 1회와 측정 3회를 모두 완료했다. parser의 JSON 검증과 결과 디렉터리
+redaction 검사는 PASS였다.
+
+이 결과는 Floci 컨테이너와 JVM의 로컬 보조 baseline일 뿐이다. 실제 AWS publisher의
+지연시간·비용·quota·retention·backend heap을 증명하지 않으므로 Issue #530의 실제 AWS
+완료 조건이나 production performance baseline을 대체하지 않는다.
 
 ## SPW-02 — 범위와 계약
 
@@ -62,7 +74,9 @@ AWS backend가 혼합 응답·프로토콜 불일치·caller cancellation을 결
 2. preflight와 redaction checker를 구현하고 Python 테스트를 GREEN으로 만든다.
 3. `SnsCoroutinesTemplateAwsMeasurementTest`를 추가한다. 테스트는 `DefaultCredentialsProvider`와 기본 AWS endpoint만 사용하고, system property가 없으면 비활성화한다.
 4. wrapper가 preflight → caller identity 비교 → Gradle 테스트 → parser → JFR metadata 확인 → redaction 검사를 순서대로 수행하게 한다.
-5. 로컬에서는 실제 AWS 환경변수를 설정하거나 wrapper를 성공 경로로 실행하지 않는다. 현재 검증은 no-approval fail-closed, Python, Kotlin compile, shell syntax에 한정한다.
+5. 로컬에서는 `run_sns_batch_floci_measurement.sh`로 Floci 보조 측정을 실행하고, 실제 AWS
+   wrapper는 승인된 환경변수가 있을 때만 성공 경로로 실행한다. 두 backend 결과를 섞지
+   않으며, 실제 AWS 미실행 상태는 PENDING으로 유지한다.
 
 ## 검증 명령과 기대 증거
 
@@ -75,7 +89,16 @@ bash -n scripts/benchmarks/run_sns_batch_aws_measurement.sh
   --no-daemon --max-workers=1 --no-configuration-cache
 ```
 
-승인 없는 wrapper 실행은 exit 2이며 `aws sts`를 호출하지 않아야 한다. 실제 AWS 실행은 승인된 계정·region·quota·비용·retention 값을 별도 운영 기록으로 남긴 뒤에만 수행한다. 성공 후에는 원시 JSON, parser `summary.json`, JFR, allocation/retention/capability 파일과 redaction PASS를 Issue #530에 연결한다.
+승인 없는 wrapper 실행은 exit 2이며 `aws sts`를 호출하지 않아야 한다. Floci 보조 실행은
+다음 명령으로 재현할 수 있다.
+
+```bash
+./scripts/benchmarks/run_sns_batch_floci_measurement.sh issue-530-floci-<run-id>
+```
+
+실제 AWS 실행은 승인된 계정·region·quota·비용·retention 값을 별도 운영 기록으로 남긴
+뒤에만 수행한다. 성공 후에는 원시 JSON, parser `summary.json`, JFR,
+allocation/retention/capability 파일과 redaction PASS를 Issue #530에 연결한다.
 
 ## 재실행과 되돌리기
 
@@ -88,7 +111,8 @@ bash -n scripts/benchmarks/run_sns_batch_aws_measurement.sh
 
 - [ ] AWS credential/account/region/quota/cost/retention 승인과 redaction 검증 — 외부 승인 대기
 - [x] 고정된 command·matrix·warmup/repetition·commit/JDK/OS 기록 경로 — wrapper와 `environment.json` 계약
-- [x] 실제 AWS latency/throughput/cleanup 원시 결과와 parser 경로 — harness 준비, AWS 실행 대기
+- [x] `bluetape4k-testcontainers` `FlociServer` 기반 36셀 로컬 보조 측정 — `issue-530-floci-20260826`, parser/redaction PASS
+- [ ] 실제 AWS latency/throughput/cleanup 원시 결과와 parser 경로 — harness 준비, AWS 실행 대기
 - [x] JFR allocation/retention과 class histogram 경로 — profile 형식과 unavailable 상태 명시
 - [x] mixed/protocol/cancellation capability 경계 — `capability.json` 계약과 기존 단위 테스트 연결
 - [x] plan/lesson/review 문서 — 세 문서에 독립적인 근거와 미확인 사항 기록

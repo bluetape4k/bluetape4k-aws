@@ -3,13 +3,16 @@
 ## SPW-01 — 범위와 검토 근거
 
 - **범위:** 새 preflight, AWS 실행 wrapper, redaction checker, opt-in Kotlin measurement test와 관련 문서
-- **검토 기준:** Issue #530 본문, 기존 #529 Floci 측정 경로, `SnsBatchExecutor.kt`의 await·bounded worker·cleanup 계약, parser의 36셀 guard
+- **검토 기준:** Issue #530 본문, 기존 #529 Floci 측정 경로, `SnsBatchExecutor.kt`의 await·bounded worker·cleanup 계약, parser의 36셀 guard, `issue-530-floci-20260826` 결과
 - **검토 방식:** 소스·스크립트 read-only 대조와 로컬 테스트/컴파일 결과 확인
 - **제외:** 실제 AWS 계정 호출, hosted CI, PR review, merge, release baseline
 
 ## 판정
 
 **PENDING — 로컬 준비는 통과했지만 실제 AWS 증거가 없어 Issue #530 완료나 production performance baseline을 판정할 수 없다.**
+
+FlociServer 보조 측정은 `issue-530-floci-20260826`에서 36행과 parser/redaction PASS로
+확인했지만, 이는 실제 AWS publisher·비용·quota·heap·retention 증거가 아니다.
 
 ## Findings
 
@@ -43,6 +46,8 @@
 
 ## 검증 증거
 
+- Floci 보조 측정: `bluetape4k-testcontainers` `FlociServer.Launcher.floci`, 36행 PASS
+- Floci 결과 JSON parser와 redaction checker: PASS
 - Python 단위 테스트: 8건 PASS
 - shell syntax: `bash -n` PASS
 - Kotlin: `./gradlew :bluetape4k-aws-spring-boot:compileTestKotlin --no-daemon --max-workers=1 --no-configuration-cache` PASS
