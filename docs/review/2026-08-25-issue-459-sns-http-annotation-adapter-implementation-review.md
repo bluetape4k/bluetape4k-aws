@@ -18,7 +18,7 @@
 - P0: 0
 - P1: 0
 - P2: 1 (Spring reflection API deprecation 경고; 동작 blocker 아님)
-- 결정: **PASS — PR/merge 단계로 진행하지 않고 local delivery에서 종료**
+- 결정: **초기 local PASS — 사용자 delivery 지시에 따라 PR 단계로 확장하고 repair review 진행**
 
 초기 독립 review에서 확인된 P1은 모두 수정했다. Servlet의
 `ResponseStatusException`도 `classify → record → sendError`를 통과하며 로그는
@@ -82,14 +82,36 @@ git diff --check
   credential-gated live smoke는 실행하지 않았다. Floci는 signed SNS HTTP payload를
   생성하지 않으며, 이번 변경은 parser/verifier mock과 local Web stack 경계를
   보장한다.
-- PR 생성, push, merge, issue close, release는 사용자 범위 밖이므로 수행하지
-  않는다. human review도 사용자 지시에 따라 N/A다.
+- PR/merge와 issue close/release는 별도 gate로 분리한다. PR #568 생성·push는
+  사용자 delivery 지시에 따라 수행했고, merge는 fresh approval 전까지 수행하지
+  않는다. human review는 사용자 지시에 따라 N/A다.
 
 ## DoD Status
 
-- 상태: local implementation review 통과
-- P0/P1: `0/0`
+- 상태: 초기 local implementation review 통과, PR repair review 진행 중
+- P0/P1: 초기 review `0/0`; PR 후 architecture/API P1 3건을 repair하고 최신 head 재검토 중
 - 완료: design/plan traceability, TDD RED/GREEN, independent role review,
   Kotlin/Spring implementation, MVC/WebFlux lifecycle, optional classpath/AOT,
   EN/KO docs, full module/root validation, lesson artifact
-- 미완료: hosted CI, PR review/merge, real AWS signed smoke (범위 밖/N/A)
+- 미완료: 최신 PR exact-head hosted CI/review, merge approval, real AWS signed smoke (범위 밖/N/A)
+
+## PR 후 repair addendum
+
+- PR: [#568](https://github.com/bluetape4k/bluetape4k-aws/pull/568)
+- 최신 exact head: `3c4b18375fd1365dc7e7694926d686e050911bc3`
+- repair 내용:
+  - `SnsHttpMessageResolverSupport`가 method/class composed mapping을 판별해
+    notification parameter와 confirmation-only `NotificationStatus` 조합을
+    startup에서 fail-fast한다. MVC/WebFlux context startup-failure 테스트와
+    class-level mapping 테스트가 이를 증명한다.
+  - handler mapping 탐색을 `SmartInitializingSingleton`의 직접 handler map
+    공급으로 바꿔 `Class.forName`/`Method.invoke` 경계를 제거하고,
+    optional Jackson `ObjectMapper.readValue(String, Class)`만 exact runtime
+    hint로 등록한다.
+  - SNS SDK `ConfirmSubscriptionResponse`를 두 endpoint auto-configuration의
+    classpath 조건으로 고정하고 `FilteredClassLoader` 부재 테스트와 EN/KO
+    runtime dependency 문서를 추가했다.
+- 최신 local evidence: targeted 17 tests, module 767/767 (serial), module/root
+  detekt PASS, root `build -x test` PASS, `git diff --check` PASS.
+- 독립 최신 head review와 hosted CI는 이 addendum 작성 시점에 진행 중이며,
+  결과를 확인한 뒤 P0/P1 수렴과 CG-14 상태를 갱신한다.

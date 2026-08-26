@@ -17,10 +17,13 @@
 4. confirmation은 `NotificationStatus`를 통한 명시적 `confirmSubscription()`만
    허용한다. subscription과 unsubscribe를 별도 mapping으로 유지해 자동 side
    effect와 재전달 처리를 섞지 않는다.
-5. `ObjectMapper`와 web stack은 optional classpath 경계로 취급한다. Jackson은
-   reflection bridge로만 조회하고, MVC/WebFlux auto-configuration은 string-based
-   condition으로 back off한다. AOT는 annotation만 보존하지 않고 실제 controller
-   method와 payload type을 reflective processor로 등록한다.
+5. Jackson `ObjectMapper`와 web stack은 optional classpath 경계로 취급하되,
+   endpoint adapter 자체는 공개 `NotificationStatus`의
+   `ConfirmSubscriptionResponse` 계약 때문에 SNS service SDK를 런타임 필수로
+   둔다. Jackson은 reflection bridge와 exact runtime hint로만 조회하고,
+   MVC/WebFlux auto-configuration은 SNS SDK 또는 web stack이 없으면 back off한다.
+   AOT는 annotation만 보존하지 않고 실제 controller method와 payload type을
+   reflective processor로 등록한다.
 
 ## 검증에서 배운 점
 
@@ -38,8 +41,10 @@
   `path = ["/..."]` 문법을 사용해야 한다. 독립 API review에서 발견한 예제 오류를
   문서 양국에서 수정하고 reflection/endpoint fixture로 실제 사용 형태를 고정했다.
 - compileOnly SDK는 코드가 컴파일된다는 사실만으로 runtime 계약이 완성되지 않는다.
-  `FilteredClassLoader`에서 raw/String path가 시작하는지와 runtime dependency,
-  SDK timeout/retry ownership을 함께 문서화해야 한다.
+  endpoint adapter처럼 공개 API descriptor가 SDK type을 노출하면
+  `FilteredClassLoader`에서 auto-configuration이 back off하는지와 소비자 runtime
+  dependency를 함께 문서화해야 한다. SDK timeout/retry ownership도 별도로
+  명시한다.
 
 ## 다음 변경자를 위한 지침
 
