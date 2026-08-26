@@ -21,7 +21,7 @@ internal data class SqsListenerEndpoint(
     val batch: Boolean = false,
     val acknowledgementMode: SqsAcknowledgementMode = SqsAcknowledgementMode.INHERIT,
     val backPressureMode: SqsBackPressureMode = SqsBackPressureMode.FIXED,
-    val maxInFlight: Int = maxMessages,
+    val maxInFlight: Int = maxMessages * concurrency,
     val fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy =
         SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
     val queueAttributeNames: Set<QueueAttributeName> = emptySet(),

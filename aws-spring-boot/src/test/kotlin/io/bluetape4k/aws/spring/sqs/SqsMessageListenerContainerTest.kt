@@ -728,9 +728,9 @@ class SqsMessageListenerContainerTest {
         interceptors: List<SqsListenerInterceptor> = emptyList(),
         messageVisibilityHeartbeatIntervalSeconds: Int? = null,
         messageVisibilityHeartbeatSeconds: Int? = null,
-        maxInFlight: Int = maxMessages,
-        fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy = SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
         concurrency: Int = 1,
+        maxInFlight: Int = maxMessages * concurrency,
+        fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy = SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
     ): SqsMessageListenerContainer {
         return SqsMessageListenerContainer(
             endpoint = SqsListenerEndpoint(

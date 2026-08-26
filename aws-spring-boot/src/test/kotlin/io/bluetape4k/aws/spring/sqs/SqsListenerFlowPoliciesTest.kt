@@ -21,6 +21,13 @@ class SqsListenerFlowPoliciesTest {
     }
 
     @Test
+    fun `listener default admission preserves configured polling concurrency`() {
+        val listener = SqsProperties.Listener(maxMessages = 4, concurrency = 3)
+
+        listener.maxInFlight shouldBeEqualTo 12
+    }
+
+    @Test
     fun `listener rejects invalid admission and attribute cache values`() {
         assertFailsWith<IllegalArgumentException> {
             SqsProperties.Listener(maxInFlight = 0)
