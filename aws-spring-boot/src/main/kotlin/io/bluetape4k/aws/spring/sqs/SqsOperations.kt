@@ -59,15 +59,6 @@ interface SqsOperations {
     suspend fun createConfiguredQueue(queueName: String): String
 
     /**
-     * queue URL의 속성을 조회합니다. 기본 구현은 기존 사용자 구현과의 ABI 호환을 위해 빈 결과를 반환합니다.
-     * FIFO/visibility cache를 사용하려면 AWS adapter 또는 custom 구현이 이 메서드를 재정의해야 합니다.
-     */
-    suspend fun getQueueAttributes(
-        queueUrl: String,
-        attributeNames: Collection<QueueAttributeName>,
-    ): Map<QueueAttributeName, String> = emptyMap()
-
-    /**
      * 큐 URL로 메시지를 전송합니다.
      */
     suspend fun send(
@@ -190,4 +181,16 @@ private fun validateVisibilityBatchRequests(requests: List<SqsChangeVisibilityRe
         "duplicate batch visibility request"
     }
     requests.forEach { requireVisibilityTimeout(it.timeoutSeconds) }
+}
+
+/**
+ * queue URL 속성 조회가 필요한 adapter가 선택적으로 구현하는 additive capability입니다.
+ * 기존 [SqsOperations] 구현의 public ABI는 변경하지 않습니다.
+ */
+interface SqsQueueAttributesOperations : SqsOperations {
+
+    suspend fun getQueueAttributes(
+        queueUrl: String,
+        attributeNames: Collection<QueueAttributeName>,
+    ): Map<QueueAttributeName, String>
 }

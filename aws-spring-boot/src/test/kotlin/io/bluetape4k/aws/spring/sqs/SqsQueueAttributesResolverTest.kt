@@ -15,7 +15,7 @@ class SqsQueueAttributesResolverTest {
 
     @Test
     fun `successful queue attributes are cached by URL and requested names`() = runSuspendIO {
-        val operations = mockk<SqsOperations>()
+        val operations = mockk<SqsQueueAttributesOperations>()
         val now = AtomicLong(0)
         val names = setOf(QueueAttributeName.FIFO_QUEUE)
         coEvery { operations.getQueueAttributes(QUEUE_URL, names) } returns
@@ -35,7 +35,7 @@ class SqsQueueAttributesResolverTest {
 
     @Test
     fun `expired queue attributes are looked up again`() = runTest {
-        val operations = mockk<SqsOperations>()
+        val operations = mockk<SqsQueueAttributesOperations>()
         val now = AtomicLong(0)
         val names = setOf(QueueAttributeName.VISIBILITY_TIMEOUT)
         coEvery { operations.getQueueAttributes(QUEUE_URL, names) } returns

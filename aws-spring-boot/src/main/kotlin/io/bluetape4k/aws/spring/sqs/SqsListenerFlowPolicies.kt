@@ -90,7 +90,10 @@ class DefaultSqsQueueAttributesResolver(
         val values = if (names.isEmpty()) {
             emptyMap()
         } else {
-            operations.getQueueAttributes(queueUrl, names).toMap()
+            (operations as? SqsQueueAttributesOperations)
+                ?.getQueueAttributes(queueUrl, names)
+                ?.toMap()
+                .orEmpty()
         }
         val attributes = SqsQueueAttributes(queueUrl, values)
         if (!cacheTtl.isZero) {

@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 class SqsCoroutinesTemplate(
     private val sqsAsyncClient: SqsAsyncClient,
     private val properties: SqsProperties,
-): SqsFullRequestOperations {
+): SqsFullRequestOperations, SqsQueueAttributesOperations {
 
     override suspend fun getQueueUrl(queueName: String): String =
         sqsAsyncClient.getQueueUrl(queueName).queueUrl()

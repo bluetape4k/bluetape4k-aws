@@ -22,7 +22,7 @@ open class MicrometerSqsOperations(
     private val delegate: SqsOperations,
     private val meterRegistry: MeterRegistry,
     private val meterName: String = DEFAULT_METER_NAME,
-): SqsOperations {
+): SqsQueueAttributesOperations {
 
     override suspend fun getQueueUrl(queueName: String): String =
         record(OPERATION_GET_QUEUE_URL) {
@@ -47,7 +47,9 @@ open class MicrometerSqsOperations(
         attributeNames: Collection<QueueAttributeName>,
     ): Map<QueueAttributeName, String> =
         record(OPERATION_GET_QUEUE_ATTRIBUTES, queueUrl) {
-            delegate.getQueueAttributes(queueUrl, attributeNames)
+            (delegate as? SqsQueueAttributesOperations)
+                ?.getQueueAttributes(queueUrl, attributeNames)
+                .orEmpty()
         }
 
     override suspend fun send(queueUrl: String, body: String, delaySeconds: Int?): SendMessageResponse =
