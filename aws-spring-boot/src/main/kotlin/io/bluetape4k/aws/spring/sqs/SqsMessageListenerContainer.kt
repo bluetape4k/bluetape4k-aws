@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference
     "TooManyFunctions",
     "TooGenericExceptionCaught",
     "ThrowsCount",
+    "LargeClass",
 )
 class SqsMessageListenerContainer internal constructor(
     private val endpoint: SqsListenerEndpoint,
@@ -330,7 +331,9 @@ class SqsMessageListenerContainer internal constructor(
             repeat(acquired) { current.inFlight.release() }
             throw e
         }
-        val groupMutex = if (endpoint.fifoBatchGroupingStrategy == SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID) {
+        val groupMutex = if (
+            endpoint.fifoBatchGroupingStrategy == SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID
+        ) {
             messageGroupId?.takeIf(String::isNotBlank)?.let {
                 current.groupMutexes.computeIfAbsent(it) { Mutex() }
             }

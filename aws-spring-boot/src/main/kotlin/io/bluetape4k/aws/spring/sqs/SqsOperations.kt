@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
  * }
  * ```
  */
+@Suppress("TooManyFunctions")
 interface SqsOperations {
 
     /**

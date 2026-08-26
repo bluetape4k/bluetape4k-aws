@@ -5,6 +5,9 @@ import java.io.Serializable
 import java.net.URI
 import java.time.Duration
 
+private const val DEFAULT_OUTPUT_STREAM_THRESHOLD_BYTES: Long = 8L * 1024 * 1024
+private const val DEFAULT_OUTPUT_STREAM_PART_SIZE_BYTES: Long = 8L * 1024 * 1024
+
 /**
  * Spring Boot S3 지원용 구성 속성입니다.
  */
@@ -33,9 +36,9 @@ data class S3Properties(
         val uploadDirectoryMaxDepth: Int? = null,
         val transferDirectoryMaxConcurrency: Int? = null,
         /** 메모리에서 임시 파일로 전환하는 스트림 누적 한계입니다. */
-        val outputStreamThresholdBytes: Long = 8 * 1024 * 1024,
+        val outputStreamThresholdBytes: Long = DEFAULT_OUTPUT_STREAM_THRESHOLD_BYTES,
         /** TransferManager multipart 업로드를 위한 권장 part 크기입니다. */
-        val outputStreamPartSizeBytes: Long = 8 * 1024 * 1024,
+        val outputStreamPartSizeBytes: Long = DEFAULT_OUTPUT_STREAM_PART_SIZE_BYTES,
     ) : Serializable {
         init {
             require(uploadDirectoryMaxDepth == null || uploadDirectoryMaxDepth >= 0) {

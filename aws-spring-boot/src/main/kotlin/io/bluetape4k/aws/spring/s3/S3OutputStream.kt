@@ -18,6 +18,7 @@ import java.nio.file.Paths
  * [complete]를 직접 호출하는 것이 좋습니다. close 경계의 blocking 작업은 항상
  * `Dispatchers.IO`에서 실행됩니다.
  */
+@Suppress("TooGenericExceptionCaught")
 class S3OutputStream(
     private val operations: S3TransferOperations,
     private val bucket: String,

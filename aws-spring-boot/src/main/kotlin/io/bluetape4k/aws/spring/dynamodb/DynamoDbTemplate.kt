@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap
  * val loaded = template.getItem("orders", key, Order::class.java)
  * ```
  */
+@Suppress("TooGenericExceptionCaught")
 class DynamoDbTemplate(
     private val enhancedClient: DynamoDbEnhancedAsyncClient,
     private val tableNameResolver: DynamoDbTableNameResolver,
