@@ -140,8 +140,8 @@ data class AwsModulithEventTypeRegistration<T : Any>(
 class AwsModulithEventTypeRegistry private constructor(
     registrations: List<AwsModulithEventTypeRegistration<*>>,
 ) {
-    fun registrationFor(event: Any): AwsModulithResolvedRegistration
-    fun registrationFor(type: String, version: Int): AwsModulithResolvedRegistration
+    internal fun registrationFor(event: Any): AwsModulithResolvedRegistration
+    internal fun registrationFor(type: String, version: Int): AwsModulithResolvedRegistration
 
     companion object {
         fun of(vararg registrations: AwsModulithEventTypeRegistration<*>):
@@ -154,7 +154,8 @@ registry는 exact runtime class로 registration을 찾고 내부 resolved wrappe
 `eventClass.cast(event)` 뒤 typed lambdas를 호출한다. subclass/proxy 또는 잘못된 mapped
 payload는 unchecked cast가 아니라 `AwsModulithEventRegistrationMismatchException`
 (`BT4K-MOD-102`)으로 publication별 실패가 된다. duplicate/invalid registration은 registry
-생성 시 configuration error다.
+생성 시 configuration error다. 두 lookup 함수와 `AwsModulithResolvedRegistration`은
+adapter 구현 전용 `internal` API이며 consumer public ABI에 노출하지 않는다.
 
 각 registration은 다음 불변 조건을 가진다.
 
@@ -342,7 +343,16 @@ transport에 전달된 mapped payload의 registration header만 wire header로 �
 ```kotlin
 enum class AwsModulithConsumeOutcome { PROCESSED, COMPLETED_DUPLICATE }
 
-class AwsModulithSqsEventConsumer {
+class AwsModulithSqsEventConsumer internal constructor(
+    sourceDecoder: AwsModulithInboundSourceDecoder,
+    registry: AwsModulithEventTypeRegistry,
+    store: AwsModulithEventIdempotencyStore,
+    externalization: org.springframework.modulith.events.EventExternalizationConfiguration,
+    eventPublisher: org.springframework.context.ApplicationEventPublisher,
+    properties: AwsModulithEventsProperties.Consumer,
+    metrics: AwsModulithMetrics,
+    clock: java.time.Clock,
+) {
     suspend fun consume(message: SqsReceivedMessage): AwsModulithConsumeOutcome
 }
 
@@ -362,6 +372,10 @@ internal suspend fun onMessage(
 public consumer는 `PROCESSED` 또는 `COMPLETED_DUPLICATE`만 정상 반환하고 retry/no-ack
 상태는 typed exception 또는 원래 cancellation로 전파한다. internal listener만 정상
 outcome 뒤 ack를 소유하며 exception/cancellation을 catch해 성공으로 바꾸지 않는다.
+constructor는 Spring 자동 설정 전용 `internal` 경계다. application caller는 bean을
+주입받아 `consume`만 호출하며 직접 생성 API를 제공하지 않는다.
+`AwsModulithInboundSourceDecoder`와 `AwsModulithMetrics`도 같은 package의 `internal`
+구현 타입이다.
 
 처리 순서는 다음과 같다.
 
@@ -405,13 +419,13 @@ data class AwsModulithClaimToken(
     val key: AwsModulithEventKey,
     val ownerId: String,
     val generation: Long,
-    val leaseUntil: Instant,
+    val leaseUntil: java.time.Instant,
 )
 
 sealed interface AwsModulithClaimResult {
     data class Acquired(val token: AwsModulithClaimToken) : AwsModulithClaimResult
     data object Completed : AwsModulithClaimResult
-    data class InProgress(val leaseUntil: Instant) : AwsModulithClaimResult
+    data class InProgress(val leaseUntil: java.time.Instant) : AwsModulithClaimResult
 }
 
 enum class AwsModulithStoreMutation {
@@ -422,11 +436,11 @@ enum class AwsModulithStoreMutation {
 }
 
 interface AwsModulithEventIdempotencyStore {
-    suspend fun claim(key: AwsModulithEventKey, leaseDuration: Duration): AwsModulithClaimResult
-    suspend fun renew(token: AwsModulithClaimToken, leaseDuration: Duration): AwsModulithClaimToken
+    suspend fun claim(key: AwsModulithEventKey, leaseDuration: java.time.Duration): AwsModulithClaimResult
+    suspend fun renew(token: AwsModulithClaimToken, leaseDuration: java.time.Duration): AwsModulithClaimToken
     suspend fun complete(token: AwsModulithClaimToken): AwsModulithStoreMutation
     suspend fun release(token: AwsModulithClaimToken): AwsModulithStoreMutation
-    suspend fun recoverExpired(now: Instant): Int
+    suspend fun recoverExpired(now: java.time.Instant): Int
 }
 ```
 
@@ -482,16 +496,26 @@ exactly-once 보장이 아니다.
 
 | 경계 | primary 결과 | cleanup/state | ack |
 | --- | --- | --- | --- |
-| handler 실패 | 원래 handler 예외 보존 | bounded `NonCancellable` release, release 실패는 suppressed와 안전 로그 | 하지 않음 |
-| handler cancellation | 원래 `CancellationException` 재전파 | bounded `NonCancellable` release, 실패는 suppressed | 하지 않음 |
+| handler 일반 실패 | 원문 cause 없는 bounded `AwsModulithDispatchException` (`BT4K-MOD-204`) | bounded `NonCancellable` release, release 실패도 sanitized suppressed exception | 하지 않음 |
+| handler cancellation | 원래 `CancellationException` 재전파 | bounded `NonCancellable` release, 실패는 sanitized suppressed exception | 하지 않음 |
+| handler JVM `Error` | 원래 `Error` 재전파 | bounded `NonCancellable` release, 실패는 sanitized suppressed exception | 하지 않음 |
 | handler 성공, heartbeat/renew 실패 | lease 오류 | stale/만료 claim을 complete하지 않음 | 하지 않음 |
 | handler 성공, complete 실패 | complete 오류 | claim은 lease 만료 후 takeover 가능한 상태 | 하지 않음 |
 | complete 성공, ack 실패 | ack 오류 | completed 유지, redelivery는 handler 없이 ack 재시도 | 실패 |
 | duplicate completed, ack 실패 | ack 오류 | completed 유지 | 실패 |
 
-cleanup failure는 handler 예외나 cancellation을 덮지 않는다. 정상 handler 뒤 complete가
-실패하면 complete 오류가 primary다. `complete`가 성공한 뒤에만 ack할 수 있으며, ack가
-실패해도 completed 상태를 release하지 않는다.
+일반 handler throwable은 원문 message/cause chain을 보존하지 않고 cause class와 bounded
+phase만 안전한 internal summary로 바꾼 `AwsModulithDispatchException`이 primary가 된다.
+cleanup failure도 raw throwable 대신 bounded phase/code만 가진 sanitized exception으로
+suppressed에 붙인다. `CancellationException`과 JVM `Error`만 원래 객체 identity를
+재전파한다. cleanup failure는 이 primary를 덮지 않는다. 정상 handler 뒤 complete가
+실패하면 sanitized complete 오류가 primary다. `complete`가 성공한 뒤에만 ack할 수 있으며,
+ack가 실패해도 completed 상태를 release하지 않는다. adapter가 생성한 일반 typed
+exception, sanitized suppressed array, adapter 소유 운영 로그 어디에도 handler/cleanup의
+hostile message, payload, event ID, header, ARN/URL, AWS request/response가 노출되지 않아야
+한다. identity를 보존하는 `CancellationException`과 JVM `Error`의 자체 message/cause는 이
+adapter-generated no-leak claim에서 제외한다. adapter는 두 원본 객체를 logger에 전달하거나
+직접 렌더링하지 않으며 framework/user logger의 렌더링까지 비노출로 주장하지 않는다.
 
 ### 6.4 retry와 dead-letter
 
@@ -499,20 +523,110 @@ consumer는 자체 retry/DLQ publisher를 만들지 않는다. 현재
 `bluetape4k.aws.sqs.listener.retry.*`, error visibility timeout, queue redrive policy를
 그대로 사용한다. 최대 수신 횟수를 넘긴 메시지의 DLQ 이동은 SQS/Floci redrive
 configuration 책임이다. typed exception은 payload나 secret을 메시지에 포함하지 않고
-event type/version, diagnostic code, retryable 여부만 노출한다.
+diagnostic code, bounded phase, retryable, caller action만 노출한다. event type/version은
+검증된 내부 관측 field로만 다루고 exception message/property에는 넣지 않는다.
 
 diagnostic code는 bounded enum으로 고정한다.
 
-| Code | 경계 | 기본 운영 조치 |
+```kotlin
+enum class AwsModulithCallerAction {
+    STOP_DEPLOYMENT,
+    FIX_PAYLOAD,
+    RESUBMIT_PUBLICATION,
+    CHECK_AWS_AND_RESUBMIT,
+    QUARANTINE_SOURCE,
+    DEPLOY_COMPATIBLE_CONSUMER,
+    RECOVER_STORE_AND_RETRY,
+    INSPECT_DISPATCH_OR_ACK,
+}
+
+enum class AwsModulithDiagnosticCode(
+    val value: String,
+    val retryable: Boolean,
+    val callerAction: AwsModulithCallerAction,
+)
+
+enum class AwsModulithFailurePhase {
+    CONFIGURATION,
+    SERIALIZATION,
+    LIFECYCLE,
+    RESOLUTION,
+    PUBLISH,
+    SOURCE,
+    DECODE,
+    CLAIM,
+    DISPATCH,
+    ACK,
+    CLEANUP,
+}
+
+sealed class AwsModulithEventException protected constructor(
+    val code: AwsModulithDiagnosticCode,
+    val phase: AwsModulithFailurePhase,
+) : RuntimeException("${code.value}:${phase.name}", null, true, true) {
+    val retryable: Boolean get() = code.retryable
+    val callerAction: AwsModulithCallerAction get() = code.callerAction
+}
+```
+
+public concrete exception type의 constructor는 모두 `internal`이며 library code만
+생성한다. base hierarchy는 sealed라 consumer module이 code, retryability, caller action,
+message, cause를 임의로 조합하거나 subclass로 우회할 수 없다. 일반 typed exception의
+`cause`는 항상 `null`이고 message는 code와 bounded phase로만 생성한다. 4-인자
+`RuntimeException` constructor가 cause를 이미 `null`로 초기화하므로 consumer의
+`initCause(hostileThrowable)`도 `IllegalStateException`으로 거부된다. suppression은
+sanitized cleanup exception을 붙이기 위해 활성화한다.
+
+public catch ABI와 고정 mapping은 다음 catalog로 닫는다. 각 public class는
+`AwsModulithEventException`을 상속하며 exact constructor는 인자 없는
+`internal constructor()`다. 표에 없는 public concrete exception은 추가하지 않는다.
+
+| Public exception type | Diagnostic code | Fixed phase |
 | --- | --- | --- |
-| `BT4K-MOD-101` | 설정·classpath·target 오류 | 배포 중단, condition report 확인 |
-| `BT4K-MOD-102` | 직렬화·envelope 제한 | registration/payload 수정, 재게시 전 DLQ 보존 |
-| `BT4K-MOD-103` | producer capacity·shutdown 거부 | in-flight/latency 확인, Modulith resubmission 유지 |
-| `BT4K-MOD-104` | target resolution·AWS publish | endpoint/권한/SDK retry 확인, publication 미완료 유지 |
-| `BT4K-MOD-201` | source mode·TopicArn·signature | queue policy/source 확인, 메시지 격리 |
-| `BT4K-MOD-202` | malformed·unknown type/version·loop risk | 호환 consumer 선배포 또는 DLQ 분석 |
-| `BT4K-MOD-203` | claim·lease·complete | store health/lease takeover 확인, no-ack 유지 |
-| `BT4K-MOD-204` | local dispatch·ack | handler/SQS delete 확인, completed 여부로 재처리 결정 |
+| `AwsModulithConfigurationException` | `BT4K-MOD-101` | `CONFIGURATION` |
+| `AwsModulithEventRegistrationMismatchException` | `BT4K-MOD-102` | `SERIALIZATION` |
+| `AwsModulithOutboundEnvelopeException` | `BT4K-MOD-102` | `SERIALIZATION` |
+| `AwsModulithProducerCapacityException` | `BT4K-MOD-103` | `LIFECYCLE` |
+| `AwsModulithProducerClosedException` | `BT4K-MOD-103` | `LIFECYCLE` |
+| `AwsModulithTargetResolutionException` | `BT4K-MOD-104` | `RESOLUTION` |
+| `AwsModulithPublishException` | `BT4K-MOD-104` | `PUBLISH` |
+| `AwsModulithSourceException` | `BT4K-MOD-201` | `SOURCE` |
+| `AwsModulithInboundEnvelopeException` | `BT4K-MOD-202` | `DECODE` |
+| `AwsModulithUnknownEventTypeException` | `BT4K-MOD-202` | `DECODE` |
+| `AwsModulithUnsupportedEventVersionException` | `BT4K-MOD-202` | `DECODE` |
+| `AwsModulithInboundLoopRiskException` | `BT4K-MOD-202` | `DECODE` |
+| `AwsModulithClaimCapacityException` | `BT4K-MOD-203` | `CLAIM` |
+| `AwsModulithEventInProgressException` | `BT4K-MOD-203` | `CLAIM` |
+| `AwsModulithStaleClaimException` | `BT4K-MOD-203` | `CLAIM` |
+| `AwsModulithClaimMutationException` | `BT4K-MOD-203` | `CLAIM` |
+| `AwsModulithDispatchException` | `BT4K-MOD-204` | `DISPATCH` |
+| `AwsModulithAcknowledgementException` | `BT4K-MOD-204` | `ACK` |
+
+cleanup failure는 public catch ABI가 아닌
+`internal class AwsModulithCleanupException internal constructor()`로 두고
+`BT4K-MOD-204`/`CLEANUP`에 고정한다. public catalog의 grouping은 source/signature를
+`AwsModulithSourceException`, renew/complete/release를
+`AwsModulithClaimMutationException`으로 모은다.
+
+| Code | `retryable` | 경계 | caller/운영 조치 |
+| --- | --- | --- | --- |
+| `BT4K-MOD-101` | `false` | 설정·classpath·target 오류 | 시작/배포 중단, condition report 확인 |
+| `BT4K-MOD-102` | `false` | 직렬화·envelope 제한 | 자동 재시도 금지, registration/payload 수정 전 DLQ 보존 |
+| `BT4K-MOD-103` | `true` | producer capacity·shutdown 거부 | Modulith publication 미완료 유지, in-flight/latency 확인 뒤 resubmission |
+| `BT4K-MOD-104` | `true` | target resolution·AWS publish | publication 미완료 유지, endpoint/권한/SDK retry 확인 |
+| `BT4K-MOD-201` | `false` | source mode·TopicArn·signature | no-ack로 DLQ 이동, queue policy/source 확인 후 격리 |
+| `BT4K-MOD-202` | `false` | malformed·unknown type/version·loop risk | 자동 재시도 금지, 호환 consumer 선배포 또는 DLQ 분석 |
+| `BT4K-MOD-203` | `true` | claim·lease·complete | no-ack 유지, store health/lease takeover 확인 |
+| `BT4K-MOD-204` | `true` | local dispatch·ack | no-ack 유지, handler/SQS delete와 completed 여부로 안전한 재처리 결정 |
+
+같은 code의 concrete exception은 위 `retryable`과 `callerAction`을 바꾸지 않는다.
+configuration과 non-retryable inbound 오류도 listener가 ack로 삼지 않으며 SQS
+redrive/DLQ가 반복 수신을 종료한다.
+
+consumer fixture는 모든 public catch type과 base accessor를 외부 source set에서
+compile한다. 별도 forbidden fixture는 public concrete constructor 호출을 시도하고 외부
+Kotlin compile이 `internal` 접근 오류로 실패하는지 확인한다. 같은 module의 friend-path
+test만으로 visibility를 증명하지 않는다.
 
 구조화 로그는 code, retryable, target alias, type, version, phase만 허용한다. Micrometer가
 있으면 publish latency/success/failure, resolution failure, in-flight/capacity reject,
