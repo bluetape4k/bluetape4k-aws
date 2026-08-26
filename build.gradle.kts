@@ -928,6 +928,7 @@ val compatibilityCheck = tasks.register<WriteCompatibilityReportTask>("compatibi
             "compileSqsListenerInterceptorLegacyConsumerFixture",
             "compileSqsBatchConsumerFixture",
             "compileSnsOperationsLegacyConsumerFixture",
+            "compileAwsSpringModulithConsumerFixture",
         ),
     )
     dependsOn(
@@ -940,6 +941,7 @@ val compatibilityCheck = tasks.register<WriteCompatibilityReportTask>("compatibi
         compileSqsListenerInterceptorLegacyConsumerFixture,
         compileSqsBatchConsumerFixture,
         compileSnsOperationsLegacyConsumerFixture,
+        compileAwsSpringModulithConsumerFixture,
     )
     reportFile.set(layout.buildDirectory.file("reports/compatibility/compatibility-check.json"))
 }
