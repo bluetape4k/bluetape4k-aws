@@ -5,6 +5,11 @@ import io.bluetape4k.aws.dynamodb.dynamoDbClient
 import io.bluetape4k.aws.dynamodbstreams.DynamoDbStreamsStartingPosition
 import io.bluetape4k.aws.dynamodbstreams.dynamoDbStreamsAsyncClientOf
 import io.bluetape4k.aws.kinesis.kinesisClient
+import io.bluetape4k.aws.kinesis.InMemoryKinesisCheckpointStore
+import io.bluetape4k.aws.kinesis.InMemoryKinesisLeaseStore
+import io.bluetape4k.aws.kinesis.KinesisConsumerOptions
+import io.bluetape4k.aws.kinesis.KinesisStartingPosition
+import io.bluetape4k.aws.kinesis.consumerFlow
 import io.bluetape4k.aws.kms.kmsClient
 import io.bluetape4k.aws.lambda.lambdaAsyncClient
 import io.bluetape4k.aws.lambda.lambdaAsyncClientOf
@@ -35,6 +40,7 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisClient
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.LambdaClient
@@ -47,6 +53,8 @@ import software.amazon.awssdk.services.sfn.SfnAsyncClient
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sts.StsClient
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.take
 import java.net.URI
 
 private const val FIXTURE_STATE_MACHINE_ARN =
@@ -135,4 +143,17 @@ fun javaServiceConsumerFixture(): List<Any> = listOf<Any>(
         }
     },
     { stsClient { } },
+    suspend {
+        KinesisAsyncClient.builder().build().use { client ->
+            client.consumerFlow(
+                streamName = "orders",
+                consumerGroup = "fixture-group",
+                streamIdentity = "orders-v1",
+                position = KinesisStartingPosition.Latest,
+                options = KinesisConsumerOptions(ownerId = "fixture-owner"),
+                checkpointStore = InMemoryKinesisCheckpointStore(),
+                leaseStore = InMemoryKinesisLeaseStore(),
+            ).take(1).collect { }
+        }
+    },
 )

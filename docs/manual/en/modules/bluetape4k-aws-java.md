@@ -82,6 +82,48 @@ short-lived client and keep injected clients under caller ownership. Emulator
 verification is Floci-first; production retention, throttling, and resharding
 timing remain AWS-only gaps.
 
+## Kinesis multi-shard consumer {#kinesis-consumer}
+
+> Unreleased/develop: this section describes the Issue #470 API and is not part of the `0.5.0` release source.
+
+`KinesisAsyncClient.consumerFlow` discovers `ListShards` pages continuously and
+polls each shard in order. `maxShardConcurrency` bounds active shard jobs; a
+child shard waits for durable `KinesisCheckpoint.ShardEnd` checkpoints from both
+parents. The public Flow uses a rendezvous boundary, so its checkpoint is saved
+only after the collector's `emit` returns.
+
+```kotlin
+client.consumerFlow(
+    streamName = "orders",
+    consumerGroup = "orders-api",
+    streamIdentity = "orders-generation-1",
+    position = KinesisStartingPosition.TrimHorizon,
+    options = KinesisConsumerOptions(ownerId = "orders-worker-1"),
+    checkpointStore = durableCheckpointStore,
+    leaseStore = durableLeaseStore,
+).collect { envelope -> handle(envelope.record) }
+```
+
+`Sequence` resumes inclusively and therefore provides an at-least-once boundary;
+exactly-once side effects remain the caller's responsibility. The split
+`KinesisCheckpointStore`/`KinesisLeaseStore` SPI is caller-owned. The supplied
+`InMemory*` stores are process-local test doubles, while `Noop*` stores make the
+same limitation explicit and do not survive restart or coordinate workers.
+Lease counters fence stale saves, and metrics callbacks receive finite labels
+plus redacted tokens rather than payloads or credentials. The client and probes
+remain caller-owned; cancellation is the normal stop/drain signal.
+
+Run the integration contract without AWS credentials by selecting Floci:
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-java:test --tests '*KinesisConsumerFlociTest'
+```
+
+The Floci run proves SDK/emulator compatibility only. Production rollout should
+stop, drain, canary, and then scale; rollback reuses the last durable checkpoint
+and never deletes or rewinds it.
+
 ## Lambda invocation helpers {#lambda}
 
 > Unreleased/develop: this section describes the Issue #314 API and is not part of the `0.5.0` release source.

@@ -1442,6 +1442,49 @@ shutdown에 등록하며 주입한 client의 소유권은 호출자에게 둡니
 Floci 실행 결과로 운영 retention, throttling, resharding timing을 증명한다고
 주장하지 않습니다. 이 항목들은 AWS-only 검증 공백으로 남깁니다.
 
+### Kinesis — 멀티 샤드 consumer와 checkpoint (Issue #470)
+
+Java SDK v2와 AWS SDK for Kotlin 모듈에 계속해서 shard를 발견하는
+`consumerFlow`를 추가했습니다. 각 shard 안에서는 polling 순서를 지키고
+`maxShardConcurrency`로 동시성을 제한하며, split/merge 뒤에는 두 부모의
+checkpoint가 모두 완료될 때까지 child를 시작하지 않습니다. rendezvous 경계에서
+downstream `emit`이 반환된 뒤에만 checkpoint를 저장합니다. `Sequence` checkpoint는
+해당 sequence를 포함해 재개하므로 정확히 한 번이 아니라 at-least-once 전달입니다.
+
+```kotlin
+withKinesisClient(endpointUrl = flociEndpoint, region = "us-east-1") { client ->
+    client.consumerFlow(
+        streamName = "orders",
+        consumerGroup = "orders-api",
+        streamIdentity = "orders-generation-1",
+        position = KinesisStartingPosition.TrimHorizon,
+        options = KinesisConsumerOptions(ownerId = "orders-api-${instanceId}"),
+        checkpointStore = durableCheckpointStore,
+        leaseStore = durableLeaseStore,
+    ).collect { envelope ->
+        handle(envelope.record)
+    }
+}
+```
+
+`KinesisCheckpointStore`와 `KinesisLeaseStore`는 호출자가 소유하는 교체 가능한
+SPI입니다. 제공하는 `InMemory*` store는 테스트와 emulator 실행용이고, `Noop*` store는
+명시적인 process-local 구현이므로 재시작 복구, lease takeover, durable `ShardEnd`를
+보장하지 않습니다. metrics callback에는 고정 label과 해시된 stream/shard/owner token만
+전달합니다. 로컬 검증은 저장소의 Floci-first 경로를 사용하고, LocalStack은 명시적인
+Floci coverage gap에만 대체 경로로 사용합니다.
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-java:test --tests '*KinesisConsumerFlociTest'
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*KinesisConsumerFlociTest'
+```
+
+Consumer는 AWS client나 health probe의 수명을 소유하지 않습니다. 수집 scope를 취소해
+정지하고, 운영 rollout은 stop → drain → canary → scale 순서로 진행하세요. rollback 때는
+마지막 durable checkpoint를 재사용하며 checkpoint를 삭제하거나 되감지 않습니다.
+
 ### CloudWatch 메트릭 — DSL (`bluetape4k-aws-kotlin` 모듈)
 
 `bluetape4k-aws-kotlin`의 CloudWatch helper는 AWS Kotlin SDK 응답 타입을 그대로
