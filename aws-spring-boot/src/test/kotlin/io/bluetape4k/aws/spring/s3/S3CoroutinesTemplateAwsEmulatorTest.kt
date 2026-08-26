@@ -134,6 +134,51 @@ class S3CoroutinesTemplateAwsEmulatorTest {
     }
 
     @Test
+    fun `streaming output and typed object operations complete through the emulator`() {
+        contextRunner().run { context ->
+            val s3Client = context.getBean(S3Client::class.java)
+            val transferBucketName = "spring-s3-stream-${Base58.randomString(8).lowercase()}"
+            s3Client.createBucket { it.bucket(transferBucketName) }
+
+            runSuspendIO {
+                val provider = context.getBean(S3OutputStreamProvider::class.java)
+                provider.outputStream(
+                    bucket = transferBucketName,
+                    key = "stream/report.txt",
+                    metadata = mapOf("source" to "issue-464"),
+                ).use { output ->
+                    output.write("streamed through TransferManager".encodeToByteArray())
+                }
+
+                val stored = s3Client.getObjectAsBytes {
+                    it.bucket(transferBucketName).key("stream/report.txt")
+                }
+                stored.asUtf8String() shouldBeEqualTo "streamed through TransferManager"
+                stored.response().contentType() shouldBeEqualTo "text/plain"
+
+                val converter = JacksonS3ObjectConverter(tools.jackson.databind.ObjectMapper())
+                @Suppress("UNCHECKED_CAST")
+                val typedConverter = converter as S3ObjectConverter<Map<String, Any>>
+                val typedOperations = context.getBean(S3ObjectOperations::class.java)
+                val document = mapOf<String, Any>("name" to "bluetape", "revision" to 4)
+                typedOperations.uploadObject(
+                    bucket = transferBucketName,
+                    key = "typed/document.json",
+                    value = document,
+                    converter = typedConverter,
+                )
+                val restored = typedOperations.downloadObject(
+                    bucket = transferBucketName,
+                    key = "typed/document.json",
+                    targetType = Map::class.java as Class<Map<String, Any>>,
+                    converter = typedConverter,
+                )
+                restored shouldBeEqualTo document
+            }
+        }
+    }
+
+    @Test
     fun `upload and download encrypted object through S3 client side encryption`() {
         contextRunner()
             .withBean(KmsOperations::class.java, { FixedS3KmsOperations })

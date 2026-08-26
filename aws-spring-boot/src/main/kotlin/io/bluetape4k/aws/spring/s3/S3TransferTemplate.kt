@@ -23,7 +23,9 @@ import java.nio.file.Path
  */
 class S3TransferTemplate(
     private val transferManager: S3TransferManager,
-): S3TransferOperations {
+    private val properties: S3Properties = S3Properties(),
+    private val contentTypeResolver: S3ObjectContentTypeResolver = DefaultS3ObjectContentTypeResolver(),
+): S3TransferOperations, S3OutputStreamProvider, S3ObjectOperations {
 
     override suspend fun upload(
         bucket: String,
@@ -55,4 +57,59 @@ class S3TransferTemplate(
         configure: DownloadFileRequest.Builder.() -> Unit,
     ): CompletedFileDownload =
         transferManager.downloadFile(bucket, key, destination, configure)
+
+    override fun outputStream(
+        bucket: String,
+        key: String,
+        contentType: String?,
+        metadata: Map<String, String>,
+    ): S3OutputStream =
+        S3OutputStream(
+            operations = this,
+            bucket = bucket,
+            key = key,
+            thresholdBytes = properties.transfer.outputStreamThresholdBytes,
+            partSizeBytes = properties.transfer.outputStreamPartSizeBytes,
+            contentType = contentTypeResolver.resolve(key, contentType, metadata),
+            metadata = metadata,
+        )
+
+    override suspend fun <T : Any> uploadObject(
+        bucket: String,
+        key: String,
+        value: T,
+        converter: S3ObjectConverter<T>,
+        contentType: String?,
+        metadata: Map<String, String>,
+    ): CompletedUpload =
+        upload(bucket, key, converter.write(value)) {
+            putObjectRequest(
+                bucket = bucket,
+                key = key,
+                contentType = contentTypeResolver.resolve(key, contentType ?: converter.contentType, metadata),
+                metadata = metadata,
+            )
+        }
+
+    override suspend fun <T : Any> downloadObject(
+        bucket: String,
+        key: String,
+        targetType: Class<T>,
+        converter: S3ObjectConverter<T>,
+    ): T =
+        converter.read(downloadBytes(bucket, key).result().asByteArray(), targetType)
+
+    private fun UploadRequest.Builder.putObjectRequest(
+        bucket: String,
+        key: String,
+        contentType: String,
+        metadata: Map<String, String>,
+    ) {
+        putObjectRequest { builder ->
+            builder.bucket(bucket)
+            builder.key(key)
+            builder.contentType(contentType)
+            if (metadata.isNotEmpty()) builder.metadata(metadata)
+        }
+    }
 }
