@@ -61,7 +61,7 @@ internal class SnsBatchExecutionGuard(
             val mapped = SnsBatchResponseMapper.map(chunk, response)
             return SnsPublishBatchResult(mapped.successful, mapped.failed)
         } catch (cause: CancellationException) {
-            future?.cancel(true)
+            future?.cancel(false)
             throw cause
         } catch (cause: SnsBatchExecutionContractException) {
             throw cause
