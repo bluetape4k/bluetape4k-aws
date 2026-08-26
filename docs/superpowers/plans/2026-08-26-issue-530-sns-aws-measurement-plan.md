@@ -1,16 +1,16 @@
-# Issue #530 SNS 실제 AWS 측정 계획
+# Issue #530 SNS Floci 최종 측정 계획
 
 ## SPW-01 — 대상과 근거
 
 - **문서 종류:** Type-E 측정 harness·운영 계획
 - **독자:** AWS SNS 성능 측정을 승인하고 결과를 재현할 bluetape4k 유지보수자
-- **목적:** Issue #529의 Floci 결과와 실제 AWS 결과를 섞지 않고, 승인된 계정에서만 실행할 측정 경계를 고정한다.
+- **목적:** Issue #529의 Floci 결과와 Issue #530의 최종 Floci 결과를 고정하고, 실제 AWS 운영 성능과 혼동하지 않는 측정 경계를 유지한다.
 - **현재 근거:** Issue #530 본문, `SnsBatchExecutor.kt`, `SnsCoroutinesTemplateAwsEmulatorTest.kt`, `parse_sns_batch_benchmark.py`, `run_sns_batch_floci_measurement.sh`, `issue-530-floci-20260826` 결과
-- **미확인 사항:** 실제 AWS 지연시간·처리량·heap/allocation·retention·caller cancellation 결과와 hosted CI 결과는 아직 없다.
+- **미확인 사항:** 실제 AWS 운영 지연시간·처리량·heap/allocation·retention 결과는 수집하지 않는다. 해당 비교가 필요하면 별도 이슈로 재개한다.
 
 Issue #530에는 최적화 후보, 목표 개선율, 중단 기준이 없다. 따라서 Type-F 후보 경쟁으로 확장하지 않고 Type-E 준비 작업으로 분류한다. 이 계획은 생산 코드나 릴리스 기준선을 변경하지 않는다.
 
-## FlociServer 로컬 보조 측정
+## FlociServer 최종 수용 측정
 
 `bluetape4k-testcontainers`의 `FlociServer.Launcher.floci`를 사용하는 기존
 `AwsSpringBootTestEmulator` 경로로 `issue-530-floci-20260826`을 실행했다. `success`와
@@ -18,9 +18,10 @@ Issue #530에는 최적화 후보, 목표 개선율, 중단 기준이 없다. �
 생성되었고, warmup 1회와 측정 3회를 모두 완료했다. parser의 JSON 검증과 결과 디렉터리
 redaction 검사는 PASS였다.
 
-이 결과는 Floci 컨테이너와 JVM의 로컬 보조 baseline일 뿐이다. 실제 AWS publisher의
-지연시간·비용·quota·retention·backend heap을 증명하지 않으므로 Issue #530의 실제 AWS
-완료 조건이나 production performance baseline을 대체하지 않는다.
+사용자는 실제 AWS 계정이 없으므로 이 결과를 Issue #530의 최종 수용 범위로 결정했다.
+이 결과는 Floci 컨테이너와 JVM의 로컬 baseline이며, 실제 AWS publisher의 지연시간·비용·
+quota·retention·backend heap을 증명하지 않는다. 따라서 production performance baseline은
+선언하지 않고, 실제 AWS 비교가 필요할 때 별도 이슈로 분리한다.
 
 ## SPW-02 — 범위와 계약
 
@@ -74,9 +75,8 @@ AWS backend가 혼합 응답·프로토콜 불일치·caller cancellation을 결
 2. preflight와 redaction checker를 구현하고 Python 테스트를 GREEN으로 만든다.
 3. `SnsCoroutinesTemplateAwsMeasurementTest`를 추가한다. 테스트는 `DefaultCredentialsProvider`와 기본 AWS endpoint만 사용하고, system property가 없으면 비활성화한다.
 4. wrapper가 preflight → caller identity 비교 → Gradle 테스트 → parser → JFR metadata 확인 → redaction 검사를 순서대로 수행하게 한다.
-5. 로컬에서는 `run_sns_batch_floci_measurement.sh`로 Floci 보조 측정을 실행하고, 실제 AWS
-   wrapper는 승인된 환경변수가 있을 때만 성공 경로로 실행한다. 두 backend 결과를 섞지
-   않으며, 실제 AWS 미실행 상태는 PENDING으로 유지한다.
+5. 로컬에서는 `run_sns_batch_floci_measurement.sh`로 Floci 최종 측정을 실행한다. 실제 AWS
+   wrapper는 이 이슈의 실행 대상이 아니며, 두 backend 결과를 섞지 않는다.
 
 ## 검증 명령과 기대 증거
 
@@ -105,18 +105,19 @@ allocation/retention/capability 파일과 redaction PASS를 Issue #530에 연결
 - 새 `run-id`마다 `.omx/self-improve/tracking/raw/<run-id>`를 사용하고 이전 원시 결과를 덮어쓰지 않는다.
 - preflight 또는 redaction 실패는 결과를 기준선으로 사용하지 않고 원인을 수정한 뒤 새 `run-id`로 재실행한다.
 - 변경을 되돌릴 때는 이 계획의 변경 파일을 함께 제거하고, 기존 #529 Floci 파일과 생산 코드에는 손대지 않는다.
-- 실제 AWS 결과가 생기기 전에는 Issue #530을 닫거나 release/performance baseline을 선언하지 않는다.
+- 실제 AWS 비교가 필요해지면 Issue #530의 Floci 완료를 되돌리지 않고 별도 이슈로 분리한다.
 
 ## DoD
 
-- [ ] AWS credential/account/region/quota/cost/retention 승인과 redaction 검증 — 외부 승인 대기
+- [x] Floci 실행·credential 경계와 redaction 검증 — 실제 AWS 계정 없이 Floci 수용으로 결정
 - [x] 고정된 command·matrix·warmup/repetition·commit/JDK/OS 기록 경로 — wrapper와 `environment.json` 계약
 - [x] `bluetape4k-testcontainers` `FlociServer` 기반 36셀 로컬 보조 측정 — `issue-530-floci-20260826`, parser/redaction PASS
-- [ ] 실제 AWS latency/throughput/cleanup 원시 결과와 parser 경로 — harness 준비, AWS 실행 대기
-- [x] JFR allocation/retention과 class histogram 경로 — profile 형식과 unavailable 상태 명시
+- [x] Floci latency/throughput/cleanup 원시 결과와 parser 경로 — `issue-530-floci-20260826`, 36행 PASS
+- [ ] 실제 AWS latency/throughput/heap/retention — N/A: 사용자 결정으로 이 이슈 범위에서 제외
+- [x] JFR allocation/retention과 class histogram 경계 — 실제 backend profile은 별도 이슈로 분리
 - [x] mixed/protocol/cancellation capability 경계 — `capability.json` 계약과 기존 단위 테스트 연결
 - [x] plan/lesson/review 문서 — 세 문서에 독립적인 근거와 미확인 사항 기록
-- [ ] PR/hosted CI/merge/canonical sync/완료 worktree 정리 — PR 생성 권한과 실제 AWS 결과 이후
+- [ ] PR/hosted CI/merge/canonical sync/완료 worktree 정리 — 별도 delivery 승인 이후
 - [x] Human review — N/A: 1인 개발자 요청이며 이번 변경은 PR·외부 리뷰 없이 로컬 준비 범위
 
 ## Writer DoD
@@ -125,4 +126,4 @@ allocation/retention/capability 파일과 redaction PASS를 Issue #530에 연결
 - [x] SPW-02: 실행 순서, 파일, 산출물, 승인 게이트, 검증, 재실행·되돌리기를 포함했다.
 - [x] SPW-03: 한국어 기술 문체와 `profile`, `payload`, `retention`, `capability` 용어를 일관되게 적용했다.
 - [x] SPW-04: Issue #530, 기존 Floci harness/parser, `SnsBatchExecutor` 테스트와 계약을 대조했다.
-- [x] SPW-05: 완성본을 다시 읽었고, 실제 AWS 결과가 없다는 상태를 체크박스에 남겼다.
+- [x] SPW-05: 완성본을 다시 읽었고, Floci-only 완료와 실제 AWS 제외 상태를 체크박스에 남겼다.
