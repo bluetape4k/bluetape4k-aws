@@ -485,6 +485,7 @@ dependencies {
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:s3", libs.aws.kotlin.s3)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:s3tables", libs.aws.kotlin.s3tables)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:dynamodb", libs.aws.kotlin.dynamodb)
+    addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:dynamodbstreams", libs.aws.kotlin.dynamodbstreams)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sns", libs.aws.kotlin.sns)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sqs", libs.aws.kotlin.sqs)
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:kms", libs.aws.kotlin.kms)
@@ -1111,6 +1112,8 @@ subprojects {
             dependency("aws.sdk.kotlin:cloudwatchlogs:${bt4kVersion("aws-kotlin")}")
 
             dependency("aws.sdk.kotlin:dynamodb:${bt4kVersion("aws-kotlin")}")
+
+            dependency("aws.sdk.kotlin:dynamodbstreams:${bt4kVersion("aws-kotlin")}")
 
             dependency("aws.sdk.kotlin:eventbridge:${bt4kVersion("aws-kotlin")}")
 

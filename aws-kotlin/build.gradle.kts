@@ -24,6 +24,7 @@ dependencies {
     // AWS Kotlin SDK Services (compileOnly — consumer adds runtime deps)
     compileOnly(libs.aws.kotlin.bedrock.runtime)
     compileOnly(libs.aws.kotlin.dynamodb)
+    compileOnly(libs.aws.kotlin.dynamodbstreams)
     compileOnly(libs.aws.kotlin.s3)
     compileOnly(libs.aws.kotlin.s3tables)
     compileOnly(libs.aws.kotlin.ses)
