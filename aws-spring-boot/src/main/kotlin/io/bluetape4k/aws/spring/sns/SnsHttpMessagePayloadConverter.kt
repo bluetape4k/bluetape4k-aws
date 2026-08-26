@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import org.springframework.beans.factory.ListableBeanFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.server.ResponseStatusException
@@ -50,9 +51,17 @@ class SnsHttpMessagePayloadConverter(
         ResponseStatusException(HttpStatus.BAD_REQUEST, message, cause)
 }
 
-internal fun findSnsObjectMapper(beanFactory: org.springframework.beans.factory.ListableBeanFactory): Any? {
+/**
+ * Spring의 primary 후보 해석 규칙으로 SNS typed payload용 ObjectMapper를 찾습니다.
+ *
+ * 단일 후보 또는 유일한 `@Primary` 후보만 반환하며, 후보가 없거나 여러 후보가
+ * 모두 비-primary이면 `null`을 반환해 임의의 bean 순서 선택을 피합니다.
+ */
+internal fun findSnsObjectMapper(beanFactory: ListableBeanFactory): Any? {
     val mapperType = runCatching {
         Class.forName("tools.jackson.databind.ObjectMapper", false, beanFactory.javaClass.classLoader)
     }.getOrNull() ?: return null
-    return beanFactory.getBeansOfType(mapperType).values.firstOrNull()
+
+    @Suppress("UNCHECKED_CAST")
+    return beanFactory.getBeanProvider(mapperType as Class<Any>).getIfUnique()
 }
