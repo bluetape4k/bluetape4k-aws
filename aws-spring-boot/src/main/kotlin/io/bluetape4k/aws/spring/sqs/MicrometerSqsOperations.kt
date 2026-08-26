@@ -42,6 +42,14 @@ open class MicrometerSqsOperations(
             delegate.createConfiguredQueue(queueName)
         }
 
+    override suspend fun getQueueAttributes(
+        queueUrl: String,
+        attributeNames: Collection<QueueAttributeName>,
+    ): Map<QueueAttributeName, String> =
+        record(OPERATION_GET_QUEUE_ATTRIBUTES, queueUrl) {
+            delegate.getQueueAttributes(queueUrl, attributeNames)
+        }
+
     override suspend fun send(queueUrl: String, body: String, delaySeconds: Int?): SendMessageResponse =
         record(OPERATION_SEND, queueUrl) {
             delegate.send(queueUrl, body, delaySeconds)
@@ -146,6 +154,7 @@ open class MicrometerSqsOperations(
         const val OPERATION_GET_QUEUE_URL: String = "get_queue_url"
         const val OPERATION_CREATE_QUEUE: String = "create_queue"
         const val OPERATION_CREATE_CONFIGURED_QUEUE: String = "create_configured_queue"
+        const val OPERATION_GET_QUEUE_ATTRIBUTES: String = "get_queue_attributes"
         const val OPERATION_SEND: String = "send"
         const val OPERATION_RECEIVE: String = "receive"
         const val OPERATION_DELETE: String = "delete"

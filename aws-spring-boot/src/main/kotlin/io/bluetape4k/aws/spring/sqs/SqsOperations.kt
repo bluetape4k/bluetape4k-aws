@@ -58,6 +58,15 @@ interface SqsOperations {
     suspend fun createConfiguredQueue(queueName: String): String
 
     /**
+     * queue URL의 속성을 조회합니다. 기본 구현은 기존 사용자 구현과의 ABI 호환을 위해 빈 결과를 반환합니다.
+     * FIFO/visibility cache를 사용하려면 AWS adapter 또는 custom 구현이 이 메서드를 재정의해야 합니다.
+     */
+    suspend fun getQueueAttributes(
+        queueUrl: String,
+        attributeNames: Collection<QueueAttributeName>,
+    ): Map<QueueAttributeName, String> = emptyMap()
+
+    /**
      * 큐 URL로 메시지를 전송합니다.
      */
     suspend fun send(

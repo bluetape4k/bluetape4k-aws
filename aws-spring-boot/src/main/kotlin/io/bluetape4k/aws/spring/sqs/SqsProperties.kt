@@ -4,6 +4,7 @@ import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
@@ -33,6 +34,13 @@ data class SqsProperties(
         val messageVisibilityHeartbeatSeconds: Int? = null,
         val concurrency: Int = 1,
         val stopTimeoutMillis: Long = 25_000,
+        val backPressureMode: SqsBackPressureMode = SqsBackPressureMode.FIXED,
+        val maxInFlight: Int = maxMessages,
+        val fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy =
+            SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
+        val queueAttributeNames: Set<QueueAttributeName> = emptySet(),
+        val queueAttributeCacheTtl: Duration = Duration.ofMinutes(1),
+        val queueNotFoundStrategy: SqsQueueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
         val retry: Retry = Retry(),
     ) : Serializable {
         init {
@@ -46,6 +54,8 @@ data class SqsProperties(
             )
             concurrency.requireGe(1, "concurrency")
             stopTimeoutMillis.requireGe(1, "stopTimeoutMillis")
+            maxInFlight.requireGe(1, "maxInFlight")
+            queueAttributeCacheTtl.requireGe(Duration.ZERO, "queueAttributeCacheTtl")
         }
 
         companion object {

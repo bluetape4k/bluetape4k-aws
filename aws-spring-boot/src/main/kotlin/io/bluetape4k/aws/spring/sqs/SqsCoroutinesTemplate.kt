@@ -49,6 +49,15 @@ class SqsCoroutinesTemplate(
         return createQueue(queueName, attributes)
     }
 
+    override suspend fun getQueueAttributes(
+        queueUrl: String,
+        attributeNames: Collection<QueueAttributeName>,
+    ): Map<QueueAttributeName, String> =
+        sqsAsyncClient.getQueueAttributes {
+            it.queueUrl(queueUrl)
+            it.attributeNames(attributeNames)
+        }.await().attributes().orEmpty()
+
     override suspend fun send(
         queueUrl: String,
         body: String,

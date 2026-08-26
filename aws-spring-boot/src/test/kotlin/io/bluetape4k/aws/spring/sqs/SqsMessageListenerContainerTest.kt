@@ -26,12 +26,101 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
 import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.CopyOnWriteArrayList
 
 @Suppress("LargeClass")
 class SqsMessageListenerContainerTest {
+
+    @Test
+    fun `single message handlers run concurrently up to the in flight limit`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val messages = listOf(message(), message("message-2"))
+        val receiveCalls = AtomicInteger()
+        val startedIds = CopyOnWriteArrayList<String>()
+        val bothStarted = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 2, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) messages else awaitCancellation()
+        }
+        coEvery { operations.delete(QUEUE_URL, any()) } returns DeleteMessageResponse.builder().build()
+        every { invoker.manualAcknowledgement } returns false
+        coEvery { invoker.invoke(any(), any()) } coAnswers {
+            startedIds += firstArg<SqsReceivedMessage>().messageId
+            if (startedIds.size == 2) {
+                bothStarted.complete(Unit)
+            }
+            release.await()
+        }
+        val container = container(
+            operations,
+            invoker,
+            maxMessages = 2,
+            maxInFlight = 2,
+        )
+
+        container.start()
+        try {
+            withTimeout(2_000) { bothStarted.await() }
+            startedIds.toSet() shouldBeEqualTo setOf("message-1", "message-2")
+        } finally {
+            release.complete(Unit)
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+        }
+    }
+
+    @Test
+    fun `fifo message group is serialized while another group runs in parallel`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val messages = listOf(message("a-1", "group-a"), message("a-2", "group-a"), message("b-1", "group-b"))
+        val receiveCalls = AtomicInteger()
+        val firstGroupStarted = CompletableDeferred<Unit>()
+        val otherGroupStarted = CompletableDeferred<Unit>()
+        val secondGroupMessageStarted = CompletableDeferred<Unit>()
+        val releaseFirstGroup = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 3, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) messages else awaitCancellation()
+        }
+        coEvery { operations.delete(QUEUE_URL, any()) } returns DeleteMessageResponse.builder().build()
+        every { invoker.manualAcknowledgement } returns false
+        coEvery { invoker.invoke(any(), any()) } coAnswers {
+            when (val id = firstArg<SqsReceivedMessage>().messageId) {
+                "a-1" -> {
+                    firstGroupStarted.complete(Unit)
+                    releaseFirstGroup.await()
+                }
+                "a-2" -> secondGroupMessageStarted.complete(Unit)
+                "b-1" -> otherGroupStarted.complete(Unit)
+            }
+        }
+        val container = container(
+            operations,
+            invoker,
+            maxMessages = 3,
+            maxInFlight = 3,
+        )
+
+        container.start()
+        try {
+            withTimeout(2_000) { firstGroupStarted.await() }
+            withTimeout(2_000) { otherGroupStarted.await() }
+            secondGroupMessageStarted.isCompleted shouldBeEqualTo false
+            releaseFirstGroup.complete(Unit)
+            withTimeout(2_000) { secondGroupMessageStarted.await() }
+        } finally {
+            releaseFirstGroup.complete(Unit)
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+        }
+    }
 
     @Test
     fun `batch receive invokes handler once with all messages`() = runSuspendIO {
@@ -639,6 +728,9 @@ class SqsMessageListenerContainerTest {
         interceptors: List<SqsListenerInterceptor> = emptyList(),
         messageVisibilityHeartbeatIntervalSeconds: Int? = null,
         messageVisibilityHeartbeatSeconds: Int? = null,
+        maxInFlight: Int = maxMessages,
+        fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy = SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
+        concurrency: Int = 1,
     ): SqsMessageListenerContainer {
         return SqsMessageListenerContainer(
             endpoint = SqsListenerEndpoint(
@@ -652,11 +744,13 @@ class SqsMessageListenerContainerTest {
                 messageVisibilityHeartbeatSeconds = messageVisibilityHeartbeatSeconds,
                 autoStartup = autoStartup,
                 phase = 0,
-                concurrency = 1,
+                concurrency = concurrency,
                 stopTimeoutMillis = stopTimeoutMillis,
                 retry = retry,
                 batch = batch,
                 acknowledgementMode = acknowledgementMode,
+                maxInFlight = maxInFlight,
+                fifoBatchGroupingStrategy = fifoBatchGroupingStrategy,
             ),
             operations = operations,
             invoker = invoker,
@@ -665,13 +759,18 @@ class SqsMessageListenerContainerTest {
         )
     }
 
-    private fun message(messageId: String = "message-1"): SqsReceivedMessage =
+    private fun message(messageId: String = "message-1", messageGroupId: String? = null): SqsReceivedMessage =
         SqsReceivedMessage(
             queueUrl = QUEUE_URL,
             message = Message.builder()
                 .messageId(messageId)
                 .receiptHandle("receipt-$messageId")
                 .body("payload")
+                .apply {
+                    messageGroupId?.let {
+                        attributes(mapOf(MessageSystemAttributeName.MESSAGE_GROUP_ID to it))
+                    }
+                }
                 .build(),
         )
 
