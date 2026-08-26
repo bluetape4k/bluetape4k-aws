@@ -22,7 +22,7 @@ open class MicrometerSqsOperations(
     private val delegate: SqsOperations,
     private val meterRegistry: MeterRegistry,
     private val meterName: String = DEFAULT_METER_NAME,
-): SqsOperations {
+): SqsQueueAttributesOperations {
 
     override suspend fun getQueueUrl(queueName: String): String =
         record(OPERATION_GET_QUEUE_URL) {
@@ -40,6 +40,16 @@ open class MicrometerSqsOperations(
     override suspend fun createConfiguredQueue(queueName: String): String =
         record(OPERATION_CREATE_CONFIGURED_QUEUE) {
             delegate.createConfiguredQueue(queueName)
+        }
+
+    override suspend fun getQueueAttributes(
+        queueUrl: String,
+        attributeNames: Collection<QueueAttributeName>,
+    ): Map<QueueAttributeName, String> =
+        record(OPERATION_GET_QUEUE_ATTRIBUTES, queueUrl) {
+            (delegate as? SqsQueueAttributesOperations)
+                ?.getQueueAttributes(queueUrl, attributeNames)
+                .orEmpty()
         }
 
     override suspend fun send(queueUrl: String, body: String, delaySeconds: Int?): SendMessageResponse =
@@ -146,6 +156,7 @@ open class MicrometerSqsOperations(
         const val OPERATION_GET_QUEUE_URL: String = "get_queue_url"
         const val OPERATION_CREATE_QUEUE: String = "create_queue"
         const val OPERATION_CREATE_CONFIGURED_QUEUE: String = "create_configured_queue"
+        const val OPERATION_GET_QUEUE_ATTRIBUTES: String = "get_queue_attributes"
         const val OPERATION_SEND: String = "send"
         const val OPERATION_RECEIVE: String = "receive"
         const val OPERATION_DELETE: String = "delete"

@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 class SqsCoroutinesTemplate(
     private val sqsAsyncClient: SqsAsyncClient,
     private val properties: SqsProperties,
-): SqsFullRequestOperations {
+): SqsFullRequestOperations, SqsQueueAttributesOperations {
 
     override suspend fun getQueueUrl(queueName: String): String =
         sqsAsyncClient.getQueueUrl(queueName).queueUrl()
@@ -48,6 +48,15 @@ class SqsCoroutinesTemplate(
         }
         return createQueue(queueName, attributes)
     }
+
+    override suspend fun getQueueAttributes(
+        queueUrl: String,
+        attributeNames: Collection<QueueAttributeName>,
+    ): Map<QueueAttributeName, String> =
+        sqsAsyncClient.getQueueAttributes {
+            it.queueUrl(queueUrl)
+            it.attributeNames(attributeNames)
+        }.await().attributes().orEmpty()
 
     override suspend fun send(
         queueUrl: String,

@@ -6,6 +6,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import tools.jackson.databind.ObjectMapper
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.transfer.s3.S3TransferManager
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
@@ -42,7 +44,20 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
     ]
 )
 @ConditionalOnProperty(prefix = "bluetape4k.aws.s3", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(S3Properties::class)
 class S3TransferAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(S3ObjectContentTypeResolver::class)
+    fun s3ObjectContentTypeResolver(): S3ObjectContentTypeResolver =
+        DefaultS3ObjectContentTypeResolver()
+
+    @Bean
+    @ConditionalOnClass(name = ["tools.jackson.databind.ObjectMapper"])
+    @ConditionalOnBean(ObjectMapper::class)
+    @ConditionalOnMissingBean(S3ObjectConverter::class)
+    fun s3ObjectConverter(objectMapper: ObjectMapper): S3ObjectConverter<Any> =
+        JacksonS3ObjectConverter(objectMapper)
 
     @Bean(destroyMethod = "close")
     @ConditionalOnBean(S3AsyncClient::class)
@@ -76,6 +91,8 @@ class S3TransferAutoConfiguration {
     )
     fun s3TransferOperations(
         transferManager: S3TransferManager,
+        properties: S3Properties,
+        contentTypeResolver: S3ObjectContentTypeResolver,
     ): S3TransferTemplate =
-        S3TransferTemplate(transferManager)
+        S3TransferTemplate(transferManager, properties, contentTypeResolver)
 }

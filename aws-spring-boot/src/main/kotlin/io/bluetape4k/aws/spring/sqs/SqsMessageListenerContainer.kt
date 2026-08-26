@@ -18,9 +18,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import org.springframework.context.SmartLifecycle
 import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
@@ -36,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference
     "TooManyFunctions",
     "TooGenericExceptionCaught",
     "ThrowsCount",
+    "LargeClass",
 )
 class SqsMessageListenerContainer internal constructor(
     private val endpoint: SqsListenerEndpoint,
@@ -50,8 +53,11 @@ class SqsMessageListenerContainer internal constructor(
     private class ListenerGeneration(
         val id: Long,
         val scope: CoroutineScope,
+        maxInFlight: Int,
         val pollerJobs: CopyOnWriteArrayList<Job> = CopyOnWriteArrayList(),
         val handlerJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet(),
+        val inFlight: Semaphore = Semaphore(maxInFlight),
+        val groupMutexes: SqsGroupMutexes = SqsGroupMutexes(),
     )
 
     private enum class LifecycleState {
@@ -65,7 +71,16 @@ class SqsMessageListenerContainer internal constructor(
     private val lifecycleState = AtomicReference(LifecycleState.STOPPED)
     private val generationSequence = AtomicLong()
     private val lifecycleLock = Any()
+    private val queueAttributesResolver = DefaultSqsQueueAttributesResolver(
+        operations = operations,
+        cacheTtl = endpoint.queueAttributeCacheTtl,
+    )
     private var resolvedQueueUrl: String? = null
+
+    private val admissionLimit: Int = when (endpoint.backPressureMode) {
+        SqsBackPressureMode.FIXED -> endpoint.maxInFlight
+        SqsBackPressureMode.AUTO -> maxOf(endpoint.maxInFlight, endpoint.maxMessages * endpoint.concurrency)
+    }
 
     override fun start() {
         val current: ListenerGeneration
@@ -79,6 +94,7 @@ class SqsMessageListenerContainer internal constructor(
                     current = ListenerGeneration(
                         id = generationSequence.incrementAndGet(),
                         scope = CoroutineScope(SupervisorJob() + dispatcher),
+                        maxInFlight = admissionLimit,
                     )
                     generation.set(current)
                     lifecycleState.set(LifecycleState.RUNNING)
@@ -122,6 +138,7 @@ class SqsMessageListenerContainer internal constructor(
                     current.handlerJobs.toList().forEach { it.cancel() }
                 }
                 current.scope.cancel()
+                current.groupMutexes.clear()
             } finally {
                 synchronized(lifecycleLock) {
                     if (generation.get() === current) {
@@ -151,6 +168,7 @@ class SqsMessageListenerContainer internal constructor(
                 receiveAttempt++
                 continue
             }
+            awaitReceiveCapacity(current)
             val correlation = SqsListenerBatchCorrelation(
                 generation = current.id,
                 pollerId = pollerId,
@@ -169,6 +187,18 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
+    private suspend fun awaitReceiveCapacity(current: ListenerGeneration) {
+        val requiredPermits = if (endpoint.batch) {
+            endpoint.maxMessages.coerceAtMost(admissionLimit)
+        } else {
+            1
+        }
+        while (current.inFlight.availablePermits < requiredPermits) {
+            current.ensureActiveOperation()
+            delay(1)
+        }
+    }
+
     private suspend fun resolveQueueUrlForPoll(
         current: ListenerGeneration,
         receiveAttempt: Int,
@@ -179,6 +209,38 @@ class SqsMessageListenerContainer internal constructor(
     } catch (e: Error) {
         failGeneration(current)
         throw e
+    } catch (e: QueueDoesNotExistException) {
+        when (endpoint.queueNotFoundStrategy) {
+            SqsQueueNotFoundStrategy.FAIL_FAST -> {
+                failGeneration(current)
+                throw e
+            }
+            SqsQueueNotFoundStrategy.IGNORE -> {
+                log.info("SQS queue does not exist; stopping listener: listenerId=${endpoint.id}")
+                failGeneration(current)
+                null
+            }
+            SqsQueueNotFoundStrategy.CREATE -> {
+                require(!endpoint.queue.startsWith("http://") && !endpoint.queue.startsWith("https://")) {
+                    "CREATE queueNotFoundStrategy requires a queue name, not a queue URL."
+                }
+                try {
+                    operations.createConfiguredQueue(endpoint.queue).also { resolvedQueueUrl = it }
+                } catch (createFailure: CancellationException) {
+                    throw createFailure
+                } catch (createFailure: Error) {
+                    failGeneration(current)
+                    throw createFailure
+                } catch (createFailure: Throwable) {
+                    log.warn(
+                        "SQS queue creation failed: listenerId=${endpoint.id}, queue=${endpoint.queue}",
+                        createFailure,
+                    )
+                    delay(endpoint.retry.nextDelay(receiveAttempt))
+                    null
+                }
+            }
+        }
     } catch (e: Throwable) {
         log.warn("SQS queue URL resolution failed: listenerId=${endpoint.id}, queue=${endpoint.queue}", e)
         delay(endpoint.retry.nextDelay(receiveAttempt))
@@ -230,7 +292,7 @@ class SqsMessageListenerContainer internal constructor(
     ) {
         try {
             if (endpoint.batch) {
-                launchHandler(current) {
+                launchHandler(current, permitCount = messages.size.coerceAtMost(admissionLimit)) {
                     handleBatch(queueUrl, messages, correlation, current)
                 }
             } else {
@@ -238,7 +300,7 @@ class SqsMessageListenerContainer internal constructor(
                     if (generation.get() !== current) {
                         return
                     }
-                    launchHandler(current) {
+                    launchHandler(current, message.messageGroupId) {
                         handle(queueUrl, message, current)
                     }
                 }
@@ -253,13 +315,54 @@ class SqsMessageListenerContainer internal constructor(
 
     private suspend fun launchHandler(
         current: ListenerGeneration,
+        messageGroupId: String? = null,
+        permitCount: Int = 1,
         block: suspend () -> Unit,
     ) {
-        val handlerJob = current.scope.launch(start = CoroutineStart.LAZY) { block() }
+        current.ensureActiveOperation()
+        val permits = permitCount.coerceIn(1, admissionLimit)
+        var acquired = 0
+        try {
+            repeat(permits) {
+                current.inFlight.acquire()
+                acquired++
+            }
+        } catch (e: Throwable) {
+            repeat(acquired) { current.inFlight.release() }
+            throw e
+        }
+        val groupMutex = if (
+            endpoint.fifoBatchGroupingStrategy == SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID
+        ) {
+            messageGroupId?.takeIf(String::isNotBlank)?.let {
+                current.groupMutexes.computeIfAbsent(it) { Mutex() }
+            }
+        } else {
+            null
+        }
+        val handlerJob = try {
+            current.scope.launch(start = CoroutineStart.LAZY) {
+                try {
+                    if (groupMutex == null) {
+                        block()
+                    } else {
+                        groupMutex.withLock { block() }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Error) {
+                    log.error("SQS listener handler terminated with an error: listenerId=${endpoint.id}", e)
+                } finally {
+                    repeat(permits) { current.inFlight.release() }
+                }
+            }
+        } catch (e: Throwable) {
+            repeat(permits) { current.inFlight.release() }
+            throw e
+        }
         current.handlerJobs += handlerJob
         handlerJob.invokeOnCompletion { current.handlerJobs -= handlerJob }
         handlerJob.start()
-        handlerJob.join()
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -574,6 +677,9 @@ class SqsMessageListenerContainer internal constructor(
         val queueUrl = when {
             endpoint.queue.startsWith("http://") || endpoint.queue.startsWith("https://") -> endpoint.queue
             else -> operations.getQueueUrl(endpoint.queue)
+        }
+        if (endpoint.queueAttributeNames.isNotEmpty()) {
+            queueAttributesResolver.resolve(queueUrl, endpoint.queueAttributeNames)
         }
         resolvedQueueUrl = queueUrl
         return queueUrl

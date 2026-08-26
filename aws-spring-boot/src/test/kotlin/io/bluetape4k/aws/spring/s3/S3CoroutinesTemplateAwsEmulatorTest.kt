@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.S3AsyncClient
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -37,6 +38,7 @@ class S3CoroutinesTemplateAwsEmulatorTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 S3AutoConfiguration::class.java,
+                S3CrtAsyncClientAutoConfiguration::class.java,
                 S3TransferAutoConfiguration::class.java,
             )
         )
@@ -131,6 +133,72 @@ class S3CoroutinesTemplateAwsEmulatorTest {
                 bytes.result().asUtf8String() shouldBeEqualTo contents
             }
         }
+    }
+
+    @Test
+    fun `streaming output and typed object operations complete through the emulator`() {
+        contextRunner().run { context ->
+            val s3Client = context.getBean(S3Client::class.java)
+            val transferBucketName = "spring-s3-stream-${Base58.randomString(8).lowercase()}"
+            s3Client.createBucket { it.bucket(transferBucketName) }
+
+            runSuspendIO {
+                val provider = context.getBean(S3OutputStreamProvider::class.java)
+                provider.outputStream(
+                    bucket = transferBucketName,
+                    key = "stream/report.txt",
+                    metadata = mapOf("source" to "issue-464"),
+                ).use { output ->
+                    output.write("streamed through TransferManager".encodeToByteArray())
+                }
+
+                val stored = s3Client.getObjectAsBytes {
+                    it.bucket(transferBucketName).key("stream/report.txt")
+                }
+                stored.asUtf8String() shouldBeEqualTo "streamed through TransferManager"
+                stored.response().contentType() shouldBeEqualTo "text/plain"
+
+                val converter = JacksonS3ObjectConverter(tools.jackson.databind.ObjectMapper())
+                @Suppress("UNCHECKED_CAST")
+                val typedConverter = converter as S3ObjectConverter<Map<String, Any>>
+                val typedOperations = context.getBean(S3ObjectOperations::class.java)
+                val document = mapOf<String, Any>("name" to "bluetape", "revision" to 4)
+                typedOperations.uploadObject(
+                    bucket = transferBucketName,
+                    key = "typed/document.json",
+                    value = document,
+                    converter = typedConverter,
+                )
+                val restored = typedOperations.downloadObject(
+                    bucket = transferBucketName,
+                    key = "typed/document.json",
+                    targetType = Map::class.java as Class<Map<String, Any>>,
+                    converter = typedConverter,
+                )
+                restored shouldBeEqualTo document
+            }
+        }
+    }
+
+    @Test
+    fun `CRT async client performs an emulator smoke upload and closes with context`() {
+        contextRunner()
+            .withPropertyValues(
+                "bluetape4k.aws.s3.crt.enabled=true",
+                "bluetape4k.aws.s3.crt.max-concurrency=2",
+            )
+            .run { context ->
+                context.getBean(S3AsyncClient::class.java).javaClass.name shouldContain "Crt"
+                val s3Client = context.getBean(S3Client::class.java)
+                val operations = context.getBean(S3Operations::class.java)
+                val bucket = "spring-s3-crt-${Base58.randomString(8).lowercase()}"
+                s3Client.createBucket { it.bucket(bucket) }
+
+                runSuspendIO {
+                    operations.upload(bucket, "smoke.txt", "crt", contentType = "text/plain")
+                    operations.downloadText(bucket, "smoke.txt") shouldBeEqualTo "crt"
+                }
+            }
     }
 
     @Test

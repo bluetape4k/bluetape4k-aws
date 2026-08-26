@@ -76,6 +76,12 @@ class SqsListenerAnnotationBeanPostProcessor(
             retry = effective.retry,
             batch = listener.batch,
             acknowledgementMode = resolveAcknowledgementMode(listener, invoker),
+            backPressureMode = effective.backPressureMode,
+            maxInFlight = effective.maxInFlight,
+            fifoBatchGroupingStrategy = effective.fifoBatchGroupingStrategy,
+            queueAttributeNames = effective.queueAttributeNames,
+            queueAttributeCacheTtl = effective.queueAttributeCacheTtl,
+            queueNotFoundStrategy = effective.queueNotFoundStrategy,
         )
         registry.register(id, SqsMessageListenerContainer(endpoint, operations, invoker, interceptors))
     }

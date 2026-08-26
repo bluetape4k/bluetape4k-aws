@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
  * }
  * ```
  */
+@Suppress("TooManyFunctions")
 interface SqsOperations {
 
     /**
@@ -180,4 +181,16 @@ private fun validateVisibilityBatchRequests(requests: List<SqsChangeVisibilityRe
         "duplicate batch visibility request"
     }
     requests.forEach { requireVisibilityTimeout(it.timeoutSeconds) }
+}
+
+/**
+ * queue URL 속성 조회가 필요한 adapter가 선택적으로 구현하는 additive capability입니다.
+ * 기존 [SqsOperations] 구현의 public ABI는 변경하지 않습니다.
+ */
+interface SqsQueueAttributesOperations : SqsOperations {
+
+    suspend fun getQueueAttributes(
+        queueUrl: String,
+        attributeNames: Collection<QueueAttributeName>,
+    ): Map<QueueAttributeName, String>
 }

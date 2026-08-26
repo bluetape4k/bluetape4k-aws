@@ -4,6 +4,7 @@ import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
@@ -33,8 +34,54 @@ data class SqsProperties(
         val messageVisibilityHeartbeatSeconds: Int? = null,
         val concurrency: Int = 1,
         val stopTimeoutMillis: Long = 25_000,
+        val backPressureMode: SqsBackPressureMode = SqsBackPressureMode.FIXED,
+        val maxInFlight: Int = maxMessages * concurrency,
+        val fifoBatchGroupingStrategy: SqsFifoBatchGroupingStrategy =
+            SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
+        val queueAttributeNames: Set<QueueAttributeName> = emptySet(),
+        val queueAttributeCacheTtl: Duration = Duration.ofMinutes(1),
+        val queueNotFoundStrategy: SqsQueueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
         val retry: Retry = Retry(),
     ) : Serializable {
+        /**
+         * 기존 0.1.x consumer가 호출하던 constructor descriptor를 유지합니다.
+         * 새 listener flow 정책은 이 legacy 경로에서 기존 기본값으로 채웁니다.
+         */
+        @Suppress("LongParameterList")
+        constructor(
+            enabled: Boolean = true,
+            autoStartup: Boolean = true,
+            phase: Int = Int.MAX_VALUE,
+            maxMessages: Int = 10,
+            waitTimeSeconds: Int = 20,
+            visibilityTimeoutSeconds: Int? = null,
+            errorVisibilityTimeoutSeconds: Int? = null,
+            messageVisibilityHeartbeatIntervalSeconds: Int? = null,
+            messageVisibilityHeartbeatSeconds: Int? = null,
+            concurrency: Int = 1,
+            stopTimeoutMillis: Long = 25_000,
+            retry: Retry = Retry(),
+        ) : this(
+            enabled = enabled,
+            autoStartup = autoStartup,
+            phase = phase,
+            maxMessages = maxMessages,
+            waitTimeSeconds = waitTimeSeconds,
+            visibilityTimeoutSeconds = visibilityTimeoutSeconds,
+            errorVisibilityTimeoutSeconds = errorVisibilityTimeoutSeconds,
+            messageVisibilityHeartbeatIntervalSeconds = messageVisibilityHeartbeatIntervalSeconds,
+            messageVisibilityHeartbeatSeconds = messageVisibilityHeartbeatSeconds,
+            concurrency = concurrency,
+            stopTimeoutMillis = stopTimeoutMillis,
+            backPressureMode = SqsBackPressureMode.FIXED,
+            maxInFlight = maxMessages * concurrency,
+            fifoBatchGroupingStrategy = SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID,
+            queueAttributeNames = emptySet(),
+            queueAttributeCacheTtl = Duration.ofMinutes(1),
+            queueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
+            retry = retry,
+        )
+
         init {
             maxMessages.requireInRange(1, 10, "maxMessages")
             waitTimeSeconds.requireInRange(0, 20, "waitTimeSeconds")
@@ -46,6 +93,8 @@ data class SqsProperties(
             )
             concurrency.requireGe(1, "concurrency")
             stopTimeoutMillis.requireGe(1, "stopTimeoutMillis")
+            maxInFlight.requireGe(1, "maxInFlight")
+            queueAttributeCacheTtl.requireGe(Duration.ZERO, "queueAttributeCacheTtl")
         }
 
         companion object {

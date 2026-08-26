@@ -67,6 +67,9 @@ class S3AutoConfigurationTest {
             context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
             context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3OutputStreamProvider::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3ObjectOperations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType(S3ObjectContentTypeResolver::class.java).size shouldBeEqualTo 1
         }
     }
 
@@ -92,6 +95,7 @@ class S3AutoConfigurationTest {
                 context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 0
                 context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(S3OutputStreamProvider::class.java).size shouldBeEqualTo 0
             }
     }
 

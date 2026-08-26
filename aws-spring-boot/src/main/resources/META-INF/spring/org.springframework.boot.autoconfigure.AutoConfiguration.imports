@@ -13,6 +13,7 @@ io.bluetape4k.aws.spring.kms.KmsAutoConfiguration
 io.bluetape4k.aws.spring.kms.KmsFieldEncryptionAutoConfiguration
 io.bluetape4k.aws.spring.kms.KmsTextEncryptorAutoConfiguration
 io.bluetape4k.aws.spring.s3.S3AutoConfiguration
+io.bluetape4k.aws.spring.s3.S3CrtAsyncClientAutoConfiguration
 io.bluetape4k.aws.spring.s3.S3ResourceAutoConfiguration
 io.bluetape4k.aws.spring.s3.accessgrants.S3AccessGrantsAutoConfiguration
 io.bluetape4k.aws.spring.s3vectors.S3VectorsAutoConfiguration
