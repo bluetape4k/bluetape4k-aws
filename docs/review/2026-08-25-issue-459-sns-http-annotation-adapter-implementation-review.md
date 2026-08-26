@@ -98,7 +98,9 @@ git diff --check
 ## PR 후 repair addendum
 
 - PR: [#568](https://github.com/bluetape4k/bluetape4k-aws/pull/568)
-- 최신 exact head: `3c4b18375fd1365dc7e7694926d686e050911bc3`
+- repair code/test evidence head: `3c4b18375fd1365dc7e7694926d686e050911bc3`
+- PR exact head: live PR metadata에서 별도로 확인한다(이 문서의 docs-only
+  provenance 변경은 구현 evidence head를 바꾸지 않는다).
 - repair 내용:
   - `SnsHttpMessageResolverSupport`가 method/class composed mapping을 판별해
     notification parameter와 confirmation-only `NotificationStatus` 조합을
@@ -111,7 +113,9 @@ git diff --check
   - SNS SDK `ConfirmSubscriptionResponse`를 두 endpoint auto-configuration의
     classpath 조건으로 고정하고 `FilteredClassLoader` 부재 테스트와 EN/KO
     runtime dependency 문서를 추가했다.
-- 최신 local evidence: targeted 17 tests, module 767/767 (serial), module/root
-  detekt PASS, root `build -x test` PASS, `git diff --check` PASS.
-- 독립 최신 head review와 hosted CI는 이 addendum 작성 시점에 진행 중이며,
-  결과를 확인한 뒤 P0/P1 수렴과 CG-14 상태를 갱신한다.
+- repair code/test head local evidence: targeted 17 tests, module 767/767
+  (serial), module/root detekt PASS, root `build -x test` PASS,
+  `git diff --check` PASS.
+- 독립 review와 hosted CI의 exact-head 상태는 live PR metadata/checks에서
+  확인하며, docs-only provenance commit 이후 새 exact-head 결과로 CG-14를
+  갱신한다.
