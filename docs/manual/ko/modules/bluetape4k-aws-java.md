@@ -55,7 +55,32 @@ try {
 
 ## 작업별 API {#api-by-task}
 
-S3 객체·전송, DynamoDB Enhanced 저장소·배치, SQS/SNS 메시징, KMS, CloudWatch, Kinesis, Lambda, SES, STS와 요청 모델 빌더를 제공합니다.
+S3 객체·전송, DynamoDB Enhanced 저장소·배치, DynamoDB Streams Flow/checkpoint 소비, SQS/SNS 메시징, KMS, CloudWatch, Kinesis, Lambda, SES, STS와 요청 모델 빌더를 제공합니다.
+
+## DynamoDB Streams Flow와 checkpoint {#dynamodb-streams}
+
+> 미출시/develop: 이 절은 Issue #469 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+Java SDK v2 확장은 한 shard를 읽는 `DynamoDbStreamsAsyncClient.recordFlow`와
+제한된 동시성으로 shard graph를 읽는 `shardRecordFlow`를 제공합니다. 시작 위치는
+`TrimHorizon`, `Latest`, `AtSequenceNumber`, `AfterSequenceNumber`이며, 단일 소비는
+SDK `Record`를, 다중 shard 소비는 `DynamoDbStreamsShardRecord` envelope를 반환합니다.
+
+```kotlin
+val records = client.recordFlow(
+    streamArn = streamArn,
+    shardId = shardId,
+    position = DynamoDbStreamsStartingPosition.Latest,
+    checkpointStore = InMemoryDynamoDbStreamsCheckpointStore(),
+).toList()
+```
+
+Checkpoint는 downstream emission 뒤에만 저장하고 저장된 sequence를 포함해 재생하므로
+at-least-once 전달을 유지하며 재시작 시 중복이 생길 수 있습니다. Root shard tree는
+`maxShardConcurrency`로 제한하고 child는 parent가 완료된 뒤 소비합니다. 짧은 작업에는
+`withDynamoDbStreamsAsyncClient`를 사용하고 주입한 client의 소유권은 호출자에게 둡니다.
+Emulator 검증은 Floci-first이며 운영 retention, throttling, resharding timing은 AWS-only
+공백으로 남깁니다.
 
 ## Lambda 호출 helper {#lambda}
 

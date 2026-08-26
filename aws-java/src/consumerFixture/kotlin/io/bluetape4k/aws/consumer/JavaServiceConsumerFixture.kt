@@ -2,6 +2,8 @@ package io.bluetape4k.aws.consumer
 
 import io.bluetape4k.aws.cloudwatch.cloudWatchClient
 import io.bluetape4k.aws.dynamodb.dynamoDbClient
+import io.bluetape4k.aws.dynamodbstreams.DynamoDbStreamsStartingPosition
+import io.bluetape4k.aws.dynamodbstreams.dynamoDbStreamsAsyncClientOf
 import io.bluetape4k.aws.kinesis.kinesisClient
 import io.bluetape4k.aws.kms.kmsClient
 import io.bluetape4k.aws.lambda.lambdaAsyncClient
@@ -25,11 +27,13 @@ import io.bluetape4k.aws.sfn.withSfnClient
 import io.bluetape4k.aws.sns.snsClient
 import io.bluetape4k.aws.sqs.sqsClient
 import io.bluetape4k.aws.sts.stsClient
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
+import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisClient
 import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
@@ -67,6 +71,7 @@ fun javaServiceConsumerFixture(): List<Any> = listOf<Any>(
     S3Client::class.java,
     S3TablesClient::class.java,
     DynamoDbClient::class.java,
+    DynamoDbStreamsAsyncClient::class.java,
     SnsClient::class.java,
     SqsClient::class.java,
     KmsClient::class.java,
@@ -81,6 +86,14 @@ fun javaServiceConsumerFixture(): List<Any> = listOf<Any>(
     { S3ClientFactory.Sync.create { } },
     { s3TablesClient { region(Region.AP_NORTHEAST_2) } },
     { dynamoDbClient { } },
+    {
+        dynamoDbStreamsAsyncClientOf(
+            endpoint = URI.create("http://localhost:4566"),
+            region = Region.AP_NORTHEAST_2,
+            credentialsProvider = AnonymousCredentialsProvider.create(),
+        )
+    },
+    DynamoDbStreamsStartingPosition.Latest,
     { snsClient { } },
     { sqsClient { } },
     { kmsClient { } },

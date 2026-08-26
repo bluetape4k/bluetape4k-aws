@@ -15,7 +15,7 @@
 | 운영 | metrics no-op 기본값, retry budget, Floci와 AWS-only 경계, close helper | 통과. 실제 AWS 호출을 금지하고 Floci capability 증거와 N/A 증거를 별도 남긴다. |
 | 개발자/API | SDK model package 차이, sealed 시작 위치, checkpoint SPI, raw record/envelope 분리 | 통과. Java는 `software.amazon.awssdk.services.dynamodb.model`, Kotlin은 전용 streams model을 사용하고 cross-module model 재수출을 하지 않는다. |
 | 사용자/호출자 | at-least-once 중복 범위, 전역 shard 순서 부재, idempotency 책임, helper lifecycle | 통과. `emit` 후 save와 `AtSequenceNumber` inclusive 재생을 README/manual/KDoc에 같은 의미로 설명한다. |
-| 통합 | version catalog, root dependency-management, consumer fixture, module registration, docs locales | 통과. Java 별도 `aws2-dynamodbstreams` alias를 만들지 않고 기존 `dynamodb` artifact를 재사용하며 Kotlin `dynamodbstreams-jvm` alias와 fixture를 함께 등록한다. |
+| 통합 | version catalog, root dependency-management, consumer fixture, module registration, docs locales | 통과. Java 별도 `aws2-dynamodbstreams` alias를 만들지 않고 기존 `dynamodb` artifact를 재사용하며 Kotlin `dynamodbstreams` alias와 fixture를 함께 등록한다. |
 
 ## 명세 보정
 

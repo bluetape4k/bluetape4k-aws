@@ -52,7 +52,34 @@ withS3Client(region = region) { s3 ->
 
 ## 작업별 API {#api-by-task}
 
-DynamoDB 모델 DSL·배치, S3 객체 작업, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, Lambda, STS와 HTTP engine provider를 제공합니다.
+DynamoDB 모델 DSL·배치, DynamoDB Streams Flow/checkpoint 소비, S3 객체 작업, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, Lambda, STS와 HTTP engine provider를 제공합니다.
+
+## DynamoDB Streams Flow와 checkpoint {#dynamodb-streams}
+
+> 미출시/develop: 이 절은 Issue #469 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+native AWS SDK for Kotlin 확장은 한 shard를 읽는 `DynamoDbStreamsClient.recordFlow`와
+제한된 동시성으로 shard graph를 읽는 `shardRecordFlow`를 제공합니다. 시작 위치는
+`TrimHorizon`, `Latest`, `AtSequenceNumber`, `AfterSequenceNumber`이고 SDK `Record` 타입을
+그대로 유지하며 다중 shard 수집에는 stream/shard envelope를 추가합니다.
+
+```kotlin
+withDynamoDbStreamsClient(region = "ap-northeast-2") { client ->
+    client.shardRecordFlow(
+        streamArn = streamArn,
+        checkpointStore = InMemoryDynamoDbStreamsCheckpointStore(),
+    ).collect { envelope ->
+        handle(envelope.record)
+    }
+}
+```
+
+Checkpoint는 downstream emission 뒤에 저장하고 저장된 sequence를 포함해 재생하므로
+at-least-once 계약을 지키며 재시작 시 중복이 생길 수 있습니다. Root shard tree는
+`maxShardConcurrency`로 제한하고 child는 parent 완료 뒤 시작합니다. 짧은 client에는
+`withDynamoDbStreamsClient`를 사용하고 주입한 HTTP engine은 호출자가 소유합니다. Floci를
+첫 emulator 검증 경로로 사용하며 운영 retention, throttling, resharding timing은 AWS-only
+공백으로 남깁니다.
 
 ## Lambda 호출 helper {#lambda}
 

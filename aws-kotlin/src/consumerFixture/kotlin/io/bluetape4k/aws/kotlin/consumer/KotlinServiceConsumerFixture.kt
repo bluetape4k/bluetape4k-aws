@@ -2,6 +2,7 @@ package io.bluetape4k.aws.kotlin.consumer
 
 import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
+import aws.sdk.kotlin.services.dynamodbstreams.DynamoDbStreamsClient
 import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.sdk.kotlin.services.lambda.LambdaClient
 import aws.sdk.kotlin.services.kms.KmsClient
@@ -15,6 +16,8 @@ import aws.sdk.kotlin.services.sqs.SqsClient
 import aws.sdk.kotlin.services.sts.StsClient
 import io.bluetape4k.aws.kotlin.cloudwatch.cloudWatchClientOf
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
+import io.bluetape4k.aws.kotlin.dynamodbstreams.DynamoDbStreamsStartingPosition
+import io.bluetape4k.aws.kotlin.dynamodbstreams.dynamoDbStreamsClientOf
 import io.bluetape4k.aws.kotlin.kinesis.kinesisClientOf
 import io.bluetape4k.aws.kotlin.kms.kmsClientOf
 import io.bluetape4k.aws.kotlin.lambda.invokeString
@@ -49,6 +52,7 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
     S3Client::class.java,
     S3TablesClient::class.java,
     DynamoDbClient::class.java,
+    DynamoDbStreamsClient::class.java,
     SnsClient::class.java,
     SqsClient::class.java,
     KmsClient::class.java,
@@ -62,6 +66,8 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
     { s3ClientOf() },
     { s3TablesClientOf(region = "ap-northeast-2") },
     { dynamoDbClientOf(region = "ap-northeast-2") },
+    { dynamoDbStreamsClientOf(region = "ap-northeast-2") },
+    DynamoDbStreamsStartingPosition.Latest,
     { snsClientOf() },
     { sqsClientOf() },
     { kmsClientOf() },

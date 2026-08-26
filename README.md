@@ -33,7 +33,7 @@ uses.
 
 - **Kotlin-first AWS clients** — coroutine adapters for Java SDK v2, native AWS
   Kotlin SDK helpers, and small DSL builders for request objects.
-- **Service coverage** — DynamoDB, S3, S3 Tables, S3 Vectors, SES/SESv2, SNS, SQS, KMS,
+- **Service coverage** — DynamoDB, DynamoDB Streams, S3, S3 Tables, S3 Vectors, SES/SESv2, SNS, SQS, KMS,
   CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, EventBridge, EventBridge
   Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, RDS IAM, Secrets
   Manager, and Parameter Store.
@@ -59,8 +59,8 @@ uses.
 
 | Module | Artifact | Description |
 |---|---|---|
-| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, S3, S3 Tables, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
-| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, DynamoDB Streams, S3, S3 Tables, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
+| `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, DynamoDB Streams, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, EventBridge server plugin, Kinesis and STS server plugins, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
@@ -135,6 +135,7 @@ dependencies {
     implementation("io.github.bluetape4k.aws:bluetape4k-aws-java")
 
     // Add the AWS Java SDK v2 services you use
+    implementation("software.amazon.awssdk:dynamodb") // DynamoDB Streams is in this artifact
     implementation("software.amazon.awssdk:dynamodb-enhanced")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:s3-transfer-manager")
@@ -173,6 +174,7 @@ dependencies {
 
     // Add the AWS Kotlin SDK services you use
     implementation("aws.sdk.kotlin:dynamodb")
+    implementation("aws.sdk.kotlin:dynamodbstreams")
     implementation("aws.sdk.kotlin:s3")
     implementation("aws.sdk.kotlin:secretsmanager")
     implementation("aws.sdk.kotlin:sqs")
@@ -1429,6 +1431,41 @@ Use `DynamoDbBatchExecutor` when writes or deletes may exceed DynamoDB's
 25-item `BatchWriteItem` limit. It chunks requests, applies a Resilience4j
 retry, and recursively retries `unprocessedItems` until they are accepted or the
 configured retry ceiling is reached.
+
+### DynamoDB Streams — Flow and checkpoints (Java/Kotlin SDKs)
+
+Issue #469 adds the same at-least-once consumer contract to both SDK modules.
+The Java SDK v2 path uses `DynamoDbStreamsAsyncClient`; the native Kotlin path
+uses `DynamoDbStreamsClient`. Both expose `recordFlow` for one shard and
+`shardRecordFlow` for a bounded root-shard graph, with
+`TrimHorizon`, `Latest`, `AtSequenceNumber`, and `AfterSequenceNumber` starts.
+
+```kotlin
+// AWS SDK for Kotlin
+withDynamoDbStreamsClient(region = "ap-northeast-2") { client ->
+    client.shardRecordFlow(
+        streamArn = streamArn,
+        checkpointStore = InMemoryDynamoDbStreamsCheckpointStore(),
+    ).collect { envelope ->
+        handle(envelope.record)
+    }
+}
+```
+
+The checkpoint is saved only after downstream `emit` returns and resumes
+inclusively at the saved sequence number, so duplicates are possible after a
+restart. Use `withDynamoDbStreamsAsyncClient` for a short-lived Java client;
+application-scoped Java clients are registered for shutdown and injected
+clients remain caller-owned. New emulator coverage runs against Floci first:
+
+```bash
+./gradlew :bluetape4k-aws-kotlin:test \
+  --tests 'io.bluetape4k.aws.kotlin.dynamodbstreams.DynamoDbStreamsFlociTest' \
+  -Dbluetape4k.aws.emulator=floci --no-daemon
+```
+
+The repository does not claim production retention, throttling, or resharding
+timing from the Floci run; those remain AWS-only verification gaps.
 
 ### CloudWatch Metrics — DSL (`bluetape4k-aws-kotlin` module)
 

@@ -53,7 +53,34 @@ try {
 
 ## API by task {#api-by-task}
 
-S3 object and transfer helpers, DynamoDB enhanced repositories and batch execution, SQS/SNS messaging, KMS, CloudWatch, Kinesis, Lambda, SES, STS, and request-model builders.
+S3 object and transfer helpers, DynamoDB enhanced repositories and batch execution, DynamoDB Streams Flow/checkpoint consumption, SQS/SNS messaging, KMS, CloudWatch, Kinesis, Lambda, SES, STS, and request-model builders.
+
+## DynamoDB Streams Flow and checkpoints {#dynamodb-streams}
+
+> Unreleased/develop: this section describes the Issue #469 API and is not part of the `0.5.0` release source.
+
+The Java SDK v2 extension exposes `DynamoDbStreamsAsyncClient.recordFlow` for one
+shard and `shardRecordFlow` for a bounded shard graph. The consumer supports
+`TrimHorizon`, `Latest`, `AtSequenceNumber`, and `AfterSequenceNumber`, and
+returns the SDK `Record` type (or a `DynamoDbStreamsShardRecord` envelope for
+multi-shard consumption).
+
+```kotlin
+val records = client.recordFlow(
+    streamArn = streamArn,
+    shardId = shardId,
+    position = DynamoDbStreamsStartingPosition.Latest,
+    checkpointStore = InMemoryDynamoDbStreamsCheckpointStore(),
+).toList()
+```
+
+Checkpoints are saved only after downstream emission and are replayed
+inclusively, which preserves at-least-once delivery and permits duplicates after
+restart. Root shard trees are bounded by `maxShardConcurrency`; each child is
+consumed after its parent completes. Use `withDynamoDbStreamsAsyncClient` for a
+short-lived client and keep injected clients under caller ownership. Emulator
+verification is Floci-first; production retention, throttling, and resharding
+timing remain AWS-only gaps.
 
 ## Lambda invocation helpers {#lambda}
 

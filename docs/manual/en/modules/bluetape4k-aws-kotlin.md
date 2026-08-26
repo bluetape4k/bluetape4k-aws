@@ -50,7 +50,35 @@ withS3Client(region = region) { s3 ->
 
 ## API by task {#api-by-task}
 
-DynamoDB model DSL and batch execution, S3 object operations, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, Lambda, STS, and HTTP engine providers.
+DynamoDB model DSL and batch execution, DynamoDB Streams Flow/checkpoint consumption, S3 object operations, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, Lambda, STS, and HTTP engine providers.
+
+## DynamoDB Streams Flow and checkpoints {#dynamodb-streams}
+
+> Unreleased/develop: this section describes the Issue #469 API and is not part of the `0.5.0` release source.
+
+The native AWS SDK for Kotlin extension exposes `DynamoDbStreamsClient.recordFlow`
+for one shard and `shardRecordFlow` for a bounded shard graph. It supports
+`TrimHorizon`, `Latest`, `AtSequenceNumber`, and `AfterSequenceNumber`, while
+keeping the SDK `Record` type visible and adding a stream/shard envelope for
+multi-shard collection.
+
+```kotlin
+withDynamoDbStreamsClient(region = "ap-northeast-2") { client ->
+    client.shardRecordFlow(
+        streamArn = streamArn,
+        checkpointStore = InMemoryDynamoDbStreamsCheckpointStore(),
+    ).collect { envelope ->
+        handle(envelope.record)
+    }
+}
+```
+
+The checkpoint is saved after downstream emission and replayed inclusively, so
+the contract is at-least-once and a restart may deliver a duplicate. Root shard
+trees are bounded by `maxShardConcurrency`; children start after their parent
+completes. Use `withDynamoDbStreamsClient` for short-lived clients and keep
+injected HTTP engines caller-owned. Floci is the first emulator lane; production
+retention, throttling, and resharding timing remain AWS-only gaps.
 
 ## Lambda invocation helpers {#lambda}
 
