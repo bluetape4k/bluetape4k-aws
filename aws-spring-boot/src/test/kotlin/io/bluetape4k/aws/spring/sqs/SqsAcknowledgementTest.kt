@@ -13,6 +13,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
@@ -24,6 +26,23 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 
 class SqsAcknowledgementTest {
+
+    @Test
+    fun `concurrent terminal acknowledgement performs delete exactly once`() = runSuspendIO {
+        repeat(TERMINAL_RACE_REPETITIONS) {
+            val operations = RecordingSqsOperations()
+            val acknowledgement = acknowledgement(operations)
+
+            coroutineScope {
+                List(TERMINAL_RACE_COROUTINES) {
+                    async(Dispatchers.Default) { acknowledgement.acknowledge() }
+                }.awaitAll()
+            }
+
+            acknowledgement.completed.shouldBeTrue()
+            operations.deleteCalls shouldBeEqualTo 1
+        }
+    }
 
     @Test
     fun `terminal race keeps heartbeat observation count equal to actual visibility IO`() = runTest {
@@ -369,7 +388,9 @@ class SqsAcknowledgementTest {
             receiptHandle: String,
         ): DeleteMessageResponse {
             beforeDelete()
-            deleteCalls++
+            synchronized(this) {
+                deleteCalls++
+            }
             deleteFailure?.let { throw it }
             return DeleteMessageResponse.builder().build()
         }
@@ -391,5 +412,10 @@ class SqsAcknowledgementTest {
             visibilityTimeoutSeconds: Int?,
         ): Flow<SqsReceivedMessage> =
             emptyFlow()
+    }
+
+    private companion object {
+        private const val TERMINAL_RACE_REPETITIONS: Int = 500
+        private const val TERMINAL_RACE_COROUTINES: Int = 32
     }
 }

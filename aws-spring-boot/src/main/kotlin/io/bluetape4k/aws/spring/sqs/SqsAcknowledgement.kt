@@ -99,14 +99,13 @@ internal class DefaultSqsAcknowledgement(
         action: SqsAcknowledgementAction,
         block: suspend () -> Unit,
     ) {
-        if (terminal.get()) {
-            return
-        }
-        if (!inFlightTerminal.compareAndSet(false, true)) {
+        if (terminal.get() || !inFlightTerminal.compareAndSet(false, true)) {
             return
         }
         try {
-            runAcknowledgement(action, onIoSuccess = { terminal.set(true) }, block = block)
+            if (!terminal.get()) {
+                runAcknowledgement(action, onIoSuccess = { terminal.set(true) }, block = block)
+            }
         } finally {
             inFlightTerminal.set(false)
         }
