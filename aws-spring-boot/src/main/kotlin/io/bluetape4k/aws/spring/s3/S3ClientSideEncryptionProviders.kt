@@ -82,6 +82,9 @@ internal object ProviderEnvelope {
     private const val DATA_KEY_SIZE = 32
     private const val GCM_TAG_BITS = 128
     private const val MAX_WRAPPED_KEY_BYTES = 4 * 1024
+    private const val BASE64_INPUT_BYTES = 3
+    private const val BASE64_OUTPUT_BYTES = 4
+    private const val BASE64_PADDING_BYTES = 2
 
     private const val VERSION_KEY = "bt4k-cek-version"
     private const val PROVIDER_KEY = "bt4k-cek-provider"
@@ -331,7 +334,10 @@ internal object ProviderEnvelope {
     }
 
     private fun decode(value: String, key: String, maxBytes: Int): ByteArray {
-        require(value.length <= ((maxBytes + 2) / 3) * 4) {
+        require(
+            value.length <=
+                ((maxBytes + BASE64_PADDING_BYTES) / BASE64_INPUT_BYTES) * BASE64_OUTPUT_BYTES,
+        ) {
             "Provider envelope metadata exceeds the maximum size: $key"
         }
         val decoded = try {
