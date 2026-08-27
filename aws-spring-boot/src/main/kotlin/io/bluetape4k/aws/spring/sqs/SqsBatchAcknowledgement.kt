@@ -147,11 +147,26 @@ internal class DefaultSqsBatchAcknowledgement(
         return execute(SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY, messages.toList(), timeoutSeconds)
     }
 
+    internal suspend fun heartbeat(
+        messages: Collection<SqsReceivedMessage>,
+        timeoutSeconds: Int,
+        onObservationFailure: (Throwable) -> Unit,
+    ): SqsBatchAcknowledgementResult {
+        requireVisibilityTimeout(timeoutSeconds)
+        return execute(
+            operation = SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY,
+            requested = messages.toList(),
+            timeoutSeconds = timeoutSeconds,
+            onObservationCleanupFailure = onObservationFailure,
+        )
+    }
+
     @Suppress("TooGenericExceptionCaught")
     private suspend fun execute(
         operation: SqsBatchAcknowledgementOperation,
         requested: List<SqsReceivedMessage>,
         timeoutSeconds: Int?,
+        onObservationCleanupFailure: ((Throwable) -> Unit)? = null,
     ): SqsBatchAcknowledgementResult {
         val requestedItems = validateRequested(requested)
         val action = operation.toAcknowledgementAction()
@@ -169,6 +184,7 @@ internal class DefaultSqsBatchAcknowledgement(
                 requestedItems = requestedItems,
                 timeoutSeconds = timeoutSeconds,
                 context = context,
+                onObservationCleanupFailure = onObservationCleanupFailure,
                 onCancellationFinalized = { afterAcknowledgementCompleted = true },
             )
         } catch (e: Throwable) {
@@ -192,6 +208,7 @@ internal class DefaultSqsBatchAcknowledgement(
         requestedItems: List<Item>,
         timeoutSeconds: Int?,
         context: SqsListenerInvocationContext,
+        onObservationCleanupFailure: ((Throwable) -> Unit)?,
         onCancellationFinalized: () -> Unit,
     ): SqsBatchAcknowledgementResult {
         while (true) {
@@ -209,9 +226,12 @@ internal class DefaultSqsBatchAcknowledgement(
                         context,
                         requestedItems.size,
                         decision,
+                        onObservationCleanupFailure,
                         onCancellationFinalized,
                     )
-                    commit(decision.items, decision.deferred, operation, result)
+                    withContext(NonCancellable) {
+                        commit(decision.items, decision.deferred, operation, result)
+                    }
                     notifyResult(context, action, result, requestedItems.size)
                     return result
                 }
@@ -227,12 +247,18 @@ internal class DefaultSqsBatchAcknowledgement(
         context: SqsListenerInvocationContext,
         requestedSize: Int,
         decision: Decision.Run,
+        onObservationCleanupFailure: ((Throwable) -> Unit)?,
         onCancellationFinalized: () -> Unit,
     ): SqsBatchAcknowledgementResult {
         var rollbackCompleted = false
         return try {
             operationGuard()
-            observeBatchAcknowledgement(context, action, decision.items.size) {
+            observeBatchAcknowledgement(
+                context = context,
+                action = action,
+                batchSize = decision.items.size,
+                onObservationCleanupFailure = onObservationCleanupFailure,
+            ) {
                 try {
                     perform(
                         operation,
@@ -266,15 +292,17 @@ internal class DefaultSqsBatchAcknowledgement(
         context: SqsListenerInvocationContext,
         action: SqsAcknowledgementAction,
         batchSize: Int,
+        onObservationCleanupFailure: ((Throwable) -> Unit)?,
         block: suspend SqsObservationExecution.() -> T,
     ): T {
         var observedContext: SqsObservationContext? = null
-        return observeSqs(
+        val observation = prepareSqsObservation(
             runtime = observationRuntime,
             contextFactory = {
                 batchObservationContext(context, action, batchSize).also { observedContext = it }
             },
-        ) {
+        )
+        return observation.observe(onCleanupFailure = onObservationCleanupFailure) {
             try {
                 val result = block()
                 if (result is SqsBatchAcknowledgementResult) {

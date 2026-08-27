@@ -10,8 +10,11 @@ import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.observation.ObservationView
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
@@ -19,8 +22,55 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class SqsAcknowledgementTest {
+
+    @Test
+    fun `terminal race keeps heartbeat observation count equal to actual visibility IO`() = runTest {
+        val operations = RecordingSqsOperations()
+        val recorder = AcknowledgementObservationRecorder()
+        val heartbeatStarted = CountDownLatch(1)
+        val releaseHeartbeat = CountDownLatch(1)
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(recorder)
+        registry.observationConfig().observationHandler(object : ObservationHandler<SqsObservationContext> {
+            override fun supportsContext(context: Observation.Context): Boolean =
+                context is SqsObservationContext
+
+            override fun onStart(context: SqsObservationContext) {
+                if (context.metadata.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY) {
+                    heartbeatStarted.countDown()
+                    check(releaseHeartbeat.await(5, TimeUnit.SECONDS))
+                }
+            }
+        })
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = registry,
+                customizers = emptyList(),
+                factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+            ),
+        )
+
+        val heartbeat = async(Dispatchers.Default) { acknowledgement.heartbeat(30) {} }
+        withContext(Dispatchers.IO) {
+            check(heartbeatStarted.await(5, TimeUnit.SECONDS))
+        }
+        val terminal = async(Dispatchers.Default) { acknowledgement.acknowledge() }
+        releaseHeartbeat.countDown()
+        heartbeat.await()
+        terminal.await()
+
+        recorder.contexts.count {
+            it.metadata.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+        } shouldBeEqualTo operations.changeVisibilityCalls
+        recorder.contexts.count {
+            it.metadata.acknowledgementAction == SqsAcknowledgementAction.ACK
+        } shouldBeEqualTo operations.deleteCalls
+    }
 
     @Test
     fun `actual acknowledgement IO creates one observation and duplicate creates none`() = runTest {

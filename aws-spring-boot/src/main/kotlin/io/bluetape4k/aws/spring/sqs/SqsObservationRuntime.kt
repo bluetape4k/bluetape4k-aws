@@ -31,13 +31,21 @@ internal class SqsObservationRuntime(
     internal suspend fun <T> observe(
         context: SqsObservationContext,
         block: suspend SqsObservationExecution.() -> T,
-    ): T {
-        val observation = prepareSqsObservation(context, registry, customizers, factory)
-        val execution = SqsObservationExecution(context, observation)
-        if (observation === Observation.NOOP) {
-            return execution.block()
-        }
+    ): T = prepare(context).observe(block = block)
 
+    internal fun prepare(context: SqsObservationContext): SqsPreparedObservation {
+        val observation = prepareSqsObservation(context, registry, customizers, factory)
+        return SqsPreparedObservation(this, context, observation)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    internal suspend fun <T> observePrepared(
+        context: SqsObservationContext,
+        observation: Observation,
+        onCleanupFailure: ((Throwable) -> Unit)?,
+        block: suspend SqsObservationExecution.() -> T,
+    ): T {
+        val execution = SqsObservationExecution(context, observation)
         val parentScope = registry.currentObservationScope
         var started = false
         val observedResult = try {
@@ -69,7 +77,28 @@ internal class SqsObservationRuntime(
         } finally {
             registry.currentObservationScope = parentScope
         }
-        return observedResult.resolve(cleanupFailure)
+        val unhandledCleanupFailure = if (cleanupFailure != null && onCleanupFailure != null) {
+            onCleanupFailure(cleanupFailure)
+            null
+        } else {
+            cleanupFailure
+        }
+        return observedResult.resolve(unhandledCleanupFailure)
+    }
+}
+
+internal class SqsPreparedObservation internal constructor(
+    private val runtime: SqsObservationRuntime?,
+    private val context: SqsObservationContext?,
+    private val observation: Observation,
+) {
+    internal suspend fun <T> observe(
+        onCleanupFailure: ((Throwable) -> Unit)? = null,
+        block: suspend SqsObservationExecution.() -> T,
+    ): T = when {
+        runtime == null || context == null -> SqsObservationExecution(null, Observation.NOOP).block()
+        observation === Observation.NOOP -> SqsObservationExecution(context, observation).block()
+        else -> runtime.observePrepared(context, observation, onCleanupFailure, block)
     }
 }
 
@@ -163,6 +192,16 @@ internal suspend fun <T> observeSqs(
         return SqsObservationExecution(null, Observation.NOOP).block()
     }
     return runtime.observe(contextFactory(), block)
+}
+
+internal fun prepareSqsObservation(
+    runtime: SqsObservationRuntime?,
+    contextFactory: () -> SqsObservationContext,
+): SqsPreparedObservation {
+    if (runtime == null || runtime.registry === ObservationRegistry.NOOP) {
+        return SqsPreparedObservation(null, null, Observation.NOOP)
+    }
+    return runtime.prepare(contextFactory())
 }
 
 @Suppress("TooGenericExceptionCaught")

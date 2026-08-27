@@ -70,13 +70,18 @@ internal class DefaultSqsAcknowledgement(
         changeVisibilityInternal(SqsAcknowledgementAction.CHANGE_VISIBILITY, timeoutSeconds)
     }
 
-    internal suspend fun heartbeat(timeoutSeconds: Int) {
+    internal suspend fun heartbeat(
+        timeoutSeconds: Int,
+        onObservationFailure: (Throwable) -> Unit,
+    ) {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
         if (terminal.get()) return
-        runAcknowledgement(SqsAcknowledgementAction.CHANGE_VISIBILITY) {
-            if (!terminal.get()) {
-                operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
-            }
+        runAcknowledgement(
+            action = SqsAcknowledgementAction.CHANGE_VISIBILITY,
+            shouldRun = { !terminal.get() },
+            onObservationCleanupFailure = onObservationFailure,
+        ) {
+            operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
     }
 
@@ -110,7 +115,9 @@ internal class DefaultSqsAcknowledgement(
     @Suppress("TooGenericExceptionCaught")
     private suspend fun runAcknowledgement(
         action: SqsAcknowledgementAction,
+        shouldRun: () -> Boolean = { true },
         onIoSuccess: () -> Unit = {},
+        onObservationCleanupFailure: ((Throwable) -> Unit)? = null,
         block: suspend () -> Unit,
     ) {
         interceptors.forEach { it.beforeAcknowledgement(context, action) }
@@ -118,29 +125,31 @@ internal class DefaultSqsAcknowledgement(
         try {
             operationGuard()
             var observedContext: SqsObservationContext? = null
-            observeSqs(
+            val observation = prepareSqsObservation(
                 runtime = observationRuntime,
                 contextFactory = {
                     acknowledgementObservationContext(action).also { observedContext = it }
                 },
-            ) {
-                try {
-                    operationMutex.withLock {
+            )
+            operationMutex.withLock {
+                if (!shouldRun()) return@withLock
+                observation.observe(onCleanupFailure = onObservationCleanupFailure) {
+                    try {
                         block()
                         onIoSuccess()
+                        observedContext?.apply {
+                            acknowledgementSuccessCount = 1
+                            acknowledgementFailureCount = 0
+                        }
+                    } catch (e: CancellationException) {
+                        observedContext?.acknowledgementFailureCount = 1
+                        cancel("acknowledgement")
+                        throw e
+                    } catch (e: Throwable) {
+                        observedContext?.acknowledgementFailureCount = 1
+                        fail("acknowledgement")
+                        throw e
                     }
-                    observedContext?.apply {
-                        acknowledgementSuccessCount = 1
-                        acknowledgementFailureCount = 0
-                    }
-                } catch (e: CancellationException) {
-                    observedContext?.acknowledgementFailureCount = 1
-                    cancel("acknowledgement")
-                    throw e
-                } catch (e: Throwable) {
-                    observedContext?.acknowledgementFailureCount = 1
-                    fail("acknowledgement")
-                    throw e
                 }
             }
         } catch (e: Throwable) {

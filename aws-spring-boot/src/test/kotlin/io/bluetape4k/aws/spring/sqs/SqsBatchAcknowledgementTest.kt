@@ -18,7 +18,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
@@ -29,6 +31,33 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 
 class SqsBatchAcknowledgementTest {
+
+    @Test
+    fun `cancellation while committing completed IO does not strand later waiters`() = runTest {
+        val operations = RecordingBatchOperations()
+        val acknowledgement = acknowledgement(messages(2), operations)
+        val mutex = acknowledgement.javaClass.getDeclaredField("mutex").let { field ->
+            field.isAccessible = true
+            field.get(acknowledgement) as Mutex
+        }
+        val commitBlocked = CompletableDeferred<Unit>()
+        operations.beforeDeleteReturn = {
+            mutex.lock()
+            commitBlocked.complete(Unit)
+        }
+        val cancellation = CancellationException("cancel during commit")
+
+        val first = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+        commitBlocked.await()
+        first.cancel(cancellation)
+        mutex.unlock()
+        assertFailsWith<CancellationException> { first.await() }
+
+        withTimeout(1_000) {
+            acknowledgement.acknowledge().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
+        }
+        operations.deleteBatchCalls shouldBeEqualTo 1
+    }
 
     @Test
     fun `batch actual IO records partial counts without individual identifiers`() = runTest {
@@ -395,6 +424,7 @@ class SqsBatchAcknowledgementTest {
         var deleteBatchFailure: Throwable? = null
         var deleteStarted: CompletableDeferred<Unit>? = null
         var deleteRelease: CompletableDeferred<Unit>? = null
+        var beforeDeleteReturn: suspend () -> Unit = {}
         val deleteRequests = CopyOnWriteArrayList<List<String>>()
         val visibilityRequests = CopyOnWriteArrayList<List<SqsChangeVisibilityRequest>>()
 
@@ -435,6 +465,7 @@ class SqsBatchAcknowledgementTest {
             deleteStarted?.complete(Unit)
             deleteRelease?.let { it.await() }
             deleteBatchFailure?.let { throw it }
+            beforeDeleteReturn()
             return if (deleteBatchResult.successfulEntryIds.isEmpty() && deleteBatchResult.failed.isEmpty()) {
                 SqsBatchDeleteResult(receiptHandles.indices.map { "entry-$it" }, emptyList())
             } else {

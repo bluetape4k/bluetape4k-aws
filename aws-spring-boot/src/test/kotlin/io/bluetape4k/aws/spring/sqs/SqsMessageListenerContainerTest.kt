@@ -1399,7 +1399,14 @@ class SqsMessageListenerContainerTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `heartbeat failure does not change successful handler outcome`() = runTest {
+        val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = containerLogger.level
+        containerLogger.addAppender(appender)
+        containerLogger.level = Level.WARN
+        try {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -1441,6 +1448,7 @@ class SqsMessageListenerContainerTest {
         withContext(Dispatchers.Default.limitedParallelism(1)) {
             withTimeout(2_000) { heartbeatFailed.await() }
         }
+        runCurrent()
         handlerRelease.complete(Unit)
         runCurrent()
         withContext(Dispatchers.Default.limitedParallelism(1)) {
@@ -1452,6 +1460,12 @@ class SqsMessageListenerContainerTest {
         container.stop { stopped.complete(Unit) }
         runCurrent()
         stopped.await()
+        appender.list.any { it.formattedMessage.contains("SQS visibility heartbeat failed") }.shouldBeTrue()
+        appender.list.none { it.formattedMessage.contains("BT4K-SQS-OBS-202") }.shouldBeTrue()
+        } finally {
+            containerLogger.detachAppender(appender)
+            containerLogger.level = previousLevel
+        }
     }
 
     @Test

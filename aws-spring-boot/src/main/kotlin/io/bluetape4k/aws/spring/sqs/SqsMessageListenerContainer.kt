@@ -564,7 +564,9 @@ class SqsMessageListenerContainer internal constructor(
                 operationGuard = { generation.ensureActiveOperation() },
                 observationRuntime = observationRuntime,
             )
-            val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement)
+            val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement) { error ->
+                logHeartbeatObservationFailure("single", error)
+            }
             updateHeartbeatAcknowledgement(currentAcknowledgement)
             var invocationStarted = false
             var invocationCompleted = false
@@ -680,7 +682,9 @@ class SqsMessageListenerContainer internal constructor(
         val pending = acknowledgement.pending
         if (pending.isEmpty()) return
         val result = withContext(Dispatchers.IO) {
-            acknowledgement.changeVisibility(pending, timeoutSeconds)
+            acknowledgement.heartbeat(pending, timeoutSeconds) { error ->
+                logHeartbeatObservationFailure("batchSize=${pending.size}", error)
+            }
         }
         if (result.failed.isNotEmpty()) {
             log.warn(
@@ -860,8 +864,7 @@ class SqsMessageListenerContainer internal constructor(
                         throw e
                     } catch (e: Throwable) {
                         log.warn(
-                            "BT4K-SQS-OBS-202 SQS visibility heartbeat failed: " +
-                                "listenerId=${endpoint.id}, target=$target",
+                            "SQS visibility heartbeat failed: listenerId=${endpoint.id}, target=$target",
                             e,
                         )
                     }
@@ -875,6 +878,15 @@ class SqsMessageListenerContainer internal constructor(
                 }
             }
         }
+    }
+
+    private fun logHeartbeatObservationFailure(target: String, error: Throwable) {
+        log.warn(
+            "BT4K-SQS-OBS-202 SQS visibility heartbeat observation cleanup failed: " +
+                "listenerId=${endpoint.id}, target=$target, stage=acknowledgement, " +
+                "action=change_visibility, reason=telemetry_cleanup",
+            error,
+        )
     }
 
     private suspend fun invokeBatchHandler(
@@ -1061,6 +1073,7 @@ private fun Job.cancellationExceptionOrNull(): CancellationException? = try {
 
 private class HeartbeatAwareSqsAcknowledgement(
     private val delegate: DefaultSqsAcknowledgement,
+    private val onObservationFailure: (Throwable) -> Unit,
 ) : SqsAcknowledgement {
 
     override val completed: Boolean
@@ -1081,7 +1094,7 @@ private class HeartbeatAwareSqsAcknowledgement(
     suspend fun heartbeat(timeoutSeconds: Int) {
         if (!delegate.completed) {
             withContext(Dispatchers.IO) {
-                delegate.heartbeat(timeoutSeconds)
+                delegate.heartbeat(timeoutSeconds, onObservationFailure)
             }
         }
     }
