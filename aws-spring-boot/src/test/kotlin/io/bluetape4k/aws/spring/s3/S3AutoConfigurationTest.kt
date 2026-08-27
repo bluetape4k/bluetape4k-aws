@@ -289,6 +289,37 @@ class S3AutoConfigurationTest {
     }
 
     @Test
+    fun `provider transfer adapter is created only when transfer is enabled`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=aes",
+            )
+            .withBean(S3AesProvider::class.java, {
+                S3AesProvider.of(SecretKeySpec(ByteArray(32) { 7 }, "AES"))
+            })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(S3ClientSideEncryptionTransferOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3ClientSideEncryptionTransferTemplate::class.java).size shouldBeEqualTo 1
+            }
+
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=aes",
+                "bluetape4k.aws.s3.transfer.enabled=false",
+            )
+            .withBean(S3AesProvider::class.java, {
+                S3AesProvider.of(SecretKeySpec(ByteArray(32) { 8 }, "AES"))
+            })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(S3ClientSideEncryptionTransferOperations::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
     fun `selected RSA provider without a provider bean fails startup`() {
         contextRunner
             .withPropertyValues(
