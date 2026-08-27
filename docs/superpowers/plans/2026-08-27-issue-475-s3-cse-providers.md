@@ -1780,7 +1780,7 @@ Review evidence must address per-object data-key allocation, RSA key wrapping co
 
     ## 결정
 
-    - provider key material을 생성 시 snapshot하고 caller key는 zeroize하지 않았다.
+    - provider key material을 생성 시점에 고정하고 caller key는 zeroize하지 않았다.
     - provider metadata version 2와 Bluetape 전용 wire 경계를 유지했다.
     - streaming 임시 경로에는 ciphertext만 쓰고 authenticated decrypt 뒤 destination에 평문을 썼다.
 
