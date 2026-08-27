@@ -79,9 +79,14 @@ internal class SqsObservationPrerequisitesCondition : SpringBootCondition(), Con
         } else {
             findFailureReason(beanFactory)
         }
+        val matchReason = if (beanFactory?.hasUserSqsObservationFactory() == true) {
+            "user-factory"
+        } else {
+            "supporting-handler"
+        }
         return failureReason
             ?.let(::noMatch)
-            ?: ConditionOutcome.match("$REASON_CODE supporting-handler")
+            ?: ConditionOutcome.match("$REASON_CODE $matchReason")
     }
 
     private fun findFailureReason(beanFactory: ConfigurableListableBeanFactory): String? {
@@ -112,6 +117,9 @@ internal class SqsObservationPrerequisitesCondition : SpringBootCondition(), Con
 
     private fun noMatch(reason: String): ConditionOutcome =
         ConditionOutcome.noMatch("$REASON_CODE $reason")
+
+    private fun ConfigurableListableBeanFactory.hasUserSqsObservationFactory(): Boolean =
+        getBeanNamesForType(SqsObservationFactory::class.java, false, false).isNotEmpty()
 
     private companion object {
         const val REASON_CODE: String = "BT4K-SQS-OBS-101"

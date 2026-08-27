@@ -214,6 +214,16 @@ class SqsObservationAutoConfigurationTest {
                     runtime.observe(processContext()) { Unit }
                 }
                 calls.get() shouldBeEqualTo 1
+                val conditionMessages = ConditionEvaluationReport.get(context.beanFactory)
+                    .conditionAndOutcomesBySource
+                    .values
+                    .asSequence()
+                    .flatMap { outcomes -> outcomes.asSequence() }
+                    .mapNotNull { conditionAndOutcome -> conditionAndOutcome.outcome.message }
+                    .toList()
+                conditionMessages.any { message ->
+                    message.contains("BT4K-SQS-OBS-101 user-factory")
+                } shouldBeEqualTo true
             }
     }
 
