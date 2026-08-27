@@ -165,7 +165,8 @@ provider key material의 SHA-256 fingerprint에서 `sha256:<base64url>` identity
 설정된 keyId가 있으면 그 값을 metadata에 저장한다. keyVersion은 선택적이지만 설정하면
 암호화 metadata와 복호화 설정이 정확히 일치해야 한다.
 
-새 field는 기존 primary constructor 뒤에 추가해 positional source call의 순서를 보존한다.
+새 field는 기존 primary constructor 뒤에 추가해 positional source call의 순서를 보존하고
+기존 `serialVersionUID`는 유지한다.
 다만 `ClientSideEncryption`이 data class이므로 JVM primary-constructor와 `copy` descriptor의
 binary compatibility는 별도 baseline 검사가 필요하다. 이 checkout에 API/binary compatibility
 task가 없으면 source-compatible 범위와 baseline 부재를 release note/lesson에 명시하고,
