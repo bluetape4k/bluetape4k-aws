@@ -19,14 +19,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.context.properties.bind.Bindable
+import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Conditional
+import org.springframework.context.annotation.Condition
+import org.springframework.context.annotation.ConditionContext
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.ImportSelector
 import org.springframework.core.type.AnnotationMetadata
+import org.springframework.core.type.AnnotatedTypeMetadata
 import org.springframework.modulith.events.EventExternalizationConfiguration
 import org.springframework.modulith.events.core.EventSerializer
 import org.springframework.modulith.events.support.EventExternalizationTransport
@@ -176,6 +181,7 @@ internal class AwsModulithSnsPublisherConfiguration {
         "software.amazon.awssdk.services.sqs.model.SendMessageRequest",
     ]
 )
+@Conditional(AwsModulithSqsTargetConfiguredCondition::class)
 internal class AwsModulithSqsPublisherConfiguration {
 
     @Bean(name = [SQS_PUBLISHER_BEAN])
@@ -190,6 +196,18 @@ internal class AwsModulithSqsPublisherConfiguration {
             .keys
         return AwsModulithSqsTargetPublisher(operations, aliases)
     }
+}
+
+/** SQS target이 실제로 선언된 producer에만 SQS publisher를 조립합니다. */
+internal class AwsModulithSqsTargetConfiguredCondition : Condition {
+    override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean =
+        Binder.get(context.environment)
+            .bind(
+                "bluetape4k.aws.modulith.events.targets",
+                Bindable.mapOf(String::class.java, AwsModulithEventsProperties.Target::class.java),
+            )
+            .map { targets -> targets.values.any { it.service == AwsModulithTargetService.SQS } }
+            .orElse(false) == true
 }
 
 @Configuration(proxyBeanMethods = false)

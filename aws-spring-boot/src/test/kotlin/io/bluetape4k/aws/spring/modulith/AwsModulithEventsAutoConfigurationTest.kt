@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerificationAutoConfiguration
+import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sqs.SqsFullRequestOperations
 import io.bluetape4k.aws.spring.sqs.SqsOperations
 import io.bluetape4k.aws.spring.sqs.SqsCoroutinesTemplate
@@ -109,6 +110,24 @@ class AwsModulithEventsAutoConfigurationTest {
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
                 failureMessages(context.startupFailure) shouldContain AwsModulithDiagnosticCode.CONFIGURATION.value
+            }
+    }
+
+    @Test
+    fun `SNS only producer does not instantiate an empty SQS publisher`() {
+        configuredRunner()
+            .withBean(SnsOperations::class.java, { mockk(relaxed = true) })
+            .withBean(SqsOperations::class.java, { mockk<SqsFullRequestOperations>(relaxed = true) })
+            .withPropertyValues(
+                "bluetape4k.aws.modulith.events.enabled=true",
+                "bluetape4k.aws.modulith.events.producer.enabled=true",
+                "bluetape4k.aws.modulith.events.targets.events.service=sns",
+                "bluetape4k.aws.modulith.events.targets.events.destination=events",
+            )
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(EventExternalizationTransport::class.java).size shouldBeEqualTo 1
+                context.containsBean("awsModulithSqsTargetPublisher") shouldBeEqualTo false
             }
     }
 
