@@ -78,13 +78,13 @@ FlociServer 계약을 주 검증으로 사용한다.
   - **Action:** 재사용 가능한 decision/failure/guard를 Korean lesson으로 커밋한다.
   - **Evidence:** `docs/lessons/2026-08-27-issue-476-dynamodb-coordination.md`에 Floci AllOld, fencing reset, resolver와 재실행 guard를 기록했다. commit은 PR delivery 직전에 생성한다.
   - **Failure:** untracked lesson은 gate를 통과하지 못한다.
-- [ ] **A-10 — PR delivery**
+- [x] **A-10 — PR delivery**
   - **Action:** exact head를 publish하고 live PR/CI/review를 검증한다.
-  - **Evidence:** CG-11..14, PR metadata와 final `## DoD Status`.
+  - **Evidence:** PR #581(`https://github.com/bluetape4k/bluetape4k-aws/pull/581`)을 base `develop`에 publish했고, live metadata·변경 파일·final `## DoD Status`와 exact-head CI run `33050842958`를 읽었다.
   - **Failure:** stale/missing CI·review는 PENDING/FAIL로 유지한다.
-- [ ] **A-11 — merge-ready 보고**
+- [x] **A-11 — merge-ready 보고**
   - **Action:** phase-aware counts와 exact PR/head를 보고한다.
-  - **Evidence:** CG-15 report, `Required checks: X/Y; N/A: N; Blocked: 0`.
+  - **Evidence:** 당시 PR head `e432da22a4ebe545ca8892d3b95ea44560bc1d0f`에서 required checks success, path-filtered unrelated jobs skipped, reviews/comments 없음, `CLEAN/MERGEABLE`를 확인했다. 이후 이 checklist evidence commit 자체는 새 head로 재검증한다.
   - **Failure:** merge approval 전 DONE을 주장하지 않는다.
 - [ ] **A-12 — 승인 후 merge closeout**
   - **Action:** fresh merge approval 뒤 merge, sync, proven cleanup을 수행한다.
@@ -165,5 +165,5 @@ FlociServer 계약을 주 검증으로 사용한다.
 
 ## Final count
 
-현재 단계는 PR publication 전이므로 `Required checks: 32/35; N/A: 5; Blocked: 0`이다. 미완료 3개는
-PR delivery·merge-ready 보고·승인 후 merge closeout이며, PR/merge/cleanup은 각각 별도 gate다.
+현재 단계는 PR merge 승인 전이므로 `Required checks: 34/35; N/A: 5; Blocked: 0`이다. 미완료 1개는
+승인 후 merge closeout이며, merge/cleanup은 별도 gate다.
