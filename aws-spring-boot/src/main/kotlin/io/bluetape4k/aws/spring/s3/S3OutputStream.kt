@@ -97,15 +97,19 @@ class S3OutputStream(
     private suspend fun completeOnIo() {
         val bytes: ByteArray?
         val file: Path?
+        val output: OutputStream?
         synchronized(this) {
             if (completionStarted) return
             completionStarted = true
-            fileOutput?.close()
-            bytes = if (fileOutput == null) memoryBuffer.toByteArray() else null
+            output = fileOutput
             file = temporaryFile
+            bytes = if (output == null) memoryBuffer.toByteArray() else null
+            fileOutput = null
         }
 
+        var failure: Throwable? = null
         try {
+            output?.close()
             if (bytes != null) {
                 operations.upload(bucket, key, bytes) {
                     putObjectRequest(buildPutObjectRequest())
@@ -115,14 +119,28 @@ class S3OutputStream(
                     putObjectRequest(buildPutObjectRequest())
                 }
             }
+        } catch (error: Throwable) {
+            failure = error
+            synchronized(this) {
+                completionFailure = error
+            }
+            throw error
         } finally {
             bytes?.fill(0)
-            file?.let { Files.deleteIfExists(it) }
+            val cleanupFailure = runCatching { file?.let { Files.deleteIfExists(it) } }.exceptionOrNull()
             synchronized(this) {
-                fileOutput = null
+                if (cleanupFailure != null) {
+                    val failureToReport = failure
+                    if (failureToReport == null) {
+                        completionFailure = cleanupFailure
+                    } else {
+                        failureToReport.addSuppressed(cleanupFailure)
+                    }
+                }
                 memoryBuffer.reset()
                 temporaryFile = null
             }
+            if (cleanupFailure != null && failure == null) throw cleanupFailure
         }
     }
 
@@ -146,12 +164,23 @@ class S3OutputStream(
         fileOutput?.let { return it }
         Files.createDirectories(temporaryDirectory)
         val file = Files.createTempFile(temporaryDirectory, "bluetape-s3-", ".part")
-        val output = Files.newOutputStream(file)
-        output.write(memoryBuffer.toByteArray())
-        memoryBuffer.reset()
-        temporaryFile = file
-        fileOutput = output
-        return output
+        var output: OutputStream? = null
+        var buffered: ByteArray? = null
+        try {
+            output = Files.newOutputStream(file)
+            buffered = memoryBuffer.toByteArray()
+            output.write(buffered)
+            memoryBuffer.reset()
+            temporaryFile = file
+            fileOutput = output
+            return output
+        } catch (error: Throwable) {
+            runCatching { output?.close() }.onFailure(error::addSuppressed)
+            runCatching { Files.deleteIfExists(file) }.onFailure(error::addSuppressed)
+            throw error
+        } finally {
+            buffered?.fill(0)
+        }
     }
 
     private fun buildPutObjectRequest(): PutObjectRequest =
