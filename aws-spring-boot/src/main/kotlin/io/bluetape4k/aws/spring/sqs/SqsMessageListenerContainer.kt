@@ -180,7 +180,10 @@ class SqsMessageListenerContainer internal constructor(
                     }
                 } != null
                 if (!drained) {
-                    current.handlerJobs.toTypedArray().forEach { it.cancel() }
+                    current.handlerJobs.toTypedArray().also { activeHandlers ->
+                        activeHandlers.forEach { it.cancel() }
+                        activeHandlers.asList().joinAll()
+                    }
                 }
                 current.scope.cancel()
                 current.groupDispatchOrder.clear()
@@ -434,7 +437,14 @@ class SqsMessageListenerContainer internal constructor(
             runtime = observationRuntime,
             contextFactory = { processObservationContext(queueUrl, listOf(message), batch = false) },
         ) {
-            handleObservedSingle(queueUrl, message, generation, this)
+            handleObservedSingle(
+                queueUrl,
+                message,
+                generation,
+                onRetry = ::retry,
+                onFailure = ::fail,
+                onCancellation = ::cancel,
+            )
         }
     }
 
@@ -442,7 +452,9 @@ class SqsMessageListenerContainer internal constructor(
         queueUrl: String,
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
-        observation: SqsObservationExecution,
+        onRetry: (Int) -> Unit,
+        onFailure: (String) -> Unit,
+        onCancellation: (String) -> Unit,
     ) {
         var heartbeatAcknowledgement: HeartbeatAwareSqsAcknowledgement? = null
         withVisibilityHeartbeat(
@@ -451,9 +463,14 @@ class SqsMessageListenerContainer internal constructor(
             shouldContinue = { heartbeatAcknowledgement?.completed != true },
             operation = { timeoutSeconds -> heartbeatAcknowledgement?.heartbeat(timeoutSeconds) ?: Unit },
         ) {
-            handleSingleAttempts(queueUrl, message, generation, observation) {
-                heartbeatAcknowledgement = it
-            }
+            handleSingleAttempts(
+                queueUrl,
+                message,
+                generation,
+                onRetry,
+                onFailure,
+                onCancellation,
+            ) { heartbeatAcknowledgement = it }
         }
     }
 
@@ -462,7 +479,9 @@ class SqsMessageListenerContainer internal constructor(
         queueUrl: String,
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
-        observation: SqsObservationExecution,
+        onRetry: (Int) -> Unit,
+        onFailure: (String) -> Unit,
+        onCancellation: (String) -> Unit,
         updateHeartbeatAcknowledgement: (HeartbeatAwareSqsAcknowledgement) -> Unit,
     ) {
         var attempt = 1
@@ -490,17 +509,17 @@ class SqsMessageListenerContainer internal constructor(
                 if (!invoker.manualAcknowledgement) currentAcknowledgement.acknowledge()
                 return
             } catch (e: CancellationException) {
-                observation.cancel(failureStage)
+                onCancellation(failureStage)
                 if (invocationStarted && !invocationCompleted) {
                     runCancellationCleanup(e) { interceptors.forEach { it.afterHandle(context, e) } }
                 }
                 throw e
             } catch (e: Error) {
-                observation.fail(failureStage)
+                onFailure(failureStage)
                 failGeneration(generation)
                 throw e
             } catch (e: Throwable) {
-                observation.fail(failureStage)
+                onFailure(failureStage)
                 interceptors.forEach { it.afterHandle(context, e) }
                 if (acknowledgement.completed) return
                 if (attempt >= endpoint.retry.maxAttempts) {
@@ -508,7 +527,7 @@ class SqsMessageListenerContainer internal constructor(
                     return
                 }
                 attempt++
-                observation.retry(attempt)
+                onRetry(attempt)
                 delay(endpoint.retry.nextDelay(attempt - 1))
             }
         }
@@ -569,7 +588,9 @@ class SqsMessageListenerContainer internal constructor(
                     context,
                     correlation,
                     generation,
-                    this@observeSqs,
+                    onRetry = ::retry,
+                    onFailure = ::fail,
+                    onCancellation = ::cancel,
                 )
             }
         }
@@ -602,7 +623,9 @@ class SqsMessageListenerContainer internal constructor(
         context: SqsListenerInvocationContext,
         correlation: SqsListenerBatchCorrelation,
         generation: ListenerGeneration,
-        observation: SqsObservationExecution,
+        onRetry: (Int) -> Unit,
+        onFailure: (String) -> Unit,
+        onCancellation: (String) -> Unit,
     ) {
         var attempt = 1
         while (attempt <= endpoint.retry.maxAttempts) {
@@ -631,7 +654,7 @@ class SqsMessageListenerContainer internal constructor(
                     return
                 }
                 if (attempt >= endpoint.retry.maxAttempts) {
-                    observation.fail("acknowledgement")
+                    onFailure("acknowledgement")
                     handleBatchFailure(queueUrl, acknowledgement)
                     return
                 }
@@ -639,15 +662,15 @@ class SqsMessageListenerContainer internal constructor(
                     it.onBatchRetry(attemptContext, correlation, pending.size, attempt + 1, null)
                 }
             } catch (e: CancellationException) {
-                observation.cancel(invocationPhase.stage)
+                onCancellation(invocationPhase.stage)
                 interceptors.forEach { it.onBatchCancellation(attemptContext, correlation, pending.size) }
                 throw e
             } catch (e: Error) {
-                observation.fail(invocationPhase.stage)
+                onFailure(invocationPhase.stage)
                 failGeneration(generation)
                 throw e
             } catch (e: Throwable) {
-                observation.fail(invocationPhase.stage)
+                onFailure(invocationPhase.stage)
                 if (acknowledgement.completed) {
                     return
                 }
@@ -660,7 +683,7 @@ class SqsMessageListenerContainer internal constructor(
                 }
             }
             attempt++
-            observation.retry(attempt)
+            onRetry(attempt)
             delay(endpoint.retry.nextDelay(attempt - 1))
         }
     }
