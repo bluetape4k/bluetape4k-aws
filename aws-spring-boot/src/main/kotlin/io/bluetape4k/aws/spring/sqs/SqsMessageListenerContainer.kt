@@ -182,7 +182,9 @@ class SqsMessageListenerContainer internal constructor(
                 if (!drained) {
                     current.handlerJobs.toTypedArray().also { activeHandlers ->
                         activeHandlers.forEach { it.cancel() }
-                        activeHandlers.asList().joinAll()
+                        withTimeoutOrNull(endpoint.stopTimeoutMillis) {
+                            activeHandlers.asList().joinAll()
+                        }
                     }
                 }
                 current.scope.cancel()
@@ -258,6 +260,7 @@ class SqsMessageListenerContainer internal constructor(
         failGeneration(current)
         throw e
     } catch (e: QueueDoesNotExistException) {
+        log.warn("BT4K-SQS-OBS-201 SQS queue URL resolution failed: listenerId=${endpoint.id}, stage=resolution")
         when (endpoint.queueNotFoundStrategy) {
             SqsQueueNotFoundStrategy.FAIL_FAST -> {
                 failGeneration(current)
@@ -433,14 +436,20 @@ class SqsMessageListenerContainer internal constructor(
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
     ) {
-        observeSqs(
-            runtime = observationRuntime,
-            contextFactory = { processObservationContext(queueUrl, listOf(message), batch = false) },
-        ) {
+        observeProcessWithSetupRetry(
+            queueUrl = queueUrl,
+            messages = listOf(message),
+            batch = false,
+            generation = generation,
+            onSetupFailure = { attempt, error ->
+                handleProcessObservationSetupFailure(queueUrl, message, generation, attempt, error)
+            },
+        ) { attempt ->
             handleObservedSingle(
                 queueUrl,
                 message,
                 generation,
+                initialAttempt = attempt,
                 onRetry = ::retry,
                 onFailure = ::fail,
                 onCancellation = ::cancel,
@@ -448,10 +457,66 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
+    private suspend fun observeProcessWithSetupRetry(
+        queueUrl: String,
+        messages: List<SqsReceivedMessage>,
+        batch: Boolean,
+        generation: ListenerGeneration,
+        onSetupFailure: suspend (attempt: Int, error: Throwable) -> Unit,
+        block: suspend SqsObservationExecution.(attempt: Int) -> Unit,
+    ) {
+        var attempt = 1
+        while (attempt <= endpoint.retry.maxAttempts) {
+            var processStarted = false
+            try {
+                observeSqs(
+                    runtime = observationRuntime,
+                    contextFactory = { processObservationContext(queueUrl, messages, batch) },
+                ) {
+                    if (attempt > 1) retry(attempt)
+                    processStarted = true
+                    block(attempt)
+                }
+                return
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Error) {
+                failGeneration(generation)
+                throw e
+            } catch (e: Throwable) {
+                if (processStarted) throw e
+                if (attempt >= endpoint.retry.maxAttempts) {
+                    onSetupFailure(attempt, e)
+                    return
+                }
+                attempt++
+                delay(endpoint.retry.nextDelay(attempt - 1))
+            }
+        }
+    }
+
+    private suspend fun handleProcessObservationSetupFailure(
+        queueUrl: String,
+        message: SqsReceivedMessage,
+        generation: ListenerGeneration,
+        attempt: Int,
+        error: Throwable,
+    ) {
+        val context = SqsListenerInvocationContext(endpoint.id, queueUrl, message, attempt)
+        val acknowledgement = DefaultSqsAcknowledgement(
+            context = context,
+            operations = operations,
+            interceptors = interceptors,
+            operationGuard = { generation.ensureActiveOperation() },
+        )
+        handleFailure(queueUrl, message, acknowledgement, error)
+    }
+
     private suspend fun handleObservedSingle(
         queueUrl: String,
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
+        initialAttempt: Int,
         onRetry: (Int) -> Unit,
         onFailure: (String) -> Unit,
         onCancellation: (String) -> Unit,
@@ -467,6 +532,7 @@ class SqsMessageListenerContainer internal constructor(
                 queueUrl,
                 message,
                 generation,
+                initialAttempt,
                 onRetry,
                 onFailure,
                 onCancellation,
@@ -479,12 +545,13 @@ class SqsMessageListenerContainer internal constructor(
         queueUrl: String,
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
+        initialAttempt: Int,
         onRetry: (Int) -> Unit,
         onFailure: (String) -> Unit,
         onCancellation: (String) -> Unit,
         updateHeartbeatAcknowledgement: (HeartbeatAwareSqsAcknowledgement) -> Unit,
     ) {
-        var attempt = 1
+        var attempt = initialAttempt
         while (attempt <= endpoint.retry.maxAttempts) {
             val context = SqsListenerInvocationContext(endpoint.id, queueUrl, message, attempt)
             val acknowledgement = DefaultSqsAcknowledgement(
@@ -569,10 +636,13 @@ class SqsMessageListenerContainer internal constructor(
         )
         val manual = endpoint.acknowledgementMode == SqsAcknowledgementMode.MANUAL
         val context = SqsListenerInvocationContext(endpoint.id, queueUrl, messages.first(), 1)
-        observeSqs(
-            runtime = observationRuntime,
-            contextFactory = { processObservationContext(queueUrl, messages, batch = true) },
-        ) {
+        observeProcessWithSetupRetry(
+            queueUrl = queueUrl,
+            messages = messages,
+            batch = true,
+            generation = generation,
+            onSetupFailure = { _, _ -> handleBatchFailure(queueUrl, acknowledgement) },
+        ) { attempt ->
             withVisibilityHeartbeat(
                 generation = generation,
                 target = "batchSize=${messages.size}",
@@ -588,6 +658,7 @@ class SqsMessageListenerContainer internal constructor(
                     context,
                     correlation,
                     generation,
+                    initialAttempt = attempt,
                     onRetry = ::retry,
                     onFailure = ::fail,
                     onCancellation = ::cancel,
@@ -615,7 +686,7 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod", "ReturnCount")
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount")
     private suspend fun handleBatchAttempts(
         queueUrl: String,
         acknowledgement: DefaultSqsBatchAcknowledgement,
@@ -623,11 +694,12 @@ class SqsMessageListenerContainer internal constructor(
         context: SqsListenerInvocationContext,
         correlation: SqsListenerBatchCorrelation,
         generation: ListenerGeneration,
+        initialAttempt: Int,
         onRetry: (Int) -> Unit,
         onFailure: (String) -> Unit,
         onCancellation: (String) -> Unit,
     ) {
-        var attempt = 1
+        var attempt = initialAttempt
         while (attempt <= endpoint.retry.maxAttempts) {
             acknowledgement.updateAttempt(attempt)
             val pending = acknowledgement.pending
@@ -645,25 +717,27 @@ class SqsMessageListenerContainer internal constructor(
                     correlation,
                     invocationPhase,
                 )
-                if (manual) {
-                    return
-                }
-
-                val result = acknowledgement.acknowledge(pending)
-                if (result.status == SqsBatchAcknowledgementStatus.SUCCESS || acknowledgement.completed) {
-                    return
-                }
-                if (attempt >= endpoint.retry.maxAttempts) {
-                    onFailure("acknowledgement")
-                    handleBatchFailure(queueUrl, acknowledgement)
-                    return
-                }
-                interceptors.forEach {
-                    it.onBatchRetry(attemptContext, correlation, pending.size, attempt + 1, null)
-                }
+                val completed = completeBatchAttempt(
+                    queueUrl,
+                    acknowledgement,
+                    manual,
+                    pending,
+                    attempt,
+                    attemptContext,
+                    correlation,
+                    invocationPhase,
+                    onFailure,
+                )
+                if (completed) return
             } catch (e: CancellationException) {
-                onCancellation(invocationPhase.stage)
-                interceptors.forEach { it.onBatchCancellation(attemptContext, correlation, pending.size) }
+                notifyBatchCancellation(
+                    e,
+                    attemptContext,
+                    correlation,
+                    pending.size,
+                    invocationPhase.stage,
+                    onCancellation,
+                )
                 throw e
             } catch (e: Error) {
                 onFailure(invocationPhase.stage)
@@ -684,7 +758,70 @@ class SqsMessageListenerContainer internal constructor(
             }
             attempt++
             onRetry(attempt)
+            delayBatchRetry(attempt, attemptContext, correlation, pending.size, invocationPhase.stage, onCancellation)
+        }
+    }
+
+    private suspend fun completeBatchAttempt(
+        queueUrl: String,
+        acknowledgement: DefaultSqsBatchAcknowledgement,
+        manual: Boolean,
+        pending: List<SqsReceivedMessage>,
+        attempt: Int,
+        context: SqsListenerInvocationContext,
+        correlation: SqsListenerBatchCorrelation,
+        invocationPhase: SqsProcessInvocationPhase,
+        onFailure: (String) -> Unit,
+    ): Boolean {
+        return if (manual) {
+            true
+        } else {
+            invocationPhase.stage = "acknowledgement"
+            val result = acknowledgement.acknowledge(pending)
+            when {
+                result.status == SqsBatchAcknowledgementStatus.SUCCESS || acknowledgement.completed -> true
+                attempt >= endpoint.retry.maxAttempts -> {
+                    onFailure("acknowledgement")
+                    handleBatchFailure(queueUrl, acknowledgement)
+                    true
+                }
+                else -> {
+                    interceptors.forEach {
+                        it.onBatchRetry(context, correlation, pending.size, attempt + 1, null)
+                    }
+                    false
+                }
+            }
+        }
+    }
+
+    private suspend fun delayBatchRetry(
+        attempt: Int,
+        context: SqsListenerInvocationContext,
+        correlation: SqsListenerBatchCorrelation,
+        batchSize: Int,
+        stage: String,
+        onCancellation: (String) -> Unit,
+    ) {
+        try {
             delay(endpoint.retry.nextDelay(attempt - 1))
+        } catch (e: CancellationException) {
+            notifyBatchCancellation(e, context, correlation, batchSize, stage, onCancellation)
+            throw e
+        }
+    }
+
+    private suspend fun notifyBatchCancellation(
+        cancellation: CancellationException,
+        context: SqsListenerInvocationContext,
+        correlation: SqsListenerBatchCorrelation,
+        batchSize: Int,
+        stage: String,
+        onCancellation: (String) -> Unit,
+    ) {
+        onCancellation(stage)
+        runCancellationCleanup(cancellation) {
+            interceptors.forEach { it.onBatchCancellation(context, correlation, batchSize) }
         }
     }
 
@@ -749,12 +886,19 @@ class SqsMessageListenerContainer internal constructor(
             invoker.invokeBatch(pending, acknowledgement.takeIf { manual }) {
                 invocationPhase.stage = "handler"
             }
+        } catch (e: CancellationException) {
+            handlerFailure = e
+            runCancellationCleanup(e) {
+                interceptors.forEach { it.afterBatchHandle(context, e, correlation, pending.size) }
+            }
+            throw e
         } catch (e: Throwable) {
             handlerFailure = e
             throw e
         } finally {
-            invocationPhase.stage = "handler"
-            interceptors.forEach { it.afterBatchHandle(context, handlerFailure, correlation, pending.size) }
+            if (handlerFailure !is CancellationException) {
+                interceptors.forEach { it.afterBatchHandle(context, handlerFailure, correlation, pending.size) }
+            }
         }
     }
 
