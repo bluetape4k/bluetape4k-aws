@@ -86,7 +86,8 @@ data class S3Properties(
                 "bluetape4k.aws.s3.client-side-encryption.keyVersion must not be blank or contain control characters."
             }
             require(encryptionContext.keys.none { it.isBlank() || it.any(Char::isISOControl) }) {
-                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank or contain control characters."
+                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank " +
+                    "or contain control characters."
             }
             require(encryptionContext.values.none { it.any(Char::isISOControl) }) {
                 "bluetape4k.aws.s3.client-side-encryption.encryptionContext values must not contain control characters."
