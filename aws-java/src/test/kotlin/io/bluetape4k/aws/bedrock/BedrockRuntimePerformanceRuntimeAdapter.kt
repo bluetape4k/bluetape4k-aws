@@ -4,6 +4,7 @@ import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -19,9 +20,14 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler
 import software.amazon.awssdk.services.bedrockruntime.model.ValidationException
+import java.lang.management.ManagementFactory
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -39,6 +45,12 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         REPLACEMENT,
     }
 
+    enum class CleanupMode {
+        IMMEDIATE,
+        DELAYED,
+        BLOCKING,
+    }
+
     data class Sample(
         val scenario: Scenario,
         val eventCount: Int,
@@ -53,17 +65,69 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         val overflowDroppedCount: Long = 0,
         val markerRetainsOriginalThrowable: Boolean = false,
         val duplicateIdentityCount: Int = 0,
+        val cleanupMode: CleanupMode = CleanupMode.IMMEDIATE,
+        val watchdogReleaseCount: Int = 0,
+        val blockingWaitNanos: Long = 0,
+        val allocatedBytes: Long = 0,
+        val heapUsedBefore: Long = 0,
+        val heapUsedAfter: Long = 0,
+        val heapDeltaBytes: Long = 0,
+        val throughputEventsPerSecond: Double = 0.0,
+    )
+
+    data class LongRunResult(
+        val samples: List<Sample>,
+        val eventCount: Int,
+        val measurementIterations: Int,
+        val throughputEventsPerSecond: Double,
+        val allocatedBytes: Long,
+        val heapUsedBefore: Long,
+        val heapUsedAfter: Long,
+        val heapDeltaBytes: Long,
+        val pendingCallbackCount: Int,
+        val operationFailureIsPrimary: Boolean,
+        val retainedSuppressedCount: Int,
+        val overflowMarkerCount: Int,
+        val overflowDroppedCount: Long,
+        val markerRetainsOriginalThrowable: Boolean,
     )
 
     private data class ScenarioResult(
+        val coordinatorCleanupNanos: Long,
         val publisherCleanupNanos: Long,
         val publisherCancelCount: Int,
+        val watchdogReleaseCount: Int,
+        val blockingWaitNanos: Long,
         val operationFailure: Throwable? = null,
         val cancellationFailures: List<Throwable> = emptyList(),
     )
 
+    private val allocationBean: com.sun.management.ThreadMXBean by lazy {
+        val bean = ManagementFactory.getThreadMXBean() as? com.sun.management.ThreadMXBean
+            ?: error("ThreadMXBean allocated memory is unavailable")
+        require(bean.isThreadAllocatedMemorySupported) {
+            "ThreadMXBean allocated memory is unavailable"
+        }
+        if (!bean.isThreadAllocatedMemoryEnabled) {
+            bean.isThreadAllocatedMemoryEnabled = true
+        }
+        bean
+    }
+
     suspend fun run(
         scenario: Scenario,
+        eventCount: Int = DEFAULT_EVENT_COUNT,
+        failureVolume: Int = DEFAULT_FAILURE_VOLUME,
+    ): Sample = run(
+        scenario = scenario,
+        cleanupMode = CleanupMode.IMMEDIATE,
+        eventCount = eventCount,
+        failureVolume = failureVolume,
+    )
+
+    suspend fun run(
+        scenario: Scenario,
+        cleanupMode: CleanupMode,
         eventCount: Int = DEFAULT_EVENT_COUNT,
         failureVolume: Int = DEFAULT_FAILURE_VOLUME,
     ): Sample {
@@ -72,22 +136,89 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         val executor = Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "bedrock-runtime-performance")
         }
+        val scheduler = Executors.newScheduledThreadPool(2) { runnable ->
+            Thread(runnable, "bedrock-runtime-cleanup").apply { isDaemon = true }
+        }
         val dispatcher = executor.asCoroutineDispatcher()
         return try {
             withContext(dispatcher) {
-                runScenario(scenario, eventCount, failureVolume)
+                runScenario(scenario, cleanupMode, eventCount, failureVolume, scheduler)
             }
         } finally {
             dispatcher.close()
             executor.shutdownNow()
+            scheduler.shutdownNow()
         }
     }
 
+    suspend fun runLongRun(
+        eventCount: Int = DEFAULT_LONG_RUN_EVENT_COUNT,
+        measurementIterations: Int = DEFAULT_LONG_RUN_MEASUREMENT_ITERATIONS,
+    ): LongRunResult {
+        require(eventCount > 0)
+        require(measurementIterations > 0)
+        run(
+            scenario = Scenario.NORMAL,
+            cleanupMode = CleanupMode.IMMEDIATE,
+            eventCount = eventCount,
+        )
+        val samples = buildList {
+            repeat(measurementIterations) {
+                add(
+                    run(
+                        scenario = Scenario.NORMAL,
+                        cleanupMode = CleanupMode.IMMEDIATE,
+                        eventCount = eventCount,
+                    ),
+                )
+            }
+            add(
+                run(
+                    scenario = Scenario.OPERATION_FAILURE,
+                    cleanupMode = CleanupMode.IMMEDIATE,
+                    eventCount = eventCount,
+                    failureVolume = DEFAULT_LONG_RUN_FAILURE_VOLUME,
+                ),
+            )
+        }
+        val normalSamples = samples.dropLast(1)
+        val totalEvents = eventCount.toLong() * measurementIterations
+        val totalElapsedNanos = normalSamples.sumOf { it.coordinatorCleanupNanos }
+        val throughput = if (totalElapsedNanos > 0L) {
+            totalEvents.toDouble() * NANOS_PER_SECOND / totalElapsedNanos
+        } else {
+            0.0
+        }
+        val retention = samples.last()
+        return LongRunResult(
+            samples = samples,
+            eventCount = eventCount,
+            measurementIterations = measurementIterations,
+            throughputEventsPerSecond = throughput,
+            allocatedBytes = samples.sumOf { it.allocatedBytes },
+            heapUsedBefore = samples.first().heapUsedBefore,
+            heapUsedAfter = samples.last().heapUsedAfter,
+            heapDeltaBytes = samples.last().heapUsedAfter - samples.first().heapUsedBefore,
+            pendingCallbackCount = samples.maxOf { it.pendingCallbackCount },
+            operationFailureIsPrimary = retention.operationFailureIsPrimary,
+            retainedSuppressedCount = retention.retainedSuppressedCount,
+            overflowMarkerCount = retention.overflowMarkerCount,
+            overflowDroppedCount = retention.overflowDroppedCount,
+            markerRetainsOriginalThrowable = retention.markerRetainsOriginalThrowable,
+        )
+    }
+
+    @Suppress("LongMethod")
     private suspend fun CoroutineScope.runScenario(
         scenario: Scenario,
+        cleanupMode: CleanupMode,
         eventCount: Int,
         failureVolume: Int,
+        scheduler: ScheduledExecutorService,
     ): Sample {
+        val operationThreadId = Thread.currentThread().threadId()
+        val allocationBefore = allocatedBytes(operationThreadId)
+        val heapBefore = usedHeap()
         val client = mockk<BedrockRuntimeAsyncClient>()
         val request = ConverseStreamRequest.builder()
             .modelId("performance-model")
@@ -104,24 +235,58 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         val collector = startCollector(client, request, scenario) { cause -> terminalFailure = cause }
         val handler = handlerReady.await()
         val scenarioResult = when (scenario) {
-            Scenario.NORMAL -> runNormal(handler, operation, collector, eventCount)
-            Scenario.COLLECTOR_CANCELLATION -> runCollectorCancellation(handler, collector)
-            Scenario.OPERATION_FAILURE -> runOperationFailure(handler, operation, collector, failureVolume)
-            Scenario.REPLACEMENT -> runReplacement(handler, operation, collector)
+            Scenario.NORMAL -> runNormal(
+                handler,
+                operation,
+                collector,
+                eventCount,
+                cleanupMode,
+                scheduler,
+                startedAt,
+            )
+            Scenario.COLLECTOR_CANCELLATION -> runCollectorCancellation(
+                handler,
+                collector,
+                cleanupMode,
+                scheduler,
+                startedAt,
+            )
+            Scenario.OPERATION_FAILURE -> runOperationFailure(
+                handler,
+                operation,
+                collector,
+                failureVolume,
+                cleanupMode,
+                scheduler,
+                startedAt,
+            )
+            Scenario.REPLACEMENT -> runReplacement(
+                handler,
+                operation,
+                collector,
+                cleanupMode,
+                scheduler,
+                startedAt,
+            )
         }
 
-        val late = TimedPublisher<ConverseStreamOutput>()
+        val late = TimedPublisher<ConverseStreamOutput>(cleanupMode, scheduler)
         handler.onEventStream(late.publisher)
-        await.atMost(CLEANUP_TIMEOUT).untilSuspending { late.cancelCount == 1 }
+        late.awaitCleanup()
         val pendingCallbackCount = if (late.cancelCount == 1) 0 else 1
+        val allocationAfter = allocatedBytes(operationThreadId)
+        val heapAfter = usedHeap()
         return buildSample(
             scenario = scenario,
             eventCount = eventCount,
             failureVolume = failureVolume,
-            startedAt = startedAt,
+            cleanupMode = cleanupMode,
             terminalFailure = terminalFailure,
             scenarioResult = scenarioResult,
             pendingCallbackCount = pendingCallbackCount,
+            allocatedBytes = (allocationAfter - allocationBefore).coerceAtLeast(0L),
+            heapUsedBefore = heapBefore,
+            heapUsedAfter = heapAfter,
         )
     }
 
@@ -137,6 +302,8 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
             } else {
                 client.converseStreamFlow(request).toList()
             }
+        } catch (ce: CancellationException) {
+            throw ce
         } catch (cause: Throwable) {
             onFailure(cause)
         }
@@ -146,12 +313,14 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         scenario: Scenario,
         eventCount: Int,
         failureVolume: Int,
-        startedAt: Long,
+        cleanupMode: CleanupMode,
         terminalFailure: Throwable?,
         scenarioResult: ScenarioResult,
         pendingCallbackCount: Int,
+        allocatedBytes: Long,
+        heapUsedBefore: Long,
+        heapUsedAfter: Long,
     ): Sample {
-        val coordinatorCleanupNanos = (System.nanoTime() - startedAt).coerceAtLeast(0L)
         val failure = terminalFailure
         val marker = failure?.suppressed?.firstOrNull {
             it.message?.startsWith("suppressed failure count") == true
@@ -167,7 +336,7 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
             scenario = scenario,
             eventCount = eventCount,
             failureVolume = failureVolume,
-            coordinatorCleanupNanos = coordinatorCleanupNanos,
+            coordinatorCleanupNanos = scenarioResult.coordinatorCleanupNanos,
             publisherCleanupNanos = scenarioResult.publisherCleanupNanos,
             publisherCancelCount = scenarioResult.publisherCancelCount,
             pendingCallbackCount = pendingCallbackCount,
@@ -182,6 +351,18 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
                 }
             } ?: false,
             duplicateIdentityCount = duplicateIdentityCount,
+            cleanupMode = cleanupMode,
+            watchdogReleaseCount = scenarioResult.watchdogReleaseCount,
+            blockingWaitNanos = scenarioResult.blockingWaitNanos,
+            allocatedBytes = allocatedBytes,
+            heapUsedBefore = heapUsedBefore,
+            heapUsedAfter = heapUsedAfter,
+            heapDeltaBytes = heapUsedAfter - heapUsedBefore,
+            throughputEventsPerSecond = if (scenarioResult.coordinatorCleanupNanos > 0L) {
+                eventCount.toDouble() * NANOS_PER_SECOND / scenarioResult.coordinatorCleanupNanos
+            } else {
+                0.0
+            },
         )
     }
 
@@ -190,8 +371,11 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         operation: CompletableFuture<Void>,
         collector: Deferred<Unit>,
         eventCount: Int,
+        cleanupMode: CleanupMode,
+        scheduler: ScheduledExecutorService,
+        startedAt: Long,
     ): ScenarioResult {
-        val publisher = TimedPublisher<ConverseStreamOutput>()
+        val publisher = TimedPublisher<ConverseStreamOutput>(cleanupMode, scheduler)
         handler.onEventStream(publisher.publisher)
         awaitDemand(publisher, 1)
         repeat(eventCount) { index ->
@@ -201,20 +385,38 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         publisher.complete()
         operation.complete(null)
         collector.await()
-        return ScenarioResult(publisher.cleanupNanos(), publisher.cancelCount)
+        val coordinatorCleanupNanos = elapsedSince(startedAt)
+        publisher.awaitCleanup()
+        return ScenarioResult(
+            coordinatorCleanupNanos = coordinatorCleanupNanos,
+            publisherCleanupNanos = publisher.cleanupNanos(),
+            publisherCancelCount = publisher.cancelCount,
+            watchdogReleaseCount = publisher.watchdogReleaseCount,
+            blockingWaitNanos = publisher.blockingWaitNanos,
+        )
     }
 
     private suspend fun runCollectorCancellation(
         handler: ConverseStreamResponseHandler,
         collector: Deferred<Unit>,
+        cleanupMode: CleanupMode,
+        scheduler: ScheduledExecutorService,
+        startedAt: Long,
     ): ScenarioResult {
-        val publisher = TimedPublisher<ConverseStreamOutput>()
+        val publisher = TimedPublisher<ConverseStreamOutput>(cleanupMode, scheduler)
         handler.onEventStream(publisher.publisher)
         awaitDemand(publisher, 1)
         publisher.emit(contentDelta("cancel"))
         collector.await()
+        val coordinatorCleanupNanos = elapsedSince(startedAt)
         publisher.awaitCleanup()
-        return ScenarioResult(publisher.cleanupNanos(), publisher.cancelCount)
+        return ScenarioResult(
+            coordinatorCleanupNanos = coordinatorCleanupNanos,
+            publisherCleanupNanos = publisher.cleanupNanos(),
+            publisherCancelCount = publisher.cancelCount,
+            watchdogReleaseCount = publisher.watchdogReleaseCount,
+            blockingWaitNanos = publisher.blockingWaitNanos,
+        )
     }
 
     private suspend fun runOperationFailure(
@@ -222,6 +424,9 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         operation: CompletableFuture<Void>,
         collector: Deferred<Unit>,
         failureVolume: Int,
+        cleanupMode: CleanupMode,
+        scheduler: ScheduledExecutorService,
+        startedAt: Long,
     ): ScenarioResult {
         val duplicateFailure = IllegalStateException("duplicate-cancel")
         val failures = buildList {
@@ -232,22 +437,29 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
             add(duplicateFailure)
         }.take(failureVolume.coerceAtLeast(2))
         val publishers = failures.map { failure ->
-            TimedPublisher<ConverseStreamOutput> { throw failure }
+            TimedPublisher<ConverseStreamOutput>(cleanupMode, scheduler) { throw failure }
         }
         publishers.forEachIndexed { index, publisher ->
             handler.onEventStream(publisher.publisher)
             if (index > 0) {
                 val previous = publishers[index - 1]
-                await.atMost(CLEANUP_TIMEOUT).untilSuspending { previous.cancelCount == 1 }
+                await.atMost(CLEANUP_TIMEOUT)
+                    .pollInterval(POLL_INTERVAL)
+                    .pollDelay(POLL_INTERVAL)
+                    .untilSuspending { previous.cancelCount == 1 }
             }
         }
         val operationFailure = ValidationException.builder().message("operation").build()
         operation.completeExceptionally(operationFailure)
         collector.await()
+        val coordinatorCleanupNanos = elapsedSince(startedAt)
         publishers.forEach { it.awaitCleanup() }
         return ScenarioResult(
+            coordinatorCleanupNanos = coordinatorCleanupNanos,
             publisherCleanupNanos = publishers.maxOf { it.cleanupNanos() },
             publisherCancelCount = publishers.sumOf { it.cancelCount },
+            watchdogReleaseCount = publishers.sumOf { it.watchdogReleaseCount },
+            blockingWaitNanos = publishers.sumOf { it.blockingWaitNanos },
             operationFailure = operationFailure,
             cancellationFailures = failures,
         )
@@ -257,9 +469,12 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         handler: ConverseStreamResponseHandler,
         operation: CompletableFuture<Void>,
         collector: Deferred<Unit>,
+        cleanupMode: CleanupMode,
+        scheduler: ScheduledExecutorService,
+        startedAt: Long,
     ): ScenarioResult {
-        val first = TimedPublisher<ConverseStreamOutput>()
-        val latest = TimedPublisher<ConverseStreamOutput>()
+        val first = TimedPublisher<ConverseStreamOutput>(cleanupMode, scheduler)
+        val latest = TimedPublisher<ConverseStreamOutput>(cleanupMode, scheduler)
         handler.onEventStream(first.publisher)
         awaitDemand(first, 1)
         handler.onEventStream(latest.publisher)
@@ -269,16 +484,35 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         latest.complete()
         operation.complete(null)
         collector.await()
+        val coordinatorCleanupNanos = elapsedSince(startedAt)
+        latest.awaitCleanup()
         return ScenarioResult(
+            coordinatorCleanupNanos = coordinatorCleanupNanos,
             publisherCleanupNanos = first.cleanupNanos().coerceAtLeast(latest.cleanupNanos()),
             publisherCancelCount = first.cancelCount + latest.cancelCount,
+            watchdogReleaseCount = first.watchdogReleaseCount + latest.watchdogReleaseCount,
+            blockingWaitNanos = first.blockingWaitNanos + latest.blockingWaitNanos,
         )
     }
 
+    private fun elapsedSince(startedAt: Long): Long =
+        (System.nanoTime() - startedAt).coerceAtLeast(1L)
+
+    private fun allocatedBytes(threadId: Long): Long =
+        allocationBean.getThreadAllocatedBytes(threadId).coerceAtLeast(0L)
+
+    private fun usedHeap(): Long {
+        val runtime = Runtime.getRuntime()
+        return (runtime.totalMemory() - runtime.freeMemory()).coerceAtLeast(0L)
+    }
+
     private suspend fun awaitDemand(publisher: TimedPublisher<ConverseStreamOutput>, expected: Int) {
-        await.atMost(CLEANUP_TIMEOUT).untilSuspending {
-            publisher.requests >= expected
-        }
+        await.atMost(CLEANUP_TIMEOUT)
+            .pollInterval(POLL_INTERVAL)
+            .pollDelay(POLL_INTERVAL)
+            .untilSuspending {
+                publisher.requests >= expected
+            }
     }
 
     private fun contentDelta(text: String): ContentBlockDeltaEvent =
@@ -287,20 +521,32 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
             .build()
 
     private class TimedPublisher<T : Any>(
+        private val cleanupMode: CleanupMode,
+        private val scheduler: ScheduledExecutorService,
         private val onCancelled: () -> Unit = {},
     ) {
         private val cancelRequestedAt = AtomicLong()
         private val cleanupCompletedAt = AtomicLong()
+        private val blockingWaitNanosValue = AtomicLong()
+        private val watchdogReleaseCountValue = AtomicInteger()
         private val cleanup = CompletableDeferred<Unit>()
+        private val blockingRelease = CountDownLatch(1)
         val publisher = RecordingSdkPublisher<T>(
             onCancelled = {
                 cancelRequestedAt.compareAndSet(0L, System.nanoTime())
+                var callbackFailure: Throwable? = null
                 try {
                     onCancelled()
+                } catch (cause: Throwable) {
+                    callbackFailure = cause
                 } finally {
-                    cleanupCompletedAt.compareAndSet(0L, System.nanoTime())
-                    cleanup.complete(Unit)
+                    try {
+                        completeAccordingToMode()
+                    } catch (cause: Throwable) {
+                        callbackFailure = callbackFailure ?: cause
+                    }
                 }
+                callbackFailure?.let { throw it }
             },
         )
 
@@ -310,6 +556,12 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         val cancelCount: Int
             get() = publisher.cancelCount
 
+        val watchdogReleaseCount: Int
+            get() = watchdogReleaseCountValue.get()
+
+        val blockingWaitNanos: Long
+            get() = blockingWaitNanosValue.get()
+
         fun emit(value: T) {
             check(publisher.emitOne(value)) { "controlled publisher had no demand" }
         }
@@ -318,8 +570,52 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
 
         suspend fun awaitCleanup() {
             withContext(kotlinx.coroutines.NonCancellable) {
-                await.atMost(CLEANUP_TIMEOUT).untilSuspending { cleanup.isCompleted }
+                await.atMost(CLEANUP_TIMEOUT)
+                    .pollInterval(POLL_INTERVAL)
+                    .pollDelay(POLL_INTERVAL)
+                    .untilSuspending { cleanup.isCompleted }
             }
+        }
+
+        private fun completeAccordingToMode() {
+            when (cleanupMode) {
+                CleanupMode.IMMEDIATE -> completeCleanup()
+                CleanupMode.DELAYED -> scheduler.schedule(
+                    { completeCleanup() },
+                    CLEANUP_DELAY_MILLIS,
+                    TimeUnit.MILLISECONDS,
+                )
+                CleanupMode.BLOCKING -> {
+                    val waitStartedAt = System.nanoTime()
+                    val watchdog = scheduler.schedule(
+                        {
+                            watchdogReleaseCountValue.incrementAndGet()
+                            blockingRelease.countDown()
+                        },
+                        BLOCKING_WATCHDOG_DELAY_MILLIS,
+                        TimeUnit.MILLISECONDS,
+                    )
+                    try {
+                        check(
+                            blockingRelease.await(
+                                BLOCKING_TIMEOUT_MILLIS,
+                                TimeUnit.MILLISECONDS,
+                            ),
+                        ) { "blocking cleanup watchdog did not release publisher" }
+                    } finally {
+                        blockingWaitNanosValue.addAndGet(
+                            (System.nanoTime() - waitStartedAt).coerceAtLeast(0L),
+                        )
+                        watchdog.cancel(false)
+                    }
+                    completeCleanup()
+                }
+            }
+        }
+
+        private fun completeCleanup() {
+            cleanupCompletedAt.compareAndSet(0L, System.nanoTime())
+            cleanup.complete(Unit)
         }
 
         fun cleanupNanos(): Long {
@@ -331,7 +627,15 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
 
     companion object {
         private val CLEANUP_TIMEOUT = Duration.ofSeconds(5)
+        private val POLL_INTERVAL = Duration.ofMillis(1)
         private const val DEFAULT_EVENT_COUNT: Int = 8
         private const val DEFAULT_FAILURE_VOLUME: Int = 2
+        private const val DEFAULT_LONG_RUN_EVENT_COUNT: Int = 256
+        private const val DEFAULT_LONG_RUN_MEASUREMENT_ITERATIONS: Int = 4
+        private const val DEFAULT_LONG_RUN_FAILURE_VOLUME: Int = 20
+        private const val CLEANUP_DELAY_MILLIS: Long = 25
+        private const val BLOCKING_WATCHDOG_DELAY_MILLIS: Long = 25
+        private const val BLOCKING_TIMEOUT_MILLIS: Long = 5_000
+        private const val NANOS_PER_SECOND: Double = 1_000_000_000.0
     }
 }
