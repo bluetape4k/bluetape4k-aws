@@ -232,12 +232,12 @@ internal object ProviderEnvelope {
                 metadata = metadata(material, keyId, keyVersion, wrapped, nonce),
             ).also { succeeded = true }
         } finally {
+            wrapped?.ciphertext?.fill(0)
+            wrapped?.nonce?.fill(0)
             if (!succeeded) {
                 dataKey.fill(0)
                 nonce.fill(0)
                 aad?.fill(0)
-                wrapped?.ciphertext?.fill(0)
-                wrapped?.nonce?.fill(0)
             }
         }
     }

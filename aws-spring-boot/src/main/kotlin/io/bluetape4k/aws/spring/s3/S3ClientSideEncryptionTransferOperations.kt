@@ -45,14 +45,21 @@ class S3EncryptedOutputStream internal constructor(
 
     override fun write(b: ByteArray, off: Int, len: Int) {
         require(off >= 0 && len >= 0 && off <= b.size - len) { "Invalid byte range." }
-        try {
-            synchronized(stateLock) {
-                check(!terminalStarted) { "S3EncryptedOutputStream is already closed." }
-                if (len == 0) return
+        var writeFailure: Throwable? = null
+        synchronized(stateLock) {
+            check(!terminalStarted) { "S3EncryptedOutputStream is already closed." }
+            if (len == 0) return
+            try {
                 cipher.update(b, off, len)?.let(::writeCiphertext)
+            } catch (error: Throwable) {
+                terminalStarted = true
+                completed = true
+                terminalFailure = error
+                writeFailure = error
             }
-        } catch (error: Throwable) {
-            failAndDiscard(error)
+        }
+        writeFailure?.let { error ->
+            discardDelegateAfterFailure()
             throw error
         }
     }
@@ -113,20 +120,8 @@ class S3EncryptedOutputStream internal constructor(
         }
     }
 
-    private fun failAndDiscard(error: Throwable) {
-        val ownsCleanup = synchronized(stateLock) {
-            if (completed || terminalStarted) {
-                false
-            } else {
-                terminalStarted = true
-                completed = true
-                terminalFailure = error
-                true
-            }
-        }
-        if (ownsCleanup) {
-            runCatching { runBlocking(Dispatchers.IO) { delegate.discardBlocking() } }
-        }
+    private fun discardDelegateAfterFailure() {
+        runCatching { runBlocking(Dispatchers.IO) { delegate.discardBlocking() } }
     }
 
     private fun writeCiphertext(ciphertext: ByteArray) {
@@ -287,9 +282,20 @@ class S3ClientSideEncryptionTransferTemplate(
             }
         } finally {
             plaintext?.fill(0)
-            temporary?.let { path ->
-                withContext(NonCancellable + ioDispatcher) {
-                    runCatching { Files.deleteIfExists(path) }
+            temporary?.let { path -> cleanupTemporary(path) }
+        }
+    }
+
+    private suspend fun cleanupTemporary(path: Path) {
+        val cleanedWithConfiguredDispatcher = runCatching {
+            withContext(NonCancellable + ioDispatcher) {
+                Files.deleteIfExists(path)
+            }
+        }.isSuccess
+        if (!cleanedWithConfiguredDispatcher) {
+            runCatching {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    Files.deleteIfExists(path)
                 }
             }
         }
