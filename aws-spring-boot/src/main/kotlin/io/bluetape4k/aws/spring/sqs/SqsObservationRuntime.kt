@@ -166,9 +166,18 @@ private fun cleanupObservation(
     try {
         observation.stop()
     } catch (e: Throwable) {
-        cleanupFailure?.addSuppressed(e) ?: run { cleanupFailure = e }
+        cleanupFailure = mergeSqsObservationCleanupFailure(cleanupFailure, e)
     }
     return cleanupFailure
+}
+
+internal fun mergeSqsObservationCleanupFailure(
+    current: Throwable?,
+    next: Throwable,
+): Throwable = when {
+    current == null -> next
+    current === next -> current
+    else -> current.apply { addSuppressed(next) }
 }
 
 private fun ContextSnapshot.asContextElement(): CoroutineContext = ContextSnapshotElement(this)

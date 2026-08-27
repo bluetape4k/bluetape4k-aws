@@ -6,6 +6,7 @@ import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.lang.reflect.Proxy
+import java.util.concurrent.Executors
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SqsObservationRuntimeTest {
@@ -44,6 +46,35 @@ class SqsObservationRuntimeTest {
         assertEquals(2, handler.starts)
         assertEquals(2, handler.stops)
         assertSame(parent, handler.processParent)
+    }
+
+    @Test
+    fun `process observation crosses a worker thread and clears its thread local`() = runTest {
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(RecordingHandler())
+        val parent = Observation.start("parent", registry)
+        val callerThread = Thread.currentThread()
+        val workerDispatcher = Executors.newSingleThreadExecutor { task ->
+            Thread(task, "sqs-observation-runtime-test")
+        }.asCoroutineDispatcher()
+
+        try {
+            parent.openScope().use {
+                observeSqs(runtime(registry), ::processContext) {
+                    withContext(workerDispatcher) {
+                        assertTrue(Thread.currentThread() !== callerThread)
+                        assertSame(observation, registry.currentObservation)
+                    }
+                }
+                assertSame(parent, registry.currentObservation)
+            }
+            withContext(workerDispatcher) {
+                assertNull(registry.currentObservation)
+            }
+        } finally {
+            workerDispatcher.close()
+            parent.stop()
+        }
     }
 
     @Test
@@ -266,6 +297,36 @@ class SqsObservationRuntimeTest {
         assertSame(errorFailure, actual.suppressed.single())
         assertSame(stopFailure, errorFailure.suppressed.single())
         assertNull(registry.currentObservation)
+    }
+
+    @Test
+    fun `same telemetry failure instance is suppressed once without self suppression`() = runTest {
+        val registry = ObservationRegistry.create()
+        val businessFailure = IllegalStateException("business")
+        val telemetryFailure = IllegalArgumentException("telemetry")
+        registry.observationConfig().observationHandler(
+            FailingHandler(errorFailure = telemetryFailure, stopFailure = telemetryFailure),
+        )
+
+        val actual = failureOf {
+            observeSqs(runtime(registry), ::processContext) { throw businessFailure }
+        }
+
+        assertSame(businessFailure, actual)
+        assertSame(telemetryFailure, actual.suppressed.single())
+        assertEquals(0, telemetryFailure.suppressed.size)
+        assertNull(registry.currentObservation)
+    }
+
+    @Test
+    fun `cleanup failure merge ignores the same instance and preserves distinct order`() {
+        val first = IllegalArgumentException("first")
+        val second = UnsupportedOperationException("second")
+
+        assertSame(first, mergeSqsObservationCleanupFailure(first, first))
+        assertEquals(0, first.suppressed.size)
+        assertSame(first, mergeSqsObservationCleanupFailure(first, second))
+        assertSame(second, first.suppressed.single())
     }
 
     @Test
