@@ -38,7 +38,8 @@ uses.
   Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, RDS IAM, Secrets
   Manager, and Parameter Store.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
-  listeners, and auto-configuration without depending on awspring.
+  listeners, optional Spring Modulith SNS/SQS event externalization, and
+  auto-configuration without depending on awspring.
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 access, SQS consumer
   runtime, EventBridge publishing, DynamoDB server repositories, EC2 IMDS
   helpers, and Ktor server/client examples.
@@ -62,7 +63,7 @@ uses.
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, DynamoDB Streams, S3, S3 Tables, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, DynamoDB Streams, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, optional Spring Modulith SNS/SQS event externalization, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, EventBridge server plugin, Kinesis and STS server plugins, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
@@ -230,6 +231,44 @@ CloudWatch helpers. Add `software.amazon.awssdk:imds` when using EC2 metadata he
 Add `software.amazon.awssdk:eventbridge` when using EventBridge operations.
 Add `spring-security-crypto` only when you want to inject Spring Security's synchronous
 `TextEncryptor`.
+
+#### Spring Modulith SNS/SQS event externalization (Unreleased/develop)
+
+| Direction | Required runtime pieces | Delivery boundary |
+| --- | --- | --- |
+| SNS producer | Spring Modulith event publication/serialization, SNS SDK | The publication future follows the actual AWS publish result. |
+| SQS producer | Spring Modulith event publication/serialization, SQS SDK | Logical target names; FIFO requires a routing key. |
+| DIRECT SQS consumer | SQS SDK, registry, serializer, redrive policy | Local synchronous dispatch and claim completion precede acknowledgement. |
+| SNS-to-SQS consumer | DIRECT pieces plus `sns-message-manager` and TopicArn allowlist | SNS source/signature verification precedes decode and claim. |
+
+The root feature and each direction are opt-in. This minimal SNS producer setup
+uses the root BOM already shown above and keeps coordinates versionless:
+
+```kotlin
+dependencies {
+    implementation("org.springframework.modulith:spring-modulith-starter-jpa")
+    implementation("org.springframework.modulith:spring-modulith-events-jackson")
+    runtimeOnly("software.amazon.awssdk:sns")
+}
+```
+
+```yaml
+bluetape4k.aws.modulith.events:
+  enabled: true
+  producer.enabled: true
+  targets.order-events:
+    service: sns
+    destination: order-events
+```
+
+The application must provide an `AwsModulithEventTypeRegistry` bean and route
+Spring Modulith events to the logical alias `order-events`. Detailed dependency,
+producer, DIRECT/SNS consumer, FIFO, back-off, diagnostics, rollout, and Floci
+boundaries are in the
+[storage and messaging](docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md#spring-modulith-snssqs-externalization-unreleaseddevelop),
+[auto-configuration](docs/manual/en/modules/bluetape4k-aws-spring-boot/auto-configuration.md#modulith-event-auto-configuration-unreleaseddevelop),
+and [runtime operations](docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md#modulith-event-runtime-operations-unreleaseddevelop)
+manual chapters.
 
 ```yaml
 bluetape4k:

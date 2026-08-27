@@ -48,6 +48,39 @@ constructed `SnsCoroutinesTemplate` instances require the client endpoint/region
 to match `SnsProperties`; inject a resolver explicitly for a different or
 uninspectable client.
 
+## Modulith event auto-configuration (Unreleased/develop)
+
+`AwsModulithEventsAutoConfiguration` is additive and disabled by default. It
+loads only when all three Spring Modulith classes
+`EventExternalizationTransport`, `EventSerializer`, and
+`EventExternalizerModuleListener` are present and
+`bluetape4k.aws.modulith.events.enabled=true`.
+
+Producer and consumer directions have independent opt-ins:
+
+| Condition | Result |
+| --- | --- |
+| Root disabled or Modulith classes absent | No adapter properties, transport, or consumer beans. |
+| `producer.enabled=true` | Requires a registry, serializer, at least one logical target, and the operations capability for each target service. |
+| SNS-only target | Creates only the SNS publisher; SQS operations or SDK classes are not required. |
+| SQS-only target | Requires `SqsFullRequestOperations` so FIFO keys and message attributes are not discarded. |
+| `consumer.enabled=true`, `source-mode=DIRECT` | Requires SQS operations, registry, serializer, externalization configuration, queue name, and redrive policy unless explicitly disabled. |
+| `consumer.enabled=true`, `source-mode=SNS` | Adds `sns-message-manager`, `SnsHttpMessageVerifier`, and a non-empty exact TopicArn allowlist to the DIRECT requirements. |
+
+The built-in producer backs off when the application supplies an
+`EventExternalizationTransport`. The built-in in-memory idempotency store backs
+off for an `AwsModulithEventIdempotencyStore` bean. A custom
+`SnsHttpMessageVerifier` replaces the verifier created by SNS verification
+auto-configuration. These are separate boundaries: a custom outbound transport
+does not disable the inbound consumer.
+
+One built-in consumer binds one
+`bluetape4k.aws.modulith.events.consumer.queue` and one `source-mode` in an
+application context. Multi-queue or mixed DIRECT/SNS consumption needs separate
+contexts or an application-owned listener. Invalid cross-property combinations
+fail startup with `BT4K-MOD-101`; they do not defer validation until the first
+message.
+
 ## Back-off is a feature
 
 If an expected bean is missing, inspect the condition report before adding manual beans. Common causes are a missing `compileOnly` service SDK, disabled property, or an application-provided bean that intentionally makes auto-configuration back off.
@@ -97,3 +130,4 @@ Fail early on invalid endpoint/region combinations, queue settings, pool sizes, 
 - [Auto-configuration imports](../../../../../aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports)
 - [Shared AWS properties](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/AwsProperties.kt)
 - [AWS auto-configuration](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/AwsAutoConfiguration.kt)
+- [Modulith auto-configuration](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithEventsAutoConfiguration.kt)

@@ -89,6 +89,58 @@ consumer 수, long-poll 시간, 한 번에 받을 메시지 수, visibility time
 
 `MeterRegistry`가 있으면 S3·SQS 작업과 listener 단계에 낮은 cardinality timer를 붙일 수 있습니다. bucket key, message body, secret ID, 제한 없는 예외 문자열을 metric tag로 사용하지 마세요. 로그에는 AWS request ID를 남겨 상관관계를 추적합니다.
 
+## Modulith event runtime 운영 (미출시/develop)
+
+inbound adapter는 SQS의 at-least-once 전달을 사용합니다. source를 검증하고 envelope를
+decode한 뒤 `(type, eventId)`를 claim하고, local event를 동기로 발행하고, claim을 complete한
+후에만 SQS message를 acknowledge합니다. 이미 complete된 중복 message는 local handler를
+건너뛰고 acknowledgement만 다시 시도합니다. claim complete 전 실패는 acknowledge하지
+않으며 queue visibility와 redrive policy를 따릅니다.
+
+기본 `InMemoryAwsModulithEventIdempotencyStore`는 process-local 구현입니다. 한 process
+안에서 중복 처리를 제한하지만 restart 이후 상태를 보존하거나 여러 instance를 조정하거나
+local side effect와 claim commit을 원자화하지 않습니다. 이런 요구에는 durable
+`AwsModulithEventIdempotencyStore`를 제공하세요. 이 경계는 at-least-once 전달 위의 중복
+억제이며 exactly-once 보장이 아닙니다. 비동기 event listener의 최종 완료도 acknowledgement
+경계 밖입니다. 완료는 동기 `ApplicationEventPublisher.publishEvent` 호출이 반환한 시점을
+뜻합니다.
+
+`MeterRegistry`가 있으면 consumer가 `bluetape4k.aws.modulith.events`,
+`bluetape4k.aws.modulith.events.latency`, `bluetape4k.aws.modulith.events.inflight`를
+등록합니다. 제한된 tag는 `service`, `phase`, `outcome`, `code`입니다. event ID, payload,
+message ID, TopicArn, queue URL, raw exception text를 tag로 추가하지 마세요.
+
+| Code | 재시도 가능 | 경계 | caller가 수행할 조치 |
+| --- | --- | --- | --- |
+| `BT4K-MOD-101` | 아니요 | 설정, classpath, target, redrive guard | 배포를 중단하고 condition report를 확인합니다. |
+| `BT4K-MOD-102` | 아니요 | registration, 직렬화, envelope 상한 | DLQ message를 보존하고 registration 또는 payload를 고친 뒤 재처리합니다. |
+| `BT4K-MOD-103` | 예 | producer capacity 또는 shutdown admission | Modulith publication을 미완료로 유지하고 in-flight 작업을 확인한 뒤 다시 제출합니다. |
+| `BT4K-MOD-104` | 예 | target 해석 또는 AWS publish | endpoint, 권한, SDK retry 상태를 확인한 뒤 다시 제출합니다. |
+| `BT4K-MOD-201` | 아니요 | source mode, TopicArn, SNS signature | acknowledge하지 말고 source를 격리한 뒤 queue policy를 확인합니다. |
+| `BT4K-MOD-202` | 아니요 | malformed, 알 수 없는 type/version, loop 위험 | 호환 consumer를 배포하거나 DLQ를 분석한 뒤 재처리합니다. |
+| `BT4K-MOD-203` | 예 | claim, lease, fencing, complete | message를 acknowledge하지 않고 store를 복구하거나 lease takeover를 기다립니다. |
+| `BT4K-MOD-204` | 예 | local dispatch, SQS acknowledgement, cleanup | handler 완료, claim 상태, SQS delete 결과를 대조한 뒤 재시도합니다. |
+
+### 배포와 rollback
+
+새 `(type, version)`을 이해하는 consumer를 모든 instance에 먼저 배포한 뒤 producer를
+활성화하세요. consumer 시작 전 queue DLQ/redrive policy를 설정해야 하며,
+`redrive-required=true`이면 policy가 없을 때 startup이 실패합니다. rollback은 producer
+외부화를 먼저 끄고 제한된 close 완료를 기다리면서 미완료 publication을 보존합니다. 그다음
+지원하는 version의 queue와 DLQ를 drain한 뒤 consumer를 끕니다. 대기 중인 message를
+삭제하거나 idempotency store를 비우거나 더 새로운 version이 남은 상태에서 downgrade하면
+안 됩니다.
+
+### Floci와 실제 AWS 근거 경계
+
+Floci test matrix는 AWS 계정 없이 DIRECT SQS round trip, 명시적인
+`signature-not-proven` verifier fixture를 사용한 SNS-to-SQS transport, FIFO
+group/deduplication, 중복 acknowledgement, malformed message no-ack, DLQ redrive를
+증명합니다. Floci는 production SNS certificate/signature 동작, IAM resource policy,
+cross-account 전달, 실제 AWS redrive timing을 증명하지 않습니다. SNS verifier는 별도의
+signed request/certificate contract test를 사용하며 production 배포에는 자체 IAM과
+endpoint smoke 근거가 필요합니다.
+
 ## Native CloudWatch registry
 
 Micrometer 경로는 두 가지를 서로 분리합니다.
@@ -333,3 +385,5 @@ pointer가 다시 나타나도 전체 rollback deadline은 늘어나지 않습�
 - [SQS listener container](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsMessageListenerContainer.kt)
 - [Micrometer SQS interceptor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsListenerInterceptor.kt)
 - [Secrets environment processor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/secretsmanager/SecretsManagerEnvironmentPostProcessor.kt)
+- [Modulith diagnostic](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithExceptions.kt)
+- [Modulith consumer metric](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithMetrics.kt)

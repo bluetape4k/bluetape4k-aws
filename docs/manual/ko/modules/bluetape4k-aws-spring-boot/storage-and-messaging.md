@@ -221,6 +221,131 @@ Guarded strategy port는 AWS client와 lifecycle을 노출하지 않고 상태�
 byte-size preflight, Jackson 3 adapter, `ByteArray` payload 지원은 현재
 동작이 아니라 후속 범위입니다.
 
+## Spring Modulith SNS/SQS 외부화 (미출시/develop)
+
+선택적 adapter는 등록한 Spring Modulith event를 SNS 또는 SQS로 외부화하고,
+SQS message를 local application event로 복원합니다. root BOM을 한 번 가져오고
+개별 좌표에는 버전을 쓰지 않습니다.
+
+```kotlin
+dependencies {
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot")
+    implementation("org.springframework.modulith:spring-modulith-starter-jpa")
+    implementation("org.springframework.modulith:spring-modulith-events-jackson")
+
+    runtimeOnly("software.amazon.awssdk:sns")                 // SNS producer
+    runtimeOnly("software.amazon.awssdk:sqs")                 // SQS producer/consumer
+    runtimeOnly("software.amazon.awssdk:sns-message-manager") // 검증된 SNS consumer
+}
+```
+
+Spring Modulith publication repository 선택은 애플리케이션이 소유합니다. 이 모듈은
+Modulith와 서비스 SDK 의존성을 선택 사항으로 유지합니다. 외부 event마다 안정적인 type,
+version, final concrete JVM class, event ID를 등록하세요.
+
+```kotlin
+data class OrderCreated(val orderId: String, val tenant: String)
+
+@Bean
+fun awsModulithEventTypes(): AwsModulithEventTypeRegistry =
+    AwsModulithEventTypeRegistry.of(
+        AwsModulithEventTypeRegistration(
+            type = "order.created",
+            version = 1,
+            eventClass = OrderCreated::class.java,
+            eventId = OrderCreated::orderId,
+            allowedHeaderNames = setOf("tenant"),
+            headers = { mapOf("tenant" to it.tenant) },
+        )
+    )
+```
+
+Spring Modulith routing은 ARN이나 URL이 아니라 `order-events` 같은 논리 alias를
+반환해야 합니다. alias는 하나의 서비스 destination에 대응합니다.
+
+```yaml
+bluetape4k:
+  aws:
+    modulith:
+      events:
+        enabled: true
+        producer:
+          enabled: true
+        targets:
+          order-events:
+            service: sns
+            destination: order-events
+```
+
+producer-only 애플리케이션은 `consumer.enabled=false`를 유지합니다. DIRECT SQS
+consumer는 adapter envelope를 받고, 기본적으로 queue redrive policy를 요구합니다.
+
+```yaml
+bluetape4k.aws.modulith.events:
+  enabled: true
+  consumer:
+    enabled: true
+    queue: direct-order-events
+    source-mode: direct
+    redrive-required: true
+```
+
+SNS fanout consumer는 SQS를 통해 SNS notification을 받습니다. 이 경로에는
+`sns-message-manager`, verifier bean, 정확한 TopicArn allowlist가 추가로 필요합니다.
+
+```yaml
+bluetape4k.aws.sns:
+  region: ap-northeast-2
+bluetape4k.aws.modulith.events:
+  enabled: true
+  consumer:
+    enabled: true
+    queue: sns-order-events
+    source-mode: sns
+    expected-topic-arns:
+      - arn:aws:sns:ap-northeast-2:123456789012:order-events
+    redrive-required: true
+```
+
+기본 listener 하나는 application context 하나에서 queue 하나와 source mode 하나만
+처리합니다. DIRECT와 SNS source를 함께 소비해야 한다면 context를 분리하세요. FIFO
+외부화는 `.fifo`로 끝나는 SQS destination을 설정하고 Spring Modulith가
+`RoutingTarget.key`를 제공해야 합니다. adapter는 이 key를 `messageGroupId`로, 등록한
+안정적 event ID를 deduplication ID로 사용합니다. standard destination은 routing key를
+거부하고 FIFO destination은 routing key를 요구합니다.
+
+기본 in-memory idempotency store는 application scope이며 재시작하면 claim을 잃습니다.
+여러 instance에서 durable하게 처리하려면 `AwsModulithEventIdempotencyStore`를 구현해
+bean 하나로 노출하세요. 해당 bean이 있으면 auto-configuration은 기본 store를 만들지
+않습니다. handler 성공과 이미 완료된 중복은 acknowledge합니다. active claim, handler
+실패, claim 갱신·완료 실패, source 검증 실패는 acknowledge하지 않으므로 SQS visibility,
+redelivery, queue redrive policy가 retry와 DLQ 전달을 결정합니다. 결과가 불확실한 claim
+mutation은 즉시 release하지 않고 lease 만료 후 takeover에 맡겨 중복 dispatch fencing을
+유지합니다.
+
+로컬 transport 계약은 Floci로 실행합니다.
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests 'io.bluetape4k.aws.spring.modulith.*' \
+  -Dbluetape4k.aws.emulator=floci --no-daemon
+```
+
+이 검증은 `FlociServer`가 지원하는 local SQS 경로, SNS-to-SQS fanout transport,
+redrive 사전 검증, acknowledgement, claim/fencing 동작을 증명합니다. production SNS
+certificate/signature telemetry, IAM, cross-account policy, 실제 AWS timing은 증명하지
+않습니다. Floci API 공백에만 LocalStack을 명시적 fallback으로 사용하며 이 local
+계약에는 실제 AWS 계정이 필요하지 않습니다.
+
+| 문서 계약 | 소스 근거 symbol |
+| --- | --- |
+| 안정적인 event type, version, final concrete class, ID, 허용 header | `AwsModulithEventTypeRegistration`, `AwsModulithEventTypeRegistry` |
+| 논리 SNS/SQS target | `AwsModulithEventsProperties.Target`, `AwsModulithTargetService` |
+| DIRECT 또는 검증된 SNS source | `AwsModulithSourceMode`, `AwsModulithSqsEventConsumer` |
+| lease/fencing 기반 중복 억제 | `AwsModulithEventIdempotencyStore` |
+| 정상 처리 또는 완료된 중복 | `AwsModulithConsumeOutcome` |
+
 ## 실패 경로를 테스트한다
 
 직렬화, queue 조회, redelivery, 중복 전달, DLQ, S3 pagination, multipart 취소, DynamoDB batch 일부 성공을 검증하세요. 성공적인 send만 확인하는 테스트로는 부족합니다.
@@ -230,3 +355,5 @@ byte-size preflight, Jackson 3 adapter, `ByteArray` payload 지원은 현재
 - [S3 operations](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3Operations.kt)
 - [SQS listener annotation](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsListener.kt)
 - [DynamoDB repository](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/dynamodb/AbstractCoroutinesDynamoDbRepository.kt)
+- [Modulith event registry](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithEventTypes.kt)
+- [Modulith properties](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithEventsProperties.kt)
