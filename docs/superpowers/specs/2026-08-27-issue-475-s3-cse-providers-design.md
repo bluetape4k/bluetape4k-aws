@@ -149,11 +149,12 @@ enum class ClientSideEncryptionProvider { KMS, AES, RSA }
 
 data class ClientSideEncryption(
     val enabled: Boolean = false,
-    val provider: ClientSideEncryptionProvider = ClientSideEncryptionProvider.KMS,
     val keyId: String? = null,
-    val keyVersion: String? = null,
     val encryptionContext: Map<String, String> = emptyMap(),
     val useDataKeyCache: Boolean = true,
+    // 기존 positional source call을 보존하도록 새 property를 뒤에 추가한다.
+    val provider: ClientSideEncryptionProvider = ClientSideEncryptionProvider.KMS,
+    val keyVersion: String? = null,
 )
 ~~~
 
