@@ -104,12 +104,23 @@ class SqsMessageListenerContainer internal constructor(
         operations = operations,
         cacheTtl = endpoint.queueAttributeCacheTtl,
     )
+    @Volatile
+    private var observationRuntime: SqsObservationRuntime? = null
     private var resolvedQueueUrl: String? = null
 
     private val admissionLimit: Int = when (endpoint.backPressureMode) {
         SqsBackPressureMode.FIXED -> endpoint.maxInFlight
         SqsBackPressureMode.AUTO -> maxOf(endpoint.maxInFlight, endpoint.maxMessages * endpoint.concurrency)
     }
+
+    internal fun setObservationRuntime(runtime: Any) {
+        val candidate = runtime as? SqsObservationRuntime
+            ?: error("runtime must be an SqsObservationRuntime")
+        check(observationRuntime == null) { "SQS observation runtime is already configured" }
+        observationRuntime = candidate
+    }
+
+    internal fun observationRuntimeOrNull(): Any? = observationRuntime
 
     override fun start() {
         val current: ListenerGeneration

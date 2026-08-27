@@ -1,7 +1,10 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
@@ -13,6 +16,8 @@ import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
@@ -77,6 +82,42 @@ class SqsObservationAutoConfigurationTest {
                 context.getBean(SqsObservationActivation::class.java).shouldNotBeNull()
                 context.getBean(SqsObservationRuntime::class.java).shouldNotBeNull()
                 context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `runtime connector initializes the SQS processor before every listener container`() {
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    AwsAutoConfiguration::class.java,
+                    SqsObservationAutoConfiguration::class.java,
+                    SqsAutoConfiguration::class.java,
+                ),
+            )
+            .withPropertyValues(
+                "bluetape4k.aws.sqs.region=us-east-1",
+                "bluetape4k.aws.sqs.observation.enabled=true",
+                "bluetape4k.aws.sqs.listener.auto-startup=false",
+            )
+            .withBean(SqsOperations::class.java, Supplier { NoopSqsOperations })
+            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+            .withUserConfiguration(RecordingListenerConfiguration::class.java)
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                val runtime = context.getBean(SqsObservationRuntime::class.java)
+                val processor = context.getBean(SqsListenerAnnotationBeanPostProcessor::class.java)
+                val containers = context.getBean(SqsMessageListenerContainerRegistry::class.java).containers
+
+                processor.observationRuntimeOrNull() shouldBeSameInstanceAs runtime
+                containers.size shouldBeEqualTo 2
+                containers.forEach { container ->
+                    container.observationRuntimeOrNull() shouldBeSameInstanceAs runtime
+                }
+                assertFailsWith<IllegalStateException> {
+                    processor.setObservationRuntime(runtime)
+                }
             }
     }
 
@@ -359,5 +400,23 @@ class SqsObservationAutoConfigurationTest {
         override val stage: SqsObservationStage = SqsObservationStage.PROCESS
 
         override fun getName(): String = "test.process"
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class RecordingListenerConfiguration {
+        @Bean
+        fun recordingListener(): RecordingListener = RecordingListener()
+    }
+
+    internal class RecordingListener {
+        @SqsListener(id = "recording-first", queue = "orders")
+        fun first(body: String) {
+            check(body.isNotBlank())
+        }
+
+        @SqsListener(id = "recording-second", queue = "orders")
+        fun second(body: String) {
+            check(body.isNotBlank())
+        }
     }
 }

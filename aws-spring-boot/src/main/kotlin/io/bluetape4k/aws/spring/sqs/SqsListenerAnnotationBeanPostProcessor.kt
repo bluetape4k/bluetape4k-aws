@@ -21,6 +21,18 @@ class SqsListenerAnnotationBeanPostProcessor(
     private val interceptors: List<SqsListenerInterceptor>,
 ): BeanPostProcessor {
 
+    @Volatile
+    private var observationRuntime: SqsObservationRuntime? = null
+
+    internal fun setObservationRuntime(runtime: Any) {
+        val candidate = runtime as? SqsObservationRuntime
+            ?: error("runtime must be an SqsObservationRuntime")
+        check(observationRuntime == null) { "SQS observation runtime is already configured" }
+        observationRuntime = candidate
+    }
+
+    internal fun observationRuntimeOrNull(): Any? = observationRuntime
+
     @Throws(BeansException::class)
     override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
         if (!properties.listener.enabled) {
@@ -83,7 +95,9 @@ class SqsListenerAnnotationBeanPostProcessor(
             queueAttributeCacheTtl = effective.queueAttributeCacheTtl,
             queueNotFoundStrategy = effective.queueNotFoundStrategy,
         )
-        registry.register(id, SqsMessageListenerContainer(endpoint, operations, invoker, interceptors))
+        val container = SqsMessageListenerContainer(endpoint, operations, invoker, interceptors)
+        observationRuntime?.let(container::setObservationRuntime)
+        registry.register(id, container)
     }
 
     private fun resolveAcknowledgementMode(

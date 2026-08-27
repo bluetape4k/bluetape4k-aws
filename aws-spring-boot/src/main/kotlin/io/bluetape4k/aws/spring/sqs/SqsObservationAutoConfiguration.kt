@@ -5,6 +5,8 @@ import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.beans.factory.config.BeanDefinition
+import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome
@@ -17,6 +19,9 @@ import org.springframework.context.annotation.ConditionContext
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.ConfigurationCondition
+import org.springframework.context.annotation.Role
+import org.springframework.core.Ordered
+import org.springframework.core.PriorityOrdered
 import org.springframework.core.type.AnnotatedTypeMetadata
 
 /** SQS 관찰 runtime이 실제로 활성화됐음을 나타내는 내부 marker입니다. */
@@ -61,6 +66,29 @@ class SqsObservationAutoConfiguration {
                 factory = factory,
             )
         }
+
+        companion object {
+            @Bean
+            @JvmStatic
+            @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+            fun sqsObservationRuntimeConnector(
+                runtime: SqsObservationRuntime,
+            ): SqsObservationRuntimeConnector = SqsObservationRuntimeConnector(runtime)
+        }
+    }
+}
+
+internal class SqsObservationRuntimeConnector(
+    private val runtime: SqsObservationRuntime,
+): BeanPostProcessor, PriorityOrdered {
+
+    override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
+
+    override fun postProcessBeforeInitialization(bean: Any, beanName: String): Any {
+        if (bean is SqsListenerAnnotationBeanPostProcessor) {
+            bean.setObservationRuntime(runtime)
+        }
+        return bean
     }
 }
 

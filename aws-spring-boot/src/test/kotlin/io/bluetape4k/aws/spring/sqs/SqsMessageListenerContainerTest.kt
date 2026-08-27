@@ -11,6 +11,8 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.micrometer.observation.Observation
+import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -35,6 +37,61 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 @Suppress("LargeClass")
 class SqsMessageListenerContainerTest {
+
+    @Test
+    fun `missing and noop runtime preserve the direct listener sequence without extension calls`() = runSuspendIO {
+        listOf(false, true).forEach { installNoopRuntime ->
+            val calls = CopyOnWriteArrayList<String>()
+            var customizers = 0
+            var factories = 0
+            val received = CompletableDeferred<Unit>()
+            val operations = mockk<SqsOperations>()
+            val invoker = mockk<SqsListenerMethodInvoker>()
+            val receiveCalls = AtomicInteger()
+            coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+                if (receiveCalls.incrementAndGet() == 1) {
+                    calls += "receive"
+                    listOf(message())
+                } else {
+                    awaitCancellation()
+                }
+            }
+            coEvery { operations.delete(QUEUE_URL, any()) } coAnswers {
+                calls += "ack"
+                received.complete(Unit)
+                DeleteMessageResponse.builder().build()
+            }
+            every { invoker.manualAcknowledgement } returns false
+            coEvery { invoker.invoke(any(), any()) } coAnswers {
+                calls += "handler"
+            }
+            val container = container(operations, invoker)
+            if (installNoopRuntime) {
+                container.setObservationRuntime(
+                    SqsObservationRuntime(
+                        registry = ObservationRegistry.NOOP,
+                        customizers = listOf(SqsObservationContextCustomizer { customizers++ }),
+                        factory = SqsObservationFactory { _, _ ->
+                            factories++
+                            Observation.NOOP
+                        },
+                    ),
+                )
+            }
+
+            try {
+                container.start()
+                withTimeout(2_000) { received.await() }
+                calls shouldBeEqualTo listOf("receive", "handler", "ack")
+                customizers shouldBeEqualTo 0
+                factories shouldBeEqualTo 0
+            } finally {
+                val stopped = CompletableDeferred<Unit>()
+                container.stop { stopped.complete(Unit) }
+                withTimeout(2_000) { stopped.await() }
+            }
+        }
+    }
 
     @Test
     fun `single message handlers run concurrently up to the in flight limit`() = runSuspendIO {
