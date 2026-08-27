@@ -486,7 +486,9 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
         override val wrappingAlgorithm: String =
             "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
         override val keyIdentityMaterial: ByteArray
-            get() = requireNotNull(publicKey) { "RSA provider material is closed." }.encoded.copyOf()
+            get() = MessageDigest.getInstance("SHA-256").digest(
+                requireNotNull(publicKey) { "RSA provider material is closed." }.encoded,
+            )
         override fun wrap(dataKey: ByteArray, random: SecureRandom): WrappedDataKey =
             rsaOaepWrap(dataKey, requireNotNull(publicKey) { "RSA provider material is closed." })
         override fun unwrap(wrapped: ByteArray, nonce: ByteArray?): ByteArray =
@@ -630,6 +632,14 @@ Files:
         )
 
         first.keyFingerprint shouldNotBeEqualTo second.keyFingerprint
+        testProviderTemplate(
+            properties = S3Properties(
+                clientSideEncryption = S3Properties.ClientSideEncryption(
+                    enabled = true,
+                    provider = ClientSideEncryptionProvider.AES,
+                ),
+            ),
+        ).canonicalKeyIdentity shouldContain "sha256:"
     }
 
 `testProviderTemplate` fixture는 선택적 `properties` 인자를 받아 provider와 properties의
@@ -754,6 +764,19 @@ Expected: FAIL because provider template methods and metadata-backed S3 response
             callContext: Map<String, String>,
         ): Map<String, String> =
             properties.clientSideEncryption.encryptionContext + callContext
+
+        private fun effectiveKeyIdentity(): String {
+            properties.clientSideEncryption.keyId?.let { return it }
+            val fingerprint = material.keyIdentityMaterial
+            return try {
+                "sha256:" + Base64.getUrlEncoder().withoutPadding().encodeToString(fingerprint)
+            } finally {
+                fingerprint.fill(0)
+            }
+        }
+
+        private fun effectiveKeyVersion(): String =
+            properties.clientSideEncryption.keyVersion.orEmpty()
 
         private fun <T> withOpenMaterial(block: () -> T): T = synchronized(lifecycleLock) {
             check(!closed) { "S3 client-side encryption provider is already closed." }
