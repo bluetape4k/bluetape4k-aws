@@ -372,8 +372,11 @@ class SqsObservationAwsEmulatorTest {
             }
             assertRegistryStopped(registry)
         } finally {
-            closeClientAfterQueueCleanup(client, queueUrl)
-            AckFailureListener.queueUrl = null
+            try {
+                closeClientAfterQueueCleanup(client, queueUrl)
+            } finally {
+                AckFailureListener.queueUrl = null
+            }
         }
     }
 
