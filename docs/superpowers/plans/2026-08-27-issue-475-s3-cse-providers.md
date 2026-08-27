@@ -157,18 +157,14 @@ Run the Step 1 Gradle command again.
 
 `ClientSideEncryption`은 새 field를 기존 4개 뒤에 붙여 기존 Kotlin positional source call의
 의미를 유지한다. JVM binary compatibility는 data-class primary constructor와 `copy` descriptor가
-변경될 수 있으므로 자동으로 보장한다고 주장하지 않는다. `checkBinaryCompatibility` task/API
-baseline이 이 checkout에 존재하면 다음 검사를 실행하고, 없으면 명시적으로 N/A와 baseline 부재를
-기록한다.
+변경될 수 있으므로 자동으로 보장한다고 주장하지 않는다. 이 checkout의 실제 public ABI와
+legacy consumer aggregate gate인 다음 명령을 실행하고 report 경로를 lesson에 기록한다.
 
-    if ./gradlew tasks --all --no-daemon --console=plain | rg -q '^checkBinaryCompatibility'; then
-      ./gradlew checkBinaryCompatibility --no-daemon --max-workers=1 --console=plain
-    else
-      echo 'N/A: checkBinaryCompatibility task/API baseline is not present in this checkout.'
-    fi
+    ./gradlew compatibilityCheck --no-daemon --no-configuration-cache
 
-Expected: BUILD SUCCESSFUL and all S3ClientSideEncryptionProviderTest tests pass; any ABI gap is
-visible in the lesson rather than being silently called compatible.
+Expected: BUILD SUCCESSFUL, `build/reports/compatibility/compatibility-check.json` 생성,
+S3ClientSideEncryptionProviderTest 통과. ABI gap은 lesson에 명시하고 compatible이라고
+침묵해서 부르지 않는다.
 
 - [ ] Step 5: Lore commit을 만든다.
 
@@ -533,8 +529,12 @@ aesGcmWrap/aesGcmUnwrap는 12-byte nonce와 128-bit tag를 사용하고 RSA는 O
 
     git diff --check
     ./gradlew :bluetape4k-aws-spring-boot:compileKotlin --no-daemon --max-workers=1 --console=plain
+    ./gradlew :bluetape4k-aws-spring-boot:test \
+      --tests 'io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionProviderTest' \
+      --no-daemon --max-workers=1 --console=plain
 
-Expected: targeted tests pass, git diff --check emits no output, and compileKotlin ends with BUILD SUCCESSFUL.
+Expected: provider targeted tests pass, git diff --check emits no output, and compileKotlin
+ends with BUILD SUCCESSFUL.
 
 - [ ] Step 5: Lore commit을 만든다.
 
