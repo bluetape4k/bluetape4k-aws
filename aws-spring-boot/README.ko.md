@@ -26,7 +26,10 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
 
 - **S3** — `S3CoroutinesTemplate`로 버킷 존재 확인, 업로드/다운로드(바이트·문자열),
   삭제, 페이지 단위 조회(`listPage`/`listFlow`), Spring `Resource` 뷰, presigned
-  GET/PUT URL 발급을 지원합니다.
+  GET/PUT URL 발급을 지원합니다. 선택적인
+  `S3ClientSideEncryptionOperations`는 KMS 또는 애플리케이션이 제공하는 AES/RSA
+  provider, converter 기반 typed object, provider 전용 암호화 transfer stream/file을
+  지원합니다.
 - **S3 Vectors** — 선택적 `S3VectorsOperations`로 vector bucket/index 조회와
   vector put/get/list/query 호출을 지원합니다.
 - **SNS** — `SnsCoroutinesTemplate`로 topic 생성/조회, 단건·배치 topic publish,
@@ -179,9 +182,13 @@ bluetape4k:
             format: properties
       client-side-encryption:
         enabled: true
-        key-id: alias/app-s3
+        provider: AES                         # KMS (기본값), AES, RSA
+        key-id: orders-key
+        key-version: 2026-08
         encryption-context:
           service: order-api
+      transfer:
+        enabled: true
     s3-vectors:
       enabled: true
       region: ap-northeast-2
@@ -489,11 +496,50 @@ bean을 제공하면 됩니다. transfer manager auto-configuration은 그 bean�
 기본 S3 사용자에게 CRT dependency를 강제하지 않습니다.
 
 `S3ClientSideEncryptionOperations`는
-`bluetape4k.aws.s3.client-side-encryption.enabled=true`이고 `KmsOperations`
-bean이 있을 때 활성화됩니다. AWS KMS data key를 생성하고 object byte를 로컬에서
-AES-GCM으로 암호화한 뒤 encrypted data key와 nonce를 S3 metadata에 저장합니다.
-이 helper는 byte-array object용입니다. multipart 또는 streaming client-side
-encryption은 지원하지 않으며, metadata format은 AWS Encryption SDK와 호환되지 않습니다.
+`bluetape4k.aws.s3.client-side-encryption.enabled=true`로 명시적으로 활성화합니다.
+`provider=KMS`가 기본값이며 기존 `KmsOperations` 기반 byte-array 동작을 유지합니다.
+`provider=AES`에는 `S3AesProvider` bean이 정확히 하나 필요하고,
+`provider=RSA`에는 `S3RsaProvider` bean이 정확히 하나 필요합니다. 선택한 provider의
+bean이 없거나 여러 개면 다른 provider로 자동 대체하지 않고 시작 시 명확히 실패합니다.
+
+Provider contract는 애플리케이션이 소유하는 안정적인 key material을 공급합니다.
+Template은 object마다 32-byte AES data key를 만들고 AES-GCM으로 payload를 암호화한 뒤
+Bluetape4k 전용 `bt4k-cek-*` envelope metadata를 저장합니다. AES는 AES-GCM으로 data
+key를 wrapping하고 RSA는 `RSA/ECB/OAEPWithSHA-1AndMGF1Padding`을 사용합니다.
+애플리케이션의 secret-management 경계에서 key를 읽은 뒤 provider를 등록합니다.
+
+```kotlin
+import io.bluetape4k.aws.spring.s3.S3AesProvider
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import javax.crypto.SecretKey
+
+@Configuration
+class S3EncryptionConfiguration {
+    @Bean
+    fun s3AesProvider(secret: SecretKey): S3AesProvider =
+        S3AesProvider.of(secret)
+}
+```
+
+RSA에는 `S3RsaProvider.of(keyPair)`를 사용합니다.
+`uploadEncryptedObject`/`downloadEncryptedObject`는
+`S3ClientSideEncryptionOperations`의 공통 extension으로 기존
+`S3ObjectConverter`를 재사용하며 KMS와 provider template 모두에서 사용할 수 있습니다.
+Transfer Manager와 provider transfer 조건이 충족되면
+`S3ClientSideEncryptionTransferOperations`가 추가됩니다. `encryptedOutputStream`은
+내부 `S3OutputStream` 앞에서 먼저 암호화하고 `complete()` suspend method에서 GCM tag를
+기록합니다. `close()`는 blocking 호환 경로이며, threshold 임시 파일에는 ciphertext만
+기록됩니다. `downloadEncryptedFile`은 object size와 ETag를 확인하고 `If-Match`로
+다운로드한 뒤 전체 ciphertext 인증이 끝난 후에만 destination에 plaintext를 씁니다.
+
+애플리케이션이 key 저장, rotation, 원본 key lifecycle, HSM 연동을 소유합니다.
+Encryption context는 AES-GCM AAD로 인증하며 metadata, log, temporary file에 기록하지
+않습니다. 잘못된 metadata나 authentication 실패는 plaintext를 반환하지 않습니다.
+`bt4k-cek-*` 형식은 Bluetape4k 전용 wire format이므로 AWS Encryption SDK나 다른 S3
+client와 호환되지 않습니다. 전체 provider와 lifecycle 계약은 [S3 client-side
+encryption manual](../docs/manual/ko/modules/bluetape4k-aws-spring-boot.md#s3-client-side-encryption)에서
+확인하세요.
 
 ### S3 — ResourceLoader와 패턴
 

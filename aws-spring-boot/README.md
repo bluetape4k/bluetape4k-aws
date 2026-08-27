@@ -26,7 +26,10 @@ Exposed database wiring.
 
 - **S3** — `S3CoroutinesTemplate` for bucket-existence, upload/download (bytes
   or text), delete, paginated listing (`listPage`/`listFlow`), Spring
-  `Resource` view, and presigned GET/PUT URLs.
+  `Resource` view, and presigned GET/PUT URLs. Opt-in
+  `S3ClientSideEncryptionOperations` supports KMS or application-provided AES/RSA
+  providers, converter-based typed objects, and provider-only encrypted transfer
+  streams/files.
 - **S3 Vectors** — optional `S3VectorsOperations` for vector bucket/index
   discovery and vector put/get/list/query calls.
 - **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, single and batch
@@ -182,9 +185,13 @@ bluetape4k:
             format: properties
       client-side-encryption:
         enabled: true
-        key-id: alias/app-s3
+        provider: AES                         # KMS (default), AES, or RSA
+        key-id: orders-key
+        key-version: 2026-08
         encryption-context:
           service: order-api
+      transfer:
+        enabled: true
     s3-vectors:
       enabled: true
       region: ap-northeast-2
@@ -499,13 +506,50 @@ transfers. To use CRT-backed transfers, provide a CRT-backed `S3AsyncClient`
 bean; the transfer manager auto-configuration reuses it instead of forcing CRT
 dependencies on basic S3 users.
 
-`S3ClientSideEncryptionOperations` is available when
-`bluetape4k.aws.s3.client-side-encryption.enabled=true` and a `KmsOperations`
-bean is present. It generates an AWS KMS data key, encrypts object bytes locally
-with AES-GCM, and stores the encrypted data key and nonce in S3 metadata. This
-helper is for byte-array objects; it does not support multipart or streaming
-client-side encryption, and the metadata format is not AWS Encryption SDK
-compatible.
+`S3ClientSideEncryptionOperations` is opt-in through
+`bluetape4k.aws.s3.client-side-encryption.enabled=true`. `provider=KMS` is the
+default and preserves the existing `KmsOperations`-backed, byte-array-only
+behavior. `provider=AES` requires exactly one `S3AesProvider` bean, and
+`provider=RSA` requires exactly one `S3RsaProvider` bean; the selected provider
+does not fall back to another provider when its bean is absent or ambiguous.
+
+The provider contracts supply stable application-owned key material. The
+template creates a per-object 32-byte AES data key, encrypts the payload with
+AES-GCM, and stores the Bluetape4k-specific `bt4k-cek-*` envelope metadata.
+AES wraps the data key with AES-GCM; RSA uses
+`RSA/ECB/OAEPWithSHA-1AndMGF1Padding`. Register the provider after loading the
+key from the application's secret-management boundary:
+
+```kotlin
+import io.bluetape4k.aws.spring.s3.S3AesProvider
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import javax.crypto.SecretKey
+
+@Configuration
+class S3EncryptionConfiguration {
+    @Bean
+    fun s3AesProvider(secret: SecretKey): S3AesProvider =
+        S3AesProvider.of(secret)
+}
+```
+
+`S3RsaProvider.of(keyPair)` is the corresponding RSA factory.
+`uploadEncryptedObject`/`downloadEncryptedObject` are common extensions on
+`S3ClientSideEncryptionOperations` that use `S3ObjectConverter`; they work with
+both the KMS and provider templates. When the transfer manager is available and enabled,
+`S3ClientSideEncryptionTransferOperations` adds encrypted streams and file
+downloads: `complete()` writes the GCM tag, threshold spill files contain only
+ciphertext, and a file download authenticates the complete ciphertext before
+writing the destination. `close()` is the blocking compatibility path.
+
+The application owns key storage, rotation, source-key lifecycle, and HSM
+integration. Encryption context is authenticated as AES-GCM AAD and is not
+written to metadata, logs, or temporary files. Malformed metadata and
+authentication failures do not return plaintext. The `bt4k-cek-*` envelope is
+a Bluetape4k wire format, not an AWS Encryption SDK or general S3-client
+format. See the [S3 client-side encryption manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot.md#s3-client-side-encryption)
+for key validation, lifecycle, and failure details.
 
 ### S3 — ResourceLoader and patterns
 
