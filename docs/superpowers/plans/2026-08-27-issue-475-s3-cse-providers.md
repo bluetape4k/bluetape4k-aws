@@ -99,11 +99,12 @@ Expected: FAIL with unresolved ClientSideEncryptionProvider, S3AesProvider, or S
 
     data class ClientSideEncryption(
         val enabled: Boolean = false,
-        val provider: ClientSideEncryptionProvider = ClientSideEncryptionProvider.KMS,
         val keyId: String? = null,
-        val keyVersion: String? = null,
         val encryptionContext: Map<String, String> = emptyMap(),
         val useDataKeyCache: Boolean = true,
+        // Append new parameters to preserve existing positional source calls.
+        val provider: ClientSideEncryptionProvider = ClientSideEncryptionProvider.KMS,
+        val keyVersion: String? = null,
     ) : Serializable {
         init {
             require(keyId == null || keyId.isSafeCseToken("keyId")) {
@@ -310,6 +311,20 @@ Files:
         }
     }
 
+    @Test
+    fun rsa_material_close_rejects_wrap_and_identity_access() {
+        val pair = KeyPairGenerator.getInstance("RSA")
+            .apply { initialize(2048) }
+            .generateKeyPair()
+        val material = RsaClientSideEncryptionKeyMaterial.from(S3RsaProvider.of(pair))
+        material.close()
+
+        assertFailsWith<IllegalStateException> { material.keyIdentityMaterial }
+        assertFailsWith<IllegalStateException> {
+            material.wrap(ByteArray(32), SecureRandom())
+        }
+    }
+
 각 metadata 음성 fixture는 version/provider/content algorithm/wrap algorithm/encoding/key-id/
 key-version/nonce/wrap-nonce/wrapped-key 중 하나를 제거·변조한 값을 parameterized case로
 실행한다. upload reserved-key collision과 duplicate-key case는 MockK `putObject` 호출 횟수를
@@ -394,15 +409,29 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
     internal class AesClientSideEncryptionKeyMaterial private constructor(
         private val keyBytes: ByteArray,
     ) : ClientSideEncryptionKeyMaterial {
+        private var closed = false
         override val providerToken: String = "aes"
         override val wrappingAlgorithm: String = "AES/GCM/NoPadding"
         override val keyIdentityMaterial: ByteArray
-            get() = MessageDigest.getInstance("SHA-256").digest(keyBytes)
+            get() {
+                check(!closed) { "AES provider material is closed." }
+                return MessageDigest.getInstance("SHA-256").digest(keyBytes)
+            }
         override fun wrap(dataKey: ByteArray, random: SecureRandom): WrappedDataKey =
-            aesGcmWrap(dataKey, keyBytes, random)
+            aesGcmWrap(dataKey, openBytes(), random)
         override fun unwrap(wrapped: ByteArray, nonce: ByteArray?): ByteArray =
-            aesGcmUnwrap(wrapped, keyBytes, requireNotNull(nonce))
-        override fun close() = keyBytes.fill(0)
+            aesGcmUnwrap(wrapped, openBytes(), requireNotNull(nonce))
+        override fun close() {
+            if (!closed) {
+                closed = true
+                keyBytes.fill(0)
+            }
+        }
+
+        private fun openBytes(): ByteArray {
+            check(!closed) { "AES provider material is closed." }
+            return keyBytes
+        }
 
         companion object {
             fun from(provider: S3AesProvider): AesClientSideEncryptionKeyMaterial {
@@ -536,7 +565,7 @@ Files:
             "bt4k-cek-wrap-alg" to "RSA/ECB/OAEPWithSHA-1AndMGF1Padding",
             "bt4k-cek-encoding" to "base64",
         )
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<IllegalStateException> {
             template.decryptProviderPayload(byteArrayOf(1), metadata, emptyMap())
         }
     }
@@ -781,6 +810,19 @@ Files:
             }
     }
 
+    @Test
+    fun unsupported_provider_value_fails_configuration_binding() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=blowfish",
+            )
+            .run { context ->
+                context.startupFailure.shouldNotBeNull()
+                context.startupFailure!!.message shouldContain "provider"
+            }
+    }
+
 - [ ] Step 2: 조건 구현 부재의 실패를 확인한다.
 
     ./gradlew :bluetape4k-aws-spring-boot:test \
@@ -812,7 +854,7 @@ S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 Conditional
             val configured = context.environment
                 .getProperty("bluetape4k.aws.s3.client-side-encryption.provider")
                 ?.trim()
-                ?.uppercase()
+                ?.uppercase(Locale.ROOT)
                 ?: ClientSideEncryptionProvider.KMS.name
             return configured == requested.name
         }
@@ -882,6 +924,13 @@ S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 Conditional
         )
 
 getIfUnique가 null이면 zero/multiple candidate를 동일하게 임의 선택하지 않고 provider name과 property를 담은 명시적 IllegalStateException으로 실패시킨다. provider transfer adapter는 provider template, S3TransferOperations, S3OutputStreamProvider가 모두 있을 때만 등록하고 KMS template에는 등록하지 않는다.
+
+추가 context test는 (a) `provider=KMS`에서 AES bean만 있어도 KMS `KmsOperations`가 없으면
+startup이 실패하고 AES로 자동 대체되지 않는지, (b) custom
+`S3ClientSideEncryptionOperations`가 있으면 KMS/AES/RSA template 모두 backoff하는지,
+(c) KMS template만 있을 때 `S3ClientSideEncryptionTransferOperations`가 생기지 않는지,
+(d) provider template과 transfer/output provider가 모두 있을 때만 transfer adapter가
+생기는지를 확인한다.
 
     @Bean
     @ConditionalOnBean(
@@ -980,6 +1029,10 @@ delegate가 받은 모든 chunk를 보존한다. failing delegate는 `complete()
 내용으로 만든 뒤 tag/metadata를 변조하고, 인증 실패 후 sentinel이 그대로이며 새 destination은
 생기지 않는지 확인한다. ciphertext 크기가 `MAX_CIPHERTEXT_BYTES + 1`이면 임시 파일을
 plaintext로 읽기 전에 거부하고 destination과 임시 경로를 변경하지 않는지도 검증한다.
+기존 테스트와 동일한 Logback `ListAppender<ILoggingEvent>`를 provider/transfer logger에
+부착해 성공·실패·취소 경로의 formatted message와 throwable message를 수집한다. sentinel
+plaintext, AES/RSA key material, wrapped-key Base64, encryption-context 값이 어느 log event에도
+없음을 검증하고, production 경로에는 payload를 logging하지 않는다는 정적 확인도 남긴다.
 
 - [ ] Step 2: RED 확인 명령을 실행한다.
 
@@ -1245,7 +1298,8 @@ Files:
                     "issue-475/aes.txt",
                 ) shouldBeEqualTo "aes payload"
 
-                val converter = JacksonS3ObjectConverter(tools.jackson.databind.ObjectMapper())
+                @Suppress("UNCHECKED_CAST")
+                val converter = JacksonS3ObjectConverter(ObjectMapper()) as S3ObjectConverter<Map<String, Any>>
                 val typed = mapOf("issue" to 475, "provider" to "aes")
                 encrypted.uploadEncryptedObject(bucket, "issue-475/aes.json", typed, converter)
                 encrypted.downloadEncryptedObject(
@@ -1499,4 +1553,4 @@ Review evidence must address per-object data-key allocation, RSA key wrapping co
 - Approval gate: 이 plan commit 이후 사용자 계획 승인을 받은 다음 executing-plans skill로 inline execution을 시작한다.
 - Lifecycle/test boundary: 기존 KMS bean에는 destroy method를 추가하지 않고 AES/RSA template만 close한다. streaming은 logical EOF, truncated final input, post-terminal reuse, double terminal call, cancellation cleanup을 별도 테스트한다.
 - Performance/stability gate: Task 8 Step 1A에서 fresh diff와 transfer/emulator 테스트를 대상으로 `performance-stability-scan.md`를 적용하고 benchmark N/A 사유를 기록한다.
-- Security remediation: provider context는 length-prefixed canonical AAD로 인증하고 raw key/data-key 복사 API를 노출하지 않으며, RSA modulus pair 검증·metadata collision/malformed negative cases·destination immutability를 task와 테스트에 고정했다.
+- Security remediation: provider context는 length-prefixed canonical AAD로 인증하고 raw key/data-key 복사 API를 노출하지 않으며, AES/RSA post-close fail-closed와 RSA modulus pair 검증·metadata collision/malformed negative cases·destination immutability·Logback redaction capture를 task와 테스트에 고정했다.
