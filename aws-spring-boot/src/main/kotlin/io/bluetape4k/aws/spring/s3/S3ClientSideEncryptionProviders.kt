@@ -303,7 +303,7 @@ internal object ProviderEnvelope {
         expectedKeyVersion: String,
     ) {
         require(metadata[VERSION_KEY] == VERSION) { "Unsupported provider envelope version." }
-        require(metadata[PROVIDER_KEY] == material.providerToken) {
+        check(metadata[PROVIDER_KEY] == material.providerToken) {
             "Provider envelope provider does not match the configured provider."
         }
         require(metadata[ALGORITHM_KEY] == CONTENT_ALGORITHM) {
@@ -313,10 +313,10 @@ internal object ProviderEnvelope {
             "Provider envelope wrapping algorithm does not match the configured provider."
         }
         require(metadata[ENCODING_KEY] == ENCODING) { "Unsupported provider envelope encoding." }
-        require(metadata[KEY_ID_KEY] == expectedKeyId) {
+        check(metadata[KEY_ID_KEY] == expectedKeyId) {
             "Provider envelope key identity does not match the configured provider."
         }
-        require(metadata[KEY_VERSION_KEY].orEmpty() == expectedKeyVersion) {
+        check(metadata[KEY_VERSION_KEY].orEmpty() == expectedKeyVersion) {
             "Provider envelope key version does not match the configured provider."
         }
     }

@@ -278,7 +278,7 @@ class S3ClientSideEncryptionProviderTest {
             "bt4k-cek-encoding" to "base64",
         )
 
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<IllegalStateException> {
             template.decryptProviderPayload(byteArrayOf(1), metadata)
         }
         template.close()
