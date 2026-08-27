@@ -147,6 +147,10 @@ Expected: FAIL with unresolved ClientSideEncryptionProvider, S3AesProvider, or S
         }
     }
 
+기존 `ClientSideEncryption` companion의 `serialVersionUID`는 그대로 유지하고, 새 field에는
+기본값을 둔다. 기존 positional source call과 Java serialization compatibility를 보존한다고
+추정하지 않으며, 실제 ABI/API baseline 결과와 함께 lesson에 기록한다.
+
 - [ ] Step 4: 계약/속성 단위 테스트가 통과하는지 확인한다.
 
 Run the Step 1 Gradle command again.
