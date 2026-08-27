@@ -112,8 +112,11 @@ Expected: FAIL with unresolved ClientSideEncryptionProvider, S3AesProvider, or S
             require(keyVersion == null || keyVersion.isSafeCseToken("keyVersion")) {
                 "bluetape4k.aws.s3.client-side-encryption.keyVersion must not be blank or contain control characters."
             }
-            require(encryptionContext.keys.none { it.isBlank() }) {
-                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank."
+            require(encryptionContext.keys.none { it.isBlank() || it.any(Char::isISOControl) }) {
+                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank or contain control characters."
+            }
+            require(encryptionContext.values.none { it.any(Char::isISOControl) }) {
+                "bluetape4k.aws.s3.client-side-encryption.encryptionContext values must not contain control characters."
             }
         }
     }
@@ -174,13 +177,16 @@ Files:
 - [ ] Step 1: AES/RSA key 검증, envelope round-trip, metadata 검증의 RED 테스트를 추가한다.
 
     @Test
-    fun aes_material_snapshots_and_zeroizes_copy() {
+    fun aes_material_close_rejects_use_and_does_not_mutate_caller_key() {
         val source = SecretKeySpec(ByteArray(32) { 3 }, "AES")
         val material = AesClientSideEncryptionKeyMaterial.from(S3AesProvider.of(source))
 
-        material.keyBytesCopy().contentEquals(source.encoded).shouldBeTrue()
+        material.keyIdentityMaterial.isNotEmpty().shouldBeTrue()
         material.close()
-        material.keyBytesCopy().all { it == 0.toByte() }.shouldBeTrue()
+        source.encoded.all { it == 3.toByte() }.shouldBeTrue()
+        assertFailsWith<IllegalStateException> {
+            material.wrap(ByteArray(32), SecureRandom())
+        }
     }
 
     @Test
@@ -207,20 +213,108 @@ Files:
         )
         val plaintext = "provider envelope".encodeToByteArray()
 
-        val aesEnvelope = ProviderEnvelope.encrypt(plaintext, aes, "orders", "v1", SecureRandom())
-        val rsaEnvelope = ProviderEnvelope.encrypt(plaintext, rsa, "orders", "v1", SecureRandom())
+        val aesEnvelope = ProviderEnvelope.encrypt(
+            plaintext, aes, "orders", "v1", SecureRandom(), mapOf("service" to "orders"),
+        )
+        val rsaEnvelope = ProviderEnvelope.encrypt(
+            plaintext, rsa, "orders", "v1", SecureRandom(), mapOf("service" to "orders"),
+        )
 
         ProviderEnvelope.decrypt(
             aesEnvelope.ciphertext, aes, aesEnvelope.metadata, "orders", "v1",
+            mapOf("service" to "orders"),
         ).contentEquals(plaintext).shouldBeTrue()
         ProviderEnvelope.decrypt(
             rsaEnvelope.ciphertext, rsa, rsaEnvelope.metadata, "orders", "v1",
+            mapOf("service" to "orders"),
         ).contentEquals(plaintext).shouldBeTrue()
         aesEnvelope.metadata["bt4k-cek-provider"] shouldBeEqualTo "aes"
         rsaEnvelope.metadata["bt4k-cek-provider"] shouldBeEqualTo "rsa"
         aesEnvelope.metadata["bt4k-cek-wrap-nonce"].shouldNotBeNull()
         rsaEnvelope.metadata["bt4k-cek-wrap-nonce"] shouldBeNull()
     }
+
+    @Test
+    fun provider_envelope_rejects_context_mismatch_without_plaintext() {
+        val material = AesClientSideEncryptionKeyMaterial.from(
+            S3AesProvider.of(SecretKeySpec(ByteArray(32) { 10 }, "AES")),
+        )
+        val envelope = ProviderEnvelope.encrypt(
+            "context-bound".encodeToByteArray(),
+            material,
+            "orders",
+            "v1",
+            SecureRandom(),
+            mapOf("service" to "orders"),
+        )
+
+        assertFailsWith<S3ClientSideEncryptionException> {
+            ProviderEnvelope.decrypt(
+                envelope.ciphertext,
+                material,
+                envelope.metadata,
+                "orders",
+                "v1",
+                mapOf("service" to "billing"),
+            )
+        }
+    }
+
+    @Test
+    fun provider_metadata_validation_rejects_missing_malformed_and_colliding_fields() {
+        val material = AesClientSideEncryptionKeyMaterial.from(
+            S3AesProvider.of(SecretKeySpec(ByteArray(32) { 11 }, "AES")),
+        )
+        val envelope = ProviderEnvelope.encrypt(
+            byteArrayOf(1, 2, 3), material, "orders", "v1", SecureRandom(), emptyMap(),
+        )
+
+        listOf(
+            envelope.metadata - "bt4k-cek-version",
+            envelope.metadata + ("bt4k-cek-nonce" to "not-base64"),
+            envelope.metadata + ("bt4k-cek-nonce" to Base64.getEncoder().encodeToString(byteArrayOf(1))),
+            envelope.metadata + ("bt4k-cek-wrap-alg" to "wrong"),
+        ).forEach { metadata ->
+            assertFailsWith<IllegalArgumentException> {
+                ProviderEnvelope.decrypt(byteArrayOf(1), material, metadata, "orders", "v1", emptyMap())
+            }
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            ProviderEnvelope.mergeMetadata(
+                mapOf("BT4K-CEK" to "caller-value"),
+                envelope.metadata,
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            ProviderEnvelope.mergeMetadata(
+                mapOf("bt4k-cek" to "first", "BT4K-CEK" to "duplicate"),
+                emptyMap(),
+            )
+        }
+    }
+
+    @Test
+    fun rsa_material_rejects_mismatched_public_and_private_keys() {
+        val publicPair = KeyPairGenerator.getInstance("RSA")
+            .apply { initialize(2048) }
+            .generateKeyPair()
+        val privatePair = KeyPairGenerator.getInstance("RSA")
+            .apply { initialize(2048) }
+            .generateKeyPair()
+
+        assertFailsWith<IllegalArgumentException> {
+            RsaClientSideEncryptionKeyMaterial.from(
+                S3RsaProvider.of(KeyPair(publicPair.public, privatePair.private)),
+            )
+        }
+    }
+
+각 metadata 음성 fixture는 version/provider/content algorithm/wrap algorithm/encoding/key-id/
+key-version/nonce/wrap-nonce/wrapped-key 중 하나를 제거·변조한 값을 parameterized case로
+실행한다. upload reserved-key collision과 duplicate-key case는 MockK `putObject` 호출 횟수를
+0으로 검증해 네트워크 호출 전에 실패하는지 확인하고, 오류 메시지에는 plaintext·raw key·Base64
+wrapped key를 포함하지 않는다.
 
 - [ ] Step 2: primitive 테스트가 구현 부재로 실패하는지 확인한다.
 
@@ -243,7 +337,6 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
         val keyIdentityMaterial: ByteArray
         fun wrap(dataKey: ByteArray, random: SecureRandom): WrappedDataKey
         fun unwrap(wrapped: ByteArray, nonce: ByteArray?): ByteArray
-        fun keyBytesCopy(): ByteArray
     }
 
     internal data class WrappedDataKey(
@@ -259,6 +352,7 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
     internal data class ProviderStreamingEnvelope(
         val dataKey: ByteArray,
         val nonce: ByteArray,
+        val aad: ByteArray,
         val metadata: Map<String, String>,
     )
 
@@ -269,6 +363,7 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
             keyId: String,
             keyVersion: String,
             random: SecureRandom,
+            encryptionContext: Map<String, String>,
         ): ProviderEncryptedPayload
 
         fun decrypt(
@@ -277,6 +372,7 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
             metadata: Map<String, String>,
             expectedKeyId: String,
             expectedKeyVersion: String,
+            encryptionContext: Map<String, String>,
         ): ByteArray
 
         fun mergeMetadata(
@@ -289,7 +385,10 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
             keyId: String,
             keyVersion: String,
             random: SecureRandom,
+            encryptionContext: Map<String, String>,
         ): ProviderStreamingEnvelope
+
+        fun canonicalContextAad(encryptionContext: Map<String, String>): ByteArray
     }
 
     internal class AesClientSideEncryptionKeyMaterial private constructor(
@@ -297,12 +396,12 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
     ) : ClientSideEncryptionKeyMaterial {
         override val providerToken: String = "aes"
         override val wrappingAlgorithm: String = "AES/GCM/NoPadding"
-        override val keyIdentityMaterial: ByteArray get() = keyBytes.copyOf()
+        override val keyIdentityMaterial: ByteArray
+            get() = MessageDigest.getInstance("SHA-256").digest(keyBytes)
         override fun wrap(dataKey: ByteArray, random: SecureRandom): WrappedDataKey =
             aesGcmWrap(dataKey, keyBytes, random)
         override fun unwrap(wrapped: ByteArray, nonce: ByteArray?): ByteArray =
             aesGcmUnwrap(wrapped, keyBytes, requireNotNull(nonce))
-        override fun keyBytesCopy(): ByteArray = keyBytes.copyOf()
         override fun close() = keyBytes.fill(0)
 
         companion object {
@@ -325,19 +424,22 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
     }
 
     internal class RsaClientSideEncryptionKeyMaterial private constructor(
-        private val keyPair: KeyPair,
+        private var publicKey: RSAPublicKey?,
+        private var privateKey: RSAPrivateKey?,
     ) : ClientSideEncryptionKeyMaterial {
         override val providerToken: String = "rsa"
         override val wrappingAlgorithm: String =
             "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
         override val keyIdentityMaterial: ByteArray
-            get() = keyPair.public.encoded.copyOf()
+            get() = requireNotNull(publicKey) { "RSA provider material is closed." }.encoded.copyOf()
         override fun wrap(dataKey: ByteArray, random: SecureRandom): WrappedDataKey =
-            rsaOaepWrap(dataKey, keyPair.public)
+            rsaOaepWrap(dataKey, requireNotNull(publicKey) { "RSA provider material is closed." })
         override fun unwrap(wrapped: ByteArray, nonce: ByteArray?): ByteArray =
-            rsaOaepUnwrap(wrapped, keyPair.private)
-        override fun keyBytesCopy(): ByteArray = keyPair.private.encoded.copyOf()
-        override fun close() = Unit
+            rsaOaepUnwrap(wrapped, requireNotNull(privateKey) { "RSA provider material is closed." })
+        override fun close() {
+            publicKey = null
+            privateKey = null
+        }
 
         companion object {
             fun from(provider: S3RsaProvider): RsaClientSideEncryptionKeyMaterial {
@@ -351,15 +453,24 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
                     "RSA private key algorithm must be RSA."
                 }
                 val public = pair.public as? RSAPublicKey
-                require(public != null && public.modulus.bitLength() >= 2048) {
+                val private = pair.private as? RSAPrivateKey
+                require(public != null && private != null && public.modulus.bitLength() >= 2048) {
                     "RSA provider public key must be at least 2048 bits."
                 }
-                return RsaClientSideEncryptionKeyMaterial(pair)
+                require(public.modulus == private.modulus) {
+                    "RSA provider public and private key modulus must match."
+                }
+                require(private.modulus.bitLength() >= 2048) {
+                    "RSA provider private key must be at least 2048 bits."
+                }
+                return RsaClientSideEncryptionKeyMaterial(public, private)
             }
         }
     }
 
-aesGcmWrap/aesGcmUnwrap는 12-byte nonce와 128-bit tag를 사용하고 RSA는 OAEPParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT)로 초기화한다. ProviderEnvelope는 metadata를 소문자 key로 정규화하고 bt4k-cek-version=2, bt4k-cek-encoding=base64, payload/wrap nonce 길이와 wrapped key 길이를 검증한다. Cipher.doFinal의 GeneralSecurityException은 secret 값을 메시지에 넣지 않고 S3ClientSideEncryptionException으로 감싼다.
+aesGcmWrap/aesGcmUnwrap는 12-byte nonce와 128-bit tag를 사용하고 RSA는 OAEPParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT)로 초기화한다. ProviderEnvelope는 metadata를 소문자 key로 정규화하고 bt4k-cek-version=2, bt4k-cek-encoding=base64, payload/wrap nonce 길이와 wrapped key 길이를 검증한다. reserved metadata 이름은 ASCII와 `Locale.ROOT` 소문자 비교로 관리하고 사용자 metadata와 대소문자 무시 충돌·중복을 업로드 전에 거부한다. context AAD는 정렬된 key/value 각각의 UTF-8 길이를 4-byte big-endian prefix로 붙여 모호한 연결을 막는다. Cipher.doFinal의 GeneralSecurityException은 secret 값을 메시지에 넣지 않고 S3ClientSideEncryptionException으로 감싼다.
+
+암호 primitive는 raw key/data-key를 호출자에게 반환하지 않는다. AES adapter는 key byte 복사본만 보유하고 `close()`에서 지우며, RSA adapter는 검증된 `RSAPublicKey`/`RSAPrivateKey` 참조를 nullable 상태로 폐기한다. `ProviderEnvelope.encrypt/decrypt`와 streaming cipher 생성은 data key, decoded wrapped key, nonce, AAD의 임시 배열을 각 성공·실패·취소 경로의 `finally`에서 `fill(0)`한다. zeroization은 JVM/JCE 내부 복사본이나 caller 소유 key 객체까지 지운다고 주장하지 않는다.
 
 - [ ] Step 4: primitive GREEN 테스트와 정적 검증을 실행한다.
 
@@ -426,7 +537,7 @@ Files:
             "bt4k-cek-encoding" to "base64",
         )
         assertFailsWith<IllegalArgumentException> {
-            template.decryptProviderPayload(byteArrayOf(1), metadata)
+            template.decryptProviderPayload(byteArrayOf(1), metadata, emptyMap())
         }
     }
 
@@ -487,7 +598,7 @@ Expected: FAIL because provider template methods and metadata-backed S3 response
             checkOpen()
             bucket.requireNotBlank("bucket")
             key.requireNotBlank("key")
-            val envelope = newEncryptionEnvelope(bytes)
+            val envelope = newEncryptionEnvelope(bytes, encryptionContext)
             return s3AsyncClient.putObject(
                 { builder ->
                     builder.bucket(bucket).key(key)
@@ -529,6 +640,7 @@ Expected: FAIL because provider template methods and metadata-backed S3 response
                 metadata,
                 effectiveKeyIdentity(),
                 effectiveKeyVersion(),
+                effectiveEncryptionContext(encryptionContext),
             )
         }
 
@@ -539,6 +651,11 @@ Expected: FAIL because provider template methods and metadata-backed S3 response
         override val keyFingerprint: String
             get() = sha256Url(canonicalKeyIdentity + encryptionContextForIdentity())
 
+        private fun effectiveEncryptionContext(
+            callContext: Map<String, String>,
+        ): Map<String, String> =
+            properties.clientSideEncryption.encryptionContext + callContext
+
         override fun close() {
             if (!closed) {
                 closed = true
@@ -547,14 +664,37 @@ Expected: FAIL because provider template methods and metadata-backed S3 response
         }
     }
 
-downloadEncryptedBytesBounded는 기존 KMS 구현의 AsyncResponseTransformer.toPublisher와 SqsExtendedPayloadReadException 경계를 그대로 사용하고 ciphertext를 모두 모은 뒤 metadata 검증과 doFinal을 수행한다. effectiveKeyIdentity는 설정 keyId 또는 provider public material SHA-256의 sha256:base64url 값이며 keyVersion은 설정 값 또는 빈 token이다. identity fingerprint에는 정렬된 encryption context만 포함하고 provider envelope primitive에는 encryption context 평문을 전달하지 않는다.
+downloadEncryptedBytesBounded는 기존 KMS 구현의 AsyncResponseTransformer.toPublisher와 SqsExtendedPayloadReadException 경계를 그대로 사용하고 ciphertext를 모두 모은 뒤 metadata 검증과 doFinal을 수행한다. chunk를 받을 때마다 `maxCiphertextBytes`를 검사하고 `max + 1` byte를 할당하기 전에 publisher를 취소한다. effectiveKeyIdentity는 설정 keyId 또는 provider public material SHA-256의 sha256:base64url 값이며 keyVersion은 설정 값 또는 빈 token이다. identity fingerprint에는 정렬된 encryption context를 포함하고, provider envelope에는 effective context의 canonical AAD byte만 전달하며 context 평문은 전달하지 않는다.
 
-Provider template은 transfer adapter가 사용할 다음 internal helper도 제공한다. newStreamingEnvelope는 새 32-byte data key와 12-byte payload nonce를 만들고 wrapped key metadata만 반환하며, newPayloadCipher는 그 data key와 nonce로 AES/GCM/NoPadding cipher를 초기화한다. helper와 material은 모두 checkOpen 뒤에만 호출한다.
+Provider template은 transfer adapter가 사용할 다음 internal helper도 제공한다. newEncryptionEnvelope는 새 32-byte data key와 12-byte payload nonce를 만들고 wrapped key metadata를 반환하며, newStreamingEnvelope는 같은 metadata와 effective context AAD를 반환한다. newPayloadCipher는 data key와 nonce로 AES/GCM/NoPadding cipher를 초기화하고 `updateAAD(envelope.aad)`를 호출한다. helper와 material은 모두 checkOpen 뒤에만 호출하며 envelope의 data key/AAD 임시 배열은 cipher 생성 직후 zeroize한다.
 
-    internal fun newStreamingEnvelope(): ProviderStreamingEnvelope
-    internal fun newPayloadCipher(envelope: ProviderStreamingEnvelope): Cipher
+    internal fun newEncryptionEnvelope(
+        plaintext: ByteArray,
+        encryptionContext: Map<String, String> = emptyMap(),
+    ): ProviderEncryptedPayload = ProviderEnvelope.encrypt(
+        plaintext,
+        material,
+        effectiveKeyIdentity(),
+        effectiveKeyVersion(),
+        random,
+        effectiveEncryptionContext(encryptionContext),
+    )
+    internal fun newStreamingEnvelope(
+        encryptionContext: Map<String, String> = emptyMap(),
+    ): ProviderStreamingEnvelope = ProviderEnvelope.newStreamingEnvelope(
+        material,
+        effectiveKeyIdentity(),
+        effectiveKeyVersion(),
+        random,
+        effectiveEncryptionContext(encryptionContext),
+    )
+    internal fun newPayloadCipher(envelope: ProviderStreamingEnvelope): Cipher =
+        payloadCipher(envelope.dataKey, envelope.nonce).also { it.updateAAD(envelope.aad) }
 
 - [ ] Step 4: byte/bounded/identity/lifecycle GREEN과 회귀 테스트를 실행한다.
+
+bounded 테스트에는 `MAX_CIPHERTEXT_BYTES` 정확히 허용, `max + 1` 즉시 거부·publisher 취소,
+취소 중 output buffer/임시 배열 정리, metadata 인증 실패 시 partial plaintext 미반환을 포함한다.
 
     ./gradlew :bluetape4k-aws-spring-boot:test \
       --tests 'io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionProviderTest' \
@@ -651,7 +791,7 @@ Expected: FAIL in new provider selection tests; existing KMS tests remain the ba
 
 - [ ] Step 3: provider selection과 transfer-ready bean을 구현한다.
 
-S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 ConditionalOnS3CseProvider condition을 추가한다. condition은 environment에서 bluetape4k.aws.s3.client-side-encryption.provider를 읽고 누락 값은 KMS로 해석한다. 각 provider method는 enabled=true, ConditionalOnMissingBean(S3ClientSideEncryptionOperations), destroyMethod=close를 사용한다.
+S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 ConditionalOnS3CseProvider condition을 추가한다. condition은 environment에서 bluetape4k.aws.s3.client-side-encryption.provider를 읽고 누락 값은 KMS로 해석한다. 각 method는 enabled=true와 ConditionalOnMissingBean(S3ClientSideEncryptionOperations)를 사용한다. AES/RSA provider template만 key material을 소유하므로 `destroyMethod = "close"`를 지정하고, 기존 KMS template은 S3 client나 KMS resource를 소유하지 않으므로 destroy method를 추가하지 않는다.
 
     @Target(AnnotationTarget.FUNCTION)
     @Retention(AnnotationRetention.RUNTIME)
@@ -678,7 +818,7 @@ S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 Conditional
         }
     }
 
-    @Bean(destroyMethod = "close")
+    @Bean
     @ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)
     @ConditionalOnProperty(
         prefix = "bluetape4k.aws.s3.client-side-encryption",
@@ -825,13 +965,21 @@ Files:
             key = "large.bin",
             contentType = "application/octet-stream",
             metadata = emptyMap(),
-            encryptionContext = emptyMap(),
+            encryptionContext = mapOf("service" to "orders"),
         )
 
         encrypted.use { it.write("plaintext that crosses threshold".encodeToByteArray()) }
         delegate.uploadedFileContents.single().decodeToString() shouldNotBeEqualTo
             "plaintext that crosses threshold"
     }
+
+RecordingS3OutputStreamProvider는 주입한 `Path`를 temp directory로 사용하고 spill 전후에
+delegate가 받은 모든 chunk를 보존한다. failing delegate는 `complete()` 또는 `close()`에서
+지정한 오류를 던지도록 만들어 성공·실패·취소 후 directory가 비고 plaintext byte subsequence가
+어느 chunk에도 없음을 검증한다. `downloadEncryptedFile` 테스트는 기존 destination을 sentinel
+내용으로 만든 뒤 tag/metadata를 변조하고, 인증 실패 후 sentinel이 그대로이며 새 destination은
+생기지 않는지 확인한다. ciphertext 크기가 `MAX_CIPHERTEXT_BYTES + 1`이면 임시 파일을
+plaintext로 읽기 전에 거부하고 destination과 임시 경로를 변경하지 않는지도 검증한다.
 
 - [ ] Step 2: RED 확인 명령을 실행한다.
 
@@ -889,52 +1037,102 @@ Expected: FAIL with missing extension, transfer interface, or encrypted stream s
         )
     }
 
+`complete()`는 `kotlinx.coroutines.sync.Mutex`를 단일 completion owner로 사용하고
+`write`는 별도 state lock에서 terminal 시작 이후를 거부한다. 따라서 concurrent
+`complete/close`는 첫 completion을 기다린 뒤 no-op이 되고, 실패 후에도 delegate close와
+state 전이가 정확히 한 번 일어난다.
+
     class S3EncryptedOutputStream internal constructor(
         private val delegate: S3OutputStream,
         private val cipher: Cipher,
+        private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : OutputStream() {
         override fun write(b: ByteArray, off: Int, len: Int) {
-            check(!completed) { "S3EncryptedOutputStream is already closed." }
-            cipher.update(b, off, len)?.let(delegate::write)
+            synchronized(stateLock) {
+                check(!terminalStarted) { "S3EncryptedOutputStream is already closed." }
+                cipher.update(b, off, len)?.let(delegate::write)
+            }
         }
 
         override fun write(b: Int) = write(byteArrayOf(b.toByte()))
 
-        suspend fun complete() = withContext(Dispatchers.IO) { completeOnIo() }
+        suspend fun complete() = withContext(ioDispatcher) { completeOnIo() }
 
         override fun close() = runBlocking { complete() }
 
-        private suspend fun completeOnIo() {
-            if (completed) return
+        private suspend fun completeOnIo() = completionMutex.withLock {
+            synchronized(stateLock) {
+                if (completed) return@withLock
+                check(!terminalStarted)
+                terminalStarted = true
+            }
             try {
                 cipher.doFinal()?.let(delegate::write)
                 delegate.complete()
+            } catch (cancelled: CancellationException) {
+                withContext(NonCancellable + ioDispatcher) { runCatching { delegate.close() } }
+                throw cancelled
             } catch (error: Throwable) {
-                runCatching { delegate.close() }
+                withContext(NonCancellable + ioDispatcher) { runCatching { delegate.close() } }
                 throw error
             } finally {
-                completed = true
+                synchronized(stateLock) { completed = true }
             }
         }
 
+        private val completionMutex = Mutex()
+        private val stateLock = Any()
+        private var terminalStarted: Boolean = false
         private var completed: Boolean = false
 
         companion object {
             internal fun create(
                 template: S3ClientSideEncryptionProviderTemplate,
-                delegate: S3OutputStream,
-                envelope: ProviderStreamingEnvelope,
-            ): S3EncryptedOutputStream =
-                S3EncryptedOutputStream(delegate, template.newPayloadCipher(envelope))
+                outputStreamProvider: S3OutputStreamProvider,
+                bucket: String,
+                key: String,
+                contentType: String?,
+                metadata: Map<String, String>,
+                encryptionContext: Map<String, String>,
+                ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+            ): S3EncryptedOutputStream {
+                val envelope = template.newStreamingEnvelope(encryptionContext)
+                var delegate: S3OutputStream? = null
+                try {
+                    val created = outputStreamProvider.outputStream(
+                        bucket,
+                        key,
+                        contentType,
+                        ProviderEnvelope.mergeMetadata(metadata, envelope.metadata),
+                    )
+                    delegate = created
+                    return S3EncryptedOutputStream(
+                        created,
+                        template.newPayloadCipher(envelope),
+                        ioDispatcher = ioDispatcher,
+                    )
+                } catch (cancelled: CancellationException) {
+                    runCatching { delegate?.close() }
+                    throw cancelled
+                } catch (error: Throwable) {
+                    runCatching { delegate?.close() }
+                    throw error
+                } finally {
+                    envelope.dataKey.fill(0)
+                    envelope.nonce.fill(0)
+                    envelope.aad.fill(0)
+                }
+            }
         }
     }
 
-S3ClientSideEncryptionTransferTemplate는 provider template의 newEncryptionEnvelope로 reserved metadata를 먼저 만들고 S3OutputStreamProvider.outputStream을 ciphertext delegate로 연다. downloadEncryptedFile은 S3TransferOperations.downloadFile로 Files.createTempFile 경로에 ciphertext만 받은 뒤 response metadata를 provider template에 전달한다. ProviderEnvelope.decrypt가 성공한 후에만 Files.write(destination, plaintext)를 실행하고 ciphertext 임시 경로는 성공·실패·취소 모두 finally에서 삭제한다. transfer adapter는 provider CSE가 선택되고 S3TransferOperations와 S3OutputStreamProvider가 모두 있을 때만 auto-configuration한다.
+S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnvelope`로 reserved metadata를 먼저 만들고 S3OutputStreamProvider.outputStream을 ciphertext delegate로 연다. downloadEncryptedFile은 S3TransferOperations.downloadFile로 Files.createTempFile 경로에 ciphertext만 받은 뒤 response metadata를 provider template에 전달한다. ProviderEnvelope.decrypt가 성공한 후에만 Files.write(destination, plaintext)를 실행하고 ciphertext 임시 경로는 성공·실패·취소 모두 finally에서 삭제한다. transfer adapter는 provider CSE가 선택되고 S3TransferOperations와 S3OutputStreamProvider가 모두 있을 때만 auto-configuration한다.
 
     class S3ClientSideEncryptionTransferTemplate(
         private val providerTemplate: S3ClientSideEncryptionProviderTemplate,
         private val transferOperations: S3TransferOperations,
         private val outputStreamProvider: S3OutputStreamProvider,
+        internal val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : S3ClientSideEncryptionTransferOperations {
         override fun encryptedOutputStream(
             bucket: String,
@@ -943,14 +1141,16 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 newEncryptionEnve
             metadata: Map<String, String>,
             encryptionContext: Map<String, String>,
         ): S3EncryptedOutputStream {
-            val envelope = providerTemplate.newStreamingEnvelope()
-            val delegate = outputStreamProvider.outputStream(
-                bucket,
-                key,
-                contentType,
-                ProviderEnvelope.mergeMetadata(metadata, envelope.metadata),
+            return S3EncryptedOutputStream.create(
+                template = providerTemplate,
+                outputStreamProvider = outputStreamProvider,
+                bucket = bucket,
+                key = key,
+                contentType = contentType,
+                metadata = metadata,
+                encryptionContext = encryptionContext,
+                ioDispatcher = ioDispatcher,
             )
-            return S3EncryptedOutputStream.create(providerTemplate, delegate, envelope)
         }
 
         override suspend fun downloadEncryptedFile(
@@ -959,22 +1159,34 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 newEncryptionEnve
             destination: Path,
             encryptionContext: Map<String, String>,
         ) {
-            val temporary = Files.createTempFile("bluetape-s3-cse-", ".ciphertext")
+            val temporary = withContext(ioDispatcher) {
+                Files.createTempFile("bluetape-s3-cse-", ".ciphertext")
+            }
             try {
                 val completed = transferOperations.downloadFile(bucket, key, temporary)
-                val plaintext = providerTemplate.decryptProviderPayload(
-                    Files.readAllBytes(temporary),
-                    completed.response().metadata(),
-                    encryptionContext,
-                )
-                Files.write(destination, plaintext)
+                val plaintext = withContext(ioDispatcher) {
+                    val size = Files.size(temporary)
+                    require(size <= S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
+                        "Encrypted S3 object exceeds max ciphertext size: $size"
+                    }
+                    providerTemplate.decryptProviderPayload(
+                        Files.readAllBytes(temporary),
+                        completed.response().metadata(),
+                        encryptionContext,
+                    )
+                }
+                withContext(ioDispatcher) { Files.write(destination, plaintext) }
             } finally {
-                Files.deleteIfExists(temporary)
+                withContext(NonCancellable + ioDispatcher) {
+                    Files.deleteIfExists(temporary)
+                }
             }
         }
     }
 
 - [ ] Step 5: transfer/typed GREEN과 no-plaintext 테스트를 실행한다.
+
+스트리밍 테스트는 다음 terminal 경계를 모두 고정한다: 빈 stream의 `complete()` logical EOF에서 tag와 delegate completion이 한 번만 발생하는지, `complete()`의 `doFinal`이 한 번만 호출되는지, `complete()`와 `close()`의 double terminal call이 idempotent한지, terminal 이후 `write`가 거절되는지, concurrent `complete/close`가 exactly-once인지, ciphertext를 잘라낸 truncated final input이 인증 실패하고 destination을 만들지 않는지, `CancellationException`이 그대로 전파되면서 delegate와 임시 파일이 정리되는지. broad `Throwable` cleanup은 cancellation을 새 예외로 감싸지 않고 원래 instance를 다시 throw한다.
 
     ./gradlew :bluetape4k-aws-spring-boot:test \
       --tests 'io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionObjectExtensionsTest' \
@@ -982,7 +1194,7 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 newEncryptionEnve
       --tests 'io.bluetape4k.aws.spring.s3.S3OutputStreamTest' \
       --no-daemon --max-workers=1 --console=plain
 
-Expected: all selected tests pass; recording delegate sees ciphertext and its temporary directory is empty after completion or failure.
+Expected: all selected tests pass; recording delegate sees ciphertext and its temporary directory is empty after completion, authentication failure, or cancellation. The stream tests prove logical EOF, truncated final input, post-terminal reuse, and double-terminal behavior.
 
 - [ ] Step 6: Lore commit을 만든다.
 
@@ -1012,7 +1224,7 @@ Files:
 
 - [ ] Step 1: Floci acceptance RED 테스트를 추가한다.
 
-새 test class는 기존 AwsSpringBootTestEmulator.get("s3"), getCredentialProvider(), path-style-access-enabled=true 패턴을 사용하고 병렬 실행하지 않는다. 각 bucket/key에는 issue-475와 생성한 owner-token을 넣는다.
+새 test class는 기존 AwsSpringBootTestEmulator.get("s3"), getCredentialProvider(), path-style-access-enabled=true 패턴을 사용하고 `@Execution(ExecutionMode.SAME_THREAD)`로 병렬 실행하지 않는다. 각 bucket/key에는 issue-475와 생성한 owner-token을 넣는다. 이 module의 Floci acceptance는 `--max-workers=1` 단일 Gradle lane에서만 실행하고, 별도 emulator lane과 동시 실행하지 않는 운영 계약을 lesson에 기록한다.
 
     @Test
     fun aes_provider_round_trips_byte_typed_and_transfer_payload() =
@@ -1103,6 +1315,12 @@ AES fixture는 고정 32-byte SecretKeySpec, RSA fixture는 KeyPairGenerator("RS
 
 Expected: AES/RSA byte·typed·stream/file round-trip, ciphertext metadata, mismatch/no-plaintext, auto-config, and KMS regression all pass with BUILD SUCCESSFUL.
 
+Acceptance에는 다음 인증 경계도 포함한다: 업로드 context와 다른 context로 byte/stream/file을
+복호화하면 `S3ClientSideEncryptionException`이 발생하고 plaintext/destination을 만들지 않으며,
+metadata의 provider·algorithm·version·key ID·key version을 바꾸거나 ciphertext tag를 자르면
+동일하게 실패한다. 실패한 다운로드의 기존 destination 내용은 변경되지 않고 ciphertext 임시
+경로는 제거된다.
+
 - [ ] Step 5: Lore commit을 만든다.
 
     git add aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/S3ClientSideEncryptionProviderAwsEmulatorTest.kt \
@@ -1152,7 +1370,7 @@ Expected: current KMS byte-array-only paragraph와 configuration sample 위치�
             encryption-context:
               service: order-api
 
-문서에는 S3AesProvider/S3RsaProvider bean이 선택 provider와 정확히 하나여야 한다는 점, KMS 기본값이 기존 byte API를 유지한다는 점, provider streaming이 ciphertext-only 임시 파일과 authenticated destination write를 사용한다는 점, S3ClientSideEncryptionException/identity mismatch, AWS Encryption Client wire compatibility를 약속하지 않는다는 점, 실제 key rotation/storage/HSM을 제공하지 않는다는 점을 적는다. KDoc에는 public method의 bucket/key/provider/close 계약과 실패 시 평문 미반환을 명시한다.
+문서에는 S3AesProvider/S3RsaProvider bean이 선택 provider와 정확히 하나여야 한다는 점, KMS 기본값이 기존 byte API를 유지한다는 점, provider streaming이 ciphertext-only 임시 파일과 authenticated destination write를 사용한다는 점, S3ClientSideEncryptionException/identity mismatch, AWS Encryption Client wire compatibility를 약속하지 않는다는 점, 실제 key rotation/storage/HSM을 제공하지 않는다는 점을 적는다. KDoc에는 public method의 bucket/key/provider/close 계약과 실패 시 평문 미반환을 명시한다. `complete()`는 권장하는 suspend 경로이고 `close()`는 `runBlocking`을 사용한 blocking 호환 경로임을 분명히 하며, bulk `write(ByteArray, off, len)`가 기본이고 작은 `write(Int)` 반복에는 allocation 비용이 있음을 기록한다.
 
 - [ ] Step 3: writer gate와 문서 검증을 실행한다.
 
@@ -1198,6 +1416,19 @@ Floci를 사용하는 module test가 Docker socket을 상속하지 않으면 다
     ./gradlew :bluetape4k-aws-spring-boot:test --no-daemon --max-workers=1 --console=plain
 
 Expected: test와 detekt가 BUILD SUCCESSFUL, git diff --check 무출력. 실패한 test는 이름·stack trace·환경 원인을 lesson에 기록하고 해결 전 완료 상태로 표시하지 않는다.
+
+- [ ] Step 1A: Step 4-P 성능·안정성 검토를 fresh diff에 대해 수행한다.
+
+`references/performance-stability-scan.md` 기준으로 provider 변경 파일과 transfer stream 경계를 읽고 다음을 기록한다.
+
+    rg -n "runBlocking|withContext|Files\\.(createTempFile|readAllBytes|write)|readAllBytes|doFinal|SecureRandom|Cipher" \
+      aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3
+    ./gradlew :bluetape4k-aws-spring-boot:test \
+      --tests 'io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionTransferTest' \
+      --tests 'io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionProviderAwsEmulatorTest' \
+      --no-daemon --max-workers=1 --console=plain
+
+Review evidence must address per-object data-key allocation, RSA key wrapping cost, bounded ciphertext buffering, IO dispatcher boundaries, cancellation propagation, provider close/cleanup, and sequential Floci/Testcontainers use. A repeatable benchmark is not required for this feature; record benchmark as N/A with the reason that no throughput target or representative production payload distribution was supplied, and do not make an unsupported performance claim.
 
 - [ ] Step 2: lesson을 검증 결과로 작성한다.
 
@@ -1266,3 +1497,6 @@ Expected: test와 detekt가 BUILD SUCCESSFUL, git diff --check 무출력. 실패
 - Type consistency: ClientSideEncryptionProvider, S3AesProvider, S3RsaProvider, S3ClientSideEncryptionProviderTemplate, S3ClientSideEncryptionTransferOperations, S3EncryptedOutputStream, uploadEncryptedObject, downloadEncryptedObject, S3ClientSideEncryptionException의 이름과 인자를 앞뒤 task에서 동일하게 사용했다.
 - Rollback points: task별 Lore commit 직전 targeted test가 실패하면 다음 task로 진행하지 않고 해당 task 원인을 수정한다. 이미 commit된 task를 되돌릴 때는 실제 task commit SHA를 지정한 git revert로 해당 task만 되돌리고 user-owned 파일을 reset하지 않는다.
 - Approval gate: 이 plan commit 이후 사용자 계획 승인을 받은 다음 executing-plans skill로 inline execution을 시작한다.
+- Lifecycle/test boundary: 기존 KMS bean에는 destroy method를 추가하지 않고 AES/RSA template만 close한다. streaming은 logical EOF, truncated final input, post-terminal reuse, double terminal call, cancellation cleanup을 별도 테스트한다.
+- Performance/stability gate: Task 8 Step 1A에서 fresh diff와 transfer/emulator 테스트를 대상으로 `performance-stability-scan.md`를 적용하고 benchmark N/A 사유를 기록한다.
+- Security remediation: provider context는 length-prefixed canonical AAD로 인증하고 raw key/data-key 복사 API를 노출하지 않으며, RSA modulus pair 검증·metadata collision/malformed negative cases·destination immutability를 task와 테스트에 고정했다.

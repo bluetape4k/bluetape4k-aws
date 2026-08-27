@@ -157,7 +157,8 @@ data class ClientSideEncryption(
 )
 ~~~
 
-`keyId`/`keyVersion`는 non-blank·control character를 거부한다. KMS에서는 기존
+`keyId`/`keyVersion`는 non-blank·control character를 거부하고 encryption context의
+key/value도 control character를 거부한다. KMS에서는 기존
 `keyId` 의미와 canonical ARN 검증을 그대로 사용한다. AES/RSA에서는 keyId가 없을 때
 provider key material의 SHA-256 fingerprint에서 `sha256:<base64url>` identity를 만들고,
 설정된 keyId가 있으면 그 값을 metadata에 저장한다. keyVersion은 선택적이지만 설정하면
@@ -181,9 +182,10 @@ provider bean만 있는 경우에는 KMS를 자동 대체하지 않아 기존 �
 
 모든 template bean은 `@ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)`
 backoff을 유지한다. provider template은 `S3BoundedEncryptedReadOperations`와
-`S3ClientSideEncryptionIdentity`를 함께 구현한다. Spring이 관리하는 provider template은
-`close()`를 destroy method로 호출하고, `S3AsyncClient`는 기존 auto-configuration의
-소유권을 유지한다.
+`S3ClientSideEncryptionIdentity`를 함께 구현한다. Spring이 관리하는 AES/RSA provider
+template은 `close()`를 destroy method로 호출하고, 기존 KMS template은 client나 key
+resource를 소유하지 않으므로 destroy method를 추가하지 않는다. `S3AsyncClient`는 기존
+auto-configuration의 소유권을 유지한다.
 
 ### 4.3 Envelope metadata와 암호 primitive
 
@@ -207,6 +209,13 @@ provider 객체는 매 업로드마다 32-byte random AES data key와 12-byte ra
 | `bt4k-cek-wrap-nonce` | AES wrapping nonce (RSA에서는 없음) |
 | `bt4k-cek-key-id` | 유효 key ID 또는 material fingerprint |
 | `bt4k-cek-key-version` | 설정된 경우에만 기록 |
+
+호출자와 properties의 `encryptionContext`는 병합된 effective context를 정렬된 key/value와
+length-prefixed UTF-8
+형식으로 canonicalize한 뒤 본문 AES-GCM의 Additional Authenticated Data(AAD)로만
+사용한다. context 평문은 metadata·로그·임시 파일에 기록하지 않는다. 업로드와 복호화의
+effective context가 다르면 GCM 인증이 실패하고 plaintext를 반환하지 않는다. streaming도
+동일한 AAD를 cipher 초기화 직후 설정한다.
 
 복호화는 metadata를 case-insensitive하게 찾되 다음 순서로 조기 검증한다.
 
@@ -273,19 +282,25 @@ interface S3ClientSideEncryptionTransferOperations {
 }
 ~~~
 
-`S3EncryptedOutputStream`은 provider envelope를 먼저 만든 뒤
+`S3EncryptedOutputStream`은 provider envelope와 effective context AAD를 먼저 만든 뒤
 `S3OutputStreamProvider.outputStream`을 ciphertext destination으로 연다. `write`는
 `Cipher.update` 결과만 delegate에 전달하고 `close/complete`에서 `doFinal`을 호출해 GCM
-tag를 기록한다. 따라서 delegate가 threshold를 넘겨 OS temporary file을 만들더라도
-그 파일에는 ciphertext만 존재한다. 암호화 실패·close 실패·취소 시 delegate를 닫고
-임시 파일을 삭제한다.
+tag를 기록한다. completion owner는 coroutine `Mutex`와 terminal state로 단일화해 빈
+stream의 EOF/tag와 concurrent/double `complete/close`도 exactly-once로 처리한다. 따라서
+delegate가 threshold를 넘겨 OS temporary file을 만들더라도 그 파일에는 ciphertext만
+존재한다. 암호화 실패·close 실패·취소 시 delegate를 닫고 임시 파일을 삭제하며
+`CancellationException`은 원인 그대로 전파한다. `complete()`는 권장 suspend 경로이고
+`close()`는 blocking 호환 경로다.
 
 `downloadEncryptedFile`은 TransferManager로 ciphertext를 임시 경로에 내려받을 수
-있지만, 인증이 끝날 때까지 평문을 생성하지 않는다. 전체 ciphertext를 unwrap/GCM
-검증한 뒤 최종 `destination`에만 평문을 쓰고, 임시 ciphertext 경로는 `finally`에서
-삭제한다. destination을 덮어쓰는 동작은 caller가 지정한 경로에 한정하며, 로그에는
-내용·key material·credentials를 기록하지 않는다. KMS template은 이 transfer capability를
-노출하지 않는다.
+있지만, 인증이 끝날 때까지 평문을 생성하지 않는다. `S3BoundedEncryptedReadOperations`
+의 `MAX_CIPHERTEXT_BYTES`를 상한으로 사용해 `max + 1` 객체는 plaintext read 전에
+거부한다. 전체 ciphertext를 unwrap/GCM 검증한 뒤 최종 `destination`에만 평문을 쓰고,
+임시 ciphertext 경로는 성공·실패·취소 모두 `NonCancellable + Dispatchers.IO`의
+`finally`에서 삭제한다. 모든 blocking filesystem 작업은 주입 가능한 IO dispatcher에서
+수행하고 `downloadFile`의 cancellation은 원래 예외를 유지한다. destination을 덮어쓰는
+동작은 caller가 지정한 경로에 한정하며, 로그에는 내용·key material·credentials를
+기록하지 않는다. KMS template은 이 transfer capability를 노출하지 않는다.
 
 ### 4.5 Identity, 오류, 수명
 
@@ -299,9 +314,8 @@ canonical 문자열로 묶고 SHA-256 fingerprint를 계산한다. `S3ClientSide
 - unsupported provider/algorithm/version/encoding: `IllegalArgumentException`
 - key material이 없거나 형식이 잘못됨: `IllegalArgumentException`
 - metadata key ID/version/provider mismatch: `IllegalStateException`
-- GCM tag 또는 RSA unwrap 인증 실패: 원인 예외를 보존한
-  `S3ClientSideEncryptionException`(새 public hierarchy가 필요하면 provider 경계에만
-  한정)
+- GCM tag 또는 RSA unwrap 인증 실패: 원인 예외를 보존한 provider 경계의 public
+  `S3ClientSideEncryptionException`
 - S3 network/permission 오류: AWS SDK 원인과 request 위치를 보존하고 secret은 제외
 
 어떤 오류도 부분 plaintext를 반환하지 않는다. provider template은 Spring context가
