@@ -165,6 +165,12 @@ provider key material의 SHA-256 fingerprint에서 `sha256:<base64url>` identity
 설정된 keyId가 있으면 그 값을 metadata에 저장한다. keyVersion은 선택적이지만 설정하면
 암호화 metadata와 복호화 설정이 정확히 일치해야 한다.
 
+새 field는 기존 primary constructor 뒤에 추가해 positional source call의 순서를 보존한다.
+다만 `ClientSideEncryption`이 data class이므로 JVM primary-constructor와 `copy` descriptor의
+binary compatibility는 별도 baseline 검사가 필요하다. 이 checkout에 API/binary compatibility
+task가 없으면 source-compatible 범위와 baseline 부재를 release note/lesson에 명시하고,
+기존 ABI 보존을 주장하지 않는다.
+
 auto-configuration은 CSE `enabled=true`일 때 다음 우선순위를 사용한다.
 
 | `provider` | 필요한 bean | 결과 |
@@ -173,16 +179,22 @@ auto-configuration은 CSE `enabled=true`일 때 다음 우선순위를 사용한
 | `AES` | `S3AesProvider` | `S3ClientSideEncryptionProviderTemplate`의 AES delegate |
 | `RSA` | `S3RsaProvider` | `S3ClientSideEncryptionProviderTemplate`의 RSA delegate |
 
-선택한 provider bean이 없으면 컨텍스트 시작을 실패시키고 필요한 bean과
+선택한 AES/RSA provider bean이 없으면 컨텍스트 시작을 실패시키고 필요한 bean과
 `bluetape4k.aws.s3.client-side-encryption.provider`를 메시지에 포함한다. KMS가
 존재해도 `provider=AES/RSA`를 명시하면 명시 provider를 사용한다. 기본값 KMS에서
-provider bean만 있는 경우에는 KMS를 자동 대체하지 않아 기존 설정의 의미를 보존한다.
+`KmsOperations`가 없거나 provider bean만 있는 경우에는 기존 조건부 backoff로 CSE bean을
+만들지 않으며, KMS를 자동 대체하지 않아 기존 설정의 의미를 보존한다.
 선택한 provider에 여러 candidate bean이 있으면 template을 임의로 선택하지 않고 명시적
 구성 오류로 거부한다. `provider=KMS`에서는 AES/RSA bean을 무시하므로 기존 KMS 구성이
 영향받지 않는다.
 
-모든 template bean은 `@ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)`
-backoff을 유지한다. provider template은 `S3BoundedEncryptedReadOperations`와
+KMS template bean은 기존 `@ConditionalOnBean(KmsOperations::class)`와
+`@ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)` backoff을 그대로
+유지한다. 따라서 기본값 KMS에서 `KmsOperations`가 없으면 컨텍스트는 성공하지만 CSE
+bean을 만들지 않으며 AES/RSA로 자동 대체하지 않는다. AES/RSA template bean은
+`@ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)`
+backoff을 유지하고 선택 provider bean이 정확히 하나일 때만 만든다. provider template은
+`S3BoundedEncryptedReadOperations`와
 `S3ClientSideEncryptionIdentity`를 함께 구현한다. Spring이 관리하는 AES/RSA provider
 template은 `close()`를 destroy method로 호출하고, 기존 KMS template은 client나 key
 resource를 소유하지 않으므로 destroy method를 추가하지 않는다. `S3AsyncClient`는 기존
@@ -294,11 +306,16 @@ delegate가 threshold를 넘겨 OS temporary file을 만들더라도 그 파일�
 `close()`는 blocking 호환 경로다.
 
 `downloadEncryptedFile`은 TransferManager로 ciphertext를 임시 경로에 내려받을 수
-있지만, 인증이 끝날 때까지 평문을 생성하지 않는다. `S3BoundedEncryptedReadOperations`
-의 `MAX_CIPHERTEXT_BYTES`를 상한으로 사용해 `max + 1` 객체는 plaintext read 전에
-거부한다. 전체 ciphertext를 unwrap/GCM 검증한 뒤 최종 `destination`에만 평문을 쓰고,
-임시 ciphertext 경로는 성공·실패·취소 모두 `NonCancellable + Dispatchers.IO`의
-`finally`에서 삭제한다. 모든 blocking filesystem 작업은 주입 가능한 IO dispatcher에서
+있지만, 먼저 `S3AsyncClient.headObject`의 remote `contentLength`와 `eTag`를 확인해
+`S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES`를 초과하는 객체는 임시 파일과
+다운로드를 시작하기 전에 거부한다. `eTag`가 없는 응답은 fail-closed하고, transfer
+`DownloadFileRequest`의 nested `getObjectRequest`에 `ifMatch(eTag)`를 설정해 HEAD와 GET
+사이 객체 교체(TOCTOU)를 body 수신 전에 거부한다. 인증이 끝날 때까지 평문을 생성하지 않으며, 전체
+ciphertext를 unwrap/GCM 검증한 뒤 최종 `destination`에만 평문을 쓴다. 다운로드 중 실제
+파일 크기도 다시 상한으로 검사해 불일치 응답을 방어하고, 임시 ciphertext 경로와
+복호화 buffer는 성공·실패·취소 모두 `NonCancellable + Dispatchers.IO`의 finally에서
+삭제/zeroize한다. 임시 경로 생성 자체도 nullable 상태를 `NonCancellable + IO` 경계에서
+기록해 취소 누수를 막는다. 모든 blocking filesystem 작업은 주입 가능한 IO dispatcher에서
 수행하고 `downloadFile`의 cancellation은 원래 예외를 유지한다. destination을 덮어쓰는
 동작은 caller가 지정한 경로에 한정하며, 로그에는 내용·key material·credentials를
 기록하지 않는다. KMS template은 이 transfer capability를 노출하지 않는다.
@@ -306,7 +323,9 @@ delegate가 threshold를 넘겨 OS temporary file을 만들더라도 그 파일�
 ### 4.5 Identity, 오류, 수명
 
 provider identity는 `provider`, effective keyId, keyVersion, 정렬된 encryption context를
-canonical 문자열로 묶고 SHA-256 fingerprint를 계산한다. `S3ClientSideEncryptionIdentity`
+canonical 문자열로 묶고 SHA-256 fingerprint를 계산한다. context는 envelope와 같은
+length-prefixed UTF-8 canonical AAD를 다시 SHA-256 digest한 token으로 identity에 넣으며,
+raw context 값은 identity·metadata·로그에 노출하지 않는다. `S3ClientSideEncryptionIdentity`
 계약을 사용하는 SQS extended client가 KMS와 provider를 서로 다른 암호 경계로 인식할
 수 있어야 한다.
 
@@ -321,8 +340,10 @@ canonical 문자열로 묶고 SHA-256 fingerprint를 계산한다. `S3ClientSide
 
 어떤 오류도 부분 plaintext를 반환하지 않는다. provider template은 Spring context가
 종료될 때 한 번만 close되며, close 이후 모든 operation은 `IllegalStateException`으로
-거부한다. provider interface의 구현자가 반환한 외부 `SecretKey`/`KeyPair`는 caller 소유로
-남기고, template이 만든 복사본만 zeroize한다.
+거부한다. material을 사용하는 helper와 close의 상태 전이는 동일한 lifecycle lock으로
+보호해 close와 key access가 서로 중간 상태를 관찰하지 않게 한다. provider interface의
+구현자가 반환한 외부 `SecretKey`/`KeyPair`는 caller 소유로 남기고, template이 만든
+복사본만 zeroize한다.
 
 ## 5. 파일 경계와 구현 책임
 
@@ -334,6 +355,7 @@ canonical 문자열로 묶고 SHA-256 fingerprint를 계산한다. `S3ClientSide
 | `aws-spring-boot/.../s3/S3ClientSideEncryptionOperations.kt` | 기존 KMS 구현 보존, 공통 reserved metadata/helper만 중복 없이 재사용 |
 | `aws-spring-boot/.../s3/S3Properties.kt` | provider enum, keyVersion, 입력 검증 |
 | `aws-spring-boot/.../s3/S3AutoConfiguration.kt` | KMS/AES/RSA 선택, missing bean/ambiguity 조건, destroy method |
+| `aws-spring-boot/.../s3/S3TransferAutoConfiguration.kt` | provider transfer adapter의 classpath/order/property/backoff 조건 |
 | `aws-spring-boot/src/test/.../S3ClientSideEncryptionProviderTest.kt` | JDK crypto round-trip, metadata/algorithm/key validation, zeroization/lifecycle |
 | `aws-spring-boot/src/test/.../S3ClientSideEncryptionProviderAwsEmulatorTest.kt` | Floci S3 round-trip, transfer/streaming, typed object, no plaintext temp |
 | `aws-spring-boot/src/test/.../S3AutoConfigurationTest.kt` | provider property/bean 조건, KMS backoff, ambiguity/startup failure |
