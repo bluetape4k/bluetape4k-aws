@@ -41,6 +41,7 @@ import software.amazon.awssdk.transfer.s3.model.DownloadRequest
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
 import software.amazon.awssdk.transfer.s3.model.UploadRequest
 import java.nio.file.Path
+import javax.crypto.spec.SecretKeySpec
 
 class S3AutoConfigurationTest {
 
@@ -268,6 +269,120 @@ class S3AutoConfigurationTest {
             val calls: MutableList<String> = mutableListOf()
         }
     }
+
+    @Test
+    fun `AES provider selection ignores an available KMS operation`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=aes",
+            )
+            .withBean(S3AesProvider::class.java, {
+                S3AesProvider.of(SecretKeySpec(ByteArray(32) { 1 }, "AES"))
+            })
+            .withBean(KmsOperations::class.java, { FixedKmsOperations })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(S3ClientSideEncryptionProviderTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3ClientSideEncryptionTemplate::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `selected RSA provider without a provider bean fails startup`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=rsa",
+            )
+            .run { context ->
+                val failure = context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(failure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "S3RsaProvider"
+                messages shouldContain "client-side-encryption.provider"
+            }
+    }
+
+    @Test
+    fun `KMS default keeps backoff when KMS operations are missing`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+            )
+            .withBean(S3AesProvider::class.java, {
+                S3AesProvider.of(SecretKeySpec(ByteArray(32) { 2 }, "AES"))
+            })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 0
+            }
+    }
+
+    @Test
+    fun `multiple selected AES providers fail instead of choosing one`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=aes",
+            )
+            .withUserConfiguration(MultipleAesProviderConfiguration::class.java)
+            .run { context ->
+                val failure = context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(failure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "exactly once"
+        }
+    }
+
+    @Test
+    fun `custom client side encryption operation backs off selected provider`() {
+        val customOperations = mockk<S3ClientSideEncryptionOperations>(relaxed = true)
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=aes",
+            )
+            .withBean(S3AesProvider::class.java, {
+                S3AesProvider.of(SecretKeySpec(ByteArray(32) { 5 }, "AES"))
+            })
+            .withBean(S3ClientSideEncryptionOperations::class.java, { customOperations })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(S3ClientSideEncryptionProviderTemplate::class.java).size shouldBeEqualTo 0
+                context.getBean(S3ClientSideEncryptionOperations::class.java) shouldBeSameInstanceAs customOperations
+            }
+    }
+
+    @Test
+    fun `unsupported provider value fails configuration binding`() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+                "bluetape4k.aws.s3.client-side-encryption.provider=blowfish",
+            )
+            .run { context ->
+                val failure = context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(failure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages shouldContain "provider"
+            }
+    }
+}
+
+@Configuration(proxyBeanMethods = false)
+internal class MultipleAesProviderConfiguration {
+    @Bean
+    fun firstAes(): S3AesProvider =
+        S3AesProvider.of(SecretKeySpec(ByteArray(32) { 3 }, "AES"))
+
+    @Bean
+    fun secondAes(): S3AesProvider =
+        S3AesProvider.of(SecretKeySpec(ByteArray(32) { 4 }, "AES"))
 }
 
 private object FixedKmsOperations: KmsOperations {
