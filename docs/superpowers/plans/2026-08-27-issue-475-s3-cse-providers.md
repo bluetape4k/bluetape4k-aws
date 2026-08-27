@@ -420,6 +420,9 @@ Expected: FAIL with missing AesClientSideEncryptionKeyMaterial, RsaClientSideEnc
         fun canonicalContextAad(encryptionContext: Map<String, String>): ByteArray
     }
 
+    private fun ByteArray.toHex(): String =
+        joinToString(separator = "") { byte -> "%02x".format(Locale.ROOT, byte.toInt() and 0xff) }
+
     internal class AesClientSideEncryptionKeyMaterial private constructor(
         private val keyBytes: ByteArray,
     ) : ClientSideEncryptionKeyMaterial {
