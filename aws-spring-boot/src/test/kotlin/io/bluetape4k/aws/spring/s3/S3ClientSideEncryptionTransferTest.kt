@@ -27,6 +27,7 @@ import software.amazon.awssdk.transfer.s3.model.UploadRequest
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.RejectedExecutionException
 import java.util.function.Consumer
 import kotlin.coroutines.CoroutineContext
 import javax.crypto.spec.SecretKeySpec
@@ -148,6 +149,36 @@ class S3ClientSideEncryptionTransferTest {
             cancelled.message shouldBeEqualTo "cancelled before dispatch"
             operations.uploadedFileContents.size shouldBeEqualTo 0
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
+        } finally {
+            template.close()
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
+
+    @Test
+    fun `dispatcher rejection discards delegate and preserves terminal failure`() = runSuspendIO {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-cse-rejected-")
+        val operations = EncryptedRecordingTransferOperations()
+        val delegate = RecordingS3OutputStreamProvider(operations, tempDirectory, thresholdBytes = 1)
+        val template = testProviderTemplate()
+        try {
+            val encrypted = S3EncryptedOutputStream.create(
+                template = template,
+                outputStreamProvider = delegate,
+                bucket = "bucket",
+                key = "rejected.bin",
+                contentType = null,
+                metadata = emptyMap(),
+                encryptionContext = emptyMap(),
+                ioDispatcher = RejectingDispatcher,
+            )
+            encrypted.write(ByteArray(128) { 7 })
+
+            val rejected = assertFailsWith<RejectedExecutionException> { encrypted.complete() }
+            rejected.message shouldBeEqualTo "dispatcher rejected"
+            operations.uploadedFileContents.size shouldBeEqualTo 0
+            Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
+            assertFailsWith<RejectedExecutionException> { encrypted.complete() }
         } finally {
             template.close()
             Files.deleteIfExists(tempDirectory)
@@ -278,6 +309,11 @@ class S3ClientSideEncryptionTransferTest {
 private object CancellingDispatcher : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable): Unit =
         throw CancellationException("cancelled before dispatch")
+}
+
+private object RejectingDispatcher : CoroutineDispatcher() {
+    override fun dispatch(context: CoroutineContext, block: Runnable): Unit =
+        throw RejectedExecutionException("dispatcher rejected")
 }
 
 private class RecordingS3OutputStreamProvider(

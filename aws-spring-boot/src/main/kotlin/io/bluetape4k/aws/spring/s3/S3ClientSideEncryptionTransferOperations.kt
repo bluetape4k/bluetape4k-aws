@@ -85,6 +85,19 @@ class S3EncryptedOutputStream internal constructor(
             }
             if (ownsCleanup) cleanupDelegate()
             throw cancelled
+        } catch (error: Throwable) {
+            val ownsCleanup = synchronized(stateLock) {
+                if (completed || terminalStarted) {
+                    false
+                } else {
+                    terminalStarted = true
+                    completed = true
+                    terminalFailure = error
+                    true
+                }
+            }
+            if (ownsCleanup) cleanupDelegate()
+            throw error
         }
     }
 
@@ -277,7 +290,7 @@ class S3ClientSideEncryptionTransferTemplate(
                     ciphertext.fill(0)
                 }
             }
-            withContext(ioDispatcher) {
+            withContext(NonCancellable + ioDispatcher) {
                 commitPlaintext(destination, requireNotNull(plaintext))
             }
         } finally {
@@ -321,6 +334,8 @@ class S3ClientSideEncryptionTransferTemplate(
                 } else {
                     Files.write(destination, previous)
                 }
+            }.onFailure { rollbackError ->
+                error.addSuppressed(rollbackError)
             }
             throw error
         } finally {
