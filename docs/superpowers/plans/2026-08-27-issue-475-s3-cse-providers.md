@@ -36,6 +36,8 @@
 | aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/S3ClientSideEncryptionTransferTest.kt | stream delegate와 ciphertext-only 임시 파일 검증 |
 | aws-spring-boot/README.md, aws-spring-boot/README.ko.md | provider 설정과 KMS/provider streaming 경계 요약 |
 | docs/manual/en/modules/bluetape4k-aws-spring-boot.md, docs/manual/ko/modules/bluetape4k-aws-spring-boot.md | 영어/한국어 상세 사용법과 제한사항 |
+| docs/superpowers/risk/2026-08-27-issue-475-s3-cse-providers-risk.md | Type A 위험 ledger, 신호, 완화, 검증, rollback/stop 경계 |
+| docs/superpowers/reviews/2026-08-27-issue-475-s3-cse-providers-plan-review.md | 여섯 관점 독립 review와 P0/P1 disposition |
 | docs/lessons/2026-08-27-issue-475-s3-cse-providers.md | 결정, 검증 결과, 실패 원인, 후속 guard 기록 |
 
 ---
@@ -1740,6 +1742,8 @@ Expected: all commands succeed; English/Korean manual headings, anchors, API nam
 ### Task 8: 통합 검증, lesson, Type A handoff
 
 Files:
+- Create: docs/superpowers/risk/2026-08-27-issue-475-s3-cse-providers-risk.md
+- Create: docs/superpowers/reviews/2026-08-27-issue-475-s3-cse-providers-plan-review.md
 - Create: docs/lessons/2026-08-27-issue-475-s3-cse-providers.md
 - No further production edits after verification unless a failing check identifies a concrete regression.
 
@@ -1796,7 +1800,9 @@ Review evidence must address per-object data-key allocation, RSA key wrapping co
 | Gate | Evidence |
 | --- | --- |
 | SPW-01~05 | 승인 spec/plan, Korean naturalness, source ledger, read-back |
+| Type A risk | `docs/superpowers/risk/2026-08-27-issue-475-s3-cse-providers-risk.md`의 R-01~R-08 ledger와 rollback/stop 규칙 |
 | Security/API/Spring/stream/test perspective | provider review notes와 해결된 P0/P1 목록 |
+| Integrated plan review | `docs/superpowers/reviews/2026-08-27-issue-475-s3-cse-providers-plan-review.md`의 여섯 관점 verdict와 exact HEAD |
 | TDD | 각 task의 RED/GREEN 명령과 commit |
 | Acceptance | Floci AES/RSA byte·typed·stream·file 및 KMS regression |
 | Quality | detekt, module test, git diff --check, manual contract |
