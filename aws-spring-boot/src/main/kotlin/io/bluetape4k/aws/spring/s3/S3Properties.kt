@@ -8,6 +8,12 @@ import java.time.Duration
 private const val DEFAULT_OUTPUT_STREAM_THRESHOLD_BYTES: Long = 8L * 1024 * 1024
 private const val DEFAULT_OUTPUT_STREAM_PART_SIZE_BYTES: Long = 8L * 1024 * 1024
 
+enum class ClientSideEncryptionProvider {
+    KMS,
+    AES,
+    RSA,
+}
+
 /**
  * Spring Boot S3 지원용 구성 속성입니다.
  */
@@ -68,13 +74,22 @@ data class S3Properties(
         val keyId: String? = null,
         val encryptionContext: Map<String, String> = emptyMap(),
         val useDataKeyCache: Boolean = true,
+        // 기존 positional source call의 의미를 유지하도록 새 parameter를 뒤에 추가합니다.
+        val provider: ClientSideEncryptionProvider = ClientSideEncryptionProvider.KMS,
+        val keyVersion: String? = null,
     ) : Serializable {
         init {
-            require(keyId == null || keyId.isNotBlank()) {
-                "bluetape4k.aws.s3.client-side-encryption.keyId must not be blank."
+            require(keyId == null || keyId.isSafeCseToken("keyId")) {
+                "bluetape4k.aws.s3.client-side-encryption.keyId must not be blank or contain control characters."
             }
-            require(encryptionContext.keys.none { it.isBlank() }) {
-                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank."
+            require(keyVersion == null || keyVersion.isSafeCseToken("keyVersion")) {
+                "bluetape4k.aws.s3.client-side-encryption.keyVersion must not be blank or contain control characters."
+            }
+            require(encryptionContext.keys.none { it.isBlank() || it.any(Char::isISOControl) }) {
+                "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank or contain control characters."
+            }
+            require(encryptionContext.values.none { it.any(Char::isISOControl) }) {
+                "bluetape4k.aws.s3.client-side-encryption.encryptionContext values must not contain control characters."
             }
         }
 
@@ -86,4 +101,14 @@ data class S3Properties(
     companion object {
         private const val serialVersionUID: Long = -710482694906352408L
     }
+}
+
+private fun String.isSafeCseToken(name: String): Boolean {
+    require(isNotBlank()) {
+        "bluetape4k.aws.s3.client-side-encryption.$name must not be blank."
+    }
+    require(none(Char::isISOControl)) {
+        "bluetape4k.aws.s3.client-side-encryption.$name must not contain control characters."
+    }
+    return true
 }
