@@ -17,6 +17,7 @@ import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
 import org.awaitility.kotlin.await
@@ -36,6 +37,7 @@ import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
+import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import java.time.Duration
@@ -44,6 +46,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 
 @Timeout(30)
+@Suppress("LargeClass")
 class SqsObservationAwsEmulatorTest {
 
     private val openContexts = AtomicInteger()
@@ -64,8 +67,9 @@ class SqsObservationAwsEmulatorTest {
             observationConfig().observationHandler(recorder)
         }
         val client = sqsClient()
-        val queueUrl = createQueue(client, "observation")
+        var queueUrl = ""
         try {
+            queueUrl = createQueue(client, "observation")
             contextRunner(
                 queueUrl,
                 registry,
@@ -106,10 +110,7 @@ class SqsObservationAwsEmulatorTest {
             }
             assertRegistryStopped(contextRunnerRegistry = registry)
         } finally {
-            runSuspendIO {
-                client.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build()).await()
-            }
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
         }
     }
 
@@ -118,8 +119,9 @@ class SqsObservationAwsEmulatorTest {
         val recorder = ObservationRecorder()
         val registry = observationRegistry(recorder)
         val client = sqsClient()
-        val queueUrl = createQueue(client, "observation-retry")
+        var queueUrl = ""
         try {
+            queueUrl = createQueue(client, "observation-retry")
             contextRunner(
                 queueUrl,
                 registry,
@@ -155,8 +157,7 @@ class SqsObservationAwsEmulatorTest {
             }
             assertRegistryStopped(registry)
         } finally {
-            deleteQueue(client, queueUrl)
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
         }
     }
 
@@ -165,8 +166,9 @@ class SqsObservationAwsEmulatorTest {
         val recorder = ObservationRecorder()
         val registry = observationRegistry(recorder)
         val client = sqsClient()
-        val queueUrl = createQueue(client, "observation-redelivery")
+        var queueUrl = ""
         try {
+            queueUrl = createQueue(client, "observation-redelivery")
             contextRunner(
                 queueUrl,
                 registry,
@@ -204,8 +206,7 @@ class SqsObservationAwsEmulatorTest {
             }
             assertRegistryStopped(registry)
         } finally {
-            deleteQueue(client, queueUrl)
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
         }
     }
 
@@ -214,8 +215,9 @@ class SqsObservationAwsEmulatorTest {
         val recorder = ObservationRecorder()
         val registry = observationRegistry(recorder)
         val client = sqsClient()
-        val queueUrl = createQueue(client, "observation-empty")
+        var queueUrl = ""
         try {
+            queueUrl = createQueue(client, "observation-empty")
             contextRunner(queueUrl, registry, recorder, EmptyListenerConfiguration::class.java).run {
                 await.atMost(Duration.ofSeconds(10)).untilAsserted {
                     recorder.snapshots.any { it.stage == SqsObservationStage.RECEIVE }.shouldBeTrue()
@@ -228,8 +230,7 @@ class SqsObservationAwsEmulatorTest {
             }
             assertRegistryStopped(registry)
         } finally {
-            deleteQueue(client, queueUrl)
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
         }
     }
 
@@ -238,15 +239,16 @@ class SqsObservationAwsEmulatorTest {
         val recorder = ObservationRecorder()
         val registry = observationRegistry(recorder)
         val client = sqsClient()
-        val queueUrl = createQueue(
-            client,
-            "observation-fifo",
-            suffix = ".fifo",
-            attributes = mapOf(QueueAttributeName.FIFO_QUEUE to "true"),
-        )
+        var queueUrl = ""
         val groupId = "task8-group-${UUID.randomUUID()}"
         val deduplicationId = "task8-dedup-${UUID.randomUUID()}"
         try {
+            queueUrl = createQueue(
+                client,
+                "observation-fifo",
+                suffix = ".fifo",
+                attributes = mapOf(QueueAttributeName.FIFO_QUEUE to "true"),
+            )
             runSuspendIO {
                 client.sendMessage(
                     SendMessageRequest.builder()
@@ -278,8 +280,7 @@ class SqsObservationAwsEmulatorTest {
             }
             assertRegistryStopped(registry)
         } finally {
-            deleteQueue(client, queueUrl)
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
         }
     }
 
@@ -288,12 +289,13 @@ class SqsObservationAwsEmulatorTest {
         val recorder = ObservationRecorder()
         val registry = observationRegistry(recorder)
         val client = sqsClient()
-        val queueUrl = createQueue(
-            client,
-            "observation-batch",
-            attributes = mapOf(QueueAttributeName.VISIBILITY_TIMEOUT to "2"),
-        )
+        var queueUrl = ""
         try {
+            queueUrl = createQueue(
+                client,
+                "observation-batch",
+                attributes = mapOf(QueueAttributeName.VISIBILITY_TIMEOUT to "2"),
+            )
             runSuspendIO {
                 repeat(2) { index ->
                     client.sendMessage(
@@ -333,8 +335,7 @@ class SqsObservationAwsEmulatorTest {
                 it == PartialBatchListener.acknowledgedBody
             } ?: "batch-1")
         } finally {
-            deleteQueue(client, queueUrl)
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
         }
     }
 
@@ -343,9 +344,10 @@ class SqsObservationAwsEmulatorTest {
         val recorder = ObservationRecorder()
         val registry = observationRegistry(recorder)
         val client = sqsClient()
-        val queueUrl = createQueue(client, "observation-ack-failure")
-        AckFailureListener.queueUrl = queueUrl
+        var queueUrl = ""
         try {
+            queueUrl = createQueue(client, "observation-ack-failure")
+            AckFailureListener.queueUrl = queueUrl
             contextRunner(queueUrl, registry, recorder, AckFailureListenerConfiguration::class.java).run { context ->
                 val operations = context.getBean(SqsOperations::class.java)
                 val listener = context.getBean(AckFailureListener::class.java)
@@ -370,8 +372,7 @@ class SqsObservationAwsEmulatorTest {
             }
             assertRegistryStopped(registry)
         } finally {
-            runCatching { deleteQueue(client, queueUrl) }
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
             AckFailureListener.queueUrl = null
         }
     }
@@ -383,13 +384,14 @@ class SqsObservationAwsEmulatorTest {
             observationConfig().observationHandler(SecretHeartbeatCleanupFailureHandler)
         }
         val client = sqsClient()
-        val queueUrl = createQueue(client, "observation-cleanup")
+        var queueUrl = ""
         val logger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
         val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
         val previousLevel = logger.level
         logger.addAppender(appender)
         logger.level = Level.WARN
         try {
+            queueUrl = createQueue(client, "observation-cleanup")
             contextRunner(
                 queueUrl,
                 registry,
@@ -427,8 +429,113 @@ class SqsObservationAwsEmulatorTest {
         } finally {
             logger.detachAppender(appender)
             logger.level = previousLevel
-            deleteQueue(client, queueUrl)
-            client.close()
+            closeClientAfterQueueCleanup(client, queueUrl)
+        }
+    }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `batch heartbeat cleanup failure preserves visibility and first delivery`() {
+        val observationRecorder = ObservationRecorder()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig()
+                .observationHandler(SecretHeartbeatCleanupFailureHandler)
+                .observationHandler(observationRecorder)
+        }
+        val client = sqsClient()
+        var queueUrl = ""
+        val logger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = logger.level
+        logger.addAppender(appender)
+        logger.level = Level.WARN
+        try {
+            queueUrl = createQueue(
+                client,
+                "observation-batch-cleanup",
+                attributes = mapOf(QueueAttributeName.VISIBILITY_TIMEOUT to "1"),
+            )
+            runSuspendIO {
+                repeat(2) { index ->
+                    client.sendMessage(
+                        SendMessageRequest.builder()
+                            .queueUrl(queueUrl)
+                            .messageBody("batch-cleanup-$index")
+                            .build(),
+                    ).await()
+                }
+            }
+            contextRunner(
+                queueUrl,
+                registry,
+                observationRecorder,
+                BatchCleanupFailureListenerConfiguration::class.java,
+                "bluetape4k.aws.sqs.listener.max-messages=2",
+                "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-interval-seconds=1",
+                "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-seconds=4",
+            ).run { context ->
+                val listener = context.getBean(BatchCleanupFailureListener::class.java)
+                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                    listener.started.shouldBeTrue()
+                    appender.list.any { it.formattedMessage.contains("BT4K-SQS-OBS-202") }.shouldBeTrue()
+                    observationRecorder.snapshots.count {
+                        it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
+                            it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+                    }.shouldBeGreaterOrEqualTo(1)
+                }
+
+                val visibilityHeartbeat = observationRecorder.snapshots.first {
+                    it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
+                        it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+                }
+                visibilityHeartbeat.batch.shouldBeTrue()
+                visibilityHeartbeat.batchSize shouldBeEqualTo 2
+                visibilityHeartbeat.acknowledgementSuccessCount shouldBeEqualTo 2
+
+                runSuspendIO { delay(2_500) }
+                runSuspendIO {
+                    val visible = client.receiveMessage(
+                        ReceiveMessageRequest.builder()
+                            .queueUrl(queueUrl)
+                            .maxNumberOfMessages(10)
+                            .waitTimeSeconds(0)
+                            .visibilityTimeout(0)
+                            .build(),
+                    ).await().messages()
+                    visible shouldBeEqualTo emptyList()
+                }
+
+                listener.release.complete(Unit)
+                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                    listener.completed.get() shouldBeEqualTo 1
+                    observationRecorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
+                }
+                observationRecorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }.let { process ->
+                    process.delivery shouldBeEqualTo SqsObservationDelivery.FIRST
+                    process.outcome shouldBeEqualTo SqsObservationOutcome.SUCCESS
+                }
+                runSuspendIO {
+                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                        context.getBean(SqsOperations::class.java)
+                            .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                            .isEmpty()
+                    }
+                }
+            }
+
+            appender.list.filter { it.formattedMessage.contains("BT4K-SQS-OBS-202") }
+                .forEach { event ->
+                    event.formattedMessage.contains("stage=acknowledgement").shouldBeTrue()
+                    event.formattedMessage.contains("action=change_visibility").shouldBeTrue()
+                    event.formattedMessage.contains("reason=telemetry_cleanup").shouldBeTrue()
+                    event.formattedMessage.contains(SECRET_THROWABLE_TOKEN).shouldBeFalse()
+                    (event.throwableProxy == null).shouldBeTrue()
+                }
+            assertRegistryStopped(registry)
+        } finally {
+            logger.detachAppender(appender)
+            logger.level = previousLevel
+            closeClientAfterQueueCleanup(client, queueUrl)
         }
     }
 
@@ -669,6 +776,20 @@ class SqsObservationAwsEmulatorTest {
         runSuspendIO { client.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build()).await() }
     }
 
+    private fun closeClientAfterQueueCleanup(client: SqsAsyncClient, queueUrl: String) {
+        try {
+            if (queueUrl.isNotBlank()) {
+                try {
+                    deleteQueue(client, queueUrl)
+                } catch (_: QueueDoesNotExistException) {
+                    // 테스트가 의도적으로 큐를 먼저 삭제한 경우 cleanup은 이미 완료되었습니다.
+                }
+            }
+        } finally {
+            client.close()
+        }
+    }
+
     private fun sqsClient(): SqsAsyncClient =
         SqsAsyncClient.builder()
             .endpointOverride(floci.awsEndpoint)
@@ -836,6 +957,31 @@ class SqsObservationAwsEmulatorTest {
         suspend fun handle(@Suppress("UNUSED_PARAMETER") body: String) {
             delay(1_500)
             completed = true
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class BatchCleanupFailureListenerConfiguration {
+        @Bean
+        fun batchCleanupFailureListener(): BatchCleanupFailureListener = BatchCleanupFailureListener()
+    }
+
+    internal class BatchCleanupFailureListener {
+        @Volatile
+        var started: Boolean = false
+        val completed = AtomicInteger()
+        val release = CompletableDeferred<Unit>()
+
+        @SqsListener(
+            queue = "\${test.queue-url}",
+            id = "batch-cleanup-failure-listener",
+            batch = true,
+            maxMessages = 2,
+        )
+        suspend fun handle(@Suppress("UNUSED_PARAMETER") messages: List<SqsReceivedMessage>) {
+            started = true
+            release.await()
+            completed.incrementAndGet()
         }
     }
 

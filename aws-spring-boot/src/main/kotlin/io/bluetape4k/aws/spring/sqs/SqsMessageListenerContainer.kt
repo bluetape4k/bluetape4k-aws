@@ -284,10 +284,10 @@ class SqsMessageListenerContainer internal constructor(
                 } catch (createFailure: Error) {
                     failGeneration(current)
                     throw createFailure
-                } catch (createFailure: Throwable) {
+                } catch (_: Throwable) {
                     log.warn(
-                        "SQS queue creation failed: listenerId=${endpoint.id}, queue=${endpoint.queue}",
-                        createFailure,
+                        "BT4K-SQS-OBS-201 SQS queue URL resolution failed: " +
+                            "listenerId=${endpoint.id}, stage=resolution, reason=queue_creation",
                     )
                     delay(endpoint.retry.nextDelay(receiveAttempt))
                     null

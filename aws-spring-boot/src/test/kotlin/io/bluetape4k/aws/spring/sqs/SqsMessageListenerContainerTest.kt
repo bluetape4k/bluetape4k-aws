@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
@@ -215,6 +216,56 @@ class SqsMessageListenerContainerTest {
                 .any { it.contains("BT4K-SQS-OBS-201") && it.contains("stage=resolution") }
                 .shouldBeTrue()
         } finally {
+            containerLogger.detachAppender(appender)
+            containerLogger.level = previousLevel
+        }
+    }
+
+    @Test
+    fun `CREATE queue failure logs bounded OBS-201 without queue or throwable`() = runSuspendIO {
+        val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = containerLogger.level
+        val queue = "secret-queue-task8"
+        val failure = IllegalStateException("throwable-secret-task8")
+        var container: SqsMessageListenerContainer? = null
+        containerLogger.addAppender(appender)
+        containerLogger.level = Level.WARN
+        try {
+            val operations = mockk<SqsOperations>()
+            val invoker = mockk<SqsListenerMethodInvoker>()
+            coEvery { operations.getQueueUrl(queue) } throws
+                QueueDoesNotExistException.builder().message("queue-secret-task8").build()
+            coEvery { operations.createConfiguredQueue(queue) } throws failure
+            val listenerContainer = container(
+                operations = operations,
+                invoker = invoker,
+                queue = queue,
+                queueNotFoundStrategy = SqsQueueNotFoundStrategy.CREATE,
+                retry = SqsProperties.Retry(initialBackoff = Duration.ofSeconds(10)),
+            )
+            container = listenerContainer
+
+            listenerContainer.start()
+            withTimeout(2_000) {
+                while (appender.list.none { it.formattedMessage.contains("reason=queue_creation") }) {
+                    delay(5)
+                }
+            }
+
+            val diagnostic = appender.list.single { it.formattedMessage.contains("reason=queue_creation") }
+            diagnostic.formattedMessage.contains("BT4K-SQS-OBS-201").shouldBeTrue()
+            diagnostic.formattedMessage.contains("stage=resolution").shouldBeTrue()
+            diagnostic.formattedMessage.contains("reason=queue_creation").shouldBeTrue()
+            diagnostic.formattedMessage.contains(queue).shouldBeFalse()
+            diagnostic.formattedMessage.contains(failure.message.orEmpty()).shouldBeFalse()
+            (diagnostic.throwableProxy == null).shouldBeTrue()
+        } finally {
+            container?.let { listenerContainer ->
+                val stopped = CompletableDeferred<Unit>()
+                listenerContainer.stop { stopped.complete(Unit) }
+                withTimeout(2_000) { stopped.await() }
+            }
             containerLogger.detachAppender(appender)
             containerLogger.level = previousLevel
         }
