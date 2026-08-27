@@ -17,6 +17,7 @@ import io.mockk.slot
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
+import kotlinx.coroutines.async
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -34,6 +35,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertSame
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
@@ -499,7 +501,7 @@ class SqsMessageListenerContainerTest {
     }
 
     @Test
-    fun `batch final hook completes when stop cancels while it is suspended`() = runSuspendIO {
+    fun `batch final hook failure does not replace cancellation`() = runSuspendIO {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
         val interceptor = mockk<SqsListenerInterceptor>(relaxed = true)
@@ -507,23 +509,30 @@ class SqsMessageListenerContainerTest {
         val hookStarted = CompletableDeferred<Unit>()
         val releaseHook = CompletableDeferred<Unit>()
         val hookCompleted = CompletableDeferred<Unit>()
+        val cleanupFailure = IllegalStateException("batch final hook failed")
         coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
             if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
         }
-        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } returns Unit
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
+            thirdArg<() -> Unit>().invoke()
+        }
         coEvery { interceptor.afterBatchHandle(any(), anyNullable(), any(), any()) } coAnswers {
             hookStarted.complete(Unit)
             releaseHook.await()
             hookCompleted.complete(Unit)
+            throw cleanupFailure
         }
+        val recorder = ContainerObservationRecorder()
         val container = container(
             operations,
             invoker,
             batch = true,
             acknowledgementMode = SqsAcknowledgementMode.MANUAL,
             interceptors = listOf(interceptor),
+            retry = SqsProperties.Retry(maxAttempts = 1),
             stopTimeoutMillis = 25,
         )
+        container.setObservationRuntime(observationRuntime(recorder))
 
         try {
             container.start()
@@ -535,6 +544,45 @@ class SqsMessageListenerContainerTest {
             releaseHook.complete(Unit)
         }
         withTimeout(2_000) { hookCompleted.await() }
+        withTimeout(2_000) {
+            while (recorder.snapshots.none { it.stage == SqsObservationStage.PROCESS }) {
+                delay(5)
+            }
+        }
+        val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+        process.outcome shouldBeEqualTo SqsObservationOutcome.CANCELLED
+        process.failureStage shouldBeEqualTo "handler"
+    }
+
+    @Test
+    fun `non cancellable finalization keeps original cancellation and suppresses cleanup failure`() = runTest {
+        val finalizationStarted = CompletableDeferred<Unit>()
+        val releaseFinalization = CompletableDeferred<Unit>()
+        val cancellation = CancellationException("listener is stopping")
+        val cleanupFailure = IllegalStateException("cleanup failed")
+        val preservedCancellation = CompletableDeferred<CancellationException>()
+        val finalization = async {
+            try {
+                runSqsNonCancellableFinalization {
+                    finalizationStarted.complete(Unit)
+                    releaseFinalization.await()
+                    throw cleanupFailure
+                }
+            } catch (actual: CancellationException) {
+                preservedCancellation.complete(actual)
+                throw actual
+            }
+        }
+
+        finalizationStarted.await()
+        finalization.cancel(cancellation)
+        releaseFinalization.complete(Unit)
+
+        assertFailsWith<CancellationException> { finalization.await() }
+        val actual = preservedCancellation.await()
+        assertSame(cancellation, actual)
+        actual.suppressed.single().shouldBeInstanceOf<IllegalStateException>()
+        actual.suppressed.single().message shouldBeEqualTo cleanupFailure.message
     }
 
     @Test

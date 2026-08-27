@@ -15,6 +15,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -31,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.coroutineContext
 
 /**
  * 하나의 `@SqsListener` 엔드포인트를 실행하는 SQS 메시지 리스너 컨테이너.
@@ -897,7 +899,7 @@ class SqsMessageListenerContainer internal constructor(
             throw e
         } finally {
             if (handlerFailure !is CancellationException) {
-                withContext(NonCancellable) {
+                runSqsNonCancellableFinalization {
                     interceptors.forEach { it.afterBatchHandle(context, handlerFailure, correlation, pending.size) }
                 }
             }
@@ -1025,6 +1027,32 @@ class SqsMessageListenerContainer internal constructor(
             current.scope.cancel()
         }
     }
+}
+
+@Suppress("TooGenericExceptionCaught")
+internal suspend fun runSqsNonCancellableFinalization(finalize: suspend () -> Unit) {
+    val parentJob = coroutineContext[Job]
+    try {
+        withContext(NonCancellable) {
+            finalize()
+        }
+    } catch (finalizationFailure: Throwable) {
+        val cancellation = parentJob?.cancellationExceptionOrNull()
+        if (cancellation == null) {
+            throw finalizationFailure
+        }
+        if (finalizationFailure !== cancellation) {
+            cancellation.addSuppressed(finalizationFailure)
+        }
+        throw cancellation
+    }
+}
+
+private fun Job.cancellationExceptionOrNull(): CancellationException? = try {
+    ensureActive()
+    null
+} catch (cancellation: CancellationException) {
+    cancellation
 }
 
 private class HeartbeatAwareSqsAcknowledgement(
