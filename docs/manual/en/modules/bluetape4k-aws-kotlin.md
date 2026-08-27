@@ -52,6 +52,72 @@ withS3Client(region = region) { s3 ->
 
 DynamoDB model DSL and batch execution, DynamoDB Streams Flow/checkpoint consumption, S3 object operations, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, Lambda, STS, and HTTP engine providers.
 
+## DynamoDB coordination {#dynamodb-coordination}
+
+> Unreleased/develop: this section describes Issue #476 and is not part of the `0.5.0` release source.
+
+`DynamoDbDistributedLock` and `DynamoDbMetadataStore` are coroutine-first
+coordination adapters for a caller-owned DynamoDB table. They use a String
+partition key only; the schema does not create tables, infer a sort key, or
+manage the client lifecycle. Add the AWS Kotlin DynamoDB service SDK at runtime
+because service SDKs in this module remain `compileOnly`.
+
+Prepare a PK-only table whose hash key matches `partitionKeyAttributeName`
+(`id` by default). Enable DynamoDB TTL only for the metadata
+`ttlEpochSeconds` attribute; lock rows must not be deleted by TTL. A metadata
+TTL and its logical `expiresAt` are written to the same epoch second.
+
+```kotlin
+val schema = DynamoDbCoordinationSchema(
+    tableName = "coordination",
+    namespace = "orders",
+)
+val lock = DynamoDbDistributedLock(client, schema)
+val metadata = DynamoDbMetadataStore(client, schema)
+
+val lease = lock.tryAcquire("orders", "worker-1")
+if (lease != null) {
+    // Protect the downstream write with lease.fencingToken as well.
+    val renewed = lock.heartbeat(lease)
+    lock.release(renewed ?: lease)
+}
+metadata.put("config", "v1", ttl = 60.seconds)
+```
+
+Acquire, renew, heartbeat, and release use conditional writes without an
+adapter retry loop or pre-read. `tryAcquire` can return `null` when another
+owner wins or when the result is indeterminate; callers must not treat a
+transport failure as a successful lease. A takeover increments the monotonic
+`LockLease.fencingToken`. `release` returns `false` for a stale lease and
+removes only the owner while preserving the fencing counter. Downstream state
+changes must check the current token, because a lease alone cannot fence an
+already-started side effect.
+
+`MetadataStore.get` returns `null` for a missing or logically expired value.
+`putIfAbsent`, `remove`, and `removeIfValue` use bounded compare-and-set
+operations. An expired item may be replaced or cleaned up, but an expired
+cleanup still reports `false` to the caller. A caller that needs ABA protection
+should store a unique version or fencing token in the value. Malformed
+`AllOld`/`AllNew` responses and missing required `AllOld` capability fail
+closed; they are not converted into a normal miss.
+
+Use `withDynamoDbClient` for short-lived clients or close an application-scoped
+client explicitly. If a coroutine is cancelled while a test or application
+owns a table cleanup, run the cleanup in `NonCancellable` with a bounded
+`withTimeout`; do not launch an unscoped background cleanup task. Credentials,
+IAM policy, and downstream fencing conditions remain application concerns.
+
+The local contract test uses FlociServer and does not contact real AWS:
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*DynamoDbCoordinationFlociTest'
+```
+
+The Floci lane proves PK-only schema, conditional `AllOld`, fencing and logical
+expiry behavior. It does not prove AWS throttling, asynchronous TTL deletion,
+clock skew, production quotas, or credentials.
+
 ## DynamoDB Streams Flow and checkpoints {#dynamodb-streams}
 
 > Unreleased/develop: this section describes the Issue #469 API and is not part of the `0.5.0` release source.

@@ -151,6 +151,30 @@ withSqsClient(endpointUrl, region, credentialsProvider) { client ->
 
 ## 사용 예시
 
+### DynamoDB coordination (Issue #476)
+
+`DynamoDbDistributedLock`과 `DynamoDbMetadataStore`는 호출자가 소유하는 PK-only DynamoDB
+table에서 coroutine 우선 bounded 조건부 coordination을 제공합니다. Lock은 release 뒤에도
+단조 증가 fencing token을 보존하고, metadata는 제한된 String 값과 선택적 logical/DynamoDB
+TTL 만료를 저장합니다. 이 adapter가 client를 만들거나 닫지는 않습니다.
+
+```kotlin
+val schema = DynamoDbCoordinationSchema(tableName = "coordination", namespace = "orders")
+val lock = DynamoDbDistributedLock(client, schema)
+val lease = lock.tryAcquire("orders", "worker-1")
+if (lease != null) {
+    // downstream 조건부 쓰기에서 lease.fencingToken을 함께 확인합니다.
+    lock.release(lease)
+}
+```
+
+로컬 계약 테스트는 실제 AWS endpoint 없이 FlociServer만 사용합니다.
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*DynamoDbCoordinationFlociTest'
+```
+
 ### DynamoDB (native suspend)
 
 ```kotlin

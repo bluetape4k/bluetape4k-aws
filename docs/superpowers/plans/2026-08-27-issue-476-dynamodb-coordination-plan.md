@@ -242,6 +242,8 @@ MockK `DynamoDbClient` coroutine stubbing을 먼저 추가한다.
 @Test fun `heartbeat은 stale lease에서 null을 반환한다`()
 @Test fun `release는 stale lease에서 false를 반환한다`()
 @Test fun `token Long MAX_VALUE는 fencing token exhausted로 거부한다`()
+@Test fun `token Long MAX_VALUE 직전에는 발급 전 exhaustion으로 second update를 막는다`()
+@Test fun `AllNew fencing token이 기대값과 다르면 lease를 발급하지 않는다`()
 @Test fun `CancellationException과 SDK timeout은 결과 매핑 없이 전달된다`()
 @Test fun `convenience overload는 options default duration을 전달한다`()
 @Test fun `renew와 release의 old item 부재는 각각 null과 false로 끝난다`()
