@@ -84,10 +84,10 @@
 
 ### Task 1: optional dependency와 compile boundary 고정
 
-**Complexity:** M  
-**Depends on:** 승인된 설계와 본 계획  
-**Write scope:** `gradle/libs.versions.toml`, `aws-spring-boot/build.gradle.kts`, `build.gradle.kts`, consumer fixture  
-**Required skills:** `$bluetape-kotlin-patterns`, `test-driven-development`; Spring trigger는 `references/spring-boot.md`, test trigger는 `references/testing.md`  
+**Complexity:** M
+**Depends on:** 승인된 설계와 본 계획
+**Write scope:** `gradle/libs.versions.toml`, `aws-spring-boot/build.gradle.kts`, `build.gradle.kts`, consumer fixture
+**Required skills:** `$bluetape-kotlin-patterns`, `test-driven-development`; Spring trigger는 `references/spring-boot.md`, test trigger는 `references/testing.md`
 **Expected DoD:** Modulith가 없는 runtime은 영향이 없고, 명시적으로 추가한 consumer classpath에서는 public contract가 compile된다.
 
 - [ ] **Step 1.1: RED consumer fixture를 추가한다**
@@ -198,9 +198,9 @@
 
 ### Task 2: registry, properties, diagnostic public contract 구현
 
-**Complexity:** L  
-**Depends on:** Task 1  
-**Write scope:** event types, properties, exceptions와 해당 unit tests  
+**Complexity:** L
+**Depends on:** Task 1
+**Write scope:** event types, properties, exceptions와 해당 unit tests
 **Expected DoD:** 모든 caller input과 configuration constraint가 시작 또는 publication 전에 deterministic하게 거부되고 payload/secret을 예외에 담지 않는다.
 
 - [ ] **Step 2.1: RED registry/property/diagnostic tests를 작성한다**
@@ -373,9 +373,9 @@
 
 ### Task 3: bounded envelope와 strict codec 구현
 
-**Complexity:** XL  
-**Depends on:** Task 2  
-**Write scope:** envelope, codec, codec/security tests  
+**Complexity:** XL
+**Depends on:** Task 2
+**Write scope:** envelope, codec, codec/security tests
 **Expected DoD:** serializer는 한 번만 호출되고, 허용된 concrete type만 decode되며, JSON/byte/header/attribute 경계 밖 입력은 AWS/local publish 전에 실패한다.
 
 - [ ] **Step 3.1: RED envelope/codec/security tests를 작성한다**
@@ -448,9 +448,9 @@
 
 ### Task 4: idempotency SPI, in-memory store, TCK 구현
 
-**Complexity:** XL  
-**Depends on:** Task 2  
-**Write scope:** idempotency contract/store, TCK와 unit tests  
+**Complexity:** XL
+**Depends on:** Task 2
+**Write scope:** idempotency contract/store, TCK와 unit tests
 **Expected DoD:** claim은 key당 linearizable single winner이고 lease takeover와 stale fencing이 모든 store 구현에 재사용 가능한 TCK로 증명된다.
 
 - [ ] **Step 4.1: RED public contract TCK와 in-memory scenarios를 작성한다**
@@ -517,9 +517,9 @@
 
 ### Task 5: service publisher와 bounded outbound transport 구현
 
-**Complexity:** XL  
-**Depends on:** Tasks 2, 3  
-**Write scope:** target publisher SPI, SNS/SQS publisher, transport와 unit/contract tests  
+**Complexity:** XL
+**Depends on:** Tasks 2, 3
+**Write scope:** target publisher SPI, SNS/SQS publisher, transport와 unit/contract tests
 **Expected DoD:** actual operations 성공 전 Modulith future가 완료되지 않으며, capacity/lifecycle/cancellation race가 first-terminal-wins와 bounded state를 지킨다.
 
 - [ ] **Step 5.1: RED publisher request tests를 작성한다**
@@ -591,9 +591,9 @@
 
 ### Task 6: inbound source, consumer, success-only ack 구현
 
-**Complexity:** XL  
-**Depends on:** Tasks 3, 4  
-**Write scope:** public consumer, internal listener, source parser/verifier adapter, metrics와 tests  
+**Complexity:** XL
+**Depends on:** Tasks 3, 4
+**Write scope:** public consumer, internal listener, source parser/verifier adapter, metrics와 tests
 **Expected DoD:** source trust와 decode가 claim보다 먼저 끝나고, completed 뒤에만 ack하며, 일반 failure는 안전한 code/phase로 정규화하고 cancellation/Error identity는 보존한다.
 
 - [ ] **Step 6.1: RED source/consumer/listener tests를 작성한다**
@@ -676,9 +676,9 @@
 
 ### Task 7: name-only auto-configuration과 classloading guard 구현
 
-**Complexity:** XL  
-**Depends on:** Tasks 2–6  
-**Write scope:** auto-configuration, imports, condition/redrive/Modulith integration tests  
+**Complexity:** XL
+**Depends on:** Tasks 2–6
+**Write scope:** auto-configuration, imports, condition/redrive/Modulith integration tests
 **Expected DoD:** root opt-in과 classpath condition을 모두 만족할 때만 필요한 nested bean이 생기며, 미사용 SNS/SQS/Modulith SDK가 없어도 context가 시작한다.
 
 - [ ] **Step 7.1: RED auto-configuration matrix를 작성한다**
@@ -798,10 +798,10 @@
 
 ### Task 8: Floci DIRECT/SNS/FIFO/redrive 통합 검증
 
-**Complexity:** XL  
-**Depends on:** Task 7  
-**Write scope:** Floci integration test와 bounded test fixtures only  
-**Heavy-command limit:** Docker-backed Gradle invocation 1개씩 순차 실행  
+**Complexity:** XL
+**Depends on:** Task 7
+**Write scope:** Floci integration test와 bounded test fixtures only
+**Heavy-command limit:** Docker-backed Gradle invocation 1개씩 순차 실행
 **Expected DoD:** 실제 AWS 계정 없이 Floci가 지원하는 transport/consumer lifecycle이 skip 없이 통과하고, 지원하지 않는 signature API는 명시적인 별도 contract로 남는다.
 
 - [ ] **Step 8.1: Floci capability probe를 test setup으로 고정한다**
@@ -844,10 +844,10 @@
 
 ### Task 9: README/manual/KDoc와 운영 계약 동기화
 
-**Complexity:** L  
-**Depends on:** Tasks 1–8의 실제 API와 test 결과  
-**Write scope:** README 두 locale, manual 여섯 파일, KDoc corrections  
-**Required skills:** `$bluetape-writer`; Korean files는 naturalness/terminology audit  
+**Complexity:** L
+**Depends on:** Tasks 1–8의 실제 API와 test 결과
+**Write scope:** README 두 locale, manual 여섯 파일, KDoc corrections
+**Required skills:** `$bluetape-writer`; Korean files는 naturalness/terminology audit
 **Expected DoD:** copy-paste recipe가 source와 일치하고 README는 요약, manual은 상세 기준 정보로 역할을 나눈다.
 
 - [ ] **Step 9.1: source-backed documentation ledger를 만든다**
@@ -856,8 +856,8 @@
 
 - [ ] **Step 9.2: manual EN/KO를 같은 구조로 갱신한다**
 
-  `storage-and-messaging.md`: BOM dependency recipe, registry bean, logical target, producer-only, DIRECT, SNS, FIFO.  
-  `auto-configuration.md`: opt-in, classpath conditions, custom transport/store/verifier back-off, one queue/source per context.  
+  `storage-and-messaging.md`: BOM dependency recipe, registry bean, logical target, producer-only, DIRECT, SNS, FIFO.
+  `auto-configuration.md`: opt-in, classpath conditions, custom transport/store/verifier back-off, one queue/source per context.
   `runtime-operations.md`: metrics, diagnostic catalog, redrive/DLQ, consumer-first rollout, rollback, at-least-once/idempotency, Floci-vs-real-AWS evidence boundary.
 
 - [ ] **Step 9.3: README EN/KO를 요약한다**
@@ -893,9 +893,9 @@
 
 ### Task 10: 전체 검증, 성능·안정성 scan, 독립 review 수렴
 
-**Complexity:** XL  
-**Depends on:** Tasks 1–9  
-**Write scope:** review artifact와 blocker repair only  
+**Complexity:** XL
+**Depends on:** Tasks 1–9
+**Write scope:** review artifact와 blocker repair only
 **Expected DoD:** fresh full evidence와 6관점 review가 P0=0/P1=0으로 수렴하고 exact scoped branch가 clean하다.
 
 - [ ] **Step 10.1: targeted tests를 dependency order로 실행한다**
@@ -970,9 +970,9 @@
 
 ### Task 11: lesson, PR delivery, exact-head CI, merge-ready 정지
 
-**Complexity:** L  
-**Depends on:** Task 10  
-**Write/external scope:** lesson, branch push, PR create/update; merge 금지  
+**Complexity:** L
+**Depends on:** Task 10
+**Write/external scope:** lesson, branch push, PR create/update; merge 금지
 **Expected DoD:** lesson과 PR metadata가 live source와 일치하고 exact-head CI 후 CG-16에서 멈춘다.
 
 - [ ] **Step 11.1: durable lesson을 작성·검증·commit한다**
