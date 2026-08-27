@@ -10,11 +10,11 @@ import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.observation.ObservationView
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
@@ -22,54 +22,54 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class SqsAcknowledgementTest {
 
     @Test
     fun `terminal race keeps heartbeat observation count equal to actual visibility IO`() = runTest {
-        val operations = RecordingSqsOperations()
+        val deleteStarted = CompletableDeferred<Unit>()
+        val releaseDelete = CompletableDeferred<Unit>()
+        val heartbeatPrepared = CompletableDeferred<Unit>()
+        val operations = RecordingSqsOperations().apply {
+            beforeDelete = {
+                deleteStarted.complete(Unit)
+                releaseDelete.await()
+            }
+        }
         val recorder = AcknowledgementObservationRecorder()
-        val heartbeatStarted = CountDownLatch(1)
-        val releaseHeartbeat = CountDownLatch(1)
         val registry = ObservationRegistry.create()
         registry.observationConfig().observationHandler(recorder)
-        registry.observationConfig().observationHandler(object : ObservationHandler<SqsObservationContext> {
-            override fun supportsContext(context: Observation.Context): Boolean =
-                context is SqsObservationContext
-
-            override fun onStart(context: SqsObservationContext) {
-                if (context.metadata.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY) {
-                    heartbeatStarted.countDown()
-                    check(releaseHeartbeat.await(5, TimeUnit.SECONDS))
-                }
-            }
-        })
         val acknowledgement = acknowledgement(
             operations,
             observationRuntime = SqsObservationRuntime(
                 registry = registry,
-                customizers = emptyList(),
+                customizers = listOf(
+                    SqsObservationContextCustomizer { context ->
+                        if (context.metadata.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY) {
+                            heartbeatPrepared.complete(Unit)
+                        }
+                    }
+                ),
                 factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
             ),
         )
 
-        val heartbeat = async(Dispatchers.Default) { acknowledgement.heartbeat(30) {} }
-        withContext(Dispatchers.IO) {
-            check(heartbeatStarted.await(5, TimeUnit.SECONDS))
-        }
         val terminal = async(Dispatchers.Default) { acknowledgement.acknowledge() }
-        releaseHeartbeat.countDown()
-        heartbeat.await()
+        deleteStarted.await()
+        val heartbeat = async(Dispatchers.Default) { acknowledgement.heartbeat(30) {} }
+        heartbeatPrepared.await()
+        releaseDelete.complete(Unit)
         terminal.await()
+        heartbeat.await()
 
+        operations.changeVisibilityCalls shouldBeEqualTo 0
         recorder.contexts.count {
             it.metadata.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
-        } shouldBeEqualTo operations.changeVisibilityCalls
+        } shouldBeEqualTo 0
+        operations.deleteCalls shouldBeEqualTo 1
         recorder.contexts.count {
             it.metadata.acknowledgementAction == SqsAcknowledgementAction.ACK
-        } shouldBeEqualTo operations.deleteCalls
+        } shouldBeEqualTo 1
     }
 
     @Test
@@ -339,6 +339,7 @@ class SqsAcknowledgementTest {
         var changeVisibilityCalls = 0
         var deleteFailure: Throwable? = null
         var changeVisibilityFailure: Throwable? = null
+        var beforeDelete: suspend () -> Unit = {}
 
         override suspend fun getQueueUrl(queueName: String): String = "queue-url"
 
@@ -367,6 +368,7 @@ class SqsAcknowledgementTest {
             queueUrl: String,
             receiptHandle: String,
         ): DeleteMessageResponse {
+            beforeDelete()
             deleteCalls++
             deleteFailure?.let { throw it }
             return DeleteMessageResponse.builder().build()
