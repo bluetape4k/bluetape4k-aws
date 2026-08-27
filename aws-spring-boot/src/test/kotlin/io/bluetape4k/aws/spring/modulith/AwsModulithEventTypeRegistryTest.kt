@@ -30,6 +30,34 @@ class AwsModulithEventTypeRegistryTest {
     }
 
     @Test
+    fun `only final concrete event classes can be registered`() {
+        listOf(
+            AwsModulithEventTypeRegistration(
+                type = "open.event",
+                version = 1,
+                eventClass = OpenEvent::class.java,
+                eventId = { it.id },
+            ),
+            AwsModulithEventTypeRegistration(
+                type = "abstract.event",
+                version = 1,
+                eventClass = AbstractEvent::class.java,
+                eventId = { it.id },
+            ),
+            AwsModulithEventTypeRegistration(
+                type = "interface.event",
+                version = 1,
+                eventClass = EventContract::class.java,
+                eventId = { it.id },
+            ),
+        ).forEach { registration ->
+            assertFailsWith<AwsModulithConfigurationException> {
+                AwsModulithEventTypeRegistry.of(registration)
+            }
+        }
+    }
+
+    @Test
     fun `duplicate event class is rejected even when type differs`() {
         assertFailsWith<AwsModulithConfigurationException> {
             AwsModulithEventTypeRegistry.of(
@@ -259,11 +287,19 @@ class AwsModulithEventTypeRegistryTest {
         assertEquals(expected, this)
     }
 
-    private open class OrderPlaced(val id: String)
+    private class OrderPlaced(val id: String)
 
     private data class OrderCancelled(val id: String)
 
-    private class PreferredOrderPlaced(id: String) : OrderPlaced(id)
+    private class PreferredOrderPlaced(val id: String)
+
+    private open class OpenEvent(val id: String)
+
+    private abstract class AbstractEvent(val id: String)
+
+    private interface EventContract {
+        val id: String
+    }
 
     private data class OtherEvent(val id: String)
 

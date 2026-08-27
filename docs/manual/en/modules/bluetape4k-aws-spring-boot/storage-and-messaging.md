@@ -244,7 +244,7 @@ dependencies {
 
 The application owns the Spring Modulith publication repository choice. This
 module keeps the Modulith and service SDK dependencies optional. Register every
-external event with a stable type, version, concrete JVM class, and event ID:
+external event with a stable type, version, final concrete JVM class, and event ID:
 
 ```kotlin
 data class OrderCreated(val orderId: String, val tenant: String)
@@ -318,9 +318,33 @@ and make Spring Modulith provide `RoutingTarget.key`; the adapter uses that key
 as `messageGroupId` and the stable registered event ID as deduplication ID.
 Standard destinations reject a routing key, while FIFO destinations require it.
 
+The built-in in-memory idempotency store is application-scoped and loses its
+claims on restart. For durable multi-instance processing, implement
+`AwsModulithEventIdempotencyStore` and expose exactly one bean; auto-configuration
+backs off when that bean exists. A successful handler or an already-completed
+duplicate is acknowledged. An active claim, handler failure, claim renewal or
+completion failure, and source verification failure are not acknowledged, so
+SQS visibility, redelivery, and the queue redrive policy govern retry and DLQ
+delivery. An uncertain claim mutation is left for lease-expiry takeover instead
+of being released eagerly, which preserves fencing against duplicate dispatch.
+
+Run the local transport contract with Floci:
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests 'io.bluetape4k.aws.spring.modulith.*' \
+  -Dbluetape4k.aws.emulator=floci --no-daemon
+```
+
+This proves the local SQS path, SNS-to-SQS fanout transport, redrive preflight,
+acknowledgement, and claim/fencing behavior supported by `FlociServer`. It does
+not prove production SNS certificate/signature telemetry, IAM, cross-account
+policies, or real AWS timing. Keep LocalStack as an explicit fallback for a
+Floci API gap; no real AWS account is required for this local contract.
+
 | Documented contract | Source-backed symbol |
 | --- | --- |
-| Stable event type, version, ID, allowed headers | `AwsModulithEventTypeRegistration`, `AwsModulithEventTypeRegistry` |
+| Stable event type, version, final concrete class, ID, allowed headers | `AwsModulithEventTypeRegistration`, `AwsModulithEventTypeRegistry` |
 | Logical SNS/SQS target | `AwsModulithEventsProperties.Target`, `AwsModulithTargetService` |
 | DIRECT or verified SNS source | `AwsModulithSourceMode`, `AwsModulithSqsEventConsumer` |
 | Lease/fencing duplicate suppression | `AwsModulithEventIdempotencyStore` |

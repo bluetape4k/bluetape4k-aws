@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sqs.SqsFullRequestOperations
@@ -46,6 +47,7 @@ import java.time.Clock
         "io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration",
     ]
 )
+@ConditionalOnAwsEnabled
 @ConditionalOnClass(
     name = [
         "org.springframework.modulith.events.support.EventExternalizationTransport",

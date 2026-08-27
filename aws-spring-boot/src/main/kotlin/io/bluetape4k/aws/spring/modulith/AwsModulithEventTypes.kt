@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.modulith
 
+import java.lang.reflect.Modifier
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CancellationException
 
@@ -8,7 +9,7 @@ import java.util.concurrent.CancellationException
  *
  * @property type 외부 envelope에서 사용하는 안정적인 이벤트 형식 이름
  * @property version 이벤트 payload 형식 버전
- * @property eventClass 등록할 이벤트의 정확한 JVM class
+ * @property eventClass 등록할 이벤트의 final concrete JVM class
  * @property eventId 이벤트에서 안정적인 식별자를 추출하는 함수
  * @property allowedHeaderNames 외부 envelope에 포함할 수 있는 header 이름
  * @property headers 이벤트에서 header 값을 추출하는 함수
@@ -23,7 +24,7 @@ data class AwsModulithEventTypeRegistration<T : Any>(
 )
 
 /**
- * 외부화할 concrete event class와 안정적인 type/version 계약을 보관하는 immutable registry입니다.
+ * 외부화할 final concrete event class와 안정적인 type/version 계약을 보관하는 immutable registry입니다.
  *
  * 동일 class 또는 type을 중복 등록할 수 없으며, 등록하지 않은 subtype이나 version을 자동으로
  * 추론하지 않습니다. 애플리케이션은 producer와 consumer가 공유하는 registry bean을 명시적으로
@@ -173,10 +174,17 @@ private fun AwsModulithEventTypeRegistration<*>.snapshot(): AwsModulithEventType
     )
 
 private fun validateRegistration(registration: AwsModulithEventTypeRegistration<*>) {
-    if (!EVENT_TYPE_PATTERN.matches(registration.type) || registration.version < 1) {
-        throw AwsModulithConfigurationException()
-    }
-    if (registration.allowedHeaderNames.any { it.isBlank() }) {
+    val eventClassModifiers = registration.eventClass.modifiers
+    val invalidEventClass =
+        registration.eventClass.isInterface ||
+            Modifier.isAbstract(eventClassModifiers) ||
+            !Modifier.isFinal(eventClassModifiers)
+    val invalidContract =
+        !EVENT_TYPE_PATTERN.matches(registration.type) ||
+            registration.version < 1 ||
+            registration.allowedHeaderNames.any { it.isBlank() }
+
+    if (invalidContract || invalidEventClass) {
         throw AwsModulithConfigurationException()
     }
 }

@@ -117,6 +117,15 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
         }
     }
 
+    internal fun metrics(): InMemoryAwsModulithEventIdempotencyStoreMetrics = lock.withLock {
+        InMemoryAwsModulithEventIdempotencyStoreMetrics(
+            entryCount = entries.size,
+            inProgressCount = inProgressCount,
+            retainedKeyBytes = retainedKeyBytes,
+            closed = closed,
+        )
+    }
+
     override fun close() {
         lock.withLock {
             if (closed) return
@@ -266,6 +275,14 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
         }
     }
 }
+
+/** deterministic lifecycle tests에만 노출하는 bounded in-memory store 상태입니다. */
+internal data class InMemoryAwsModulithEventIdempotencyStoreMetrics(
+    val entryCount: Int,
+    val inProgressCount: Int,
+    val retainedKeyBytes: Long,
+    val closed: Boolean,
+)
 
 private fun AwsModulithEventKey.utf8Bytes(): Long =
     type.toByteArray(StandardCharsets.UTF_8).size.toLong() +
