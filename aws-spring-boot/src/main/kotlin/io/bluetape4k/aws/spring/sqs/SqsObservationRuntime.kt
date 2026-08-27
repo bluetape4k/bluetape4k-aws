@@ -51,9 +51,14 @@ internal class SqsObservationRuntime(
         val observedResult = try {
             observation.start()
             started = true
-            val snapshot = observation.openScope().use {
-                requireSqsObservationRegistryBinding(registry, observation)
-                snapshotFactory.captureAll()
+            val snapshot = try {
+                observation.openScope().use {
+                    requireSqsObservationRegistryBinding(registry, observation)
+                    snapshotFactory.captureAll()
+                }
+            } catch (e: Throwable) {
+                registry.currentObservationScope = parentScope
+                throw e
             }
             runObservedBlock(snapshot, execution, context, block)
         } catch (e: CancellationException) {
@@ -66,16 +71,12 @@ internal class SqsObservationRuntime(
             SqsObservedResult.Failure(e)
         }
 
-        val cleanupFailure = try {
-            if (started) {
-                withContext(NonCancellable) {
-                    cleanupObservation(observation, context, observedResult.failureOrNull())
-                }
-            } else {
-                null
+        val cleanupFailure = if (started) {
+            withContext(NonCancellable) {
+                cleanupObservation(observation, context, observedResult.failureOrNull())
             }
-        } finally {
-            registry.currentObservationScope = parentScope
+        } else {
+            null
         }
         val unhandledCleanupFailure = if (cleanupFailure != null && onCleanupFailure != null) {
             onCleanupFailure(cleanupFailure)
@@ -165,6 +166,13 @@ internal class SqsObservationExecution internal constructor(
         if (!retryEventEmitted) {
             observation.event(Observation.Event.of("retry"))
             retryEventEmitted = true
+        }
+    }
+
+    fun partial() {
+        observationContext?.apply {
+            outcome = SqsObservationOutcome.PARTIAL
+            failureStage = null
         }
     }
 

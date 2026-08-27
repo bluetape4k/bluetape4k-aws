@@ -842,6 +842,7 @@ class SqsMessageListenerContainerTest {
     fun `manual batch acknowledgement deletes only the selected messages`() = runSuspendIO {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
+        val recorder = ContainerObservationRecorder()
         val invocation = CompletableDeferred<Unit>()
         val messages = listOf(message(), message("message-2"))
         coEvery { operations.receive(QUEUE_URL, 2, 0, null) } coAnswers {
@@ -860,10 +861,18 @@ class SqsMessageListenerContainerTest {
             maxMessages = 2,
             acknowledgementMode = SqsAcknowledgementMode.MANUAL,
         )
+        container.setObservationRuntime(observationRuntime(recorder))
         try {
             container.start()
             withTimeout(2_000) { invocation.await() }
             coVerify(exactly = 1) { operations.deleteBatch(QUEUE_URL, any()) }
+            withTimeout(2_000) {
+                while (recorder.snapshots.none { it.stage == SqsObservationStage.PROCESS }) {
+                    delay(1)
+                }
+            }
+            recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }.outcome shouldBeEqualTo
+                SqsObservationOutcome.PARTIAL
         } finally {
             val stopped = CompletableDeferred<Unit>()
             container.stop { stopped.complete(Unit) }

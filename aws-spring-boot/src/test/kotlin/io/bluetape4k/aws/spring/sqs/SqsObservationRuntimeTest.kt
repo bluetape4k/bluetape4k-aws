@@ -94,6 +94,43 @@ class SqsObservationRuntimeTest {
     }
 
     @Test
+    fun `nested cleanup failure preserves the process scope until coroutine restoration completes`() = runTest {
+        val registry = ObservationRegistry.create()
+        val stopFailure = IllegalStateException("nested-stop")
+        registry.observationConfig().observationHandler(
+            object : ObservationHandler<SqsObservationContext> {
+                override fun supportsContext(context: Observation.Context): Boolean =
+                    context is SqsObservationContext
+
+                override fun onStop(context: SqsObservationContext) {
+                    if (context.metadata.listenerId == "nested") {
+                        throw stopFailure
+                    }
+                }
+            },
+        )
+        val runtime = runtime(registry)
+
+        observeSqs(runtime, ::processContext) {
+            val processObservation = observation
+            var cleanupFailure: Throwable? = null
+
+            runtime.prepare(processContext(listenerId = "nested")).observe(
+                onCleanupFailure = { cleanupFailure = it },
+            ) {
+                withContext(StandardTestDispatcher(testScheduler)) {
+                    assertSame(observation, registry.currentObservation)
+                }
+            }
+
+            assertSame(stopFailure, cleanupFailure)
+            assertSame(processObservation, registry.currentObservation)
+        }
+
+        assertNull(registry.currentObservation)
+    }
+
+    @Test
     fun `business error is rethrown while telemetry sees only a redacted error`() = runTest {
         val registry = ObservationRegistry.create()
         val handler = RecordingHandler()
@@ -348,9 +385,9 @@ class SqsObservationRuntimeTest {
             factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
         )
 
-    private fun processContext(): SqsObservationContext = SqsObservationContext(
+    private fun processContext(listenerId: String = "listener-1"): SqsObservationContext = SqsObservationContext(
         SqsObservationMetadata(
-            listenerId = "listener-1",
+            listenerId = listenerId,
             queueName = "orders",
             stage = SqsObservationStage.PROCESS,
             batch = false,

@@ -294,9 +294,8 @@ class SqsMessageListenerContainer internal constructor(
                 }
             }
         }
-    } catch (e: Throwable) {
+    } catch (_: Throwable) {
         log.warn("BT4K-SQS-OBS-201 SQS queue URL resolution failed: listenerId=${endpoint.id}, stage=resolution")
-        log.warn("SQS queue URL resolution failed: listenerId=${endpoint.id}, queue=${endpoint.queue}", e)
         delay(endpoint.retry.nextDelay(receiveAttempt))
         null
     }
@@ -564,8 +563,8 @@ class SqsMessageListenerContainer internal constructor(
                 operationGuard = { generation.ensureActiveOperation() },
                 observationRuntime = observationRuntime,
             )
-            val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement) { error ->
-                logHeartbeatObservationFailure("single", error)
+            val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement) {
+                logHeartbeatObservationFailure("single")
             }
             updateHeartbeatAcknowledgement(currentAcknowledgement)
             var invocationStarted = false
@@ -669,6 +668,9 @@ class SqsMessageListenerContainer internal constructor(
                     onRetry = ::retry,
                     onFailure = ::fail,
                     onCancellation = ::cancel,
+                    onManualCompletion = { pendingCount ->
+                        if (pendingCount in 1 until messages.size) partial()
+                    },
                 )
             }
         }
@@ -682,8 +684,8 @@ class SqsMessageListenerContainer internal constructor(
         val pending = acknowledgement.pending
         if (pending.isEmpty()) return
         val result = withContext(Dispatchers.IO) {
-            acknowledgement.heartbeat(pending, timeoutSeconds) { error ->
-                logHeartbeatObservationFailure("batchSize=${pending.size}", error)
+            acknowledgement.heartbeat(pending, timeoutSeconds) {
+                logHeartbeatObservationFailure("batchSize=${pending.size}")
             }
         }
         if (result.failed.isNotEmpty()) {
@@ -707,6 +709,7 @@ class SqsMessageListenerContainer internal constructor(
         onRetry: (Int) -> Unit,
         onFailure: (String) -> Unit,
         onCancellation: (String) -> Unit,
+        onManualCompletion: (Int) -> Unit,
     ) {
         var attempt = initialAttempt
         while (attempt <= endpoint.retry.maxAttempts) {
@@ -726,6 +729,7 @@ class SqsMessageListenerContainer internal constructor(
                     correlation,
                     invocationPhase,
                 )
+                if (manual) onManualCompletion(acknowledgement.pending.size)
                 val completed = completeBatchAttempt(
                     queueUrl,
                     acknowledgement,
@@ -880,12 +884,11 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
-    private fun logHeartbeatObservationFailure(target: String, error: Throwable) {
+    private fun logHeartbeatObservationFailure(target: String) {
         log.warn(
             "BT4K-SQS-OBS-202 SQS visibility heartbeat observation cleanup failed: " +
                 "listenerId=${endpoint.id}, target=$target, stage=acknowledgement, " +
                 "action=change_visibility, reason=telemetry_cleanup",
-            error,
         )
     }
 
