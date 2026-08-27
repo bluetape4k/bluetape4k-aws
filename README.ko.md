@@ -32,7 +32,8 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 - **Kotlin-first AWS 클라이언트** — Java SDK v2 coroutine adapter, AWS Kotlin SDK helper, 작은 request DSL
 - **서비스 범위** — DynamoDB, DynamoDB Streams, S3, S3 Tables, S3 Vectors, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, RDS IAM, Secrets Manager, Parameter Store
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener,
-  선택적 Spring Modulith SNS/SQS event 외부화, auto-configuration 제공
+  선택적 lifecycle-aware SQS Observation, Spring Modulith SNS/SQS event 외부화,
+  auto-configuration 제공. 자세한 내용은 [storage와 messaging 매뉴얼](docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)을 참고하세요.
 - **Ktor 3 통합** — SigV4 signing, coroutine S3 접근, SQS consumer runtime, EventBridge publishing, DynamoDB server repository, EC2 IMDS helper, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 Floci-first emulator와 coverage gap을 위한 명시적 LocalStack fallback 검증
 

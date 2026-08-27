@@ -45,7 +45,8 @@ Exposed database wiring.
   visibility change, and a cold `Flow<SqsReceivedMessage>` stream.
 - **SQS listener** — `@SqsListener` annotation drives a coroutine-based
   message listener container with configurable concurrency, visibility, and
-  error-visibility timeouts.
+  error-visibility timeouts. Opt-in SQS Observation covers receive, process,
+  and actual acknowledgement I/O; the [manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md) is the detailed source of truth.
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` abstract base over
   `DynamoDbAsyncTable` with `save`/`findById`/`update`/`delete`, plus
   `scan`/`query`/`queryIndex` `Flow` results. Logical table names are resolved
@@ -1005,6 +1006,14 @@ jitter before the final failure path. Register `SqsListenerInterceptor` beans to
 observe receive, handler, ack/nack, and failure phases with Micrometer or a
 logging/tracing library. `stop-timeout-millis` bounds container shutdown after
 poller cancellation.
+
+Native SQS Observation is separately opt-in with
+`bluetape4k.aws.sqs.observation.enabled=true`. It preserves coroutine parentage
+across receive, process, and actual acknowledgement I/O. See the
+[storage and messaging manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)
+for prerequisites, safe tags, extension points, and Floci acceptance, and the
+[runtime operations manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md)
+for canary and rollback rules.
 
 The opt-in visibility heartbeat requires both `message-visibility-heartbeat-interval-seconds`
 and `message-visibility-heartbeat-seconds`; it is disabled by default. The interval must be

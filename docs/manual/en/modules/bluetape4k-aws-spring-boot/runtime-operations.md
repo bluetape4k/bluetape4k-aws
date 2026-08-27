@@ -92,6 +92,56 @@ Tune concurrent consumers, long-poll duration, maximum messages, visibility time
 
 When a `MeterRegistry` is available, S3/SQS operations and listener phases can emit low-cardinality timers. Do not put bucket keys, message bodies, secret IDs, or unbounded exception text in metric tags. Correlate AWS request IDs in logs.
 
+### SQS Observation rollout and rollback
+
+SQS Observation has one runtime owner: `debop` approves activation, canary
+promotion, dashboard changes, and rollback. Keep both the legacy listener
+meter (`MicrometerSqsListenerInterceptor`) and the operations meter
+(`MicrometerSqsOperations`) during migration. Enable the observation property
+only after a real registry and supporting handler are present, then restart or
+redeploy. The runtime does not rebind when a property changes at runtime.
+
+Run a canary for at least 30 minutes and 10,000 messages, satisfying both
+limits. During the complete window, compare the legacy listener meter, the new
+observation counts, process-latency p95, redelivery rate, and DLQ visible count.
+Do not switch dashboards or alerts to the new meters until the canary passes.
+Stop the canary immediately for any of these signals:
+
+- receive/process/acknowledgement observation counts do not match after
+  accounting for empty polls and partial acknowledgements;
+- process p95 rises by more than 20% against the same-run legacy baseline;
+- redelivery rate rises by more than 1 percentage point; or
+- a new DLQ item becomes visible.
+
+Abort and roll back in this order:
+
+1. stop receiving;
+2. drain in-flight handlers;
+3. wait for `STOPPING_RECEIVE -> DRAINING -> STOPPED`;
+4. set `bluetape4k.aws.sqs.observation.enabled=false`;
+5. restart or redeploy and read back the disabled property and restored legacy meters.
+
+Preserve the legacy dashboards and alerts until the full canary window passes.
+The heartbeat interval, timeout, lifecycle child-job, cancellation, and
+visibility policy remain owned by issue #453; this observation change measures
+that path and does not redefine its policy. The same Floci acceptance boundary
+applies here: `FlociServer.Launcher.floci` proves the local emulator path, while
+actual AWS and an OpenTelemetry exporter remain `N/A`.
+
+### SQS Observation diagnostics
+
+| Code | Meaning | Operator action |
+| --- | --- | --- |
+| `BT4K-SQS-OBS-101` | Observation activation prerequisites are missing, including a registry, a non-NOOP registry, or a supporting Spring handler. | Inspect the condition report; add the required runtime classes/handler or leave observation disabled. A user factory alone is insufficient. |
+| `BT4K-SQS-OBS-201` | The listener could not resolve a queue URL for the observation boundary. | Check the queue name/URL, endpoint configuration, and `getQueueUrl` permission before retrying. |
+| `BT4K-SQS-OBS-202` | A visibility-heartbeat observation could not clean up its telemetry. | Preserve the message-processing result, inspect the bounded warning, and verify that the heartbeat job stopped with the listener lifecycle. |
+
+For `BT4K-SQS-OBS-201`, the runtime does not publish a guessed queue name.
+For `BT4K-SQS-OBS-202`, a telemetry cleanup failure does not change successful
+handler or visibility I/O outcome. Treat both as diagnostics to investigate,
+not as permission to add raw queue URLs, receipt handles, or exception text to
+tags.
+
 ## Modulith event runtime operations (Unreleased/develop)
 
 The inbound adapter uses SQS at-least-once delivery. It verifies the source and

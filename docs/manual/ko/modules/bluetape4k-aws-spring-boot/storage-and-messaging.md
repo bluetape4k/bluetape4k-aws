@@ -78,6 +78,140 @@ failure가 `1%/5m`, retry exhaustion이 `0.1%/5m`, redelivery age p95가 visibil
 또는 DLQ visible count가 `0/5m` 기준을 넘으면 canary를 중단합니다. 온콜 owner는
 `bluetape4k-sqs-oncall`, release approval은 `bluetape4k-release-approvers`입니다.
 
+## SQS Observation (Unreleased/develop)
+
+SQS Observation은 listener의 RECEIVE, PROCESS, ACKNOWLEDGEMENT 수명 주기를
+Micrometer `ObservationRegistry`에 연결하는 opt-in 경로입니다. 기본값은 비활성화이며,
+기존 listener와 meter의 동작은 `bluetape4k.aws.sqs.observation.enabled=true`로
+명시하기 전까지 바뀌지 않습니다.
+
+### Activation and prerequisites
+
+다음 설정으로 활성화합니다.
+
+```yaml
+bluetape4k:
+  aws:
+    sqs:
+      observation:
+        enabled: true
+```
+
+자동 설정은 application context 초기화 시 다음 조건을 모두 확인합니다.
+
+- `bluetape4k.aws.enabled`와 `bluetape4k.aws.sqs.enabled`가 활성화되어 있습니다.
+- `ObservationRegistry`와 `io.micrometer.context.ContextSnapshot` classpath가 있습니다.
+- `ObservationRegistry.NOOP`이 아닌 `ObservationRegistry` bean이 있습니다.
+- `SqsObservationContext`를 지원하는 `ObservationHandler` Spring bean이 하나 이상 있습니다.
+
+조건이 충족되지 않으면 runtime marker를 만들지 않고 기존 listener와 legacy listener
+meter를 유지합니다. `SqsObservationFactory`를 직접 등록해도 supporting handler와
+registry prerequisite를 우회하지 않습니다. 비활성화·활성화, handler 변경은 runtime
+rebind가 아니라 restart/redeploy로 반영합니다.
+
+### Observation names and privacy
+
+기본 observation 이름과 실제 I/O 경계는 다음과 같습니다.
+
+| 단계 | observation name | 범위 |
+| --- | --- | --- |
+| RECEIVE | `bluetape4k.aws.sqs.receive` | queue URL resolution 뒤의 `receive` I/O. 빈 poll도 성공으로 종료합니다. |
+| PROCESS | `bluetape4k.aws.sqs.process` | message conversion, handler, retry 판정과 자동 acknowledgement 조정 |
+| ACKNOWLEDGEMENT | `bluetape4k.aws.sqs.acknowledgement` | `DeleteMessage`와 `ChangeMessageVisibility`를 포함한 실제 ACK/NACK/visibility I/O와 heartbeat I/O |
+
+기본 low-cardinality tag는 `messaging.system`, `messaging.operation`,
+`messaging.destination.name`, `bluetape4k.aws.sqs.listener.id`,
+`bluetape4k.aws.sqs.outcome`, `bluetape4k.aws.sqs.ack.action`,
+`bluetape4k.aws.sqs.batch.size`, `bluetape4k.aws.sqs.delivery`,
+`bluetape4k.aws.sqs.failure.stage` allowlist로 제한됩니다. listener ID는 operator가
+설정한 bounded 값이며 blank이면 `unknown`입니다. message에서 동적으로 만들지
+말고, queue URL은 안전한 마지막 path segment인 queue name만 사용합니다.
+
+단건 PROCESS/ACK에서만 message ID, FIFO group ID, deduplication ID와 정확한 attempt를
+high-cardinality 값으로 사용할 수 있습니다. RECEIVE와 batch PROCESS/ACK는 batch size가
+1이어도 이 식별자를 노출하지 않습니다. message body, receipt handle, 전체 queue URL,
+account ID, secret header와 제한 없는 exception text는 tag·log·`toString()`에 넣지
+않습니다. inbound SQS message attribute에서 W3C/B3 carrier를 추출하는 propagation은
+지원하지 않습니다. `ContextSnapshot`은 listener coroutine의 downstream context를
+전파하고 scope가 끝나면 parent를 복원하는 내부 구현 경계입니다.
+
+### Customization contract
+
+`SqsObservationContextCustomizer`는 정제된 `SqsObservationContext`에만 접근하고
+Spring `Ordered` 또는 `@Order` 순서로 한 번씩 실행됩니다. `SqsObservationFactory`는
+전달받은 context와 registry를 그대로 사용해 시작되지 않은 observation을 반환해야
+합니다. `start`, `error`, `stop` lifecycle은 runtime이 소유합니다. 다른 context나
+registry를 묶은 observation은 lifecycle 실행 전에 실패합니다. Micrometer public API에
+started-state 조회가 없으므로 이미 시작된 observation 반환은 지원하지 않습니다.
+`Observation.NOOP`은 정상적인 no-op 결과로 허용됩니다.
+단계별 이름과 tag를 바꾸려면 해당 단계의 `SqsObservationConvention`을 하나만 등록하세요.
+
+<!-- sqs-observation-customization:start -->
+```kotlin
+@Order(1)
+private class DeploymentEnvironmentCustomizer : SqsObservationContextCustomizer {
+    override fun customize(context: SqsObservationContext) {
+        context.put("deployment.environment", "production")
+    }
+}
+
+@Order(2)
+private class ObservationOwnerCustomizer : SqsObservationContextCustomizer {
+    override fun customize(context: SqsObservationContext) {
+        val environment = context.get<String>("deployment.environment")
+        context.put("observation.owner", "$environment:sqs-platform")
+    }
+}
+
+fun sqsObservationFactory(): SqsObservationFactory = SqsObservationFactory { context, registry ->
+    Observation.createNotStarted("custom.sqs.process", { context }, registry)
+}
+```
+<!-- sqs-observation-customization:end -->
+
+위 예시의 marker는 문서와 compile-verified test fixture가 공유하는 계약입니다. 실제
+Spring bean으로 등록할 때는 애플리케이션의 configuration 방식에 맞춰 `@Bean`을
+추가하되, factory 함수의 context·registry identity와 not-started 계약은 유지하세요.
+customizer나 factory가 generic context에 임의 데이터를 추가하면 privacy와 cardinality
+책임은 애플리케이션에 있습니다. raw message body, receipt handle, 전체 queue URL,
+임의 message/system attribute accessor는 제공하지 않습니다.
+
+### Legacy metrics migration
+
+Observation 활성화는 자동 생성된 legacy listener metric만 대체하며,
+`MicrometerSqsOperations` meter는 계속 유지합니다. 기존 interceptor를 직접 등록한
+경우에는 아래 표에 따라 중복 여부를 애플리케이션이 선택해야 합니다.
+
+| 상태 | legacy listener meter | operations meter | 새 observation |
+| --- | --- | --- | --- |
+| property false 또는 누락 | 유지 | 유지 | 없음 |
+| enabled지만 prerequisite 불충족 | 유지 | 유지 | 없음; condition report에 bounded negative reason 기록 |
+| activation marker 존재 | 자동 bean만 억제 | 유지 | RECEIVE/PROCESS/ACKNOWLEDGEMENT와 visibility |
+| legacy interceptor 수동 등록 | 애플리케이션 선택에 따라 중복 가능 | 유지 | 활성 |
+
+### Coroutine context and manual ACK
+
+수명 주기 observation은 suspension과 downstream dispatcher 전환을 넘어 coroutine context를
+전파합니다. detached manual ACK가 handler 반환 뒤 호출되면 호출 시점의 current
+observation만 parent로 사용하며, 이미 끝난 PROCESS parent를 재사용하지 않습니다. 활성
+parent가 없으면 ACK observation은 root로 시작합니다. ACK observation은 실제 delete 또는
+visibility I/O를 감싸고, cancellation 때 waiter와 acknowledgement 상태를 rollback한 뒤
+기존 `CancellationException`을 보존합니다.
+
+visibility heartbeat의 주기와 정책은 #453이 소유합니다. #473은 heartbeat의 visibility
+I/O를 ACKNOWLEDGEMENT observation으로 감싸는 경계만 추가합니다. observation의
+`error()`나 `stop()` cleanup이 실패해도 visibility 결과나 handler 결과를 바꾸지 않고
+`BT4K-SQS-OBS-202` bounded diagnostic만 남깁니다.
+
+### Evidence boundary
+
+`context-propagation:1.2.1`은 module의 transitive runtime dependency입니다. 이 type은
+public signature에 노출되지 않으며 schema migration이나 persisted-state migration도
+없습니다. `FlociServer.Launcher.floci`와 in-memory `ObservationHandler`로 listener
+receive/process/ACK, cancellation, coroutine context restoration과 count 계약을 검증할
+수 있습니다. 실제 AWS 계정, IAM/cross-account 동작, production OpenTelemetry SDK와
+exporter는 이번 범위의 검증 대상이 아니므로 `N/A`입니다.
+
 ## SQS Extended Client
 
 Extended Client는 opt-in 기능입니다. 작은 메시지는 SQS 본문에 그대로 두고,

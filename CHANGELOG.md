@@ -9,6 +9,13 @@
 
 ### 추가
 
+- Spring Boot SQS listener에 기본 비활성인 lifecycle-aware Observation을 추가했습니다.
+  receive, process, 실제 acknowledgement I/O의 coroutine parentage와 제한된 metadata,
+  사용자 정의 convention/factory를 지원합니다. `context-propagation:1.2.1`은 transitive
+  runtime dependency이며 public signature와 schema/persisted state migration은 없습니다.
+  활성화·rollback에는 restart/redeploy가 필요하고, 실제 AWS와 OpenTelemetry exporter 대신
+  Floci-first contract와 성능 gate로 검증했습니다
+  ([#473](https://github.com/bluetape4k/bluetape4k-aws/issues/473)).
 - Java SDK v2와 AWS SDK for Kotlin에 Kinesis 멀티 샤드 `consumerFlow`를 추가했습니다.
   동적 `ListShards` discovery, shard graph ordering, bounded concurrency와 rendezvous
   backpressure, lease fencing, inclusive checkpoint, redacted metrics callback을

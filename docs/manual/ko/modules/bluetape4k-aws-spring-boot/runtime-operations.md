@@ -89,6 +89,71 @@ consumer 수, long-poll 시간, 한 번에 받을 메시지 수, visibility time
 
 `MeterRegistry`가 있으면 S3·SQS 작업과 listener 단계에 낮은 cardinality timer를 붙일 수 있습니다. bucket key, message body, secret ID, 제한 없는 예외 문자열을 metric tag로 사용하지 마세요. 로그에는 AWS request ID를 남겨 상관관계를 추적합니다.
 
+### SQS Observation rollout and rollback
+
+SQS Observation은 `debop`이 activation, canary 승격, dashboard 변경과 rollback을
+소유합니다. migration 동안 legacy listener meter(`MicrometerSqsListenerInterceptor`)와
+operations meter(`MicrometerSqsOperations`)를 모두 유지합니다. real registry와
+supporting handler를 준비한 뒤 observation property를 활성화하고 restart/redeploy하세요.
+runtime property rebind는 지원하지 않습니다.
+
+활성화와 비활성화는 restart/redeploy 경계입니다. 먼저 canary listener에서 최소
+30분과 10,000개 message를 모두 충족하는 동안 다음 지표를 legacy listener meter와
+나란히 비교하세요.
+
+- legacy listener meter와 새 observation count
+- PROCESS p95 latency
+- redelivery rate
+- DLQ count
+
+다음 조건 중 하나라도 발생하면 canary를 중단합니다.
+
+- observation count mismatch
+- PROCESS p95 latency가 기준보다 `20%` 초과 상승
+- redelivery rate가 기준보다 `1%p` 초과 상승
+- 새로운 DLQ message 발생
+
+중단과 rollback은 다음 순서를 지킵니다.
+
+1. receive를 중지합니다.
+2. in-flight 작업을 drain합니다.
+3. `STOPPING_RECEIVE -> DRAINING -> STOPPED` 상태를 확인합니다.
+4. `bluetape4k.aws.sqs.observation.enabled=false`로 되돌립니다.
+5. restart/redeploy합니다.
+
+전체 canary window를 통과하기 전에는 기존 legacy meter를 dashboard와 alert에
+유지합니다. 새 observation meter로 dashboard와 alert를 전환하는 시점은 window
+통과와 생성 결과 read-back 이후로 한정합니다.
+
+| 운영 책임 | 담당 | 완료 증거 |
+| --- | --- | --- |
+| activation과 canary 승인/중단 | `debop` | canary window와 abort signal 기록 |
+| dashboard/alert meter 전환 | `debop` | 전체 window 통과 후 전환 read-back |
+| rollback과 진단 code 확인 | `debop` | drain state, restart 뒤 marker 부재, legacy meter 복구 |
+| heartbeat 정책 자체 | #453 | #473은 telemetry 경계만 소유하며 주기·정책은 변경하지 않음 |
+
+Floci acceptance와 in-memory `ObservationHandler` 검증은 AWS 계정 없이 수행할 수
+있습니다. 실제 AWS IAM/redelivery timing과 production OpenTelemetry exporter 검증은
+이번 운영 근거에 포함하지 않으며 `N/A`로 기록합니다.
+
+### SQS Observation diagnostics
+
+Observation이 활성화되어도 queue resolution과 background heartbeat는 서로 다른
+운영 경계입니다. 다음 진단 코드는 payload, 전체 queue URL, account ID와 제한 없는
+exception text를 포함하지 않는 bounded 신호입니다.
+
+| Code | 의미 | 확인 및 조치 |
+| --- | --- | --- |
+| `BT4K-SQS-OBS-101` | property는 enabled지만 observation prerequisite가 충족되지 않음 | `ConditionEvaluationReport`의 `registry-missing`, `registry-noop`, `handler-missing` reason을 확인하고 기존 listener/legacy meter를 유지합니다. |
+| `BT4K-SQS-OBS-201` | receive observation을 시작하기 전 queue URL resolution 실패 | queue 이름·권한·`queueNotFoundStrategy`를 확인하고 기존 retry 또는 fail-fast 정책을 따릅니다. queue resolution 실패를 receive I/O 성공으로 집계하지 않습니다. |
+| `BT4K-SQS-OBS-202` | background visibility heartbeat observation의 `error()` 또는 `stop()` cleanup 실패 | bounded warning을 확인합니다. heartbeat 주기·visibility 결과·handler 결과는 바꾸지 않으며 #453의 heartbeat 정책을 그대로 적용합니다. |
+
+`BT4K-SQS-OBS-101`이 발생하면 startup을 임의로 실패시키거나 user factory만으로
+활성화하지 않습니다. registry, `ObservationHandler` bean, Context Propagation classpath를
+보완한 뒤 restart/redeploy로 다시 평가하세요. `BT4K-SQS-OBS-201`은 queue URL resolution
+실패를, `BT4K-SQS-OBS-202`는 telemetry cleanup 실패를 나타내므로 각각의 bounded
+warning과 condition report를 확인하세요.
+
 ## Modulith event runtime 운영 (미출시/develop)
 
 inbound adapter는 SQS의 at-least-once 전달을 사용합니다. source를 검증하고 envelope를

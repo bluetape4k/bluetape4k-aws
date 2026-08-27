@@ -42,7 +42,9 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
 - **SQS** — `SqsCoroutinesTemplate`로 큐 조회·생성, 송신, 수신, visibility 변경,
   cold `Flow<SqsReceivedMessage>` 스트림을 제공합니다.
 - **SQS 리스너** — `@SqsListener` 어노테이션 기반 Coroutine 메시지 리스너 컨테이너입니다.
-  동시 처리 수와 visibility/error-visibility 타임아웃을 속성으로 조정합니다.
+  동시 처리 수와 visibility/error-visibility 타임아웃을 속성으로 조정합니다. 선택적 SQS
+  Observation은 receive, process, 실제 acknowledgement I/O를 관찰하며 상세 계약은
+  [매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)에 있습니다.
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` 추상 베이스가
   `DynamoDbAsyncTable` 위에서 `save`/`findById`/`update`/`delete`와
   `scan`/`query`/`queryIndex`의 `Flow` 결과를 제공합니다. 논리 테이블 이름은
@@ -1007,6 +1009,13 @@ SNS envelope가 아닌 본문은 기존 SQS 변환 경로를 그대로 사용합
 backoff와 optional jitter를 지원합니다. `SqsListenerInterceptor` bean을 등록하면
 receive, handler, ack/nack, failure 단계를 Micrometer나 logging/tracing library로
 관찰할 수 있습니다. `stop-timeout-millis`는 poller 취소 후 컨테이너 종료 대기 시간을 제한합니다.
+
+네이티브 SQS Observation은 `bluetape4k.aws.sqs.observation.enabled=true`로 별도
+활성화합니다. receive, process, 실제 acknowledgement I/O 사이에서 coroutine parentage를
+보존합니다. 선행 조건, 안전한 tag, 확장 지점, Floci acceptance는
+[storage와 messaging 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md),
+canary와 rollback 규칙은
+[runtime operations 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md)을 참고하세요.
 
 선택적 visibility heartbeat를 사용하려면 `message-visibility-heartbeat-interval-seconds`와
 `message-visibility-heartbeat-seconds`를 모두 설정해야 하며 기본값은 비활성화입니다. 두 값은

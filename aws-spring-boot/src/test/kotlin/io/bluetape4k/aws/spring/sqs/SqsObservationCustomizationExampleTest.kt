@@ -12,31 +12,52 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.core.annotation.Order
 
+// tag::sqs-observation-customization[]
+@Order(1)
+private class DeploymentEnvironmentCustomizer : SqsObservationContextCustomizer {
+    override fun customize(context: SqsObservationContext) {
+        context.put("deployment.environment", "production")
+    }
+}
+
+@Order(2)
+private class ObservationOwnerCustomizer : SqsObservationContextCustomizer {
+    override fun customize(context: SqsObservationContext) {
+        val environment = context.get<String>("deployment.environment")
+        context.put("observation.owner", "$environment:sqs-platform")
+    }
+}
+
+fun sqsObservationFactory(): SqsObservationFactory = SqsObservationFactory { context, registry ->
+    Observation.createNotStarted("custom.sqs.process", { context }, registry)
+}
+// end::sqs-observation-customization[]
+
 class SqsObservationCustomizationExampleTest {
 
     @Test
     fun `ordered customizers run exactly once before the user factory`() {
-        val calls = mutableListOf<String>()
         val context = processContext()
         val registry = ObservationRegistry.create()
         registry.observationConfig().observationHandler(RecordingHandler())
         val factory = SqsObservationFactory { suppliedContext, suppliedRegistry ->
-            calls += "factory"
             assertSame(context, suppliedContext)
             assertSame(registry, suppliedRegistry)
-            Observation.createNotStarted("custom", { suppliedContext }, suppliedRegistry)
+            assertEquals("production", suppliedContext.get<String>("deployment.environment"))
+            assertEquals("production:sqs-platform", suppliedContext.get<String>("observation.owner"))
+            sqsObservationFactory().createNotStarted(suppliedContext, suppliedRegistry)
         }
 
         val observation = prepareSqsObservation(
             context = context,
             registry = registry,
-            customizers = listOf(SecondCustomizer(calls), FirstCustomizer(calls)),
+            customizers = listOf(ObservationOwnerCustomizer(), DeploymentEnvironmentCustomizer()),
             factory = factory,
         )
 
-        assertEquals(listOf("first", "second", "factory"), calls)
         assertSame(context, observation.context)
-        assertEquals("first-second", context.get<String>("customizer-order"))
+        assertEquals("production", context.get<String>("deployment.environment"))
+        assertEquals("production:sqs-platform", context.get<String>("observation.owner"))
     }
 
     @Test
@@ -133,26 +154,6 @@ class SqsObservationCustomizationExampleTest {
             initialAttempt = 1,
         ),
     )
-
-    @Order(1)
-    private class FirstCustomizer(
-        private val calls: MutableList<String>,
-    ) : SqsObservationContextCustomizer {
-        override fun customize(context: SqsObservationContext) {
-            calls += "first"
-            context.put("customizer-order", "first")
-        }
-    }
-
-    @Order(2)
-    private class SecondCustomizer(
-        private val calls: MutableList<String>,
-    ) : SqsObservationContextCustomizer {
-        override fun customize(context: SqsObservationContext) {
-            calls += "second"
-            context.put("customizer-order", context.get<String>("customizer-order") + "-second")
-        }
-    }
 
     private class RecordingHandler : ObservationHandler<SqsObservationContext> {
         var starts: Int = 0
