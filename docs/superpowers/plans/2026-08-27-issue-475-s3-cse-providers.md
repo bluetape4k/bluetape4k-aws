@@ -1422,7 +1422,7 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnve
                 plaintext?.fill(0)
                 temporary?.let { path ->
                     withContext(NonCancellable + ioDispatcher) {
-                        Files.deleteIfExists(path)
+                        runCatching { Files.deleteIfExists(path) }
                     }
                 }
             }
@@ -1469,7 +1469,7 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnve
 
 - [ ] Step 5: transfer/typed GREEN과 no-plaintext 테스트를 실행한다.
 
-스트리밍 테스트는 다음 terminal 경계를 모두 고정한다: 빈 stream의 `complete()` logical EOF에서 tag와 delegate completion이 한 번만 발생하는지, `complete()`의 `doFinal`이 한 번만 호출되는지, `complete()`와 `close()`의 double terminal call이 idempotent한지, terminal 이후 `write`가 거절되는지, concurrent `complete/close`가 exactly-once인지, `complete()`가 IO dispatcher 진입 전에 취소되어도 delegate가 exactly-once cleanup되는지, ciphertext를 잘라낸 truncated final input이 인증 실패하고 destination을 만들지 않는지, `CancellationException`이 그대로 전파되면서 delegate와 임시 파일이 정리되는지. `headObject`가 `MAX_CIPHERTEXT_BYTES + 1`을 보고한 경우 download 전에 실패하고 temp path가 생성되지 않는지도 검증한다. provider가 close된 뒤 `downloadEncryptedFile`이 HEAD를 호출하지 않고 즉시 실패하는지도 검증한다. HEAD ETag와 GET `ifMatch`가 다른 TOCTOU 응답은 body를 쓰기 전에 실패하고, 이미 만든 ciphertext temp path는 cleanup되는지 확인한다. temp 생성 직후 cancellation은 `NonCancellable + Dispatchers.IO` finally에서 path와 plaintext buffer를 정리한다. broad `Throwable` cleanup은 cancellation을 새 예외로 감싸지 않고 원래 instance를 다시 throw한다.
+스트리밍 테스트는 다음 terminal 경계를 모두 고정한다: 빈 stream의 `complete()` logical EOF에서 tag와 delegate completion이 한 번만 발생하는지, `complete()`의 `doFinal`이 한 번만 호출되는지, `complete()`와 `close()`의 double terminal call이 idempotent한지, terminal 이후 `write`가 거절되는지, concurrent `complete/close`가 exactly-once인지, `complete()`가 IO dispatcher 진입 전에 취소되어도 delegate가 exactly-once cleanup되는지, ciphertext를 잘라낸 truncated final input이 인증 실패하고 destination을 만들지 않는지, `CancellationException`이 그대로 전파되면서 delegate와 임시 파일이 정리되는지. `headObject`가 `MAX_CIPHERTEXT_BYTES + 1`을 보고한 경우 download 전에 실패하고 temp path가 생성되지 않는지도 검증한다. provider가 close된 뒤 `downloadEncryptedFile`이 HEAD를 호출하지 않고 즉시 실패하는지도 검증한다. HEAD ETag와 GET `ifMatch`가 다른 TOCTOU 응답은 body를 쓰기 전에 실패하고, 이미 만든 ciphertext temp path는 cleanup되는지 확인한다. temp 생성 직후 cancellation은 `NonCancellable + Dispatchers.IO` finally에서 path와 plaintext buffer를 정리한다. 파일 삭제 자체가 실패해도 best-effort로 삼키고 원래 `CancellationException` 또는 download 오류 instance를 보존하는 경로를 별도 테스트한다. broad `Throwable` cleanup은 cancellation을 새 예외로 감싸지 않고 원래 instance를 다시 throw한다.
 
     ./gradlew :bluetape4k-aws-spring-boot:test \
       --tests 'io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionObjectExtensionsTest' \
