@@ -45,10 +45,15 @@ class S3EncryptedOutputStream internal constructor(
 
     override fun write(b: ByteArray, off: Int, len: Int) {
         require(off >= 0 && len >= 0 && off <= b.size - len) { "Invalid byte range." }
-        if (len == 0) return
-        synchronized(stateLock) {
-            check(!terminalStarted) { "S3EncryptedOutputStream is already closed." }
-            cipher.update(b, off, len)?.let(::writeCiphertext)
+        try {
+            synchronized(stateLock) {
+                check(!terminalStarted) { "S3EncryptedOutputStream is already closed." }
+                if (len == 0) return
+                cipher.update(b, off, len)?.let(::writeCiphertext)
+            }
+        } catch (error: Throwable) {
+            failAndDiscard(error)
+            throw error
         }
     }
 
@@ -67,6 +72,7 @@ class S3EncryptedOutputStream internal constructor(
                 } else {
                     terminalStarted = true
                     completed = true
+                    terminalFailure = cancelled
                     true
                 }
             }
@@ -81,6 +87,7 @@ class S3EncryptedOutputStream internal constructor(
 
     private suspend fun completeOnIo() = completionMutex.withLock {
         synchronized(stateLock) {
+            terminalFailure?.let { throw it }
             if (completed) return@withLock
             check(!terminalStarted) { "S3EncryptedOutputStream completion already started." }
             terminalStarted = true
@@ -95,12 +102,30 @@ class S3EncryptedOutputStream internal constructor(
             delegate.complete()
         } catch (cancelled: CancellationException) {
             cleanupDelegate()
+            synchronized(stateLock) { terminalFailure = cancelled }
             throw cancelled
         } catch (error: Throwable) {
             cleanupDelegate()
+            synchronized(stateLock) { terminalFailure = error }
             throw error
         } finally {
             synchronized(stateLock) { completed = true }
+        }
+    }
+
+    private fun failAndDiscard(error: Throwable) {
+        val ownsCleanup = synchronized(stateLock) {
+            if (completed || terminalStarted) {
+                false
+            } else {
+                terminalStarted = true
+                completed = true
+                terminalFailure = error
+                true
+            }
+        }
+        if (ownsCleanup) {
+            runCatching { runBlocking(Dispatchers.IO) { delegate.discardBlocking() } }
         }
     }
 
@@ -113,8 +138,17 @@ class S3EncryptedOutputStream internal constructor(
     }
 
     private suspend fun cleanupDelegate() {
-        withContext(NonCancellable + ioDispatcher) {
-            runCatching { delegate.close() }
+        val cleanedWithConfiguredDispatcher = runCatching {
+            withContext(NonCancellable + ioDispatcher) {
+                delegate.discardBlocking()
+            }
+        }.isSuccess
+        if (!cleanedWithConfiguredDispatcher) {
+            runCatching {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    delegate.discardBlocking()
+                }
+            }
         }
     }
 
@@ -122,6 +156,7 @@ class S3EncryptedOutputStream internal constructor(
     private val stateLock = Any()
     private var terminalStarted: Boolean = false
     private var completed: Boolean = false
+    private var terminalFailure: Throwable? = null
 
     companion object {
         /** provider metadata와 ciphertext delegate를 하나의 streaming 경계로 묶습니다. */
@@ -151,10 +186,10 @@ class S3EncryptedOutputStream internal constructor(
                     ioDispatcher,
                 )
             } catch (cancelled: CancellationException) {
-                runCatching { delegate?.close() }
+                runCatching { runBlocking(Dispatchers.IO) { delegate?.discardBlocking() } }
                 throw cancelled
             } catch (error: Throwable) {
-                runCatching { delegate?.close() }
+                runCatching { runBlocking(Dispatchers.IO) { delegate?.discardBlocking() } }
                 throw error
             } finally {
                 envelope.dataKey.fill(0)
@@ -248,7 +283,7 @@ class S3ClientSideEncryptionTransferTemplate(
                 }
             }
             withContext(ioDispatcher) {
-                Files.write(destination, requireNotNull(plaintext))
+                commitPlaintext(destination, requireNotNull(plaintext))
             }
         } finally {
             plaintext?.fill(0)
@@ -257,6 +292,33 @@ class S3ClientSideEncryptionTransferTemplate(
                     runCatching { Files.deleteIfExists(path) }
                 }
             }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun commitPlaintext(destination: Path, plaintext: ByteArray) {
+        val previous = if (Files.exists(destination)) {
+            val size = Files.size(destination)
+            require(size <= S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
+                "Existing destination is too large to preserve on write failure: $size"
+            }
+            Files.readAllBytes(destination)
+        } else {
+            null
+        }
+        try {
+            Files.write(destination, plaintext)
+        } catch (error: Throwable) {
+            runCatching {
+                if (previous == null) {
+                    Files.deleteIfExists(destination)
+                } else {
+                    Files.write(destination, previous)
+                }
+            }
+            throw error
+        } finally {
+            previous?.fill(0)
         }
     }
 }

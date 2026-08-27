@@ -74,6 +74,13 @@ class S3OutputStream(
         }
     }
 
+    /** 업로드하지 않고 buffered payload와 임시 파일을 폐기합니다. */
+    internal suspend fun discard() {
+        withContext(Dispatchers.IO) {
+            discardBlocking()
+        }
+    }
+
     /** 업로드를 완료하고 임시 파일을 정리합니다. 두 번 호출해도 안전합니다. */
     override fun close() {
         if (isComplete()) return
@@ -109,6 +116,7 @@ class S3OutputStream(
                 }
             }
         } finally {
+            bytes?.fill(0)
             file?.let { Files.deleteIfExists(it) }
             synchronized(this) {
                 fileOutput = null
@@ -116,6 +124,22 @@ class S3OutputStream(
                 temporaryFile = null
             }
         }
+    }
+
+    internal fun discardBlocking() {
+        val file: Path?
+        val output: OutputStream?
+        synchronized(this) {
+            if (completionStarted) return
+            completionStarted = true
+            output = fileOutput
+            file = temporaryFile
+            fileOutput = null
+            memoryBuffer.reset()
+            temporaryFile = null
+        }
+        runCatching { output?.close() }
+        file?.let { Files.deleteIfExists(it) }
     }
 
     private fun ensureFileOutput(): OutputStream {
