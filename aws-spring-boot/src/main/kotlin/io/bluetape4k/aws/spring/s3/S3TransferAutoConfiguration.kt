@@ -95,4 +95,37 @@ class S3TransferAutoConfiguration {
         contentTypeResolver: S3ObjectContentTypeResolver,
     ): S3TransferTemplate =
         S3TransferTemplate(transferManager, properties, contentTypeResolver)
+
+    @Bean
+    @ConditionalOnBean(
+        value = [
+            S3ClientSideEncryptionProviderTemplate::class,
+            S3TransferOperations::class,
+            S3OutputStreamProvider::class,
+        ],
+    )
+    @ConditionalOnMissingBean(S3ClientSideEncryptionTransferOperations::class)
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.s3.client-side-encryption",
+        name = ["enabled"],
+        havingValue = "true",
+    )
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.s3.transfer",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true,
+    )
+    fun s3ClientSideEncryptionTransferOperations(
+        s3AsyncClient: S3AsyncClient,
+        providerTemplate: S3ClientSideEncryptionProviderTemplate,
+        transferOperations: S3TransferOperations,
+        outputStreamProvider: S3OutputStreamProvider,
+    ): S3ClientSideEncryptionTransferOperations =
+        S3ClientSideEncryptionTransferTemplate(
+            s3AsyncClient,
+            providerTemplate,
+            transferOperations,
+            outputStreamProvider,
+        )
 }
