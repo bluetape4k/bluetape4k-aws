@@ -1027,7 +1027,8 @@ S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 Conditional
     )
     @ConditionalOnBean(KmsOperations::class)
     @ConditionalOnS3CseProvider(ClientSideEncryptionProvider.KMS)
-    fun s3KmsClientSideEncryptionOperations(
+    // Keep the existing method/bean name for KMS binary/configuration compatibility.
+    fun s3ClientSideEncryptionOperations(
         s3AsyncClient: S3AsyncClient,
         kmsOperations: KmsOperations,
         properties: S3Properties,
