@@ -2,7 +2,7 @@
 
 <!-- 이슈 #476 | bluetape4k-aws -->
 
-**상태**: 설계 초안 — 사용자 검토 대기
+**상태**: 설계 승인됨 — 사용자 승인 메시지 `승인` 확인
 **작성일**: 2026-08-27
 **이슈**: [#476](https://github.com/bluetape4k/bluetape4k-aws/issues/476)
 **대상 모듈**: `aws-kotlin`
@@ -488,5 +488,6 @@ codec, Java parity, Streams/Kinesis adapter, background heartbeat scheduler 요�
 
 ## 상태
 
-설계 문서를 작성했으며 사용자 검토를 기다린다. 승인 후 `writing-plans`로 RED→GREEN
-구현 계획을 만들고, 그 전에는 production code를 작성하지 않는다.
+설계 문서는 사용자 승인 메시지 `승인`으로 승인되었다. 이제 `writing-plans`로
+RED→GREEN 구현 계획을 고정하며, 계획·리스크·실행 리뷰가 완료되기 전에는 production
+code를 작성하지 않는다.
