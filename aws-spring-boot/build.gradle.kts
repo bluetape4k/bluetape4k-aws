@@ -115,6 +115,7 @@ dependencies {
     api(bt4k.bluetape4k.io)
     api(bt4k.bluetape4k.coroutines)
     api(libs.micrometer.core)
+    implementation(bt4k.micrometer.context.propagation)
     compileOnly(libs.micrometer.registry.cloudwatch2)
     compileOnly(bt4k.bluetape4k.jackson3)
     compileOnly(bt4k.bluetape4k.testcontainers)
