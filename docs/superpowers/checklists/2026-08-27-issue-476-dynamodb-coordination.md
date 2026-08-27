@@ -129,7 +129,7 @@ FlociServer 계약을 주 검증으로 사용한다.
   - **Failure:** lesson evidence를 수선한다.
 - [x] **CG-10 — pre-PR 수렴**
   - **Action:** leaf gate와 final diff를 수렴하고 local head를 기록한다.
-  - **Evidence:** P0/P1=0, 최신 테스트·문서 계약 통과, branch local exact SHA `1b318db63b6668b1a52dd1589c373529dd6c2ad2`.
+  - **Evidence:** P0/P1=0, 최신 테스트·문서 계약 통과, implementation commit exact SHA `0735f1a850e28a887d90894563da7c0ed897d646`.
   - **Failure:** PR 생성을 차단한다.
 
 ## Kotlin contract
