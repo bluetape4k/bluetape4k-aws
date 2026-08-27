@@ -897,7 +897,9 @@ class SqsMessageListenerContainer internal constructor(
             throw e
         } finally {
             if (handlerFailure !is CancellationException) {
-                interceptors.forEach { it.afterBatchHandle(context, handlerFailure, correlation, pending.size) }
+                withContext(NonCancellable) {
+                    interceptors.forEach { it.afterBatchHandle(context, handlerFailure, correlation, pending.size) }
+                }
             }
         }
     }

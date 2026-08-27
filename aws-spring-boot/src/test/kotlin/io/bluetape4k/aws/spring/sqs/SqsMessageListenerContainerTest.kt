@@ -224,12 +224,16 @@ class SqsMessageListenerContainerTest {
         val invoker = mockk<SqsListenerMethodInvoker>()
         val receiveCalls = AtomicInteger()
         val processFactoryCalls = AtomicInteger()
+        val handlerCalls = AtomicInteger()
         val handlerInvoked = CompletableDeferred<Unit>()
         coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
             if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
         }
         every { invoker.manualAcknowledgement } returns true
-        coEvery { invoker.invoke(any(), any(), any()) } coAnswers { handlerInvoked.complete(Unit) }
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
+            handlerCalls.incrementAndGet()
+            handlerInvoked.complete(Unit)
+        }
         val recorder = ContainerObservationRecorder()
         val registry = ObservationRegistry.create().apply {
             observationConfig().observationHandler(recorder)
@@ -265,10 +269,71 @@ class SqsMessageListenerContainerTest {
         }
 
         processFactoryCalls.get() shouldBeEqualTo 2
+        handlerCalls.get() shouldBeEqualTo 1
         val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
         process.outcome shouldBeEqualTo SqsObservationOutcome.RETRIED
         process.retryCount shouldBeEqualTo 1
         process.attempt shouldBeEqualTo 2
+    }
+
+    @Test
+    fun `batch process observation setup retry enters handler once`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val receiveCalls = AtomicInteger()
+        val processFactoryCalls = AtomicInteger()
+        val handlerCalls = AtomicInteger()
+        val handlerInvoked = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+        }
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
+            handlerCalls.incrementAndGet()
+            handlerInvoked.complete(Unit)
+        }
+        val recorder = ContainerObservationRecorder()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig().observationHandler(recorder)
+        }
+        val delegateFactory = defaultSqsObservationFactory(defaultSqsObservationConventions())
+        val runtime = SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = SqsObservationFactory { context, suppliedRegistry ->
+                if (
+                    context.metadata.stage == SqsObservationStage.PROCESS &&
+                    processFactoryCalls.incrementAndGet() == 1
+                ) {
+                    error("batch process observation setup failed")
+                }
+                delegateFactory.createNotStarted(context, suppliedRegistry)
+            },
+        )
+        val container = container(
+            operations,
+            invoker,
+            batch = true,
+            acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+            retry = SqsProperties.Retry(maxAttempts = 2, initialBackoff = Duration.ZERO),
+        )
+        container.setObservationRuntime(runtime)
+
+        try {
+            container.start()
+            withTimeout(2_000) { handlerInvoked.await() }
+        } finally {
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+        }
+
+        processFactoryCalls.get() shouldBeEqualTo 2
+        handlerCalls.get() shouldBeEqualTo 1
+        val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+        process.outcome shouldBeEqualTo SqsObservationOutcome.RETRIED
+        process.retryCount shouldBeEqualTo 1
+        process.attempt shouldBeEqualTo 2
+        process.batch.shouldBeTrue()
     }
 
     @Test
@@ -431,6 +496,45 @@ class SqsMessageListenerContainerTest {
 
         cancellation.captured.shouldBeInstanceOf(CancellationException::class)
         cleanupActive shouldBeEqualTo listOf(true, true)
+    }
+
+    @Test
+    fun `batch final hook completes when stop cancels while it is suspended`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val interceptor = mockk<SqsListenerInterceptor>(relaxed = true)
+        val receiveCalls = AtomicInteger()
+        val hookStarted = CompletableDeferred<Unit>()
+        val releaseHook = CompletableDeferred<Unit>()
+        val hookCompleted = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+        }
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } returns Unit
+        coEvery { interceptor.afterBatchHandle(any(), anyNullable(), any(), any()) } coAnswers {
+            hookStarted.complete(Unit)
+            releaseHook.await()
+            hookCompleted.complete(Unit)
+        }
+        val container = container(
+            operations,
+            invoker,
+            batch = true,
+            acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+            interceptors = listOf(interceptor),
+            stopTimeoutMillis = 25,
+        )
+
+        try {
+            container.start()
+            withTimeout(2_000) { hookStarted.await() }
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(500) { stopped.await() }
+        } finally {
+            releaseHook.complete(Unit)
+        }
+        withTimeout(2_000) { hookCompleted.await() }
     }
 
     @Test
@@ -974,13 +1078,18 @@ class SqsMessageListenerContainerTest {
         val receiveCalls = AtomicInteger()
         val handlerStarted = CompletableDeferred<Unit>()
         val releaseHandler = CompletableDeferred<Unit>()
+        val handlerCompleted = CompletableDeferred<Unit>()
         coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
             if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
         }
         every { invoker.manualAcknowledgement } returns true
         coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
-            withContext(NonCancellable) { releaseHandler.await() }
+            try {
+                withContext(NonCancellable) { releaseHandler.await() }
+            } finally {
+                handlerCompleted.complete(Unit)
+            }
         }
         val container = container(operations, invoker, stopTimeoutMillis = 25)
 
@@ -992,6 +1101,7 @@ class SqsMessageListenerContainerTest {
             withTimeout(500) { stopped.await() }
         } finally {
             releaseHandler.complete(Unit)
+            withTimeout(2_000) { handlerCompleted.await() }
         }
     }
 
