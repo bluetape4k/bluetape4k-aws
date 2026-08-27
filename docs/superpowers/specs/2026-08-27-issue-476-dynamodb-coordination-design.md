@@ -238,6 +238,9 @@ identifier/token/expiry invariant가 깨지면 DynamoDB를 호출하지 않고 `
   한 번 시도한다. 이 두 번째 조건이 race로 실패하면 `null`이며 더 반복하지 않는다.
   따라서 새/active 경로는 SDK 호출 1회, expiry takeover 경로는 최대 2회이고 pre-read나
   unbounded retry는 없다. 두 단계 모두 `ReturnValue.AllNew`로 새 token을 읽는다.
+  takeover 전 fencing token이 `Long.MAX_VALUE - 1` 이상이면 다음 token을 기록하지 않고
+  `fencing token exhausted`로 중단한다. 성공 응답의 `AllNew` token도 fresh acquire는
+  `1`, takeover는 관찰 token+1, renew는 기존 lease token과 일치하는지 다시 확인한다.
   active owner의 재진입은 acquire가 아니라 renew를 사용한다.
 - renew/heartbeat: lease에 담긴 owner·fencing token·기존 expiry가 현재 item과 모두
   equality로 일치하고 `expiresAt > now`일 때만 만료 시각을 갱신한다. 따라서 fractional

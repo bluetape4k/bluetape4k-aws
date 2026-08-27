@@ -87,6 +87,21 @@ This chart tracks established cross-module integrations. Core-client-only
 services such as Bedrock Runtime are listed in the module table and module
 READMEs.
 
+### DynamoDB coordination (Issue #476)
+
+The AWS Kotlin module also provides `DynamoDbDistributedLock` and
+`DynamoDbMetadataStore` for bounded conditional coordination on a PK-only
+DynamoDB table. Locks retain a monotonic `LockLease.fencingToken`, while
+metadata supports logical expiry and conditional remove/replace operations.
+The [AWS Kotlin manual](docs/manual/en/modules/bluetape4k-aws-kotlin.md#dynamodb-coordination)
+documents the schema, lifecycle, and downstream fencing boundary. The contract
+test uses FlociServer only:
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*DynamoDbCoordinationFlociTest'
+```
+
 ---
 
 ## Architecture

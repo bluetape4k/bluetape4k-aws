@@ -77,6 +77,20 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 core client 모듈에서만 제공하는 서비스는 위 모듈 표와 각 모듈 README에서
 확인할 수 있습니다.
 
+### DynamoDB coordination (Issue #476)
+
+AWS Kotlin 모듈은 PK-only DynamoDB table에서 조건부 쓰기만으로 bounded coordination을
+수행하는 `DynamoDbDistributedLock`과 `DynamoDbMetadataStore`도 제공합니다. Lock은
+단조 증가하는 `LockLease.fencingToken`을 보존하고, metadata는 logical expiry와 조건부
+remove/replace를 지원합니다. 스키마·client lifecycle·downstream fencing 경계는
+[AWS Kotlin 매뉴얼](docs/manual/ko/modules/bluetape4k-aws-kotlin.md#dynamodb-coordination)에서
+설명합니다. 계약 테스트는 FlociServer만 사용합니다.
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*DynamoDbCoordinationFlociTest'
+```
+
 ---
 
 ## 아키텍처
