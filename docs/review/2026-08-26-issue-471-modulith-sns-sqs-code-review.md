@@ -6,7 +6,7 @@
 
 - 대상: `feat/issue-471-modulith-sns-sqs`
 - 기준: `origin/develop` 대비 이슈 #471 구현·테스트·manual 변경
-- 검토 기준 데이터: `57415f4a8734bee9deb8a97a015ff2140b63ad84`와 Task 10 worktree 변경
+- 검토 기준 데이터: `4de73423`과 Task 10 worktree 변경
 - 범위 제외: 실제 AWS 계정, IAM, cross-account, production SNS 인증서 회전·전파 지연
 - 로컬 서비스 검증: `bluetape4k-testcontainers`의 `FlociServer`
 - 판정 규칙: P0/P1은 0이어야 하며 P2/P3는 수정하거나 근거와 후속 경계를 기록한다.

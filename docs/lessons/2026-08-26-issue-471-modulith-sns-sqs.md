@@ -38,7 +38,7 @@ consumer, claim store, metrics, auto-configuration, consumer fixture와 EN/KO ma
 추가했다. Task 10에서는 concurrency stability test, final concrete security guard,
 global disable guard와 6개 관점 code review evidence를 수렴했다.
 
-주요 검증 수렴 커밋은 `f29e74bb`이며, 이전 단계의 원자적 구현 커밋과 함께 이슈 #471
+주요 검증 수렴 커밋은 `124f7fe4`이며, 이전 단계의 원자적 구현 커밋과 함께 이슈 #471
 범위를 구성한다.
 
 ## 검증
