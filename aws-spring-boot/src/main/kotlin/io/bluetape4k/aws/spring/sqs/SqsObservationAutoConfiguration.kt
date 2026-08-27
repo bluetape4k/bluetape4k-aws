@@ -89,7 +89,7 @@ internal class SqsObservationPrerequisitesCondition : SpringBootCondition(), Con
         return when {
             registry == null -> "registry-missing"
             registry === ObservationRegistry.NOOP -> "registry-noop"
-            !hasSupportingHandler(beanFactory) -> "supporting-handler-missing"
+            !hasSupportingHandler(beanFactory) -> "handler-missing"
             else -> null
         }
     }

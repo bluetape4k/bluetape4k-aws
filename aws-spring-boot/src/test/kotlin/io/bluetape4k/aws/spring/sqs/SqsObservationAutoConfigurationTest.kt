@@ -122,6 +122,24 @@ class SqsObservationAutoConfigurationTest {
     }
 
     @Test
+    fun `missing supporting handler exposes the documented diagnostic reason`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
+            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
+            .run { context ->
+                val messages = ConditionEvaluationReport.get(context.beanFactory)
+                    .conditionAndOutcomesBySource
+                    .values
+                    .asSequence()
+                    .flatMap { outcomes -> outcomes.asSequence() }
+                    .mapNotNull { conditionAndOutcome -> conditionAndOutcome.outcome.message }
+                    .toList()
+
+                messages.any { message -> message.contains("BT4K-SQS-OBS-101 handler-missing") } shouldBeEqualTo true
+            }
+    }
+
+    @Test
     fun `registry handler that is not a Spring bean does not activate observation`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
