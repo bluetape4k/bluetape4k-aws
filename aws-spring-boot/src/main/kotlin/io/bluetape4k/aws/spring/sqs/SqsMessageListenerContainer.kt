@@ -510,6 +510,7 @@ class SqsMessageListenerContainer internal constructor(
             operations = operations,
             interceptors = interceptors,
             operationGuard = { generation.ensureActiveOperation() },
+            observationRuntime = observationRuntime,
         )
         handleFailure(queueUrl, message, acknowledgement, error)
     }
@@ -561,6 +562,7 @@ class SqsMessageListenerContainer internal constructor(
                 operations = operations,
                 interceptors = interceptors,
                 operationGuard = { generation.ensureActiveOperation() },
+                observationRuntime = observationRuntime,
             )
             val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement)
             updateHeartbeatAcknowledgement(currentAcknowledgement)
@@ -635,6 +637,7 @@ class SqsMessageListenerContainer internal constructor(
             attempt = 1,
             correlation = correlation,
             operationGuard = { generation.ensureActiveOperation() },
+            observationRuntime = observationRuntime,
         )
         val manual = endpoint.acknowledgementMode == SqsAcknowledgementMode.MANUAL
         val context = SqsListenerInvocationContext(endpoint.id, queueUrl, messages.first(), 1)
@@ -857,7 +860,8 @@ class SqsMessageListenerContainer internal constructor(
                         throw e
                     } catch (e: Throwable) {
                         log.warn(
-                            "SQS visibility heartbeat failed: listenerId=${endpoint.id}, target=$target",
+                            "BT4K-SQS-OBS-202 SQS visibility heartbeat failed: " +
+                                "listenerId=${endpoint.id}, target=$target",
                             e,
                         )
                     }
@@ -1056,38 +1060,28 @@ private fun Job.cancellationExceptionOrNull(): CancellationException? = try {
 }
 
 private class HeartbeatAwareSqsAcknowledgement(
-    private val delegate: SqsAcknowledgement,
+    private val delegate: DefaultSqsAcknowledgement,
 ) : SqsAcknowledgement {
-
-    private val operationMutex = Mutex()
 
     override val completed: Boolean
         get() = delegate.completed
 
     override suspend fun acknowledge() {
-        operationMutex.withLock {
-            delegate.acknowledge()
-        }
+        delegate.acknowledge()
     }
 
     override suspend fun nack(timeoutSeconds: Int) {
-        operationMutex.withLock {
-            delegate.nack(timeoutSeconds)
-        }
+        delegate.nack(timeoutSeconds)
     }
 
     override suspend fun changeVisibility(timeoutSeconds: Int) {
-        operationMutex.withLock {
-            delegate.changeVisibility(timeoutSeconds)
-        }
+        delegate.changeVisibility(timeoutSeconds)
     }
 
     suspend fun heartbeat(timeoutSeconds: Int) {
-        operationMutex.withLock {
-            if (!delegate.completed) {
-                withContext(Dispatchers.IO) {
-                    delegate.changeVisibility(timeoutSeconds)
-                }
+        if (!delegate.completed) {
+            withContext(Dispatchers.IO) {
+                delegate.heartbeat(timeoutSeconds)
             }
         }
     }

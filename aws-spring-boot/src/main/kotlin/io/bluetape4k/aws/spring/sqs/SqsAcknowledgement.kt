@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.spring.sqs
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -38,17 +43,18 @@ internal class DefaultSqsAcknowledgement(
     private val operations: SqsOperations,
     private val interceptors: List<SqsListenerInterceptor>,
     private val operationGuard: () -> Unit = {},
+    private val observationRuntime: SqsObservationRuntime? = null,
 ) : SqsAcknowledgement {
 
     private val terminal = AtomicBoolean(false)
     private val inFlightTerminal = AtomicBoolean(false)
+    private val operationMutex = Mutex()
 
     override val completed: Boolean
         get() = terminal.get()
 
     override suspend fun acknowledge() {
         runTerminalAcknowledgement(SqsAcknowledgementAction.ACK) {
-            operationGuard()
             operations.delete(context.queueUrl, context.message.receiptHandle)
         }
     }
@@ -56,7 +62,6 @@ internal class DefaultSqsAcknowledgement(
     override suspend fun nack(timeoutSeconds: Int) {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
         runTerminalAcknowledgement(SqsAcknowledgementAction.NACK) {
-            operationGuard()
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
     }
@@ -65,13 +70,22 @@ internal class DefaultSqsAcknowledgement(
         changeVisibilityInternal(SqsAcknowledgementAction.CHANGE_VISIBILITY, timeoutSeconds)
     }
 
+    internal suspend fun heartbeat(timeoutSeconds: Int) {
+        require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
+        if (terminal.get()) return
+        runAcknowledgement(SqsAcknowledgementAction.CHANGE_VISIBILITY) {
+            if (!terminal.get()) {
+                operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
+            }
+        }
+    }
+
     private suspend fun changeVisibilityInternal(
         action: SqsAcknowledgementAction,
         timeoutSeconds: Int,
     ) {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
         runAcknowledgement(action) {
-            operationGuard()
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
     }
@@ -87,26 +101,92 @@ internal class DefaultSqsAcknowledgement(
             return
         }
         try {
-            runAcknowledgement(action, block)
-            terminal.set(true)
+            runAcknowledgement(action, onIoSuccess = { terminal.set(true) }, block = block)
         } finally {
             inFlightTerminal.set(false)
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun runAcknowledgement(
         action: SqsAcknowledgementAction,
+        onIoSuccess: () -> Unit = {},
         block: suspend () -> Unit,
     ) {
         interceptors.forEach { it.beforeAcknowledgement(context, action) }
         var failure: Throwable? = null
         try {
-            block()
+            operationGuard()
+            var observedContext: SqsObservationContext? = null
+            observeSqs(
+                runtime = observationRuntime,
+                contextFactory = {
+                    acknowledgementObservationContext(action).also { observedContext = it }
+                },
+            ) {
+                try {
+                    operationMutex.withLock {
+                        block()
+                        onIoSuccess()
+                    }
+                    observedContext?.apply {
+                        acknowledgementSuccessCount = 1
+                        acknowledgementFailureCount = 0
+                    }
+                } catch (e: CancellationException) {
+                    observedContext?.acknowledgementFailureCount = 1
+                    cancel("acknowledgement")
+                    throw e
+                } catch (e: Throwable) {
+                    observedContext?.acknowledgementFailureCount = 1
+                    fail("acknowledgement")
+                    throw e
+                }
+            }
         } catch (e: Throwable) {
             failure = e
-            throw e
-        } finally {
+        }
+        val cleanupFailure = runCatchingAcknowledgementFinalization {
             interceptors.forEach { it.afterAcknowledgement(context, action, failure) }
         }
+        throwAcknowledgementFailures(failure, cleanupFailure)
     }
+
+    private fun acknowledgementObservationContext(action: SqsAcknowledgementAction): SqsObservationContext =
+        SqsObservationContext(
+            SqsObservationMetadata(
+                listenerId = context.listenerId,
+                queueName = resolveSqsObservationQueueName(context.queueUrl),
+                stage = SqsObservationStage.ACKNOWLEDGEMENT,
+                batch = false,
+                messageId = context.message.messageId,
+                messageGroupId = context.message.messageGroupId,
+                messageDeduplicationId = context.message.messageDeduplicationId,
+                initialAttempt = context.attempt,
+                batchSize = 1,
+                acknowledgementAction = action,
+                delivery = resolveSqsObservationDelivery(context.message.approximateReceiveCount?.toString()),
+                queueNameResolved = true,
+            ),
+        )
+}
+
+@Suppress("TooGenericExceptionCaught")
+private suspend fun runCatchingAcknowledgementFinalization(block: suspend () -> Unit): Throwable? =
+    withContext(NonCancellable) {
+        try {
+            block()
+            null
+        } catch (e: Throwable) {
+            e
+        }
+    }
+
+internal fun throwAcknowledgementFailures(primary: Throwable?, cleanup: Throwable?) {
+    if (primary == null) {
+        cleanup?.let { throw it }
+        return
+    }
+    cleanup?.takeUnless { it === primary }?.let(primary::addSuppressed)
+    throw primary
 }
