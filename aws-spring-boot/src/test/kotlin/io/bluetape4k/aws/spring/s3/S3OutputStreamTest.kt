@@ -106,6 +106,33 @@ class S3OutputStreamTest {
         operations.uploadedBytes.single().decodeToString() shouldBeEqualTo "ok"
         operations.ioCompletionObserved.shouldBeTrue()
     }
+
+    @Test
+    fun `discard drops buffered payload without uploading`() = runBlocking {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-output-discard-")
+        val operations = RecordingTransferOperations()
+        try {
+            val output = S3OutputStream(
+                operations = operations,
+                bucket = "bucket",
+                key = "discarded.bin",
+                thresholdBytes = 1,
+                temporaryDirectory = tempDirectory,
+            )
+            output.write("discard me".encodeToByteArray())
+
+            output.discard()
+            output.discard()
+
+            operations.uploadedBytes.size shouldBeEqualTo 0
+            operations.uploadedFiles.size shouldBeEqualTo 0
+            Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
+            assertFailsWith<IllegalStateException> { output.write(1) }
+            Unit
+        } finally {
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
 }
 
 private class RecordingTransferOperations(

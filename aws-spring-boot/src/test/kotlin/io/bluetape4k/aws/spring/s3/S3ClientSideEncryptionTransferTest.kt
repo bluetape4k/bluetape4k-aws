@@ -7,7 +7,9 @@ import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -26,6 +28,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
+import kotlin.coroutines.CoroutineContext
 import javax.crypto.spec.SecretKeySpec
 import kotlin.test.assertFailsWith
 
@@ -84,7 +87,67 @@ class S3ClientSideEncryptionTransferTest {
             encrypted.complete()
 
             assertFailsWith<IllegalStateException> { encrypted.write(1) }
+            assertFailsWith<IllegalStateException> { encrypted.write(byteArrayOf(), 0, 0) }
             operations.uploadedFileContents.size shouldBeEqualTo 1
+        } finally {
+            template.close()
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
+
+    @Test
+    fun `encrypted stream write failure discards delegate without uploading`() = runSuspendIO {
+        val root = Files.createTempDirectory("bluetape-s3-cse-write-failure-")
+        val blockingPath = root.resolve("not-a-directory")
+        Files.write(blockingPath, byteArrayOf(1))
+        val operations = EncryptedRecordingTransferOperations()
+        val delegate = RecordingS3OutputStreamProvider(operations, blockingPath, thresholdBytes = 1)
+        val template = testProviderTemplate()
+        try {
+            val encrypted = S3EncryptedOutputStream.create(
+                template = template,
+                outputStreamProvider = delegate,
+                bucket = "bucket",
+                key = "failed.bin",
+                contentType = null,
+                metadata = emptyMap(),
+                encryptionContext = emptyMap(),
+                ioDispatcher = Dispatchers.IO,
+            )
+
+            assertFailsWith<Exception> { encrypted.write(ByteArray(128) { 7 }) }
+            operations.uploadedFileContents.size shouldBeEqualTo 0
+            assertFailsWith<Exception> { encrypted.close() }
+        } finally {
+            template.close()
+            Files.deleteIfExists(blockingPath)
+            Files.deleteIfExists(root)
+        }
+    }
+
+    @Test
+    fun `dispatcher entry cancellation discards delegate and preserves cancellation`() = runSuspendIO {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-cse-cancel-")
+        val operations = EncryptedRecordingTransferOperations()
+        val delegate = RecordingS3OutputStreamProvider(operations, tempDirectory, thresholdBytes = 1)
+        val template = testProviderTemplate()
+        try {
+            val encrypted = S3EncryptedOutputStream.create(
+                template = template,
+                outputStreamProvider = delegate,
+                bucket = "bucket",
+                key = "cancelled.bin",
+                contentType = null,
+                metadata = emptyMap(),
+                encryptionContext = emptyMap(),
+                ioDispatcher = CancellingDispatcher,
+            )
+            encrypted.write(ByteArray(128) { 7 })
+
+            val cancelled = assertFailsWith<CancellationException> { encrypted.complete() }
+            cancelled.message shouldBeEqualTo "cancelled before dispatch"
+            operations.uploadedFileContents.size shouldBeEqualTo 0
+            Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
         } finally {
             template.close()
             Files.deleteIfExists(tempDirectory)
@@ -210,6 +273,11 @@ class S3ClientSideEncryptionTransferTest {
         }
         verify(exactly = 0) { client.headObject(any<Consumer<HeadObjectRequest.Builder>>()) }
     }
+}
+
+private object CancellingDispatcher : CoroutineDispatcher() {
+    override fun dispatch(context: CoroutineContext, block: Runnable): Unit =
+        throw CancellationException("cancelled before dispatch")
 }
 
 private class RecordingS3OutputStreamProvider(
