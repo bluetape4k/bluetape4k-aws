@@ -656,6 +656,22 @@ val compileAwsSpringModulithConsumerFixture = registerSpringModulithConsumerFixt
     outputPath = "consumer-fixtures/aws-spring-modulith/classes",
 )
 
+val compileAwsSpringModulithForbiddenConfigurationConstructorFixture = registerSpringModulithConsumerFixtureCompile(
+    name = "compileAwsSpringModulithForbiddenConfigurationConstructorFixture",
+    sourceFile =
+        "aws-spring-boot/src/consumerFixture/kotlin/io/bluetape4k/aws/spring/modulith/consumer/" +
+            "AwsModulithForbiddenConfigurationExceptionConstructionFixture.kt",
+    outputPath = "consumer-fixtures/aws-spring-modulith/forbidden-configuration/classes",
+)
+
+val compileAwsSpringModulithForbiddenDispatchConstructorFixture = registerSpringModulithConsumerFixtureCompile(
+    name = "compileAwsSpringModulithForbiddenDispatchConstructorFixture",
+    sourceFile =
+        "aws-spring-boot/src/consumerFixture/kotlin/io/bluetape4k/aws/spring/modulith/consumer/" +
+            "AwsModulithForbiddenDispatchExceptionConstructionFixture.kt",
+    outputPath = "consumer-fixtures/aws-spring-modulith/forbidden-dispatch/classes",
+)
+
 fun registerBedrockConsumerFixtureCompile(
     name: String,
     sourcePath: String,

@@ -212,6 +212,7 @@ tasks.register<Test>("compatibilityTest") {
         includeTestsMatching("io.bluetape4k.aws.spring.AwsAutoConfigurationTest")
         includeTestsMatching("io.bluetape4k.aws.spring.cloudwatch.CloudWatchAutoConfigurationTest")
         includeTestsMatching("io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfigurationTest")
+        includeTestsMatching("io.bluetape4k.aws.spring.modulith.AwsModulithEventsClasspathIsolationTest")
         includeTestsMatching("io.bluetape4k.aws.spring.s3vectors.S3VectorsAutoConfigurationTest")
         includeTestsMatching("io.bluetape4k.aws.spring.ses.SesAutoConfigurationTest")
     }

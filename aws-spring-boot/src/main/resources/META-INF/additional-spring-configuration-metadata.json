@@ -9,6 +9,26 @@
       "name": "bluetape4k.aws.cloudwatch.micrometer.registry.filters",
       "type": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties$Micrometer$Filters",
       "sourceType": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties"
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events",
+      "type": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties",
+      "sourceType": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties"
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.producer",
+      "type": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties$Producer",
+      "sourceType": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties"
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer",
+      "type": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties$Consumer",
+      "sourceType": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties"
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.idempotency",
+      "type": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties$Idempotency",
+      "sourceType": "io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties"
     }
   ],
   "properties": [
@@ -55,6 +75,104 @@
       "name": "bluetape4k.aws.cloudwatch.micrometer.registry.filters.excludes",
       "type": "java.util.List<java.lang.String>",
       "description": "Meter-name prefixes to deny after include filtering."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "Modulith 이벤트 외부화 adapter를 명시적으로 활성화합니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.producer.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "outbound 이벤트 producer를 활성화합니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.producer.max-in-flight",
+      "type": "java.lang.Integer",
+      "defaultValue": 64,
+      "description": "동시에 처리할 수 있는 publication의 최대 개수입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.producer.max-serialized-payload-bytes",
+      "type": "java.lang.Integer",
+      "defaultValue": 196608,
+      "description": "직렬화된 payload의 UTF-8 최대 크기입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.producer.max-envelope-bytes",
+      "type": "java.lang.Integer",
+      "defaultValue": 262144,
+      "description": "SNS/SQS envelope의 UTF-8 최대 크기입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.producer.shutdown-timeout",
+      "type": "java.time.Duration",
+      "defaultValue": "PT25S",
+      "description": "producer 종료 시 in-flight publication을 기다리는 최대 시간입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "inbound SQS consumer를 활성화합니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.queue",
+      "type": "java.lang.String",
+      "description": "consumer가 polling할 논리적 SQS queue 이름입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.source-mode",
+      "type": "io.bluetape4k.aws.spring.modulith.AwsModulithSourceMode",
+      "description": "inbound source 검증 방식(DIRECT 또는 SNS)입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.expected-topic-arns",
+      "type": "java.util.Set<java.lang.String>",
+      "description": "SNS source에서 허용할 topic ARN 목록입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.redrive-required",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "SQS queue에 RedrivePolicy가 없으면 시작을 거부합니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.idempotency.max-entries",
+      "type": "java.lang.Integer",
+      "defaultValue": 10000,
+      "description": "기본 in-memory idempotency store의 최대 entry 수입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.idempotency.max-in-progress",
+      "type": "java.lang.Integer",
+      "defaultValue": 256,
+      "description": "동시에 claim할 수 있는 event의 최대 개수입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.idempotency.max-key-bytes",
+      "type": "java.lang.Integer",
+      "defaultValue": 2097152,
+      "description": "idempotency key의 aggregate UTF-8 최대 크기입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.idempotency.retention",
+      "type": "java.time.Duration",
+      "defaultValue": "PT24H",
+      "description": "완료된 duplicate claim을 유지하는 시간입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.consumer.idempotency.lease-duration",
+      "type": "java.time.Duration",
+      "defaultValue": "PT2M",
+      "description": "idempotency claim lease와 heartbeat 기준 시간입니다."
+    },
+    {
+      "name": "bluetape4k.aws.modulith.events.targets",
+      "type": "java.util.Map<java.lang.String,io.bluetape4k.aws.spring.modulith.AwsModulithEventsProperties$Target>",
+      "description": "logical alias별 SNS 또는 SQS destination 설정입니다."
     }
   ]
 }
