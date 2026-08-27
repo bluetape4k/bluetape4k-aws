@@ -38,7 +38,9 @@ enum class AwsModulithStoreMutation {
  * inbound event의 lease와 fencing을 관리하는 idempotency store 계약입니다.
  *
  * 구현은 key별 claim을 선형화하고 blocking I/O가 필요하면 구현 내부에서 별도 dispatcher로
- * 격리해야 합니다. library는 사용자 구현의 lifecycle을 소유하지 않습니다.
+ * 격리해야 합니다. library는 사용자 구현의 lifecycle을 소유하지 않습니다. 이 SPI는
+ * at-least-once 전달의 중복을 제한하지만 local side effect와 claim commit을 원자화하거나
+ * exactly-once 처리를 보장하지 않습니다.
  */
 interface AwsModulithEventIdempotencyStore {
     suspend fun claim(key: AwsModulithEventKey, leaseDuration: Duration): AwsModulithClaimResult

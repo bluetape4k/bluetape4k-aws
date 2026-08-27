@@ -223,6 +223,109 @@ lifecycle and does not automatically retry an uncertain partial publish.
 262,144-byte SNS byte-size preflight, a Jackson 3 adapter, and `ByteArray`
 payload support are follow-up scope rather than current behavior.
 
+## Spring Modulith SNS/SQS externalization (Unreleased/develop)
+
+The optional adapter externalizes registered Spring Modulith events to SNS or
+SQS and restores SQS messages as local application events. Import the root BOM
+once and keep all coordinates versionless:
+
+```kotlin
+dependencies {
+    implementation(platform("io.github.bluetape4k:bluetape4k-dependencies:<version>"))
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-spring-boot")
+    implementation("org.springframework.modulith:spring-modulith-starter-jpa")
+    implementation("org.springframework.modulith:spring-modulith-events-jackson")
+
+    runtimeOnly("software.amazon.awssdk:sns")                 // SNS producer
+    runtimeOnly("software.amazon.awssdk:sqs")                 // SQS producer/consumer
+    runtimeOnly("software.amazon.awssdk:sns-message-manager") // verified SNS consumer
+}
+```
+
+The application owns the Spring Modulith publication repository choice. This
+module keeps the Modulith and service SDK dependencies optional. Register every
+external event with a stable type, version, concrete JVM class, and event ID:
+
+```kotlin
+data class OrderCreated(val orderId: String, val tenant: String)
+
+@Bean
+fun awsModulithEventTypes(): AwsModulithEventTypeRegistry =
+    AwsModulithEventTypeRegistry.of(
+        AwsModulithEventTypeRegistration(
+            type = "order.created",
+            version = 1,
+            eventClass = OrderCreated::class.java,
+            eventId = OrderCreated::orderId,
+            allowedHeaderNames = setOf("tenant"),
+            headers = { mapOf("tenant" to it.tenant) },
+        )
+    )
+```
+
+Spring Modulith routing must return a logical alias such as `order-events`, not
+an ARN or URL. The alias maps to one service destination:
+
+```yaml
+bluetape4k:
+  aws:
+    modulith:
+      events:
+        enabled: true
+        producer:
+          enabled: true
+        targets:
+          order-events:
+            service: sns
+            destination: order-events
+```
+
+Producer-only applications leave `consumer.enabled=false`. A direct SQS
+consumer receives the adapter envelope and requires a queue redrive policy by
+default:
+
+```yaml
+bluetape4k.aws.modulith.events:
+  enabled: true
+  consumer:
+    enabled: true
+    queue: direct-order-events
+    source-mode: direct
+    redrive-required: true
+```
+
+An SNS fanout consumer receives an SNS notification through SQS. It additionally
+requires `sns-message-manager`, a verifier bean, and an exact TopicArn allowlist:
+
+```yaml
+bluetape4k.aws.sns:
+  region: ap-northeast-2
+bluetape4k.aws.modulith.events:
+  enabled: true
+  consumer:
+    enabled: true
+    queue: sns-order-events
+    source-mode: sns
+    expected-topic-arns:
+      - arn:aws:sns:ap-northeast-2:123456789012:order-events
+    redrive-required: true
+```
+
+One built-in listener handles one queue and one source mode per application
+context. Deploy separate contexts when DIRECT and SNS sources must be consumed
+together. For FIFO publication, configure an SQS destination ending in `.fifo`
+and make Spring Modulith provide `RoutingTarget.key`; the adapter uses that key
+as `messageGroupId` and the stable registered event ID as deduplication ID.
+Standard destinations reject a routing key, while FIFO destinations require it.
+
+| Documented contract | Source-backed symbol |
+| --- | --- |
+| Stable event type, version, ID, allowed headers | `AwsModulithEventTypeRegistration`, `AwsModulithEventTypeRegistry` |
+| Logical SNS/SQS target | `AwsModulithEventsProperties.Target`, `AwsModulithTargetService` |
+| DIRECT or verified SNS source | `AwsModulithSourceMode`, `AwsModulithSqsEventConsumer` |
+| Lease/fencing duplicate suppression | `AwsModulithEventIdempotencyStore` |
+| Normal processing or completed duplicate | `AwsModulithConsumeOutcome` |
+
 ## Test what can fail
 
 Test serialization, queue lookup, redelivery, duplicate delivery, DLQ behavior, S3 pagination, multipart cancellation, and DynamoDB partial batch success. A successful send-only test is insufficient.
@@ -232,3 +335,5 @@ Test serialization, queue lookup, redelivery, duplicate delivery, DLQ behavior, 
 - [S3 operations](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3Operations.kt)
 - [SQS listener annotation](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsListener.kt)
 - [DynamoDB repository](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/dynamodb/AbstractCoroutinesDynamoDbRepository.kt)
+- [Modulith event registry](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithEventTypes.kt)
+- [Modulith properties](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithEventsProperties.kt)

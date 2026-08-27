@@ -49,6 +49,36 @@ resolver가 필요합니다. `SnsCoroutinesTemplate`을 직접 생성할 때는 
 endpoint/region이 `SnsProperties`와 일치해야 하며, 다른 client나 검사할 수 없는
 client에는 resolver 주입 생성자를 사용하세요.
 
+## Modulith event 자동 설정 (미출시/develop)
+
+`AwsModulithEventsAutoConfiguration`은 기존 기능에 영향을 주지 않는 추가 기능이며
+기본값은 비활성입니다. Spring Modulith의 `EventExternalizationTransport`,
+`EventSerializer`, `EventExternalizerModuleListener` 세 class가 모두 있고
+`bluetape4k.aws.modulith.events.enabled=true`일 때만 로드됩니다.
+
+producer와 consumer 방향은 서로 독립적으로 opt-in합니다.
+
+| 조건 | 결과 |
+| --- | --- |
+| root 비활성 또는 Modulith class 없음 | adapter properties, transport, consumer bean을 만들지 않습니다. |
+| `producer.enabled=true` | registry, serializer, 하나 이상의 논리 target, target service별 operations capability가 필요합니다. |
+| SNS target만 사용 | SNS publisher만 만들며 SQS operations나 SDK class는 필요하지 않습니다. |
+| SQS target만 사용 | FIFO key와 message attribute를 버리지 않도록 `SqsFullRequestOperations`가 필요합니다. |
+| `consumer.enabled=true`, `source-mode=DIRECT` | SQS operations, registry, serializer, externalization configuration, queue name이 필요하고 명시적으로 끄지 않으면 redrive policy도 요구합니다. |
+| `consumer.enabled=true`, `source-mode=SNS` | DIRECT 요구 사항에 `sns-message-manager`, `SnsHttpMessageVerifier`, 비어 있지 않은 정확한 TopicArn allowlist가 추가됩니다. |
+
+애플리케이션이 `EventExternalizationTransport`를 제공하면 기본 producer가 back-off합니다.
+`AwsModulithEventIdempotencyStore` bean은 기본 in-memory store를 대체합니다. custom
+`SnsHttpMessageVerifier`는 SNS verification 자동 설정이 만든 verifier를 대체합니다.
+각 경계는 독립적이므로 custom outbound transport를 제공해도 inbound consumer는
+비활성화되지 않습니다.
+
+기본 consumer 하나는 application context 하나에서
+`bluetape4k.aws.modulith.events.consumer.queue` 하나와 `source-mode` 하나에 바인딩됩니다.
+여러 queue나 DIRECT/SNS 혼합 소비가 필요하면 context를 분리하거나 애플리케이션 소유
+listener를 사용하세요. 잘못된 교차 property 조합은 첫 message까지 미루지 않고
+`BT4K-MOD-101`로 startup을 실패시킵니다.
+
 ## Back-off는 정상 동작이다
 
 예상한 bean이 없다면 수동 bean부터 추가하지 말고 condition report를 확인하세요. 흔한 원인은 `compileOnly` 서비스 SDK 누락, disabled property, 또는 애플리케이션이 같은 타입의 bean을 제공해 자동 설정이 물러난 경우입니다.
@@ -98,3 +128,4 @@ region과 endpoint 설정만으로 부족하면 제공된 client builder customi
 - [자동 설정 목록](../../../../../aws-spring-boot/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports)
 - [공통 AWS properties](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/AwsProperties.kt)
 - [AWS 자동 설정](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/AwsAutoConfiguration.kt)
+- [Modulith 자동 설정](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithEventsAutoConfiguration.kt)

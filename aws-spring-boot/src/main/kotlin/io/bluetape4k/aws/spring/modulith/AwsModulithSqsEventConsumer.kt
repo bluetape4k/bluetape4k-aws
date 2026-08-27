@@ -132,7 +132,13 @@ internal class DefaultAwsModulithInboundSourceDecoder(
     }
 }
 
-/** Source decode 이후 claim, heartbeat, synchronous dispatch와 fencing complete를 수행합니다. */
+/**
+ * Source decode 이후 claim, heartbeat, synchronous dispatch와 fencing complete를 수행합니다.
+ *
+ * dispatch 완료는 `ApplicationEventPublisher.publishEvent` 호출이 반환한 시점입니다. 별도 executor나
+ * reactive pipeline에서 실행되는 비동기 listener의 최종 완료까지 기다리지는 않습니다. 정상 dispatch와
+ * claim complete 뒤에만 caller가 SQS acknowledgement를 수행할 수 있습니다.
+ */
 @Suppress("LongParameterList", "TooManyFunctions", "TooGenericExceptionCaught")
 class AwsModulithSqsEventConsumer internal constructor(
     private val sourceDecoder: AwsModulithInboundSourceDecoder,

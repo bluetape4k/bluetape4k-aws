@@ -92,6 +92,61 @@ Tune concurrent consumers, long-poll duration, maximum messages, visibility time
 
 When a `MeterRegistry` is available, S3/SQS operations and listener phases can emit low-cardinality timers. Do not put bucket keys, message bodies, secret IDs, or unbounded exception text in metric tags. Correlate AWS request IDs in logs.
 
+## Modulith event runtime operations (Unreleased/develop)
+
+The inbound adapter uses SQS at-least-once delivery. It verifies the source and
+decodes the envelope before claiming `(type, eventId)`, publishes the local
+event synchronously, completes the claim, and only then acknowledges SQS. A
+completed duplicate skips the local handler and retries acknowledgement. A
+failure before claim completion is not acknowledged and remains subject to the
+queue visibility and redrive policy.
+
+The default `InMemoryAwsModulithEventIdempotencyStore` is process-local. It
+limits duplicate handling within one process, but it does not survive restart,
+coordinate multiple instances, or make the local side effect and claim commit
+atomic. Supply a durable `AwsModulithEventIdempotencyStore` for those needs.
+This boundary is duplicate suppression over at-least-once delivery, not an
+exactly-once guarantee. Asynchronous event listener completion is also outside
+the acknowledgement boundary: completion means the synchronous
+`ApplicationEventPublisher.publishEvent` call returned.
+
+When `MeterRegistry` is present, the consumer registers
+`bluetape4k.aws.modulith.events`, `bluetape4k.aws.modulith.events.latency`, and
+`bluetape4k.aws.modulith.events.inflight`. The bounded tags are `service`,
+`phase`, `outcome`, and `code`. Never add event IDs, payloads, message IDs,
+TopicArns, queue URLs, or raw exception text as tags.
+
+| Code | Retryable | Boundary | Required caller action |
+| --- | --- | --- | --- |
+| `BT4K-MOD-101` | no | Configuration, classpath, target, redrive guard | Stop deployment and inspect the condition report. |
+| `BT4K-MOD-102` | no | Registration, serialization, envelope bound | Preserve the DLQ item and fix the registration or payload before replay. |
+| `BT4K-MOD-103` | yes | Producer capacity or shutdown admission | Keep the Modulith publication incomplete and resubmit after checking in-flight work. |
+| `BT4K-MOD-104` | yes | Target resolution or AWS publish | Check endpoint, permission, and SDK retry state before resubmission. |
+| `BT4K-MOD-201` | no | Source mode, TopicArn, SNS signature | Do not acknowledge; quarantine the source and inspect queue policy. |
+| `BT4K-MOD-202` | no | Malformed, unknown type/version, loop risk | Deploy a compatible consumer or inspect the DLQ before replay. |
+| `BT4K-MOD-203` | yes | Claim, lease, fencing, completion | Keep the message unacknowledged and restore the store or wait for lease takeover. |
+| `BT4K-MOD-204` | yes | Local dispatch, SQS acknowledgement, cleanup | Compare handler completion, claim state, and SQS delete before retrying. |
+
+### Rollout and rollback
+
+Deploy a consumer that understands every new `(type, version)` to all instances
+before enabling its producer. Configure the queue DLQ/redrive policy before
+starting the consumer; `redrive-required=true` makes its absence a startup
+failure. For rollback, disable producer externalization first, wait for its
+bounded close and preserve incomplete publications, then drain supported queue
+and DLQ versions before disabling the consumer. Do not delete queued messages,
+truncate the idempotency store, or downgrade while a newer version remains.
+
+### Floci and real AWS evidence boundary
+
+The Floci test matrix proves DIRECT SQS round trip, SNS-to-SQS transport with an
+explicit `signature-not-proven` verifier fixture, FIFO group/deduplication,
+duplicate acknowledgement, malformed-message no-ack, and DLQ redrive without an
+AWS account. Floci does not prove production SNS certificate/signature behavior,
+IAM resource policies, cross-account delivery, or real AWS redrive timing. The
+SNS verifier has a separate signed request/certificate contract test; production
+deployment still needs its own IAM and endpoint smoke evidence.
+
 ## Native CloudWatch registry
 
 The module keeps two Micrometer paths separate:
@@ -341,3 +396,5 @@ foreign bucket/key/CMK identities are rejected by configuration validation.
 - [SQS listener container](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/SqsMessageListenerContainer.kt)
 - [Micrometer SQS interceptor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/sqs/MicrometerSqsListenerInterceptor.kt)
 - [Secrets environment processor](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/secretsmanager/SecretsManagerEnvironmentPostProcessor.kt)
+- [Modulith diagnostics](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithExceptions.kt)
+- [Modulith consumer metrics](../../../../../aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/modulith/AwsModulithMetrics.kt)

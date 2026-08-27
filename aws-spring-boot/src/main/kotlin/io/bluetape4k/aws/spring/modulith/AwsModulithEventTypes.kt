@@ -22,7 +22,13 @@ data class AwsModulithEventTypeRegistration<T : Any>(
     val headers: (T) -> Map<String, String> = { emptyMap() },
 )
 
-/** 등록된 이벤트 형식을 보관하는 immutable registry입니다. */
+/**
+ * 외부화할 concrete event class와 안정적인 type/version 계약을 보관하는 immutable registry입니다.
+ *
+ * 동일 class 또는 type을 중복 등록할 수 없으며, 등록하지 않은 subtype이나 version을 자동으로
+ * 추론하지 않습니다. 애플리케이션은 producer와 consumer가 공유하는 registry bean을 명시적으로
+ * 제공해야 합니다.
+ */
 class AwsModulithEventTypeRegistry private constructor(
     registrations: List<AwsModulithEventTypeRegistration<*>>,
 ) {
