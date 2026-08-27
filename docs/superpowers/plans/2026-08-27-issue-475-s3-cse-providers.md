@@ -1150,8 +1150,9 @@ delegate가 받은 모든 chunk를 보존한다. failing delegate는 `complete()
 생기지 않는지 확인한다. ciphertext 크기가 `MAX_CIPHERTEXT_BYTES + 1`이면 임시 파일을
 plaintext로 읽기 전에 거부하고 destination과 임시 경로를 변경하지 않는지도 검증한다.
 HEAD와 GET 사이 객체가 교체되는 TOCTOU fixture는 `headObject`가 반환한 ETag를
-`DownloadFileRequest.getObjectRequest { ifMatch(...) }`에 전달했는지 기록하고, ETag 불일치
-응답이 body를 쓰기 전에 실패하며 destination과 임시 경로가 보존/삭제되는지 검증한다.
+`DownloadFileRequest.getObjectRequest { bucket(bucket).key(key).ifMatch(...) }`에 전달했는지
+기록하고, request의 bucket·key·If-Match가 모두 채워진 상태에서 ETag 불일치 응답이 body를
+쓰기 전에 실패하며 destination과 임시 경로가 보존/삭제되는지 검증한다.
 기존 테스트와 동일한 Logback `ListAppender<ILoggingEvent>`를 provider/transfer logger에
 부착해 성공·실패·취소 경로의 formatted message와 throwable message를 수집한다. sentinel
 plaintext, AES/RSA key material, wrapped-key Base64, encryption-context 값이 어느 log event에도
@@ -1353,7 +1354,7 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnve
                     Files.createTempFile("bluetape-s3-cse-", ".ciphertext")
                 }
                 val completed = transferOperations.downloadFile(bucket, key, requireNotNull(temporary)) {
-                    getObjectRequest { it.ifMatch(remoteETag) }
+                    getObjectRequest { it.bucket(bucket).key(key).ifMatch(remoteETag) }
                 }
                 plaintext = withContext(ioDispatcher) {
                     val size = Files.size(requireNotNull(temporary))
