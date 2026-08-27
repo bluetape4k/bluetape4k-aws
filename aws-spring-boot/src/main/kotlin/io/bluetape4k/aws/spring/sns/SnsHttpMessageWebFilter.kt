@@ -52,7 +52,7 @@ class SnsHttpMessageWebFilter(
                     override fun getBody(): Flux<DataBuffer> =
                         Flux.defer {
                             Flux.just(exchange.response.bufferFactory().wrap(bytes.copyOf()))
-                        }
+                        }.doOnDiscard(DataBuffer::class.java, DataBufferUtils.releaseConsumer())
 
                     override fun getHeaders(): HttpHeaders =
                         HttpHeaders().also { headers ->
