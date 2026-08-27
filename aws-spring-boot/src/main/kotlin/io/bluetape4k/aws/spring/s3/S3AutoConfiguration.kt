@@ -15,6 +15,9 @@ import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
 import io.bluetape4k.aws.spring.connection.S3ConnectionDetails
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.context.annotation.Condition
+import org.springframework.context.annotation.ConditionContext
+import org.springframework.core.type.AnnotatedTypeMetadata
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -31,6 +34,30 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder
 import software.amazon.awssdk.services.s3.S3Configuration
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
+import java.util.Locale
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@org.springframework.context.annotation.Conditional(S3CseProviderCondition::class)
+internal annotation class ConditionalOnS3CseProvider(
+    val value: ClientSideEncryptionProvider,
+)
+
+internal class S3CseProviderCondition : Condition {
+    override fun matches(
+        context: ConditionContext,
+        metadata: AnnotatedTypeMetadata,
+    ): Boolean {
+        val attributes = metadata.getAnnotationAttributes(ConditionalOnS3CseProvider::class.java.name)
+        val requested = attributes?.get("value") as? ClientSideEncryptionProvider
+        val configured = context.environment
+            .getProperty("bluetape4k.aws.s3.client-side-encryption.provider")
+            ?.trim()
+            ?.uppercase(Locale.ROOT)
+            ?: ClientSideEncryptionProvider.KMS.name
+        return requested != null && configured == requested.name
+    }
+}
 
 @AutoConfiguration(after = [AwsAutoConfiguration::class])
 @ConditionalOnAwsEnabled
@@ -152,12 +179,57 @@ class S3AutoConfiguration {
         name = ["enabled"],
         havingValue = "true",
     )
+    @ConditionalOnS3CseProvider(ClientSideEncryptionProvider.KMS)
     fun s3ClientSideEncryptionOperations(
         s3AsyncClient: S3AsyncClient,
         kmsOperations: KmsOperations,
         properties: S3Properties,
     ): S3ClientSideEncryptionOperations =
         S3ClientSideEncryptionTemplate(s3AsyncClient, kmsOperations, properties)
+
+    @Bean(destroyMethod = "close")
+    @ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.s3.client-side-encryption",
+        name = ["enabled"],
+        havingValue = "true",
+    )
+    @ConditionalOnS3CseProvider(ClientSideEncryptionProvider.AES)
+    fun s3AesClientSideEncryptionOperations(
+        s3AsyncClient: S3AsyncClient,
+        aesProvider: ObjectProvider<S3AesProvider>,
+        properties: S3Properties,
+    ): S3ClientSideEncryptionProviderTemplate =
+        S3ClientSideEncryptionProviderTemplate(
+            s3AsyncClient = s3AsyncClient,
+            properties = properties,
+            aesProvider = aesProvider.getIfUnique() ?: error(
+                "S3AesProvider is required exactly once when " +
+                    "bluetape4k.aws.s3.client-side-encryption.provider=AES.",
+            ),
+        )
+
+    @Bean(destroyMethod = "close")
+    @ConditionalOnMissingBean(S3ClientSideEncryptionOperations::class)
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.s3.client-side-encryption",
+        name = ["enabled"],
+        havingValue = "true",
+    )
+    @ConditionalOnS3CseProvider(ClientSideEncryptionProvider.RSA)
+    fun s3RsaClientSideEncryptionOperations(
+        s3AsyncClient: S3AsyncClient,
+        rsaProvider: ObjectProvider<S3RsaProvider>,
+        properties: S3Properties,
+    ): S3ClientSideEncryptionProviderTemplate =
+        S3ClientSideEncryptionProviderTemplate(
+            s3AsyncClient = s3AsyncClient,
+            properties = properties,
+            rsaProvider = rsaProvider.getIfUnique() ?: error(
+                "S3RsaProvider is required exactly once when " +
+                    "bluetape4k.aws.s3.client-side-encryption.provider=RSA.",
+            ),
+        )
 
     private fun S3ClientBuilder.applyCommon(
         defaults: io.bluetape4k.aws.spring.AwsClientDefaults,
