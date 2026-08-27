@@ -184,7 +184,10 @@ spills after its threshold, the temporary file contains ciphertext only.
 and writes the plaintext destination only after decryption succeeds. The
 temporary ciphertext file and decryption buffers are cleaned up on success,
 failure, and cancellation. An authentication failure therefore leaves the
-existing destination untouched.
+existing destination untouched. The final destination write runs in a
+non-cancellable I/O boundary; to preserve an existing destination without
+creating a plaintext temporary file, an existing destination is bounded by the
+same `MAX_CIPHERTEXT_BYTES` limit and is restored in memory if the write fails.
 
 ## Recommended patterns {#patterns}
 
