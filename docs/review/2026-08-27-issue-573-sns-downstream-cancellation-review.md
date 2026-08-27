@@ -3,7 +3,7 @@
 ## 검토 범위와 근거
 
 이번 review는 prepared message와 replayable request가 downstream에 전달된 뒤
-구독이 취소되는 경계를 최소한의 pooled-buffer discard 보강과 회귀 테스트로
+구독이 취소되는 경계를 기존 filter discard semantics를 보존하는 회귀 테스트로
 고정하는 이슈 #573을 대상으로 한다.
 
 - 대상 테스트: `aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sns/SnsHttpMessageWebFilterTest.kt`
@@ -17,12 +17,11 @@
 
 ## 검토 결과
 
-판정은 **PASS**다. filter는 replay body가 취소 시 discard될 때
-`DataBufferUtils.releaseConsumer()`를 적용하고, 새 테스트는 별도 Netty response
-buffer factory를 사용해 입력과 replay 모두 `PooledDataBuffer`로 만든다. replay
-body read 완료 경계와 in-flight queue 경계를 각각 동기화한 뒤
-`StepVerifier.thenCancel()`을 실행한다. 취소 시 downstream chain과 body는
-각각 한 번만 구독되고 활성 body 구독은 0으로 돌아가며, handler와
+판정은 **PASS**다. 기존 filter의 outer `doOnDiscard` semantics를 유지하고, 새
+테스트는 별도 Netty response buffer factory를 사용해 입력과 replay 모두
+`PooledDataBuffer`로 만든다. replay body read 완료 경계와 in-flight queue 경계를
+각각 동기화한 뒤 `StepVerifier.thenCancel()`을 실행한다. 취소 시 downstream
+chain과 body는 각각 한 번만 구독되고 활성 body 구독은 0으로 돌아가며, handler와
 `confirmSubscription`은 호출되지 않는다. response status도 설정되지 않아
 취소가 400 입력 오류로 정규화되지 않음을 확인한다.
 
@@ -43,11 +42,9 @@ body read 완료 경계와 in-flight queue 경계를 각각 동기화한 뒤
 - P0/P1: 없음.
 - P2/P3: 없음. 새로운 cancellation API, production semaphore, 실제 AWS
   서명·네트워크, bounded concurrency/latency benchmark는 범위에서 제외했다.
-- 기존 filter의 cancellation 전파는 유지하고, decorated replay body에
-  `doOnDiscard(DataBuffer::class.java, DataBufferUtils.releaseConsumer())`를
-  추가해 downstream queue가 보유한 pooled buffer의 최소 cleanup 경계를
-  보강했다. 새 fixture는 `hide()`와 수동 scheduler barrier로 discard 경로가
-  실제 실행됐음을 보장한다.
+- 기존 filter의 cancellation 전파와 outer `doOnDiscard`를 유지했다. 새 fixture는
+  `hide()`와 수동 scheduler barrier로 downstream queue discard 경로가 실제
+  실행됐음을 보장하며 production semantics/API는 변경하지 않는다.
 - Floci는 signed SNS HTTP delivery를 생성하지 않으므로 이 in-process Reactor
   lifecycle 테스트를 대체하지 않는다.
 
@@ -64,13 +61,13 @@ body read 완료 경계와 in-flight queue 경계를 각각 동기화한 뒤
 
 이슈 #573의 downstream cancellation 회귀 증거는 승인된 범위에 맞게 고정됐다.
 입력과 replay pooled buffer의 해제, 추가 구독 부재, handler·confirmation 0회,
-취소 의미 보존을 두 개의 재현 가능한 cancellation fixture에서 확인하며,
-production 변경은 decorated replay의 discard hook 1줄로 제한했다.
+취소 의미 보존을 두 개의 재현 가능한 cancellation fixture에서 확인하며
+production semantics/API는 변경하지 않았다.
 
 ## DoD Status
 
 - [x] RED fixture로 prepared/replay 이후 cancellation 경계를 고정한다.
-- [x] 최소 production 변경으로 회귀 테스트를 통과시킨다. (replay `doOnDiscard` 1줄)
+- [x] 최소 production 변경으로 회귀 테스트를 통과시킨다. (추가 production 변경 없음)
 - [x] buffer/resource cleanup과 오류 분류를 read-back한다.
 - [ ] exact-head 검증과 별도 PR로 전달한다.
 

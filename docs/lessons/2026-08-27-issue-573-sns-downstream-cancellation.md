@@ -9,8 +9,8 @@ downstream에 넘기고 body를 읽은 다음 취소하는 경계와 replay queu
 
 ## 결정
 
-- production cancellation API나 새로운 동시성 계층을 만들지 않고, decorated
-  replay body에 `DataBufferUtils.releaseConsumer()` discard hook만 보강한다.
+- production cancellation API나 새로운 동시성 계층을 만들지 않고 기존 filter
+  discard semantics를 그대로 검증하는 in-process 테스트만 추가한다.
 - `DefaultServerWebExchange`와 `MockServerHttpResponse(NettyDataBufferFactory)`를
   사용해 입력과 replay body 모두 실제 `PooledDataBuffer` lifecycle을 노출한다.
 - `CountDownLatch`로 replay body read와 upstream body termination을 먼저
@@ -61,6 +61,6 @@ WebFlux filter의 cancellation 테스트는 prepare/replay 이후 단계에서 �
 `thenCancel()`을 사용하고, 입력·replay pooled buffer release, active
 subscription 0, handler·confirmation side effect 0, response error 미정규화를
 동시에 검증해야 한다. 기존 정상 replay와 handler 이전 입력 취소 테스트도
-함께 유지해 lifecycle의 앞·뒤 경계를 모두 덮는다. replay body를 만드는
-decorator는 discard hook을 유지해야 downstream prefetch queue가 보유한
-`DataBuffer`를 안전하게 release할 수 있다.
+함께 유지해 lifecycle의 앞·뒤 경계를 모두 덮는다. 기존 filter의 outer
+`doOnDiscard`가 downstream prefetch queue가 보유한 `DataBuffer`를 안전하게
+release하는지 in-flight fixture로 계속 검증한다.
