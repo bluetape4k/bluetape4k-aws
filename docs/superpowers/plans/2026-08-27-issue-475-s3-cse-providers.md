@@ -996,7 +996,10 @@ Files:
             }
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
-                context.startupFailure!!.message shouldContain "exactly one"
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull(Throwable::getMessage)
+                    .joinToString("\n")
+                messages shouldContain "exactly one"
             }
     }
 
@@ -1009,7 +1012,10 @@ Files:
             )
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
-                context.startupFailure!!.message shouldContain "provider"
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull(Throwable::getMessage)
+                    .joinToString("\n")
+                messages shouldContain "provider"
             }
     }
 
