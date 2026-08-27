@@ -86,6 +86,7 @@ class SqsObservationMetadata internal constructor(
     companion object {
         private const val UNKNOWN: String = "unknown"
 
+        @Suppress("MayBeConstant", "SerialVersionUIDInSerializableClass")
         @JvmField
         val serialVersionUID: Long = 1L
     }

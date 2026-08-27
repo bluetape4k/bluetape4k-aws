@@ -51,7 +51,10 @@ class SqsObservationContextTest {
         observationMetadata(stage = SqsObservationStage.RECEIVE).initialAttempt.shouldBeNull()
         observationMetadata(stage = SqsObservationStage.RECEIVE, initialAttempt = 1).initialAttempt shouldBeEqualTo 1
         observationMetadata(stage = SqsObservationStage.PROCESS, initialAttempt = 1).initialAttempt shouldBeEqualTo 1
-        observationMetadata(stage = SqsObservationStage.ACKNOWLEDGEMENT, initialAttempt = 1).initialAttempt shouldBeEqualTo 1
+        observationMetadata(
+            stage = SqsObservationStage.ACKNOWLEDGEMENT,
+            initialAttempt = 1,
+        ).initialAttempt shouldBeEqualTo 1
 
         listOf(SqsObservationStage.PROCESS, SqsObservationStage.ACKNOWLEDGEMENT).forEach { stage ->
             assertFailsWith<IllegalArgumentException> {

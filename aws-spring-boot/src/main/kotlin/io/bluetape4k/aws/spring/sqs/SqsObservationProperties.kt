@@ -15,6 +15,7 @@ data class SqsObservationProperties(
 ) : Serializable {
 
     companion object {
+        @Suppress("MayBeConstant", "SerialVersionUIDInSerializableClass")
         @JvmField
         val serialVersionUID: Long = 1L
     }
