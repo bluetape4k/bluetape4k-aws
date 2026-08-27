@@ -129,7 +129,7 @@ class SqsMessageListenerContainerTest {
         val invoker = mockk<SqsListenerMethodInvoker>()
         val handlerStarted = CompletableDeferred<Unit>()
         val releaseHandler = CompletableDeferred<Unit>()
-        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message(receiveCount = "2"))
         coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
             handlerStarted.complete(Unit)
             releaseHandler.await()
@@ -156,6 +156,7 @@ class SqsMessageListenerContainerTest {
         process.messageId shouldBeEqualTo null
         process.messageGroupId shouldBeEqualTo null
         process.messageDeduplicationId shouldBeEqualTo null
+        process.delivery shouldBeEqualTo SqsObservationDelivery.UNKNOWN
     }
 
     @Test
@@ -387,6 +388,21 @@ class SqsMessageListenerContainerTest {
         process.retryCount shouldBeEqualTo 1
         process.attempt shouldBeEqualTo 2
         process.batch.shouldBeTrue()
+    }
+
+    @Test
+    fun `receive observation setup failure logs only a bounded diagnostic`() = runSuspendIO {
+        assertObservationSetupFailureIsRedacted(SqsObservationStage.RECEIVE, batch = false)
+    }
+
+    @Test
+    fun `single process observation setup failure logs only a bounded diagnostic`() = runSuspendIO {
+        assertObservationSetupFailureIsRedacted(SqsObservationStage.PROCESS, batch = false)
+    }
+
+    @Test
+    fun `batch process observation setup failure logs only a bounded diagnostic`() = runSuspendIO {
+        assertObservationSetupFailureIsRedacted(SqsObservationStage.PROCESS, batch = true)
     }
 
     @Test
@@ -1636,7 +1652,74 @@ class SqsMessageListenerContainerTest {
         )
     }
 
-    private fun message(messageId: String = "message-1", messageGroupId: String? = null): SqsReceivedMessage =
+    private suspend fun assertObservationSetupFailureIsRedacted(
+        failingStage: SqsObservationStage,
+        batch: Boolean,
+    ) {
+        val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = containerLogger.level
+        val failure = IllegalStateException("telemetry-secret-${failingStage.name.lowercase()}")
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val receiveCalls = AtomicInteger()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+        }
+        every { invoker.manualAcknowledgement } returns true
+        val runtime = SqsObservationRuntime(
+            registry = ObservationRegistry.create(),
+            customizers = emptyList(),
+            factory = SqsObservationFactory { context, _ ->
+                if (context.metadata.stage == failingStage) throw failure
+                Observation.NOOP
+            },
+        )
+        val listenerContainer = container(
+            operations = operations,
+            invoker = invoker,
+            batch = batch,
+            acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+            retry = SqsProperties.Retry(maxAttempts = 1, initialBackoff = Duration.ofSeconds(10)),
+        )
+        listenerContainer.setObservationRuntime(runtime)
+        containerLogger.addAppender(appender)
+        containerLogger.level = Level.WARN
+        try {
+            listenerContainer.start()
+            val expectedStage = "stage=${failingStage.name.lowercase()}"
+            withTimeout(2_000) {
+                while (appender.list.none {
+                    it.formattedMessage.contains("reason=telemetry_setup") &&
+                        it.formattedMessage.contains(expectedStage)
+                }) {
+                    delay(5)
+                }
+            }
+
+            val diagnostic = appender.list.first {
+                it.formattedMessage.contains("reason=telemetry_setup") &&
+                    it.formattedMessage.contains(expectedStage)
+            }
+            diagnostic.formattedMessage.contains("BT4K-SQS-OBS-202").shouldBeTrue()
+            diagnostic.formattedMessage.contains(expectedStage).shouldBeTrue()
+            diagnostic.formattedMessage.contains(QUEUE_URL).shouldBeFalse()
+            diagnostic.formattedMessage.contains(failure.message.orEmpty()).shouldBeFalse()
+            (diagnostic.throwableProxy == null).shouldBeTrue()
+        } finally {
+            val stopped = CompletableDeferred<Unit>()
+            listenerContainer.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+            containerLogger.detachAppender(appender)
+            containerLogger.level = previousLevel
+        }
+    }
+
+    private fun message(
+        messageId: String = "message-1",
+        messageGroupId: String? = null,
+        receiveCount: String? = null,
+    ): SqsReceivedMessage =
         SqsReceivedMessage(
             queueUrl = QUEUE_URL,
             message = Message.builder()
@@ -1644,9 +1727,11 @@ class SqsMessageListenerContainerTest {
                 .receiptHandle("receipt-$messageId")
                 .body("payload")
                 .apply {
-                    messageGroupId?.let {
-                        attributes(mapOf(MessageSystemAttributeName.MESSAGE_GROUP_ID to it))
+                    val attributes = buildMap {
+                        messageGroupId?.let { put(MessageSystemAttributeName.MESSAGE_GROUP_ID, it) }
+                        receiveCount?.let { put(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT, it) }
                     }
+                    if (attributes.isNotEmpty()) attributes(attributes)
                 }
                 .build(),
         )
@@ -1689,6 +1774,7 @@ class SqsMessageListenerContainerTest {
         val acknowledgementAction: SqsAcknowledgementAction?,
         val acknowledgementSuccessCount: Int,
         val acknowledgementFailureCount: Int,
+        val delivery: SqsObservationDelivery,
     )
 
     private class ContainerObservationRecorder : ObservationHandler<SqsObservationContext> {
@@ -1718,6 +1804,7 @@ class SqsMessageListenerContainerTest {
                 acknowledgementAction = context.metadata.acknowledgementAction,
                 acknowledgementSuccessCount = context.acknowledgementSuccessCount,
                 acknowledgementFailureCount = context.acknowledgementFailureCount,
+                delivery = context.metadata.delivery,
             )
         }
     }

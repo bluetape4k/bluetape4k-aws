@@ -46,9 +46,10 @@ element의 structured-concurrency 수명을 같은 것으로 취급하면 안 �
 ### 2. optional classpath와 실제 handler prerequisite를 분리한다
 
 관찰 기능은 `bluetape4k.aws.sqs.observation.enabled`가 명시적으로 `true`일 때만 후보가 된다. 외부
-타입을 eager link하지 않도록 `SqsObservationAutoConfiguration`의 outer condition이
-`io.micrometer.observation.ObservationRegistry`와 `io.micrometer.context.ContextSnapshot` class의
-존재를 먼저 확인한다. class가 없으면 application context가 linkage error 없이 back off해야 한다.
+타입을 eager link하지 않도록 `SqsObservationAutoConfiguration`의 outer condition은
+`io.micrometer.observation.ObservationRegistry`만 확인하고, 내부 prerequisite condition은
+`io.micrometer.context.ContextSnapshot`을 class 이름으로 확인한다. class가 없으면 application
+context가 linkage error 없이 bounded reason을 남기고 back off해야 한다.
 
 class가 있어도 다음 bean 조건이 모두 필요하다.
 
@@ -59,7 +60,8 @@ class가 있어도 다음 bean 조건이 모두 필요하다.
 `SqsObservationFactory`는 default factory만 대체한다. factory bean을 등록해도 registry 또는 supporting
 handler prerequisite를 우회하지 않는다. 조건이 충족되지 않으면 activation marker와 runtime을 만들지
 않고 기존 listener 및 legacy listener metric 경로를 유지한다. condition report에는 현재 구현이
-`BT4K-SQS-OBS-101 registry-missing`, `registry-noop`, `handler-missing` 같은 bounded reason을 남긴다.
+`BT4K-SQS-OBS-101 registry-missing`, `registry-noop`, `handler-missing`,
+`context-propagation-missing` 같은 bounded reason을 남긴다.
 
 이 dependency는 runtime에서 `context-propagation:1.2.1`을 사용하지만 public observation signature에는
 `io.micrometer.context` 타입을 노출하지 않는다. 선택적 capability의 classpath 조건과 public ABI 경계는
@@ -95,7 +97,8 @@ observation으로 감싼다.
 
 heartbeat는 handler 수명에 묶인 child coroutine으로 실행하고, `withVisibilityHeartbeat`의 `finally`에서
 `NonCancellable` `cancelAndJoin`으로 종료한다. background heartbeat에 stale process parent를 연결하지
-않는다. heartbeat observation의 `error()` 또는 `stop()`이 실패해도 `BT4K-SQS-OBS-202` bounded warning만
+않는다. foreground telemetry setup 실패와 heartbeat observation의 `error()` 또는 `stop()` 실패는
+원본 throwable이나 전체 queue URL 없이 `BT4K-SQS-OBS-202` bounded warning만
 남기고 #453이 정한 visibility 연장 결과와 handler 결과는 유지한다.
 
 ## 결과

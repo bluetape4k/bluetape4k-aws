@@ -95,15 +95,19 @@ When a `MeterRegistry` is available, S3/SQS operations and listener phases can e
 ### SQS Observation rollout and rollback
 
 SQS Observation has one runtime owner: `debop` approves activation, canary
-promotion, dashboard changes, and rollback. Keep both the legacy listener
-meter (`MicrometerSqsListenerInterceptor`) and the operations meter
-(`MicrometerSqsOperations`) during migration. Enable the observation property
+promotion, dashboard changes, and rollback. Keep the automatic legacy listener
+meter (`MicrometerSqsListenerInterceptor`) in a separate control cohort and the
+operations meter (`MicrometerSqsOperations`) in both cohorts during migration.
+Observation activation suppresses the automatic legacy listener meter in the
+candidate cohort; manually registering it there would duplicate listener
+instrumentation. Enable the observation property
 only after a real registry and supporting handler are present, then restart or
 redeploy. The runtime does not rebind when a property changes at runtime.
 
 Run a canary for at least 30 minutes and 10,000 messages, satisfying both
-limits. During the complete window, compare the legacy listener meter, the new
-observation counts, process-latency p95, redelivery rate, and DLQ visible count.
+limits. During the complete window, compare the control cohort's legacy
+listener meter with the candidate cohort's new observation counts, plus
+process-latency p95, redelivery rate, and DLQ visible count.
 Do not switch dashboards or alerts to the new meters until the canary passes.
 Stop the canary immediately for any of these signals:
 
@@ -132,13 +136,14 @@ actual AWS and an OpenTelemetry exporter remain `N/A`.
 
 | Code | Meaning | Operator action |
 | --- | --- | --- |
-| `BT4K-SQS-OBS-101` | Observation activation prerequisites are missing, including a registry, a non-NOOP registry, or a supporting Spring handler. | Inspect the condition report; add the required runtime classes/handler or leave observation disabled. A user factory alone is insufficient. |
+| `BT4K-SQS-OBS-101` | Observation activation prerequisites are missing, including Context Propagation, a registry, a non-NOOP registry, or a supporting Spring handler. | Inspect `context-propagation-missing`, `registry-missing`, `registry-noop`, or `handler-missing`; add the required runtime class/bean or leave observation disabled. A user factory alone is insufficient. |
 | `BT4K-SQS-OBS-201` | The listener could not resolve a queue URL for the observation boundary. | Check the queue name/URL, endpoint configuration, and `getQueueUrl` permission before retrying. |
-| `BT4K-SQS-OBS-202` | A visibility-heartbeat observation could not clean up its telemetry. | Preserve the message-processing result, inspect the bounded warning, and verify that the heartbeat job stopped with the listener lifecycle. |
+| `BT4K-SQS-OBS-202` | Foreground observation setup failed closed, or visibility-heartbeat telemetry cleanup failed open. | Inspect the bounded `stage` and `reason`. Foreground setup remains primary; heartbeat cleanup preserves the message-processing and visibility result. |
 
 For `BT4K-SQS-OBS-201`, the runtime does not publish a guessed queue name.
-For `BT4K-SQS-OBS-202`, a telemetry cleanup failure does not change successful
-handler or visibility I/O outcome. Treat both as diagnostics to investigate,
+For `BT4K-SQS-OBS-202`, `reason=telemetry_setup` identifies a fail-closed
+foreground setup failure, while `reason=telemetry_cleanup` does not change a
+successful heartbeat visibility I/O or handler outcome. Treat both as diagnostics to investigate,
 not as permission to add raw queue URLs, receipt handles, or exception text to
 tags.
 

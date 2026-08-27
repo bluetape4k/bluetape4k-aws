@@ -56,7 +56,7 @@ class SqsListenerAnnotationBeanPostProcessor(
         val queue = resolveValue(listener.queue, "queue")
         val id = listener.id.takeIf { it.isNotBlank() }
             ?.let { resolveValue(it, "id") }
-            ?: "$beanName.${method.name}.$queue"
+            ?: "$beanName.${method.name}.${resolveSqsObservationQueueName(queue)}"
 
         val effective = properties.listener
         val maxMessages = listener.maxMessages.takeIf { it != -1 } ?: effective.maxMessages

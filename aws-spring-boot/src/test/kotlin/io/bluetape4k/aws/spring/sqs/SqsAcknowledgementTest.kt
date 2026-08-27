@@ -17,6 +17,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
@@ -45,7 +47,7 @@ class SqsAcknowledgementTest {
     }
 
     @Test
-    fun `terminal race keeps heartbeat observation count equal to actual visibility IO`() = runTest {
+    fun `terminal race skips heartbeat customization when no visibility IO can run`() = runTest {
         val deleteStarted = CompletableDeferred<Unit>()
         val releaseDelete = CompletableDeferred<Unit>()
         val heartbeatPrepared = CompletableDeferred<Unit>()
@@ -76,7 +78,9 @@ class SqsAcknowledgementTest {
         val terminal = async(Dispatchers.Default) { acknowledgement.acknowledge() }
         deleteStarted.await()
         val heartbeat = async(Dispatchers.Default) { acknowledgement.heartbeat(30) {} }
-        heartbeatPrepared.await()
+        withContext(Dispatchers.Default) {
+            withTimeoutOrNull(250) { heartbeatPrepared.await() }
+        }.shouldBeEqualTo(null)
         releaseDelete.complete(Unit)
         terminal.await()
         heartbeat.await()

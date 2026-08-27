@@ -88,10 +88,10 @@
 
 ### Task 1: dependency와 공개 metadata contract를 먼저 고정
 
-**Complexity:** L  
-**Depends on:** 승인된 설계와 본 계획  
-**Write scope:** `aws-spring-boot/build.gradle.kts`, `SqsObservationProperties.kt`, `SqsObservationContext.kt`, context/dependency tests  
-**Required skills:** `$bluetape-kotlin-patterns`, `test-driven-development`; testing과 Spring reference 적용  
+**Complexity:** L
+**Depends on:** 승인된 설계와 본 계획
+**Write scope:** `aws-spring-boot/build.gradle.kts`, `SqsObservationProperties.kt`, `SqsObservationContext.kt`, context/dependency tests
+**Required skills:** `$bluetape-kotlin-patterns`, `test-driven-development`; testing과 Spring reference 적용
 **Expected DoD:** opt-in 기본값, serialization, metadata 불변식, queue name 정제와 context-propagation dependency 경계가 테스트로 고정된다.
 
 - [ ] **Step 1.1: RED public contract test를 작성한다**
@@ -175,9 +175,9 @@
 
 ### Task 2: convention, factory와 customization 계약 구현
 
-**Complexity:** L  
-**Depends on:** Task 1  
-**Write scope:** `SqsObservationConvention.kt`, `SqsObservationFactory.kt`, convention/customization tests  
+**Complexity:** L
+**Depends on:** Task 1
+**Write scope:** `SqsObservationConvention.kt`, `SqsObservationFactory.kt`, convention/customization tests
 **Expected DoD:** 이름·tag allowlist, stage별 convention 선택, ordered customizer와 user factory contract가 deterministic하다.
 
 - [ ] **Step 2.1: RED convention/factory test를 작성한다**
@@ -236,9 +236,9 @@
 
 ### Task 3: coroutine-safe runtime과 실패 우선순위 구현
 
-**Complexity:** XL  
-**Depends on:** Task 2  
-**Write scope:** `SqsObservationRuntime.kt`, `SqsObservationRuntimeTest.kt`  
+**Complexity:** XL
+**Depends on:** Task 2
+**Write scope:** `SqsObservationRuntime.kt`, `SqsObservationRuntimeTest.kt`
 **Expected DoD:** scope를 suspension에 걸치지 않고 current observation을 전파하며, success/error/cancellation/setup/stop의 primary/suppressed와 exactly-once stop을 보존한다.
 
 - [ ] **Step 3.1: RED lifecycle matrix를 작성한다**
@@ -297,9 +297,9 @@
 
 ### Task 4: prerequisite 기반 auto-configuration과 metric 공존 고정
 
-**Complexity:** XL  
-**Depends on:** Task 3  
-**Write scope:** `SqsObservationAutoConfiguration.kt`, imports, `SqsMicrometerAutoConfiguration.kt`, auto-config/metric tests  
+**Complexity:** XL
+**Depends on:** Task 3
+**Write scope:** `SqsObservationAutoConfiguration.kt`, imports, `SqsMicrometerAutoConfiguration.kt`, auto-config/metric tests
 **Expected DoD:** property, optional class, non-NOOP registry와 supporting Spring handler bean을 모두 만족할 때만 marker/runtime이 생기며 legacy listener meter와 operations meter 정책이 유지된다.
 
 - [ ] **Step 4.1: RED `ApplicationContextRunner` matrix를 작성한다**
@@ -367,9 +367,9 @@
 
 ### Task 5: ABI를 보존한 runtime 주입과 direct fast path 연결
 
-**Complexity:** L  
-**Depends on:** Task 4  
-**Write scope:** `SqsAutoConfiguration.kt`, BPP, container, binary compatibility/fast-path tests  
+**Complexity:** L
+**Depends on:** Task 4
+**Write scope:** `SqsAutoConfiguration.kt`, BPP, container, binary compatibility/fast-path tests
 **Expected DoD:** 기존 JVM descriptor를 하나도 제거하지 않고 runtime을 internal setter로 전달하며 미설정 경로는 기존 listener 동작을 직접 실행한다.
 
 - [ ] **Step 5.1: RED binary compatibility test를 작성한다**
@@ -432,9 +432,9 @@
 
 ### Task 6: receive와 process lifecycle을 container에 통합
 
-**Complexity:** XL  
-**Depends on:** Task 5  
-**Write scope:** container, runtime, container/runtime tests  
+**Complexity:** XL
+**Depends on:** Task 5
+**Write scope:** container, runtime, container/runtime tests
 **Expected DoD:** receive/process observation count와 parent 전파가 정확하고 기존 retry, cancellation, generation stop 동작이 유지된다.
 
 - [ ] **Step 6.1: RED receive/process tests를 확장한다**
@@ -485,9 +485,9 @@
 
 ### Task 7: 단건·batch ACK, detached parent와 heartbeat I/O 통합
 
-**Complexity:** XL  
-**Depends on:** Task 6  
-**Write scope:** acknowledgements, container heartbeat, ACK/container tests  
+**Complexity:** XL
+**Depends on:** Task 6
+**Write scope:** acknowledgements, container heartbeat, ACK/container tests
 **Expected DoD:** 실제 AWS I/O에만 acknowledgement observation이 생기고 partial/cancellation/race와 heartbeat 오류 정책이 유지된다.
 
 - [ ] **Step 7.1: RED 단건 ACK lifecycle test를 작성한다**
@@ -556,9 +556,9 @@
 
 ### Task 8: Floci end-to-end acceptance 구현
 
-**Complexity:** XL  
-**Depends on:** Task 7  
-**Write scope:** `SqsObservationAwsEmulatorTest.kt`, 필요한 기존 Floci fixture의 최소 재사용 변경  
+**Complexity:** XL
+**Depends on:** Task 7
+**Write scope:** `SqsObservationAwsEmulatorTest.kt`, 필요한 기존 Floci fixture의 최소 재사용 변경
 **Expected DoD:** 실제 AWS 계정 없이 `FlociServer`의 listener/ACK/visibility 동작과 in-memory handler 증거가 결합된다.
 
 - [ ] **Step 8.1: `FlociServer` 기반 RED integration test를 작성한다**
@@ -608,9 +608,9 @@
 
 ### Task 9: fast-path allocation·contention benchmark와 전체 Kotlin 품질 gate
 
-**Complexity:** L  
-**Depends on:** Task 8  
-**Write scope:** benchmark source/config, touched Kotlin code와 tests의 최소 수정  
+**Complexity:** L
+**Depends on:** Task 8
+**Write scope:** benchmark source/config, touched Kotlin code와 tests의 최소 수정
 **Expected DoD:** disabled 경로의 direct bypass와 active observation count budget이 측정되고, Kotlin/Spring/coroutine 차단 항목이 없다.
 
 - [ ] **Step 9.1: 기존 benchmark wiring을 확장한다**
@@ -663,9 +663,9 @@
 
 ### Task 10: 문서·lesson·전체 검증과 구현 review 준비
 
-**Complexity:** XL  
-**Depends on:** Task 9  
-**Write scope:** `CHANGELOG.md`, EN/KO manual, README, example contract, lesson, review artifact  
+**Complexity:** XL
+**Depends on:** Task 9
+**Write scope:** `CHANGELOG.md`, EN/KO manual, README, example contract, lesson, review artifact
 **Expected DoD:** 사용자가 activation, privacy, customization, migration과 rollback을 구현과 같은 계약으로 이해하고 전체 module evidence가 fresh하다.
 
 - [ ] **Step 10.1: customization example contract를 문서와 연결한다**

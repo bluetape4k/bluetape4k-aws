@@ -15,10 +15,11 @@ import kotlin.coroutines.CoroutineContext
 
 internal class SqsObservationRuntime(
     internal val registry: ObservationRegistry,
-    private val customizers: List<SqsObservationContextCustomizer>,
+    customizers: List<SqsObservationContextCustomizer>,
     private val factory: SqsObservationFactory,
     contextSnapshotFactory: ContextSnapshotFactory? = null,
 ) {
+    private val customizers: List<SqsObservationContextCustomizer> = orderedSqsObservationCustomizers(customizers)
     private val snapshotFactory: ContextSnapshotFactory = contextSnapshotFactory ?: run {
         val contextRegistry = ContextRegistry()
             .registerThreadLocalAccessor(ObservationThreadLocalAccessor(registry))
@@ -211,6 +212,9 @@ internal fun prepareSqsObservation(
     }
     return runtime.prepare(contextFactory())
 }
+
+internal fun SqsObservationRuntime?.activeOrNull(): SqsObservationRuntime? =
+    this?.takeUnless { it.registry === ObservationRegistry.NOOP }
 
 @Suppress("TooGenericExceptionCaught")
 private fun cleanupObservation(

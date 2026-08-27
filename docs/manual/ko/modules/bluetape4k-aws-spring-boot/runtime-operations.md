@@ -92,14 +92,16 @@ consumer 수, long-poll 시간, 한 번에 받을 메시지 수, visibility time
 ### SQS Observation rollout and rollback
 
 SQS Observation은 `debop`이 activation, canary 승격, dashboard 변경과 rollback을
-소유합니다. migration 동안 legacy listener meter(`MicrometerSqsListenerInterceptor`)와
-operations meter(`MicrometerSqsOperations`)를 모두 유지합니다. real registry와
+소유합니다. migration 동안 자동 legacy listener meter(`MicrometerSqsListenerInterceptor`)는
+별도 control cohort에 유지하고 operations meter(`MicrometerSqsOperations`)는 두 cohort에
+유지합니다. Observation이 활성화된 candidate cohort에서는 자동 legacy listener bean이
+억제되며, 수동 등록하면 listener instrumentation이 중복됩니다. real registry와
 supporting handler를 준비한 뒤 observation property를 활성화하고 restart/redeploy하세요.
 runtime property rebind는 지원하지 않습니다.
 
 활성화와 비활성화는 restart/redeploy 경계입니다. 먼저 canary listener에서 최소
-30분과 10,000개 message를 모두 충족하는 동안 다음 지표를 legacy listener meter와
-나란히 비교하세요.
+30분과 10,000개 message를 모두 충족하는 동안 control cohort의 legacy listener meter와
+candidate cohort의 새 observation을 비교하세요.
 
 - legacy listener meter와 새 observation count
 - PROCESS p95 latency
@@ -144,14 +146,15 @@ exception text를 포함하지 않는 bounded 신호입니다.
 
 | Code | 의미 | 확인 및 조치 |
 | --- | --- | --- |
-| `BT4K-SQS-OBS-101` | property는 enabled지만 observation prerequisite가 충족되지 않음 | `ConditionEvaluationReport`의 `registry-missing`, `registry-noop`, `handler-missing` reason을 확인하고 기존 listener/legacy meter를 유지합니다. |
+| `BT4K-SQS-OBS-101` | property는 enabled지만 observation prerequisite가 충족되지 않음 | `ConditionEvaluationReport`의 `context-propagation-missing`, `registry-missing`, `registry-noop`, `handler-missing` reason을 확인하고 기존 listener/legacy meter를 유지합니다. |
 | `BT4K-SQS-OBS-201` | receive observation을 시작하기 전 queue URL resolution 실패 | queue 이름·권한·`queueNotFoundStrategy`를 확인하고 기존 retry 또는 fail-fast 정책을 따릅니다. queue resolution 실패를 receive I/O 성공으로 집계하지 않습니다. |
-| `BT4K-SQS-OBS-202` | background visibility heartbeat observation의 `error()` 또는 `stop()` cleanup 실패 | bounded warning을 확인합니다. heartbeat 주기·visibility 결과·handler 결과는 바꾸지 않으며 #453의 heartbeat 정책을 그대로 적용합니다. |
+| `BT4K-SQS-OBS-202` | foreground observation setup fail-closed 또는 background visibility heartbeat telemetry cleanup fail-open | bounded `stage`와 `reason`을 확인합니다. foreground setup 실패는 primary이며, heartbeat cleanup 실패는 visibility·handler 결과를 바꾸지 않습니다. |
 
 `BT4K-SQS-OBS-101`이 발생하면 startup을 임의로 실패시키거나 user factory만으로
 활성화하지 않습니다. registry, `ObservationHandler` bean, Context Propagation classpath를
 보완한 뒤 restart/redeploy로 다시 평가하세요. `BT4K-SQS-OBS-201`은 queue URL resolution
-실패를, `BT4K-SQS-OBS-202`는 telemetry cleanup 실패를 나타내므로 각각의 bounded
+실패를, `BT4K-SQS-OBS-202`는 `reason=telemetry_setup` 또는
+`reason=telemetry_cleanup`을 나타내므로 각각의 bounded
 warning과 condition report를 확인하세요.
 
 ## Modulith event runtime 운영 (미출시/develop)

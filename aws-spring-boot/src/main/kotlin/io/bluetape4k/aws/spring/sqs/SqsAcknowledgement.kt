@@ -44,11 +44,15 @@ internal class DefaultSqsAcknowledgement(
     private val interceptors: List<SqsListenerInterceptor>,
     private val operationGuard: () -> Unit = {},
     private val observationRuntime: SqsObservationRuntime? = null,
+    private val observationQueueName: String? = null,
 ) : SqsAcknowledgement {
 
     private val terminal = AtomicBoolean(false)
     private val inFlightTerminal = AtomicBoolean(false)
     private val operationMutex = Mutex()
+
+    @Volatile
+    private var observationSetupFailure: Throwable? = null
 
     override val completed: Boolean
         get() = terminal.get()
@@ -75,10 +79,10 @@ internal class DefaultSqsAcknowledgement(
         onObservationFailure: (Throwable) -> Unit,
     ) {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
-        if (terminal.get()) return
+        if (terminal.get() || inFlightTerminal.get()) return
         runAcknowledgement(
             action = SqsAcknowledgementAction.CHANGE_VISIBILITY,
-            shouldRun = { !terminal.get() },
+            shouldRun = { !terminal.get() && !inFlightTerminal.get() },
             onObservationCleanupFailure = onObservationFailure,
         ) {
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
@@ -111,7 +115,7 @@ internal class DefaultSqsAcknowledgement(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("CyclomaticComplexMethod", "TooGenericExceptionCaught")
     private suspend fun runAcknowledgement(
         action: SqsAcknowledgementAction,
         shouldRun: () -> Boolean = { true },
@@ -119,20 +123,24 @@ internal class DefaultSqsAcknowledgement(
         onObservationCleanupFailure: ((Throwable) -> Unit)? = null,
         block: suspend () -> Unit,
     ) {
+        if (!shouldRun()) return
         interceptors.forEach { it.beforeAcknowledgement(context, action) }
         var failure: Throwable? = null
         try {
             operationGuard()
+            val activeRuntime = observationRuntime.activeOrNull()
             var observedContext: SqsObservationContext? = null
-            val observation = prepareSqsObservation(
-                runtime = observationRuntime,
-                contextFactory = {
-                    acknowledgementObservationContext(action).also { observedContext = it }
-                },
-            )
+            val observation = try {
+                activeRuntime?.let { runtime ->
+                    runtime.prepare(acknowledgementObservationContext(action).also { observedContext = it })
+                }
+            } catch (e: Throwable) {
+                observationSetupFailure = e
+                throw e
+            }
             operationMutex.withLock {
                 if (!shouldRun()) return@withLock
-                observation.observe(onCleanupFailure = onObservationCleanupFailure) {
+                suspend fun performAcknowledgement() {
                     try {
                         block()
                         onIoSuccess()
@@ -141,13 +149,26 @@ internal class DefaultSqsAcknowledgement(
                             acknowledgementFailureCount = 0
                         }
                     } catch (e: CancellationException) {
-                        observedContext?.acknowledgementFailureCount = 1
-                        cancel("acknowledgement")
+                        observedContext?.apply {
+                            acknowledgementFailureCount = 1
+                            failureStage = "acknowledgement"
+                            outcome = SqsObservationOutcome.CANCELLED
+                        }
                         throw e
                     } catch (e: Throwable) {
-                        observedContext?.acknowledgementFailureCount = 1
-                        fail("acknowledgement")
+                        observedContext?.apply {
+                            acknowledgementFailureCount = 1
+                            failureStage = "acknowledgement"
+                            outcome = SqsObservationOutcome.ERROR
+                        }
                         throw e
+                    }
+                }
+                if (observation == null) {
+                    performAcknowledgement()
+                } else {
+                    observation.observe(onCleanupFailure = onObservationCleanupFailure) {
+                        performAcknowledgement()
                     }
                 }
             }
@@ -160,11 +181,13 @@ internal class DefaultSqsAcknowledgement(
         throwAcknowledgementFailures(failure, cleanupFailure)
     }
 
+    internal fun isObservationSetupFailure(error: Throwable): Boolean = observationSetupFailure === error
+
     private fun acknowledgementObservationContext(action: SqsAcknowledgementAction): SqsObservationContext =
         SqsObservationContext(
             SqsObservationMetadata(
                 listenerId = context.listenerId,
-                queueName = resolveSqsObservationQueueName(context.queueUrl),
+                queueName = observationQueueName ?: resolveSqsObservationQueueName(context.queueUrl),
                 stage = SqsObservationStage.ACKNOWLEDGEMENT,
                 batch = false,
                 messageId = context.message.messageId,

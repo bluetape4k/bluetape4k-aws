@@ -39,9 +39,7 @@ internal fun prepareSqsObservation(
     customizers: List<SqsObservationContextCustomizer>,
     factory: SqsObservationFactory,
 ): Observation {
-    val orderedCustomizers = customizers.toMutableList()
-    AnnotationAwareOrderComparator.sort(orderedCustomizers)
-    orderedCustomizers.forEach { it.customize(context) }
+    customizers.forEach { it.customize(context) }
 
     val observation = factory.createNotStarted(context, registry)
     if (observation !== Observation.NOOP) {
@@ -54,6 +52,13 @@ internal fun prepareSqsObservation(
     }
     return observation
 }
+
+internal fun orderedSqsObservationCustomizers(
+    customizers: List<SqsObservationContextCustomizer>,
+): List<SqsObservationContextCustomizer> = customizers
+    .toMutableList()
+    .also(AnnotationAwareOrderComparator::sort)
+    .toList()
 
 internal fun requireSqsObservationRegistryBinding(
     registry: ObservationRegistry,

@@ -357,6 +357,19 @@ class SqsAutoConfigurationTest {
             }
     }
 
+    @Test
+    fun `default listener id contains only the sanitized queue name`() {
+        contextRunner
+            .withUserConfiguration(UrlQueueListenerConfig::class.java)
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                val registry = context.getBean(SqsMessageListenerContainerRegistry::class.java)
+
+                registry.getContainer("listener.handle.orders").shouldNotBeNull()
+                registry.containers.size shouldBeEqualTo 1
+            }
+    }
+
     @Configuration(proxyBeanMethods = false)
     internal class SpelListenerConfig {
         @Bean
@@ -365,6 +378,22 @@ class SqsAutoConfigurationTest {
 
     internal class SpelListener {
         @SqsListener("#{queueName}")
+        fun handle(body: String) {
+            check(body.isNotBlank())
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    internal class UrlQueueListenerConfig {
+        @Bean
+        fun listener(): UrlQueueListener = UrlQueueListener()
+    }
+
+    internal class UrlQueueListener {
+        @SqsListener(
+            queue = "https://user:password@sqs.us-east-1.amazonaws.com/123456789012/orders?token=secret",
+            autoStartup = false,
+        )
         fun handle(body: String) {
             check(body.isNotBlank())
         }

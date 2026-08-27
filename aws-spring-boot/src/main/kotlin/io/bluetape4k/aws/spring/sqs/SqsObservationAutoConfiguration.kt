@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Role
 import org.springframework.core.Ordered
 import org.springframework.core.PriorityOrdered
 import org.springframework.core.type.AnnotatedTypeMetadata
+import org.springframework.util.ClassUtils
 
 /** SQS 관찰 runtime이 실제로 활성화됐음을 나타내는 내부 marker입니다. */
 internal class SqsObservationActivation
@@ -38,7 +39,6 @@ internal class SqsObservationActivation
 @ConditionalOnClass(
     name = [
         "io.micrometer.observation.ObservationRegistry",
-        "io.micrometer.context.ContextSnapshot",
     ],
 )
 @EnableConfigurationProperties(SqsObservationProperties::class)
@@ -102,10 +102,10 @@ internal class SqsObservationPrerequisitesCondition : SpringBootCondition(), Con
         metadata: AnnotatedTypeMetadata,
     ): ConditionOutcome {
         val beanFactory = context.beanFactory
-        val failureReason = if (beanFactory == null) {
-            "bean-factory-missing"
-        } else {
-            findFailureReason(beanFactory)
+        val failureReason = when {
+            !ClassUtils.isPresent(CONTEXT_SNAPSHOT_CLASS, context.classLoader) -> "context-propagation-missing"
+            beanFactory == null -> "bean-factory-missing"
+            else -> findFailureReason(beanFactory)
         }
         val matchReason = if (beanFactory?.hasUserSqsObservationFactory() == true) {
             "user-factory"
@@ -151,5 +151,6 @@ internal class SqsObservationPrerequisitesCondition : SpringBootCondition(), Con
 
     private companion object {
         const val REASON_CODE: String = "BT4K-SQS-OBS-101"
+        const val CONTEXT_SNAPSHOT_CLASS: String = "io.micrometer.context.ContextSnapshot"
     }
 }

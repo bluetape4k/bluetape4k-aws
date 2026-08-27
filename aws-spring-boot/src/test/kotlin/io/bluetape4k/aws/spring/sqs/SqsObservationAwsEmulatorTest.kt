@@ -438,7 +438,7 @@ class SqsObservationAwsEmulatorTest {
 
     @Test
     @Suppress("LongMethod")
-    fun `batch heartbeat cleanup failure preserves visibility and first delivery`() {
+    fun `batch heartbeat cleanup failure preserves visibility and unknown delivery`() {
         val observationRecorder = ObservationRecorder()
         val registry = ObservationRegistry.create().apply {
             observationConfig()
@@ -514,7 +514,7 @@ class SqsObservationAwsEmulatorTest {
                     observationRecorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
                 }
                 observationRecorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }.let { process ->
-                    process.delivery shouldBeEqualTo SqsObservationDelivery.FIRST
+                    process.delivery shouldBeEqualTo SqsObservationDelivery.UNKNOWN
                     process.outcome shouldBeEqualTo SqsObservationOutcome.SUCCESS
                 }
                 runSuspendIO {

@@ -52,6 +52,7 @@ internal class DefaultSqsBatchAcknowledgement(
     private val correlation: SqsListenerBatchCorrelation = SqsListenerBatchCorrelation(0L, 0, 0L),
     private val operationGuard: () -> Unit = {},
     private val observationRuntime: SqsObservationRuntime? = null,
+    private val observationQueueName: String? = null,
 ) : SqsBatchAcknowledgement {
 
     private enum class ItemState {
@@ -92,6 +93,9 @@ internal class DefaultSqsBatchAcknowledgement(
     private val snapshotLock = Any()
     private val items: List<Item>
     private val byReceiptHandle: Map<String, Item>
+
+    @Volatile
+    private var observationSetupFailure: Throwable? = null
 
     init {
         requireBatchSize(messages.size)
@@ -253,12 +257,7 @@ internal class DefaultSqsBatchAcknowledgement(
         var rollbackCompleted = false
         return try {
             operationGuard()
-            observeBatchAcknowledgement(
-                context = context,
-                action = action,
-                batchSize = decision.items.size,
-                onObservationCleanupFailure = onObservationCleanupFailure,
-            ) {
+            suspend fun performDecision(): SqsBatchAcknowledgementResult =
                 try {
                     perform(
                         operation,
@@ -275,6 +274,19 @@ internal class DefaultSqsBatchAcknowledgement(
                     onCancellationFinalized()
                     throw e
                 }
+            val activeRuntime = observationRuntime.activeOrNull()
+            if (activeRuntime == null) {
+                performDecision()
+            } else {
+                observeBatchAcknowledgement(
+                    runtime = activeRuntime,
+                    context = context,
+                    action = action,
+                    batchSize = decision.items.size,
+                    onObservationCleanupFailure = onObservationCleanupFailure,
+                ) {
+                    performDecision()
+                }
             }
         } catch (e: CancellationException) {
             if (!rollbackCompleted) {
@@ -287,8 +299,9 @@ internal class DefaultSqsBatchAcknowledgement(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("ThrowsCount", "TooGenericExceptionCaught")
     private suspend fun <T> observeBatchAcknowledgement(
+        runtime: SqsObservationRuntime,
         context: SqsListenerInvocationContext,
         action: SqsAcknowledgementAction,
         batchSize: Int,
@@ -296,12 +309,12 @@ internal class DefaultSqsBatchAcknowledgement(
         block: suspend SqsObservationExecution.() -> T,
     ): T {
         var observedContext: SqsObservationContext? = null
-        val observation = prepareSqsObservation(
-            runtime = observationRuntime,
-            contextFactory = {
-                batchObservationContext(context, action, batchSize).also { observedContext = it }
-            },
-        )
+        val observation = try {
+            runtime.prepare(batchObservationContext(context, action, batchSize).also { observedContext = it })
+        } catch (e: Throwable) {
+            observationSetupFailure = e
+            throw e
+        }
         return observation.observe(onCleanupFailure = onObservationCleanupFailure) {
             try {
                 val result = block()
@@ -332,6 +345,8 @@ internal class DefaultSqsBatchAcknowledgement(
         }
     }
 
+    internal fun isObservationSetupFailure(error: Throwable): Boolean = observationSetupFailure === error
+
     private fun batchObservationContext(
         context: SqsListenerInvocationContext,
         action: SqsAcknowledgementAction,
@@ -339,7 +354,7 @@ internal class DefaultSqsBatchAcknowledgement(
     ): SqsObservationContext = SqsObservationContext(
         SqsObservationMetadata(
             listenerId = context.listenerId,
-            queueName = resolveSqsObservationQueueName(queueUrl),
+            queueName = observationQueueName ?: resolveSqsObservationQueueName(queueUrl),
             stage = SqsObservationStage.ACKNOWLEDGEMENT,
             batch = true,
             messageId = context.message.messageId,

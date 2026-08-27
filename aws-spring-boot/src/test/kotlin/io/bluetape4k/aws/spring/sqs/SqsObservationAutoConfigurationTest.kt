@@ -318,6 +318,16 @@ class SqsObservationAutoConfigurationTest {
             .run { context ->
                 context.startupFailure.shouldBeNull()
                 context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                val messages = ConditionEvaluationReport.get(context.beanFactory)
+                    .conditionAndOutcomesBySource
+                    .values
+                    .asSequence()
+                    .flatMap { outcomes -> outcomes.asSequence() }
+                    .mapNotNull { conditionAndOutcome -> conditionAndOutcome.outcome.message }
+                    .toList()
+                messages.any { message ->
+                    message.contains("BT4K-SQS-OBS-101 context-propagation-missing")
+                } shouldBeEqualTo true
             }
     }
 

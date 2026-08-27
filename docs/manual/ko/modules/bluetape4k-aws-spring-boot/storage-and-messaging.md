@@ -92,7 +92,9 @@ Micrometer `ObservationRegistry`에 연결하는 opt-in 경로입니다. 기본�
 ```yaml
 bluetape4k:
   aws:
+    enabled: true
     sqs:
+      enabled: true
       observation:
         enabled: true
 ```
@@ -103,6 +105,9 @@ bluetape4k:
 - `ObservationRegistry`와 `io.micrometer.context.ContextSnapshot` classpath가 있습니다.
 - `ObservationRegistry.NOOP`이 아닌 `ObservationRegistry` bean이 있습니다.
 - `SqsObservationContext`를 지원하는 `ObservationHandler` Spring bean이 하나 이상 있습니다.
+
+handler prerequisite probe는 정제된 PROCESS `SqsObservationContext`입니다. 일반
+Micrometer context만 받고 이 구체 context를 거부하는 handler는 기능을 활성화하지 못합니다.
 
 조건이 충족되지 않으면 runtime marker를 만들지 않고 기존 listener와 legacy listener
 meter를 유지합니다. `SqsObservationFactory`를 직접 등록해도 supporting handler와
@@ -164,7 +169,12 @@ private class ObservationOwnerCustomizer : SqsObservationContextCustomizer {
 }
 
 fun sqsObservationFactory(): SqsObservationFactory = SqsObservationFactory { context, registry ->
-    Observation.createNotStarted("custom.sqs.process", { context }, registry)
+    val observationName = when (context.metadata.stage) {
+        SqsObservationStage.RECEIVE -> "custom.sqs.receive"
+        SqsObservationStage.PROCESS -> "custom.sqs.process"
+        SqsObservationStage.ACKNOWLEDGEMENT -> "custom.sqs.acknowledgement"
+    }
+    Observation.createNotStarted(observationName, { context }, registry)
 }
 ```
 <!-- sqs-observation-customization:end -->
@@ -189,6 +199,11 @@ Observation 활성화는 자동 생성된 legacy listener metric만 대체하며
 | activation marker 존재 | 자동 bean만 억제 | 유지 | RECEIVE/PROCESS/ACKNOWLEDGEMENT와 visibility |
 | legacy interceptor 수동 등록 | 애플리케이션 선택에 따라 중복 가능 | 유지 | 활성 |
 
+비교는 control과 candidate cohort를 분리합니다. control은 Observation을 끄고 자동 legacy
+listener meter를 유지하며, candidate는 Observation을 켜서 자동 listener interceptor를
+억제합니다. candidate에 `MicrometerSqsListenerInterceptor`를 수동 등록하면 listener
+instrumentation이 중복되므로 기본 migration 절차가 아니라 명시적인 진단 선택입니다.
+
 ### Coroutine context and manual ACK
 
 수명 주기 observation은 suspension과 downstream dispatcher 전환을 넘어 coroutine context를
@@ -202,6 +217,20 @@ visibility heartbeat의 주기와 정책은 #453이 소유합니다. #473은 hea
 I/O를 ACKNOWLEDGEMENT observation으로 감싸는 경계만 추가합니다. observation의
 `error()`나 `stop()` cleanup이 실패해도 visibility 결과나 handler 결과를 바꾸지 않고
 `BT4K-SQS-OBS-202` bounded diagnostic만 남깁니다.
+
+### Failure precedence와 redelivery
+
+| 경계 | primary 결과 |
+| --- | --- |
+| business 또는 ACK I/O 전에 observation setup 실패 | setup 실패가 primary이며 fail-closed합니다. |
+| business 또는 ACK I/O 실패와 observation cleanup 실패가 함께 발생 | business/I/O 실패가 primary이고 cleanup 실패는 suppressed exception입니다. |
+| business 또는 ACK I/O 성공 뒤 foreground observation stop 실패 | stop 실패가 primary이고 기존 retry/redelivery 정책을 적용합니다. ACK I/O는 이미 성공했을 수 있으므로 handler는 멱등 replay와 불명확한 redelivery를 견뎌야 합니다. |
+| visibility heartbeat observation cleanup 실패 | payload, queue URL, throwable text 없이 `BT4K-SQS-OBS-202`를 기록하고 heartbeat 결과를 유지하는 fail-open 경계입니다. |
+
+`BT4K-SQS-OBS-101 context-propagation-missing`은 `ContextSnapshot` prerequisite 누락을
+뜻합니다. `BT4K-SQS-OBS-202`는 foreground telemetry setup 실패도
+`reason=telemetry_setup`으로 제한해 기록하며 원본 throwable과 전체 queue URL을 포함하지
+않습니다.
 
 ### Evidence boundary
 

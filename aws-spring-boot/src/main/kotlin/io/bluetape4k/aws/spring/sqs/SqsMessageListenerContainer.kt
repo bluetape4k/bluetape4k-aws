@@ -305,8 +305,10 @@ class SqsMessageListenerContainer internal constructor(
         queueUrl: String,
         correlation: SqsListenerBatchCorrelation,
         receiveAttempt: Int,
-    ): List<SqsReceivedMessage>? = try {
-        observeSqs(
+    ): List<SqsReceivedMessage>? {
+        var receiveFailure: Throwable? = null
+        return try {
+            observeSqs(
             runtime = observationRuntime,
             contextFactory = { receiveObservationContext(queueUrl, receiveAttempt) },
         ) {
@@ -331,20 +333,26 @@ class SqsMessageListenerContainer internal constructor(
                 }
                 throw e
             } catch (e: Throwable) {
+                receiveFailure = e
                 fail("receive")
                 interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
                 throw e
             }
         }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Error) {
-        failGeneration(current)
-        throw e
-    } catch (e: Throwable) {
-        log.warn("SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl", e)
-        delay(endpoint.retry.nextDelay(receiveAttempt))
-        null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Error) {
+            failGeneration(current)
+            throw e
+        } catch (e: Throwable) {
+            if (e === receiveFailure) {
+                log.warn("SQS receive failed: listenerId=${endpoint.id}, queueUrl=$queueUrl", e)
+            } else {
+                logObservationFailure(target = "poll", stage = "receive", reason = "telemetry_setup")
+            }
+            delay(endpoint.retry.nextDelay(receiveAttempt))
+            null
+        }
     }
 
     private suspend fun dispatchMessages(
@@ -442,8 +450,8 @@ class SqsMessageListenerContainer internal constructor(
             messages = listOf(message),
             batch = false,
             generation = generation,
-            onSetupFailure = { attempt, error ->
-                handleProcessObservationSetupFailure(queueUrl, message, generation, attempt, error)
+            onSetupFailure = { attempt, _ ->
+                handleProcessObservationSetupFailure(queueUrl, message, generation, attempt)
             },
         ) { attempt ->
             handleObservedSingle(
@@ -501,8 +509,8 @@ class SqsMessageListenerContainer internal constructor(
         message: SqsReceivedMessage,
         generation: ListenerGeneration,
         attempt: Int,
-        error: Throwable,
     ) {
+        logObservationFailure(target = "single", stage = "process", reason = "telemetry_setup")
         val context = SqsListenerInvocationContext(endpoint.id, queueUrl, message, attempt)
         val acknowledgement = DefaultSqsAcknowledgement(
             context = context,
@@ -510,8 +518,9 @@ class SqsMessageListenerContainer internal constructor(
             interceptors = interceptors,
             operationGuard = { generation.ensureActiveOperation() },
             observationRuntime = observationRuntime,
+            observationQueueName = activeObservationQueueName(queueUrl),
         )
-        handleFailure(queueUrl, message, acknowledgement, error)
+        applyErrorVisibility(queueUrl, message, acknowledgement)
     }
 
     private suspend fun handleObservedSingle(
@@ -562,6 +571,7 @@ class SqsMessageListenerContainer internal constructor(
                 interceptors = interceptors,
                 operationGuard = { generation.ensureActiveOperation() },
                 observationRuntime = observationRuntime,
+                observationQueueName = activeObservationQueueName(queueUrl),
             )
             val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement) {
                 logHeartbeatObservationFailure("single")
@@ -639,6 +649,7 @@ class SqsMessageListenerContainer internal constructor(
             correlation = correlation,
             operationGuard = { generation.ensureActiveOperation() },
             observationRuntime = observationRuntime,
+            observationQueueName = activeObservationQueueName(queueUrl),
         )
         val manual = endpoint.acknowledgementMode == SqsAcknowledgementMode.MANUAL
         val context = SqsListenerInvocationContext(endpoint.id, queueUrl, messages.first(), 1)
@@ -647,7 +658,14 @@ class SqsMessageListenerContainer internal constructor(
             messages = messages,
             batch = true,
             generation = generation,
-            onSetupFailure = { _, _ -> handleBatchFailure(queueUrl, acknowledgement) },
+            onSetupFailure = { _, _ ->
+                logObservationFailure(
+                    target = "batchSize=${messages.size}",
+                    stage = "process",
+                    reason = "telemetry_setup",
+                )
+                handleBatchFailure(queueUrl, acknowledgement)
+            },
         ) { attempt ->
             withVisibilityHeartbeat(
                 generation = generation,
@@ -892,6 +910,13 @@ class SqsMessageListenerContainer internal constructor(
         )
     }
 
+    private fun logObservationFailure(target: String, stage: String, reason: String) {
+        log.warn(
+            "BT4K-SQS-OBS-202 SQS observation failed: " +
+                "listenerId=${endpoint.id}, target=$target, stage=$stage, reason=$reason",
+        )
+    }
+
     private suspend fun invokeBatchHandler(
         pending: List<SqsReceivedMessage>,
         acknowledgement: DefaultSqsBatchAcknowledgement,
@@ -941,11 +966,19 @@ class SqsMessageListenerContainer internal constructor(
             } catch (e: Error) {
                 throw e
             } catch (e: Throwable) {
-                log.warn(
-                    "SQS batch changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, " +
-                        "batchSize=${pending.size}",
-                    e,
-                )
+                if (acknowledgement.isObservationSetupFailure(e)) {
+                    logObservationFailure(
+                        target = "batchSize=${pending.size}",
+                        stage = "acknowledgement",
+                        reason = "telemetry_setup",
+                    )
+                } else {
+                    log.warn(
+                        "SQS batch changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, " +
+                            "batchSize=${pending.size}",
+                        e,
+                    )
+                }
             }
         }
     }
@@ -956,10 +989,23 @@ class SqsMessageListenerContainer internal constructor(
         acknowledgement: SqsAcknowledgement,
         error: Throwable,
     ) {
-        log.warn(
-            "SQS message handling failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
-            error,
-        )
+        if (acknowledgement is DefaultSqsAcknowledgement && acknowledgement.isObservationSetupFailure(error)) {
+            logObservationFailure(target = "single", stage = "acknowledgement", reason = "telemetry_setup")
+        } else {
+            log.warn(
+                "SQS message handling failed: " +
+                    "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
+                error,
+            )
+        }
+        applyErrorVisibility(queueUrl, message, acknowledgement)
+    }
+
+    private suspend fun applyErrorVisibility(
+        queueUrl: String,
+        message: SqsReceivedMessage,
+        acknowledgement: SqsAcknowledgement,
+    ) {
         endpoint.errorVisibilityTimeoutSeconds?.let {
             try {
                 if (!acknowledgement.completed) {
@@ -970,13 +1016,21 @@ class SqsMessageListenerContainer internal constructor(
             } catch (ve: Error) {
                 throw ve
             } catch (ve: Throwable) {
-                log.warn(
-                    "SQS changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
-                    ve,
-                )
+                if (acknowledgement is DefaultSqsAcknowledgement && acknowledgement.isObservationSetupFailure(ve)) {
+                    logObservationFailure(target = "single", stage = "acknowledgement", reason = "telemetry_setup")
+                } else {
+                    log.warn(
+                        "SQS changeVisibility failed: " +
+                            "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
+                        ve,
+                    )
+                }
             }
         }
     }
+
+    private fun activeObservationQueueName(queueUrl: String): String? =
+        observationRuntime.activeOrNull()?.let { observationQueueNameCache.resolve(queueUrl) }
 
     private suspend fun resolveQueueUrl(): String {
         resolvedQueueUrl?.let { return it }
@@ -1024,7 +1078,11 @@ class SqsMessageListenerContainer internal constructor(
                 messageDeduplicationId = first.messageDeduplicationId,
                 initialAttempt = 1,
                 batchSize = messages.size,
-                delivery = resolveSqsObservationDelivery(first.approximateReceiveCount?.toString()),
+                delivery = if (batch) {
+                    SqsObservationDelivery.UNKNOWN
+                } else {
+                    resolveSqsObservationDelivery(first.approximateReceiveCount?.toString())
+                },
                 queueNameResolved = true,
             ),
         )

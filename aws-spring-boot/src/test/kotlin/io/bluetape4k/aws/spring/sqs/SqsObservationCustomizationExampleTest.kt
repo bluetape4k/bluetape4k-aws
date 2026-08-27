@@ -29,11 +29,37 @@ private class ObservationOwnerCustomizer : SqsObservationContextCustomizer {
 }
 
 fun sqsObservationFactory(): SqsObservationFactory = SqsObservationFactory { context, registry ->
-    Observation.createNotStarted("custom.sqs.process", { context }, registry)
+    val observationName = when (context.metadata.stage) {
+        SqsObservationStage.RECEIVE -> "custom.sqs.receive"
+        SqsObservationStage.PROCESS -> "custom.sqs.process"
+        SqsObservationStage.ACKNOWLEDGEMENT -> "custom.sqs.acknowledgement"
+    }
+    Observation.createNotStarted(observationName, { context }, registry)
 }
 // end::sqs-observation-customization[]
 
 class SqsObservationCustomizationExampleTest {
+
+    @Test
+    fun `global factory keeps distinct names for every observation stage`() {
+        val registry = ObservationRegistry.create()
+        val names = mutableMapOf<SqsObservationStage, String>()
+        registry.observationConfig().observationHandler(RecordingHandler())
+        registry.observationConfig().observationPredicate { name, context ->
+            if (context is SqsObservationContext) names[context.metadata.stage] = name
+            true
+        }
+
+        SqsObservationStage.entries.forEach { stage ->
+            val context = observationContext(stage)
+            val observation = sqsObservationFactory().createNotStarted(context, registry).start()
+            observation.stop()
+        }
+
+        assertEquals("custom.sqs.receive", names[SqsObservationStage.RECEIVE])
+        assertEquals("custom.sqs.process", names[SqsObservationStage.PROCESS])
+        assertEquals("custom.sqs.acknowledgement", names[SqsObservationStage.ACKNOWLEDGEMENT])
+    }
 
     @Test
     fun `ordered customizers run exactly once before the user factory`() {
@@ -51,7 +77,9 @@ class SqsObservationCustomizationExampleTest {
         val observation = prepareSqsObservation(
             context = context,
             registry = registry,
-            customizers = listOf(ObservationOwnerCustomizer(), DeploymentEnvironmentCustomizer()),
+            customizers = orderedSqsObservationCustomizers(
+                listOf(ObservationOwnerCustomizer(), DeploymentEnvironmentCustomizer()),
+            ),
             factory = factory,
         )
 
@@ -152,6 +180,21 @@ class SqsObservationCustomizationExampleTest {
             stage = SqsObservationStage.PROCESS,
             batch = false,
             initialAttempt = 1,
+        ),
+    )
+
+    private fun observationContext(stage: SqsObservationStage): SqsObservationContext = SqsObservationContext(
+        SqsObservationMetadata(
+            listenerId = "listener-1",
+            queueName = "orders",
+            stage = stage,
+            batch = false,
+            initialAttempt = 1,
+            acknowledgementAction = if (stage == SqsObservationStage.ACKNOWLEDGEMENT) {
+                SqsAcknowledgementAction.ACK
+            } else {
+                null
+            },
         ),
     )
 
