@@ -108,6 +108,7 @@ class S3OutputStream(
         }
 
         var failure: Throwable? = null
+        var cleanupFailure: Throwable? = null
         try {
             output?.close()
             if (bytes != null) {
@@ -127,7 +128,7 @@ class S3OutputStream(
             throw error
         } finally {
             bytes?.fill(0)
-            val cleanupFailure = runCatching { file?.let { Files.deleteIfExists(it) } }.exceptionOrNull()
+            cleanupFailure = runCatching { file?.let { Files.deleteIfExists(it) } }.exceptionOrNull()
             synchronized(this) {
                 if (cleanupFailure != null) {
                     val failureToReport = failure
@@ -140,8 +141,8 @@ class S3OutputStream(
                 memoryBuffer.reset()
                 temporaryFile = null
             }
-            if (cleanupFailure != null && failure == null) throw cleanupFailure
         }
+        if (cleanupFailure != null && failure == null) throw cleanupFailure as Throwable
     }
 
     internal fun discardBlocking() {
