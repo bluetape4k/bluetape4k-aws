@@ -27,6 +27,7 @@ io.bluetape4k.aws.spring.sns.SnsHttpMessageVerificationAutoConfiguration
 io.bluetape4k.aws.spring.sns.SnsHttpEndpointWebMvcAutoConfiguration
 io.bluetape4k.aws.spring.sns.SnsHttpEndpointWebFluxAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration
+io.bluetape4k.aws.spring.sqs.SqsObservationAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsExtendedClientAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsExtendedClientJacksonAutoConfiguration
 io.bluetape4k.aws.spring.sqs.SqsMicrometerAutoConfiguration

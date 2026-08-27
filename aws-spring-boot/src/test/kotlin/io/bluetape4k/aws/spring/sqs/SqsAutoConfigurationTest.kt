@@ -10,6 +10,10 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.observation.Observation
+import io.micrometer.observation.ObservationHandler
+import io.micrometer.observation.ObservationRegistry
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
@@ -29,6 +33,7 @@ class SqsAutoConfigurationTest {
             AutoConfigurations.of(
                 AwsAutoConfiguration::class.java,
                 SqsAutoConfiguration::class.java,
+                SqsObservationAutoConfiguration::class.java,
                 SqsMicrometerAutoConfiguration::class.java,
                 SqsJacksonMessageConverterAutoConfiguration::class.java,
             )
@@ -57,6 +62,70 @@ class SqsAutoConfigurationTest {
                 context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 2
                 context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
                 context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `active observation suppresses only automatic listener meter`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
+            .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, { SupportingSqsObservationHandler })
+            .withBean(SqsListenerInterceptor::class.java, { UserSqsListenerInterceptor })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(SqsListenerInterceptor::class.java).values.contains(
+                    UserSqsListenerInterceptor,
+                ) shouldBeEqualTo true
+                context.getBeansOfType(MicrometerSqsOperations::class.java).size shouldBeEqualTo 1
+                context.getBean(SqsOperations::class.java).javaClass shouldBeEqualTo MicrometerSqsOperations::class.java
+            }
+    }
+
+    @Test
+    fun `NOOP observation registry keeps automatic listener meter and operations`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
+            .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.NOOP })
+            .withBean(ObservationHandler::class.java, { SupportingSqsObservationHandler })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(MicrometerSqsOperations::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `missing observation handler keeps automatic listener meter and operations`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
+            .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType(MicrometerSqsOperations::class.java).size shouldBeEqualTo 1
+            }
+    }
+
+    @Test
+    fun `active observation keeps full request operations`() {
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(SqsMicrometerAutoConfiguration::class.java))
+            .withPropertyValues("bluetape4k.aws.sqs.extended.enabled=true")
+            .withBean(SqsCoroutinesTemplate::class.java, { mockk(relaxed = true) })
+            .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
+            .withBean(SqsObservationActivation::class.java, { SqsObservationActivation() })
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType(MicrometerFullRequestSqsOperations::class.java).size shouldBeEqualTo 1
             }
     }
 
@@ -448,4 +517,13 @@ class SqsAutoConfigurationTest {
             val calls: MutableList<String> = mutableListOf()
         }
     }
+
+    private object SupportingSqsObservationHandler : ObservationHandler<Observation.Context> {
+        override fun onStart(context: Observation.Context) = Unit
+
+        override fun supportsContext(context: Observation.Context): Boolean =
+            context is SqsObservationContext && context.metadata.stage == SqsObservationStage.PROCESS
+    }
+
+    private object UserSqsListenerInterceptor : SqsListenerInterceptor
 }
