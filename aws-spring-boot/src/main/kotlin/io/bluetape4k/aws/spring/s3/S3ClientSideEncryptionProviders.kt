@@ -81,6 +81,7 @@ internal object ProviderEnvelope {
     private const val NONCE_SIZE = 12
     private const val DATA_KEY_SIZE = 32
     private const val GCM_TAG_BITS = 128
+    private const val MAX_WRAPPED_KEY_BYTES = 4 * 1024
 
     private const val VERSION_KEY = "bt4k-cek-version"
     private const val PROVIDER_KEY = "bt4k-cek-provider"
@@ -150,12 +151,14 @@ internal object ProviderEnvelope {
         var aad: ByteArray? = null
         return try {
             validateMetadata(normalized, material, expectedKeyId, expectedKeyVersion)
-            val decodedWrapped = decodeRequired(normalized, WRAPPED_KEY)
+            val decodedWrapped = decodeRequired(normalized, WRAPPED_KEY, MAX_WRAPPED_KEY_BYTES)
             wrapped = decodedWrapped
-            val decodedNonce = decodeRequired(normalized, NONCE_KEY)
+            val decodedNonce = decodeRequired(normalized, NONCE_KEY, NONCE_SIZE)
             nonce = decodedNonce
             require(decodedNonce.size == NONCE_SIZE) { "Provider envelope nonce must be 12 bytes." }
-            val decodedWrapNonce = normalized[WRAP_NONCE_KEY]?.let { decode(it, WRAP_NONCE_KEY) }
+            val decodedWrapNonce = normalized[WRAP_NONCE_KEY]?.let {
+                decode(it, WRAP_NONCE_KEY, NONCE_SIZE)
+            }
             wrapNonce = decodedWrapNonce
             if (material.providerToken == "aes") {
                 require(decodedWrapNonce?.size == NONCE_SIZE) {
@@ -321,16 +324,25 @@ internal object ProviderEnvelope {
         }
     }
 
-    private fun decodeRequired(metadata: Map<String, String>, key: String): ByteArray {
+    private fun decodeRequired(metadata: Map<String, String>, key: String, maxBytes: Int): ByteArray {
         val value = metadata[key]
         require(value != null) { "Provider envelope metadata is missing: $key" }
-        return decode(value, key)
+        return decode(value, key, maxBytes)
     }
 
-    private fun decode(value: String, key: String): ByteArray = try {
-        Base64.getDecoder().decode(value)
-    } catch (error: IllegalArgumentException) {
-        throw IllegalArgumentException("Provider envelope metadata is not valid base64: $key", error)
+    private fun decode(value: String, key: String, maxBytes: Int): ByteArray {
+        require(value.length <= ((maxBytes + 2) / 3) * 4) {
+            "Provider envelope metadata exceeds the maximum size: $key"
+        }
+        val decoded = try {
+            Base64.getDecoder().decode(value)
+        } catch (error: IllegalArgumentException) {
+            throw IllegalArgumentException("Provider envelope metadata is not valid base64: $key", error)
+        }
+        require(decoded.size <= maxBytes) {
+            "Provider envelope metadata exceeds the maximum size: $key"
+        }
+        return decoded
     }
 
     private fun payloadCipher(mode: Int, dataKey: ByteArray, nonce: ByteArray): Cipher =
@@ -509,14 +521,20 @@ internal class RsaClientSideEncryptionKeyMaterial private constructor(
             val pair = requireNotNull(provider.generateKeyPair()) {
                 "S3RsaProvider returned null key pair."
             }
-            require(pair.public.algorithm.equals("RSA", ignoreCase = true)) {
+            val suppliedPublic = requireNotNull(pair.public) {
+                "S3RsaProvider key pair must contain a public key."
+            }
+            val suppliedPrivate = requireNotNull(pair.private) {
+                "S3RsaProvider key pair must contain a private key."
+            }
+            require(suppliedPublic.algorithm.equals("RSA", ignoreCase = true)) {
                 "RSA public key algorithm must be RSA."
             }
-            require(pair.private.algorithm.equals("RSA", ignoreCase = true)) {
+            require(suppliedPrivate.algorithm.equals("RSA", ignoreCase = true)) {
                 "RSA private key algorithm must be RSA."
             }
-            val public = pair.public as? RSAPublicKey
-            val private = pair.private as? RSAPrivateKey
+            val public = suppliedPublic as? RSAPublicKey
+            val private = suppliedPrivate as? RSAPrivateKey
             require(public != null && private != null && public.modulus.bitLength() >= MIN_RSA_KEY_BITS) {
                 "RSA provider public key must be at least 2048 bits."
             }

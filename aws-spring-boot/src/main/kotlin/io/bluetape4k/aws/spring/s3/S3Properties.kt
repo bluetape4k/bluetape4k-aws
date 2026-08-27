@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.s3
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import kotlin.jvm.internal.DefaultConstructorMarker
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
@@ -78,6 +79,54 @@ data class S3Properties(
         val provider: ClientSideEncryptionProvider = ClientSideEncryptionProvider.KMS,
         val keyVersion: String? = null,
     ) : Serializable {
+        /** 기존 4-인자 생성자와의 source/JVM descriptor 호환성을 유지합니다. */
+        constructor(
+            enabled: Boolean,
+            keyId: String?,
+            encryptionContext: Map<String, String>,
+            useDataKeyCache: Boolean,
+        ) : this(
+            enabled = enabled,
+            keyId = keyId,
+            encryptionContext = encryptionContext,
+            useDataKeyCache = useDataKeyCache,
+            provider = ClientSideEncryptionProvider.KMS,
+            keyVersion = null,
+        )
+
+        /** Kotlin compiler가 생성하던 기존 4-인자 default constructor descriptor를 보존합니다. */
+        @Suppress("UNUSED_PARAMETER")
+        constructor(
+            enabled: Boolean,
+            keyId: String?,
+            encryptionContext: Map<String, String>,
+            useDataKeyCache: Boolean,
+            mask: Int,
+            marker: DefaultConstructorMarker?,
+        ) : this(
+            enabled = if (mask and COPY_ENABLED_MASK != 0) false else enabled,
+            keyId = if (mask and COPY_KEY_ID_MASK != 0) null else keyId,
+            encryptionContext = if (mask and COPY_ENCRYPTION_CONTEXT_MASK != 0) emptyMap() else encryptionContext,
+            useDataKeyCache = if (mask and COPY_USE_DATA_KEY_CACHE_MASK != 0) true else useDataKeyCache,
+            provider = ClientSideEncryptionProvider.KMS,
+            keyVersion = null,
+        )
+
+        /** 기존 4-인자 data-class copy 호출과의 source/JVM descriptor 호환성을 유지합니다. */
+        fun copy(
+            enabled: Boolean,
+            keyId: String?,
+            encryptionContext: Map<String, String>,
+            useDataKeyCache: Boolean,
+        ): ClientSideEncryption = ClientSideEncryption(
+            enabled = enabled,
+            keyId = keyId,
+            encryptionContext = encryptionContext,
+            useDataKeyCache = useDataKeyCache,
+            provider = provider,
+            keyVersion = keyVersion,
+        )
+
         init {
             require(keyId == null || keyId.isSafeCseToken("keyId")) {
                 "bluetape4k.aws.s3.client-side-encryption.keyId must not be blank or contain control characters."
@@ -95,6 +144,40 @@ data class S3Properties(
         }
 
         companion object {
+            /** Kotlin compiler가 생성하던 기존 4-인자 `copy$default` descriptor를 보존합니다. */
+            @JvmStatic
+            @Suppress("FunctionNaming", "unused")
+            fun `copy$default`(
+                self: ClientSideEncryption,
+                enabled: Boolean,
+                keyId: String?,
+                encryptionContext: Map<String, String>,
+                useDataKeyCache: Boolean,
+                mask: Int,
+                marker: Any?,
+            ): ClientSideEncryption {
+                @Suppress("UNUSED_VARIABLE")
+                val ignoredMarker = marker
+                return self.copy(
+                    enabled = if (mask and COPY_ENABLED_MASK != 0) self.enabled else enabled,
+                    keyId = if (mask and COPY_KEY_ID_MASK != 0) self.keyId else keyId,
+                    encryptionContext = if (mask and COPY_ENCRYPTION_CONTEXT_MASK != 0) {
+                        self.encryptionContext
+                    } else {
+                        encryptionContext
+                    },
+                    useDataKeyCache = if (mask and COPY_USE_DATA_KEY_CACHE_MASK != 0) {
+                        self.useDataKeyCache
+                    } else {
+                        useDataKeyCache
+                    },
+                )
+            }
+
+            private const val COPY_ENABLED_MASK: Int = 1
+            private const val COPY_KEY_ID_MASK: Int = 1 shl 1
+            private const val COPY_ENCRYPTION_CONTEXT_MASK: Int = 1 shl 2
+            private const val COPY_USE_DATA_KEY_CACHE_MASK: Int = 1 shl 3
             private const val serialVersionUID: Long = -2600404936788080311L
         }
     }

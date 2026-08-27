@@ -16,6 +16,7 @@ import software.amazon.awssdk.transfer.s3.model.DownloadFileRequest
 import software.amazon.awssdk.transfer.s3.model.DownloadRequest
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
 import software.amazon.awssdk.transfer.s3.model.UploadRequest
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.assertFailsWith
@@ -132,6 +133,43 @@ class S3OutputStreamTest {
         } finally {
             Files.deleteIfExists(tempDirectory)
         }
+    }
+
+    @Test
+    fun `temporary file is cleaned when closing the spill output fails`() {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-output-close-failure-")
+        try {
+            val output = S3OutputStream(
+                operations = RecordingTransferOperations(),
+                bucket = "bucket",
+                key = "close-failure.bin",
+                thresholdBytes = 1,
+                temporaryDirectory = tempDirectory,
+            )
+            output.write("spill me".encodeToByteArray())
+
+            val fileOutputField = S3OutputStream::class.java.getDeclaredField("fileOutput").apply {
+                isAccessible = true
+            }
+            val originalFileOutput = fileOutputField.get(output) as OutputStream
+            originalFileOutput.close()
+            fileOutputField.set(output, FailingCloseOutputStream())
+
+            assertFailsWith<IllegalStateException> { output.close() }
+
+            Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
+        } finally {
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
+}
+
+private class FailingCloseOutputStream : OutputStream() {
+
+    override fun write(b: Int) = Unit
+
+    override fun close() {
+        throw IllegalStateException("close failed")
     }
 }
 

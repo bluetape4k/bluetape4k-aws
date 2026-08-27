@@ -181,6 +181,9 @@ class S3ClientSideEncryptionProviderTest {
                 "bt4k-cek-nonce" to Base64.getEncoder().encodeToString(byteArrayOf(1))
             ),
             envelope.metadata + ("bt4k-cek-wrap-alg" to "wrong"),
+            envelope.metadata + (
+                "bt4k-cek" to Base64.getEncoder().encodeToString(ByteArray(4 * 1024 + 1))
+            ),
         ).forEach { metadata ->
             assertFailsWith<IllegalArgumentException> {
                 ProviderEnvelope.decrypt(byteArrayOf(1), material, metadata, "orders", "v1", emptyMap())
@@ -213,6 +216,24 @@ class S3ClientSideEncryptionProviderTest {
         assertFailsWith<IllegalArgumentException> {
             RsaClientSideEncryptionKeyMaterial.from(
                 S3RsaProvider.of(KeyPair(publicPair.public, privatePair.private)),
+            )
+        }
+    }
+
+    @Test
+    fun `rsa material rejects null key components`() {
+        val pair = KeyPairGenerator.getInstance("RSA")
+            .apply { initialize(2048) }
+            .generateKeyPair()
+
+        assertFailsWith<IllegalArgumentException> {
+            RsaClientSideEncryptionKeyMaterial.from(
+                S3RsaProvider.of(KeyPair(null, pair.private)),
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            RsaClientSideEncryptionKeyMaterial.from(
+                S3RsaProvider.of(KeyPair(pair.public, null)),
             )
         }
     }
