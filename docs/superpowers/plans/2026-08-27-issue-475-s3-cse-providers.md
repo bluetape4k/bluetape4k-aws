@@ -889,6 +889,15 @@ Provider template은 transfer adapter가 사용할 다음 internal helper도 제
         payloadCipher(envelope.dataKey, envelope.nonce).also { it.updateAAD(envelope.aad) }
     }
 
+    private fun payloadCipher(dataKey: ByteArray, nonce: ByteArray): Cipher =
+        Cipher.getInstance("AES/GCM/NoPadding").apply {
+            init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(dataKey, "AES"),
+                GCMParameterSpec(128, nonce),
+            )
+        }
+
 - [ ] Step 4: byte/bounded/identity/lifecycle GREEN과 회귀 테스트를 실행한다.
 
 bounded 테스트에는 `MAX_CIPHERTEXT_BYTES` 정확히 허용, `max + 1` 즉시 거부·publisher 취소,
@@ -1680,7 +1689,22 @@ Expected: current KMS byte-array-only paragraph와 configuration sample 위치�
             encryption-context:
               service: order-api
 
-문서에는 S3AesProvider/S3RsaProvider bean이 선택 provider와 정확히 하나여야 한다는 점, KMS 기본값이 기존 byte API를 유지한다는 점, provider streaming이 ciphertext-only 임시 파일과 authenticated destination write를 사용한다는 점, S3ClientSideEncryptionException/identity mismatch, AWS Encryption Client wire compatibility를 약속하지 않는다는 점, 실제 key rotation/storage/HSM을 제공하지 않는다는 점을 적는다. KDoc에는 public method의 bucket/key/provider/close 계약과 실패 시 평문 미반환을 명시한다. `complete()`는 권장하는 suspend 경로이고 `close()`는 `runBlocking`을 사용한 blocking 호환 경로임을 분명히 하며, bulk `write(ByteArray, off, len)`가 기본이고 작은 `write(Int)` 반복에는 allocation 비용이 있음을 기록한다.
+문서에는 S3AesProvider/S3RsaProvider bean이 선택 provider와 정확히 하나여야 한다는 점과
+애플리케이션이 secret manager/configuration에서 읽은 key material로 provider bean을
+등록하는 최소 Kotlin 예시를 함께 적는다.
+
+    @Bean
+    fun s3AesProvider(secret: SecretKey): S3AesProvider = S3AesProvider.of(secret)
+
+`SecretKey`/`KeyPair`의 저장·회전·폐기는 애플리케이션 책임이며 이 모듈이 raw secret을
+로그나 metadata에 기록하지 않는다는 점도 명시한다. KMS 기본값이 기존 byte API를
+유지한다는 점, provider streaming이 ciphertext-only 임시 파일과 authenticated destination
+write를 사용한다는 점, S3ClientSideEncryptionException/identity mismatch, AWS Encryption
+Client wire compatibility를 약속하지 않는다는 점, 실제 key rotation/storage/HSM을
+제공하지 않는다는 점을 적는다. KDoc에는 public method의 bucket/key/provider/close 계약과
+실패 시 평문 미반환을 명시한다. `complete()`는 권장하는 suspend 경로이고 `close()`는
+`runBlocking`을 사용한 blocking 호환 경로임을 분명히 하며, bulk `write(ByteArray, off, len)`가
+기본이고 작은 `write(Int)` 반복에는 allocation 비용이 있음을 기록한다.
 
 - [ ] Step 3: writer gate와 문서 검증을 실행한다.
 
@@ -1821,3 +1845,6 @@ Review evidence must address per-object data-key allocation, RSA key wrapping co
 - Lifecycle/test boundary: 기존 KMS bean에는 destroy method를 추가하지 않고 AES/RSA template만 close한다. streaming은 logical EOF, truncated final input, post-terminal reuse, double terminal call, cancellation cleanup을 별도 테스트한다.
 - Performance/stability gate: Task 8 Step 1A에서 fresh diff와 transfer/emulator 테스트를 대상으로 `performance-stability-scan.md`를 적용하고 benchmark N/A 사유를 기록한다.
 - Security remediation: provider context는 length-prefixed canonical AAD로 인증하고 raw key/data-key 복사 API를 노출하지 않으며, AES/RSA post-close fail-closed와 RSA modulus pair 검증·metadata collision/malformed negative cases·destination immutability·Logback redaction capture를 task와 테스트에 고정했다.
+- Compatibility/order remediation: 기존 KMS auto-configuration method/bean 이름 `s3ClientSideEncryptionOperations`를 유지하고, provider template이 생성된 뒤에만 transfer adapter를 추가한다. Task 2/3/4/5의 파일 경계와 `git add` 경로는 앞 task 결과만 참조하도록 read-back했다.
+- Identity/cleanup remediation: `effectiveKeyIdentity`와 `effectiveKeyVersion` helper, provider fingerprint bytes의 즉시 zeroization, bounded `ByteArrayOutputStream`의 reset, transfer deletion failure 시 원래 예외 보존을 계획 코드와 음성 테스트에 고정했다.
+- Scope/hazard check: 새 모듈·dependency·BOM·settings·CI registration은 없고 기존 `aws-spring-boot` module만 변경한다. `compileOnly` AWS SDK와 current transfer classpath guard를 유지하며, module-wide test/detekt/manual contract와 workflow closure를 Task 8에 연결했다.
