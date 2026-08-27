@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -57,8 +58,36 @@ class SqsMessageListenerContainer internal constructor(
         val pollerJobs: CopyOnWriteArrayList<Job> = CopyOnWriteArrayList(),
         val handlerJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet(),
         val inFlight: Semaphore = Semaphore(maxInFlight),
-        val groupMutexes: SqsGroupMutexes = SqsGroupMutexes(),
+        val groupDispatchOrder: SqsGroupDispatchOrder = SqsGroupDispatchOrder(),
     )
+
+    private data class SqsGroupDispatchTicket(
+        val messageGroupId: String,
+        val predecessor: CompletableDeferred<Unit>?,
+        val completion: CompletableDeferred<Unit>,
+    )
+
+    private class SqsGroupDispatchOrder {
+        private val tails = ConcurrentHashMap<String, CompletableDeferred<Unit>>()
+
+        fun register(messageGroupId: String): SqsGroupDispatchTicket {
+            val completion = CompletableDeferred<Unit>()
+            return SqsGroupDispatchTicket(
+                messageGroupId = messageGroupId,
+                predecessor = tails.put(messageGroupId, completion),
+                completion = completion,
+            )
+        }
+
+        fun complete(ticket: SqsGroupDispatchTicket) {
+            ticket.completion.complete(Unit)
+            tails.remove(ticket.messageGroupId, ticket.completion)
+        }
+
+        fun clear() {
+            tails.clear()
+        }
+    }
 
     private enum class LifecycleState {
         STOPPED,
@@ -138,7 +167,7 @@ class SqsMessageListenerContainer internal constructor(
                     current.handlerJobs.toList().forEach { it.cancel() }
                 }
                 current.scope.cancel()
-                current.groupMutexes.clear()
+                current.groupDispatchOrder.clear()
             } finally {
                 synchronized(lifecycleLock) {
                     if (generation.get() === current) {
@@ -331,32 +360,36 @@ class SqsMessageListenerContainer internal constructor(
             repeat(acquired) { current.inFlight.release() }
             throw e
         }
-        val groupMutex = if (
+        val groupDispatchTicket = if (
             endpoint.fifoBatchGroupingStrategy == SqsFifoBatchGroupingStrategy.GROUP_BY_MESSAGE_GROUP_ID
         ) {
-            messageGroupId?.takeIf(String::isNotBlank)?.let {
-                current.groupMutexes.computeIfAbsent(it) { Mutex() }
-            }
+            messageGroupId?.takeIf(String::isNotBlank)?.let(current.groupDispatchOrder::register)
         } else {
             null
         }
         val handlerJob = try {
             current.scope.launch(start = CoroutineStart.LAZY) {
                 try {
-                    if (groupMutex == null) {
+                    if (groupDispatchTicket == null) {
                         block()
                     } else {
-                        groupMutex.withLock { block() }
+                        withContext(NonCancellable) {
+                            groupDispatchTicket.predecessor?.await()
+                        }
+                        current.ensureActiveOperation()
+                        block()
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Error) {
                     log.error("SQS listener handler terminated with an error: listenerId=${endpoint.id}", e)
                 } finally {
+                    groupDispatchTicket?.let(current.groupDispatchOrder::complete)
                     repeat(permits) { current.inFlight.release() }
                 }
             }
         } catch (e: Throwable) {
+            groupDispatchTicket?.let(current.groupDispatchOrder::complete)
             repeat(permits) { current.inFlight.release() }
             throw e
         }

@@ -27,6 +27,9 @@ source-backed test evidence로 대체했다.
 - 신규 auto-configuration import는 feature property만 보지 말고 repository-wide
   `@ConditionalOnAwsEnabled`도 반드시 적용한다. 전체 module test가 이 누락을 targeted
   test보다 먼저 드러냈다.
+- FIFO message group의 `Mutex`는 동시 실행만 막을 뿐 수신·submission 순서를 보장하지
+  않는다. handler마다 mutex 획득을 경쟁시키지 말고 submission 시점에 predecessor
+  ticket을 연결해야 같은 그룹 순서와 다른 그룹 병렬성을 함께 보장할 수 있다.
 - Floci는 SQS, SNS-to-SQS fanout transport, redrive, ack, claim/fencing을 검증하지만
   production SNS certificate/signature telemetry, IAM, cross-account, 실제 AWS timing을
   증명하지 않는다.
@@ -45,7 +48,8 @@ global disable guard와 6개 관점 code review evidence를 수렴했다.
 
 - concurrency stability: 3개 `@RepeatedTest(100)`, 300 tests 통과
 - 전체 Modulith + Floci: 19 classes, 489 tests 통과
-- 전체 `aws-spring-boot` + Floci: 177 classes, 1,298 tests, failure/error 0,
+- SQS FIFO ordering 회귀: 100회 반복, listener container 116 tests 통과
+- 전체 `aws-spring-boot` + Floci: 177 classes, 1,397 tests, failure/error 0,
   기존 skip 2
 - module detekt와 consumer fixture compile 통과
 - configuration·dispatch internal constructor 금지 fixture는 예상한 compile error 확인
@@ -56,11 +60,16 @@ global disable guard와 6개 관점 code review evidence를 수렴했다.
 `kotlinx/serialization/StringFormat` 누락으로 구성 단계에서 한 차례 실패했다. 같은
 source를 configuration cache 없이 검증해 Issue #471 code failure와 분리했다.
 
+최초 hosted exact-head run `33037601682`에서 기존 FIFO 직렬화 test 1건이 실패했다.
+재실행만으로 green을 만들지 않고 scheduler 경쟁을 원인으로 확정한 뒤 ordering ticket과
+100회 회귀 검증을 추가했다.
+
 ## 향후 지침
 
 event serializer를 호출하기 전 registry가 안전한 concrete target을 확정해야 하며,
 역직렬화 뒤 exact-class 검사만으로 gadget side effect를 막았다고 판단하지 않는다.
 claim mutation의 성공 여부가 불확실할 때 cleanup을 선의로 추가하지 말고 fencing과
 lease takeover 계약을 먼저 검토한다. auto-configuration을 새 imports에 넣을 때는 global
-disable test를 함께 실행한다. emulator 결과는 서비스별 지원 범위와 실제 AWS 미검증
-항목을 같은 문서에 기록한다.
+disable test를 함께 실행한다. FIFO 그룹 직렬화는 mutual exclusion과 ordering을 별도
+불변식으로 검토한다. emulator 결과는 서비스별 지원 범위와 실제 AWS 미검증 항목을 같은
+문서에 기록한다.

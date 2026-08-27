@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
@@ -75,7 +76,7 @@ class SqsMessageListenerContainerTest {
         }
     }
 
-    @Test
+    @RepeatedTest(100)
     fun `fifo message group is serialized while another group runs in parallel`() = runSuspendIO {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()

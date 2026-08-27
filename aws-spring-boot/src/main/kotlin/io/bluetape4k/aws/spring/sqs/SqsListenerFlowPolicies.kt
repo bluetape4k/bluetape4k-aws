@@ -2,7 +2,6 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireNotBlank
-import kotlinx.coroutines.sync.Mutex
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
@@ -116,5 +115,3 @@ class DefaultSqsQueueAttributesResolver(
             attributeNames.map(QueueAttributeName::toString).sorted().joinTo(this, separator = ",")
         }
 }
-
-internal typealias SqsGroupMutexes = ConcurrentHashMap<String, Mutex>
