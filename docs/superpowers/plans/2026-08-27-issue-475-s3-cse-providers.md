@@ -27,7 +27,8 @@
 | aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3ClientSideEncryptionProviderTemplate.kt | provider envelope metadata, byte/bounded decrypt, identity, lifecycle |
 | aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3ClientSideEncryptionTransferOperations.kt | transfer capability 계약, encrypted stream, authenticated file download |
 | aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3ClientSideEncryptionObjectExtensions.kt | 기존 converter를 재사용하는 typed encrypted object extension |
-| aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfiguration.kt | KMS/AES/RSA 선택, missing/ambiguous bean 실패, transfer adapter destroy/backoff |
+| aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfiguration.kt | KMS/AES/RSA 선택과 missing/ambiguous bean 실패 |
+| aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3TransferAutoConfiguration.kt | provider transfer adapter의 classpath/order/property/backoff 조건 |
 | aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/S3ClientSideEncryptionProviderTest.kt | JDK crypto, metadata, mismatch, lifecycle, zeroization 단위 검증 |
 | aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/S3ClientSideEncryptionProviderAwsEmulatorTest.kt | Floci S3 AES/RSA byte·typed·stream·file acceptance |
 | aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfigurationTest.kt | provider property/조건, KMS 회귀, backoff/ambiguity/startup 오류 |
@@ -150,7 +151,20 @@ Expected: FAIL with unresolved ClientSideEncryptionProvider, S3AesProvider, or S
 
 Run the Step 1 Gradle command again.
 
-Expected: BUILD SUCCESSFUL and all S3ClientSideEncryptionProviderTest tests pass.
+`ClientSideEncryption`은 새 field를 기존 4개 뒤에 붙여 기존 Kotlin positional source call의
+의미를 유지한다. JVM binary compatibility는 data-class primary constructor와 `copy` descriptor가
+변경될 수 있으므로 자동으로 보장한다고 주장하지 않는다. `checkBinaryCompatibility` task/API
+baseline이 이 checkout에 존재하면 다음 검사를 실행하고, 없으면 명시적으로 N/A와 baseline 부재를
+기록한다.
+
+    if ./gradlew tasks --all --no-daemon --console=plain | rg -q '^checkBinaryCompatibility'; then
+      ./gradlew checkBinaryCompatibility --no-daemon --max-workers=1 --console=plain
+    else
+      echo 'N/A: checkBinaryCompatibility task/API baseline is not present in this checkout.'
+    fi
+
+Expected: BUILD SUCCESSFUL and all S3ClientSideEncryptionProviderTest tests pass; any ABI gap is
+visible in the lesson rather than being silently called compatible.
 
 - [ ] Step 5: Lore commit을 만든다.
 
@@ -579,6 +593,35 @@ Files:
         }
     }
 
+    @Test
+    fun provider_identity_changes_when_effective_context_changes() {
+        val first = testProviderTemplate(
+            properties = S3Properties(
+                clientSideEncryption = S3Properties.ClientSideEncryption(
+                    enabled = true,
+                    provider = ClientSideEncryptionProvider.AES,
+                    encryptionContext = mapOf("service" to "orders"),
+                ),
+            ),
+        )
+        val second = testProviderTemplate(
+            properties = S3Properties(
+                clientSideEncryption = S3Properties.ClientSideEncryption(
+                    enabled = true,
+                    provider = ClientSideEncryptionProvider.AES,
+                    encryptionContext = mapOf("service" to "billing"),
+                ),
+            ),
+        )
+
+        first.keyFingerprint shouldNotBeEqualTo second.keyFingerprint
+    }
+
+`testProviderTemplate` fixture는 선택적 `properties` 인자를 받아 provider와 properties의
+context를 함께 주입하고, identity assertion은 raw context 값을 로그나 metadata에서 찾지
+않는다. 기존 SQS capability fixture도 `keyFingerprint`를 사용해 provider context가 경계를
+분리하는지 확인한다.
+
 - [ ] Step 2: RED 결과를 확인한다.
 
     ./gradlew :bluetape4k-aws-spring-boot:test \
@@ -661,9 +704,8 @@ Expected: FAIL because provider template methods and metadata-backed S3 response
             ciphertext: ByteArray,
             metadata: Map<String, String>,
             encryptionContext: Map<String, String> = emptyMap(),
-        ): ByteArray {
-            checkOpen()
-            return ProviderEnvelope.decrypt(
+        ): ByteArray = withOpenMaterial {
+            ProviderEnvelope.decrypt(
                 ciphertext,
                 material,
                 metadata,
@@ -674,51 +716,84 @@ Expected: FAIL because provider template methods and metadata-backed S3 response
         }
 
         override val canonicalKeyIdentity: String
-            get() = "bluetape4k.s3.cse/" + material.providerToken + "/" +
-                effectiveKeyIdentity() + "/" + effectiveKeyVersion()
+            get() = withOpenMaterial {
+                "bluetape4k.s3.cse/" + material.providerToken + "/" +
+                    effectiveKeyIdentity() + "/" + effectiveKeyVersion()
+            }
 
         override val keyFingerprint: String
-            get() = sha256Url(canonicalKeyIdentity + encryptionContextForIdentity())
+            get() = withOpenMaterial {
+                sha256Url(
+                    "${canonicalKeyIdentity}/" + encryptionContextForIdentity(),
+                )
+            }
+
+        private fun encryptionContextForIdentity(): String =
+            sha256Url(
+                ProviderEnvelope.canonicalContextAad(
+                    effectiveEncryptionContext(emptyMap()),
+                ).toHex(),
+            )
 
         private fun effectiveEncryptionContext(
             callContext: Map<String, String>,
         ): Map<String, String> =
             properties.clientSideEncryption.encryptionContext + callContext
 
-        override fun close() {
-            if (!closed) {
-                closed = true
-                material.close()
+        private fun <T> withOpenMaterial(block: () -> T): T = synchronized(lifecycleLock) {
+            check(!closed) { "S3 client-side encryption provider is already closed." }
+            block()
+        }
+
+        private fun checkOpen() {
+            synchronized(lifecycleLock) {
+                check(!closed) { "S3 client-side encryption provider is already closed." }
             }
         }
+
+        override fun close() {
+            synchronized(lifecycleLock) {
+                if (!closed) {
+                    closed = true
+                    material.close()
+                }
+            }
+        }
+
+        private val lifecycleLock = Any()
     }
 
 downloadEncryptedBytesBounded는 기존 KMS 구현의 AsyncResponseTransformer.toPublisher와 SqsExtendedPayloadReadException 경계를 그대로 사용하고 ciphertext를 모두 모은 뒤 metadata 검증과 doFinal을 수행한다. chunk를 받을 때마다 `maxCiphertextBytes`를 검사하고 `max + 1` byte를 할당하기 전에 publisher를 취소한다. effectiveKeyIdentity는 설정 keyId 또는 provider public material SHA-256의 sha256:base64url 값이며 keyVersion은 설정 값 또는 빈 token이다. identity fingerprint에는 정렬된 encryption context를 포함하고, provider envelope에는 effective context의 canonical AAD byte만 전달하며 context 평문은 전달하지 않는다.
 
-Provider template은 transfer adapter가 사용할 다음 internal helper도 제공한다. newEncryptionEnvelope는 새 32-byte data key와 12-byte payload nonce를 만들고 wrapped key metadata를 반환하며, newStreamingEnvelope는 같은 metadata와 effective context AAD를 반환한다. newPayloadCipher는 data key와 nonce로 AES/GCM/NoPadding cipher를 초기화하고 `updateAAD(envelope.aad)`를 호출한다. helper와 material은 모두 checkOpen 뒤에만 호출하며 envelope의 data key/AAD 임시 배열은 cipher 생성 직후 zeroize한다.
+Provider template은 transfer adapter가 사용할 다음 internal helper도 제공한다. newEncryptionEnvelope는 새 32-byte data key와 12-byte payload nonce를 만들고 wrapped key metadata를 반환하며, newStreamingEnvelope는 같은 metadata와 effective context AAD를 반환한다. newPayloadCipher는 data key와 nonce로 AES/GCM/NoPadding cipher를 초기화하고 `updateAAD(envelope.aad)`를 호출한다. material을 읽는 helper와 decrypt는 `lifecycleLock` 안에서 `withOpenMaterial`로 원자적으로 guard하고, `close()`도 같은 lock에서 closed 전이를 먼저 고정한 뒤 material을 폐기한다. envelope의 data key/AAD 임시 배열은 cipher 생성 직후 zeroize한다.
 
     internal fun newEncryptionEnvelope(
         plaintext: ByteArray,
         encryptionContext: Map<String, String> = emptyMap(),
-    ): ProviderEncryptedPayload = ProviderEnvelope.encrypt(
-        plaintext,
-        material,
-        effectiveKeyIdentity(),
-        effectiveKeyVersion(),
-        random,
-        effectiveEncryptionContext(encryptionContext),
-    )
+    ): ProviderEncryptedPayload = withOpenMaterial {
+        ProviderEnvelope.encrypt(
+            plaintext,
+            material,
+            effectiveKeyIdentity(),
+            effectiveKeyVersion(),
+            random,
+            effectiveEncryptionContext(encryptionContext),
+        )
+    }
     internal fun newStreamingEnvelope(
         encryptionContext: Map<String, String> = emptyMap(),
-    ): ProviderStreamingEnvelope = ProviderEnvelope.newStreamingEnvelope(
-        material,
-        effectiveKeyIdentity(),
-        effectiveKeyVersion(),
-        random,
-        effectiveEncryptionContext(encryptionContext),
-    )
-    internal fun newPayloadCipher(envelope: ProviderStreamingEnvelope): Cipher =
+    ): ProviderStreamingEnvelope = withOpenMaterial {
+        ProviderEnvelope.newStreamingEnvelope(
+            material,
+            effectiveKeyIdentity(),
+            effectiveKeyVersion(),
+            random,
+            effectiveEncryptionContext(encryptionContext),
+        )
+    }
+    internal fun newPayloadCipher(envelope: ProviderStreamingEnvelope): Cipher = withOpenMaterial {
         payloadCipher(envelope.dataKey, envelope.nonce).also { it.updateAAD(envelope.aad) }
+    }
 
 - [ ] Step 4: byte/bounded/identity/lifecycle GREEN과 회귀 테스트를 실행한다.
 
@@ -752,6 +827,7 @@ Expected: provider unit tests and existing KMS emulator test pass; no KMS source
 
 Files:
 - Modify: aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfiguration.kt
+- Modify: aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3TransferAutoConfiguration.kt
 - Modify: aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfigurationTest.kt
 
 - [ ] Step 1: provider 조건과 lifecycle의 RED context tests를 추가한다.
@@ -788,6 +864,18 @@ Files:
                     .joinToString("\n")
                 messages shouldContain "S3RsaProvider"
                 messages shouldContain "client-side-encryption.provider"
+        }
+    }
+
+    @Test
+    fun kms_default_keeps_backoff_when_kms_operations_are_missing() {
+        contextRunner
+            .withPropertyValues(
+                "bluetape4k.aws.s3.client-side-encryption.enabled=true",
+            )
+            .run { context ->
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 0
             }
     }
 
@@ -833,7 +921,7 @@ Expected: FAIL in new provider selection tests; existing KMS tests remain the ba
 
 - [ ] Step 3: provider selection과 transfer-ready bean을 구현한다.
 
-S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 ConditionalOnS3CseProvider condition을 추가한다. condition은 environment에서 bluetape4k.aws.s3.client-side-encryption.provider를 읽고 누락 값은 KMS로 해석한다. 각 method는 enabled=true와 ConditionalOnMissingBean(S3ClientSideEncryptionOperations)를 사용한다. AES/RSA provider template만 key material을 소유하므로 `destroyMethod = "close"`를 지정하고, 기존 KMS template은 S3 client나 KMS resource를 소유하지 않으므로 destroy method를 추가하지 않는다.
+S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 ConditionalOnS3CseProvider condition을 추가한다. condition은 environment에서 bluetape4k.aws.s3.client-side-encryption.provider를 읽고 누락 값은 KMS로 해석한다. 각 method는 enabled=true와 ConditionalOnMissingBean(S3ClientSideEncryptionOperations)를 사용한다. AES/RSA provider template만 key material을 소유하므로 `destroyMethod = "close"`를 지정하고, 기존 KMS template은 S3 client나 KMS resource를 소유하지 않으므로 destroy method를 추가하지 않는다. transfer adapter는 S3TransferOperations가 생성된 뒤 평가되어야 하므로 S3AutoConfiguration에 두지 않는다.
 
     @Target(AnnotationTarget.FUNCTION)
     @Retention(AnnotationRetention.RUNTIME)
@@ -867,17 +955,16 @@ S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 Conditional
         name = ["enabled"],
         havingValue = "true",
     )
+    @ConditionalOnBean(KmsOperations::class)
     @ConditionalOnS3CseProvider(ClientSideEncryptionProvider.KMS)
     fun s3KmsClientSideEncryptionOperations(
         s3AsyncClient: S3AsyncClient,
-        kmsOperations: ObjectProvider<KmsOperations>,
+        kmsOperations: KmsOperations,
         properties: S3Properties,
     ): S3ClientSideEncryptionOperations =
         S3ClientSideEncryptionTemplate(
             s3AsyncClient,
-            kmsOperations.getIfUnique() ?: error(
-                "KmsOperations is required exactly once when provider=KMS.",
-            ),
+            kmsOperations,
             properties,
         )
 
@@ -923,10 +1010,22 @@ S3AutoConfiguration에 provider 값을 대소문자 무시해 읽는 Conditional
             ),
         )
 
-getIfUnique가 null이면 zero/multiple candidate를 동일하게 임의 선택하지 않고 provider name과 property를 담은 명시적 IllegalStateException으로 실패시킨다. provider transfer adapter는 provider template, S3TransferOperations, S3OutputStreamProvider가 모두 있을 때만 등록하고 KMS template에는 등록하지 않는다.
+기존 KMS method에는 `@ConditionalOnBean(KmsOperations::class)`를 그대로 유지하고
+직접 `KmsOperations`를 주입한다. 따라서 provider 기본값이 KMS이고 KMS bean이 없으면
+컨텍스트는 성공하지만 CSE bean은 0개이며, AES/RSA로 자동 대체하지 않는다. AES/RSA의
+`getIfUnique`가 null이면 zero/multiple candidate를 동일하게 임의 선택하지 않고 provider
+name과 property를 담은 명시적 IllegalStateException으로 실패시킨다. provider transfer
+adapter는 provider template, S3TransferOperations, S3OutputStreamProvider가 모두 있을 때만
+등록하고 KMS template에는 등록하지 않는다.
+
+`S3TransferAutoConfiguration.kt`에 transfer adapter bean을 추가한다. 이 auto-configuration은
+기존 `S3TransferAutoConfiguration`의 transfer SDK `@ConditionalOnClass`와
+`@AutoConfiguration(after = [S3AutoConfiguration::class])` 순서를 재사용하므로 provider
+template과 transfer/output provider가 모두 등록된 뒤 조건을 평가한다. CSE enabled와
+transfer enabled가 각각 true이고, custom transfer CSE bean이 없을 때만 생성한다.
 
 추가 context test는 (a) `provider=KMS`에서 AES bean만 있어도 KMS `KmsOperations`가 없으면
-startup이 실패하고 AES로 자동 대체되지 않는지, (b) custom
+CSE bean이 0개이고 AES로 자동 대체되지 않는지, (b) custom
 `S3ClientSideEncryptionOperations`가 있으면 KMS/AES/RSA template 모두 backoff하는지,
 (c) KMS template만 있을 때 `S3ClientSideEncryptionTransferOperations`가 생기지 않는지,
 (d) provider template과 transfer/output provider가 모두 있을 때만 transfer adapter가
@@ -941,12 +1040,25 @@ startup이 실패하고 AES로 자동 대체되지 않는지, (b) custom
         ],
     )
     @ConditionalOnMissingBean(S3ClientSideEncryptionTransferOperations::class)
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.s3.client-side-encryption",
+        name = ["enabled"],
+        havingValue = "true",
+    )
+    @ConditionalOnProperty(
+        prefix = "bluetape4k.aws.s3.transfer",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true,
+    )
     fun s3ClientSideEncryptionTransferOperations(
+        s3AsyncClient: S3AsyncClient,
         providerTemplate: S3ClientSideEncryptionProviderTemplate,
         transferOperations: S3TransferOperations,
         outputStreamProvider: S3OutputStreamProvider,
     ): S3ClientSideEncryptionTransferOperations =
         S3ClientSideEncryptionTransferTemplate(
+            s3AsyncClient,
             providerTemplate,
             transferOperations,
             outputStreamProvider,
@@ -959,11 +1071,12 @@ startup이 실패하고 AES로 자동 대체되지 않는지, (b) custom
       --tests 'io.bluetape4k.aws.spring.s3.S3CoroutinesTemplateAwsEmulatorTest' \
       --no-daemon --max-workers=1 --console=plain
 
-Expected: provider selection, missing/ambiguous/backoff tests and all existing KMS tests pass with BUILD SUCCESSFUL.
+Expected: provider selection, missing/ambiguous/backoff tests and all existing KMS tests pass with BUILD SUCCESSFUL. The KMS-without-operations case is a successful context with zero CSE beans, preserving the pre-existing `@ConditionalOnBean` backoff.
 
 - [ ] Step 5: Lore commit을 만든다.
 
     git add aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfiguration.kt \
+      aws-spring-boot/src/main/kotlin/io/bluetape4k/aws/spring/s3/S3TransferAutoConfiguration.kt \
       aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/s3/S3AutoConfigurationTest.kt
     git commit -m "#475 Spring provider 선택과 KMS backoff를 고정한다" \
       -m "Constraint: enabled=false와 custom S3ClientSideEncryptionOperations backoff을 유지한다.
@@ -1029,6 +1142,9 @@ delegate가 받은 모든 chunk를 보존한다. failing delegate는 `complete()
 내용으로 만든 뒤 tag/metadata를 변조하고, 인증 실패 후 sentinel이 그대로이며 새 destination은
 생기지 않는지 확인한다. ciphertext 크기가 `MAX_CIPHERTEXT_BYTES + 1`이면 임시 파일을
 plaintext로 읽기 전에 거부하고 destination과 임시 경로를 변경하지 않는지도 검증한다.
+HEAD와 GET 사이 객체가 교체되는 TOCTOU fixture는 `headObject`가 반환한 ETag를
+`DownloadFileRequest.getObjectRequest { ifMatch(...) }`에 전달했는지 기록하고, ETag 불일치
+응답이 body를 쓰기 전에 실패하며 destination과 임시 경로가 보존/삭제되는지 검증한다.
 기존 테스트와 동일한 Logback `ListAppender<ILoggingEvent>`를 provider/transfer logger에
 부착해 성공·실패·취소 경로의 formatted message와 throwable message를 수집한다. sentinel
 plaintext, AES/RSA key material, wrapped-key Base64, encryption-context 값이 어느 log event에도
@@ -1179,9 +1295,10 @@ state 전이가 정확히 한 번 일어난다.
         }
     }
 
-S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnvelope`로 reserved metadata를 먼저 만들고 S3OutputStreamProvider.outputStream을 ciphertext delegate로 연다. downloadEncryptedFile은 S3TransferOperations.downloadFile로 Files.createTempFile 경로에 ciphertext만 받은 뒤 response metadata를 provider template에 전달한다. ProviderEnvelope.decrypt가 성공한 후에만 Files.write(destination, plaintext)를 실행하고 ciphertext 임시 경로는 성공·실패·취소 모두 finally에서 삭제한다. transfer adapter는 provider CSE가 선택되고 S3TransferOperations와 S3OutputStreamProvider가 모두 있을 때만 auto-configuration한다.
+S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnvelope`로 reserved metadata를 먼저 만들고 S3OutputStreamProvider.outputStream을 ciphertext delegate로 연다. `downloadEncryptedFile`은 먼저 `S3AsyncClient.headObject`로 remote ciphertext `contentLength`와 `eTag`를 조회해 `MAX_CIPHERTEXT_BYTES`를 초과하거나 eTag가 없으면 임시 파일을 만들거나 다운로드하지 않고 거부한다. 통과한 경우 `S3TransferOperations.downloadFile`의 nested `getObjectRequest`에 `ifMatch(head.eTag())`를 설정해 HEAD와 GET 사이 객체 교체를 body 수신 전에 거부하고, `Files.createTempFile` 경로에는 ciphertext만 받는다. ProviderEnvelope.decrypt가 성공한 후에만 Files.write(destination, plaintext)를 실행하고 ciphertext 임시 경로와 사용한 plaintext byte array는 성공·실패·취소 모두 `NonCancellable + Dispatchers.IO`의 finally에서 정리한다. 임시 파일 생성 자체도 같은 NonCancellable IO 경계 안에서 nullable path에 기록해 취소 시 누수를 막는다. transfer adapter는 provider CSE가 선택되고 S3TransferOperations와 S3OutputStreamProvider가 모두 있을 때만 auto-configuration한다.
 
     class S3ClientSideEncryptionTransferTemplate(
+        private val s3AsyncClient: S3AsyncClient,
         private val providerTemplate: S3ClientSideEncryptionProviderTemplate,
         private val transferOperations: S3TransferOperations,
         private val outputStreamProvider: S3OutputStreamProvider,
@@ -1212,26 +1329,43 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnve
             destination: Path,
             encryptionContext: Map<String, String>,
         ) {
-            val temporary = withContext(ioDispatcher) {
-                Files.createTempFile("bluetape-s3-cse-", ".ciphertext")
+            val head = s3AsyncClient.headObject { it.bucket(bucket).key(key) }.await()
+            val remoteSize = requireNotNull(head.contentLength()) {
+                "Encrypted S3 object content length is unavailable: s3://$bucket/$key"
             }
+            val remoteETag = requireNotNull(head.eTag()) {
+                "Encrypted S3 object ETag is unavailable: s3://$bucket/$key"
+            }
+            require(remoteSize <= S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
+                "Encrypted S3 object exceeds max ciphertext size: $remoteSize"
+            }
+            var temporary: Path? = null
+            var plaintext: ByteArray? = null
             try {
-                val completed = transferOperations.downloadFile(bucket, key, temporary)
-                val plaintext = withContext(ioDispatcher) {
-                    val size = Files.size(temporary)
+                temporary = withContext(NonCancellable + ioDispatcher) {
+                    Files.createTempFile("bluetape-s3-cse-", ".ciphertext")
+                }
+                val completed = transferOperations.downloadFile(bucket, key, requireNotNull(temporary)) {
+                    getObjectRequest { it.ifMatch(remoteETag) }
+                }
+                plaintext = withContext(ioDispatcher) {
+                    val size = Files.size(requireNotNull(temporary))
                     require(size <= S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
                         "Encrypted S3 object exceeds max ciphertext size: $size"
                     }
                     providerTemplate.decryptProviderPayload(
-                        Files.readAllBytes(temporary),
+                        Files.readAllBytes(requireNotNull(temporary)),
                         completed.response().metadata(),
                         encryptionContext,
                     )
                 }
-                withContext(ioDispatcher) { Files.write(destination, plaintext) }
+                withContext(ioDispatcher) { Files.write(destination, requireNotNull(plaintext)) }
             } finally {
-                withContext(NonCancellable + ioDispatcher) {
-                    Files.deleteIfExists(temporary)
+                plaintext?.fill(0)
+                temporary?.let { path ->
+                    withContext(NonCancellable + ioDispatcher) {
+                        Files.deleteIfExists(path)
+                    }
                 }
             }
         }
@@ -1239,7 +1373,7 @@ S3ClientSideEncryptionTransferTemplate는 provider template의 `newStreamingEnve
 
 - [ ] Step 5: transfer/typed GREEN과 no-plaintext 테스트를 실행한다.
 
-스트리밍 테스트는 다음 terminal 경계를 모두 고정한다: 빈 stream의 `complete()` logical EOF에서 tag와 delegate completion이 한 번만 발생하는지, `complete()`의 `doFinal`이 한 번만 호출되는지, `complete()`와 `close()`의 double terminal call이 idempotent한지, terminal 이후 `write`가 거절되는지, concurrent `complete/close`가 exactly-once인지, ciphertext를 잘라낸 truncated final input이 인증 실패하고 destination을 만들지 않는지, `CancellationException`이 그대로 전파되면서 delegate와 임시 파일이 정리되는지. broad `Throwable` cleanup은 cancellation을 새 예외로 감싸지 않고 원래 instance를 다시 throw한다.
+스트리밍 테스트는 다음 terminal 경계를 모두 고정한다: 빈 stream의 `complete()` logical EOF에서 tag와 delegate completion이 한 번만 발생하는지, `complete()`의 `doFinal`이 한 번만 호출되는지, `complete()`와 `close()`의 double terminal call이 idempotent한지, terminal 이후 `write`가 거절되는지, concurrent `complete/close`가 exactly-once인지, ciphertext를 잘라낸 truncated final input이 인증 실패하고 destination을 만들지 않는지, `CancellationException`이 그대로 전파되면서 delegate와 임시 파일이 정리되는지. `headObject`가 `MAX_CIPHERTEXT_BYTES + 1`을 보고한 경우 download 전에 실패하고 temp path가 생성되지 않는지도 검증한다. HEAD ETag와 GET `ifMatch`가 다른 TOCTOU 응답은 body를 쓰기 전에 실패하고, 이미 만든 ciphertext temp path는 cleanup되는지 확인한다. temp 생성 직후 cancellation은 `NonCancellable + Dispatchers.IO` finally에서 path와 plaintext buffer를 정리한다. broad `Throwable` cleanup은 cancellation을 새 예외로 감싸지 않고 원래 instance를 다시 throw한다.
 
     ./gradlew :bluetape4k-aws-spring-boot:test \
       --tests 'io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionObjectExtensionsTest' \
@@ -1515,6 +1649,17 @@ Review evidence must address per-object data-key allocation, RSA key wrapping co
 | Acceptance | Floci AES/RSA byte·typed·stream·file 및 KMS regression |
 | Quality | detekt, module test, git diff --check, manual contract |
 | Scope | PR/push/merge/tag/release를 실행하지 않음 |
+
+- [ ] Step 3A: bluetape-flow run closure evidence를 기록한다.
+
+현재 workflow run `20260827T141950Z-e6cc6c9b`의 owner와 `.workflow/topology.json`에 등록된
+`cse-core`, `cse-transfer`, `cse-spring`, `cse-tests`, `cse-docs`, `main` component를
+각각 실제 명령의 `check-result`와 `component-evidence` receipt로 채운다. 모든 component가
+검증된 뒤 `lane-complete`를 기록하고 `completion-check`가 complete를 보고하는지 확인한다.
+그 다음에만 `complete`와 `live-report-create`를 실행하며, 각 명령은 실행 전 `--help`로
+필수 field를 재확인한다. receipt checksum은 Git SHA와 혼동하지 않고 immutable evidence로
+보존하며, owner token은 출력·문서·커밋에 기록하지 않는다. PR/push/merge/tag/release와
+외부 AWS mutation은 이 run에서 수행하지 않는다.
 
 - [ ] Step 4: 최종 변경과 lesson을 commit한다.
 
