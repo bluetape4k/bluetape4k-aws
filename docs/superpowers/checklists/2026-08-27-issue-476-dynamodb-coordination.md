@@ -52,15 +52,15 @@ FlociServer 계약을 주 검증으로 사용한다.
   - **Failure:** 미확인 외부 동작을 가정하지 않는다.
 - [x] **A-03 — 설계 승인·review**
   - **Action:** 설계 spec을 writer gate와 여섯 관점 review로 검증한다.
-  - **Evidence:** `docs/superpowers/specs/2026-08-27-issue-476-dynamodb-coordination-design.md`, `docs/superpowers/reviews/2026-08-27-issue-476-dynamodb-coordination-design-review.md`, SPW-01..05, six-perspective matrix, 최종 P0/P1=0. 사용자 설계 검토/승인은 별도 gate로 남김.
+  - **Evidence:** `docs/superpowers/specs/2026-08-27-issue-476-dynamodb-coordination-design.md`, `docs/superpowers/reviews/2026-08-27-issue-476-dynamodb-coordination-design-review.md`, SPW-01..05, six-perspective matrix, 최종 P0/P1=0. 사용자 `승인` 메시지로 설계 승인을 확인하고 spec 상태를 승인됨으로 갱신했다.
   - **Failure:** material change는 재승인한다.
-- [ ] **A-04 — 구현 plan 승인·review**
+- [x] **A-04 — 구현 plan 승인·review**
   - **Action:** ordered task/file/test/doc/hazard/rollback plan을 검증한다.
-  - **Evidence:** plan path, traceability, SPW-01..05, P0/P1=0.
+  - **Evidence:** `docs/superpowers/plans/2026-08-27-issue-476-dynamodb-coordination-plan.md`, `docs/superpowers/risk/2026-08-27-issue-476-dynamodb-coordination-risk.md`, `docs/superpowers/reviews/2026-08-27-issue-476-dynamodb-coordination-plan-review.md`, 파일/명령/RED→GREEN/rollback traceability, 여섯 관점 최종 P0/P1=0.
   - **Failure:** 누락된 proof/ordering을 수선하기 전 구현하지 않는다.
-- [ ] **A-05 — 위험 예측**
+- [x] **A-05 — 위험 예측**
   - **Action:** conditional write, fencing, clock skew, retry, cancellation, emulator 위험을 기록한다.
-  - **Evidence:** risk artifact의 signal/mitigation/rerun point.
+  - **Evidence:** `docs/superpowers/risk/2026-08-27-issue-476-dynamodb-coordination-risk.md`의 signal/impact/mitigation/rerun ledger. 필수 `AllOld` capability 부재는 N/A가 아닌 PENDING/BLOCKED stop으로 고정했다.
   - **Failure:** generic skip을 사용하지 않는다.
 - [ ] **A-06 — test-first 구현**
   - **Action:** RED→GREEN과 Kotlin/domain pattern을 사용해 최소 구현한다.
