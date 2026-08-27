@@ -170,6 +170,21 @@ class SqsObservationAutoConfigurationTest {
     }
 
     @Test
+    fun `handler probe failure is not hidden as a missing handler`() {
+        contextRunner
+            .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
+            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, Supplier { FailingObservationHandler })
+            .run { context ->
+                context.startupFailure.shouldNotBeNull()
+                val messages = generateSequence(context.startupFailure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+                messages.contains("probe failure") shouldBeEqualTo true
+            }
+    }
+
+    @Test
     fun `missing Spring handler does not activate observation`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
@@ -322,6 +337,12 @@ class SqsObservationAutoConfigurationTest {
         override fun onStart(context: Observation.Context) = Unit
 
         override fun supportsContext(context: Observation.Context): Boolean = false
+    }
+
+    private object FailingObservationHandler : ObservationHandler<Observation.Context> {
+        override fun onStart(context: Observation.Context) = Unit
+
+        override fun supportsContext(context: Observation.Context): Boolean = error("probe failure")
     }
 
     private object ProcessConvention : SqsObservationConvention {

@@ -107,7 +107,7 @@ internal class SqsObservationPrerequisitesCondition : SpringBootCondition(), Con
         return beanFactory
             .getBeanProvider(ObservationHandler::class.java)
             .orderedStream()
-            .anyMatch { handler -> runCatching { handler.supportsContext(probe) }.getOrDefault(false) }
+            .anyMatch { handler -> handler.supportsContext(probe) }
     }
 
     private fun noMatch(reason: String): ConditionOutcome =
