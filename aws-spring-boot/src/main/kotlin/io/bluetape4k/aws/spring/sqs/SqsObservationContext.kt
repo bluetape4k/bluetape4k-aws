@@ -54,10 +54,15 @@ class SqsObservationMetadata internal constructor(
     val batchSize: Int = 0,
     val acknowledgementAction: SqsAcknowledgementAction? = null,
     val delivery: SqsObservationDelivery = SqsObservationDelivery.UNKNOWN,
+    queueNameResolved: Boolean = false,
 ) : Serializable {
 
     val listenerId: String = listenerId.ifBlank { UNKNOWN }
-    val queueName: String = resolveSqsObservationQueueName(queueName)
+    val queueName: String = if (queueNameResolved) {
+        queueName.also(::requireResolvedSqsObservationQueueName)
+    } else {
+        resolveSqsObservationQueueName(queueName)
+    }
     val messageId: String? = messageId.takeUnless { batch }
     val messageGroupId: String? = messageGroupId.takeUnless { batch }
     val messageDeduplicationId: String? = messageDeduplicationId.takeUnless { batch }
@@ -157,6 +162,36 @@ internal fun resolveSqsObservationQueueName(queueUrl: String?): String {
         SQS_QUEUE_NAME_PATTERN.matches(it) &&
             !SQS_ACCOUNT_ID_PATTERN.matches(it.removeSuffix(".fifo"))
     } ?: "unknown"
+}
+
+internal class SqsObservationQueueNameCache(
+    private val sanitizer: (String?) -> String = ::resolveSqsObservationQueueName,
+) {
+    @Volatile
+    private var cached: Entry? = null
+
+    fun resolve(queueUrl: String): String {
+        cached?.takeIf { it.queueUrl == queueUrl }?.let { return it.queueName }
+        return synchronized(this) {
+            cached?.takeIf { it.queueUrl == queueUrl }?.queueName
+                ?: sanitizer(queueUrl).also { queueName ->
+                    cached = Entry(queueUrl, queueName)
+                }
+        }
+    }
+
+    private data class Entry(
+        val queueUrl: String,
+        val queueName: String,
+    )
+}
+
+private fun requireResolvedSqsObservationQueueName(queueName: String) {
+    require(
+        queueName == "unknown" ||
+            SQS_QUEUE_NAME_PATTERN.matches(queueName) &&
+            !SQS_ACCOUNT_ID_PATTERN.matches(queueName.removeSuffix(".fifo")),
+    ) { "queueName must already satisfy the SQS observation allowlist." }
 }
 
 private val SQS_QUEUE_NAME_PATTERN = Regex("(?=.{1,80}$)[A-Za-z0-9_-]+(?:\\.fifo)?")

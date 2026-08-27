@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.ObjectStreamClass
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
 
 class SqsObservationContextTest {
@@ -155,6 +156,21 @@ class SqsObservationContextTest {
 
         resolvedQueueName shouldBeEqualTo "orders.fifo"
         observationMetadata(queueName = resolvedQueueName).queueName shouldBeEqualTo resolvedQueueName
+    }
+
+    @Test
+    fun `queue name cache sanitizes one resolved URL once across receive and process lookups`() {
+        val sanitizerCalls = AtomicInteger()
+        val cache = SqsObservationQueueNameCache { queueUrl ->
+            sanitizerCalls.incrementAndGet()
+            resolveSqsObservationQueueName(queueUrl)
+        }
+
+        repeat(11) {
+            cache.resolve("https://host/123456789012/orders") shouldBeEqualTo "orders"
+        }
+
+        sanitizerCalls.get() shouldBeEqualTo 1
     }
 
     @Test

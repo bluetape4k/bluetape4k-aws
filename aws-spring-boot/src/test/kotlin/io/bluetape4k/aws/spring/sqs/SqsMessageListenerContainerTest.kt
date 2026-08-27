@@ -12,6 +12,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.micrometer.observation.Observation
+import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +40,225 @@ import java.util.concurrent.CopyOnWriteArrayList
 class SqsMessageListenerContainerTest {
 
     @Test
+    fun `enabled runtime records one receive and one process per single message`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val messages = listOf(message(), message("message-2"))
+        val handlersStarted = AtomicInteger()
+        val allHandlersStarted = CompletableDeferred<Unit>()
+        val releaseHandlers = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 2, 0, null) } returns messages
+        every { invoker.manualAcknowledgement } returns true
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
+            if (handlersStarted.incrementAndGet() == messages.size) {
+                allHandlersStarted.complete(Unit)
+            }
+            releaseHandlers.await()
+        }
+        val recorder = ContainerObservationRecorder()
+        val container = container(operations, invoker, maxMessages = 2, maxInFlight = 2)
+        container.setObservationRuntime(observationRuntime(recorder))
+
+        container.start()
+        withTimeout(2_000) { allHandlersStarted.await() }
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        releaseHandlers.complete(Unit)
+        withTimeout(2_000) { stopped.await() }
+
+        recorder.snapshots.count { it.stage == SqsObservationStage.RECEIVE } shouldBeEqualTo 1
+        recorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 2
+        recorder.snapshots.filter { it.stage == SqsObservationStage.PROCESS }
+            .map { it.outcome }
+            .toSet() shouldBeEqualTo setOf(SqsObservationOutcome.SUCCESS)
+    }
+
+    @Test
+    fun `retry stays inside one process observation and records one event`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val handlerCalls = AtomicInteger()
+        val retriedHandlerStarted = CompletableDeferred<Unit>()
+        val releaseHandler = CompletableDeferred<Unit>()
+        val failure = IllegalStateException("retry")
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
+        every { invoker.manualAcknowledgement } returns true
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
+            if (handlerCalls.incrementAndGet() == 1) {
+                throw failure
+            }
+            retriedHandlerStarted.complete(Unit)
+            releaseHandler.await()
+        }
+        val recorder = ContainerObservationRecorder()
+        val container = container(
+            operations,
+            invoker,
+            retry = SqsProperties.Retry(maxAttempts = 2, initialBackoff = Duration.ZERO),
+        )
+        container.setObservationRuntime(observationRuntime(recorder))
+
+        container.start()
+        withTimeout(2_000) { retriedHandlerStarted.await() }
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        releaseHandler.complete(Unit)
+        withTimeout(2_000) { stopped.await() }
+
+        val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+        process.outcome shouldBeEqualTo SqsObservationOutcome.RETRIED
+        process.retryCount shouldBeEqualTo 1
+        process.attempt shouldBeEqualTo 2
+        recorder.retryEvents.get() shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `batch size one process observation never exposes message identifiers`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val handlerStarted = CompletableDeferred<Unit>()
+        val releaseHandler = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
+            handlerStarted.complete(Unit)
+            releaseHandler.await()
+        }
+        val recorder = ContainerObservationRecorder()
+        val container = container(
+            operations,
+            invoker,
+            batch = true,
+            acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+        )
+        container.setObservationRuntime(observationRuntime(recorder))
+
+        container.start()
+        withTimeout(2_000) { handlerStarted.await() }
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        releaseHandler.complete(Unit)
+        withTimeout(2_000) { stopped.await() }
+
+        val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+        process.batch shouldBeEqualTo true
+        process.batchSize shouldBeEqualTo 1
+        process.messageId shouldBeEqualTo null
+        process.messageGroupId shouldBeEqualTo null
+        process.messageDeduplicationId shouldBeEqualTo null
+    }
+
+    @Test
+    fun `queue URL resolution failure happens before receive observation`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val lookupAttempted = CompletableDeferred<Unit>()
+        coEvery { operations.getQueueUrl("orders") } coAnswers {
+            lookupAttempted.complete(Unit)
+            error("lookup failed")
+        }
+        val recorder = ContainerObservationRecorder()
+        val container = container(
+            operations,
+            invoker,
+            queue = "orders",
+            retry = SqsProperties.Retry(initialBackoff = Duration.ofSeconds(10)),
+        )
+        container.setObservationRuntime(observationRuntime(recorder))
+
+        container.start()
+        withTimeout(2_000) { lookupAttempted.await() }
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        withTimeout(2_000) { stopped.await() }
+
+        recorder.snapshots shouldBeEqualTo emptyList()
+    }
+
+    @Test
+    fun `conversion and handler failures keep their process stage boundaries`() = runSuspendIO {
+        val conversionFailure = IllegalArgumentException("conversion")
+        val conversionInvoker = SqsListenerMethodInvoker(
+            ContainerConvertedListener(),
+            ContainerConvertedListener::class.java.declaredMethods.single { it.name == "handle" },
+            object : SqsMessageConverter {
+                override fun convert(message: SqsReceivedMessage, targetType: Class<*>): Any = throw conversionFailure
+            },
+        )
+        val handlerFailure = IllegalStateException("handler")
+        val handlerInvoker = SqsListenerMethodInvoker(
+            ContainerThrowingListener(handlerFailure),
+            ContainerThrowingListener::class.java.declaredMethods.single { it.name == "handle" },
+            NoopSqsMessageConverter,
+        )
+
+        listOf("conversion" to conversionInvoker, "handler" to handlerInvoker).forEach { (stage, invoker) ->
+            val operations = mockk<SqsOperations>()
+            val receiveCalls = AtomicInteger()
+            coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+                if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+            }
+            val recorder = ContainerObservationRecorder()
+            val container = container(
+                operations,
+                invoker,
+                retry = SqsProperties.Retry(maxAttempts = 1),
+            )
+            container.setObservationRuntime(observationRuntime(recorder))
+
+            container.start()
+            withTimeout(2_000) {
+                while (recorder.snapshots.none { it.stage == SqsObservationStage.PROCESS }) {
+                    delay(5)
+                }
+            }
+            val stopped = CompletableDeferred<Unit>()
+            container.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+
+            val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+            process.outcome shouldBeEqualTo SqsObservationOutcome.ERROR
+            process.failureStage shouldBeEqualTo stage
+        }
+    }
+
+    @Test
+    fun `cancelling retry backoff stops the same process without another attempt or acknowledgement`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val handlerCalls = AtomicInteger()
+        val firstAttemptFailed = CompletableDeferred<Unit>()
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
+        every { invoker.manualAcknowledgement } returns false
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
+            handlerCalls.incrementAndGet()
+            firstAttemptFailed.complete(Unit)
+            throw IllegalStateException("retry")
+        }
+        val recorder = ContainerObservationRecorder()
+        val container = container(
+            operations,
+            invoker,
+            stopTimeoutMillis = 50,
+            retry = SqsProperties.Retry(maxAttempts = 3, initialBackoff = Duration.ofSeconds(10)),
+        )
+        container.setObservationRuntime(observationRuntime(recorder))
+
+        container.start()
+        withTimeout(2_000) { firstAttemptFailed.await() }
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        withTimeout(2_000) { stopped.await() }
+
+        handlerCalls.get() shouldBeEqualTo 1
+        coVerify(exactly = 0) { operations.delete(any(), any()) }
+        val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+        process.outcome shouldBeEqualTo SqsObservationOutcome.CANCELLED
+        process.retryCount shouldBeEqualTo 1
+        process.attempt shouldBeEqualTo 2
+        recorder.retryEvents.get() shouldBeEqualTo 1
+    }
+
+    @Test
     fun `missing and noop runtime preserve the direct listener sequence without extension calls`() = runSuspendIO {
         listOf(false, true).forEach { installNoopRuntime ->
             val calls = CopyOnWriteArrayList<String>()
@@ -62,7 +282,7 @@ class SqsMessageListenerContainerTest {
                 DeleteMessageResponse.builder().build()
             }
             every { invoker.manualAcknowledgement } returns false
-            coEvery { invoker.invoke(any(), any()) } coAnswers {
+            coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
                 calls += "handler"
             }
             val container = container(operations, invoker)
@@ -107,7 +327,7 @@ class SqsMessageListenerContainerTest {
         }
         coEvery { operations.delete(QUEUE_URL, any()) } returns DeleteMessageResponse.builder().build()
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             startedIds += firstArg<SqsReceivedMessage>().messageId
             if (startedIds.size == 2) {
                 bothStarted.complete(Unit)
@@ -148,7 +368,7 @@ class SqsMessageListenerContainerTest {
         }
         coEvery { operations.delete(QUEUE_URL, any()) } returns DeleteMessageResponse.builder().build()
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             when (val id = firstArg<SqsReceivedMessage>().messageId) {
                 "a-1" -> {
                     firstGroupStarted.complete(Unit)
@@ -195,7 +415,7 @@ class SqsMessageListenerContainerTest {
             deleteBatchCalled.complete(Unit)
             SqsBatchDeleteResult(listOf("entry-0", "entry-1"), emptyList())
         }
-        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>()) } coAnswers {
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
             invocation.complete(firstArg<List<SqsReceivedMessage>>())
         }
         val container = container(
@@ -211,7 +431,7 @@ class SqsMessageListenerContainerTest {
             withTimeout(2_000) { invocation.await() }.map { it.messageId } shouldBeEqualTo
                 listOf("message-1", "message-2")
             withTimeout(2_000) { deleteBatchCalled.await() }
-            coVerify(exactly = 1) { invoker.invokeBatch(any(), null) }
+            coVerify(exactly = 1) { invoker.invokeBatch(any(), null, any()) }
             coVerify(exactly = 1) { operations.deleteBatch(QUEUE_URL, any()) }
         } finally {
             val stopped = CompletableDeferred<Unit>()
@@ -231,7 +451,7 @@ class SqsMessageListenerContainerTest {
         }
         coEvery { operations.deleteBatch(QUEUE_URL, any()) } returns
             SqsBatchDeleteResult(listOf("entry-0"), emptyList())
-        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>()) } coAnswers {
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
             secondArg<SqsBatchAcknowledgement>().acknowledge(listOf(firstArg<List<SqsReceivedMessage>>().first()))
             invocation.complete(Unit)
         }
@@ -271,7 +491,7 @@ class SqsMessageListenerContainerTest {
             )
             else SqsBatchDeleteResult(listOf("entry-0"), emptyList()).also { completed.complete(Unit) }
         }
-        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>()) } coAnswers {
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
             invocations += firstArg<List<SqsReceivedMessage>>()
         }
         val container = container(
@@ -389,7 +609,7 @@ class SqsMessageListenerContainerTest {
         val cancellation = slot<Throwable>()
         coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
             awaitCancellation()
         }
@@ -399,6 +619,8 @@ class SqsMessageListenerContainerTest {
             stopTimeoutMillis = 50,
             interceptors = listOf(interceptor),
         )
+        val recorder = ContainerObservationRecorder()
+        container.setObservationRuntime(observationRuntime(recorder))
 
         container.start()
         withTimeout(2_000) { handlerStarted.await() }
@@ -408,6 +630,8 @@ class SqsMessageListenerContainerTest {
 
         coVerify(exactly = 1) { interceptor.afterHandle(any(), capture(cancellation)) }
         cancellation.captured.shouldBeInstanceOf(CancellationException::class)
+        val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+        process.outcome shouldBeEqualTo SqsObservationOutcome.CANCELLED
     }
 
     @Test
@@ -423,7 +647,7 @@ class SqsMessageListenerContainerTest {
         }
         coEvery { operations.delete(any(), any()) } returns DeleteMessageResponse.builder().build()
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
             handlerRelease.await()
             handlerCompleted.complete(Unit)
@@ -463,7 +687,7 @@ class SqsMessageListenerContainerTest {
         val handlerCancelled = CompletableDeferred<Unit>()
         coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
             try {
                 awaitCancellation()
@@ -537,7 +761,7 @@ class SqsMessageListenerContainerTest {
         val started = CompletableDeferred<Unit>()
         coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns listOf(message())
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             started.complete(Unit)
             throw AssertionError("fatal handler error")
         }
@@ -573,7 +797,7 @@ class SqsMessageListenerContainerTest {
         coEvery { operations.delete(QUEUE_URL, "receipt-message-1") } returns
             DeleteMessageResponse.builder().build()
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
             handlerRelease.await()
         }
@@ -625,7 +849,7 @@ class SqsMessageListenerContainerTest {
         coEvery { operations.delete(QUEUE_URL, "receipt-message-1") } returns
             DeleteMessageResponse.builder().build()
         every { invoker.manualAcknowledgement } returns true
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
             secondArg<SqsAcknowledgement>().acknowledge()
             acknowledgementCompleted.complete(Unit)
@@ -678,7 +902,7 @@ class SqsMessageListenerContainerTest {
             DeleteMessageResponse.builder().build()
         }
         every { invoker.manualAcknowledgement } returns false
-        coEvery { invoker.invoke(any(), any()) } coAnswers {
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             handlerStarted.complete(Unit)
             heartbeatFailed.await()
             handlerRelease.await()
@@ -735,7 +959,7 @@ class SqsMessageListenerContainerTest {
         }
         coEvery { operations.deleteBatch(QUEUE_URL, any()) } returns
             SqsBatchDeleteResult(listOf("entry-0"), emptyList())
-        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>()) } coAnswers {
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
             secondArg<SqsBatchAcknowledgement>().acknowledge(listOf(firstArg<List<SqsReceivedMessage>>().first()))
             handlerStarted.complete(Unit)
             handlerRelease.await()
@@ -832,6 +1056,71 @@ class SqsMessageListenerContainerTest {
                 }
                 .build(),
         )
+
+    private fun observationRuntime(recorder: ContainerObservationRecorder): SqsObservationRuntime {
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(recorder)
+        return SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+    }
+
+    private data class ContainerObservationSnapshot(
+        val stage: SqsObservationStage,
+        val outcome: SqsObservationOutcome,
+        val retryCount: Int,
+        val attempt: Int?,
+        val batch: Boolean,
+        val batchSize: Int,
+        val messageId: String?,
+        val messageGroupId: String?,
+        val messageDeduplicationId: String?,
+        val failureStage: String?,
+    )
+
+    private class ContainerObservationRecorder : ObservationHandler<SqsObservationContext> {
+        val snapshots = CopyOnWriteArrayList<ContainerObservationSnapshot>()
+        val retryEvents = AtomicInteger()
+
+        override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
+
+        override fun onEvent(event: Observation.Event, context: SqsObservationContext) {
+            if (event.name == "retry") {
+                retryEvents.incrementAndGet()
+            }
+        }
+
+        override fun onStop(context: SqsObservationContext) {
+            snapshots += ContainerObservationSnapshot(
+                stage = context.metadata.stage,
+                outcome = context.outcome,
+                retryCount = context.retryCount,
+                attempt = context.attempt,
+                batch = context.metadata.batch,
+                batchSize = context.metadata.batchSize,
+                messageId = context.metadata.messageId,
+                messageGroupId = context.metadata.messageGroupId,
+                messageDeduplicationId = context.metadata.messageDeduplicationId,
+                failureStage = context.failureStage,
+            )
+        }
+    }
+
+    private class ContainerConvertedPayload
+
+    private class ContainerConvertedListener {
+        @Suppress("UNUSED_PARAMETER")
+        fun handle(payload: ContainerConvertedPayload) = Unit
+    }
+
+    private class ContainerThrowingListener(
+        private val failure: RuntimeException,
+    ) {
+        @Suppress("UNUSED_PARAMETER")
+        fun handle(payload: String): Nothing = throw failure
+    }
 
     companion object {
         private const val QUEUE_URL = "https://sqs.local/orders"

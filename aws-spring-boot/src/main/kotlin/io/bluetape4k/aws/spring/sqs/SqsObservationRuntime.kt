@@ -128,12 +128,28 @@ internal class SqsObservationExecution internal constructor(
 
     fun retry(attempt: Int) {
         require(attempt >= 1) { "attempt must be greater than or equal to 1." }
-        context.currentAttempt = attempt
-        context.retryCount++
-        context.outcome = SqsObservationOutcome.RETRIED
+        val currentContext = observationContext ?: return
+        currentContext.currentAttempt = attempt
+        currentContext.retryCount++
+        currentContext.outcome = SqsObservationOutcome.RETRIED
+        currentContext.failureStage = null
         if (!retryEventEmitted) {
             observation.event(Observation.Event.of("retry"))
             retryEventEmitted = true
+        }
+    }
+
+    fun fail(stage: String) {
+        observationContext?.apply {
+            failureStage = stage
+            outcome = SqsObservationOutcome.ERROR
+        }
+    }
+
+    fun cancel(stage: String) {
+        observationContext?.apply {
+            failureStage = stage
+            outcome = SqsObservationOutcome.CANCELLED
         }
     }
 }
@@ -156,7 +172,11 @@ private fun cleanupObservation(
     primaryFailure: Throwable?,
 ): Throwable? {
     var cleanupFailure: Throwable? = null
-    if (primaryFailure != null) {
+    if (
+        primaryFailure != null ||
+        context.outcome == SqsObservationOutcome.ERROR ||
+        context.outcome == SqsObservationOutcome.CANCELLED
+    ) {
         try {
             observation.error(SqsObservationTelemetryException(context.failureStage ?: "observation"))
         } catch (e: Throwable) {
