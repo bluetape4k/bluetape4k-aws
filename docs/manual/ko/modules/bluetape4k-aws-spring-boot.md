@@ -182,7 +182,10 @@ ciphertext만 기록됩니다.
 `downloadEncryptedFile`은 HEAD로 size와 ETag를 확인하고 `If-Match`로 다운로드한
 뒤 ciphertext size를 확인합니다. 전체 ciphertext 인증이 성공한 뒤에만 destination에
 plaintext를 기록합니다. 성공·실패·취소 모두 temporary ciphertext file과 복호화
-buffer를 정리하므로 authentication 실패가 기존 destination을 바꾸지 않습니다.
+buffer를 정리하므로 authentication 실패가 기존 destination을 바꾸지 않습니다. 평문
+temporary file을 만들지 않고 기존 destination을 보존하기 위해 최종 기록은
+non-cancellable I/O 경계에서 수행하며, 기존 destination도 같은
+`MAX_CIPHERTEXT_BYTES` 상한을 적용해 write 실패 시 memory에서 복원합니다.
 
 ## 권장 패턴 {#patterns}
 
