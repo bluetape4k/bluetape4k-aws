@@ -81,6 +81,49 @@ at-least-once 계약을 지키며 재시작 시 중복이 생길 수 있습니�
 첫 emulator 검증 경로로 사용하며 운영 retention, throttling, resharding timing은 AWS-only
 공백으로 남깁니다.
 
+## Kinesis 멀티 샤드 consumer {#kinesis-consumer}
+
+> 미출시/develop: 이 절은 Issue #470 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+Native `KinesisClient.consumerFlow`는 shard를 계속 발견하고 각 shard를 순차적으로
+polling하며 `maxShardConcurrency`로 active shard job을 제한합니다. Parent와 adjacent
+parent dependency를 graph에 보존하고, 모든 부모의 durable `KinesisCheckpoint.ShardEnd`가
+완료된 뒤에만 child를 시작합니다. 단일 outer emitter가 rendezvous backpressure를
+제공하므로 downstream emission이 반환된 뒤에 checkpoint를 저장합니다.
+
+```kotlin
+withKinesisClient(endpointUrl = flociEndpoint, region = "us-east-1") { client ->
+    client.consumerFlow(
+        streamName = "orders",
+        consumerGroup = "orders-api",
+        streamIdentity = "orders-generation-1",
+        position = KinesisStartingPosition.TrimHorizon,
+        options = KinesisConsumerOptions(ownerId = "orders-worker-1"),
+        checkpointStore = durableCheckpointStore,
+        leaseStore = durableLeaseStore,
+    ).collect { envelope -> handle(envelope.record) }
+}
+```
+
+`Sequence`는 해당 sequence를 포함해 재생하므로 at-least-once 계약이며 마지막 record가
+중복될 수 있습니다. `KinesisCheckpointStore`와 `KinesisLeaseStore`는 호출자 소유 SPI이고,
+`InMemory*` 구현은 테스트와 emulator 실행용입니다. `Noop*` 구현은 재시작 복구와 worker
+조정을 제공하지 않는 process-local 선택입니다. Lease counter가 stale save를 fencing하며,
+metrics에는 유한 label과 redacted token만 노출되고 payload·credential·request token은
+전달되지 않습니다. Client와 health probe는 호출자가 소유하고 cancellation이 stop/drain
+경계를 수행합니다.
+
+로컬 검증은 Floci를 사용하고 LocalStack은 명시적인 coverage gap에만 사용합니다.
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*KinesisConsumerFlociTest'
+```
+
+Floci는 emulator 계약을 증명하지만 운영 retention이나 throttling을 증명하지는 않습니다.
+Rollout은 stop → drain → canary → scale 순서로 진행하며, rollback 때는 마지막 durable
+checkpoint를 재사용하고 삭제하거나 되감지 않습니다.
+
 ## Lambda 호출 helper {#lambda}
 
 > 미출시/develop: 이 절은 Issue #314 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.

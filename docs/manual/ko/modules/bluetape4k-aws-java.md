@@ -82,6 +82,47 @@ at-least-once 전달을 유지하며 재시작 시 중복이 생길 수 있습�
 Emulator 검증은 Floci-first이며 운영 retention, throttling, resharding timing은 AWS-only
 공백으로 남깁니다.
 
+## Kinesis 멀티 샤드 consumer {#kinesis-consumer}
+
+> 미출시/develop: 이 절은 Issue #470 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+`KinesisAsyncClient.consumerFlow`는 `ListShards` 페이지를 계속 탐색하며 각 shard를
+순서대로 polling합니다. `maxShardConcurrency`로 active shard job 수를 제한하고,
+child shard는 두 부모의 durable `KinesisCheckpoint.ShardEnd`가 모두 저장된 뒤에
+시작합니다. Public Flow는 rendezvous 경계를 사용하므로 collector의 `emit`이 반환된
+뒤에만 checkpoint를 저장합니다.
+
+```kotlin
+client.consumerFlow(
+    streamName = "orders",
+    consumerGroup = "orders-api",
+    streamIdentity = "orders-generation-1",
+    position = KinesisStartingPosition.TrimHorizon,
+    options = KinesisConsumerOptions(ownerId = "orders-worker-1"),
+    checkpointStore = durableCheckpointStore,
+    leaseStore = durableLeaseStore,
+).collect { envelope -> handle(envelope.record) }
+```
+
+`Sequence`는 해당 위치를 포함해 재개하므로 at-least-once 경계를 제공하며, 정확히 한 번의
+외부 side effect는 호출자의 책임입니다. 분리된 `KinesisCheckpointStore`와
+`KinesisLeaseStore` SPI의 수명도 호출자가 소유합니다. 제공하는 `InMemory*` store는
+process-local 테스트 double이고 `Noop*` store는 재시작 복구나 worker 조정을 제공하지
+않는다는 점을 명시합니다. Lease counter로 stale save를 차단하고, metrics callback에는
+payload나 credential 대신 유한 label과 redacted token만 전달합니다. Client와 probe의 수명은
+호출자에게 있으며 cancellation이 정상적인 stop/drain 신호입니다.
+
+AWS credential 없이 Floci를 선택해 integration 계약을 실행할 수 있습니다.
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-java:test --tests '*KinesisConsumerFlociTest'
+```
+
+Floci 실행은 SDK와 emulator 호환성만 증명합니다. 운영 rollout은 stop → drain → canary →
+scale 순서로 진행하고, rollback 때는 마지막 durable checkpoint를 재사용하며 삭제하거나
+되감지 않습니다.
+
 ## Lambda 호출 helper {#lambda}
 
 > 미출시/develop: 이 절은 Issue #314 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.

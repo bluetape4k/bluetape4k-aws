@@ -80,6 +80,52 @@ completes. Use `withDynamoDbStreamsClient` for short-lived clients and keep
 injected HTTP engines caller-owned. Floci is the first emulator lane; production
 retention, throttling, and resharding timing remain AWS-only gaps.
 
+## Kinesis multi-shard consumer {#kinesis-consumer}
+
+> Unreleased/develop: this section describes the Issue #470 API and is not part of the `0.5.0` release source.
+
+The native `KinesisClient.consumerFlow` discovers shards continuously, polls
+each shard sequentially, and limits active shard jobs with
+`maxShardConcurrency`. Parent and adjacent-parent dependencies are retained in
+the graph; a child starts only after every parent has a durable
+`KinesisCheckpoint.ShardEnd`. The single outer emitter provides rendezvous
+backpressure and saves a checkpoint only after downstream emission returns.
+
+```kotlin
+withKinesisClient(endpointUrl = flociEndpoint, region = "us-east-1") { client ->
+    client.consumerFlow(
+        streamName = "orders",
+        consumerGroup = "orders-api",
+        streamIdentity = "orders-generation-1",
+        position = KinesisStartingPosition.TrimHorizon,
+        options = KinesisConsumerOptions(ownerId = "orders-worker-1"),
+        checkpointStore = durableCheckpointStore,
+        leaseStore = durableLeaseStore,
+    ).collect { envelope -> handle(envelope.record) }
+}
+```
+
+`Sequence` resumes inclusively, so the contract is at-least-once and a restart
+may duplicate the last delivered record. `KinesisCheckpointStore` and
+`KinesisLeaseStore` are caller-owned SPIs; `InMemory*` implementations are
+intended for tests and emulator runs, and `Noop*` implementations are explicit
+process-local choices without restart recovery or worker coordination. Lease
+counters fence stale saves. Metrics expose finite labels and redacted tokens;
+payloads, credentials, and request tokens are not emitted. The client and health
+probes remain caller-owned; cancellation performs the stop/drain path.
+
+Use Floci for local verification, with LocalStack reserved for an explicit
+coverage gap:
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*KinesisConsumerFlociTest'
+```
+
+Floci proves the emulator contract, not production retention or throttling.
+Rollout should stop, drain, canary, and scale; rollback reuses the last durable
+checkpoint and never deletes or rewinds it.
+
 ## Lambda invocation helpers {#lambda}
 
 > Unreleased/develop: this section describes the Issue #314 API and is not part of the `0.5.0` release source.

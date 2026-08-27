@@ -1467,6 +1467,50 @@ clients remain caller-owned. New emulator coverage runs against Floci first:
 The repository does not claim production retention, throttling, or resharding
 timing from the Floci run; those remain AWS-only verification gaps.
 
+### Kinesis — Multi-shard consumer and checkpoints (Issue #470)
+
+The Java SDK v2 and AWS SDK for Kotlin modules now expose `consumerFlow` for a
+continuously discovered multi-shard stream. The flow keeps polling sequential
+within each shard, respects `maxShardConcurrency`, waits for both parent
+checkpoints after a split/merge, and emits through a rendezvous boundary before
+saving a checkpoint. `Sequence` checkpoints resume inclusively, so the public
+delivery contract is at-least-once rather than exactly-once.
+
+```kotlin
+withKinesisClient(endpointUrl = flociEndpoint, region = "us-east-1") { client ->
+    client.consumerFlow(
+        streamName = "orders",
+        consumerGroup = "orders-api",
+        streamIdentity = "orders-generation-1",
+        position = KinesisStartingPosition.TrimHorizon,
+        options = KinesisConsumerOptions(ownerId = "orders-api-${instanceId}"),
+        checkpointStore = durableCheckpointStore,
+        leaseStore = durableLeaseStore,
+    ).collect { envelope ->
+        handle(envelope.record)
+    }
+}
+```
+
+`KinesisCheckpointStore` and `KinesisLeaseStore` are caller-owned SPIs. The
+provided `InMemory*` stores are for tests and emulator runs; `Noop*` stores are
+explicitly process-local and do not provide restart recovery, lease takeover,
+or durable `ShardEnd`. Metrics callbacks receive only fixed labels and hashed
+stream/shard/owner tokens. For local verification, use the repository's
+Floci-first test lane (LocalStack is an explicit fallback):
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-java:test --tests '*KinesisConsumerFlociTest'
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*KinesisConsumerFlociTest'
+```
+
+The consumer does not own the AWS client or health probes. Stop it by
+cancelling the collecting scope; production rollout should stop, drain, canary,
+and then scale. Rollback reuses the last durable checkpoint and never deletes
+or rewinds it.
+
 ### CloudWatch Metrics — DSL (`bluetape4k-aws-kotlin` module)
 
 CloudWatch helpers in `bluetape4k-aws-kotlin` keep the AWS Kotlin SDK response

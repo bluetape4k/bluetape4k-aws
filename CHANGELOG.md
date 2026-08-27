@@ -9,6 +9,12 @@
 
 ### 추가
 
+- Java SDK v2와 AWS SDK for Kotlin에 Kinesis 멀티 샤드 `consumerFlow`를 추가했습니다.
+  동적 `ListShards` discovery, shard graph ordering, bounded concurrency와 rendezvous
+  backpressure, lease fencing, inclusive checkpoint, redacted metrics callback을
+  제공합니다. 실제 AWS 대신 Floci-first contract test를 사용하며 durable store와
+  운영 probe의 소유권은 호출자에게 둡니다
+  ([#470](https://github.com/bluetape4k/bluetape4k-aws/issues/470)).
 - Java SDK v2와 AWS SDK for Kotlin에 Lambda `Invoke` helper를 추가했습니다. 동기,
   async/coroutine 또는 native suspend 호출, typed payload codec, raw response와
   `FunctionError` 보존, 명시적 client 수명과 Floci-first smoke 경계를 제공합니다

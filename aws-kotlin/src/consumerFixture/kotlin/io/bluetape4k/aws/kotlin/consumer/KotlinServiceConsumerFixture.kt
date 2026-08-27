@@ -19,6 +19,11 @@ import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.kotlin.dynamodbstreams.DynamoDbStreamsStartingPosition
 import io.bluetape4k.aws.kotlin.dynamodbstreams.dynamoDbStreamsClientOf
 import io.bluetape4k.aws.kotlin.kinesis.kinesisClientOf
+import io.bluetape4k.aws.kotlin.kinesis.InMemoryKinesisCheckpointStore
+import io.bluetape4k.aws.kotlin.kinesis.InMemoryKinesisLeaseStore
+import io.bluetape4k.aws.kotlin.kinesis.KinesisConsumerOptions
+import io.bluetape4k.aws.kotlin.kinesis.KinesisStartingPosition
+import io.bluetape4k.aws.kotlin.kinesis.consumerFlow
 import io.bluetape4k.aws.kotlin.kms.kmsClientOf
 import io.bluetape4k.aws.kotlin.lambda.invokeString
 import io.bluetape4k.aws.kotlin.lambda.lambdaClientOf
@@ -34,6 +39,8 @@ import io.bluetape4k.aws.kotlin.sns.snsClientOf
 import io.bluetape4k.aws.kotlin.sqs.sqsClientOf
 import io.bluetape4k.aws.kotlin.sts.stsClientOf
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.take
 
 private const val FIXTURE_STATE_MACHINE_ARN =
     "arn:aws:states:ap-northeast-2:123456789012:stateMachine:consumer"
@@ -102,4 +109,17 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
         }
     },
     { stsClientOf() },
+    suspend {
+        KinesisClient { }.use { client ->
+            client.consumerFlow(
+                streamName = "orders",
+                consumerGroup = "fixture-group",
+                streamIdentity = "orders-v1",
+                position = KinesisStartingPosition.Latest,
+                options = KinesisConsumerOptions(ownerId = "fixture-owner"),
+                checkpointStore = InMemoryKinesisCheckpointStore(),
+                leaseStore = InMemoryKinesisLeaseStore(),
+            ).take(1).collect { }
+        }
+    },
 )
