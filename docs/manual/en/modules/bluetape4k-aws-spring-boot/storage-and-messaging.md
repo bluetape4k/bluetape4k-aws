@@ -213,12 +213,14 @@ reuses a stale process parent.
 | Observation setup fails before business or ACK I/O | The setup failure is primary and the operation fails closed. |
 | Business or ACK I/O fails and observation cleanup also fails | The business/I/O failure stays primary; cleanup is suppressed. |
 | Business or ACK I/O succeeds and foreground observation stop fails | The stop failure is primary and the existing retry/redelivery policy applies. ACK I/O may already have succeeded, so handlers must tolerate idempotent replay and ambiguous redelivery. |
+| Visibility-heartbeat observation setup fails | `BT4K-SQS-OBS-202 reason=heartbeat_telemetry_setup` is logged without the original throwable or queue URL. The current visibility extension is skipped, but the background handler continues, so duplicate delivery is possible. |
 | Visibility-heartbeat observation cleanup fails | `BT4K-SQS-OBS-202` is logged without payload, queue URL, or throwable text; the heartbeat result remains primary and cleanup fails open. |
 
 `BT4K-SQS-OBS-101 context-propagation-missing` identifies a missing
 `ContextSnapshot` prerequisite. `BT4K-SQS-OBS-202` also reports bounded
 foreground telemetry setup failures with `reason=telemetry_setup`; it never
-includes the original throwable or full queue URL.
+includes the original throwable or full queue URL. Heartbeat setup uses the distinct
+`reason=heartbeat_telemetry_setup` fail-open diagnostic described above.
 
 ### Evidence boundary
 

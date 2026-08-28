@@ -138,12 +138,14 @@ actual AWS and an OpenTelemetry exporter remain `N/A`.
 | --- | --- | --- |
 | `BT4K-SQS-OBS-101` | Observation activation prerequisites are missing, including Context Propagation, a registry, a non-NOOP registry, or a supporting Spring handler. | Inspect `context-propagation-missing`, `registry-missing`, `registry-noop`, or `handler-missing`; add the required runtime class/bean or leave observation disabled. A user factory alone is insufficient. |
 | `BT4K-SQS-OBS-201` | The listener could not resolve a queue URL for the observation boundary. | Check the queue name/URL, endpoint configuration, and `getQueueUrl` permission before retrying. |
-| `BT4K-SQS-OBS-202` | Foreground observation setup failed closed, or visibility-heartbeat telemetry cleanup failed open. | Inspect the bounded `stage` and `reason`. Foreground setup remains primary; heartbeat cleanup preserves the message-processing and visibility result. |
+| `BT4K-SQS-OBS-202` | Foreground observation setup failed closed, or visibility-heartbeat telemetry setup/cleanup failed open. | Inspect the bounded `stage` and `reason`. Foreground setup remains primary. Heartbeat setup failure skips that visibility extension but lets the background handler continue, so duplicate delivery is possible; heartbeat cleanup preserves the visibility and handler result. |
 
 For `BT4K-SQS-OBS-201`, the runtime does not publish a guessed queue name.
 For `BT4K-SQS-OBS-202`, `reason=telemetry_setup` identifies a fail-closed
-foreground setup failure, while `reason=telemetry_cleanup` does not change a
-successful heartbeat visibility I/O or handler outcome. Treat both as diagnostics to investigate,
+foreground setup failure. `reason=heartbeat_telemetry_setup` means that the current
+visibility extension did not run while the background handler continued, so monitor for
+duplicate delivery. `reason=telemetry_cleanup` does not change a successful heartbeat
+visibility I/O or handler outcome. Treat all three as diagnostics to investigate,
 not as permission to add raw queue URLs, receipt handles, or exception text to
 tags.
 

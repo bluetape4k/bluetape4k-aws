@@ -580,7 +580,7 @@ class SqsMessageListenerContainer internal constructor(
                     logObservationFailure(
                         target = "single",
                         stage = "acknowledgement",
-                        reason = "telemetry_setup",
+                        reason = "heartbeat_telemetry_setup",
                     )
                 },
             )
@@ -719,7 +719,7 @@ class SqsMessageListenerContainer internal constructor(
                     logObservationFailure(
                         target = "batchSize=${pending.size}",
                         stage = "acknowledgement",
-                        reason = "telemetry_setup",
+                        reason = "heartbeat_telemetry_setup",
                     )
                     return@withContext null
                 }

@@ -148,13 +148,15 @@ exception text를 포함하지 않는 bounded 신호입니다.
 | --- | --- | --- |
 | `BT4K-SQS-OBS-101` | property는 enabled지만 observation prerequisite가 충족되지 않음 | `ConditionEvaluationReport`의 `context-propagation-missing`, `registry-missing`, `registry-noop`, `handler-missing` reason을 확인하고 기존 listener/legacy meter를 유지합니다. |
 | `BT4K-SQS-OBS-201` | receive observation을 시작하기 전 queue URL resolution 실패 | queue 이름·권한·`queueNotFoundStrategy`를 확인하고 기존 retry 또는 fail-fast 정책을 따릅니다. queue resolution 실패를 receive I/O 성공으로 집계하지 않습니다. |
-| `BT4K-SQS-OBS-202` | foreground observation setup fail-closed 또는 background visibility heartbeat telemetry cleanup fail-open | bounded `stage`와 `reason`을 확인합니다. foreground setup 실패는 primary이며, heartbeat cleanup 실패는 visibility·handler 결과를 바꾸지 않습니다. |
+| `BT4K-SQS-OBS-202` | foreground observation setup fail-closed 또는 background visibility heartbeat telemetry setup/cleanup fail-open | bounded `stage`와 `reason`을 확인합니다. foreground setup 실패는 primary입니다. heartbeat setup 실패는 해당 visibility 연장을 건너뛰고 background handler를 계속하므로 중복 delivery가 발생할 수 있으며, cleanup 실패는 visibility·handler 결과를 바꾸지 않습니다. |
 
 `BT4K-SQS-OBS-101`이 발생하면 startup을 임의로 실패시키거나 user factory만으로
 활성화하지 않습니다. registry, `ObservationHandler` bean, Context Propagation classpath를
 보완한 뒤 restart/redeploy로 다시 평가하세요. `BT4K-SQS-OBS-201`은 queue URL resolution
 실패를, `BT4K-SQS-OBS-202`는 `reason=telemetry_setup` 또는
-`reason=telemetry_cleanup`을 나타내므로 각각의 bounded
+`reason=heartbeat_telemetry_setup` 또는 `reason=telemetry_cleanup`을 나타냅니다.
+`reason=heartbeat_telemetry_setup`이면 현재 visibility 연장은 실행되지 않았지만
+background handler는 계속되므로 중복 delivery를 관찰해야 합니다. 각각의 bounded
 warning과 condition report를 확인하세요.
 
 ## Modulith event runtime 운영 (미출시/develop)

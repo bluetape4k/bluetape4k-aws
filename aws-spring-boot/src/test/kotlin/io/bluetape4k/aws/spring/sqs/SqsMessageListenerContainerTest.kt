@@ -1483,7 +1483,7 @@ class SqsMessageListenerContainerTest {
             override fun append(eventObject: ch.qos.logback.classic.spi.ILoggingEvent) {
                 super.append(eventObject)
                 if (
-                    eventObject.formattedMessage.contains("reason=telemetry_setup") &&
+                    eventObject.formattedMessage.contains("reason=heartbeat_telemetry_setup") &&
                     eventObject.formattedMessage.contains("target=single")
                 ) {
                     diagnosticObserved.complete(eventObject)
@@ -1502,6 +1502,7 @@ class SqsMessageListenerContainerTest {
             val dispatcher = StandardTestDispatcher(testScheduler)
             val handlerStarted = CompletableDeferred<Unit>()
             val handlerRelease = CompletableDeferred<Unit>()
+            val handlerReturned = CompletableDeferred<Unit>()
             val receiveCalls = AtomicInteger()
             coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
                 if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
@@ -1510,6 +1511,7 @@ class SqsMessageListenerContainerTest {
             coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
                 handlerStarted.complete(Unit)
                 handlerRelease.await()
+                handlerReturned.complete(Unit)
             }
             val registry = ObservationRegistry.create().apply {
                 observationConfig().observationHandler(
@@ -1565,6 +1567,9 @@ class SqsMessageListenerContainerTest {
 
             handlerRelease.complete(Unit)
             runCurrent()
+            withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) { handlerReturned.await() }
+            }
         } finally {
             listenerContainer?.let { container ->
                 val stopped = CompletableDeferred<Unit>()
@@ -1586,7 +1591,7 @@ class SqsMessageListenerContainerTest {
             override fun append(eventObject: ch.qos.logback.classic.spi.ILoggingEvent) {
                 super.append(eventObject)
                 if (
-                    eventObject.formattedMessage.contains("reason=telemetry_setup") &&
+                    eventObject.formattedMessage.contains("reason=heartbeat_telemetry_setup") &&
                     eventObject.formattedMessage.contains("target=batchSize=2")
                 ) {
                     diagnosticObserved.complete(eventObject)
@@ -1605,6 +1610,7 @@ class SqsMessageListenerContainerTest {
             val dispatcher = StandardTestDispatcher(testScheduler)
             val handlerStarted = CompletableDeferred<Unit>()
             val handlerRelease = CompletableDeferred<Unit>()
+            val handlerReturned = CompletableDeferred<Unit>()
             val receiveCalls = AtomicInteger()
             val messages = listOf(message(), message("message-2"))
             coEvery { operations.receive(QUEUE_URL, 2, 0, null) } coAnswers {
@@ -1614,6 +1620,7 @@ class SqsMessageListenerContainerTest {
             coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
                 handlerStarted.complete(Unit)
                 handlerRelease.await()
+                handlerReturned.complete(Unit)
             }
             val registry = ObservationRegistry.create().apply {
                 observationConfig().observationHandler(
@@ -1669,6 +1676,9 @@ class SqsMessageListenerContainerTest {
 
             handlerRelease.complete(Unit)
             runCurrent()
+            withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) { handlerReturned.await() }
+            }
         } finally {
             listenerContainer?.let { container ->
                 val stopped = CompletableDeferred<Unit>()

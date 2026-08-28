@@ -48,6 +48,7 @@ class SqsObservationDocumentationParityTest {
             "BT4K-SQS-OBS-101",
             "BT4K-SQS-OBS-201",
             "BT4K-SQS-OBS-202",
+            "reason=heartbeat_telemetry_setup",
             "STOPPING_RECEIVE -> DRAINING -> STOPPED",
             "FlociServer.Launcher.floci",
             "#453",

@@ -225,12 +225,14 @@ I/O를 ACKNOWLEDGEMENT observation으로 감싸는 경계만 추가합니다. ob
 | business 또는 ACK I/O 전에 observation setup 실패 | setup 실패가 primary이며 fail-closed합니다. |
 | business 또는 ACK I/O 실패와 observation cleanup 실패가 함께 발생 | business/I/O 실패가 primary이고 cleanup 실패는 suppressed exception입니다. |
 | business 또는 ACK I/O 성공 뒤 foreground observation stop 실패 | stop 실패가 primary이고 기존 retry/redelivery 정책을 적용합니다. ACK I/O는 이미 성공했을 수 있으므로 handler는 멱등 replay와 불명확한 redelivery를 견뎌야 합니다. |
+| visibility heartbeat observation setup 실패 | 원본 throwable과 queue URL 없이 `BT4K-SQS-OBS-202 reason=heartbeat_telemetry_setup`을 기록합니다. 현재 visibility 연장은 건너뛰지만 background handler는 계속되므로 중복 delivery가 발생할 수 있습니다. |
 | visibility heartbeat observation cleanup 실패 | payload, queue URL, throwable text 없이 `BT4K-SQS-OBS-202`를 기록하고 heartbeat 결과를 유지하는 fail-open 경계입니다. |
 
 `BT4K-SQS-OBS-101 context-propagation-missing`은 `ContextSnapshot` prerequisite 누락을
 뜻합니다. `BT4K-SQS-OBS-202`는 foreground telemetry setup 실패도
 `reason=telemetry_setup`으로 제한해 기록하며 원본 throwable과 전체 queue URL을 포함하지
-않습니다.
+않습니다. heartbeat setup은 위에서 설명한 별도 fail-open 진단
+`reason=heartbeat_telemetry_setup`을 사용합니다.
 
 ### Evidence boundary
 
