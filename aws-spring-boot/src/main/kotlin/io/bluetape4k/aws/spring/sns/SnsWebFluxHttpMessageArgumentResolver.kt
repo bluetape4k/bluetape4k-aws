@@ -9,7 +9,7 @@ import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
-/** Resolves SNS HTTP handler parameters from the filter-owned exchange cache. */
+/** filter가 소유한 exchange cache의 SNS HTTP envelope에서 handler parameter를 해석합니다. */
 class SnsWebFluxHttpMessageArgumentResolver(
     private val support: SnsHttpMessageResolverSupport,
 ) : HandlerMethodArgumentResolver {

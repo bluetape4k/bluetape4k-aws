@@ -3,7 +3,7 @@ package io.bluetape4k.aws.spring.sns
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 
-/** Default [NotificationStatus] implementation backed by existing SNS operations. */
+/** 기존 [SnsOperations]를 사용해 [NotificationStatus] 계약을 구현하는 기본 상태 객체입니다. */
 internal class SnsNotificationStatus(
     private val message: SnsHttpMessage,
     private val operations: SnsOperations,
