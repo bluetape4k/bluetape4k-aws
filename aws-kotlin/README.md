@@ -363,7 +363,7 @@ Add `aws.sdk.kotlin:eventbridge` at runtime. Scheduler, framework integrations,
 global endpoints, cross-account target orchestration, and target-specific
 validation beyond SDK model types are outside this module.
 
-### S3 Tables management (unreleased/develop)
+### S3 Tables management (1.0.0 development line)
 
 S3 Tables helpers expose native AWS Kotlin SDK request and response types for
 table bucket, namespace, and table create/list/get/delete operations. Lists
@@ -401,9 +401,9 @@ Iceberg data-plane or SQL engine. Athena, Glue, Redshift, and Apache Iceberg
 integration remain application concerns, and local emulator fidelity for S3
 Tables is not asserted by this module.
 
-### Step Functions Execution Helpers (unreleased/develop)
+### Step Functions Execution Helpers (1.0.0 development line)
 
-The develop line adds native suspend helpers for `StartExecution`,
+The `1.0.0` development line provides native suspend helpers for `StartExecution`,
 `StopExecution`, `DescribeExecution`, and `ListExecutions`. Polling uses the
 AWS Kotlin SDK `SfnClient` and returns a cold `Flow<DescribeExecutionResponse>`
 of raw responses. The caller owns the client, timeout, and cancellation policy.
@@ -432,9 +432,9 @@ service client and leaves an injected HTTP engine under caller ownership. Add
 manual](../docs/manual/en/modules/bluetape4k-aws-kotlin.md) for dependency,
 Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
 
-### Lambda invocation helpers (unreleased/develop)
+### Lambda invocation helpers (1.0.0 development line)
 
-The develop line adds native suspend `Invoke` helpers under
+The `1.0.0` development line provides native suspend `Invoke` helpers under
 `io.bluetape4k.aws.kotlin.lambda`. A `LambdaInvocationResult` keeps the raw
 response, copied payload, status, optional `FunctionError`, and decoded tail
 log together. Use `LambdaPayloadCodecs.jackson(...)` only when the consumer

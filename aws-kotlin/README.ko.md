@@ -357,7 +357,7 @@ EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK �
 global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은
 이 모듈 범위에 포함하지 않습니다.
 
-### S3 Tables 관리 (미출시/develop)
+### S3 Tables 관리 (1.0.0 개발선)
 
 S3 Tables helper는 native AWS Kotlin SDK request·response 타입을 유지하면서 table bucket,
 namespace, table의 생성·목록·조회·삭제를 native suspend로 제공합니다. 목록은 raw service의
@@ -394,9 +394,9 @@ suspend fun createOrdersTable() = withS3TablesClient(region = "ap-northeast-2") 
 Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의
 S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
 
-### Step Functions 실행 helper (미출시/develop)
+### Step Functions 실행 helper (1.0.0 개발선)
 
-develop 개발선에는 `StartExecution`, `StopExecution`, `DescribeExecution`,
+`1.0.0` 개발선에서는 `StartExecution`, `StopExecution`, `DescribeExecution`,
 `ListExecutions`를 위한 native suspend helper가 추가됩니다. Polling은 AWS Kotlin SDK의
 `SfnClient`를 사용하며 raw 응답을 `Flow<DescribeExecutionResponse>` cold Flow로
 전달합니다. client, timeout과 cancellation 정책은 호출자가 소유합니다.
@@ -424,9 +424,9 @@ HTTP engine은 호출자 소유로 남깁니다. 서비스 SDK는 `compileOnly`�
 emulator 경계는 [Step Functions Kotlin 모듈 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-kotlin.md)에서
 확인할 수 있습니다.
 
-### Lambda 호출 helper (미출시/develop)
+### Lambda 호출 helper (1.0.0 개발선)
 
-develop 개발선에는 `io.bluetape4k.aws.kotlin.lambda` 아래에 native suspend
+`1.0.0` 개발선에서는 `io.bluetape4k.aws.kotlin.lambda` 아래에 native suspend
 `Invoke` helper가 추가됩니다. `LambdaInvocationResult`는 raw response, 복사한 payload,
 status, 선택적 `FunctionError`, 디코드한 tail log를 함께 보존합니다. Typed payload에는
 소비자가 Jackson을 선택한 경우에만 `LambdaPayloadCodecs.jackson(...)`을 사용하세요.

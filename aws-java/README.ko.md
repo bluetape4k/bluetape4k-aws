@@ -184,7 +184,7 @@ S3 Vectors는 별도 AWS SDK v2 `s3vectors` 서비스를 사용합니다. 이 �
 선택으로 유지하고 discovery, put/get/list, query 작업용 작은 suspend facade만 제공합니다.
 파괴적 관리, tagging, policy 호출은 raw `S3VectorsAsyncClient` 로 그대로 사용할 수 있습니다.
 
-### S3 Tables 관리 (미출시/develop)
+### S3 Tables 관리 (1.0.0 개발선)
 
 S3 Tables helper는 AWS SDK v2 request·response 타입을 그대로 노출하면서 table bucket,
 namespace, table의 생성·목록·조회·삭제를 sync/async/coroutine으로 제공합니다. 목록은 raw
@@ -361,9 +361,9 @@ EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK �
 integration, global endpoint, cross-account target orchestration, SDK model 타입을
 넘어서는 target별 검증은 이 모듈 범위에 포함하지 않습니다.
 
-### Step Functions 실행 helper (미출시/develop)
+### Step Functions 실행 helper (1.0.0 개발선)
 
-develop 개발선에는 `StartExecution`, `StopExecution`, `DescribeExecution`,
+`1.0.0` 개발선에서는 `StartExecution`, `StopExecution`, `DescribeExecution`,
 `ListExecutions`를 위한 얇은 extension이 추가됩니다. 동기와 단발성 async 연산은 AWS
 SDK raw 응답을 반환합니다. Polling은 `SfnAsyncClient`에서만 제공하며
 `Flow<DescribeExecutionResponse>` cold Flow로 동작합니다. client, timeout과 cancellation
@@ -395,9 +395,9 @@ fun awaitExecution(executionArn: String): DescribeExecutionResponse = runBlockin
 [Step Functions Java 모듈 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-java.md)에서
 확인할 수 있습니다.
 
-### Lambda 호출 helper (미출시/develop)
+### Lambda 호출 helper (1.0.0 개발선)
 
-develop 개발선에는 `io.bluetape4k.aws.lambda` 아래에 동기, async, coroutine
+`1.0.0` 개발선에서는 `io.bluetape4k.aws.lambda` 아래에 동기, async, coroutine
 `Invoke` helper가 추가됩니다. Raw `InvokeResponse`를 보존하고 response payload를
 복사하며, `functionError`를 결과 데이터로 노출하고 선택적 tail log를 디코드합니다.
 소비자가 Jackson을 선택한 경우 `LambdaPayloadCodecs.jackson(...)`으로 typed payload를
