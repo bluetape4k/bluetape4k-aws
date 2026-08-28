@@ -226,7 +226,10 @@ class SqsMessageListenerContainerTest {
     @Test
     fun `CREATE queue failure logs bounded OBS-201 without queue or throwable`() = runSuspendIO {
         val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
-        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply {
+            list = CopyOnWriteArrayList()
+            start()
+        }
         val previousLevel = containerLogger.level
         val queue = "secret-queue-task8"
         val failure = IllegalStateException("throwable-secret-task8")
