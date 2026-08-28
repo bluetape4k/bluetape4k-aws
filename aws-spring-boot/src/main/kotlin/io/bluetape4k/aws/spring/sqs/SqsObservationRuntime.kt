@@ -205,15 +205,15 @@ internal class SqsObservationExecution internal constructor(
 
 private val DISABLED_SQS_OBSERVATION_EXECUTION = SqsObservationExecution(null, Observation.NOOP)
 
-internal suspend fun <T> observeSqs(
+internal suspend inline fun <T> observeSqs(
     runtime: SqsObservationRuntime?,
-    contextFactory: () -> SqsObservationContext,
-    block: suspend SqsObservationExecution.() -> T,
+    crossinline contextFactory: () -> SqsObservationContext,
+    crossinline block: suspend SqsObservationExecution.() -> T,
 ): T {
     if (runtime == null || runtime.registry === ObservationRegistry.NOOP) {
         return DISABLED_SQS_OBSERVATION_EXECUTION.block()
     }
-    return runtime.observe(contextFactory(), block)
+    return runtime.observe(contextFactory()) { block() }
 }
 
 internal fun prepareSqsObservation(
