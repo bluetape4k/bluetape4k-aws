@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -50,6 +51,7 @@ internal class DefaultSqsAcknowledgement(
     private val terminal = AtomicBoolean(false)
     private val inFlightTerminal = AtomicBoolean(false)
     private val operationMutex = Mutex()
+    private var operationTail: CompletableDeferred<Unit>? = null
 
     @Volatile
     private var observationSetupFailure: Throwable? = null
@@ -76,14 +78,16 @@ internal class DefaultSqsAcknowledgement(
 
     internal suspend fun heartbeat(
         timeoutSeconds: Int,
-        onObservationFailure: (Throwable) -> Unit,
+        onObservationSetupFailure: (Throwable) -> Unit = {},
+        onObservationCleanupFailure: (Throwable) -> Unit,
     ) {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
         if (terminal.get() || inFlightTerminal.get()) return
         runAcknowledgement(
             action = SqsAcknowledgementAction.CHANGE_VISIBILITY,
             shouldRun = { !terminal.get() && !inFlightTerminal.get() },
-            onObservationCleanupFailure = onObservationFailure,
+            onObservationSetupFailure = onObservationSetupFailure,
+            onObservationCleanupFailure = onObservationCleanupFailure,
         ) {
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
@@ -120,11 +124,13 @@ internal class DefaultSqsAcknowledgement(
         action: SqsAcknowledgementAction,
         shouldRun: () -> Boolean = { true },
         onIoSuccess: () -> Unit = {},
+        onObservationSetupFailure: ((Throwable) -> Unit)? = null,
         onObservationCleanupFailure: ((Throwable) -> Unit)? = null,
         block: suspend () -> Unit,
     ) {
         if (!shouldRun()) return
         interceptors.forEach { it.beforeAcknowledgement(context, action) }
+        val ticket = reserveOperation(shouldRun) ?: return
         var failure: Throwable? = null
         try {
             operationGuard()
@@ -136,11 +142,12 @@ internal class DefaultSqsAcknowledgement(
                 }
             } catch (e: Throwable) {
                 observationSetupFailure = e
+                onObservationSetupFailure?.invoke(e)
                 throw e
             }
-            operationMutex.withLock {
-                if (!shouldRun()) return@withLock
-                suspend fun performAcknowledgement() {
+            suspend fun performAcknowledgement() {
+                ticket.awaitTurn()
+                try {
                     try {
                         block()
                         onIoSuccess()
@@ -163,17 +170,27 @@ internal class DefaultSqsAcknowledgement(
                         }
                         throw e
                     }
+                } finally {
+                    ticket.complete()
                 }
-                if (observation == null) {
+            }
+            if (observation == null) {
+                performAcknowledgement()
+            } else {
+                observation.observe(
+                    onSetupFailure = {
+                        observationSetupFailure = it
+                        onObservationSetupFailure?.invoke(it)
+                    },
+                    onCleanupFailure = onObservationCleanupFailure,
+                ) {
                     performAcknowledgement()
-                } else {
-                    observation.observe(onCleanupFailure = onObservationCleanupFailure) {
-                        performAcknowledgement()
-                    }
                 }
             }
         } catch (e: Throwable) {
             failure = e
+        } finally {
+            ticket.completeAfterPredecessor()
         }
         val cleanupFailure = runCatchingAcknowledgementFinalization {
             interceptors.forEach { it.afterAcknowledgement(context, action, failure) }
@@ -182,6 +199,14 @@ internal class DefaultSqsAcknowledgement(
     }
 
     internal fun isObservationSetupFailure(error: Throwable): Boolean = observationSetupFailure === error
+
+    private suspend fun reserveOperation(shouldRun: () -> Boolean): OperationTicket? = operationMutex.withLock {
+        if (!shouldRun()) {
+            return@withLock null
+        }
+        val completion = CompletableDeferred<Unit>()
+        OperationTicket(operationTail, completion).also { operationTail = completion }
+    }
 
     private fun acknowledgementObservationContext(action: SqsAcknowledgementAction): SqsObservationContext =
         SqsObservationContext(
@@ -200,6 +225,29 @@ internal class DefaultSqsAcknowledgement(
                 queueNameResolved = true,
             ),
         )
+
+    private class OperationTicket(
+        private val predecessor: CompletableDeferred<Unit>?,
+        private val completion: CompletableDeferred<Unit>,
+    ) {
+        suspend fun awaitTurn() {
+            predecessor?.await()
+        }
+
+        fun complete() {
+            completion.complete(Unit)
+        }
+
+        fun completeAfterPredecessor() {
+            if (completion.isCompleted) return
+            val previous = predecessor
+            if (previous == null || previous.isCompleted) {
+                complete()
+            } else {
+                previous.invokeOnCompletion { complete() }
+            }
+        }
+    }
 }
 
 @Suppress("TooGenericExceptionCaught")

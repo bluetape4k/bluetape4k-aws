@@ -353,6 +353,40 @@ class SqsBatchAcknowledgementTest {
         recorder.contexts shouldBeEqualTo emptyList()
     }
 
+    @Test
+    fun `observation start failure is marked as setup failure before batch IO`() = runTest {
+        val setupFailure = IllegalStateException("batch observation start failed")
+        val operations = RecordingBatchOperations()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig().observationHandler(
+                object : ObservationHandler<SqsObservationContext> {
+                    override fun supportsContext(context: Observation.Context): Boolean =
+                        context is SqsObservationContext
+
+                    override fun onStart(context: SqsObservationContext) {
+                        throw setupFailure
+                    }
+                },
+            )
+        }
+        val acknowledgement = acknowledgement(
+            messages = messages(2),
+            operations = operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = registry,
+                customizers = emptyList(),
+                factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+            ),
+        )
+
+        val actual = assertFailsWith<IllegalStateException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo setupFailure
+        acknowledgement.isObservationSetupFailure(actual).shouldBeTrue()
+        operations.deleteBatchCalls shouldBeEqualTo 0
+        acknowledgement.pending.size shouldBeEqualTo 2
+    }
+
     private fun acknowledgement(
         messages: List<SqsReceivedMessage>,
         operations: RecordingBatchOperations,

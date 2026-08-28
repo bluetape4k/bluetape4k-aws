@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
+import java.util.concurrent.atomic.AtomicInteger
 
 class SqsAcknowledgementTest {
 
@@ -196,6 +197,78 @@ class SqsAcknowledgementTest {
     }
 
     @Test
+    fun `observation start failure is marked as setup failure before acknowledgement IO`() = runTest {
+        val setupFailure = IllegalStateException("observation start failed")
+        val operations = RecordingSqsOperations()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig().observationHandler(FailingAcknowledgementStartHandler(setupFailure))
+        }
+        val runtime = SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+        val acknowledgement = acknowledgement(operations, observationRuntime = runtime)
+
+        val actual = assertFailsWith<IllegalStateException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo setupFailure
+        acknowledgement.isObservationSetupFailure(actual).shouldBeTrue()
+        operations.deleteCalls shouldBeEqualTo 0
+        acknowledgement.completed.shouldBeFalse()
+    }
+
+    @Test
+    fun `observation lifecycle setup runs outside acknowledgement IO serialization`() = runTest {
+        val deleteStarted = CompletableDeferred<Unit>()
+        val releaseDelete = CompletableDeferred<Unit>()
+        val secondObservationStarted = CompletableDeferred<Unit>()
+        val operations = RecordingSqsOperations().apply {
+            beforeDelete = {
+                deleteStarted.complete(Unit)
+                releaseDelete.await()
+            }
+        }
+        val starts = AtomicInteger()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig().observationHandler(
+                object : ObservationHandler<SqsObservationContext> {
+                    override fun supportsContext(context: Observation.Context): Boolean =
+                        context is SqsObservationContext
+
+                    override fun onStart(context: SqsObservationContext) {
+                        if (starts.incrementAndGet() == 2) {
+                            secondObservationStarted.complete(Unit)
+                        }
+                    }
+                },
+            )
+        }
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = registry,
+                customizers = emptyList(),
+                factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+            ),
+        )
+
+        val terminal = async(Dispatchers.Default) { acknowledgement.acknowledge() }
+        deleteStarted.await()
+        val visibility = async(Dispatchers.Default) { acknowledgement.changeVisibility(30) }
+        val setupCompletedBeforeRelease = withContext(Dispatchers.Default) {
+            withTimeoutOrNull(250) { secondObservationStarted.await() }
+        }
+        releaseDelete.complete(Unit)
+        terminal.await()
+        visibility.await()
+
+        setupCompletedBeforeRelease shouldBeEqualTo Unit
+        operations.deleteCalls shouldBeEqualTo 1
+        operations.changeVisibilityCalls shouldBeEqualTo 1
+    }
+
+    @Test
     fun `business failure stays primary when observation stop also fails`() = runTest {
         val businessFailure = IllegalStateException("delete failed")
         val stopFailure = IllegalArgumentException("observation stop failed")
@@ -341,6 +414,16 @@ class SqsAcknowledgementTest {
         override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
 
         override fun onStop(context: SqsObservationContext) {
+            throw failure
+        }
+    }
+
+    private class FailingAcknowledgementStartHandler(
+        private val failure: Throwable,
+    ) : ObservationHandler<SqsObservationContext> {
+        override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
+
+        override fun onStart(context: SqsObservationContext) {
             throw failure
         }
     }

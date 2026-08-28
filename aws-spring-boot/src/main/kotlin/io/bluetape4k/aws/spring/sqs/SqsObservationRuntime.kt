@@ -43,12 +43,14 @@ internal class SqsObservationRuntime(
     internal suspend fun <T> observePrepared(
         context: SqsObservationContext,
         observation: Observation,
+        onSetupFailure: ((Throwable) -> Unit)?,
         onCleanupFailure: ((Throwable) -> Unit)?,
         block: suspend SqsObservationExecution.() -> T,
     ): T {
         val execution = SqsObservationExecution(context, observation)
         val parentScope = registry.currentObservationScope
         var started = false
+        var blockStarted = false
         val observedResult = try {
             observation.start()
             started = true
@@ -61,12 +63,18 @@ internal class SqsObservationRuntime(
                 registry.currentObservationScope = parentScope
                 throw e
             }
-            runObservedBlock(snapshot, execution, context, block)
+            runObservedBlock(snapshot, execution, context) {
+                blockStarted = true
+                block()
+            }
         } catch (e: CancellationException) {
             context.outcome = SqsObservationOutcome.CANCELLED
             context.failureStage = context.failureStage ?: "observation"
             SqsObservedResult.Failure(e)
         } catch (e: Throwable) {
+            if (!blockStarted) {
+                onSetupFailure?.invoke(e)
+            }
             context.outcome = SqsObservationOutcome.ERROR
             context.failureStage = context.failureStage ?: "observation"
             SqsObservedResult.Failure(e)
@@ -95,12 +103,13 @@ internal class SqsPreparedObservation internal constructor(
     private val observation: Observation,
 ) {
     internal suspend fun <T> observe(
+        onSetupFailure: ((Throwable) -> Unit)? = null,
         onCleanupFailure: ((Throwable) -> Unit)? = null,
         block: suspend SqsObservationExecution.() -> T,
     ): T = when {
         runtime == null || context == null -> SqsObservationExecution(null, Observation.NOOP).block()
         observation === Observation.NOOP -> SqsObservationExecution(context, observation).block()
-        else -> runtime.observePrepared(context, observation, onCleanupFailure, block)
+        else -> runtime.observePrepared(context, observation, onSetupFailure, onCleanupFailure, block)
     }
 }
 

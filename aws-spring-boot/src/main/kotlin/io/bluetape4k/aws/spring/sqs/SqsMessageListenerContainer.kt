@@ -551,7 +551,7 @@ class SqsMessageListenerContainer internal constructor(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod", "ReturnCount")
+    @Suppress("CyclomaticComplexMethod", "ReturnCount", "LongMethod")
     private suspend fun handleSingleAttempts(
         queueUrl: String,
         message: SqsReceivedMessage,
@@ -573,9 +573,17 @@ class SqsMessageListenerContainer internal constructor(
                 observationRuntime = observationRuntime,
                 observationQueueName = activeObservationQueueName(queueUrl),
             )
-            val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(acknowledgement) {
-                logHeartbeatObservationFailure("single")
-            }
+            val currentAcknowledgement = HeartbeatAwareSqsAcknowledgement(
+                delegate = acknowledgement,
+                onObservationCleanupFailure = { logHeartbeatObservationFailure("single") },
+                onObservationSetupFailure = {
+                    logObservationFailure(
+                        target = "single",
+                        stage = "acknowledgement",
+                        reason = "telemetry_setup",
+                    )
+                },
+            )
             updateHeartbeatAcknowledgement(currentAcknowledgement)
             var invocationStarted = false
             var invocationCompleted = false
@@ -702,10 +710,23 @@ class SqsMessageListenerContainer internal constructor(
         val pending = acknowledgement.pending
         if (pending.isEmpty()) return
         val result = withContext(Dispatchers.IO) {
-            acknowledgement.heartbeat(pending, timeoutSeconds) {
-                logHeartbeatObservationFailure("batchSize=${pending.size}")
+            try {
+                acknowledgement.heartbeat(pending, timeoutSeconds) {
+                    logHeartbeatObservationFailure("batchSize=${pending.size}")
+                }
+            } catch (e: Throwable) {
+                if (acknowledgement.isObservationSetupFailure(e)) {
+                    logObservationFailure(
+                        target = "batchSize=${pending.size}",
+                        stage = "acknowledgement",
+                        reason = "telemetry_setup",
+                    )
+                    return@withContext null
+                }
+                throw e
             }
         }
+        if (result == null) return
         if (result.failed.isNotEmpty()) {
             log.warn(
                 "SQS batch visibility heartbeat partially failed: " +
@@ -1134,7 +1155,8 @@ private fun Job.cancellationExceptionOrNull(): CancellationException? = try {
 
 private class HeartbeatAwareSqsAcknowledgement(
     private val delegate: DefaultSqsAcknowledgement,
-    private val onObservationFailure: (Throwable) -> Unit,
+    private val onObservationCleanupFailure: (Throwable) -> Unit,
+    private val onObservationSetupFailure: (Throwable) -> Unit,
 ) : SqsAcknowledgement {
 
     override val completed: Boolean
@@ -1152,10 +1174,25 @@ private class HeartbeatAwareSqsAcknowledgement(
         delegate.changeVisibility(timeoutSeconds)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun heartbeat(timeoutSeconds: Int) {
         if (!delegate.completed) {
-            withContext(Dispatchers.IO) {
-                delegate.heartbeat(timeoutSeconds, onObservationFailure)
+            var observationSetupFailed = false
+            try {
+                withContext(Dispatchers.IO) {
+                    delegate.heartbeat(
+                        timeoutSeconds,
+                        onObservationCleanupFailure = onObservationCleanupFailure,
+                        onObservationSetupFailure = {
+                            observationSetupFailed = true
+                            onObservationSetupFailure(it)
+                        },
+                    )
+                }
+            } catch (e: Throwable) {
+                if (!observationSetupFailed) {
+                    throw e
+                }
             }
         }
     }

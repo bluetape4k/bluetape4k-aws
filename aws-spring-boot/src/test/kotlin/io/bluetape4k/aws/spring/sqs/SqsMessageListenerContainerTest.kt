@@ -1476,6 +1476,213 @@ class SqsMessageListenerContainerTest {
 
     @Test
     @Suppress("LongMethod")
+    fun `heartbeat observation start failure emits bounded diagnostic without raw telemetry details`() = runTest {
+        val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val diagnosticObserved = CompletableDeferred<ch.qos.logback.classic.spi.ILoggingEvent>()
+        val appender = object : ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>() {
+            override fun append(eventObject: ch.qos.logback.classic.spi.ILoggingEvent) {
+                super.append(eventObject)
+                if (
+                    eventObject.formattedMessage.contains("reason=telemetry_setup") &&
+                    eventObject.formattedMessage.contains("target=single")
+                ) {
+                    diagnosticObserved.complete(eventObject)
+                }
+            }
+        }.apply { start() }
+        val previousLevel = containerLogger.level
+        val failure = IllegalStateException("heartbeat-start-secret")
+        val acknowledgementStartAttempted = CompletableDeferred<Unit>()
+        var listenerContainer: SqsMessageListenerContainer? = null
+        containerLogger.addAppender(appender)
+        containerLogger.level = Level.WARN
+        try {
+            val operations = mockk<SqsOperations>()
+            val invoker = mockk<SqsListenerMethodInvoker>()
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val handlerStarted = CompletableDeferred<Unit>()
+            val handlerRelease = CompletableDeferred<Unit>()
+            val receiveCalls = AtomicInteger()
+            coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
+                if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
+            }
+            every { invoker.manualAcknowledgement } returns true
+            coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
+                handlerStarted.complete(Unit)
+                handlerRelease.await()
+            }
+            val registry = ObservationRegistry.create().apply {
+                observationConfig().observationHandler(
+                    object : ObservationHandler<SqsObservationContext> {
+                        override fun supportsContext(context: Observation.Context): Boolean =
+                            context is SqsObservationContext
+
+                        override fun onStart(context: SqsObservationContext) {
+                            if (context.metadata.stage == SqsObservationStage.ACKNOWLEDGEMENT) {
+                                acknowledgementStartAttempted.complete(Unit)
+                                throw failure
+                            }
+                        }
+                    },
+                )
+            }
+            val currentContainer = container(
+                operations = operations,
+                invoker = invoker,
+                dispatcher = dispatcher,
+                acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+                messageVisibilityHeartbeatIntervalSeconds = 1,
+                messageVisibilityHeartbeatSeconds = 30,
+            )
+            listenerContainer = currentContainer
+            currentContainer.setObservationRuntime(
+                SqsObservationRuntime(
+                    registry = registry,
+                    customizers = emptyList(),
+                    factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+                ),
+            )
+
+            currentContainer.start()
+            runCurrent()
+            handlerStarted.await()
+            advanceTimeBy(1_000)
+            runCurrent()
+            withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) { acknowledgementStartAttempted.await() }
+            }
+            val diagnostic = withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) {
+                    diagnosticObserved.await()
+                }
+            }
+
+            diagnostic.formattedMessage.contains("BT4K-SQS-OBS-202").shouldBeTrue()
+            diagnostic.formattedMessage.contains(QUEUE_URL).shouldBeFalse()
+            diagnostic.formattedMessage.contains(failure.message.orEmpty()).shouldBeFalse()
+            (diagnostic.throwableProxy == null).shouldBeTrue()
+            coVerify(exactly = 0) { operations.changeVisibility(any(), any(), any()) }
+
+            handlerRelease.complete(Unit)
+            runCurrent()
+        } finally {
+            listenerContainer?.let { container ->
+                val stopped = CompletableDeferred<Unit>()
+                container.stop { stopped.complete(Unit) }
+                runCurrent()
+                withTimeout(2_000) { stopped.await() }
+            }
+            containerLogger.detachAppender(appender)
+            containerLogger.level = previousLevel
+        }
+    }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `batch heartbeat observation start failure emits bounded diagnostic without raw telemetry details`() = runTest {
+        val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val diagnosticObserved = CompletableDeferred<ch.qos.logback.classic.spi.ILoggingEvent>()
+        val appender = object : ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>() {
+            override fun append(eventObject: ch.qos.logback.classic.spi.ILoggingEvent) {
+                super.append(eventObject)
+                if (
+                    eventObject.formattedMessage.contains("reason=telemetry_setup") &&
+                    eventObject.formattedMessage.contains("target=batchSize=2")
+                ) {
+                    diagnosticObserved.complete(eventObject)
+                }
+            }
+        }.apply { start() }
+        val previousLevel = containerLogger.level
+        val failure = IllegalStateException("batch-heartbeat-start-secret")
+        val acknowledgementStartAttempted = CompletableDeferred<Unit>()
+        var listenerContainer: SqsMessageListenerContainer? = null
+        containerLogger.addAppender(appender)
+        containerLogger.level = Level.WARN
+        try {
+            val operations = mockk<SqsOperations>()
+            val invoker = mockk<SqsListenerMethodInvoker>()
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val handlerStarted = CompletableDeferred<Unit>()
+            val handlerRelease = CompletableDeferred<Unit>()
+            val receiveCalls = AtomicInteger()
+            val messages = listOf(message(), message("message-2"))
+            coEvery { operations.receive(QUEUE_URL, 2, 0, null) } coAnswers {
+                if (receiveCalls.incrementAndGet() == 1) messages else awaitCancellation()
+            }
+            every { invoker.manualAcknowledgement } returns true
+            coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
+                handlerStarted.complete(Unit)
+                handlerRelease.await()
+            }
+            val registry = ObservationRegistry.create().apply {
+                observationConfig().observationHandler(
+                    object : ObservationHandler<SqsObservationContext> {
+                        override fun supportsContext(context: Observation.Context): Boolean =
+                            context is SqsObservationContext
+
+                        override fun onStart(context: SqsObservationContext) {
+                            if (context.metadata.stage == SqsObservationStage.ACKNOWLEDGEMENT) {
+                                acknowledgementStartAttempted.complete(Unit)
+                                throw failure
+                            }
+                        }
+                    },
+                )
+            }
+            val currentContainer = container(
+                operations = operations,
+                invoker = invoker,
+                dispatcher = dispatcher,
+                batch = true,
+                maxMessages = 2,
+                acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+                messageVisibilityHeartbeatIntervalSeconds = 1,
+                messageVisibilityHeartbeatSeconds = 30,
+            )
+            listenerContainer = currentContainer
+            currentContainer.setObservationRuntime(
+                SqsObservationRuntime(
+                    registry = registry,
+                    customizers = emptyList(),
+                    factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+                ),
+            )
+
+            currentContainer.start()
+            runCurrent()
+            handlerStarted.await()
+            advanceTimeBy(1_000)
+            runCurrent()
+            withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) { acknowledgementStartAttempted.await() }
+            }
+            val diagnostic = withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) { diagnosticObserved.await() }
+            }
+
+            diagnostic.formattedMessage.contains("BT4K-SQS-OBS-202").shouldBeTrue()
+            diagnostic.formattedMessage.contains(QUEUE_URL).shouldBeFalse()
+            diagnostic.formattedMessage.contains(failure.message.orEmpty()).shouldBeFalse()
+            (diagnostic.throwableProxy == null).shouldBeTrue()
+            coVerify(exactly = 0) { operations.changeVisibilityBatch(any(), any()) }
+
+            handlerRelease.complete(Unit)
+            runCurrent()
+        } finally {
+            listenerContainer?.let { container ->
+                val stopped = CompletableDeferred<Unit>()
+                container.stop { stopped.complete(Unit) }
+                runCurrent()
+                withTimeout(2_000) { stopped.await() }
+            }
+            containerLogger.detachAppender(appender)
+            containerLogger.level = previousLevel
+        }
+    }
+
+    @Test
+    @Suppress("LongMethod")
     fun `heartbeat failure does not change successful handler outcome`() = runTest {
         val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
         val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }

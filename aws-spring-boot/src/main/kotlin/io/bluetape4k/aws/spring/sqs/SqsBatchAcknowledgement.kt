@@ -315,7 +315,10 @@ internal class DefaultSqsBatchAcknowledgement(
             observationSetupFailure = e
             throw e
         }
-        return observation.observe(onCleanupFailure = onObservationCleanupFailure) {
+        return observation.observe(
+            onSetupFailure = { observationSetupFailure = it },
+            onCleanupFailure = onObservationCleanupFailure,
+        ) {
             try {
                 val result = block()
                 if (result is SqsBatchAcknowledgementResult) {
