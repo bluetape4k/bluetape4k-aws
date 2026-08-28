@@ -63,6 +63,10 @@ class SqsMessageListenerContainer internal constructor(
         val groupDispatchOrder: SqsGroupDispatchOrder = SqsGroupDispatchOrder(),
     )
 
+    private class FatalHeartbeatError(
+        val original: Error,
+    ): Error(null, original, false, false)
+
     private data class SqsGroupDispatchTicket(
         val messageGroupId: String,
         val predecessor: CompletableDeferred<Unit>?,
@@ -423,11 +427,13 @@ class SqsMessageListenerContainer internal constructor(
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Error) {
+                } catch (e: FatalHeartbeatError) {
                     log.error(
-                        "SQS listener handler terminated with a fatal error: " +
-                            "listenerId=${endpoint.id}, errorType=${e::class.java.name}",
+                        "SQS listener handler terminated with a fatal heartbeat error: " +
+                            "listenerId=${endpoint.id}, errorType=${e.original::class.java.name}",
                     )
+                } catch (e: Error) {
+                    log.error("SQS listener handler terminated with an error: listenerId=${endpoint.id}", e)
                 } finally {
                     groupDispatchTicket?.let(current.groupDispatchOrder::complete)
                     repeat(permits) { current.inFlight.release() }
@@ -913,7 +919,7 @@ class SqsMessageListenerContainer internal constructor(
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Error) {
-                        throw e
+                        throw FatalHeartbeatError(e)
                     } catch (e: Throwable) {
                         log.warn(
                             "SQS visibility heartbeat failed: listenerId=${endpoint.id}, target=$target",

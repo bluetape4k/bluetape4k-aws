@@ -1265,6 +1265,9 @@ class SqsMessageListenerContainerTest {
 
     @Test
     fun `fatal handler error stops generation without acknowledgement`() = runSuspendIO {
+        val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = containerLogger.level
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
         val started = CompletableDeferred<Unit>()
@@ -1276,12 +1279,25 @@ class SqsMessageListenerContainerTest {
         }
         val container = container(operations, invoker)
 
-        container.start()
-        withTimeout(2_000) { started.await() }
-        withTimeout(2_000) {
-            while (container.isRunning) delay(5)
+        containerLogger.addAppender(appender)
+        containerLogger.level = Level.ERROR
+        try {
+            container.start()
+            withTimeout(2_000) { started.await() }
+            withTimeout(2_000) {
+                while (container.isRunning) delay(5)
+            }
+            withTimeout(2_000) {
+                while (appender.list.none { it.throwableProxy?.message == "fatal handler error" }) delay(5)
+            }
+            appender.list.any {
+                it.throwableProxy?.message == "fatal handler error"
+            }.shouldBeTrue()
+            coVerify(exactly = 0) { operations.delete(any(), any()) }
+        } finally {
+            containerLogger.detachAppender(appender)
+            containerLogger.level = previousLevel
         }
-        coVerify(exactly = 0) { operations.delete(any(), any()) }
     }
 
     @Test
@@ -2002,6 +2018,7 @@ class SqsMessageListenerContainerTest {
 
             appender.list.none {
                 it.formattedMessage.contains("SQS visibility heartbeat failed") ||
+                    it.formattedMessage.contains(fatal.message.orEmpty()) ||
                     it.throwableProxy?.message?.contains(fatal.message.orEmpty()) == true
             }.shouldBeTrue()
             if (batch) {
