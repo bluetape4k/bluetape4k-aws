@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -8,7 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * Spring SQS 작업의 Micrometer 계측을 자동 구성합니다.
@@ -55,7 +55,12 @@ class SqsMicrometerAutoConfiguration {
 
     @Bean
     @ConditionalOnBean(MeterRegistry::class)
-    @ConditionalOnMissingBean(MicrometerSqsListenerInterceptor::class)
+    @ConditionalOnMissingBean(
+        value = [
+            MicrometerSqsListenerInterceptor::class,
+            SqsObservationActivation::class,
+        ],
+    )
     fun micrometerSqsListenerInterceptor(meterRegistry: MeterRegistry): MicrometerSqsListenerInterceptor =
         MicrometerSqsListenerInterceptor(meterRegistry)
 }

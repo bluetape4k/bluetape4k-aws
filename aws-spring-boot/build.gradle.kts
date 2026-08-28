@@ -1,3 +1,7 @@
+import org.gradle.api.tasks.JavaExec
+import org.gradle.jvm.tasks.Jar
+import org.gradle.process.CommandLineArgumentProvider
+
 plugins {
     kotlin("plugin.allopen")
     alias(bt4k.plugins.kotlin.spring)
@@ -67,6 +71,91 @@ benchmark {
     }
 }
 
+val sqsObservationFastPath = tasks.register<JavaExec>("sqsObservationFastPath") {
+    group = "benchmark"
+    description = "Run SQS observation fast-path benchmarks with fail-closed JMH execution."
+    val benchmarkJar = tasks.named<Jar>("benchmarkBenchmarkJar")
+    val resultFile = layout.buildDirectory.file("reports/benchmarks/sqs-observation-fast-path.json")
+    dependsOn(benchmarkJar)
+    classpath(files(benchmarkJar.flatMap { it.archiveFile }))
+    mainClass.set("org.openjdk.jmh.Main")
+    args(
+        ".*SqsObservationBenchmark\\.(directBaseline|disabledFastPath|activeProcess).*",
+        "-wi", "5",
+        "-i", "10",
+        "-w", "1s",
+        "-r", "1s",
+        "-f", "2",
+        "-bm", "avgt",
+        "-tu", "ns",
+        "-foe", "true",
+        "-rf", "json",
+    )
+    argumentProviders.add(CommandLineArgumentProvider {
+        listOf("-rff", resultFile.get().asFile.absolutePath)
+    })
+    doFirst {
+        resultFile.get().asFile.parentFile.mkdirs()
+    }
+}
+
+val sqsObservationContention = tasks.register<JavaExec>("sqsObservationContention") {
+    group = "benchmark"
+    description = "Run SQS observation acknowledgement contention benchmarks with JMH sample mode."
+    val benchmarkJar = tasks.named<Jar>("benchmarkBenchmarkJar")
+    val resultFile = layout.buildDirectory.file("reports/benchmarks/sqs-observation-contention.json")
+    dependsOn(benchmarkJar)
+    classpath(files(benchmarkJar.flatMap { it.archiveFile }))
+    mainClass.set("org.openjdk.jmh.Main")
+    args(
+        ".*SqsObservationBenchmark\\.(concurrentSingleAck|concurrentBatchAck|concurrentHeartbeat).*",
+        "-wi", "5",
+        "-i", "10",
+        "-w", "1s",
+        "-r", "1s",
+        "-f", "2",
+        "-bm", "sample",
+        "-tu", "ns",
+        "-foe", "true",
+        "-rf", "json",
+    )
+    argumentProviders.add(CommandLineArgumentProvider {
+        listOf("-rff", resultFile.get().asFile.absolutePath)
+    })
+    doFirst {
+        resultFile.get().asFile.parentFile.mkdirs()
+    }
+}
+
+tasks.register<JavaExec>("verifySqsObservationBenchmarkFailClosed") {
+    group = "verification"
+    description = "Verify that a JMH teardown assertion makes the benchmark process fail."
+    val benchmarkJar = tasks.named<Jar>("benchmarkBenchmarkJar")
+    dependsOn(benchmarkJar)
+    classpath(files(benchmarkJar.flatMap { it.archiveFile }))
+    mainClass.set("org.openjdk.jmh.Main")
+    args(
+        ".*SqsObservationBenchmark\\.activeProcess.*",
+        "-wi", "0",
+        "-i", "1",
+        "-r", "1ms",
+        "-f", "1",
+        "-bm", "ss",
+        "-foe", "true",
+        "-jvmArgsAppend", "-Dbluetape4k.aws.benchmark.forceFailure=true",
+    )
+    isIgnoreExitValue = true
+    doLast {
+        check(executionResult.get().exitValue != 0) {
+            "JMH returned success after the forced teardown assertion failure."
+        }
+    }
+}
+
+tasks.matching { it.name == "benchmark" }.configureEach {
+    dependsOn(sqsObservationFastPath, sqsObservationContention)
+}
+
 configurations {
     testImplementation.get().extendsFrom(compileOnly.get(), runtimeOnly.get())
 }
@@ -115,6 +204,7 @@ dependencies {
     api(bt4k.bluetape4k.io)
     api(bt4k.bluetape4k.coroutines)
     api(libs.micrometer.core)
+    implementation(bt4k.micrometer.context.propagation)
     compileOnly(libs.micrometer.registry.cloudwatch2)
     compileOnly(bt4k.bluetape4k.jackson3)
     compileOnly(bt4k.bluetape4k.testcontainers)

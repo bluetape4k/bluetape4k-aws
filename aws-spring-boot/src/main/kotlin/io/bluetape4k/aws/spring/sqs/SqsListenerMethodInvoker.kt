@@ -50,15 +50,35 @@ internal class SqsListenerMethodInvoker(
     }
 
     suspend fun invoke(message: SqsReceivedMessage, acknowledgement: SqsAcknowledgement) {
-        invokeReflectively(parameterPlan.arguments(message, acknowledgement, messageConverter))
+        invoke(message, acknowledgement) {}
+    }
+
+    internal suspend fun invoke(
+        message: SqsReceivedMessage,
+        acknowledgement: SqsAcknowledgement,
+        enterHandler: () -> Unit,
+    ) {
+        val arguments = parameterPlan.arguments(message, acknowledgement, messageConverter)
+        enterHandler()
+        invokeReflectively(arguments)
     }
 
     internal suspend fun invokeBatch(
         messages: List<SqsReceivedMessage>,
         acknowledgement: SqsBatchAcknowledgement?,
     ) {
+        invokeBatch(messages, acknowledgement) {}
+    }
+
+    internal suspend fun invokeBatch(
+        messages: List<SqsReceivedMessage>,
+        acknowledgement: SqsBatchAcknowledgement?,
+        enterHandler: () -> Unit,
+    ) {
         parameterPlan.validateBatch()
-        invokeReflectively(parameterPlan.batchArguments(messages, acknowledgement, messageConverter))
+        val arguments = parameterPlan.batchArguments(messages, acknowledgement, messageConverter)
+        enterHandler()
+        invokeReflectively(arguments)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")

@@ -1,10 +1,12 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.mockk
 import kotlinx.coroutines.asCoroutineDispatcher
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertSame
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
@@ -59,6 +61,42 @@ class SqsListenerMethodInvokerTest {
         failure?.message shouldContain "unsupported batch element type"
     }
 
+    @Test
+    fun `phase callback preserves conversion and handler failure identity`() = runSuspendIO {
+        val conversionFailure = IllegalArgumentException("conversion")
+        val converter = object : SqsMessageConverter {
+            override fun convert(message: SqsReceivedMessage, targetType: Class<*>): Any = throw conversionFailure
+        }
+        val conversionInvoker = SqsListenerMethodInvoker(
+            ConvertedProbe(),
+            ConvertedProbe::class.java.declaredMethods.single { it.name == "handle" },
+            converter,
+        )
+        var conversionEnteredHandler = false
+
+        val actualConversionFailure = runCatching {
+            conversionInvoker.invoke(message(), mockk()) { conversionEnteredHandler = true }
+        }.exceptionOrNull()
+
+        assertSame(conversionFailure, actualConversionFailure)
+        conversionEnteredHandler shouldBeEqualTo false
+
+        val handlerFailure = IllegalStateException("handler")
+        val handlerInvoker = SqsListenerMethodInvoker(
+            ThrowingProbe(handlerFailure),
+            ThrowingProbe::class.java.declaredMethods.single { it.name == "handle" },
+            NoopSqsMessageConverter,
+        )
+        var handlerEntered = false
+
+        val actualHandlerFailure = runCatching {
+            handlerInvoker.invoke(message(), mockk()) { handlerEntered = true }
+        }.exceptionOrNull()
+
+        assertSame(handlerFailure, actualHandlerFailure)
+        handlerEntered shouldBeEqualTo true
+    }
+
     class DispatcherProbe {
         val threadName = AtomicReference("")
 
@@ -79,6 +117,20 @@ class SqsListenerMethodInvokerTest {
 
     class InvalidBatchProbe {
         fun nullable(messages: List<String?>) = messages.size
+    }
+
+    class ConvertedProbe {
+        @Suppress("UNUSED_PARAMETER")
+        fun handle(payload: ConvertedPayload) = Unit
+    }
+
+    class ConvertedPayload
+
+    class ThrowingProbe(
+        private val failure: RuntimeException,
+    ) {
+        @Suppress("UNUSED_PARAMETER")
+        fun handle(payload: String): Nothing = throw failure
     }
 
     private fun message(messageId: String = "message-1"): SqsReceivedMessage =

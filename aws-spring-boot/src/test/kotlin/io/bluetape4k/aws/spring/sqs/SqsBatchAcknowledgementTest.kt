@@ -6,12 +6,21 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.micrometer.observation.Observation
+import io.micrometer.observation.ObservationHandler
+import io.micrometer.observation.ObservationRegistry
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
@@ -19,8 +28,181 @@ import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 
 class SqsBatchAcknowledgementTest {
+
+    @Test
+    fun `cancellation while committing completed IO does not strand later waiters`() = runTest {
+        val operations = RecordingBatchOperations()
+        val acknowledgement = acknowledgement(messages(2), operations)
+        val mutex = acknowledgement.javaClass.getDeclaredField("mutex").let { field ->
+            field.isAccessible = true
+            field.get(acknowledgement) as Mutex
+        }
+        val commitBlocked = CompletableDeferred<Unit>()
+        operations.beforeDeleteReturn = {
+            mutex.lock()
+            commitBlocked.complete(Unit)
+        }
+        val cancellation = CancellationException("cancel during commit")
+
+        val first = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+        commitBlocked.await()
+        first.cancel(cancellation)
+        mutex.unlock()
+        assertFailsWith<CancellationException> { first.await() }
+
+        withTimeout(1_000) {
+            acknowledgement.acknowledge().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
+        }
+        operations.deleteBatchCalls shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `batch actual IO records partial counts without individual identifiers`() = runTest {
+        val messages = messages(3)
+        val operations = RecordingBatchOperations().apply {
+            deleteBatchResult = SqsBatchDeleteResult(
+                successfulEntryIds = listOf("entry-0", "entry-2"),
+                failed = listOf(SqsBatchDeleteFailure("entry-1", "AccessDenied", "denied", true)),
+            )
+        }
+        val recorder = BatchObservationRecorder()
+        val acknowledgement = acknowledgement(
+            messages,
+            operations,
+            observationRuntime = observationRuntime(recorder),
+        )
+
+        acknowledgement.acknowledge()
+
+        recorder.contexts.single().apply {
+            metadata.stage shouldBeEqualTo SqsObservationStage.ACKNOWLEDGEMENT
+            metadata.acknowledgementAction shouldBeEqualTo SqsAcknowledgementAction.ACK
+            metadata.batch.shouldBeTrue()
+            metadata.batchSize shouldBeEqualTo 3
+            metadata.messageId shouldBeEqualTo null
+            metadata.messageGroupId shouldBeEqualTo null
+            metadata.messageDeduplicationId shouldBeEqualTo null
+            acknowledgementSuccessCount shouldBeEqualTo 2
+            acknowledgementFailureCount shouldBeEqualTo 1
+            outcome shouldBeEqualTo SqsObservationOutcome.PARTIAL
+        }
+    }
+
+    @Test
+    fun `already terminal and prevalidation paths create no extra observation`() = runTest {
+        val messages = messages(2)
+        val operations = RecordingBatchOperations()
+        val recorder = BatchObservationRecorder()
+        val acknowledgement = acknowledgement(
+            messages,
+            operations,
+            observationRuntime = observationRuntime(recorder),
+        )
+
+        acknowledgement.acknowledge()
+        acknowledgement.acknowledge()
+        assertFailsWith<IllegalArgumentException> {
+            acknowledgement.acknowledge(messages + message(99))
+        }
+
+        operations.deleteBatchCalls shouldBeEqualTo 1
+        recorder.contexts.size shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `cancellation rollback completes waiter outside mutex and permits retry for 1000 races`() = runTest {
+        repeat(1_000) {
+            val messages = messages(2)
+            val started = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val operations = RecordingBatchOperations().apply {
+                deleteStarted = started
+                deleteRelease = release
+            }
+            val acknowledgement = acknowledgement(messages, operations)
+            val first = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+            started.await()
+            val waiter = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+
+            operations.deleteRelease = null
+            first.cancel(CancellationException("cancel batch acknowledgement"))
+            first.join()
+
+            waiter.await().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
+            acknowledgement.completed.shouldBeTrue()
+            operations.deleteBatchCalls shouldBeEqualTo 2
+        }
+    }
+
+    @Test
+    fun `waiting duplicate shares one actual IO observation`() = runTest {
+        val messages = messages(2)
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val operations = RecordingBatchOperations().apply {
+            deleteStarted = started
+            deleteRelease = release
+        }
+        val recorder = BatchObservationRecorder()
+        val acknowledgement = acknowledgement(messages, operations, observationRuntime = observationRuntime(recorder))
+
+        val first = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+        started.await()
+        val waiter = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+        release.complete(Unit)
+
+        first.await().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
+        waiter.await().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
+        operations.deleteBatchCalls shouldBeEqualTo 1
+        recorder.contexts.size shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `cancellation completes interceptor and observation cleanup before retry`() = runTest {
+        val messages = messages(2)
+        val cancellation = CancellationException("cancel batch acknowledgement")
+        val stopFailure = IllegalStateException("observation stop failed")
+        val operations = RecordingBatchOperations().apply { deleteBatchFailure = cancellation }
+        val activeAfterHooks = mutableListOf<Boolean>()
+        val interceptor = object : SqsListenerInterceptor {
+            override suspend fun afterAcknowledgement(
+                context: SqsListenerInvocationContext,
+                action: SqsAcknowledgementAction,
+                error: Throwable?,
+                correlation: SqsListenerBatchCorrelation,
+                batchSize: Int,
+            ) {
+                activeAfterHooks += currentCoroutineContext().isActive
+            }
+        }
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(FailFirstBatchStopHandler(stopFailure))
+        val runtime = SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+        val acknowledgement = acknowledgement(
+            messages,
+            operations,
+            interceptors = listOf(interceptor),
+            observationRuntime = runtime,
+        )
+
+        val actual = assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo cancellation
+        actual.suppressed.toList() shouldBeEqualTo listOf(stopFailure)
+        activeAfterHooks.single().shouldBeTrue()
+        acknowledgement.pending.size shouldBeEqualTo 2
+
+        operations.deleteBatchFailure = null
+        acknowledgement.acknowledge().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
+        acknowledgement.completed.shouldBeTrue()
+    }
 
     @Test
     fun `acknowledge deletes all pending and completes`() = runSuspendIO {
@@ -152,6 +334,7 @@ class SqsBatchAcknowledgementTest {
     @Test
     fun `operation guard cancels before an AWS batch call`() = runSuspendIO {
         val operations = RecordingBatchOperations()
+        val recorder = BatchObservationRecorder()
         val acknowledgement = DefaultSqsBatchAcknowledgement(
             listenerId = "listener",
             queueUrl = QUEUE_URL,
@@ -159,6 +342,7 @@ class SqsBatchAcknowledgementTest {
             operations = operations,
             interceptors = emptyList(),
             operationGuard = { throw CancellationException("listener is stopping") },
+            observationRuntime = observationRuntime(recorder),
         )
 
         assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
@@ -166,19 +350,133 @@ class SqsBatchAcknowledgementTest {
         operations.deleteBatchCalls shouldBeEqualTo 0
         acknowledgement.pending.size shouldBeEqualTo 2
         acknowledgement.completed.shouldBeFalse()
+        recorder.contexts shouldBeEqualTo emptyList()
+    }
+
+    @Test
+    fun `observation start failure is marked as setup failure before batch IO`() = runTest {
+        val setupFailure = IllegalStateException("batch observation start failed")
+        val operations = RecordingBatchOperations()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig().observationHandler(
+                object : ObservationHandler<SqsObservationContext> {
+                    override fun supportsContext(context: Observation.Context): Boolean =
+                        context is SqsObservationContext
+
+                    override fun onStart(context: SqsObservationContext) {
+                        throw setupFailure
+                    }
+                },
+            )
+        }
+        val acknowledgement = acknowledgement(
+            messages = messages(2),
+            operations = operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = registry,
+                customizers = emptyList(),
+                factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+            ),
+        )
+
+        val actual = assertFailsWith<IllegalStateException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo setupFailure
+        acknowledgement.isObservationSetupFailure(actual).shouldBeTrue()
+        operations.deleteBatchCalls shouldBeEqualTo 0
+        acknowledgement.pending.size shouldBeEqualTo 2
+    }
+
+    @Test
+    fun `observation factory cancellation is not classified as batch setup failure`() = runTest {
+        val cancellation = CancellationException("batch observation factory cancelled")
+        val operations = RecordingBatchOperations()
+        val acknowledgement = acknowledgement(
+            messages = messages(2),
+            operations = operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw cancellation },
+            ),
+        )
+
+        val actual = assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo cancellation
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteBatchCalls shouldBeEqualTo 0
+    }
+
+    @Test
+    fun `observation factory error is not classified as batch setup failure`() = runTest {
+        val fatal = AssertionError("batch observation factory fatal error")
+        val operations = RecordingBatchOperations()
+        val acknowledgement = acknowledgement(
+            messages = messages(2),
+            operations = operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw fatal },
+            ),
+        )
+
+        val actual = assertFailsWith<AssertionError> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo fatal
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteBatchCalls shouldBeEqualTo 0
     }
 
     private fun acknowledgement(
         messages: List<SqsReceivedMessage>,
         operations: RecordingBatchOperations,
+        interceptors: List<SqsListenerInterceptor> = emptyList(),
+        observationRuntime: SqsObservationRuntime? = null,
     ): DefaultSqsBatchAcknowledgement =
         DefaultSqsBatchAcknowledgement(
             listenerId = "listener",
             queueUrl = QUEUE_URL,
             messages = messages,
             operations = operations,
-            interceptors = emptyList(),
+            interceptors = interceptors,
+            observationRuntime = observationRuntime,
         )
+
+    private fun observationRuntime(recorder: BatchObservationRecorder): SqsObservationRuntime {
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(recorder)
+        return SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+    }
+
+    private class BatchObservationRecorder : ObservationHandler<SqsObservationContext> {
+        val contexts = mutableListOf<SqsObservationContext>()
+
+        override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
+
+        override fun onStop(context: SqsObservationContext) {
+            contexts += context
+        }
+    }
+
+    private class FailFirstBatchStopHandler(
+        private val failure: Throwable,
+    ) : ObservationHandler<SqsObservationContext> {
+        private val remainingFailures = AtomicInteger(1)
+
+        override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
+
+        override fun onStop(context: SqsObservationContext) {
+            if (remainingFailures.getAndDecrement() > 0) {
+                throw failure
+            }
+        }
+    }
 
     private fun messages(count: Int, groupId: String? = null): List<SqsReceivedMessage> =
         (1..count).map { message(it, groupId) }
@@ -199,6 +497,10 @@ class SqsBatchAcknowledgementTest {
     private class RecordingBatchOperations : SqsOperations {
         var deleteBatchCalls = 0
         var deleteBatchResult = SqsBatchDeleteResult(emptyList(), emptyList())
+        var deleteBatchFailure: Throwable? = null
+        var deleteStarted: CompletableDeferred<Unit>? = null
+        var deleteRelease: CompletableDeferred<Unit>? = null
+        var beforeDeleteReturn: suspend () -> Unit = {}
         val deleteRequests = CopyOnWriteArrayList<List<String>>()
         val visibilityRequests = CopyOnWriteArrayList<List<SqsChangeVisibilityRequest>>()
 
@@ -236,6 +538,10 @@ class SqsBatchAcknowledgementTest {
         ): SqsBatchDeleteResult {
             deleteBatchCalls++
             deleteRequests += receiptHandles.toList()
+            deleteStarted?.complete(Unit)
+            deleteRelease?.let { it.await() }
+            deleteBatchFailure?.let { throw it }
+            beforeDeleteReturn()
             return if (deleteBatchResult.successfulEntryIds.isEmpty() && deleteBatchResult.failed.isEmpty()) {
                 SqsBatchDeleteResult(receiptHandles.indices.map { "entry-$it" }, emptyList())
             } else {

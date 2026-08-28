@@ -79,6 +79,158 @@ exceed `1%/5m`, retry exhaustion exceeds `0.1%/5m`, redelivery age p95 exceeds `
 or DLQ visible count is non-zero. The on-call owner is `bluetape4k-sqs-oncall` and release approval
 belongs to `bluetape4k-release-approvers`.
 
+## SQS Observation (Unreleased/develop)
+
+### Activation and prerequisites
+
+SQS Observation is an opt-in lifecycle path and is disabled by default. Enable it
+only when `bluetape4k.aws.enabled`, `bluetape4k.aws.sqs.enabled`, and
+`bluetape4k.aws.sqs.observation.enabled` are all true; the equivalent YAML is:
+
+```yaml
+bluetape4k:
+  aws:
+    enabled: true
+    sqs:
+      enabled: true
+      observation:
+        enabled: true
+```
+
+Activation requires a real `ObservationRegistry` bean (not
+`ObservationRegistry.NOOP`) and at least one Spring-managed
+`ObservationHandler` that supports `SqsObservationContext`. The
+`io.micrometer.context.ContextSnapshot` class must also be available. A user
+`SqsObservationFactory` does not bypass these registry and supporting-handler
+prerequisites; if a prerequisite is absent, the listener keeps the ordinary
+non-observation path. The activation property is read during context creation,
+so enablement and disablement require a restart or redeploy. Runtime property
+rebind and observation-runtime reattachment are not supported.
+The prerequisite probe is a sanitized PROCESS `SqsObservationContext`; a
+handler that accepts only generic Micrometer contexts but rejects this concrete
+context does not activate the feature.
+
+### Observation names and privacy
+
+The default observations have three bounded names:
+
+| Stage | Observation name | Boundary |
+| --- | --- | --- |
+| Receive | `bluetape4k.aws.sqs.receive` | One SQS receive attempt, including an empty poll. |
+| Process | `bluetape4k.aws.sqs.process` | Message conversion and handler processing, including retry and cancellation outcome. |
+| Acknowledgement | `bluetape4k.aws.sqs.acknowledgement` | Delete, nack, or visibility-change I/O, including manual acknowledgement and heartbeat calls. |
+
+Low-cardinality tags are limited to `messaging.system`,
+`messaging.operation`, `messaging.destination.name`,
+`bluetape4k.aws.sqs.listener.id`, `bluetape4k.aws.sqs.outcome`,
+`bluetape4k.aws.sqs.ack.action`, `bluetape4k.aws.sqs.batch.size`,
+`bluetape4k.aws.sqs.delivery`, and `bluetape4k.aws.sqs.failure.stage`. The
+queue dimension is only the final allowlisted path segment: one to 80 ASCII
+letters, digits, `_`, `-`, and an optional `.fifo`; invalid, blank, or
+account-like values become `unknown`. A blank listener ID also becomes
+`unknown`, and listener IDs must remain bounded operator configuration rather
+than values derived from each message.
+
+For a non-batch process or acknowledgement observation, high-cardinality values
+may contain the message ID, FIFO group ID, deduplication ID, and attempt. Receive
+observations and every batch observation suppress these identifiers, even when a
+batch contains one message. The context exposes no raw message body, receipt
+handle, message attribute, system-attribute, or complete queue-URL accessor.
+Do not add those values through a customizer or factory. If custom code adds
+external data to the generic observation context, privacy and cardinality
+remain the application's responsibility. Inbound SQS carrier propagation is
+not supported; coroutine context propagation is limited to the observation
+scope and child observations.
+
+### Customization contract
+
+Customizers run once in Spring `Ordered`/`@Order` order before the factory. A
+factory must return a not-started observation bound to the supplied context and
+registry; the runtime owns `start`, `error`, and `stop`. Returning a different
+context or registry fails before lifecycle execution. Returning an already
+started observation is unsupported because Micrometer exposes no public started
+state check. `Observation.NOOP` is the explicit direct-path result and has no
+observation lifecycle. A stage-specific `SqsObservationConvention` or factory
+can replace the PROCESS observation name while preserving the same context and registry.
+The following example adds only bounded custom context values:
+
+<!-- sqs-observation-customization:start -->
+```kotlin
+@Order(1)
+private class DeploymentEnvironmentCustomizer : SqsObservationContextCustomizer {
+    override fun customize(context: SqsObservationContext) {
+        context.put("deployment.environment", "production")
+    }
+}
+
+@Order(2)
+private class ObservationOwnerCustomizer : SqsObservationContextCustomizer {
+    override fun customize(context: SqsObservationContext) {
+        val environment = context.get<String>("deployment.environment")
+        context.put("observation.owner", "$environment:sqs-platform")
+    }
+}
+
+fun sqsObservationFactory(): SqsObservationFactory = SqsObservationFactory { context, registry ->
+    val observationName = when (context.metadata.stage) {
+        SqsObservationStage.RECEIVE -> "custom.sqs.receive"
+        SqsObservationStage.PROCESS -> "custom.sqs.process"
+        SqsObservationStage.ACKNOWLEDGEMENT -> "custom.sqs.acknowledgement"
+    }
+    Observation.createNotStarted(observationName, { context }, registry)
+}
+```
+<!-- sqs-observation-customization:end -->
+
+### Legacy metrics migration
+
+Keep the existing instrumentation paths separate during migration:
+
+| Path | Measures | Migration use |
+| --- | --- | --- |
+| `MicrometerSqsListenerInterceptor` | Listener receive, handler, acknowledgement, and batch callback timers/counters. | Keep it automatic in the control cohort. Observation activation suppresses the automatic bean in the candidate cohort. |
+| `MicrometerSqsOperations` | Low-cardinality timers around `SqsOperations` calls such as receive, send, delete, and visibility changes. | Keep as the request-operation meter; it does not replace listener lifecycle observations. |
+| SQS Observation | `receive`, `process`, and `acknowledgement` observations with coroutine scope and bounded context. | Enable after the canary and switch dashboards only after the runtime evidence passes. |
+
+Compare separate control and candidate cohorts. The control keeps the automatic
+legacy listener meter with Observation disabled; the candidate enables
+Observation and therefore suppresses that automatic listener interceptor. A
+manually registered `MicrometerSqsListenerInterceptor` in the candidate creates
+duplicate listener instrumentation and is an explicit diagnostic choice, not
+the default migration procedure.
+
+### Coroutine context and manual ACK
+
+A manual acknowledgement invoked after the process observation has ended is
+detached from that completed process span. Its acknowledgement observation uses
+only the observation that is current at invocation time as its parent; it never
+reuses a stale process parent.
+
+### Failure precedence and redelivery
+
+| Boundary | Primary result |
+| --- | --- |
+| Observation setup fails before business or ACK I/O | The setup failure is primary and the operation fails closed. |
+| Business or ACK I/O fails and observation cleanup also fails | The business/I/O failure stays primary; cleanup is suppressed. |
+| Business or ACK I/O succeeds and foreground observation stop fails | The stop failure is primary and the existing retry/redelivery policy applies. ACK I/O may already have succeeded, so handlers must tolerate idempotent replay and ambiguous redelivery. |
+| Visibility-heartbeat observation setup fails | `BT4K-SQS-OBS-202 reason=heartbeat_telemetry_setup` is logged without the original throwable or queue URL. The current visibility extension is skipped, but the background handler continues, so duplicate delivery is possible. |
+| Visibility-heartbeat observation cleanup fails | `BT4K-SQS-OBS-202` is logged without payload, queue URL, or throwable text; the heartbeat result remains primary and cleanup fails open. |
+
+`BT4K-SQS-OBS-101 context-propagation-missing` identifies a missing
+`ContextSnapshot` prerequisite. `BT4K-SQS-OBS-202` also reports bounded
+foreground telemetry setup failures with `reason=telemetry_setup`; it never
+includes the original throwable or full queue URL. Heartbeat setup uses the distinct
+`reason=heartbeat_telemetry_setup` fail-open diagnostic described above.
+
+### Evidence boundary
+
+The runtime uses `context-propagation:1.2.1` as a transitive runtime
+dependency. That dependency does not appear in public observation signatures,
+and enabling the feature requires no schema or persisted-state migration. Local
+acceptance uses the `FlociServer.Launcher.floci` test server and the Floci SQS
+matrix; verification against an actual AWS account and an OpenTelemetry
+exporter is `N/A` for this path.
+
 ## SQS Extended Client
 
 The Extended Client is opt-in. It keeps small messages inline and stores larger

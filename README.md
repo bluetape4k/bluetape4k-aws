@@ -38,8 +38,9 @@ uses.
   Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, RDS IAM, Secrets
   Manager, and Parameter Store.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
-  listeners, optional Spring Modulith SNS/SQS event externalization, and
-  auto-configuration without depending on awspring.
+  listeners, opt-in lifecycle-aware SQS Observation, optional Spring Modulith
+  SNS/SQS event externalization, and auto-configuration without depending on
+  awspring. See the [storage and messaging manual](docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md).
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 access, SQS consumer
   runtime, EventBridge publishing, DynamoDB server repositories, EC2 IMDS
   helpers, and Ktor server/client examples.

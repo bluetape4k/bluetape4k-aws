@@ -9,6 +9,14 @@
 
 ### 추가
 
+- Spring Boot SQS listener에 기본 비활성인 lifecycle-aware Observation을 추가했습니다.
+  receive, process, 실제 acknowledgement I/O의 coroutine parentage와 제한된 metadata,
+  사용자 정의 convention/factory를 지원합니다. `context-propagation:1.2.1`은 transitive
+  runtime dependency이며 public signature와 schema/persisted state migration은 없습니다.
+  활성화·rollback에는 restart/redeploy가 필요하고, 실제 AWS와 OpenTelemetry exporter 대신
+  Floci-first contract와 성능 gate로 검증했습니다. 누락된 context propagation과 telemetry
+  setup 실패는 queue URL·원본 throwable을 제외한 bounded diagnostic으로 기록합니다
+  ([#473](https://github.com/bluetape4k/bluetape4k-aws/issues/473)).
 - AWS Kotlin SDK에 `DynamoDbDistributedLock`과 `DynamoDbMetadataStore`를 추가했습니다.
   PK-only table의 조건부 쓰기만 사용해 bounded lease/fencing과 String metadata의
   logical expiry/CAS를 제공하며, lock row는 fencing counter 보존을 위해 물리 삭제하지

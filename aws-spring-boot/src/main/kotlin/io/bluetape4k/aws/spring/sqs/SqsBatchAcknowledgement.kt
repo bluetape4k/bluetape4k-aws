@@ -2,9 +2,11 @@ package io.bluetape4k.aws.spring.sqs
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * 하나의 ReceiveMessage 응답에 대한 전체·부분 acknowledgement API입니다.
@@ -49,6 +51,8 @@ internal class DefaultSqsBatchAcknowledgement(
     private var attempt: Int = 1,
     private val correlation: SqsListenerBatchCorrelation = SqsListenerBatchCorrelation(0L, 0, 0L),
     private val operationGuard: () -> Unit = {},
+    private val observationRuntime: SqsObservationRuntime? = null,
+    private val observationQueueName: String? = null,
 ) : SqsBatchAcknowledgement {
 
     private enum class ItemState {
@@ -89,6 +93,9 @@ internal class DefaultSqsBatchAcknowledgement(
     private val snapshotLock = Any()
     private val items: List<Item>
     private val byReceiptHandle: Map<String, Item>
+
+    @Volatile
+    private var observationSetupFailure: Throwable? = null
 
     init {
         requireBatchSize(messages.size)
@@ -144,58 +151,240 @@ internal class DefaultSqsBatchAcknowledgement(
         return execute(SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY, messages.toList(), timeoutSeconds)
     }
 
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    internal suspend fun heartbeat(
+        messages: Collection<SqsReceivedMessage>,
+        timeoutSeconds: Int,
+        onObservationFailure: (Throwable) -> Unit,
+    ): SqsBatchAcknowledgementResult {
+        requireVisibilityTimeout(timeoutSeconds)
+        return execute(
+            operation = SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY,
+            requested = messages.toList(),
+            timeoutSeconds = timeoutSeconds,
+            onObservationCleanupFailure = onObservationFailure,
+        )
+    }
+
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun execute(
         operation: SqsBatchAcknowledgementOperation,
         requested: List<SqsReceivedMessage>,
         timeoutSeconds: Int?,
+        onObservationCleanupFailure: ((Throwable) -> Unit)? = null,
     ): SqsBatchAcknowledgementResult {
         val requestedItems = validateRequested(requested)
         val action = operation.toAcknowledgementAction()
-        val context = items.firstOrNull()?.let {
+        val context = requireNotNull(items.firstOrNull()?.let {
             SqsListenerInvocationContext(listenerId, queueUrl, it.message, attempt)
-        }
-        context?.let { beforeAcknowledgement(it, action, requestedItems.size) }
+        })
         var failure: Throwable? = null
+        var afterAcknowledgementCompleted = false
+        var result: SqsBatchAcknowledgementResult? = null
         try {
-            while (true) {
-                when (val decision = reserve(operation, requestedItems)) {
-                    is Decision.Done -> {
-                        notifyResult(context, action, decision.result, requestedItems.size)
-                        return decision.result
-                    }
-                    is Decision.Wait -> {
-                        decision.deferreds.awaitAll()
-                    }
-                    is Decision.Run -> {
-                        val result = try {
-                            perform(
-                                operation,
-                                decision.requested,
-                                decision.items,
-                                decision.preSuccessIds,
-                                decision.preFailures,
-                                timeoutSeconds,
-                            )
-                        } catch (e: CancellationException) {
-                            rollback(decision.items, decision.deferred)
-                            throw e
-                        } catch (e: Throwable) {
-                            rollback(decision.items, decision.deferred)
-                            throw e
-                        }
-                        commit(decision.items, decision.deferred, operation, result)
-                        notifyResult(context, action, result, requestedItems.size)
-                        return result
-                    }
-                }
-            }
+            beforeAcknowledgement(context, action, requestedItems.size)
+            result = executeReserved(
+                operation = operation,
+                action = action,
+                requestedItems = requestedItems,
+                timeoutSeconds = timeoutSeconds,
+                context = context,
+                onObservationCleanupFailure = onObservationCleanupFailure,
+                onCancellationFinalized = { afterAcknowledgementCompleted = true },
+            )
         } catch (e: Throwable) {
             failure = e
-            throw e
-        } finally {
-            context?.let { afterAcknowledgement(it, action, failure, requestedItems.size) }
         }
+        val cleanupFailure = if (afterAcknowledgementCompleted) {
+            null
+        } else {
+            runCatchingBatchFinalization {
+                afterAcknowledgement(context, action, failure, requestedItems.size)
+            }
+        }
+        throwAcknowledgementFailures(failure, cleanupFailure)
+        return requireNotNull(result)
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun executeReserved(
+        operation: SqsBatchAcknowledgementOperation,
+        action: SqsAcknowledgementAction,
+        requestedItems: List<Item>,
+        timeoutSeconds: Int?,
+        context: SqsListenerInvocationContext,
+        onObservationCleanupFailure: ((Throwable) -> Unit)?,
+        onCancellationFinalized: () -> Unit,
+    ): SqsBatchAcknowledgementResult {
+        while (true) {
+            when (val decision = reserve(operation, requestedItems)) {
+                is Decision.Done -> {
+                    notifyResult(context, action, decision.result, requestedItems.size)
+                    return decision.result
+                }
+                is Decision.Wait -> decision.deferreds.awaitAll()
+                is Decision.Run -> {
+                    val result = executeRunDecision(
+                        operation,
+                        action,
+                        timeoutSeconds,
+                        context,
+                        requestedItems.size,
+                        decision,
+                        onObservationCleanupFailure,
+                        onCancellationFinalized,
+                    )
+                    withContext(NonCancellable) {
+                        commit(decision.items, decision.deferred, operation, result)
+                    }
+                    notifyResult(context, action, result, requestedItems.size)
+                    return result
+                }
+            }
+        }
+    }
+
+    @Suppress("LongParameterList", "TooGenericExceptionCaught", "ThrowsCount")
+    private suspend fun executeRunDecision(
+        operation: SqsBatchAcknowledgementOperation,
+        action: SqsAcknowledgementAction,
+        timeoutSeconds: Int?,
+        context: SqsListenerInvocationContext,
+        requestedSize: Int,
+        decision: Decision.Run,
+        onObservationCleanupFailure: ((Throwable) -> Unit)?,
+        onCancellationFinalized: () -> Unit,
+    ): SqsBatchAcknowledgementResult {
+        var rollbackCompleted = false
+        return try {
+            operationGuard()
+            suspend fun performDecision(): SqsBatchAcknowledgementResult =
+                try {
+                    perform(
+                        operation,
+                        decision.requested,
+                        decision.items,
+                        decision.preSuccessIds,
+                        decision.preFailures,
+                        timeoutSeconds,
+                    )
+                } catch (e: CancellationException) {
+                    rollbackAfterCancellation(decision.items, decision.deferred, e)
+                    rollbackCompleted = true
+                    completeAfterAcknowledgementCancellation(context, action, e, requestedSize)
+                    onCancellationFinalized()
+                    throw e
+                }
+            val activeRuntime = observationRuntime.activeOrNull()
+            if (activeRuntime == null) {
+                performDecision()
+            } else {
+                observeBatchAcknowledgement(
+                    runtime = activeRuntime,
+                    context = context,
+                    action = action,
+                    batchSize = decision.items.size,
+                    onObservationCleanupFailure = onObservationCleanupFailure,
+                ) {
+                    performDecision()
+                }
+            }
+        } catch (e: CancellationException) {
+            if (!rollbackCompleted) {
+                rollbackAfterCancellation(decision.items, decision.deferred, e)
+            }
+            throw e
+        } catch (e: Throwable) {
+            rollback(decision.items, decision.deferred)
+            throw e
+        }
+    }
+
+    @Suppress("ThrowsCount", "TooGenericExceptionCaught")
+    private suspend fun <T> observeBatchAcknowledgement(
+        runtime: SqsObservationRuntime,
+        context: SqsListenerInvocationContext,
+        action: SqsAcknowledgementAction,
+        batchSize: Int,
+        onObservationCleanupFailure: ((Throwable) -> Unit)?,
+        block: suspend SqsObservationExecution.() -> T,
+    ): T {
+        var observedContext: SqsObservationContext? = null
+        val observation = try {
+            runtime.prepare(batchObservationContext(context, action, batchSize).also { observedContext = it })
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Error) {
+            throw e
+        } catch (e: Throwable) {
+            observationSetupFailure = e
+            throw e
+        }
+        return observation.observe(
+            onSetupFailure = { observationSetupFailure = it },
+            onCleanupFailure = onObservationCleanupFailure,
+        ) {
+            try {
+                val result = block()
+                if (result is SqsBatchAcknowledgementResult) {
+                    observedContext?.apply {
+                        acknowledgementSuccessCount = result.successfulMessageIds.size
+                        acknowledgementFailureCount = result.failed.size
+                        outcome = when (result.status) {
+                            SqsBatchAcknowledgementStatus.SUCCESS -> SqsObservationOutcome.SUCCESS
+                            SqsBatchAcknowledgementStatus.PARTIAL_FAILURE -> SqsObservationOutcome.PARTIAL
+                            SqsBatchAcknowledgementStatus.FAILURE -> SqsObservationOutcome.ERROR
+                        }
+                        if (result.status == SqsBatchAcknowledgementStatus.FAILURE) {
+                            failureStage = "acknowledgement"
+                        }
+                    }
+                }
+                result
+            } catch (e: CancellationException) {
+                observedContext?.acknowledgementFailureCount = batchSize
+                cancel("acknowledgement")
+                throw e
+            } catch (e: Throwable) {
+                observedContext?.acknowledgementFailureCount = batchSize
+                fail("acknowledgement")
+                throw e
+            }
+        }
+    }
+
+    internal fun isObservationSetupFailure(error: Throwable): Boolean = observationSetupFailure === error
+
+    private fun batchObservationContext(
+        context: SqsListenerInvocationContext,
+        action: SqsAcknowledgementAction,
+        batchSize: Int,
+    ): SqsObservationContext = SqsObservationContext(
+        SqsObservationMetadata(
+            listenerId = context.listenerId,
+            queueName = observationQueueName ?: resolveSqsObservationQueueName(queueUrl),
+            stage = SqsObservationStage.ACKNOWLEDGEMENT,
+            batch = true,
+            messageId = context.message.messageId,
+            messageGroupId = context.message.messageGroupId,
+            messageDeduplicationId = context.message.messageDeduplicationId,
+            initialAttempt = attempt,
+            batchSize = batchSize,
+            acknowledgementAction = action,
+            delivery = SqsObservationDelivery.UNKNOWN,
+            queueNameResolved = true,
+        ),
+    )
+
+    private suspend fun completeAfterAcknowledgementCancellation(
+        context: SqsListenerInvocationContext,
+        action: SqsAcknowledgementAction,
+        cancellation: CancellationException,
+        batchSize: Int,
+    ) {
+        val cleanupFailure = runCatchingBatchFinalization {
+            afterAcknowledgement(context, action, cancellation, batchSize)
+        }
+        cleanupFailure?.takeUnless { it === cancellation }?.let(cancellation::addSuppressed)
     }
 
     private suspend fun beforeAcknowledgement(
@@ -317,7 +506,6 @@ internal class DefaultSqsBatchAcknowledgement(
     ): SqsBatchAcknowledgementResult {
         val external: List<Pair<Item, Outcome>> = when (operation) {
             SqsBatchAcknowledgementOperation.ACKNOWLEDGE -> {
-                operationGuard()
                 val response = operations.deleteBatch(queueUrl, runnable.map { it.message.receiptHandle })
                 validateDeleteResponse(runnable, response)
                 response.successfulEntryIds.associateBy { it }
@@ -340,7 +528,6 @@ internal class DefaultSqsBatchAcknowledgement(
                 val requests = runnable.map {
                     SqsChangeVisibilityRequest(it.message.messageId, it.message.receiptHandle, timeout)
                 }
-                operationGuard()
                 val response = operations.changeVisibilityBatch(queueUrl, requests)
                 validateVisibilityResponse(runnable, response)
                 val successIds = response.successfulMessageIds.toSet()
@@ -377,36 +564,70 @@ internal class DefaultSqsBatchAcknowledgement(
         deferred: CompletableDeferred<Unit>,
         operation: SqsBatchAcknowledgementOperation,
         result: SqsBatchAcknowledgementResult,
-    ) = mutex.withLock {
+    ) {
         val successIds = result.successfulMessageIds.toSet()
-        synchronized(snapshotLock) {
-            runnable.forEach { item ->
-                if (item.message.messageId in successIds) {
-                    item.state = when (operation) {
-                        SqsBatchAcknowledgementOperation.ACKNOWLEDGE -> ItemState.ACKED
-                        SqsBatchAcknowledgementOperation.NACK -> ItemState.DEFERRED
-                        SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY -> ItemState.PENDING
+        mutex.withLock {
+            synchronized(snapshotLock) {
+                runnable.forEach { item ->
+                    if (item.message.messageId in successIds) {
+                        item.state = when (operation) {
+                            SqsBatchAcknowledgementOperation.ACKNOWLEDGE -> ItemState.ACKED
+                            SqsBatchAcknowledgementOperation.NACK -> ItemState.DEFERRED
+                            SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY -> ItemState.PENDING
+                        }
+                        if (operation != SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY) {
+                            item.outcomes[operation] = Outcome(true)
+                        }
+                    } else {
+                        item.state = ItemState.PENDING
                     }
-                    if (operation != SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY) {
-                        item.outcomes[operation] = Outcome(true)
-                    }
-                } else {
-                    item.state = ItemState.PENDING
+                    item.inFlight = null
                 }
-                item.inFlight = null
             }
         }
         deferred.complete(Unit)
     }
 
-    private suspend fun rollback(runnable: List<Item>, deferred: CompletableDeferred<Unit>) = mutex.withLock {
-        synchronized(snapshotLock) {
-            runnable.forEach {
-                it.state = ItemState.PENDING
-                it.inFlight = null
+    private suspend fun rollback(runnable: List<Item>, deferred: CompletableDeferred<Unit>) {
+        rollbackState(runnable)
+        deferred.complete(Unit)
+    }
+
+    private suspend fun rollbackState(runnable: List<Item>) {
+        mutex.withLock {
+            synchronized(snapshotLock) {
+                runnable.forEach {
+                    it.state = ItemState.PENDING
+                    it.inFlight = null
+                }
             }
         }
-        deferred.complete(Unit)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun rollbackAfterCancellation(
+        runnable: List<Item>,
+        deferred: CompletableDeferred<Unit>,
+        cancellation: CancellationException,
+    ) {
+        withContext(NonCancellable) {
+            val failures = mutableListOf<Throwable>()
+            try {
+                rollbackState(runnable)
+            } catch (e: Throwable) {
+                failures += e
+            }
+            try {
+                deferred.complete(Unit)
+            } catch (e: Throwable) {
+                failures += e
+            }
+            failures.forEach { failure ->
+                if (failure !== cancellation) {
+                    cancellation.addSuppressed(failure)
+                }
+            }
+        }
     }
 
     private fun fifoPredecessor(item: Item): Item? {
@@ -468,3 +689,14 @@ internal class DefaultSqsBatchAcknowledgement(
         }
     }
 }
+
+@Suppress("TooGenericExceptionCaught")
+private suspend fun runCatchingBatchFinalization(block: suspend () -> Unit): Throwable? =
+    withContext(NonCancellable) {
+        try {
+            block()
+            null
+        } catch (e: Throwable) {
+            e
+        }
+    }

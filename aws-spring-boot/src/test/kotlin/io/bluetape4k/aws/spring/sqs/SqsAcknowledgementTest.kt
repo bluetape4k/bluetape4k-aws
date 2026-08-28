@@ -5,16 +5,329 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.micrometer.observation.Observation
+import io.micrometer.observation.ObservationHandler
+import io.micrometer.observation.ObservationRegistry
+import io.micrometer.observation.ObservationView
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
+import java.util.concurrent.atomic.AtomicInteger
 
 class SqsAcknowledgementTest {
+
+    @Test
+    fun `concurrent terminal acknowledgement performs delete exactly once`() = runSuspendIO {
+        repeat(TERMINAL_RACE_REPETITIONS) {
+            val operations = RecordingSqsOperations()
+            val acknowledgement = acknowledgement(operations)
+
+            coroutineScope {
+                List(TERMINAL_RACE_COROUTINES) {
+                    async(Dispatchers.Default) { acknowledgement.acknowledge() }
+                }.awaitAll()
+            }
+
+            acknowledgement.completed.shouldBeTrue()
+            operations.deleteCalls shouldBeEqualTo 1
+        }
+    }
+
+    @Test
+    fun `terminal race skips heartbeat customization when no visibility IO can run`() = runTest {
+        val deleteStarted = CompletableDeferred<Unit>()
+        val releaseDelete = CompletableDeferred<Unit>()
+        val heartbeatPrepared = CompletableDeferred<Unit>()
+        val operations = RecordingSqsOperations().apply {
+            beforeDelete = {
+                deleteStarted.complete(Unit)
+                releaseDelete.await()
+            }
+        }
+        val recorder = AcknowledgementObservationRecorder()
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(recorder)
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = registry,
+                customizers = listOf(
+                    SqsObservationContextCustomizer { context ->
+                        if (context.metadata.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY) {
+                            heartbeatPrepared.complete(Unit)
+                        }
+                    }
+                ),
+                factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+            ),
+        )
+
+        val terminal = async(Dispatchers.Default) { acknowledgement.acknowledge() }
+        deleteStarted.await()
+        val heartbeat = async(Dispatchers.Default) { acknowledgement.heartbeat(30) {} }
+        withContext(Dispatchers.Default) {
+            withTimeoutOrNull(250) { heartbeatPrepared.await() }
+        }.shouldBeEqualTo(null)
+        releaseDelete.complete(Unit)
+        terminal.await()
+        heartbeat.await()
+
+        operations.changeVisibilityCalls shouldBeEqualTo 0
+        recorder.contexts.count {
+            it.metadata.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+        } shouldBeEqualTo 0
+        operations.deleteCalls shouldBeEqualTo 1
+        recorder.contexts.count {
+            it.metadata.acknowledgementAction == SqsAcknowledgementAction.ACK
+        } shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `actual acknowledgement IO creates one observation and duplicate creates none`() = runTest {
+        val operations = RecordingSqsOperations()
+        val recorder = AcknowledgementObservationRecorder()
+        val acknowledgement = acknowledgement(operations, observationRuntime = observationRuntime(recorder))
+
+        acknowledgement.acknowledge()
+        acknowledgement.acknowledge()
+
+        operations.deleteCalls shouldBeEqualTo 1
+        recorder.contexts.size shouldBeEqualTo 1
+        recorder.contexts.single().apply {
+            metadata.stage shouldBeEqualTo SqsObservationStage.ACKNOWLEDGEMENT
+            metadata.acknowledgementAction shouldBeEqualTo SqsAcknowledgementAction.ACK
+            metadata.batch.shouldBeFalse()
+            acknowledgementSuccessCount shouldBeEqualTo 1
+            acknowledgementFailureCount shouldBeEqualTo 0
+            outcome shouldBeEqualTo SqsObservationOutcome.SUCCESS
+        }
+    }
+
+    @Test
+    fun `acknowledgement cancellation keeps identity and records cancelled outcome`() = runTest {
+        val cancellation = CancellationException("cancel acknowledgement")
+        val operations = RecordingSqsOperations().apply { deleteFailure = cancellation }
+        val recorder = AcknowledgementObservationRecorder()
+        val acknowledgement = acknowledgement(operations, observationRuntime = observationRuntime(recorder))
+
+        val actual = assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo cancellation
+        acknowledgement.completed.shouldBeFalse()
+        recorder.contexts.single().apply {
+            outcome shouldBeEqualTo SqsObservationOutcome.CANCELLED
+            failureStage shouldBeEqualTo "acknowledgement"
+            acknowledgementFailureCount shouldBeEqualTo 1
+        }
+    }
+
+    @Test
+    fun `detached acknowledgement uses the current call-time observation parent`() = runTest {
+        val registry = ObservationRegistry.create()
+        val recorder = AcknowledgementObservationRecorder()
+        registry.observationConfig().observationHandler(recorder)
+        val runtime = SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+        val acknowledgement = acknowledgement(RecordingSqsOperations(), observationRuntime = runtime)
+        val completedProcess = Observation.start("completed-process", registry)
+        completedProcess.stop()
+        val currentParent = Observation.start("current-parent", registry)
+
+        currentParent.openScope().use {
+            acknowledgement.acknowledge()
+        }
+        currentParent.stop()
+
+        recorder.parents.single() shouldBeEqualTo currentParent
+    }
+
+    @Test
+    fun `nack error and change visibility success record their actual IO outcomes`() = runTest {
+        val operations = RecordingSqsOperations().apply {
+            changeVisibilityFailure = IllegalStateException("visibility failed")
+        }
+        val recorder = AcknowledgementObservationRecorder()
+        val acknowledgement = acknowledgement(operations, observationRuntime = observationRuntime(recorder))
+
+        assertFailsWith<IllegalStateException> { acknowledgement.nack(0) }
+        operations.changeVisibilityFailure = null
+        acknowledgement.changeVisibility(15)
+
+        recorder.contexts.map { it.metadata.acknowledgementAction } shouldBeEqualTo
+            listOf(SqsAcknowledgementAction.NACK, SqsAcknowledgementAction.CHANGE_VISIBILITY)
+        recorder.contexts.map { it.outcome } shouldBeEqualTo
+            listOf(SqsObservationOutcome.ERROR, SqsObservationOutcome.SUCCESS)
+        recorder.contexts.map { it.acknowledgementFailureCount } shouldBeEqualTo listOf(1, 0)
+        acknowledgement.completed.shouldBeFalse()
+    }
+
+    @Test
+    fun `observation setup fails closed before acknowledgement IO`() = runTest {
+        val setupFailure = IllegalStateException("observation setup failed")
+        val operations = RecordingSqsOperations()
+        val runtime = SqsObservationRuntime(
+            registry = ObservationRegistry.create(),
+            customizers = listOf(SqsObservationContextCustomizer { throw setupFailure }),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+        val acknowledgement = acknowledgement(operations, observationRuntime = runtime)
+
+        val actual = assertFailsWith<IllegalStateException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo setupFailure
+        operations.deleteCalls shouldBeEqualTo 0
+        acknowledgement.completed.shouldBeFalse()
+    }
+
+    @Test
+    fun `observation start failure is marked as setup failure before acknowledgement IO`() = runTest {
+        val setupFailure = IllegalStateException("observation start failed")
+        val operations = RecordingSqsOperations()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig().observationHandler(FailingAcknowledgementStartHandler(setupFailure))
+        }
+        val runtime = SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+        val acknowledgement = acknowledgement(operations, observationRuntime = runtime)
+
+        val actual = assertFailsWith<IllegalStateException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo setupFailure
+        acknowledgement.isObservationSetupFailure(actual).shouldBeTrue()
+        operations.deleteCalls shouldBeEqualTo 0
+        acknowledgement.completed.shouldBeFalse()
+    }
+
+    @Test
+    fun `observation factory cancellation is not classified as setup failure`() = runTest {
+        val cancellation = CancellationException("observation factory cancelled")
+        val operations = RecordingSqsOperations()
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw cancellation },
+            ),
+        )
+
+        val actual = assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo cancellation
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteCalls shouldBeEqualTo 0
+    }
+
+    @Test
+    fun `observation factory error is not classified as setup failure`() = runTest {
+        val fatal = AssertionError("observation factory fatal error")
+        val operations = RecordingSqsOperations()
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw fatal },
+            ),
+        )
+
+        val actual = assertFailsWith<AssertionError> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo fatal
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteCalls shouldBeEqualTo 0
+    }
+
+    @Test
+    fun `observation lifecycle setup runs outside acknowledgement IO serialization`() = runTest {
+        val deleteStarted = CompletableDeferred<Unit>()
+        val releaseDelete = CompletableDeferred<Unit>()
+        val secondObservationStarted = CompletableDeferred<Unit>()
+        val operations = RecordingSqsOperations().apply {
+            beforeDelete = {
+                deleteStarted.complete(Unit)
+                releaseDelete.await()
+            }
+        }
+        val starts = AtomicInteger()
+        val registry = ObservationRegistry.create().apply {
+            observationConfig().observationHandler(
+                object : ObservationHandler<SqsObservationContext> {
+                    override fun supportsContext(context: Observation.Context): Boolean =
+                        context is SqsObservationContext
+
+                    override fun onStart(context: SqsObservationContext) {
+                        if (starts.incrementAndGet() == 2) {
+                            secondObservationStarted.complete(Unit)
+                        }
+                    }
+                },
+            )
+        }
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = registry,
+                customizers = emptyList(),
+                factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+            ),
+        )
+
+        val terminal = async(Dispatchers.Default) { acknowledgement.acknowledge() }
+        deleteStarted.await()
+        val visibility = async(Dispatchers.Default) { acknowledgement.changeVisibility(30) }
+        val setupCompletedBeforeRelease = withContext(Dispatchers.Default) {
+            withTimeoutOrNull(250) { secondObservationStarted.await() }
+        }
+        releaseDelete.complete(Unit)
+        terminal.await()
+        visibility.await()
+
+        setupCompletedBeforeRelease shouldBeEqualTo Unit
+        operations.deleteCalls shouldBeEqualTo 1
+        operations.changeVisibilityCalls shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `business failure stays primary when observation stop also fails`() = runTest {
+        val businessFailure = IllegalStateException("delete failed")
+        val stopFailure = IllegalArgumentException("observation stop failed")
+        val operations = RecordingSqsOperations().apply { deleteFailure = businessFailure }
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(FailingAcknowledgementStopHandler(stopFailure))
+        val runtime = SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+        val acknowledgement = acknowledgement(operations, observationRuntime = runtime)
+
+        val actual = assertFailsWith<IllegalStateException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo businessFailure
+        actual.suppressed.toList() shouldBeEqualTo listOf(stopFailure)
+        acknowledgement.completed.shouldBeFalse()
+    }
 
     @Test
     fun `acknowledge marks completed only after delete succeeds`() = runSuspendIO {
@@ -89,6 +402,7 @@ class SqsAcknowledgementTest {
     private fun acknowledgement(
         operations: RecordingSqsOperations,
         interceptor: SqsListenerInterceptor = RecordingInterceptor(),
+        observationRuntime: SqsObservationRuntime? = null,
     ): DefaultSqsAcknowledgement =
         DefaultSqsAcknowledgement(
             context = SqsListenerInvocationContext(
@@ -106,7 +420,53 @@ class SqsAcknowledgementTest {
             ),
             operations = operations,
             interceptors = listOf(interceptor),
+            observationRuntime = observationRuntime,
         )
+
+    private fun observationRuntime(recorder: AcknowledgementObservationRecorder): SqsObservationRuntime {
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(recorder)
+        return SqsObservationRuntime(
+            registry = registry,
+            customizers = emptyList(),
+            factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
+        )
+    }
+
+    private class AcknowledgementObservationRecorder : ObservationHandler<SqsObservationContext> {
+        val contexts = mutableListOf<SqsObservationContext>()
+        val parents = mutableListOf<ObservationView?>()
+
+        override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
+
+        override fun onStart(context: SqsObservationContext) {
+            parents.add(context.parentObservation)
+        }
+
+        override fun onStop(context: SqsObservationContext) {
+            contexts += context
+        }
+    }
+
+    private class FailingAcknowledgementStopHandler(
+        private val failure: Throwable,
+    ) : ObservationHandler<SqsObservationContext> {
+        override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
+
+        override fun onStop(context: SqsObservationContext) {
+            throw failure
+        }
+    }
+
+    private class FailingAcknowledgementStartHandler(
+        private val failure: Throwable,
+    ) : ObservationHandler<SqsObservationContext> {
+        override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
+
+        override fun onStart(context: SqsObservationContext) {
+            throw failure
+        }
+    }
 
     private class RecordingInterceptor : SqsListenerInterceptor {
         val afterFailures = mutableListOf<Throwable?>()
@@ -125,6 +485,7 @@ class SqsAcknowledgementTest {
         var changeVisibilityCalls = 0
         var deleteFailure: Throwable? = null
         var changeVisibilityFailure: Throwable? = null
+        var beforeDelete: suspend () -> Unit = {}
 
         override suspend fun getQueueUrl(queueName: String): String = "queue-url"
 
@@ -153,7 +514,10 @@ class SqsAcknowledgementTest {
             queueUrl: String,
             receiptHandle: String,
         ): DeleteMessageResponse {
-            deleteCalls++
+            beforeDelete()
+            synchronized(this) {
+                deleteCalls++
+            }
             deleteFailure?.let { throw it }
             return DeleteMessageResponse.builder().build()
         }
@@ -175,5 +539,10 @@ class SqsAcknowledgementTest {
             visibilityTimeoutSeconds: Int?,
         ): Flow<SqsReceivedMessage> =
             emptyFlow()
+    }
+
+    private companion object {
+        private const val TERMINAL_RACE_REPETITIONS: Int = 500
+        private const val TERMINAL_RACE_COROUTINES: Int = 32
     }
 }
