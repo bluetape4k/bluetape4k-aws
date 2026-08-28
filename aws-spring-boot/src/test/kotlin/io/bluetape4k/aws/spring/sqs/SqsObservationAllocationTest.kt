@@ -68,6 +68,23 @@ class SqsObservationAllocationTest {
     }
 
     @Test
+    fun `disabled fast path reuses the stateless execution`() = runSuspendIO {
+        val executions = ArrayList<SqsObservationExecution>(DISABLED_EXECUTION_INVOCATIONS)
+
+        repeat(DISABLED_EXECUTION_INVOCATIONS) {
+            observeSqs(
+                runtime = null,
+                contextFactory = disabledContextFactory,
+            ) {
+                executions += this
+            }
+        }
+
+        executions.toSet().size shouldBeEqualTo 1
+        disabledContextFactoryCalls.get() shouldBeEqualTo 0
+    }
+
+    @Test
     fun `active process emits one observation and one retry event per invocation`() = runSuspendIO {
         val recorder = CountingObservationHandler()
         val registry = ObservationRegistry.create().apply {
@@ -206,6 +223,7 @@ class SqsObservationAllocationTest {
         private const val BOOTSTRAP_SEED: Long = 473L
         private const val MAX_DISABLED_ALLOCATION_DELTA_BYTES: Double = 0.5
         private const val ACTIVE_INVOCATIONS: Int = 1_000
+        private const val DISABLED_EXECUTION_INVOCATIONS: Int = 100
         private const val QUEUE_LOOKUPS: Int = 10_000
         private const val QUEUE_URL: String = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders"
     }
