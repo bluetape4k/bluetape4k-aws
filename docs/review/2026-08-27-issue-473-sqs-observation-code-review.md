@@ -5,8 +5,9 @@
 ## 검토 범위
 
 - 대상 branch: `feat/issue-473-sqs-observation`
-- 코드 검토 exact head: `4ec6887519643b2e3ba9e9d406d7efd3b9ebb67a`
+- 코드 검토 exact head: `17489298f86122b2bf46a954e37c56a064cab508`
 - merge base: `8baa578a77d4c41cdc3245fed8a1fa7fed11b1d0`
+- develop 충돌 해소 merge: `d7364c31d7a4be3b33534bb214730b5ff9f0c8bb`
 - GitHub issue: #473 `feat(aws-spring-boot): SQS ObservationRegistry·trace context 전파 지원`
 - milestone/assignee: `1.0.0` / `debop`
 - 검토 범위: SQS receive·process·acknowledgement observation, coroutine context 전파, auto-configuration,
@@ -17,7 +18,9 @@
 - 로컬 emulator: `bluetape4k-testcontainers`의 `FlociServer`만 사용
 
 판정 규칙은 P0/P1 0건이다. P2/P3도 이번 검토에서 남기지 않았으며, 검증할 수 없는 실제 AWS와
-production telemetry 범위는 Floci 결과로 대체하지 않는다.
+production telemetry 범위는 Floci 결과로 대체하지 않는다. PR #586에는 develop 최신 문서를
+보존하는 non-ff merge와 비동기 로그 수집기 경쟁을 제거한 테스트 보강만 추가되었고 production
+동작·공개 ABI는 바뀌지 않았다.
 
 ## 구현 근거 원장
 
@@ -65,13 +68,17 @@ production telemetry 범위는 Floci 결과로 대체하지 않는다.
    `FatalHeartbeatError`를 private 내부 marker로 추가해 heartbeat fatal만 redaction하고 일반 handler
    throwable은 기존대로 기록하도록 복구했다. 강화 테스트 RED 1건을 확인한 뒤 관련 3건과 핵심 176건을
    GREEN으로 전환했고 보안·호출자 재검토가 모두 승인했다.
+8. PR exact-head Floci 재실행에서 `ListAppender`의 기본 `ArrayList`를 백그라운드 컨테이너 로그와
+   동시에 순회하는 테스트 경쟁을 확인했다. 해당 진단 테스트의 수집 목록만
+   `CopyOnWriteArrayList`로 교체했으며 production source와 public API는 변경하지 않았다. 대상
+   테스트 단독·클래스 전체·전체 module 재실행에서 경쟁 예외가 재발하지 않았다.
 
 ### 후속 delivery 경계
 
 - 실제 AWS, IAM, 실제 redelivery timing, production OpenTelemetry exporter·collector는 계정과 운영
   환경이 없어 `N/A`다. Floci PASS는 이 범위의 성공을 뜻하지 않는다.
-- hosted exact-head CI는 PR을 만들지 않았으므로 아직 실행되지 않았다. PR 생성 뒤 path-filter를 포함한
-  applicable job의 terminal 상태를 별도로 확인해야 한다.
+- PR #586의 hosted exact-head CI는 생성 직후 아직 check-run이 보고되지 않았다. path-filter를
+  포함한 applicable job의 terminal 상태를 별도로 확인해야 한다.
 - human review는 1인 개발자 저장소 조건으로 `N/A`지만, 6개 독립 model review와 exact-head 검증은
   생략하지 않았다.
 
@@ -81,16 +88,16 @@ production telemetry 범위는 Floci 결과로 대체하지 않는다.
 | --- | --- |
 | fatal 경계 TDD | 일반 handler 진단 강화 테스트 RED 1/1 확인 후, handler·single heartbeat·batch heartbeat 3/3 PASS |
 | SQS 핵심 회귀 | `SqsMessageListenerContainerTest` 142, `SqsAcknowledgementTest` 16, `SqsBatchAcknowledgementTest` 18; 합계 176, failure/error/skip 0 |
-| 전체 `aws-spring-boot` + Floci | 187 suites, 1,557 passing, 2 pending, failure/error 0 |
+| 전체 `aws-spring-boot` + Floci | 187 suites, 1,560 passing, 2 pending, failure/error 0 |
 | Floci pending 분류 | `SnsCoroutinesTemplateAwsEmulatorTest` 측정 artifact와 실제 AWS SNS 측정 test 2건; SQS Observation acceptance skip 0 |
-| compile/static | `compileKotlin`, `compileTestKotlin`, repository `detekt` PASS |
+| compile/static | `compileKotlin`, `compileTestKotlin`, current module `detekt` PASS |
 | allocation | 3/3 PASS, 30 paired samples, median `0.0 B/op`, upper95 `0.0 B/op` |
 | JMH fast path | `directBaseline` `41.1966 ns/op`, `disabledFastPath` `41.4602 ns/op`, `activeProcess` `1328.5492 ns/op` |
 | JMH contention | batch ACK p50/p95/p99 `44,736/194,304/225,536 ns/op`; heartbeat `97,152/201,984/224,000 ns/op`; single ACK `187,136/220,416/236,032 ns/op` |
 | benchmark fail-closed | forced teardown 실패가 non-zero exit로 전파되고 hidden assertion/exception scan PASS |
 | manual | manifest current; manual contract 9 runs/44 assertions, failure/error/skip 0 |
 | 문서 정합성 | EN/KO parity test를 포함한 전체 module PASS; 한국어 terminology audit 5 files, finding 0 |
-| diff | `git diff --check` PASS |
+| diff | `git diff --check origin/develop...17489298f86122b2bf46a954e37c56a064cab508` PASS |
 
 JMH와 allocation 값은 해당 로컬 JVM·workload의 회귀 기준이다. 임의의 절대 latency threshold로
 일반화하지 않는다. 최종 fatal remediation은 오류 전용 분기이고 성능 hot path를 바꾸지 않았다는
@@ -100,7 +107,7 @@ exact-head 성능 독립 검토를 받았다.
 
 | Gate | 상태 | 근거 |
 | --- | --- | --- |
-| KT-FIN-01 current surface | PASS | source, callers, tests, EN/KO docs와 `origin/develop...4ec68875` diff를 대조했다. |
+| KT-FIN-01 current surface | PASS | source, callers, tests, EN/KO docs와 `origin/develop...17489298f86122b2bf46a954e37c56a064cab508` diff를 대조했다. |
 | KT-FIN-02 validation contracts | PASS | caller validation과 공개 exception 계약을 변경하지 않았다. |
 | KT-FIN-03 unsafe constructs | PASS | 새 production `!!`, suspend `runCatching`, swallowed cancellation, event-loop blocking, monitor 기반 coroutine lock이 없다. |
 | KT-FIN-04 lifecycle ownership | PASS | generation, heartbeat child, ACK ticket, cleanup과 fatal 경계를 source·회귀로 확인했다. |
@@ -109,7 +116,7 @@ exact-head 성능 독립 검토를 받았다.
 | KT-FIN-07 named behavior | PASS | JUnit 5·MockK·bluetape4k assertions를 사용하고 fatal 진단·비노출·I/O 0회를 직접 검증한다. |
 | KT-FIN-08 public docs | PASS | README 요약과 EN/KO manual의 활성화·실패·Floci 경계를 source와 맞췄다. |
 | KT-FIN-09 diagnostics | PASS | compile·전체 detekt PASS, import/deprecation 오류 0건이다. |
-| KT-FIN-10 fresh validation | PASS | exact-head Floci·core·allocation·compile·detekt·manual·diff 검증이 모두 통과했다. |
+| KT-FIN-10 fresh validation | PASS | exact-head Floci·core·compile·detekt·manual·diff 검증이 모두 통과했다. allocation·JMH는 production 변경이 없는 test-only delta와 무관한 기존 exact-head 증거로 유지한다. |
 | KT-FIN-11 final scope | PASS | 이슈 #473 범위만 포함하고 독립 6관점 P0/P1/P2/P3가 모두 0이다. |
 
 ## Writer·증거 게이트
@@ -133,7 +140,8 @@ exact-head 성능 독립 검토를 받았다.
 - [x] 실제 AWS 없이 `FlociServer` 전체 module 검증
 - [x] allocation·JMH·compile·detekt·manual·문서 정합성 검증
 - [x] 실제 AWS·production OpenTelemetry·human review N/A 경계 기록
+- [x] PR #586 한국어 metadata·label·milestone·assignee와 exact head 고정
 - [ ] PR exact-head hosted CI와 별도 merge gate
 
-최종 판정: **PASS**. 이슈 #473의 local 구현·검토는 완료됐으며, PR 생성 권한을 받은 뒤 hosted
-exact-head CI와 별도 merge 승인을 거쳐야 한다.
+최종 판정: **PASS (local implementation/review/delivery)**. PR #586은 OPEN이며 exact head와
+metadata가 고정됐다. hosted exact-head CI terminal 성공과 별도 merge 승인은 아직 남아 있다.
