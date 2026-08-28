@@ -1,0 +1,11 @@
+{
+  "Type" : "Notification",
+  "MessageId" : "513-v2-message-id",
+  "TopicArn" : "arn:aws:sns:us-west-2:123456789012:issue-513-topic",
+  "Message" : "This message uses signature version 2.",
+  "Timestamp" : "2026-08-28T12:00:00.000Z",
+  "SignatureVersion" : "2",
+  "Signature" : "BHXsfCyoUy55oOFGz3VBTw1FUdb/9hsXwXLwO+aFFtEOfwHZJUunit8SITE4Buz0PphGyg9L3qznTNuhwk+XIllgsIc49uIFjz58FGgWBXejxDwlp3RmKxhm0xf8+WZ+EPERHa4uUCdo8xq+gZcy610JQmqwLeMX+tfHYvc+T+iPV6j60Bf8snpRBMUzKuNNJwCq81NBFv1ZP9ngc+R+eItok9/Q7MwhLBLwhzE2t+VGBW+dZ2XQ6QYqM06/6uFk6NwUGbPFI019Wd2ZvKTe6zuplQEeNGHyoT2uma7onrVBcOOc1uHuMIZ73sxa9eTKqVUGpv8RYR4wulMyRyiGHA==",
+  "SigningCertURL" : "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-issue-513.pem",
+  "UnsubscribeURL" : "https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:123456789012:issue-513-topic:513-v2"
+}
