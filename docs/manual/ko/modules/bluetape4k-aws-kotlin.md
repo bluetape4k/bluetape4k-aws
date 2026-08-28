@@ -54,6 +54,68 @@ withS3Client(region = region) { s3 ->
 
 DynamoDB 모델 DSL·배치, DynamoDB Streams Flow/checkpoint 소비, S3 객체 작업, SQS/SNS, SES, KMS, CloudWatch, Kinesis record Flow, Lambda, STS와 HTTP engine provider를 제공합니다.
 
+## DynamoDB coordination {#dynamodb-coordination}
+
+> 미출시/develop: 이 절은 Issue #476을 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.
+
+`DynamoDbDistributedLock`과 `DynamoDbMetadataStore`는 호출자가 소유하는 DynamoDB table을
+대상으로 하는 coroutine 우선 coordination adapter입니다. String partition key 하나만
+사용하며 schema가 table을 만들거나 sort key를 추론하거나 client lifecycle을 관리하지
+않습니다. 이 모듈의 service SDK는 `compileOnly`이므로 AWS Kotlin DynamoDB service SDK를
+런타임 의존성으로 추가해야 합니다.
+
+`partitionKeyAttributeName`(`id` 기본값)과 일치하는 hash key만 가진 PK-only table을
+준비하세요. DynamoDB TTL은 metadata의 `ttlEpochSeconds` attribute에만 활성화하고 lock
+row에는 적용하지 마세요. Metadata TTL과 논리 `expiresAt`은 같은 epoch second로 기록됩니다.
+
+```kotlin
+val schema = DynamoDbCoordinationSchema(
+    tableName = "coordination",
+    namespace = "orders",
+)
+val lock = DynamoDbDistributedLock(client, schema)
+val metadata = DynamoDbMetadataStore(client, schema)
+
+val lease = lock.tryAcquire("orders", "worker-1")
+if (lease != null) {
+    // downstream 쓰기에서도 lease.fencingToken을 조건으로 확인합니다.
+    val renewed = lock.heartbeat(lease)
+    lock.release(renewed ?: lease)
+}
+metadata.put("config", "v1", ttl = 60.seconds)
+```
+
+Acquire, renew, heartbeat, release는 adapter 내부 retry loop나 pre-read 없이 조건부 쓰기를
+사용합니다. `tryAcquire`는 다른 owner가 이겼거나 결과가 indeterminate할 때 `null`을
+반환할 수 있으므로 transport failure를 lease 성공으로 취급하면 안 됩니다. Takeover는
+단조 증가하는 `LockLease.fencingToken`을 발급합니다. `release`는 stale lease에 `false`를
+반환하고 owner만 제거하며 fencing counter는 보존합니다. 이미 시작된 side effect를 막으려면
+downstream 상태 변경에서도 현재 token을 확인해야 합니다.
+
+`MetadataStore.get`은 없거나 논리적으로 만료된 값을 `null`로 반환합니다.
+`putIfAbsent`, `remove`, `removeIfValue`는 bounded compare-and-set 연산을 사용합니다.
+만료된 item을 교체하거나 정리할 수 있지만 만료 item 정리는 호출자에게 `false`를
+보고합니다. ABA 방지가 필요하면 value 안에 고유 version 또는 fencing token을 저장하세요.
+잘못된 `AllOld`/`AllNew` 응답과 필요한 `AllOld` capability 부재는 정상적인 miss로
+변환하지 않고 fail closed 예외로 처리합니다.
+
+짧은 client에는 `withDynamoDbClient`를 사용하고 application 범위 client는 명시적으로
+닫으세요. table cleanup을 소유한 test 또는 application coroutine이 취소되면
+`NonCancellable`과 제한된 `withTimeout` 안에서 cleanup하고, unscoped background cleanup
+task를 만들지 않습니다. Credential, IAM policy, downstream fencing 조건은 application의
+책임입니다.
+
+로컬 계약 테스트는 실제 AWS에 연결하지 않고 FlociServer만 사용합니다.
+
+```bash
+./gradlew -Dbluetape4k.aws.emulator=floci --no-parallel --max-workers=1 \
+  :bluetape4k-aws-kotlin:test --tests '*DynamoDbCoordinationFlociTest'
+```
+
+Floci lane은 PK-only schema, conditional `AllOld`, fencing과 logical expiry 동작을
+검증합니다. AWS throttling, 비동기 TTL 삭제, clock skew, 운영 quota, credential은 검증하지
+않습니다.
+
 ## DynamoDB Streams Flow와 checkpoint {#dynamodb-streams}
 
 > 미출시/develop: 이 절은 Issue #469 API를 설명하며 `0.5.0` 릴리스 소스에는 포함되지 않습니다.

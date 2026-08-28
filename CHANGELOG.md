@@ -17,6 +17,11 @@
   Floci-first contract와 성능 gate로 검증했습니다. 누락된 context propagation과 telemetry
   setup 실패는 queue URL·원본 throwable을 제외한 bounded diagnostic으로 기록합니다
   ([#473](https://github.com/bluetape4k/bluetape4k-aws/issues/473)).
+- AWS Kotlin SDK에 `DynamoDbDistributedLock`과 `DynamoDbMetadataStore`를 추가했습니다.
+  PK-only table의 조건부 쓰기만 사용해 bounded lease/fencing과 String metadata의
+  logical expiry/CAS를 제공하며, lock row는 fencing counter 보존을 위해 물리 삭제하지
+  않습니다. 실제 AWS 대신 FlociServer contract test로 검증합니다
+  ([#476](https://github.com/bluetape4k/bluetape4k-aws/issues/476)).
 - Java SDK v2와 AWS SDK for Kotlin에 Kinesis 멀티 샤드 `consumerFlow`를 추가했습니다.
   동적 `ListShards` discovery, shard graph ordering, bounded concurrency와 rendezvous
   backpressure, lease fencing, inclusive checkpoint, redacted metrics callback을
