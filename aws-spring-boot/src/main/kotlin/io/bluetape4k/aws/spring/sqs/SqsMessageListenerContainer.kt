@@ -424,7 +424,10 @@ class SqsMessageListenerContainer internal constructor(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Error) {
-                    log.error("SQS listener handler terminated with an error: listenerId=${endpoint.id}", e)
+                    log.error(
+                        "SQS listener handler terminated with a fatal error: " +
+                            "listenerId=${endpoint.id}, errorType=${e::class.java.name}",
+                    )
                 } finally {
                     groupDispatchTicket?.let(current.groupDispatchOrder::complete)
                     repeat(permits) { current.inFlight.release() }
@@ -908,6 +911,8 @@ class SqsMessageListenerContainer internal constructor(
                         generation.ensureActiveOperation()
                         operation(heartbeatSeconds)
                     } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Error) {
                         throw e
                     } catch (e: Throwable) {
                         log.warn(

@@ -31,6 +31,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -1284,6 +1285,16 @@ class SqsMessageListenerContainerTest {
     }
 
     @Test
+    fun `fatal single heartbeat telemetry error stops generation without generic diagnostic`() = runTest {
+        assertFatalHeartbeatTelemetryErrorIsNotLogged(batch = false)
+    }
+
+    @Test
+    fun `fatal batch heartbeat telemetry error stops generation without generic diagnostic`() = runTest {
+        assertFatalHeartbeatTelemetryErrorIsNotLogged(batch = true)
+    }
+
+    @Test
     fun `single message heartbeat repeats while handler is active and stops after success`() = runTest {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
@@ -1926,6 +1937,82 @@ class SqsMessageListenerContainerTest {
         } finally {
             val stopped = CompletableDeferred<Unit>()
             listenerContainer.stop { stopped.complete(Unit) }
+            withTimeout(2_000) { stopped.await() }
+            containerLogger.detachAppender(appender)
+            containerLogger.level = previousLevel
+        }
+    }
+
+    @Suppress("LongMethod")
+    private suspend fun TestScope.assertFatalHeartbeatTelemetryErrorIsNotLogged(batch: Boolean) {
+        val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = containerLogger.level
+        val fatal = AssertionError("fatal-heartbeat-telemetry-secret")
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val handlerStarted = CompletableDeferred<Unit>()
+        val receiveCalls = AtomicInteger()
+        val messages = if (batch) listOf(message(), message("message-2")) else listOf(message())
+        coEvery { operations.receive(QUEUE_URL, messages.size, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) messages else awaitCancellation()
+        }
+        every { invoker.manualAcknowledgement } returns true
+        coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
+            handlerStarted.complete(Unit)
+            awaitCancellation()
+        }
+        coEvery { invoker.invokeBatch(any(), anyNullable<SqsBatchAcknowledgement>(), any()) } coAnswers {
+            handlerStarted.complete(Unit)
+            awaitCancellation()
+        }
+        val runtime = SqsObservationRuntime(
+            registry = ObservationRegistry.create(),
+            customizers = emptyList(),
+            factory = SqsObservationFactory { context, _ ->
+                if (context.metadata.stage == SqsObservationStage.ACKNOWLEDGEMENT) throw fatal
+                Observation.NOOP
+            },
+        )
+        val listenerContainer = container(
+            operations = operations,
+            invoker = invoker,
+            dispatcher = dispatcher,
+            batch = batch,
+            maxMessages = messages.size,
+            acknowledgementMode = SqsAcknowledgementMode.MANUAL,
+            messageVisibilityHeartbeatIntervalSeconds = 1,
+            messageVisibilityHeartbeatSeconds = 30,
+        )
+        listenerContainer.setObservationRuntime(runtime)
+        containerLogger.addAppender(appender)
+        containerLogger.level = Level.WARN
+        try {
+            listenerContainer.start()
+            runCurrent()
+            handlerStarted.await()
+            advanceTimeBy(1_000)
+            runCurrent()
+            withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) {
+                    while (listenerContainer.isRunning) delay(5)
+                }
+            }
+
+            appender.list.none {
+                it.formattedMessage.contains("SQS visibility heartbeat failed") ||
+                    it.throwableProxy?.message?.contains(fatal.message.orEmpty()) == true
+            }.shouldBeTrue()
+            if (batch) {
+                coVerify(exactly = 0) { operations.changeVisibilityBatch(any(), any()) }
+            } else {
+                coVerify(exactly = 0) { operations.changeVisibility(any(), any(), any()) }
+            }
+        } finally {
+            val stopped = CompletableDeferred<Unit>()
+            listenerContainer.stop { stopped.complete(Unit) }
+            runCurrent()
             withTimeout(2_000) { stopped.await() }
             containerLogger.detachAppender(appender)
             containerLogger.level = previousLevel
