@@ -9,38 +9,79 @@
 
 ### 추가
 
-- Spring Boot SQS listener에 기본 비활성인 lifecycle-aware Observation을 추가했습니다.
-  receive, process, 실제 acknowledgement I/O의 coroutine parentage와 제한된 metadata,
-  사용자 정의 convention/factory를 지원합니다. `context-propagation:1.2.1`은 transitive
-  runtime dependency이며 public signature와 schema/persisted state migration은 없습니다.
-  활성화·rollback에는 restart/redeploy가 필요하고, 실제 AWS와 OpenTelemetry exporter 대신
-  Floci-first contract와 성능 gate로 검증했습니다. 누락된 context propagation과 telemetry
-  setup 실패는 queue URL·원본 throwable을 제외한 bounded diagnostic으로 기록합니다
-  ([#473](https://github.com/bluetape4k/bluetape4k-aws/issues/473)).
-- AWS Kotlin SDK에 `DynamoDbDistributedLock`과 `DynamoDbMetadataStore`를 추가했습니다.
-  PK-only table의 조건부 쓰기만 사용해 bounded lease/fencing과 String metadata의
-  logical expiry/CAS를 제공하며, lock row는 fencing counter 보존을 위해 물리 삭제하지
-  않습니다. 실제 AWS 대신 FlociServer contract test로 검증합니다
-  ([#476](https://github.com/bluetape4k/bluetape4k-aws/issues/476)).
-- Java SDK v2와 AWS SDK for Kotlin에 Kinesis 멀티 샤드 `consumerFlow`를 추가했습니다.
-  동적 `ListShards` discovery, shard graph ordering, bounded concurrency와 rendezvous
-  backpressure, lease fencing, inclusive checkpoint, redacted metrics callback을
-  제공합니다. 실제 AWS 대신 Floci-first contract test를 사용하며 durable store와
-  운영 probe의 소유권은 호출자에게 둡니다
-  ([#470](https://github.com/bluetape4k/bluetape4k-aws/issues/470)).
-- Java SDK v2와 AWS SDK for Kotlin에 Lambda `Invoke` helper를 추가했습니다. 동기,
-  async/coroutine 또는 native suspend 호출, typed payload codec, raw response와
-  `FunctionError` 보존, 명시적 client 수명과 Floci-first smoke 경계를 제공합니다
-  ([#314](https://github.com/bluetape4k/bluetape4k-aws/issues/314)).
-- Java SDK v2와 AWS SDK for Kotlin에 S3 Tables table bucket·namespace·table 관리 API,
-  request DSL, sync/async/coroutine 및 native suspend lifecycle helper를 추가했습니다.
-  S3 Tables service SDK는 compileOnly이며 Iceberg data plane과 Athena·Glue·Redshift 연동은
-  애플리케이션 경계로 남깁니다
-  ([#311](https://github.com/bluetape4k/bluetape4k-aws/issues/311)).
-- Java SDK v2와 AWS SDK for Kotlin에 Step Functions 실행 시작·중지·조회·목록 및
-  coroutine `Flow` polling helper를 추가했습니다. compileOnly SDK, caller-owned
-  client 수명, 명시적 cancellation, Floci/LocalStack 검증 경계를 포함합니다
-  ([#313](https://github.com/bluetape4k/bluetape4k-aws/issues/313)).
+- Java SDK v2와 AWS SDK for Kotlin에 S3 Tables 관리 API, Step Functions 실행·polling,
+  Lambda `Invoke`, SNS batch·async publishing, DynamoDB Streams `Flow`, Kinesis
+  multi-shard `consumerFlow`, DynamoDB distributed lock·metadata store를 추가했습니다.
+  각 service SDK는 `compileOnly` 경계를 유지하고 raw response, client 수명, cancellation,
+  checkpoint·fencing 책임을 호출자에게 명시합니다
+  ([#311](https://github.com/bluetape4k/bluetape4k-aws/issues/311),
+  [#313](https://github.com/bluetape4k/bluetape4k-aws/issues/313),
+  [#314](https://github.com/bluetape4k/bluetape4k-aws/issues/314),
+  [#456](https://github.com/bluetape4k/bluetape4k-aws/issues/456),
+  [#469](https://github.com/bluetape4k/bluetape4k-aws/issues/469),
+  [#470](https://github.com/bluetape4k/bluetape4k-aws/issues/470),
+  [#476](https://github.com/bluetape4k/bluetape4k-aws/issues/476)).
+- Spring Boot S3에 ResourceLoader protocol, streaming/object converter, CRT async
+  transfer tuning, AES·RSA client-side encryption provider를 추가했습니다. S3 service
+  SDK와 provider 선택·ciphertext stream 수명은 애플리케이션 경계로 남깁니다
+  ([#463](https://github.com/bluetape4k/bluetape4k-aws/issues/463),
+  [#464](https://github.com/bluetape4k/bluetape4k-aws/issues/464),
+  [#465](https://github.com/bluetape4k/bluetape4k-aws/issues/465),
+  [#475](https://github.com/bluetape4k/bluetape4k-aws/issues/475)).
+- Spring Boot에 AWS AppConfig runtime reload, ConfigData import, Micrometer CloudWatch
+  registry, DynamoDB Enhanced template·schema resolver·batch transaction, AWS emulator
+  `ServiceConnection`을 추가했습니다
+  ([#458](https://github.com/bluetape4k/bluetape4k-aws/issues/458),
+  [#466](https://github.com/bluetape4k/bluetape4k-aws/issues/466),
+  [#467](https://github.com/bluetape4k/bluetape4k-aws/issues/467),
+  [#468](https://github.com/bluetape4k/bluetape4k-aws/issues/468),
+  [#472](https://github.com/bluetape4k/bluetape4k-aws/issues/472)).
+- Spring Boot SQS listener에 visibility heartbeat, batch·partial acknowledgement,
+  Extended Client payload offload, backpressure·FIFO ordering, async batching·partial
+  result, SNS notification envelope, lifecycle-aware Observation을 추가했습니다
+  ([#453](https://github.com/bluetape4k/bluetape4k-aws/issues/453),
+  [#454](https://github.com/bluetape4k/bluetape4k-aws/issues/454),
+  [#455](https://github.com/bluetape4k/bluetape4k-aws/issues/455),
+  [#460](https://github.com/bluetape4k/bluetape4k-aws/issues/460),
+  [#461](https://github.com/bluetape4k/bluetape4k-aws/issues/461),
+  [#462](https://github.com/bluetape4k/bluetape4k-aws/issues/462),
+  [#473](https://github.com/bluetape4k/bluetape4k-aws/issues/473)).
+- Spring Boot SNS에 Signature v1/v2 verification, MVC/WebFlux composed HTTP endpoint
+  mappings, topic ARN resolver·bounded cache, batch execution strategy와 message
+  converter 계약을 추가했습니다. confirmation은 `NotificationStatus.confirmSubscription()`을
+  handler가 명시적으로 호출하며, verification과 TopicArn allowlist는 기본 fail-closed입니다
+  ([#457](https://github.com/bluetape4k/bluetape4k-aws/issues/457),
+  [#459](https://github.com/bluetape4k/bluetape4k-aws/issues/459),
+  [#474](https://github.com/bluetape4k/bluetape4k-aws/issues/474),
+  [#541](https://github.com/bluetape4k/bluetape4k-aws/issues/541)).
+- Spring Modulith SNS/SQS event externalization을 producer·consumer 방향별 opt-in
+  delivery boundary로 추가했습니다
+  ([#471](https://github.com/bluetape4k/bluetape4k-aws/issues/471)).
+
+### 변경
+
+- `0.5.0` 이후 개발선을 `baseVersion=1.0.0`으로 열고, 현재 catalog의
+  `bluetape4k = "2.0.0-SNAPSHOT"`, `bluetape4k-exposed = "2.0.0-SNAPSHOT"` 참조를
+  유지합니다.
+- SNS signature 검증의 실제 fixture·Floci 경계를 문서화하고
+  ([#513](https://github.com/bluetape4k/bluetape4k-aws/issues/513)), SNS HTTP adapter
+  공개 KDoc를 한국어 계약에 맞춰 정렬했습니다
+  ([#571](https://github.com/bluetape4k/bluetape4k-aws/issues/571),
+  [PR #590](https://github.com/bluetape4k/bluetape4k-aws/pull/590)).
+
+### 버그 수정
+
+- SNS typed payload converter가 `@Primary ObjectMapper`를 선택하도록 보장하고,
+  Spring SNS AOT runtime hint의 deprecated API 사용을 현재 invocation 계약으로
+  정렬했습니다 ([#569](https://github.com/bluetape4k/bluetape4k-aws/issues/569),
+  [#570](https://github.com/bluetape4k/bluetape4k-aws/issues/570)).
+- 개별 SQS listener 중지가 전역 registry 종료를 건너뛰지 않도록 수정했습니다
+  ([#542](https://github.com/bluetape4k/bluetape4k-aws/issues/542)).
+- 기본 SNS batch exception의 `message`와 `toString()`에서 추정 가능한 entry
+  fingerprint를 제거하고, 호환성 getter는 `@Deprecated`로 유지했습니다. raw entry
+  ID와 `completedEntryIds` recovery 계약은 그대로 보존합니다
+  ([#518](https://github.com/bluetape4k/bluetape4k-aws/issues/518),
+  [PR #587](https://github.com/bluetape4k/bluetape4k-aws/pull/587)).
 
 ## [0.5.0] - 2026-08-06
 
@@ -77,7 +118,7 @@
 
 ### 변경
 
-- `0.4.0` 출시 후 `0.5.0` snapshot 개발선을 열고 local bluetape4k BOM ref를
+- `0.4.0` 출시 후 `0.5.0` 사전 공개 버전 개발선을 열고 local bluetape4k BOM ref를
   `bluetape4k-bom:1.11.1-SNAPSHOT` 및
   `bluetape4k-exposed-bom:1.12.0-SNAPSHOT`에 맞췄습니다.
 - service matrix, integration view, class diagram routing을 포함하도록 EventBridge
@@ -105,7 +146,7 @@
   emulator test는 일반 DynamoDB client 경로를 유지했습니다
   ([#191](https://github.com/bluetape4k/bluetape4k-aws/issues/191)).
 - Spring Boot CloudWatch 및 CloudWatch Logs auto-configuration, coroutine operation
-  template, Micrometer snapshot publishing helper를 추가했습니다
+  template, Micrometer 기준 데이터 발행 helper를 추가했습니다
   ([#194](https://github.com/bluetape4k/bluetape4k-aws/issues/194)).
 - 명시적인 metric/log 발행과 buffered shutdown flush를 지원하는 Ktor CloudWatch 및
   CloudWatch Logs plugin을 추가했습니다
@@ -154,8 +195,8 @@
   ([#281](https://github.com/bluetape4k/bluetape4k-aws/issues/281),
   [#282](https://github.com/bluetape4k/bluetape4k-aws/issues/282),
   [#283](https://github.com/bluetape4k/bluetape4k-aws/issues/283)).
-- Central snapshot metadata 및 cache refresh 실패에 대응하도록 CI와 Nightly snapshot
-  dependency refresh 동작을 강화했습니다
+- Central 사전 공개 버전 메타데이터 및 cache refresh 실패에 대응하도록 CI와 Nightly
+  사전 공개 버전 dependency refresh 동작을 강화했습니다
   ([#251](https://github.com/bluetape4k/bluetape4k-aws/issues/251),
   [#253](https://github.com/bluetape4k/bluetape4k-aws/issues/253),
   [#255](https://github.com/bluetape4k/bluetape4k-aws/issues/255),
@@ -285,7 +326,7 @@
   repository 기반을 추가했습니다 ([PR #31](https://github.com/bluetape4k/bluetape4k-aws/pull/31)).
 - AWS library consumer를 위한 `bluetape4k-aws-bom` BOM 모듈을 추가했습니다 ([PR #24](https://github.com/bluetape4k/bluetape4k-aws/pull/24)).
 - AWS BOM 모듈의 영문 및 한국어 README를 추가했습니다 ([PR #25](https://github.com/bluetape4k/bluetape4k-aws/pull/25)).
-- CI, nightly, snapshot, release, code-quality 검사를 위한 GitHub Actions workflow를
+- CI, nightly, 사전 공개 버전, release, code-quality 검사를 위한 GitHub Actions workflow를
   추가했습니다 ([PR #19](https://github.com/bluetape4k/bluetape4k-aws/pull/19)).
 
 ### 변경
@@ -315,7 +356,7 @@
 
 ### 버그 수정
 
-- remote Environment refresh가 reload 중 안정적인 snapshot을 유지하고 refresh race
+- remote Environment refresh가 reload 중 안정적인 구성 상태를 유지하고 refresh race
   regression을 방지하도록 수정했습니다 ([PR #86](https://github.com/bluetape4k/bluetape4k-aws/pull/86)).
 - 첫 public release 전에 deprecated `S3Factory`, `SesFactory`, `SnsFactory`,
   `SqsFactory` object를 제거했습니다. 각각 `S3ClientFactory`, `SesClientFactory`,

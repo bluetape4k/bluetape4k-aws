@@ -33,8 +33,9 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
 - **S3 Vectors** — 선택적 `S3VectorsOperations`로 vector bucket/index 조회와
   vector put/get/list/query 호출을 지원합니다.
 - **SNS** — `SnsCoroutinesTemplate`로 topic 생성/조회, 단건·배치 topic publish,
-  FIFO publish 필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반 subscription
-  confirmation을 지원합니다.
+  FIFO publish 필드, 직접 SMS publish 옵션, HTTP(S) notification JSON 파싱과 token 기반
+  subscription confirmation, notification·subscription·unsubscribe confirmation handler용
+  MVC/WebFlux composed mapping을 지원합니다.
 - **Kinesis** — `KinesisCoroutinesTemplate`로 stream 생성, record publish, shard
   iterator 조회, 제한된 `GetRecords` polling, single-shard cold `Flow<Record>`를
   제공합니다.
@@ -772,6 +773,97 @@ class OrderNotifications(
     private fun processNotification(message: String) = Unit
 }
 ```
+
+### SNS HTTP endpoint mapping
+
+이 모듈은 SNS HTTP(S) 전달을 위한 composed mapping도 제공합니다. 세 mapping은
+일치하는 `x-amz-sns-message-type` header의 `POST` 요청을 받고
+`204 No Content`를 반환합니다. MVC와 WebFlux controller에서 Kotlin
+`suspend` handler를 포함해 하나의 bounded·replayable request body로 파싱된
+envelope를 재사용할 수 있습니다.
+
+endpoint adapter는 `NotificationStatus` 공개 계약이
+`ConfirmSubscriptionResponse`를 반환하므로 notification 전용 mapping을 사용할
+때도 런타임에 AWS SNS service SDK가 필요합니다. 소비자 runtime에
+`software.amazon.awssdk:sns`를 추가해야 하며, SDK가 없으면 auto-configuration이
+자동으로 back off합니다.
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsHttpMessage
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
+import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessage
+import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
+import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class SnsHttpController {
+    @NotificationMessageMapping(path = ["/sns/notifications"])
+    suspend fun notification(
+        @NotificationMessage payload: OrderPayload,
+        @NotificationSubject subject: String?,
+    ) {
+        // SNS 재전달을 고려해 idempotent하게 처리합니다.
+    }
+
+    @NotificationSubscriptionMapping(path = ["/sns/subscriptions"])
+    suspend fun subscription(status: NotificationStatus) {
+        // confirmation은 명시적으로 호출하며 adapter가 AWS를 자동 호출하지 않습니다.
+        status.confirmSubscription()
+    }
+
+    @NotificationUnsubscribeConfirmationMapping(path = ["/sns/unsubscriptions"])
+    fun unsubscribe(status: NotificationStatus) {
+        // unsubscribe confirmation도 명시적으로 처리합니다.
+    }
+
+    @NotificationMessageMapping(path = ["/sns/raw"])
+    fun raw(@io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage message: SnsHttpMessage) {
+        // typed payload가 필요하지 않으면 raw envelope를 받을 수 있습니다.
+    }
+}
+
+class OrderPayload {
+    var orderId: String = ""
+}
+```
+
+adapter는 기본적으로 fail-closed입니다. 허용할 topic ARN을 설정하고 기존 SNS
+verifier를 활성화한 뒤 traffic을 받으세요.
+
+```yaml
+bluetape4k:
+  aws:
+    sns:
+      http-endpoints:
+        enabled: true
+        verification-required: true
+        allow-structural-only: false
+        expected-topic-arns:
+          - arn:aws:sns:us-west-2:123456789012:orders
+```
+
+allowlist가 비어 있으면 요청은 `403`으로 거부되고 verifier가 없으면 `503`으로
+거부됩니다. 두 경우 모두 handler는 호출되지 않습니다. SNS는 outer HTTP body를
+일반적으로 `text/plain`으로 보내므로 이를 허용합니다. `String`이 아닌
+`@NotificationMessage` parameter는 envelope의
+`MessageAttributes.contentType=application/json`을 요구하며 malformed JSON,
+signature, header/type 불일치, 크기 초과는 handler 전에 `400`으로 끝납니다.
+
+`SnsHttpMessageVerifier`는 `software.amazon.awssdk:sns-message-manager`를
+`compileOnly` 의존성으로 유지하므로 signature 검증을 활성화할 때 애플리케이션
+runtime에 직접 추가해야 합니다. 이 adapter는 거부된 HTTP 전달이나 handler 호출을
+자동 재시도하지 않습니다.
+
+`NotificationUnsubscribeConfirmationMapping`은
+`NotificationSubscriptionMapping`과 분리해 unsubscribe confirmation을 처리합니다.
+두 mapping 모두 명시적인 `confirmSubscription()` 호출에 사용할
+`NotificationStatus`를 제공합니다. 임시 진단 rollback만 필요하면
+`verification-required=false`와 `allow-structural-only=true`를 함께 설정할 수
+있지만 signature 검증을 우회하므로 production SNS traffic에는 사용하지 마세요.
+adapter 전체를 끄려면 `bluetape4k.aws.sns.http-endpoints.enabled=false`를 설정합니다.
 
 ### SNS — AWS SDK 래퍼
 

@@ -54,7 +54,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 래퍼. DynamoDB, DynamoDB Streams, S3, S3 Tables, 선택적 S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 동기, 비동기(`CompletableFuture`), Coroutines 확장과 Java SDK 기반 RDS IAM token helper 제공 |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, DynamoDB Streams, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, EventBridge operations, SES sender와 JavaMail adapter, SNS HTTP 엔드포인트 알림 파싱(`SnsHttpMessageParser`), SQS listener, 선택적 Spring Modulith SNS/SQS event 외부화, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer 기준 데이터 전송을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, EventBridge operations, SES sender와 JavaMail adapter, SNS HTTP(S) 엔드포인트 알림 파싱(`SnsHttpMessageParser`)과 MVC/WebFlux composed mapping, SQS listener, 선택적 Spring Modulith SNS/SQS event 외부화, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer 기준 데이터 전송을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, EventBridge server plugin, Kinesis 및 STS server plugin, SES v2 및 SNS server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
 | `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
@@ -238,7 +238,7 @@ KMS를 쓰려면 `software.amazon.awssdk:kms`, Kinesis operations를 쓰려면
 `software.amazon.awssdk:eventbridge`를 추가합니다. Spring Security의 동기식 `TextEncryptor`를
 주입받고 싶을 때만 `spring-security-crypto`를 추가합니다.
 
-#### Spring Modulith SNS/SQS event 외부화 (미출시/develop)
+#### Spring Modulith SNS/SQS event 외부화 (1.0.0 개발선)
 
 | 방향 | 필요한 runtime 구성 | 전달 경계 |
 | --- | --- | --- |
@@ -1151,7 +1151,7 @@ Java/Kotlin SDK 확장은 SDK 응답과 예외를 그대로 전달하고, 이 Sp
 추적합니다. Publisher cleanup/latency telemetry와 heap/throughput 측정은
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서 추적합니다.
 
-#### SNS Message 변환 (Unreleased/develop)
+#### SNS 메시지 변환 (1.0.0 개발선)
 
 `SnsBatchMessageConverter`는 Spring `Message<*>`를 typed
 `SnsPublishBatchRequest`로 바꾸는 opt-in·무네트워크 adapter입니다. 인자가
@@ -1361,9 +1361,9 @@ flexible time window, retry policy, list page size 같은 bluetape4k 수준의 r
 검증합니다. Global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는
 target별 검증은 얇은 helper 계층 밖에 둡니다.
 
-### Step Functions — 실행 helper (미출시/develop)
+### Step Functions — 실행 helper (1.0.0 개발선)
 
-`develop` 개발선에는 두 SDK 모듈 모두에 `StartExecution`, `StopExecution`,
+`1.0.0` 개발선에서는 두 SDK 모듈 모두에 `StartExecution`, `StopExecution`,
 `DescribeExecution`, `ListExecutions`를 위한 얇은 실행 helper가 추가됩니다. Java SDK v2
 폴링은 `SfnAsyncClient`를 사용하고, Kotlin SDK는 native suspend `SfnClient`를 사용합니다.
 두 모듈 모두 raw SDK 응답을 `Flow<DescribeExecutionResponse>`로 전달하는 cold Flow를
@@ -1386,9 +1386,9 @@ Standard/Express/Map Run 경계, IAM/KMS, quota를 고려한 polling, Floci/Loca
 [테스트와 운영 가이드](docs/manual/ko/guides/testing-and-operations.md)에서 확인하세요.
 Emulator 결과는 운영 IAM 또는 KMS 접근 권한을 증명하지 않습니다.
 
-### Lambda — 범위가 지정된 호출 helper (미출시/develop)
+### Lambda — 범위가 지정된 호출 helper (1.0.0 개발선)
 
-두 SDK 모듈 모두 얇은 `Invoke` 표면을 제공합니다. Java는 동기/async/coroutine
+`1.0.0` 개발선의 두 SDK 모듈은 얇은 `Invoke` 표면을 제공합니다. Java는 동기/async/coroutine
 확장을, Kotlin은 native suspend 확장을 제공합니다. 결과는 raw SDK response와 복사한
 payload를 보존하고 `FunctionError`를 반환 데이터로 취급하며 선택적으로 Lambda tail log를
 디코드합니다. 서비스 SDK는 `compileOnly`이므로 런타임에

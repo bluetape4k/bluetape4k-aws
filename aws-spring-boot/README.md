@@ -33,8 +33,9 @@ Exposed database wiring.
 - **S3 Vectors** — optional `S3VectorsOperations` for vector bucket/index
   discovery and vector put/get/list/query calls.
 - **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, single and batch
-  topic publishing, FIFO publish fields, direct SMS publish options, and HTTP(S) notification
-  JSON parsing plus token-based subscription confirmation.
+  topic publishing, FIFO publish fields, direct SMS publish options, HTTP(S) notification
+  JSON parsing, token-based subscription confirmation, and MVC/WebFlux composed endpoint
+  mappings for notification, subscription, and unsubscribe confirmation handlers.
 - **Kinesis** — `KinesisCoroutinesTemplate` for stream creation, record
   publishing, shard iterator lookup, bounded `GetRecords` polling, and a cold
   single-shard `Flow<Record>`.
@@ -785,6 +786,96 @@ class OrderNotifications(
 }
 ```
 
+### SNS HTTP endpoint mappings
+
+The module also provides composed mappings for SNS HTTP(S) delivery. The three
+mappings accept `POST` requests with the matching `x-amz-sns-message-type`
+header and return `204 No Content`. MVC and WebFlux controllers, including
+Kotlin `suspend` handlers, resolve the parsed envelope from one bounded,
+replayable request body.
+
+The endpoint adapter requires the AWS SNS service SDK at runtime, including for
+notification-only mappings, because the public `NotificationStatus` contract
+returns `ConfirmSubscriptionResponse`. Add `software.amazon.awssdk:sns` to
+the consumer runtime; auto-configuration backs off when that SDK is absent.
+
+```kotlin
+import io.bluetape4k.aws.spring.sns.SnsHttpMessage
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
+import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessage
+import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
+import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class SnsHttpController {
+    @NotificationMessageMapping(path = ["/sns/notifications"])
+    suspend fun notification(
+        @NotificationMessage payload: OrderPayload,
+        @NotificationSubject subject: String?,
+    ) {
+        // Process idempotently; SNS may redeliver a notification.
+    }
+
+    @NotificationSubscriptionMapping(path = ["/sns/subscriptions"])
+    suspend fun subscription(status: NotificationStatus) {
+        // Confirmation is explicit; the adapter never calls AWS automatically.
+        status.confirmSubscription()
+    }
+
+    @NotificationUnsubscribeConfirmationMapping(path = ["/sns/unsubscriptions"])
+    fun unsubscribe(status: NotificationStatus) {
+        // Unsubscribe confirmation is also explicit.
+    }
+
+    @NotificationMessageMapping(path = ["/sns/raw"])
+    fun raw(@io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage message: SnsHttpMessage) {
+        // The raw envelope is available when no typed payload is needed.
+    }
+}
+
+class OrderPayload {
+    var orderId: String = ""
+}
+```
+
+The adapter is fail-closed by default. Configure the expected topic ARN and
+keep the SNS verifier enabled before accepting traffic:
+
+```yaml
+bluetape4k:
+  aws:
+    sns:
+      http-endpoints:
+        enabled: true
+        verification-required: true
+        allow-structural-only: false
+        expected-topic-arns:
+          - arn:aws:sns:us-west-2:123456789012:orders
+```
+
+An empty allowlist rejects requests with `403`, and a missing verifier rejects
+requests with `503`; neither path invokes the handler. SNS commonly sends the
+outer HTTP body as `text/plain`, which is accepted. A non-`String`
+`@NotificationMessage` parameter requires the envelope attribute
+`MessageAttributes.contentType=application/json`; malformed JSON, signature,
+header/type, and size failures return `400` before handler invocation.
+
+`SnsHttpMessageVerifier` keeps `software.amazon.awssdk:sns-message-manager`
+as a `compileOnly` dependency, so applications must add it at runtime when
+signature verification is enabled. This adapter does not retry rejected HTTP
+deliveries or handler invocations.
+
+`NotificationUnsubscribeConfirmationMapping` covers unsubscribe confirmation
+separately from `NotificationSubscriptionMapping`; both expose
+`NotificationStatus` for an explicit `confirmSubscription()` call. For a
+temporary diagnostic rollback only, set both `verification-required=false`
+and `allow-structural-only=true`; this bypasses signature verification and
+must not be used for production SNS traffic. Disable the adapter entirely with
+`bluetape4k.aws.sns.http-endpoints.enabled=false`.
+
 ### SNS — AWS SDK wrappers
 
 The sibling `bluetape4k-aws-java` extensions keep AWS SDK responses and exceptions visible while
@@ -1077,6 +1168,29 @@ calls `acknowledge()`.
 SpEL is not supported in `queue`; `${...}` placeholders are.
 If `bluetape4k.aws.sqs.queues.orders.url` is configured, `queue = "orders"`
 uses that URL directly.
+
+When an SNS topic fans out to SQS, the default Jackson converter recognizes the
+SNS `Notification` envelope. A listener can receive a typed
+`SnsNotification<OrderEvent>` and access the SNS subject, topic ARN, timestamp,
+signature metadata, SNS message attributes, and original `SqsReceivedMessage`:
+
+```kotlin
+import io.bluetape4k.aws.spring.sqs.SnsNotification
+
+@SqsListener("\${orders.queue-url}")
+suspend fun handle(notification: SnsNotification<OrderEvent>) {
+    process(notification.message)
+    val topicArn = notification.topicArn
+    val sqsGroup = notification.sqs.messageGroupId
+}
+```
+
+Non-SNS bodies retain the existing SQS conversion path. A malformed
+`Notification` falls back to that path by default; use
+`SnsMalformedEnvelopeStrategy.THROW` when the listener must reject malformed
+envelopes. `SnsNotification.rawEnvelope` is preserved by default and can be
+disabled when the original JSON is not needed.
+
 Listener acknowledgement is delete-on-success: the container deletes the message
 only after the listener method returns normally. If the listener throws, the
 message is not deleted; when `error-visibility-timeout-seconds` is configured,

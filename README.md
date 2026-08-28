@@ -64,7 +64,7 @@ uses.
 | `bluetape4k-aws-java` | `io.github.bluetape4k.aws:bluetape4k-aws-java` | AWS Java SDK v2 wrappers. Sync, async (`CompletableFuture`), and Coroutines extensions for DynamoDB, DynamoDB Streams, S3, S3 Tables, optional S3 Vectors, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store, and Java SDK-backed RDS IAM token helpers |
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, DynamoDB Streams, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
-| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP endpoint notification parsing (`SnsHttpMessageParser`), SQS listener support, optional Spring Modulith SNS/SQS event externalization, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
+| `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP(S) notification parsing (`SnsHttpMessageParser`) with MVC/WebFlux composed endpoint mappings, SQS listener support, optional Spring Modulith SNS/SQS event externalization, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, EventBridge server plugin, Kinesis and STS server plugins, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
@@ -248,7 +248,7 @@ Add `software.amazon.awssdk:eventbridge` when using EventBridge operations.
 Add `spring-security-crypto` only when you want to inject Spring Security's synchronous
 `TextEncryptor`.
 
-#### Spring Modulith SNS/SQS event externalization (Unreleased/develop)
+#### Spring Modulith SNS/SQS event externalization (1.0.0 development line)
 
 | Direction | Required runtime pieces | Delivery boundary |
 | --- | --- | --- |
@@ -1168,7 +1168,7 @@ expansion research is tracked in [#514](https://github.com/bluetape4k/bluetape4k
 Publisher cleanup/latency telemetry and heap/throughput measurement are tracked in
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
-#### SNS Message conversion (Unreleased/develop)
+#### SNS Message conversion (1.0.0 development line)
 
 `SnsBatchMessageConverter` is an opt-in, no-network adapter from Spring
 `Message<*>` values to the typed `SnsPublishBatchRequest`. The no-argument
@@ -1385,9 +1385,9 @@ retry policy limits, and list page sizes. Global endpoints, cross-account target
 orchestration, and target-specific validation beyond SDK model types stay
 outside these thin helper layers.
 
-### Step Functions — execution helpers (unreleased/develop)
+### Step Functions — execution helpers (1.0.0 development line)
 
-The `develop` line adds thin execution helpers for `StartExecution`,
+The `1.0.0` development line provides thin execution helpers for `StartExecution`,
 `StopExecution`, `DescribeExecution`, and `ListExecutions` in both SDK modules.
 Java SDK v2 polling uses `SfnAsyncClient`; the Kotlin SDK uses its native suspend
 `SfnClient`. Both expose raw SDK responses through a cold
@@ -1412,9 +1412,9 @@ for Standard/Express/Map Run boundaries, IAM/KMS, quota-aware polling, and
 Floci/LocalStack evidence. An emulator result does not prove production IAM or
 KMS access.
 
-### Lambda — bounded invocation helpers (unreleased/develop)
+### Lambda — bounded invocation helpers (1.0.0 development line)
 
-Both SDK modules expose a thin `Invoke` surface: Java sync/async/coroutine
+The `1.0.0` development line exposes a thin `Invoke` surface in both SDK modules: Java sync/async/coroutine
 extensions and Kotlin native suspend extensions. The result keeps the raw SDK
 response and copied payload, treats `FunctionError` as returned data, and
 optionally decodes the Lambda tail log. Service SDKs remain `compileOnly`; add

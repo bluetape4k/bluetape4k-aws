@@ -189,7 +189,7 @@ the dependency optional and exposes a small suspend facade for discovery,
 put/get/list, and query operations. Destructive administration, tagging, and
 policy calls remain available through the raw `S3VectorsAsyncClient`.
 
-### S3 Tables management (unreleased/develop)
+### S3 Tables management (1.0.0 development line)
 
 S3 Tables helpers keep the AWS SDK v2 request and response types visible while
 covering table bucket, namespace, and table create/list/get/delete operations.
@@ -368,9 +368,9 @@ Add `software.amazon.awssdk:eventbridge` at runtime. Scheduler, framework
 integrations, global endpoints, cross-account target orchestration, and
 target-specific validation beyond SDK model types are outside this module.
 
-### Step Functions Execution Helpers (unreleased/develop)
+### Step Functions Execution Helpers (1.0.0 development line)
 
-The develop line adds thin `StartExecution`, `StopExecution`,
+The `1.0.0` development line provides thin `StartExecution`, `StopExecution`,
 `DescribeExecution`, and `ListExecutions` extensions. Sync and one-shot async
 operations return raw AWS SDK responses. Polling is available only on
 `SfnAsyncClient` and returns a cold `Flow<DescribeExecutionResponse>`; the
@@ -402,9 +402,9 @@ because service SDKs remain `compileOnly`. See the [Step Functions Java module
 manual](../docs/manual/en/modules/bluetape4k-aws-java.md) for dependency,
 Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
 
-### Lambda invocation helpers (unreleased/develop)
+### Lambda invocation helpers (1.0.0 development line)
 
-The develop line adds sync, async, and coroutine `Invoke` helpers under
+The `1.0.0` development line provides sync, async, and coroutine `Invoke` helpers under
 `io.bluetape4k.aws.lambda`. The helpers preserve the raw `InvokeResponse`, copy
 the response payload, expose `functionError` as result data, and decode optional
 tail logs. `LambdaPayloadCodecs.jackson(...)` is available when the consumer
