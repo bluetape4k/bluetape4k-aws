@@ -21,17 +21,24 @@ enum class SnsBatchFailureType {
 class SnsBatchTransportException private constructor(
     val failureType: SnsBatchFailureType,
     completedEntryIds: Collection<String>,
+    /**
+     * 낮은 엔트로피 ID에서 원본 ID 집합을 추정하는 데 악용될 수 있는 호환성용 값입니다.
+     *
+     * 이 값은 호환성을 위해 유지하지만 기본 `message`와 `toString()`에는 포함하지 않습니다.
+     * 명시적으로 외부 observability에 전달할 때는 호출자가 privacy와 수명주기를 책임져야 합니다.
+     */
+    @Deprecated("entryFingerprint는 privacy-safe 진단 계약이 아니므로 직접 사용을 피하세요.")
     val entryFingerprint: String,
 ) : IllegalStateException(
     "SNS batch transport failed: type=$failureType, " +
-        "completedCount=${completedEntryIds.size}, fingerprint=$entryFingerprint",
+        "completedCount=${completedEntryIds.size}",
 ) {
 
     val completedEntryIds: List<String> = completedEntryIds.toList()
 
     override fun toString(): String =
         "SnsBatchTransportException(failureType=$failureType, " +
-            "completedCount=${completedEntryIds.size}, fingerprint=$entryFingerprint)"
+            "completedCount=${completedEntryIds.size})"
 
     companion object {
         private const val serialVersionUID: Long = 1L

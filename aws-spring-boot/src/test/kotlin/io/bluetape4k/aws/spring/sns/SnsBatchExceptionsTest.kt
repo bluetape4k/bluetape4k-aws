@@ -34,6 +34,22 @@ class SnsBatchExceptionsTest {
         rendered shouldNotContain "\n"
     }
 
+    @Suppress("DEPRECATION")
+    @Test
+    fun `transport exception omits fingerprint from diagnostic rendering while preserving compatibility getter`() {
+        val exception = SnsBatchTransportException.from(
+            IllegalStateException("transport failure"),
+            listOf("entry-1", "entry-2"),
+        )
+
+        val rendered = "${exception.message}$exception"
+        rendered shouldNotContain "fingerprint="
+        rendered shouldNotContain exception.entryFingerprint
+        exception.entryFingerprint.length shouldBeEqualTo 12
+        exception.entryFingerprint.matches(Regex("[0-9a-f]{12}")) shouldBeEqualTo true
+        exception.completedEntryIds shouldBeEqualTo listOf("entry-1", "entry-2")
+    }
+
     @Test
     fun `transport exception classifies concrete SNS service exceptions`() {
         val exception = SnsBatchTransportException.from(
