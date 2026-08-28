@@ -219,6 +219,46 @@ class SqsAcknowledgementTest {
     }
 
     @Test
+    fun `observation factory cancellation is not classified as setup failure`() = runTest {
+        val cancellation = CancellationException("observation factory cancelled")
+        val operations = RecordingSqsOperations()
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw cancellation },
+            ),
+        )
+
+        val actual = assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo cancellation
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteCalls shouldBeEqualTo 0
+    }
+
+    @Test
+    fun `observation factory error is not classified as setup failure`() = runTest {
+        val fatal = AssertionError("observation factory fatal error")
+        val operations = RecordingSqsOperations()
+        val acknowledgement = acknowledgement(
+            operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw fatal },
+            ),
+        )
+
+        val actual = assertFailsWith<AssertionError> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo fatal
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteCalls shouldBeEqualTo 0
+    }
+
+    @Test
     fun `observation lifecycle setup runs outside acknowledgement IO serialization`() = runTest {
         val deleteStarted = CompletableDeferred<Unit>()
         val releaseDelete = CompletableDeferred<Unit>()

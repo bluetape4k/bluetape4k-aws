@@ -714,6 +714,10 @@ class SqsMessageListenerContainer internal constructor(
                 acknowledgement.heartbeat(pending, timeoutSeconds) {
                     logHeartbeatObservationFailure("batchSize=${pending.size}")
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Error) {
+                throw e
             } catch (e: Throwable) {
                 if (acknowledgement.isObservationSetupFailure(e)) {
                     logObservationFailure(
@@ -1174,7 +1178,7 @@ private class HeartbeatAwareSqsAcknowledgement(
         delegate.changeVisibility(timeoutSeconds)
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     suspend fun heartbeat(timeoutSeconds: Int) {
         if (!delegate.completed) {
             var observationSetupFailed = false
@@ -1189,6 +1193,10 @@ private class HeartbeatAwareSqsAcknowledgement(
                         },
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Error) {
+                throw e
             } catch (e: Throwable) {
                 if (!observationSetupFailed) {
                     throw e

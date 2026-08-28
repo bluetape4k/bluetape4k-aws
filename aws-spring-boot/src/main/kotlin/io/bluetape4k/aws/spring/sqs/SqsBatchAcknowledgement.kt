@@ -311,6 +311,10 @@ internal class DefaultSqsBatchAcknowledgement(
         var observedContext: SqsObservationContext? = null
         val observation = try {
             runtime.prepare(batchObservationContext(context, action, batchSize).also { observedContext = it })
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Error) {
+            throw e
         } catch (e: Throwable) {
             observationSetupFailure = e
             throw e

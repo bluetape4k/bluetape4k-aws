@@ -119,7 +119,7 @@ internal class DefaultSqsAcknowledgement(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod", "TooGenericExceptionCaught")
+    @Suppress("CyclomaticComplexMethod", "TooGenericExceptionCaught", "ThrowsCount")
     private suspend fun runAcknowledgement(
         action: SqsAcknowledgementAction,
         shouldRun: () -> Boolean = { true },
@@ -140,6 +140,10 @@ internal class DefaultSqsAcknowledgement(
                 activeRuntime?.let { runtime ->
                     runtime.prepare(acknowledgementObservationContext(action).also { observedContext = it })
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Error) {
+                throw e
             } catch (e: Throwable) {
                 observationSetupFailure = e
                 onObservationSetupFailure?.invoke(e)

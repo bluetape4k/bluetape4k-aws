@@ -71,6 +71,8 @@ internal class SqsObservationRuntime(
             context.outcome = SqsObservationOutcome.CANCELLED
             context.failureStage = context.failureStage ?: "observation"
             SqsObservedResult.Failure(e)
+        } catch (e: Error) {
+            throw e
         } catch (e: Throwable) {
             if (!blockStarted) {
                 onSetupFailure?.invoke(e)

@@ -387,6 +387,48 @@ class SqsBatchAcknowledgementTest {
         acknowledgement.pending.size shouldBeEqualTo 2
     }
 
+    @Test
+    fun `observation factory cancellation is not classified as batch setup failure`() = runTest {
+        val cancellation = CancellationException("batch observation factory cancelled")
+        val operations = RecordingBatchOperations()
+        val acknowledgement = acknowledgement(
+            messages = messages(2),
+            operations = operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw cancellation },
+            ),
+        )
+
+        val actual = assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo cancellation
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteBatchCalls shouldBeEqualTo 0
+    }
+
+    @Test
+    fun `observation factory error is not classified as batch setup failure`() = runTest {
+        val fatal = AssertionError("batch observation factory fatal error")
+        val operations = RecordingBatchOperations()
+        val acknowledgement = acknowledgement(
+            messages = messages(2),
+            operations = operations,
+            observationRuntime = SqsObservationRuntime(
+                registry = ObservationRegistry.create(),
+                customizers = emptyList(),
+                factory = SqsObservationFactory { _, _ -> throw fatal },
+            ),
+        )
+
+        val actual = assertFailsWith<AssertionError> { acknowledgement.acknowledge() }
+
+        actual shouldBeEqualTo fatal
+        acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
+        operations.deleteBatchCalls shouldBeEqualTo 0
+    }
+
     private fun acknowledgement(
         messages: List<SqsReceivedMessage>,
         operations: RecordingBatchOperations,
