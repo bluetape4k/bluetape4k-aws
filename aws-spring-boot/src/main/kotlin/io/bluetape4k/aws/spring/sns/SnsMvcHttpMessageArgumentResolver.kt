@@ -8,7 +8,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
 import java.io.ByteArrayOutputStream
 
-/** Resolves SNS HTTP handler parameters from the servlet request cache. */
+/** Servlet request cache에 저장된 SNS HTTP envelope에서 handler parameter를 해석합니다. */
 class SnsMvcHttpMessageArgumentResolver(
     private val support: SnsHttpMessageResolverSupport,
 ) : HandlerMethodArgumentResolver {

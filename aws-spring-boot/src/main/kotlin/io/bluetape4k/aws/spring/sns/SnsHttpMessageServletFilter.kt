@@ -14,7 +14,7 @@ import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import jakarta.servlet.FilterChain
 
-/** Performs the SNS structural/security gate and replays the bounded servlet body. */
+/** SNS 구조·보안 gate를 수행하고 크기가 제한된 Servlet request body를 다시 읽을 수 있게 제공합니다. */
 class SnsHttpMessageServletFilter(
     private val support: SnsHttpMessageResolverSupport,
 ) : OncePerRequestFilter() {

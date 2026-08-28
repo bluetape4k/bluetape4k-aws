@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.CancellationException
 
-/** Performs the SNS gate before a reactive handler and supplies a replayable body. */
+/** Reactive handler 전에 SNS gate를 수행하고 크기가 제한된 request body를 다시 읽을 수 있게 제공합니다. */
 class SnsHttpMessageWebFilter(
     private val support: SnsHttpMessageResolverSupport,
 ) : WebFilter {

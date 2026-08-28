@@ -16,7 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.server.ResponseStatusException
 import java.lang.reflect.ParameterizedType
 
-/** Shared policy and parameter mapping used by MVC and WebFlux adapters. */
+/** MVC와 WebFlux adapter가 공유하는 SNS HTTP 정책과 handler parameter 매핑을 제공합니다. */
 class SnsHttpMessageResolverSupport(
     private val properties: SnsHttpEndpointProperties = SnsHttpEndpointProperties(),
     private val verifierProvider: ObjectProvider<SnsHttpMessageVerifier>? = null,
@@ -26,10 +26,20 @@ class SnsHttpMessageResolverSupport(
 
     private val payloadConverter = SnsHttpMessagePayloadConverter(objectMapper)
 
-    /** Parses and applies the configured topic/verifier boundary before handler invocation. */
+    /**
+     * Handler 호출 전에 SNS HTTP JSON을 파싱하고 구성된 topic/verifier 경계를 적용합니다.
+     *
+     * `SnsHttpMessageParser`가 envelope와 `MessageAttributes` 구조를 검증한 뒤 topic ARN
+     * allowlist를 확인하고, `verificationRequired`가 활성화된 경우
+     * `SnsHttpMessageVerifier`로 원문 JSON의 서명을 검증합니다.
+     *
+     * @param json 파싱하고 검증할 원문 SNS HTTP JSON입니다.
+     * @param messageTypeHeader 선택적으로 함께 확인할 `x-amz-sns-message-type` 헤더 값입니다.
+     * @return handler가 사용할 수 있도록 준비된 [SnsHttpMessage]입니다.
+     */
     fun prepare(json: String, messageTypeHeader: String?): SnsHttpMessage {
         val message = SnsHttpMessageParser.parse(json, messageTypeHeader)
-        // Force validation of the envelope attribute shape before a handler can observe it.
+        // handler가 envelope를 관찰하기 전에 MessageAttributes 구조를 검증합니다.
         message.messageAttributes
         if (!isTopicAllowed(message.topicArn)) {
             throw ResponseStatusException(
@@ -48,6 +58,7 @@ class SnsHttpMessageResolverSupport(
         return message
     }
 
+    /** SNS HTTP adapter가 주어진 Spring [MethodParameter]를 지원하는지 검증합니다. */
     fun supportsParameter(parameter: MethodParameter): Boolean {
         validateAnnotationCombination(parameter)
         validateDirectParameterType(parameter.parameterType)
@@ -62,6 +73,7 @@ class SnsHttpMessageResolverSupport(
         return supported
     }
 
+    /** 애플리케이션 시작 시 SNS HTTP mapping과 handler parameter 조합을 검증합니다. */
     fun validateHandlerMethod(method: java.lang.reflect.Method) {
         val mappingType = resolveSnsHttpEndpointMessageType(method)
         method.parameters.indices
@@ -72,7 +84,19 @@ class SnsHttpMessageResolverSupport(
             }
     }
 
-    /** Resolves one supported parameter from a previously parsed envelope. */
+    /**
+     * 이미 파싱된 [SnsHttpMessage]에서 지원되는 handler parameter 값을 하나 해석합니다.
+     *
+     * `@NotificationMessage`, `@NotificationSubject`, `@NotificationMessageAttributes`,
+     * `@NotificationRawMessage`, `SnsHttpMessage`, `NotificationStatus`의 선언 방식과
+     * 메시지 타입에 따라 typed payload, subject, attributes, 원본 envelope 또는 상태 객체를
+     * 반환합니다. `NotificationStatus`는 confirmation 메시지에서만 제공되며 AWS 확인 작업은
+     * handler가 `confirmSubscription()`을 명시적으로 호출할 때 수행됩니다.
+     *
+     * @param parameter 값을 주입할 handler parameter 메타데이터입니다.
+     * @param message topic과 verifier 정책을 통과한 SNS HTTP envelope입니다.
+     * @return parameter에 주입할 값입니다.
+     */
     fun resolve(parameter: MethodParameter, message: SnsHttpMessage): Any? {
         val parameterType = parameter.parameterType
         return when {
