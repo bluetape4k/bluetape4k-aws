@@ -89,11 +89,11 @@ internal object ProviderEnvelope {
     private const val VERSION_KEY = "bt4k-cek-version"
     private const val PROVIDER_KEY = "bt4k-cek-provider"
     private const val ALGORITHM_KEY = "bt4k-cek-alg"
-    private const val WRAP_ALGORITHM_KEY = "bt4k-cek-wrap-alg"
+    private const val WRAPPING_ALGORITHM_METADATA = "bt4k-cek-wrap-alg"
     private const val ENCODING_KEY = "bt4k-cek-encoding"
     private const val WRAPPED_KEY = "bt4k-cek"
     private const val NONCE_KEY = "bt4k-cek-nonce"
-    private const val WRAP_NONCE_KEY = "bt4k-cek-wrap-nonce"
+    private const val WRAPPING_NONCE_METADATA = "bt4k-cek-wrap-nonce"
     private const val KEY_ID_KEY = "bt4k-cek-key-id"
     private const val KEY_VERSION_KEY = "bt4k-cek-key-version"
 
@@ -159,8 +159,8 @@ internal object ProviderEnvelope {
             val decodedNonce = decodeRequired(normalized, NONCE_KEY, NONCE_SIZE)
             nonce = decodedNonce
             require(decodedNonce.size == NONCE_SIZE) { "Provider envelope nonce must be 12 bytes." }
-            val decodedWrapNonce = normalized[WRAP_NONCE_KEY]?.let {
-                decode(it, WRAP_NONCE_KEY, NONCE_SIZE)
+            val decodedWrapNonce = normalized[WRAPPING_NONCE_METADATA]?.let {
+                decode(it, WRAPPING_NONCE_METADATA, NONCE_SIZE)
             }
             wrapNonce = decodedWrapNonce
             if (material.providerToken == "aes") {
@@ -282,11 +282,11 @@ internal object ProviderEnvelope {
         put(VERSION_KEY, VERSION)
         put(PROVIDER_KEY, material.providerToken)
         put(ALGORITHM_KEY, CONTENT_ALGORITHM)
-        put(WRAP_ALGORITHM_KEY, material.wrappingAlgorithm)
+        put(WRAPPING_ALGORITHM_METADATA, material.wrappingAlgorithm)
         put(ENCODING_KEY, ENCODING)
         put(WRAPPED_KEY, Base64.getEncoder().encodeToString(wrapped.ciphertext))
         put(NONCE_KEY, Base64.getEncoder().encodeToString(nonce))
-        wrapped.nonce?.let { put(WRAP_NONCE_KEY, Base64.getEncoder().encodeToString(it)) }
+        wrapped.nonce?.let { put(WRAPPING_NONCE_METADATA, Base64.getEncoder().encodeToString(it)) }
         put(KEY_ID_KEY, keyId)
         if (keyVersion.isNotEmpty()) put(KEY_VERSION_KEY, keyVersion)
     }
@@ -315,7 +315,7 @@ internal object ProviderEnvelope {
         require(metadata[ALGORITHM_KEY] == CONTENT_ALGORITHM) {
             "Unsupported provider envelope content algorithm."
         }
-        require(metadata[WRAP_ALGORITHM_KEY] == material.wrappingAlgorithm) {
+        require(metadata[WRAPPING_ALGORITHM_METADATA] == material.wrappingAlgorithm) {
             "Provider envelope wrapping algorithm does not match the configured provider."
         }
         require(metadata[ENCODING_KEY] == ENCODING) { "Unsupported provider envelope encoding." }
