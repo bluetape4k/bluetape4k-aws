@@ -897,9 +897,45 @@ bluetape4k:
 
 Setting `verification.enabled=false` removes the auto-configured verifier and is
 an explicit security opt-out; parser output alone is not authenticated. Floci
-does not create signed SNS HTTP payloads, so fixture or manager-mock tests cover
-this boundary. Certificate-fetch timeout/cleanup telemetry and real AWS smoke
-measurement are tracked separately from this contract.
+does not create signed SNS HTTP payloads, so the deterministic fixture test uses
+the AWS SDK v2 manager with a local `SdkHttpClient` double. The fixture covers
+SignatureVersion 1/2, forged and canonical-field mutations, corrupt and expired
+certificates, SNS host and TopicArn rejection, connect/read timeout causes,
+cancellation, response-body cleanup, the SDK's bounded 10-entry certificate
+cache, and concurrent cache access:
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests "io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifierFixtureTest" \
+  --no-build-cache
+```
+
+The opt-in local measurement records cache hit/miss certificate fetch counts,
+throughput, and peak heap snapshots using fixed warmup and sample counts. It
+writes a JSON artifact under `aws-spring-boot/build/reports/benchmarks/` and
+does not set an absolute performance target:
+
+```bash
+JAVA_TOOL_OPTIONS="-Dbluetape4k.aws.sns.signature-measurement=true \
+-Dbluetape4k.aws.sns.signature-measurement.output=$PWD/aws-spring-boot/build/reports/benchmarks/sns-http-message-verifier.json" \
+  ./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests "io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifierMeasurementTest" \
+  --no-build-cache
+```
+
+`SnsHttpMessageVerifier` directly retains no root `Throwable` reference; the
+adapter only owns the SDK manager and its idempotent close flag. The measurement
+is a same-JVM SDK snapshot, not an AWS service or production heap guarantee.
+Floci can verify the SNS API path, but not signed HTTP delivery:
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests "io.bluetape4k.aws.spring.sns.SnsBatchExecutionFlociTest" \
+  -Dbluetape4k.aws.emulator=floci --no-build-cache
+```
+
+Credential-gated real AWS signed-delivery smoke and hosted certificate endpoint
+evidence remain intentionally N/A for this local/Docker-only scope.
 
 ### Kinesis — stream operations and record Flow
 

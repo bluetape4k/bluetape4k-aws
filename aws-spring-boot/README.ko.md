@@ -885,8 +885,42 @@ bluetape4k:
 
 `verification.enabled=false`는 자동 구성 verifier를 제거하는 명시적 보안 opt-out이며
 parser 결과만으로는 인증되지 않습니다. Floci는 서명된 SNS HTTP payload를 생성하지
-않으므로 fixture 또는 manager mock으로 이 경계를 검증합니다. 인증서 요청 timeout·정리
-telemetry와 실제 AWS smoke 측정은 이 계약과 분리한 후속 이슈로 추적합니다.
+않으므로 결정적인 fixture 테스트에서 AWS SDK v2 manager와 로컬 `SdkHttpClient` double을
+사용합니다. 이 fixture는 SignatureVersion 1/2, 위조 및 canonical field 변조, 손상·만료
+인증서, SNS host·TopicArn 거부, connect/read timeout 원인, cancellation, response body
+정리, SDK의 10개 bounded 인증서 cache, 동시 cache 접근을 검증합니다.
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests "io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifierFixtureTest" \
+  --no-build-cache
+```
+
+opt-in 로컬 측정은 cache hit/miss 인증서 fetch 횟수, throughput, peak heap 측정값을
+고정된 warmup·샘플 수로 기록합니다. JSON artifact는
+`aws-spring-boot/build/reports/benchmarks/` 아래에 저장하며 절대 성능 목표는 두지 않습니다.
+
+```bash
+JAVA_TOOL_OPTIONS="-Dbluetape4k.aws.sns.signature-measurement=true \
+-Dbluetape4k.aws.sns.signature-measurement.output=$PWD/aws-spring-boot/build/reports/benchmarks/sns-http-message-verifier.json" \
+  ./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests "io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifierMeasurementTest" \
+  --no-build-cache
+```
+
+`SnsHttpMessageVerifier`가 직접 보관하는 root `Throwable` reference는 없습니다. adapter가
+직접 소유하는 것은 SDK manager와 idempotent close flag뿐입니다. 이 측정은 동일 JVM에서
+수집한 SDK 기준값이며 AWS 서비스 성능이나 운영 heap을 보장하지 않습니다. Floci로 SNS API 경계는
+검증할 수 있지만 서명된 HTTP delivery는 만들지 못합니다.
+
+```bash
+./gradlew :bluetape4k-aws-spring-boot:test \
+  --tests "io.bluetape4k.aws.spring.sns.SnsBatchExecutionFlociTest" \
+  -Dbluetape4k.aws.emulator=floci --no-build-cache
+```
+
+credential-gated 실제 AWS signed-delivery smoke와 hosted certificate endpoint 증거는
+이번 로컬·Docker 전용 범위에서 의도적으로 N/A입니다.
 
 ### Kinesis — stream operations와 record Flow
 
