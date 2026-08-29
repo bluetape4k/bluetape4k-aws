@@ -28,6 +28,8 @@ dependencies {
     implementation(platform(bt4k.exposed.bom))
     implementation(platform(bt4k.bluetape4k.exposed.bom))
     implementation(bt4k.bluetape4k.exposed.jdbc)
+    // Spring Data QBE와 closed projection의 SQL pushdown 예제를 검증합니다.
+    implementation(bt4k.bluetape4k.exposed.spring.boot.jdbc)
     implementation(bt4k.exposed.jdbc)
     implementation(libs.spring.boot.starter.web)
 

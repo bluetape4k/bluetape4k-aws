@@ -5,13 +5,17 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import io.bluetape4k.testcontainers.spring.registerDynamicProperties
 import org.jetbrains.exposed.v1.core.SqlLogger
 import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.statements.StatementContext
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -19,8 +23,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.core.env.Environment
+import org.springframework.data.domain.Example
+import org.springframework.data.domain.ExampleMatcher
+import org.springframework.data.domain.Sort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.transaction.annotation.Transactional
 import tools.jackson.databind.ObjectMapper
 import java.net.URI
 import java.net.http.HttpClient
@@ -49,6 +57,9 @@ class SpringBootExposedExampleApplicationTest {
 
     @Autowired
     private lateinit var environment: Environment
+
+    @Autowired
+    private lateinit var orderSpringDataRepository: OrderSpringDataRepository
 
     private val httpClient: HttpClient = HttpClient.newHttpClient()
 
@@ -178,6 +189,74 @@ class SpringBootExposedExampleApplicationTest {
         get("/orders?cursor=-1").statusCode() shouldBeEqualTo 400
     }
 
+    @Test
+    fun `order search combines qbe conditions and returns bounded projection`() {
+        val customerId = "qbe-customer-${System.nanoTime()}"
+        post("/orders", OrderRequest(customerId, OrderStatus.PAID, "first"))
+        post("/orders", OrderRequest(customerId, OrderStatus.PAID, "second"))
+        post("/orders", OrderRequest(customerId, OrderStatus.CANCELLED, "ignored"))
+
+        val response = get(
+            "/orders/search?customerId=$customerId&status=PAID&limit=1&sort=-customerId",
+        )
+
+        response.statusCode() shouldBeEqualTo 200
+        val projected = objectMapper
+            .readValue(response.body(), Array<OrderSummaryResponse>::class.java)
+            .toList()
+        projected shouldBeEqualTo listOf(OrderSummaryResponse(customerId, "PAID"))
+
+        get("/orders/search?customerId=missing-$customerId&status=PAID").statusCode() shouldBeEqualTo 200
+        get("/orders/search?customerId=$customerId&status=UNKNOWN").statusCode() shouldBeEqualTo 400
+        get("/orders/search?customerId=$customerId&limit=101").statusCode() shouldBeEqualTo 400
+        get("/orders/search?customerId=$customerId&sort=notes").statusCode() shouldBeEqualTo 400
+    }
+
+    @Test
+    @Transactional(transactionManager = "springTransactionManager")
+    fun `qbe projection pushes selected columns sort and limit into one sql query`() {
+        val customerId = "qbe-sql-customer-${System.nanoTime()}"
+        OrderRepository.save(OrderRecord(customerId = customerId, status = OrderStatus.PAID, notes = "one"))
+        OrderRepository.save(OrderRecord(customerId = customerId, status = OrderStatus.PAID, notes = "two"))
+        OrderRepository.save(OrderRecord(customerId = customerId, status = OrderStatus.CANCELLED, notes = "three"))
+
+        val probe = OrderEntity.find {
+            (OrdersTable.customerId eq customerId) and (OrdersTable.status eq OrderStatus.PAID.name)
+        }.first()
+        val example = Example.of(
+            probe,
+            ExampleMatcher.matchingAll()
+                .withIgnorePaths("notes")
+                .withMatcher("customerId", ExampleMatcher.GenericPropertyMatchers.exact())
+                .withMatcher("status", ExampleMatcher.GenericPropertyMatchers.exact()),
+        )
+        val statements = mutableListOf<String>()
+        TransactionManager.current().addLogger(object: SqlLogger {
+            override fun log(context: StatementContext, transaction: Transaction) {
+                statements += context.sql(transaction)
+            }
+        })
+
+        val projected = orderSpringDataRepository.findBy(example) { query ->
+            query.`as`(OrderSummaryProjection::class.java)
+                .project(mutableListOf("customerId", "status"))
+                .sortBy(Sort.by(Sort.Direction.DESC, "status"))
+                .limit(1)
+                .all()
+        }
+
+        projected shouldBeEqualTo listOf(OrderSummaryProjection(customerId, OrderStatus.PAID.name))
+        val selectStatements = statements.filter { it.trimStart().startsWith("SELECT", ignoreCase = true) }
+        selectStatements shouldHaveSize 1
+        val select = selectStatements.single()
+        select.contains("customer_id", ignoreCase = true).shouldBeTrue()
+        select.contains("status", ignoreCase = true).shouldBeTrue()
+        select.contains("notes", ignoreCase = true).shouldBeFalse()
+        select.contains("ORDER BY", ignoreCase = true).shouldBeTrue()
+        select.contains("LIMIT", ignoreCase = true).shouldBeTrue()
+        select.contains("COUNT(", ignoreCase = true).shouldBeFalse()
+    }
+
     private fun get(path: String): HttpResponse<String> =
         httpClient.send(
             HttpRequest.newBuilder(uri(path)).GET().build(),
@@ -229,4 +308,9 @@ private data class OrderPagePayload(
     val content: List<OrderRecord> = emptyList(),
     val nextCursor: Long? = null,
     val hasNext: Boolean = false,
+)
+
+private data class OrderSummaryResponse(
+    val customerId: String = "",
+    val status: String = "",
 )
