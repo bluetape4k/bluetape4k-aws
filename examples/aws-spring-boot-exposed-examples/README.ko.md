@@ -81,7 +81,10 @@ bluetape4k:
 ./gradlew :aws-spring-boot-exposed-examples:test
 ```
 
-테스트는 공유 `PostgreSQLServer.Launcher.postgres` 컨테이너를 시작하고
+테스트는 공유 `PostgreSQLServer.Launcher.postgres` 컨테이너를 시작한 뒤
+`bluetape4k-testcontainers-spring`으로 lazy `testcontainers.postgresql.*` 프로퍼티를
+노출합니다. `src/test/resources/application.yml`은 이 표준 키를 AWS database prefix로
+placeholder 매핑하고, pool 크기만 예제 전용 dynamic 설정으로 별도 유지합니다. 이후
 `AwsExposedDatabaseRegistry`, `DataSource`, Exposed `Database`, HTTP 생성/조회/목록/404
 동작과 cursor 페이지 순회, 잘못된 cursor·limit 거부를 random-port `SpringBootTest`로
 검증합니다.

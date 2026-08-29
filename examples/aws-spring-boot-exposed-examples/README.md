@@ -83,7 +83,10 @@ Store, environment variables, or another Spring configuration source.
 ```
 
 The test starts the shared `PostgreSQLServer.Launcher.postgres` container and
-verifies auto-configured `AwsExposedDatabaseRegistry`, `DataSource`, Exposed
-`Database`, and HTTP create/read/list/not-found behavior through a random-port
-`SpringBootTest`, including cursor page traversal and invalid cursor or limit
-rejection.
+uses `bluetape4k-testcontainers-spring` to expose lazy
+`testcontainers.postgresql.*` properties. `src/test/resources/application.yml`
+maps those standard keys to the AWS database prefix, while pool sizing stays
+an example-specific dynamic setting. It then verifies auto-configured
+`AwsExposedDatabaseRegistry`, `DataSource`, Exposed `Database`, and HTTP
+create/read/list/not-found behavior through a random-port `SpringBootTest`,
+including cursor page traversal and invalid cursor or limit rejection.

@@ -35,6 +35,8 @@ dependencies {
 
     testImplementation(bt4k.bluetape4k.junit5)
     testImplementation(bt4k.bluetape4k.testcontainers)
+    // PropertyExportingServer를 Spring DynamicPropertyRegistry에 lazy하게 연결합니다.
+    testImplementation(bt4k.bluetape4k.testcontainers.spring)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.testcontainers.postgresql)
 }

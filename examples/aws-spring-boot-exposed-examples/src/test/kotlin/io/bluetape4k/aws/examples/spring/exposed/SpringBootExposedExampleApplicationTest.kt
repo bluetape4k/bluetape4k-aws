@@ -7,6 +7,7 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
+import io.bluetape4k.testcontainers.spring.registerDynamicProperties
 import org.jetbrains.exposed.v1.core.SqlLogger
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.statements.StatementContext
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.core.env.Environment
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import tools.jackson.databind.ObjectMapper
@@ -45,12 +47,31 @@ class SpringBootExposedExampleApplicationTest {
     @Autowired
     private lateinit var database: Database
 
+    @Autowired
+    private lateinit var environment: Environment
+
     private val httpClient: HttpClient = HttpClient.newHttpClient()
 
     @Test
     fun `auto configuration creates shared Exposed beans`() {
         registry.defaultHandle.dataSource shouldBeSameInstanceAs dataSource
         registry.defaultHandle.database shouldBeSameInstanceAs database
+    }
+
+    @Test
+    fun `testcontainers bridge resolves AWS database placeholders`() {
+        environment.getRequiredProperty("testcontainers.postgresql.jdbc-url") shouldBeEqualTo postgres.jdbcUrl
+        environment.getRequiredProperty("testcontainers.postgresql.driver-class-name") shouldBeEqualTo
+            postgres.getDriverClassName()
+        environment.getRequiredProperty("testcontainers.postgresql.username") shouldBeEqualTo postgres.getUsername()
+        environment.getRequiredProperty("testcontainers.postgresql.password") shouldBeEqualTo postgres.getPassword()
+        environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.url") shouldBeEqualTo postgres.jdbcUrl
+        environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.driver-class-name") shouldBeEqualTo
+            postgres.getDriverClassName()
+        environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.username") shouldBeEqualTo
+            postgres.getUsername()
+        environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.password") shouldBeEqualTo
+            postgres.getPassword()
     }
 
     @Test
@@ -195,10 +216,9 @@ class SpringBootExposedExampleApplicationTest {
         @JvmStatic
         @DynamicPropertySource
         fun databaseProperties(registry: DynamicPropertyRegistry) {
-            registry.add("bluetape4k.aws.exposed.default-database.url") { postgres.getJdbcUrl() }
-            registry.add("bluetape4k.aws.exposed.default-database.driver-class-name") { postgres.getDriverClassName() }
-            registry.add("bluetape4k.aws.exposed.default-database.username") { postgres.getUsername().orEmpty() }
-            registry.add("bluetape4k.aws.exposed.default-database.password") { postgres.getPassword().orEmpty() }
+            val runningBeforeRegistration = postgres.isRunning
+            postgres.registerDynamicProperties(registry)
+            postgres.isRunning shouldBeEqualTo runningBeforeRegistration
             registry.add("bluetape4k.aws.exposed.default-database.pool.maximum-pool-size") { "2" }
             registry.add("bluetape4k.aws.exposed.default-database.pool.minimum-idle") { "0" }
         }
