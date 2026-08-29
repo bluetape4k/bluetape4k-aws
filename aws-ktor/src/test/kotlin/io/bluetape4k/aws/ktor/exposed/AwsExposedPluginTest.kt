@@ -16,13 +16,18 @@ import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
 import io.bluetape4k.aws.exposed.AwsSecretString
 import io.bluetape4k.aws.exposed.NoopAwsDatabaseSettingsResolver
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.ktor.core.HealthResponse
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.install
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import org.jetbrains.exposed.v1.core.Table
@@ -117,6 +122,94 @@ class AwsExposedPluginTest {
         startApplication()
 
         client.get("/count").bodyAsText() shouldBeEqualTo "1"
+    }
+
+    @Test
+    fun `opt in health routes use named AWS database and record readiness outcome`() = testApplication {
+        val meterRegistry = SimpleMeterRegistry()
+        application {
+            install(ContentNegotiation) { jackson() }
+            install(AwsExposedPlugin) {
+                defaultDatabase {
+                    url = h2Url("health_default_${UUID.randomUUID()}")
+                    driverClassName = H2_DRIVER
+                    username = "sa"
+                }
+                database("analytics") {
+                    url = h2Url("health_analytics_${UUID.randomUUID()}")
+                    driverClassName = H2_DRIVER
+                    username = "sa"
+                }
+            }
+            installAwsExposedHealthRoutes(
+                AwsExposedKtorHealthConfig(
+                    databaseName = "analytics",
+                    meterRegistry = meterRegistry,
+                )
+            )
+        }
+
+        startApplication()
+
+        val health = client.get("/healthz/exposed")
+        health.status shouldBeEqualTo HttpStatusCode.OK
+        health.bodyAsText() shouldContain "\"status\":\"${HealthResponse.UP}\""
+
+        val readiness = client.get("/readyz/exposed")
+        readiness.status shouldBeEqualTo HttpStatusCode.OK
+        readiness.bodyAsText() shouldContain "\"jdbc\":\"${HealthResponse.UP}\""
+        meterRegistry.find("bluetape4k.exposed.ktor.core.readiness")
+            .tag("backend", "jdbc")
+            .tag("operation", "readiness")
+            .tag("component", "jdbc")
+            .tag("outcome", "success")
+            .timer()
+            ?.count() shouldBeEqualTo 1L
+    }
+
+    @Test
+    fun `health readiness maps JDBC failures to fixed response and error metric`() = testApplication {
+        val meterRegistry = SimpleMeterRegistry()
+        application {
+            install(ContentNegotiation) { jackson() }
+            install(AwsExposedPlugin) {
+                registryFactory { _, _ -> registry("failing_health", SensitiveFailingDataSource()) }
+            }
+            installAwsExposedHealthRoutes(
+                AwsExposedKtorHealthConfig(meterRegistry = meterRegistry)
+            )
+        }
+
+        startApplication()
+
+        val response = client.get("/readyz/exposed")
+        response.status shouldBeEqualTo HttpStatusCode.ServiceUnavailable
+        val body = response.bodyAsText()
+        body shouldContain "\"jdbc\":\"${HealthResponse.DOWN}\""
+        body shouldNotContain SENSITIVE_JDBC_ERROR
+        meterRegistry.find("bluetape4k.exposed.ktor.core.readiness")
+            .tag("backend", "jdbc")
+            .tag("operation", "readiness")
+            .tag("component", "jdbc")
+            .tag("outcome", "error")
+            .timer()
+            ?.count() shouldBeEqualTo 1L
+    }
+
+    @Test
+    fun `health config rejects unsafe names and non positive timeouts`() {
+        assertFailsWith<IllegalArgumentException> {
+            AwsExposedKtorHealthConfig(databaseName = " ")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AwsExposedKtorHealthConfig(component = "jdbc/{id}")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AwsExposedKtorHealthConfig(readinessProbeTimeout = Duration.ZERO)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            AwsExposedKtorHealthConfig(jdbcQueryTimeout = (-1).milliseconds)
+        }
     }
 
     @Test
@@ -408,8 +501,17 @@ class AwsExposedPluginTest {
         }
     }
 
+    private class SensitiveFailingDataSource: CloseTrackingDataSource() {
+        override fun getConnection(): Connection = throw SQLException(SENSITIVE_JDBC_ERROR)
+
+        override fun getConnection(username: String?, password: String?): Connection =
+            throw SQLException(SENSITIVE_JDBC_ERROR)
+    }
+
     private companion object {
         private const val H2_DRIVER = "org.h2.Driver"
         private const val SENTINEL_SECRET = "sentinel-secret"
+        private const val SENSITIVE_JDBC_ERROR =
+            "jdbc:h2:mem:secret password=top-secret SELECT payments"
     }
 }

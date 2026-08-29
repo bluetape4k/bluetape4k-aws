@@ -20,6 +20,8 @@ credential이 필요하지 않습니다.
 | `POST` | `/exposed/orders` | 주문 생성 후 `201 Created` 반환 |
 | `GET` | `/exposed/orders/{id}` | 주문 조회, 없으면 `404 Not Found` 반환 |
 | `GET` | `/exposed/orders?customerId={customerId}&limit={limit}&cursor={cursor}` | cursor 페이지로 주문 목록 조회, 고객별 필터 지원 |
+| `GET` | `/healthz/exposed` | 선택적 probe-free liveness |
+| `GET` | `/readyz/exposed` | 선택적 JDBC `SELECT 1` readiness |
 
 ## Cursor pagination
 
@@ -43,6 +45,39 @@ credential이 필요하지 않습니다.
 이 예제는 wire contract를 명확히 보여주기 위해 raw primary-key cursor를 노출합니다.
 운영 호출자는 client에 전달하기 전에 cursor token을 인코딩·서명하고 tenant/권한 범위와
 만료 시간을 적용해야 합니다.
+
+## 선택적 JDBC Health/Readiness
+
+이 예제는 2.0.0 backend-selective Ktor surface에서 core와 JDBC artifact만
+opt-in 합니다. 호환용 `bluetape4k-exposed-ktor` aggregator와 R2DBC/cache artifact는
+의도적으로 포함하지 않습니다.
+
+```kotlin
+dependencies {
+    implementation(platform("io.github.bluetape4k.exposed:bluetape4k-exposed-bom:<version>"))
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-core")
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-jdbc")
+}
+```
+
+공유 catalog에 전용 `core`/`jdbc` alias가 아직 등록되지 않았으므로 선행조건이
+충족될 때까지는 Exposed BOM이 versionless 좌표의 버전을 관리합니다. Health route는
+예제 모듈의 `healthConfig` 매개변수로 opt-in 합니다.
+
+```kotlin
+exposedExampleModule(
+    database = database,
+    healthConfig = AwsExposedKtorHealthConfig(
+        blockingDispatcher = Dispatchers.IO,
+    ),
+)
+```
+
+Liveness는 database를 조회하지 않습니다. Readiness는 요청 시 AWS registry의 default
+(또는 named) `Database`를 해석하고 caller dispatcher에서 하나의 shared timeout budget
+아래 `SELECT 1`을 실행합니다. 실패 시 고정 status token만 노출하며, 선택적 Micrometer
+metric은 core JDBC/backend/component/outcome tag를 사용합니다. AWS plugin은 registry와
+pool shutdown을 계속 소유하고 기존 transaction API도 변경하지 않습니다.
 
 ## 트랜잭션 경계
 
@@ -80,4 +115,4 @@ install(AwsExposedPlugin) {
 
 테스트는 공유 `PostgreSQLServer.Launcher.postgres` 컨테이너를 시작하고, 해당 JDBC
 설정을 `ExampleDatabaseConfig`에 전달한 뒤 route 수준의 생성/조회/목록/404, cursor 페이지
-순회, 잘못된 cursor·limit 거부를 검증합니다.
+순회, 잘못된 cursor·limit 거부, 선택적 liveness/readiness 및 JDBC metric을 검증합니다.

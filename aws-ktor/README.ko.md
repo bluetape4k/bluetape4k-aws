@@ -933,6 +933,55 @@ fun Application.module() {
 JDBC 값을 제공하게 구성합니다. 이렇게 하면 Ktor 통합과 Secrets Manager 또는
 Parameter Store 로딩 정책을 분리할 수 있습니다.
 
+### 선택적 JDBC health/readiness
+
+2.0.0 Exposed Ktor 통합은 명시적으로 opt-in 합니다. backend-neutral core와 JDBC
+adapter만 추가하고, legacy surface가 필요하지 않다면 호환용
+`bluetape4k-exposed-ktor` aggregator를 추가하지 않습니다.
+
+```kotlin
+dependencies {
+    implementation(platform("io.github.bluetape4k.exposed:bluetape4k-exposed-bom:<version>"))
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-core")
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-jdbc")
+}
+```
+
+공유 catalog에 전용 `core`/`jdbc` alias가 등록되기 전까지는 위 versionless 좌표를
+Exposed BOM이 해석합니다. 선행조건이 충족되면 catalog alias로 교체하세요.
+
+`AwsExposedPlugin`을 설치한 뒤 `installAwsExposedHealthRoutes`를 명시적으로 호출합니다.
+
+```kotlin
+import io.bluetape4k.aws.ktor.exposed.AwsExposedKtorHealthConfig
+import io.bluetape4k.aws.ktor.exposed.installAwsExposedHealthRoutes
+import kotlinx.coroutines.Dispatchers
+
+fun Application.module() {
+    install(AwsExposedPlugin) {
+        defaultDatabase {
+            url = "jdbc:postgresql://localhost:5432/orders"
+            driverClassName = "org.postgresql.Driver"
+            username = "orders"
+        }
+    }
+
+    installAwsExposedHealthRoutes(
+        AwsExposedKtorHealthConfig(
+            blockingDispatcher = Dispatchers.IO,
+        )
+    )
+}
+```
+
+`/healthz/exposed`는 probe를 실행하지 않는 liveness입니다. `/readyz/exposed`는 호출자가
+제공한 blocking dispatcher에서 JDBC `SELECT 1`을 실행하고 하나의 shared monotonic
+`readinessProbeTimeout`을 사용합니다. Probe가 실패하면 JDBC URL, SQL, credential,
+exception detail을 노출하지 않는 고정 `DOWN` 응답을 반환합니다. 선택적 `meterRegistry`는
+core의 `backend`, `component`, `operation`, `outcome` tag를 기록합니다. Helper는 요청 시점에
+AWS registry handle을 해석하며 database, pool, dispatcher, registry 또는 shutdown lifecycle을
+소유하지 않습니다. 기존 `awsExposedTransaction` suspend block 계약은 변경하지 않습니다.
+
 ```kotlin
 install(AwsExposedPlugin) {
     settingsResolver = mySecretsManagerResolver

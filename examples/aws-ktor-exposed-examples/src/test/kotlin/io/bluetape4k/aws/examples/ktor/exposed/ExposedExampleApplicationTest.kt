@@ -1,12 +1,14 @@
 package io.bluetape4k.aws.examples.ktor.exposed
 
-import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.aws.ktor.exposed.AwsExposedKtorHealthConfig
+import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
 import io.bluetape4k.exposed.core.ExposedCursorPage
+import io.bluetape4k.ktor.core.HealthResponse
 import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import io.ktor.client.call.body
@@ -19,6 +21,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.testing.testApplication
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.jetbrains.exposed.v1.core.SqlLogger
 import org.jetbrains.exposed.v1.core.Transaction
 import org.jetbrains.exposed.v1.core.statements.StatementContext
@@ -173,6 +176,40 @@ class ExposedExampleApplicationTest {
     }
 
     @Test
+    fun `opt in health routes expose probe free liveness and jdbc readiness`() = testApplication {
+        val meterRegistry = SimpleMeterRegistry()
+        application {
+            exposedExampleModule(
+                database = ExampleDatabaseConfig.from(postgres),
+                healthConfig = AwsExposedKtorHealthConfig(meterRegistry = meterRegistry),
+            )
+        }
+        startApplication()
+
+        val client = createClient {
+            install(ContentNegotiation) {
+                jackson()
+            }
+        }
+        val health = client.get("/healthz/exposed")
+        health shouldHaveStatus HttpStatusCode.OK
+        health.body<HealthResponse>() shouldBeEqualTo
+            HealthResponse.up(mapOf("exposed" to HealthResponse.UP))
+        meterRegistry.find("bluetape4k.exposed.ktor.core.readiness").timer()?.count() shouldBeEqualTo 0L
+
+        val readiness = client.get("/readyz/exposed")
+        readiness shouldHaveStatus HttpStatusCode.OK
+        readiness.body<HealthResponse>() shouldBeEqualTo
+            HealthResponse.up(mapOf("jdbc" to HealthResponse.UP))
+        meterRegistry.find("bluetape4k.exposed.ktor.core.readiness")
+            .tag("backend", "jdbc")
+            .tag("operation", "readiness")
+            .tag("outcome", "success")
+            .timer()
+            ?.count() shouldBeEqualTo 1L
+    }
+
+    @Test
     fun `order record rejects negative id with bluetape assertion`() {
         val error = assertFailsWith<IllegalArgumentException> {
             OrderRecord(
@@ -185,7 +222,7 @@ class ExposedExampleApplicationTest {
         error.message shouldContain "id"
     }
 
-    private fun recordSql(statements: MutableList<String>) = object: SqlLogger {
+    private fun recordSql(statements: MutableList<String>) = object : SqlLogger {
         override fun log(context: StatementContext, transaction: Transaction) {
             statements += context.sql(transaction)
         }
