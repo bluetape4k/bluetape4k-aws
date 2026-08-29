@@ -3,13 +3,17 @@ package io.bluetape4k.aws.examples.spring.exposed
 import io.bluetape4k.exposed.core.ExposedCursorPage
 import io.bluetape4k.exposed.jdbc.repository.LongJdbcRepository
 import io.bluetape4k.exposed.jdbc.repository.findCursorPage as findTypedCursorPage
+import io.bluetape4k.spring.data.exposed.common.annotation.ExposedEntity
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.dao.LongEntity
+import org.jetbrains.exposed.v1.dao.LongEntityClass
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import java.io.Serializable
 
@@ -103,6 +107,39 @@ internal data class OrderPageRequest(
                 customerId = customerId?.takeUnless { it.isBlank() },
             )
         }
+    }
+}
+
+/**
+ * Spring Data Exposed QBE probe와 조회 결과 매핑에 사용하는 DAO Entity입니다.
+ */
+@ExposedEntity
+class OrderEntity(id: EntityID<Long>): LongEntity(id) {
+    companion object: LongEntityClass<OrderEntity>(OrdersTable)
+
+    var customerId: String by OrdersTable.customerId
+    var status: String by OrdersTable.status
+    var notes: String? by OrdersTable.notes
+}
+
+/**
+ * QBE 검색에서 `customerId`, `status`만 SQL로 읽는 closed projection입니다.
+ */
+data class OrderSummaryProjection(
+    val customerId: String,
+    val status: String,
+)
+
+/**
+ * 주문 검색 API가 노출하는 상태 타입을 복원한 projection 응답입니다.
+ */
+data class OrderSummaryRecord(
+    val customerId: String,
+    val status: OrderStatus,
+): Serializable {
+
+    companion object {
+        private const val serialVersionUID: Long = 770272870688987431L
     }
 }
 

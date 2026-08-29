@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.examples.spring.exposed
 
 import io.bluetape4k.exposed.core.ExposedCursorPage
+import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -50,5 +51,50 @@ class OrderController(
             )
         }
         return orderService.findOrders(request)
+    }
+
+    @GetMapping("/search")
+    fun searchOrders(
+        @RequestParam(required = false) customerId: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(defaultValue = "${OrderService.DEFAULT_SEARCH_LIMIT}") limit: Int,
+        @RequestParam(defaultValue = "customerId") sort: String,
+    ): List<OrderSummaryRecord> {
+        if (limit !in 1..OrderService.MAX_SEARCH_LIMIT) {
+            throw badRequest("limit must be between 1 and ${OrderService.MAX_SEARCH_LIMIT}.")
+        }
+
+        val parsedStatus = status
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
+            ?.let { value ->
+                runCatching { OrderStatus.valueOf(value) }
+                    .getOrElse { throw badRequest("status must be CREATED, PAID, or CANCELLED.") }
+            }
+
+        return orderService.searchOrders(
+            customerId = customerId,
+            status = parsedStatus,
+            limit = limit,
+            sort = parseSort(sort),
+        )
+    }
+
+    private fun parseSort(value: String): Sort {
+        val normalized = value.trim()
+        val descending = normalized.startsWith("-")
+        val property = normalized.removePrefix("-")
+        if (property !in SUPPORTED_SEARCH_SORTS) {
+            throw badRequest("sort must be customerId, status, -customerId, or -status.")
+        }
+        val order = if (descending) Sort.Order.desc(property) else Sort.Order.asc(property)
+        return Sort.by(order)
+    }
+
+    private fun badRequest(message: String): ResponseStatusException =
+        ResponseStatusException(HttpStatus.BAD_REQUEST, message)
+
+    private companion object {
+        val SUPPORTED_SEARCH_SORTS = setOf("customerId", "status")
     }
 }
