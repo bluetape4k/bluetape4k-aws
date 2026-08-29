@@ -19,7 +19,31 @@ do not require AWS credentials.
 |---|---|---|
 | `POST` | `/exposed/orders` | Create an order and return `201 Created` |
 | `GET` | `/exposed/orders/{id}` | Read one order or return `404 Not Found` |
-| `GET` | `/exposed/orders?customerId={customerId}` | List orders, optionally filtered by customer |
+| `GET` | `/exposed/orders?customerId={customerId}&limit={limit}&cursor={cursor}` | Return a cursor page of orders, optionally filtered by customer |
+
+## Cursor Pagination
+
+The list route returns `ExposedCursorPage<OrderRecord, Long>` instead of a
+plain array:
+
+```json
+{
+  "content": [{ "id": 41, "customerId": "customer-1", "status": "CREATED", "notes": null }],
+  "nextCursor": 41,
+  "hasNext": true
+}
+```
+
+- `customerId` is optional and filters the page.
+- `limit` is an optional integer from `1` to `100`; the default is `20`.
+- `cursor` is an optional non-negative last-seen `OrdersTable.id`. Send the
+  returned `nextCursor` unchanged to fetch the next page.
+- The final page has `hasNext: false` and `nextCursor: null`. The query does
+  not calculate a total count.
+
+This example exposes the raw primary-key cursor to keep the wire contract
+visible. Production callers should encode, sign, scope, and expire cursor
+tokens before exposing them to clients.
 
 ## Transaction Boundary
 
@@ -58,4 +82,5 @@ environment before installing the plugin.
 
 The test starts the shared `PostgreSQLServer.Launcher.postgres` container,
 passes its JDBC settings into `ExampleDatabaseConfig`, and verifies route-level
-create/read/list/not-found behavior.
+create/read/list/not-found behavior, cursor page traversal, and invalid cursor
+or limit rejection.

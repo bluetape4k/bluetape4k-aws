@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.spring.exposed
 
+import io.bluetape4k.exposed.core.ExposedCursorPage
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,6 +31,24 @@ class OrderController(
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Order $id was not found.")
 
     @GetMapping
-    fun findOrders(@RequestParam(required = false) customerId: String?): List<OrderRecord> =
-        orderService.findOrders(customerId)
+    fun findOrders(
+        @RequestParam(required = false) customerId: String?,
+        @RequestParam(required = false) cursor: String?,
+        @RequestParam(required = false) limit: String?,
+    ): ExposedCursorPage<OrderRecord, Long> {
+        val request = try {
+            OrderPageRequest.parse(
+                rawCursor = cursor,
+                rawLimit = limit,
+                customerId = customerId,
+            )
+        } catch (e: IllegalArgumentException) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.message ?: "Invalid order page request.",
+                e,
+            )
+        }
+        return orderService.findOrders(request)
+    }
 }

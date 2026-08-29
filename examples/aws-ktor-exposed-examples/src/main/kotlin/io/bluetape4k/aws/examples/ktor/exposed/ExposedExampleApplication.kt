@@ -102,15 +102,23 @@ fun Application.exposedExampleModule(database: ExampleDatabaseConfig) {
             }
 
             get {
-                val customerId = call.request.queryParameters["customerId"]
-                val orders = call.awsExposedTransaction {
-                    if (customerId.isNullOrBlank()) {
-                        OrderRepository.findAll()
-                    } else {
-                        OrderRepository.findByCustomerId(customerId)
-                    }
+                val request = try {
+                    OrderPageRequest.parse(
+                        rawCursor = call.request.queryParameters["cursor"],
+                        rawLimit = call.request.queryParameters["limit"],
+                        customerId = call.request.queryParameters["customerId"],
+                    )
+                } catch (e: IllegalArgumentException) {
+                    call.respond(
+                        io.ktor.http.HttpStatusCode.BadRequest,
+                        e.message ?: "Invalid order page request.",
+                    )
+                    return@get
                 }
-                call.respond(orders)
+                val page = call.awsExposedTransaction {
+                    OrderRepository.findOrderPage(request)
+                }
+                call.respond(page)
             }
         }
     }

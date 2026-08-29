@@ -1,8 +1,12 @@
 package io.bluetape4k.aws.examples.spring.exposed
 
+import io.bluetape4k.exposed.core.ExposedCursorPage
 import io.bluetape4k.exposed.jdbc.repository.LongJdbcRepository
+import io.bluetape4k.exposed.jdbc.repository.findCursorPage as findTypedCursorPage
 import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 import org.jetbrains.exposed.v1.core.eq
@@ -65,6 +69,43 @@ object OrdersTable: LongIdTable("spring_example_orders") {
     val notes = varchar("notes", 512).nullable()
 }
 
+internal const val DEFAULT_ORDER_PAGE_SIZE = 20
+internal const val MAX_ORDER_PAGE_SIZE = 100
+
+/**
+ * 주문 목록 cursor 조회에 사용하는 HTTP query 값입니다.
+ */
+internal data class OrderPageRequest(
+    val cursor: Long?,
+    val pageSize: Int,
+    val customerId: String?,
+) {
+    init {
+        pageSize.requireInRange(1, MAX_ORDER_PAGE_SIZE, "limit")
+        cursor?.requireGe(0L, "cursor")
+    }
+
+    companion object {
+        fun parse(rawCursor: String?, rawLimit: String?, customerId: String?): OrderPageRequest {
+            val pageSize = when {
+                rawLimit == null -> DEFAULT_ORDER_PAGE_SIZE
+                else -> rawLimit.toIntOrNull()
+                    ?: throw IllegalArgumentException("limit must be an integer.")
+            }
+            val cursor = when {
+                rawCursor == null -> null
+                else -> rawCursor.toLongOrNull()
+                    ?: throw IllegalArgumentException("cursor must be a non-negative integer.")
+            }
+            return OrderPageRequest(
+                cursor = cursor,
+                pageSize = pageSize,
+                customerId = customerId?.takeUnless { it.isBlank() },
+            )
+        }
+    }
+}
+
 /**
  * 호출자가 소유한 Exposed transaction 안에서만 사용하는 JDBC 저장소입니다.
  */
@@ -96,3 +137,12 @@ object OrderRepository: LongJdbcRepository<OrderRecord> {
         return findAll { OrdersTable.customerId eq customerId }
     }
 }
+
+internal fun OrderRepository.findOrderPage(request: OrderPageRequest): ExposedCursorPage<OrderRecord, Long> =
+    this.findTypedCursorPage(
+        pageSize = request.pageSize,
+        cursor = request.cursor,
+        predicate = {
+            request.customerId?.let { OrdersTable.customerId eq it } ?: Op.TRUE
+        },
+    )
