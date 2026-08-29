@@ -19,7 +19,30 @@ credential이 필요하지 않습니다.
 |---|---|---|
 | `POST` | `/exposed/orders` | 주문 생성 후 `201 Created` 반환 |
 | `GET` | `/exposed/orders/{id}` | 주문 조회, 없으면 `404 Not Found` 반환 |
-| `GET` | `/exposed/orders?customerId={customerId}` | 주문 목록 조회, 고객별 필터 지원 |
+| `GET` | `/exposed/orders?customerId={customerId}&limit={limit}&cursor={cursor}` | cursor 페이지로 주문 목록 조회, 고객별 필터 지원 |
+
+## Cursor pagination
+
+목록 route는 단순 배열 대신 `ExposedCursorPage<OrderRecord, Long>`을 반환합니다.
+
+```json
+{
+  "content": [{ "id": 41, "customerId": "customer-1", "status": "CREATED", "notes": null }],
+  "nextCursor": 41,
+  "hasNext": true
+}
+```
+
+- `customerId`는 선택 값이며 해당 고객으로 페이지를 필터링합니다.
+- `limit`은 `1`~`100` 범위의 선택적 정수이며 기본값은 `20`입니다.
+- `cursor`는 마지막으로 본 `OrdersTable.id`인 0 이상 정수입니다. 다음 페이지를
+  조회할 때 응답의 `nextCursor`를 그대로 전달합니다.
+- 마지막 페이지는 `hasNext: false`, `nextCursor: null`을 반환하며 전체 건수는
+  계산하지 않습니다.
+
+이 예제는 wire contract를 명확히 보여주기 위해 raw primary-key cursor를 노출합니다.
+운영 호출자는 client에 전달하기 전에 cursor token을 인코딩·서명하고 tenant/권한 범위와
+만료 시간을 적용해야 합니다.
 
 ## 트랜잭션 경계
 
@@ -56,5 +79,5 @@ install(AwsExposedPlugin) {
 ```
 
 테스트는 공유 `PostgreSQLServer.Launcher.postgres` 컨테이너를 시작하고, 해당 JDBC
-설정을 `ExampleDatabaseConfig`에 전달한 뒤 route 수준의 생성/조회/목록/404 동작을
-검증합니다.
+설정을 `ExampleDatabaseConfig`에 전달한 뒤 route 수준의 생성/조회/목록/404, cursor 페이지
+순회, 잘못된 cursor·limit 거부를 검증합니다.

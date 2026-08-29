@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.spring.exposed
 
+import io.bluetape4k.exposed.core.ExposedCursorPage
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
@@ -22,13 +23,9 @@ class OrderService(
             OrderRepository.findByIdOrNull(id)
         }
 
-    fun findOrders(customerId: String?): List<OrderRecord> =
+    internal fun findOrders(request: OrderPageRequest): ExposedCursorPage<OrderRecord, Long> =
         transaction(database) {
-            if (customerId.isNullOrBlank()) {
-                OrderRepository.findAll()
-            } else {
-                OrderRepository.findByCustomerId(customerId)
-            }
+            OrderRepository.findOrderPage(request)
         }
 
     private fun OrderRequest.toRecord(): OrderRecord =

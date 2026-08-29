@@ -1,11 +1,17 @@
 package io.bluetape4k.aws.examples.spring.exposed
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
+import org.jetbrains.exposed.v1.core.SqlLogger
+import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.statements.StatementContext
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -68,11 +74,87 @@ class SpringBootExposedExampleApplicationTest {
 
         val listResponse = get("/orders?customerId=${request.customerId}")
         listResponse.statusCode() shouldBeEqualTo 200
-        val listed = objectMapper.readValue(listResponse.body(), Array<OrderRecord>::class.java).toList()
-        listed.map { it.id } shouldContain created.id
+        val listed = readPage(listResponse)
+        listed.content.map { it.id } shouldContain created.id
+        listed.hasNext.shouldBeFalse()
+        listed.nextCursor shouldBeEqualTo null
 
         val missingResponse = get("/orders/${Long.MAX_VALUE}")
         missingResponse.statusCode() shouldBeEqualTo 404
+    }
+
+    @Test
+    fun `order api returns cursor pages without duplicates`() {
+        val customerId = "cursor-customer-${System.nanoTime()}"
+        val orderIds = buildList {
+            repeat(4) { index ->
+                val response = post(
+                    "/orders",
+                    OrderRequest(customerId = customerId, notes = "page-$index"),
+                )
+                response.statusCode() shouldBeEqualTo 201
+                add(objectMapper.readValue(response.body(), OrderRecord::class.java).id)
+            }
+        }
+        val otherCustomerId = "other-customer-${System.nanoTime()}"
+        post(
+            "/orders",
+            OrderRequest(customerId = otherCustomerId, notes = "must-not-leak"),
+        ).statusCode() shouldBeEqualTo 201
+
+        transaction(database) {
+            OrderRepository.deleteById(orderIds[1])
+        }
+
+        val firstResponse = get("/orders?customerId=$customerId&limit=2")
+        firstResponse.statusCode() shouldBeEqualTo 200
+        val first = readPage(firstResponse)
+        first.content.size shouldBeEqualTo 2
+        first.content.map { it.customerId }.toSet() shouldBeEqualTo setOf(customerId)
+        first.hasNext.shouldBeTrue()
+        val cursor = first.nextCursor ?: error("first page must contain nextCursor")
+
+        val secondResponse = get("/orders?customerId=$customerId&limit=2&cursor=$cursor")
+        secondResponse.statusCode() shouldBeEqualTo 200
+        val second = readPage(secondResponse)
+        second.content.size shouldBeEqualTo 1
+        second.content.map { it.customerId }.toSet() shouldBeEqualTo setOf(customerId)
+        second.hasNext.shouldBeFalse()
+        second.nextCursor shouldBeEqualTo null
+
+        val pageIds = first.content.map { it.id } + second.content.map { it.id }
+        pageIds.toSet().size shouldBeEqualTo 3
+        pageIds.contains(orderIds[1]).shouldBeFalse()
+    }
+
+    @Test
+    fun `order api returns an empty cursor page without a count query`() {
+        val statements = mutableListOf<String>()
+        val page = transaction(database) {
+            addLogger(recordSql(statements))
+            OrderRepository.findOrderPage(
+                OrderPageRequest.parse(
+                    rawCursor = null,
+                    rawLimit = null,
+                    customerId = "missing-customer-${System.nanoTime()}",
+                ),
+            )
+        }
+
+        page.content shouldBeEqualTo emptyList()
+        page.hasNext.shouldBeFalse()
+        page.nextCursor shouldBeEqualTo null
+        statements.count { it.trimStart().startsWith("SELECT", ignoreCase = true) } shouldBeEqualTo 1
+        statements.any { it.contains("COUNT(", ignoreCase = true) }.shouldBeFalse()
+    }
+
+    @Test
+    fun `order api rejects invalid cursor and limit`() {
+        get("/orders?limit=0").statusCode() shouldBeEqualTo 400
+        get("/orders?limit=101").statusCode() shouldBeEqualTo 400
+        get("/orders?limit=not-a-number").statusCode() shouldBeEqualTo 400
+        get("/orders?cursor=not-a-number").statusCode() shouldBeEqualTo 400
+        get("/orders?cursor=-1").statusCode() shouldBeEqualTo 400
     }
 
     private fun get(path: String): HttpResponse<String> =
@@ -90,6 +172,18 @@ class SpringBootExposedExampleApplicationTest {
                 .build(),
             HttpResponse.BodyHandlers.ofString(),
         )
+    }
+
+    private fun readPage(response: HttpResponse<String>): OrderPagePayload =
+        objectMapper.readValue(
+            response.body(),
+            object : tools.jackson.core.type.TypeReference<OrderPagePayload>() {},
+        )
+
+    private fun recordSql(statements: MutableList<String>) = object: SqlLogger {
+        override fun log(context: StatementContext, transaction: Transaction) {
+            statements += context.sql(transaction)
+        }
     }
 
     private fun uri(path: String): URI =
@@ -110,3 +204,9 @@ class SpringBootExposedExampleApplicationTest {
         }
     }
 }
+
+private data class OrderPagePayload(
+    val content: List<OrderRecord> = emptyList(),
+    val nextCursor: Long? = null,
+    val hasNext: Boolean = false,
+)
