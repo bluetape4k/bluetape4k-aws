@@ -18,6 +18,9 @@ dependencies {
     implementation(platform(bt4k.exposed.bom))
     implementation(platform(bt4k.bluetape4k.exposed.bom))
     implementation(bt4k.bluetape4k.exposed.jdbc)
+    // 2.0.0 selective Ktor surface: keep JDBC health support free of R2DBC/cache transitives.
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-core")
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-jdbc")
     implementation(bt4k.bluetape4k.ktor.core)
     implementation(bt4k.exposed.jdbc)
     // Direct Ktor artifacts remain intentional: the example runs on CIO and uses Jackson DTO binding.
@@ -33,5 +36,6 @@ dependencies {
     testImplementation(bt4k.bluetape4k.testcontainers)
     // Jackson remains intentional because the example DTOs are Jackson-serialized Exposed records.
     testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.micrometer.core)
     testImplementation(libs.testcontainers.postgresql)
 }

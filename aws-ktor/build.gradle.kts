@@ -8,6 +8,12 @@ dependencies {
     api(project(":bluetape4k-aws-kotlin"))
     compileOnly(project(":bluetape4k-aws-exposed"))
 
+    // Selective Exposed Ktor health integration remains compileOnly here. Consumers
+    // opt in to the backend adapter they actually run (the example adds core+jdbc).
+    compileOnly(platform(bt4k.bluetape4k.exposed.bom))
+    compileOnly("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-core")
+    compileOnly("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-jdbc")
+
     // bluetape4k artifacts
     api(bt4k.bluetape4k.io)
     api(bt4k.bluetape4k.coroutines)

@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.examples.ktor.exposed
 
 import io.bluetape4k.aws.ktor.exposed.AwsExposedPlugin
+import io.bluetape4k.aws.ktor.exposed.AwsExposedKtorHealthConfig
 import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
+import io.bluetape4k.aws.ktor.exposed.installAwsExposedHealthRoutes
 import io.bluetape4k.ktor.core.requiredPathParameter
 import io.bluetape4k.support.requireNotBlank
 import io.ktor.serialization.jackson.jackson
@@ -47,7 +49,10 @@ data class ExampleDatabaseConfig(
 /**
  * JSON, AWS Exposed plugin, 스키마 초기화와 주문 예제 route를 등록합니다.
  */
-fun Application.exposedExampleModule(database: ExampleDatabaseConfig) {
+fun Application.exposedExampleModule(
+    database: ExampleDatabaseConfig,
+    healthConfig: AwsExposedKtorHealthConfig? = null,
+) {
     install(ContentNegotiation) {
         jackson()
     }
@@ -64,6 +69,7 @@ fun Application.exposedExampleModule(database: ExampleDatabaseConfig) {
             }
         }
     }
+    healthConfig?.let(::installAwsExposedHealthRoutes)
 
     monitor.subscribe(ApplicationStarted) {
         // Ktor startup event는 동기식이므로 AwsExposedPlugin의 제한된 startup bridge를 따릅니다.

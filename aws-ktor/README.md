@@ -940,6 +940,58 @@ an `AwsDatabaseSettingsResolver` supply final JDBC values. This keeps Ktor
 integration separate from concrete Secrets Manager or Parameter Store loading
 policy.
 
+### Selective JDBC health and readiness
+
+The 2.0.0 Exposed Ktor integration is opt-in. Add the backend-neutral core and
+the JDBC adapter only; do not add the compatibility `bluetape4k-exposed-ktor`
+aggregator when the application does not use its legacy surface.
+
+```kotlin
+dependencies {
+    implementation(platform("io.github.bluetape4k.exposed:bluetape4k-exposed-bom:<version>"))
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-core")
+    implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-jdbc")
+}
+```
+
+Until the shared catalog publishes dedicated `core`/`jdbc` aliases, the
+versionless coordinates above are resolved by the Exposed BOM. Replace them
+with the catalog aliases when that prerequisite lands.
+
+Call `installAwsExposedHealthRoutes` explicitly after installing
+`AwsExposedPlugin`:
+
+```kotlin
+import io.bluetape4k.aws.ktor.exposed.AwsExposedKtorHealthConfig
+import io.bluetape4k.aws.ktor.exposed.installAwsExposedHealthRoutes
+import kotlinx.coroutines.Dispatchers
+
+fun Application.module() {
+    install(AwsExposedPlugin) {
+        defaultDatabase {
+            url = "jdbc:postgresql://localhost:5432/orders"
+            driverClassName = "org.postgresql.Driver"
+            username = "orders"
+        }
+    }
+
+    installAwsExposedHealthRoutes(
+        AwsExposedKtorHealthConfig(
+            blockingDispatcher = Dispatchers.IO,
+        )
+    )
+}
+```
+
+`/healthz/exposed` is probe-free liveness. `/readyz/exposed` runs JDBC
+`SELECT 1` on the supplied blocking dispatcher under one shared monotonic
+`readinessProbeTimeout`; a failed probe returns a fixed `DOWN` response without
+JDBC URL, SQL, credentials, or exception details. The optional `meterRegistry`
+records the core `backend`, `component`, `operation`, and `outcome` tags. The
+helper resolves the AWS registry handle when a request arrives and never owns
+the database, pool, dispatcher, registry, or shutdown lifecycle. The existing
+`awsExposedTransaction` suspend block contract is unchanged.
+
 ```kotlin
 install(AwsExposedPlugin) {
     settingsResolver = mySecretsManagerResolver
