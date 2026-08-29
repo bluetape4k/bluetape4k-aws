@@ -134,6 +134,7 @@ jobs:
             "exposed-bom"
             "exposed-plugin"
             "spring-boot4-dependencies"
+            "bluetape4k-testcontainers-spring"
           )
 
           echo "Fetching bluetape4k-dependencies catalog: $catalog_url"
@@ -147,7 +148,7 @@ jobs:
           done
 
           echo "Verified catalog aliases from ${BLUETAPE4K_DEPENDENCIES_CATALOG_REF}:"
-          grep -E '^[[:space:]]*(bluetape4k-bom|bluetape4k-exposed-bom|exposed-bom|exposed-plugin|spring-boot4-dependencies)[[:space:]]*=' "$catalog_file"
+          grep -E '^[[:space:]]*(bluetape4k-bom|bluetape4k-exposed-bom|exposed-bom|exposed-plugin|spring-boot4-dependencies|bluetape4k-testcontainers-spring)[[:space:]]*=' "$catalog_file"
 
       - name: Verify gradle.properties matches tag
         shell: bash

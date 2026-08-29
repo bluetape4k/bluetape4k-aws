@@ -1,0 +1,8 @@
+bluetape4k:
+  aws:
+    exposed:
+      default-database:
+        url: ${testcontainers.postgresql.jdbc-url}
+        driver-class-name: ${testcontainers.postgresql.driver-class-name}
+        username: ${testcontainers.postgresql.username}
+        password: ${testcontainers.postgresql.password}
