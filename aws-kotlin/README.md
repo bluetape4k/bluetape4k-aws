@@ -429,7 +429,7 @@ not trigger an implicit `StopExecution`; the scoped helper closes only the
 service client and leaves an injected HTTP engine under caller ownership. Add
 `aws.sdk.kotlin:sfn` directly at runtime because service SDKs remain
 `compileOnly`. See the [Step Functions Kotlin module
-manual](../docs/manual/en/modules/bluetape4k-aws-kotlin.md) for dependency,
+manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/) for dependency,
 Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
 
 ### Lambda invocation helpers (1.0.0 development line)

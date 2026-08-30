@@ -15,7 +15,7 @@ Ktor 3 integration for bluetape4k services that need AWS without committing to
 one application stack.
 
 For task-oriented guidance, SDK and framework choices, lifecycle rules, and
-runnable learning paths, use the [AWS manual](docs/manual/en/index.md). This
+runnable learning paths, use the [AWS manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/). This
 README remains a repository overview; the manual is the detailed source of
 truth.
 
@@ -40,7 +40,7 @@ uses.
 - **Spring Boot 4 operations** — coroutine-oriented templates, repositories,
   listeners, opt-in lifecycle-aware SQS Observation, optional Spring Modulith
   SNS/SQS event externalization, and auto-configuration without depending on
-  awspring. See the [storage and messaging manual](docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md).
+  awspring. See the [storage and messaging manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/).
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 access, SQS consumer
   runtime, EventBridge publishing, DynamoDB server repositories, EC2 IMDS
   helpers, selective Exposed JDBC health/readiness routes, and Ktor
@@ -95,7 +95,7 @@ The AWS Kotlin module also provides `DynamoDbDistributedLock` and
 `DynamoDbMetadataStore` for bounded conditional coordination on a PK-only
 DynamoDB table. Locks retain a monotonic `LockLease.fencingToken`, while
 metadata supports logical expiry and conditional remove/replace operations.
-The [AWS Kotlin manual](docs/manual/en/modules/bluetape4k-aws-kotlin.md#dynamodb-coordination)
+The [AWS Kotlin manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/#dynamodb-coordination)
 documents the schema, lifecycle, and downstream fencing boundary. The contract
 test uses FlociServer only:
 
@@ -282,9 +282,9 @@ The application must provide an `AwsModulithEventTypeRegistry` bean and route
 Spring Modulith events to the logical alias `order-events`. Detailed dependency,
 producer, DIRECT/SNS consumer, FIFO, back-off, diagnostics, rollout, and Floci
 boundaries are in the
-[storage and messaging](docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md#spring-modulith-snssqs-externalization-unreleaseddevelop),
-[auto-configuration](docs/manual/en/modules/bluetape4k-aws-spring-boot/auto-configuration.md#modulith-event-auto-configuration-unreleaseddevelop),
-and [runtime operations](docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md#modulith-event-runtime-operations-unreleaseddevelop)
+[storage and messaging](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/#spring-modulith-snssqs-externalization-unreleaseddevelop),
+[auto-configuration](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/auto-configuration/#modulith-event-auto-configuration-unreleaseddevelop),
+and [runtime operations](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/#modulith-event-runtime-operations-unreleaseddevelop)
 manual chapters.
 
 ```yaml
@@ -1425,9 +1425,9 @@ implementation("software.amazon.awssdk:sfn")
 implementation("aws.sdk.kotlin:sfn")
 ```
 
-Use the [Java module manual](docs/manual/en/modules/bluetape4k-aws-java.md),
-[Kotlin module manual](docs/manual/en/modules/bluetape4k-aws-kotlin.md), and
-[testing and operations guide](docs/manual/en/guides/testing-and-operations.md)
+Use the [Java module manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-java/),
+[Kotlin module manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/), and
+[testing and operations guide](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/guides/testing-and-operations/)
 for Standard/Express/Map Run boundaries, IAM/KMS, quota-aware polling, and
 Floci/LocalStack evidence. An emulator result does not prove production IAM or
 KMS access.

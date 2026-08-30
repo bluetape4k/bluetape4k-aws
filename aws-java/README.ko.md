@@ -392,7 +392,7 @@ fun awaitExecution(executionArn: String): DescribeExecutionResponse = runBlockin
 `StopExecution`을 자동 호출하지 않으며 호출자가 제공한 client를 닫지 않습니다. 서비스 SDK는
 `compileOnly`로 유지되므로 런타임에 `software.amazon.awssdk:sfn`을 직접 추가하세요.
 의존성, Standard/Express/Map Run, IAM/KMS, quota와 emulator 경계는
-[Step Functions Java 모듈 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-java.md)에서
+[Step Functions Java 모듈 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-java/)에서
 확인할 수 있습니다.
 
 ### Lambda 호출 helper (1.0.0 개발선)

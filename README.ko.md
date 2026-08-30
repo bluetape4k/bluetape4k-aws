@@ -15,7 +15,7 @@
 얇게 유지합니다.
 
 SDK와 framework 선택, lifecycle 원칙, 실전 예제 중심의 학습 경로는
-[AWS 매뉴얼](docs/manual/ko/index.md)에서 자세히 설명합니다. README는 저장소를
+[AWS 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/)에서 자세히 설명합니다. README는 저장소를
 빠르게 둘러보는 문서이고, 상세 설명의 기준은 매뉴얼입니다.
 
 ---
@@ -33,7 +33,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 - **서비스 범위** — DynamoDB, DynamoDB Streams, S3, S3 Tables, S3 Vectors, SES/SESv2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, EC2 IMDS, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, RDS IAM, Secrets Manager, Parameter Store
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener,
   선택적 lifecycle-aware SQS Observation, Spring Modulith SNS/SQS event 외부화,
-  auto-configuration 제공. 자세한 내용은 [storage와 messaging 매뉴얼](docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)을 참고하세요.
+  auto-configuration 제공. 자세한 내용은 [storage와 messaging 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)을 참고하세요.
 - **Ktor 3 통합** — SigV4 signing, coroutine S3 접근, SQS consumer runtime, EventBridge publishing, DynamoDB server repository, EC2 IMDS helper, 선택적 Exposed JDBC health/readiness route, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 Floci-first emulator와 coverage gap을 위한 명시적 LocalStack fallback 검증
 
@@ -84,7 +84,7 @@ AWS Kotlin 모듈은 PK-only DynamoDB table에서 조건부 쓰기만으로 boun
 수행하는 `DynamoDbDistributedLock`과 `DynamoDbMetadataStore`도 제공합니다. Lock은
 단조 증가하는 `LockLease.fencingToken`을 보존하고, metadata는 logical expiry와 조건부
 remove/replace를 지원합니다. 스키마·client lifecycle·downstream fencing 경계는
-[AWS Kotlin 매뉴얼](docs/manual/ko/modules/bluetape4k-aws-kotlin.md#dynamodb-coordination)에서
+[AWS Kotlin 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/#dynamodb-coordination)에서
 설명합니다. 계약 테스트는 FlociServer만 사용합니다.
 
 ```bash
@@ -270,9 +270,9 @@ bluetape4k.aws.modulith.events:
 애플리케이션은 `AwsModulithEventTypeRegistry` bean을 제공하고 Spring Modulith event를
 논리 alias `order-events`로 route해야 합니다. 자세한 의존성, producer, DIRECT/SNS
 consumer, FIFO, back-off, diagnostic, 배포, Floci 경계는 manual의
-[storage와 messaging](docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md#spring-modulith-snssqs-외부화-미출시develop),
-[자동 설정](docs/manual/ko/modules/bluetape4k-aws-spring-boot/auto-configuration.md#modulith-event-자동-설정-미출시develop),
-[runtime 운영](docs/manual/ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md#modulith-event-runtime-운영-미출시develop)
+[storage와 messaging](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/#spring-modulith-snssqs-외부화-미출시develop),
+[자동 설정](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/auto-configuration/#modulith-event-자동-설정-미출시develop),
+[runtime 운영](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/#modulith-event-runtime-운영-미출시develop)
 장에 정리했습니다.
 
 ```yaml
@@ -1400,9 +1400,9 @@ implementation("aws.sdk.kotlin:sfn")
 ```
 
 Standard/Express/Map Run 경계, IAM/KMS, quota를 고려한 polling, Floci/LocalStack 검증
-근거는 [Java 모듈 매뉴얼](docs/manual/ko/modules/bluetape4k-aws-java.md),
-[Kotlin 모듈 매뉴얼](docs/manual/ko/modules/bluetape4k-aws-kotlin.md),
-[테스트와 운영 가이드](docs/manual/ko/guides/testing-and-operations.md)에서 확인하세요.
+근거는 [Java 모듈 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-java/),
+[Kotlin 모듈 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/),
+[테스트와 운영 가이드](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/guides/testing-and-operations/)에서 확인하세요.
 Emulator 결과는 운영 IAM 또는 KMS 접근 권한을 증명하지 않습니다.
 
 ### Lambda — 범위가 지정된 호출 helper (1.0.0 개발선)
