@@ -57,6 +57,24 @@
 - Spring Modulith SNS/SQS event externalization을 producer·consumer 방향별 opt-in
   delivery boundary로 추가했습니다
   ([#471](https://github.com/bluetape4k/bluetape4k-aws/issues/471)).
+- Ktor와 Spring Boot Exposed 주문 예제에 `bluetape4k-exposed` 2.0.0의 typed cursor
+  pagination을 연결했습니다. 두 API 모두 `ExposedCursorPage<OrderRecord, Long>`을
+  사용하고 고객 필터·limit·cursor 계약과 count query 없는 마지막 페이지를 보여줍니다
+  ([#592](https://github.com/bluetape4k/bluetape4k-aws/issues/592),
+  [PR #596](https://github.com/bluetape4k/bluetape4k-aws/pull/596)).
+- Spring Boot Exposed 예제 테스트에 `DynamicPropertyRegistry` bridge를 추가해
+  Testcontainers의 lazy JDBC property를 AWS database prefix에 연결했습니다
+  ([#593](https://github.com/bluetape4k/bluetape4k-aws/issues/593),
+  [PR #597](https://github.com/bluetape4k/bluetape4k-aws/pull/597)).
+- Spring Boot Exposed 예제에 Query by Example과 `OrderSummaryProjection` closed
+  projection을 추가하고, 선택 column·`ORDER BY`·`LIMIT`을 SQL로 pushdown하는 계약을
+  검증했습니다 ([#594](https://github.com/bluetape4k/bluetape4k-aws/issues/594),
+  [PR #598](https://github.com/bluetape4k/bluetape4k-aws/pull/598)).
+- Ktor Exposed 예제와 `aws-ktor` 모듈에 backend-selective JDBC health/readiness를
+  추가했습니다. `/healthz/exposed`는 probe-free liveness를, `/readyz/exposed`는
+  고정된 실패 응답과 timeout 경계를 가진 JDBC `SELECT 1` readiness를 opt-in으로
+  제공합니다 ([#595](https://github.com/bluetape4k/bluetape4k-aws/issues/595),
+  [PR #599](https://github.com/bluetape4k/bluetape4k-aws/pull/599)).
 
 ### 변경
 
@@ -68,6 +86,9 @@
   공개 KDoc를 한국어 계약에 맞춰 정렬했습니다
   ([#571](https://github.com/bluetape4k/bluetape4k-aws/issues/571),
   [PR #590](https://github.com/bluetape4k/bluetape4k-aws/pull/590)).
+- 위 네 건의 Exposed 예제 변경을 #596 → #597 → #598 → #599 순서로 `develop`에
+  병합했으며, PR #599 병합 직후 `develop` head는
+  `248f62fa28a05bc61037ff0cc469cce8059f3681`입니다.
 
 ### 버그 수정
 

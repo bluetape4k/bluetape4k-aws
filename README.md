@@ -43,7 +43,8 @@ uses.
   awspring. See the [storage and messaging manual](docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md).
 - **Ktor 3 integration** — SigV4 signing, coroutine S3 access, SQS consumer
   runtime, EventBridge publishing, DynamoDB server repositories, EC2 IMDS
-  helpers, and Ktor server/client examples.
+  helpers, selective Exposed JDBC health/readiness routes, and Ktor
+  server/client examples.
 - **Local integration testing** — Floci-first emulator wiring through
   Testcontainers, with explicit LocalStack fallback runs for coverage gaps.
 
@@ -65,16 +66,16 @@ uses.
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK wrappers. Native `suspend` functions + DSL builders for DynamoDB, DynamoDB Streams, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, and Parameter Store |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | Shared Exposed JDBC database foundation for AWS-backed configuration. Provides database properties, RDS IAM authentication token support, Secrets Manager/Parameter Store source descriptors, Hikari-backed Exposed `Database` creation, and default/named database registry support |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | Spring Boot 4 auto-configuration for AWS services. Coroutines-native, no awspring dependency. Includes S3 Transfer Manager (`S3TransferTemplate`), optional S3 Access Grants through S3 Control, optional S3 Vectors operations, EventBridge operations, SES sender and JavaMail adapter, SNS HTTP(S) notification parsing (`SnsHttpMessageParser`) with MVC/WebFlux composed endpoint mappings, SQS listener support, optional Spring Modulith SNS/SQS event externalization, Kinesis operations, DynamoDB with optional DAX, CloudWatch/CloudWatch Logs with Micrometer snapshot publishing, EC2 IMDS metadata operations, KMS, Secrets Manager, and Parameter Store |
-| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, EventBridge server plugin, Kinesis and STS server plugins, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, and shared `bluetape4k-ktor-core` baseline helpers |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, coroutine-friendly S3 REST client with KMS encryption header support, optional S3 Access Grants and S3 Vectors server plugins, EventBridge server plugin, Kinesis and STS server plugins, SES v2 and SNS server plugins, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helpers, AWS-backed Exposed configuration, opt-in selective Exposed JDBC health/readiness routes, and shared `bluetape4k-ktor-core` baseline helpers |
 | `aws-ktor-dynamodb-examples` | not published | Ktor 3 DynamoDB server repository example backed by Floci-first AWS emulator tests and shared `bluetape4k-ktor-*` helpers |
 | `aws-ktor-s3-examples` | not published | Ktor 3 `S3KtorClient` examples for object routes, presigned URLs, content-type detection, config objects, and client-side encryption |
 | `aws-ktor-sqs-examples` | not published | Ktor 3 SQS consumer/runtime example backed by Floci, with manual ack/nack, retry-once redelivery, interceptors, and observer events |
-| `aws-ktor-exposed-examples` | not published | Ktor 3 `AwsExposedPlugin` example with PostgreSQL Testcontainers and route-level Exposed transactions |
+| `aws-ktor-exposed-examples` | not published | Ktor 3 `AwsExposedPlugin` example with PostgreSQL Testcontainers, typed `ExposedCursorPage` order pagination, and opt-in `/healthz/exposed` and `/readyz/exposed` JDBC probes |
 | `aws-ktor-service-coverage-examples` | not published | Ktor 3 service coverage examples for SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, and STS plugins with injected operations for deterministic route tests |
 | `aws-spring-boot-dynamodb-examples` | not published | Spring Boot 4 DynamoDB repository examples for coroutine service flows |
 | `aws-spring-boot-s3-examples` | not published | Spring Boot 4 WebFlux examples for `S3Operations`/`S3CoroutinesTemplate`, presigned URLs, and optional KMS-backed client-side encryption; compiled, tested, and wired for Spring AOT |
 | `aws-spring-boot-sqs-examples` | not published | Spring Boot 4 SQS/SNS fanout examples for `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor events, and Floci-first SNS subscriptions; compiled, tested, and wired for Spring AOT |
-| `aws-spring-boot-exposed-examples` | not published | Spring Boot 4 MVC/Exposed example backed by `AwsExposedAutoConfiguration` and PostgreSQL Testcontainers |
+| `aws-spring-boot-exposed-examples` | not published | Spring Boot 4 MVC/Exposed example with typed cursor pagination, Spring Data Exposed 2.0.0 QBE/closed-projection SQL pushdown, and a `DynamicPropertyRegistry` Testcontainers bridge |
 
 ### Component Map
 
@@ -751,6 +752,25 @@ Direct `bluetape4k.aws.exposed.default-database.*` properties still work for
 local and test profiles. Source descriptor values overlay only keys that exist
 under the descriptor prefix, and optional descriptors leave existing settings
 unchanged when the source is absent.
+
+### Exposed 2.0.0 examples
+
+The two Exposed example modules exercise the current
+`bluetape4k-exposed` `2.0.0-SNAPSHOT` APIs while keeping AWS configuration,
+transaction, and resource-lifecycle boundaries explicit. They are not
+published and use PostgreSQL Testcontainers without requiring AWS credentials.
+
+| Example | Demonstrated contract | Guide |
+|---|---|---|
+| `aws-ktor-exposed-examples` | `ExposedCursorPage<OrderRecord, Long>` cursor pagination with an optional `customerId` filter and no count query; opt-in `/healthz/exposed` liveness and `/readyz/exposed` JDBC `SELECT 1` readiness using only the Exposed core/JDBC artifacts | [Ktor Exposed example](examples/aws-ktor-exposed-examples/README.md) |
+| `aws-spring-boot-exposed-examples` | Cursor pagination plus Spring Data Exposed 2.0.0 Query by Example with `OrderSummaryProjection` closed-projection SQL pushdown; `DynamicPropertyRegistry` maps Testcontainers properties into the AWS database prefix | [Spring Boot Exposed example](examples/aws-spring-boot-exposed-examples/README.md) |
+
+Run the focused example tests sequentially when sharing Docker resources:
+
+```bash
+./gradlew :aws-ktor-exposed-examples:test
+./gradlew :aws-spring-boot-exposed-examples:test
+```
 
 ### SQS — Spring Boot Coroutines Template and Listener
 
@@ -1634,9 +1654,11 @@ container reuse for an experiment must instantiate the wrapper explicitly with
 ./gradlew :bluetape4k-aws-spring-boot:test
 ./gradlew :bluetape4k-aws-ktor:test
 ./gradlew :aws-ktor-dynamodb-examples:test
+./gradlew :aws-ktor-exposed-examples:test
 ./gradlew :aws-ktor-sqs-examples:test
 ./gradlew :aws-ktor-service-coverage-examples:test
 ./gradlew :aws-spring-boot-dynamodb-examples:test
+./gradlew :aws-spring-boot-exposed-examples:test
 ./gradlew :aws-spring-boot-s3-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test
 
