@@ -1,8 +1,9 @@
 # 진행 중인 작업 - bluetape4k-aws
 
-기준 시점: 2026-08-29 KST
-기준 브랜치: `develop` (`f48ac3fe1682127b5e019be75a37efd75f5d8934`)
-범위: `0.5.0` 이후 병합된 공개 API와 `1.0.0` 개발선의 문서 정합성 유지
+기준 시점: 2026-08-30 KST
+기준 브랜치: `develop` (`248f62fa28a05bc61037ff0cc469cce8059f3681`)
+범위: `0.5.0` 이후 병합된 공개 API, `1.0.0` 개발선과 `bluetape4k-exposed`
+`2.0.0-SNAPSHOT` 예제의 문서 정합성 유지
 열린 이슈 수: 0개
 열린 PR 수: 0개
 최신 안정 릴리스: `0.5.0` (2026-08-06)
@@ -12,6 +13,11 @@
 `0.5.0`은 안정 릴리스로 종료되었고, 저장소는 `1.0.0` 개발선의 공개 API와
 문서를 유지합니다. 이 파일은 활성 저장소 관리에 필요한 상태와 다음 확인
 지점만 기록합니다.
+
+현재 Exposed 예제는 `bluetape4k-exposed` `2.0.0-SNAPSHOT`의 typed cursor
+pagination, Spring Data QBE·projection SQL pushdown, `DynamicPropertyRegistry`
+bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR은 모두
+순서대로 `develop`에 병합되었습니다.
 
 - 공개 표면이 병합되면 `CHANGELOG.md`와 관련 README를 같은 변경 단위에서 갱신합니다.
 - 릴리스 및 사전 공개 버전 의존성 표기는 `gradle.properties`와
@@ -26,13 +32,13 @@
 
 | 우선순위 | 이슈 | 마일스톤 | 비고 |
 |---|---|---|---|
-| — | 없음 | — | 2026-08-29 `gh issue list --state open` 결과 열린 이슈가 없습니다. |
+| — | 없음 | — | 2026-08-30 `gh issue list --state open` 결과 열린 이슈가 없습니다. |
 
 ## 열린 PR
 
 | PR | 브랜치 | 설명 |
 |---|---|---|
-| — | 없음 | 2026-08-29 `gh pr list --state open` 결과 열린 PR이 없습니다. |
+| — | 없음 | 2026-08-30 `gh pr list --state open` 결과 열린 PR이 없습니다. |
 
 ## `0.5.0` 이후 완료된 작업
 
@@ -77,6 +83,21 @@
   [#573](https://github.com/bluetape4k/bluetape4k-aws/issues/573), SQS observation
   후속 [#586](https://github.com/bluetape4k/bluetape4k-aws/issues/586)도 종료했습니다.
 
+## `bluetape4k-exposed` 2.0.0 신규 기능 병합 현황
+
+다음 네 건은 Exposed 2.0.0 신규 기능을 AWS 예제에서 검증하기 위한 순차 train이며,
+모두 `develop`에 병합되어 현재 열린 후속 작업이 없습니다.
+
+| 순서 | 이슈 | PR | 반영 내용 |
+|---:|---|---|---|
+| 1 | [#592](https://github.com/bluetape4k/bluetape4k-aws/issues/592) | [#596](https://github.com/bluetape4k/bluetape4k-aws/pull/596) | Ktor·Spring 주문 API에 typed `ExposedCursorPage` pagination과 customer filter를 적용하고 count query 없는 페이지 계약을 검증 |
+| 2 | [#593](https://github.com/bluetape4k/bluetape4k-aws/issues/593) | [#597](https://github.com/bluetape4k/bluetape4k-aws/pull/597) | Spring Exposed Testcontainers 속성을 `DynamicPropertyRegistry` bridge로 AWS database prefix에 연결 |
+| 3 | [#594](https://github.com/bluetape4k/bluetape4k-aws/issues/594) | [#598](https://github.com/bluetape4k/bluetape4k-aws/pull/598) | Spring Data Exposed QBE와 closed projection의 선택 column·정렬·limit SQL pushdown을 추가 |
+| 4 | [#595](https://github.com/bluetape4k/bluetape4k-aws/issues/595) | [#599](https://github.com/bluetape4k/bluetape4k-aws/pull/599) | Ktor에 opt-in `/healthz/exposed` liveness와 `/readyz/exposed` JDBC `SELECT 1` readiness를 core/JDBC 경계로 추가 |
+
+순차 train의 최종 `develop` head는
+`248f62fa28a05bc61037ff0cc469cce8059f3681`이며, 병합 후 develop CI도 성공했습니다.
+
 ## Backlog
 
 현재 미종료 backlog는 없습니다. 다음 공개 변경이 병합되면 이 표에 실제 열린
@@ -84,13 +105,13 @@
 
 ## 갱신 메모
 
-- 2026-08-29 KST에 `gh issue list --state open`과 `gh pr list --state open`을
+- 2026-08-30 KST에 `gh issue list --state open`과 `gh pr list --state open`을
   실행해 열린 이슈와 PR이 각각 0개임을 확인했습니다.
-- 2026-08-29 KST에 `gh release view 0.5.0`으로 최신 안정 릴리스와
+- 2026-08-30 KST에 `gh release view 0.5.0`으로 최신 안정 릴리스와
   `2026-08-06` 게시 시각을 확인했습니다.
 - 현재 미출시 개발선은 `gradle.properties`의 `baseVersion=1.0.0`을 사용합니다.
 - `gradle/libs.versions.toml`의 로컬 참조는
   `bluetape4k = "2.0.0-SNAPSHOT"`, `bluetape4k-exposed = "2.0.0-SNAPSHOT"`입니다.
-- 최신 `develop` head의 기본 SNS batch diagnostic은 추정 가능한 fingerprint를
-  로그 문자열에서 제외하고, 호환성 getter는 deprecated 상태로 유지합니다
-  (PR [#587](https://github.com/bluetape4k/bluetape4k-aws/pull/587)).
+- 최신 `develop` head는 Exposed 순차 train의 최종 병합 커밋이며, 기본 SNS batch
+  diagnostic은 추정 가능한 fingerprint를 로그 문자열에서 제외하고 호환성 getter는
+  deprecated 상태로 유지합니다 (PR [#587](https://github.com/bluetape4k/bluetape4k-aws/pull/587)).

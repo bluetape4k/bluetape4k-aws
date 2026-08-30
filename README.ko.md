@@ -34,7 +34,7 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 - **Spring Boot 4 operations** — awspring 없이 coroutine 중심 template, repository, listener,
   선택적 lifecycle-aware SQS Observation, Spring Modulith SNS/SQS event 외부화,
   auto-configuration 제공. 자세한 내용은 [storage와 messaging 매뉴얼](docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)을 참고하세요.
-- **Ktor 3 통합** — SigV4 signing, coroutine S3 접근, SQS consumer runtime, EventBridge publishing, DynamoDB server repository, EC2 IMDS helper, Ktor server/client 예제
+- **Ktor 3 통합** — SigV4 signing, coroutine S3 접근, SQS consumer runtime, EventBridge publishing, DynamoDB server repository, EC2 IMDS helper, 선택적 Exposed JDBC health/readiness route, Ktor server/client 예제
 - **로컬 통합 테스트** — Testcontainers 기반 Floci-first emulator와 coverage gap을 위한 명시적 LocalStack fallback 검증
 
 <!-- README_VISUAL_OVERVIEW:START -->
@@ -55,16 +55,16 @@ Ktor 3 HTTP 통합을 연결하되, 실제로 사용할 AWS SDK 모듈과 런타
 | `bluetape4k-aws-kotlin` | `io.github.bluetape4k.aws:bluetape4k-aws-kotlin` | AWS Kotlin SDK 래퍼. DynamoDB, DynamoDB Streams, S3, S3 Tables, SES/v2, SNS, SQS, KMS, CloudWatch, CloudWatch Logs, Kinesis, EventBridge, EventBridge Scheduler, Step Functions, Lambda, Bedrock Runtime, STS, Secrets Manager, Parameter Store에 대한 네이티브 `suspend` 함수 + DSL 빌더 제공 |
 | `bluetape4k-aws-exposed` | `io.github.bluetape4k.aws:bluetape4k-aws-exposed` | AWS 기반 설정과 Exposed JDBC를 연결하는 공통 기반. 데이터베이스 프로퍼티, RDS IAM 인증 토큰, Secrets Manager/Parameter Store source descriptor, Hikari 기반 Exposed `Database` 생성, default/named database registry 제공 |
 | `bluetape4k-aws-spring-boot` | `io.github.bluetape4k.aws:bluetape4k-aws-spring-boot` | AWS 서비스용 Spring Boot 4 자동설정. Coroutines 네이티브, awspring 미사용. S3 Transfer Manager(`S3TransferTemplate`), S3 Control 기반 선택적 S3 Access Grants, 선택적 S3 Vectors operations, EventBridge operations, SES sender와 JavaMail adapter, SNS HTTP(S) 엔드포인트 알림 파싱(`SnsHttpMessageParser`)과 MVC/WebFlux composed mapping, SQS listener, 선택적 Spring Modulith SNS/SQS event 외부화, Kinesis operations, 선택적 DAX를 포함한 DynamoDB, Micrometer 기준 데이터 전송을 포함한 CloudWatch/CloudWatch Logs, EC2 IMDS metadata operations, KMS, Secrets Manager, Parameter Store 지원 |
-| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, EventBridge server plugin, Kinesis 및 STS server plugin, SES v2 및 SNS server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 공유 `bluetape4k-ktor-core` 기반 helper |
+| `bluetape4k-aws-ktor` | `io.github.bluetape4k.aws:bluetape4k-aws-ktor` | Ktor 3 SigV4 client plugin, KMS encryption header를 지원하는 coroutine 친화적 S3 REST client, 선택적 S3 Access Grants 및 S3 Vectors server plugin, EventBridge server plugin, Kinesis 및 STS server plugin, SES v2 및 SNS server plugin, SQS consumer runtime, DynamoDB server repository plugin, EC2 IMDS helper, AWS 기반 Exposed configuration, 선택적 Exposed JDBC health/readiness route, 공유 `bluetape4k-ktor-core` 기반 helper |
 | `aws-ktor-dynamodb-examples` | 배포 안 함 | Floci-first AWS emulator 테스트와 공유 `bluetape4k-ktor-*` helper 기반 Ktor 3 DynamoDB server repository 예제 |
 | `aws-ktor-s3-examples` | 배포 안 함 | object route, presigned URL, content-type 감지, config object, client-side encryption을 다루는 Ktor 3 `S3KtorClient` 예제 |
 | `aws-ktor-sqs-examples` | 배포 안 함 | Floci 기반 Ktor 3 SQS consumer/runtime 예제. Manual ack/nack, retry-once redelivery, interceptor, observer event 포함 |
-| `aws-ktor-exposed-examples` | 배포 안 함 | PostgreSQL Testcontainers와 route-level Exposed transaction을 사용하는 Ktor 3 `AwsExposedPlugin` 예제 |
+| `aws-ktor-exposed-examples` | 배포 안 함 | PostgreSQL Testcontainers, typed `ExposedCursorPage` 주문 pagination, 선택적 `/healthz/exposed`·`/readyz/exposed` JDBC probe를 사용하는 Ktor 3 `AwsExposedPlugin` 예제 |
 | `aws-ktor-service-coverage-examples` | 배포 안 함 | SES/v2, SNS, CloudWatch, CloudWatch Logs, Kinesis, STS plugin을 다루는 Ktor 3 service coverage 예제. Injected operations 기반 deterministic route test 포함 |
 | `aws-spring-boot-dynamodb-examples` | 배포 안 함 | Coroutine service flow용 Spring Boot 4 DynamoDB repository 예제 |
 | `aws-spring-boot-s3-examples` | 배포 안 함 | `S3Operations`/`S3CoroutinesTemplate`, presigned URL, 선택적 KMS 기반 client-side encryption을 다루는 Spring Boot 4 WebFlux 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
 | `aws-spring-boot-sqs-examples` | 배포 안 함 | `SqsOperations`, typed/manual-ack `@SqsListener`, retry, interceptor event, Floci-first SNS subscription fanout을 다루는 Spring Boot 4 SQS/SNS 예제. 컴파일/테스트 및 Spring AOT 태스크 검증 |
-| `aws-spring-boot-exposed-examples` | 배포 안 함 | `AwsExposedAutoConfiguration`과 PostgreSQL Testcontainers를 사용하는 Spring Boot 4 MVC/Exposed 예제 |
+| `aws-spring-boot-exposed-examples` | 배포 안 함 | typed cursor pagination, Spring Data Exposed 2.0.0 QBE/closed-projection SQL pushdown, `DynamicPropertyRegistry` Testcontainers bridge를 포함한 Spring Boot 4 MVC/Exposed 예제 |
 
 ### 구성요소 맵
 
@@ -736,6 +736,25 @@ Secret payload는 database field를 그대로 제공할 수 있습니다.
 `bluetape4k.aws.exposed.default-database.*` 속성을 직접 설정해도 됩니다. Source
 descriptor 값은 descriptor prefix 아래 실제 존재하는 key만 덮어쓰며, optional
 descriptor는 source가 없을 때 기존 설정을 유지합니다.
+
+### Exposed 2.0.0 예제
+
+두 Exposed 예제 모듈은 현재
+`bluetape4k-exposed` `2.0.0-SNAPSHOT` API를 사용하면서 AWS 설정, transaction과
+resource lifecycle 경계를 분명하게 보여줍니다. 두 모듈 모두 배포하지 않으며 AWS
+credential 없이 PostgreSQL Testcontainers로 실행합니다.
+
+| 예제 | 확인하는 계약 | 안내 |
+|---|---|---|
+| `aws-ktor-exposed-examples` | 선택적인 `customerId` 필터와 count query 없는 `ExposedCursorPage<OrderRecord, Long>` cursor pagination, Exposed core/JDBC artifact만 사용하는 opt-in `/healthz/exposed` liveness와 `/readyz/exposed` JDBC `SELECT 1` readiness | [Ktor Exposed 예제](examples/aws-ktor-exposed-examples/README.ko.md) |
+| `aws-spring-boot-exposed-examples` | cursor pagination, `OrderSummaryProjection` closed projection을 사용하는 Spring Data Exposed 2.0.0 Query by Example SQL pushdown, Testcontainers property를 AWS database prefix로 매핑하는 `DynamicPropertyRegistry` bridge | [Spring Boot Exposed 예제](examples/aws-spring-boot-exposed-examples/README.ko.md) |
+
+Docker resource를 공유할 때는 두 예제 테스트를 순서대로 실행합니다.
+
+```bash
+./gradlew :aws-ktor-exposed-examples:test
+./gradlew :aws-spring-boot-exposed-examples:test
+```
 
 ### SQS — Spring Boot Coroutines Template과 Listener
 
@@ -1605,9 +1624,11 @@ Testcontainer launcher는 단일 module test JVM 안에서만 공유됩니다. �
 ./gradlew :bluetape4k-aws-spring-boot:test
 ./gradlew :bluetape4k-aws-ktor:test
 ./gradlew :aws-ktor-dynamodb-examples:test
+./gradlew :aws-ktor-exposed-examples:test
 ./gradlew :aws-ktor-sqs-examples:test
 ./gradlew :aws-ktor-service-coverage-examples:test
 ./gradlew :aws-spring-boot-dynamodb-examples:test
+./gradlew :aws-spring-boot-exposed-examples:test
 ./gradlew :aws-spring-boot-s3-examples:test
 ./gradlew :aws-spring-boot-sqs-examples:test
 
