@@ -87,7 +87,8 @@
   ([#571](https://github.com/bluetape4k/bluetape4k-aws/issues/571),
   [PR #590](https://github.com/bluetape4k/bluetape4k-aws/pull/590)).
 - 위 네 건의 Exposed 예제 변경을 #596 → #597 → #598 → #599 순서로 `develop`에
-  병합했으며, 현재 기준 head는 `248f62fa28a05bc61037ff0cc469cce8059f3681`입니다.
+  병합했으며, PR #599 병합 직후 `develop` head는
+  `248f62fa28a05bc61037ff0cc469cce8059f3681`입니다.
 
 ### 버그 수정
 

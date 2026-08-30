@@ -1,11 +1,12 @@
 # 진행 중인 작업 - bluetape4k-aws
 
 기준 시점: 2026-08-30 KST
-기준 브랜치: `develop` (`248f62fa28a05bc61037ff0cc469cce8059f3681`)
+기준 브랜치: `develop` — PR #599 병합 직후 기준 정보
+(`248f62fa28a05bc61037ff0cc469cce8059f3681`)
 범위: `0.5.0` 이후 병합된 공개 API, `1.0.0` 개발선과 `bluetape4k-exposed`
 `2.0.0-SNAPSHOT` 예제의 문서 정합성 유지
 열린 이슈 수: 0개
-열린 PR 수: 0개
+문서 갱신 시점의 열린 PR 수: 0개 (PR #600 생성 전 확인)
 최신 안정 릴리스: `0.5.0` (2026-08-06)
 
 ## 현재 방향
@@ -32,13 +33,13 @@ bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR�
 
 | 우선순위 | 이슈 | 마일스톤 | 비고 |
 |---|---|---|---|
-| — | 없음 | — | 2026-08-30 `gh issue list --state open` 결과 열린 이슈가 없습니다. |
+| — | 없음 | — | 2026-08-30 문서 갱신 시점에 `gh issue list --state open` 결과 열린 이슈가 없었습니다. |
 
 ## 열린 PR
 
 | PR | 브랜치 | 설명 |
 |---|---|---|
-| — | 없음 | 2026-08-30 `gh pr list --state open` 결과 열린 PR이 없습니다. |
+| — | 없음 | 2026-08-30 PR #600 생성 전에 `gh pr list --state open` 결과 열린 PR이 없었습니다. |
 
 ## `0.5.0` 이후 완료된 작업
 
@@ -95,8 +96,8 @@ bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR�
 | 3 | [#594](https://github.com/bluetape4k/bluetape4k-aws/issues/594) | [#598](https://github.com/bluetape4k/bluetape4k-aws/pull/598) | Spring Data Exposed QBE와 closed projection의 선택 column·정렬·limit SQL pushdown을 추가 |
 | 4 | [#595](https://github.com/bluetape4k/bluetape4k-aws/issues/595) | [#599](https://github.com/bluetape4k/bluetape4k-aws/pull/599) | Ktor에 opt-in `/healthz/exposed` liveness와 `/readyz/exposed` JDBC `SELECT 1` readiness를 core/JDBC 경계로 추가 |
 
-순차 train의 최종 `develop` head는
-`248f62fa28a05bc61037ff0cc469cce8059f3681`이며, 병합 후 develop CI도 성공했습니다.
+순차 train의 PR #599 병합 직후 `develop` head는
+`248f62fa28a05bc61037ff0cc469cce8059f3681`이며, 해당 병합 후 develop CI도 성공했습니다.
 
 ## Backlog
 
@@ -105,13 +106,14 @@ bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR�
 
 ## 갱신 메모
 
-- 2026-08-30 KST에 `gh issue list --state open`과 `gh pr list --state open`을
-  실행해 열린 이슈와 PR이 각각 0개임을 확인했습니다.
+- 2026-08-30 KST, PR #600 생성 전에 `gh issue list --state open`과
+  `gh pr list --state open`을 실행해 당시 열린 이슈와 PR이 각각 0개임을 확인했습니다.
 - 2026-08-30 KST에 `gh release view 0.5.0`으로 최신 안정 릴리스와
   `2026-08-06` 게시 시각을 확인했습니다.
 - 현재 미출시 개발선은 `gradle.properties`의 `baseVersion=1.0.0`을 사용합니다.
 - `gradle/libs.versions.toml`의 로컬 참조는
   `bluetape4k = "2.0.0-SNAPSHOT"`, `bluetape4k-exposed = "2.0.0-SNAPSHOT"`입니다.
-- 최신 `develop` head는 Exposed 순차 train의 최종 병합 커밋이며, 기본 SNS batch
-  diagnostic은 추정 가능한 fingerprint를 로그 문자열에서 제외하고 호환성 getter는
-  deprecated 상태로 유지합니다 (PR [#587](https://github.com/bluetape4k/bluetape4k-aws/pull/587)).
+- PR #599 병합 직후 `develop` head는 Exposed 순차 train의 최종 병합 커밋이며, 기본
+  SNS batch diagnostic은 추정 가능한 fingerprint를 로그 문자열에서 제외하고
+  호환성 getter는 deprecated 상태로 유지합니다
+  (PR [#587](https://github.com/bluetape4k/bluetape4k-aws/pull/587)).
