@@ -23,8 +23,8 @@ class AwsConfigDataDocumentationParityTest {
         val readme = read("aws-spring-boot/README.md")
         val koreanReadme = read("aws-spring-boot/README.ko.md")
 
-        readme shouldContain "docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md"
-        koreanReadme shouldContain "docs/manual/ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md"
+        readme shouldContain "https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/"
+        koreanReadme shouldContain "https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/"
     }
 
     @Test
