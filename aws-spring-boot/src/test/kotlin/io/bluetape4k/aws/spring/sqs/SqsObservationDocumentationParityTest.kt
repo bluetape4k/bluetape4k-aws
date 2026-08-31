@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -11,6 +12,10 @@ class SqsObservationDocumentationParityTest {
     private val repositoryRoot: Path by lazy {
         generateSequence(Path.of("").toAbsolutePath()) { it.parent }
             .first { Files.exists(it.resolve("settings.gradle.kts")) }
+    }
+
+    private val manualRoot: Path by lazy {
+        Path.of(System.getenv("BLUETAPE4K_MANUAL_ROOT") ?: repositoryRoot.resolve("docs/manual").toString())
     }
 
     @Test
@@ -96,6 +101,11 @@ class SqsObservationDocumentationParityTest {
         .trimIndent()
         .trim()
 
-    private fun read(relativePath: String): String =
-        Files.readString(repositoryRoot.resolve(relativePath))
+    private fun read(relativePath: String): String {
+        if (relativePath.startsWith("docs/manual/")) {
+            assumeTrue(Files.isDirectory(manualRoot), "central manual checkout is not available")
+            return Files.readString(manualRoot.resolve(relativePath.removePrefix("docs/manual/")))
+        }
+        return Files.readString(repositoryRoot.resolve(relativePath))
+    }
 }

@@ -48,9 +48,11 @@ transient runtime state and local artifacts only.
 
 ## Manual Ownership
 
-- `docs/manual/` is the source of truth for detailed user guidance. README files
-  summarize the repository and point readers to the manual; do not duplicate a
-  full manual chapter in README.
+- The central site owns detailed user guidance under
+  `bluetape4k.github.io/docs/manual/bluetape4k-aws`; this repository must not
+  recreate a second `docs/manual/` tree. README files summarize the repository
+  and point readers to the central manual; do not duplicate a full manual
+  chapter in README.
 - Keep English and Korean pages structurally aligned. Korean prose must read as
   natural Korean rather than a literal translation while preserving API names,
   links, anchors, and technical meaning.
@@ -85,9 +87,12 @@ For release work, check the workspace governance docs first:
 ./gradlew build
 ./gradlew detekt
 ./gradlew exportManualModuleInventory --no-daemon
-TAG=0.4.0; SHA=$(git rev-parse "$TAG^{}"); ruby scripts/manual/validate_release_manuals.rb "$TAG" "$SHA"
-ruby scripts/manual/export_manifest.rb docs/manual/manifest.yaml docs/manual/generated/manifest.json --check
-ruby scripts/manual/manual_contract_test.rb
+MANUAL_SITE_ROOT=${MANUAL_SITE_ROOT:-../bluetape4k.github.io}
+TOOL_ROOT="$MANUAL_SITE_ROOT/scripts/manual/repositories/bluetape4k-aws"
+MANUAL_ROOT="$MANUAL_SITE_ROOT/docs/manual/bluetape4k-aws"
+TAG=0.4.0; SHA=$(git rev-parse "$TAG^{}"); ruby "$TOOL_ROOT/validate_release_manuals.rb" "$TAG" "$SHA"
+ruby "$TOOL_ROOT/export_manifest.rb" "$MANUAL_ROOT/manifest.yaml" "$MANUAL_ROOT/generated/manifest.json" --check
+ruby "$TOOL_ROOT/manual_contract_test.rb"
 ./gradlew publishBluetapeAwsPublicationToCentralPortal
 ./gradlew publishBluetapeAwsPublicationToCentralPortal -PsnapshotVersion=
 ```

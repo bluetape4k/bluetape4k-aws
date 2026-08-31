@@ -50,7 +50,7 @@ Exposed database wiring.
 - **SQS listener** — `@SqsListener` annotation drives a coroutine-based
   message listener container with configurable concurrency, visibility, and
   error-visibility timeouts. Opt-in SQS Observation covers receive, process,
-  and actual acknowledgement I/O; the [manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md) is the detailed source of truth.
+  and actual acknowledgement I/O; the [manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/) is the detailed source of truth.
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` abstract base over
   `DynamoDbAsyncTable` with `save`/`findById`/`update`/`delete`, plus
   `scan`/`query`/`queryIndex` `Flow` results. Logical table names are resolved
@@ -387,7 +387,7 @@ remote access. AppConfig Data reload is disabled by default; set
 resource. Empty responses and decode/transport failures retain the last good map,
 and `Environment` sees new values without automatic `@Value` or
 `@ConfigurationProperties` rebind. Floci is the preferred local emulator; use
-LocalStack only as an explicit fallback. See the [runtime operations manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md)
+LocalStack only as an explicit fallback. See the [runtime operations manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/)
 for the complete contract.
 
 `bluetape4k.aws.exposed.default-database.url` activates the Exposed registry.
@@ -550,7 +550,7 @@ integration. Encryption context is authenticated as AES-GCM AAD and is not
 written to metadata, logs, or temporary files. Malformed metadata and
 authentication failures do not return plaintext. The `bt4k-cek-*` envelope is
 a Bluetape4k wire format, not an AWS Encryption SDK or general S3-client
-format. See the [S3 client-side encryption manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot.md#s3-client-side-encryption)
+format. See the [S3 client-side encryption manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/#s3-client-side-encryption)
 for key validation, lifecycle, and failure details.
 
 ### S3 — ResourceLoader and patterns
@@ -1204,9 +1204,9 @@ poller cancellation.
 Native SQS Observation is separately opt-in with
 `bluetape4k.aws.sqs.observation.enabled=true`. It preserves coroutine parentage
 across receive, process, and actual acknowledgement I/O. See the
-[storage and messaging manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)
+[storage and messaging manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)
 for prerequisites, safe tags, extension points, and Floci acceptance, and the
-[runtime operations manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/runtime-operations.md)
+[runtime operations manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/)
 for canary and rollback rules.
 
 The opt-in visibility heartbeat requires both `message-visibility-heartbeat-interval-seconds`
@@ -1231,7 +1231,7 @@ an optional `SqsBatchAcknowledgement`. `maxMessages` remains within the AWS limi
 otherwise. FIFO groups preserve a contiguous successful prefix, and at-least-once delivery still
 requires idempotent side effects or message-id deduplication. Receipt handles, bodies, and raw
 message identifiers are not emitted in result `toString()`, logs, metric tags, or correlation
-values. Use the [storage and messaging manual](../docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)
+values. Use the [storage and messaging manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)
 for the canary/rollback sequence (`STOPPING_RECEIVE -> DRAINING -> STOPPED`, DLQ redrive, and
 idempotency checks).
 

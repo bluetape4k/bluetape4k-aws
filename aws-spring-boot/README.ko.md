@@ -48,7 +48,7 @@ AWS-backed Exposed 데이터베이스 연결을 제공합니다. `awspring` 런�
 - **SQS 리스너** — `@SqsListener` 어노테이션 기반 Coroutine 메시지 리스너 컨테이너입니다.
   동시 처리 수와 visibility/error-visibility 타임아웃을 속성으로 조정합니다. 선택적 SQS
   Observation은 receive, process, 실제 acknowledgement I/O를 관찰하며 상세 계약은
-  [매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)에 있습니다.
+  [매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)에 있습니다.
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` 추상 베이스가
   `DynamoDbAsyncTable` 위에서 `save`/`findById`/`update`/`delete`와
   `scan`/`query`/`queryIndex`의 `Flow` 결과를 제공합니다. 논리 테이블 이름은
@@ -378,7 +378,7 @@ fixed-delay poller 하나를 만듭니다. 빈 응답과 decode/transport 오류
 map을 유지하며 `Environment`는 새 값을 읽지만 `@Value`나
 `@ConfigurationProperties`는 자동 rebind하지 않습니다. 로컬 emulator는 Floci를
 우선 사용하고, LocalStack은 명시적인 fallback으로 사용하세요.
-전체 계약은 [runtime 운영 manual](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md)에서
+전체 계약은 [runtime 운영 manual](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/)에서
 확인할 수 있습니다.
 
 `bluetape4k.aws.exposed.default-database.url`이 있을 때 Exposed registry가
@@ -541,7 +541,7 @@ Encryption context는 AES-GCM AAD로 인증하며 metadata, log, temporary file�
 않습니다. 잘못된 metadata나 authentication 실패는 plaintext를 반환하지 않습니다.
 `bt4k-cek-*` 형식은 Bluetape4k 전용 wire format이므로 AWS Encryption SDK나 다른 S3
 client와 호환되지 않습니다. 전체 provider와 lifecycle 계약은 [S3 client-side
-encryption manual](../docs/manual/ko/modules/bluetape4k-aws-spring-boot.md#s3-client-side-encryption)에서
+encryption manual](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/#s3-client-side-encryption)에서
 확인하세요.
 
 ### S3 — ResourceLoader와 패턴
@@ -1185,9 +1185,9 @@ receive, handler, ack/nack, failure 단계를 Micrometer나 logging/tracing libr
 네이티브 SQS Observation은 `bluetape4k.aws.sqs.observation.enabled=true`로 별도
 활성화합니다. receive, process, 실제 acknowledgement I/O 사이에서 coroutine parentage를
 보존합니다. 선행 조건, 안전한 tag, 확장 지점, Floci acceptance는
-[storage와 messaging 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md),
+[storage와 messaging 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/),
 canary와 rollback 규칙은
-[runtime operations 매뉴얼](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/runtime-operations.md)을 참고하세요.
+[runtime operations 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/)을 참고하세요.
 
 선택적 visibility heartbeat를 사용하려면 `message-visibility-heartbeat-interval-seconds`와
 `message-visibility-heartbeat-seconds`를 모두 설정해야 하며 기본값은 비활성화입니다. 두 값은
@@ -1211,7 +1211,7 @@ acknowledgement로 완료된 메시지는 다음 heartbeat 요청에서 제외�
 FIFO group에서는 연속해서 성공한 prefix를 보존하며, at-least-once 전달이므로 외부 side effect는
 멱등하게 만들거나 message-id deduplication을 적용해야 합니다. receipt handle, body, raw
 message identifier는 결과 `toString()`, 로그, metric tag, correlation 값에 기록하지 않습니다.
-[storage와 messaging manual](../docs/manual/ko/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md)에서
+[storage와 messaging manual](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)에서
 canary/rollback 순서(`STOPPING_RECEIVE -> DRAINING -> STOPPED`, DLQ redrive, idempotency 확인)를
 확인하세요.
 

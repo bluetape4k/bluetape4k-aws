@@ -399,7 +399,7 @@ The example targets a Standard execution. The helper does not call
 `StopExecution` when collection is cancelled, and it does not close a client
 that the caller supplied. Add `software.amazon.awssdk:sfn` directly at runtime
 because service SDKs remain `compileOnly`. See the [Step Functions Java module
-manual](../docs/manual/en/modules/bluetape4k-aws-java.md) for dependency,
+manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-java/) for dependency,
 Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
 
 ### Lambda invocation helpers (1.0.0 development line)
