@@ -7,6 +7,8 @@
 
 ## [미출시]
 
+## [1.0.0] - 2026-09-02
+
 ### 추가
 
 - Java SDK v2와 AWS SDK for Kotlin에 S3 Tables 관리 API, Step Functions 실행·polling,
@@ -78,9 +80,12 @@
 
 ### 변경
 
-- `0.5.0` 이후 개발선을 `baseVersion=1.0.0`으로 열고, 현재 catalog의
-  `bluetape4k = "2.0.0-SNAPSHOT"`, `bluetape4k-exposed = "2.0.0-SNAPSHOT"` 참조를
-  유지합니다.
+- `0.5.0` 이후 개발선을 `baseVersion=1.0.0`으로 열고, 중앙 catalog ref를
+  `8efed120b91c4e1b1cfbfe1269321df325b08aef`로 고정해
+  `bluetape4k = "2.0.0"`, `bluetape4k-exposed = "2.0.0"` 안정 버전을 사용합니다.
+- Full Nightly의 `aws-spring-boot` job timeout을 10분에서 20분으로 조정해
+  테스트와 Kover가 성공한 뒤 artifact 업로드 중 취소되던 문제를 해결했습니다
+  ([#608](https://github.com/bluetape4k/bluetape4k-aws/issues/608)).
 - SNS signature 검증의 실제 fixture·Floci 경계를 문서화하고
   ([#513](https://github.com/bluetape4k/bluetape4k-aws/issues/513)), SNS HTTP adapter
   공개 KDoc를 한국어 계약에 맞춰 정렬했습니다
