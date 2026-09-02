@@ -56,10 +56,13 @@ class SqsMessageListenerContainerTest {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()
         val messages = listOf(message(), message("message-2"))
+        val receiveCalls = AtomicInteger()
         val handlersStarted = AtomicInteger()
         val allHandlersStarted = CompletableDeferred<Unit>()
         val releaseHandlers = CompletableDeferred<Unit>()
-        coEvery { operations.receive(QUEUE_URL, 2, 0, null) } returns messages
+        coEvery { operations.receive(QUEUE_URL, 2, 0, null) } coAnswers {
+            if (receiveCalls.incrementAndGet() == 1) messages else awaitCancellation()
+        }
         every { invoker.manualAcknowledgement } returns true
         coEvery { invoker.invoke(any(), any(), any()) } coAnswers {
             if (handlersStarted.incrementAndGet() == messages.size) {
