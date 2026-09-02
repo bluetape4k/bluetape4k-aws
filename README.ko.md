@@ -7,6 +7,10 @@
 
 [English](./README.md) | 한국어
 
+현재 안정 버전: `1.0.0`
+
+현재 개발선: `develop`의 `1.1.0-SNAPSHOT`
+
 ![bluetape4k AWS 작업대 일러스트](./docs/assets/aws-workbench.png)
 
 **AWS Java SDK v2**와 **AWS Kotlin SDK**를 Kotlin/JVM 서비스에서 쓰기 쉽게
@@ -15,7 +19,7 @@
 얇게 유지합니다.
 
 SDK와 framework 선택, lifecycle 원칙, 실전 예제 중심의 학습 경로는
-[AWS 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/)에서 자세히 설명합니다. README는 저장소를
+[AWS 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/1.0/)에서 자세히 설명합니다. README는 저장소를
 빠르게 둘러보는 문서이고, 상세 설명의 기준은 매뉴얼입니다.
 
 ---
@@ -238,7 +242,7 @@ KMS를 쓰려면 `software.amazon.awssdk:kms`, Kinesis operations를 쓰려면
 `software.amazon.awssdk:eventbridge`를 추가합니다. Spring Security의 동기식 `TextEncryptor`를
 주입받고 싶을 때만 `spring-security-crypto`를 추가합니다.
 
-#### Spring Modulith SNS/SQS event 외부화 (1.0.0 개발선)
+#### Spring Modulith SNS/SQS event 외부화 (1.0.0부터)
 
 | 방향 | 필요한 runtime 구성 | 전달 경계 |
 | --- | --- | --- |
@@ -740,7 +744,7 @@ descriptor는 source가 없을 때 기존 설정을 유지합니다.
 ### Exposed 2.0.0 예제
 
 두 Exposed 예제 모듈은 현재
-`bluetape4k-exposed` `2.0.0-SNAPSHOT` API를 사용하면서 AWS 설정, transaction과
+`bluetape4k-exposed` `2.0.0` API를 사용하면서 AWS 설정, transaction과
 resource lifecycle 경계를 분명하게 보여줍니다. 두 모듈 모두 배포하지 않으며 AWS
 credential 없이 PostgreSQL Testcontainers로 실행합니다.
 
@@ -1170,7 +1174,7 @@ Java/Kotlin SDK 확장은 SDK 응답과 예외를 그대로 전달하고, 이 Sp
 추적합니다. Publisher cleanup/latency telemetry와 heap/throughput 측정은
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서 추적합니다.
 
-#### SNS 메시지 변환 (1.0.0 개발선)
+#### SNS 메시지 변환 (1.0.0부터)
 
 `SnsBatchMessageConverter`는 Spring `Message<*>`를 typed
 `SnsPublishBatchRequest`로 바꾸는 opt-in·무네트워크 adapter입니다. 인자가
@@ -1380,9 +1384,9 @@ flexible time window, retry policy, list page size 같은 bluetape4k 수준의 r
 검증합니다. Global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는
 target별 검증은 얇은 helper 계층 밖에 둡니다.
 
-### Step Functions — 실행 helper (1.0.0 개발선)
+### Step Functions — 실행 helper (1.0.0부터)
 
-`1.0.0` 개발선에서는 두 SDK 모듈 모두에 `StartExecution`, `StopExecution`,
+`1.0.0`부터 두 SDK 모듈 모두에 `StartExecution`, `StopExecution`,
 `DescribeExecution`, `ListExecutions`를 위한 얇은 실행 helper가 추가됩니다. Java SDK v2
 폴링은 `SfnAsyncClient`를 사용하고, Kotlin SDK는 native suspend `SfnClient`를 사용합니다.
 두 모듈 모두 raw SDK 응답을 `Flow<DescribeExecutionResponse>`로 전달하는 cold Flow를
@@ -1405,9 +1409,9 @@ Standard/Express/Map Run 경계, IAM/KMS, quota를 고려한 polling, Floci/Loca
 [테스트와 운영 가이드](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/guides/testing-and-operations/)에서 확인하세요.
 Emulator 결과는 운영 IAM 또는 KMS 접근 권한을 증명하지 않습니다.
 
-### Lambda — 범위가 지정된 호출 helper (1.0.0 개발선)
+### Lambda — 범위가 지정된 호출 helper (1.0.0부터)
 
-`1.0.0` 개발선의 두 SDK 모듈은 얇은 `Invoke` 표면을 제공합니다. Java는 동기/async/coroutine
+`1.0.0`부터 두 SDK 모듈은 얇은 `Invoke` 표면을 제공합니다. Java는 동기/async/coroutine
 확장을, Kotlin은 native suspend 확장을 제공합니다. 결과는 raw SDK response와 복사한
 payload를 보존하고 `FunctionError`를 반환 데이터로 취급하며 선택적으로 Lambda tail log를
 디코드합니다. 서비스 SDK는 `compileOnly`이므로 런타임에
