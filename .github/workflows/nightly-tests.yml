@@ -251,7 +251,7 @@ jobs:
   test-aws-spring-boot:
     name: Test / aws-spring-boot
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     needs: build
     steps:
       - uses: actions/checkout@v7

@@ -1,12 +1,10 @@
 # 진행 중인 작업 - bluetape4k-aws
 
-기준 시점: 2026-08-30 KST
-기준 브랜치: `develop` — PR #599 병합 직후 기준 정보
-(`248f62fa28a05bc61037ff0cc469cce8059f3681`)
-범위: `0.5.0` 이후 병합된 공개 API, `1.0.0` 개발선과 `bluetape4k-exposed`
-`2.0.0-SNAPSHOT` 예제의 문서 정합성 유지
-열린 이슈 수: 0개
-문서 갱신 시점의 열린 PR 수: 0개 (PR #600 생성 전 확인)
+기준 시점: 2026-09-02 KST
+기준 브랜치: `develop` — 1.0.0 release-prep 기준 정보
+범위: `0.5.0` 이후 병합된 공개 API와 `1.0.0` 정식 배포 경계
+열린 이슈 수: 2개 (#608, #609)
+문서 갱신 시점의 열린 PR 수: 0개 (release-prep PR 생성 전 확인)
 최신 안정 릴리스: `0.5.0` (2026-08-06)
 
 ## 현재 방향
@@ -15,7 +13,7 @@
 문서를 유지합니다. 이 파일은 활성 저장소 관리에 필요한 상태와 다음 확인
 지점만 기록합니다.
 
-현재 Exposed 예제는 `bluetape4k-exposed` `2.0.0-SNAPSHOT`의 typed cursor
+현재 Exposed 예제는 `bluetape4k-exposed` `2.0.0`의 typed cursor
 pagination, Spring Data QBE·projection SQL pushdown, `DynamicPropertyRegistry`
 bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR은 모두
 순서대로 `develop`에 병합되었습니다.
@@ -33,7 +31,8 @@ bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR�
 
 | 우선순위 | 이슈 | 마일스톤 | 비고 |
 |---|---|---|---|
-| — | 없음 | — | 2026-08-30 문서 갱신 시점에 `gh issue list --state open` 결과 열린 이슈가 없었습니다. |
+| 1 | [#608](https://github.com/bluetape4k/bluetape4k-aws/issues/608) | 1.0.0 | Full Nightly `aws-spring-boot` timeout을 release-prep PR에서 함께 수정 |
+| 2 | [#609](https://github.com/bluetape4k/bluetape4k-aws/issues/609) | 1.0.0 | catalog SHA·문서·exact-head 검증과 정식 배포 |
 
 ## 열린 PR
 
@@ -101,8 +100,8 @@ bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR�
 
 ## Backlog
 
-현재 미종료 backlog는 없습니다. 다음 공개 변경이 병합되면 이 표에 실제 열린
-이슈와 milestone을 확인한 뒤 추가합니다.
+현재 미종료 backlog는 1.0.0 release-prep #608, #609뿐입니다. 두 이슈는 같은
+PR과 exact head로 종료해 배포 직전 SHA 변경을 최소화합니다.
 
 ## 갱신 메모
 
@@ -110,9 +109,9 @@ bridge, 선택적 JDBC health/readiness를 사용합니다. 관련 이슈와 PR�
   `gh pr list --state open`을 실행해 당시 열린 이슈와 PR이 각각 0개임을 확인했습니다.
 - 2026-08-30 KST에 `gh release view 0.5.0`으로 최신 안정 릴리스와
   `2026-08-06` 게시 시각을 확인했습니다.
-- 현재 미출시 개발선은 `gradle.properties`의 `baseVersion=1.0.0`을 사용합니다.
-- `gradle/libs.versions.toml`의 로컬 참조는
-  `bluetape4k = "2.0.0-SNAPSHOT"`, `bluetape4k-exposed = "2.0.0-SNAPSHOT"`입니다.
+- 1.0.0 release-prep는 `gradle.properties`의 `baseVersion=1.0.0`, 빈
+  `snapshotVersion`, 중앙 catalog SHA
+  `8efed120b91c4e1b1cfbfe1269321df325b08aef`를 사용합니다.
 - PR #599 병합 직후 `develop` head는 Exposed 순차 train의 최종 병합 커밋이며, 기본
   SNS batch diagnostic은 추정 가능한 fingerprint를 로그 문자열에서 제외하고
   호환성 getter는 deprecated 상태로 유지합니다
