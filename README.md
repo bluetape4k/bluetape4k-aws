@@ -7,6 +7,10 @@
 
 English | [한국어](./README.ko.md)
 
+Current stable version: `1.0.0`
+
+Current development line: `1.1.0-SNAPSHOT` on `develop`
+
 ![Bluetape4k AWS workbench](./docs/assets/aws-workbench.png)
 
 Kotlin/JVM wrappers for **AWS Java SDK v2** and the **AWS Kotlin SDK**. The
@@ -15,7 +19,7 @@ Ktor 3 integration for bluetape4k services that need AWS without committing to
 one application stack.
 
 For task-oriented guidance, SDK and framework choices, lifecycle rules, and
-runnable learning paths, use the [AWS manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/). This
+runnable learning paths, use the [AWS manual](https://bluetape4k.github.io/manual/bluetape4k-aws/1.0/). This
 README remains a repository overview; the manual is the detailed source of
 truth.
 
@@ -249,7 +253,7 @@ Add `software.amazon.awssdk:eventbridge` when using EventBridge operations.
 Add `spring-security-crypto` only when you want to inject Spring Security's synchronous
 `TextEncryptor`.
 
-#### Spring Modulith SNS/SQS event externalization (1.0.0 development line)
+#### Spring Modulith SNS/SQS event externalization (since 1.0.0)
 
 | Direction | Required runtime pieces | Delivery boundary |
 | --- | --- | --- |
@@ -756,7 +760,7 @@ unchanged when the source is absent.
 ### Exposed 2.0.0 examples
 
 The two Exposed example modules exercise the current
-`bluetape4k-exposed` `2.0.0-SNAPSHOT` APIs while keeping AWS configuration,
+`bluetape4k-exposed` `2.0.0` APIs while keeping AWS configuration,
 transaction, and resource-lifecycle boundaries explicit. They are not
 published and use PostgreSQL Testcontainers without requiring AWS credentials.
 
@@ -1188,7 +1192,7 @@ expansion research is tracked in [#514](https://github.com/bluetape4k/bluetape4k
 Publisher cleanup/latency telemetry and heap/throughput measurement are tracked in
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
-#### SNS Message conversion (1.0.0 development line)
+#### SNS Message conversion (since 1.0.0)
 
 `SnsBatchMessageConverter` is an opt-in, no-network adapter from Spring
 `Message<*>` values to the typed `SnsPublishBatchRequest`. The no-argument
@@ -1405,9 +1409,9 @@ retry policy limits, and list page sizes. Global endpoints, cross-account target
 orchestration, and target-specific validation beyond SDK model types stay
 outside these thin helper layers.
 
-### Step Functions — execution helpers (1.0.0 development line)
+### Step Functions — execution helpers (since 1.0.0)
 
-The `1.0.0` development line provides thin execution helpers for `StartExecution`,
+The `1.0.0` release provides thin execution helpers for `StartExecution`,
 `StopExecution`, `DescribeExecution`, and `ListExecutions` in both SDK modules.
 Java SDK v2 polling uses `SfnAsyncClient`; the Kotlin SDK uses its native suspend
 `SfnClient`. Both expose raw SDK responses through a cold
@@ -1432,9 +1436,9 @@ for Standard/Express/Map Run boundaries, IAM/KMS, quota-aware polling, and
 Floci/LocalStack evidence. An emulator result does not prove production IAM or
 KMS access.
 
-### Lambda — bounded invocation helpers (1.0.0 development line)
+### Lambda — bounded invocation helpers (since 1.0.0)
 
-The `1.0.0` development line exposes a thin `Invoke` surface in both SDK modules: Java sync/async/coroutine
+The `1.0.0` release exposes a thin `Invoke` surface in both SDK modules: Java sync/async/coroutine
 extensions and Kotlin native suspend extensions. The result keeps the raw SDK
 response and copied payload, treats `FunctionError` as returned data, and
 optionally decodes the Lambda tail log. Service SDKs remain `compileOnly`; add
