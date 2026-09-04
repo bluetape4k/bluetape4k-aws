@@ -48,7 +48,7 @@ jobs:
 
       - name: Build with Gradle
         if: matrix.language == 'java-kotlin'
-        run: ./gradlew build -x test --no-daemon
+        run: ./gradlew build -x test --no-daemon --no-build-cache
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 

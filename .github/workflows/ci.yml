@@ -144,6 +144,8 @@ jobs:
       - uses: actions/checkout@v7
       - name: Test classified retry helper
         run: python3 .github/scripts/run_gradle_with_classified_retry_test.py
+      - name: Test CodeQL workflow contract
+        run: python3 .github/scripts/code_quality_workflow_test.py
       - uses: dorny/paths-filter@v4
         id: filter
         with:
