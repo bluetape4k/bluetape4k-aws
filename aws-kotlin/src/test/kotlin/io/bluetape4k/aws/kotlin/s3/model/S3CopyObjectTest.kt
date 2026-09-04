@@ -99,17 +99,16 @@ class S3CopyObjectTest {
                 secretAccessKey = emulator.awsSecretKey
             },
         ) { client ->
-            client.ensureBucketExists(sourceBucket)
-            client.ensureBucketExists(destinationBucket)
-            try {
+            withTestBuckets(
+                buckets = listOf(sourceBucket, destinationBucket),
+                create = { client.ensureBucketExists(it) },
+                delete = { client.forceDeleteBucket(it) },
+            ) {
                 client.putFromString(sourceBucket, sourceKey, content)
                 val response = client.copy(sourceBucket, sourceKey, destinationBucket, destinationKey)
 
                 response.copyObjectResult.shouldNotBeNull()
                 client.getAsString(destinationBucket, destinationKey).shouldNotBeNull() shouldBeEqualTo content
-            } finally {
-                client.forceDeleteBucket(destinationBucket)
-                client.forceDeleteBucket(sourceBucket)
             }
         }
     }
