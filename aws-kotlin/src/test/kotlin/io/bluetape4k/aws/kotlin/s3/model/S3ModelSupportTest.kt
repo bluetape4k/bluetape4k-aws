@@ -80,15 +80,15 @@ class S3ModelSupportTest {
     }
 
     @Test
-    fun `copyObjectRequestOf는 원본과 대상을 설정한다`() {
+    fun `copyObjectRequestOf는 원본 키의 공백과 plus를 RFC 3986으로 인코딩한다`() {
         val request = copyObjectRequestOf(
             srcBucket = "src-bucket",
-            srcKey = "src key",
+            srcKey = "folder/a b+c/한글?#.txt",
             destBucket = "dest-bucket",
             destKey = "dest-key",
         )
 
-        request.copySource shouldBeEqualTo "src-bucket%2Fsrc+key"
+        request.copySource shouldBeEqualTo "src-bucket%2Ffolder%2Fa%20b%2Bc%2F%ED%95%9C%EA%B8%80%3F%23.txt"
         request.bucket shouldBeEqualTo "dest-bucket"
         request.key shouldBeEqualTo "dest-key"
     }
@@ -96,13 +96,13 @@ class S3ModelSupportTest {
     @Test
     fun `copyObjectRequestOf copySource 오버로드는 필드를 설정한다`() {
         val request = copyObjectRequestOf(
-            copySource = "src-bucket/src-key",
+            copySource = "src-bucket%2Ffolder%2Fa%20b%2Bc.txt",
             destBucket = "dest-bucket",
             destKey = "dest-key",
             acl = ObjectCannedAcl.Private,
         )
 
-        request.copySource shouldBeEqualTo "src-bucket/src-key"
+        request.copySource shouldBeEqualTo "src-bucket%2Ffolder%2Fa%20b%2Bc.txt"
         request.bucket shouldBeEqualTo "dest-bucket"
         request.key shouldBeEqualTo "dest-key"
         request.acl shouldBeEqualTo ObjectCannedAcl.Private
