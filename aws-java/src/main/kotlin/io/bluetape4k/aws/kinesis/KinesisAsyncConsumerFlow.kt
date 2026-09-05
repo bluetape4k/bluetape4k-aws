@@ -163,6 +163,7 @@ private suspend fun KinesisAsyncClient.discoverShardGraph(
     "NestedBlockDepth",
     "ReturnCount",
     "ThrowsCount",
+    "ThrowingExceptionFromFinally",
     "TooGenericExceptionCaught",
 )
 private suspend fun KinesisAsyncClient.consumeShard(
@@ -185,6 +186,7 @@ private suspend fun KinesisAsyncClient.consumeShard(
     val currentLease = AtomicReference(lease)
     val leaseLost = AtomicReference<KinesisLeaseLostException?>(null)
     val heartbeatFailure = AtomicReference<Throwable?>(null)
+    var primaryFailure: Throwable? = null
     val heartbeat = scope.launchHeartbeat(
         leaseStore = leaseStore,
         options = options,
@@ -327,17 +329,39 @@ private suspend fun KinesisAsyncClient.consumeShard(
             }
         }
     } catch (e: CancellationException) {
-        throw heartbeatFailure.get() ?: leaseLost.get() ?: e
+        val failure = heartbeatFailure.get() ?: leaseLost.get() ?: e
+        primaryFailure = failure
+        throw failure
+    } catch (e: Throwable) {
+        primaryFailure = e
+        throw e
     } finally {
-        heartbeat.cancelAndJoin()
+        var cleanupFailure: Throwable? = null
         withContext(NonCancellable) {
-            withTimeoutOrNull(options.leaseReleaseTimeout) {
-                try {
-                    leaseStore.release(currentLease.get())
-                } catch (e: Throwable) {
-                    log.warn(e) { "Kinesis lease release failed after consumer termination" }
-                }
+            heartbeat.cancel()
+            try {
+                heartbeat.join()
+            } catch (e: Throwable) {
+                cleanupFailure = e
             }
+            try {
+                withTimeoutOrNull(options.leaseReleaseTimeout) {
+                    leaseStore.release(currentLease.get())
+                }
+            } catch (e: Throwable) {
+                val heartbeatJoinFailure = cleanupFailure
+                if (heartbeatJoinFailure == null) {
+                    cleanupFailure = e
+                } else if (heartbeatJoinFailure !== e) {
+                    heartbeatJoinFailure.addSuppressed(e)
+                }
+                log.warn(e) { "Kinesis lease release failed after consumer termination" }
+            }
+        }
+        cleanupFailure?.let { failure ->
+            val primary = primaryFailure
+            if (primary == null) throw failure
+            if (primary !== failure) primary.addSuppressed(failure)
         }
     }
 }
