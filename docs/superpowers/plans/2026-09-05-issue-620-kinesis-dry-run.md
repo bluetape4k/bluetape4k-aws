@@ -276,7 +276,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/kinesis/KinesisDryRunWireTest.kt`
 
-- [ ] **Step 1: loopback test RED 작성**
+- [x] **Step 1: loopback test RED 작성**
 
   JDK `HttpServer`를 literal `127.0.0.1`의 ephemeral port에 연다. 실제 `KinesisClient`는
   explicit endpoint, region, static fake credentials를 사용한다. test server는 operation별
@@ -294,19 +294,19 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   `PutRecords`는 top-level `DryRun`만 가지며 record마다 복제되지 않아야 한다. test 실패
   메시지에 body, `Authorization`, 전체 header를 넣지 않는다.
 
-- [ ] **Step 2: endpoint/credential guard 음성 테스트**
+- [x] **Step 2: endpoint/credential guard 음성 테스트**
 
   loopback literal이 아닌 HTTP host 또는 static fake credential이 아닌 설정은 operation 전에
   실패시킨다. test는 ambient credential chain과 실제 AWS endpoint를 참조하지 않는다.
 
-- [ ] **Step 3: wire GREEN**
+- [x] **Step 3: wire GREEN**
 
   Run: `./gradlew :bluetape4k-aws-kotlin:test --tests '*KinesisDryRunWireTest' --no-daemon`
 
   Expected: 네 target의 false/true/null serialization과 SDK exception type PASS. JDK loopback
   실행이 불가능하면 대체 성공으로 처리하지 않고 전체 DoD를 PENDING으로 둔다.
 
-- [ ] **Step 4: wire checkpoint commit**
+- [x] **Step 4: wire checkpoint commit**
 
   Intent: `#620 DryRun wire shape를 public SDK 경계에서 증명한다`. No-real-AWS와 no-secret-log
   constraint, internal serializer/reflection 기각, loopback test 결과를 Lore trailers에 기록한다.
