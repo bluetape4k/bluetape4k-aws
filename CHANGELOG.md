@@ -7,6 +7,13 @@
 
 ## [미출시]
 
+### 추가
+
+- AWS SDK for Kotlin Kinesis의 `putRecord`, `putRecords`, `getShardIterator`, `getRecords`와
+  두 request helper에 builder-last named `dryRun` API를 추가했습니다. 검증 성공은 정상 응답이
+  아니라 `DryRunOperationException`으로 전달됩니다
+  ([#620](https://github.com/bluetape4k/bluetape4k-aws/issues/620)).
+
 ### 변경
 
 - `1.0.0` 정식 배포 후 다음 minor 개발선을 `1.1.0-SNAPSHOT`으로 열었다.

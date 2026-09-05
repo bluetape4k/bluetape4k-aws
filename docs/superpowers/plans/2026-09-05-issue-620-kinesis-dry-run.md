@@ -532,7 +532,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 - Modify: `CHANGELOG.md` (`[미출시]`의 `추가`)
 - Create: `.github/scripts/kinesis_readme_contract_test.py`
 
-- [ ] **Step 1: API documentation**
+- [x] **Step 1: API documentation**
 
   네 extension KDoc에는 `@param dryRun`, successful validation의
   `DryRunOperationException`, 다른 SDK 예외와 coroutine cancellation의 그대로인 전파,
@@ -541,7 +541,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   포함한다. 두 request helper KDoc에는 request mapping, builder-last, builder의 `false`/`null`이
   `DryRun` 전송을 해제하거나 생략하는 규칙만 기록하고 서비스 호출 예외를 약속하지 않는다.
 
-- [ ] **Step 2: README examples와 parity**
+- [x] **Step 2: README examples와 parity**
 
   기존 `putRecordRequestOf(streamName, data, partitionKey = "default")`의 잘못된 positional
   호출을 named argument로 고친다. 네 operation과 두 helper의 `dryRun = true`, 예외 처리,
@@ -551,7 +551,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   `CHANGELOG.md`의 `[미출시]` 아래 `추가`에 Issue #620과 Kinesis DryRun named API,
   `DryRunOperationException` 계약을 한국어로 기록한다.
 
-- [ ] **Step 3: docs 검증**
+- [x] **Step 3: docs 검증**
 
   Run:
 
@@ -577,7 +577,15 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   `DryRunOperationException`이 함께 있는지 검사한다. Kotlin external consumer compile이 snippet의
   실제 public call shape를 검증한다. 중앙 manual/diagram은 변경하지 않는다.
 
-- [ ] **Step 4: docs checkpoint commit**
+  Local evidence (2026-09-06): terminology audit 5 files/findings 0,
+  `kinesis_readme_contract_test.py`, `compileAwsKotlinServiceConsumerFixture`, `git diff --check`가
+  모두 GREEN이었다. 리뷰 중 발견한 undeclared client, 첫 success exception 뒤 후속 operation
+  미실행, raw credential로 오해할 수 있는 표현, invalid iterator, emulator의 DryRun 무시 시 write
+  위험을 수정했다. 최종 예제는 AWS Kinesis endpoint 전용, operation별 exception boundary,
+  caller-provided `existingShardIterator`, 일반 응답 fail-closed helper, `KinesisException` 재전파를
+  명시한다. writer 재검토는 P0/P1/P2 0, `APPROVE`였고 중앙 manual/diagram은 변경하지 않았다.
+
+- [x] **Step 4: docs checkpoint commit**
 
   Intent: `#620 DryRun의 성공 예외와 payload 전송 위험을 사용자에게 알린다`. Lore trailers에
   module-only manual ownership, locale parity, terminology 결과를 기록한다.
