@@ -41,3 +41,27 @@ javap -classpath aws-kotlin/build/libs/bluetape4k-aws-kotlin-1.1.0.jar -public -
 
 이 baseline은 binary compatibility의 과거 입력이다. 변경 후 새 overload가 추가되는지는
 Task 5의 별도 additive verifier와 격리된 legacy consumer runtime test가 판정한다.
+
+## Kotlin source compatibility
+
+기존 trailing lambda와 named `builder` 호출은 그대로 컴파일된다.
+
+```kotlin
+// before: both forms remain source-compatible
+client.putRecord("orders", "partition", data) { explicitHashKey = "1" }
+client.putRecord("orders", "partition", data, builder = { explicitHashKey = "1" })
+putRecordRequestOf("orders", "partition", data, builder = { explicitHashKey = "1" })
+
+// after: DryRun is opt-in and builder remains last
+client.putRecord("orders", "partition", data, dryRun = true) { explicitHashKey = "1" }
+putRecordRequestOf(
+    streamName = "orders",
+    partitionKey = "partition",
+    data = data,
+    dryRun = true,
+    builder = { explicitHashKey = "1" },
+)
+```
+
+`builder`를 positional argument로 전달하던 호출은 trailing lambda 또는 named `builder = {}`
+형태로 이동한다. `dryRun`은 기본값 `false`이므로 기존 source의 요청 의미는 바뀌지 않는다.

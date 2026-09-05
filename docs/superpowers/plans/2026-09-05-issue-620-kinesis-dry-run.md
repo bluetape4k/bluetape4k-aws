@@ -465,7 +465,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 - Create: `src/abi-fixtures/kinesis-dry-run-pre-change/consumer/io/bluetape4k/aws/kotlin/kinesis/KinesisDryRunLegacyConsumer.java`
 - Modify: `aws-kotlin/src/consumerFixture/kotlin/io/bluetape4k/aws/kotlin/consumer/KotlinServiceConsumerFixture.kt`
 
-- [ ] **Step 1: pre-change baseline과 Java legacy consumer RED**
+- [x] **Step 1: pre-change baseline과 Java legacy consumer RED**
 
   Task 0에서 exact base SHA로 freeze한 세 `javap.txt`를 수정 없이 소비한다. Java stub은 정확히
   그 12개 method를 선언하고 consumer는 direct와 `$default` 12개를 모두 `invokestatic`으로 호출한다.
@@ -477,7 +477,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   고정한다. `compileAwsKotlinServiceConsumerFixture`를 `compatibilityCheck` checks/dependencies에
   추가한다.
 
-- [ ] **Step 2: compile/runtime classpath를 분리한 Gradle task 구현**
+- [x] **Step 2: compile/runtime classpath를 분리한 Gradle task 구현**
 
   `VerifyAdditiveKinesisAbiTask`는 production JAR의 `javap -public -s`가 baseline의 모든
   method/descriptor를 포함하는지 확인하고 additions는 허용한다. 기존
@@ -493,7 +493,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   `verifyKinesisDryRunAdditiveAbi`, `verifyKinesisDryRunLegacyInvocations`,
   `runKinesisDryRunLegacyConsumer`를 `compatibilityCheck`의 checks와 dependencies에 추가한다.
 
-- [ ] **Step 3: compatibility RED→GREEN**
+- [x] **Step 3: compatibility RED→GREEN**
 
   Run:
 
@@ -507,7 +507,14 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   Expected: hidden overload가 없으면 descriptor/linkage RED; Task 2 구현 후 12개 reference와
   runtime call이 GREEN. stub output이 runtime에 섞이면 명시적으로 실패한다.
 
-- [ ] **Step 4: ABI checkpoint commit**
+  Local evidence (2026-09-06): 세 `javap` baseline과 세 Java stub의 파일 집합 및 SHA-256을
+  `verifyKinesisDryRunFixtureIntegrity`가 fail-closed로 고정했다. additive verifier는 method 선언과
+  바로 다음 descriptor를 exact tuple로 비교했고, 격리된 consumer의 12개 `invokestatic`과
+  `type`/`builder` default mask `12`를 production JAR runtime에서 확인했다. 지정 Gradle 명령은
+  `BUILD SUCCESSFUL` (`32 actionable tasks`)이었고 `git diff --check`도 통과했다. ABI/API,
+  classpath/security, Gradle stability 독립 재검토 결과는 모두 P0/P1/P2 0, `APPROVE`였다.
+
+- [x] **Step 4: ABI checkpoint commit**
 
   Intent: `#620 기존 Kinesis binary가 새 DryRun API에서도 연결되게 한다`. Lore trailers에
   12개 descriptor, additive verifier 분리, classpath isolation, compatibilityCheck 결과를
