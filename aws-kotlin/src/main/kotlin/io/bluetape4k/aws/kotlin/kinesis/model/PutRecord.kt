@@ -22,6 +22,7 @@ inline fun putRecordRequestOf(
     streamName: String,
     partitionKey: String,
     data: ByteArray,
+    dryRun: Boolean = false,
     crossinline builder: PutRecordRequest.Builder.() -> Unit = {},
 ): PutRecordRequest {
     streamName.requireNotBlank("streamName")
@@ -30,6 +31,15 @@ inline fun putRecordRequestOf(
         this.streamName = streamName
         this.partitionKey = partitionKey
         this.data = data
+        this.dryRun = dryRun
         builder()
     }
 }
+
+@Deprecated("Binary compatibility overload", level = DeprecationLevel.HIDDEN)
+inline fun putRecordRequestOf(
+    streamName: String,
+    partitionKey: String,
+    data: ByteArray,
+    crossinline builder: PutRecordRequest.Builder.() -> Unit = {},
+): PutRecordRequest = putRecordRequestOf(streamName, partitionKey, data, false, builder)
