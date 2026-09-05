@@ -1,0 +1,5 @@
+CLASS io.bluetape4k.aws.kotlin.kinesis.model.GetShardIteratorKt
+public static final aws.sdk.kotlin.services.kinesis.model.GetShardIteratorRequest getShardIteratorRequestOf(java.lang.String, java.lang.String, aws.sdk.kotlin.services.kinesis.model.ShardIteratorType, kotlin.jvm.functions.Function1<? super aws.sdk.kotlin.services.kinesis.model.GetShardIteratorRequest$Builder, kotlin.Unit>);
+descriptor: (Ljava/lang/String;Ljava/lang/String;Laws/sdk/kotlin/services/kinesis/model/ShardIteratorType;Lkotlin/jvm/functions/Function1;)Laws/sdk/kotlin/services/kinesis/model/GetShardIteratorRequest;
+public static aws.sdk.kotlin.services.kinesis.model.GetShardIteratorRequest getShardIteratorRequestOf$default(java.lang.String, java.lang.String, aws.sdk.kotlin.services.kinesis.model.ShardIteratorType, kotlin.jvm.functions.Function1, int, java.lang.Object);
+descriptor: (Ljava/lang/String;Ljava/lang/String;Laws/sdk/kotlin/services/kinesis/model/ShardIteratorType;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Laws/sdk/kotlin/services/kinesis/model/GetShardIteratorRequest;
