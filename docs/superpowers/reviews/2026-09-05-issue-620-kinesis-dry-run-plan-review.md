@@ -107,3 +107,49 @@ placeholder/terminology/diff 검증은 Task 0 commit 전에 다시 실행한다.
 - **Merge:** PENDING. PR exact-head evidence를 다시 읽고 fresh explicit approval을 받기 전에는 실행하지 않는다.
 
 **Step DoD:** `PASS` — 구현 계획과 위험 예측이 P0=0, P1=0으로 수렴했다.
+
+## Task 4 implementation review — 2026-09-06
+
+**최종 verdict: PASS — P0=0, P1=0, P2=0**
+
+Task 4 구현 diff를 Developer/API, Operator/Ops, Stability/lifecycle, Performance/CI,
+Security, User/caller 여섯 독립 관점으로 검토했다. 초기·focused review에서 발견한 finding은
+모두 코드, 회귀 테스트, workflow contract와 artifact scan으로 닫은 뒤 각 관점의 최종
+`APPROVE`를 확인했다.
+
+| 관점 | 최종 | 확인한 경계 |
+| --- | --- | --- |
+| Developer/API | APPROVE | generic 정상 응답은 `FAILED/normal_response`; closed-set과 4-row schema 유지 |
+| Operator/Ops | APPROVE | validator/test/sanitizer 성공 gate, primary JUnit 필수, artifact 누락 fail-closed |
+| Stability/lifecycle | APPROVE | baseline 보존, 30초 전체 관측, in-flight timeout 전파, owned cleanup |
+| Performance/CI | APPROVE | preflight/operation/관측 30초, poll 500ms, 120+30+30초, CI 30분/Nightly 75분 |
+| Security | APPROVE | loopback/fake credential, backend path whitelist, captured client config, main/retry artifact sanitization |
+| User/caller | APPROVE | capability-neutral test naming, unsupported 명시, safe step summary의 backend/version/status/reason |
+
+### 구현 review finding과 disposition
+
+| 우선순위 | 발견 | disposition |
+| --- | --- | --- |
+| P1 | write marker 관측이 2초 뒤 종료돼 지연 write를 놓칠 수 있음 | deadline 전체를 polling하고 completed absent와 in-flight timeout을 구분한다. |
+| P1 | non-dry-run baseline record 보존 검증 누락 | 각 write scenario가 baseline을 먼저 기록·관측하고 DryRun 뒤 보존을 확인한다. |
+| P1 | Testcontainers fake credential property가 JUnit XML에 기록됨 | 업로드 대상 전체 main JUnit과 retry XML/HTML/log를 wrapper-safe sanitizer로 정리한다. |
+| P1 | sanitizer 실패·경로 누락·retry artifact가 upload를 우회 | primary JUnit을 필수화하고 sanitizer 성공 gate를 upload에 연결한다. retry binary/unknown extension은 업로드하지 않는다. |
+| P1 | 관측 중 SDK call timeout이 marker 없음으로 바뀔 수 있음 | completed poll wrapper로 in-flight timeout을 `TimeoutException`으로 전파한다. |
+| P2 | preflight describe/create가 120초 outer budget만 사용 | 두 호출을 각 30초 operation deadline으로 제한한다. |
+| P2 | backend property가 report path에 검증 전 사용됨 | `floci|localstack` allow-list를 path 구성 전에 적용한다. |
+| P2 | 검증한 endpoint/credential과 client 생성 값 사이 TOCTOU | 검증한 boundary 값을 캡처해 정적 provider와 client에 그대로 사용한다. |
+| P2 | capability test 이름과 CI UI가 지원 여부를 오해시킬 수 있음 | 중립적인 probe 이름과 stream token 없는 backend/version/operation/status/reason step summary를 사용한다. |
+
+### Fresh validation evidence
+
+- `KinesisDryRunSupportTest`: 28 tests, failures/errors/skipped 0.
+- Floci `1.6.0`: 4 tests, failures/errors 0, skipped 4; validated 4-row artifact.
+- LocalStack `4`: 4 tests, failures/errors 0, skipped 4; validated 4-row diagnostic artifact.
+- 두 backend 모두 PutRecord/PutRecords는 `unsupported/dry_run_ignored_write`, read 두 operation은
+  `unsupported/dry_run_ignored_response`다. AWS semantics 또는 no-write PASS로 사용하지 않는다.
+- JUnit sanitizer 5 tests, capability validator 9 tests, workflow/catalog contract, `actionlint`,
+  `detekt`, `git diff --check`가 성공했다.
+- 실제 Floci JUnit XML sanitizer 뒤 credential property match는 0이다.
+
+Task 5 additive ABI, Task 6 문서, module/full build와 exact-head CI는 이 review 범위 밖이며
+계속 `PENDING`이다.

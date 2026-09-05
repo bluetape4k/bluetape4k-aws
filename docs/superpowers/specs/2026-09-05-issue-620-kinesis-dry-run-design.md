@@ -293,22 +293,31 @@ PR CI의 순차 실행 예산은 네 scenario의 최악 경계를 수용하도�
    `PutRecord(dryRun = true)` 또는 `PutRecords(dryRun = true)`를 호출한다.
 3. `DryRunOperationException`이면 baseline iterator를 새로 얻어 dry-run marker가 끝까지
    관측되지 않으며 기존 record 집합이 유지되는지 bounded polling으로 확인한다.
-4. 정상 응답은 `UNSUPPORTED` skip 사유가 아니다. write에서 정상 응답 또는 새 record가
-   관측되면 backend가 DryRun을 무시한 계약 위반으로 실패한다.
+4. generic classifier에서 정상 응답은 계속 `FAILED/normal_response`다. 다만 isolated write
+   scenario가 정상 응답 뒤 marker persistence를 직접 관측한 경우에는 backend가 `DryRun`을
+   무시하고 실제 write를 수행한 결정적 capability evidence이므로
+   `UNSUPPORTED/dry_run_ignored_write`로 기록한다. marker가 없더라도 정상 응답이면
+   `UNSUPPORTED/dry_run_ignored_response`이며 `SUPPORTED`로 간주하지 않는다.
 5. `GetShardIterator(dryRun = true)`는 operation별 fixture에서 검증한다. `GetRecords`는
    별도의 non-dry-run `getShardIterator`로 유효한 iterator를 만든 뒤
    `GetRecords(dryRun = true)`만 probe한다.
-6. read operation이 정상 iterator나 record 응답을 반환해도 계약 위반으로 실패한다.
+6. read operation이 정상 iterator나 record 응답을 반환하면 isolated scenario에서
+   `UNSUPPORTED/dry_run_ignored_response`로 기록한다. 이 승격은 generic classifier에는
+   적용하지 않으며, disposable stream과 operation-specific 정상 response가 함께 확인된
+   경우에만 허용한다.
 7. 오직 아래 closed set만 `UNSUPPORTED`로 분류한다.
    - HTTP `501`과 error code `NotImplemented` 또는 `NotImplementedException`
    - HTTP `400`과 error code `SerializationException`, `ValidationException`, 또는
      `InvalidArgumentException`이며 sanitized message가 `DryRun`과 정확한
      unknown/unsupported member 원인을 함께 포함하는 경우
+   - isolated write 정상 응답 뒤 marker persistence를 관측한 `dry_run_ignored_write`
+   - isolated operation이 정상 응답을 반환한 `dry_run_ignored_response`
 8. 지원되지 않는 operation은 fake/model/wire proof를 필수 대체 증거로 유지한다.
 
 인증 오류, endpoint 오류, Docker 오류, timeout, assertion 실패를 capability 부족으로
-분류하지 않는다. `AccessDenied`, `403`, 연결 실패, timeout, 정상 응답이 skip되지 않는
-classifier unit test를 둔다. capability decision은 `operation`, `backend`, backend version,
+분류하지 않는다. `AccessDenied`, `403`, 연결 실패, timeout, 정상 응답이 generic classifier에서
+skip되지 않는 unit test를 둔다. 정상 응답의 isolated capability 승격은 별도 emulator scenario와
+marker 관측으로만 검증한다. capability decision은 `operation`, `backend`, backend version,
 sanitized reason, disposable stream 식별자를 JUnit assumption message와 test artifact에 남긴다.
 sanitizer는 임의 exception message를 출력하지 않고 bounded allow-list의 backend, 제한 길이의
 version, operation, reason code, 생성한 stream token만 반환한다. credential/access key/session
@@ -317,9 +326,15 @@ cleanup failure에 주입해 assumption, JSON, JUnit/Gradle 출력 어디에도 
 client request logging은 비활성화한다.
 
 PR CI는 기본 Floci scenario와 필수 fake/model/wire proof를 실행한다. Floci가 위 closed set으로
-미지원임이 확인되면 LocalStack fallback을 로컬에서 순차 실행해 evidence를 남긴다. CI에
+미지원이거나 `DryRun`을 무시함이 확인되면 LocalStack fallback을 로컬에서 순차 진단해 evidence를 남긴다. CI에
 두 Docker backend를 동시에 올리지 않는다. LocalStack도 미지원이면 operation별 skip evidence와
 필수 대체 증거로 닫되, 다른 실패를 미지원으로 바꾸지 않는다.
+
+2026-09-06 실행 evidence에서 Floci `1.6.0`과 LocalStack `4`는 네 operation의 `DryRun:true`를
+모두 정상 응답으로 처리했다. 두 write operation에서는 marker persistence도 관측됐다. 따라서
+이 두 backend는 AWS `DryRunOperationException`/no-write semantics의 증명 수단이 아니며,
+capability artifact에는 지원으로 기록하지 않는다. public SDK wire proof와 fake/model test가
+wrapper 구현의 필수 증거이고 emulator artifact는 이 제한을 명시적으로 드러내는 보조 증거다.
 
 PR CI와 Full Nightly의 각 backend run은
 `aws-kotlin/build/reports/kinesis-dry-run/capability-<backend>.json`을 만들고 validator가 네
