@@ -1,0 +1,5 @@
+CLASS io.bluetape4k.aws.kotlin.kinesis.model.PutRecordKt
+public static final aws.sdk.kotlin.services.kinesis.model.PutRecordRequest putRecordRequestOf(java.lang.String, java.lang.String, byte[], kotlin.jvm.functions.Function1<? super aws.sdk.kotlin.services.kinesis.model.PutRecordRequest$Builder, kotlin.Unit>);
+descriptor: (Ljava/lang/String;Ljava/lang/String;[BLkotlin/jvm/functions/Function1;)Laws/sdk/kotlin/services/kinesis/model/PutRecordRequest;
+public static aws.sdk.kotlin.services.kinesis.model.PutRecordRequest putRecordRequestOf$default(java.lang.String, java.lang.String, byte[], kotlin.jvm.functions.Function1, int, java.lang.Object);
+descriptor: (Ljava/lang/String;Ljava/lang/String;[BLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Laws/sdk/kotlin/services/kinesis/model/PutRecordRequest;
