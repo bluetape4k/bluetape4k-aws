@@ -254,17 +254,89 @@ suspend fun getCallerIdentity() = stsClient.getCallerIdentity {}
 
 ### Kinesis (DSL)
 
+Kinesis DryRun은 opt-in이며 기본값은 `dryRun = false`입니다. `builder`는 계속 마지막
+인자입니다. 서비스 측 검증 성공도 정상 응답이 아니라 `DryRunOperationException`으로 전달됩니다.
+그 밖의 AWS SDK 예외와 coroutine cancellation은 그대로 전파됩니다. 다음 검증은 AWS Kinesis
+endpoint에서만 실행하세요. DryRun capability가 입증되지 않은 emulator에서 write 호출을 실행하면
+안 됩니다.
+
 ```kotlin
 import aws.sdk.kotlin.services.kinesis.KinesisClient
-import aws.sdk.kotlin.services.kinesis.putRecord
+import aws.sdk.kotlin.services.kinesis.model.DryRunOperationException
+import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
+import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
+import aws.sdk.kotlin.services.kinesis.model.KinesisException
+import io.bluetape4k.aws.kotlin.kinesis.getRecords
+import io.bluetape4k.aws.kotlin.kinesis.getShardIterator
+import io.bluetape4k.aws.kotlin.kinesis.putRecord
+import io.bluetape4k.aws.kotlin.kinesis.putRecords
+import io.bluetape4k.aws.kotlin.kinesis.model.getShardIteratorRequestOf
 import io.bluetape4k.aws.kotlin.kinesis.model.putRecordRequestOf
 
-suspend fun putRecord(client: KinesisClient, streamName: String, data: ByteArray) {
-    client.putRecord(
-        putRecordRequestOf(streamName, data, partitionKey = "default")
+private suspend fun validateAwsKinesisDryRun(operation: suspend () -> Unit) {
+    try {
+        operation()
+        error("이 endpoint가 DryRun을 무시하거나 지원하지 않습니다")
+    } catch (expected: DryRunOperationException) {
+        // 권한과 요청 검증이 성공했으며 실제 쓰기나 읽기 결과는 생성되지 않았습니다.
+    } catch (failed: KinesisException) {
+        throw failed // 인증, 권한, 요청 및 서비스 오류를 그대로 전파합니다.
+    }
+}
+
+private suspend fun validateKinesisDryRun(client: KinesisClient, existingShardIterator: String) {
+    val data = "order-1".toByteArray()
+    val entry = PutRecordsRequestEntry { partitionKey = "default"; this.data = data }
+
+    // 각 operation은 독립된 성공 예외 경계를 사용합니다.
+    validateAwsKinesisDryRun { client.putRecord("orders", "default", data, dryRun = true) { explicitHashKey = "1" } }
+    validateAwsKinesisDryRun { client.putRecords("orders", listOf(entry), dryRun = true) }
+    validateAwsKinesisDryRun {
+        client.getShardIterator(
+            "orders",
+            "shardId-000000000000",
+            ShardIteratorType.TrimHorizon,
+            dryRun = true,
+        )
+    }
+    validateAwsKinesisDryRun { client.getRecords(existingShardIterator, dryRun = true) }
+
+    val putRequest = putRecordRequestOf(
+        streamName = "orders",
+        partitionKey = "default",
+        data = data,
+        dryRun = true,
     )
+    val iteratorRequest = getShardIteratorRequestOf(
+        streamName = "orders",
+        shardId = "shardId-000000000000",
+        dryRun = true,
+    )
+
+    // builder-last: false로 덮어쓰면 DryRun:false를 보내고, null이면 DryRun을 생략합니다.
+    putRecordRequestOf("orders", "default", data, dryRun = true) { dryRun = false }
+    putRecordRequestOf("orders", "default", data, dryRun = true) { dryRun = null }
+
+    // Positional builder migration:
+    // before: putRecordRequestOf("orders", "default", data, { explicitHashKey = "1" })
+    // after:
+    putRecordRequestOf("orders", "default", data, builder = { explicitHashKey = "1" })
 }
 ```
+
+DryRun 요청도 payload를 설정된 endpoint로 직렬화해 전송하고 credential provider를 요청 서명에
+사용합니다. client-side validation, encryption 또는 network block을 대신하지 않습니다.
+`getRecords`를 검증하기 전에 일반 non-DryRun `getShardIterator` 호출로 `existingShardIterator`를
+얻어야 합니다. 예제 helper는 DryRun 정상 응답을 미지원으로 간주해 fail-closed 처리하지만,
+production extension은 backend 응답을 그대로 반환합니다.
+
+| #620에서 확인한 backend | capability | 예상 결과 |
+| --- | --- | --- |
+| AWS Kinesis | 지원 | 검증 성공 시 `DryRunOperationException`, 실제 읽기/쓰기 없음 |
+| Floci `1.6.0` | 미지원 | 요청 필드를 무시하며 안전성 테스트는 사유를 기록하고 예제를 실행하지 않음 |
+| LocalStack `4` | 미지원 fallback | 요청 필드를 무시하며 진단 결과에 명시적 사유 기록 |
+
+[AWS Kinesis DryRun 가이드](https://docs.aws.amazon.com/ko_kr/streams/latest/dev/kds-dryrun-validation.html)를 참고하세요.
 
 ### Kinesis — `recordFlow` (샤드별 cold `Flow<Record>`)
 
