@@ -319,10 +319,11 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/kinesis/KinesisDryRunSupportTest.kt`
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/kinesis/KinesisDryRunEmulatorTest.kt`
 - Create: `.github/scripts/validate_kinesis_dry_run_capability.py`
+- Create: `.github/scripts/sanitize_kinesis_dry_run_junit.py`
 - Modify: `.github/workflows/ci.yml` (aws-kotlin timeout 30분, test 뒤 capability validate/upload)
 - Modify: `.github/workflows/nightly-tests.yml` (aws-kotlin timeout 75분, 동일 validate/upload)
 
-- [ ] **Step 1: test-only ownership/cleanup helper RED**
+- [x] **Step 1: test-only ownership/cleanup helper RED**
 
   test support는 run nonce+UUID name 생성, `describeStream` absence preflight, 최대 3회 collision
   retry, create 전 cleanup registration, `ResourceNotFoundException` idempotence를 제공한다.
@@ -341,7 +342,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   chain, 실제 AWS endpoint, endpoint userinfo, 임의 host는 network I/O 전에 실패시키고 fake
   transport call count가 0인지 음성 test로 고정한다.
 
-- [ ] **Step 2: capability classifier RED**
+- [x] **Step 2: capability classifier RED**
 
   operation별 emulator unsupported closed set만 JUnit assumption으로 바꾼다. `AccessDenied`,
   HTTP 403, endpoint/connection failure, timeout, assertion failure, 정상 response는 skip되지
@@ -361,25 +362,34 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   unsupported, secret/header/payload sentinel을 실패시킨다. 성공 시 allow-list field만 정규화한
   `capability-<backend>.validated.json`을 생성한다. 실패 시 raw report를 삭제하고 고정된 redacted
   metadata만 log에 남긴다. `failed` row는 Gradle test exit를 non-zero로 유지한다.
+  항상 업로드되는 JUnit XML과 CI retry XML/HTML/log는 Testcontainers가 출력한 credential
+  property 행을 업로드 전에 제거한다. primary JUnit 누락이나 sanitizer 실패 시 일반 test
+  artifact upload를 막는다. retry upload는 sanitized XML/HTML/log와 classification만 허용하고
+  binary/unknown extension은 제외하며, sanitizer 회귀 테스트와 workflow ordering contract로
+  우회를 막는다.
 
   Run: `./gradlew :bluetape4k-aws-kotlin:test --tests '*KinesisDryRunSupportTest' --no-daemon`
 
   Expected: support 구현 전 RED, 구현 후 모든 음성 분류와 cleanup 테스트 GREEN.
 
-- [ ] **Step 3: isolated emulator scenarios**
+- [x] **Step 3: isolated emulator scenarios**
 
   `@Execution(SAME_THREAD)`와 scenario별 `@Timeout(180)`을 사용한다. 각 시나리오 본문은 120초,
   cleanup은 30초, JUnit 종료 여유는 30초다. 별도 disposable stream에서:
 
-  1. PutRecord dry-run 전후 bounded read로 marker 부재 확인
-  2. PutRecords dry-run 전후 각 marker 부재 확인
+  1. PutRecord 전에 non-dry-run baseline record를 기록·관측하고, dry-run 뒤 baseline 보존과
+     marker 부재를 30초 deadline 전체에서 확인
+  2. PutRecords도 별도 baseline record를 기록·관측하고, dry-run 뒤 baseline 보존과 각 marker
+     부재를 30초 deadline 전체에서 확인
   3. GetShardIterator dry-run의 operation-specific response/exception 확인
   4. 별도 정상 non-dry-run `getShardIterator`로 non-blank iterator를 만든 뒤 그 iterator를
      사용한 GetRecords dry-run의 operation-specific response/exception 확인
 
-  유효한 dry-run이 정상 success를 반환하거나 iterator 준비가 실패하거나 marker가 보이면
-  contract failure다. unsupported closed set일 때만 operation별 skip evidence를 남기며
-  fake/model/wire proof는 항상 필수다.
+  generic classifier는 정상 success를 `FAILED/normal_response`로 유지한다. isolated scenario가
+  disposable stream에서 operation별 정상 response를 직접 확인한 경우에만
+  `dry_run_ignored_response`, write marker persistence까지 확인한 경우에만
+  `dry_run_ignored_write`라는 명시적 unsupported capability로 승격한다. 두 결과 모두 AWS
+  semantics 또는 no-write PASS가 아니며 fake/model/wire proof는 항상 필수다.
 
   `withinOperationDeadline` helper는 각 operation, stream `ACTIVE`, baseline 및 record 관측을
   `withTimeout(30.seconds)`로 감싸고 polling/backoff를 500ms 이하로 clamp한다. fake clock/delay
@@ -389,7 +399,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   재시도하는 Full Nightly job은 최악 12분 x 5, 30초 retry backoff와 setup/teardown을 수용하도록
   75분으로 변경한다.
 
-- [ ] **Step 4: Floci-first GREEN과 LocalStack fallback**
+- [x] **Step 4: Floci-first GREEN과 LocalStack fallback**
 
   Run sequentially:
 
@@ -401,7 +411,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
     aws-kotlin/build/reports/kinesis-dry-run/capability-floci.json
   ```
 
-  If and only if Floci reports the closed-set unsupported capability, run:
+  Floci가 closed-set unsupported 또는 isolated ignored capability를 보고한 경우에만 진단용으로 run:
 
   ```bash
   ./gradlew :bluetape4k-aws-kotlin:test \
@@ -410,12 +420,13 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   ```
 
   Expected: supported operation은 `DryRunOperationException`과 no-write PASS; unsupported는
-  explicit operation별 evidence. 인증/네트워크/Docker/timeout 등 closed-set 밖 오류는 test
+  explicit operation별 evidence. ignored write/response는 `SUPPORTED`로 올리지 않는다.
+  인증/네트워크/Docker/timeout 등 closed-set 밖 오류는 test
   command를 non-zero로 실패시키고 assumption/skip하지 않는다. 최종 DoD의 `PENDING/BLOCKED`는
   그 실패를 pass로 바꾸지 않는 delivery 상태이며 원래 exit status를 함께 기록한다.
 
   PR CI와 Full Nightly는 test 뒤 validator를 `if: always()`로 실행한다. upload step은 validator
-  success인 경우에만
+  success이고 앞선 test step도 성공인 경우에만
   `capability-floci.validated.json`을 `coverage-aws-kotlin`과 분리된
   `kinesis-dry-run-capability` artifact로 올린다. validator failure에서는 raw report를 삭제하고
   artifact upload를 실행하지 않는다. workflow contract test는 unconditional upload와 raw report
@@ -423,7 +434,18 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   validator 실패는 job을 실패시킨다. PR DoD는 PR CI와 실행 가능한 Full Nightly validated
   artifact의 네 operation row와 backend/version/status를 read-back한다.
 
-- [ ] **Step 5: emulator checkpoint commit**
+  Local evidence (2026-09-06): support 28/28 GREEN. Floci `1.6.0`과 LocalStack `4` 모두
+  PutRecord/PutRecords에서 `dry_run_ignored_write`, GetShardIterator/GetRecords에서
+  `dry_run_ignored_response`를 기록했다. Floci run은 4개 assumption과 validator 4-row GREEN,
+  LocalStack은 같은 결과의 순차 진단이었다. 두 backend 결과는 service-semantics PASS가 아니라
+  명시적 unsupported evidence다. stability focused review에서 발견한 2초 관측과 baseline 누락은
+  30초 deadline 전체 관측 및 non-dry-run baseline 보존 검사로 닫았다. JUnit XML의 Testcontainers
+  fake credential property는 main/retry artifact upload 전 sanitizer로 제거하고 실제 artifact
+  scan으로 확인했다. sanitizer 실패·primary JUnit 누락은 upload를 차단하고 capability artifact
+  누락은 `if-no-files-found: error`로 실패시킨다. retry artifact는 sanitizer가 처리한 확장자와
+  classification만 업로드해 Gradle binary event 파일의 우회를 차단한다.
+
+- [x] **Step 5: emulator checkpoint commit**
 
   Intent: `#620 DryRun emulator 검증이 외부 자원을 지우지 않게 한다`. Lore trailers에
   Floci-first, owned-name cleanup, LocalStack fallback 여부, skip/PENDING 결과를 기록한다.

@@ -148,6 +148,12 @@ jobs:
         run: python3 .github/scripts/code_quality_workflow_test.py
       - name: Test dependency catalog pin contract
         run: python3 .github/scripts/catalog_pin_contract_test.py
+      - name: Test Kinesis DryRun workflow contract
+        run: python3 .github/scripts/kinesis_dry_run_workflow_contract_test.py
+      - name: Test Kinesis DryRun capability validator
+        run: python3 .github/scripts/validate_kinesis_dry_run_capability_test.py
+      - name: Test Kinesis DryRun JUnit sanitizer
+        run: python3 .github/scripts/sanitize_kinesis_dry_run_junit_test.py
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -410,10 +416,33 @@ jobs:
           DOCKER_HOST: "unix:///var/run/docker.sock"
           BLUETAPE4K_RETRY_JOB: aws-kotlin
           BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-kotlin
+      - name: Validate Kinesis DryRun capability
+        if: always()
+        id: validate-kinesis-dry-run-capability
+        run: python3 .github/scripts/validate_kinesis_dry_run_capability.py aws-kotlin/build/reports/kinesis-dry-run/capability-floci.json
+      - name: Upload Kinesis DryRun capability
+        if: ${{ success() && steps.validate-kinesis-dry-run-capability.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: kinesis-dry-run-capability
+          path: aws-kotlin/build/reports/kinesis-dry-run/capability-floci.validated.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Generate Kover XML report
         if: always()
         run: ./gradlew :bluetape4k-aws-kotlin:koverXmlReport -x test --no-daemon
         continue-on-error: true
+
+      - name: Sanitize Kinesis DryRun JUnit output
+        if: always()
+        id: sanitize-kinesis-dry-run-junit
+        run: |
+          python3 .github/scripts/sanitize_kinesis_dry_run_junit.py \
+            --require-file 'aws-kotlin/build/test-results/test/TEST-io.bluetape4k.aws.kotlin.kinesis.KinesisDryRunEmulatorTest.xml' \
+            '**/build/test-results/test/*.xml' \
+            'ci-retry-artifacts/aws-kotlin/**/*.xml' \
+            'ci-retry-artifacts/aws-kotlin/**/*.html' \
+            'ci-retry-artifacts/aws-kotlin/**/*.log'
 
       - name: Upload coverage report
         if: always()
@@ -424,13 +453,16 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        if: always()
+        if: ${{ always() && steps.sanitize-kinesis-dry-run-junit.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-kotlin
           path: |
             **/build/test-results/test/*.xml
-            ci-retry-artifacts/aws-kotlin/**
+            ci-retry-artifacts/aws-kotlin/**/*.xml
+            ci-retry-artifacts/aws-kotlin/**/*.html
+            ci-retry-artifacts/aws-kotlin/**/*.log
+            ci-retry-artifacts/aws-kotlin/classification.txt
           retention-days: 7
 
   test-aws-spring-boot:
