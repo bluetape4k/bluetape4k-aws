@@ -178,7 +178,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 - Modify: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/kinesis/model/GetShardIteratorTest.kt`
 - Create: `aws-kotlin/src/test/kotlin/io/bluetape4k/aws/kotlin/kinesis/KinesisClientExtensionsMockTest.kt`
 
-- [ ] **Step 1: model/helper RED**
+- [x] **Step 1: model/helper RED**
 
   두 helper test에 default `false`, explicit `true`, builder `true -> false`, builder
   `true -> null`, 기존 `ByteArray` identity를 추가한다.
@@ -200,7 +200,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 
   Expected: helper에 named `dryRun`이 없어 compile RED.
 
-- [ ] **Step 2: extension fake RED**
+- [x] **Step 2: extension fake RED**
 
   MockK `KinesisClient`에서 네 request를 capture한다. 각 operation에 대해 default/true/
   builder false/null을 검증하고 호출 횟수는 정확히 1회다. PutRecord data와 PutRecords
@@ -211,7 +211,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 
   Expected: 새 인자와 mapping이 없어 compile/test RED.
 
-- [ ] **Step 3: 새 public overload와 helper 최소 구현**
+- [x] **Step 3: 새 public overload와 helper 최소 구현**
 
   각 새 함수는 다음 순서를 사용한다.
 
@@ -235,7 +235,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   `getShardIteratorRequestOf`도 `this.dryRun = dryRun` 뒤 `builder()`를 호출한다. 새 retry,
   exception mapping, request copy는 추가하지 않는다.
 
-- [ ] **Step 4: old source/binary overload 보존**
+- [x] **Step 4: old source/binary overload 보존**
 
   네 extension과 두 helper에 변경 전 signature의 다음 형태를 둔다.
 
@@ -252,7 +252,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   새 source compiler에서는 숨기되 old direct/`$default` descriptor는 남긴다. trailing lambda와
   named `builder` compile fixture를 유지하고 괄호 안 positional builder는 migration 대상이다.
 
-- [ ] **Step 5: targeted GREEN**
+- [x] **Step 5: targeted GREEN**
 
   Run:
 
@@ -264,7 +264,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 
   Expected: mapping/precedence/identity/cancellation/call-count 모두 PASS.
 
-- [ ] **Step 6: API checkpoint commit**
+- [x] **Step 6: API checkpoint commit**
 
   Intent: `#620 Kinesis DryRun을 builder 우선 계약으로 노출한다`. Lore trailers에 old
   descriptor 보존, hidden overload 선택, positional builder migration, targeted test 결과,

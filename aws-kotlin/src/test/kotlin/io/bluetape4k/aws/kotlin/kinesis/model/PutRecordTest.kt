@@ -2,6 +2,7 @@ package io.bluetape4k.aws.kotlin.kinesis.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
@@ -21,7 +22,48 @@ class PutRecordTest {
 
         req.streamName shouldBeEqualTo "my-stream"
         req.partitionKey shouldBeEqualTo "pk-001"
-        req.data shouldBeEqualTo data
+        req.data shouldBeSameInstanceAs data
+        req.dryRun shouldBeEqualTo false
+    }
+
+    @Test
+    fun `putRecordRequestOf는 dryRun을 설정한다`() {
+        val req = putRecordRequestOf(
+            streamName = "my-stream",
+            partitionKey = "pk-001",
+            data = "test".toByteArray(),
+            dryRun = true,
+        )
+
+        req.dryRun shouldBeEqualTo true
+    }
+
+    @Test
+    fun `putRecordRequestOf는 builder의 dryRun false를 우선한다`() {
+        val req = putRecordRequestOf(
+            streamName = "my-stream",
+            partitionKey = "pk-001",
+            data = "test".toByteArray(),
+            dryRun = true,
+        ) {
+            dryRun = false
+        }
+
+        req.dryRun shouldBeEqualTo false
+    }
+
+    @Test
+    fun `putRecordRequestOf는 builder의 dryRun null을 우선한다`() {
+        val req = putRecordRequestOf(
+            streamName = "my-stream",
+            partitionKey = "pk-001",
+            data = "test".toByteArray(),
+            dryRun = true,
+        ) {
+            dryRun = null
+        }
+
+        req.dryRun shouldBeEqualTo null
     }
 
     @Test

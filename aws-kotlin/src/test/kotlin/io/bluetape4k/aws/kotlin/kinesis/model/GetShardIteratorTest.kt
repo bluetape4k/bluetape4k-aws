@@ -22,6 +22,44 @@ class GetShardIteratorTest {
         req.streamName shouldBeEqualTo "my-stream"
         req.shardId shouldBeEqualTo "shardId-000000000000"
         req.shardIteratorType shouldBeEqualTo ShardIteratorType.TrimHorizon
+        req.dryRun shouldBeEqualTo false
+    }
+
+    @Test
+    fun `getShardIteratorRequestOf는 dryRun을 설정한다`() {
+        val req = getShardIteratorRequestOf(
+            streamName = "my-stream",
+            shardId = "shardId-000000000000",
+            dryRun = true,
+        )
+
+        req.dryRun shouldBeEqualTo true
+    }
+
+    @Test
+    fun `getShardIteratorRequestOf는 builder의 dryRun false를 우선한다`() {
+        val req = getShardIteratorRequestOf(
+            streamName = "my-stream",
+            shardId = "shardId-000000000000",
+            dryRun = true,
+        ) {
+            dryRun = false
+        }
+
+        req.dryRun shouldBeEqualTo false
+    }
+
+    @Test
+    fun `getShardIteratorRequestOf는 builder의 dryRun null을 우선한다`() {
+        val req = getShardIteratorRequestOf(
+            streamName = "my-stream",
+            shardId = "shardId-000000000000",
+            dryRun = true,
+        ) {
+            dryRun = null
+        }
+
+        req.dryRun shouldBeEqualTo null
     }
 
     @Test

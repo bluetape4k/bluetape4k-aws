@@ -23,6 +23,7 @@ inline fun getShardIteratorRequestOf(
     streamName: String,
     shardId: String,
     type: ShardIteratorType = ShardIteratorType.TrimHorizon,
+    dryRun: Boolean = false,
     crossinline builder: GetShardIteratorRequest.Builder.() -> Unit = {},
 ): GetShardIteratorRequest {
     streamName.requireNotBlank("streamName")
@@ -31,6 +32,15 @@ inline fun getShardIteratorRequestOf(
         this.streamName = streamName
         this.shardId = shardId
         this.shardIteratorType = type
+        this.dryRun = dryRun
         builder()
     }
 }
+
+@Deprecated("Binary compatibility overload", level = DeprecationLevel.HIDDEN)
+inline fun getShardIteratorRequestOf(
+    streamName: String,
+    shardId: String,
+    type: ShardIteratorType = ShardIteratorType.TrimHorizon,
+    crossinline builder: GetShardIteratorRequest.Builder.() -> Unit = {},
+): GetShardIteratorRequest = getShardIteratorRequestOf(streamName, shardId, type, false, builder)
