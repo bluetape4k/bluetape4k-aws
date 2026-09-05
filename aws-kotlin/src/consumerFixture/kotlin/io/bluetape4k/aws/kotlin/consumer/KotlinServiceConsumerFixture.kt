@@ -4,6 +4,8 @@ import aws.sdk.kotlin.services.cloudwatch.CloudWatchClient
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodbstreams.DynamoDbStreamsClient
 import aws.sdk.kotlin.services.kinesis.KinesisClient
+import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
+import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import aws.sdk.kotlin.services.lambda.LambdaClient
 import aws.sdk.kotlin.services.kms.KmsClient
 import aws.sdk.kotlin.services.s3.S3Client
@@ -24,6 +26,12 @@ import io.bluetape4k.aws.kotlin.kinesis.InMemoryKinesisLeaseStore
 import io.bluetape4k.aws.kotlin.kinesis.KinesisConsumerOptions
 import io.bluetape4k.aws.kotlin.kinesis.KinesisStartingPosition
 import io.bluetape4k.aws.kotlin.kinesis.consumerFlow
+import io.bluetape4k.aws.kotlin.kinesis.getRecords
+import io.bluetape4k.aws.kotlin.kinesis.getShardIterator
+import io.bluetape4k.aws.kotlin.kinesis.putRecord
+import io.bluetape4k.aws.kotlin.kinesis.putRecords
+import io.bluetape4k.aws.kotlin.kinesis.model.getShardIteratorRequestOf
+import io.bluetape4k.aws.kotlin.kinesis.model.putRecordRequestOf
 import io.bluetape4k.aws.kotlin.kms.kmsClientOf
 import io.bluetape4k.aws.kotlin.lambda.invokeString
 import io.bluetape4k.aws.kotlin.lambda.lambdaClientOf
@@ -111,6 +119,51 @@ fun kotlinServiceConsumerFixture(): List<Any> = listOf<Any>(
     { stsClientOf() },
     suspend {
         KinesisClient { }.use { client ->
+            val data = "fixture".toByteArray()
+            val entries = listOf(
+                PutRecordsRequestEntry {
+                    partitionKey = "fixture"
+                    this.data = data
+                },
+            )
+            client.putRecord("orders", "fixture", data) { }
+            client.putRecord("orders", "fixture", data, builder = {})
+            client.putRecord("orders", "fixture", data, dryRun = true) { }
+            client.putRecords("orders", entries) { }
+            client.putRecords("orders", entries, builder = {})
+            client.putRecords("orders", entries, dryRun = true) { }
+            client.getShardIterator("orders", "shardId-000000000000", ShardIteratorType.values().first()) { }
+            client.getShardIterator(
+                "orders",
+                "shardId-000000000000",
+                ShardIteratorType.values().first(),
+                builder = {},
+            )
+            client.getShardIterator(
+                "orders",
+                "shardId-000000000000",
+                ShardIteratorType.values().first(),
+                dryRun = true,
+            ) { }
+            client.getRecords("iterator") { }
+            client.getRecords("iterator", builder = {})
+            client.getRecords("iterator", dryRun = true) { }
+            putRecordRequestOf("orders", "fixture", data) { }
+            putRecordRequestOf("orders", "fixture", data, builder = {})
+            putRecordRequestOf("orders", "fixture", data, dryRun = true) { }
+            getShardIteratorRequestOf("orders", "shardId-000000000000", ShardIteratorType.values().first()) { }
+            getShardIteratorRequestOf(
+                "orders",
+                "shardId-000000000000",
+                ShardIteratorType.values().first(),
+                builder = {},
+            )
+            getShardIteratorRequestOf(
+                "orders",
+                "shardId-000000000000",
+                ShardIteratorType.values().first(),
+                dryRun = true,
+            ) { }
             client.consumerFlow(
                 streamName = "orders",
                 consumerGroup = "fixture-group",

@@ -11,8 +11,10 @@ import org.gradle.api.attributes.Usage
 import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
@@ -23,6 +25,7 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.publish.maven.tasks.GenerateMavenPom
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -176,6 +179,146 @@ abstract class VerifyLegacyAbiTask : DefaultTask() {
         }
     }
 }
+
+abstract class VerifyAdditiveKinesisAbiTask : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val productionJar: RegularFileProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val baselineFiles: ConfigurableFileCollection
+
+    @get:OutputFile
+    abstract val reportFile: RegularFileProperty
+
+    private data class ExpectedMethod(
+        val owner: String,
+        val signature: String,
+        val descriptor: String,
+    )
+
+    private fun parseMethods(owner: String, lines: List<String>, source: String): List<ExpectedMethod> {
+        return lines.mapIndexedNotNull { index, line ->
+            if (!line.startsWith("public static ")) {
+                null
+            } else {
+                ExpectedMethod(
+                    owner = owner,
+                    signature = line.trim(),
+                    descriptor = lines.getOrNull(index + 1)?.trim()
+                        ?.takeIf { it.startsWith("descriptor: ") }
+                        ?: error("Missing descriptor after $source:${index + 1}"),
+                )
+            }
+        }
+    }
+
+    private fun readExpectedMethods(file: File): List<ExpectedMethod> {
+        val lines = file.readLines()
+        val owner = lines.single { it.startsWith("CLASS ") }.removePrefix("CLASS ")
+        return parseMethods(owner, lines, file.path)
+    }
+
+    @TaskAction
+    fun verifyAdditiveAbi() {
+        val jar = productionJar.get().asFile
+        val expected = baselineFiles.files.sortedBy(File::getName).flatMap(::readExpectedMethods)
+        require(expected.size == 12) {
+            "Expected exactly 12 pre-change Kinesis methods, found ${expected.size}"
+        }
+
+        expected.groupBy(ExpectedMethod::owner).forEach { (owner, methods) ->
+            val javap = ProcessBuilder("javap", "-classpath", jar.absolutePath, "-public", "-s", owner)
+                .redirectErrorStream(true)
+                .start()
+            val output = javap.inputStream.bufferedReader().use { it.readText() }
+            require(javap.waitFor() == 0) { "javap failed for $owner: $output" }
+            val normalized = output.lineSequence().map(String::trim).filter(String::isNotBlank).toList()
+            val actual = parseMethods(owner, normalized, "javap:$owner")
+            methods.forEach { method ->
+                require(method in actual) {
+                    "Missing pre-change Kinesis ABI method in ${jar.name}:\n${method.signature}\n${method.descriptor}"
+                }
+            }
+        }
+
+        reportFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(
+                groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(
+                        linkedMapOf(
+                            "issue" to 620,
+                            "status" to "passed",
+                            "policy" to "additive",
+                            "legacyMethodCount" to expected.size,
+                            "owners" to expected.map(ExpectedMethod::owner).distinct().sorted(),
+                        ),
+                    ),
+                ) + "\n",
+            )
+        }
+    }
+}
+
+abstract class VerifyKinesisDryRunFixtureIntegrityTask : DefaultTask() {
+    @get:Internal
+    abstract val fixtureRoot: DirectoryProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val fixtureFiles: ConfigurableFileCollection
+
+    @get:Input
+    abstract val expectedSha256: MapProperty<String, String>
+
+    @get:OutputFile
+    abstract val reportFile: RegularFileProperty
+
+    private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256")
+        .digest(file.readBytes())
+        .joinToString("") { byte -> "%02x".format(byte) }
+
+    @TaskAction
+    fun verifyIntegrity() {
+        val root = fixtureRoot.get().asFile.toPath()
+        val actual = fixtureFiles.files.associate { file ->
+            root.relativize(file.toPath()).toString() to sha256(file)
+        }.toSortedMap()
+        val expected = expectedSha256.get().toSortedMap()
+        require(actual.keys == expected.keys) {
+            "Kinesis pre-change fixture file set changed: expected=${expected.keys}, actual=${actual.keys}"
+        }
+        val drift = actual.filter { (path, digest) -> expected[path] != digest }
+        require(drift.isEmpty()) {
+            "Kinesis pre-change fixture digest changed: " +
+                drift.entries.joinToString { (path, digest) -> "$path=$digest expected=${expected[path]}" }
+        }
+
+        reportFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(
+                groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(
+                        linkedMapOf(
+                            "issue" to 620,
+                            "status" to "passed",
+                            "baseCommit" to "f07015b6e9a3e6aceb4f301081b502cb88eb40c3",
+                            "sha256" to actual,
+                        ),
+                    ),
+                ) + "\n",
+            )
+        }
+    }
+}
+
+data class KinesisLegacyReference(
+    val owner: String,
+    val method: String,
+    val descriptor: String,
+)
 
 abstract class WriteCompatibilityReportTask : DefaultTask() {
     @get:Input
@@ -441,6 +584,9 @@ val awsKotlinServiceConsumerFixtureClasspath =
     configurations.create("awsKotlinServiceConsumerFixtureClasspath") {
         configureAwsServiceConsumerFixtureVersions()
     }
+val kinesisDryRunLegacyDependencies = configurations.create("kinesisDryRunLegacyDependencies") {
+    configureAwsServiceConsumerFixtureVersions()
+}
 
 fun addConsumerFixtureDependency(
     configuration: Configuration,
@@ -531,6 +677,9 @@ dependencies {
     addConsumerFixtureDependency(awsKotlinServiceConsumerFixtureClasspath, "aws-kotlin:sts", libs.aws.kotlin.sts)
     awsKotlinServiceConsumerFixtureClasspath(bt4kLibrary("bluetape4k-coroutines"))
     awsKotlinServiceConsumerFixtureClasspath(libs.kotlinx.coroutines.core)
+
+    kinesisDryRunLegacyDependencies(libs.aws.kotlin.kinesis)
+    kinesisDryRunLegacyDependencies(rootLibs.kotlin.stdlib)
 }
 
 val compileAwsKtorSqsConsumerFixture = tasks.register<JavaCompile>("compileAwsKtorSqsConsumerFixture") {
@@ -755,6 +904,165 @@ val compileAwsKotlinServiceConsumerFixture = registerAwsServiceConsumerFixtureCo
     ":bluetape4k-aws-kotlin:jar",
 )
 
+val kinesisDryRunFixtureRoot = layout.projectDirectory.dir("src/abi-fixtures/kinesis-dry-run-pre-change")
+val kinesisDryRunStubClasses = layout.buildDirectory.dir("consumer-fixtures/kinesis-dry-run/stub-classes")
+val kinesisDryRunConsumerClasses = layout.buildDirectory.dir("consumer-fixtures/kinesis-dry-run/consumer-classes")
+val awsKotlinProductionJar = layout.projectDirectory.file(
+    "aws-kotlin/build/libs/bluetape4k-aws-kotlin-${baseVersion + snapshotVersion}.jar",
+)
+
+fun requireClasspathExcludes(
+    label: String,
+    classpath: FileCollection,
+    forbidden: File,
+) {
+    val forbiddenPath = forbidden.canonicalFile
+    require(classpath.files.none { it.canonicalFile == forbiddenPath }) {
+        "$label must not contain ${forbiddenPath.path}"
+    }
+}
+
+val verifyKinesisDryRunFixtureIntegrity = tasks.register<VerifyKinesisDryRunFixtureIntegrityTask>(
+    "verifyKinesisDryRunFixtureIntegrity",
+) {
+    description = "Fails closed when the frozen pre-change Kinesis ABI fixture drifts."
+    group = "verification"
+    fixtureRoot.set(kinesisDryRunFixtureRoot)
+    fixtureFiles.from(
+        fileTree(kinesisDryRunFixtureRoot) {
+            include("*.javap.txt")
+            include("stub/**/*.java")
+        },
+    )
+    expectedSha256.set(
+        mapOf(
+            "get-shard-iterator.javap.txt" to "04fd9a7f6a23a9047c5b478cb02a1ad771bd2e80c7dde108e9c82e6a47ad6352",
+            "kinesis-client-extensions.javap.txt" to "4b65d04ce34c9c3facd02fafcd27a87c3652472300043391dd2e62b1713a9f21",
+            "put-record.javap.txt" to "c90e637ccec342d3fa3e22ddc3d04f902bf91d01994df1ad34908e6a0f6a5392",
+            "stub/io/bluetape4k/aws/kotlin/kinesis/KinesisClientExtensionsKt.java" to
+                "0aa1107bbe117de09b39658a9d428bf9a3225325b2b6f1a57dfbe507f9c56d94",
+            "stub/io/bluetape4k/aws/kotlin/kinesis/model/GetShardIteratorKt.java" to
+                "82ea01abd702e78c3bad9822d88c7767b5cf75b5e7c85f923316849cfba25fc0",
+            "stub/io/bluetape4k/aws/kotlin/kinesis/model/PutRecordKt.java" to
+                "79a4459e26d8b7ada73360fae42dd939d88542bb29dbf67f190e50c9a6a9faaf",
+        ),
+    )
+    reportFile.set(layout.buildDirectory.file("reports/abi/issue-620/kinesis-dry-run-fixture-integrity.json"))
+}
+
+val compileKinesisDryRunLegacyStubs = tasks.register<JavaCompile>("compileKinesisDryRunLegacyStubs") {
+    description = "Compiles the pre-change Kinesis JVM surface without the production JAR."
+    group = "verification"
+    dependsOn(verifyKinesisDryRunFixtureIntegrity)
+    source(fileTree(kinesisDryRunFixtureRoot.dir("stub")) { include("**/*.java") })
+    classpath = kinesisDryRunLegacyDependencies
+    destinationDirectory.set(kinesisDryRunStubClasses)
+    options.release.set(25)
+    options.encoding = "UTF-8"
+    doFirst {
+        requireClasspathExcludes("Kinesis legacy stub compile classpath", classpath, awsKotlinProductionJar.asFile)
+    }
+}
+
+val compileKinesisDryRunLegacyConsumer = tasks.register<JavaCompile>("compileKinesisDryRunLegacyConsumer") {
+    description = "Compiles a legacy Kinesis consumer against stubs instead of the production JAR."
+    group = "verification"
+    dependsOn(compileKinesisDryRunLegacyStubs)
+    source(fileTree(kinesisDryRunFixtureRoot.dir("consumer")) { include("**/*.java") })
+    classpath = files(kinesisDryRunStubClasses) + kinesisDryRunLegacyDependencies
+    destinationDirectory.set(kinesisDryRunConsumerClasses)
+    options.release.set(25)
+    options.encoding = "UTF-8"
+    doFirst {
+        requireClasspathExcludes("Kinesis legacy consumer compile classpath", classpath, awsKotlinProductionJar.asFile)
+        require(classpath.files.any { it.canonicalFile == kinesisDryRunStubClasses.get().asFile.canonicalFile }) {
+            "Kinesis legacy consumer compile classpath must contain the pre-change stub output"
+        }
+    }
+}
+
+val verifyKinesisDryRunAdditiveAbi = tasks.register<VerifyAdditiveKinesisAbiTask>(
+    "verifyKinesisDryRunAdditiveAbi",
+) {
+    description = "Verifies all 12 pre-change Kinesis JVM methods remain in the production JAR."
+    group = "verification"
+    dependsOn(verifyKinesisDryRunFixtureIntegrity, ":bluetape4k-aws-kotlin:jar")
+    productionJar.set(awsKotlinProductionJar)
+    baselineFiles.from(
+        kinesisDryRunFixtureRoot.file("kinesis-client-extensions.javap.txt"),
+        kinesisDryRunFixtureRoot.file("put-record.javap.txt"),
+        kinesisDryRunFixtureRoot.file("get-shard-iterator.javap.txt"),
+    )
+    reportFile.set(layout.buildDirectory.file("reports/abi/issue-620/kinesis-dry-run-additive.json"))
+}
+
+val verifyKinesisDryRunLegacyInvocations = tasks.register("verifyKinesisDryRunLegacyInvocations") {
+    description = "Verifies the isolated legacy consumer references all 12 exact pre-change JVM descriptors."
+    group = "verification"
+    dependsOn(compileKinesisDryRunLegacyConsumer)
+    val baselineFiles = files(
+        kinesisDryRunFixtureRoot.file("kinesis-client-extensions.javap.txt"),
+        kinesisDryRunFixtureRoot.file("put-record.javap.txt"),
+        kinesisDryRunFixtureRoot.file("get-shard-iterator.javap.txt"),
+    )
+    inputs.files(baselineFiles)
+    inputs.dir(kinesisDryRunConsumerClasses)
+    doLast {
+        val expected = baselineFiles.files.sortedBy(File::getName).flatMap { fixture ->
+            val lines = fixture.readLines()
+            val owner = lines.single { it.startsWith("CLASS ") }
+                .removePrefix("CLASS ")
+                .replace('.', '/')
+            lines.mapIndexedNotNull { index, line ->
+                if (!line.startsWith("public static ")) {
+                    null
+                } else {
+                    val method = Regex(" ([^ (]+)\\(").find(line)?.groupValues?.get(1)
+                        ?: error("Cannot parse method from ${fixture.path}:${index + 1}")
+                    val descriptor = lines.getOrNull(index + 1)?.removePrefix("descriptor: ")?.trim()
+                        ?: error("Missing descriptor after ${fixture.path}:${index + 1}")
+                    KinesisLegacyReference(owner, method, descriptor)
+                }
+            }
+        }
+        require(expected.size == 12) { "Expected exactly 12 legacy Kinesis references, found ${expected.size}" }
+
+        val outputDirectory = kinesisDryRunConsumerClasses.get().asFile
+        val javap = ProcessBuilder(
+            "javap",
+            "-classpath",
+            outputDirectory.absolutePath,
+            "-p",
+            "-c",
+            "-s",
+            "io.bluetape4k.aws.kotlin.kinesis.KinesisDryRunLegacyConsumer",
+        ).redirectErrorStream(true).start()
+        val output = javap.inputStream.bufferedReader().use { it.readText() }
+        require(javap.waitFor() == 0) { "javap failed for isolated Kinesis legacy consumer: $output" }
+        expected.forEach { reference ->
+            val token = "Method ${reference.owner}.${reference.method}:${reference.descriptor}"
+            require(token in output) { "Missing exact legacy invocation: $token" }
+        }
+    }
+}
+
+val runKinesisDryRunLegacyConsumer = tasks.register<JavaExec>("runKinesisDryRunLegacyConsumer") {
+    description = "Links and runs the isolated pre-change Kinesis consumer against the production JAR."
+    group = "verification"
+    dependsOn(compileKinesisDryRunLegacyConsumer, ":bluetape4k-aws-kotlin:jar")
+    mainClass.set("io.bluetape4k.aws.kotlin.kinesis.KinesisDryRunLegacyConsumer")
+    classpath = files(kinesisDryRunConsumerClasses, awsKotlinProductionJar) + kinesisDryRunLegacyDependencies
+    doFirst {
+        val stubOutput = kinesisDryRunStubClasses.get().asFile.canonicalFile
+        require(classpath.files.none { it.canonicalFile == stubOutput }) {
+            "Kinesis legacy runtime classpath must not contain the pre-change stub output"
+        }
+        require(classpath.files.any { it.canonicalFile == awsKotlinProductionJar.asFile.canonicalFile }) {
+            "Kinesis legacy runtime classpath must contain the production JAR"
+        }
+    }
+}
+
 val verifyAwsConsumerFixturePublication = tasks.register("verifyAwsConsumerFixturePublication") {
     description = "Verifies AWS service SDKs remain compileOnly in generated Java/Kotlin publication metadata."
     group = "verification"
@@ -945,6 +1253,11 @@ val compatibilityCheck = tasks.register<WriteCompatibilityReportTask>("compatibi
             "compileSqsBatchConsumerFixture",
             "compileSnsOperationsLegacyConsumerFixture",
             "compileAwsSpringModulithConsumerFixture",
+            "verifyKinesisDryRunAdditiveAbi",
+            "verifyKinesisDryRunFixtureIntegrity",
+            "verifyKinesisDryRunLegacyInvocations",
+            "runKinesisDryRunLegacyConsumer",
+            "compileAwsKotlinServiceConsumerFixture",
         ),
     )
     dependsOn(
@@ -958,6 +1271,11 @@ val compatibilityCheck = tasks.register<WriteCompatibilityReportTask>("compatibi
         compileSqsBatchConsumerFixture,
         compileSnsOperationsLegacyConsumerFixture,
         compileAwsSpringModulithConsumerFixture,
+        verifyKinesisDryRunAdditiveAbi,
+        verifyKinesisDryRunFixtureIntegrity,
+        verifyKinesisDryRunLegacyInvocations,
+        runKinesisDryRunLegacyConsumer,
+        compileAwsKotlinServiceConsumerFixture,
     )
     reportFile.set(layout.buildDirectory.file("reports/compatibility/compatibility-check.json"))
 }
