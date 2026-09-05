@@ -41,7 +41,7 @@ env:
   JAVA_DISTRIBUTION: 'temurin'
   GITLEAKS_VERSION: '8.30.1'
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  BLUETAPE4K_DEPENDENCIES_CATALOG_REF: '850959d0ea5f76ac7e2c442400f47653d5f95eed'
+  BLUETAPE4K_DEPENDENCIES_CATALOG_REF: '9698c9d66bea6fcba373143ee8fa5bfbd9812d4b'
   # Retry once only for classified emulator/infra failures; preserve first-failure evidence.
   BLUETAPE4K_RETRY_MAX_ATTEMPTS: '2'
   BLUETAPE4K_RETRY_DELAY_SECONDS: '15'
@@ -146,6 +146,14 @@ jobs:
         run: python3 .github/scripts/run_gradle_with_classified_retry_test.py
       - name: Test CodeQL workflow contract
         run: python3 .github/scripts/code_quality_workflow_test.py
+      - name: Test dependency catalog pin contract
+        run: python3 .github/scripts/catalog_pin_contract_test.py
+      - name: Test Kinesis DryRun workflow contract
+        run: python3 .github/scripts/kinesis_dry_run_workflow_contract_test.py
+      - name: Test Kinesis DryRun capability validator
+        run: python3 .github/scripts/validate_kinesis_dry_run_capability_test.py
+      - name: Test Kinesis DryRun JUnit sanitizer
+        run: python3 .github/scripts/sanitize_kinesis_dry_run_junit_test.py
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -171,8 +179,10 @@ jobs:
               - '.github/workflows/ci.yml'
               - '.github/scripts/**'
             compatibility:
+              - 'settings.gradle.kts'
               - 'build.gradle.kts'
               - 'src/abi-fixtures/**'
+              - 'aws-kotlin/src/main/**'
               - 'aws-spring-boot/build.gradle.kts'
               - 'aws-spring-boot/src/consumerFixture/**'
               - 'aws-spring-boot/src/main/**'
@@ -384,7 +394,7 @@ jobs:
   test-aws-kotlin:
     name: Test / aws-kotlin
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     needs: [build, changes]
     if: ${{ needs.changes.outputs['aws-kotlin'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
@@ -406,10 +416,33 @@ jobs:
           DOCKER_HOST: "unix:///var/run/docker.sock"
           BLUETAPE4K_RETRY_JOB: aws-kotlin
           BLUETAPE4K_RETRY_ARTIFACT_DIR: ci-retry-artifacts/aws-kotlin
+      - name: Validate Kinesis DryRun capability
+        if: always()
+        id: validate-kinesis-dry-run-capability
+        run: python3 .github/scripts/validate_kinesis_dry_run_capability.py aws-kotlin/build/reports/kinesis-dry-run/capability-floci.json
+      - name: Upload Kinesis DryRun capability
+        if: ${{ success() && steps.validate-kinesis-dry-run-capability.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: kinesis-dry-run-capability
+          path: aws-kotlin/build/reports/kinesis-dry-run/capability-floci.validated.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Generate Kover XML report
         if: always()
         run: ./gradlew :bluetape4k-aws-kotlin:koverXmlReport -x test --no-daemon
         continue-on-error: true
+
+      - name: Sanitize Kinesis DryRun JUnit output
+        if: always()
+        id: sanitize-kinesis-dry-run-junit
+        run: |
+          python3 .github/scripts/sanitize_kinesis_dry_run_junit.py \
+            --require-file 'aws-kotlin/build/test-results/test/TEST-io.bluetape4k.aws.kotlin.kinesis.KinesisDryRunEmulatorTest.xml' \
+            '**/build/test-results/test/*.xml' \
+            'ci-retry-artifacts/aws-kotlin/**/*.xml' \
+            'ci-retry-artifacts/aws-kotlin/**/*.html' \
+            'ci-retry-artifacts/aws-kotlin/**/*.log'
 
       - name: Upload coverage report
         if: always()
@@ -420,13 +453,16 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        if: always()
+        if: ${{ always() && steps.sanitize-kinesis-dry-run-junit.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: test-results-aws-kotlin
           path: |
             **/build/test-results/test/*.xml
-            ci-retry-artifacts/aws-kotlin/**
+            ci-retry-artifacts/aws-kotlin/**/*.xml
+            ci-retry-artifacts/aws-kotlin/**/*.html
+            ci-retry-artifacts/aws-kotlin/**/*.log
+            ci-retry-artifacts/aws-kotlin/classification.txt
           retention-days: 7
 
   test-aws-spring-boot:
@@ -874,15 +910,22 @@ jobs:
       - test-aws-ktor-exposed-examples
       - test-aws-ktor-service-coverage-examples
       - test-aws-ktor-emulator-examples
+      - compatibility
     if: always()
     steps:
       - name: Check all jobs
         env:
           RESULTS: ${{ join(needs.*.result, ',') }}
+          COMPATIBILITY_SELECTED: ${{ needs.changes.outputs.compatibility }}
+          COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
         run: |
           echo "Job results: $RESULTS"
           if echo "$RESULTS" | grep -qE "failure|cancelled"; then
             echo "CI failed"
             exit 1
           fi
-          echo "CI passed (skipped jobs treated as success)"
+          if [[ "$COMPATIBILITY_SELECTED" == "true" && "$COMPATIBILITY_RESULT" != "success" ]]; then
+            echo "Compatibility was selected but did not succeed: $COMPATIBILITY_RESULT"
+            exit 1
+          fi
+          echo "CI passed"
