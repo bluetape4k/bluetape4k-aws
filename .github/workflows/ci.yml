@@ -41,7 +41,7 @@ env:
   JAVA_DISTRIBUTION: 'temurin'
   GITLEAKS_VERSION: '8.30.1'
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  BLUETAPE4K_DEPENDENCIES_CATALOG_REF: '850959d0ea5f76ac7e2c442400f47653d5f95eed'
+  BLUETAPE4K_DEPENDENCIES_CATALOG_REF: '9698c9d66bea6fcba373143ee8fa5bfbd9812d4b'
   # Retry once only for classified emulator/infra failures; preserve first-failure evidence.
   BLUETAPE4K_RETRY_MAX_ATTEMPTS: '2'
   BLUETAPE4K_RETRY_DELAY_SECONDS: '15'
@@ -146,6 +146,8 @@ jobs:
         run: python3 .github/scripts/run_gradle_with_classified_retry_test.py
       - name: Test CodeQL workflow contract
         run: python3 .github/scripts/code_quality_workflow_test.py
+      - name: Test dependency catalog pin contract
+        run: python3 .github/scripts/catalog_pin_contract_test.py
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -171,8 +173,10 @@ jobs:
               - '.github/workflows/ci.yml'
               - '.github/scripts/**'
             compatibility:
+              - 'settings.gradle.kts'
               - 'build.gradle.kts'
               - 'src/abi-fixtures/**'
+              - 'aws-kotlin/src/main/**'
               - 'aws-spring-boot/build.gradle.kts'
               - 'aws-spring-boot/src/consumerFixture/**'
               - 'aws-spring-boot/src/main/**'
@@ -384,7 +388,7 @@ jobs:
   test-aws-kotlin:
     name: Test / aws-kotlin
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     needs: [build, changes]
     if: ${{ needs.changes.outputs['aws-kotlin'] == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
@@ -874,15 +878,22 @@ jobs:
       - test-aws-ktor-exposed-examples
       - test-aws-ktor-service-coverage-examples
       - test-aws-ktor-emulator-examples
+      - compatibility
     if: always()
     steps:
       - name: Check all jobs
         env:
           RESULTS: ${{ join(needs.*.result, ',') }}
+          COMPATIBILITY_SELECTED: ${{ needs.changes.outputs.compatibility }}
+          COMPATIBILITY_RESULT: ${{ needs.compatibility.result }}
         run: |
           echo "Job results: $RESULTS"
           if echo "$RESULTS" | grep -qE "failure|cancelled"; then
             echo "CI failed"
             exit 1
           fi
-          echo "CI passed (skipped jobs treated as success)"
+          if [[ "$COMPATIBILITY_SELECTED" == "true" && "$COMPATIBILITY_RESULT" != "success" ]]; then
+            echo "Compatibility was selected but did not succeed: $COMPATIBILITY_RESULT"
+            exit 1
+          fi
+          echo "CI passed"
