@@ -20,6 +20,7 @@ import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -27,6 +28,11 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -70,6 +76,11 @@ class S3ClientBucketMockTest {
                         versionId = "delete-marker-1"
                     },
                 )
+                isTruncated = true
+                nextKeyMarker = "reports/current.csv"
+                nextVersionIdMarker = "version-1"
+            },
+            ListObjectVersionsResponse {
                 isTruncated = false
             },
             ListObjectVersionsResponse {
@@ -84,11 +95,13 @@ class S3ClientBucketMockTest {
 
         client.forceDeleteBucket(bucket)
 
-        listVersionRequests shouldHaveSize 3
+        listVersionRequests shouldHaveSize 4
         listVersionRequests.first().keyMarker.shouldBeNull()
         listVersionRequests.first().versionIdMarker.shouldBeNull()
         listVersionRequests[1].keyMarker shouldBeEqualTo "reports/current.csv"
         listVersionRequests[1].versionIdMarker shouldBeEqualTo "version-2"
+        listVersionRequests[2].keyMarker shouldBeEqualTo "reports/current.csv"
+        listVersionRequests[2].versionIdMarker shouldBeEqualTo "version-1"
         listVersionRequests.last().keyMarker.shouldBeNull()
         listVersionRequests.last().versionIdMarker.shouldBeNull()
 
@@ -103,9 +116,107 @@ class S3ClientBucketMockTest {
             "reports/removed.csv" to "delete-marker-1",
         )
 
-        coVerify(exactly = 3) { client.listObjectVersions(any()) }
+        coVerify(exactly = 4) { client.listObjectVersions(any()) }
         coVerify(exactly = 2) { client.deleteObjects(any()) }
         coVerify(exactly = 1) { client.deleteBucket(any()) }
+    }
+
+    @Test
+    fun `forceDeleteBucket fails when a version marker does not progress`() = runSuspendIO {
+        val marker = "sensitive-key-marker"
+        var calls = 0
+
+        coEvery { client.listObjectVersions(any<ListObjectVersionsRequest>()) } answers {
+            calls++
+            check(calls <= 2) { "pagination did not stop at the repeated marker" }
+            ListObjectVersionsResponse {
+                isTruncated = true
+                nextKeyMarker = marker
+                nextVersionIdMarker = "sensitive-version-marker"
+            }
+        }
+
+        val error = assertFailsWith<IllegalStateException> {
+            client.forceDeleteBucket("sensitive-bucket")
+        }
+
+        error.message shouldBeEqualTo "S3 listObjectVersions returned a non-progressing pagination marker"
+        coVerify(exactly = 2) { client.listObjectVersions(any<ListObjectVersionsRequest>()) }
+        coVerify(exactly = 0) { client.deleteBucket(any()) }
+    }
+
+    @Test
+    fun `forceDeleteBucket fails when version markers form a cycle`() = runSuspendIO {
+        val markers = listOf(
+            "key-a" to "version-a",
+            "key-b" to "version-b",
+            "key-a" to "version-a",
+        )
+        var calls = 0
+
+        coEvery { client.listObjectVersions(any<ListObjectVersionsRequest>()) } answers {
+            check(calls < markers.size) { "pagination did not stop at the marker cycle" }
+            val (keyMarker, versionMarker) = markers[calls++]
+            ListObjectVersionsResponse {
+                isTruncated = true
+                nextKeyMarker = keyMarker
+                nextVersionIdMarker = versionMarker
+            }
+        }
+
+        val error = assertFailsWith<IllegalStateException> {
+            client.forceDeleteBucket("cyclic-version-bucket")
+        }
+
+        error.message shouldBeEqualTo "S3 listObjectVersions returned a non-progressing pagination marker"
+        coVerify(exactly = 3) { client.listObjectVersions(any<ListObjectVersionsRequest>()) }
+        coVerify(exactly = 0) { client.deleteBucket(any()) }
+    }
+
+    @Test
+    fun `forceDeleteBucket fails when a truncated version page has no marker`() = runSuspendIO {
+        coEvery { client.listObjectVersions(any<ListObjectVersionsRequest>()) } returns
+                ListObjectVersionsResponse { isTruncated = true }
+
+        val error = assertFailsWith<IllegalStateException> {
+            client.forceDeleteBucket("sensitive-bucket")
+        }
+
+        error.message shouldBeEqualTo "S3 listObjectVersions returned a truncated page without pagination markers"
+        coVerify(exactly = 1) { client.listObjectVersions(any<ListObjectVersionsRequest>()) }
+        coVerify(exactly = 0) { client.deleteBucket(any()) }
+    }
+
+    @Test
+    fun `forceDeleteBucket propagates cancellation before deleting the bucket`() = runTest {
+        val started = CompletableDeferred<Unit>()
+        val observedByCall = CompletableDeferred<CancellationException>()
+        val observedByCaller = CompletableDeferred<CancellationException>()
+        coEvery { client.listObjectVersions(any<ListObjectVersionsRequest>()) } coAnswers {
+            started.complete(Unit)
+            try {
+                awaitCancellation()
+            } catch (e: CancellationException) {
+                observedByCall.complete(e)
+                throw e
+            }
+        }
+
+        val job = launch {
+            try {
+                client.forceDeleteBucket("cancelled-bucket")
+            } catch (e: CancellationException) {
+                observedByCaller.complete(e)
+                throw e
+            }
+        }
+        started.await()
+        job.cancel()
+        job.join()
+
+        observedByCaller.await() shouldBeSameInstanceAs observedByCall.await()
+        coVerify(exactly = 1) { client.listObjectVersions(any<ListObjectVersionsRequest>()) }
+        coVerify(exactly = 0) { client.deleteBucket(any()) }
     }
 
     @Test

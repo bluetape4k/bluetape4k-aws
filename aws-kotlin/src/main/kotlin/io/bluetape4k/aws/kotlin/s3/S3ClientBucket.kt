@@ -23,6 +23,8 @@ import io.bluetape4k.aws.kotlin.s3.model.objectIdentifierOf
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /**
  * [bucket]의 버킷이 존재하는지 확인합니다.
@@ -139,12 +141,20 @@ internal suspend fun S3Client.deleteAllCurrentObjects(bucket: String) {
     } while (keys.isNotEmpty())
 }
 
+/**
+ * 객체 version과 delete marker를 최대 10,000 page까지 삭제합니다.
+ *
+ * truncated response의 marker 쌍이 없거나 반복되거나 page 상한을 넘으면 [IllegalStateException]을
+ * 발생시킵니다. 예외 메시지에는 bucket 이름과 원본 marker를 포함하지 않습니다.
+ */
 @PublishedApi
 internal suspend fun S3Client.deleteAllObjectVersions(bucket: String) {
     var keyMarker: String? = null
     var versionIdMarker: String? = null
+    val paginationGuard = S3VersionPaginationGuard()
 
-    do {
+    while (true) {
+        currentCoroutineContext().ensureActive()
         val response = listObjectVersions {
             this.bucket = bucket
             this.keyMarker = keyMarker
@@ -162,13 +172,10 @@ internal suspend fun S3Client.deleteAllObjectVersions(bucket: String) {
                 .throwIfDeleteFailed(bucket)
         }
 
-        val isTruncated = response.isTruncated == true
-        check(!isTruncated || response.nextKeyMarker != null || response.nextVersionIdMarker != null) {
-            "S3 listObjectVersions response for bucket=$bucket was truncated without pagination markers"
-        }
-        keyMarker = response.nextKeyMarker
-        versionIdMarker = response.nextVersionIdMarker
-    } while (isTruncated)
+        val marker = paginationGuard.nextMarkerOrNull(response) ?: return
+        keyMarker = marker.keyMarker
+        versionIdMarker = marker.versionIdMarker
+    }
 }
 
 private fun MutableList<ObjectIdentifier>.addObjectVersion(version: ObjectVersion) {

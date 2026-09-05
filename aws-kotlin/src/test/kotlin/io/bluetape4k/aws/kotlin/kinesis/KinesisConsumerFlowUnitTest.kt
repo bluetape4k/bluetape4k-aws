@@ -168,6 +168,48 @@ class KinesisConsumerFlowUnitTest {
     }
 
     @Test
+    fun `discovery rejects a repeated list shards token`() = runTest(timeout = 30.seconds) {
+        coEvery { client.listShards(any<ListShardsRequest>()) } returns
+                ListShardsResponse { nextToken = "repeated-token" }
+
+        val error = assertFailsWith<KinesisShardGraphException> {
+            client.consumerFlow(
+                streamName = "stream",
+                consumerGroup = "group",
+                streamIdentity = "stream-v1",
+                options = KinesisConsumerOptions(ownerId = "owner"),
+                checkpointStore = InMemoryKinesisCheckpointStore(),
+                leaseStore = InMemoryKinesisLeaseStore(),
+            ).first()
+        }
+
+        error.message shouldBeEqualTo "ListShards returned a non-progressing nextToken"
+        coVerify(exactly = 2) { client.listShards(any<ListShardsRequest>()) }
+    }
+
+    @Test
+    fun `discovery preserves the configured list shards page limit`() = runTest(timeout = 30.seconds) {
+        var page = 0
+        coEvery { client.listShards(any<ListShardsRequest>()) } answers {
+            ListShardsResponse { nextToken = "page-${++page}" }
+        }
+
+        val error = assertFailsWith<KinesisShardGraphException> {
+            client.consumerFlow(
+                streamName = "stream",
+                consumerGroup = "group",
+                streamIdentity = "stream-v1",
+                options = KinesisConsumerOptions(ownerId = "owner", maxListShardsPages = 2),
+                checkpointStore = InMemoryKinesisCheckpointStore(),
+                leaseStore = InMemoryKinesisLeaseStore(),
+            ).first()
+        }
+
+        error.message shouldBeEqualTo "ListShards pagination exceeded maxListShardsPages=2"
+        coVerify(exactly = 2) { client.listShards(any<ListShardsRequest>()) }
+    }
+
+    @Test
     fun `unknown parent is not promoted to root`() = runTest(timeout = 30.seconds) {
         coEvery { client.listShards(any<ListShardsRequest>()) } returns
                 ListShardsResponse {

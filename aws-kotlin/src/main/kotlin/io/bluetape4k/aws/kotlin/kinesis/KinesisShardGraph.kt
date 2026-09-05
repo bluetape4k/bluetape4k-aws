@@ -5,6 +5,8 @@ import aws.sdk.kotlin.services.kinesis.listShards
 import aws.sdk.kotlin.services.kinesis.model.KinesisException
 import aws.sdk.kotlin.services.kinesis.model.ListShardsRequest
 import aws.sdk.kotlin.services.kinesis.model.Shard
+import io.bluetape4k.aws.kotlin.PaginationFailure
+import io.bluetape4k.aws.kotlin.PaginationGuard
 import io.bluetape4k.logging.KotlinLogging
 import io.bluetape4k.logging.warn
 import kotlinx.coroutines.CancellationException
@@ -96,9 +98,18 @@ private suspend fun KinesisClient.collectShardPages(
 ): List<Shard> {
     val shardsById = linkedMapOf<String, Shard>()
     var token: String? = null
-    val seenTokens = mutableSetOf<String>()
+    val paginationGuard = PaginationGuard<String>(options.maxListShardsPages) { failure ->
+        KinesisShardGraphException(
+            when (failure) {
+                PaginationFailure.MISSING_TOKEN -> "ListShards returned an invalid pagination token"
+                PaginationFailure.REPEATED_TOKEN -> "ListShards returned a non-progressing nextToken"
+                PaginationFailure.PAGE_LIMIT_EXCEEDED ->
+                    "ListShards pagination exceeded maxListShardsPages=${options.maxListShardsPages}"
+            },
+        )
+    }
 
-    for (page in 1..options.maxListShardsPages) {
+    while (true) {
         currentCoroutineContext().ensureActive()
         val response = listShards(ListShardsRequest {
             this.streamName = streamName
@@ -117,17 +128,12 @@ private suspend fun KinesisClient.collectShardPages(
             }
         }
 
-        val nextToken = response.nextToken
-        if (nextToken.isNullOrBlank()) return shardsById.values.toList()
-        if (!seenTokens.add(nextToken)) {
-            throw KinesisShardGraphException("ListShards returned a non-progressing nextToken")
-        }
-        token = nextToken
+        val nextToken = response.nextToken?.takeUnless { it.isBlank() }
+        token = paginationGuard.nextTokenOrNull(
+            hasNext = nextToken != null,
+            nextToken = nextToken,
+        ) ?: return shardsById.values.toList()
     }
-
-    throw KinesisShardGraphException(
-        "ListShards pagination exceeded maxListShardsPages=${options.maxListShardsPages}",
-    )
 }
 
 private fun buildGraph(shards: List<Shard>, options: KinesisConsumerOptions): KinesisShardGraph {
