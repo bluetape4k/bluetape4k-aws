@@ -253,23 +253,36 @@ private suspend fun kotlinx.coroutines.CoroutineScope.consumeShard(
         primaryFailure = e
         throw e
     } finally {
-        heartbeat.cancel()
-        heartbeat.join()
-        var releaseFailure: Throwable? = null
+        var cleanupFailure: Throwable? = null
         withContext(NonCancellable) {
+            heartbeat.cancel()
+            try {
+                heartbeat.join()
+            } catch (e: Throwable) {
+                cleanupFailure = e
+            }
             try {
                 withTimeoutOrNull(options.leaseReleaseTimeout) {
                     leaseStore.release(leaseRef.get())
                 }
             } catch (e: Throwable) {
-                releaseFailure = e
+                val heartbeatJoinFailure = cleanupFailure
+                if (heartbeatJoinFailure == null) {
+                    cleanupFailure = e
+                } else if (heartbeatJoinFailure !== e) {
+                    heartbeatJoinFailure.addSuppressed(e)
+                }
                 consumerLog.warn {
                     "Kinesis lease release failed: shard=${KinesisFlowEvent.redactedToken(key.shardId)} " +
                             "type=${e::class.simpleName}"
                 }
             }
         }
-        if (primaryFailure == null && releaseFailure != null) throw releaseFailure
+        cleanupFailure?.let { failure ->
+            val primary = primaryFailure
+            if (primary == null) throw failure
+            if (primary !== failure) primary.addSuppressed(failure)
+        }
     }
 }
 

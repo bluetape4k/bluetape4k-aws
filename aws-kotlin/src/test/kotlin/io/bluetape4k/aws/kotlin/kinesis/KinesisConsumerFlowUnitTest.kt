@@ -11,6 +11,7 @@ import aws.sdk.kotlin.services.kinesis.model.Record
 import aws.sdk.kotlin.services.kinesis.model.Shard
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -18,13 +19,19 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
 /** 단일 shard polling, outer emitter, bounded request와 checkpoint 시점을 검증합니다. */
@@ -236,6 +243,181 @@ class KinesisConsumerFlowUnitTest {
         }
     }
 
+    @Test
+    fun `cancellation completes one bounded lease release and preserves its cause`() = runTest(timeout = 30.seconds) {
+        val cancellation = CancellationException("collector cancelled")
+
+        val result = terminateConsumer(cancellation)
+
+        result.leaseStore.releaseCount.get() shouldBeEqualTo 1
+        result.leaseStore.releaseCompleted.isCompleted.shouldBeTrue()
+        result.completion::class shouldBeEqualTo cancellation::class
+        result.completion.message shouldBeEqualTo cancellation.message
+        result.completion.failureChain().any { it === cancellation }.shouldBeTrue()
+    }
+
+    @Test
+    fun `lease release timeout stays bounded and attempts release once`() = runTest(timeout = 30.seconds) {
+        val cancellation = CancellationException("collector cancelled")
+        val leaseStore = RecordingLeaseStore { awaitCancellation() }
+
+        val result = terminateConsumer(cancellation, leaseStore)
+
+        result.leaseStore.releaseCount.get() shouldBeEqualTo 1
+        result.leaseStore.releaseCompleted.isCompleted shouldBeEqualTo false
+        result.completion::class shouldBeEqualTo cancellation::class
+        result.completion.message shouldBeEqualTo cancellation.message
+        result.completion.failureChain().any { it === cancellation }.shouldBeTrue()
+    }
+
+    @Test
+    fun `shard failure remains primary when lease release fails`() = runTest(timeout = 30.seconds) {
+        val primaryFailure = IllegalArgumentException("shard failed")
+        val releaseFailure = IllegalStateException("release failed")
+
+        val result = failShardStart(primaryFailure, releaseFailure)
+
+        result.leaseStore.releaseCount.get() shouldBeEqualTo 1
+        val failureChain = result.completion.failureChain()
+        result.completion::class shouldBeEqualTo primaryFailure::class
+        result.completion.message shouldBeEqualTo primaryFailure.message
+        failureChain.flatMap { it.suppressed.asIterable() }.any {
+            it::class == releaseFailure::class && it.message == releaseFailure.message
+        }.shouldBeTrue()
+    }
+
+    @Test
+    fun `lease release failure is propagated after successful shard completion`() = runTest(timeout = 30.seconds) {
+        val releaseFailure = IllegalStateException("release failed")
+
+        val result = finishShard(releaseFailure)
+
+        result.leaseStore.releaseCount.get() shouldBeEqualTo 1
+        result.completion::class shouldBeEqualTo releaseFailure::class
+        result.completion.message shouldBeEqualTo releaseFailure.message
+        result.completion.failureChain().any { it === releaseFailure }.shouldBeTrue()
+    }
+
+    private suspend fun terminateConsumer(
+        cancellation: CancellationException,
+        leaseStore: RecordingLeaseStore = RecordingLeaseStore(),
+    ): CancellationResult = supervisorScope {
+        val shard = "shardId-000000000000"
+        val collecting = CompletableDeferred<Unit>()
+
+        coEvery { client.listShards(any<ListShardsRequest>()) } returns
+                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
+                GetShardIteratorResponse { shardIterator = "iterator-1" }
+        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
+                GetRecordsResponse {
+                    records = listOf(record("1"))
+                    nextShardIterator = "iterator-2"
+        }
+
+        val completion = CompletableDeferred<Throwable?>()
+        val job = async {
+            client.consumerFlow(
+                streamName = "stream",
+                consumerGroup = "group",
+                streamIdentity = "stream-v1",
+                options = KinesisConsumerOptions(
+                    ownerId = "owner",
+                    leaseDuration = 10.seconds,
+                    leaseRenewInterval = 5.seconds,
+                    leaseReleaseTimeout = 1.seconds,
+                ),
+                checkpointStore = InMemoryKinesisCheckpointStore(),
+                leaseStore = leaseStore,
+            ).collect {
+                collecting.complete(Unit)
+                throw cancellation
+            }
+        }
+        job.invokeOnCompletion { completion.complete(it) }
+
+        val actual = withTimeout(5.seconds) {
+            collecting.await()
+            job.join()
+            leaseStore.releaseStarted.await()
+            completion.await().shouldNotBeNull()
+        }
+        CancellationResult(actual, leaseStore)
+    }
+
+    private suspend fun failShardStart(
+        primaryFailure: Throwable,
+        releaseFailure: Throwable,
+    ): CancellationResult = supervisorScope {
+        val shard = "shardId-000000000000"
+        val leaseStore = RecordingLeaseStore { throw releaseFailure }
+        val shardStarted = CompletableDeferred<Unit>()
+        coEvery { client.listShards(any<ListShardsRequest>()) } returns
+                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+
+        val completion = CompletableDeferred<Throwable?>()
+        val job = async {
+            client.consumerFlow(
+                streamName = "stream",
+                consumerGroup = "group",
+                streamIdentity = "stream-v1",
+                options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
+                checkpointStore = InMemoryKinesisCheckpointStore(),
+                leaseStore = leaseStore,
+                metrics = KinesisFlowMetrics { event ->
+                    if (event.eventKind == KinesisFlowEvent.EventKind.SHARD &&
+                        event.outcome == KinesisFlowEvent.Outcome.STARTED
+                    ) {
+                        shardStarted.complete(Unit)
+                        throw primaryFailure
+                    }
+                },
+            ).collect()
+        }
+        job.invokeOnCompletion { completion.complete(it) }
+
+        val actual = withTimeout(5.seconds) {
+            shardStarted.await()
+            job.join()
+            leaseStore.releaseStarted.await()
+            completion.await().shouldNotBeNull()
+        }
+        CancellationResult(actual, leaseStore)
+    }
+
+    private suspend fun finishShard(
+        releaseFailure: Throwable,
+    ): CancellationResult = supervisorScope {
+        val shard = "shardId-000000000000"
+        val leaseStore = RecordingLeaseStore { throw releaseFailure }
+        coEvery { client.listShards(any<ListShardsRequest>()) } returns
+                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
+                GetShardIteratorResponse { shardIterator = "iterator-1" }
+        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
+                GetRecordsResponse { records = emptyList(); nextShardIterator = null }
+
+        val completion = CompletableDeferred<Throwable?>()
+        val job = async {
+            client.consumerFlow(
+                streamName = "stream",
+                consumerGroup = "group",
+                streamIdentity = "stream-v1",
+                options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
+                checkpointStore = InMemoryKinesisCheckpointStore(),
+                leaseStore = leaseStore,
+            ).collect()
+        }
+        job.invokeOnCompletion { completion.complete(it) }
+
+        val actual = withTimeout(5.seconds) {
+            job.join()
+            leaseStore.releaseStarted.await()
+            completion.await().shouldNotBeNull()
+        }
+        CancellationResult(actual, leaseStore)
+    }
+
     private fun record(sequenceNumber: String): Record = mockk(relaxed = true) {
         every { this@mockk.sequenceNumber } returns sequenceNumber
         every { partitionKey } returns "partition"
@@ -263,4 +445,37 @@ class KinesisConsumerFlowUnitTest {
             KinesisCheckpoint.ShardEnd -> "ShardEnd"
         }
     }
+
+    private class RecordingLeaseStore(
+        private val releaseAction: suspend () -> Unit = {},
+    ) : KinesisLeaseStore {
+        val releaseCount = AtomicInteger()
+        val releaseStarted = CompletableDeferred<Unit>()
+        val releaseCompleted = CompletableDeferred<Unit>()
+
+        override suspend fun acquire(
+            key: KinesisShardKey,
+            ownerId: String,
+            leaseDuration: kotlin.time.Duration,
+        ): KinesisLease = KinesisLease(key, ownerId, leaseCounter = 1)
+
+        override suspend fun renew(
+            lease: KinesisLease,
+            leaseDuration: kotlin.time.Duration,
+        ): KinesisLease = lease
+
+        override suspend fun release(lease: KinesisLease) {
+            releaseCount.incrementAndGet()
+            releaseStarted.complete(Unit)
+            releaseAction()
+            releaseCompleted.complete(Unit)
+        }
+    }
+
+    private data class CancellationResult(
+        val completion: Throwable,
+        val leaseStore: RecordingLeaseStore,
+    )
+
+    private fun Throwable.failureChain(): List<Throwable> = generateSequence(this) { it.cause }.toList()
 }
