@@ -124,7 +124,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 - Modify: `.github/workflows/ci.yml:44,149-177,800-888`
 - Modify: `settings.gradle.kts:11-15`
 
-- [ ] **Step 1: pin/filter contract RED 작성**
+- [x] **Step 1: pin/filter contract RED 작성**
 
   Python test는 다음을 source text가 아니라 구조화된 정규식 결과로 검사한다.
 
@@ -141,14 +141,14 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   Expected: 기존 두 pin이 old SHA이고 compatibility filter가 settings/aws-kotlin source를
   누락하므로 RED.
 
-- [ ] **Step 2: settings/workflow를 최소 수정**
+- [x] **Step 2: settings/workflow를 최소 수정**
 
   두 pin을 target SHA로 바꾸고 compatibility filter에 누락 경로를 추가한다. `changes` job의
   기존 helper test 옆에서 catalog contract test를 실행한다. `ci-status`는 compatibility
   result를 aggregate하고 `needs.changes.outputs.compatibility == 'true'`일 때 정확히 success를
   요구한다. workflow의 다른 trigger/job은 변경하지 않는다.
 
-- [ ] **Step 3: contract와 dependency resolution GREEN**
+- [x] **Step 3: contract와 dependency resolution GREEN**
 
   Run:
 
@@ -161,7 +161,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 
   Expected: contract PASS, selected Kinesis version `1.8.46`. property override 없이 실행한다.
 
-- [ ] **Step 4: catalog checkpoint commit**
+- [x] **Step 4: catalog checkpoint commit**
 
   Intent: `#620 catalog와 CI가 같은 DryRun SDK를 사용하게 한다`. Lore trailers에 126개
   version key 변경이라는 broad blast radius, 임시 property override 기각, contract와
