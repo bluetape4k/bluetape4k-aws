@@ -58,6 +58,7 @@ class S3TransferTemplate(
     ): CompletedFileDownload =
         transferManager.downloadFile(bucket, key, destination, configure)
 
+    @Suppress("DEPRECATION")
     override fun outputStream(
         bucket: String,
         key: String,

@@ -18,12 +18,20 @@ import java.nio.file.Paths
  * [complete]를 직접 호출하는 것이 좋습니다. close 경계의 blocking 작업은 항상
  * `Dispatchers.IO`에서 실행됩니다.
  */
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "DEPRECATION")
 class S3OutputStream(
     private val operations: S3TransferOperations,
     private val bucket: String,
     private val key: String,
     val thresholdBytes: Long = DEFAULT_THRESHOLD_BYTES,
+    /**
+     * 호환성을 위해 남겨 둔 값이며 업로드 요청에는 적용되지 않습니다.
+     * Multipart part 크기는 호출자가 소유한 `S3AsyncClient multipart configuration`에서 설정하세요.
+     */
+    @Deprecated(
+        message = "요청별 part size는 AWS SDK v2 TransferManager에서 지원하지 않습니다. " +
+            "S3AsyncClient multipart configuration 또는 CRT 클라이언트 설정을 사용하세요.",
+    )
     val partSizeBytes: Long = DEFAULT_PART_SIZE_BYTES,
     private val contentType: String? = null,
     private val metadata: Map<String, String> = emptyMap(),

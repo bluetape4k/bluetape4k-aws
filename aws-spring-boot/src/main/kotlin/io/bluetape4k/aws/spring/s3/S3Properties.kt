@@ -38,13 +38,24 @@ data class S3Properties(
         }
     }
 
+    @Suppress("DEPRECATION")
     data class Transfer(
         val enabled: Boolean = true,
         val uploadDirectoryMaxDepth: Int? = null,
         val transferDirectoryMaxConcurrency: Int? = null,
         /** 메모리에서 임시 파일로 전환하는 스트림 누적 한계입니다. */
         val outputStreamThresholdBytes: Long = DEFAULT_OUTPUT_STREAM_THRESHOLD_BYTES,
-        /** TransferManager multipart 업로드를 위한 권장 part 크기입니다. */
+        /**
+         * 호환성을 위해 남겨 둔 값이며 스트림별 multipart part 크기로 적용되지 않습니다.
+         *
+         * CRT 클라이언트를 사용할 때는 `bluetape4k.aws.s3.crt.minimum-part-size-in-bytes`를 설정하고,
+         * Java multipart 클라이언트는 호출자가 소유한 [software.amazon.awssdk.services.s3.S3AsyncClient]에
+         * `MultipartConfiguration.minimumPartSizeInBytes`를 구성하세요.
+         */
+        @Deprecated(
+            message = "요청별 part size는 AWS SDK v2 TransferManager에서 지원하지 않습니다. " +
+                "CRT 클라이언트는 bluetape4k.aws.s3.crt.minimum-part-size-in-bytes를 사용하세요.",
+        )
         val outputStreamPartSizeBytes: Long = DEFAULT_OUTPUT_STREAM_PART_SIZE_BYTES,
     ) : Serializable {
         init {

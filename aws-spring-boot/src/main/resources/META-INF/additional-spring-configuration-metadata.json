@@ -1,6 +1,16 @@
 {
   "groups": [
     {
+      "name": "bluetape4k.aws.s3.transfer",
+      "type": "io.bluetape4k.aws.spring.s3.S3Properties$Transfer",
+      "sourceType": "io.bluetape4k.aws.spring.s3.S3Properties"
+    },
+    {
+      "name": "bluetape4k.aws.s3.crt",
+      "type": "io.bluetape4k.aws.spring.s3.S3CrtClientProperties",
+      "sourceType": "io.bluetape4k.aws.spring.s3.S3CrtClientProperties"
+    },
+    {
       "name": "bluetape4k.aws.cloudwatch.micrometer.registry",
       "type": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties$Micrometer$Registry",
       "sourceType": "io.bluetape4k.aws.spring.cloudwatch.CloudWatchProperties"
@@ -32,6 +42,22 @@
     }
   ],
   "properties": [
+    {
+      "name": "bluetape4k.aws.s3.transfer.output-stream-part-size-bytes",
+      "type": "java.lang.Long",
+      "defaultValue": 8388608,
+      "description": "호환성을 위해 남겨 둔 값이며 스트림별 multipart part 크기로 적용되지 않습니다.",
+      "deprecation": {
+        "level": "warning",
+        "reason": "AWS SDK v2 TransferManager는 요청별 multipart part size 설정을 지원하지 않습니다.",
+        "replacement": "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"
+      }
+    },
+    {
+      "name": "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes",
+      "type": "java.lang.Long",
+      "description": "CRT S3 async client의 multipart part 최소 크기입니다."
+    },
     {
       "name": "bluetape4k.aws.cloudwatch.micrometer.registry.enabled",
       "type": "java.lang.Boolean",
