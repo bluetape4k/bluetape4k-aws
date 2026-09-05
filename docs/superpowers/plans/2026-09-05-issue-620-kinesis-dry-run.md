@@ -598,7 +598,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 - Create: `docs/superpowers/reviews/2026-09-05-issue-620-kinesis-dry-run-final-review.md`
 - Modify: implementation/test/docs files only if verification finds a defect
 
-- [ ] **Step 1: targeted와 module test**
+- [x] **Step 1: targeted와 module test**
 
   Run sequentially through context-mode:
 
@@ -617,7 +617,7 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   Expected: targeted GREEN; module baseline의 기존 pending은 수량/이름을 기록하고 새 unexpected
   failure/skip은 0. container failure는 skip 성공으로 취급하지 않는다.
 
-- [ ] **Step 2: static/compatibility/full build**
+- [x] **Step 2: static/compatibility/full build**
 
   exact HEAD를 기록한 뒤 순차 실행한다.
 
@@ -632,14 +632,14 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
   resolved catalog를 evidence에 기록한다. catalog가 126개 key를 바꾸므로 affected-module
   compile만으로 full build를 대체하지 않는다.
 
-- [ ] **Step 3: six-lens final review와 lesson**
+- [x] **Step 3: six-lens final review와 lesson**
 
   latest diff/exact HEAD를 대상으로 performance, stability, security, ops, API, caller review를
   수행하고 P0/P1=0까지 수렴한다. lesson에는 catalog/CI dual pin, nullable Boolean wire shape,
   inline function ABI와 `$default`, emulator ownership cleanup, fake/wire/emulator 증거 계층을
   한국어로 기록한다.
 
-- [ ] **Step 4: 최종 Lore commit와 branch 검증**
+- [x] **Step 4: 최종 Lore commit와 branch 검증**
 
   final review/lesson 보정만 stage해 `#620 DryRun 구현의 검증 근거를 남긴다` commit을 만든다.
   `git status --short`, `git log --oneline origin/develop..HEAD`, `git diff --check`가 깨끗하고
@@ -658,14 +658,14 @@ JDK `HttpServer`, Floci/LocalStack Testcontainers, Gradle Kotlin DSL, Python 3 c
 
 ## 전체 DoD
 
-- [ ] spec/plan/risk review가 `P0=0`, `P1=0`이다.
-- [ ] catalog settings/CI pin이 exact target SHA이며 Kinesis `1.8.46`이 resolve된다.
-- [ ] 네 extension과 두 helper의 default/true/false/null builder-last 계약이 통과한다.
-- [ ] fake와 wire proof가 operation당 단일 호출, no-copy, exception identity를 증명한다.
-- [ ] emulator capability/no-write와 ownership-safe bounded cleanup이 증명된다.
-- [ ] 12개 old direct/`$default` descriptor와 pre-change binary invocation이 통과한다.
-- [ ] KDoc와 영어·한국어 module README가 동작·예외·payload·migration을 설명한다.
-- [ ] module test, detekt, compatibilityCheck, full build가 exact head에서 성공한다.
-- [ ] final six-lens review가 `P0=0`, `P1=0`이고 lesson/Lore commits가 있다.
+- [x] spec/plan/risk review가 `P0=0`, `P1=0`이다.
+- [x] catalog settings/CI pin이 exact target SHA이며 Kinesis `1.8.46`이 resolve된다.
+- [x] 네 extension과 두 helper의 default/true/false/null builder-last 계약이 통과한다.
+- [x] fake와 wire proof가 operation당 단일 호출, no-copy, exception identity를 증명한다.
+- [x] emulator capability/no-write와 ownership-safe bounded cleanup이 증명된다.
+- [x] 12개 old direct/`$default` descriptor와 pre-change binary invocation이 통과한다.
+- [x] KDoc와 영어·한국어 module README가 동작·예외·payload·migration을 설명한다.
+- [x] module test, detekt, compatibilityCheck, full build가 exact head에서 성공한다.
+- [x] final six-lens review가 `P0=0`, `P1=0`이고 lesson/Lore commits가 있다.
 - [ ] PR exact-head CI가 terminal success이고 mergeability/review/thread read-back이 끝났다.
 - [ ] merge는 fresh explicit approval 전 실행하지 않는다.
