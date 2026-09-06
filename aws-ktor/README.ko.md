@@ -821,7 +821,11 @@ Wrapper는 선택된 put/get/delete/list/presign operation을
 lifecycle에 설치하고 `application.dynamoDb()` 로 노출합니다. 플러그인은
 애플리케이션이 주입한 client를 사용할 수도 있고 `region`, `endpointUrl`,
 credentials로 직접 만들 수도 있습니다. 주입한 client는 플러그인이 닫지 않으며,
-플러그인이 만든 client만 `ApplicationStopping` 에서 닫습니다.
+플러그인이 만든 client만 공통 `ApplicationResourceRegistry`에 등록해
+`ApplicationStopped`에서 동기적으로 닫습니다. `closeTimeout` bridge는 AWS adapter가
+계속 소유하며, 공통 registry는 credentials·retry·timeout 정책을 소유하지 않습니다.
+이 lifecycle은 정상 종료를 위한 것이므로 프로세스가 강제 종료되면 cleanup을 보장하지
+않습니다.
 `AwsKtorCore`가 설치되어 있으면 생략한 `region`, `endpointUrl`, credentials, HTTP
 engine, DynamoDB customizer는 공유 기본값에서 상속됩니다.
 

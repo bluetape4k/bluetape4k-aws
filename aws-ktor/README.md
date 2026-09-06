@@ -826,7 +826,11 @@ object keys are never default tags.
 application lifecycle and exposes it through `application.dynamoDb()`. The
 plugin can use an injected application-owned client or create one from
 `region`, `endpointUrl`, and credentials. Injected clients are not closed by the
-plugin; plugin-created clients are closed on `ApplicationStopping`.
+plugin; plugin-created clients are registered with the shared
+`ApplicationResourceRegistry` and closed synchronously on `ApplicationStopped`.
+The AWS adapter keeps its `closeTimeout` bridge; the shared registry does not
+take ownership of credentials, retry, or timeout policy. This is a graceful
+shutdown hook and does not guarantee cleanup after a forced process exit.
 When `AwsKtorCore` is installed, omitted `region`, `endpointUrl`, credentials,
 HTTP engine, and DynamoDB customizers inherit from shared defaults.
 

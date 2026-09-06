@@ -7,12 +7,15 @@ import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemReader
 import io.bluetape4k.aws.kotlin.dynamodb.createTable
 import io.bluetape4k.aws.kotlin.dynamodb.existsTable
 import io.bluetape4k.aws.kotlin.dynamodb.waitForTableReady
+import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.warn
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -33,13 +36,22 @@ class DynamoDbKtorRuntimeConfig(
  *
  * 계약:
  * - [start]는 [DynamoDbKtorRuntimeConfig.autoCreateTables]가 true일 때만 명시적으로 등록한 누락 테이블을 생성합니다.
- * - [stop]은 플러그인이 소유한 클라이언트만 닫습니다.
+ * - [registerApplicationResources]는 플러그인이 소유한 클라이언트만 공통 application lifecycle registry에 등록합니다.
+ * - [stop]은 직접 호출할 때 플러그인이 소유한 클라이언트만 닫으며, 중복 close를 방지합니다.
  * - [repository]는 같은 애플리케이션 범위 AWS Kotlin SDK 클라이언트 위에 경량 리포지토리 파사드를 생성합니다.
  */
 class DynamoDbKtorRuntime(
     private val config: DynamoDbKtorRuntimeConfig,
 ) {
     companion object: KLogging()
+
+    private val closeStarted = AtomicBoolean(false)
+    private val resourceRegistrationInstalled = AtomicBoolean(false)
+    private val ownedClientResource = AutoCloseable {
+        runBlocking(Dispatchers.IO) {
+            stop()
+        }
+    }
 
     val dynamoDbClient: DynamoDbClient
         get() = config.dynamoDbClient
@@ -54,15 +66,28 @@ class DynamoDbKtorRuntime(
         }
     }
 
+    /**
+     * 플러그인 소유 클라이언트를 공통 application lifecycle registry에 등록합니다.
+     * registry는 `ApplicationStopped`에서 동기적으로 close action을 실행하므로, 이 메서드는
+     * AWS adapter가 소유한 timeout과 dispatcher bridge를 close action 안에 유지합니다.
+     */
+    internal fun registerApplicationResources(registry: ApplicationResourceRegistry) {
+        if (!config.ownsClient || !resourceRegistrationInstalled.compareAndSet(false, true)) {
+            return
+        }
+
+        registry.register(ownedClientResource)
+    }
+
     suspend fun stop() {
-        if (!config.ownsClient) {
+        if (!config.ownsClient || !closeStarted.compareAndSet(false, true)) {
             return
         }
 
         val closed = withTimeoutOrNull(config.closeTimeout) {
-                runInterruptible(Dispatchers.IO) {
-                    config.dynamoDbClient.close()
-                }
+            runInterruptible(Dispatchers.IO) {
+                config.dynamoDbClient.close()
+            }
             true
         } ?: false
 
