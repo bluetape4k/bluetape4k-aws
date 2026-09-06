@@ -59,7 +59,7 @@ class S3EncryptedOutputStream internal constructor(
             }
         }
         writeFailure?.let { error ->
-            discardDelegateAfterFailure()
+            discardDelegateAfterFailure(error)
             throw error
         }
     }
@@ -83,7 +83,7 @@ class S3EncryptedOutputStream internal constructor(
                     true
                 }
             }
-            if (ownsCleanup) cleanupDelegate()
+            if (ownsCleanup) cleanupDelegate(cancelled)
             throw cancelled
         } catch (error: Throwable) {
             val ownsCleanup = synchronized(stateLock) {
@@ -96,7 +96,7 @@ class S3EncryptedOutputStream internal constructor(
                     true
                 }
             }
-            if (ownsCleanup) cleanupDelegate()
+            if (ownsCleanup) cleanupDelegate(error)
             throw error
         }
     }
@@ -121,11 +121,11 @@ class S3EncryptedOutputStream internal constructor(
             }
             delegate.complete()
         } catch (cancelled: CancellationException) {
-            cleanupDelegate()
+            cleanupDelegate(cancelled)
             synchronized(stateLock) { terminalFailure = cancelled }
             throw cancelled
         } catch (error: Throwable) {
-            cleanupDelegate()
+            cleanupDelegate(error)
             synchronized(stateLock) { terminalFailure = error }
             throw error
         } finally {
@@ -133,8 +133,15 @@ class S3EncryptedOutputStream internal constructor(
         }
     }
 
-    private fun discardDelegateAfterFailure() {
-        runCatching { runBlocking(Dispatchers.IO) { delegate.discardBlocking() } }
+    private fun discardDelegateAfterFailure(primary: Throwable) {
+        runBlocking {
+            preserveCleanupFailure(
+                primary = primary,
+                operation = S3TransferCleanupOperation.DELEGATE_DISCARD,
+                configuredDispatcher = ioDispatcher,
+                cleanup = delegate::discardBlocking,
+            )
+        }
     }
 
     private fun writeCiphertext(ciphertext: ByteArray) {
@@ -145,20 +152,12 @@ class S3EncryptedOutputStream internal constructor(
         }
     }
 
-    private suspend fun cleanupDelegate() {
-        val cleanedWithConfiguredDispatcher = runCatching {
-            withContext(NonCancellable + ioDispatcher) {
-                delegate.discardBlocking()
-            }
-        }.isSuccess
-        if (!cleanedWithConfiguredDispatcher) {
-            runCatching {
-                withContext(NonCancellable + Dispatchers.IO) {
-                    delegate.discardBlocking()
-                }
-            }
-        }
-    }
+    private suspend fun cleanupDelegate(primary: Throwable) = preserveCleanupFailure(
+        primary = primary,
+        operation = S3TransferCleanupOperation.DELEGATE_DISCARD,
+        configuredDispatcher = ioDispatcher,
+        cleanup = delegate::discardBlocking,
+    )
 
     private val completionMutex = Mutex()
     private val stateLock = Any()
@@ -194,15 +193,31 @@ class S3EncryptedOutputStream internal constructor(
                     ioDispatcher,
                 )
             } catch (cancelled: CancellationException) {
-                runCatching { runBlocking(Dispatchers.IO) { delegate?.discardBlocking() } }
+                cleanupCreatedDelegate(delegate, ioDispatcher, cancelled)
                 throw cancelled
             } catch (error: Throwable) {
-                runCatching { runBlocking(Dispatchers.IO) { delegate?.discardBlocking() } }
+                cleanupCreatedDelegate(delegate, ioDispatcher, error)
                 throw error
             } finally {
                 envelope.dataKey.fill(0)
                 envelope.nonce.fill(0)
                 envelope.aad.fill(0)
+            }
+        }
+
+        private fun cleanupCreatedDelegate(
+            delegate: S3OutputStream?,
+            ioDispatcher: CoroutineDispatcher,
+            primary: Throwable,
+        ) {
+            runBlocking {
+                preserveCleanupFailure(
+                    primary = primary,
+                    operation = S3TransferCleanupOperation.DELEGATE_DISCARD,
+                    configuredDispatcher = ioDispatcher,
+                ) {
+                    delegate?.discardBlocking()
+                }
             }
         }
     }
@@ -216,6 +231,8 @@ class S3ClientSideEncryptionTransferTemplate(
     private val outputStreamProvider: S3OutputStreamProvider,
     internal val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : S3ClientSideEncryptionTransferOperations {
+
+    internal var temporaryFileDelete: (Path) -> Boolean = Files::deleteIfExists
 
     override fun encryptedOutputStream(
         bucket: String,
@@ -235,6 +252,7 @@ class S3ClientSideEncryptionTransferTemplate(
             ioDispatcher = ioDispatcher,
         )
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun downloadEncryptedFile(
         bucket: String,
         key: String,
@@ -262,6 +280,7 @@ class S3ClientSideEncryptionTransferTemplate(
 
         var temporary: Path? = null
         var plaintext: ByteArray? = null
+        var primaryFailure: Throwable? = null
         try {
             withContext(NonCancellable + ioDispatcher) {
                 temporary = Files.createTempFile("bluetape-s3-cse-", ".ciphertext")
@@ -293,25 +312,21 @@ class S3ClientSideEncryptionTransferTemplate(
             withContext(NonCancellable + ioDispatcher) {
                 commitPlaintext(destination, requireNotNull(plaintext))
             }
+        } catch (error: Throwable) {
+            primaryFailure = error
+            throw error
         } finally {
             plaintext?.fill(0)
-            temporary?.let { path -> cleanupTemporary(path) }
+            temporary?.let { path -> cleanupTemporary(path, primaryFailure) }
         }
     }
 
-    private suspend fun cleanupTemporary(path: Path) {
-        val cleanedWithConfiguredDispatcher = runCatching {
-            withContext(NonCancellable + ioDispatcher) {
-                Files.deleteIfExists(path)
-            }
-        }.isSuccess
-        if (!cleanedWithConfiguredDispatcher) {
-            runCatching {
-                withContext(NonCancellable + Dispatchers.IO) {
-                    Files.deleteIfExists(path)
-                }
-            }
-        }
+    private suspend fun cleanupTemporary(path: Path, primary: Throwable?) = preserveCleanupFailure(
+        primary = primary,
+        operation = S3TransferCleanupOperation.TEMPORARY_FILE_DELETE,
+        configuredDispatcher = ioDispatcher,
+    ) {
+        temporaryFileDelete(path)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -342,4 +357,25 @@ class S3ClientSideEncryptionTransferTemplate(
             previous?.fill(0)
         }
     }
+}
+
+@Suppress("TooGenericExceptionCaught")
+private suspend fun preserveCleanupFailure(
+    primary: Throwable?,
+    operation: S3TransferCleanupOperation,
+    configuredDispatcher: CoroutineDispatcher,
+    cleanup: () -> Unit,
+) {
+    val failures = mutableListOf<Throwable>()
+    for (dispatcher in listOf(configuredDispatcher, Dispatchers.IO)) {
+        try {
+            withContext(NonCancellable + dispatcher) { cleanup() }
+            return
+        } catch (failure: Throwable) {
+            failures += failure
+        }
+    }
+    val cleanupFailure = S3TransferCleanupException(operation, failures)
+    if (primary == null) throw cleanupFailure
+    primary.addSuppressed(cleanupFailure)
 }

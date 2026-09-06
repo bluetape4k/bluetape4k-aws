@@ -45,12 +45,12 @@ cleanup 시도 횟수는 caller가 아니라 이 경계에서 두 번으로 제�
 
 ## 수용 조건
 
-- [ ] primary exception/cancellation identity를 보존하고 최종 cleanup failure를 suppressed로 기록한다.
-- [ ] configured dispatcher rejection 뒤 fallback cleanup을 한 번만 실행한다.
-- [ ] delete/discard 두 시도 실패와 residue 존재를 deterministic fake로 검증한다.
-- [ ] fallback 성공 시 owned temporary file을 제거한다.
-- [ ] cleanup signal에 raw path, bucket, key, credential과 원문 failure message가 없다.
-- [ ] 기존 공개 API/ABI, encryption/decryption 결과와 transfer lifecycle이 유지된다.
+- [x] primary exception/cancellation identity를 보존하고 최종 cleanup failure를 suppressed로 기록한다.
+- [x] configured dispatcher rejection 뒤 fallback cleanup을 한 번만 실행한다.
+- [x] delete/discard 두 시도 실패와 residue 존재를 deterministic fake로 검증한다.
+- [x] fallback 성공 시 owned temporary file을 제거한다.
+- [x] cleanup signal에 raw path, bucket, key, credential과 원문 failure message가 없다.
+- [x] 기존 공개 API/ABI, encryption/decryption 결과와 transfer lifecycle이 유지된다.
 
 ## 비목표
 

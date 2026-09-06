@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.mockk.every
@@ -25,6 +26,7 @@ import software.amazon.awssdk.transfer.s3.model.DownloadRequest
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
 import software.amazon.awssdk.transfer.s3.model.UploadRequest
 import java.nio.file.Files
+import java.nio.file.FileSystemException
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.RejectedExecutionException
@@ -156,6 +158,97 @@ class S3ClientSideEncryptionTransferTest {
     }
 
     @Test
+    fun `cancellation preserves bounded sanitized discard failure and residue`() = runSuspendIO {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-cse-cancel-cleanup-")
+        val operations = EncryptedRecordingTransferOperations()
+        val delegate = RecordingS3OutputStreamProvider(operations, tempDirectory, thresholdBytes = 1)
+        val template = testProviderTemplate()
+        try {
+            val encrypted = S3EncryptedOutputStream.create(
+                template = template,
+                outputStreamProvider = delegate,
+                bucket = "bucket",
+                key = "secret-key",
+                contentType = null,
+                metadata = emptyMap(),
+                encryptionContext = emptyMap(),
+                ioDispatcher = CancellingDispatcher,
+            )
+            encrypted.write(ByteArray(128) { 7 })
+            val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
+            var deleteAttempts = 0
+            delegate.lastOutputStream.temporaryFileDelete = { path ->
+                deleteAttempts++
+                throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+            }
+
+            val cancellation = assertFailsWith<CancellationException> { encrypted.complete() }
+
+            cancellation.message shouldBeEqualTo "cancelled before dispatch"
+            deleteAttempts shouldBeEqualTo 1
+            Files.exists(temporary).shouldBeTrue()
+            val cleanup = cancellation.suppressed.single() as S3TransferCleanupException
+            cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.DELEGATE_DISCARD
+            cleanup.attemptFailureTypes shouldBeEqualTo listOf(
+                CancellationException::class.qualifiedName,
+                S3TransferCleanupException::class.qualifiedName,
+            )
+            cleanup.message?.contains(temporary.toString()).shouldBeFalse()
+            cleanup.message?.contains("secret-delete-marker").shouldBeFalse()
+        } finally {
+            template.close()
+            Files.list(tempDirectory).use { paths -> paths.forEach(Files::deleteIfExists) }
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
+
+    @Test
+    fun `upload failure preserves both failed discard attempts without exposing residue path`() = runSuspendIO {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-cse-double-discard-")
+        val primary = NonCopyableEncryptedUploadException(Any())
+        val operations = EncryptedRecordingTransferOperations(primary)
+        val delegate = RecordingS3OutputStreamProvider(operations, tempDirectory, thresholdBytes = 1)
+        val template = testProviderTemplate()
+        try {
+            val encrypted = S3EncryptedOutputStream.create(
+                template = template,
+                outputStreamProvider = delegate,
+                bucket = "bucket",
+                key = "secret-key",
+                contentType = null,
+                metadata = emptyMap(),
+                encryptionContext = emptyMap(),
+                ioDispatcher = Dispatchers.IO,
+            )
+            encrypted.write(ByteArray(128) { 7 })
+            val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
+            var deleteAttempts = 0
+            delegate.lastOutputStream.temporaryFileDelete = { path ->
+                deleteAttempts++
+                throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+            }
+
+            val thrown = assertFailsWith<NonCopyableEncryptedUploadException> { encrypted.complete() }
+
+            thrown.shouldBeSameInstanceAs(primary)
+            deleteAttempts shouldBeEqualTo 3
+            Files.exists(temporary).shouldBeTrue()
+            thrown.suppressed.map { (it as S3TransferCleanupException).operation } shouldBeEqualTo listOf(
+                S3TransferCleanupOperation.TEMPORARY_FILE_DELETE,
+                S3TransferCleanupOperation.DELEGATE_DISCARD,
+            )
+            thrown.suppressed.forEach { cleanup ->
+                cleanup.message?.contains(temporary.toString()).shouldBeFalse()
+                cleanup.message?.contains("secret-delete-marker").shouldBeFalse()
+            }
+        } finally {
+            template.close()
+            Files.list(tempDirectory).use { paths -> paths.forEach(Files::deleteIfExists) }
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
+
+    @Test
     fun `dispatcher rejection discards delegate and preserves terminal failure`() = runSuspendIO {
         val tempDirectory = Files.createTempDirectory("bluetape-s3-cse-rejected-")
         val operations = EncryptedRecordingTransferOperations()
@@ -176,6 +269,7 @@ class S3ClientSideEncryptionTransferTest {
 
             val rejected = assertFailsWith<RejectedExecutionException> { encrypted.complete() }
             rejected.message shouldBeEqualTo "dispatcher rejected"
+            rejected.suppressed.size shouldBeEqualTo 0
             operations.uploadedFileContents.size shouldBeEqualTo 0
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
             assertFailsWith<RejectedExecutionException> { encrypted.complete() }
@@ -260,6 +354,57 @@ class S3ClientSideEncryptionTransferTest {
     }
 
     @Test
+    fun `authentication failure preserves bounded sanitized temporary cleanup failure`() = runSuspendIO {
+        val root = Files.createTempDirectory("bluetape-s3-cse-auth-cleanup-")
+        val destination = root.resolve("destination.bin")
+        val client = mockk<S3AsyncClient>()
+        val transfer = RecordingEncryptedDownloadOperations()
+        val providerTemplate = testProviderTemplate(client = client)
+        val adapter = S3ClientSideEncryptionTransferTemplate(client, providerTemplate, transfer, transfer)
+        val envelope = providerTemplate.newEncryptionEnvelope("file payload".encodeToByteArray())
+        every { client.headObject(any<Consumer<HeadObjectRequest.Builder>>()) } returns
+            CompletableFuture.completedFuture(
+                HeadObjectResponse.builder()
+                    .contentLength(envelope.ciphertext.size.toLong())
+                    .eTag("\"etag-v1\"")
+                    .build(),
+            )
+        transfer.payload = envelope.ciphertext.copyOf().also { ciphertext ->
+            ciphertext[ciphertext.lastIndex] = (ciphertext.last().toInt() xor 1).toByte()
+        }
+        transfer.response = GetObjectResponse.builder().metadata(envelope.metadata).build()
+        var deleteAttempts = 0
+        adapter.temporaryFileDelete = { path ->
+            deleteAttempts++
+            throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+        }
+
+        try {
+            val primary = assertFailsWith<S3ClientSideEncryptionException> {
+                adapter.downloadEncryptedFile("bucket", "secret-key", destination)
+            }
+
+            deleteAttempts shouldBeEqualTo 2
+            val temporary = transfer.downloadDestination ?: error("missing temporary destination")
+            Files.exists(temporary).shouldBeTrue()
+            val cleanup = primary.suppressed.single() as S3TransferCleanupException
+            cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.TEMPORARY_FILE_DELETE
+            cleanup.attemptFailureTypes shouldBeEqualTo listOf(
+                FileSystemException::class.qualifiedName,
+                FileSystemException::class.qualifiedName,
+            )
+            cleanup.message?.contains(temporary.toString()).shouldBeFalse()
+            cleanup.message?.contains("secret-delete-marker").shouldBeFalse()
+        } finally {
+            providerTemplate.close()
+            envelope.ciphertext.fill(0)
+            transfer.downloadDestination?.let(Files::deleteIfExists)
+            Files.deleteIfExists(destination)
+            Files.deleteIfExists(root)
+        }
+    }
+
+    @Test
     fun `encrypted file download rejects oversized head before creating temp file`() = runSuspendIO {
         val root = Files.createTempDirectory("bluetape-s3-cse-oversize-")
         val destination = root.resolve("destination.bin")
@@ -321,13 +466,14 @@ private class RecordingS3OutputStreamProvider(
     private val temporaryDirectory: Path,
     private val thresholdBytes: Long,
 ) : S3OutputStreamProvider {
+    lateinit var lastOutputStream: S3OutputStream
+
     override fun outputStream(
         bucket: String,
         key: String,
         contentType: String?,
         metadata: Map<String, String>,
-    ): S3OutputStream =
-        S3OutputStream(
+    ): S3OutputStream = S3OutputStream(
             operations = operations,
             bucket = bucket,
             key = key,
@@ -335,10 +481,12 @@ private class RecordingS3OutputStreamProvider(
             contentType = contentType,
             metadata = metadata,
             temporaryDirectory = temporaryDirectory,
-        )
+        ).also { lastOutputStream = it }
 }
 
-private class EncryptedRecordingTransferOperations : S3TransferOperations {
+private class EncryptedRecordingTransferOperations(
+    private val failure: Throwable? = null,
+) : S3TransferOperations {
     val uploadedFileContents = mutableListOf<ByteArray>()
 
     override suspend fun upload(
@@ -356,6 +504,7 @@ private class EncryptedRecordingTransferOperations : S3TransferOperations {
         configure: UploadFileRequest.Builder.() -> Unit,
     ): CompletedFileUpload {
         uploadedFileContents += Files.readAllBytes(source)
+        failure?.let { throw it }
         return mockk(relaxed = true)
     }
 
@@ -374,6 +523,10 @@ private class EncryptedRecordingTransferOperations : S3TransferOperations {
     ): CompletedFileDownload =
         throw UnsupportedOperationException()
 }
+
+private class NonCopyableEncryptedUploadException(
+    @Suppress("unused") private val identityGuard: Any,
+) : RuntimeException("upload failed")
 
 private class RecordingEncryptedDownloadOperations :
     S3TransferOperations,

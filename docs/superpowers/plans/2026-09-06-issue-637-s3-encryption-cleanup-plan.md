@@ -42,9 +42,9 @@
 
 ## DoD
 
-- [ ] deterministic RED와 bounded GREEN
-- [ ] primary/cancellation identity와 suppressed cleanup signal
-- [ ] residue retry와 sensitive path redaction
-- [ ] existing API/ABI와 full module regression
-- [ ] six-lens P0=0, P1=0
+- [x] deterministic RED와 bounded GREEN
+- [x] primary/cancellation identity와 suppressed cleanup signal
+- [x] residue retry와 sensitive path redaction
+- [x] existing API/ABI와 full module regression
+- [x] six-lens P0=0, P1=0
 - [ ] exact-head CI terminal success
