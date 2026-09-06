@@ -209,6 +209,7 @@ dependencies {
     compileOnly(bt4k.bluetape4k.jackson3)
     compileOnly(bt4k.bluetape4k.testcontainers)
     testImplementation(bt4k.bluetape4k.junit5)
+    testImplementation(testFixtures(project(":bluetape4k-aws-java")))
     testImplementation(project(":bluetape4k-aws-exposed"))
     testImplementation(bt4k.aws.dax.client)
     testImplementation(libs.aws2.cloudwatch)

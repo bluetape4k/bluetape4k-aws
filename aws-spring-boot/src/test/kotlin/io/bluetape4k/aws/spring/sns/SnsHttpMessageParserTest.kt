@@ -86,7 +86,7 @@ class SnsHttpMessageParserTest {
             )
         }
 
-        error.message.orEmpty() shouldBeEqualTo "SNS HTTP message SigningCertURL must use https."
+        error.message.orEmpty() shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
     }
 
     @Test
@@ -100,8 +100,7 @@ class SnsHttpMessageParserTest {
             )
         }
 
-        error.message.orEmpty() shouldBeEqualTo
-            "SNS HTTP message SigningCertURL must use an Amazon SNS host."
+        error.message.orEmpty() shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
     }
 
     @Test

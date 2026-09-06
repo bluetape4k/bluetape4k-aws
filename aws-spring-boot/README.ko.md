@@ -965,12 +965,13 @@ deduplication 또는 외부 idempotency 저장소를 사용하며 terminal 응�
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515)에서 추적합니다.
 
 SNS는 queue policy가 topic ARN의 `sqs:SendMessage`를 허용하면 SQS subscription으로
-fanout할 수 있습니다. `SnsHttpMessageParser`는 SNS HTTP JSON과 선택적
-`x-amz-sns-message-type` header를 매핑하고, HTTPS가 아니거나 SNS host가 아닌
-`SigningCertURL`은 거부합니다. `SnsHttpMessageVerifier`는 parser 다음,
-notification 처리나 subscription confirmation 전에 실행해야 하며 Signature v1/v2,
-certificate chain, SNS host 검증을 AWS SDK message manager에 위임하고 예외가 발생하면
-fail-closed로 거부합니다.
+fanout할 수 있습니다. `SnsHttpMessageParser`는 공통 256 KiB decoded-envelope 정책을
+적용하고 필수 문자열 field와 선택적 `x-amz-sns-message-type` header를 검사하며,
+`SigningCertURL`을 정확한 SNS partition·region allowlist로 제한합니다. 구조 거부는
+저카디널리티 `SnsHttpEnvelopeRejectionReason`과 redacted message로 관측할 수 있습니다.
+`SnsHttpMessageVerifier`는 parser 다음, notification 처리나 subscription confirmation
+전에 계속 실행해야 합니다. Parsing만으로는 Signature v1/v2, certificate chain,
+credentials, IAM policy, replay 방지, retry를 검증하지 않습니다.
 
 ### SNS HTTP 메시지 서명 검증
 

@@ -1,3 +1,9 @@
+sourceSets {
+    test {
+        resources.srcDir(rootProject.file("conformance/kinesis-observation-v1"))
+    }
+}
+
 configurations {
     testImplementation.get().extendsFrom(compileOnly.get(), runtimeOnly.get())
 }

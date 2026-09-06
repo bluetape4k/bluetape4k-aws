@@ -41,6 +41,7 @@ class KinesisConsumerFlowUnitTest {
         val events = mutableListOf<String>()
         val delegateStore = InMemoryKinesisCheckpointStore()
         val terminalSave = CompletableDeferred<Unit>()
+        val canonicalRecorder = CanonicalEventRecorder()
         val checkpointStore = object : KinesisCheckpointStore {
             override suspend fun load(key: KinesisShardKey): KinesisCheckpoint? = delegateStore.load(key)
 
@@ -81,12 +82,14 @@ class KinesisConsumerFlowUnitTest {
                 options = options,
                 checkpointStore = checkpointStore,
                 leaseStore = leaseStore,
+                metrics = canonicalRecorder.metrics,
             ).collect {
                 records += it
                 events += "emit"
             }
         }
         withTimeout(5_000) { terminalSave.await() }
+        withTimeout(5_000) { canonicalRecorder.completed.await() }
         job.cancel()
         job.join()
 
@@ -97,6 +100,30 @@ class KinesisConsumerFlowUnitTest {
             "save:Sequence(sequenceNumber=1)",
             "save:ShardEnd",
         )
+        canonicalRecorder.assertLifecycle()
+    }
+
+    private class CanonicalEventRecorder {
+        val completed = CompletableDeferred<Unit>()
+        private val events = mutableListOf<KinesisCanonicalObservation>()
+        val metrics = KinesisFlowMetrics { event ->
+            event.toCanonicalObservations().forEach { canonical ->
+                events += canonical
+                if (canonical.eventKind == "shard" && canonical.outcome == "success") completed.complete(Unit)
+            }
+        }
+
+        fun assertLifecycle() {
+            events.map { "${it.eventKind}/${it.outcome}/${it.reason.orEmpty()}" } shouldBeEqualTo listOf(
+                "discovery/success/",
+                "lease/started/",
+                "shard/started/",
+                "batch/success/",
+                "record/success/",
+                "checkpoint/success/shard_end",
+                "shard/success/",
+            )
+        }
     }
 
     @Test

@@ -1,5 +1,12 @@
 plugins {
     alias(bt4k.plugins.kotlin.spring)
+    `java-test-fixtures`
+}
+
+sourceSets {
+    test {
+        resources.srcDir(rootProject.file("conformance/kinesis-observation-v1"))
+    }
 }
 
 configurations {
