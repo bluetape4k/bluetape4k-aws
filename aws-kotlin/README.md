@@ -410,6 +410,30 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 | Non-retryable `KinesisException` | Propagated immediately |
 | `CancellationException` | Propagated immediately |
 
+#### Kinesis consumer observation schema v1
+
+Keep the existing `KinesisFlowMetrics` callback and convert each legacy event at the exporter boundary:
+
+```kotlin
+import io.bluetape4k.aws.kotlin.kinesis.KinesisFlowMetrics
+import io.bluetape4k.aws.kotlin.kinesis.toCanonicalObservations
+
+val metrics = KinesisFlowMetrics { event ->
+    event.toCanonicalObservations().forEach(exporter::export)
+}
+```
+
+`KinesisCanonicalObservation` uses the fixed event vocabulary `discovery`, `shard`, `batch`,
+`record`, `lease`, `checkpoint`, and `retry`. Counts and retry counts are limited to `0..10000`.
+Stream, shard, and owner labels are normalized from the existing 64-character hashes to
+24-character lowercase hexadecimal prefixes. These labels reduce cardinality and raw-identifier
+exposure, but are not authentication or cryptographic identity tokens.
+
+For migration, run legacy and canonical exporters side by side, move dashboards and alerts to the
+canonical 24-character labels, and then remove the legacy exporter. The canonical checkpoint and
+shard-success sequence matches the Java SDK module while the legacy sealed event API and callback
+ABI remain unchanged.
+
 ### EventBridge (native suspend)
 
 ```kotlin
