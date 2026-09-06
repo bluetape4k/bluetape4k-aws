@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -57,6 +58,27 @@ class SfnExecutionFlowTest {
         val emissions = client.describeExecutionFlow(EXECUTION_ARN).toList()
 
         emissions shouldBeEqualTo listOf(running, succeeded)
+        coVerify(exactly = 2) { client.describeExecution(any<DescribeExecutionRequest>()) }
+    }
+
+    @Test
+    fun `first request is immediate and the next request waits for the polling interval`() = runTest {
+        val running = response(ExecutionStatus.Running)
+        val succeeded = response(ExecutionStatus.Succeeded)
+        val client = mockk<SfnClient>()
+        coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(running, succeeded)
+
+        val collector = launch { client.describeExecutionFlow(EXECUTION_ARN).toList() }
+        runCurrent()
+        coVerify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
+
+        advanceTimeBy(999.milliseconds)
+        runCurrent()
+        coVerify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
+
+        advanceTimeBy(1.milliseconds)
+        runCurrent()
+        collector.join()
         coVerify(exactly = 2) { client.describeExecution(any<DescribeExecutionRequest>()) }
     }
 
@@ -116,8 +138,22 @@ class SfnExecutionFlowTest {
 
         job.cancelAndJoin()
 
-        coVerify(atLeast = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
+        coVerify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
         coVerify(exactly = 0) { client.stopExecution(any<StopExecutionRequest>()) }
+    }
+
+    @Test
+    fun `SDK describe failure is propagated unchanged without another request`() = runTest {
+        val failure = IllegalStateException("describe failed")
+        val client = mockk<SfnClient>()
+        coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } throws failure
+
+        val error = assertFailsWith<IllegalStateException> {
+            client.describeExecutionFlow(EXECUTION_ARN).collect()
+        }
+
+        error shouldBeSameInstanceAs failure
+        coVerify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
     }
 
     @Test
