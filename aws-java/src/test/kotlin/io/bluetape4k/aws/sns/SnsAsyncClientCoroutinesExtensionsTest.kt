@@ -2,16 +2,14 @@ package io.bluetape4k.aws.sns
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestOf
+import io.bluetape4k.junit5.coroutines.assertResourceCancelledOnCoroutineCancellation
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.yield
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointRequest
@@ -98,12 +96,15 @@ class SnsAsyncClientCoroutinesExtensionsTest {
         val future = CompletableFuture<PublishBatchResponse>()
         every { client.publishBatch(request) } returns future
 
-        val call = launch { client.publishBatchSuspend(request) }
-        yield()
-        call.cancel(CancellationException("caller-cancelled"))
-        call.join()
+        assertResourceCancelledOnCoroutineCancellation(
+            beforeCancel = {
+                verify(exactly = 1) { client.publishBatch(request) }
+            },
+            resourceCancelled = future::isCancelled,
+        ) {
+            client.publishBatchSuspend(request)
+        }
 
-        future.isCancelled.shouldBeTrue()
         verify(exactly = 1) { client.publishBatch(request) }
     }
 }

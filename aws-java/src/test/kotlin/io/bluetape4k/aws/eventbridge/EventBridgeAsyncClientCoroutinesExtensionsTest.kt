@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
+import io.bluetape4k.junit5.coroutines.assertResourceCancelledOnCoroutineCancellation
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -49,6 +50,24 @@ class EventBridgeAsyncClientCoroutinesExtensionsTest {
         assertFailsWith<CancellationException> {
             client.putEvents(listOf(entry))
         }
+    }
+
+    @Test
+    fun `putEvents coroutine는 caller cancellation을 underlying future에 전달한다`() = runTest {
+        val entry = putEventsRequestEntryOf("source", "type", "{}")
+        val future = CompletableFuture<PutEventsResponse>()
+        every { client.putEvents(any<PutEventsRequest>()) } returns future
+
+        assertResourceCancelledOnCoroutineCancellation(
+            beforeCancel = {
+                verify(exactly = 1) { client.putEvents(any<PutEventsRequest>()) }
+            },
+            resourceCancelled = future::isCancelled,
+        ) {
+            client.putEvents(listOf(entry))
+        }
+
+        verify(exactly = 1) { client.putEvents(any<PutEventsRequest>()) }
     }
 
     @Test
