@@ -253,6 +253,7 @@ class SqsMessageListenerContainer internal constructor(
             current.ensureActiveOperation()
             delay(1)
         }
+        current.ensureActiveOperation()
     }
 
     private suspend fun resolveQueueUrlForPoll(
