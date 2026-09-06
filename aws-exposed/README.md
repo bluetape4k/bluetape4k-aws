@@ -39,7 +39,7 @@ boundaries.
 
 ```kotlin
 dependencies {
-    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:0.2.2")
+    implementation("io.github.bluetape4k.aws:bluetape4k-aws-exposed:1.0.0")
 }
 ```
 
