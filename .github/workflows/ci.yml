@@ -12,7 +12,6 @@ on:
   push:
     branches: [develop, main]
     paths-ignore:
-      - '**.md'
       - 'docs/**'
       - '.gitignore'
       - '.gitleaks.toml'
@@ -23,7 +22,6 @@ on:
   pull_request:
     branches: [develop, main]
     paths-ignore:
-      - '**.md'
       - 'docs/**'
       - '.gitignore'
       - '.gitleaks.toml'
@@ -148,6 +146,8 @@ jobs:
         run: python3 .github/scripts/code_quality_workflow_test.py
       - name: Test dependency catalog pin contract
         run: python3 .github/scripts/catalog_pin_contract_test.py
+      - name: Test aws-exposed README version contract
+        run: python3 .github/scripts/aws_exposed_readme_version_contract_test.py
       - name: Test Kinesis DryRun workflow contract
         run: python3 .github/scripts/kinesis_dry_run_workflow_contract_test.py
       - name: Test Kinesis DryRun capability validator
