@@ -1301,8 +1301,9 @@ allprojects {
             url = uri("https://central.sonatype.com/repository/maven-snapshots/")
         }
     }
+    // Recheck SNAPSHOT metadata on every resolution; stale API snapshots break CI after publication.
     configurations.all {
-        resolutionStrategy.cacheChangingModulesFor(1, TimeUnit.DAYS)
+        resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.SECONDS)
     }
 }
 
