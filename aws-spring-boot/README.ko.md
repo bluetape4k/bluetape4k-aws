@@ -536,6 +536,16 @@ Transfer Manager와 provider transfer 조건이 충족되면
 기록됩니다. `downloadEncryptedFile`은 object size와 ETag를 확인하고 `If-Match`로
 다운로드한 뒤 전체 ciphertext 인증이 끝난 후에만 destination에 plaintext를 씁니다.
 
+암호화 transfer가 실패하거나 취소되면 소유한 delegate와 temporary ciphertext file을
+최대 두 번 정리합니다. 먼저 구성한 dispatcher를 사용하고, 실패하면 `Dispatchers.IO`에서
+한 번 더 시도합니다. 원래 failure 또는 cancellation이 항상 primary로 유지됩니다. 두 cleanup
+시도가 모두 실패하면 고정 operation, 시도 횟수, failure class 이름만 담은 redaction된 signal을
+suppressed로 보존하며 bucket, key, path, credential, 원래 failure message는 남기지 않습니다.
+cleanup만 실패하면 이 signal을 직접 던집니다. background retry나 caller-owned S3 object 삭제는
+시작하지 않으므로 residue가 보고되면 애플리케이션 운영자가 조사해야 합니다. cleanup-only
+failure 뒤 `close()`를 다시 호출하면 완료된 upload는 반복하지 않고 소유한 local cleanup만
+재시도합니다.
+
 애플리케이션이 key 저장, rotation, 원본 key lifecycle, HSM 연동을 소유합니다.
 Encryption context는 AES-GCM AAD로 인증하며 metadata, log, temporary file에 기록하지
 않습니다. 잘못된 metadata나 authentication 실패는 plaintext를 반환하지 않습니다.

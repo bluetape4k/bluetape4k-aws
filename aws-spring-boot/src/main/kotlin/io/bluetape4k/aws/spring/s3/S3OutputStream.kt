@@ -38,6 +38,9 @@ class S3OutputStream(
     private val temporaryDirectory: Path = defaultTemporaryDirectory(),
 ) : OutputStream() {
 
+    internal var temporaryFileOpen: (Path) -> OutputStream = Files::newOutputStream
+    internal var temporaryFileDelete: (Path) -> Boolean = Files::deleteIfExists
+
     private var memoryBuffer = ByteArrayOutputStream(minOf(thresholdBytes, INITIAL_BUFFER_BYTES.toLong()).toInt())
     private var fileOutput: OutputStream? = null
     private var temporaryFile: Path? = null
@@ -103,16 +106,25 @@ class S3OutputStream(
     }
 
     private suspend fun completeOnIo() {
-        val bytes: ByteArray?
-        val file: Path?
-        val output: OutputStream?
+        var bytes: ByteArray? = null
+        var file: Path? = null
+        var output: OutputStream? = null
+        var retryCleanup = false
         synchronized(this) {
-            if (completionStarted) return
-            completionStarted = true
-            output = fileOutput
-            file = temporaryFile
-            bytes = if (output == null) memoryBuffer.toByteArray() else null
-            fileOutput = null
+            if (completionStarted) {
+                retryCleanup = completionFailure is S3TransferCleanupException
+                if (!retryCleanup) return
+            } else {
+                completionStarted = true
+                output = fileOutput
+                file = temporaryFile
+                bytes = if (output == null) memoryBuffer.toByteArray() else null
+                fileOutput = null
+            }
+        }
+        if (retryCleanup) {
+            discardBlocking()
+            return
         }
 
         var failure: Throwable? = null
@@ -136,7 +148,9 @@ class S3OutputStream(
             throw error
         } finally {
             bytes?.fill(0)
-            cleanupFailure = runCatching { file?.let { Files.deleteIfExists(it) } }.exceptionOrNull()
+            cleanupFailure = runCatching { file?.let(temporaryFileDelete) }
+                .exceptionOrNull()
+                ?.let { S3TransferCleanupException(S3TransferCleanupOperation.TEMPORARY_FILE_DELETE, listOf(it)) }
             synchronized(this) {
                 if (cleanupFailure != null) {
                     val failureToReport = failure
@@ -147,7 +161,7 @@ class S3OutputStream(
                     }
                 }
                 memoryBuffer.reset()
-                temporaryFile = null
+                if (cleanupFailure == null) temporaryFile = null
             }
         }
         if (cleanupFailure != null && failure == null) throw cleanupFailure as Throwable
@@ -157,35 +171,60 @@ class S3OutputStream(
         val file: Path?
         val output: OutputStream?
         synchronized(this) {
-            if (completionStarted) return
-            completionStarted = true
+            if (!completionStarted) {
+                completionStarted = true
+                memoryBuffer.reset()
+            }
             output = fileOutput
             file = temporaryFile
-            fileOutput = null
-            memoryBuffer.reset()
-            temporaryFile = null
+            if (output == null && file == null) return
         }
+        val failures = mutableListOf<Throwable>()
         runCatching { output?.close() }
-        file?.let { Files.deleteIfExists(it) }
+            .onSuccess { synchronized(this) { if (fileOutput === output) fileOutput = null } }
+            .onFailure(failures::add)
+        runCatching { file?.let(temporaryFileDelete) }
+            .onSuccess { synchronized(this) { if (temporaryFile == file) temporaryFile = null } }
+            .onFailure(failures::add)
+        if (failures.isNotEmpty()) {
+            val cleanup = S3TransferCleanupException(S3TransferCleanupOperation.OUTPUT_STREAM_DISCARD, failures)
+            synchronized(this) {
+                if (completionFailure == null) completionFailure = cleanup
+            }
+            throw cleanup
+        }
+        synchronized(this) {
+            if (completionFailure is S3TransferCleanupException) completionFailure = null
+        }
     }
 
     private fun ensureFileOutput(): OutputStream {
         fileOutput?.let { return it }
         Files.createDirectories(temporaryDirectory)
         val file = Files.createTempFile(temporaryDirectory, "bluetape-s3-", ".part")
+        temporaryFile = file
         var output: OutputStream? = null
         var buffered: ByteArray? = null
         try {
-            output = Files.newOutputStream(file)
+            output = temporaryFileOpen(file)
+            fileOutput = output
             buffered = memoryBuffer.toByteArray()
             output.write(buffered)
             memoryBuffer.reset()
-            temporaryFile = file
-            fileOutput = output
             return output
         } catch (error: Throwable) {
-            runCatching { output?.close() }.onFailure(error::addSuppressed)
-            runCatching { Files.deleteIfExists(file) }.onFailure(error::addSuppressed)
+            val failures = mutableListOf<Throwable>()
+            runCatching { output?.close() }
+                .onSuccess { if (fileOutput === output) fileOutput = null }
+                .onFailure(failures::add)
+            runCatching { temporaryFileDelete(file) }
+                .onSuccess { if (temporaryFile == file) temporaryFile = null }
+                .onFailure(failures::add)
+            if (failures.isNotEmpty()) {
+                error.addSuppressed(
+                    S3TransferCleanupException(S3TransferCleanupOperation.OUTPUT_STREAM_DISCARD, failures),
+                )
+            }
             throw error
         } finally {
             buffered?.fill(0)

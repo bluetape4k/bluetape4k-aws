@@ -545,6 +545,18 @@ downloads: `complete()` writes the GCM tag, threshold spill files contain only
 ciphertext, and a file download authenticates the complete ciphertext before
 writing the destination. `close()` is the blocking compatibility path.
 
+When an encrypted transfer fails or is cancelled, cleanup of owned delegates
+and temporary ciphertext files is attempted at most twice: first on the
+configured dispatcher and then on `Dispatchers.IO`. The original failure or
+cancellation remains primary. If both cleanup attempts fail, a suppressed,
+sanitized signal records only the fixed operation, attempt count, and failure
+class names; it does not retain bucket, key, path, credential, or original
+failure messages. A cleanup-only failure is thrown directly. Cleanup does not
+start a background retry or delete caller-owned S3 objects, so a reported
+residue must be investigated by the application operator. Calling `close()`
+again after a cleanup-only failure retries only owned local cleanup and never
+repeats the completed upload.
+
 The application owns key storage, rotation, source-key lifecycle, and HSM
 integration. Encryption context is authenticated as AES-GCM AAD and is not
 written to metadata, logs, or temporary files. Malformed metadata and

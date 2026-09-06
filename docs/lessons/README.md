@@ -16,6 +16,7 @@ workflow 문서 또는 더 좁은 범위의 skill로 승격합니다. 일시적�
 
 ## 목록
 
+- [Issue #637 S3 암호화 전송 cleanup 실패 보존](2026-09-06-issue-637-s3-encryption-cleanup.md)
 - [Issue #636 Kinesis 관측 conformance](2026-09-06-issue-636-kinesis-observation-conformance.md)
 - [Issue #635 SNS HTTP envelope 공통 정책](2026-09-06-issue-635-sns-envelope-policy.md)
 - [Issue #312 Bedrock Runtime 최소 facade](2026-07-23-issue-312-bedrock-runtime.md)

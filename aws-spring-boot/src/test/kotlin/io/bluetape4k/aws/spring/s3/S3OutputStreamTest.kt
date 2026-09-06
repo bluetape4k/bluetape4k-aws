@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -162,7 +164,131 @@ class S3OutputStreamTest {
             Files.deleteIfExists(tempDirectory)
         }
     }
+
+    @Test
+    fun `upload failure preserves sanitized cleanup failure and retries owned residue`() {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-output-cleanup-")
+        val primary = NonCopyableUploadException(Any())
+        val operations = RecordingTransferOperations(failure = primary)
+        try {
+            val output = S3OutputStream(
+                operations = operations,
+                bucket = "bucket",
+                key = "secret-key",
+                thresholdBytes = 1,
+                temporaryDirectory = tempDirectory,
+            )
+            output.write("spill me".encodeToByteArray())
+            val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
+            var deleteAttempts = 0
+            output.temporaryFileDelete = { path ->
+                deleteAttempts++
+                throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+            }
+
+            val thrown = assertFailsWith<NonCopyableUploadException> { output.close() }
+
+            thrown.shouldBeSameInstanceAs(primary)
+            deleteAttempts shouldBeEqualTo 1
+            Files.exists(temporary).shouldBeTrue()
+            val cleanup = thrown.suppressed.single() as S3TransferCleanupException
+            cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.TEMPORARY_FILE_DELETE
+            cleanup.message?.contains(temporary.toString()).shouldBeFalse()
+            cleanup.message?.contains("secret-delete-marker").shouldBeFalse()
+
+            output.temporaryFileDelete = Files::deleteIfExists
+            output.discardBlocking()
+            Files.exists(temporary).shouldBeFalse()
+        } finally {
+            Files.list(tempDirectory).use { paths -> paths.forEach(Files::deleteIfExists) }
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
+
+    @Test
+    fun `spill setup failure preserves sanitized cleanup failure and retryable residue`() {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-output-setup-cleanup-")
+        val primary = NonCopyableUploadException(Any())
+        try {
+            val output = S3OutputStream(
+                operations = RecordingTransferOperations(),
+                bucket = "bucket",
+                key = "secret-key",
+                thresholdBytes = 1,
+                temporaryDirectory = tempDirectory,
+            )
+            output.temporaryFileOpen = { throw primary }
+            output.temporaryFileDelete = { path ->
+                throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+            }
+
+            val thrown = assertFailsWith<NonCopyableUploadException> {
+                output.write("spill me".encodeToByteArray())
+            }
+
+            thrown.shouldBeSameInstanceAs(primary)
+            val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
+            Files.exists(temporary).shouldBeTrue()
+            val cleanup = thrown.suppressed.single() as S3TransferCleanupException
+            cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.OUTPUT_STREAM_DISCARD
+            cleanup.attemptFailureTypes shouldBeEqualTo listOf(java.nio.file.FileSystemException::class.qualifiedName)
+            cleanup.message?.contains(temporary.toString()).shouldBeFalse()
+            cleanup.message?.contains("secret-delete-marker").shouldBeFalse()
+
+            output.temporaryFileDelete = Files::deleteIfExists
+            output.discardBlocking()
+            Files.exists(temporary).shouldBeFalse()
+        } finally {
+            Files.list(tempDirectory).use { paths -> paths.forEach(Files::deleteIfExists) }
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
+
+    @Test
+    fun `cleanup only failure is retried by the next close without repeating upload`() {
+        val tempDirectory = Files.createTempDirectory("bluetape-s3-output-close-retry-")
+        val operations = RecordingTransferOperations()
+        try {
+            val output = S3OutputStream(
+                operations = operations,
+                bucket = "bucket",
+                key = "secret-key",
+                thresholdBytes = 1,
+                temporaryDirectory = tempDirectory,
+            )
+            output.write("spill me".encodeToByteArray())
+            val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
+            var deleteAttempts = 0
+            output.temporaryFileDelete = { path ->
+                deleteAttempts++
+                if (deleteAttempts == 1) {
+                    throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+                }
+                Files.deleteIfExists(path)
+            }
+
+            val cleanup = assertFailsWith<S3TransferCleanupException> { output.close() }
+
+            cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.TEMPORARY_FILE_DELETE
+            cleanup.message?.contains(temporary.toString()).shouldBeFalse()
+            Files.exists(temporary).shouldBeTrue()
+            operations.uploadedFiles.size shouldBeEqualTo 1
+
+            output.close()
+
+            deleteAttempts shouldBeEqualTo 2
+            Files.exists(temporary).shouldBeFalse()
+            operations.uploadedFiles.size shouldBeEqualTo 1
+        } finally {
+            Files.list(tempDirectory).use { paths -> paths.forEach(Files::deleteIfExists) }
+            Files.deleteIfExists(tempDirectory)
+        }
+    }
 }
+
+private class NonCopyableUploadException(
+    @Suppress("unused") private val identityGuard: Any,
+) : RuntimeException("upload failed")
 
 private class FailingCloseOutputStream : OutputStream() {
 
