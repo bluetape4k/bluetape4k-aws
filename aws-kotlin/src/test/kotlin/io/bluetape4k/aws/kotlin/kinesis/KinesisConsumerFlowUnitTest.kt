@@ -52,6 +52,7 @@ class KinesisConsumerFlowUnitTest {
         val eventLog = mutableListOf<String>()
         val checkpointStore = RecordingCheckpointStore(eventLog)
         val leaseStore = InMemoryKinesisLeaseStore()
+        val canonicalRecorder = CanonicalEventRecorder()
 
         coEvery { client.listShards(any<ListShardsRequest>()) } returns
                 ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
@@ -73,18 +74,44 @@ class KinesisConsumerFlowUnitTest {
             ),
             checkpointStore = checkpointStore,
             leaseStore = leaseStore,
+            metrics = canonicalRecorder.metrics,
             ).collect {
                 eventLog += "emit:${it.record.sequenceNumber}"
                 records += it
             }
         }
         checkpointStore.terminalSave.await()
+        canonicalRecorder.completed.await()
         job.cancel()
         job.join()
 
         records.map { it.record.sequenceNumber } shouldBeEqualTo listOf("1")
         eventLog shouldBeEqualTo listOf("emit:1", "save:1", "save:ShardEnd")
+        canonicalRecorder.assertLifecycle()
         coVerify { client.getRecords(match { it.limit == 1 }) }
+    }
+
+    private class CanonicalEventRecorder {
+        val completed = CompletableDeferred<Unit>()
+        private val events = mutableListOf<KinesisCanonicalObservation>()
+        val metrics = KinesisFlowMetrics { event ->
+            event.toCanonicalObservations().forEach { canonical ->
+                events += canonical
+                if (canonical.eventKind == "shard" && canonical.outcome == "success") completed.complete(Unit)
+            }
+        }
+
+        fun assertLifecycle() {
+            events.map { "${it.eventKind}/${it.outcome}/${it.reason.orEmpty()}" } shouldBeEqualTo listOf(
+                "discovery/success/",
+                "lease/started/",
+                "shard/started/",
+                "batch/success/",
+                "record/success/",
+                "checkpoint/success/shard_end",
+                "shard/success/",
+            )
+        }
     }
 
     @Test
