@@ -699,9 +699,13 @@ fun trustSnsMessageAfterVerification(message: SnsHttpMessage): TrustedSnsHttpMes
 ```
 
 SES request models defensively copy raw MIME bytes and validate message size
-before SDK submission. SNS HTTP parsing rejects malformed JSON, duplicate
-fields, mismatched `x-amz-sns-message-type` headers, non-HTTPS signing
-certificate URLs, non-SNS hosts, partition mismatches, and region mismatches.
+before SDK submission. SNS HTTP parsing applies the shared 256 KiB decoded-envelope
+policy before mapping to the Ktor model. It rejects malformed or duplicate JSON,
+missing or non-string required fields, mismatched `x-amz-sns-message-type` headers,
+and signing certificate URLs outside the exact SNS partition and region allowlist.
+Structural failures expose a low-cardinality `SnsHttpEnvelopeRejectionReason` and
+redacted messages. Parsing does not authenticate a message; signature verification,
+credentials, IAM policy, retries, and replay protection remain caller-owned.
 
 ## SQS Consumer And Publisher
 

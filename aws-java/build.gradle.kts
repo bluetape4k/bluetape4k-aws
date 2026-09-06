@@ -1,5 +1,6 @@
 plugins {
     alias(bt4k.plugins.kotlin.spring)
+    `java-test-fixtures`
 }
 
 configurations {
