@@ -136,6 +136,21 @@ class SfnExecutionFlowTest {
     }
 
     @Test
+    fun `SDK 조회 실패는 같은 예외로 전파하고 추가 조회하지 않는다`() = runTest {
+        val failure = IllegalStateException("describe failed")
+        val client = mockk<SfnAsyncClient>()
+        every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
+            CompletableFuture.failedFuture(failure)
+
+        val error = assertFailsWith<IllegalStateException> {
+            client.describeExecutionFlow(EXECUTION_ARN).collect()
+        }
+
+        error shouldBeSameInstanceAs failure
+        verify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
+    }
+
+    @Test
     fun `pending redrive는 terminal raw response로 끝난다`() = runTest {
         val pendingRedrive = response(ExecutionStatus.PENDING_REDRIVE)
         val client = mockk<SfnAsyncClient>()
