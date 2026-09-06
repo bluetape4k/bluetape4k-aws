@@ -616,7 +616,7 @@ event 수입니다. 호출자 취소는 cleanup 후 원래 `CancellationExceptio
 이 경우 plugin-owned client를 닫고 observer를 통지한 뒤
 `CloudWatchLogsShutdownTimeoutException`을 발생시킵니다.
 
-서비스가 Micrometer snapshot을 한 번 CloudWatch로 publish하고 싶을 때는
+서비스가 Micrometer 측정값을 한 번 CloudWatch로 publish하고 싶을 때는
 `CloudWatchKtorMeterPublishingTemplate` 을 사용합니다. 이 helper는 호출된 시점에만
 기존 `MeterRegistry` 를 읽으며 scheduled CloudWatch registry exporter를 등록하지
 않습니다.
@@ -694,9 +694,13 @@ fun trustSnsMessageAfterVerification(message: SnsHttpMessage): TrustedSnsHttpMes
 ```
 
 SES request model은 raw MIME byte를 방어적으로 복사하고 SDK 제출 전에 message size를
-검증합니다. SNS HTTP parser는 잘못된 JSON, duplicate field, 일치하지 않는
-`x-amz-sns-message-type` header, HTTPS가 아닌 signing certificate URL, SNS가 아닌
-host, partition 불일치, region 불일치를 거부합니다.
+검증합니다. SNS HTTP parser는 Ktor 모델로 변환하기 전에 공통 256 KiB decoded-envelope
+정책을 적용합니다. 잘못되었거나 field가 중복된 JSON, 누락되거나 문자열이 아닌 필수 field,
+일치하지 않는 `x-amz-sns-message-type` header, 정확한 SNS partition·region allowlist를
+벗어난 signing certificate URL을 거부합니다. 구조 거부는 저카디널리티
+`SnsHttpEnvelopeRejectionReason`과 redacted message로 관측할 수 있습니다. Parsing은
+message를 인증하지 않으며 signature 검증, credentials, IAM policy, retry, replay 방지는
+호출자가 소유합니다.
 
 ## SQS Consumer And Publisher
 
