@@ -11,7 +11,7 @@ class KinesisObservationConformanceTest {
     private val contract = loadContract()
     private val streamToken = KinesisFlowEvent.redactedToken(contract.required("token.input.stream"))
     private val shardToken = KinesisFlowEvent.redactedToken(contract.required("token.input.shard"))
-    private val ownerToken = KinesisFlowEvent.redactedToken(contract.required("token.input.owner"))
+    private val ownerToken = KinesisFlowEvent.redactedToken(contract.required("token.input.principal"))
 
     @Test
     fun `canonical schema matches the shared manifest`() {
@@ -31,7 +31,7 @@ class KinesisObservationConformanceTest {
         observation(KinesisFlowEvent.EventKind.SHARD, shardToken = shardToken)
             .toCanonicalObservations().single().shardToken shouldBeEqualTo contract.required("token.expected.shard")
         observation(KinesisFlowEvent.EventKind.LEASE, ownerToken = ownerToken)
-            .toCanonicalObservations().single().ownerToken shouldBeEqualTo contract.required("token.expected.owner")
+            .toCanonicalObservations().single().ownerToken shouldBeEqualTo contract.required("token.expected.principal")
 
         KinesisCanonicalObservation("batch", "success", count = KinesisCanonicalObservation.MAX_COUNT)
         assertFailsWith<IllegalArgumentException> {

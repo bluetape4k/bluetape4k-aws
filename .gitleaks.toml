@@ -15,6 +15,7 @@ paths = [
     '''docs/''',
     '''README\.md''',
     '''README\.ko\.md''',
+    '''.bluetape/''',
     '''.worktrees/''',
 ]
 
@@ -22,4 +23,6 @@ regexes = [
     '''YOUR_.*_HERE''',
     '''example[-_]key''',
     '''test[-_]api[-_]key''',
+    # Kinesis conformance manifest의 고정 SHA-256 redaction test vector입니다.
+    '''03f99ad2bb8f470ab4a6b65d''',
 ]
