@@ -89,6 +89,33 @@ class SqsMessageListenerContainerTest {
     }
 
     @Test
+    fun `stop closes receive admission before a suspended interceptor reaches SQS`() = runSuspendIO {
+        val operations = mockk<SqsOperations>()
+        val invoker = mockk<SqsListenerMethodInvoker>()
+        val beforeReceiveStarted = CompletableDeferred<Unit>()
+        val releaseBeforeReceive = CompletableDeferred<Unit>()
+        val interceptor = object : SqsListenerInterceptor {
+            override suspend fun beforeReceive(listenerId: String, queueUrl: String) {
+                beforeReceiveStarted.complete(Unit)
+                withContext(NonCancellable) {
+                    releaseBeforeReceive.await()
+                }
+            }
+        }
+        coEvery { operations.receive(QUEUE_URL, 1, 0, null) } returns emptyList()
+        val container = container(operations, invoker, interceptors = listOf(interceptor))
+
+        container.start()
+        withTimeout(2_000) { beforeReceiveStarted.await() }
+        val stopped = CompletableDeferred<Unit>()
+        container.stop { stopped.complete(Unit) }
+        releaseBeforeReceive.complete(Unit)
+        withTimeout(2_000) { stopped.await() }
+
+        coVerify(exactly = 0) { operations.receive(QUEUE_URL, 1, 0, null) }
+    }
+
+    @Test
     fun `retry stays inside one process observation and records one event`() = runSuspendIO {
         val operations = mockk<SqsOperations>()
         val invoker = mockk<SqsListenerMethodInvoker>()

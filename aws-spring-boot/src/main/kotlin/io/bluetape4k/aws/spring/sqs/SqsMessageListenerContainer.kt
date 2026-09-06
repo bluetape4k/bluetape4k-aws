@@ -30,6 +30,7 @@ import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
@@ -53,6 +54,61 @@ class SqsMessageListenerContainer internal constructor(
 
     companion object : KLogging()
 
+    private class ReceiveAdmissionGate {
+        private data class State(
+            val accepting: Boolean = true,
+            val active: Int = 0,
+        )
+
+        class Admission internal constructor(
+            private val gate: ReceiveAdmissionGate,
+        ): AutoCloseable {
+            private val released = AtomicBoolean()
+
+            override fun close() {
+                if (released.compareAndSet(false, true)) {
+                    gate.release()
+                }
+            }
+        }
+
+        private val state = AtomicReference(State())
+
+        fun acquire(): Admission? {
+            while (true) {
+                val current = state.get()
+                if (!current.accepting) {
+                    return null
+                }
+                if (state.compareAndSet(current, current.copy(active = current.active + 1))) {
+                    return Admission(this)
+                }
+            }
+        }
+
+        fun close() {
+            while (true) {
+                val current = state.get()
+                if (!current.accepting) {
+                    return
+                }
+                if (state.compareAndSet(current, current.copy(accepting = false))) {
+                    return
+                }
+            }
+        }
+
+        private fun release() {
+            while (true) {
+                val current = state.get()
+                check(current.active > 0) { "receive admission is already released" }
+                if (state.compareAndSet(current, current.copy(active = current.active - 1))) {
+                    return
+                }
+            }
+        }
+    }
+
     private class ListenerGeneration(
         val id: Long,
         val scope: CoroutineScope,
@@ -61,6 +117,7 @@ class SqsMessageListenerContainer internal constructor(
         val handlerJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet(),
         val inFlight: Semaphore = Semaphore(maxInFlight),
         val groupDispatchOrder: SqsGroupDispatchOrder = SqsGroupDispatchOrder(),
+        val receiveAdmissions: ReceiveAdmissionGate = ReceiveAdmissionGate(),
     )
 
     private class FatalHeartbeatError(
@@ -167,11 +224,14 @@ class SqsMessageListenerContainer internal constructor(
     override fun stop(callback: Runnable) {
         val current: ListenerGeneration
         synchronized(lifecycleLock) {
-            if (!lifecycleState.compareAndSet(LifecycleState.RUNNING, LifecycleState.STOPPING_RECEIVE)) {
+            if (lifecycleState.get() != LifecycleState.RUNNING) {
                 callback.run()
                 return
             }
-            current = requireNotNull(generation.getAndSet(null))
+            current = requireNotNull(generation.get())
+            current.receiveAdmissions.close()
+            lifecycleState.set(LifecycleState.STOPPING_RECEIVE)
+            generation.set(null)
         }
 
         CoroutineScope(dispatcher).launch {
@@ -253,6 +313,7 @@ class SqsMessageListenerContainer internal constructor(
             current.ensureActiveOperation()
             delay(1)
         }
+        current.ensureActiveOperation()
     }
 
     private suspend fun resolveQueueUrlForPoll(
@@ -320,12 +381,18 @@ class SqsMessageListenerContainer internal constructor(
             try {
                 receiveStarted = true
                 interceptors.forEach { it.beforeReceive(endpoint.id, queueUrl, correlation) }
-                val received = operations.receive(
-                    queueUrl = queueUrl,
-                    maxMessages = endpoint.maxMessages,
-                    waitTimeSeconds = endpoint.waitTimeSeconds,
-                    visibilityTimeoutSeconds = endpoint.visibilityTimeoutSeconds,
-                )
+                val admission = current.receiveAdmissions.acquire()
+                    ?: throw CancellationException("SQS listener generation is stopping")
+                val received = try {
+                    operations.receive(
+                        queueUrl = queueUrl,
+                        maxMessages = endpoint.maxMessages,
+                        waitTimeSeconds = endpoint.waitTimeSeconds,
+                        visibilityTimeoutSeconds = endpoint.visibilityTimeoutSeconds,
+                    )
+                } finally {
+                    admission.close()
+                }
                 interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, received, null, correlation) }
                 received
             } catch (e: CancellationException) {
@@ -1135,6 +1202,7 @@ class SqsMessageListenerContainer internal constructor(
             if (generation.get() !== current) {
                 return
             }
+            current.receiveAdmissions.close()
             generation.set(null)
             lifecycleState.set(LifecycleState.STOPPED)
             current.scope.cancel()
