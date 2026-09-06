@@ -10,6 +10,8 @@ import io.bluetape4k.aws.ktor.AwsKtorDynamoDbClientCustomizer
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.ktor.core.ApplicationResourceRegistry
+import io.bluetape4k.ktor.core.ApplicationResourceRegistryState
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -65,7 +67,7 @@ class DynamoDbKtorRuntimeConfigTest {
     }
 
     @Test
-    fun `closes plugin owned client`() = runSuspendIO {
+    fun `closes plugin owned client only once`() = runSuspendIO {
         val client = mockk<DynamoDbClient>(relaxed = true)
         every { client.close() } returns Unit
 
@@ -78,6 +80,68 @@ class DynamoDbKtorRuntimeConfigTest {
         )
 
         runtime.stop()
+        runtime.stop()
+
+        verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `application resource lifecycle keeps injected client caller owned`() {
+        val client = mockk<DynamoDbClient>(relaxed = true)
+        every { client.close() } returns Unit
+        val runtime = DynamoDbKtorRuntime(
+            DynamoDbKtorRuntimeConfig(
+                dynamoDbClient = client,
+                ownsClient = false,
+                closeTimeout = 1.seconds,
+            )
+        )
+        val registry = ApplicationResourceRegistry()
+
+        runtime.registerApplicationResources(registry)
+        registry.close()
+
+        verify(exactly = 0) { client.close() }
+        registry.closeReport.attempted shouldBeEqualTo 0
+    }
+
+    @Test
+    fun `application resource lifecycle closes plugin owned client`() = runSuspendIO {
+        val client = mockk<DynamoDbClient>(relaxed = true)
+        every { client.close() } returns Unit
+        val runtime = DynamoDbKtorRuntime(
+            DynamoDbKtorRuntimeConfig(
+                dynamoDbClient = client,
+                ownsClient = true,
+                closeTimeout = 1.seconds,
+            )
+        )
+        val registry = ApplicationResourceRegistry()
+
+        runtime.registerApplicationResources(registry)
+        registry.close()
+
+        verify(exactly = 1) { client.close() }
+        registry.closeReport.state shouldBeEqualTo ApplicationResourceRegistryState.CLOSED
+        registry.closeReport.closed shouldBeEqualTo 1
+    }
+
+    @Test
+    fun `application resource lifecycle does not double close after direct stop`() = runSuspendIO {
+        val client = mockk<DynamoDbClient>(relaxed = true)
+        every { client.close() } returns Unit
+        val runtime = DynamoDbKtorRuntime(
+            DynamoDbKtorRuntimeConfig(
+                dynamoDbClient = client,
+                ownsClient = true,
+                closeTimeout = 1.seconds,
+            )
+        )
+        val registry = ApplicationResourceRegistry()
+
+        runtime.registerApplicationResources(registry)
+        runtime.stop()
+        registry.close()
 
         verify(exactly = 1) { client.close() }
     }

@@ -1,10 +1,10 @@
 package io.bluetape4k.aws.ktor.dynamodb
 
 import io.bluetape4k.aws.ktor.awsKtorDefaults
+import io.bluetape4k.ktor.core.installApplicationResourceLifecycle
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.ApplicationStarted
-import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.util.AttributeKey
@@ -21,7 +21,8 @@ val DynamoDbKtorRuntimeKey: AttributeKey<DynamoDbKtorRuntime> = AttributeKey("Dy
  *
  * 계약:
  * - `autoCreateTables = true`이면 [ApplicationStarted]에서 명시적으로 등록한 누락 테이블을 생성합니다.
- * - [ApplicationStopping]에서 플러그인이 생성한 클라이언트만 닫습니다.
+ * - 공통 `ApplicationStopped` lifecycle registry에서 플러그인이 생성한 클라이언트만 닫습니다.
+ * - 주입된 클라이언트와 그 외 caller-owned resource는 닫지 않습니다.
  * - 리포지토리가 접근할 수 있도록 [DynamoDbKtorRuntime]을 애플리케이션 속성에 저장합니다.
  */
 val DynamoDbKtorPlugin: ApplicationPlugin<DynamoDbKtorPluginConfig> = createApplicationPlugin(
@@ -30,17 +31,12 @@ val DynamoDbKtorPlugin: ApplicationPlugin<DynamoDbKtorPluginConfig> = createAppl
 ) {
     val runtime = DynamoDbKtorRuntime(pluginConfig.toRuntimeConfig(application.awsKtorDefaults()))
     application.attributes.put(DynamoDbKtorRuntimeKey, runtime)
+    runtime.registerApplicationResources(application.installApplicationResourceLifecycle())
 
     on(MonitoringEvent(ApplicationStarted)) {
         // Ktor monitoring event는 동기식이지만 table 자동 생성은 suspend 전용 AWS Kotlin SDK 작업이다.
         runBlocking(Dispatchers.IO) {
             runtime.start()
-        }
-    }
-    on(MonitoringEvent(ApplicationStopping)) {
-        // Ktor monitoring event는 동기식이므로 plugin 소유 AWS client는 시간이 제한된 suspend bridge 안에서 닫는다.
-        runBlocking(Dispatchers.IO) {
-            runtime.stop()
         }
     }
 }
