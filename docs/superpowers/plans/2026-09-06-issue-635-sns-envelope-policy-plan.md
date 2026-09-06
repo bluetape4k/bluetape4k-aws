@@ -81,7 +81,8 @@ bluetape4k assertions. 새 dependency와 실제 AWS/emulator 호출은 추가하
   `Notification`, 두 confirmation 타입, header trim/불일치, 필수/선택 문자열,
   topic ARN, URI syntax, signing scheme/userinfo/query/fragment/port/path/host/region/partition,
   type별 forbidden/required field를 map fixture로 검증한다. decoder exception은
-  `INVALID_JSON`과 fixed message로 변환되는지 확인한다.
+  `INVALID_JSON`과 fixed message로 변환되고 `CancellationException`은 동일 인스턴스로
+  전파되는지 확인한다.
 
 - [ ] **Step 3: RED를 실행한다.**
 

@@ -966,12 +966,14 @@ Publisher cleanup/latency telemetry and heap/throughput measurement are tracked 
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
 SNS can publish to an SQS subscription when the queue policy allows
-`sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` maps SNS HTTP JSON,
-checks the optional `x-amz-sns-message-type` header, and rejects non-HTTPS or
-non-SNS `SigningCertURL` hosts. `SnsHttpMessageVerifier` must run after the
-parser and before notification processing or subscription confirmation; it
-delegates Signature v1/v2, certificate chain, and SNS host verification to the
-AWS SDK message manager and fails closed on an exception.
+`sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` applies the shared
+256 KiB decoded-envelope policy, checks required string fields and the optional
+`x-amz-sns-message-type` header, and restricts `SigningCertURL` to the exact SNS
+partition and region allowlist. Structural failures expose a low-cardinality
+`SnsHttpEnvelopeRejectionReason` and redacted messages. `SnsHttpMessageVerifier`
+must still run after the parser and before notification processing or subscription
+confirmation; parsing alone does not verify Signature v1/v2, the certificate chain,
+credentials, IAM policy, replay protection, or retries.
 
 ### SNS HTTP message signature verification
 

@@ -5,6 +5,8 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.aws.sns.SnsHttpEnvelopeRejectionReason
+import io.bluetape4k.aws.sns.SnsHttpEnvelopeValidationException
 import io.bluetape4k.junit5.concurrency.MultithreadingTester
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.exception.SdkClientException
@@ -111,11 +113,12 @@ class SnsHttpMessageVerifierFixtureTest {
         )
 
         withVerifier(client) { verifier ->
-            val failure = assertFailsWith<IllegalArgumentException> {
+            val failure = assertFailsWith<SnsHttpEnvelopeValidationException> {
                 verifier.verify(tampered, messageTypeHeader = "Notification")
             }
 
-            failure.message.orEmpty() shouldContain "Amazon SNS host"
+            failure.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.INVALID_SIGNING_CERT_URI
+            failure.message.orEmpty() shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
             client.requestCount shouldBeEqualTo 0
         }
     }

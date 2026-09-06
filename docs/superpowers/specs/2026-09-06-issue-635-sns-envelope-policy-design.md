@@ -79,8 +79,7 @@ enum class SnsHttpEnvelopeRejectionReason {
 class SnsHttpEnvelopeValidationException(
     val reason: SnsHttpEnvelopeRejectionReason,
     message: String,
-    cause: Throwable? = null,
-): IllegalArgumentException(message, cause)
+): IllegalArgumentException(message)
 
 data class SnsHttpEnvelope(/* normalized fields and raw snapshot */)
 ```
@@ -97,9 +96,11 @@ fun parse(
 ```
 
 core는 UTF-8 byte 상한을 먼저 확인하고 decoder를 정확히 한 번 호출한다. decoder가 던진
-예외는 기존 `IllegalArgumentException` 계층을 유지하는
-`SnsHttpEnvelopeValidationException(INVALID_JSON)`으로 바꾼다. 예외 메시지와 reason에는
-payload, 서명, URL 전체, topic ARN 전체를 넣지 않는다.
+`CancellationException`은 동일 인스턴스로 다시 던지고, 나머지 decode 예외는 기존
+`IllegalArgumentException` 계층을 유지하는
+`SnsHttpEnvelopeValidationException(INVALID_JSON)`으로 바꾼다. 원본 decode 예외는 cause로
+연결하지 않는다. 예외 메시지와 reason에는 payload, 서명, URL 전체, topic ARN 전체를 넣지
+않는다.
 
 ### 2. 공통 검증 규칙
 
