@@ -1,14 +1,11 @@
 package io.bluetape4k.aws.ktor.sts
 
 import io.bluetape4k.aws.ktor.awsKtorDefaults
+import io.bluetape4k.ktor.core.installApplicationResourceLifecycle
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
-import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.createApplicationPlugin
-import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.util.AttributeKey
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 
 /**
  * 설치된 [StsKtorRuntime]을 저장하는 애플리케이션 속성 키입니다.
@@ -35,12 +32,7 @@ val StsKtorPlugin: ApplicationPlugin<StsKtorPluginConfig> = createApplicationPlu
     if (runtime != null) {
         application.attributes.put(StsKtorRuntimeKey, runtime)
         application.attributes.put(StsKtorOperationsKey, runtime.operations)
-
-        on(MonitoringEvent(ApplicationStopping)) {
-            runBlocking(Dispatchers.IO) {
-                runtime.stop()
-            }
-        }
+        runtime.registerApplicationResources(application.installApplicationResourceLifecycle())
     }
 }
 

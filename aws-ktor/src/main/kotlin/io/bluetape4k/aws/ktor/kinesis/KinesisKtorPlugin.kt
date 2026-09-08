@@ -1,14 +1,11 @@
 package io.bluetape4k.aws.ktor.kinesis
 
 import io.bluetape4k.aws.ktor.awsKtorDefaults
+import io.bluetape4k.ktor.core.installApplicationResourceLifecycle
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
-import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.createApplicationPlugin
-import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.util.AttributeKey
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 
 /**
  * 설치된 [KinesisKtorRuntime]을 저장하는 애플리케이션 속성 키입니다.
@@ -36,12 +33,7 @@ val KinesisKtorPlugin: ApplicationPlugin<KinesisKtorPluginConfig> = createApplic
     if (runtime != null) {
         application.attributes.put(KinesisKtorRuntimeKey, runtime)
         application.attributes.put(KinesisKtorOperationsKey, runtime.operations)
-
-        on(MonitoringEvent(ApplicationStopping)) {
-            runBlocking(Dispatchers.IO) {
-                runtime.stop()
-            }
-        }
+        runtime.registerApplicationResources(application.installApplicationResourceLifecycle())
     }
 }
 
