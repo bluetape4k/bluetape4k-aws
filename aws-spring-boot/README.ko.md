@@ -1488,3 +1488,7 @@ Floci이며 `-Dbluetape4k.aws.emulator=...`로 전환할 수 있습니다:
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ```
+
+### 암호화 컨텍스트 지문 이관
+
+KMS S3 identity와 SQS extended policy 지문은 `;` 또는 `=`가 없는 context에서 기존 v1을 유지합니다. 구분자를 포함한 context는 충돌 없는 v2 직렬화를 사용합니다. 해당 context를 쓰는 큐를 업그레이드할 때는 생산자를 중지하고 기존 소비자 버전으로 DLQ/redrive 대상을 포함한 pointer를 모두 처리한 뒤 생산자와 소비자를 함께 전환하세요. 구분자를 포함한 기존 v1 pointer는 v2 정책 검증에서 거부됩니다. 모호한 legacy fallback은 제공하지 않습니다. S3 provider envelope의 AAD와 metadata 포맷은 유지합니다.

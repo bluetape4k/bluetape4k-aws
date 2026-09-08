@@ -52,6 +52,27 @@ taking ownership away from the application.
 - `SnsKtorPlugin` for coroutine SNS topic creation, topic lookup, topic publish,
   SMS publish, and untrusted HTTP endpoint message parsing.
 
+## Server plugin client lifecycle
+
+The simple client plugins for STS, SNS, SES v2, EventBridge, Kinesis, S3
+Vectors, CloudWatch metrics, IMDS, and S3 Access Grants register only their
+plugin-created clients with the shared `ApplicationResourceRegistry`. The
+registry closes those clients synchronously at `ApplicationStopped`, in reverse
+registration order. An injected client or operations facade remains
+application-owned and is never registered or closed by the plugin.
+
+Calling a runtime's `stop()` directly and closing the registry share the same
+idempotence guard, so either path closes a plugin-created client at most once.
+Late registrations follow the registry contract and are closed immediately.
+`CloudWatchLogsKtorPlugin`, `SqsConsumer`, and `AwsExposedPlugin` keep their
+`ApplicationStopping` flush, drain, and database-stop boundaries because those
+operations must complete before their clients are closed. SDK close operations
+are blocking bridges and do not have a new forced-shutdown timeout in these
+simple plugins. Cleanup is therefore guaranteed only for graceful Ktor
+shutdowns that reach `ApplicationStopped`.
+
+Shutdown handlers that still need plugin-owned AWS clients must finish in `ApplicationStopping`. An `ApplicationStopped` subscriber must not assume that plugin operations remain available: the shared registry may already have closed their clients. Use explicitly caller-owned clients when another lifecycle must own finalization.
+
 ## Dependency
 
 `aws-ktor` is an API aggregator. Its published POM exposes the Java/Kotlin
@@ -632,7 +653,7 @@ registry exporter.
 routes that send email. The plugin can use an injected application-owned
 `SesV2AsyncClient`, an injected operations facade, or a plugin-owned client
 created from `AwsKtorCore` and service-local settings. Injected clients are not
-closed by the plugin; plugin-owned clients are closed on `ApplicationStopping`.
+closed by the plugin; plugin-owned clients are closed on `ApplicationStopped`.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.ses.SesEmailAddressSet

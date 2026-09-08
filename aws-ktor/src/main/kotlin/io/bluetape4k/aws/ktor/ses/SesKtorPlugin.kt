@@ -1,14 +1,11 @@
 package io.bluetape4k.aws.ktor.ses
 
 import io.bluetape4k.aws.ktor.awsKtorDefaults
+import io.bluetape4k.ktor.core.installApplicationResourceLifecycle
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
-import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.createApplicationPlugin
-import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.util.AttributeKey
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 
 /**
  * 설치된 [SesKtorRuntime]을 저장하는 애플리케이션 속성 키입니다.
@@ -36,13 +33,7 @@ val SesKtorPlugin: ApplicationPlugin<SesKtorPluginConfig> = createApplicationPlu
     if (runtime != null) {
         application.attributes.put(SesKtorRuntimeKey, runtime)
         application.attributes.put(SesKtorOperationsKey, runtime.operations)
-
-        on(MonitoringEvent(ApplicationStopping)) {
-            // Ktor monitoring event는 동기식이므로 SDK client는 IO에서 닫는다.
-            runBlocking(Dispatchers.IO) {
-                runtime.stop()
-            }
-        }
+        runtime.registerApplicationResources(application.installApplicationResourceLifecycle())
     }
 }
 

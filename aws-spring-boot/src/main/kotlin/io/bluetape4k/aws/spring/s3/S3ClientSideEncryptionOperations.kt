@@ -29,6 +29,8 @@ private const val METADATA_ALGORITHM = "bt4k-cek-alg"
 private const val METADATA_ENCRYPTED_KEY = "bt4k-cek"
 private const val METADATA_KEY_ID = "bt4k-cek-key-id"
 private const val METADATA_NONCE = "bt4k-cek-nonce"
+private const val KMS_IDENTITY_DOMAIN_V1 = "bluetape4k.s3.cse.identity/v1"
+private const val KMS_IDENTITY_DOMAIN_V2 = "bluetape4k.s3.cse.identity/v2"
 
 /**
  * AWS KMS 데이터 키를 사용하는 S3 클라이언트 측 봉투 암호화 작업입니다.
@@ -90,10 +92,21 @@ class S3ClientSideEncryptionTemplate(
     override val keyFingerprint: String
         get() {
             val context = properties.clientSideEncryption.encryptionContext
-                .toSortedMap()
-                .entries
-                .joinToString(";") { (name, value) -> "$name=$value" }
-            val source = "bluetape4k.s3.cse.identity/v1\u0000$canonicalKeyIdentity\u0000$context"
+            val source = if (context.requiresVersion2Identity()) {
+                val canonicalContext = ProviderEnvelope.canonicalContextAad(context)
+                try {
+                    val encodedContext = Base64.getUrlEncoder().withoutPadding().encodeToString(canonicalContext)
+                    "$KMS_IDENTITY_DOMAIN_V2\u0000$canonicalKeyIdentity\u0000$encodedContext"
+                } finally {
+                    canonicalContext.fill(0)
+                }
+            } else {
+                val legacyContext = context
+                    .toSortedMap()
+                    .entries
+                    .joinToString(";") { (name, value) -> "$name=$value" }
+                "$KMS_IDENTITY_DOMAIN_V1\u0000$canonicalKeyIdentity\u0000$legacyContext"
+            }
             return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
                 MessageDigest.getInstance("SHA-256").digest(source.toByteArray(StandardCharsets.UTF_8)),
             )
@@ -266,6 +279,12 @@ class S3ClientSideEncryptionTemplate(
         }
     }
 }
+
+private fun Map<String, String>.requiresVersion2Identity(): Boolean = any { (key, value) ->
+    key.isBlank() || key.containsIdentityDelimiter() || value.containsIdentityDelimiter()
+}
+
+private fun String.containsIdentityDelimiter(): Boolean = any { it == ';' || it == '=' }
 
 private fun Map<String, String>.requiredMetadata(name: String): String =
     entries.firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }?.value

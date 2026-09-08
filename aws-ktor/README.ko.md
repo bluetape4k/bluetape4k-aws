@@ -51,6 +51,26 @@ S3 Access Grants, S3 Vectors, EventBridge, Kinesis, STS, IMDS, CloudWatch, Cloud
 - Topic 생성, topic 조회, topic publish, SMS publish, 신뢰 전 SNS HTTP endpoint
   message parsing을 제공하는 coroutine 기반 `SnsKtorPlugin`.
 
+## Server plugin client lifecycle
+
+STS, SNS, SES v2, EventBridge, Kinesis, S3 Vectors, CloudWatch metric, IMDS,
+S3 Access Grants의 단순 client plugin은 플러그인이 만든 client만 공통
+`ApplicationResourceRegistry`에 등록합니다. Registry는 등록 역순으로
+`ApplicationStopped`에서 동기적으로 client를 닫습니다. 주입한 client나
+operations facade는 애플리케이션 소유로 남으며 plugin이 등록하거나 닫지
+않습니다.
+
+Runtime의 `stop()`을 직접 호출하는 경로와 registry 종료는 같은 idempotence
+guard를 공유하므로 plugin-created client는 어느 경로에서도 최대 한 번만 닫힙니다.
+Registry가 종료 중일 때 늦게 등록한 resource는 registry 계약에 따라 즉시 닫힙니다.
+`CloudWatchLogsKtorPlugin`, `SqsConsumer`, `AwsExposedPlugin`은 client를 닫기 전에
+flush, handler drain, database stop을 완료해야 하므로 기존 `ApplicationStopping`
+경계를 유지합니다. 단순 plugin의 SDK close는 blocking bridge이며 새 강제 종료 timeout을
+추가하지 않았습니다. 따라서 cleanup은 `ApplicationStopped`까지 도달하는 정상적인 Ktor
+종료에서만 보장됩니다.
+
+종료 처리에서 plugin-owned AWS client가 필요하다면 `ApplicationStopping` 단계 안에서 완료합니다. `ApplicationStopped` 구독자는 공통 registry가 이미 client를 닫았을 수 있으므로 plugin operations를 계속 사용할 수 있다고 가정하지 않습니다. 다른 수명주기가 최종 정리를 담당한다면 caller-owned client를 명시적으로 주입합니다.
+
 ## 의존성
 
 `aws-ktor`는 API aggregator입니다. 게시된 POM은 Java/Kotlin wrapper, public
@@ -627,7 +647,7 @@ event 수입니다. 호출자 취소는 cleanup 후 원래 `CancellationExceptio
 operations facade를 Ktor 애플리케이션에 설치합니다. 플러그인은 애플리케이션이 소유한
 `SesV2AsyncClient`, 애플리케이션이 소유한 operations facade, 또는 `AwsKtorCore`와
 서비스 로컬 설정으로 만든 plugin-owned client를 사용할 수 있습니다. 주입한 client는
-플러그인이 닫지 않으며, plugin-owned client만 `ApplicationStopping` 에서 닫습니다.
+플러그인이 닫지 않으며, plugin-owned client만 `ApplicationStopped` 에서 닫습니다.
 
 ```kotlin
 import io.bluetape4k.aws.ktor.ses.SesEmailAddressSet

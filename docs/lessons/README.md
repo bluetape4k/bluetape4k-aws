@@ -16,7 +16,9 @@ workflow 문서 또는 더 좁은 범위의 skill로 승격합니다. 일시적�
 
 ## 목록
 
+- [PR #654 heartbeat 진단 테스트의 완료 시점](2026-09-08-pr-654-heartbeat-diagnostic-synchronization.md)
 - [Issue #649 KMS 평문 키의 소유권과 소거](2026-09-08-issue-649-kms-key-lifetime.md)
+- [Issue #648 Ktor 단순 AWS client lifecycle 통합](2026-09-08-issue-648-ktor-lifecycle.md)
 - [Issue #637 S3 암호화 전송 cleanup 실패 보존](2026-09-06-issue-637-s3-encryption-cleanup.md)
 - [Issue #636 Kinesis 관측 conformance](2026-09-06-issue-636-kinesis-observation-conformance.md)
 - [Issue #635 SNS HTTP envelope 공통 정책](2026-09-06-issue-635-sns-envelope-policy.md)

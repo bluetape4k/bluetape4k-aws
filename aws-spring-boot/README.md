@@ -1518,3 +1518,7 @@ default to Floci and can be switched with `-Dbluetape4k.aws.emulator=...`:
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=ministack
 ```
+
+### Encryption-context fingerprint migration
+
+KMS S3 identities and SQS extended policy fingerprints preserve v1 for contexts without `;` or `=`. Contexts containing these delimiters use an unambiguous v2 encoding. Before upgrading a queue using such a context, pause producers and drain existing pointers, including DLQ/redrive messages, with the previous consumer version; then upgrade producers and consumers together. Existing delimiter-bearing v1 pointers are rejected by v2 policy checks. There is no ambiguous legacy fallback. S3 provider envelope AAD and metadata formats are unchanged.
