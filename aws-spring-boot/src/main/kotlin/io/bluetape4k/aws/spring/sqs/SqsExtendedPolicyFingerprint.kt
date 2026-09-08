@@ -9,15 +9,18 @@ import java.security.MessageDigest
 import java.util.Base64
 
 internal object SqsExtendedPolicyFingerprint {
-    private const val DOMAIN = "bluetape4k.sqs.extended.policy/v1"
+    private const val DOMAIN_V1 = "bluetape4k.sqs.extended.policy/v1"
+    private const val DOMAIN_V2 = "bluetape4k.sqs.extended.policy/v2"
     private const val FIELD_COUNT = 16
 
     fun canonicalFieldCount(): Int = FIELD_COUNT
 
     fun calculate(queueUrl: String, policy: SqsExtendedClientProperties.Policy): String {
+        val context = policy.encryption.encryptionContext
+        val domain = if (context.requiresVersion2Fingerprint()) DOMAIN_V2 else DOMAIN_V1
         val bytes = ByteArrayOutputStream().apply {
             write(ByteBuffer.allocate(4).putInt(FIELD_COUNT).array())
-            string(DOMAIN)
+            string(domain)
             string(queueUrl)
             string(policy.bucket)
             string(policy.normalizedKeyPrefix())
@@ -31,7 +34,7 @@ internal object SqsExtendedPolicyFingerprint {
             integer(policy.minimumVisibilityTimeoutSeconds)
             string(policy.pointerSigningKeyRef)
             boolean(policy.encryption.enabled)
-            string(canonicalContext(policy.encryption.encryptionContext))
+            string(canonicalContext(context))
             nullableString(policy.encryption.keyFingerprint)
         }.toByteArray()
         return Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
@@ -73,5 +76,24 @@ internal object SqsExtendedPolicyFingerprint {
     }
 
     private fun canonicalContext(context: Map<String, String>): String =
-        context.toSortedMap().entries.joinToString(";") { (key, value) -> "$key=$value" }
+        if (context.requiresVersion2Fingerprint()) {
+            buildString {
+                context.toSortedMap().forEach { (key, value) ->
+                    append(key.toByteArray(StandardCharsets.UTF_8).size)
+                    append(':')
+                    append(key)
+                    append(value.toByteArray(StandardCharsets.UTF_8).size)
+                    append(':')
+                    append(value)
+                }
+            }
+        } else {
+            context.toSortedMap().entries.joinToString(";") { (key, value) -> "$key=$value" }
+        }
+
+    private fun Map<String, String>.requiresVersion2Fingerprint(): Boolean = any { (key, value) ->
+        key.isBlank() || key.containsFingerprintDelimiter() || value.containsFingerprintDelimiter()
+    }
+
+    private fun String.containsFingerprintDelimiter(): Boolean = any { it == ';' || it == '=' }
 }
