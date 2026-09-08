@@ -182,6 +182,35 @@ class KmsAutoConfigurationTest {
     }
 
     @Test
+    fun `data key cache bean clears retained keys when context closes`() {
+        contextRunner.run { context ->
+            val cache = context.getBean(DataKeyCache::class.java) as InMemoryDataKeyCache
+            val key = KmsDataKeyCacheKey(
+                keyId = "alias/test",
+                keySpec = software.amazon.awssdk.services.kms.model.DataKeySpec.AES_256,
+                numberOfBytes = null,
+                encryptionContext = emptyMap(),
+            )
+            val dataKey = KmsDataKey(
+                keyId = "alias/test",
+                plaintext = byteArrayOf(7, 8, 9),
+                encryptedDataKey = byteArrayOf(1, 2, 3),
+            )
+            cache.put(key, dataKey)
+            dataKey.close()
+
+            context.close()
+
+            val cached = cache.get(key)
+            try {
+                cached.shouldBeNull()
+            } finally {
+                cached?.close()
+            }
+        }
+    }
+
+    @Test
     fun `endpoint override requires region`() {
         ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(KmsAutoConfiguration::class.java))

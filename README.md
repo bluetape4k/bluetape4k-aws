@@ -404,7 +404,14 @@ KMS is intended for small secrets and key management, not for bulk payload encry
 secrets. For larger data, call `generateDataKey`, encrypt the payload locally with the plaintext data
 key, and store the encrypted data key with the payload metadata. The built-in `DataKeyCache` can reuse
 plaintext data keys briefly, but this is sensitive in-memory key material; keep the TTL and cache size
-small.
+small. `generateDataKey` returns a caller-owned `KmsDataKey`; close it with `use` after local encryption,
+and clear every `plaintext` array returned by the getter after use. `DataKeyCache.put` stores an independent
+snapshot, while `get` returns a caller-owned snapshot. Custom cache implementations must preserve that
+ownership contract and call `clear` at application shutdown when they retain plaintext keys. TTL expiry is
+lazy, so an idle cache does not provide a strict memory-retention deadline. Spring calls `clear` when its
+cache bean is destroyed, but in-flight KMS work can publish after that call; quiesce, cancel, or drain
+KMS work before closing the application context. The cache does not permanently close or reject late puts.
+`KmsOperations.decrypt` also returns a caller-owned plaintext array that should be cleared after use.
 
 #### KMS Spring Boot Components
 
@@ -908,7 +915,11 @@ class SecretVault(
             ciphertext = Base64.getDecoder().decode(encodedCiphertext),
             encryptionContext = mapOf("purpose" to "api-token"),
         )
-        return plaintext.decodeToString()
+        return try {
+            plaintext.decodeToString()
+        } finally {
+            plaintext.fill(0)
+        }
     }
 }
 ```

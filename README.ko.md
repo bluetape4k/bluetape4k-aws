@@ -393,6 +393,15 @@ token, credential, 설정 secret처럼 짧은 값은 `KmsOperations.encrypt`를 
 암호화된 data key를 payload metadata와 함께 저장하는 envelope encryption 방식이 적합합니다.
 기본 `DataKeyCache`는 plaintext data key를 짧게 재사용할 수 있지만, 프로세스 메모리에
 민감한 key material을 보관하는 것이므로 TTL과 cache size를 작게 유지하세요.
+`generateDataKey`가 반환하는 `KmsDataKey`는 호출자 소유이므로 로컬 암호화가 끝나면 `use`로
+닫고, `plaintext` getter가 반환한 배열도 사용 후 직접 소거하세요. `DataKeyCache.put`은 독립
+snapshot을 저장하고 `get`은 호출자가 닫아야 하는 독립 snapshot을 반환합니다. 사용자 정의 cache도
+이 소유권 계약을 지켜야 하며 평문 키를 보유한다면 애플리케이션 종료 시 `clear`를 호출해야 합니다.
+TTL 만료는 lazy 방식이므로 유휴 cache의 메모리 보존 상한을 보장하지 않습니다.
+Spring은 cache Bean 종료 시 `clear`를 호출하지만, 종료 시점에 진행 중인 KMS 작업이 그 뒤에
+키를 저장할 수 있습니다. ApplicationContext를 닫기 전에 KMS 작업을 quiesce, cancel 또는 drain해야
+하며, cache는 영구적으로 닫히거나 늦은 put을 거부하지 않습니다.
+`KmsOperations.decrypt`가 반환하는 평문 배열도 호출자 소유이므로 사용 후 소거하세요.
 
 #### KMS Spring Boot 구성요소
 
@@ -891,7 +900,11 @@ class SecretVault(
             ciphertext = Base64.getDecoder().decode(encodedCiphertext),
             encryptionContext = mapOf("purpose" to "api-token"),
         )
-        return plaintext.decodeToString()
+        return try {
+            plaintext.decodeToString()
+        } finally {
+            plaintext.fill(0)
+        }
     }
 }
 ```

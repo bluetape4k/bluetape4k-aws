@@ -55,11 +55,16 @@ class KmsEncryptedFieldCodec(
         }
 
         return try {
-            kmsOperations.decrypt(
+            val plaintext = kmsOperations.decrypt(
                 ciphertext = ciphertext,
                 keyId = annotation.effectiveKeyId(),
                 encryptionContext = effectiveEncryptionContext(annotation),
-            ).toString(StandardCharsets.UTF_8)
+            )
+            try {
+                plaintext.toString(StandardCharsets.UTF_8)
+            } finally {
+                plaintext.fill(0)
+            }
         } catch (e: KmsEncryptedFieldUsageException) {
             throw e
         } catch (e: KmsFieldEncryptionException) {

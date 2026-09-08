@@ -59,7 +59,7 @@ class KmsAutoConfiguration {
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 
-    @Bean
+    @Bean(destroyMethod = "clear")
     @ConditionalOnMissingBean
     fun dataKeyCache(properties: KmsProperties): DataKeyCache =
         if (properties.dataKeyCache.enabled) {

@@ -1439,6 +1439,46 @@ Ciphertext 문자열은 `b4k-kms:v1:` prefix를 사용합니다. 잘못된 ciphe
 암호화는 짧은 단일 `String`이 안정적인 persistence/serialization 경계를 가져야 할 때
 사용합니다.
 
+
+### 평문 데이터 키의 소유권
+
+`KmsOperations.generateDataKey()`와 `DataKeyCache.get()`은 호출자가 독립적으로 소유하는 `KmsDataKey`를 반환합니다. 사용 후 각 결과를 닫으세요. `plaintext` getter는 별도의 호출자 소유 배열을 반환하므로 이 배열도 직접 소거해야 합니다. 생성자 입력 배열은 호출자 소유로 남습니다. `decrypt()`의 반환 배열도 호출자가 변경하거나 소거할 수 있습니다.
+
+```kotlin
+kms.generateDataKey().use { key ->
+    val plaintextKey = key.plaintext
+    try {
+        encryptPayload(plaintextKey)
+    } finally {
+        plaintextKey.fill(0)
+    }
+}
+cache.get(cacheKey)?.use { key ->
+    val plaintextKey = key.plaintext
+    try {
+        encryptPayload(plaintextKey)
+    } finally {
+        plaintextKey.fill(0)
+    }
+}
+val plaintext = kms.decrypt(ciphertext)
+try {
+    consumePlaintext(plaintext)
+} finally {
+    plaintext.fill(0)
+}
+```
+
+`InMemoryDataKeyCache.put()`은 독립 복사본을 저장하며 입력의 소유권을 넘겨받지 않습니다. 교체, LRU 축출, 조회 시 확인한 TTL 만료, `evict()`, `clear()`는 제거한 캐시 소유 평문을 소거합니다. 이미 반환한 키는 호출자가 닫을 때까지 사용할 수 있습니다. Spring 자동 구성 캐시 Bean은 context 종료 시 `clear()`를 호출하며, 사용자 정의 Bean 제공자는 종료 처리를 직접 구성하고 검증해야 합니다.
+
+TTL은 접근 시 검사하므로 평문의 최대 보존시간을 보장하지 않습니다. 유휴 캐시는 만료된 키를 보유할 수 있습니다. 엄격한 보존 상한이 필요하면 캐시를 비활성화하거나 명시적인 정리 정책을 제공하세요. 라이브러리가 소유한 배열은 소거하지만 JVM·JCE·AWS SDK 내부 복사본의 완전한 제거는 보장할 수 없습니다.
+
+사용자 정의 `DataKeyCache`와 `KmsOperations`는 호출자가 독립적으로 소유하는 결과를 반환하도록 이관해야 합니다. `put()` 실패 시 새 복사본을 보유하지 않고 생성한 복사본을 소거해야 합니다. 반환 키를 닫은 뒤 다음 캐시 조회가 정상 동작하는지 점검하세요. 기존 생성자·getter·캐시 메서드 서명은 유지하지만 동일 인스턴스를 공유하던 동작은 바뀝니다. 배포와 롤백은 애플리케이션 코드와 라이브러리를 함께 진행하세요. `close()`를 호출하는 새 코드에 구버전 라이브러리를 혼용하면 안 됩니다.
+
+애플리케이션은 Spring context를 닫기 전에 새 KMS 요청을 중단하고 진행 중인 작업의 완료를 기다려야 합니다. `clear()`는 재사용 가능한 정리 연산이므로 종료 뒤 늦은 `put()`은 새 snapshot을 보유할 수 있습니다. 따라서 bean 소멸만으로 캐시의 이후 저장까지 차단하지는 않습니다.
+
+배포할 때 애플리케이션 바이트코드와 검증한 AWS 라이브러리 버전을 하나의 불변 배포물로 묶습니다. `close()`를 호출하도록 컴파일한 코드에서 라이브러리 JAR만 구버전으로 교체하지 않습니다. S3 metadata와 암호문 포맷은 같으므로 롤링 배포 중 구버전·신버전 인스턴스가 함께 실행될 수 있습니다. Canary에서 `generateDataKey → close`, cache `get → close → get`, 기존 S3 암호화 객체 읽기를 확인합니다. Linkage 오류, 닫힌 키 재사용 또는 기존 객체 읽기 실패 시 배포를 중단하고 KMS 작업을 종료한 뒤 이전의 완전한 애플리케이션 배포물로 복원합니다. 이 변경으로 객체 재암호화나 스키마 이관이 필요하지는 않습니다.
+
 ## 테스트
 
 `src/test/...`에 로컬 AWS emulator 기반 통합 테스트가 포함되어 있습니다. 기본값은

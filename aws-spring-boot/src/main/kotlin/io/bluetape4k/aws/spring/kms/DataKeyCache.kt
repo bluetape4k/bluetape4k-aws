@@ -41,17 +41,28 @@ data class KmsDataKeyCacheKey(
  */
 interface DataKeyCache {
 
+    /**
+     * 캐시가 보유한 키와 독립적인 호출자 소유 snapshot을 반환합니다.
+     * 반환된 값은 호출자가 사용 후 [KmsDataKey.close]해야 합니다.
+     */
     fun get(key: KmsDataKeyCacheKey): KmsDataKey?
 
+    /**
+     * 입력 키의 소유권을 이전하지 않고 캐시가 독립 snapshot을 보유합니다.
+     * 구현은 삽입 실패 시 해당 snapshot을 소거해야 합니다.
+     */
     fun put(key: KmsDataKeyCacheKey, value: KmsDataKey)
 
+    /** 캐시가 보유한 키를 제거하고 평문 자료를 소거합니다. */
     fun evict(key: KmsDataKeyCacheKey)
 
+    /** 캐시가 보유한 모든 키를 제거하고 평문 자료를 소거합니다. */
     fun clear()
 }
 
 /**
  * 값을 저장하지 않는 데이터 키 캐시입니다.
+ * 입력 키를 보유하거나 닫지 않으므로 반환된 키의 수명은 호출자가 관리합니다.
  */
 object NoopDataKeyCache: DataKeyCache {
     override fun get(key: KmsDataKeyCacheKey): KmsDataKey? = null
@@ -62,6 +73,7 @@ object NoopDataKeyCache: DataKeyCache {
 
 /**
  * TTL과 최대 크기 축출을 적용하는 인메모리 [DataKeyCache]입니다.
+ * TTL은 접근 시 확인하는 lazy 정책이며 별도 백그라운드 소거 작업을 시작하지 않습니다.
  */
 class InMemoryDataKeyCache(
     private val maxSize: Int,
@@ -80,42 +92,68 @@ class InMemoryDataKeyCache(
 
     private val lock = ReentrantLock()
 
-    private val entries = object: LinkedHashMap<KmsDataKeyCacheKey, Entry>(maxSize, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<KmsDataKeyCacheKey, Entry>?): Boolean =
-            size > maxSize
-    }
+    private val entries = LinkedHashMap<KmsDataKeyCacheKey, Entry>(maxSize, 0.75f, true)
 
     init {
         require(maxSize > 0) { "maxSize must be greater than 0." }
         require(!ttl.isNegative && !ttl.isZero) { "ttl must be greater than zero." }
     }
 
-    override fun get(key: KmsDataKeyCacheKey): KmsDataKey? =
-        lock.withLock {
-            val entry = entries[key] ?: return null
+    override fun get(key: KmsDataKeyCacheKey): KmsDataKey? {
+        var expired: KmsDataKey? = null
+        val result = lock.withLock {
+            val entry = entries[key] ?: return@withLock null
             if (entry.expiresAt.isAfter(clock.instant())) {
-                entry.value
+                entry.value.copy()
             } else {
                 entries.remove(key)
+                expired = entry.value
                 null
             }
         }
+        expired?.close()
+        return result
+    }
 
     override fun put(key: KmsDataKeyCacheKey, value: KmsDataKey) {
-        lock.withLock {
-            entries[key] = Entry(value, clock.instant().plus(ttl))
+        val snapshot = value.copy()
+        var published = false
+        try {
+            val retired = lock.withLock {
+                // 만료 시각 계산을 snapshot publish보다 먼저 수행해 clock 실패 시 새 entry를 남기지 않습니다.
+                val expiresAt = clock.instant().plus(ttl)
+                val replaced = entries.put(key, Entry(snapshot, expiresAt))?.value
+                // 이 지점부터 snapshot은 cache 소유이므로 이후 예외가 발생해도 닫지 않습니다.
+                published = true
+                val evicted = if (entries.size > maxSize) {
+                    val iterator = entries.entries.iterator()
+                    val eldest = iterator.next().value.value
+                    iterator.remove()
+                    eldest
+                } else {
+                    null
+                }
+                listOfNotNull(replaced, evicted)
+            }
+            retired.forEach(KmsDataKey::close)
+        } finally {
+            if (!published) {
+                snapshot.close()
+            }
         }
     }
 
     override fun evict(key: KmsDataKeyCacheKey) {
-        lock.withLock {
-            entries.remove(key)
-        }
+        val retired = lock.withLock { entries.remove(key)?.value }
+        retired?.close()
     }
 
     override fun clear() {
-        lock.withLock {
+        val retired = lock.withLock {
+            val values = entries.values.map(Entry::value)
             entries.clear()
+            values
         }
+        retired.forEach(KmsDataKey::close)
     }
 }

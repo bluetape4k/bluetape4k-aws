@@ -39,12 +39,18 @@ class KmsTextEncryptor(
             }
         )
 
-    override fun decrypt(encryptedText: String): String =
-        runBlocking(Dispatchers.IO) {
+    override fun decrypt(encryptedText: String): String {
+        val plaintext = runBlocking(Dispatchers.IO) {
             kmsOperations.decrypt(
                 ciphertext = decoder.decode(encryptedText),
                 keyId = keyId,
                 encryptionContext = encryptionContext,
             )
-        }.toString(StandardCharsets.UTF_8)
+        }
+        return try {
+            plaintext.toString(StandardCharsets.UTF_8)
+        } finally {
+            plaintext.fill(0)
+        }
+    }
 }

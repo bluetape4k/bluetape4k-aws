@@ -2,7 +2,6 @@ package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -82,9 +81,18 @@ class KmsCoroutinesEncryptorAwsEmulatorTest {
                     encryptionContext = mapOf("purpose" to "cache"),
                 )
 
-                cachedDataKey shouldBeSameInstanceAs firstDataKey
-                firstDataKey.plaintext.shouldNotBeEmpty()
-                firstDataKey.encryptedDataKey.shouldNotBeEmpty()
+                try {
+                    require(cachedDataKey !== firstDataKey) {
+                        "cache reads must return independent caller-owned snapshots"
+                    }
+                    firstDataKey.plaintext.shouldNotBeEmpty()
+                    firstDataKey.encryptedDataKey.shouldNotBeEmpty()
+                    cachedDataKey.plaintext.shouldNotBeEmpty()
+                    cachedDataKey.encryptedDataKey.shouldNotBeEmpty()
+                } finally {
+                    firstDataKey.close()
+                    cachedDataKey.close()
+                }
             }
         }
     }

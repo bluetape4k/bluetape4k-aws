@@ -73,17 +73,30 @@ class KmsCoroutinesEncryptor(
             effectiveContext.takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
         }.await()
 
-        val dataKey = KmsDataKey(
-            keyId = response.keyId() ?: effectiveKeyId,
-            plaintext = response.plaintext().asByteArray(),
-            encryptedDataKey = response.ciphertextBlob().asByteArray(),
-        )
+        val sdkPlaintext = response.plaintext().asByteArray()
+        try {
+            val dataKey = KmsDataKey(
+                keyId = response.keyId() ?: effectiveKeyId,
+                plaintext = sdkPlaintext,
+                encryptedDataKey = response.ciphertextBlob().asByteArray(),
+            )
 
-        if (useCache) {
-            dataKeyCache.put(cacheKey, dataKey)
+            if (useCache) {
+                var published = false
+                try {
+                    dataKeyCache.put(cacheKey, dataKey)
+                    published = true
+                } finally {
+                    if (!published) {
+                        dataKey.close()
+                    }
+                }
+            }
+
+            return dataKey
+        } finally {
+            sdkPlaintext.fill(0)
         }
-
-        return dataKey
     }
 
     private fun resolveRequiredKeyId(keyId: String?): String {
