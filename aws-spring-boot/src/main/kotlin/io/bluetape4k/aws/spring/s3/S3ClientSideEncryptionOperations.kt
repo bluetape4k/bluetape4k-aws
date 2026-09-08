@@ -130,13 +130,22 @@ class S3ClientSideEncryptionTemplate(
             encryptionContext = effectiveContext,
             useCache = properties.clientSideEncryption.useDataKeyCache,
         )
-        val nonce = ByteArray(GCM_NONCE_BYTES).also(random::nextBytes)
-        val ciphertext = encrypt(bytes, dataKey.plaintext, nonce)
-        val encryptionMetadata = buildMap {
-            put(METADATA_ALGORITHM, ENCRYPTION_ALGORITHM)
-            put(METADATA_ENCRYPTED_KEY, Base64.getEncoder().encodeToString(dataKey.encryptedDataKey))
-            put(METADATA_KEY_ID, dataKey.keyId)
-            put(METADATA_NONCE, Base64.getEncoder().encodeToString(nonce))
+        val (ciphertext, encryptionMetadata) = dataKey.use {
+            val nonce = ByteArray(GCM_NONCE_BYTES).also(random::nextBytes)
+            val plaintextKey = dataKey.plaintext
+            val ciphertext = try {
+                encrypt(bytes, plaintextKey, nonce)
+            } finally {
+                plaintextKey.fill(0)
+            }
+            val encryptionMetadata = buildMap {
+                put(METADATA_ALGORITHM, ENCRYPTION_ALGORITHM)
+                put(METADATA_ENCRYPTED_KEY, Base64.getEncoder().encodeToString(dataKey.encryptedDataKey))
+                put(METADATA_KEY_ID, dataKey.keyId)
+                put(METADATA_NONCE, Base64.getEncoder().encodeToString(nonce))
+            }
+
+            ciphertext to encryptionMetadata
         }
 
         return s3AsyncClient.putObject(
@@ -180,7 +189,11 @@ class S3ClientSideEncryptionTemplate(
             encryptionContext = effectiveEncryptionContext(encryptionContext),
         )
 
-        return decrypt(response.asByteArray(), plaintextKey, nonce)
+        return try {
+            decrypt(response.asByteArray(), plaintextKey, nonce)
+        } finally {
+            plaintextKey.fill(0)
+        }
     }
 
     override suspend fun downloadEncryptedBytesBounded(
@@ -226,7 +239,11 @@ class S3ClientSideEncryptionTemplate(
             keyId = keyId,
             encryptionContext = effectiveEncryptionContext(encryptionContext),
         )
-        return decrypt(output.toByteArray(), plaintextKey, nonce)
+        return try {
+            decrypt(output.toByteArray(), plaintextKey, nonce)
+        } finally {
+            plaintextKey.fill(0)
+        }
     }
 
     private fun canonicalKeyIdentity(): String {

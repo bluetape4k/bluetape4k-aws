@@ -1451,11 +1451,25 @@ class SqsMessageListenerContainerTest {
         stopped.await()
     }
 
-    @Test
+    @RepeatedTest(100)
     @Suppress("LongMethod")
     fun `heartbeat observation stop failure emits bounded diagnostic without changing handler outcome`() = runTest {
         val containerLogger = LoggerFactory.getLogger(SqsMessageListenerContainer::class.java) as Logger
-        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val diagnosticObserved = CompletableDeferred<ch.qos.logback.classic.spi.ILoggingEvent>()
+        val appender = object : ch.qos.logback.core.AppenderBase<ch.qos.logback.classic.spi.ILoggingEvent>() {
+            override fun append(eventObject: ch.qos.logback.classic.spi.ILoggingEvent) {
+                if (
+                    eventObject.formattedMessage.contains("reason=telemetry_cleanup") &&
+                    eventObject.formattedMessage.contains("target=single")
+                ) {
+                    diagnosticObserved.complete(eventObject)
+                }
+            }
+        }.apply { start() }
+        val observationStopEntered = CompletableDeferred<Unit>()
+        val observationStopRelease = java.util.concurrent.CountDownLatch(1)
+        val handlerRelease = CompletableDeferred<Unit>()
+        var listenerContainer: SqsMessageListenerContainer? = null
         val previousLevel = containerLogger.level
         containerLogger.addAppender(appender)
         containerLogger.level = Level.WARN
@@ -1464,15 +1478,12 @@ class SqsMessageListenerContainerTest {
             val invoker = mockk<SqsListenerMethodInvoker>()
             val dispatcher = StandardTestDispatcher(testScheduler)
             val handlerStarted = CompletableDeferred<Unit>()
-            val heartbeatObserved = CompletableDeferred<Unit>()
-            val handlerRelease = CompletableDeferred<Unit>()
             val handlerReturned = CompletableDeferred<Unit>()
             val receiveCalls = AtomicInteger()
             coEvery { operations.receive(QUEUE_URL, 1, 0, null) } coAnswers {
                 if (receiveCalls.incrementAndGet() == 1) listOf(message()) else awaitCancellation()
             }
             coEvery { operations.changeVisibility(QUEUE_URL, "receipt-message-1", 30) } coAnswers {
-                heartbeatObserved.complete(Unit)
                 software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse.builder().build()
             }
             every { invoker.manualAcknowledgement } returns true
@@ -1488,6 +1499,9 @@ class SqsMessageListenerContainerTest {
 
                 override fun onStop(context: SqsObservationContext) {
                     if (context.metadata.stage == SqsObservationStage.ACKNOWLEDGEMENT) {
+                        // 동기 콜백의 종료를 지연해 handler 반환과 로그 기록 순서를 분리한다.
+                        observationStopEntered.complete(Unit)
+                        check(observationStopRelease.await(10, java.util.concurrent.TimeUnit.SECONDS))
                         error("heartbeat observation stop failed")
                     }
                 }
@@ -1500,6 +1514,7 @@ class SqsMessageListenerContainerTest {
                 messageVisibilityHeartbeatIntervalSeconds = 1,
                 messageVisibilityHeartbeatSeconds = 30,
             )
+            listenerContainer = container
             container.setObservationRuntime(
                 SqsObservationRuntime(
                     registry = registry,
@@ -1514,23 +1529,40 @@ class SqsMessageListenerContainerTest {
             advanceTimeBy(1_000)
             runCurrent()
             withContext(Dispatchers.Default.limitedParallelism(1)) {
-                withTimeout(2_000) { heartbeatObserved.await() }
+                withTimeout(2_000) { observationStopEntered.await() }
             }
             handlerRelease.complete(Unit)
             runCurrent()
             handlerReturned.await()
 
-            appender.list.map { it.formattedMessage }
-                .any { it.contains("BT4K-SQS-OBS-202") && it.contains("target=single") }
-                .shouldBeTrue()
-
-            val stopped = CompletableDeferred<Unit>()
-            container.stop { stopped.complete(Unit) }
-            runCurrent()
-            stopped.await()
+            diagnosticObserved.isCompleted.shouldBeFalse()
+            observationStopRelease.countDown()
+            val diagnostic = withContext(Dispatchers.Default) {
+                withTimeout(5_000) { diagnosticObserved.await() }
+            }
+            diagnostic.formattedMessage.contains("BT4K-SQS-OBS-202").shouldBeTrue()
+            diagnostic.formattedMessage.contains(QUEUE_URL).shouldBeFalse()
+            diagnostic.formattedMessage.contains("heartbeat observation stop failed").shouldBeFalse()
+            (diagnostic.throwableProxy == null).shouldBeTrue()
+            coVerify(exactly = 1) { invoker.invoke(any(), any(), any()) }
+            coVerify(exactly = 1) { operations.changeVisibility(QUEUE_URL, "receipt-message-1", 30) }
         } finally {
-            containerLogger.detachAppender(appender)
-            containerLogger.level = previousLevel
+            observationStopRelease.countDown()
+            handlerRelease.complete(Unit)
+            try {
+                listenerContainer?.let { container ->
+                    val stopped = CompletableDeferred<Unit>()
+                    container.stop { stopped.complete(Unit) }
+                    runCurrent()
+                    withContext(NonCancellable + Dispatchers.Default) {
+                        withTimeout(5_000) { stopped.await() }
+                    }
+                }
+            } finally {
+                containerLogger.detachAppender(appender)
+                containerLogger.level = previousLevel
+                appender.stop()
+            }
         }
     }
 

@@ -1469,6 +1469,46 @@ fail with deterministic exceptions. Use direct `KmsOperations` for service-level
 payloads or envelope-encryption flows; use field encryption only where a
 single short `String` needs a stable persistence or serialization boundary.
 
+
+### Plaintext data key ownership
+
+`KmsOperations.generateDataKey()` and `DataKeyCache.get()` return independently owned `KmsDataKey` instances. Close each result after use. `plaintext` returns another caller-owned array; clear it separately. Constructor input arrays remain caller-owned. `decrypt()` also returns a caller-owned array that may be modified or cleared.
+
+```kotlin
+kms.generateDataKey().use { key ->
+    val plaintextKey = key.plaintext
+    try {
+        encryptPayload(plaintextKey)
+    } finally {
+        plaintextKey.fill(0)
+    }
+}
+cache.get(cacheKey)?.use { key ->
+    val plaintextKey = key.plaintext
+    try {
+        encryptPayload(plaintextKey)
+    } finally {
+        plaintextKey.fill(0)
+    }
+}
+val plaintext = kms.decrypt(ciphertext)
+try {
+    consumePlaintext(plaintext)
+} finally {
+    plaintext.fill(0)
+}
+```
+
+`InMemoryDataKeyCache.put()` stores its own snapshot and does not take ownership of its input. Replacement, LRU eviction, observed TTL expiry, `evict()`, and `clear()` erase retired cache-owned plaintext. Previously returned keys remain usable until their owner closes them. The auto-configured Spring cache bean calls `clear()` on context shutdown; custom bean providers must arrange and test their own cleanup.
+
+TTL is checked lazily and is not a maximum plaintext retention bound: an idle cache can retain expired entries. Disable caching or provide an explicit cleanup policy when a strict bound is required. Library-owned arrays are cleared, but complete removal of JVM, JCE, or AWS SDK internal copies cannot be guaranteed.
+
+Custom `DataKeyCache` and `KmsOperations` implementations must return independent caller-owned results. A failed `put()` must retain no new snapshot and must clear any snapshot it created. Validate this migration by closing a returned key and confirming that a subsequent cache lookup still works. Existing constructor/getter/cache method signatures remain, but shared-instance behavior changes. Deploy or roll back application code and library versions together; code that calls `close()` must not run with the older library.
+
+The application must stop producers and await in-flight KMS operations before closing its Spring context. `clear()` remains reusable; a late `put()` after context shutdown can retain a new snapshot, so bean destruction alone is not a terminal cache barrier.
+
+For deployment, package application bytecode and its tested AWS library version in one immutable artifact; never replace only the library JAR beneath code compiled against `close()`. Old and new application instances may coexist during a rolling deployment because S3 metadata and ciphertext formats are unchanged. A canary must exercise `generateDataKey → close`, cache `get → close → get`, and reading an existing encrypted S3 object. Stop rollout on linkage errors, closed-key reuse, or failed existing-object reads; quiesce KMS work and restore the previous complete application artifact. No object re-encryption or schema migration is required by this change.
+
 ## Testing
 
 Local AWS emulator integration tests are provided under `src/test/...`. They
