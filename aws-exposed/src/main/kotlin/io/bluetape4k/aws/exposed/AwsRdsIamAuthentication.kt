@@ -1,9 +1,5 @@
 package io.bluetape4k.aws.exposed
 
-import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
-import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenGenerator as CoreRdsIamAuthTokenGenerator
-import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenRequest as CoreRdsIamAuthTokenRequest
-import io.bluetape4k.aws.rds.AwsSdkRdsIamAuthTokenGenerator as CoreAwsSdkRdsIamAuthTokenGenerator
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireInRange
@@ -17,6 +13,10 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenGenerator as CoreRdsIamAuthTokenGenerator
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenRequest as CoreRdsIamAuthTokenRequest
+import io.bluetape4k.aws.rds.AwsSdkRdsIamAuthTokenGenerator as CoreAwsSdkRdsIamAuthTokenGenerator
 
 /**
  * physical JDBC connection을 열 때 사용할 인증 방식입니다.
@@ -135,29 +135,29 @@ fun interface AwsRdsIamAuthTokenGenerator {
 
 /**
  * AWS SDK Java v2 기반 RDS IAM authentication token generator입니다.
- *
- * 주입된 [rdsUtilities]는 호출자가 관리합니다. `RdsUtilities` 자체가 가벼운 utility 객체이고 호출자의
- * AWS SDK lifecycle과 공유될 수 있으므로 이 generator는 닫지 않습니다.
  */
 class AwsSdkRdsIamAuthTokenGenerator private constructor(
     private val delegate: CoreRdsIamAuthTokenGenerator,
 ): AwsRdsIamAuthTokenGenerator {
 
-    constructor(): this(CoreAwsSdkRdsIamAuthTokenGenerator())
+    companion object: KLogging() {
+        operator fun invoke(): AwsSdkRdsIamAuthTokenGenerator {
+            return AwsSdkRdsIamAuthTokenGenerator(CoreAwsSdkRdsIamAuthTokenGenerator())
+        }
 
-    constructor(rdsUtilities: RdsUtilities): this(CoreAwsSdkRdsIamAuthTokenGenerator(rdsUtilities))
+        /**
+         * 주입된 [rdsUtilities]는 호출자가 관리합니다. `RdsUtilities` 자체가 가벼운 utility 객체이고 호출자의
+         * AWS SDK lifecycle과 공유될 수 있으므로 이 generator는 닫지 않습니다.
+         */
+        operator fun invoke(rdsUtilities: RdsUtilities): AwsSdkRdsIamAuthTokenGenerator {
+            return AwsSdkRdsIamAuthTokenGenerator(CoreAwsSdkRdsIamAuthTokenGenerator(rdsUtilities))
+        }
+    }
 
     override fun generate(request: AwsRdsIamAuthTokenRequest): AwsSecretString =
         try {
-            AwsSecretString.of(
-                delegate.generate(
-                    CoreRdsIamAuthTokenRequest(
-                        region = request.region,
-                        hostname = request.hostname,
-                        port = request.port,
-                        username = request.username,
-                    ),
-                ).reveal(),
+            AwsSecretString(
+                delegate.generate(request.toCoreRdsIamAuthTokenRequest()).reveal(),
             )
         } catch (e: CoreRdsIamAuthTokenException) {
             throw AwsRdsIamAuthTokenException(
@@ -171,6 +171,14 @@ class AwsSdkRdsIamAuthTokenGenerator private constructor(
             )
         }
 }
+
+fun AwsRdsIamAuthTokenRequest.toCoreRdsIamAuthTokenRequest(): CoreRdsIamAuthTokenRequest =
+    CoreRdsIamAuthTokenRequest(
+        region = this.region,
+        hostname = this.hostname,
+        port = this.port,
+        username = this.username,
+    )
 
 /**
  * RDS IAM token 생성 실패를 나타내는 redaction-safe 예외입니다.
@@ -244,7 +252,7 @@ object AwsDatabasePasswordProviders: KLogging() {
     ): AwsDatabasePasswordProvider =
         when (properties.authenticationMode) {
             AwsDatabaseAuthenticationMode.STATIC_PASSWORD -> static(properties.password)
-            AwsDatabaseAuthenticationMode.RDS_IAM -> rdsIam(properties, rdsIamTokenGenerator, clock)
+            AwsDatabaseAuthenticationMode.RDS_IAM         -> rdsIam(properties, rdsIamTokenGenerator, clock)
         }
 }
 
