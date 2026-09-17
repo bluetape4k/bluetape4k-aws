@@ -6,7 +6,6 @@ import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requirePositiveNumber
 import java.io.Serializable
 
-
 /**
  * 기본 handle과 선택적 named handle에 사용할 Exposed database 연결 설정입니다.
  *
