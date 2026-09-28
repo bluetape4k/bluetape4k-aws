@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.concurrent.await
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSource
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSourceConfig
 import io.bluetape4k.logging.KLogging
@@ -19,9 +20,9 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.seconds
 import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -178,7 +179,7 @@ class AwsRdsIamAuthenticationTest {
         }
 
         start.countDown()
-        done.await(5, TimeUnit.SECONDS).shouldBeTrue()
+        done.await(5.seconds).shouldBeTrue()
         executor.shutdownNow()
         failure.get()?.let { throw it }
         counter.get() shouldBeEqualTo 2
