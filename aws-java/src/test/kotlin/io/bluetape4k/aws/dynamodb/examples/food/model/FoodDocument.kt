@@ -39,9 +39,10 @@ class FoodDocument: AbstractDynamoDocument() {
     var restraurantId: String = ""
     var state: FoodState = FoodState.UNKOWN
 
-    override fun equalProperties(other: Any): Boolean {
-        return other is FoodDocument && id == other.id && restraurantId == other.restraurantId
-    }
+    override fun equalProperties(other: Any): Boolean =
+        other is FoodDocument &&
+                id == other.id &&
+                restraurantId == other.restraurantId
 
     override fun hashCode(): Int = hashOf(id, restraurantId)
 

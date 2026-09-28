@@ -1,6 +1,9 @@
 package io.bluetape4k.aws.bedrock
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.utils.ShutdownQueue
 import io.mockk.every
 import io.mockk.mockk
@@ -20,11 +23,12 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClientB
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClientBuilder
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeServiceClientConfiguration
-import io.bluetape4k.assertions.assertFailsWith
 import java.net.URI
-import java.util.Optional
+import java.util.*
 
-class BedrockRuntimeClientSupportTest {
+class BedrockRuntimeClientSupportTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     private val credentials = StaticCredentialsProvider.create(
         AwsBasicCredentials.create("test", "test"),
@@ -163,7 +167,9 @@ class BedrockRuntimeClientSupportTest {
             credentialsProvider = credentials,
         ) {
             endpointOverride(URI("http://example.com"))
-        }.close()
+        }.use { client ->
+            client.serviceClientConfiguration().shouldNotBeNull()
+        }
 
         bedrockRuntimeAsyncClientOf(
             endpoint = URI("http://localhost:4566"),
@@ -171,6 +177,8 @@ class BedrockRuntimeClientSupportTest {
             credentialsProvider = credentials,
         ) {
             endpointOverride(URI("http://example.com"))
-        }.close()
+        }.use { client ->
+            client.serviceClientConfiguration().shouldNotBeNull()
+        }
     }
 }

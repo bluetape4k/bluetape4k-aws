@@ -53,7 +53,7 @@ open class AwsBluetapeException: BluetapeException {
      * // ex.cause === cause
      * ```
      */
-    constructor(message: String, cause: Throwable): super(message, cause)
+    constructor(message: String, cause: Throwable?): super(message, cause)
 
     /**
      * 원인만 포함한 예외 인스턴스를 생성합니다.
@@ -67,5 +67,5 @@ open class AwsBluetapeException: BluetapeException {
      * // ex.cause === cause
      * ```
      */
-    constructor(cause: Throwable): super(cause)
+    constructor(cause: Throwable?): super(cause)
 }

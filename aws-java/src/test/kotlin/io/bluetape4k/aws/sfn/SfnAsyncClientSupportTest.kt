@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.sfn
 
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.utils.ShutdownQueue
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -10,6 +12,7 @@ import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
@@ -21,13 +24,25 @@ import java.net.URI
 
 class SfnAsyncClientSupportTest {
 
+    companion object: KLogging()
+
+    private val builder = mockk<SfnAsyncClientBuilder>(relaxed = true)
+    private val client = mockk<SfnAsyncClient>(relaxed = true)
+    private val httpClient = mockk<SdkAsyncHttpClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(builder, client, httpClient)
+    }
+
     @Test
     fun `application async factory registers client and lets builder override explicit settings`() {
-        val builder = mockk<SfnAsyncClientBuilder>(relaxed = true)
-        val client = mockk<SfnAsyncClient>(relaxed = true)
+
         val endpoint = URI("http://localhost:4566")
         val httpClient = mockk<SdkAsyncHttpClient>()
-        val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
+        val credentials = StaticCredentialsProvider.create(
+            AwsBasicCredentials.create("test", "test")
+        )
 
         mockkStatic(SfnAsyncClient::class)
         mockkObject(ShutdownQueue)
@@ -63,10 +78,6 @@ class SfnAsyncClientSupportTest {
 
     @Test
     fun `with async factory closes service client without registering it or closing external HTTP client`() = runTest {
-        val builder = mockk<SfnAsyncClientBuilder>(relaxed = true)
-        val client = mockk<SfnAsyncClient>(relaxed = true)
-        val httpClient = mockk<SdkAsyncHttpClient>(relaxed = true)
-
         mockkStatic(SfnAsyncClient::class)
         mockkObject(ShutdownQueue)
         try {

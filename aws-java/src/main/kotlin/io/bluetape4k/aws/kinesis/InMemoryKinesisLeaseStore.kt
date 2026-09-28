@@ -1,11 +1,14 @@
 package io.bluetape4k.aws.kinesis
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.io.Serializable
 import java.time.Clock
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /**
  * 단위 테스트와 Floci contract 검증용 process-local lease 저장소입니다.
@@ -15,50 +18,62 @@ import kotlinx.coroutines.sync.withLock
  */
 class InMemoryKinesisLeaseStore(
     private val clock: Clock = Clock.systemUTC(),
-) : KinesisLeaseStore {
+): KinesisLeaseStore {
 
-    private data class Entry(val lease: KinesisLease, val expiresAt: Instant)
+    companion object: KLogging()
+
+    private data class Entry(val lease: KinesisLease, val expiresAt: Instant): Serializable
 
     private val entries = ConcurrentHashMap<KinesisShardKey, Entry>()
     private val counters = ConcurrentHashMap<KinesisShardKey, Long>()
     private val mutex = Mutex()
 
-    override suspend fun acquire(key: KinesisShardKey, ownerId: String, leaseDuration: Duration): KinesisLease? =
-        mutex.withLock {
-            ownerId.requireKinesisIdentifier("ownerId")
-            require(leaseDuration.isPositive()) { "leaseDuration must be positive" }
-            val now = clock.instant()
-            val current = entries[key]
-            if (current != null && current.expiresAt.isAfter(now)) {
-                if (current.lease.ownerId != ownerId) return@withLock null
-                entries[key] = current.copy(expiresAt = now.plusNanos(leaseDuration.inWholeNanoseconds))
-                return@withLock current.lease
-            }
+    override suspend fun acquire(
+        key: KinesisShardKey,
+        ownerId: String,
+        leaseDuration: Duration
+    ): KinesisLease? = mutex.withLock {
+        ownerId.requireKinesisIdentifier("ownerId")
+        require(leaseDuration.isPositive()) { "leaseDuration must be positive" }
 
-            val previousCounter = counters[key] ?: current?.lease?.leaseCounter ?: 0L
-            require(previousCounter < Long.MAX_VALUE) {
-                "leaseCounter overflow for key=${key.canonicalValue}"
-            }
-            val counter = previousCounter + 1L
-            val lease = KinesisLease(key, ownerId, counter)
-            entries[key] = Entry(lease, now.plusNanos(leaseDuration.inWholeNanoseconds))
-            counters[key] = counter
-            lease
+        log.debug { "acquire KinesisLease. key=$key, ownerId=$ownerId, leaseDuration=$leaseDuration" }
+
+        val now = clock.instant()
+        val current = entries[key]
+        if (current != null && current.expiresAt.isAfter(now)) {
+            if (current.lease.ownerId != ownerId) return@withLock null
+            entries[key] = current.copy(expiresAt = now.plusNanos(leaseDuration.inWholeNanoseconds))
+            return@withLock current.lease
         }
 
-    override suspend fun renew(lease: KinesisLease, leaseDuration: Duration): KinesisLease? =
-        mutex.withLock {
-            require(leaseDuration.isPositive()) { "leaseDuration must be positive" }
-            val current = entries[lease.key]
-            val now = clock.instant()
-            if (current == null || current.lease != lease || !current.expiresAt.isAfter(now)) {
-                return@withLock null
-            }
-            entries[lease.key] = Entry(lease, now.plusNanos(leaseDuration.inWholeNanoseconds))
-            lease
+        val previousCounter = counters[key] ?: current?.lease?.leaseCounter ?: 0L
+        require(previousCounter < Long.MAX_VALUE) { "leaseCounter overflow for key=${key.canonicalValue}" }
+
+        val counter = previousCounter + 1L
+        val lease = KinesisLease(key, ownerId, counter)
+        entries[key] = Entry(lease, now.plusNanos(leaseDuration.inWholeNanoseconds))
+        counters[key] = counter
+        lease
+    }
+
+    override suspend fun renew(
+        lease: KinesisLease,
+        leaseDuration: Duration
+    ): KinesisLease? = mutex.withLock {
+        require(leaseDuration.isPositive()) { "leaseDuration must be positive" }
+        log.debug { "renew KinesisLease. leaseDuration=$leaseDuration" }
+
+        val current = entries[lease.key]
+        val now = clock.instant()
+        if (current == null || current.lease != lease || !current.expiresAt.isAfter(now)) {
+            return@withLock null
         }
+        entries[lease.key] = Entry(lease, now.plusNanos(leaseDuration.inWholeNanoseconds))
+        lease
+    }
 
     override suspend fun release(lease: KinesisLease) {
+        log.debug { "release KinesisLease. lease=$lease" }
         mutex.withLock {
             if (entries[lease.key]?.lease == lease) entries.remove(lease.key)
         }

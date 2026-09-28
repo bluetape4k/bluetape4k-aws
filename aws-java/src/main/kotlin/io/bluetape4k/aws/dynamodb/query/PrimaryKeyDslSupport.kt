@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.dynamodb.query
 
+import io.bluetape4k.support.checkNotNull
 import java.io.Serializable
 
 /**
@@ -36,7 +37,7 @@ class PrimaryKeyBuilder(val keyName: String = "primaryKey") {
     /** 설정된 비교자를 기반으로 [PrimaryKey]를 생성합니다. */
     fun build(): PrimaryKey {
         // WHY: eq() 호출 없이 build() 시 명확한 에러 메시지 제공 (non-null assertion 대신)
-        val cmp = checkNotNull(comparator) { "PrimaryKeyBuilder: comparator must be set via 'eq' before build()" }
+        val cmp = comparator.checkNotNull { "PrimaryKeyBuilder: comparator must be set via 'eq' before build()" }
         return PrimaryKey(keyName, cmp)
     }
 }

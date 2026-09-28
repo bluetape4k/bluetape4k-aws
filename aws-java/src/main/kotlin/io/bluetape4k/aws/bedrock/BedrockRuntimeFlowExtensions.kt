@@ -3,6 +3,10 @@ package io.bluetape4k.aws.bedrock
 import io.bluetape4k.aws.bedrock.model.converseStreamRequestOf
 import io.bluetape4k.aws.bedrock.model.textDeltaOrNull
 import io.bluetape4k.coroutines.flow.extensions.castNotNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -32,25 +36,24 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRespon
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration
 import software.amazon.awssdk.services.bedrockruntime.model.Message
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock as withReentrantLock
 
 private sealed interface StreamTerminal {
-    data object Active : StreamTerminal
-    data object Completed : StreamTerminal
-    data class Failed(val cause: Throwable) : StreamTerminal
-    data object Cancelled : StreamTerminal
+    data object Active: StreamTerminal
+    data object Completed: StreamTerminal
+    data class Failed(val cause: Throwable): StreamTerminal
+    data object Cancelled: StreamTerminal
 }
 
 private sealed interface AttemptCompletion {
-    data object Succeeded : AttemptCompletion
-    data class Failed(val cause: Throwable) : AttemptCompletion
-    data class Cancelled(val cleanupFailure: Throwable?) : AttemptCompletion
+    data object Succeeded: AttemptCompletion
+    data class Failed(val cause: Throwable): AttemptCompletion
+    data class Cancelled(val cleanupFailure: Throwable?): AttemptCompletion
 }
 
 private const val MAX_RETAINED_SUPPRESSED_FAILURES = 16
@@ -62,7 +65,7 @@ private data class FailureSnapshot(
     val overflowCount: Long,
 )
 
-private class SuppressedFailureOverflow(count: Long) :
+private class SuppressedFailureOverflow(count: Long):
     RuntimeException("suppressed failure count exceeded bound; dropped=$count") {
     override fun fillInStackTrace(): Throwable = this
 }
@@ -75,6 +78,9 @@ private class SuppressedFailureOverflow(count: Long) :
  * additional synchronization.
  */
 private class BoundedFailureAccumulator(initialPrimary: Throwable? = null) {
+
+    companion object: KLogging()
+
     private var primary: Throwable? = initialPrimary
     private val suppressed = ArrayList<Throwable>(MAX_RETAINED_SUPPRESSED_FAILURES)
     private var overflowCount = 0L
@@ -88,7 +94,10 @@ private class BoundedFailureAccumulator(initialPrimary: Throwable? = null) {
 
     fun record(failure: Throwable?) {
         check(materialized == null) { "failure accumulator is already materialized" }
-        if (failure == null || failure is CancellationException || retainedIdentities.contains(failure)) return
+        if (failure == null || failure is CancellationException || retainedIdentities.contains(failure)) {
+            return
+        }
+
         if (primary == null) {
             primary = failure
             retainedIdentities += failure
@@ -103,7 +112,9 @@ private class BoundedFailureAccumulator(initialPrimary: Throwable? = null) {
     /** Selects an authoritative operation, publisher, or collector cause. */
     fun selectPrimary(authoritative: Throwable?) {
         check(materialized == null) { "failure accumulator is already materialized" }
-        if (authoritative == null || primary === authoritative) return
+        if (authoritative == null || primary === authoritative) {
+            return
+        }
 
         val existingIndex = suppressed.indexOfFirst { it === authoritative }
         if (primary == null) {
@@ -173,19 +184,21 @@ private data class CallbackDrain(
     val completedFailure: FailureSnapshot,
 )
 
-private class StreamAttempt<T : Any>(
+private class StreamAttempt<T: Any>(
     val generation: Long,
     val publisher: SdkPublisher<T>,
 ) {
+    companion object: KLogging()
+
     val completion = CompletableDeferred<AttemptCompletion>()
-    private val cancellationStarted = AtomicBoolean()
+    private val cancellationStarted = atomic(false)
     private val cancellationResult = CompletableDeferred<Throwable?>()
     val cancellationRequested = AtomicBoolean()
     val jobReady = CompletableDeferred<Job>()
 
     @Suppress("TooGenericExceptionCaught")
     suspend fun cancelOnce(): Throwable? {
-        if (cancellationStarted.compareAndSet(false, true)) {
+        if (cancellationStarted.compareAndSet(expect = false, update = true)) {
             val failure = withContext(NonCancellable) {
                 try {
                     val job = jobReady.await()
@@ -196,7 +209,7 @@ private class StreamAttempt<T : Any>(
                         is AttemptCompletion.Cancelled -> outcome.cleanupFailure
                         AttemptCompletion.Succeeded,
                         is AttemptCompletion.Failed,
-                        -> null
+                            -> null
                     }
                 } catch (_: CancellationException) {
                     null
@@ -211,10 +224,12 @@ private class StreamAttempt<T : Any>(
 }
 
 @Suppress("TooManyFunctions")
-private class StreamCoordinator<T : Any>(
+private class StreamCoordinator<T: Any>(
     private val scope: CoroutineScope,
     private val emit: suspend (T) -> Unit,
 ) {
+    companion object: KLoggingChannel()
+    
     private val mutex = Mutex()
     private val callbackLock = ReentrantLock()
     private val callbackSequence = AtomicLong()
@@ -260,7 +275,7 @@ private class StreamCoordinator<T : Any>(
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod", "TooGenericExceptionCaught")
-    private suspend fun replace(sequence: Long, publisher: SdkPublisher<T>): FailureSnapshot? {
+    private suspend fun replace(sequence: Long, publisher: SdkPublisher<T>): FailureSnapshot {
         val failures = BoundedFailureAccumulator()
         var handedOff = false
         try {
@@ -302,8 +317,8 @@ private class StreamCoordinator<T : Any>(
                                 .collect { value ->
                                     val currentGeneration = mutex.withLock {
                                         terminal is StreamTerminal.Active &&
-                                            generation == sequence &&
-                                            attempt === current
+                                                generation == sequence &&
+                                                attempt === current
                                     }
                                     if (currentGeneration) emit(value)
                                 }
@@ -355,6 +370,8 @@ private class StreamCoordinator<T : Any>(
     suspend fun futureSucceeded() {
         val callbacks = closeCallbacks()
         drainCallbacks(callbacks)
+
+        log.debug { "current terminal=$terminal" }
         val current = mutex.withLock {
             if (terminal !is StreamTerminal.Active) return
             futureSucceeded = true
@@ -369,7 +386,7 @@ private class StreamCoordinator<T : Any>(
                 is AttemptCompletion.Cancelled -> recordOperationFailure(outcome.cleanupFailure)
                 AttemptCompletion.Succeeded,
                 null,
-                -> Unit
+                    -> Unit
             }
         }
         mutex.withLock {
@@ -377,6 +394,7 @@ private class StreamCoordinator<T : Any>(
                 terminal = StreamTerminal.Completed
             }
         }
+        log.debug { "final terminal=$terminal" }
     }
 
     suspend fun futureFailed(cause: Throwable) {
@@ -399,6 +417,7 @@ private class StreamCoordinator<T : Any>(
     }
 
     suspend fun cancel(cause: CancellationException) {
+        log.debug { "canceling $cause" }
         withContext(NonCancellable) {
             selectOperationPrimary(cause)
             val callbacks = closeCallbacks()
@@ -486,8 +505,10 @@ private class StreamCoordinator<T : Any>(
 fun BedrockRuntimeAsyncClient.converseStreamFlow(
     request: ConverseStreamRequest,
 ): Flow<ConverseStreamOutput> = channelFlow {
-    val coordinator = StreamCoordinator<ConverseStreamOutput>(this) { send(it) }
-    val handler = object : ConverseStreamResponseHandler {
+    val coordinator = StreamCoordinator(this) { output ->
+        send(output)
+    }
+    val handler = object: ConverseStreamResponseHandler {
         override fun responseReceived(response: ConverseStreamResponse) = Unit
 
         override fun onEventStream(publisher: SdkPublisher<ConverseStreamOutput>) {
@@ -544,10 +565,10 @@ fun Flow<ConverseStreamOutput>.textDeltaFlow(): Flow<String> =
     map(ConverseStreamOutput::textDeltaOrNull).castNotNull<String>()
 
 @Suppress("TooGenericExceptionCaught")
-private fun <T : Any> SdkPublisher<T>.cancelImmediately(): Throwable? =
+private fun <T: Any> SdkPublisher<T>.cancelImmediately(): Throwable? =
     try {
         subscribe(
-            object : Subscriber<T> {
+            object: Subscriber<T> {
                 override fun onSubscribe(subscription: Subscription) {
                     subscription.cancel()
                 }
@@ -555,7 +576,7 @@ private fun <T : Any> SdkPublisher<T>.cancelImmediately(): Throwable? =
                 override fun onNext(item: T) = Unit
                 override fun onError(throwable: Throwable) = Unit
                 override fun onComplete() = Unit
-            },
+            }
         )
         null
     } catch (failure: Throwable) {

@@ -267,8 +267,8 @@ private data class SnsTopicArn(
 private fun parseTopicArn(topicArn: String): SnsTopicArn {
     val parts = topicArn.split(':')
     val hasArnShape = parts.size >= MIN_SNS_TOPIC_ARN_PARTS &&
-        parts[SNS_ARN_PREFIX_INDEX] == "arn" &&
-        parts[SNS_ARN_SERVICE_INDEX] == "sns"
+            parts[SNS_ARN_PREFIX_INDEX] == "arn" &&
+            parts[SNS_ARN_SERVICE_INDEX] == "sns"
     if (!hasArnShape || parts[SNS_ARN_PARTITION_INDEX].isBlank() || parts[SNS_ARN_REGION_INDEX].isBlank()) {
         fail(SnsHttpEnvelopeRejectionReason.INVALID_TOPIC_ARN, "topicArn must be an SNS ARN.")
     }
@@ -289,11 +289,11 @@ private fun Map<String, Any?>.requireSigningCertUri(topic: SnsTopicArn): URI {
     val labels = host.split('.')
 
     val allowedAuthority = uri.scheme.equals("https", ignoreCase = true) &&
-        uri.rawUserInfo == null &&
-        uri.port == -1
+            uri.rawUserInfo == null &&
+            uri.port == -1
     val allowedLocation = uri.rawQuery == null && uri.rawFragment == null && uri.path.endsWith(".pem")
     val allowedHost = hostMatchesPartition(labels, topic.partition) &&
-        labels[SNS_SIGNING_CERT_REGION_INDEX] == topic.region
+            labels[SNS_SIGNING_CERT_REGION_INDEX] == topic.region
     if (!allowedAuthority || !allowedLocation || !allowedHost) {
         failInvalidSigningCertUri()
     }
@@ -309,7 +309,7 @@ private fun hostMatchesPartition(labels: List<String>, partition: String): Boole
             labels.drop(SNS_AMAZONAWS_INDEX) == listOf("amazonaws", "com")
         "aws-cn" ->
             labels.drop(SNS_AMAZONAWS_INDEX) == listOf("amazonaws", "com", "cn")
-        else -> false
+        else     -> false
     }
 }
 

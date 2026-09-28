@@ -52,7 +52,7 @@ data class KinesisCanonicalObservation(
 
 /** 기존 Java SDK v2 event를 canonical schema v1 값으로 변환합니다. */
 fun KinesisFlowEvent.toCanonicalObservations(): List<KinesisCanonicalObservation> = when (this) {
-    is KinesisFlowEvent.Shard -> {
+    is KinesisFlowEvent.Shard      -> {
         if (eventKind == "shard" && outcome == "completed") {
             listOf(
                 canonicalObservation("checkpoint", "success", reason = "shard_end"),
@@ -63,7 +63,7 @@ fun KinesisFlowEvent.toCanonicalObservations(): List<KinesisCanonicalObservation
         }
     }
 
-    is KinesisFlowEvent.Lease -> listOf(
+    is KinesisFlowEvent.Lease      -> listOf(
         canonicalObservation(
             eventKind = eventKind,
             outcome = when (outcome) {
@@ -75,15 +75,27 @@ fun KinesisFlowEvent.toCanonicalObservations(): List<KinesisCanonicalObservation
         )
     )
 
-    is KinesisFlowEvent.Batch -> listOf(
-        canonicalObservation(eventKind, canonicalOutcome(outcome), reason, retryClass, count = recordCount)
+    is KinesisFlowEvent.Batch      -> listOf(
+        canonicalObservation(
+            eventKind,
+            canonicalOutcome(outcome),
+            reason,
+            retryClass,
+            count = recordCount
+        )
     )
 
     is KinesisFlowEvent.Checkpoint -> listOf(
-        canonicalObservation("record", canonicalOutcome(outcome), reason, retryClass, count = 1)
+        canonicalObservation(
+            "record",
+            canonicalOutcome(outcome),
+            reason,
+            retryClass,
+            count = 1
+        )
     )
 
-    is KinesisFlowEvent.Discovery -> listOf(
+    is KinesisFlowEvent.Discovery  -> listOf(
         KinesisCanonicalObservation(
             eventKind = eventKind,
             outcome = canonicalOutcome(outcome),
@@ -94,7 +106,7 @@ fun KinesisFlowEvent.toCanonicalObservations(): List<KinesisCanonicalObservation
         )
     )
 
-    is KinesisFlowEvent.Retry -> listOf(
+    is KinesisFlowEvent.Retry      -> listOf(
         canonicalObservation(
             eventKind = eventKind,
             outcome = canonicalOutcome(outcome),
@@ -129,21 +141,21 @@ private fun KinesisFlowEvent.canonicalObservation(
 
 private val KinesisFlowEvent.canonicalStreamToken: String?
     get() = when (this) {
-        is KinesisFlowEvent.Shard -> streamToken
-        is KinesisFlowEvent.Lease -> streamToken
-        is KinesisFlowEvent.Batch -> streamToken
+        is KinesisFlowEvent.Shard     -> streamToken
+        is KinesisFlowEvent.Lease     -> streamToken
+        is KinesisFlowEvent.Batch     -> streamToken
         is KinesisFlowEvent.Checkpoint -> streamToken
-        is KinesisFlowEvent.Retry -> streamToken
+        is KinesisFlowEvent.Retry     -> streamToken
         is KinesisFlowEvent.Discovery -> streamToken
     }
 
 private val KinesisFlowEvent.canonicalShardToken: String?
     get() = when (this) {
-        is KinesisFlowEvent.Shard -> shardToken
-        is KinesisFlowEvent.Lease -> shardToken
-        is KinesisFlowEvent.Batch -> shardToken
+        is KinesisFlowEvent.Shard     -> shardToken
+        is KinesisFlowEvent.Lease     -> shardToken
+        is KinesisFlowEvent.Batch     -> shardToken
         is KinesisFlowEvent.Checkpoint -> shardToken
-        is KinesisFlowEvent.Retry -> shardToken
+        is KinesisFlowEvent.Retry     -> shardToken
         is KinesisFlowEvent.Discovery -> null
     }
 
@@ -157,8 +169,8 @@ private val KinesisFlowEvent.canonicalOwnerToken: String?
 private fun canonicalOutcome(outcome: String): String = when (outcome) {
     "started" -> "started"
     "failed" -> "failed"
-    "lost" -> "lost"
-    else -> "success"
+    "lost"   -> "lost"
+    else     -> "success"
 }
 
 private val CANONICAL_KINESIS_TOKEN = Regex("[0-9a-f]{${KinesisCanonicalObservation.TOKEN_LENGTH}}")

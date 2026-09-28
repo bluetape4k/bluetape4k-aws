@@ -4,12 +4,15 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.aws.sfn.model.describeExecutionRequestOf
+import io.bluetape4k.coroutines.support.log
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -17,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sfn.SfnAsyncClient
 import software.amazon.awssdk.services.sfn.model.DescribeExecutionRequest
@@ -31,22 +35,32 @@ import kotlin.time.Duration.Companion.seconds
 
 class SfnExecutionFlowTest {
 
-    private companion object {
+    private companion object: KLogging() {
         const val EXECUTION_ARN = "arn:aws:states:ap-northeast-2:123456789012:execution:orders:order-1"
+    }
+
+    private val client = mockk<SfnAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
     }
 
     @Test
     fun `running 뒤 terminal raw response를 방출하고 끝난다`() = runTest {
         val running = response(ExecutionStatus.RUNNING)
         val succeeded = response(ExecutionStatus.SUCCEEDED)
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
             CompletableFuture.completedFuture(running),
             CompletableFuture.completedFuture(succeeded),
         )
 
         client.describeExecutionFlow(EXECUTION_ARN).toList() shouldBeEqualTo listOf(running, succeeded)
-        verify(exactly = 2) { client.describeExecution(any<DescribeExecutionRequest>()) }
+
+        verify(exactly = 2) {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        }
     }
 
     @Test
@@ -54,7 +68,7 @@ class SfnExecutionFlowTest {
         val running = response(ExecutionStatus.RUNNING)
         val succeeded = response(ExecutionStatus.SUCCEEDED)
         val second = CompletableFuture<DescribeExecutionResponse>()
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
             CompletableFuture.completedFuture(running),
             second,
@@ -78,11 +92,12 @@ class SfnExecutionFlowTest {
     @Test
     fun `take one은 추가 조회 없이 첫 응답에서 끝난다`() = runTest {
         val running = response(ExecutionStatus.RUNNING)
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-            CompletableFuture.completedFuture(running)
+                CompletableFuture.completedFuture(running)
 
         client.describeExecutionFlow(EXECUTION_ARN).take(1).toList() shouldBeEqualTo listOf(running)
+
         verify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
         verify(exactly = 0) { client.stopExecution(any<StopExecutionRequest>()) }
     }
@@ -92,19 +107,20 @@ class SfnExecutionFlowTest {
         val running = response(ExecutionStatus.RUNNING)
         val succeeded = response(ExecutionStatus.SUCCEEDED)
         val release = CompletableDeferred<Unit>()
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
             CompletableFuture.completedFuture(running),
             CompletableFuture.completedFuture(succeeded),
         )
-        val seen = mutableListOf<DescribeExecutionResponse>()
 
+        val seen = mutableListOf<DescribeExecutionResponse>()
         val collector = launch {
             client.describeExecutionFlow(EXECUTION_ARN).collect {
                 seen += it
                 if (it === running) release.await()
             }
-        }
+        }.log("Collector")
+
         runCurrent()
         verify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
         seen shouldBeEqualTo listOf(running)
@@ -122,7 +138,7 @@ class SfnExecutionFlowTest {
     @Test
     fun `취소하면 현재 future만 취소하고 client와 execution을 건드리지 않는다`() = runTest {
         val future = CompletableFuture<DescribeExecutionResponse>()
-        val client = mockk<SfnAsyncClient>(relaxed = true)
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returns future
 
         val collector = launch { client.describeExecutionFlow(EXECUTION_ARN).toList() }
@@ -138,9 +154,9 @@ class SfnExecutionFlowTest {
     @Test
     fun `SDK 조회 실패는 같은 예외로 전파하고 추가 조회하지 않는다`() = runTest {
         val failure = IllegalStateException("describe failed")
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-            CompletableFuture.failedFuture(failure)
+                CompletableFuture.failedFuture(failure)
 
         val error = assertFailsWith<IllegalStateException> {
             client.describeExecutionFlow(EXECUTION_ARN).collect()
@@ -153,9 +169,9 @@ class SfnExecutionFlowTest {
     @Test
     fun `pending redrive는 terminal raw response로 끝난다`() = runTest {
         val pendingRedrive = response(ExecutionStatus.PENDING_REDRIVE)
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-            CompletableFuture.completedFuture(pendingRedrive)
+                CompletableFuture.completedFuture(pendingRedrive)
 
         client.describeExecutionFlow(EXECUTION_ARN).toList() shouldBeEqualTo listOf(pendingRedrive)
         verify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
@@ -164,9 +180,9 @@ class SfnExecutionFlowTest {
     @Test
     fun `null status는 방출하지 않고 고정 예외 메시지를 반환한다`() = runTest {
         val response = response(null)
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-            CompletableFuture.completedFuture(response)
+                CompletableFuture.completedFuture(response)
         val emissions = mutableListOf<DescribeExecutionResponse>()
 
         val error = assertFailsWith<IllegalStateException> {
@@ -182,9 +198,9 @@ class SfnExecutionFlowTest {
     @Test
     fun `unknown status는 statusAsString을 예외 메시지에 사용한다`() = runTest {
         val response = DescribeExecutionResponse.builder().status("FUTURE_STATUS").build()
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returns
-            CompletableFuture.completedFuture(response)
+                CompletableFuture.completedFuture(response)
         val emissions = mutableListOf<DescribeExecutionResponse>()
 
         val error = assertFailsWith<IllegalStateException> {
@@ -201,19 +217,20 @@ class SfnExecutionFlowTest {
         assertFailsWith<IllegalArgumentException> { SfnExecutionPollingOptions(999.milliseconds) }
         assertFailsWith<IllegalArgumentException> { SfnExecutionPollingOptions(Duration.INFINITE) }
         assertFailsWith<IllegalArgumentException> { SfnExecutionPollingOptions(-Duration.INFINITE) }
+
         SfnExecutionPollingOptions(1.seconds).pollInterval shouldBeEqualTo 1.seconds
     }
 
     @Test
     fun `request overload는 모든 조회에서 같은 immutable request를 전달한다`() = runTest {
-        val request = DescribeExecutionRequest.builder()
-            .executionArn(EXECUTION_ARN)
-            .includedData(IncludedData.ALL_DATA)
-            .build()
+        val request = describeExecutionRequestOf(EXECUTION_ARN) {
+            includedData(IncludedData.ALL_DATA)
+        }
+
         val running = response(ExecutionStatus.RUNNING)
         val succeeded = response(ExecutionStatus.SUCCEEDED)
         val requests = mutableListOf<DescribeExecutionRequest>()
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(capture(requests)) } returnsMany listOf(
             CompletableFuture.completedFuture(running),
             CompletableFuture.completedFuture(succeeded),
@@ -231,7 +248,7 @@ class SfnExecutionFlowTest {
     fun `같은 cold flow의 collector는 각각 독립적으로 조회한다`() = runTest {
         val running = response(ExecutionStatus.RUNNING)
         val succeeded = response(ExecutionStatus.SUCCEEDED)
-        val client = mockk<SfnAsyncClient>()
+
         every { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(
             CompletableFuture.completedFuture(running),
             CompletableFuture.completedFuture(succeeded),
@@ -242,7 +259,10 @@ class SfnExecutionFlowTest {
 
         flow.toList() shouldBeEqualTo listOf(running, succeeded)
         flow.toList() shouldBeEqualTo listOf(running, succeeded)
-        verify(exactly = 4) { client.describeExecution(any<DescribeExecutionRequest>()) }
+
+        verify(exactly = 4) {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        }
     }
 
     private fun response(status: ExecutionStatus?): DescribeExecutionResponse =

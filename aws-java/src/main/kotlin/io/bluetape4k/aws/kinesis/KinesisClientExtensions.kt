@@ -37,10 +37,11 @@ fun KinesisClient.createStream(
 ): CreateStreamResponse {
     streamName.requireNotBlank("streamName")
     shardCount.validateKinesisShardCount("shardCount")
-    return createStream(createStreamRequest {
+    val request = createStreamRequest {
         streamName(streamName)
         shardCount(shardCount)
-    })
+    }
+    return createStream(request)
 }
 
 /**
@@ -66,11 +67,12 @@ fun KinesisClient.putRecord(
 ): PutRecordResponse {
     streamName.requireNotBlank("streamName")
     partitionKey.requireNotBlank("partitionKey")
-    return putRecord(putRecordRequest {
+    val request = putRecordRequest {
         streamName(streamName)
         partitionKey(partitionKey)
         data(data)
-    })
+    }
+    return putRecord(request)
 }
 
 /**
@@ -96,10 +98,12 @@ fun KinesisClient.putRecords(
 ): PutRecordsResponse {
     streamName.requireNotBlank("streamName")
     entries.validateKinesisPutRecordsEntries("entries")
-    return putRecords(putRecordsRequest {
+
+    val request = putRecordsRequest {
         streamName(streamName)
         records(entries)
-    })
+    }
+    return putRecords(request)
 }
 
 /**
@@ -125,11 +129,12 @@ fun KinesisClient.getShardIterator(
 ): GetShardIteratorResponse {
     streamName.requireNotBlank("streamName")
     shardId.requireNotBlank("shardId")
-    return getShardIterator(getShardIteratorRequest {
+    val request = getShardIteratorRequest {
         streamName(streamName)
         shardId(shardId)
         shardIteratorType(type)
-    })
+    }
+    return getShardIterator(request)
 }
 
 /**
@@ -149,10 +154,11 @@ fun KinesisClient.getRecords(
 ): GetRecordsResponse {
     shardIterator.requireNotBlank("shardIterator")
     limit.validateKinesisGetRecordsLimit("limit")
-    return getRecords(getRecordsRequest {
+    val request = getRecordsRequest {
         shardIterator(shardIterator)
         limit(limit)
-    })
+    }
+    return getRecords(request)
 }
 
 /**
@@ -169,9 +175,10 @@ fun KinesisClient.describeStream(
     streamName: String,
 ): DescribeStreamResponse {
     streamName.requireNotBlank("streamName")
-    return describeStream(describeStreamRequest {
+    val request = describeStreamRequest {
         streamName(streamName)
-    })
+    }
+    return describeStream(request)
 }
 
 /**
@@ -188,7 +195,8 @@ fun KinesisClient.deleteStream(
     streamName: String,
 ): DeleteStreamResponse {
     streamName.requireNotBlank("streamName")
-    return deleteStream(deleteStreamRequest {
+    val request = deleteStreamRequest {
         streamName(streamName)
-    })
+    }
+    return deleteStream(request)
 }

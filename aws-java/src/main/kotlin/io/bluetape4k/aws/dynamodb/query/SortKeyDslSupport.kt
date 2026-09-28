@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.dynamodb.query
 
+import io.bluetape4k.support.checkNotNull
 import java.io.Serializable
 
 /**
@@ -38,7 +39,9 @@ class SortKeyBuilder(val keyName: String = "sortKey") {
     /** 설정된 비교 연산자를 기반으로 [SortKey]를 생성합니다. */
     fun build(): SortKey {
         // WHY: comparator 미설정 시 명확한 에러 메시지 제공 (non-null assertion 대신)
-        val cmp = checkNotNull(comparator) { "SortKeyBuilder: comparator must be set via 'eq', 'between', etc. before build()" }
+        val cmp = comparator.checkNotNull {
+            "SortKeyBuilder: comparator must be set via 'eq', 'between', etc. before build()"
+        }
         return SortKey(keyName, cmp)
     }
 }

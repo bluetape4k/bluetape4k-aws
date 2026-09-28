@@ -1,14 +1,14 @@
 package io.bluetape4k.aws.sqs
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.sqs.model.sendMessageBatchRequestEntry
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.trace
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldHaveSize
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -34,8 +34,8 @@ class SqsAsyncClientTest: AbstractSqsTest() {
         val url = asyncClient.createQueue(QUEUE_NAME)
         queueUrl = asyncClient.getQueueUrl(QUEUE_NAME).queueUrl()
 
-        queueUrl shouldBeEqualTo url
         log.debug { "queue url=$queueUrl" }
+        queueUrl shouldBeEqualTo url
     }
 
     @Test
@@ -43,18 +43,17 @@ class SqsAsyncClientTest: AbstractSqsTest() {
     fun `list queues`() = runSuspendIO {
         val response = asyncClient.listQueuesSuspend(QUEUE_PREFIX)
 
+        response.queueUrls().forEach { log.debug { "queue url=$it" } }
         response.queueUrls() shouldHaveSize 1
-        response.queueUrls().forEach {
-            log.debug { "queue url=$it" }
-        }
     }
 
     @Test
     @Order(3)
     fun `send message`() = runSuspendIO {
         val response = asyncClient.send(queueUrl, "Hello, World!")
-        response.messageId().shouldNotBeEmpty()
+
         log.debug { "response=$response" }
+        response.messageId().shouldNotBeEmpty()
     }
 
     @Test
@@ -70,10 +69,9 @@ class SqsAsyncClientTest: AbstractSqsTest() {
             }
         }
         val response = asyncClient.sendBatch(queueUrl, entries)
+
+        response.successful().forEach { log.debug { "result entry=$it" } }
         response.successful() shouldHaveSize entries.size
-        response.successful().forEach {
-            log.debug { "result entry=$it" }
-        }
     }
 
     @Test
@@ -81,16 +79,16 @@ class SqsAsyncClientTest: AbstractSqsTest() {
     fun `receive messages`() = runSuspendIO {
         val messages = asyncClient.receiveMessages(queueUrl, 3).messages()
 
+        messages.forEach { log.trace { "message=$it" } }
         messages shouldHaveSize 3
-        messages.forEach {
-            log.trace { "message=$it" }
-        }
     }
 
     @Test
     @Order(6)
     fun `change messages`() = runSuspendIO {
-        val messages = asyncClient.receiveMessages(queueUrl, 3).messages()
+        val messages = asyncClient
+            .receiveMessages(queueUrl, 3)
+            .messages()
 
         val responses = messages.map { message ->
             asyncClient.changeMessageVisibility(queueUrl, message.receiptHandle(), 10)
@@ -98,30 +96,32 @@ class SqsAsyncClientTest: AbstractSqsTest() {
                 it.queueUrl(queueUrl).receiptHandle(message.receiptHandle()).visibilityTimeout(10)
             }
         }
+
+        responses.forEach { log.debug { "response  metadata=${it.responseMetadata()}" } }
         responses shouldHaveSize messages.size
-        responses.forEach {
-            log.debug { "response  metadata=${it.responseMetadata()}" }
-        }
     }
 
     @Test
     @Order(7)
     fun `delete messages`() = runSuspendIO {
-        val messages = asyncClient.receiveMessages(queueUrl, 3).messages()
+        val messages = asyncClient
+            .receiveMessages(queueUrl, 3)
+            .messages()
 
         val responses = messages.map { message ->
             asyncClient.deleteMessage(queueUrl, message.receiptHandle())
         }
+
+        responses.forEach { log.debug { "response=$it" } }
         responses shouldHaveSize messages.size
-        responses.forEach {
-            log.debug { "response=$it" }
-        }
     }
 
     @Test
     @Order(8)
     fun `delete queue`() = runSuspendIO {
         val response: DeleteQueueResponse = asyncClient.deleteQueue(queueUrl)
+
+        log.debug { "delete queue response=$response" }
         response.responseMetadata().requestId().shouldNotBeEmpty()
     }
 }

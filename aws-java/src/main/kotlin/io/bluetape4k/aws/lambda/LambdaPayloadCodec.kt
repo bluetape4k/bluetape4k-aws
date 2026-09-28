@@ -21,14 +21,14 @@ interface LambdaPayloadCodec<T> {
 object LambdaPayloadCodecs {
 
     /** 원시 바이트 payload를 복사 기반으로 처리하는 codec입니다. */
-    val bytes: LambdaPayloadCodec<ByteArray> = object : LambdaPayloadCodec<ByteArray> {
+    val bytes: LambdaPayloadCodec<ByteArray> = object: LambdaPayloadCodec<ByteArray> {
         override fun encode(value: ByteArray): ByteArray = value.copyOf()
 
         override fun decode(payload: ByteArray): ByteArray = payload.copyOf()
     }
 
     /** UTF-8 문자열 payload를 처리하는 codec입니다. */
-    val utf8: LambdaPayloadCodec<String> = object : LambdaPayloadCodec<String> {
+    val utf8: LambdaPayloadCodec<String> = object: LambdaPayloadCodec<String> {
         override fun encode(value: String): ByteArray = value.toByteArray(Charsets.UTF_8)
 
         override fun decode(payload: ByteArray): String = payload.toString(Charsets.UTF_8)
@@ -38,7 +38,7 @@ object LambdaPayloadCodecs {
     fun <T> jackson(
         objectMapper: ObjectMapper,
         valueType: Class<T>,
-    ): LambdaPayloadCodec<T> = object : LambdaPayloadCodec<T> {
+    ): LambdaPayloadCodec<T> = object: LambdaPayloadCodec<T> {
         override fun encode(value: T): ByteArray = objectMapper.writeValueAsBytes(value)
 
         override fun decode(payload: ByteArray): T = objectMapper.readValue(payload, valueType)

@@ -6,11 +6,14 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.core.toSdkBytes
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.LambdaClient
@@ -20,10 +23,23 @@ import java.util.concurrent.CompletableFuture
 
 class LambdaExtensionsTest {
 
+    companion object: KLogging()
+
+    private val client = mockk<LambdaClient>(relaxed = true)
+    private val asyncClient = mockk<LambdaAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client, asyncClient)
+    }
+
     @Test
     fun `sync bytes and string preserve final request and raw response`() {
-        val client = mockk<LambdaClient>()
-        val expected = InvokeResponse.builder().statusCode(202).payload("ok".toSdkBytes()).build()
+        val expected = InvokeResponse.builder()
+            .statusCode(202)
+            .payload("ok".toSdkBytes())
+            .build()
+
         every { client.invoke(any<InvokeRequest>()) } returns expected
 
         val bytesResult = client.invokeBytes("orders", payload = byteArrayOf(1, 2), qualifier = "live") {
@@ -34,6 +50,7 @@ class LambdaExtensionsTest {
         bytesResult.response shouldBeSameInstanceAs expected
         bytesResult.payload?.toList() shouldBeEqualTo listOf(111.toByte(), 107)
         stringResult.value shouldBeEqualTo "ok"
+
         verify(exactly = 2) {
             client.invoke(match<InvokeRequest> { request ->
                 request.functionName() == "orders"
@@ -48,7 +65,6 @@ class LambdaExtensionsTest {
 
     @Test
     fun `typed invocation decodes success and function error payload`() {
-        val client = mockk<LambdaClient>()
         val codec = LambdaPayloadCodecs.utf8
         val success = InvokeResponse.builder().payload("accepted".toSdkBytes()).build()
         val failure = InvokeResponse.builder()
@@ -69,7 +85,6 @@ class LambdaExtensionsTest {
 
     @Test
     fun `function error is result data and transport error is unchanged`() {
-        val client = mockk<LambdaClient>()
         val transportError = IllegalStateException("transport")
         every { client.invoke(any<InvokeRequest>()) } returnsMany listOf(
             InvokeResponse.builder().functionError("Handled").payload("error".toSdkBytes()).build(),
@@ -85,7 +100,6 @@ class LambdaExtensionsTest {
 
     @Test
     fun `null payload yields null value while empty payload decodes`() {
-        val client = mockk<LambdaClient>()
         every { client.invoke(any<InvokeRequest>()) } returnsMany listOf(
             InvokeResponse.builder().build(),
             InvokeResponse.builder().payload("".toSdkBytes()).build(),
@@ -104,34 +118,33 @@ class LambdaExtensionsTest {
 
     @Test
     fun `invalid log tail raises decode error without fallback`() {
-        val client = mockk<LambdaClient>()
         every { client.invoke(any<InvokeRequest>()) } returns
-            InvokeResponse.builder().logResult("not-base64").build()
+                InvokeResponse.builder().logResult("not-base64").build()
 
-        assertFailsWith<IllegalArgumentException> { client.invokeString("orders") }
+        assertFailsWith<IllegalArgumentException> {
+            client.invokeString("orders")
+        }
     }
 
     @Test
     fun `async future maps response exactly once`() {
-        val client = mockk<LambdaAsyncClient>()
         val expected = InvokeResponse.builder().payload("accepted".toSdkBytes()).build()
         val sdkFuture = CompletableFuture.completedFuture(expected)
-        every { client.invoke(any<InvokeRequest>()) } returns sdkFuture
+        every { asyncClient.invoke(any<InvokeRequest>()) } returns sdkFuture
 
-        val result = client.invokeStringAsync("orders").get()
+        val result = asyncClient.invokeStringAsync("orders").get()
 
         result.response shouldBeSameInstanceAs expected
         result.value shouldBeEqualTo "accepted"
-        verify(exactly = 1) { client.invoke(any<InvokeRequest>()) }
+        verify(exactly = 1) { asyncClient.invoke(any<InvokeRequest>()) }
     }
 
     @Test
     fun `cancel before response cancels sdk future`() {
-        val client = mockk<LambdaAsyncClient>()
         val sdkFuture = CompletableFuture<InvokeResponse>()
-        every { client.invoke(any<InvokeRequest>()) } returns sdkFuture
+        every { asyncClient.invoke(any<InvokeRequest>()) } returns sdkFuture
 
-        val resultFuture = client.invokeStringAsync("orders")
+        val resultFuture = asyncClient.invokeStringAsync("orders")
         resultFuture.cancel(true)
 
         resultFuture.isCancelled.shouldBeTrue()
@@ -140,20 +153,18 @@ class LambdaExtensionsTest {
 
     @Test
     fun `response after cancellation cannot resurrect result`() {
-        val client = mockk<LambdaAsyncClient>()
         var decodeCount = 0
-        val codec = object : LambdaPayloadCodec<String> {
+        val codec = object: LambdaPayloadCodec<String> {
             override fun encode(value: String): ByteArray = value.toByteArray()
-
             override fun decode(payload: ByteArray): String {
                 decodeCount += 1
                 return payload.decodeToString()
             }
         }
         val sdkFuture = CompletableFuture<InvokeResponse>()
-        every { client.invoke(any<InvokeRequest>()) } returns sdkFuture
+        every { asyncClient.invoke(any<InvokeRequest>()) } returns sdkFuture
 
-        val resultFuture = client.invokeTypedAsync("orders", "request", codec)
+        val resultFuture = asyncClient.invokeTypedAsync("orders", "request", codec)
         resultFuture.cancel(true)
         sdkFuture.complete(InvokeResponse.builder().payload("late".toSdkBytes()).build())
 
@@ -163,11 +174,12 @@ class LambdaExtensionsTest {
 
     @Test
     fun `await overload propagates CancellationException`() = runTest {
-        val client = mockk<LambdaAsyncClient>()
         val sdkFuture = CompletableFuture<InvokeResponse>()
         sdkFuture.completeExceptionally(CancellationException("cancelled"))
-        every { client.invoke(any<InvokeRequest>()) } returns sdkFuture
+        every { asyncClient.invoke(any<InvokeRequest>()) } returns sdkFuture
 
-        assertFailsWith<CancellationException> { client.invokeString("orders") }
+        assertFailsWith<CancellationException> {
+            asyncClient.invokeString("orders")
+        }
     }
 }

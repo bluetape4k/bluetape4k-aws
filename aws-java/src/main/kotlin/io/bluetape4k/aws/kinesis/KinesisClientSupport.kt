@@ -20,9 +20,7 @@ inline fun kinesisClient(
     builder: KinesisClientBuilder.() -> Unit,
 ): KinesisClient =
     KinesisClient.builder().apply(builder).build()
-        .apply {
-            ShutdownQueue.register(this)
-        }
+        .apply(ShutdownQueue::register)
 
 /**
  * [Region] 기반으로 [KinesisClient]를 생성합니다.

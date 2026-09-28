@@ -3,29 +3,46 @@ package io.bluetape4k.aws.sfn
 import io.bluetape4k.aws.sfn.model.startExecutionRequestOf
 import io.bluetape4k.aws.sfn.model.stopExecutionRequestOf
 import io.bluetape4k.idgenerators.uuid.Uuid
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.opentest4j.TestAbortedException
+import software.amazon.awssdk.services.sfn.SfnAsyncClient
 import software.amazon.awssdk.services.sfn.model.CreateStateMachineRequest
 import software.amazon.awssdk.services.sfn.model.DescribeExecutionRequest
 import software.amazon.awssdk.services.sfn.model.ExecutionStatus
 import software.amazon.awssdk.services.sfn.model.StateMachineType
-import software.amazon.awssdk.services.sfn.SfnAsyncClient
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
-class SfnSmokeTest : AbstractSfnTest() {
+class SfnSmokeTest: AbstractSfnTest() {
+
+    private companion object: KLogging() {
+        const val ROLE_ARN = "arn:aws:iam::000000000000:role/issue-313-sfn"
+        const val PASS_DEFINITION =
+            "{\"StartAt\":\"Pass\",\"States\":{\"Pass\":{\"Type\":\"Pass\",\"End\":true}}}"
+        const val WAIT_DEFINITION =
+            "{\"StartAt\":\"Wait\",\"States\":{\"Wait\":{\"Type\":\"Wait\",\"Seconds\":30,\"End\":true}}}"
+
+        fun Throwable.isLocalStackUnsupported(): Boolean =
+            generateSequence(this) { it.cause }.any { throwable ->
+                val text = "${throwable.javaClass.name}: ${throwable.message.orEmpty()}"
+                text.contains("NotImplemented", ignoreCase = true) ||
+                        Regex("\\b501\\b").containsMatchIn(text)
+            }
+    }
 
     @Test
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
-    fun `Step Functions execution lifecycle is bounded and cleaned up`() = runBlocking {
+    fun `Step Functions execution lifecycle is bounded and cleaned up`() = runSuspendIO {
         assumeSfnSupported()
 
         val stateMachines = mutableListOf<String>()
@@ -43,7 +60,7 @@ class SfnSmokeTest : AbstractSfnTest() {
             if (failure.isLocalStackUnsupported()) {
                 TestAbortedException(
                     "live integration unverified: LocalStack does not support Step Functions: " +
-                        failure.javaClass.simpleName,
+                            failure.javaClass.simpleName,
                     failure,
                 )
             } else {
@@ -79,8 +96,9 @@ class SfnSmokeTest : AbstractSfnTest() {
                 check(responses.lastOrNull()?.status() == ExecutionStatus.SUCCEEDED) {
                     "Step Functions pass execution did not succeed"
                 }
-                check(client.listExecutionsByStateMachine(passMachine).executions()
-                    .any { it.executionArn() == executionArn }) {
+                check(
+                    client.listExecutionsByStateMachine(passMachine).executions()
+                        .any { it.executionArn() == executionArn }) {
                     "Step Functions execution was not returned by ListExecutions"
                 }
 
@@ -131,20 +149,5 @@ class SfnSmokeTest : AbstractSfnTest() {
             }
         }.onFailure { firstFailure = firstFailure ?: it }
         return firstFailure
-    }
-
-    private companion object {
-        const val ROLE_ARN = "arn:aws:iam::000000000000:role/issue-313-sfn"
-        const val PASS_DEFINITION =
-            "{\"StartAt\":\"Pass\",\"States\":{\"Pass\":{\"Type\":\"Pass\",\"End\":true}}}"
-        const val WAIT_DEFINITION =
-            "{\"StartAt\":\"Wait\",\"States\":{\"Wait\":{\"Type\":\"Wait\",\"Seconds\":30,\"End\":true}}}"
-
-        fun Throwable.isLocalStackUnsupported(): Boolean =
-            generateSequence(this) { it.cause }.any { throwable ->
-                val text = "${throwable.javaClass.name}: ${throwable.message.orEmpty()}"
-                text.contains("NotImplemented", ignoreCase = true) ||
-                    Regex("\\b501\\b").containsMatchIn(text)
-            }
     }
 }

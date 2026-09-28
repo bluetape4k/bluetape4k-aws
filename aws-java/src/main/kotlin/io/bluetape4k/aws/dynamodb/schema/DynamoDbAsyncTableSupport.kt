@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.dynamodb.schema
 
 import io.bluetape4k.aws.dynamodb.model.provisionedThroughputOf
+import io.bluetape4k.concurrent.allAsList
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 import java.util.concurrent.CompletableFuture
+import kotlin.collections.flatten
 
 /**
  * [DynamoDbAsyncTable]을 이용하여 Table을 생성합니다.

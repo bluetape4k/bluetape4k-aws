@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.s3vectors
 
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -11,9 +13,10 @@ import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
 import software.amazon.awssdk.services.s3vectors.model.QueryVectorsRequest
 import software.amazon.awssdk.services.s3vectors.model.QueryVectorsResponse
-import java.util.concurrent.CompletableFuture
 
 class S3VectorsAsyncClientCoroutinesExtensionsTest {
+
+    companion object: KLoggingChannel()
 
     private val client = mockk<S3VectorsAsyncClient>()
 
@@ -24,9 +27,13 @@ class S3VectorsAsyncClientCoroutinesExtensionsTest {
 
     @Test
     fun `queryVectorsSuspend awaits async client future`() = runSuspendIO {
-        val request = QueryVectorsRequest.builder().vectorBucketName("vectors").indexName("semantic").build()
+        val request = QueryVectorsRequest.builder()
+            .vectorBucketName("vectors")
+            .indexName("semantic")
+            .build()
         val response = QueryVectorsResponse.builder().build()
-        every { client.queryVectors(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.queryVectors(request) } returns completableFutureOf(response)
 
         client.queryVectorsSuspend(request) shouldBeSameInstanceAs response
 

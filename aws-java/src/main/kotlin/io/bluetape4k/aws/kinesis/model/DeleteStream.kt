@@ -32,6 +32,7 @@ inline fun deleteStreamRequestOf(
     builder: DeleteStreamRequest.Builder.() -> Unit = {},
 ): DeleteStreamRequest {
     streamName.requireNotBlank("streamName")
+
     return deleteStreamRequest {
         streamName(streamName)
         builder()

@@ -96,11 +96,13 @@ inline fun putRuleRequestOf(
 
     return PutRuleRequest.builder()
         .name(name)
-        .also { eventBusName?.let(it::eventBusName) }
-        .also { eventPattern?.let(it::eventPattern) }
-        .also { scheduleExpression?.let(it::scheduleExpression) }
-        .also { state?.let(it::state) }
-        .also { description?.let(it::description) }
+        .also {
+            eventBusName?.let(it::eventBusName)
+            eventPattern?.let(it::eventPattern)
+            scheduleExpression?.let(it::scheduleExpression)
+            state?.let(it::state)
+            description?.let(it::description)
+        }
         .apply(builder)
         .build()
 }
@@ -120,8 +122,10 @@ inline fun deleteRuleRequestOf(
     eventBusName?.requireNotBlank("eventBusName")
     return DeleteRuleRequest.builder()
         .name(name)
-        .also { eventBusName?.let(it::eventBusName) }
-        .also { force?.let(it::force) }
+        .also {
+            eventBusName?.let(it::eventBusName)
+            force?.let(it::force)
+        }
         .apply(builder)
         .build()
 }
@@ -164,7 +168,9 @@ inline fun putTargetsRequestOf(
         .also { eventBusName?.let(it::eventBusName) }
         .apply(builder)
         .build()
-        .also { it.targets().requireSizeInOneToTen("targets") }
+        .also {
+            it.targets().requireSizeInOneToTen("targets")
+        }
 }
 
 /**
@@ -187,8 +193,10 @@ inline fun removeTargetsRequestOf(
     return RemoveTargetsRequest.builder()
         .rule(rule)
         .ids(ids)
-        .also { eventBusName?.let(it::eventBusName) }
-        .also { force?.let(it::force) }
+        .also {
+            eventBusName?.let(it::eventBusName)
+            force?.let(it::force)
+        }
         .apply(builder)
         .build()
         .also { request ->
@@ -224,10 +232,12 @@ inline fun putEventsRequestEntryOf(
         .source(source)
         .detailType(detailType)
         .detail(detail)
-        .also { eventBusName?.let(it::eventBusName) }
-        .also { if (resources.isNotEmpty()) it.resources(resources) }
-        .also { time?.let(it::time) }
-        .also { traceHeader?.let(it::traceHeader) }
+        .also {
+            eventBusName?.let(it::eventBusName)
+            if (resources.isNotEmpty()) it.resources(resources)
+            time?.let(it::time)
+            traceHeader?.let(it::traceHeader)
+        }
         .apply(builder)
         .build()
 }
@@ -266,10 +276,12 @@ inline fun listRulesRequestOf(
     limit?.requireEventBridgeListLimit("limit")
     nextToken?.requireNotBlank("nextToken")
     return ListRulesRequest.builder()
-        .also { eventBusName?.let(it::eventBusName) }
-        .also { namePrefix?.let(it::namePrefix) }
-        .also { limit?.let(it::limit) }
-        .also { nextToken?.let(it::nextToken) }
+        .also {
+            eventBusName?.let(it::eventBusName)
+            namePrefix?.let(it::namePrefix)
+            limit?.let(it::limit)
+            nextToken?.let(it::nextToken)
+        }
         .apply(builder)
         .build()
         .also { it.limit()?.requireEventBridgeListLimit("limit") }
@@ -293,9 +305,11 @@ inline fun listTargetsByRuleRequestOf(
     nextToken?.requireNotBlank("nextToken")
     return ListTargetsByRuleRequest.builder()
         .rule(rule)
-        .also { eventBusName?.let(it::eventBusName) }
-        .also { limit?.let(it::limit) }
-        .also { nextToken?.let(it::nextToken) }
+        .also {
+            eventBusName?.let(it::eventBusName)
+            limit?.let(it::limit)
+            nextToken?.let(it::nextToken)
+        }
         .apply(builder)
         .build()
         .also { it.limit()?.requireEventBridgeListLimit("limit") }

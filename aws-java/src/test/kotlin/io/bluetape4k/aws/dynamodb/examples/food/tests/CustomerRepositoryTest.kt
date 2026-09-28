@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.dynamodb.examples.food.tests
 
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.dynamodb.examples.food.AbstractFoodApplicationTest
 import io.bluetape4k.aws.dynamodb.examples.food.model.CustomerDocument
 import io.bluetape4k.aws.dynamodb.examples.food.model.CustomerGrade
@@ -9,7 +10,6 @@ import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.uninitialized
-import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import java.time.Instant

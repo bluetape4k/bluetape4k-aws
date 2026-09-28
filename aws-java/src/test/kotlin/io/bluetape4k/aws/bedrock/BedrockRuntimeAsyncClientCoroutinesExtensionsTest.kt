@@ -1,8 +1,11 @@
 package io.bluetape4k.aws.bedrock
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.logging.KLogging
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -18,9 +21,10 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse
 import software.amazon.awssdk.services.bedrockruntime.model.ValidationException
 import java.util.concurrent.CompletableFuture
-import io.bluetape4k.assertions.assertFailsWith
 
-class BedrockRuntimeAsyncClientCoroutinesExtensionsTest {
+class BedrockRuntimeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     private val client = mockk<BedrockRuntimeAsyncClient>()
 

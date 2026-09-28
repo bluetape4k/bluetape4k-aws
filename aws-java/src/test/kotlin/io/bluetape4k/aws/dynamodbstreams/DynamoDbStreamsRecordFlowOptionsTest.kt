@@ -2,11 +2,15 @@ package io.bluetape4k.aws.dynamodbstreams
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-class DynamoDbStreamsRecordFlowOptionsTest {
+class DynamoDbStreamsRecordFlowOptionsTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `defaults respect service and polling limits`() {
@@ -20,15 +24,23 @@ class DynamoDbStreamsRecordFlowOptionsTest {
 
     @Test
     fun `invalid limits fail fast`() {
-        assertFailsWith<IllegalArgumentException> { DynamoDbStreamsRecordFlowOptions(batchLimit = 0) }
-        assertFailsWith<IllegalArgumentException> { DynamoDbStreamsRecordFlowOptions(batchLimit = 1_001) }
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbStreamsRecordFlowOptions(batchLimit = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbStreamsRecordFlowOptions(batchLimit = 1_001)
+        }
         assertFailsWith<IllegalArgumentException> {
             DynamoDbStreamsRecordFlowOptions(pollInterval = 199.milliseconds)
         }
         assertFailsWith<IllegalArgumentException> {
             DynamoDbStreamsRecordFlowOptions(emptyBackoff = 199.milliseconds)
         }
-        assertFailsWith<IllegalArgumentException> { DynamoDbStreamsRecordFlowOptions(maxShardConcurrency = 0) }
-        assertFailsWith<IllegalArgumentException> { DynamoDbStreamsRecordFlowOptions(maxDescribePages = 0) }
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbStreamsRecordFlowOptions(maxShardConcurrency = 0)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            DynamoDbStreamsRecordFlowOptions(maxDescribePages = 0)
+        }
     }
 }

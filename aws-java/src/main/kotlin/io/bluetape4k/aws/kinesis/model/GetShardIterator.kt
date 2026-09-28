@@ -43,6 +43,7 @@ inline fun getShardIteratorRequestOf(
 ): GetShardIteratorRequest {
     streamName.requireNotBlank("streamName")
     shardId.requireNotBlank("shardId")
+
     return getShardIteratorRequest {
         streamName(streamName)
         shardId(shardId)

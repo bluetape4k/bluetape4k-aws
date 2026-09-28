@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.dynamodb.query
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
 import io.bluetape4k.aws.dynamodb.examples.food.model.FoodDocument
 import io.bluetape4k.aws.dynamodb.examples.food.model.FoodState
 import io.bluetape4k.aws.dynamodb.examples.food.model.Schema.IDX_PK_UPDATED_AT
@@ -7,14 +12,11 @@ import io.bluetape4k.aws.dynamodb.model.describe
 import io.bluetape4k.aws.dynamodb.schema.getTableSchema
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.info
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest
 import java.time.Instant
 
-class DynamoDbEnhancedDslTest {
+class DynamoDbEnhancedDslTest: AbstractDynamodbTest() {
 
     companion object: KLoggingChannel()
 

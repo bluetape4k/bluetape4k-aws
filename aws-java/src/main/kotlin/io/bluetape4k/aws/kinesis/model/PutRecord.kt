@@ -43,6 +43,7 @@ inline fun putRecordRequestOf(
 ): PutRecordRequest {
     streamName.requireNotBlank("streamName")
     partitionKey.requireNotBlank("partitionKey")
+
     return putRecordRequest {
         streamName(streamName)
         partitionKey(partitionKey)

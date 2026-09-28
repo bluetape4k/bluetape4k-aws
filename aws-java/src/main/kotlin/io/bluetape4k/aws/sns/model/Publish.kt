@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.sns.model
 
-import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.aws.sns.validatePublishBatchRequest
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import software.amazon.awssdk.services.sns.model.PublishBatchRequest

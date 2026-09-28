@@ -2,8 +2,8 @@
 
 package io.bluetape4k.aws.sfn
 
-import io.bluetape4k.aws.sfn.model.describeExecutionRequestOf
 import io.bluetape4k.aws.sfn.model.buildListExecutionsRequest
+import io.bluetape4k.aws.sfn.model.describeExecutionRequestOf
 import io.bluetape4k.aws.sfn.model.startExecutionRequestOf
 import io.bluetape4k.aws.sfn.model.stopExecutionRequestOf
 import io.bluetape4k.aws.sfn.model.validateCommon
@@ -67,7 +67,7 @@ fun SfnClient.listExecutionsByStateMachine(
     request.requireStateMachineSource(stateMachineArn)
     require(request.statusFilter() != ExecutionStatus.PENDING_REDRIVE && request.redriveFilter() == null) {
         "listExecutionsByStateMachine does not support PENDING_REDRIVE or redriveFilter; " +
-            "actual statusFilter=${request.statusFilter()}, redriveFilter=${request.redriveFilter()}"
+                "actual statusFilter=${request.statusFilter()}, redriveFilter=${request.redriveFilter()}"
     }
     request.validateCommon()
     return listExecutions(request)
@@ -141,7 +141,7 @@ fun SfnAsyncClient.listExecutionsByStateMachineAsync(
     request.requireStateMachineSource(stateMachineArn)
     require(request.statusFilter() != ExecutionStatus.PENDING_REDRIVE && request.redriveFilter() == null) {
         "listExecutionsByStateMachine does not support PENDING_REDRIVE or redriveFilter; " +
-            "actual statusFilter=${request.statusFilter()}, redriveFilter=${request.redriveFilter()}"
+                "actual statusFilter=${request.statusFilter()}, redriveFilter=${request.redriveFilter()}"
     }
     request.validateCommon()
     return listExecutions(request)
@@ -228,14 +228,14 @@ suspend fun SfnAsyncClient.listExecutionsByMapRun(
 private fun ListExecutionsRequest.requireStateMachineSource(expectedArn: String) {
     require(stateMachineArn() == expectedArn && mapRunArn() == null) {
         "listExecutionsByStateMachine must retain stateMachineArn=$expectedArn and must not set mapRunArn; " +
-            "actual stateMachineArn=${stateMachineArn()}, mapRunArn=${mapRunArn()}"
+                "actual stateMachineArn=${stateMachineArn()}, mapRunArn=${mapRunArn()}"
     }
 }
 
 private fun ListExecutionsRequest.requireMapRunSource(expectedArn: String) {
     require(mapRunArn() == expectedArn && stateMachineArn() == null) {
         "listExecutionsByMapRun must retain mapRunArn=$expectedArn and must not set stateMachineArn; " +
-            "actual mapRunArn=${mapRunArn()}, stateMachineArn=${stateMachineArn()}, " +
-            "statusFilter=${statusFilter()}, redriveFilter=${redriveFilter()}"
+                "actual mapRunArn=${mapRunArn()}, stateMachineArn=${stateMachineArn()}, " +
+                "statusFilter=${statusFilter()}, redriveFilter=${redriveFilter()}"
     }
 }

@@ -83,9 +83,8 @@ fun <T: Any> DynamoDbTable<T>.putItems(items: Collection<T>) {
  */
 inline fun CreateTableEnhancedRequest(
     builder: CreateTableEnhancedRequest.Builder.() -> Unit,
-): CreateTableEnhancedRequest {
-    return CreateTableEnhancedRequest.builder().apply(builder).build()
-}
+): CreateTableEnhancedRequest =
+    CreateTableEnhancedRequest.builder().apply(builder).build()
 
 /**
  * [CreateTableEnhancedRequest]를 생성합니다.
@@ -106,8 +105,9 @@ fun createTableEnhancedRequestOf(
     provisionedThroughput: ProvisionedThroughput? = null,
     localSecondaryIndices: Collection<EnhancedLocalSecondaryIndex>? = null,
     globalSecondaryIndices: Collection<EnhancedGlobalSecondaryIndex>? = null,
-): CreateTableEnhancedRequest = CreateTableEnhancedRequest {
-    provisionedThroughput(provisionedThroughput)
-    localSecondaryIndices(localSecondaryIndices)
-    globalSecondaryIndices(globalSecondaryIndices)
-}
+): CreateTableEnhancedRequest =
+    CreateTableEnhancedRequest {
+        provisionedThroughput?.let { provisionedThroughput(it) }
+        localSecondaryIndices?.let { localSecondaryIndices(it) }
+        globalSecondaryIndices?.let { globalSecondaryIndices(it) }
+    }

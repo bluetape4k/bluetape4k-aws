@@ -36,33 +36,30 @@ class QueryRequestBuilderDSL {
         val table = tableName.requireNotBlank("tableName")
         val pk = primaryKey.requireNotNull("primaryKey")
 
-        val request = QueryRequest.builder().tableName(table)
+        val requestBuilder = QueryRequest.builder().tableName(table)
 
-        val sk = sortKey
-        if (sk == null) {
-            request.keyConditions(mapOf(pk.keyName to pk.equals.toCondition()))
-        } else {
-            request.keyConditions(
-                mapOf(
-                    pk.keyName to pk.equals.toCondition(),
-                    sk.sortKeyName to sk.comparisonOperator.toCondition()
-                )
+        val keyConds = when (val sk = sortKey) {
+            null -> mapOf(pk.keyName to pk.equals.toCondition())
+            else -> mapOf(
+                pk.keyName to pk.equals.toCondition(),
+                sk.sortKeyName to sk.comparisonOperator.toCondition()
             )
         }
+        requestBuilder.keyConditions(keyConds)
 
         filtering?.let { filter ->
             val props = filter.getFilterRequestProperties()
 
-            request.filterExpression(props.filterExpression)
-            if (props.expressionAttributeNames.isNotEmpty()) {
-                request.expressionAttributeNames(props.expressionAttributeNames)
+            requestBuilder.filterExpression(props.filterExpression)
+            props.expressionAttributeNames.takeIf { it.isNotEmpty() }?.let {
+                requestBuilder.expressionAttributeNames(it)
             }
-            if (props.expressionAttributeValues.isNotEmpty()) {
-                request.expressionAttributeValues(props.expressionAttributeValues)
+            props.expressionAttributeValues.takeIf { it.isNotEmpty() }?.let {
+                requestBuilder.expressionAttributeValues(it)
             }
         }
 
-        return request.build()
+        return requestBuilder.build()
     }
 }
 

@@ -50,9 +50,7 @@ object SdkHttpClientProvider {
          */
         val httpClient: SdkHttpClient by lazy {
             ApacheHttpClient.builder().build()
-                .apply {
-                    ShutdownQueue.register(this)
-                }
+                .apply(ShutdownQueue::register)
         }
     }
 
@@ -85,9 +83,7 @@ object SdkHttpClientProvider {
          */
         val httpClient: SdkHttpClient by lazy {
             UrlConnectionHttpClient.builder().build()
-                .apply {
-                    ShutdownQueue.register(this)
-                }
+                .apply(ShutdownQueue::register)
         }
     }
 

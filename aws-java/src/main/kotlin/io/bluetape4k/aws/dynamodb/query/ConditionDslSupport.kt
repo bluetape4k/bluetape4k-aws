@@ -37,9 +37,8 @@ interface ComparableBuilder
  * check(condition.comparisonOperator() == ComparisonOperator.EQ)
  * ```
  */
-inline fun Condition(builder: Condition.Builder.() -> Unit): Condition {
-    return Condition.builder().apply(builder).build()
-}
+inline fun Condition(builder: Condition.Builder.() -> Unit): Condition =
+    Condition.builder().apply(builder).build()
 
 /** `BEGINS_WITH` 비교식입니다. */
 @DynamoDslMarker

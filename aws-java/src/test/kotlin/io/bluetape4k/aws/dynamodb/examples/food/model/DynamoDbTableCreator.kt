@@ -11,8 +11,10 @@ import io.bluetape4k.aws.dynamodb.model.projectionOf
 import io.bluetape4k.aws.dynamodb.model.provisionedThroughputOf
 import io.bluetape4k.aws.dynamodb.schema.DynamoDbAsyncTableCreator
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType
 
@@ -27,7 +29,9 @@ class DynamoDbTableCreator(
         const val WRITE_CAPACITY_UNITS = 100L
     }
 
-    val table = asyncClient.table<FoodDocument>("$tablePrefix$TABLE_NAME")
+    val table: DynamoDbAsyncTable<FoodDocument> by lazy {
+        asyncClient.table<FoodDocument>("$tablePrefix$TABLE_NAME")
+    }
 
     suspend fun createTable(
         readCapacityUnits: Long = READ_CAPACITY_UNITS,
@@ -54,6 +58,8 @@ class DynamoDbTableCreator(
             globalSecondaryIndices(globalSecondaryIndices)
             provisionedThroughput(provisionedThroughput)
         }
+
+        log.debug { "request create table=$createTableRequest" }
         tableCreator.tryCreateAsyncTable(table, createTableRequest)
     }
 }

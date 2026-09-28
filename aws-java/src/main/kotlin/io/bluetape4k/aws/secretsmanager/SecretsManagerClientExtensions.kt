@@ -97,4 +97,12 @@ fun SecretsManagerClient.putSecretValue(
     versionStages: Collection<String> = emptyList(),
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
 ): PutSecretValueResponse =
-    putSecretValue(putSecretValueRequestOf(secretId, secretValue, clientRequestToken, versionStages, overrideConfiguration))
+    putSecretValue(
+        putSecretValueRequestOf(
+            secretId,
+            secretValue,
+            clientRequestToken,
+            versionStages,
+            overrideConfiguration
+        )
+    )

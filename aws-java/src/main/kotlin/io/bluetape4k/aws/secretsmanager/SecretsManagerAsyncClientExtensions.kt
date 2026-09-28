@@ -99,4 +99,12 @@ fun SecretsManagerAsyncClient.putSecretValueAsync(
     versionStages: Collection<String> = emptyList(),
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
 ): CompletableFuture<PutSecretValueResponse> =
-    putSecretValue(putSecretValueRequestOf(secretId, secretValue, clientRequestToken, versionStages, overrideConfiguration))
+    putSecretValue(
+        putSecretValueRequestOf(
+            secretId,
+            secretValue,
+            clientRequestToken,
+            versionStages,
+            overrideConfiguration
+        )
+    )

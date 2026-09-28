@@ -2,6 +2,8 @@ package io.bluetape4k.aws.dynamodb.schema
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
@@ -13,7 +15,9 @@ import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 
-class DynamoDbAsyncTableCreatorTest {
+class DynamoDbAsyncTableCreatorTest: AbstractDynamodbTest() {
+
+    companion object: KLoggingChannel()
 
     private val table = mockk<DynamoDbAsyncTable<String>>()
     private val request = CreateTableEnhancedRequest.builder().build()

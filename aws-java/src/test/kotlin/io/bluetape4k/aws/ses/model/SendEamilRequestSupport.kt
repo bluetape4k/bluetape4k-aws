@@ -1,7 +1,8 @@
 package io.bluetape4k.aws.ses.model
 
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class SendEamilRequestSupport {
@@ -21,6 +22,7 @@ class SendEamilRequestSupport {
             tags(messageTagOf("name", "value"))
         }
 
+        log.debug { "request=$request" }
         request.source() shouldBeEqualTo "source@example.com"
         request.destination().toAddresses() shouldBeEqualTo listOf("target@example.com")
         request.message().subject().data() shouldBeEqualTo "제목"
@@ -42,6 +44,7 @@ class SendEamilRequestSupport {
             tags(messageTagOf("name", "value"))
         }
 
+        log.debug { "request=$request" }
         request.source() shouldBeEqualTo "source@example.com"
         request.destination().toAddresses() shouldBeEqualTo listOf("target@example.com")
         request.template() shouldBeEqualTo "template"

@@ -1,12 +1,11 @@
 package io.bluetape4k.aws.cloudwatch
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -63,7 +62,7 @@ class CloudWatchClientTest: AbstractCloudWatchTest() {
     fun `list metrics`() {
         val response = client.listMetrics(namespace = NAMESPACE)
 
-        response.metrics().shouldNotBeNull().shouldNotBeEmpty()
+        response.metrics().shouldNotBeEmpty()
         response.metrics().forEach { metric ->
             log.debug { "metric: namespace=${metric.namespace()}, name=${metric.metricName()}" }
         }
@@ -74,7 +73,7 @@ class CloudWatchClientTest: AbstractCloudWatchTest() {
     fun `list metrics with metric name filter`() {
         val response = client.listMetrics(namespace = NAMESPACE, metricName = METRIC_NAME)
 
-        response.metrics().shouldNotBeNull().shouldNotBeEmpty()
+        response.metrics().shouldNotBeEmpty()
         response.metrics().forEach { metric ->
             log.debug { "filtered metric: ${metric.metricName()}" }
         }

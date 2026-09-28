@@ -1,14 +1,18 @@
 package io.bluetape4k.aws.ses
 
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.ses.model.bodyOf
 import io.bluetape4k.aws.ses.model.contentOf
 import io.bluetape4k.aws.ses.model.destinationOf
 import io.bluetape4k.aws.ses.model.sendEmailRequest
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class SesClientFactoryTest: AbstractSesTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `SesClientFactory Sync create는 email을 전송할 수 있다`() {
@@ -28,8 +32,10 @@ class SesClientFactoryTest: AbstractSesTest() {
                 it.body(bodyOf("본문", "<p>본문</p>"))
             }
         }
+        log.debug { "request=$request" }
 
         val response = sync.send(request)
+        log.debug { "response=$response" }
         response.messageId().shouldNotBeEmpty()
     }
 
@@ -51,8 +57,10 @@ class SesClientFactoryTest: AbstractSesTest() {
                 it.body(bodyOf("본문", "<p>본문</p>"))
             }
         }
+        log.debug { "request=$request" }
 
         val response = async.send(request)
+        log.debug { "response=$response" }
         response.messageId().shouldNotBeEmpty()
     }
 }

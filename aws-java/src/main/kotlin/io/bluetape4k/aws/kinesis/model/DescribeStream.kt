@@ -32,6 +32,7 @@ inline fun describeStreamRequestOf(
     builder: DescribeStreamRequest.Builder.() -> Unit = {},
 ): DescribeStreamRequest {
     streamName.requireNotBlank("streamName")
+
     return describeStreamRequest {
         streamName(streamName)
         builder()

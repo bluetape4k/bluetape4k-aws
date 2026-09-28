@@ -46,7 +46,7 @@ class LambdaSmokeTest {
             if (failure.isLocalStackUnsupported()) {
                 throw TestAbortedException(
                     "live integration unverified: LocalStack does not support Lambda invoke: " +
-                        failure.javaClass.simpleName,
+                            failure.javaClass.simpleName,
                     failure,
                 )
             }
@@ -64,7 +64,7 @@ class LambdaSmokeTest {
             when (configuredEmulator()) {
                 "floci" -> FlociServer.Launcher.floci
                 "localstack" -> LocalStackServer.Launcher.getLocalStack("lambda")
-                else -> error(
+                else    -> error(
                     "Unsupported AWS emulator: ${configuredEmulator()}. Use floci or localstack.",
                 )
             }
@@ -87,7 +87,7 @@ class LambdaSmokeTest {
             generateSequence(this) { it.cause }.any { throwable ->
                 val text = "${throwable.javaClass.name}: ${throwable.message.orEmpty()}"
                 text.contains("NotImplemented", ignoreCase = true) ||
-                    Regex("\\b501\\b").containsMatchIn(text)
+                        Regex("\\b501\\b").containsMatchIn(text)
             }
     }
 }

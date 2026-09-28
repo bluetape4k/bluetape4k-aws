@@ -3,12 +3,12 @@ package io.bluetape4k.aws.bedrock
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
@@ -341,7 +341,7 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
             publisherCancelCount = scenarioResult.publisherCancelCount,
             pendingCallbackCount = pendingCallbackCount,
             operationFailureIsPrimary = scenarioResult.operationFailure != null &&
-                failure === scenarioResult.operationFailure,
+                    failure === scenarioResult.operationFailure,
             retainedSuppressedCount = retainedRoots,
             overflowMarkerCount = if (marker == null) 0 else 1,
             overflowDroppedCount = overflowDroppedCount,
@@ -520,7 +520,7 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
             .delta(ContentBlockDelta.builder().text(text).build())
             .build()
 
-    private class TimedPublisher<T : Any>(
+    private class TimedPublisher<T: Any>(
         private val cleanupMode: CleanupMode,
         private val scheduler: ScheduledExecutorService,
         private val onCancelled: () -> Unit = {},
@@ -580,7 +580,7 @@ internal class BedrockRuntimePerformanceRuntimeAdapter {
         private fun completeAccordingToMode() {
             when (cleanupMode) {
                 CleanupMode.IMMEDIATE -> completeCleanup()
-                CleanupMode.DELAYED -> scheduler.schedule(
+                CleanupMode.DELAYED  -> scheduler.schedule(
                     { completeCleanup() },
                     CLEANUP_DELAY_MILLIS,
                     TimeUnit.MILLISECONDS,
