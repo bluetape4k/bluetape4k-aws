@@ -7,8 +7,9 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.concurrent.await
 import io.bluetape4k.coroutines.flow.extensions.takeUntil
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
@@ -43,15 +44,16 @@ import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent
 import software.amazon.awssdk.services.bedrockruntime.model.ValidationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
 class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
-    private val client = mockk<BedrockRuntimeAsyncClient>()
+    private val asyncClient = mockk<BedrockRuntimeAsyncClient>()
     private val request = ConverseStreamRequest.builder()
         .modelId("model-id")
         .messages(userMessageOf("hello"))
@@ -59,38 +61,38 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
 
     @BeforeEach
     fun setup() {
-        clearMocks(client)
+        clearMocks(asyncClient)
     }
 
     @Test
     fun `collection is cold and each collector invokes SDK once`() = runTest {
         val handlers = mutableListOf<ConverseStreamResponseHandler>()
-        every { client.converseStream(request, capture(handlers)) } answers {
+        every { asyncClient.converseStream(request, capture(handlers)) } answers {
             CompletableFuture.completedFuture(null)
         }
-        val flow = client.converseStreamFlow(request)
+        val flow = asyncClient.converseStreamFlow(request)
 
         verify(exactly = 0) {
-            client.converseStream(any<ConverseStreamRequest>(), any())
+            asyncClient.converseStream(any<ConverseStreamRequest>(), any())
         }
         flow.toList()
         flow.toList()
 
         handlers.forEach { log.debug { "handler=$it" } }
         handlers.size shouldBeEqualTo 2
-        verify(exactly = 2) { client.converseStream(any<ConverseStreamRequest>(), any()) }
+        verify(exactly = 2) { asyncClient.converseStream(any<ConverseStreamRequest>(), any()) }
     }
 
     @Test
     fun `first event arrives before operation future completes`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val first = contentDelta("a")
         val seen = CompletableDeferred<ConverseStreamOutput>()
 
         val collector = launch {
-            client.converseStreamFlow(request).collect { seen.complete(it) }
+            asyncClient.converseStreamFlow(request).collect { seen.complete(it) }
         }
         runCurrent()
 
@@ -112,11 +114,11 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `slow collector preserves order with one outstanding request`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val release = Channel<Unit>(Channel.RENDEZVOUS)
         val seen = mutableListOf<ConverseStreamOutput>()
         val collector = launch {
-            client.converseStreamFlow(request).collect {
+            asyncClient.converseStreamFlow(request).collect {
                 seen += it
                 release.receive()
             }
@@ -148,9 +150,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `first cancels subscription and operation future once`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val result = CompletableDeferred<ConverseStreamOutput>()
-        val collector = launch { result.complete(client.converseStreamFlow(request).first()) }
+        val collector = launch { result.complete(asyncClient.converseStreamFlow(request).first()) }
         runCurrent()
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
         handler.captured.onEventStream(publisher)
@@ -170,12 +172,12 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `future success waits for latest publisher terminal and preserves publisher failure`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val error = ValidationException.builder().message("stream failed").build()
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -199,10 +201,10 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `publisher completion waits for operation future success`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val completed = CompletableDeferred<Unit>()
         val collector = launch {
-            client.converseStreamFlow(request).toList()
+            asyncClient.converseStreamFlow(request).toList()
             completed.complete(Unit)
         }
         runCurrent()
@@ -224,12 +226,12 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `operation future failure before publisher preserves error`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val expected = ValidationException.builder().message("operation failed").build()
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -247,9 +249,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `publisher error can be replaced by a successful generation`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val seen = mutableListOf<ConverseStreamOutput>()
-        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        val collector = launch { asyncClient.converseStreamFlow(request).toList(seen) }
         runCurrent()
         val failed = RecordingSdkPublisher<ConverseStreamOutput>()
         val replacement = RecordingSdkPublisher<ConverseStreamOutput>()
@@ -274,9 +276,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `handler failure from old generation does not beat replacement`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val seen = mutableListOf<ConverseStreamOutput>()
-        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        val collector = launch { asyncClient.converseStreamFlow(request).toList(seen) }
         runCurrent()
         val failed = RecordingSdkPublisher<ConverseStreamOutput>()
         val replacement = RecordingSdkPublisher<ConverseStreamOutput>()
@@ -301,11 +303,11 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `replacement activates while previous event collector is suspended`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val release = Channel<Unit>(Channel.RENDEZVOUS)
         val seen = mutableListOf<ConverseStreamOutput>()
         val collector = launch {
-            client.converseStreamFlow(request).collect {
+            asyncClient.converseStreamFlow(request).collect {
                 seen += it
                 release.receive()
             }
@@ -342,9 +344,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `callbacks received before scheduler advancement activate newest generation`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val seen = mutableListOf<ConverseStreamOutput>()
-        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        val collector = launch { asyncClient.converseStreamFlow(request).toList(seen) }
         runCurrent()
         val first = RecordingSdkPublisher<ConverseStreamOutput>()
         val latest = RecordingSdkPublisher<ConverseStreamOutput>()
@@ -368,9 +370,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `callbacks received before immediate future success still honor newest generation`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val seen = mutableListOf<ConverseStreamOutput>()
-        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        val collector = launch { asyncClient.converseStreamFlow(request).toList(seen) }
         runCurrent()
         val first = RecordingSdkPublisher<ConverseStreamOutput>()
         val latest = RecordingSdkPublisher<ConverseStreamOutput>()
@@ -394,9 +396,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `replacement cancels old generation and ignores late signals`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val seen = mutableListOf<ConverseStreamOutput>()
-        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        val collector = launch { asyncClient.converseStreamFlow(request).toList(seen) }
         runCurrent()
         val old = RecordingSdkPublisher<ConverseStreamOutput>()
         val latest = RecordingSdkPublisher<ConverseStreamOutput>()
@@ -426,8 +428,8 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `cancellation before publisher callback cancels future and late publisher`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
-        val collector = launch { client.converseStreamFlow(request).toList() }
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
+        val collector = launch { asyncClient.converseStreamFlow(request).toList() }
         runCurrent()
 
         collector.cancelAndJoin()
@@ -438,15 +440,15 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         future.isCancelled.shouldBeTrue()
         future.cancelCount shouldBeEqualTo 1
         late.cancelCount shouldBeEqualTo 1
-        verify(exactly = 1) { client.converseStream(any<ConverseStreamRequest>(), any()) }
+        verify(exactly = 1) { asyncClient.converseStream(any<ConverseStreamRequest>(), any()) }
     }
 
     @Test
     fun `publisher callback racing collector cancellation is cancelled once`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
-        val collector = launch { client.converseStreamFlow(request).toList() }
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
+        val collector = launch { asyncClient.converseStreamFlow(request).toList() }
         runCurrent()
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
 
@@ -458,19 +460,19 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         future.isCancelled.shouldBeTrue()
         future.cancelCount shouldBeEqualTo 1
         publisher.cancelCount shouldBeEqualTo 1
-        verify(exactly = 1) { client.converseStream(any<ConverseStreamRequest>(), any()) }
+        verify(exactly = 1) { asyncClient.converseStream(any<ConverseStreamRequest>(), any()) }
     }
 
     @Test
     fun `cancellation before retry publisher handoff cancels publisher once`() = runTest {
         val handlerReady = CompletableDeferred<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, any<ConverseStreamResponseHandler>()) } answers {
+        every { asyncClient.converseStream(request, any<ConverseStreamResponseHandler>()) } answers {
             handlerReady.complete(secondArg())
             future
         }
         val collector = launch(Dispatchers.Default) {
-            client.converseStreamFlow(request).toList()
+            asyncClient.converseStreamFlow(request).toList()
         }
         val handler = handlerReady.await()
         val firstSubscribed = CountDownLatch(1)
@@ -480,15 +482,15 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
             onSubscribed = firstSubscribed::countDown,
             onCancelled = {
                 firstCancelEntered.countDown()
-                firstCancelRelease.await(5, TimeUnit.SECONDS)
+                firstCancelRelease.await(5.seconds)
             },
         )
         val replacement = RecordingSdkPublisher<ConverseStreamOutput>()
         handler.onEventStream(first)
-        firstSubscribed.await(5, TimeUnit.SECONDS).shouldBeTrue()
+        firstSubscribed.await(5.seconds).shouldBeTrue()
 
         handler.onEventStream(replacement)
-        firstCancelEntered.await(5, TimeUnit.SECONDS).shouldBeTrue()
+        firstCancelEntered.await(5.seconds).shouldBeTrue()
         collector.cancel()
         firstCancelRelease.countDown()
         collector.join()
@@ -503,11 +505,11 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun `timeout cancels operation and subscription without another call`() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val timed = async {
             assertFailsWith<TimeoutCancellationException> {
-                withTimeout(1) {
-                    client.converseStreamFlow(request).toList()
+                withTimeout(1.milliseconds) {
+                    asyncClient.converseStreamFlow(request).toList()
                 }
             }
         }
@@ -521,7 +523,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         future.isCancelled.shouldBeTrue()
         future.cancelCount shouldBeEqualTo 1
         publisher.cancelCount shouldBeEqualTo 1
-        verify(exactly = 1) { client.converseStream(any<ConverseStreamRequest>(), any()) }
+        verify(exactly = 1) { asyncClient.converseStream(any<ConverseStreamRequest>(), any()) }
     }
 
     @Test
@@ -529,13 +531,13 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         val handler = slot<ConverseStreamResponseHandler>()
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
         val expected = ValidationException.builder().message("invalid").build()
-        every { client.converseStream(request, capture(handler)) } answers {
+        every { asyncClient.converseStream(request, capture(handler)) } answers {
             handler.captured.onEventStream(publisher)
             throw expected
         }
 
         val actual = assertFailsWith<ValidationException> {
-            client.converseStreamFlow(request).toList()
+            asyncClient.converseStreamFlow(request).toList()
         }
 
         actual shouldBeSameInstanceAs expected
@@ -546,13 +548,13 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun operationFailureRemainsPrimaryWhenPostHandoffCancellationFails() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val operationFailure = ValidationException.builder().message("operation").build()
         val cancellationFailure = IllegalStateException("cancel")
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -564,7 +566,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
 
         future.completeExceptionally(operationFailure)
 
-        val actual = withTimeout(1_000) { terminal.await() }
+        val actual = withTimeout(1.seconds) { terminal.await() }
         actual shouldBeSameInstanceAs operationFailure
         actual.suppressed.toList() shouldBeEqualTo listOf(cancellationFailure)
         collector.join()
@@ -574,11 +576,11 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun collectorCancellationPreservesPrimaryWhenPostHandoffCancellationFails() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val cancellationFailure = IllegalStateException("cancel")
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw cancellationFailure })
         val collector = launch {
-            client.converseStreamFlow(request).toList()
+            asyncClient.converseStreamFlow(request).toList()
         }
         runCurrent()
         handler.captured.onEventStream(publisher)
@@ -595,10 +597,10 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun successfulCancellationHasNoSuppressedCleanupFailure() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
         val collector = launch {
-            client.converseStreamFlow(request).toList()
+            asyncClient.converseStreamFlow(request).toList()
         }
         runCurrent()
         handler.captured.onEventStream(publisher)
@@ -615,10 +617,10 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun cancelOnceNormalCancellationDoesNotSuppressDeferredCancellationException() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
         val collector = launch {
-            client.converseStreamFlow(request).toList()
+            asyncClient.converseStreamFlow(request).toList()
         }
         runCurrent()
         handler.captured.onEventStream(publisher)
@@ -635,13 +637,13 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun outerFinallyDoesNotDuplicateCancellationSuppression() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val operationFailure = ValidationException.builder().message("operation").build()
         val cancellationFailure = IllegalStateException("cancel")
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -652,7 +654,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         runCurrent()
         future.completeExceptionally(operationFailure)
 
-        val actual = withTimeout(1_000) { terminal.await() }
+        val actual = withTimeout(1.seconds) { terminal.await() }
         actual shouldBeSameInstanceAs operationFailure
         actual.suppressed.count { it === cancellationFailure } shouldBeEqualTo 1
         collector.join()
@@ -662,8 +664,8 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun rejectedCallbackReportsPreHandoffCancellationFailure() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CancelCountingFuture()
-        every { client.converseStream(request, capture(handler)) } returns future
-        val collector = launch { client.converseStreamFlow(request).toList() }
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
+        val collector = launch { asyncClient.converseStreamFlow(request).toList() }
         runCurrent()
         collector.cancelAndJoin()
 
@@ -680,13 +682,13 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun replacementCancellationFailuresPreserveFirstFailure() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val firstFailure = IllegalStateException("first")
         val secondFailure = IllegalStateException("second")
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -700,7 +702,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         runCurrent()
         future.completeExceptionally(ValidationException.builder().message("operation").build())
 
-        val actual = withTimeout(1_000) { terminal.await() }
+        val actual = withTimeout(1.seconds) { terminal.await() }
         actual.suppressed.any { it === firstFailure }.shouldBeTrue()
         actual.suppressed.any { it === secondFailure }.shouldBeTrue()
         collector.join()
@@ -710,13 +712,13 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun boundedCancellationFailuresRetainBoundedSamplesAndOverflowCount() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val operationFailure = ValidationException.builder().message("operation").build()
         val failures = (0 until 20).map { index -> IllegalStateException("cancel-$index") }
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -730,7 +732,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         }
         future.completeExceptionally(operationFailure)
 
-        val actual = withTimeout(1_000) { terminal.await() }
+        val actual = withTimeout(1.seconds) { terminal.await() }
         actual shouldBeSameInstanceAs operationFailure
         actual.suppressed.count {
             it is RuntimeException && it.message?.startsWith("suppressed failure count") == true
@@ -745,13 +747,13 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun repeatedCancellationFailureDoesNotDuplicateRetainedThrowable() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val operationFailure = ValidationException.builder().message("operation").build()
         val cancellationFailure = IllegalStateException("same")
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -765,7 +767,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         }
         future.completeExceptionally(operationFailure)
 
-        val actual = withTimeout(1_000) { terminal.await() }
+        val actual = withTimeout(1.seconds) { terminal.await() }
         actual.suppressed.count { it === cancellationFailure } shouldBeEqualTo 1
         collector.join()
     }
@@ -774,12 +776,12 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun boundedFailureAccumulatorMaterializesOverflowOnce() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val operationFailure = ValidationException.builder().message("operation").build()
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -795,7 +797,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         }
         future.completeExceptionally(operationFailure)
 
-        val actual = withTimeout(1_000) { terminal.await() }
+        val actual = withTimeout(1.seconds) { terminal.await() }
         actual.suppressed.count { it.message?.startsWith("suppressed failure count") == true } shouldBeEqualTo 1
         collector.join()
     }
@@ -804,11 +806,11 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun completedCallbackFailureIsClearedAfterClose() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -820,7 +822,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         handler.captured.onEventStream(publisher)
         runCurrent()
         future.completeExceptionally(ValidationException.builder().message("operation").build())
-        withTimeout(1_000) { terminal.await() }
+        withTimeout(1.seconds) { terminal.await() }
         collector.join()
 
         val late = RecordingSdkPublisher<ConverseStreamOutput>()
@@ -832,12 +834,12 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun currentHandlerFailureUsesOperationFutureCause() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val expected = ValidationException.builder().message("handler").build()
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -846,7 +848,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         handler.captured.exceptionOccurred(expected)
         future.completeExceptionally(expected)
 
-        val actual = withTimeout(1_000) { terminal.await() }
+        val actual = withTimeout(1.seconds) { terminal.await() }
         actual shouldBeSameInstanceAs expected
         collector.join()
     }
@@ -855,9 +857,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun lateOldGenerationHandlerFailureDoesNotContaminateReplacementSuccess() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val seen = mutableListOf<ConverseStreamOutput>()
-        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        val collector = launch { asyncClient.converseStreamFlow(request).toList(seen) }
         runCurrent()
         val old = RecordingSdkPublisher<ConverseStreamOutput>()
         val replacement = RecordingSdkPublisher<ConverseStreamOutput>()
@@ -880,12 +882,12 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun acceptedCallbackIsDrainedWhenOperationFailsBeforeHandoff() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
@@ -895,7 +897,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         future.completeExceptionally(ValidationException.builder().message("operation").build())
         runCurrent()
 
-        withTimeout(1_000) { terminal.await() }
+        withTimeout(1.seconds) { terminal.await() }
         publisher.cancelCount shouldBeEqualTo 1
         collector.join()
     }
@@ -904,11 +906,11 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun closeDrainsSuspendedCallbackCompletion() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val release = CompletableDeferred<Unit>()
         val publisher = RecordingSdkPublisher<ConverseStreamOutput>()
         val collector = launch {
-            client.converseStreamFlow(request).collect {
+            asyncClient.converseStreamFlow(request).collect {
                 release.await()
             }
         }
@@ -928,8 +930,8 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun lateCallbackIsRejectedAfterClose() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
-        val collector = launch { client.converseStreamFlow(request).toList() }
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
+        val collector = launch { asyncClient.converseStreamFlow(request).toList() }
         runCurrent()
         future.complete(null)
         runCurrent()
@@ -943,9 +945,9 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
     fun highVolumeReplacementDrainsCompletedCallbacks() = runTest {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
-        every { client.converseStream(request, capture(handler)) } returns future
+        every { asyncClient.converseStream(request, capture(handler)) } returns future
         val seen = mutableListOf<ConverseStreamOutput>()
-        val collector = launch { client.converseStreamFlow(request).toList(seen) }
+        val collector = launch { asyncClient.converseStreamFlow(request).toList(seen) }
         runCurrent()
         repeat(100) {
             handler.captured.onEventStream(RecordingSdkPublisher())
@@ -959,7 +961,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         runCurrent()
         latest.complete()
         future.complete(null)
-        withTimeout(1_000) { collector.join() }
+        withTimeout(1.seconds) { collector.join() }
         seen shouldBeEqualTo listOf(event)
     }
 
@@ -968,7 +970,7 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         val handler = slot<ConverseStreamResponseHandler>()
         val future = CompletableFuture<Void>()
         val handlerReady = CountDownLatch(1)
-        every { client.converseStream(request, capture(handler)) } answers {
+        every { asyncClient.converseStream(request, capture(handler)) } answers {
             handlerReady.countDown()
             future
         }
@@ -976,19 +978,19 @@ class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
         val terminal = CompletableDeferred<Throwable>()
         val collector = launch(Dispatchers.Default) {
             try {
-                client.converseStreamFlow(request).toList()
+                asyncClient.converseStreamFlow(request).toList()
             } catch (cause: Throwable) {
                 terminal.complete(cause)
             }
         }
-        check(handlerReady.await(5, TimeUnit.SECONDS)) { "handler was not captured" }
+        check(handlerReady.await(5.seconds)) { "handler was not captured" }
         val first = RecordingSdkPublisher<ConverseStreamOutput>(onCancelled = { throw IllegalStateException("cancel") })
         handler.captured.onEventStream(first)
         handler.captured.onEventStream(RecordingSdkPublisher())
         future.completeExceptionally(operationFailure)
 
         val actual = withContext(Dispatchers.Default.limitedParallelism(2)) {
-            withTimeout(5_000) { terminal.await() }
+            withTimeout(5.seconds) { terminal.await() }
         }
         actual shouldBeSameInstanceAs operationFailure
         collector.join()
