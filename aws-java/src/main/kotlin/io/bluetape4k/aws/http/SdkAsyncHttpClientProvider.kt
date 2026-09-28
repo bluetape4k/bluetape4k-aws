@@ -47,9 +47,7 @@ object SdkAsyncHttpClientProvider {
          */
         @JvmStatic
         val httpClient: SdkAsyncHttpClient by lazy {
-            nettyNioAsyncHttpClientOf().apply {
-                ShutdownQueue.register(this)
-            }
+            nettyNioAsyncHttpClientOf().apply(ShutdownQueue::register)
         }
     }
 
@@ -81,9 +79,7 @@ object SdkAsyncHttpClientProvider {
          */
         @JvmStatic
         val httpClient: SdkAsyncHttpClient by lazy {
-            awsCrtAsyncHttpClientOf().apply {
-                ShutdownQueue.register(this)
-            }
+            awsCrtAsyncHttpClientOf().apply(ShutdownQueue::register) 
         }
     }
 

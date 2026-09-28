@@ -1,14 +1,21 @@
 package io.bluetape4k.aws.core
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 
-class SdkBytesSupportTest {
+class SdkBytesSupportTest: AbstractAwsTest() {
 
-    @Test
+    companion object: KLogging() {
+        const val REPEAT_SIZE = 5
+    }
+
+    @RepeatedTest(REPEAT_SIZE)
     fun `String toSdkBytes는 UTF-8 문자열을 보존한다`() {
-        val value = "안녕하세요 aws"
+        val value = faker.lorem().paragraph()
         val sdkBytes = value.toSdkBytes()
 
         sdkBytes.asUtf8String() shouldBeEqualTo value
@@ -42,19 +49,20 @@ class SdkBytesSupportTest {
         sdkBytes.asByteArrayUnsafe().toList() shouldBeEqualTo listOf(9.toByte(), 2.toByte(), 3.toByte(), 4.toByte())
     }
 
-    @Test
+    @RepeatedTest(REPEAT_SIZE)
     fun `String toUtf8SdkBytes는 UTF-8 문자열을 보존한다`() {
-        val value = "hello aws"
+        val value = faker.lorem().paragraph()
         val sdkBytes = value.toUtf8SdkBytes()
 
         sdkBytes.asUtf8String() shouldBeEqualTo value
     }
 
-    @Test
+    @RepeatedTest(REPEAT_SIZE)
     fun `InputStream toSdkBytes는 스트림 내용을 읽어 보존한다`() {
-        val sdkBytes = "stream-data".byteInputStream().toSdkBytes()
+        val text = faker.lorem().paragraph()
+        val sdkBytes = text.byteInputStream().toSdkBytes()
 
-        sdkBytes.asUtf8String() shouldBeEqualTo "stream-data"
+        sdkBytes.asUtf8String() shouldBeEqualTo text
     }
 
     @Test

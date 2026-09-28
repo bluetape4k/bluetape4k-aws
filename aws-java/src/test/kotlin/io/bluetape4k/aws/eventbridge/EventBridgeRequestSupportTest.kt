@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.eventbridge
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.eventbridge.model.listRulesRequestOf
 import io.bluetape4k.aws.eventbridge.model.listTargetsByRuleRequestOf
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
@@ -10,9 +12,13 @@ import io.bluetape4k.aws.eventbridge.model.putRuleRequestOf
 import io.bluetape4k.aws.eventbridge.model.putTargetsRequestOf
 import io.bluetape4k.aws.eventbridge.model.removeTargetsRequestOf
 import io.bluetape4k.aws.eventbridge.model.targetOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
-class EventBridgeRequestSupportTest {
+class EventBridgeRequestSupportTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `putEventsRequestOf validates entry count`() {
@@ -20,7 +26,8 @@ class EventBridgeRequestSupportTest {
             putEventsRequestOf(emptyList())
         }
 
-        val entries = (1..11).map {
+        // EventBridge의 요청당 항목 10개 제한된다
+        val entries = List(11) {
             putEventsRequestEntryOf("app.test", "event.$it", """{"id":$it}""")
         }
 
@@ -54,7 +61,7 @@ class EventBridgeRequestSupportTest {
         val entry = putEventsRequestEntryOf("source", "type", "{}", resources = emptyList())
 
         entry.source() shouldBeEqualTo "source"
-        entry.resources().size shouldBeEqualTo 0
+        entry.resources().shouldBeEmpty()
     }
 
     @Test
@@ -68,6 +75,7 @@ class EventBridgeRequestSupportTest {
 
         val request = putRuleRequestOf(name = "rule", eventPattern = """{"source":["app.test"]}""")
 
+        log.debug { "request: $request" }
         request.name() shouldBeEqualTo "rule"
         request.eventPattern() shouldBeEqualTo """{"source":["app.test"]}"""
     }
@@ -107,6 +115,7 @@ class EventBridgeRequestSupportTest {
 
         val request = removeTargetsRequestOf("rule", listOf("target-1"))
 
+        log.debug { "request: $request" }
         request.rule() shouldBeEqualTo "rule"
         request.ids() shouldBeEqualTo listOf("target-1")
     }

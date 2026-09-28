@@ -34,6 +34,7 @@ fun KinesisAsyncClient.createStreamAsync(
 ): CompletableFuture<CreateStreamResponse> {
     streamName.requireNotBlank("streamName")
     shardCount.validateKinesisShardCount("shardCount")
+
     return createStream(createStreamRequest {
         streamName(streamName)
         shardCount(shardCount)
@@ -58,6 +59,7 @@ fun KinesisAsyncClient.putRecordAsync(
 ): CompletableFuture<PutRecordResponse> {
     streamName.requireNotBlank("streamName")
     partitionKey.requireNotBlank("partitionKey")
+
     return putRecord(putRecordRequest {
         streamName(streamName)
         partitionKey(partitionKey)
@@ -78,6 +80,7 @@ fun KinesisAsyncClient.putRecordsAsync(
 ): CompletableFuture<PutRecordsResponse> {
     streamName.requireNotBlank("streamName")
     entries.validateKinesisPutRecordsEntries("entries")
+
     return putRecords(putRecordsRequest {
         streamName(streamName)
         records(entries)
@@ -102,6 +105,7 @@ fun KinesisAsyncClient.getShardIteratorAsync(
 ): CompletableFuture<GetShardIteratorResponse> {
     streamName.requireNotBlank("streamName")
     shardId.requireNotBlank("shardId")
+
     return getShardIterator(getShardIteratorRequest {
         streamName(streamName)
         shardId(shardId)
@@ -122,6 +126,7 @@ fun KinesisAsyncClient.getRecordsAsync(
 ): CompletableFuture<GetRecordsResponse> {
     shardIterator.requireNotBlank("shardIterator")
     limit.validateKinesisGetRecordsLimit("limit")
+
     return getRecords(getRecordsRequest {
         shardIterator(shardIterator)
         limit(limit)
@@ -139,6 +144,7 @@ fun KinesisAsyncClient.describeStreamAsync(
     streamName: String,
 ): CompletableFuture<DescribeStreamResponse> {
     streamName.requireNotBlank("streamName")
+
     return describeStream(describeStreamRequest {
         streamName(streamName)
     })
@@ -155,6 +161,7 @@ fun KinesisAsyncClient.deleteStreamAsync(
     streamName: String,
 ): CompletableFuture<DeleteStreamResponse> {
     streamName.requireNotBlank("streamName")
+
     return deleteStream(deleteStreamRequest {
         streamName(streamName)
     })

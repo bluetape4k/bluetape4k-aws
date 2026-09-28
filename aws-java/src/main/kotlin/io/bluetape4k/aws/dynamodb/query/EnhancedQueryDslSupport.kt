@@ -74,8 +74,8 @@ class EnhancedQueryBuilderKt<T: Any> {
      * - `filtering`이 있으면 Enhanced Expression으로 변환해 `filterExpression`에 적용합니다.
      */
     fun build(): QueryEnhancedRequest {
-        log.debug { "Start query ...  primaryKey=$primaryKey, sortKey=$sortKey" }
         primaryKey.requireNotNull("primaryKey")
+        log.debug { "Start query ...  primaryKey=$primaryKey, sortKey=$sortKey" }
 
         // WHY: requireNotNull 위에서 이미 null이면 예외를 던지므로 non-null assertion 대신 안전한 캐스트 사용
         val pk = checkNotNull(primaryKey) { "primaryKey must not be null" }
@@ -83,45 +83,38 @@ class EnhancedQueryBuilderKt<T: Any> {
         return QueryEnhancedRequest {
             val conditional =
                 sortKey?.let { sk: SortKey ->
-
                     when (sk.comparisonOperator) {
-                        is BeginsWith       -> {
+                        is BeginsWith          ->
                             QueryConditional.sortBeginsWith(
                                 keyOf(pk.equals.right, sk.comparisonOperator.right)
                             )
-                        }
-                        is GreaterThan      -> {
+                        is GreaterThan         ->
                             QueryConditional.sortGreaterThan(
                                 keyOf(pk.equals.right, sk.comparisonOperator.right)
                             )
-                        }
-                        is GreaterThanOrEquals -> {
+                        is GreaterThanOrEquals ->
                             QueryConditional.sortGreaterThanOrEqualTo(
                                 keyOf(pk.equals.right, sk.comparisonOperator.right)
                             )
-                        }
-                        is LessThan         -> {
+                        is LessThan            ->
                             QueryConditional.sortLessThan(
                                 keyOf(pk.equals.right, sk.comparisonOperator.right)
                             )
-                        }
-                        is LessThanOrEquals -> {
+                        is LessThanOrEquals    ->
                             QueryConditional.sortLessThanOrEqualTo(
                                 keyOf(pk.equals.right, sk.comparisonOperator.right)
                             )
-                        }
-                        is Between          -> {
+                        is Between             ->
                             QueryConditional.sortBetween(
                                 keyOf(sk.sortKeyName, sk.comparisonOperator.left.toString()),
                                 keyOf(sk.sortKeyName, sk.comparisonOperator.right.toString())
                             )
-                        }
-                        else                -> {
+                        else                   ->
                             throw UnsupportedOperationException("Unknown comparison operator: ${sk.comparisonOperator}")
-                        }
                     }
                 } ?: QueryConditional.keyEqualTo(keyOf(pk.equals.right))
 
+            log.debug { "conditional=$conditional" }
             queryConditional(conditional)
 
             filtering?.let { filter ->

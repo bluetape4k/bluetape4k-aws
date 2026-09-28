@@ -3,10 +3,14 @@ package io.bluetape4k.aws.bedrock
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.firstTextOrNull
 import io.bluetape4k.aws.bedrock.model.textContents
 import io.bluetape4k.aws.bedrock.model.textDeltaOrNull
 import io.bluetape4k.aws.bedrock.model.textOrEmpty
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
@@ -22,7 +26,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock
 import java.nio.file.Files
 import java.nio.file.Path
 
-class BedrockRuntimeResponseSupportTest {
+class BedrockRuntimeResponseSupportTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `text helpers skip non-text blocks and preserve order`() {
@@ -39,6 +45,7 @@ class BedrockRuntimeResponseSupportTest {
             ContentBlock.builder().text(" world").build(),
         )
 
+        log.debug { "response=$response" }
         response.textContents() shouldBeEqualTo listOf("hello", " world")
         response.firstTextOrNull() shouldBeEqualTo "hello"
         response.textOrEmpty() shouldBeEqualTo "hello world"
@@ -55,14 +62,20 @@ class BedrockRuntimeResponseSupportTest {
             .build()
             .textContents()
             .shouldBeEmpty()
+
         responseOf().textContents().shouldBeEmpty()
     }
 
     @Test
     fun `large text response joins without losing content`() {
         val values = List(1_000) { "value-$it" }
-        val response = responseOf(*values.map { ContentBlock.builder().text(it).build() }.toTypedArray())
+        val response = responseOf(
+            *values
+                .map { ContentBlock.builder().text(it).build() }
+                .toTypedArray()
+        )
 
+        log.debug { "response=$response" }
         response.textContents() shouldBeEqualTo values
         response.textOrEmpty("|") shouldBeEqualTo values.joinToString("|")
     }
@@ -73,6 +86,7 @@ class BedrockRuntimeResponseSupportTest {
             .delta(ContentBlockDelta.builder().text("delta").build())
             .build()
 
+        log.debug { "textDelta=$textDelta" }
         textDelta.textDeltaOrNull() shouldBeEqualTo "delta"
         MessageStopEvent.builder().build().textDeltaOrNull().shouldBeNull()
     }
@@ -94,7 +108,8 @@ class BedrockRuntimeResponseSupportTest {
         val joinList = CountingContentList(
             List(1_000) { ContentBlock.builder().text("value-$it").build() },
         )
-        responseWith(joinList).textOrEmpty("|") shouldBeEqualTo List(1_000) { "value-$it" }.joinToString("|")
+        responseWith(joinList)
+            .textOrEmpty("|") shouldBeEqualTo List(1_000) { "value-$it" }.joinToString("|")
         joinList.iteratorCount shouldBeEqualTo 1
         joinList.getCount shouldBeEqualTo 1_000
     }
@@ -115,8 +130,10 @@ class BedrockRuntimeResponseSupportTest {
         val joinBody = source.substringAfter("fun ConverseResponse.textOrEmpty")
             .substringBefore("/**")
 
-        require(!firstBody.contains("textContents("))
-        require(!joinBody.contains("textContents("))
+        log.debug { "firstBody=$firstBody" }
+        log.debug { "joinBody=$joinBody" }
+        firstBody shouldNotContain "textContents("
+        joinBody shouldNotContain "textContents("
     }
 
     private fun responseOf(vararg blocks: ContentBlock): ConverseResponse =
@@ -145,7 +162,7 @@ class BedrockRuntimeResponseSupportTest {
 
     private class CountingContentList(
         private val delegate: List<ContentBlock>,
-    ) : AbstractList<ContentBlock>() {
+    ): AbstractList<ContentBlock>() {
         var getCount = 0
             private set
         var iteratorCount = 0

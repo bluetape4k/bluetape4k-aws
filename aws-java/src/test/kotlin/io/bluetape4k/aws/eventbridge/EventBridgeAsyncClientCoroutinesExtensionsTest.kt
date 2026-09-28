@@ -3,8 +3,11 @@ package io.bluetape4k.aws.eventbridge
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.junit5.coroutines.assertResourceCancelledOnCoroutineCancellation
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -18,7 +21,9 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 
-class EventBridgeAsyncClientCoroutinesExtensionsTest {
+class EventBridgeAsyncClientCoroutinesExtensionsTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     private val client = mockk<EventBridgeAsyncClient>()
 
@@ -35,8 +40,10 @@ class EventBridgeAsyncClientCoroutinesExtensionsTest {
 
         val result = client.putEvents(listOf(entry))
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.failedEntryCount() shouldBeEqualTo 1
+
         verify(exactly = 1) { client.putEvents(any<PutEventsRequest>()) }
     }
 

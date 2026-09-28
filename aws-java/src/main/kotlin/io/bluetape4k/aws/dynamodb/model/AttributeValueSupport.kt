@@ -18,9 +18,8 @@ import java.nio.ByteBuffer
  */
 inline fun attributeValue(
     builder: AttributeValue.Builder.() -> Unit,
-): AttributeValue {
-    return AttributeValue.builder().apply(builder).build()
-}
+): AttributeValue =
+    AttributeValue.builder().apply(builder).build()
 
 /**
  * [ByteArray]를 [AttributeValue]로 변환합니다.

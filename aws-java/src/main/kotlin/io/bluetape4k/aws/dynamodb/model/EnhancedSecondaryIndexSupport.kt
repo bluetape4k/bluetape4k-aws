@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.dynamodb.model
 
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedGlobalSecondaryIndex
 import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedLocalSecondaryIndex
 import software.amazon.awssdk.services.dynamodb.model.Projection
@@ -76,6 +77,6 @@ fun enhancedLocalSecondaryIndexOf(
     indexName: String,
     projection: Projection,
 ): EnhancedLocalSecondaryIndex = EnhancedLocalSecondaryIndex {
-    indexName(indexName)
+    indexName(indexName.requireNotBlank("indexName"))
     projection(projection)
 }

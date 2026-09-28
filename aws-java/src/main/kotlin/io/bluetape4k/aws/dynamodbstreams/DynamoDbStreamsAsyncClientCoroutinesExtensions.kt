@@ -1,12 +1,15 @@
 package io.bluetape4k.aws.dynamodbstreams
 
+import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.logging.error
+import io.bluetape4k.logging.warn
+import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.future.await
@@ -20,10 +23,7 @@ import software.amazon.awssdk.services.dynamodb.model.Shard
 import software.amazon.awssdk.services.dynamodb.model.ShardIteratorType
 import software.amazon.awssdk.services.dynamodb.model.TrimmedDataAccessException
 import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClient
-import io.bluetape4k.logging.KotlinLogging
-import io.bluetape4k.logging.error
-import io.bluetape4k.logging.warn
-import io.bluetape4k.support.requireNotBlank
+import java.io.Serializable
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -53,7 +53,9 @@ fun DynamoDbStreamsAsyncClient.recordFlow(
             options = options,
             checkpointStore = checkpointStore,
             metrics = metrics,
-        ).collect { emit(it) }
+        ).collect {
+            emit(it)
+        }
     }
 }
 
@@ -111,11 +113,13 @@ private suspend fun DynamoDbStreamsAsyncClient.describeShards(
                 .exclusiveStartShardId(exclusiveStartShardId)
                 .build(),
         ).await()
+
         val description = response.streamDescription()
             ?: error("DescribeStream returned no streamDescription for streamArn=$streamArn")
         shards += description.shards()
         exclusiveStartShardId = description.lastEvaluatedShardId()
-        if (exclusiveStartShardId == null) return shards
+        if (exclusiveStartShardId == null)
+            return shards
     }
 
     error(
@@ -144,25 +148,29 @@ private fun DynamoDbStreamsAsyncClient.consumeShardTree(
         options = options,
         checkpointStore = checkpointStore,
         metrics = metrics,
-    ).collect { emit(DynamoDbStreamsShardRecord(streamArn, shardId, it)) }
-
-    childrenByParent[shardId].orEmpty().forEach { child ->
-        consumeShardTree(
-            streamArn = streamArn,
-            shard = child,
-            childrenByParent = childrenByParent,
-            visited = visited,
-            position = position,
-            options = options,
-            checkpointStore = checkpointStore,
-            metrics = metrics,
-        ).collect { emit(it) }
+    ).collect {
+        emit(DynamoDbStreamsShardRecord(streamArn, shardId, it))
     }
+
+    childrenByParent[shardId].orEmpty()
+        .forEach { child ->
+            consumeShardTree(
+                streamArn = streamArn,
+                shard = child,
+                childrenByParent = childrenByParent,
+                visited = visited,
+                position = position,
+                options = options,
+                checkpointStore = checkpointStore,
+                metrics = metrics,
+            ).collect { emit(it) }
+        }
 }
 
-private fun Shard.requireShardId(): String = shardId()
-    ?.also { it.requireNotBlank("shardId") }
-    ?: error("DescribeStream returned a shard without shardId")
+private fun Shard.requireShardId(): String =
+    shardId()
+        ?.also { it.requireNotBlank("shardId") }
+        ?: error("DescribeStream returned a shard without shardId")
 
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 private fun DynamoDbStreamsAsyncClient.consumeShard(
@@ -199,6 +207,7 @@ private fun DynamoDbStreamsAsyncClient.consumeShard(
                         .limit(options.batchLimit)
                         .build(),
                 ).await()
+
                 iteratorRetryCount = 0
                 throttleRetryCount = 0
                 val records = response.records()
@@ -225,17 +234,17 @@ private fun DynamoDbStreamsAsyncClient.consumeShard(
                 throw e
 
             } catch (e: TrimmedDataAccessException) {
-                log.error { "DynamoDB Streams data was trimmed: streamArn=$streamArn shard=$shardId" }
+                log.error(e) { "DynamoDB Streams data was trimmed: streamArn=$streamArn shard=$shardId" }
                 throw e
 
             } catch (e: ExpiredIteratorException) {
                 iteratorRetryCount++
                 if (lastSeenSequenceNumber == null && currentPosition is DynamoDbStreamsStartingPosition.Latest) {
-                    log.error { "Latest iterator expired before a checkpoint: streamArn=$streamArn shard=$shardId" }
+                    log.error(e) { "Latest iterator expired before a checkpoint: streamArn=$streamArn shard=$shardId" }
                     throw e
                 }
                 if (iteratorRetryCount > options.maxIteratorRetries) {
-                    log.error {
+                    log.error(e) {
                         "DynamoDB Streams iterator retries exhausted: streamArn=$streamArn " +
                                 "shard=$shardId attempts=$iteratorRetryCount"
                     }
@@ -285,8 +294,8 @@ private suspend fun DynamoDbStreamsAsyncClient.fetchShardIterator(
         .shardId(shardId)
         .apply {
             when (position) {
-                DynamoDbStreamsStartingPosition.TrimHorizon -> shardIteratorType(ShardIteratorType.TRIM_HORIZON)
-                DynamoDbStreamsStartingPosition.Latest -> shardIteratorType(ShardIteratorType.LATEST)
+                DynamoDbStreamsStartingPosition.TrimHorizon         -> shardIteratorType(ShardIteratorType.TRIM_HORIZON)
+                DynamoDbStreamsStartingPosition.Latest              -> shardIteratorType(ShardIteratorType.LATEST)
                 is DynamoDbStreamsStartingPosition.AtSequenceNumber -> {
                     shardIteratorType(ShardIteratorType.AT_SEQUENCE_NUMBER)
                     sequenceNumber(position.sequenceNumber)
@@ -323,4 +332,8 @@ data class DynamoDbStreamsShardRecord(
     val streamArn: String,
     val shardId: String,
     val record: Record,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}

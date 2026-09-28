@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.lambda
 
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
-import java.util.Base64
+import java.util.*
 
 /**
  * Lambda invoke의 raw response와 codec으로 변환한 결과를 함께 보존합니다.

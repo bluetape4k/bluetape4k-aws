@@ -5,15 +5,18 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.userMessageOf
 import io.bluetape4k.coroutines.flow.extensions.takeUntil
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -22,13 +25,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient
@@ -45,7 +47,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("LargeClass")
-class BedrockRuntimeFlowExtensionsTest {
+class BedrockRuntimeFlowExtensionsTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     private val client = mockk<BedrockRuntimeAsyncClient>()
     private val request = ConverseStreamRequest.builder()
@@ -66,10 +70,13 @@ class BedrockRuntimeFlowExtensionsTest {
         }
         val flow = client.converseStreamFlow(request)
 
-        verify(exactly = 0) { client.converseStream(any<ConverseStreamRequest>(), any()) }
+        verify(exactly = 0) {
+            client.converseStream(any<ConverseStreamRequest>(), any())
+        }
         flow.toList()
         flow.toList()
 
+        handlers.forEach { log.debug { "handler=$it" } }
         handlers.size shouldBeEqualTo 2
         verify(exactly = 2) { client.converseStream(any<ConverseStreamRequest>(), any()) }
     }
@@ -81,6 +88,7 @@ class BedrockRuntimeFlowExtensionsTest {
         every { client.converseStream(request, capture(handler)) } returns future
         val first = contentDelta("a")
         val seen = CompletableDeferred<ConverseStreamOutput>()
+
         val collector = launch {
             client.converseStreamFlow(request).collect { seen.complete(it) }
         }
@@ -1030,7 +1038,7 @@ class BedrockRuntimeFlowExtensionsTest {
             .delta(ContentBlockDelta.builder().text(text).build())
             .build()
 
-    private class CancelCountingFuture : CompletableFuture<Void>() {
+    private class CancelCountingFuture: CompletableFuture<Void>() {
         private val cancellations = AtomicInteger()
 
         val cancelCount: Int

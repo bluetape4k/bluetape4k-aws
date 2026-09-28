@@ -4,7 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.MethodOrderer
@@ -15,13 +15,13 @@ import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 
 /**
- * [StsAsyncClient] 코루틴 확장 함수 테스트.
+ * `StsAsyncClient` 코루틴 확장 함수 테스트.
  */
 @Execution(ExecutionMode.SAME_THREAD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class StsAsyncClientCoroutinesExtensionsTest: AbstractStsTest() {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
 
     @Test
     @Order(1)

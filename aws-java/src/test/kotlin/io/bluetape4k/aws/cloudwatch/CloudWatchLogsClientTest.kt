@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.cloudwatch
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -29,7 +29,7 @@ class CloudWatchLogsClientTest: AbstractCloudWatchTest() {
         val response = logsClient.createLogGroup(LOG_GROUP_NAME)
 
         response.sdkHttpResponse().statusCode() shouldBeEqualTo 200
-        log.debug { "createLogGroup response: ${response.sdkHttpResponse().statusCode()}" }
+        log.debug { "createLogGroup response: $response" }
     }
 
     @Test
@@ -38,7 +38,7 @@ class CloudWatchLogsClientTest: AbstractCloudWatchTest() {
         val response = logsClient.createLogStream(LOG_GROUP_NAME, LOG_STREAM_NAME)
 
         response.sdkHttpResponse().statusCode() shouldBeEqualTo 200
-        log.debug { "createLogStream response: ${response.sdkHttpResponse().statusCode()}" }
+        log.debug { "createLogStream response: $response" }
     }
 
     @Test
@@ -53,7 +53,7 @@ class CloudWatchLogsClientTest: AbstractCloudWatchTest() {
         val response = logsClient.putLogEvents(LOG_GROUP_NAME, LOG_STREAM_NAME, events)
 
         response.sdkHttpResponse().statusCode() shouldBeEqualTo 200
-        log.debug { "putLogEvents response: ${response.sdkHttpResponse().statusCode()}" }
+        log.debug { "putLogEvents response: $response" }
     }
 
     @Test
@@ -61,7 +61,7 @@ class CloudWatchLogsClientTest: AbstractCloudWatchTest() {
     fun `describe log groups`() {
         val response = logsClient.describeLogGroups(logGroupNamePrefix = "/bluetape4k")
 
-        response.logGroups().shouldNotBeNull().shouldNotBeEmpty()
+        response.logGroups().shouldNotBeEmpty()
         response.logGroups().forEach { group ->
             log.debug { "logGroup: ${group.logGroupName()}" }
         }
@@ -72,7 +72,7 @@ class CloudWatchLogsClientTest: AbstractCloudWatchTest() {
     fun `describe log streams`() {
         val response = logsClient.describeLogStreams(LOG_GROUP_NAME)
 
-        response.logStreams().shouldNotBeNull().shouldNotBeEmpty()
+        response.logStreams().shouldNotBeEmpty()
         response.logStreams().forEach { stream ->
             log.debug { "logStream: ${stream.logStreamName()}" }
         }

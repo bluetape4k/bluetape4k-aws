@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.http
 
+import io.bluetape4k.support.requirePositiveNumber
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient
 import kotlin.time.Duration
@@ -26,9 +27,8 @@ import kotlin.time.toJavaDuration
  */
 inline fun awsCrtAsyncHttpClient(
     builder: AwsCrtAsyncHttpClient.Builder.() -> Unit,
-): SdkAsyncHttpClient {
-    return AwsCrtAsyncHttpClient.builder().apply(builder).build()
-}
+): SdkAsyncHttpClient =
+    AwsCrtAsyncHttpClient.builder().apply(builder).build()
 
 /**
  * 기본 동시성/버퍼/타임아웃 설정을 적용한 CRT [SdkAsyncHttpClient]를 생성합니다.
@@ -54,8 +54,8 @@ inline fun awsCrtAsyncHttpClientOf(
     postQuantumTlsEnabled: Boolean = false,
     builder: AwsCrtAsyncHttpClient.Builder.() -> Unit = {},
 ): SdkAsyncHttpClient = awsCrtAsyncHttpClient {
-    this.maxConcurrency(maxConcurrency)
-    this.readBufferSizeInBytes(readBufferSize)
+    this.maxConcurrency(maxConcurrency.requirePositiveNumber("maxConcurrency"))
+    this.readBufferSizeInBytes(readBufferSize.requirePositiveNumber("readBufferSize"))
     this.connectionMaxIdleTime(connectionMaxIdleTime.toJavaDuration())
     this.connectionTimeout(connectionTimeout.toJavaDuration())
     this.postQuantumTlsEnabled(postQuantumTlsEnabled)

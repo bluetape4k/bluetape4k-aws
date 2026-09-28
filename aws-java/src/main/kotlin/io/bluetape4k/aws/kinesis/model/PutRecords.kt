@@ -39,15 +39,35 @@ inline fun putRecordsRequestOf(
 ): PutRecordsRequest {
     streamName.requireNotBlank("streamName")
     entries.validateKinesisPutRecordsEntries("entries")
+
     return putRecordsRequest {
         streamName(streamName)
         records(entries)
+
         builder()
-    }.also { request ->
-        request.streamName().requireNotBlank("streamName")
-        request.records().validateKinesisPutRecordsEntries("entries")
+    }.apply {
+        streamName().requireNotBlank("streamName")
+        records().validateKinesisPutRecordsEntries("entries")
     }
 }
+
+
+/**
+ * 파티션 키와 데이터로 [PutRecordsRequestEntry]를 생성합니다.
+ *
+ * ## 동작/계약
+ *
+ * ```kotlin
+ * val entry = putRecordsRequestEntry {
+ *     partitionKey = "pk",
+ *     data = SdkBytes.fromUtf8String("hello")
+ * }
+ * ```
+ */
+inline fun putRecordsRequestEntry(
+    builder: PutRecordsRequestEntry.Builder.() -> Unit
+): PutRecordsRequestEntry =
+    PutRecordsRequestEntry.builder().apply(builder).build()
 
 /**
  * 파티션 키와 데이터로 [PutRecordsRequestEntry]를 생성합니다.
@@ -65,10 +85,13 @@ inline fun putRecordsRequestOf(
 fun putRecordsRequestEntryOf(
     partitionKey: String,
     data: SdkBytes,
+    builder: PutRecordsRequestEntry.Builder.() -> Unit = {}
 ): PutRecordsRequestEntry {
     partitionKey.requireNotBlank("partitionKey")
-    return PutRecordsRequestEntry.builder()
-        .partitionKey(partitionKey)
-        .data(data)
-        .build()
+
+    return putRecordsRequestEntry {
+        partitionKey(partitionKey)
+        data(data)
+        builder()
+    }
 }

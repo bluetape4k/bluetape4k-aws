@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.coroutines
 
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -9,7 +10,6 @@ import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.ec2.Ec2Client

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kinesis
 
+import io.bluetape4k.support.requirePositiveNumber
 import java.io.ObjectInputStream
 import java.io.Serializable
 
@@ -11,18 +12,18 @@ data class KinesisLease(
     val key: KinesisShardKey,
     val ownerId: String,
     val leaseCounter: Long,
-) : Serializable {
+): Serializable {
 
     init {
         ownerId.requireKinesisIdentifier("ownerId")
-        require(leaseCounter > 0) { "leaseCounter must be positive, but was $leaseCounter" }
+        leaseCounter.requirePositiveNumber("leaseCounter")
     }
 
     @Suppress("unused")
     private fun readObject(input: ObjectInputStream) {
         input.defaultReadObject()
         ownerId.requireKinesisIdentifier("ownerId")
-        require(leaseCounter > 0) { "leaseCounter must be positive, but was $leaseCounter" }
+        leaseCounter.requirePositiveNumber("leaseCounter")
     }
 
     companion object {

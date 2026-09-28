@@ -26,12 +26,11 @@ import java.net.URI
  */
 inline fun dynamoDbStreamsAsyncClient(
     builder: DynamoDbStreamsAsyncClientBuilder.() -> Unit,
-): DynamoDbStreamsAsyncClient {
-    return DynamoDbStreamsAsyncClient.builder().apply(builder).build()
+): DynamoDbStreamsAsyncClient =
+    DynamoDbStreamsAsyncClient.builder().apply(builder).build()
         .apply {
             ShutdownQueue.register(this)
         }
-}
 
 /**
  * [DynamoDbStreamsAsyncClient]를 빌드해주는 함수입니다.
@@ -61,11 +60,12 @@ inline fun dynamoDbStreamsAsyncClientOf(
     credentialsProvider: AwsCredentialsProvider,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
     builder: DynamoDbStreamsAsyncClientBuilder.() -> Unit = {},
-): DynamoDbStreamsAsyncClient = dynamoDbStreamsAsyncClient {
-    endpointOverride(endpoint)
-    region(region)
-    credentialsProvider(credentialsProvider)
-    httpClient(httpClient)
+): DynamoDbStreamsAsyncClient =
+    dynamoDbStreamsAsyncClient {
+        endpointOverride(endpoint)
+        region(region)
+        credentialsProvider(credentialsProvider)
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }

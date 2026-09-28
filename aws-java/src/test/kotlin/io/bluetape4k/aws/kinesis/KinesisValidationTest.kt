@@ -3,9 +3,13 @@ package io.bluetape4k.aws.kinesis
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.aws.kinesis.model.createStreamRequestOf
 import io.bluetape4k.aws.kinesis.model.getRecordsRequestOf
+import io.bluetape4k.aws.kinesis.model.putRecordsRequestEntryOf
 import io.bluetape4k.aws.kinesis.model.putRecordsRequestOf
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
@@ -14,8 +18,15 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 
 class KinesisValidationTest {
 
+    companion object: KLogging()
+
     private val client = mockk<KinesisClient>()
     private val asyncClient = mockk<KinesisAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client, asyncClient)
+    }
 
     @Test
     fun `createStream validates shard count before AWS call`() = runTest {
@@ -71,18 +82,18 @@ class KinesisValidationTest {
     }
 
     private fun tooManyEntries(): List<PutRecordsRequestEntry> =
-        (1..501).map { index ->
-            PutRecordsRequestEntry.builder()
-                .partitionKey("partition-$index")
-                .data(SdkBytes.fromUtf8String("message-$index"))
-                .build()
+        List(MAX_KINESIS_PUT_RECORDS_ENTRIES + 1) { index ->
+            putRecordsRequestEntryOf(
+                "partition-$index",
+                SdkBytes.fromUtf8String("message-$index")
+            )
         }
 
     private fun validEntries(): List<PutRecordsRequestEntry> =
         listOf(
-            PutRecordsRequestEntry.builder()
-                .partitionKey("partition")
-                .data(SdkBytes.fromUtf8String("message"))
-                .build()
+            putRecordsRequestEntryOf(
+                "partition",
+                SdkBytes.fromUtf8String("message")
+            )
         )
 }

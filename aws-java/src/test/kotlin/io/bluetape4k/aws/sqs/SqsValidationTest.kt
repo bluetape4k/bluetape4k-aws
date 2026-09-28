@@ -4,7 +4,10 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.aws.sqs.model.receiveMessageRequestOf
 import io.bluetape4k.aws.sqs.model.sendMessageBatchRequestEntryOf
 import io.bluetape4k.aws.sqs.model.sendMessageRequestOf
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearAllMocks
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -13,6 +16,16 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 
 class SqsValidationTest: AbstractSqsTest() {
+
+    companion object: KLogging()
+
+    private val sync = mockk<SqsClient>(relaxed = true)
+    private val async = mockk<SqsAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
+    }
 
     @Test
     fun `receiveMessages validates maxResults range in sync client`() {
@@ -43,37 +56,30 @@ class SqsValidationTest: AbstractSqsTest() {
         val queueUrl = "https://example.com/queue/demo"
 
         assertFailsWith<IllegalArgumentException> {
-            client.sendBatch(queueUrl, entries = emptyList<SendMessageBatchRequestEntry>())
+            client.sendBatch(queueUrl, entries = emptyList())
         }
         assertFailsWith<IllegalArgumentException> {
-            client.changeMessageVisibilityBatch(
-                queueUrl,
-                entries = emptyList<ChangeMessageVisibilityBatchRequestEntry>()
-            )
+            client.changeMessageVisibilityBatch(queueUrl, entries = emptyList())
         }
         assertFailsWith<IllegalArgumentException> {
-            client.deleteMessageBatch(queueUrl, entries = emptyList<DeleteMessageBatchRequestEntry>())
+            client.deleteMessageBatch(queueUrl, entries = emptyList())
         }
 
         assertFailsWith<IllegalArgumentException> {
-            asyncClient.sendBatchAsync(queueUrl, entries = emptyList<SendMessageBatchRequestEntry>())
+            asyncClient.sendBatchAsync(queueUrl, entries = emptyList())
         }
         assertFailsWith<IllegalArgumentException> {
-            asyncClient.changeMessageVisibilityBatchAsync(
-                queueUrl,
-                entries = emptyList<ChangeMessageVisibilityBatchRequestEntry>()
-            )
+            asyncClient.changeMessageVisibilityBatchAsync(queueUrl, entries = emptyList())
         }
         assertFailsWith<IllegalArgumentException> {
-            asyncClient.deleteMessageBatchAsync(queueUrl, entries = emptyList<DeleteMessageBatchRequestEntry>())
+            asyncClient.deleteMessageBatchAsync(queueUrl, entries = emptyList())
         }
     }
 
     @Test
     fun `batch operations reject more than ten entries`() {
         val queueUrl = "https://example.com/queue/demo"
-        val sync = mockk<SqsClient>()
-        val async = mockk<SqsAsyncClient>()
+
         val sendEntries = tooManySendEntries()
         val visibilityEntries = tooManyVisibilityEntries()
         val deleteEntries = tooManyDeleteEntries()
@@ -147,8 +153,6 @@ class SqsValidationTest: AbstractSqsTest() {
     @Test
     fun `changeMessageVisibility validates visibility timeout`() {
         val queueUrl = "https://example.com/queue/demo"
-        val sync = mockk<SqsClient>()
-        val async = mockk<SqsAsyncClient>()
 
         assertFailsWith<IllegalArgumentException> {
             sync.changeMessageVisibility(queueUrl, visibilityTimeout = -1)
@@ -183,7 +187,7 @@ class SqsValidationTest: AbstractSqsTest() {
     }
 
     private fun tooManySendEntries(): List<SendMessageBatchRequestEntry> =
-        (1..11).map { index ->
+        List(11) { index ->
             SendMessageBatchRequestEntry.builder()
                 .id("send-$index")
                 .messageBody("message-$index")
@@ -191,7 +195,7 @@ class SqsValidationTest: AbstractSqsTest() {
         }
 
     private fun tooManyVisibilityEntries(): List<ChangeMessageVisibilityBatchRequestEntry> =
-        (1..11).map { index ->
+        List(11) { index ->
             ChangeMessageVisibilityBatchRequestEntry.builder()
                 .id("visibility-$index")
                 .receiptHandle("receipt-$index")
@@ -200,7 +204,7 @@ class SqsValidationTest: AbstractSqsTest() {
         }
 
     private fun tooManyDeleteEntries(): List<DeleteMessageBatchRequestEntry> =
-        (1..11).map { index ->
+        List(11) { index ->
             DeleteMessageBatchRequestEntry.builder()
                 .id("delete-$index")
                 .receiptHandle("receipt-$index")

@@ -63,7 +63,16 @@ fun SsmAsyncClient.getParametersByPathAsync(
     nextToken: String? = null,
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
 ): CompletableFuture<GetParametersByPathResponse> =
-    getParametersByPath(getParametersByPathRequestOf(path, recursive, withDecryption, maxResults, nextToken, overrideConfiguration))
+    getParametersByPath(
+        getParametersByPathRequestOf(
+            path,
+            recursive,
+            withDecryption,
+            maxResults,
+            nextToken,
+            overrideConfiguration
+        )
+    )
 
 /**
  * 파라미터 페이지 하나를 설명합니다.

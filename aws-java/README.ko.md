@@ -2,18 +2,11 @@
 
 [English](./README.md) | 한국어
 
-AWS Java SDK v2 기반 통합 모듈입니다. AWS SDK 모델 타입은 그대로 드러내고,
-동기 helper, 비동기 `CompletableFuture` 확장, coroutine API를 더합니다.
-DynamoDB, S3, S3 Tables, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis,
-EventBridge, Step Functions, Lambda, STS, Secrets Manager, Parameter Store 같은 주요
-서비스를 대상으로 합니다.
+AWS Java SDK v2 기반 통합 모듈입니다. AWS SDK 모델 타입은 그대로 드러내고, 동기 helper, 비동기 `CompletableFuture` 확장, coroutine API를 더합니다. DynamoDB, S3, S3 Tables, 선택적 S3 Vectors, SES, SNS, SQS, KMS, CloudWatch, Kinesis, EventBridge, Step Functions, Lambda, STS, Secrets Manager, Parameter Store 같은 주요 서비스를 대상으로 합니다.
 
 ## 다이어그램
 
-아래 다이어그램은 모듈을 정적 경계, 런타임 호출 흐름, 코루틴 handoff 세 관점으로
-나눠 보여줍니다. 애플리케이션이 AWS SDK 런타임 의존성을 직접 고르는 지점과
-이 모듈이 제공하는 factory, request DSL, async extension, coroutine wrapper,
-repository helper의 역할을 함께 확인할 수 있습니다.
+아래 다이어그램은 모듈을 정적 경계, 런타임 호출 흐름, 코루틴 handoff 세 관점으로 나눠 보여줍니다. 애플리케이션이 AWS SDK 런타임 의존성을 직접 고르는 지점과 이 모듈이 제공하는 factory, request DSL, async extension, coroutine wrapper, repository helper의 역할을 함께 확인할 수 있습니다.
 
 ### 모듈 아키텍처
 
@@ -29,35 +22,33 @@ repository helper의 역할을 함께 확인할 수 있습니다.
 
 ## 제공 서비스
 
-| 서비스                 | 주요 기능                                                   |
-|---------------------|---------------------------------------------------------|
-| **DynamoDB**        | 테이블 CRUD, Enhanced Client, Coroutines 확장                |
-| **S3**              | 객체 업로드/다운로드, TransferManager(대용량), Coroutines 확장        |
+| 서비스              | 주요 기능                                                                      |
+|---------------------|--------------------------------------------------------------------------------|
+| **DynamoDB**        | 테이블 CRUD, Enhanced Client, Coroutines 확장                                  |
+| **S3**              | 객체 업로드/다운로드, TransferManager(대용량), Coroutines 확장                 |
 | **S3 Tables**       | table bucket, namespace, table 생성·목록·조회·삭제와 sync/async/coroutine 확장 |
-| **S3 Vectors**      | 선택적 vector bucket/index 조회와 vector put/get/list/query facade |
-| **SES**             | 이메일 발송, Coroutines 확장                                   |
-| **SNS**             | 토픽 발행, SMS, 푸시 알림, Coroutines 확장                        |
-| **SQS**             | 메시지 발송/수신/삭제, Coroutines 확장                             |
-| **KMS**             | 암호화 키 관리, 요청 DSL, Sync/Async 클라이언트 빌더                    |
-| **CloudWatch**      | 메트릭 발행/조회, Coroutines 확장                                |
-| **CloudWatch Logs** | 로그 그룹/스트림 관리, 이벤트 전송, Coroutines 확장                     |
-| **Kinesis**         | 스트림 레코드 전송/조회, Coroutines 확장                            |
-| **EventBridge**     | Event bus, rule, target, list, `PutEvents` helper           |
-| **Step Functions**  | 실행 시작/중지/조회/목록, async coroutine `Flow` polling       |
-| **Lambda**          | 동기, async `CompletableFuture`, coroutine 호출, typed payload codec |
-| **Bedrock Runtime** | 모델 중립 `Converse`, `ConverseStream`, cold text-delta `Flow` |
-| **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines 확장 |
-| **Secrets Manager** | Redacted secret value, 요청 DSL, sync/async/coroutine helper |
-| **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL |
+| **S3 Vectors**      | 선택적 vector bucket/index 조회와 vector put/get/list/query facade             |
+| **SES**             | 이메일 발송, Coroutines 확장                                                   |
+| **SNS**             | 토픽 발행, SMS, 푸시 알림, Coroutines 확장                                     |
+| **SQS**             | 메시지 발송/수신/삭제, Coroutines 확장                                         |
+| **KMS**             | 암호화 키 관리, 요청 DSL, Sync/Async 클라이언트 빌더                           |
+| **CloudWatch**      | 메트릭 발행/조회, Coroutines 확장                                              |
+| **CloudWatch Logs** | 로그 그룹/스트림 관리, 이벤트 전송, Coroutines 확장                            |
+| **Kinesis**         | 스트림 레코드 전송/조회, Coroutines 확장                                       |
+| **EventBridge**     | Event bus, rule, target, list, `PutEvents` helper                              |
+| **Step Functions**  | 실행 시작/중지/조회/목록, async coroutine `Flow` polling                       |
+| **Lambda**          | 동기, async `CompletableFuture`, coroutine 호출, typed payload codec           |
+| **Bedrock Runtime** | 모델 중립 `Converse`, `ConverseStream`, cold text-delta `Flow`                 |
+| **STS**             | AssumeRole, CallerIdentity, SessionToken, Coroutines 확장                      |
+| **Secrets Manager** | Redacted secret value, 요청 DSL, sync/async/coroutine helper                   |
+| **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL                     |
 
 ## Bedrock Runtime Converse와 스트리밍
 
 ![Amazon Bedrock Runtime 스트리밍 시퀀스](../docs/images/readme-diagrams/aws-bedrock-runtime-streaming-sequence-ko-01.png)
 
-이 파사드는 AWS SDK v2의 요청·응답·이벤트·future·예외 타입을 그대로 사용합니다.
-블로킹 `Converse`, 원본 `CompletableFuture`를 돌려주는 `converseAsync`, suspend
-`converse` 확장, 모델 중립 `ConverseStream`을 cold `Flow`로 제공합니다. 특정 모델
-제공자에 종속된 프롬프트 추상화는 만들지 않습니다.
+이 파사드는 AWS SDK v2의 요청·응답·이벤트·future·예외 타입을 그대로 사용합니다. 블로킹 `Converse`, 원본 `CompletableFuture`를 돌려주는 `converseAsync`, suspend
+`converse` 확장, 모델 중립 `ConverseStream`을 cold `Flow`로 제공합니다. 특정 모델 제공자에 종속된 프롬프트 추상화는 만들지 않습니다.
 
 ```kotlin
 import io.bluetape4k.aws.bedrock.bedrockRuntimeAsyncClientOf
@@ -91,27 +82,17 @@ suspend fun streamReply(
     }
 ```
 
-`bedrockRuntimeClientOf`와 `bedrockRuntimeAsyncClientOf`가 돌려준 클라이언트의
-생명주기는 애플리케이션이 소유합니다. 스트림의 최종 수집이 끝난 뒤 클라이언트를
-닫아야 합니다. Flow를 다시 수집하면 과금될 수 있는 새 요청이 실행됩니다.
-`takeUntil`은 원본 Flow가 다음 이벤트를 내보낼 때 중단 상태를 확인하므로, 모델이 한동안
-응답하지 않을 수 있다면 `withTimeout`으로 강제 제한 시간을 함께 두세요.
+`bedrockRuntimeClientOf`와 `bedrockRuntimeAsyncClientOf`가 돌려준 클라이언트의 생명주기는 애플리케이션이 소유합니다. 스트림의 최종 수집이 끝난 뒤 클라이언트를 닫아야 합니다. Flow를 다시 수집하면 과금될 수 있는 새 요청이 실행됩니다.
+`takeUntil`은 원본 Flow가 다음 이벤트를 내보낼 때 중단 상태를 확인하므로, 모델이 한동안 응답하지 않을 수 있다면 `withTimeout`으로 강제 제한 시간을 함께 두세요.
 
-- `textDeltaFlow()`는 bluetape4k-coroutines의 `castNotNull`을 재사용해 네이티브
-  텍스트 델타를 순서대로 고릅니다. 버퍼링·재생·병렬 매핑·로그 기록은 추가하지 않습니다.
+- `textDeltaFlow()`는 bluetape4k-coroutines의 `castNotNull`을 재사용해 네이티브 텍스트 델타를 순서대로 고릅니다. 버퍼링·재생·병렬 매핑·로그 기록은 추가하지 않습니다.
 - 빈 모델 ID, 비어 있는 메시지 컬렉션, `contentBlockOf` 또는
   `userMessageOf`에 전달한 빈 텍스트는 SDK 호출 전에
   `IllegalArgumentException`으로 거절합니다.
-- 네이티브 SDK 오류와 코루틴 취소는 바꾸지 않고 호출자에게 전달합니다. 예외로 완료된
-  future도 그대로 유지하며, 실패·시간 초과·취소 시점에 수집자에게는 이미 일부 텍스트가
-  전달됐을 수 있습니다.
-- AWS SDK 재시도는 의미가 같은 출력을 반복할 수 있습니다. 정확히 한 번
-  (exactly-once), 중복 제거, 재생, 파사드 차원의 재시도는 제공하지 않습니다.
+- 네이티브 SDK 오류와 코루틴 취소는 바꾸지 않고 호출자에게 전달합니다. 예외로 완료된 future도 그대로 유지하며, 실패·시간 초과·취소 시점에 수집자에게는 이미 일부 텍스트가 전달됐을 수 있습니다.
+- AWS SDK 재시도는 의미가 같은 출력을 반복할 수 있습니다. 정확히 한 번 (exactly-once), 중복 제거, 재생, 파사드 차원의 재시도는 제공하지 않습니다.
 - 트랜잭션 성격의 작업에는 비스트리밍 `Converse`가 더 안전합니다.
-- 자격 증명은 기본 AWS provider chain으로 공급하고, 루프백 주소를 직접 지정한 테스트가
-  아니라면 HTTPS 엔드포인트만 사용하세요. 생성된 출력은 신뢰하지 말고 도구를 자동
-  실행하지 마세요. 운영 로그에는 허용한 메타데이터만 남기며 원문 SDK 예외, 프롬프트,
-  모델 출력은 기록하거나 애플리케이션 경계 밖에 그대로 노출하지 않습니다.
+- 자격 증명은 기본 AWS provider chain으로 공급하고, 루프백 주소를 직접 지정한 테스트가 아니라면 HTTPS 엔드포인트만 사용하세요. 생성된 출력은 신뢰하지 말고 도구를 자동 실행하지 마세요. 운영 로그에는 허용한 메타데이터만 남기며 원문 SDK 예외, 프롬프트, 모델 출력은 기록하거나 애플리케이션 경계 밖에 그대로 노출하지 않습니다.
 
 ## 3단계 API 패턴
 
@@ -121,8 +102,7 @@ suspend fun streamReply(
 sync (blocking) → async (CompletableFuture) → coroutines (suspend)
 ```
 
-코루틴 확장이 제공되는 API는 `CompletableFuture`를 `.await()` 확장 함수로 래핑하므로, 코루틴 컨텍스트에서 스레드 블로킹 없이 사용할 수 있습니다.
-서비스 SDK와 코루틴 헬퍼 아티팩트는 `compileOnly`로 유지되므로 애플리케이션은 실제 사용하는 AWS SDK 및 코루틴 런타임 모듈을 추가해야 합니다.
+코루틴 확장이 제공되는 API는 `CompletableFuture`를 `.await()` 확장 함수로 래핑하므로, 코루틴 컨텍스트에서 스레드 블로킹 없이 사용할 수 있습니다. 서비스 SDK와 코루틴 헬퍼 아티팩트는 `compileOnly`로 유지되므로 애플리케이션은 실제 사용하는 AWS SDK 및 코루틴 런타임 모듈을 추가해야 합니다.
 
 ## 사용 예시
 
@@ -180,18 +160,12 @@ class SemanticIndexReader(
 }
 ```
 
-S3 Vectors는 별도 AWS SDK v2 `s3vectors` 서비스를 사용합니다. 이 모듈은 해당 의존성을
-선택으로 유지하고 discovery, put/get/list, query 작업용 작은 suspend facade만 제공합니다.
-파괴적 관리, tagging, policy 호출은 raw `S3VectorsAsyncClient` 로 그대로 사용할 수 있습니다.
+S3 Vectors는 별도 AWS SDK v2 `s3vectors` 서비스를 사용합니다. 이 모듈은 해당 의존성을 선택으로 유지하고 discovery, put/get/list, query 작업용 작은 suspend facade만 제공합니다. 파괴적 관리, tagging, policy 호출은 raw `S3VectorsAsyncClient` 로 그대로 사용할 수 있습니다.
 
 ### S3 Tables 관리 (1.0.0 개발선)
 
-S3 Tables helper는 AWS SDK v2 request·response 타입을 그대로 노출하면서 table bucket,
-namespace, table의 생성·목록·조회·삭제를 sync/async/coroutine으로 제공합니다. 목록은 raw
-service의 한 페이지를 반환하므로 다음 페이지가 필요하면 `continuationToken`을 호출자가
-명시합니다. `ListTables`의 `namespace`는 선택 사항이므로 bucket 범위 목록에도 사용할 수 있습니다.
-`CreateTable`의 기본 format은 SDK의 `ICEBERG`이며, `GetTable`은 table ARN 또는
-bucket/namespace/name selector 중 하나를 사용합니다.
+S3 Tables helper는 AWS SDK v2 request·response 타입을 그대로 노출하면서 table bucket, namespace, table의 생성·목록·조회·삭제를 sync/async/coroutine으로 제공합니다. 목록은 raw service의 한 페이지를 반환하므로 다음 페이지가 필요하면 `continuationToken`을 호출자가 명시합니다. `ListTables`의 `namespace`는 선택 사항이므로 bucket 범위 목록에도 사용할 수 있습니다.
+`CreateTable`의 기본 format은 SDK의 `ICEBERG`이며, `GetTable`은 table ARN 또는 bucket/namespace/name selector 중 하나를 사용합니다.
 
 서비스 SDK는 `compileOnly`이므로 애플리케이션이 직접 추가해야 합니다.
 
@@ -216,12 +190,8 @@ suspend fun createOrdersTable() = withS3TablesClient(region = Region.AP_NORTHEAS
 }
 ```
 
-`s3TablesClient`와 `s3TablesClientOf`는 application-scoped client를 만들고 `ShutdownQueue`에
-등록합니다. 일찍 닫거나 주입한 HTTP client를 관리하는 책임은 호출자에게 있습니다.
-`withS3TablesClient`는 등록하지 않은 단기 client를 만들어 block이 끝날 때 service client만 닫습니다.
-이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다.
-Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의
-S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
+`s3TablesClient`와 `s3TablesClientOf`는 application-scoped client를 만들고 `ShutdownQueue`에 등록합니다. 일찍 닫거나 주입한 HTTP client를 관리하는 책임은 호출자에게 있습니다.
+`withS3TablesClient`는 등록하지 않은 단기 client를 만들어 block이 끝날 때 service client만 닫습니다. 이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다. Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의 S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
 
 ### Secrets Manager와 Parameter Store
 
@@ -263,8 +233,7 @@ fun loadAppParameters(ssm: SsmClient) =
     ).parameters()
 ```
 
-Secret 값은 plaintext가 꼭 필요한 consumer boundary까지 `AwsSecretValue` 안에
-유지하세요. Revealed value를 출력, 로그, 예외 메시지에 포함하지 않습니다.
+Secret 값은 plaintext가 꼭 필요한 consumer boundary까지 `AwsSecretValue` 안에 유지하세요. Revealed value를 출력, 로그, 예외 메시지에 포함하지 않습니다.
 
 ### SQS Coroutine Extensions
 
@@ -351,13 +320,10 @@ val metrics = KinesisFlowMetrics { event ->
 
 `KinesisCanonicalObservation`은 `discovery`, `shard`, `batch`, `record`, `lease`,
 `checkpoint`, `retry`로 event vocabulary를 고정합니다. count와 retry count의 범위는
-`0..10000`입니다. stream, shard, owner label은 24자 소문자 16진수 hash prefix로 통일해
-cardinality와 raw identifier 노출을 줄이지만, 인증 또는 암호학적 identity token으로 사용하면 안 됩니다.
+`0..10000`입니다. stream, shard, owner label은 24자 소문자 16진수 hash prefix로 통일해 cardinality와 raw identifier 노출을 줄이지만, 인증 또는 암호학적 identity token으로 사용하면 안 됩니다.
 
-마이그레이션할 때는 legacy와 canonical exporter를 병행한 뒤 dashboard와 alert를 canonical
-24자 label로 옮기고 legacy exporter를 제거합니다. Java의 완료된 shard 한 건은 canonical에서
-`checkpoint/success/shard_end`, `shard/success` 두 건이 됩니다. 기존 sealed event API와 callback
-ABI는 바뀌지 않습니다.
+마이그레이션할 때는 legacy와 canonical exporter를 병행한 뒤 dashboard와 alert를 canonical 24자 label로 옮기고 legacy exporter를 제거합니다. Java의 완료된 shard 한 건은 canonical에서
+`checkpoint/success/shard_end`, `shard/success` 두 건이 됩니다. 기존 sealed event API와 callback ABI는 바뀌지 않습니다.
 
 ### EventBridge Core Helpers
 
@@ -379,18 +345,13 @@ fun publishOrderEvent(client: EventBridgeClient) {
 }
 ```
 
-EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK 응답을 그대로 반환합니다.
-런타임에는 `software.amazon.awssdk:eventbridge`를 추가해야 합니다. Scheduler, framework
-integration, global endpoint, cross-account target orchestration, SDK model 타입을
-넘어서는 target별 검증은 이 모듈 범위에 포함하지 않습니다.
+EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK 응답을 그대로 반환합니다. 런타임에는 `software.amazon.awssdk:eventbridge`를 추가해야 합니다. Scheduler, framework integration, global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은 이 모듈 범위에 포함하지 않습니다.
 
 ### Step Functions 실행 helper (1.0.0 개발선)
 
 `1.0.0` 개발선에서는 `StartExecution`, `StopExecution`, `DescribeExecution`,
-`ListExecutions`를 위한 얇은 extension이 추가됩니다. 동기와 단발성 async 연산은 AWS
-SDK raw 응답을 반환합니다. Polling은 `SfnAsyncClient`에서만 제공하며
-`Flow<DescribeExecutionResponse>` cold Flow로 동작합니다. client, timeout과 cancellation
-정책은 호출자가 소유합니다.
+`ListExecutions`를 위한 얇은 extension이 추가됩니다. 동기와 단발성 async 연산은 AWS SDK raw 응답을 반환합니다. Polling은 `SfnAsyncClient`에서만 제공하며
+`Flow<DescribeExecutionResponse>` cold Flow로 동작합니다. client, timeout과 cancellation 정책은 호출자가 소유합니다.
 
 ```kotlin
 import io.bluetape4k.aws.sfn.withSfnAsyncClient
@@ -413,18 +374,13 @@ fun awaitExecution(executionArn: String): DescribeExecutionResponse = runBlockin
 
 이 예제는 Standard execution을 대상으로 합니다. 수집이 취소되어도 helper가
 `StopExecution`을 자동 호출하지 않으며 호출자가 제공한 client를 닫지 않습니다. 서비스 SDK는
-`compileOnly`로 유지되므로 런타임에 `software.amazon.awssdk:sfn`을 직접 추가하세요.
-의존성, Standard/Express/Map Run, IAM/KMS, quota와 emulator 경계는
-[Step Functions Java 모듈 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-java/)에서
-확인할 수 있습니다.
+`compileOnly`로 유지되므로 런타임에 `software.amazon.awssdk:sfn`을 직접 추가하세요. 의존성, Standard/Express/Map Run, IAM/KMS, quota와 emulator 경계는
+[Step Functions Java 모듈 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-java/)에서 확인할 수 있습니다.
 
 ### Lambda 호출 helper (1.0.0 개발선)
 
 `1.0.0` 개발선에서는 `io.bluetape4k.aws.lambda` 아래에 동기, async, coroutine
-`Invoke` helper가 추가됩니다. Raw `InvokeResponse`를 보존하고 response payload를
-복사하며, `functionError`를 결과 데이터로 노출하고 선택적 tail log를 디코드합니다.
-소비자가 Jackson을 선택한 경우 `LambdaPayloadCodecs.jackson(...)`으로 typed payload를
-디코드할 수 있습니다.
+`Invoke` helper가 추가됩니다. Raw `InvokeResponse`를 보존하고 response payload를 복사하며, `functionError`를 결과 데이터로 노출하고 선택적 tail log를 디코드합니다. 소비자가 Jackson을 선택한 경우 `LambdaPayloadCodecs.jackson(...)`으로 typed payload를 디코드할 수 있습니다.
 
 ```kotlin
 import io.bluetape4k.aws.lambda.invokeString
@@ -438,21 +394,14 @@ fun invokeOrder(): String = withLambdaClient(region = Region.AP_NORTHEAST_2) { c
 }
 ```
 
-서비스 SDK는 `compileOnly`이므로 런타임에 `software.amazon.awssdk:lambda`를 직접
-추가하세요. Async 호출의 `invokeStringAsync`는 future를 반환하고 coroutine overload는
-`.await()`를 사용합니다. 결과 future를 취소하면 AWS SDK future에도 취소가 전달됩니다.
-이 helper는 retry, 배포, polling, 로깅, IAM policy 관리를 추가하지 않습니다. Typed
-payload에는 애플리케이션이 소유한 codec을 사용하고 client 범위 안에서 호출하세요.
+서비스 SDK는 `compileOnly`이므로 런타임에 `software.amazon.awssdk:lambda`를 직접 추가하세요. Async 호출의 `invokeStringAsync`는 future를 반환하고 coroutine overload는
+`.await()`를 사용합니다. 결과 future를 취소하면 AWS SDK future에도 취소가 전달됩니다. 이 helper는 retry, 배포, polling, 로깅, IAM policy 관리를 추가하지 않습니다. Typed payload에는 애플리케이션이 소유한 codec을 사용하고 client 범위 안에서 호출하세요.
 
 ## 이 모듈이 제공하지 않는 것
 
-이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책,
-rotation orchestration, IAM/KMS policy 관리, 숨겨진 전체 페이지 수집 abstraction을
-제공하지 않습니다. 해당 책임은 Spring/Exposed 모듈이나 애플리케이션 코드에서 다룹니다.
+이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책, rotation orchestration, IAM/KMS policy 관리, 숨겨진 전체 페이지 수집 abstraction을 제공하지 않습니다. 해당 책임은 Spring/Exposed 모듈이나 애플리케이션 코드에서 다룹니다.
 
-Hot path에서는 애플리케이션 경계에서 caller-owned cache를 두고 refresh/error 정책을
-명시하세요. Create/put helper는 AWS-side state를 변경하므로 의도적으로 사용하고
-감사 가능하게 유지해야 합니다.
+Hot path에서는 애플리케이션 경계에서 caller-owned cache를 두고 refresh/error 정책을 명시하세요. Create/put helper는 AWS-side state를 변경하므로 의도적으로 사용하고 감사 가능하게 유지해야 합니다.
 
 ## 테스트 환경
 

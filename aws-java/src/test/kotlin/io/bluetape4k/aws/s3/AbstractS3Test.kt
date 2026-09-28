@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.transfer.s3.S3TransferManager
 
 abstract class AbstractS3Test: AbstractAwsTest() {
+
     companion object: KLoggingChannel() {
         const val IMAGE_PATH: String = "./src/test/resources/images"
         const val BUCKET_NAME: String = "test-bucket"

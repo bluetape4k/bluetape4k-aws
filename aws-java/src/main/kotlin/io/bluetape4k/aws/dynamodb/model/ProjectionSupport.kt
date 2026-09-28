@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.dynamodb.model
 
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.dynamodb.model.Projection
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType
 
@@ -17,9 +18,8 @@ import software.amazon.awssdk.services.dynamodb.model.ProjectionType
  */
 inline fun Projection(
     builder: Projection.Builder.() -> Unit,
-): Projection {
-    return Projection.builder().apply(builder).build()
-}
+): Projection =
+    Projection.builder().apply(builder).build()
 
 /**
  * DynamoDB 테이블의 프로젝션 설정을 생성합니다.
@@ -36,11 +36,9 @@ inline fun Projection(
 fun projectionOf(
     projectionType: ProjectionType = ProjectionType.ALL,
     nonKeyAttrs: Collection<String>? = null,
-): Projection {
-    return Projection {
-        projectionType(projectionType)
-        nonKeyAttributes(nonKeyAttrs)
-    }
+): Projection = Projection {
+    projectionType(projectionType)
+    nonKeyAttributes(nonKeyAttrs)
 }
 
 /**
@@ -58,9 +56,7 @@ fun projectionOf(
 fun projectionOf(
     projectionType: String,
     nonKeyAttrs: Collection<String>? = null,
-): Projection {
-    return Projection {
-        projectionType(projectionType)
-        nonKeyAttributes(nonKeyAttrs)
-    }
+): Projection = Projection {
+    projectionType(projectionType.requireNotBlank("projectionType"))
+    nonKeyAttrs?.let { nonKeyAttributes(it) }
 }

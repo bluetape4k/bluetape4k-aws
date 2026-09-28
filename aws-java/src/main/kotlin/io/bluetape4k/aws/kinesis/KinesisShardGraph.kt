@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.kinesis
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireNotNull
 import software.amazon.awssdk.services.kinesis.model.Shard
 
 /**
@@ -18,7 +20,7 @@ class KinesisShardGraph private constructor(
         val dependencies: Set<String>,
     )
 
-    companion object {
+    companion object: KLogging() {
         /** 중복 ID를 합치고 parent/adjacent parent를 모두 dependency로 검증합니다. */
         fun from(shards: List<Shard>, maxDiscoveredShards: Int): KinesisShardGraph {
             require(maxDiscoveredShards >= 1) { "maxDiscoveredShards must be >= 1" }
@@ -33,7 +35,7 @@ class KinesisShardGraph private constructor(
             }
 
             val nodes = byId.values.map { shard ->
-                val id = requireNotNull(shard.shardId())
+                val id = shard.shardId().requireNotNull("shardId")
                 val parentIds = listOfNotNull(shard.parentShardId(), shard.adjacentParentShardId())
                     .map { it.requireKinesisIdentifier("parentShardId") }
                     .toSet()
@@ -44,7 +46,9 @@ class KinesisShardGraph private constructor(
         }
 
         private fun ensureAcyclic(nodes: List<Node>) {
-            val dependencies = nodes.associateBy { requireNotNull(it.shard.shardId()) }
+            val dependencies = nodes.associateBy {
+                it.shard.shardId().requireNotNull("shardId")
+            }
             val visiting = mutableSetOf<String>()
             val visited = mutableSetOf<String>()
 
@@ -53,11 +57,14 @@ class KinesisShardGraph private constructor(
                     throw KinesisShardGraphException("shard graph contains a dependency cycle")
                 }
                 if (!visited.add(id)) return
+
                 visiting.add(id)
                 dependencies[id]?.dependencies.orEmpty().forEach(::visit)
                 visiting.remove(id)
             }
-            nodes.forEach { visit(requireNotNull(it.shard.shardId())) }
+            nodes.forEach {
+                visit(it.shard.shardId().requireNotNull("shardId"))
+            }
         }
     }
 }

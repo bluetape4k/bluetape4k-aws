@@ -1,13 +1,18 @@
 package io.bluetape4k.aws.eventbridge
 
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import java.net.URI
 
-class EventBridgeClientSupportTest {
+class EventBridgeClientSupportTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `eventBridgeClientOf creates closeable sync client`() {
@@ -17,6 +22,7 @@ class EventBridgeClientSupportTest {
             credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test")),
         )
 
+        log.debug { "client=$client" }
         client.shouldNotBeNull()
         client.close()
     }
@@ -29,6 +35,7 @@ class EventBridgeClientSupportTest {
             credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test")),
         )
 
+        log.debug { "client=$client" }
         client.shouldNotBeNull()
         client.close()
     }

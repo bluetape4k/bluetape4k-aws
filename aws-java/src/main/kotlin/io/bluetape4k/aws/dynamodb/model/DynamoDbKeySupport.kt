@@ -18,9 +18,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
  * @param builder [Key.Builder]를 초기화하는 람다 함수입니다.
  * @return [key] 객체를 반환합니다.
  */
-inline fun key(builder: Key.Builder.() -> Unit): Key {
-    return Key.builder().apply(builder).build()
-}
+inline fun key(builder: Key.Builder.() -> Unit): Key =
+    Key.builder().apply(builder).build()
 
 /**
  * DynamoDB의 [Key]를 생성합니다.
