@@ -6,11 +6,11 @@ import io.bluetape4k.aws.dynamodb.model.BatchWriteItemEnhancedRequest
 import io.bluetape4k.aws.dynamodb.model.writeBatchOf
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient
-import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable
 import software.amazon.awssdk.enhanced.dynamodb.MappedTableResource
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult
+import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException
 
 /**
  * 지정한 이름([tableName])으로 DynamoDb 테이블을 생성합니다.
@@ -52,10 +52,9 @@ fun <T: Any> DynamoDbEnhancedClient.batchWriteItems(
     return items
         .chunked(chunk)
         .map { chunkedItems ->
-            val request =
-                BatchWriteItemEnhancedRequest {
-                    addWriteBatch(writeBatchOf(table, chunkedItems, itemClass))
-                }
+            val request = BatchWriteItemEnhancedRequest {
+                addWriteBatch(writeBatchOf(table, chunkedItems, itemClass))
+            }
             batchWriteItem(request)
         }
 }
@@ -78,7 +77,8 @@ inline fun <reified T: Any> DynamoDbEnhancedClient.batchWriteItems(
     table: MappedTableResource<T>,
     items: Collection<T>,
     chunkSize: Int = MAX_BATCH_ITEM_SIZE,
-): List<BatchWriteResult> = batchWriteItems(T::class.java, table, items, chunkSize)
+): List<BatchWriteResult> =
+    batchWriteItems(T::class.java, table, items, chunkSize)
 
 /**
  * 지정한 이름의 테이블이 있으면 `true`, 없으면 `false`를 반환합니다.

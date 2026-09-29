@@ -13,7 +13,7 @@ data class KinesisShardKey(
     val streamIdentity: String,
     val consumerGroup: String,
     val shardId: String,
-) : Serializable {
+): Serializable {
 
     init {
         streamIdentity.requireKinesisIdentifier("streamIdentity")

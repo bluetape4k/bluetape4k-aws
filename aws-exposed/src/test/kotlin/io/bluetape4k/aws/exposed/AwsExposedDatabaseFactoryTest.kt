@@ -9,13 +9,13 @@ import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import kotlinx.coroutines.test.runTest
-import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.io.ByteArrayInputStream
@@ -146,7 +146,7 @@ class AwsExposedDatabaseFactoryTest {
         val failure = IllegalStateException("connect failed")
         val factory = AwsExposedDatabaseFactory(
             resolver = NoopAwsDatabaseSettingsResolver,
-            dataSourceFactory = AwsJdbcDataSourceFactory { _, _ -> dataSource },
+            dataSourceFactory = { _, _ -> dataSource },
             databaseConnector = { throw failure },
             testing = Unit,
         )
@@ -166,7 +166,7 @@ class AwsExposedDatabaseFactoryTest {
         val connectFailure = IllegalStateException("connect failed")
         val factory = AwsExposedDatabaseFactory(
             resolver = NoopAwsDatabaseSettingsResolver,
-            dataSourceFactory = AwsJdbcDataSourceFactory { _, _ -> dataSource },
+            dataSourceFactory = { _, _ -> dataSource },
             databaseConnector = { throw connectFailure },
             testing = Unit,
         )
@@ -206,8 +206,8 @@ class AwsExposedDatabaseFactoryTest {
 
         registry.use {
             it.get() shouldBeSameInstanceAs it.defaultHandle
-            it.get(AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME) shouldBeSameInstanceAs it.defaultHandle
-            it.get("analytics") shouldBeSameInstanceAs it.namedHandles.getValue("analytics")
+            it[AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME] shouldBeSameInstanceAs it.defaultHandle
+            it["analytics"] shouldBeSameInstanceAs it.namedHandles.getValue("analytics")
         }
     }
 
@@ -221,7 +221,7 @@ class AwsExposedDatabaseFactoryTest {
             )
         }
 
-        error.message.orEmpty() shouldContain AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME
+        error.message shouldContain AwsExposedDatabaseFactory.DEFAULT_DATABASE_NAME
     }
 
     @Test
@@ -310,11 +310,8 @@ class AwsExposedDatabaseFactoryTest {
         }
     }
 
-    private class TestItems(tableName: String): Table(tableName) {
-        val id = integer("id")
+    private class TestItems(tableName: String): IntIdTable(tableName) {
         val name = varchar("name", 64)
-
-        override val primaryKey = PrimaryKey(id)
     }
 
     private class CloseTrackingDataSource(

@@ -3,11 +3,16 @@ package io.bluetape4k.aws.auth
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 
-class AuthSupportTest {
+class AuthSupportTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `awsBasicCredentialsOf는 accessKey와 secretKey를 보존한다`() {
@@ -55,7 +60,7 @@ class AuthSupportTest {
         val credentials = awsBasicCredentialsOf("myKey", "mySecret")
         val provider = staticCredentialsProviderOf(credentials)
 
-        provider.resolveCredentials() shouldBeInstanceOf software.amazon.awssdk.auth.credentials.AwsBasicCredentials::class
+        provider.resolveCredentials().shouldBeInstanceOf<AwsBasicCredentials>() 
         provider.resolveCredentials().accessKeyId() shouldBeEqualTo "myKey"
     }
 }

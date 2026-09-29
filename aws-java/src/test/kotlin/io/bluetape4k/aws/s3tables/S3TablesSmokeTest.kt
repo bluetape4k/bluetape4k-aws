@@ -7,6 +7,7 @@ import io.bluetape4k.assertions.shouldMatch
 import io.bluetape4k.assertions.shouldNotStartWith
 import io.bluetape4k.assertions.shouldStartWith
 import io.bluetape4k.idgenerators.uuid.Uuid
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeout
@@ -25,6 +26,17 @@ import java.time.Duration
  * 만든 resource만 삭제한다.
  */
 class S3TablesSmokeTest {
+
+    private companion object: KLogging() {
+        const val READ_ONLY_TAG = "s3-tables-read-only-smoke"
+        const val MUTATING_TAG = "s3-tables-mutating-smoke"
+        const val READ_ONLY_REGION = "S3_TABLES_READ_ONLY_REGION"
+        const val READ_ONLY_TABLE_BUCKET_ARN = "S3_TABLES_READ_ONLY_TABLE_BUCKET_ARN"
+        const val EXPECTED_ACCOUNT_ID = "S3_TABLES_EXPECTED_ACCOUNT_ID"
+        const val MUTATING_REGION = "S3_TABLES_MUTATING_REGION"
+        const val MUTATING_PREFIX = "S3_TABLES_MUTATING_PREFIX"
+        val SMOKE_TIMEOUT: Duration = Duration.ofMinutes(2)
+    }
 
     @Test
     fun `bucket name normalization preserves unique suffix and bucket alphabet`() {
@@ -101,7 +113,7 @@ class S3TablesSmokeTest {
                             requestId = namespaces.responseMetadata().requestId(),
                             detail =
                                 "namespaceCount=${namespaces.namespaces().size} " +
-                                    "bucketKnown=${bucket.arn().isNotBlank()}",
+                                        "bucketKnown=${bucket.arn().isNotBlank()}",
                         ),
                     )
                 }
@@ -195,7 +207,7 @@ class S3TablesSmokeTest {
             .overrideConfiguration(timeoutConfiguration())
             .build()
             .use { sts ->
-                val actualAccountId = sts.getCallerIdentity().account()
+                val actualAccountId = sts.callerIdentity.account()
                 check(actualAccountId == expectedAccountId) {
                     "configured account does not match the credential account"
                 }
@@ -261,16 +273,7 @@ class S3TablesSmokeTest {
         runCatching(action).exceptionOrNull()?.takeUnless(::isAlreadyAbsent)?.let(failures::add)
     }
 
-    private companion object {
-        const val READ_ONLY_TAG = "s3-tables-read-only-smoke"
-        const val MUTATING_TAG = "s3-tables-mutating-smoke"
-        const val READ_ONLY_REGION = "S3_TABLES_READ_ONLY_REGION"
-        const val READ_ONLY_TABLE_BUCKET_ARN = "S3_TABLES_READ_ONLY_TABLE_BUCKET_ARN"
-        const val EXPECTED_ACCOUNT_ID = "S3_TABLES_EXPECTED_ACCOUNT_ID"
-        const val MUTATING_REGION = "S3_TABLES_MUTATING_REGION"
-        const val MUTATING_PREFIX = "S3_TABLES_MUTATING_PREFIX"
-        val SMOKE_TIMEOUT: Duration = Duration.ofMinutes(2)
-    }
+
 }
 
 private fun requiredInput(name: String): String =
@@ -326,12 +329,12 @@ private fun normalizedTableIdentifierName(prefix: String, suffix: String): Strin
 private fun isAlreadyAbsent(failure: Throwable): Boolean {
     val serviceFailure = failure as? AwsServiceException ?: return false
     return serviceFailure.statusCode() == 404 ||
-        serviceFailure.awsErrorDetails()?.errorCode() in setOf(
-            "NoSuchTableBucket",
-            "NoSuchNamespace",
-            "NoSuchTable",
-            "ResourceNotFoundException",
-        )
+            serviceFailure.awsErrorDetails()?.errorCode() in setOf(
+        "NoSuchTableBucket",
+        "NoSuchNamespace",
+        "NoSuchTable",
+        "ResourceNotFoundException",
+    )
 }
 
 private fun elapsedMillis(startedAt: Long): Long =
@@ -346,7 +349,7 @@ private fun smokeEvidence(
     detail: String,
 ): String =
     "s3-tables-smoke lane=$lane result=$result elapsedMs=$elapsedMillis region=$region " +
-        "requestId=${requestId.orNotAvailable()} detail=$detail"
+            "requestId=${requestId.orNotAvailable()} detail=$detail"
 
 private fun sanitizedSmokeFailure(
     lane: String,
@@ -358,8 +361,8 @@ private fun sanitizedSmokeFailure(
     val requestId = (failure as? SdkServiceException)?.requestId()
     return AssertionError(
         "s3-tables-smoke lane=$lane result=FAIL elapsedMs=$elapsedMillis region=$region " +
-            "exceptionClass=${failure.javaClass.name} errorCode=${errorCode.orNotAvailable()} " +
-            "requestId=${requestId.orNotAvailable()}",
+                "exceptionClass=${failure.javaClass.name} errorCode=${errorCode.orNotAvailable()} " +
+                "requestId=${requestId.orNotAvailable()}",
     )
 }
 

@@ -117,7 +117,15 @@ inline fun putSecureParameterRequestOf(
     overrideConfiguration: AwsRequestOverrideConfiguration? = null,
     builder: PutParameterRequest.Builder.() -> Unit = {},
 ): PutParameterRequest =
-    putParameterRequestOf(name, value.reveal(), ParameterType.SECURE_STRING, overwrite, description, overrideConfiguration, builder)
+    putParameterRequestOf(
+        name,
+        value.reveal(),
+        ParameterType.SECURE_STRING,
+        overwrite,
+        description,
+        overrideConfiguration,
+        builder
+    )
 
 /**
  * 비밀이 아닌 String [PutParameterRequest]를 구성합니다.
@@ -145,7 +153,15 @@ inline fun putStringListParameterRequestOf(
 ): PutParameterRequest {
     require(values.isNotEmpty()) { "values must not be empty" }
     values.forEach { it.requireNotBlank("value") }
-    return putParameterRequestOf(name, values.joinToString(","), ParameterType.STRING_LIST, overwrite, description, overrideConfiguration, builder)
+    return putParameterRequestOf(
+        name,
+        values.joinToString(","),
+        ParameterType.STRING_LIST,
+        overwrite,
+        description,
+        overrideConfiguration,
+        builder
+    )
 }
 
 /**

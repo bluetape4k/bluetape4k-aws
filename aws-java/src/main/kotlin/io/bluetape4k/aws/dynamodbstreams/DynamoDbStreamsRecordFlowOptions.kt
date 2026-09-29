@@ -1,5 +1,9 @@
 package io.bluetape4k.aws.dynamodbstreams
 
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import java.io.Serializable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -16,36 +20,17 @@ data class DynamoDbStreamsRecordFlowOptions(
     val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     val maxShardConcurrency: Int = DEFAULT_MAX_SHARD_CONCURRENCY,
     val maxDescribePages: Int = DEFAULT_MAX_DESCRIBE_PAGES,
-) : Serializable {
+): Serializable {
     init {
-        require(batchLimit in 1..MAX_BATCH_LIMIT) {
-            "batchLimit must be in 1..$MAX_BATCH_LIMIT, but was $batchLimit"
-        }
-        require(pollInterval >= MIN_POLL_INTERVAL) {
-            "pollInterval must be >= $MIN_POLL_INTERVAL, but was $pollInterval"
-        }
-        require(emptyBackoff >= pollInterval) {
-            "emptyBackoff ($emptyBackoff) must be >= pollInterval ($pollInterval)"
-        }
-        require(maxIteratorRetries >= 0) {
-            "maxIteratorRetries must be >= 0, but was $maxIteratorRetries"
-        }
-        require(initialThrottleBackoff.isPositive()) {
-            "initialThrottleBackoff must be positive, but was $initialThrottleBackoff"
-        }
-        require(maxThrottleBackoff >= initialThrottleBackoff) {
-            "maxThrottleBackoff ($maxThrottleBackoff) must be >= initialThrottleBackoff " +
-                    "($initialThrottleBackoff)"
-        }
-        require(maxThrottleRetries >= 0) {
-            "maxThrottleRetries must be >= 0, but was $maxThrottleRetries"
-        }
-        require(maxShardConcurrency >= 1) {
-            "maxShardConcurrency must be >= 1, but was $maxShardConcurrency"
-        }
-        require(maxDescribePages >= 1) {
-            "maxDescribePages must be >= 1, but was $maxDescribePages"
-        }
+        batchLimit.requireInRange(1, MAX_BATCH_LIMIT, "batchLimit")
+        pollInterval.requireGe(MIN_POLL_INTERVAL, "pollInterval")
+        emptyBackoff.requireGe(pollInterval, "emptyBackoff")
+        maxIteratorRetries.requireZeroOrPositiveNumber("maxIteratorRetries")
+        initialThrottleBackoff.requireGt(Duration.ZERO, "initialThrottleBackoff")
+        maxThrottleBackoff.requireGe(initialThrottleBackoff, "maxThrottleBackoff")
+        maxThrottleRetries.requireZeroOrPositiveNumber("maxThrottleRetries")
+        maxShardConcurrency.requireGe(1, "maxShardConcurrency")
+        maxDescribePages.requireGt(1, "maxDescribePages")
     }
 
     companion object {

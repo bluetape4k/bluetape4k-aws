@@ -1,6 +1,5 @@
 package io.bluetape4k.aws.exposed
 
-import io.bluetape4k.aws.exposed.AwsSecretString.Companion.REDACTED
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
@@ -57,7 +56,5 @@ class AwsSecretString private constructor(private val value: String): Serializab
     }
 }
 
-fun awsSecretStringOf(value: String): AwsSecretString {
-    value.requireNotBlank("value")
-    return AwsSecretString.of(value)
-}
+fun awsSecretStringOf(value: String): AwsSecretString =
+    AwsSecretString.of(value)

@@ -6,6 +6,7 @@ import io.bluetape4k.aws.dynamodb.model.DynamoDbEntity.Companion.ENTITY_ID_DELIM
 import io.bluetape4k.aws.dynamodb.model.DynamoDbEntity.Companion.ENTITY_NAME_DELIMITER
 import io.bluetape4k.idgenerators.snowflake.GlobalSnowflake
 import io.bluetape4k.idgenerators.uuid.Uuid
+import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.enhanced.dynamodb.Key
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey
@@ -53,9 +54,10 @@ interface DynamoDbEntity: Serializable {
 /**
  * DynamoDB의 Entity를 표현하는 추상 클래스입니다.
  */
-abstract class AbstractDynamoDbEntity:
-    AbstractValueObject(),
-    DynamoDbEntity {
+abstract class AbstractDynamoDbEntity: AbstractValueObject(),
+                                       DynamoDbEntity {
+    companion object: KLogging()
+
     override val key: Key by lazy {
         Key
             .builder()
@@ -100,20 +102,20 @@ abstract class AbstractDynamoDbEntity:
 inline fun <reified T: DynamoDbEntity> T.makeKeyString(
     partitionKey: Any? = null,
     sortKey: Any? = null,
-): String =
-    buildString {
-        append(T::class.simpleName)
+): String = buildString {
+    append(T::class.simpleName)
 
-        partitionKey
-            ?.takeIf { it.toString().isNotBlank() }
-            ?.let {
-                append(ENTITY_NAME_DELIMITER)
-                append(it)
-            }
-        sortKey
-            ?.takeIf { it.toString().isNotBlank() }
-            ?.let {
-                append(ENTITY_ID_DELIMITER)
-                append(it)
-            }
-    }
+    partitionKey
+        ?.takeIf { it.toString().isNotBlank() }
+        ?.let {
+            append(ENTITY_NAME_DELIMITER)
+            append(it)
+        }
+
+    sortKey
+        ?.takeIf { it.toString().isNotBlank() }
+        ?.let {
+            append(ENTITY_ID_DELIMITER)
+            append(it)
+        }
+}

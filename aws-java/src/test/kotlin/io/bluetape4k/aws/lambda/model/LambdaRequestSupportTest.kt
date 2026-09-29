@@ -1,13 +1,18 @@
 package io.bluetape4k.aws.lambda.model
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.lambda.model.InvocationType
 import software.amazon.awssdk.services.lambda.model.LogType
 
 class LambdaRequestSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `request maps function ARN qualifier invocation log and payload`() {
@@ -21,11 +26,13 @@ class LambdaRequestSupportTest {
             logType = LogType.TAIL,
         )
 
+        log.debug { "request=$request" }
         request.functionName() shouldBeEqualTo "arn:aws:lambda:ap-northeast-2:123456789012:function:orders"
         request.qualifier() shouldBeEqualTo "live"
         request.invocationType() shouldBeEqualTo InvocationType.REQUEST_RESPONSE
         request.logType() shouldBeEqualTo LogType.TAIL
         request.payload().asByteArray().toList() shouldBeEqualTo payload.toList()
+
         payload[0] = 9
         request.payload().asByteArray()[0] shouldBeEqualTo 1.toByte()
     }
@@ -36,7 +43,7 @@ class LambdaRequestSupportTest {
 
         val empty = invokeRequestOf("orders", payload = ByteArray(0)).payload()
             ?: error("empty payload was omitted")
-        empty.asByteArray().size shouldBeEqualTo 0
+        empty.asByteArray().shouldBeEmpty()
     }
 
     @Test

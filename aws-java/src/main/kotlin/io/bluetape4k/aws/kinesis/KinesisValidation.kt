@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kinesis
 
+import io.bluetape4k.support.requireLe
 import io.bluetape4k.support.requireNotBlank
 
 internal const val MAX_KINESIS_IDENTIFIER_LENGTH: Int = 256
@@ -10,10 +11,8 @@ internal fun String.requireKinesisIdentifier(
     name: String,
     maxLength: Int = MAX_KINESIS_IDENTIFIER_LENGTH,
 ): String {
-    requireNotBlank(name)
-    require(length <= maxLength) {
-        "$name length must be <= $maxLength, but was $length"
-    }
+    this.requireNotBlank(name)
+    this.length.requireLe(maxLength, "$name length")
     require(none(Char::isISOControl)) {
         "$name must not contain ISO control characters"
     }

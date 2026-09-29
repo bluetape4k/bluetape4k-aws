@@ -24,9 +24,8 @@ import java.net.URI
  */
 inline fun dynamoDbStreamsClient(
     builder: DynamoDbStreamsClientBuilder.() -> Unit,
-): DynamoDbStreamsClient {
-    return DynamoDbStreamsClient.builder().apply(builder).build()
-}
+): DynamoDbStreamsClient =
+    DynamoDbStreamsClient.builder().apply(builder).build()
 
 /**
  * [DynamoDbStreamsClient]를 빌드해주는 함수입니다.
@@ -50,11 +49,12 @@ inline fun dynamoDbStreamsClientOf(
     credentialsProvider: AwsCredentialsProvider,
     httpClient: SdkHttpClient = SdkHttpClientProvider.defaultHttpClient,
     builder: DynamoDbStreamsClientBuilder.() -> Unit = {},
-): DynamoDbStreamsClient = dynamoDbStreamsClient {
-    endpointOverride(endpoint)
-    region(region)
-    credentialsProvider(credentialsProvider)
-    httpClient(httpClient)
+): DynamoDbStreamsClient =
+    dynamoDbStreamsClient {
+        endpointOverride(endpoint)
+        region(region)
+        credentialsProvider(credentialsProvider)
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }

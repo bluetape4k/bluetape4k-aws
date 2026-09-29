@@ -3,6 +3,7 @@ package io.bluetape4k.aws.lambda
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.utils.ShutdownQueue
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -13,6 +14,7 @@ import io.mockk.verify
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
@@ -21,15 +23,22 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.LambdaAsyncClientBuilder
 import java.net.URI
+import kotlin.time.Duration.Companion.milliseconds
 
 class LambdaAsyncClientSupportTest {
 
+    private val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
+    private val client = mockk<LambdaAsyncClient>(relaxed = true)
+    private val httpClient = mockk<SdkAsyncHttpClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(builder, client, httpClient)
+    }
+
     @Test
     fun `application async factory registers client and lets builder override explicit settings`() {
-        val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
-        val client = mockk<LambdaAsyncClient>(relaxed = true)
         val endpoint = URI("http://localhost:4566")
-        val httpClient = mockk<SdkAsyncHttpClient>()
         val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
 
         mockkStatic(LambdaAsyncClient::class)
@@ -66,10 +75,6 @@ class LambdaAsyncClientSupportTest {
 
     @Test
     fun `with async factory closes service client without registering or closing external HTTP client`() = runTest {
-        val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
-        val client = mockk<LambdaAsyncClient>(relaxed = true)
-        val httpClient = mockk<SdkAsyncHttpClient>(relaxed = true)
-
         mockkStatic(LambdaAsyncClient::class)
         mockkObject(ShutdownQueue)
         try {
@@ -92,9 +97,6 @@ class LambdaAsyncClientSupportTest {
 
     @Test
     fun `with async factory closes service client when block fails`() = runTest {
-        val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
-        val client = mockk<LambdaAsyncClient>(relaxed = true)
-        val httpClient = mockk<SdkAsyncHttpClient>()
         val expected = IllegalStateException("block failed")
 
         mockkStatic(LambdaAsyncClient::class)
@@ -119,10 +121,6 @@ class LambdaAsyncClientSupportTest {
 
     @Test
     fun `with async factory closes service client when coroutine is cancelled`() = runTest {
-        val builder = mockk<LambdaAsyncClientBuilder>(relaxed = true)
-        val client = mockk<LambdaAsyncClient>(relaxed = true)
-        val httpClient = mockk<SdkAsyncHttpClient>()
-
         mockkStatic(LambdaAsyncClient::class)
         mockkObject(ShutdownQueue)
         try {
@@ -131,9 +129,9 @@ class LambdaAsyncClientSupportTest {
             every { builder.httpClient(httpClient) } returns builder
 
             assertFailsWith<kotlinx.coroutines.TimeoutCancellationException> {
-                withTimeout(1) {
-                    withLambdaAsyncClient<Unit>(httpClient = httpClient) {
-                        delay(10)
+                withTimeout(1.milliseconds) {
+                    withLambdaAsyncClient(httpClient = httpClient) {
+                        delay(10.milliseconds)
                     }
                 }
             }

@@ -25,7 +25,8 @@ import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest
 suspend inline fun <T: Any> DynamoDbAsyncTable<T>.getItem(
     partitionValue: Any,
     sortValue: Any? = null,
-): T? = getItem(keyOf(partitionValue, sortValue)).await()
+): T? =
+    getItem(keyOf(partitionValue, sortValue)).await()
 
 
 /**
@@ -57,12 +58,11 @@ suspend inline fun <reified T: Any> DynamoDbAsyncTable<T>.putItem(
     item: T,
     builder: PutItemEnhancedRequest.Builder<T>.() -> Unit,
 ) {
-    val request =
-        PutItemEnhancedRequest
-            .builder(T::class.java)
-            .item(item)
-            .apply(builder)
-            .build()
+    val request = PutItemEnhancedRequest
+        .builder(T::class.java)
+        .item(item)
+        .apply(builder)
+        .build()
     putItem(request).await()
 }
 
@@ -81,7 +81,8 @@ suspend inline fun <reified T: Any> DynamoDbAsyncTable<T>.putItem(
 suspend inline fun <T: Any> DynamoDbAsyncTable<T>.deleteItem(
     partitionValue: Any,
     sortValue: Any? = null,
-): T? = deleteItem(keyOf(partitionValue, sortValue)).await()
+): T? =
+    deleteItem(keyOf(partitionValue, sortValue)).await()
 
 /**
  * 테이블을 전체 스캔합니다.
@@ -119,12 +120,11 @@ inline fun <T: Any> DynamoDbAsyncTable<T>.queryAll(
     queryConditional: QueryConditional,
     builder: QueryEnhancedRequest.Builder.() -> Unit = {},
 ): Flow<T> {
-    val request =
-        QueryEnhancedRequest
-            .builder()
-            .queryConditional(queryConditional)
-            .apply(builder)
-            .build()
+    val request = QueryEnhancedRequest
+        .builder()
+        .queryConditional(queryConditional)
+        .apply(builder)
+        .build()
 
     return query(request).items().asFlow()
 }
@@ -191,4 +191,5 @@ fun <T: Any> DynamoDbAsyncTable<T>.findByPartition(partitionValue: String): Flow
 suspend inline fun <T: Any> DynamoDbAsyncTable<T>.exists(
     partitionValue: Any,
     sortValue: Any? = null,
-): Boolean = getItem(partitionValue, sortValue) != null
+): Boolean =
+    getItem(partitionValue, sortValue) != null

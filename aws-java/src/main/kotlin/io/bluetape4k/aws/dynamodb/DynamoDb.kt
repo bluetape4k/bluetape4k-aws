@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.dynamodb
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+
 /**
  * DynamoDB 상수 및 유틸리티를 제공합니다.
  *
@@ -8,7 +11,7 @@ package io.bluetape4k.aws.dynamodb
  * // maxSize == 25
  * ```
  */
-object DynamoDb {
+object DynamoDb: KLoggingChannel() {
 
     /**
      * DynamoDB의 BatchWriteItem 은 Batch당 최대 25개의 Item만 허용합니다.

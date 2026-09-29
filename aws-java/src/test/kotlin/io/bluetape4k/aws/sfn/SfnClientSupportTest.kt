@@ -2,7 +2,10 @@ package io.bluetape4k.aws.sfn
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.auth.awsBasicCredentialsOf
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.utils.ShutdownQueue
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -10,8 +13,8 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
@@ -21,13 +24,24 @@ import java.net.URI
 
 class SfnClientSupportTest {
 
+    companion object: KLogging()
+
+    private val builder = mockk<SfnClientBuilder>(relaxed = true)
+    private val client = mockk<SfnClient>(relaxed = true)
+    private val httpClient = mockk<SdkHttpClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
+    }
+
     @Test
     fun `application factory registers client and applies explicit settings`() {
-        val builder = mockk<SfnClientBuilder>(relaxed = true)
-        val client = mockk<SfnClient>(relaxed = true)
         val endpoint = URI("http://localhost:4566")
         val httpClient = mockk<SdkHttpClient>()
-        val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
+        val credentials = StaticCredentialsProvider.create(
+            awsBasicCredentialsOf("test", "test")
+        )
 
         mockkStatic(SfnClient::class)
         mockkObject(ShutdownQueue)
@@ -63,10 +77,6 @@ class SfnClientSupportTest {
 
     @Test
     fun `with factory closes service client without registering it or closing external HTTP client`() {
-        val builder = mockk<SfnClientBuilder>(relaxed = true)
-        val client = mockk<SfnClient>(relaxed = true)
-        val httpClient = mockk<SdkHttpClient>(relaxed = true)
-
         mockkStatic(SfnClient::class)
         mockkObject(ShutdownQueue)
         try {

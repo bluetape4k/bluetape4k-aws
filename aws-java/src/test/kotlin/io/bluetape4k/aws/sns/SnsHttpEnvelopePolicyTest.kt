@@ -84,7 +84,7 @@ class SnsHttpEnvelopePolicyTest {
         envelope.topicArn shouldBeEqualTo "arn:aws:sns:us-east-1:123456789012:orders"
         envelope.message shouldBeEqualTo "payload"
         envelope.signingCertUrl shouldBeEqualTo
-            URI.create("https://sns.us-east-1.amazonaws.com/SimpleNotificationService.pem")
+                URI.create("https://sns.us-east-1.amazonaws.com/SimpleNotificationService.pem")
         envelope.token.shouldBeNull()
         envelope.raw["MessageId"] shouldBeEqualTo "message-1"
     }
@@ -151,7 +151,7 @@ class SnsHttpEnvelopePolicyTest {
         unsupported.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.UNSUPPORTED_TYPE
         mismatch.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.HEADER_TYPE_MISMATCH
         mismatch.message.orEmpty() shouldBeEqualTo
-            "x-amz-sns-message-type 'SubscriptionConfirmation' does not match JSON Type 'Notification'."
+                "x-amz-sns-message-type 'SubscriptionConfirmation' does not match JSON Type 'Notification'."
     }
 
     @Test

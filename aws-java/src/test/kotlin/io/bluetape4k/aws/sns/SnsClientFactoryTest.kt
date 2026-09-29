@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.sns
 
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 
 class SnsClientFactoryTest: AbstractSnsTest() {

@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.ses
 
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.ses.model.bodyOf
 import io.bluetape4k.aws.ses.model.contentOf
 import io.bluetape4k.aws.ses.model.destinationOf
 import io.bluetape4k.aws.ses.model.sendEmailRequest
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.ses.model.SendEmailResponse
 
@@ -36,9 +36,10 @@ class SesClientTest: AbstractSesTest() {
                 mb.body(bodyOf("본문", "<p1>본문</p1>"))
             }
         }
+        log.debug { "request=$request" }
 
         val response: SendEmailResponse = client.send(request)
-        response.messageId().shouldNotBeEmpty()
         log.debug { "response=$response" }
+        response.messageId().shouldNotBeEmpty()
     }
 }

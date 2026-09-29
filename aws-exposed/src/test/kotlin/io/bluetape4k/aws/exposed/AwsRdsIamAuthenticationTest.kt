@@ -2,10 +2,10 @@ package io.bluetape4k.aws.exposed
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.concurrent.await
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSource
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSourceConfig
 import io.bluetape4k.logging.KLogging
@@ -20,9 +20,10 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.seconds
+import io.bluetape4k.aws.rds.AwsRdsIamAuthTokenException as CoreRdsIamAuthTokenException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AwsRdsIamAuthenticationTest {
@@ -38,7 +39,7 @@ class AwsRdsIamAuthenticationTest {
                 port = 0,
             )
         }
-        invalidPort.message.orEmpty() shouldContain "port"
+        invalidPort.message shouldContain "port"
 
         val invalidTokenTtl = assertFailsWith<IllegalArgumentException> {
             AwsRdsIamAuthenticationProperties(
@@ -48,7 +49,7 @@ class AwsRdsIamAuthenticationTest {
                 tokenTtl = Duration.ofMinutes(16),
             )
         }
-        invalidTokenTtl.message.orEmpty() shouldContain "tokenTtl"
+        invalidTokenTtl.message shouldContain "tokenTtl"
 
         val invalidTokenTtlLowerBound = assertFailsWith<IllegalArgumentException> {
             AwsRdsIamAuthenticationProperties(
@@ -58,7 +59,7 @@ class AwsRdsIamAuthenticationTest {
                 tokenTtl = Duration.ZERO,
             )
         }
-        invalidTokenTtlLowerBound.message.orEmpty() shouldContain "tokenTtl"
+        invalidTokenTtlLowerBound.message shouldContain "tokenTtl"
 
         val invalidRefreshBeforeExpiry = assertFailsWith<IllegalArgumentException> {
             AwsRdsIamAuthenticationProperties(
@@ -68,7 +69,7 @@ class AwsRdsIamAuthenticationTest {
                 refreshBeforeExpiry = Duration.ZERO,
             )
         }
-        invalidRefreshBeforeExpiry.message.orEmpty() shouldContain "refreshBeforeExpiry"
+        invalidRefreshBeforeExpiry.message shouldContain "refreshBeforeExpiry"
 
         assertFailsWith<IllegalArgumentException> {
             AwsDatabaseConnectionProperties(
@@ -98,7 +99,7 @@ class AwsRdsIamAuthenticationTest {
                 username = "app_user",
             )
         }
-        invalidTokenRequestPort.message.orEmpty() shouldContain "port"
+        invalidTokenRequestPort.message shouldContain "port"
     }
 
     @Test
@@ -154,9 +155,7 @@ class AwsRdsIamAuthenticationTest {
         val counter = AtomicInteger()
         val provider = AwsDatabasePasswordProviders.rdsIam(
             properties = rdsIamConnectionProperties(),
-            tokenGenerator = AwsRdsIamAuthTokenGenerator {
-                awsSecretStringOf("token-${counter.incrementAndGet()}")
-            },
+            tokenGenerator = { awsSecretStringOf("token-${counter.incrementAndGet()}") },
             clock = clock,
         )
         provider.currentPassword()?.reveal() shouldBeEqualTo "token-1"
@@ -180,7 +179,7 @@ class AwsRdsIamAuthenticationTest {
         }
 
         start.countDown()
-        done.await(5, TimeUnit.SECONDS).shouldBeTrue()
+        done.await(5.seconds).shouldBeTrue()
         executor.shutdownNow()
         failure.get()?.let { throw it }
         counter.get() shouldBeEqualTo 2
@@ -190,17 +189,15 @@ class AwsRdsIamAuthenticationTest {
     fun `rds iam provider wraps generator failure without token leakage`() {
         val provider = AwsDatabasePasswordProviders.rdsIam(
             properties = rdsIamConnectionProperties(),
-            tokenGenerator = AwsRdsIamAuthTokenGenerator {
-                error("credential chain failed")
-            },
+            tokenGenerator = { error("credential chain failed") },
         )
 
         val error = assertFailsWith<AwsRdsIamAuthTokenException> {
             provider.currentPassword()
         }
 
-        error.message.orEmpty() shouldContain "Failed to generate RDS IAM authentication token"
-        error.stackTraceToString().contains("raw-token").shouldBeFalse()
+        error.message shouldContain "Failed to generate RDS IAM authentication token"
+        error.stackTraceToString() shouldNotContain "raw-token"
     }
 
     @Test
@@ -224,8 +221,8 @@ class AwsRdsIamAuthenticationTest {
         }
 
         error.causeChain().any { it is CoreRdsIamAuthTokenException }.shouldBeTrue()
-        error.message.orEmpty() shouldContain "database.example.com:5432"
-        error.message.orEmpty().contains("raw-token").shouldBeFalse()
+        error.message shouldContain "database.example.com:5432"
+        error.message shouldNotContain "raw-token"
     }
 
     @Test
@@ -248,7 +245,7 @@ class AwsRdsIamAuthenticationTest {
             dataSource.getConnection("sa", "caller-password")
         }
 
-        error.message.orEmpty() shouldContain "does not accept caller-supplied credentials"
+        error.message shouldContain "does not accept caller-supplied credentials"
         counter.get() shouldBeEqualTo 0
     }
 

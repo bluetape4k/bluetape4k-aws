@@ -1,19 +1,17 @@
 package io.bluetape4k.aws.kinesis
 
-import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.aws.kinesis.model.getShardIteratorRequest
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.warn
-import java.util.concurrent.atomic.AtomicReference
-import kotlin.random.Random
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +19,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -31,12 +28,16 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.ExpiredIteratorException
 import software.amazon.awssdk.services.kinesis.model.ExpiredNextTokenException
 import software.amazon.awssdk.services.kinesis.model.GetRecordsRequest
-import software.amazon.awssdk.services.kinesis.model.GetShardIteratorRequest
 import software.amazon.awssdk.services.kinesis.model.ListShardsRequest
 import software.amazon.awssdk.services.kinesis.model.Shard
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
-private val log = KotlinLogging.logger {}
+private object KinesisAsyncClientLog: KLoggingChannel()
 
 /**
  * Java SDK v2 async client에서 dynamic multi-shard consumer Flow를 생성합니다.
@@ -65,7 +66,8 @@ fun KinesisAsyncClient.consumerFlow(
         coroutineScope {
             val pending = Channel<PendingRecord>(capacity = Channel.RENDEZVOUS)
             val semaphore = Semaphore(options.maxShardConcurrency)
-            val activeJobs = mutableMapOf<String, Job>()
+            val activeJobs = ConcurrentHashMap<String, Job>()
+
             val discoveryJob = launch {
                 try {
                     while (isActive) {
@@ -73,16 +75,19 @@ fun KinesisAsyncClient.consumerFlow(
                         val graph = kinesisClient.discoverShardGraph(streamName, options, metrics)
                         for (node in graph.nodes) {
                             if (!isActive || activeJobs.size >= options.maxShardConcurrency) break
-                            val shardId = requireNotNull(node.shard.shardId())
-                            if (shardId in activeJobs) continue
+                            val shardId: String = requireNotNull(node.shard.shardId()) { "shardId cannot be null" }
+                            if (activeJobs.containsKey(shardId)) continue
+
                             val key = KinesisShardKey(streamIdentity, consumerGroup, shardId)
                             if (checkpointStore.load(key) is KinesisCheckpoint.ShardEnd) continue
+
                             val dependenciesReady = node.dependencies.all { dependency ->
                                 checkpointStore.load(
                                     KinesisShardKey(streamIdentity, consumerGroup, dependency),
                                 ) is KinesisCheckpoint.ShardEnd
                             }
                             if (!dependenciesReady) continue
+
                             activeJobs[shardId] = launch {
                                 semaphore.withPermit {
                                     kinesisClient.consumeShard(
@@ -139,11 +144,15 @@ private suspend fun KinesisAsyncClient.discoverShardGraph(
     var unknownParentAttempts = 0
     while (true) {
         val graph = KinesisShardGraph.from(discoverShards(streamName, options, metrics), options.maxDiscoveredShards)
-        val knownIds = graph.nodes.mapTo(mutableSetOf()) { requireNotNull(it.shard.shardId()) }
+        val knownIds = graph.nodes
+            .mapTo(mutableSetOf()) {
+                requireNotNull(it.shard.shardId()) { "shardId cannot be null" }
+            }
         val missingParents = graph.nodes
             .flatMap { it.dependencies }
             .filterNot(knownIds::contains)
             .toSet()
+
         if (missingParents.isEmpty()) return graph
 
         unknownParentAttempts++
@@ -225,7 +234,8 @@ private suspend fun KinesisAsyncClient.consumeShard(
             ?.let { it as? KinesisCheckpoint.Sequence }
             ?.let { KinesisStartingPosition.AtSequenceNumber(it.sequenceNumber) }
             ?: position
-        var lastSeenSequenceNumber = (checkpoint as? KinesisCheckpoint.Sequence)?.sequenceNumber
+
+        var lastSeenSequenceNumber: String? = (checkpoint as? KinesisCheckpoint.Sequence)?.sequenceNumber
         var iterator: String? = null
         var iteratorRetries = 0
         var throttleRetries = 0
@@ -269,6 +279,7 @@ private suspend fun KinesisAsyncClient.consumeShard(
                     pendingRecord.ack.await()
                     currentCoroutineContext().ensureActive()
                     leaseLost.get()?.let { throw it }
+
                     val fencedLease = validateLease(leaseStore, options, currentLease, leaseLost)
                     checkpointStore.save(key, KinesisCheckpoint.Sequence(sequence), fencedLease)
                     lastSeenSequenceNumber = sequence
@@ -284,8 +295,11 @@ private suspend fun KinesisAsyncClient.consumeShard(
 
                 val nextIterator = response.nextShardIterator()
                 val reachedEnding = endingSequence?.let { ending ->
-                    lastSeenSequenceNumber?.let { last -> compareKinesisSequence(last, ending) >= 0 }
+                    lastSeenSequenceNumber?.let { last ->
+                        compareKinesisSequence(last, ending) >= 0
+                    }
                 } ?: false
+
                 if (nextIterator == null || reachedEnding) {
                     checkpointStore.save(
                         key,
@@ -315,6 +329,7 @@ private suspend fun KinesisAsyncClient.consumeShard(
                 iteratorRetries++
                 if (iteratorRetries > options.recordOptions.maxIteratorRetries) throw e
                 if (lastSeenSequenceNumber == null && currentPosition is KinesisStartingPosition.Latest) throw e
+
                 currentPosition = lastSeenSequenceNumber
                     ?.let { KinesisStartingPosition.AfterSequenceNumber(it) }
                     ?: currentPosition
@@ -322,8 +337,10 @@ private suspend fun KinesisAsyncClient.consumeShard(
                 emitRetry(metrics, streamIdentity, shardId, iteratorRetries, "iterator", "iterator_expired")
             } catch (e: SdkException) {
                 if (!e.retryable()) throw e
+
                 throttleRetries++
                 if (throttleRetries > options.recordOptions.maxThrottleRetries) throw e
+
                 emitRetry(metrics, streamIdentity, shardId, throttleRetries, "throttle", "throttled")
                 delay(jitteredKinesisBackoff(throttleRetries, options.recordOptions))
             }
@@ -355,12 +372,13 @@ private suspend fun KinesisAsyncClient.consumeShard(
                 } else if (heartbeatJoinFailure !== e) {
                     heartbeatJoinFailure.addSuppressed(e)
                 }
-                log.warn(e) { "Kinesis lease release failed after consumer termination" }
+                KinesisAsyncClientLog.log.warn(e) {
+                    "Kinesis lease release failed after consumer termination"
+                }
             }
         }
         cleanupFailure?.let { failure ->
-            val primary = primaryFailure
-            if (primary == null) throw failure
+            val primary = primaryFailure ?: throw failure
             if (primary !== failure) primary.addSuppressed(failure)
         }
     }
@@ -380,7 +398,8 @@ private fun kotlinx.coroutines.CoroutineScope.launchHeartbeat(
     while (true) {
         delay(options.leaseRenewInterval)
         currentCoroutineContext().ensureActive()
-        val renewed = leaseStore.renew(currentLease.get(), options.leaseDuration)
+        val renewed: KinesisLease? = leaseStore.renew(currentLease.get(), options.leaseDuration)
+
         if (renewed == null) {
             val failure = KinesisLeaseLostException()
             leaseLost.compareAndSet(null, failure)
@@ -421,7 +440,8 @@ private suspend fun validateLease(
     leaseLost: AtomicReference<KinesisLeaseLostException?>,
 ): KinesisLease {
     leaseLost.get()?.let { throw it }
-    val renewed = leaseStore.renew(currentLease.get(), options.leaseDuration)
+    val renewed: KinesisLease? = leaseStore.renew(currentLease.get(), options.leaseDuration)
+
     if (renewed == null) {
         val failure = KinesisLeaseLostException()
         leaseLost.compareAndSet(null, failure)
@@ -431,7 +451,9 @@ private suspend fun validateLease(
     return renewed
 }
 
-private suspend fun emitEvent(metrics: KinesisFlowMetrics, event: KinesisFlowEvent) = metrics.onEvent(event)
+private suspend fun emitEvent(metrics: KinesisFlowMetrics, event: KinesisFlowEvent) {
+    metrics.onEvent(event)
+}
 
 private suspend fun emitRetry(
     metrics: KinesisFlowMetrics,
@@ -458,28 +480,28 @@ private suspend fun KinesisAsyncClient.fetchShardIterator(
     shardId: String,
     position: KinesisStartingPosition,
 ): String {
-    val request = GetShardIteratorRequest.builder()
-        .streamName(streamName)
-        .shardId(shardId)
-        .apply {
-            when (position) {
-                KinesisStartingPosition.TrimHorizon -> shardIteratorType(ShardIteratorType.TRIM_HORIZON)
-                KinesisStartingPosition.Latest -> shardIteratorType(ShardIteratorType.LATEST)
-                is KinesisStartingPosition.AtSequenceNumber -> {
-                    shardIteratorType(ShardIteratorType.AT_SEQUENCE_NUMBER)
-                    startingSequenceNumber(position.sequenceNumber)
-                }
-                is KinesisStartingPosition.AfterSequenceNumber -> {
-                    shardIteratorType(ShardIteratorType.AFTER_SEQUENCE_NUMBER)
-                    startingSequenceNumber(position.sequenceNumber)
-                }
-                is KinesisStartingPosition.AtTimestamp -> {
-                    shardIteratorType(ShardIteratorType.AT_TIMESTAMP)
-                    timestamp(position.timestamp)
-                }
+    val request = getShardIteratorRequest {
+        streamName(streamName)
+        shardId(shardId)
+
+        when (position) {
+            KinesisStartingPosition.TrimHorizon            -> shardIteratorType(ShardIteratorType.TRIM_HORIZON)
+            KinesisStartingPosition.Latest                 -> shardIteratorType(ShardIteratorType.LATEST)
+            is KinesisStartingPosition.AtSequenceNumber    -> {
+                shardIteratorType(ShardIteratorType.AT_SEQUENCE_NUMBER)
+                startingSequenceNumber(position.sequenceNumber)
+            }
+            is KinesisStartingPosition.AfterSequenceNumber -> {
+                shardIteratorType(ShardIteratorType.AFTER_SEQUENCE_NUMBER)
+                startingSequenceNumber(position.sequenceNumber)
+            }
+            is KinesisStartingPosition.AtTimestamp         -> {
+                shardIteratorType(ShardIteratorType.AT_TIMESTAMP)
+                timestamp(position.timestamp)
             }
         }
-        .build()
+    }
+
     return getShardIterator(request).await().shardIterator()
         ?: error("GetShardIterator returned no iterator")
 }

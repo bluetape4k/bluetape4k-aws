@@ -2,7 +2,9 @@ package io.bluetape4k.aws.s3tables
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.utils.ShutdownQueue
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -10,6 +12,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.services.s3tables.S3TablesClient
@@ -18,11 +21,19 @@ import java.net.URI
 
 class S3TablesClientSupportTest {
 
+    companion object: KLogging()
+
+    private val builder = mockk<S3TablesClientBuilder>(relaxed = true)
+    private val client = mockk<S3TablesClient>(relaxed = true)
+    private val httpClient = mockk<SdkHttpClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
+    }
+
     @Test
     fun `application factory registers client and with factory closes only service client`() {
-        val builder = mockk<S3TablesClientBuilder>(relaxed = true)
-        val client = mockk<S3TablesClient>(relaxed = true)
-        val httpClient = mockk<SdkHttpClient>(relaxed = true)
         mockkStatic(S3TablesClient::class)
         mockkObject(ShutdownQueue)
         try {
@@ -46,7 +57,6 @@ class S3TablesClientSupportTest {
 
     @Test
     fun `with factory closes service client after failure`() {
-        val client = mockk<S3TablesClient>(relaxed = true)
         val expected = IllegalStateException("boom")
         val actual = assertFailsWith<IllegalStateException> {
             withS3TablesClient(clientFactory = { client }) { throw expected }

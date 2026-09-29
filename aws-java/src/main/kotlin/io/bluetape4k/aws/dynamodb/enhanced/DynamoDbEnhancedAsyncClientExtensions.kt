@@ -60,10 +60,9 @@ fun <T: Any> DynamoDbEnhancedAsyncClient.batchWriteItems(
         .buffer(chunk)
         .chunked(chunk)
         .map { chunkedItems ->
-            val request =
-                BatchWriteItemEnhancedRequest {
-                    addWriteBatch(writeBatchOf(table, chunkedItems, itemClass))
-                }
+            val request = BatchWriteItemEnhancedRequest {
+                addWriteBatch(writeBatchOf(table, chunkedItems, itemClass))
+            }
             batchWriteItem(request).await()
         }
 }

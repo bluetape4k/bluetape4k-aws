@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.exposed
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
 
 /**
@@ -39,6 +40,9 @@ class AwsExposedDatabaseRegistry(
                 failure?.addSuppressed(e) ?: run { failure = e }
             }
         }
-        failure?.let { throw IllegalStateException("Failed to close one or more Exposed database handles.", it) }
+        failure?.let {
+            throw IllegalStateException("Failed to close one or more Exposed database handles.", it)
+        }
+        log.debug { "Close AwsExposedDatabaseRegistry instance." }
     }
 }

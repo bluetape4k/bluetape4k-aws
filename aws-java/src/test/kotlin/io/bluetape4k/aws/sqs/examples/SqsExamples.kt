@@ -1,13 +1,13 @@
 package io.bluetape4k.aws.sqs.examples
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.sqs.AbstractSqsTest
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.trace
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldHaveSize
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -34,8 +34,8 @@ class SqsExamples: AbstractSqsTest() {
         val url = client.createQueue { it.queueName(QUEUE_NAME) }.queueUrl()
         queueUrl = client.getQueueUrl { it.queueName(QUEUE_NAME) }.queueUrl()
 
-        queueUrl shouldBeEqualTo url
         log.debug { "queue url=$queueUrl" }
+        queueUrl shouldBeEqualTo url
     }
 
     @Test
@@ -43,10 +43,8 @@ class SqsExamples: AbstractSqsTest() {
     fun `list queues`() {
         val response = client.listQueues { it.queueNamePrefix(QUEUE_PREFIX) }
 
+        response.queueUrls().forEach { log.debug { "queue url=$it" } }
         response.queueUrls() shouldHaveSize 1
-        response.queueUrls().forEach {
-            log.debug { "queue url=$it" }
-        }
     }
 
     @Test
@@ -55,8 +53,8 @@ class SqsExamples: AbstractSqsTest() {
         val response = client.sendMessage {
             it.queueUrl(queueUrl).messageBody("Hello, World!").delaySeconds(3)
         }
-        response.messageId().shouldNotBeEmpty()
         log.debug { "response=$response" }
+        response.messageId().shouldNotBeEmpty()
     }
 
     @Test
@@ -74,10 +72,9 @@ class SqsExamples: AbstractSqsTest() {
         val response = client.sendMessageBatch {
             it.queueUrl(queueUrl).entries(entries)
         }
+
+        response.successful().forEach { log.debug { "result entry=$it" } }
         response.successful() shouldHaveSize entries.size
-        response.successful().forEach {
-            log.debug { "result entry=$it" }
-        }
     }
 
     @Test
@@ -104,13 +101,13 @@ class SqsExamples: AbstractSqsTest() {
 
         val responses = messages.map { message ->
             client.changeMessageVisibility {
-                it.queueUrl(queueUrl).receiptHandle(message.receiptHandle()).visibilityTimeout(10)
+                it.queueUrl(queueUrl)
+                    .receiptHandle(message.receiptHandle())
+                    .visibilityTimeout(10)
             }
         }
+        responses.forEach { log.debug { "response  metadata=${it.responseMetadata()}" } }
         responses shouldHaveSize messages.size
-        responses.forEach {
-            log.debug { "response  metadata=${it.responseMetadata()}" }
-        }
     }
 
     @Test
@@ -121,12 +118,13 @@ class SqsExamples: AbstractSqsTest() {
             .messages()
 
         val responses = messages.map { message ->
-            client.deleteMessage { it.queueUrl(queueUrl).receiptHandle(message.receiptHandle()) }
+            client.deleteMessage {
+                it.queueUrl(queueUrl)
+                    .receiptHandle(message.receiptHandle())
+            }
         }
+        responses.forEach { log.debug { "response=$it" } }
         responses shouldHaveSize messages.size
-        responses.forEach {
-            log.debug { "response=$it" }
-        }
     }
 
     @Test

@@ -5,6 +5,7 @@ package io.bluetape4k.aws.testcontainers
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import org.junit.jupiter.api.Test
@@ -29,18 +30,14 @@ class AwsTestcontainersReusePolicyTest {
 
     @Test
     fun `aws emulator containers disable docker reuse by default`() {
-        FlociServer().isReuseRequested.shouldBeFalse()
-
-        val localStack = LocalStackServer()
-        localStack.isReuseRequested.shouldBeFalse()
+        FlociServer().use { it.isReuseRequested.shouldBeFalse() }
+        LocalStackServer().use { it.isReuseRequested.shouldBeFalse() }
     }
 
     @Test
     fun `aws emulator reusable containers require explicit local opt in`() {
-        FlociServer(reuse = true).isReuseRequested.shouldBeTrue()
-
-        val localStack = LocalStackServer(reuse = true)
-        localStack.isReuseRequested.shouldBeTrue()
+        FlociServer(reuse = true).use { it.isReuseRequested.shouldBeTrue() }
+        LocalStackServer(reuse = true).use { it.isReuseRequested.shouldBeTrue() }
     }
 
     private fun executablePolicyFiles(): List<Path> {
@@ -98,7 +95,7 @@ class AwsTestcontainersReusePolicyTest {
             .apply { isAccessible = true }
             .getBoolean(this)
 
-    companion object {
+    companion object: KLogging() {
         private val SCAN_ROOTS = listOf(
             ".github",
             "aws-java",
