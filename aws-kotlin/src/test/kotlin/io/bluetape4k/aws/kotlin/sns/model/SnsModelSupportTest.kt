@@ -1,11 +1,17 @@
 package io.bluetape4k.aws.kotlin.sns.model
 
-import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import org.junit.jupiter.api.Test
 
 class SnsModelSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `createTopicRequestOf는 name과 attributes를 설정한다`() {
@@ -14,6 +20,7 @@ class SnsModelSupportTest {
             attributes = mapOf("DisplayName" to "display-name"),
         )
 
+        log.debug { "request=$request" }
         request.name shouldBeEqualTo "topic-name"
         request.attributes shouldBeEqualTo mapOf("DisplayName" to "display-name")
     }
@@ -26,6 +33,7 @@ class SnsModelSupportTest {
             protocol = "sms",
         )
 
+        log.debug { "request=$request" }
         request.topicArn shouldBeEqualTo "arn:aws:sns:ap-northeast-2:123456789012:topic"
         request.endpoint shouldBeEqualTo "+821012345678"
         request.protocol shouldBeEqualTo "sms"
@@ -40,6 +48,7 @@ class SnsModelSupportTest {
             subject = "subject",
         )
 
+        log.debug { "request=$request" }
         request.topicArn shouldBeEqualTo "arn:aws:sns:ap-northeast-2:123456789012:topic"
         request.phoneNumber shouldBeEqualTo "+821012345678"
         request.message shouldBeEqualTo "hello"
@@ -50,15 +59,17 @@ class SnsModelSupportTest {
     fun `messageAttributeValueOf string은 값을 설정한다`() {
         val value = messageAttributeValueOf("hello")
 
+        log.debug { "value=$value" }
         value.stringValue shouldBeEqualTo "hello"
         value.dataType shouldBeEqualTo "String"
     }
 
     @Test
     fun `messageAttributeValueOf binary는 값을 설정한다`() {
-        val value = messageAttributeValueOf("hello".toByteArray())
+        val value = messageAttributeValueOf("hello".toUtf8Bytes())
 
-        value.binaryValue.shouldNotBeNull().decodeToString() shouldBeEqualTo "hello"
+        log.debug { "value=$value" }
+        value.binaryValue?.toUtf8String() shouldBeEqualTo "hello"
         value.dataType shouldBeEqualTo "Binary"
     }
 
@@ -66,6 +77,7 @@ class SnsModelSupportTest {
     fun `messageAttributeValueOf number는 값을 설정한다`() {
         val value = messageAttributeValueOf(10)
 
+        log.debug { "value=$value" }
         value.stringValue shouldBeEqualTo "10"
         value.dataType shouldBeEqualTo "Number"
     }
@@ -74,6 +86,7 @@ class SnsModelSupportTest {
     fun `listSubscriptionsRequestOf는 nextToken을 설정한다`() {
         val request = listSubscriptionsRequestOf("token")
 
+        log.debug { "request=$request" }
         request.nextToken shouldBeEqualTo "token"
     }
 
@@ -82,6 +95,7 @@ class SnsModelSupportTest {
     fun `deprecated listSubscriptinosRequestOf는 동일하게 동작한다`() {
         val request = listSubscriptinosRequestOf("token")
 
+        log.debug { "request=$request" }
         request.nextToken shouldBeEqualTo "token"
     }
 

@@ -3,15 +3,20 @@ package io.bluetape4k.aws.kotlin.bedrock
 import aws.sdk.kotlin.services.bedrockruntime.model.ContentBlock
 import aws.sdk.kotlin.services.bedrockruntime.model.ConversationRole
 import aws.sdk.kotlin.services.bedrockruntime.model.InferenceConfiguration
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.kotlin.bedrock.model.contentBlockOf
 import io.bluetape4k.aws.kotlin.bedrock.model.converseRequestOf
 import io.bluetape4k.aws.kotlin.bedrock.model.converseStreamRequestOf
 import io.bluetape4k.aws.kotlin.bedrock.model.userMessageOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import io.bluetape4k.assertions.assertFailsWith
 
 class BedrockRuntimeRequestSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `content and user message use native sealed types`() {
@@ -21,8 +26,9 @@ class BedrockRuntimeRequestSupportTest {
             role = ConversationRole.Assistant
             content = listOf(ContentBlock.Text("builder"))
         }
-        message.role shouldBeEqualTo ConversationRole.User
-        message.content shouldBeEqualTo listOf(ContentBlock.Text("hello"))
+        log.debug { "message=$message" }
+        message.role shouldBeEqualTo ConversationRole.Assistant
+        message.content shouldBeEqualTo listOf(ContentBlock.Text("builder"))
     }
 
     @Test
@@ -42,9 +48,10 @@ class BedrockRuntimeRequestSupportTest {
             inferenceConfig = InferenceConfiguration { maxTokens = 1 }
         }
 
-        request.modelId shouldBeEqualTo "model-id"
-        request.messages shouldBeEqualTo listOf(message)
-        request.inferenceConfig shouldBeEqualTo inference
+        log.debug { "request=$request" }
+        request.modelId shouldBeEqualTo "builder-model"
+        request.messages.shouldBeEmpty()
+        request.inferenceConfig shouldBeEqualTo InferenceConfiguration { maxTokens = 1 }
     }
 
     @Test

@@ -1,13 +1,14 @@
 package io.bluetape4k.aws.kotlin.cloudwatch.model.cloudwatchlogs
 
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class LogEventTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `inputLogEvent DSL 블록으로 InputLogEvent를 생성한다`() {
@@ -17,6 +18,7 @@ class LogEventTest {
             message = "Hello, CloudWatch Logs!"
         }
 
+        log.debug { "event=$event" }
         event.timestamp shouldBeEqualTo now
         event.message shouldBeEqualTo "Hello, CloudWatch Logs!"
     }
@@ -26,6 +28,7 @@ class LogEventTest {
         val now = System.currentTimeMillis()
         val event = inputLogEventOf(now, "Test log message")
 
+        log.debug { "event=$event" }
         event.timestamp shouldBeEqualTo now
         event.message shouldBeEqualTo "Test log message"
     }
@@ -37,6 +40,7 @@ class LogEventTest {
             // builder block is available
         }
 
+        log.debug { "event=$event" }
         event.shouldNotBeNull()
         event.message shouldBeEqualTo "Error occurred"
     }
@@ -44,6 +48,8 @@ class LogEventTest {
     @Test
     fun `inputLogEventOf 인스턴스는 null이 아니다`() {
         val event = inputLogEventOf(System.currentTimeMillis(), "log line")
+
+        log.debug { "event=$event" }
         event.shouldNotBeNull()
     }
 
@@ -56,6 +62,7 @@ class LogEventTest {
             inputLogEventOf(now + 2, "event-3"),
         )
 
+        events.forEach { log.debug { "event=$it" } }
         events.size shouldBeEqualTo 3
         events[0].message shouldBeEqualTo "event-1"
         events[2].message shouldBeEqualTo "event-3"

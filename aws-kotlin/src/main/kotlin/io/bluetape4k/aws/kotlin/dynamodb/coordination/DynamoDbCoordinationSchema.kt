@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.kotlin.dynamodb.coordination
 
+import io.bluetape4k.ToStringBuilder
 import java.nio.charset.StandardCharsets
-import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -110,6 +110,20 @@ class DynamoDbCoordinationSchema(
             maxUtf8Bytes = MAX_RESOLVED_KEY_UTF8_BYTES,
         )
         return ResolvedCoordinationKey(logicalKey, physicalKey, lockScopeId)
+    }
+
+    override fun toString(): String {
+        return ToStringBuilder(this)
+            .add("tableName", tableName)
+            .add("partitionKeyAttributeName", partitionKeyAttributeName)
+            .add("namespace", namespace)
+            .add("ownerAttributeName", ownerAttributeName)
+            .add("expiresAtAttributeName", expiresAtAttributeName)
+            .add("fencingTokenAttributeName", fencingTokenAttributeName)
+            .add("valueAttributeName", valueAttributeName)
+            .add("ttlAttributeName", ttlAttributeName)
+            .add("resolver", resolver)
+            .toString()
     }
 
     companion object {

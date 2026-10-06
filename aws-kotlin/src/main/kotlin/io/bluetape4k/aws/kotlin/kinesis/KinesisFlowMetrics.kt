@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import kotlin.time.Duration
 
@@ -12,7 +12,7 @@ fun interface KinesisFlowMetrics {
 }
 
 /** metrics callback을 사용하지 않는 기본 구현입니다. */
-object NoopKinesisFlowMetrics : KinesisFlowMetrics {
+object NoopKinesisFlowMetrics: KinesisFlowMetrics {
     override suspend fun onEvent(event: KinesisFlowEvent) = Unit
 }
 
@@ -22,7 +22,7 @@ object NoopKinesisFlowMetrics : KinesisFlowMetrics {
  * `sealed` subtype을 추가하면 exhaustive `when` 소비자에 source break가 생기므로
  * 다음 major version에서만 subtype을 추가할 수 있습니다.
  */
-sealed interface KinesisFlowEvent : Serializable {
+sealed interface KinesisFlowEvent: Serializable {
     val eventKind: EventKind
     val outcome: Outcome
     val reason: Reason?
@@ -46,7 +46,7 @@ sealed interface KinesisFlowEvent : Serializable {
         override val count: Int? = null,
         override val duration: Duration? = null,
         override val retryCount: Int? = null,
-    ) : KinesisFlowEvent {
+    ): KinesisFlowEvent {
         init {
             streamToken?.let(::requireRedactedToken)
             shardToken?.let(::requireRedactedToken)
@@ -62,16 +62,43 @@ sealed interface KinesisFlowEvent : Serializable {
     }
 
     /** 이벤트 종류는 고정된 low-cardinality 집합입니다. */
-    enum class EventKind { DISCOVERY, SHARD, BATCH, RECORD, LEASE, CHECKPOINT, RETRY }
+    enum class EventKind {
+        DISCOVERY,
+        SHARD,
+        BATCH,
+        RECORD,
+        LEASE,
+        CHECKPOINT,
+        RETRY
+    }
 
     /** 이벤트 결과입니다. */
-    enum class Outcome { STARTED, SUCCESS, FAILED, SKIPPED, LOST }
+    enum class Outcome {
+        STARTED,
+        SUCCESS,
+        FAILED,
+        SKIPPED,
+        LOST
+    }
 
     /** 실패·종료 이유를 표현하는 고정 집합입니다. */
-    enum class Reason { EMPTY, SHARD_END, LEASE_BUSY, LEASE_LOST, ITERATOR_EXPIRED, THROTTLED, ERROR, CANCELLED }
+    enum class Reason {
+        EMPTY,
+        SHARD_END,
+        LEASE_BUSY,
+        LEASE_LOST,
+        ITERATOR_EXPIRED,
+        THROTTLED,
+        ERROR,
+        CANCELLED
+    }
 
     /** retry 분류를 표현하는 고정 집합입니다. */
-    enum class RetryClass { DISCOVERY, ITERATOR, THROTTLE }
+    enum class RetryClass {
+        DISCOVERY,
+        ITERATOR,
+        THROTTLE
+    }
 
     companion object {
         const val MAX_TOKEN_LENGTH: Int = 64
@@ -87,8 +114,8 @@ sealed interface KinesisFlowEvent : Serializable {
 
         /** 원본 식별자를 metrics/log에 노출하지 않는 deterministic token으로 바꿉니다. */
         fun redactedToken(value: String): String {
-            val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(StandardCharsets.UTF_8))
-            return digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
+            val digest = MessageDigest.getInstance("SHA-256").digest(value.toUtf8Bytes())
+            return digest.joinToString(separator = "") { "%02x".format(it) }
                 .take(MAX_TOKEN_LENGTH)
         }
     }

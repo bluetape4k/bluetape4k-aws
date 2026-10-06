@@ -10,9 +10,12 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class DynamoDbModelSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `createTableRequestOf는 tableName과 class를 설정한다`() {
@@ -75,7 +78,9 @@ class DynamoDbModelSupportTest {
             putRequest { item = mapOf("id" to AttributeValue.S("1")) }
         }
 
-        val request = batchWriteItemRequestOf(mapOf("test-table" to listOf(writeRequest)))
+        val request = batchWriteItemRequestOf(
+            mapOf("test-table" to listOf(writeRequest))
+        )
 
         request.requestItems.shouldNotBeNull()["test-table"]?.size shouldBeEqualTo 1
     }

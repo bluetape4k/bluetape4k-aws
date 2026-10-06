@@ -1,7 +1,6 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
 import io.bluetape4k.support.requireNotBlank
-import java.io.ObjectInputStream
 import java.io.Serializable
 import java.time.Instant
 
@@ -22,12 +21,12 @@ import java.time.Instant
  * 싱글턴 계약을 유지하도록 `readResolve()`를 사용합니다. Java 역직렬화는 `init` 블록을 우회하므로
  * `sequenceNumber` 필드가 있는 변형은 `readObject()`에서 필드를 검증합니다.
  */
-sealed interface KinesisStartingPosition : Serializable {
+sealed interface KinesisStartingPosition: Serializable {
 
     /**
      * 샤드에서 사용할 수 있는 가장 오래된 레코드부터 읽습니다.
      */
-    data object TrimHorizon : KinesisStartingPosition {
+    data object TrimHorizon: KinesisStartingPosition {
         private const val serialVersionUID: Long = 1L
         private fun readResolve(): Any = TrimHorizon
     }
@@ -39,7 +38,7 @@ sealed interface KinesisStartingPosition : Serializable {
      * 체크포인트가 없습니다. 이 경우 [recordFlow]는 TTL 동안 기록된 모든 레코드를 조용히 건너뛰는
      * 새 `Latest` 반복자를 가져오지 않고 즉시 예외를 던집니다.
      */
-    data object Latest : KinesisStartingPosition {
+    data object Latest: KinesisStartingPosition {
         private const val serialVersionUID: Long = 1L
         private fun readResolve(): Any = Latest
     }
@@ -49,14 +48,8 @@ sealed interface KinesisStartingPosition : Serializable {
      *
      * @param sequenceNumber 비어 있지 않은 Kinesis 시퀀스 번호 문자열
      */
-    data class AtSequenceNumber(val sequenceNumber: String) : KinesisStartingPosition {
+    data class AtSequenceNumber(val sequenceNumber: String): KinesisStartingPosition {
         init {
-            sequenceNumber.requireNotBlank("sequenceNumber")
-        }
-
-        @Suppress("UnusedPrivateMember")
-        private fun readObject(stream: ObjectInputStream) {
-            stream.defaultReadObject()
             sequenceNumber.requireNotBlank("sequenceNumber")
         }
 
@@ -70,14 +63,8 @@ sealed interface KinesisStartingPosition : Serializable {
      *
      * @param sequenceNumber 비어 있지 않은 Kinesis 시퀀스 번호 문자열
      */
-    data class AfterSequenceNumber(val sequenceNumber: String) : KinesisStartingPosition {
+    data class AfterSequenceNumber(val sequenceNumber: String): KinesisStartingPosition {
         init {
-            sequenceNumber.requireNotBlank("sequenceNumber")
-        }
-
-        @Suppress("UnusedPrivateMember")
-        private fun readObject(stream: ObjectInputStream) {
-            stream.defaultReadObject()
             sequenceNumber.requireNotBlank("sequenceNumber")
         }
 
@@ -92,7 +79,7 @@ sealed interface KinesisStartingPosition : Serializable {
      * @param timestamp 시작 시각. [aws.smithy.kotlin.runtime.time.Instant.fromEpochSeconds]를 통해
      *   AWS SDK [aws.smithy.kotlin.runtime.time.Instant]로 변환할 때 나노초 정밀도를 보존합니다.
      */
-    data class AtTimestamp(val timestamp: Instant) : KinesisStartingPosition {
+    data class AtTimestamp(val timestamp: Instant): KinesisStartingPosition {
         companion object {
             private const val serialVersionUID: Long = 1L
         }

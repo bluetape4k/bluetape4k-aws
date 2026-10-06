@@ -1,24 +1,25 @@
 package io.bluetape4k.aws.kotlin.ses.model
 
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class DestinationTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `destinationOf vararg로 수신자를 설정한다`() {
         val dest = destinationOf("user1@example.com", "user2@example.com")
 
-        dest.toAddresses.shouldNotBeNull()
-        dest.toAddresses.shouldNotBeNull() shouldContain "user1@example.com"
-        dest.toAddresses.shouldNotBeNull() shouldContain "user2@example.com"
+        log.debug { "dest=$dest" }
+
+        dest.toAddresses shouldContain "user1@example.com"
+        dest.toAddresses shouldContain "user2@example.com"
     }
 
     @Test
@@ -28,17 +29,18 @@ class DestinationTest {
             ccAddresses = listOf("cc@example.com"),
             bccAddresses = listOf("bcc@example.com")
         )
-
-        dest.toAddresses.shouldNotBeNull() shouldContain "to@example.com"
-        dest.ccAddresses.shouldNotBeNull() shouldContain "cc@example.com"
-        dest.bccAddresses.shouldNotBeNull() shouldContain "bcc@example.com"
+        log.debug { "dest=$dest" }
+        dest.toAddresses shouldContain "to@example.com"
+        dest.ccAddresses shouldContain "cc@example.com"
+        dest.bccAddresses shouldContain "bcc@example.com"
     }
 
     @Test
     fun `destinationOf는 CC만 설정할 수 있다`() {
         val dest = destinationOf(ccAddresses = listOf("cc@example.com"))
 
-        dest.ccAddresses.shouldNotBeNull() shouldContain "cc@example.com"
+        log.debug { "dest=$dest" }
+        dest.ccAddresses shouldContain "cc@example.com"
     }
 
     @Test
@@ -64,7 +66,7 @@ class DestinationTest {
         val dest = destinationOf("user@example.com") {
             // additional settings
         }
-        dest.shouldNotBeNull()
+        log.debug { "dest=$dest" }
         dest.toAddresses shouldHaveSize 1
     }
 }

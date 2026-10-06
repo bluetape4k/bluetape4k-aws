@@ -20,7 +20,7 @@ data class DynamoDbStreamsRecordFlowOptions(
     val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     val maxShardConcurrency: Int = DEFAULT_MAX_SHARD_CONCURRENCY,
     val maxDescribePages: Int = DEFAULT_MAX_DESCRIBE_PAGES,
-) : Serializable {
+): Serializable {
 
     init {
         require(batchLimit in 1..MAX_BATCH_LIMIT) {

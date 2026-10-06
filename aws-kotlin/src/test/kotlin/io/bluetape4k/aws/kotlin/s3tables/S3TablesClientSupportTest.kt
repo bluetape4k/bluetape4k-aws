@@ -2,27 +2,41 @@ package io.bluetape4k.aws.kotlin.s3tables
 
 import aws.sdk.kotlin.services.s3tables.S3TablesClient
 import aws.smithy.kotlin.runtime.http.engine.CloseableHttpClientEngine
+import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
-import aws.smithy.kotlin.runtime.net.url.Url
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class S3TablesClientSupportTest {
 
+    companion object: KLoggingChannel()
+
+    private val externalHttpClient = mockk<CloseableHttpClientEngine>(relaxed = true)
+    private val client = mockk<S3TablesClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(externalHttpClient, client)
+        every { client.close() } just runs
+    }
+
     @Test
     fun `caller-owned factory forwards endpoint region and HTTP engine`() {
-        val externalHttpClient = mockk<CloseableHttpClientEngine>(relaxed = true)
         val endpoint = Url.parse("http://localhost:4566")
         val client = s3TablesClientOf(
             endpointUrl = endpoint,
@@ -45,8 +59,6 @@ class S3TablesClientSupportTest {
 
     @Test
     fun `with factory closes service client after success and failure`() = runTest {
-        val client = mockk<S3TablesClient>(relaxed = true)
-        every { client.close() } just runs
         withS3TablesClient(clientFactory = { client }) { it.shouldBeSameInstanceAs(client) }
         val expected = IllegalStateException("boom")
         val actual = assertFailsWith<IllegalStateException> {
@@ -58,17 +70,13 @@ class S3TablesClientSupportTest {
 
     @Test
     fun `with factory closes service client after cancellation`() = runTest {
-        val client = mockk<S3TablesClient>(relaxed = true)
-        every { client.close() } just runs
         val job = launch {
             withS3TablesClient(clientFactory = { client }) {
                 awaitCancellation()
             }
         }
         runCurrent()
-
         job.cancelAndJoin()
-
         verify(exactly = 1) { client.close() }
     }
 }

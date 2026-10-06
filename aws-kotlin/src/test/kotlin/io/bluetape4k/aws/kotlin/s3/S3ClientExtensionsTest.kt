@@ -17,7 +17,6 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.utils.Runtimex
-import java.io.File
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.io.File
 
 @TempFolderTest
 class S3ClientExtensionsTest: AbstractKotlinS3Test() {
@@ -35,30 +35,22 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
 
     @RepeatedTest(REPEAT_SIZE)
     fun `upload and download s3 object as String`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             val key = randomKey()
             val content = randomString()
 
             val response = client.putFromString(BUCKET_NAME, key, content)
-            response.eTag.shouldNotBeNull()
             log.debug { "Put response=$response" }
+            response.eTag.shouldNotBeNull()
 
             val downloadedContent = client.getAsString(BUCKET_NAME, key)
-            downloadedContent.shouldNotBeNull() shouldBeEqualTo content
+            downloadedContent shouldBeEqualTo content
         }
     }
 
     @Test
     fun `existsBucket는 없는 버킷에 대해 false를 반환한다`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             val missingBucket = "missing-${randomKey()}"
             client.existsBucket(missingBucket).shouldBeFalse()
         }
@@ -66,11 +58,7 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
 
     @Test
     fun `existsObject는 없는 객체에 대해 false를 반환한다`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             val missingKey = "missing-${randomKey()}"
             client.existsObject(BUCKET_NAME, missingKey).shouldBeFalse()
         }
@@ -78,11 +66,7 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
 
     @Test
     fun `putAll은 모든 요청을 실행하고 업로드 결과를 반환한다`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             val prefix = "bulk-put-${randomKey()}"
             val requests = arrayOf(
                 putObjectRequestOf(BUCKET_NAME, "$prefix-1", body = ByteStream.fromString("alpha")),
@@ -91,6 +75,8 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
             )
 
             val responses = client.putAll(concurrency = 2, *requests).toList()
+
+            responses.forEach { log.debug { "putObjectResponse: $it" } }
             responses.size shouldBeEqualTo requests.size
             client.existsObject(BUCKET_NAME, "$prefix-1").shouldBeTrue()
             client.existsObject(BUCKET_NAME, "$prefix-2").shouldBeTrue()
@@ -100,20 +86,16 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
 
     @Test
     fun `getAll은 모든 요청을 실행하고 객체 본문을 반환한다`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             val prefix = "bulk-get-${randomKey()}"
             val samples = listOf("one", "two", "three")
             samples.forEachIndexed { index, value ->
                 client.putFromString(BUCKET_NAME, "$prefix-$index", value)
             }
 
-            val requests = samples.indices.map { index ->
-                getObjectRequestOf(BUCKET_NAME, "$prefix-$index")
-            }.toTypedArray()
+            val requests = samples.indices
+                .map { getObjectRequestOf(BUCKET_NAME, "$prefix-$it") }
+                .toTypedArray()
 
             val contents = client
                 .getAll(concurrency = 2, *requests)
@@ -121,6 +103,7 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
                 .map { it.body?.decodeToString() }
                 .toList()
 
+            contents.forEach { log.debug { "content: $it" } }
             contents.size shouldBeEqualTo samples.size
             contents shouldBeEqualTo samples
         }
@@ -128,31 +111,23 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
 
     @RepeatedTest(REPEAT_SIZE)
     fun `upload and download s3 object as ByteArray`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             val key = randomKey()
             val content = randomString().toUtf8Bytes()
 
             val response = client.putFromByteArray(BUCKET_NAME, key, content)
-            response.eTag.shouldNotBeNull()
             log.debug { "Put response=$response" }
+            response.eTag.shouldNotBeNull()
 
             val downloadedContent = client.getAsByteArray(BUCKET_NAME, key)
-            downloadedContent.shouldNotBeNull() shouldBeEqualTo content
+            downloadedContent shouldBeEqualTo content
         }
     }
 
     @ParameterizedTest(name = "upload/download {0}")
     @MethodSource("getImageNames")
     fun `upload and download binary file`(filename: String, tempFolder: TempFolder) = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             val key = randomKey()
             val filepath = "$IMAGE_PATH/$filename"
             val file = File(filepath)
@@ -179,14 +154,10 @@ class S3ClientExtensionsTest: AbstractKotlinS3Test() {
         filename: String,
         tempFolder: TempFolder,
     ) = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             SuspendedJobTester()
                 .workers(Runtimex.availableProcessors)
-                .rounds(Runtimex.availableProcessors)
+                .rounds(Runtimex.availableProcessors * 4)
                 .add {
                     val key = randomKey()
                     val filepath = "$IMAGE_PATH/$filename"

@@ -1,14 +1,6 @@
 package io.bluetape4k.aws.kotlin.scheduler
 
 import aws.sdk.kotlin.services.scheduler.SchedulerClient
-import aws.sdk.kotlin.services.scheduler.createSchedule
-import aws.sdk.kotlin.services.scheduler.createScheduleGroup
-import aws.sdk.kotlin.services.scheduler.deleteSchedule
-import aws.sdk.kotlin.services.scheduler.deleteScheduleGroup
-import aws.sdk.kotlin.services.scheduler.getSchedule
-import aws.sdk.kotlin.services.scheduler.getScheduleGroup
-import aws.sdk.kotlin.services.scheduler.listScheduleGroups
-import aws.sdk.kotlin.services.scheduler.listSchedules
 import aws.sdk.kotlin.services.scheduler.model.CreateScheduleGroupResponse
 import aws.sdk.kotlin.services.scheduler.model.CreateScheduleResponse
 import aws.sdk.kotlin.services.scheduler.model.DeleteScheduleGroupResponse
@@ -21,7 +13,6 @@ import aws.sdk.kotlin.services.scheduler.model.ListSchedulesResponse
 import aws.sdk.kotlin.services.scheduler.model.ScheduleState
 import aws.sdk.kotlin.services.scheduler.model.Target
 import aws.sdk.kotlin.services.scheduler.model.UpdateScheduleResponse
-import aws.sdk.kotlin.services.scheduler.updateSchedule
 import aws.smithy.kotlin.runtime.time.Instant
 import io.bluetape4k.aws.kotlin.scheduler.model.createScheduleGroupRequestOf
 import io.bluetape4k.aws.kotlin.scheduler.model.createScheduleRequestOf

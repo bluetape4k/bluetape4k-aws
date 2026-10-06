@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 class SesV2MessageTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `contentOf는 data와 charset으로 Content를 생성한다`() {

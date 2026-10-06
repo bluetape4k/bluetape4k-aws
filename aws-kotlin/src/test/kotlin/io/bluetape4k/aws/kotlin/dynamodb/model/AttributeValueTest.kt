@@ -1,10 +1,13 @@
 package io.bluetape4k.aws.kotlin.dynamodb.model
 
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.io.extractBytes
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 
@@ -15,59 +18,63 @@ class AttributeValueTest {
     @Test
     fun `null값은 AttributeValue Null로 변환된다`() {
         val av = null.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.Null::class
-        (av as AttributeValue.Null).value shouldBeEqualTo true
+        av.shouldBeInstanceOf<AttributeValue.Null>()
+        av.value.shouldBeTrue()
     }
 
     @Test
     fun `String은 AttributeValue S로 변환된다`() {
         val av = "hello".toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.S::class
-        (av as AttributeValue.S).value shouldBeEqualTo "hello"
+        av.shouldBeInstanceOf<AttributeValue.S>()
+        av.value shouldBeEqualTo "hello"
     }
 
     @Test
     fun `Int는 AttributeValue N으로 변환된다`() {
         val av = 42.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.N::class
-        (av as AttributeValue.N).value shouldBeEqualTo "42"
+        av.shouldBeInstanceOf<AttributeValue.N>()
+        av.value shouldBeEqualTo "42"
     }
 
     @Test
     fun `Long은 AttributeValue N으로 변환된다`() {
         val av = 123456789L.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.N::class
-        (av as AttributeValue.N).value shouldBeEqualTo "123456789"
+        av.shouldBeInstanceOf<AttributeValue.N>()
+        av.value shouldBeEqualTo "123456789"
     }
 
     @Test
     fun `Double은 AttributeValue N으로 변환된다`() {
         val av = 3.14.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.N::class
+        av.shouldBeInstanceOf<AttributeValue.N>()
+        av.value shouldBeEqualTo "3.14"
     }
 
     @Test
     fun `Boolean은 AttributeValue Bool로 변환된다`() {
         val avTrue = true.toAttributeValue()
-        avTrue shouldBeInstanceOf AttributeValue.Bool::class
-        (avTrue as AttributeValue.Bool).value shouldBeEqualTo true
+        avTrue.shouldBeInstanceOf<AttributeValue.Bool>()
+        avTrue.value.shouldBeTrue()
 
         val avFalse = false.toAttributeValue()
-        (avFalse as AttributeValue.Bool).value shouldBeEqualTo false
+        avFalse.shouldBeInstanceOf<AttributeValue.Bool>()
+        avFalse.value.shouldBeFalse()
     }
 
     @Test
     fun `ByteArray는 AttributeValue B로 변환된다`() {
         val bytes = byteArrayOf(1, 2, 3)
         val av = bytes.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.B::class
+        av.shouldBeInstanceOf<AttributeValue.B>()
+        av.value shouldBeEqualTo bytes
     }
 
     @Test
     fun `ByteBuffer는 AttributeValue B로 변환된다`() {
         val buf = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
         val av = buf.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.B::class
+        av.shouldBeInstanceOf<AttributeValue.B>()
+        av.value shouldBeEqualTo buf.extractBytes()
     }
 
     @Test
@@ -75,8 +82,8 @@ class AttributeValueTest {
         // List<String> → Iterable<CharSequence> 오버로드 → AttributeValue.Ss (String Set)
         val list = listOf("a", "b", "c")
         val av = list.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.Ss::class
-        (av as AttributeValue.Ss).value.size shouldBeEqualTo 3
+        av.shouldBeInstanceOf<AttributeValue.Ss>()
+        av.value shouldBeEqualTo list
     }
 
     @Test
@@ -84,19 +91,17 @@ class AttributeValueTest {
         // 혼합 타입 목록은 AttributeValue.L (List)
         val mixed: List<Any> = listOf("a", 1, true)
         val av = mixed.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.L::class
-        av.value.size shouldBeEqualTo 3
+        av.shouldBeInstanceOf<AttributeValue.L>()
+        av.value.size shouldBeEqualTo mixed.size
     }
 
     @Test
     fun `Map은 AttributeValue M으로 변환된다`() {
         val map = mapOf("name" to "Alice", "age" to 30)
         val av = map.toAttributeValue()
-        av shouldBeInstanceOf AttributeValue.M::class
-        val m = av.value
-        m.shouldNotBeNull()
-        m["name"] shouldBeEqualTo AttributeValue.S("Alice")
-        m["age"] shouldBeEqualTo AttributeValue.N("30")
+        av.shouldBeInstanceOf<AttributeValue.M>()
+        av.value["name"] shouldBeEqualTo AttributeValue.S("Alice")
+        av.value["age"] shouldBeEqualTo AttributeValue.N("30")
     }
 
     @Test
@@ -106,6 +111,8 @@ class AttributeValueTest {
 
         avList.size shouldBeEqualTo 3
         avList[0] shouldBeEqualTo AttributeValue.S("x")
+        avList[1] shouldBeEqualTo AttributeValue.S("y")
+        avList[2] shouldBeEqualTo AttributeValue.S("z")
     }
 
     @Test

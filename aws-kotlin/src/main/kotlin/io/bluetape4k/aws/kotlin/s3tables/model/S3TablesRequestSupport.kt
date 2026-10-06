@@ -21,10 +21,13 @@ import aws.sdk.kotlin.services.s3tables.model.TableBucketType
 fun createTableBucketRequestOf(
     name: String,
     builder: CreateTableBucketRequest.Builder.() -> Unit = {},
-): CreateTableBucketRequest = CreateTableBucketRequest {
-    this.name = name
-    builder()
-}.also { it.name.requireNotBlank("name") }
+): CreateTableBucketRequest =
+    CreateTableBucketRequest {
+        this.name = name
+        builder()
+    }.also {
+        it.name.requireNotBlank("name")
+    }
 
 /** table bucket 목록 조회 요청을 구성합니다. */
 fun listTableBucketsRequestOf(

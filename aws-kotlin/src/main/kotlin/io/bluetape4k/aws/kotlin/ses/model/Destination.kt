@@ -21,7 +21,6 @@ inline fun destinationOf(
 
     return Destination {
         this.toAddresses = toAddresses.toList()
-
         builder()
     }
 }

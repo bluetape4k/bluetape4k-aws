@@ -1,13 +1,13 @@
 package io.bluetape4k.aws.kotlin.http
 
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class HttpClientEngineProviderTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `CRT httpEngine singleton은 null이 아니다`() {
@@ -38,7 +38,7 @@ class HttpClientEngineProviderTest {
     @Test
     fun `defaultHttpEngine은 CRT httpEngine과 같은 인스턴스다`() {
         val defaultEngine = HttpClientEngineProvider.defaultHttpEngine
-        val crtEngine = HttpClientEngineProvider.Crt.httpEngine
-        defaultEngine shouldBeSameInstanceAs crtEngine
+        val crtHttpEngine = HttpClientEngineProvider.Crt.httpEngine
+        defaultEngine shouldBeSameInstanceAs crtHttpEngine
     }
 }

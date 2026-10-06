@@ -19,20 +19,18 @@ import aws.sdk.kotlin.services.dynamodb.paginators.listTablesPaginated
 import aws.sdk.kotlin.services.dynamodb.paginators.scanPaginated
 import aws.sdk.kotlin.services.dynamodb.paginators.tableNames
 import aws.sdk.kotlin.services.dynamodb.putItem
+import aws.sdk.kotlin.services.dynamodb.waiters.waitUntilTableExists
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValue
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValueMap
-import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
-import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-private val log = KotlinLogging.logger {}
+private object DynamoDbClientLog: KLogging()
 
 
 /**
@@ -115,7 +113,7 @@ suspend fun DynamoDbClient.existsTable(name: String): Boolean {
  */
 suspend fun DynamoDbClient.deleteTableIfExists(name: String): DeleteTableResponse? =
     if (existsTable(name)) {
-        log.debug { "DynamoDB 테이블[$name]을 삭제합니다." }
+        DynamoDbClientLog.log.debug { "DynamoDB 테이블[$name]을 삭제합니다." }
         deleteTable { this.tableName = name }
     } else {
         null
@@ -161,17 +159,19 @@ suspend fun DynamoDbClient.waitForTableReady(
     name: String,
     timeout: Duration = 60.seconds,
 ) {
-    log.debug { "DynamoDb 테이블[$name]이 준비될 때까지 [timeout] 만큼 대기합니다 ... " }
+    DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비될 때까지 [$timeout] 만큼 대기합니다 ... " }
 
-    withTimeout(timeout) {
-        while (true) {
-            if (getTableStatus(name) == TableStatus.Active) {
-                log.debug { "DynamoDb 테이블[$name]이 준비되었습니다." }
-                break
-            }
-            delay(10.milliseconds)
-        }
-    }
+    // HINT: wait 관련 함수가 상당히 많다. 이를 이용하자.
+    this.waitUntilTableExists { tableName = name }
+//    withTimeout(timeout) {
+//        while (true) {
+//            if (getTableStatus(name) == TableStatus.Active) {
+//                DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비되었습니다." }
+//                return@withTimeout
+//            }
+//            delay(50.milliseconds)
+//        }
+//    }
 }
 
 /**

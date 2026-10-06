@@ -52,7 +52,7 @@ inline fun sesV2ClientOf(
  *
  * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
  */
-suspend fun <R> withSesV2Client(
+suspend inline fun <R> withSesV2Client(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,

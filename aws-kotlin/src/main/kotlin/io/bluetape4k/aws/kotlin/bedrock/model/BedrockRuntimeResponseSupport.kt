@@ -29,16 +29,15 @@ fun ConverseResponse.firstTextOrNull(): String? =
  * 내용이 비었거나 없으면 빈 문자열을 반환합니다. 건너뛴 변형을 확인할 수 있도록
  * 네이티브 원본 응답은 그대로 사용할 수 있습니다.
  */
-fun ConverseResponse.textOrEmpty(separator: String = ""): String =
-    buildString {
-        var first = true
-        for (block in output?.asMessageOrNull()?.content.orEmpty()) {
-            val text = block.asTextOrNull() ?: continue
-            if (!first) append(separator)
-            append(text)
-            first = false
-        }
+fun ConverseResponse.textOrEmpty(separator: String = ""): String = buildString {
+    var first = true
+    for (block in output?.asMessageOrNull()?.content.orEmpty()) {
+        val text = block.asTextOrNull() ?: continue
+        if (!first) append(separator)
+        append(text)
+        first = false
     }
+}
 
 /**
  * Bedrock 네이티브 콘텐츠 블록 델타 이벤트에서 텍스트를 반환합니다.

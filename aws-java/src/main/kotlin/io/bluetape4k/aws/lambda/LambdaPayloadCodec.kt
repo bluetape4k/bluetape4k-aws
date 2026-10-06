@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.lambda
 
+import io.bluetape4k.jackson3.Jackson
 import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 
 /**
  * Lambda 호출 payload를 SDK가 전송할 바이트와 호출자가 사용할 값으로 변환합니다.
@@ -36,7 +38,7 @@ object LambdaPayloadCodecs {
 
     /** 호출자가 제공한 Jackson 3 mapper와 구체적인 대상 타입을 연결합니다. */
     fun <T> jackson(
-        objectMapper: ObjectMapper,
+        objectMapper: JsonMapper = Jackson.defaultJsonMapper,
         valueType: Class<T>,
     ): LambdaPayloadCodec<T> = object: LambdaPayloadCodec<T> {
         override fun encode(value: T): ByteArray = objectMapper.writeValueAsBytes(value)

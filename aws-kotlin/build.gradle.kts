@@ -11,9 +11,6 @@ configurations {
 dependencies {
     // bluetape4k artifacts (via BOM)
     api(bt4k.bluetape4k.io)
-    api(bt4k.bluetape4k.coroutines)
-    compileOnly(bt4k.bluetape4k.jackson3)
-    compileOnly(bt4k.bluetape4k.resilience4j)
     testImplementation(bt4k.bluetape4k.junit5)
     testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(bt4k.bluetape4k.idgenerators)
@@ -50,16 +47,26 @@ dependencies {
     compileOnly(libs.aws.kotlin.sts)
 
     // Resilience4j
+    compileOnly(bt4k.bluetape4k.resilience4j)
     compileOnly(bt4k.resilience4j.retry)
     compileOnly(bt4k.resilience4j.kotlin)
 
     // Jackson
+    compileOnly(bt4k.bluetape4k.jackson3)
     compileOnly(libs.jackson3.module.kotlin)
     compileOnly(libs.jackson3.module.blackbird)
 
     // Coroutines
+    api(bt4k.bluetape4k.coroutines)
     compileOnly(libs.kotlinx.coroutines.core)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Serializers & Compressor
+    testImplementation(bt4k.fory.kotlin)
+    testImplementation(bt4k.kryo5)
+    testImplementation(bt4k.at.yawk.lz4.java)
+    testImplementation(bt4k.snappy.java)
+    testImplementation(bt4k.zstd.jni)
 
     // Test
     testImplementation(libs.aws.kotlin.bedrock.runtime)
@@ -70,6 +77,7 @@ dependencies {
     testImplementation(libs.aws.kotlin.sfn)
     testImplementation(libs.aws.kotlin.s3tables)
     testImplementation(libs.aws.kotlin.lambda)
+
     testImplementation(libs.testcontainers.localstack)
     testImplementation(bt4k.mockk)
     testImplementation(libs.awaitility.kotlin)
@@ -106,10 +114,22 @@ tasks.test {
     val lambdaSmokeEnabled = lambdaSmokeRequested && missingLambdaSmokeInputs.isEmpty()
 
     systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
-    systemProperty("bluetape4k.lambda.smoke.functionName", providers.environmentVariable("LAMBDA_SMOKE_FUNCTION_NAME").orNull.orEmpty())
-    systemProperty("bluetape4k.lambda.smoke.region", providers.environmentVariable("LAMBDA_SMOKE_REGION").orNull.orEmpty())
-    systemProperty("bluetape4k.lambda.smoke.emulator", providers.environmentVariable("LAMBDA_SMOKE_EMULATOR").orNull ?: "floci")
-    systemProperty("bluetape4k.lambda.smoke.qualifier", providers.environmentVariable("LAMBDA_SMOKE_QUALIFIER").orNull.orEmpty())
+    systemProperty(
+        "bluetape4k.lambda.smoke.functionName",
+        providers.environmentVariable("LAMBDA_SMOKE_FUNCTION_NAME").orNull.orEmpty()
+    )
+    systemProperty(
+        "bluetape4k.lambda.smoke.region",
+        providers.environmentVariable("LAMBDA_SMOKE_REGION").orNull.orEmpty()
+    )
+    systemProperty(
+        "bluetape4k.lambda.smoke.emulator",
+        providers.environmentVariable("LAMBDA_SMOKE_EMULATOR").orNull ?: "floci"
+    )
+    systemProperty(
+        "bluetape4k.lambda.smoke.qualifier",
+        providers.environmentVariable("LAMBDA_SMOKE_QUALIFIER").orNull.orEmpty()
+    )
     useJUnitPlatform {
         if (smokeEnabled) {
             includeTags(*requestedSmokeTags.toTypedArray())

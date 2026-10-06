@@ -1,13 +1,13 @@
 package io.bluetape4k.aws.kotlin.sts.model
 
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class AssumeRoleTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `assumeRoleRequest DSL 블록으로 AssumeRoleRequest를 생성한다`() {

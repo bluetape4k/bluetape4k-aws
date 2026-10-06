@@ -4,24 +4,27 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class MessageTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `contentOf는 data와 charset으로 Content를 생성한다`() {
         val content = contentOf("Hello, World!")
 
+        log.debug { "content=$content" }
         content.data shouldBeEqualTo "Hello, World!"
-        content.charset shouldBeEqualTo "UTF-8"
+        content.charset shouldBeEqualTo Charsets.UTF_8.name()
     }
 
     @Test
     fun `contentOf는 커스텀 charset을 설정할 수 있다`() {
         val content = contentOf("테스트 메시지", charset = "EUC-KR")
 
+        log.debug { "content=$content" }
         content.charset shouldBeEqualTo "EUC-KR"
     }
 
@@ -37,6 +40,7 @@ class MessageTest {
         val html = contentOf("<h1>Hello</h1>")
         val body = htmlBodyOf(html)
 
+        log.debug { "body=$body" }
         body.html?.data shouldBeEqualTo "<h1>Hello</h1>"
     }
 
@@ -45,6 +49,7 @@ class MessageTest {
         val text = contentOf("Hello, World!")
         val body = textBodyOf(text)
 
+        log.debug { "body=$body" }
         body.text?.data shouldBeEqualTo "Hello, World!"
     }
 
@@ -54,6 +59,7 @@ class MessageTest {
         val body = textBodyOf(contentOf("Test body"))
         val message = messageOf(subject, body)
 
+        log.debug { "message=$message" }
         message.subject?.data shouldBeEqualTo "Test Subject"
         message.body.shouldNotBeNull()
     }
@@ -71,6 +77,7 @@ class MessageTest {
             message = msg
         )
 
+        log.debug { "req=$req" }
         req.source shouldBeEqualTo "from@example.com"
         req.destination.shouldNotBeNull()
         req.message.shouldNotBeNull()
@@ -79,8 +86,12 @@ class MessageTest {
     @Test
     fun `sendEmailRequestOf는 빈 source를 허용하지 않는다`() {
         val dest = destinationOf("to@example.com")
-        val msg = messageOf(contentOf("Subject"), textBodyOf(contentOf("Body")))
-
+        val msg = messageOf(
+            contentOf("Subject"),
+            textBodyOf(contentOf("Body"))
+        )
+        log.debug { "msg=$msg" }
+        
         assertFailsWith<IllegalArgumentException> {
             sendEmailRequestOf(source = "", destination = dest, message = msg)
         }

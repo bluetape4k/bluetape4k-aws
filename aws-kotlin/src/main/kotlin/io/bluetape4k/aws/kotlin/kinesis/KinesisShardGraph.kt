@@ -1,20 +1,19 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
 import aws.sdk.kotlin.services.kinesis.KinesisClient
-import aws.sdk.kotlin.services.kinesis.listShards
 import aws.sdk.kotlin.services.kinesis.model.KinesisException
 import aws.sdk.kotlin.services.kinesis.model.ListShardsRequest
 import aws.sdk.kotlin.services.kinesis.model.Shard
 import io.bluetape4k.aws.kotlin.PaginationFailure
 import io.bluetape4k.aws.kotlin.PaginationGuard
-import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 
-private val graphLog = KotlinLogging.logger { }
+private object GraphLogger: KLogging()
 
 /** ListShards 결과를 consumer가 사용할 수 있는 immutable dependency graph로 표현합니다. */
 internal data class KinesisShardGraph(
@@ -59,7 +58,7 @@ internal suspend fun KinesisClient.discoverKinesisShardGraph(
                         options.maxUnknownParentDiscoveries,
             )
         }
-        graphLog.warn {
+        GraphLogger.log.warn {
             "Kinesis shard graph has unknown parent dependencies; retrying discovery " +
                     "attempt=$unknownParentAttempt/${options.maxUnknownParentDiscoveries}"
         }
@@ -82,9 +81,8 @@ private suspend fun KinesisClient.listAllShards(
             if (!e.sdkErrorMetadata.isRetryable && !e.isExpiredNextTokenFailure()) throw e
             discoveryRetry++
             if (discoveryRetry > options.maxDiscoveryRetries) throw e
-            graphLog.warn {
-                "Kinesis shard discovery retry $discoveryRetry/${options.maxDiscoveryRetries}: " +
-                        "type=${e::class.simpleName}"
+            GraphLogger.log.warn(e) {
+                "Kinesis shard discovery retry $discoveryRetry/${options.maxDiscoveryRetries}: "
             }
             delay(options.recordOptions.initialThrottleBackoff)
         }
@@ -116,7 +114,7 @@ private suspend fun KinesisClient.collectShardPages(
             this.nextToken = token
             maxResults = minOf(options.maxRecordsPerPoll, 1_000)
         })
-        response.shards.orEmpty().filterNotNull().forEach { shard ->
+        response.shards.orEmpty().forEach { shard ->
             val shardId = shard.shardId.also {
                 it.validateIdentifier("shardId", KinesisShardKey.MAX_IDENTIFIER_LENGTH)
             }
@@ -145,8 +143,8 @@ private fun buildGraph(shards: List<Shard>, options: KinesisConsumerOptions): Ki
         val dependencies = buildSet {
             shard.parentShardId?.let(::add)
             shard.adjacentParentShardId?.let(::add)
-        }.also { parents ->
-            parents.forEach { it.validateIdentifier("parentShardId", KinesisShardKey.MAX_IDENTIFIER_LENGTH) }
+        }.onEach {
+            it.validateIdentifier("parentShardId", KinesisShardKey.MAX_IDENTIFIER_LENGTH)
         }
         nodes[shardId] = KinesisShardNode(
             shardId = shardId,
@@ -182,5 +180,5 @@ private fun KinesisException.isExpiredNextTokenFailure(): Boolean {
     val type = this::class.simpleName.orEmpty()
     return type.contains("ExpiredNextToken", ignoreCase = true) ||
             type.contains("InvalidArgument", ignoreCase = true) &&
-            message.orEmpty().contains("nextToken", ignoreCase = true)
+            message.contains("nextToken", ignoreCase = true)
 }

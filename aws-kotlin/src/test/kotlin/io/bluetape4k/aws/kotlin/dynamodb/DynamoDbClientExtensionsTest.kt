@@ -1,18 +1,17 @@
 package io.bluetape4k.aws.kotlin.dynamodb
 
-import io.bluetape4k.assertions.shouldNotBeNull
 import aws.sdk.kotlin.services.dynamodb.model.TableClass
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.sortKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
+import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
-import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldHaveSize
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -28,11 +27,7 @@ class DynamoDbClientExtensionsTest: AbstractKotlinDynamoDbTest() {
     @Test
     @Order(0)
     fun `create table`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             client.deleteTableIfExists(TEST_TABLE_NAME)
 
             val response = client.createTable(TEST_TABLE_NAME) {
@@ -51,7 +46,6 @@ class DynamoDbClientExtensionsTest: AbstractKotlinDynamoDbTest() {
                 tableClass = TableClass.Standard
             }
             log.debug { "Create table: ${response.tableDescription?.tableArn}" }
-
             client.waitForTableReady(TEST_TABLE_NAME)
         }
     }
@@ -59,11 +53,7 @@ class DynamoDbClientExtensionsTest: AbstractKotlinDynamoDbTest() {
     @Test
     @Order(1)
     fun `scan paginated respects exclusive start key`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             client.putItem(TEST_TABLE_NAME, mapOf("Artist" to "Foo", "SongTitle" to "Bar"))
             client.putItem(TEST_TABLE_NAME, mapOf("Artist" to "Foo", "SongTitle" to "Baz"))
             client.putItem(TEST_TABLE_NAME, mapOf("Artist" to "Foo", "SongTitle" to "Qux"))
@@ -74,15 +64,13 @@ class DynamoDbClientExtensionsTest: AbstractKotlinDynamoDbTest() {
                     mapOf("Artist" to "Foo", "SongTitle" to "Bar"),
                     1
                 )
-                .buffer()
+                .log("ScanResponse")
                 .mapNotNull { scan ->
                     scan.items?.single()
                 }
                 .toList()
 
-            results.forEach {
-                log.debug { "item=$it" }
-            }
+            results.forEach { log.debug { "item=$it" } }
             results shouldHaveSize 2
             results[0]["SongTitle"]?.asS() shouldBeEqualTo "Baz"
             results[1]["SongTitle"]?.asS() shouldBeEqualTo "Qux"

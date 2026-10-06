@@ -7,7 +7,9 @@ import aws.sdk.kotlin.services.ssm.model.GetParametersRequest
 import aws.sdk.kotlin.services.ssm.model.ParameterType
 import aws.sdk.kotlin.services.ssm.model.PutParameterRequest
 import io.bluetape4k.aws.kotlin.secretsmanager.AwsSecretValue
+import io.bluetape4k.support.requireLe
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
 
 /**
  * [GetParameterRequest]를 구성합니다.
@@ -34,8 +36,8 @@ inline fun getParametersRequestOf(
     withDecryption: Boolean = false,
     crossinline builder: GetParametersRequest.Builder.() -> Unit = {},
 ): GetParametersRequest {
-    require(names.isNotEmpty()) { "names must not be empty" }
-    require(names.size <= 10) { "names size must be less than or equal to 10" }
+    names.requireNotEmpty("names")
+    names.size.requireLe(10, "names size")
     names.forEach { it.requireNotBlank("name") }
 
     return GetParametersRequest {
@@ -123,9 +125,17 @@ inline fun putStringListParameterRequestOf(
     description: String? = null,
     crossinline builder: PutParameterRequest.Builder.() -> Unit = {},
 ): PutParameterRequest {
-    require(values.isNotEmpty()) { "values must not be empty" }
+    values.requireNotEmpty("values")
     values.forEach { it.requireNotBlank("value") }
-    return putParameterRequestOf(name, values.joinToString(","), ParameterType.StringList, overwrite, description, builder)
+
+    return putParameterRequestOf(
+        name,
+        values.joinToString(","),
+        ParameterType.StringList,
+        overwrite,
+        description,
+        builder
+    )
 }
 
 /**

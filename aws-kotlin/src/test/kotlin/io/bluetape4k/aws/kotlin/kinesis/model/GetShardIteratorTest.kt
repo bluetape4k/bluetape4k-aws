@@ -3,13 +3,17 @@ package io.bluetape4k.aws.kotlin.kinesis.model
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class GetShardIteratorTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `getShardIteratorRequestOf는 streamName과 shardId로 요청을 생성한다`() {
@@ -19,10 +23,11 @@ class GetShardIteratorTest {
             type = ShardIteratorType.TrimHorizon
         )
 
+        log.debug { "req=$req" }
         req.streamName shouldBeEqualTo "my-stream"
         req.shardId shouldBeEqualTo "shardId-000000000000"
         req.shardIteratorType shouldBeEqualTo ShardIteratorType.TrimHorizon
-        req.dryRun shouldBeEqualTo false
+        req.dryRun.shouldBeFalse()
     }
 
     @Test
@@ -33,7 +38,7 @@ class GetShardIteratorTest {
             dryRun = true,
         )
 
-        req.dryRun shouldBeEqualTo true
+        req.dryRun.shouldBeTrue()
     }
 
     @Test
@@ -46,7 +51,7 @@ class GetShardIteratorTest {
             dryRun = false
         }
 
-        req.dryRun shouldBeEqualTo false
+        req.dryRun.shouldBeFalse()
     }
 
     @Test
@@ -59,7 +64,7 @@ class GetShardIteratorTest {
             dryRun = null
         }
 
-        req.dryRun shouldBeEqualTo null
+        req.dryRun.shouldBeNull()
     }
 
     @Test

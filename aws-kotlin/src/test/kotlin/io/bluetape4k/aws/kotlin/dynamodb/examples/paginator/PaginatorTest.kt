@@ -17,7 +17,6 @@ import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.provisionedThroughputOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.sortKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.toAttributeValue
-import io.bluetape4k.aws.kotlin.dynamodb.withDynamoDbClient
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -31,15 +30,11 @@ class PaginatorTest: AbstractKotlinDynamoDbTest() {
 
     companion object: KLoggingChannel()
 
-    private val testTableName = "test-table-${Base58.randomString(8).lowercase()}"
+    private val testTableName = "test-table-${Base58.randomString(12).lowercase()}"
 
     @BeforeAll
     fun beforeAll() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             client.deleteTableIfExists(testTableName)
 
             log.debug { "Create $testTableName table ..." }
@@ -63,33 +58,21 @@ class PaginatorTest: AbstractKotlinDynamoDbTest() {
 
     @AfterAll
     fun afterAll() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             client.deleteTableIfExists(testTableName)
         }
     }
 
     @Test
     fun `check test table exists`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             client.existsTable(testTableName).shouldBeTrue()
         }
     }
 
     @Test
     fun `첫번째 Key를 제외한 나머지 Key를 조회한다`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             client.putItem {
                 tableName = testTableName
                 item = mapOf(

@@ -4,20 +4,23 @@ import aws.sdk.kotlin.services.kinesis.model.StreamStatus
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.coroutines.flow.extensions.log
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.toUtf8String
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withTimeout
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -30,9 +33,9 @@ import kotlin.time.Duration.Companion.seconds
  * instance fields (`shardId`, `sequenceNumbers`) are shared across all test methods.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
+class KinesisRecordFlowTest: AbstractKotlinKinesisTest() {
 
-    companion object : KLoggingChannel() {
+    companion object: KLoggingChannel() {
         private val STREAM_NAME = "flow-test-stream-" + Base58.randomString(6).lowercase()
         private const val RECORD_COUNT = 5
     }
@@ -61,19 +64,17 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
             localStackServer.region,
             localStackServer.credentialsProvider,
         ) { client ->
-            await.atMost(Duration.ofSeconds(30))
-                .pollInterval(Duration.ofSeconds(1))
-                .untilSuspending {
-                    val desc = client.describeStream(STREAM_NAME)
-                    val status = desc.streamDescription?.streamStatus
-                    if (status == StreamStatus.Active) {
-                        val streamDescription = desc.streamDescription.requireNotNull("streamDescription")
-                        val shards = streamDescription.shards.requireNotNull("shards")
-                        shardId = shards.first().shardId.requireNotNull("shardId")
-                        log.debug { "Stream ACTIVE, shardId=$shardId" }
-                    }
-                    status == StreamStatus.Active
+            await atMost 30.seconds withPollInterval 1.seconds untilSuspending {
+                val desc = client.describeStream(STREAM_NAME)
+                val status = desc.streamDescription?.streamStatus
+                if (status == StreamStatus.Active) {
+                    val streamDescription = desc.streamDescription.requireNotNull("streamDescription")
+                    val shards = streamDescription.shards.requireNotNull("shards")
+                    shardId = shards.first().shardId.requireNotNull("shardId")
+                    log.debug { "Stream ACTIVE, shardId=$shardId" }
                 }
+                status == StreamStatus.Active
+            }
             shardId.shouldNotBeEmpty()
         }
     }
@@ -108,18 +109,22 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
             localStackServer.credentialsProvider,
         ) { client ->
             val collected = withTimeout(30.seconds) {
-                client.recordFlow(
-                    streamName = STREAM_NAME,
-                    shardId = shardId,
-                    position = KinesisStartingPosition.TrimHorizon,
-                ).take(RECORD_COUNT).toList()
+                client
+                    .recordFlow(
+                        streamName = STREAM_NAME,
+                        shardId = shardId,
+                        position = KinesisStartingPosition.TrimHorizon,
+                    )
+                    .log("Record")
+                    .take(RECORD_COUNT)
+                    .toList()
             }
 
             collected.size shouldBeEqualTo RECORD_COUNT
             log.debug { "TrimHorizon collected ${collected.size} records" }
 
             collected.forEachIndexed { i, record ->
-                val payload = record.data.requireNotNull("record data").decodeToString()
+                val payload = record.data.requireNotNull("record.data").toUtf8String()
                 log.debug { "  record[$i] seq=${record.sequenceNumber} payload=$payload" }
                 payload shouldBeEqualTo "record-payload-$i"
             }
@@ -129,27 +134,27 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
     @Test
     @Order(5)
     fun `recordFlow with AfterSequenceNumber skips earlier records`() = runSuspendIO {
-        withKinesisClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestKinesisClient(localStackServer) { client ->
             // Skip the first record — start after sequenceNumbers[0]
             val afterFirst = KinesisStartingPosition.AfterSequenceNumber(sequenceNumbers[0])
             val expectedCount = RECORD_COUNT - 1
 
             val collected = withTimeout(30.seconds) {
-                client.recordFlow(
-                    streamName = STREAM_NAME,
-                    shardId = shardId,
-                    position = afterFirst,
-                ).take(expectedCount).toList()
+                client
+                    .recordFlow(
+                        streamName = STREAM_NAME,
+                        shardId = shardId,
+                        position = afterFirst,
+                    )
+                    .log("Record")
+                    .take(expectedCount)
+                    .toList()
             }
 
             collected.size shouldBeEqualTo expectedCount
             // First collected record must come after the skipped one
-            collected[0].data.requireNotNull("record data").decodeToString() shouldBeEqualTo
-                "record-payload-1"
+            collected[0].data.requireNotNull("record.data")
+                .toUtf8String() shouldBeEqualTo "record-payload-1"
             log.debug { "AfterSequenceNumber collected ${collected.size} records (skipped 1)" }
         }
     }
@@ -157,26 +162,26 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
     @Test
     @Order(6)
     fun `recordFlow with AtSequenceNumber includes that record`() = runSuspendIO {
-        withKinesisClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestKinesisClient(localStackServer) { client ->
             // Start at the third record (index 2)
             val atThird = KinesisStartingPosition.AtSequenceNumber(sequenceNumbers[2])
             val expectedCount = RECORD_COUNT - 2
 
             val collected = withTimeout(30.seconds) {
-                client.recordFlow(
-                    streamName = STREAM_NAME,
-                    shardId = shardId,
-                    position = atThird,
-                ).take(expectedCount).toList()
+                client
+                    .recordFlow(
+                        streamName = STREAM_NAME,
+                        shardId = shardId,
+                        position = atThird,
+                    )
+                    .log("Record")
+                    .take(expectedCount)
+                    .toList()
             }
 
             collected.size shouldBeEqualTo expectedCount
-            collected[0].data.requireNotNull("record data").decodeToString() shouldBeEqualTo
-                "record-payload-2"
+            collected[0].data.requireNotNull("record data")
+                .toUtf8String() shouldBeEqualTo "record-payload-2"
             log.debug { "AtSequenceNumber collected ${collected.size} records starting from index 2" }
         }
     }
@@ -184,11 +189,7 @@ class KinesisRecordFlowTest : AbstractKotlinKinesisTest() {
     @Test
     @Order(7)
     fun `delete test stream`() = runSuspendIO {
-        withKinesisClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestKinesisClient(localStackServer) { client ->
             client.deleteStream(STREAM_NAME)
             log.debug { "Stream deleted: $STREAM_NAME" }
         }

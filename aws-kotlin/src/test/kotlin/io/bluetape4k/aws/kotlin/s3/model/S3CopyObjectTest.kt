@@ -6,6 +6,8 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
+import io.bluetape4k.aws.kotlin.AbstractAwsTest.Companion.localStackServer
+import io.bluetape4k.aws.kotlin.s3.AbstractKotlinS3Test
 import io.bluetape4k.aws.kotlin.s3.copy
 import io.bluetape4k.aws.kotlin.s3.ensureBucketExists
 import io.bluetape4k.aws.kotlin.s3.forceDeleteBucket
@@ -15,10 +17,11 @@ import io.bluetape4k.aws.kotlin.s3.withS3Client
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
+import org.testcontainers.utility.Base58
 
-class S3CopyObjectTest {
+class S3CopyObjectTest: AbstractKotlinS3Test() {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `copyObjectRequestOf는 원본과 대상 요청을 생성하고 source를 인코딩한다`() {
@@ -83,22 +86,14 @@ class S3CopyObjectTest {
 
     @Test
     fun `copyObjectRequestOf는 특수문자 원본을 S3 endpoint에서 복사한다`() = runSuspendIO {
-        val emulator = AbstractAwsTest.awsEmulator
-        val suffix = java.util.UUID.randomUUID().toString().replace("-", "")
+        val suffix = Base58.randomString(16).lowercase()
         val sourceBucket = "issue-618-source-$suffix"
         val destinationBucket = "issue-618-destination-$suffix"
         val sourceKey = "folder/a b+c/한글?#.txt"
         val destinationKey = "copied.txt"
         val content = "copy-source"
 
-        withS3Client(
-            endpointUrl = Url.parse(emulator.awsEndpoint.toString()),
-            region = emulator.regionName,
-            credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = emulator.awsAccessKey
-                secretAccessKey = emulator.awsSecretKey
-            },
-        ) { client ->
+        withTestS3Client(awsEmulator) { client ->
             withTestBuckets(
                 buckets = listOf(sourceBucket, destinationBucket),
                 create = { client.ensureBucketExists(it) },

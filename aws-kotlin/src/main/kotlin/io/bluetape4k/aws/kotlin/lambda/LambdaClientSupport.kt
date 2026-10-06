@@ -35,7 +35,7 @@ suspend fun <R> withLambdaClient(
 )
 
 /** client factory를 주입해 lifecycle을 네트워크 I/O 없이 검증하는 내부 seam입니다. */
-internal suspend fun <R> withLambdaClient(
+suspend inline fun <R> withLambdaClient(
     clientFactory: () -> LambdaClient,
     block: suspend (LambdaClient) -> R,
 ): R = clientFactory().useSafe { client ->

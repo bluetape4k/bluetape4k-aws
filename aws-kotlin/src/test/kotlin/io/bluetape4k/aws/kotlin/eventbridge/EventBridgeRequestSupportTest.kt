@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.kotlin.eventbridge
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.kotlin.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.putEventsRequestOf
@@ -8,9 +9,12 @@ import io.bluetape4k.aws.kotlin.eventbridge.model.putRuleRequestOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.putTargetsRequestOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.removeTargetsRequestOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.targetOf
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class EventBridgeRequestSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `putEventsRequestOf validates entry count`() {
@@ -18,7 +22,8 @@ class EventBridgeRequestSupportTest {
             putEventsRequestOf(emptyList())
         }
 
-        val entries = (1..11).map {
+        // 10개로 제한됨 
+        val entries = List(11) {
             putEventsRequestEntryOf("app.test", "event.$it", """{"id":$it}""")
         }
 
@@ -45,7 +50,7 @@ class EventBridgeRequestSupportTest {
         val entry = putEventsRequestEntryOf("source", "type", "{}", resources = emptyList())
 
         entry.source shouldBeEqualTo "source"
-        entry.resources.orEmpty().size shouldBeEqualTo 0
+        entry.resources.shouldBeEmpty()
     }
 
     @Test

@@ -4,6 +4,7 @@ import aws.sdk.kotlin.services.bedrockruntime.BedrockRuntimeClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.support.closeSafe
 import io.bluetape4k.support.useSafe
 
 /**
@@ -22,8 +23,8 @@ internal fun Url.requireTrustedBedrockEndpoint(): Url = apply {
         "Bedrock endpoint must include a host."
     }
     val isLoopback = normalizedHost == "localhost" ||
-        normalizedHost == "127.0.0.1" ||
-        normalizedHost == "::1"
+            normalizedHost == "127.0.0.1" ||
+            normalizedHost == "::1"
     require(protocol == "https" || (protocol == "http" && isLoopback)) {
         "Bedrock endpoint must use HTTPS; plain HTTP is allowed only for literal loopback tests."
     }
@@ -37,11 +38,8 @@ internal fun BedrockRuntimeClient.requireTrustedBedrockConfiguration(): BedrockR
     try {
         config.endpointUrl?.requireTrustedBedrockEndpoint()
     } catch (cause: Throwable) {
-        try {
-            close()
-        } finally {
-            throw cause
-        }
+        closeSafe()
+        throw cause
     }
     return this
 }
@@ -53,19 +51,19 @@ internal fun BedrockRuntimeClient.requireTrustedBedrockConfiguration(): BedrockR
  * 루프백 HTTP를 제외하면 HTTPS를 사용해야 합니다. 애플리케이션은 런타임에
  * `aws.sdk.kotlin:bedrockruntime`을 추가하고 반환된 클라이언트를 닫아야 합니다.
  */
-inline fun bedrockRuntimeClientOf(
+fun bedrockRuntimeClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    crossinline builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
+    builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
 ): BedrockRuntimeClient =
     BedrockRuntimeClient {
-        builder()
         endpointUrl?.requireTrustedBedrockEndpoint()?.let { this.endpointUrl = it }
         region?.let { this.region = it }
         credentialsProvider?.let { this.credentialsProvider = it }
         httpClient?.let { this.httpClient = it }
+        builder()
     }.requireTrustedBedrockConfiguration()
 
 /**

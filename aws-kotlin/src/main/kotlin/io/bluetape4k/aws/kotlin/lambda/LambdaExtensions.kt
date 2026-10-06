@@ -14,9 +14,10 @@ suspend fun LambdaClient.invokeBytes(
     invocationType: InvocationType = InvocationType.RequestResponse,
     logType: LogType = LogType.None,
     builder: InvokeRequest.Builder.() -> Unit = {},
-): LambdaInvocationResult<ByteArray> = invoke(
-    invokeRequestOf(functionName, payload, qualifier, invocationType, logType, builder),
-).toLambdaInvocationResult(LambdaPayloadCodecs.bytes)
+): LambdaInvocationResult<ByteArray> =
+    invoke(
+        invokeRequestOf(functionName, payload, qualifier, invocationType, logType, builder),
+    ).toLambdaInvocationResult(LambdaPayloadCodecs.bytes)
 
 /** UTF-8 문자열 payload로 Lambda를 suspend 호출합니다. */
 suspend fun LambdaClient.invokeString(
@@ -26,16 +27,17 @@ suspend fun LambdaClient.invokeString(
     invocationType: InvocationType = InvocationType.RequestResponse,
     logType: LogType = LogType.None,
     builder: InvokeRequest.Builder.() -> Unit = {},
-): LambdaInvocationResult<String> = invoke(
-    invokeRequestOf(
-        functionName = functionName,
-        payload = payload?.let(LambdaPayloadCodecs.utf8::encode),
-        qualifier = qualifier,
-        invocationType = invocationType,
-        logType = logType,
-        builder = builder,
-    ),
-).toLambdaInvocationResult(LambdaPayloadCodecs.utf8)
+): LambdaInvocationResult<String> =
+    invoke(
+        invokeRequestOf(
+            functionName = functionName,
+            payload = payload?.let(LambdaPayloadCodecs.utf8::encode),
+            qualifier = qualifier,
+            invocationType = invocationType,
+            logType = logType,
+            builder = builder,
+        ),
+    ).toLambdaInvocationResult(LambdaPayloadCodecs.utf8)
 
 /** caller가 제공한 codec으로 typed payload를 suspend 호출합니다. */
 suspend fun <T> LambdaClient.invokeTyped(
@@ -46,13 +48,14 @@ suspend fun <T> LambdaClient.invokeTyped(
     invocationType: InvocationType = InvocationType.RequestResponse,
     logType: LogType = LogType.None,
     builder: InvokeRequest.Builder.() -> Unit = {},
-): LambdaInvocationResult<T> = invoke(
-    invokeRequestOf(
-        functionName = functionName,
-        payload = codec.encode(payload),
-        qualifier = qualifier,
-        invocationType = invocationType,
-        logType = logType,
-        builder = builder,
-    ),
-).toLambdaInvocationResult(codec)
+): LambdaInvocationResult<T> =
+    invoke(
+        invokeRequestOf(
+            functionName = functionName,
+            payload = codec.encode(payload),
+            qualifier = qualifier,
+            invocationType = invocationType,
+            logType = logType,
+            builder = builder,
+        ),
+    ).toLambdaInvocationResult(codec)

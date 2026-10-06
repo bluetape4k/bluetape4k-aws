@@ -1,13 +1,18 @@
 package io.bluetape4k.aws.kotlin.dynamodb
 
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.io.Serializable
 
 class DynamoItemMapperTest {
+
+    companion object: KLoggingChannel()
 
     data class TestItem(
         val id: String,
@@ -44,6 +49,7 @@ class DynamoItemMapperTest {
         val item = TestItem("1", "Alice", 30)
         val result = testMapper.mapToDynamoItem(item)
 
+        log.debug { "result: $result" }
         result["id"] shouldBeEqualTo AttributeValue.S("1")
         result["name"] shouldBeEqualTo AttributeValue.S("Alice")
         result["age"] shouldBeEqualTo AttributeValue.N("30")
@@ -69,8 +75,8 @@ class DynamoItemMapperTest {
 
         val writeRequests = items.buildWritePutRequests(testMapper)
 
+        writeRequests.forEach { log.debug { "writeRequest: $it" } }
         writeRequests shouldHaveSize 2
-        writeRequests[0].putRequest.shouldNotBeNull()
         writeRequests[0].putRequest.shouldNotBeNull().item["id"] shouldBeEqualTo AttributeValue.S("1")
         writeRequests[1].putRequest.shouldNotBeNull().item["name"] shouldBeEqualTo AttributeValue.S("Bob")
     }
@@ -78,7 +84,7 @@ class DynamoItemMapperTest {
     @Test
     fun `buildWritePutRequests 빈 목록은 빈 결과 반환`() {
         val writeRequests = emptyList<TestItem>().buildWritePutRequests(testMapper)
-        writeRequests shouldHaveSize 0
+        writeRequests.shouldBeEmpty()
     }
 
     @Test
@@ -90,6 +96,7 @@ class DynamoItemMapperTest {
 
         val writeRequests = items.buildWriteDeleteRequests(keyMapper)
 
+        writeRequests.forEach { log.debug { "writeRequest: $it" } }
         writeRequests shouldHaveSize 2
         writeRequests[0].deleteRequest.shouldNotBeNull()
         writeRequests[0].deleteRequest.shouldNotBeNull().key["id"] shouldBeEqualTo AttributeValue.S("1")
@@ -99,6 +106,6 @@ class DynamoItemMapperTest {
     @Test
     fun `buildWriteDeleteRequests 빈 목록은 빈 결과 반환`() {
         val writeRequests = emptyList<TestItem>().buildWriteDeleteRequests(keyMapper)
-        writeRequests shouldHaveSize 0
+        writeRequests.shouldBeEmpty()
     }
 }

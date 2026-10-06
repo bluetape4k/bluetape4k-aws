@@ -4,15 +4,20 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
-import org.junit.jupiter.api.Test
 
 class DynamoDbCoordinationSupportTest {
+
+    companion object: KLogging()
 
     private val schema = DynamoDbCoordinationSchema(tableName = "coordination", namespace = "orders")
 
@@ -29,6 +34,9 @@ class DynamoDbCoordinationSupportTest {
             "ownerId" to AttributeValue.S("worker-1"),
             "expiresAt" to AttributeValue.N("100"),
         )
+
+        log.debug { "fractional=$fractional" }
+        log.debug { "missingToken=$missingToken" }
 
         assertFailsWith<IllegalStateException> {
             parseDynamoDbLockItem(schema, fractional, nowEpochSeconds = 100)
@@ -58,6 +66,8 @@ class DynamoDbCoordinationSupportTest {
             ),
             nowEpochSeconds = 100,
         )
+        log.debug { "noExpiry=$noExpiry" }
+        
         val expired = parseDynamoDbMetadataItem(
             schema,
             mapOf(
@@ -68,8 +78,9 @@ class DynamoDbCoordinationSupportTest {
             ),
             nowEpochSeconds = 100,
         )
+        log.debug { "expired=$expired" }
 
-        noExpiry.expiresAtEpochSeconds shouldBeEqualTo null
+        noExpiry.expiresAtEpochSeconds.shouldBeNull()
         noExpiry.expired.shouldBeFalse()
         expired.expiresAtEpochSeconds shouldBeEqualTo 100L
         expired.expired.shouldBeTrue()
@@ -126,9 +137,11 @@ class DynamoDbCoordinationSupportTest {
         resolvingSchema.requireLeaseScope(lease)
 
         calls.get() shouldBeEqualTo 1
+
         DynamoDbCoordinationExpressions.LOCK_ACQUIRE_UPDATE shouldBeEqualTo
                 "SET #owner = :owner, #expiresAt = :expiresAt, " +
                 "#fencingToken = if_not_exists(#fencingToken, :zero) + :one"
+
         DynamoDbCoordinationExpressions.LOCK_KEY_ABSENT_CONDITION shouldBeEqualTo
                 "attribute_not_exists(#pk)"
     }
@@ -162,6 +175,8 @@ class DynamoDbCoordinationSupportTest {
             "expiresAt" to AttributeValue.N("01"),
             "fencingToken" to AttributeValue.N("1"),
         )
+        log.debug { "malformed=$malformed" }
+
         assertFailsWith<IllegalStateException> {
             parseDynamoDbLockItem(schema, malformed, nowEpochSeconds = 100)
         }
@@ -170,7 +185,7 @@ class DynamoDbCoordinationSupportTest {
             parseDynamoDbLockItem(
                 schema,
                 malformed + ("expiresAt" to AttributeValue.N("100")) +
-                    ("fencingToken" to AttributeValue.N("0")),
+                        ("fencingToken" to AttributeValue.N("0")),
                 nowEpochSeconds = 100,
             )
         }

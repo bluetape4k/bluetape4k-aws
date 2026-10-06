@@ -5,13 +5,14 @@ import aws.sdk.kotlin.services.ses.model.SendRawEmailRequest
 import aws.sdk.kotlin.services.ses.model.SendTemplatedEmailRequest
 import aws.sdk.kotlin.services.ses.model.Template
 import aws.sdk.kotlin.services.ses.model.VerifyEmailAddressRequest
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 
 /**
@@ -29,11 +30,7 @@ class SesClientExtensionsTest: AbstractKotlinSesTest() {
 
     @Test
     fun `send email`() = runSuspendIO {
-        withSesClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSesClient(awsEmulator) { client ->
             client.verifyEmailAddress(VerifyEmailAddressRequest { this.emailAddress = senderEmail })
             client.verifyEmailAddress(VerifyEmailAddressRequest { this.emailAddress = receiverEmail })
 
@@ -50,6 +47,8 @@ class SesClientExtensionsTest: AbstractKotlinSesTest() {
                     }
                 }
             }
+            log.debug { "request=$request" }
+
             val response = client.send(request)
             log.debug { "response=$response" }
             response.messageId.shouldNotBeEmpty()
@@ -58,11 +57,7 @@ class SesClientExtensionsTest: AbstractKotlinSesTest() {
 
     @Test
     fun `send raw email`() = runSuspendIO {
-        withSesClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSesClient(awsEmulator) { client ->
             client.verifyEmailAddress(VerifyEmailAddressRequest { this.emailAddress = senderEmail })
             client.verifyEmailAddress(VerifyEmailAddressRequest { this.emailAddress = receiverEmail })
 
@@ -73,6 +68,8 @@ class SesClientExtensionsTest: AbstractKotlinSesTest() {
                     data = "Hello, world!".toUtf8Bytes()
                 }
             }
+            log.debug { "request=$request" }
+
             val response = client.sendRaw(request)
             log.debug { "response=$response" }
             response.messageId.shouldNotBeEmpty()
@@ -81,11 +78,7 @@ class SesClientExtensionsTest: AbstractKotlinSesTest() {
 
     @Test
     fun `send templated email`() = runSuspendIO {
-        withSesClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSesClient(awsEmulator) { client ->
             client.verifyEmailAddress(VerifyEmailAddressRequest { this.emailAddress = senderEmail })
             client.verifyEmailAddress(VerifyEmailAddressRequest { this.emailAddress = receiverEmail })
 
@@ -114,6 +107,7 @@ class SesClientExtensionsTest: AbstractKotlinSesTest() {
                 this.template = newTemplateName
                 templateData = """{"name": "world"}"""
             }
+            log.debug { "request=$request" }
 
             val response = client.sendTemplated(request)
             log.debug { "response=$response" }
@@ -123,13 +117,9 @@ class SesClientExtensionsTest: AbstractKotlinSesTest() {
 
     @Test
     fun `unknown template은 null을 반환한다`() = runSuspendIO {
-        withSesClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSesClient(awsEmulator) { client ->
             val unknown = client.getTemplateOrNull("not-exists-template")
-            unknown shouldBeEqualTo null
+            unknown.shouldBeNull()
         }
     }
 }

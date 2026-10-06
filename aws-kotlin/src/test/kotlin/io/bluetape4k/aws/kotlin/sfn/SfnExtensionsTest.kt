@@ -12,20 +12,23 @@ import aws.sdk.kotlin.services.sfn.model.StartExecutionRequest
 import aws.sdk.kotlin.services.sfn.model.StartExecutionResponse
 import aws.sdk.kotlin.services.sfn.model.StopExecutionRequest
 import aws.sdk.kotlin.services.sfn.model.StopExecutionResponse
+import aws.smithy.kotlin.runtime.time.Instant
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import aws.smithy.kotlin.runtime.time.Instant
 
 class SfnExtensionsTest {
 
-    private companion object {
+    private companion object: KLogging() {
         const val STATE_MACHINE_ARN = "arn:aws:states:ap-northeast-2:123456789012:stateMachine:orders"
         const val EXECUTION_ARN = "arn:aws:states:ap-northeast-2:123456789012:execution:orders:run-1"
         const val MAP_RUN_ARN = "arn:aws:states:ap-northeast-2:123456789012:mapRun:orders/map-1"
@@ -33,7 +36,7 @@ class SfnExtensionsTest {
         val INSTANT: Instant = Instant.fromEpochSeconds(0)
     }
 
-    private val client = mockk<SfnClient>()
+    private val client = mockk<SfnClient>(relaxed = true)
 
     @BeforeEach
     fun resetMocks() {
@@ -41,7 +44,7 @@ class SfnExtensionsTest {
     }
 
     @Test
-    fun `startExecution delegates once and preserves raw response`() = kotlinx.coroutines.test.runTest {
+    fun `startExecution delegates once and preserves raw response`() = runTest {
         val expected = StartExecutionResponse {
             executionArn = EXECUTION_ARN
             startDate = INSTANT
@@ -54,13 +57,15 @@ class SfnExtensionsTest {
             input = "{\"orderId\":1}",
         )
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.executionArn shouldBeEqualTo EXECUTION_ARN
+
         coVerify(exactly = 1) { client.startExecution(any<StartExecutionRequest>()) }
     }
 
     @Test
-    fun `stopExecution and describeExecution preserve callback fields`() = kotlinx.coroutines.test.runTest {
+    fun `stopExecution and describeExecution preserve callback fields`() = runTest {
         val stop = StopExecutionResponse { stopDate = INSTANT }
         val describe = DescribeExecutionResponse {
             status = ExecutionStatus.Succeeded
@@ -74,18 +79,22 @@ class SfnExtensionsTest {
         val stopResult = client.stopExecution(EXECUTION_ARN, error = "error", cause = "cause") {
             error = "callback-error"
         }
+        log.debug { "stopResult=$stopResult" }
+
         val describeResult = client.describeExecution(EXECUTION_ARN) {
             includedData = IncludedData.MetadataOnly
         }
-
+        log.debug { "describeResult=$describeResult" }
+        
         stopResult shouldBeSameInstanceAs stop
         describeResult shouldBeSameInstanceAs describe
+
         coVerify(exactly = 1) { client.stopExecution(any<StopExecutionRequest>()) }
         coVerify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
     }
 
     @Test
-    fun `state machine list helper forwards filters and returns raw response`() = kotlinx.coroutines.test.runTest {
+    fun `state machine list helper forwards filters and returns raw response`() = runTest {
         val expected = ListExecutionsResponse {
             executions = emptyList()
             nextToken = "next-page"
@@ -99,13 +108,14 @@ class SfnExtensionsTest {
             nextToken = "page-1",
         )
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.nextToken shouldBeEqualTo "next-page"
         coVerify(exactly = 1) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
 
     @Test
-    fun `map run list helper forwards redrive filter`() = kotlinx.coroutines.test.runTest {
+    fun `map run list helper forwards redrive filter`() = runTest {
         val expected = ListExecutionsResponse { executions = emptyList() }
         coEvery { client.listExecutions(any<ListExecutionsRequest>()) } returns expected
 
@@ -115,12 +125,14 @@ class SfnExtensionsTest {
             redriveFilter = ExecutionRedriveFilter.Redriven,
         )
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
+
         coVerify(exactly = 1) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
 
     @Test
-    fun `state machine list helper reports callback source switch`() = kotlinx.coroutines.test.runTest {
+    fun `state machine list helper reports callback source switch`() = runTest {
         val error = assertFailsWith<IllegalArgumentException> {
             client.listExecutionsByStateMachine(STATE_MACHINE_ARN) {
                 stateMachineArn = null
@@ -129,13 +141,13 @@ class SfnExtensionsTest {
         }
 
         error.message shouldBeEqualTo
-            "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
-            "actual stateMachineArn=null, mapRunArn=$MAP_RUN_ARN"
+                "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
+                "actual stateMachineArn=null, mapRunArn=$MAP_RUN_ARN"
         coVerify(exactly = 0) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
 
     @Test
-    fun `map run list helper reports callback source switch`() = kotlinx.coroutines.test.runTest {
+    fun `map run list helper reports callback source switch`() = runTest {
         val error = assertFailsWith<IllegalArgumentException> {
             client.listExecutionsByMapRun(MAP_RUN_ARN) {
                 mapRunArn = null
@@ -144,9 +156,10 @@ class SfnExtensionsTest {
         }
 
         error.message shouldBeEqualTo
-            "listExecutionsByMapRun must retain mapRunArn=$MAP_RUN_ARN and must not set stateMachineArn; " +
-            "actual mapRunArn=null, stateMachineArn=$STATE_MACHINE_ARN, " +
-            "statusFilter=null, redriveFilter=null"
+                "listExecutionsByMapRun must retain mapRunArn=$MAP_RUN_ARN and must not set stateMachineArn; " +
+                "actual mapRunArn=null, stateMachineArn=$STATE_MACHINE_ARN, " +
+                "statusFilter=null, redriveFilter=null"
+        
         coVerify(exactly = 0) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
 }

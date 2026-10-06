@@ -8,33 +8,29 @@ import org.junit.jupiter.api.Test
 
 class S3ListObjectsTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `listObjectsRequestOf는 bucket으로 요청을 생성한다`() {
         val req = listObjectsRequestOf(bucket = "my-bucket")
-
         req.bucket shouldBeEqualTo "my-bucket"
     }
 
     @Test
     fun `listObjectsRequestOf는 prefix를 설정할 수 있다`() {
         val req = listObjectsRequestOf(bucket = "my-bucket", prefix = "path/to/")
-
         req.prefix shouldBeEqualTo "path/to/"
     }
 
     @Test
     fun `listObjectsRequestOf는 maxKeys를 설정할 수 있다`() {
         val req = listObjectsRequestOf(bucket = "my-bucket", maxKeys = 50)
-
         req.maxKeys shouldBeEqualTo 50
     }
 
     @Test
     fun `listObjectsRequestOf는 delimiter를 설정할 수 있다`() {
         val req = listObjectsRequestOf(bucket = "my-bucket", delimiter = "/")
-
         req.delimiter shouldBeEqualTo "/"
     }
 
