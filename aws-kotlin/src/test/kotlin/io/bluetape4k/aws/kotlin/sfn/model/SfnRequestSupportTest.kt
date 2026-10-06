@@ -4,11 +4,14 @@ import aws.sdk.kotlin.services.sfn.model.ExecutionRedriveFilter
 import aws.sdk.kotlin.services.sfn.model.ExecutionStatus
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class SfnRequestSupportTest {
 
-    private companion object {
+    private companion object: KLogging() {
         const val STATE_MACHINE_ARN = "arn:aws:states:ap-northeast-2:123456789012:stateMachine:orders"
         const val OTHER_STATE_MACHINE_ARN = "arn:aws:states:ap-northeast-2:123456789012:stateMachine:payments"
         const val EXECUTION_ARN = "arn:aws:states:ap-northeast-2:123456789012:execution:orders:run-1"
@@ -66,6 +69,7 @@ class SfnRequestSupportTest {
     fun `execution name accepts one through eighty characters`() {
         startExecutionRequestOf(STATE_MACHINE_ARN, name = "a").name shouldBeEqualTo "a"
         startExecutionRequestOf(STATE_MACHINE_ARN, name = "a".repeat(80)).name shouldBeEqualTo "a".repeat(80)
+
         assertFailsWith<IllegalArgumentException> {
             startExecutionRequestOf(STATE_MACHINE_ARN, name = "a".repeat(81))
         }
@@ -85,6 +89,7 @@ class SfnRequestSupportTest {
             traceHeader = "override-trace"
         }
 
+        log.debug { "request=$request" }
         request.stateMachineArn shouldBeEqualTo OTHER_STATE_MACHINE_ARN
         request.name shouldBeEqualTo "override"
         request.input shouldBeEqualTo "{\"override\":true}"
@@ -102,8 +107,8 @@ class SfnRequestSupportTest {
     fun `stop request leaves optional error and cause unset`() {
         val request = stopExecutionRequestOf(EXECUTION_ARN)
 
-        request.error shouldBeEqualTo null
-        request.cause shouldBeEqualTo null
+        request.error.shouldBeNull()
+        request.cause.shouldBeNull()
     }
 
     @Test
@@ -139,10 +144,9 @@ class SfnRequestSupportTest {
     @Test
     fun `max results accepts zero through one thousand`() {
         listExecutionsRequestOf(stateMachineArn = STATE_MACHINE_ARN, maxResults = 0).maxResults shouldBeEqualTo 0
-        listExecutionsRequestOf(
-            stateMachineArn = STATE_MACHINE_ARN,
-            maxResults = 1_000,
-        ).maxResults shouldBeEqualTo 1_000
+        listExecutionsRequestOf(stateMachineArn = STATE_MACHINE_ARN, maxResults = 1_000)
+            .maxResults shouldBeEqualTo 1_000
+
         assertFailsWith<IllegalArgumentException> {
             listExecutionsRequestOf(stateMachineArn = STATE_MACHINE_ARN, maxResults = -1)
         }
@@ -168,7 +172,8 @@ class SfnRequestSupportTest {
             nextToken = "next-page",
         )
 
-        request.stateMachineArn shouldBeEqualTo null
+        log.debug { "request=$request" }
+        request.stateMachineArn.shouldBeNull()
         request.mapRunArn shouldBeEqualTo MAP_RUN_ARN
         request.statusFilter shouldBeEqualTo ExecutionStatus.Failed
         request.redriveFilter shouldBeEqualTo ExecutionRedriveFilter.NotRedriven
@@ -183,9 +188,12 @@ class SfnRequestSupportTest {
             error = "override"
             cause = "override-cause"
         }
+        log.debug { "stop=$stop" }
+
         val describe = describeExecutionRequestOf(EXECUTION_ARN) {
             executionArn = OTHER_EXECUTION_ARN
         }
+        log.debug { "describe=$describe" }
 
         stop.executionArn shouldBeEqualTo OTHER_EXECUTION_ARN
         stop.error shouldBeEqualTo "override"

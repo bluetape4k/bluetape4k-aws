@@ -15,21 +15,36 @@ import aws.sdk.kotlin.services.kinesis.model.ResourceNotFoundException
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.requireNotNull
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CancellationException
 
 class KinesisClientExtensionsMockTest {
 
+    companion object: KLoggingChannel()
+
+    private val client = mockk<KinesisClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
-    fun `putRecord는 dryRun과 builder 우선순위 및 data identity를 보존한다`() = runSuspendIO {
-        val client = mockk<KinesisClient>()
+    fun `putRecord는 dryRun과 builder 우선순위 및 data identity를 보존한다`() = runTest {
         val requests = mutableListOf<PutRecordRequest>()
         val data = "payload".toByteArray()
-        coEvery { client.putRecord(capture(requests)) } returns PutRecordResponse {
+
+        coEvery {
+            client.putRecord(capture(requests))
+        } returns PutRecordResponse {
             sequenceNumber = "1"
             shardId = "shard"
         }
@@ -41,12 +56,12 @@ class KinesisClientExtensionsMockTest {
 
         requests.map { it.dryRun } shouldBeEqualTo listOf(false, true, false, null)
         requests.forEach { it.data shouldBeSameInstanceAs data }
+
         coVerify(exactly = 4) { client.putRecord(any<PutRecordRequest>()) }
     }
 
     @Test
-    fun `putRecords는 top-level dryRun과 records identity를 보존한다`() = runSuspendIO {
-        val client = mockk<KinesisClient>()
+    fun `putRecords는 top-level dryRun과 records identity를 보존한다`() = runTest {
         val requests = mutableListOf<PutRecordsRequest>()
         val entries = listOf(
             PutRecordsRequestEntry {
@@ -54,7 +69,9 @@ class KinesisClientExtensionsMockTest {
                 data = "payload".toByteArray()
             },
         )
-        coEvery { client.putRecords(capture(requests)) } returns PutRecordsResponse {
+        coEvery {
+            client.putRecords(capture(requests))
+        } returns PutRecordsResponse {
             failedRecordCount = 0
             records = emptyList()
         }
@@ -66,14 +83,16 @@ class KinesisClientExtensionsMockTest {
 
         requests.map { it.dryRun } shouldBeEqualTo listOf(false, true, false, null)
         requests.forEach { it.records shouldBeSameInstanceAs entries }
+
         coVerify(exactly = 4) { client.putRecords(any<PutRecordsRequest>()) }
     }
 
     @Test
-    fun `getShardIterator는 dryRun과 builder 우선순위를 보존한다`() = runSuspendIO {
-        val client = mockk<KinesisClient>()
+    fun `getShardIterator는 dryRun과 builder 우선순위를 보존한다`() = runTest {
         val requests = mutableListOf<GetShardIteratorRequest>()
-        coEvery { client.getShardIterator(capture(requests)) } returns GetShardIteratorResponse {}
+        coEvery {
+            client.getShardIterator(capture(requests))
+        } returns GetShardIteratorResponse {}
 
         client.getShardIterator("stream", "shard")
         client.getShardIterator("stream", "shard", dryRun = true)
@@ -82,14 +101,16 @@ class KinesisClientExtensionsMockTest {
 
         requests.map { it.dryRun } shouldBeEqualTo listOf(false, true, false, null)
         requests.map { it.shardIteratorType }.forEach { it shouldBeEqualTo ShardIteratorType.TrimHorizon }
+
         coVerify(exactly = 4) { client.getShardIterator(any<GetShardIteratorRequest>()) }
     }
 
     @Test
-    fun `getRecords는 dryRun과 builder 우선순위를 보존한다`() = runSuspendIO {
-        val client = mockk<KinesisClient>()
+    fun `getRecords는 dryRun과 builder 우선순위를 보존한다`() = runTest {
         val requests = mutableListOf<GetRecordsRequest>()
-        coEvery { client.getRecords(capture(requests)) } returns GetRecordsResponse {
+        coEvery {
+            client.getRecords(capture(requests))
+        } returns GetRecordsResponse {
             records = emptyList()
         }
 
@@ -100,53 +121,61 @@ class KinesisClientExtensionsMockTest {
 
         requests.map { it.dryRun } shouldBeEqualTo listOf(false, true, false, null)
         requests.map { it.limit }.forEach { it shouldBeEqualTo 100 }
+
         coVerify(exactly = 4) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
     @Test
-    fun `putRecord는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runSuspendIO {
+    fun `putRecord는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runTest {
         failures().forEach { expected ->
-            val client = mockk<KinesisClient>()
+            clearMocks(client)
             coEvery { client.putRecord(any<PutRecordRequest>()) } throws expected
 
-            captureFailure { client.putRecord("stream", "partition", byteArrayOf(1), dryRun = true) }
-                .shouldBeSameInstanceAs(expected)
+            captureFailure {
+                client.putRecord("stream", "partition", byteArrayOf(1), dryRun = true)
+            } shouldBeSameInstanceAs expected
+
             coVerify(exactly = 1) { client.putRecord(any<PutRecordRequest>()) }
         }
     }
 
     @Test
-    fun `putRecords는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runSuspendIO {
+    fun `putRecords는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runTest {
         failures().forEach { expected ->
-            val client = mockk<KinesisClient>()
+            clearMocks(client)
             coEvery { client.putRecords(any<PutRecordsRequest>()) } throws expected
 
-            captureFailure { client.putRecords("stream", emptyList(), dryRun = true) }
-                .shouldBeSameInstanceAs(expected)
+            captureFailure {
+                client.putRecords("stream", emptyList(), dryRun = true)
+            } shouldBeSameInstanceAs expected
+
             coVerify(exactly = 1) { client.putRecords(any<PutRecordsRequest>()) }
         }
     }
 
     @Test
-    fun `getShardIterator는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runSuspendIO {
+    fun `getShardIterator는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runTest {
         failures().forEach { expected ->
-            val client = mockk<KinesisClient>()
+            clearMocks(client)
             coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } throws expected
 
-            captureFailure { client.getShardIterator("stream", "shard", dryRun = true) }
-                .shouldBeSameInstanceAs(expected)
+            captureFailure {
+                client.getShardIterator("stream", "shard", dryRun = true)
+            } shouldBeSameInstanceAs expected
             coVerify(exactly = 1) { client.getShardIterator(any<GetShardIteratorRequest>()) }
         }
     }
 
     @Test
-    fun `getRecords는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runSuspendIO {
+    fun `getRecords는 SDK 예외와 cancellation을 같은 instance로 전파한다`() = runTest {
         failures().forEach { expected ->
-            val client = mockk<KinesisClient>()
+            clearMocks(client)
             coEvery { client.getRecords(any<GetRecordsRequest>()) } throws expected
 
-            captureFailure { client.getRecords("iterator", dryRun = true) }
-                .shouldBeSameInstanceAs(expected)
+            captureFailure {
+                client.getRecords("iterator", dryRun = true)
+            } shouldBeSameInstanceAs expected
+
             coVerify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
         }
     }
@@ -164,6 +193,6 @@ class KinesisClientExtensionsMockTest {
         } catch (caught: Throwable) {
             failure = caught
         }
-        return requireNotNull(failure) { "operation must fail" }
+        return failure.requireNotNull { "operation must fail" }
     }
 }

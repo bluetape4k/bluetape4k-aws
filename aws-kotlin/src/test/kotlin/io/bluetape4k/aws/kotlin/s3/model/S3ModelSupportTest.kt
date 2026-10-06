@@ -4,9 +4,13 @@ import aws.sdk.kotlin.services.s3.model.EncodingType
 import aws.sdk.kotlin.services.s3.model.ObjectCannedAcl
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class S3ModelSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `putObjectRequestOf는 필드를 설정한다`() {
@@ -17,6 +21,7 @@ class S3ModelSupportTest {
             contentType = "text/plain",
         )
 
+        log.debug { "request=$request" }
         request.bucket shouldBeEqualTo "bucket"
         request.key shouldBeEqualTo "key"
         request.metadata shouldBeEqualTo mapOf("k" to "v")
@@ -33,6 +38,7 @@ class S3ModelSupportTest {
             encondingType = EncodingType.Url,
         )
 
+        log.debug { "request=$request" }
         request.bucket shouldBeEqualTo "bucket"
         request.prefix shouldBeEqualTo "a/"
         request.delimiter shouldBeEqualTo "/"
@@ -44,6 +50,7 @@ class S3ModelSupportTest {
     fun `objectIdentifierOf는 필드를 설정한다`() {
         val identifier = objectIdentifierOf(key = "key", versionId = "v1")
 
+        log.debug { "identifier=$identifier" }
         identifier.key shouldBeEqualTo "key"
         identifier.versionId shouldBeEqualTo "v1"
     }
@@ -52,6 +59,7 @@ class S3ModelSupportTest {
     fun `deleteOf는 ObjectIdentifier 목록을 설정한다`() {
         val delete = deleteOf(listOf(objectIdentifierOf("key-1"), objectIdentifierOf("key-2")))
 
+        log.debug { "delete=$delete" }
         delete.objects.size shouldBeEqualTo 2
         delete.objects.first().key shouldBeEqualTo "key-1"
     }
@@ -64,6 +72,7 @@ class S3ModelSupportTest {
             versionId = "v1",
         )
 
+        log.debug { "request=$request" }
         request.bucket shouldBeEqualTo "bucket"
         request.key shouldBeEqualTo "key"
         request.versionId shouldBeEqualTo "v1"
@@ -72,9 +81,9 @@ class S3ModelSupportTest {
     @Test
     fun `deleteObjectsRequestOf는 식별자 목록을 설정한다`() {
         val identifiers = listOf(objectIdentifierOf("key-1"), objectIdentifierOf("key-2"))
-
         val request = deleteObjectsRequestOf(bucket = "bucket", identifiers = identifiers)
 
+        log.debug { "request=$request" }
         request.bucket shouldBeEqualTo "bucket"
         request.delete?.objects?.size shouldBeEqualTo 2
     }
@@ -87,7 +96,7 @@ class S3ModelSupportTest {
             destBucket = "dest-bucket",
             destKey = "dest-key",
         )
-
+        log.debug { "request=$request" }
         request.copySource shouldBeEqualTo "src-bucket%2Ffolder%2Fa%20b%2Bc%2F%ED%95%9C%EA%B8%80%3F%23.txt"
         request.bucket shouldBeEqualTo "dest-bucket"
         request.key shouldBeEqualTo "dest-key"
@@ -101,7 +110,7 @@ class S3ModelSupportTest {
             destKey = "dest-key",
             acl = ObjectCannedAcl.Private,
         )
-
+        log.debug { "request=$request" }
         request.copySource shouldBeEqualTo "src-bucket%2Ffolder%2Fa%20b%2Bc.txt"
         request.bucket shouldBeEqualTo "dest-bucket"
         request.key shouldBeEqualTo "dest-key"
@@ -115,7 +124,7 @@ class S3ModelSupportTest {
             key = "key",
             versionId = "v1",
         )
-
+        log.debug { "request=$request" }
         request.bucket shouldBeEqualTo "bucket"
         request.key shouldBeEqualTo "key"
         request.versionId shouldBeEqualTo "v1"
@@ -128,7 +137,7 @@ class S3ModelSupportTest {
             key = "key",
             versionId = "v1",
         )
-
+        log.debug { "request=$request" }
         request.bucket shouldBeEqualTo "bucket"
         request.key shouldBeEqualTo "key"
         request.versionId shouldBeEqualTo "v1"

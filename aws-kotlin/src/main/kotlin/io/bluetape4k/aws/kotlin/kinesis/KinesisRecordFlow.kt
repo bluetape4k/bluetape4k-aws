@@ -7,10 +7,10 @@ import aws.sdk.kotlin.services.kinesis.model.ExpiredIteratorException
 import aws.sdk.kotlin.services.kinesis.model.KinesisException
 import aws.sdk.kotlin.services.kinesis.model.Record
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
-import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
-import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.error
 import io.bluetape4k.logging.warn
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -20,8 +20,9 @@ import kotlinx.coroutines.flow.flow
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
-private val log = KotlinLogging.logger {}
+private object RecordFlowLogger: KLogging()
 
 /**
  * 단일 Kinesis 샤드를 계속 폴링해 각 [Record]를 내보내는 콜드 [Flow]를 반환합니다.
@@ -79,7 +80,7 @@ fun KinesisClient.recordFlow(
             if (shardIterator == null) {
                 shardIterator = fetchShardIterator(streamName, shardId, currentPosition)
             }
-            val currentShardIterator = requireNotNull(shardIterator) {
+            val currentShardIterator = shardIterator.requireNotNull {
                 "shardIterator must be initialized before GetRecords."
             }
 
@@ -109,21 +110,21 @@ fun KinesisClient.recordFlow(
         } catch (e: ExpiredIteratorException) {
             iteratorRetryCount++
             if (iteratorRetryCount > options.maxIteratorRetries) {
-                log.error { "Shard iterator expired after $iteratorRetryCount attempts: stream=$streamName shard=$shardId" }
+                RecordFlowLogger.log.error { "Shard iterator expired after $iteratorRetryCount attempts: stream=$streamName shard=$shardId" }
                 throw e
             }
 
             val lastSeen = lastSeenSequenceNumber
             if (lastSeen == null && currentPosition is KinesisStartingPosition.Latest) {
                 // Latest를 다시 조회하면 TTL 구간에 기록된 모든 record를 조용히 건너뛴다.
-                log.error {
+                RecordFlowLogger.log.error {
                     "Iterator expired for Latest position with no checkpoint: " +
                             "stream=$streamName shard=$shardId — cannot recover without data loss"
                 }
                 throw e
             }
 
-            log.warn {
+            RecordFlowLogger.log.warn {
                 "Shard iterator expired (attempt $iteratorRetryCount/${options.maxIteratorRetries}): " +
                         "stream=$streamName shard=$shardId"
             }
@@ -137,14 +138,16 @@ fun KinesisClient.recordFlow(
 
             throttleRetryCount++
             if (throttleRetryCount > options.maxThrottleRetries) {
-                log.error {
+                RecordFlowLogger.log.error {
                     "Throttle retries exhausted after $throttleRetryCount attempts: " +
                             "stream=$streamName shard=$shardId error=${e.message}"
                 }
                 throw e
             }
 
-            log.warn { "Throttle retry $throttleRetryCount/${options.maxThrottleRetries}: stream=$streamName shard=$shardId" }
+            RecordFlowLogger.log.warn {
+                "Throttle retry $throttleRetryCount/${options.maxThrottleRetries}: stream=$streamName shard=$shardId"
+            }
             val backoff = jitteredBackoff(throttleRetryCount, options)
             delay(backoff)
         }
@@ -166,12 +169,8 @@ private suspend fun KinesisClient.fetchShardIterator(
         this.streamName = streamName
         this.shardId = shardId
         when (position) {
-            is KinesisStartingPosition.TrimHorizon -> {
-                shardIteratorType = ShardIteratorType.TrimHorizon
-            }
-            is KinesisStartingPosition.Latest -> {
-                shardIteratorType = ShardIteratorType.Latest
-            }
+            is KinesisStartingPosition.TrimHorizon -> shardIteratorType = ShardIteratorType.TrimHorizon
+            is KinesisStartingPosition.Latest -> shardIteratorType = ShardIteratorType.Latest
             is KinesisStartingPosition.AtSequenceNumber -> {
                 shardIteratorType = ShardIteratorType.AtSequenceNumber
                 startingSequenceNumber = position.sequenceNumber
@@ -188,9 +187,8 @@ private suspend fun KinesisClient.fetchShardIterator(
                 )
             }
         }
-    }.shardIterator ?: error(
-        "getShardIterator returned null iterator for stream=$streamName shard=$shardId"
-    )
+    }.shardIterator
+        ?: error("getShardIterator returned null iterator for stream=$streamName shard=$shardId")
 }
 
 /**
@@ -214,5 +212,5 @@ internal fun jitteredBackoff(attempt: Int, options: KinesisRecordFlowOptions): D
     } else {
         (baseMs shl shift).coerceAtMost(maxMs)
     }
-    return Random.Default.nextLong(0L, cappedMs + 1L).milliseconds
+    return Random.nextLong(0L, cappedMs + 1L).milliseconds
 }

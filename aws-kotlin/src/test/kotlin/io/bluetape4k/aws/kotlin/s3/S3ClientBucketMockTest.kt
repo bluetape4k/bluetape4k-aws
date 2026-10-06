@@ -5,7 +5,6 @@ import aws.sdk.kotlin.services.s3.model.DeleteBucketResponse
 import aws.sdk.kotlin.services.s3.model.DeleteMarkerEntry
 import aws.sdk.kotlin.services.s3.model.DeleteObjectsRequest
 import aws.sdk.kotlin.services.s3.model.DeleteObjectsResponse
-import aws.sdk.kotlin.services.s3.model.Error as S3DeleteError
 import aws.sdk.kotlin.services.s3.model.GetBucketPolicyRequest
 import aws.sdk.kotlin.services.s3.model.GetBucketPolicyResponse
 import aws.sdk.kotlin.services.s3.model.ListObjectVersionsRequest
@@ -24,19 +23,24 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import aws.sdk.kotlin.services.s3.model.Error as S3DeleteError
 
 class S3ClientBucketMockTest {
+
+    companion object: KLoggingChannel()
 
     private val client = mockk<S3Client>()
 
@@ -51,7 +55,9 @@ class S3ClientBucketMockTest {
         val listVersionRequests = mutableListOf<ListObjectVersionsRequest>()
         val deleteRequests = mutableListOf<DeleteObjectsRequest>()
 
-        coEvery { client.listObjectVersions(capture(listVersionRequests)) } returnsMany listOf(
+        coEvery {
+            client.listObjectVersions(capture(listVersionRequests))
+        } returnsMany listOf(
             ListObjectVersionsResponse {
                 versions = listOf(
                     ObjectVersion {
@@ -87,14 +93,19 @@ class S3ClientBucketMockTest {
                 isTruncated = false
             },
         )
-        coEvery { client.deleteObjects(capture(deleteRequests)) } returns DeleteObjectsResponse {}
-        coEvery { client.listObjectsV2(any()) } returns ListObjectsV2Response {
+        coEvery {
+            client.deleteObjects(capture(deleteRequests))
+        } returns DeleteObjectsResponse {}
+        coEvery {
+            client.listObjectsV2(any())
+        } returns ListObjectsV2Response {
             contents = emptyList()
         }
         coEvery { client.deleteBucket(any()) } returns DeleteBucketResponse {}
 
         client.forceDeleteBucket(bucket)
 
+        listVersionRequests.forEach { log.debug { "version request: $it" } }
         listVersionRequests shouldHaveSize 4
         listVersionRequests.first().keyMarker.shouldBeNull()
         listVersionRequests.first().versionIdMarker.shouldBeNull()
@@ -126,7 +137,9 @@ class S3ClientBucketMockTest {
         val marker = "sensitive-key-marker"
         var calls = 0
 
-        coEvery { client.listObjectVersions(any<ListObjectVersionsRequest>()) } answers {
+        coEvery {
+            client.listObjectVersions(any<ListObjectVersionsRequest>())
+        } answers {
             calls++
             check(calls <= 2) { "pagination did not stop at the repeated marker" }
             ListObjectVersionsResponse {
@@ -154,7 +167,9 @@ class S3ClientBucketMockTest {
         )
         var calls = 0
 
-        coEvery { client.listObjectVersions(any<ListObjectVersionsRequest>()) } answers {
+        coEvery {
+            client.listObjectVersions(any<ListObjectVersionsRequest>())
+        } answers {
             check(calls < markers.size) { "pagination did not stop at the marker cycle" }
             val (keyMarker, versionMarker) = markers[calls++]
             ListObjectVersionsResponse {
@@ -192,7 +207,9 @@ class S3ClientBucketMockTest {
         val started = CompletableDeferred<Unit>()
         val observedByCall = CompletableDeferred<CancellationException>()
         val observedByCaller = CompletableDeferred<CancellationException>()
-        coEvery { client.listObjectVersions(any<ListObjectVersionsRequest>()) } coAnswers {
+        coEvery {
+            client.listObjectVersions(any<ListObjectVersionsRequest>())
+        } coAnswers {
             started.complete(Unit)
             try {
                 awaitCancellation()
@@ -223,7 +240,9 @@ class S3ClientBucketMockTest {
     fun `forceDeleteBucket fails when version delete reports errors`() = runSuspendIO {
         val bucket = "versioned-bucket"
 
-        coEvery { client.listObjectVersions(any()) } returns ListObjectVersionsResponse {
+        coEvery {
+            client.listObjectVersions(any())
+        } returns ListObjectVersionsResponse {
             versions = listOf(
                 ObjectVersion {
                     key = "locked.csv"
@@ -232,7 +251,9 @@ class S3ClientBucketMockTest {
             )
             isTruncated = false
         }
-        coEvery { client.deleteObjects(any()) } returns DeleteObjectsResponse {
+        coEvery {
+            client.deleteObjects(any())
+        } returns DeleteObjectsResponse {
             errors = listOf(
                 S3DeleteError {
                     key = "locked.csv"
@@ -254,19 +275,22 @@ class S3ClientBucketMockTest {
 
     @Test
     fun `tryGetBucketPolicy returns null only for missing policy errors`() = runSuspendIO {
-        coEvery { client.getBucketPolicy(any<GetBucketPolicyRequest>()) } throws
-                serviceException(errorCode = "NoSuchBucketPolicy", statusCode = 404)
+        coEvery {
+            client.getBucketPolicy(any<GetBucketPolicyRequest>())
+        } throws serviceException(errorCode = "NoSuchBucketPolicy", statusCode = 404)
 
         val result = client.tryGetBucketPolicy("bucket-without-policy")
 
+        log.debug { "result: $result" }
         result.shouldBeNull()
         coVerify(exactly = 1) { client.getBucketPolicy(any<GetBucketPolicyRequest>()) }
     }
 
     @Test
     fun `tryGetBucketPolicy propagates access denied errors`() = runSuspendIO {
-        coEvery { client.getBucketPolicy(any<GetBucketPolicyRequest>()) } throws
-                serviceException(errorCode = "AccessDenied", statusCode = 403)
+        coEvery {
+            client.getBucketPolicy(any<GetBucketPolicyRequest>())
+        } throws serviceException(errorCode = "AccessDenied", statusCode = 403)
 
         assertFailsWith<ServiceException> {
             client.tryGetBucketPolicy("private-bucket")
@@ -277,7 +301,9 @@ class S3ClientBucketMockTest {
 
     @Test
     fun `tryGetBucketPolicy returns policy when request succeeds`() = runSuspendIO {
-        coEvery { client.getBucketPolicy(any<GetBucketPolicyRequest>()) } returns GetBucketPolicyResponse {
+        coEvery {
+            client.getBucketPolicy(any<GetBucketPolicyRequest>())
+        } returns GetBucketPolicyResponse {
             policy = """{"Version":"2012-10-17","Statement":[]}"""
         }
 

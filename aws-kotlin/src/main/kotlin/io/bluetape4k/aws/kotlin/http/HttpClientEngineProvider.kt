@@ -2,6 +2,7 @@ package io.bluetape4k.aws.kotlin.http
 
 import aws.smithy.kotlin.runtime.http.engine.crt.CrtHttpEngine
 import aws.smithy.kotlin.runtime.http.engine.okhttp.OkHttpEngine
+import io.bluetape4k.utils.ShutdownQueue
 
 /**
  * AWS SDK for Kotlin 클라이언트가 재사용할 수 있는 싱글턴 HTTP 엔진을 제공합니다.
@@ -25,7 +26,9 @@ object HttpClientEngineProvider {
      */
     object Crt {
         @JvmStatic
-        val httpEngine: CrtHttpEngine by lazy { crtHttpEngineOf() }
+        val httpEngine: CrtHttpEngine by lazy {
+            crtHttpEngineOf().apply(ShutdownQueue::register)
+        }
     }
 
     /**
@@ -33,11 +36,13 @@ object HttpClientEngineProvider {
      */
     object OkHttp {
         @JvmStatic
-        val httpEngine: OkHttpEngine by lazy { okHttpEngineOf() }
+        val httpEngine: OkHttpEngine by lazy {
+            okHttpEngineOf().apply(ShutdownQueue::register)
+        }
     }
 
     /**
-     * 외부 엔진 소유권을 명시적으로 선택한 호출자를 위한 공유 CRT HTTP 엔진입니다.
+     * 외부 엔진 소유권을 명시적으로 선택한 호출자를 위한 공유 Crt HTTP 엔진입니다.
      */
     val defaultHttpEngine get() = Crt.httpEngine
 }

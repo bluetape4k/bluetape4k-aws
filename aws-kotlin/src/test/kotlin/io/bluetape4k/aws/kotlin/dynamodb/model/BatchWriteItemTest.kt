@@ -2,6 +2,7 @@ package io.bluetape4k.aws.kotlin.dynamodb.model
 
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.PutRequest
+import aws.sdk.kotlin.services.dynamodb.model.ReturnConsumedCapacity
 import aws.sdk.kotlin.services.dynamodb.model.WriteRequest
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -12,7 +13,7 @@ import org.junit.jupiter.api.Test
 
 class BatchWriteItemTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `batchWriteItemRequestOf는 requestItems로 요청을 생성한다`() {
@@ -54,10 +55,10 @@ class BatchWriteItemTest {
             putRequest = PutRequest { item = mapOf("id" to AttributeValue.S("u1")) }
         }
         val req = batchWriteItemRequestOf(mapOf("users" to listOf(writeReq))) {
-            returnConsumedCapacity = aws.sdk.kotlin.services.dynamodb.model.ReturnConsumedCapacity.Total
+            returnConsumedCapacity = ReturnConsumedCapacity.Total
         }
 
         req.shouldNotBeNull()
-        req.returnConsumedCapacity shouldBeEqualTo aws.sdk.kotlin.services.dynamodb.model.ReturnConsumedCapacity.Total
+        req.returnConsumedCapacity shouldBeEqualTo ReturnConsumedCapacity.Total
     }
 }

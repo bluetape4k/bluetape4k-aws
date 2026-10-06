@@ -4,18 +4,18 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class DeleteMessageTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     private val queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue"
 
     @Test
     fun `deleteMessageRequestOf는 queueUrl로 요청을 생성한다`() {
         val req = deleteMessageRequestOf(queueUrl = queueUrl)
-
         req.queueUrl shouldBeEqualTo queueUrl
     }
 
@@ -25,7 +25,7 @@ class DeleteMessageTest {
             queueUrl = queueUrl,
             receiptHandle = "AQEBwJnKyrHigUMZj6reyYjyudnBuGxo..."
         )
-
+        log.debug { "req=$req" }
         req.receiptHandle shouldBeEqualTo "AQEBwJnKyrHigUMZj6reyYjyudnBuGxo..."
     }
 
@@ -40,6 +40,7 @@ class DeleteMessageTest {
     fun `deleteMessageBatchRequestEntryOf는 id와 receiptHandle로 entry를 생성한다`() {
         val entry = deleteMessageBatchRequestEntryOf(id = "msg-001", receiptHandle = "receipt-001")
 
+        log.debug { "entry=$entry" }
         entry.id shouldBeEqualTo "msg-001"
         entry.receiptHandle shouldBeEqualTo "receipt-001"
     }
@@ -51,6 +52,7 @@ class DeleteMessageTest {
             receiptHandle = "receiptHandle1"
         )
 
+        log.debug { "entry=$entry" }
         entry.receiptHandle shouldBeEqualTo "receiptHandle1"
     }
 
@@ -69,6 +71,7 @@ class DeleteMessageTest {
         )
         val req = deleteMessageBatchRequestOf(queueUrl = queueUrl, entries = entries)
 
+        log.debug { "req=$req" }
         req.queueUrl shouldBeEqualTo queueUrl
         req.entries shouldHaveSize 2
     }
@@ -82,6 +85,7 @@ class DeleteMessageTest {
         )
 
         req.entries shouldHaveSize 2
+        req.entries?.forEach { log.debug { "entry=$it" } }
     }
 
     @Test

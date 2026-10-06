@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
 import io.bluetape4k.junit5.faker.Fakers
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -17,7 +18,7 @@ import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
  * class MyKinesisTest : AbstractKotlinKinesisTest() {
  *     @Test
  *     fun `스트림 생성 테스트`() = runTest {
- *         withKinesisClient(localStackServer.endpointUrl, localStackServer.region, localStackServer.credentialsProvider) { client ->
+ *         withTestKinesisClient(localStackServer) { client ->
  *             val response = client.createStream("test-stream", shardCount = 1)
  *             // assertions ...
  *         }
@@ -36,4 +37,15 @@ abstract class AbstractKotlinKinesisTest: AbstractAwsTest() {
             return Fakers.randomString(min, max)
         }
     }
+
+    protected suspend inline fun <R> withTestKinesisClient(
+        server: AwsEmulatorServer,
+        block: suspend (KinesisClient) -> R,
+    ): R =
+        withKinesisClient(
+            server.endpointUrl,
+            server.region,
+            server.credentialsProvider,
+            block
+        )
 }

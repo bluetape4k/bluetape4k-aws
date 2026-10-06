@@ -14,7 +14,9 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.kotlin.s3.log
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -34,7 +36,9 @@ class SesClientExtensionsMockTest {
     @Test
     fun `getTemplateOrNull returns template when request succeeds`() = runSuspendIO {
         val templateName = "welcome-template"
-        coEvery { client.getTemplate(any<GetTemplateRequest>()) } returns GetTemplateResponse {
+        coEvery {
+            client.getTemplate(any<GetTemplateRequest>())
+        } returns GetTemplateResponse {
             template = Template {
                 this.templateName = templateName
                 subjectPart = "Hello"
@@ -44,15 +48,18 @@ class SesClientExtensionsMockTest {
 
         val result = client.getTemplateOrNull(templateName)
 
+        log.debug { "result=$result" }
         result.shouldNotBeNull()
         result.templateName shouldBeEqualTo templateName
+
         coVerify(exactly = 1) { client.getTemplate(any<GetTemplateRequest>()) }
     }
 
     @Test
     fun `getTemplateOrNull returns null for missing template errors`() = runSuspendIO {
-        coEvery { client.getTemplate(any<GetTemplateRequest>()) } throws
-                TemplateDoesNotExistException { message = "missing template" }
+        coEvery {
+            client.getTemplate(any<GetTemplateRequest>())
+        } throws TemplateDoesNotExistException { message = "missing template" }
 
         val result = client.getTemplateOrNull("missing-template")
 

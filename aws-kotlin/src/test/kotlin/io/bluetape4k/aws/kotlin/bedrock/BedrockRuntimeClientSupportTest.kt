@@ -4,9 +4,12 @@ import aws.sdk.kotlin.services.bedrockruntime.BedrockRuntimeClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,15 +18,24 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import io.bluetape4k.assertions.assertFailsWith
 
 class BedrockRuntimeClientSupportTest {
 
+    companion object: KLogging()
+
+    private val credentialsProvider = mockk<CredentialsProvider>()
+    private val httpClient = mockk<HttpClientEngine>(relaxed = true)
+    private val client = mockk<BedrockRuntimeClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
+    }
+
     @Test
     fun `caller-owned factory forwards explicit configuration`() {
-        val credentialsProvider = mockk<CredentialsProvider>()
-        val httpClient = mockk<HttpClientEngine>(relaxed = true)
         val endpoint = Url.parse("http://localhost:4566")
 
         val client = bedrockRuntimeClientOf(
@@ -79,7 +91,6 @@ class BedrockRuntimeClientSupportTest {
 
     @Test
     fun `invalid provisional client closes exactly once`() {
-        val client = mockk<BedrockRuntimeClient>(relaxed = true)
         every { client.config.endpointUrl } returns Url.parse("http://example.com")
 
         assertFailsWith<IllegalArgumentException> {
@@ -91,8 +102,6 @@ class BedrockRuntimeClientSupportTest {
 
     @Test
     fun `with client closes once after success`() = runTest {
-        val client = mockk<BedrockRuntimeClient>(relaxed = true)
-
         withBedrockRuntimeClient(clientFactory = { client }) {
             it shouldBeSameInstanceAs client
         }
@@ -102,7 +111,6 @@ class BedrockRuntimeClientSupportTest {
 
     @Test
     fun `with client closes once after block failure`() = runTest {
-        val client = mockk<BedrockRuntimeClient>(relaxed = true)
         val expected = IllegalStateException("boom")
 
         val actual = assertFailsWith<IllegalStateException> {
@@ -117,14 +125,12 @@ class BedrockRuntimeClientSupportTest {
 
     @Test
     fun `with client closes once after cancellation`() = runTest {
-        val client = mockk<BedrockRuntimeClient>(relaxed = true)
         val job = launch {
             withBedrockRuntimeClient(clientFactory = { client }) {
                 awaitCancellation()
             }
         }
         runCurrent()
-
         job.cancelAndJoin()
 
         verify(exactly = 1) { client.close() }

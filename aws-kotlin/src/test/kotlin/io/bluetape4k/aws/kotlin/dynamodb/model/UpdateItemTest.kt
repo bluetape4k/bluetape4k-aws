@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class UpdateItemTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `updateOf AttributeValue 키와 표현식으로 Update를 생성한다`() {
@@ -25,7 +25,6 @@ class UpdateItemTest {
 
         update.tableName shouldBeEqualTo "users"
         update.updateExpression shouldBeEqualTo "SET #n = :name"
-        update.expressionAttributeValues.shouldNotBeNull()
         update.expressionAttributeValues.shouldNotBeNull()[":name"] shouldBeEqualTo AttributeValue.S("Alice")
     }
 

@@ -23,7 +23,6 @@ import aws.sdk.kotlin.services.sns.model.SubscribeResponse
 import aws.sdk.kotlin.services.sns.model.UnsubscribeRequest
 import aws.sdk.kotlin.services.sns.model.UnsubscribeResponse
 import aws.sdk.kotlin.services.sns.publish
-import aws.sdk.kotlin.services.sns.publishBatch
 import aws.sdk.kotlin.services.sns.subscribe
 import aws.sdk.kotlin.services.sns.unsubscribe
 import io.bluetape4k.apache.endsWithIgnoreCase
@@ -251,7 +250,10 @@ suspend inline fun SnsClient.publishBatch(
         this.publishBatchRequestEntries = entries
         builder()
     }
-    validatePublishBatchRequest(request.topicArn.orEmpty(), request.publishBatchRequestEntries.orEmpty())
+    validatePublishBatchRequest(
+        request.topicArn.orEmpty(),
+        request.publishBatchRequestEntries.orEmpty()
+    )
     return publishBatch(request)
 }
 

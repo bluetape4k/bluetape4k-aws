@@ -47,7 +47,9 @@ import kotlinx.coroutines.CancellationException
  * @param emailRequest [SendEmailRequest] email 전송 요청 정보
  * @return [SendEmailResponse] email 전송 결과
  */
-suspend inline fun SesClient.send(emailRequest: SendEmailRequest): SendEmailResponse =
+suspend inline fun SesClient.send(
+    emailRequest: SendEmailRequest,
+): SendEmailResponse =
     sendEmail(emailRequest)
 
 
@@ -66,7 +68,9 @@ suspend inline fun SesClient.send(emailRequest: SendEmailRequest): SendEmailResp
  * @param rawEmailRequest [SendRawEmailRequest] raw email 전송 요청 정보
  * @return [SendRawEmailResponse] raw email 전송 결과
  */
-suspend inline fun SesClient.sendRaw(rawEmailRequest: SendRawEmailRequest): SendRawEmailResponse =
+suspend inline fun SesClient.sendRaw(
+    rawEmailRequest: SendRawEmailRequest,
+): SendRawEmailResponse =
     sendRawEmail(rawEmailRequest)
 
 /**
@@ -94,7 +98,9 @@ suspend inline fun SesClient.sendRaw(rawEmailRequest: SendRawEmailRequest): Send
  * @param emailRequest [SendTemplatedEmailRequest] email 전송 요청 정보
  * @return [SendTemplatedEmailResponse] email 전송 결과
  */
-suspend inline fun SesClient.sendTemplated(emailRequest: SendTemplatedEmailRequest): SendTemplatedEmailResponse =
+suspend inline fun SesClient.sendTemplated(
+    emailRequest: SendTemplatedEmailRequest,
+): SendTemplatedEmailResponse =
     sendTemplatedEmail(emailRequest)
 
 /**
@@ -119,7 +125,9 @@ suspend inline fun SesClient.sendTemplated(emailRequest: SendTemplatedEmailReque
  * @param emailRequest [SendBulkTemplatedEmailRequest] email 전송 요청 정보
  * @return [SendBulkTemplatedEmailResponse] email 전송 결과
  */
-suspend inline fun SesClient.sendBulkTemplated(emailRequest: SendBulkTemplatedEmailRequest): SendBulkTemplatedEmailResponse =
+suspend inline fun SesClient.sendBulkTemplated(
+    emailRequest: SendBulkTemplatedEmailRequest,
+): SendBulkTemplatedEmailResponse =
     sendBulkTemplatedEmail(emailRequest)
 
 
@@ -168,6 +176,7 @@ internal fun Throwable.isMissingSesTemplateError(): Boolean {
     val serviceError = this as? ServiceException ?: return false
     val errorCode = serviceError.sdkErrorMetadata.errorCode
     val statusCode = serviceError.sdkErrorMetadata.protocolResponse.statusCode()?.value
+
     return errorCode == "TemplateDoesNotExist" ||
             errorCode == "TemplateDoesNotExistException" ||
             statusCode == 404

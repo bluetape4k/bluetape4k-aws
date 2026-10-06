@@ -41,11 +41,7 @@ class BasicExamples: AbstractKotlinS3Test() {
 
     @Test
     fun `launch S3 Server`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             client.shouldNotBeNull()
         }
     }
@@ -53,12 +49,7 @@ class BasicExamples: AbstractKotlinS3Test() {
     @Test
     fun `모든 Bucket을 조회합니다`() = runSuspendIO {
         log.debug { "모든 Bucket을 조회합니다 ..." }
-
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             val response = client.listBuckets { }
 
             response.buckets?.forEach {
@@ -71,11 +62,7 @@ class BasicExamples: AbstractKotlinS3Test() {
     fun `Bucket의 모든 Object를 조회합니다`() = runSuspendIO {
         log.debug { "Bucket의 모든 Object를 조회합니다 ..." }
 
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             // 테스트용 Bucket 생성
             val bucketName = Base58.randomString(16).lowercase()
             client.ensureBucketExists(bucketName)
@@ -102,11 +89,7 @@ class BasicExamples: AbstractKotlinS3Test() {
 
     @Test
     fun `put get object as ByteArray`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             val key = randomKey()
             val contents = randomString().toUtf8Bytes()
 
@@ -123,11 +106,7 @@ class BasicExamples: AbstractKotlinS3Test() {
 
     @Test
     fun `put get object as String`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             val key = randomKey()
             val contents = randomString()
 
@@ -143,11 +122,7 @@ class BasicExamples: AbstractKotlinS3Test() {
 
     @Test
     fun `put get object as File`(temp: TempFolder) = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             val key = randomKey()
             val content = randomString()
 
@@ -169,11 +144,7 @@ class BasicExamples: AbstractKotlinS3Test() {
 
     @Test
     fun `get bucket acl`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             val key = randomKey()
             client.putFromByteArray(BUCKET_NAME, key, "acl-content".toUtf8Bytes())
 
@@ -193,11 +164,7 @@ class BasicExamples: AbstractKotlinS3Test() {
 
     @Test
     fun `get bucket policy`() = runSuspendIO {
-        withS3Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestS3Client(localStackServer) { client ->
             assertFailsWith<S3Exception> {
                 // Bucket Policy 를 지정하지 않았습니다. Policy가 없으면 예외가 발생합니다.
                 client.getBucketPolicy { bucket = BUCKET_NAME }

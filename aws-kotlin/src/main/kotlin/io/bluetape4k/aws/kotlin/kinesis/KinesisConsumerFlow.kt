@@ -1,22 +1,22 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
 import aws.sdk.kotlin.services.kinesis.KinesisClient
-import aws.sdk.kotlin.services.kinesis.getRecords
-import aws.sdk.kotlin.services.kinesis.getShardIterator
 import aws.sdk.kotlin.services.kinesis.model.ExpiredIteratorException
 import aws.sdk.kotlin.services.kinesis.model.GetShardIteratorRequest
 import aws.sdk.kotlin.services.kinesis.model.KinesisException
-import aws.sdk.kotlin.services.kinesis.model.Record
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
-import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
-import io.bluetape4k.logging.KotlinLogging
-import io.bluetape4k.logging.error
+import io.bluetape4k.coroutines.support.log
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.warn
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -25,16 +25,14 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.math.BigInteger
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.time.Duration
+import aws.smithy.kotlin.runtime.time.Instant as SmithyInstant
 
-private val consumerLog = KotlinLogging.logger { }
+private object ConsumerLogger: KLogging()
 
 /**
  * Kinesis 전체 shard를 동적으로 발견해 bounded multi-shard consumer로 내보냅니다.
@@ -69,6 +67,7 @@ fun KinesisClient.consumerFlow(
             val output = Channel<PendingRecord>(capacity = Channel.RENDEZVOUS)
             val activeJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
             val concurrency = Semaphore(options.maxShardConcurrency)
+
             val discoveryJob = launch {
                 discoverAndLaunch(
                     client = this@consumerFlow,
@@ -83,16 +82,16 @@ fun KinesisClient.consumerFlow(
                     activeJobs = activeJobs,
                     concurrency = concurrency,
                 )
-            }
+            }.log("Discovery")
 
             try {
                 // 이 loop만 Flow context에서 emit한다. shard job은 channel로 envelope만 전달한다.
-                for (pending in output) {
+                for ((envelope, ack) in output) {
                     try {
-                        emit(pending.envelope)
-                        pending.ack.complete(Unit)
+                        emit(envelope)
+                        ack.complete(Unit)
                     } catch (e: Throwable) {
-                        pending.ack.completeExceptionally(e)
+                        ack.completeExceptionally(e)
                         throw e
                     }
                 }
@@ -147,12 +146,13 @@ private suspend fun kotlinx.coroutines.CoroutineScope.discoverAndLaunch(
         for (node in graph.nodes.values) {
             if (!isActive || activeJobs.size >= options.maxShardConcurrency) break
             if (node.shardId in activeJobs) continue
+
             val key = KinesisShardKey(identity.streamIdentity, identity.consumerGroup, node.shardId)
             if (checkpointStore.load(key) is KinesisCheckpoint.ShardEnd) continue
+
             val dependenciesComplete = node.dependencies.all { parentId ->
-                checkpointStore.load(
-                    KinesisShardKey(identity.streamIdentity, identity.consumerGroup, parentId),
-                ) is KinesisCheckpoint.ShardEnd
+                val key = KinesisShardKey(identity.streamIdentity, identity.consumerGroup, parentId)
+                checkpointStore.load(key) is KinesisCheckpoint.ShardEnd
             }
             if (!dependenciesComplete) continue
 
@@ -171,7 +171,8 @@ private suspend fun kotlinx.coroutines.CoroutineScope.discoverAndLaunch(
                         output = output,
                     )
                 }
-            }
+            }.log("Job")
+
             activeJobs[node.shardId] = job
         }
         delay(options.discoveryInterval)
@@ -272,15 +273,13 @@ private suspend fun kotlinx.coroutines.CoroutineScope.consumeShard(
                 } else if (heartbeatJoinFailure !== e) {
                     heartbeatJoinFailure.addSuppressed(e)
                 }
-                consumerLog.warn {
-                    "Kinesis lease release failed: shard=${KinesisFlowEvent.redactedToken(key.shardId)} " +
-                            "type=${e::class.simpleName}"
+                ConsumerLogger.log.warn(e) {
+                    "Kinesis lease release failed: shard=${KinesisFlowEvent.redactedToken(key.shardId)}"
                 }
             }
         }
         cleanupFailure?.let { failure ->
-            val primary = primaryFailure
-            if (primary == null) throw failure
+            val primary = primaryFailure ?: throw failure
             if (primary !== failure) primary.addSuppressed(failure)
         }
     }
@@ -296,13 +295,13 @@ private fun kotlinx.coroutines.CoroutineScope.launchHeartbeat(
     leaseStore: KinesisLeaseStore,
     metrics: KinesisFlowMetrics,
     heartbeatFailure: AtomicReference<Throwable?>,
-) = launch {
+): Job = launch {
     while (isActive) {
         delay(options.leaseRenewInterval)
         val renewed = leaseStore.renew(leaseRef.get(), options.leaseDuration)
         if (renewed == null) {
             val failure = KinesisLeaseLostException(
-                "Kinesis lease lost for shard=${KinesisFlowEvent.redactedToken(key.shardId)}",
+                "Kinesis lease lost for shard=${KinesisFlowEvent.redactedToken(key.shardId)}"
             )
             leaseLoss.compareAndSet(null, failure)
             try {
@@ -336,7 +335,7 @@ private fun kotlinx.coroutines.CoroutineScope.launchHeartbeat(
             throw cause
         }
     }
-}
+}.log("Heartbeat Job")
 
 @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount")
 private suspend fun consumeShardRecords(
@@ -372,11 +371,11 @@ private suspend fun consumeShardRecords(
             if (shardIterator == null) {
                 shardIterator = client.fetchConsumerShardIterator(streamName, key.shardId, currentPosition)
             }
-            val iterator = requireNotNull(shardIterator) { "Kinesis shard iterator was not initialized" }
+            val iterator = shardIterator.requireNotNull { "Kinesis shard iterator was not initialized" }
             val response = client.getRecords(iterator, requestLimit)
             iteratorRetries = 0
             throttleRetries = 0
-            val records = response.records.orEmpty()
+            val records = response.records
             metrics.onEvent(
                 KinesisFlowEvent.Observation(
                     eventKind = KinesisFlowEvent.EventKind.BATCH,
@@ -408,6 +407,8 @@ private suspend fun consumeShardRecords(
             val hasReachedEnding = node.endingSequenceNumber?.let { ending ->
                 lastSeenSequenceNumber?.let { compareSequence(it, ending) >= 0 } == true
             } == true
+            ConsumerLogger.log.debug { "hasReachedEnding=$hasReachedEnding" }
+
             if (hasReachedEnding || (node.endingSequenceNumber == null && response.nextShardIterator == null)) {
                 checkLeaseBeforeAction(leaseStore, leaseRef, leaseLoss, options)
                 checkpointStore.save(key, KinesisCheckpoint.ShardEnd, leaseRef.get())
@@ -423,8 +424,7 @@ private suspend fun consumeShardRecords(
             }
             if (response.nextShardIterator == null) {
                 throw KinesisCheckpointException(
-                    "Kinesis closed shard did not reach ending sequence for shard=" +
-                            KinesisFlowEvent.redactedToken(key.shardId),
+                    "Kinesis closed shard did not reach ending sequence for shard=${KinesisFlowEvent.redactedToken(key.shardId)}"
                 )
             }
             shardIterator = response.nextShardIterator
@@ -435,6 +435,7 @@ private suspend fun consumeShardRecords(
             iteratorRetries++
             if (lastSeenSequenceNumber == null && currentPosition is KinesisStartingPosition.Latest) throw e
             if (iteratorRetries > options.recordOptions.maxIteratorRetries) throw e
+
             currentPosition = lastSeenSequenceNumber
                 ?.let(KinesisStartingPosition::AfterSequenceNumber)
                 ?: currentPosition
@@ -484,37 +485,39 @@ private suspend fun KinesisClient.fetchConsumerShardIterator(
     streamName: String,
     shardId: String,
     position: KinesisStartingPosition,
-): String = getShardIterator(GetShardIteratorRequest {
-    this.streamName = streamName
-    this.shardId = shardId
-    when (position) {
-        KinesisStartingPosition.TrimHorizon -> shardIteratorType = ShardIteratorType.TrimHorizon
-        KinesisStartingPosition.Latest -> shardIteratorType = ShardIteratorType.Latest
-        is KinesisStartingPosition.AtSequenceNumber -> {
-            shardIteratorType = ShardIteratorType.AtSequenceNumber
-            startingSequenceNumber = position.sequenceNumber
-        }
-        is KinesisStartingPosition.AfterSequenceNumber -> {
-            shardIteratorType = ShardIteratorType.AfterSequenceNumber
-            startingSequenceNumber = position.sequenceNumber
-        }
-        is KinesisStartingPosition.AtTimestamp -> {
-            shardIteratorType = ShardIteratorType.AtTimestamp
-            timestamp = SmithyInstant.fromEpochSeconds(position.timestamp.epochSecond, position.timestamp.nano)
+): String = getShardIterator(
+    GetShardIteratorRequest {
+        this.streamName = streamName
+        this.shardId = shardId
+
+        when (position) {
+            KinesisStartingPosition.TrimHorizon -> shardIteratorType = ShardIteratorType.TrimHorizon
+            KinesisStartingPosition.Latest -> shardIteratorType = ShardIteratorType.Latest
+            is KinesisStartingPosition.AtSequenceNumber -> {
+                shardIteratorType = ShardIteratorType.AtSequenceNumber
+                startingSequenceNumber = position.sequenceNumber
+            }
+            is KinesisStartingPosition.AfterSequenceNumber -> {
+                shardIteratorType = ShardIteratorType.AfterSequenceNumber
+                startingSequenceNumber = position.sequenceNumber
+            }
+            is KinesisStartingPosition.AtTimestamp -> {
+                shardIteratorType = ShardIteratorType.AtTimestamp
+                timestamp = SmithyInstant.fromEpochSeconds(position.timestamp.epochSecond, position.timestamp.nano)
+            }
         }
     }
-}).shardIterator ?: throw KinesisCheckpointException(
-    "Kinesis getShardIterator returned no iterator for shard=${KinesisFlowEvent.redactedToken(shardId)}",
-)
+).shardIterator
+    ?: throw KinesisCheckpointException(
+        "Kinesis getShardIterator returned no iterator for shard=${KinesisFlowEvent.redactedToken(shardId)}",
+    )
 
 private fun compareSequence(left: String, right: String): Int {
     val leftNumber = left.toBigIntegerOrNull()
     val rightNumber = right.toBigIntegerOrNull()
-    return if (leftNumber != null && rightNumber != null) leftNumber.compareTo(rightNumber) else left.compareTo(right)
-}
 
-private fun String.toBigIntegerOrNull(): BigInteger? = try {
-    BigInteger(this)
-} catch (_: NumberFormatException) {
-    null
+    return when {
+        leftNumber != null && rightNumber != null -> leftNumber.compareTo(rightNumber)
+        else -> left.compareTo(right)
+    }
 }

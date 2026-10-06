@@ -20,7 +20,7 @@ data class LockLease(
     val namespace: String,
     val physicalKey: String,
     val scopeId: String,
-) : Serializable {
+): Serializable {
 
     init {
         validateInvariants()

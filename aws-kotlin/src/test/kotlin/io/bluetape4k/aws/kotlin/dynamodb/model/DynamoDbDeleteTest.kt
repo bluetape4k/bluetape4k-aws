@@ -1,10 +1,10 @@
 package io.bluetape4k.aws.kotlin.dynamodb.model
 
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
-import io.bluetape4k.logging.KLogging
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class DynamoDbDeleteTest {
@@ -49,7 +49,7 @@ class DynamoDbDeleteTest {
     @Test
     fun `deleteRequestOf는 빈 key를 허용하지 않는다`() {
         assertFailsWith<IllegalArgumentException> {
-            deleteRequestOf(emptyMap<String, AttributeValue>())
+            deleteRequestOf(emptyMap())
         }
     }
 

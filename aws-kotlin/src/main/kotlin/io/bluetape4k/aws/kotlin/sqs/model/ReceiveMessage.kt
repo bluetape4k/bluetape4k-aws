@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.kotlin.sqs.model
 
 import aws.sdk.kotlin.services.sqs.model.ReceiveMessageRequest
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 
 @PublishedApi
@@ -53,12 +54,8 @@ inline fun receiveMessageRequestOf(
     crossinline builder: ReceiveMessageRequest.Builder.() -> Unit = {},
 ): ReceiveMessageRequest {
     queueUrl.requireNotBlank("queueUrl")
-    require(maxNumberOfMessages in MIN_RECEIVE_MESSAGES..MAX_RECEIVE_MESSAGES) {
-        "maxNumberOfMessages must be in the range $MIN_RECEIVE_MESSAGES..$MAX_RECEIVE_MESSAGES."
-    }
-    require(waitTimeSeconds in MIN_WAIT_TIME_SECONDS..MAX_WAIT_TIME_SECONDS) {
-        "waitTimeSeconds must be in the range $MIN_WAIT_TIME_SECONDS..$MAX_WAIT_TIME_SECONDS."
-    }
+    maxNumberOfMessages.requireInRange(MIN_RECEIVE_MESSAGES, MAX_RECEIVE_MESSAGES, "maxNumberOfMessages")
+    waitTimeSeconds.requireInRange(MIN_WAIT_TIME_SECONDS, MAX_WAIT_TIME_SECONDS, "waitTimeSeconds")
 
     return ReceiveMessageRequest {
         this.queueUrl = queueUrl

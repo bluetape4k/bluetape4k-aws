@@ -17,7 +17,7 @@ inline fun secretsManagerClientOf(
     httpClient: HttpClientEngine? = null,
     crossinline builder: SecretsManagerClient.Config.Builder.() -> Unit = {},
 ): SecretsManagerClient {
-    endpointUrl?.let { it.host.toString().requireNotBlank("endpointUrl.host") }
+    endpointUrl?.host?.toString()?.requireNotBlank("endpointUrl.host")
 
     return SecretsManagerClient {
         endpointUrl?.let { this.endpointUrl = it }
@@ -37,6 +37,7 @@ suspend fun <R> withSecretsManagerClient(
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (SecretsManagerClient) -> R,
-): R = secretsManagerClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-    block(client)
-}
+): R =
+    secretsManagerClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
+        block(client)
+    }

@@ -34,14 +34,15 @@ inline fun stsClientOf(
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
     crossinline builder: StsClient.Config.Builder.() -> Unit = {},
-): StsClient = StsClient {
-    endpointUrl?.let { this.endpointUrl = it }
-    region?.let { this.region = it }
-    credentialsProvider?.let { this.credentialsProvider = it }
-    httpClient?.let { this.httpClient = it }
+): StsClient =
+    StsClient {
+        endpointUrl?.let { this.endpointUrl = it }
+        region?.let { this.region = it }
+        credentialsProvider?.let { this.credentialsProvider = it }
+        httpClient?.let { this.httpClient = it }
 
-    builder()
-}
+        builder()
+    }
 
 /**
  * [StsClient]를 생성하고 [block]을 실행한 뒤 client를 자동으로 닫는다.
@@ -61,6 +62,7 @@ suspend fun <R> withStsClient(
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (StsClient) -> R,
-): R = stsClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-    block(client)
-}
+): R =
+    stsClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
+        block(client)
+    }

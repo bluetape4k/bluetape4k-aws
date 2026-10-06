@@ -20,9 +20,9 @@ class DynamoDbMetadataStore(
     private val client: DynamoDbClient,
     private val schema: DynamoDbCoordinationSchema,
     private val options: DynamoDbCoordinationOptions = DynamoDbCoordinationOptions(),
-) : MetadataStore {
+): MetadataStore {
 
-    companion object : KLoggingChannel()
+    companion object: KLoggingChannel()
 
     override suspend fun get(key: String): String? {
         val resolved = resolveKey(key)
@@ -203,16 +203,16 @@ class DynamoDbMetadataStore(
             parts += "attribute_not_exists(${DynamoDbCoordinationExpressions.TTL_ALIAS})"
         } else {
             parts += "${DynamoDbCoordinationExpressions.EXPIRES_AT_ALIAS} = " +
-                DynamoDbCoordinationExpressions.OBSERVED_EXPIRES_AT_VALUE
+                    DynamoDbCoordinationExpressions.OBSERVED_EXPIRES_AT_VALUE
             if (old.ttlEpochSeconds == null) {
                 parts += "attribute_not_exists(${DynamoDbCoordinationExpressions.TTL_ALIAS})"
             } else {
                 parts += "${DynamoDbCoordinationExpressions.TTL_ALIAS} = " +
-                    DynamoDbCoordinationExpressions.OBSERVED_TTL
+                        DynamoDbCoordinationExpressions.OBSERVED_TTL
             }
             if (requireExpired) {
                 parts += "${DynamoDbCoordinationExpressions.EXPIRES_AT_ALIAS} <= " +
-                    DynamoDbCoordinationExpressions.NOW_VALUE
+                        DynamoDbCoordinationExpressions.NOW_VALUE
             }
         }
         return parts.joinToString(" AND ")
@@ -291,21 +291,22 @@ class DynamoDbMetadataStore(
     } catch (error: ConditionalCheckFailedException) {
         throw error
     } catch (error: SdkBaseException) {
-        log.error {
+        log.error(error) {
             "DynamoDB coordination SDK failure: operation=$operation table=${schema.tableName} " +
-                "kind=METADATA namespace=${schema.namespace} error=${error::class.simpleName}"
+                    "kind=METADATA namespace=${schema.namespace}"
         }
         throw error
     }
 
     private fun logMalformed(operation: String, error: IllegalStateException) {
-        log.error {
+        log.error(error) {
             "DynamoDB coordination malformed response: operation=$operation table=${schema.tableName} " +
-                "kind=METADATA namespace=${schema.namespace} error=${error::class.simpleName}"
+                    "kind=METADATA namespace=${schema.namespace}"
         }
     }
 }
 
+@Suppress("UnusedReceiverParameter")
 private fun DynamoDbCoordinationSchema.validateMetadataKey(key: String) {
     key.validateCoordinationIdentifier("key")
 }

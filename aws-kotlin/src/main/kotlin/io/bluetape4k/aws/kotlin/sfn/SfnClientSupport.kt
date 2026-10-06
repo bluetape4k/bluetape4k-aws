@@ -27,12 +27,12 @@ inline fun sfnClientOf(
  *
  * [httpClient]로 전달한 HTTP 엔진은 호출자가 소유하므로 이 함수가 닫지 않습니다.
  */
-suspend fun <R> withSfnClient(
+suspend inline fun <R> withSfnClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    builder: SfnClient.Config.Builder.() -> Unit = {},
+    crossinline builder: SfnClient.Config.Builder.() -> Unit = {},
     block: suspend (SfnClient) -> R,
 ): R = withSfnClient(
     clientFactory = { sfnClientOf(endpointUrl, region, credentialsProvider, httpClient, builder) },
@@ -40,7 +40,7 @@ suspend fun <R> withSfnClient(
 )
 
 /** client factory를 주입해 lifecycle을 네트워크 I/O 없이 검증하는 내부 seam입니다. */
-internal suspend fun <R> withSfnClient(
+suspend inline fun <R> withSfnClient(
     clientFactory: () -> SfnClient,
     block: suspend (SfnClient) -> R,
 ): R = clientFactory().useSafe { client ->

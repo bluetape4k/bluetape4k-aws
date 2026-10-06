@@ -14,11 +14,11 @@ import io.bluetape4k.aws.kotlin.bedrock.model.converseRequestOf
  * SDK 실패, 코루틴 취소를 보존합니다. 이 호출이 단기 클라이언트를 소유해야 한다면
  * [withBedrockRuntimeClient]를 사용하세요.
  */
-suspend inline fun BedrockRuntimeClient.converse(
+suspend fun BedrockRuntimeClient.converse(
     modelId: String,
     messages: Collection<Message>,
     inferenceConfig: InferenceConfiguration? = null,
-    crossinline builder: ConverseRequest.Builder.() -> Unit = {},
+    builder: ConverseRequest.Builder.() -> Unit = {},
 ): ConverseResponse =
     converse(
         converseRequestOf(

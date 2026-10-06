@@ -13,20 +13,19 @@ import aws.smithy.kotlin.runtime.ServiceErrorMetadata
 import aws.smithy.kotlin.runtime.ServiceException
 import aws.smithy.kotlin.runtime.http.HttpStatusCode
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
-import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * MockK-based contract tests for [SesV2Client] extension functions.
@@ -41,12 +40,12 @@ class SesV2ClientExtensionsMockTest {
     private val client = mockk<SesV2Client>()
 
     @BeforeEach
-    fun setup() {
+    fun beforeEach() {
         clearMocks(client)
     }
 
     @Test
-    fun `send delegates to sendEmail`() = runSuspendIO {
+    fun `send delegates to sendEmail`() = runTest {
         val request = mockk<SendEmailRequest>()
         val expected = SendEmailResponse { messageId = "msg-001" }
         coEvery { client.sendEmail(any()) } returns expected
@@ -58,7 +57,7 @@ class SesV2ClientExtensionsMockTest {
     }
 
     @Test
-    fun `sendBulk delegates to sendBulkEmail`() = runSuspendIO {
+    fun `sendBulk delegates to sendBulkEmail`() = runTest {
         val request = mockk<SendBulkEmailRequest>()
         val expected = mockk<SendBulkEmailResponse>(relaxed = true)
         coEvery { client.sendBulkEmail(any()) } returns expected
@@ -70,14 +69,16 @@ class SesV2ClientExtensionsMockTest {
     }
 
     @Test
-    fun `getTemplateOrNull returns template when templateContent is non-null`() = runSuspendIO {
+    fun `getTemplateOrNull returns template when templateContent is non-null`() = runTest {
         val templateName = "welcome-template"
         val content = EmailTemplateContent {
             subject = "Hello, {{name}}"
             html = "<h1>Hello, {{name}}</h1>"
             text = "Hello, {{name}}"
         }
-        coEvery { client.getEmailTemplate(any()) } returns GetEmailTemplateResponse {
+        coEvery {
+            client.getEmailTemplate(any())
+        } returns GetEmailTemplateResponse {
             this.templateName = templateName
             this.templateContent = content
         }
@@ -89,8 +90,10 @@ class SesV2ClientExtensionsMockTest {
     }
 
     @Test
-    fun `getTemplateOrNull returns null when templateContent is null`() = runSuspendIO {
-        coEvery { client.getEmailTemplate(any()) } returns GetEmailTemplateResponse {
+    fun `getTemplateOrNull returns null when templateContent is null`() = runTest {
+        coEvery {
+            client.getEmailTemplate(any())
+        } returns GetEmailTemplateResponse {
             this.templateName = "empty-template"
             this.templateContent = null
         }
@@ -101,8 +104,10 @@ class SesV2ClientExtensionsMockTest {
     }
 
     @Test
-    fun `getTemplateOrNull returns null for missing template errors`() = runSuspendIO {
-        coEvery { client.getEmailTemplate(any()) } throws NotFoundException { message = "missing template" }
+    fun `getTemplateOrNull returns null for missing template errors`() = runTest {
+        coEvery {
+            client.getEmailTemplate(any())
+        } throws NotFoundException { message = "missing template" }
 
         val result = client.getTemplateOrNull("nonexistent")
 
@@ -110,7 +115,7 @@ class SesV2ClientExtensionsMockTest {
     }
 
     @Test
-    fun `getTemplateOrNull propagates access denied errors`() = runSuspendIO {
+    fun `getTemplateOrNull propagates access denied errors`() = runTest {
         coEvery { client.getEmailTemplate(any()) } throws serviceException(errorCode = "AccessDenied", statusCode = 403)
 
         assertFailsWith<ServiceException> {

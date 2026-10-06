@@ -1,22 +1,26 @@
 package io.bluetape4k.aws.kotlin.dynamodbstreams
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBe
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.io.serializer.BinarySerializers
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class DynamoDbStreamsStartingPositionTest {
 
-    private fun roundtrip(value: DynamoDbStreamsStartingPosition): DynamoDbStreamsStartingPosition {
-        val bytes = ByteArrayOutputStream().also { output ->
-            ObjectOutputStream(output).use { it.writeObject(value) }
-        }.toByteArray()
-        return ObjectInputStream(ByteArrayInputStream(bytes)).use { it.readObject() }
-            as DynamoDbStreamsStartingPosition
+    companion object: KLogging()
+
+    @Suppress("DEPRECATION")
+    private fun roundtripJdk(value: DynamoDbStreamsStartingPosition): DynamoDbStreamsStartingPosition {
+        val bytes = BinarySerializers.Jdk.serialize(value)
+        return BinarySerializers.Jdk.deserialize<DynamoDbStreamsStartingPosition>(bytes).shouldNotBeNull()
+    }
+
+    private fun roundtripFastFory(value: DynamoDbStreamsStartingPosition): DynamoDbStreamsStartingPosition {
+        val bytes = BinarySerializers.FastFory.serialize(value)
+        return BinarySerializers.FastFory.deserialize<DynamoDbStreamsStartingPosition>(bytes).shouldNotBeNull()
     }
 
     @Test
@@ -38,14 +42,24 @@ class DynamoDbStreamsStartingPositionTest {
     }
 
     @Test
-    fun `positions survive serialization and singleton identity is preserved`() {
-        (roundtrip(DynamoDbStreamsStartingPosition.TrimHorizon) === DynamoDbStreamsStartingPosition.TrimHorizon)
-            .shouldBeTrue()
-        (roundtrip(DynamoDbStreamsStartingPosition.Latest) === DynamoDbStreamsStartingPosition.Latest)
-            .shouldBeTrue()
-        roundtrip(DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")) shouldBeEqualTo
+    fun `positions survive jdk serialization and singleton identity is preserved`() {
+        roundtripJdk(DynamoDbStreamsStartingPosition.TrimHorizon) shouldBe DynamoDbStreamsStartingPosition.TrimHorizon
+        roundtripJdk(DynamoDbStreamsStartingPosition.Latest) shouldBe DynamoDbStreamsStartingPosition.Latest
+
+        roundtripJdk(DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")) shouldBeEqualTo
                 DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")
-        roundtrip(DynamoDbStreamsStartingPosition.AfterSequenceNumber("seq-after")) shouldBeEqualTo
+        roundtripJdk(DynamoDbStreamsStartingPosition.AfterSequenceNumber("seq-after")) shouldBeEqualTo
+                DynamoDbStreamsStartingPosition.AfterSequenceNumber("seq-after")
+    }
+
+    @Test
+    fun `positions survive fastfory serialization and singleton identity is preserved`() {
+        roundtripFastFory(DynamoDbStreamsStartingPosition.TrimHorizon) shouldBe DynamoDbStreamsStartingPosition.TrimHorizon
+        roundtripFastFory(DynamoDbStreamsStartingPosition.Latest) shouldBe DynamoDbStreamsStartingPosition.Latest
+
+        roundtripFastFory(DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")) shouldBeEqualTo
+                DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")
+        roundtripFastFory(DynamoDbStreamsStartingPosition.AfterSequenceNumber("seq-after")) shouldBeEqualTo
                 DynamoDbStreamsStartingPosition.AfterSequenceNumber("seq-after")
     }
 }

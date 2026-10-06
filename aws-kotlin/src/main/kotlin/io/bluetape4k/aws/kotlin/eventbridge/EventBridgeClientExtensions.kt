@@ -1,11 +1,6 @@
 package io.bluetape4k.aws.kotlin.eventbridge
 
 import aws.sdk.kotlin.services.eventbridge.EventBridgeClient
-import aws.sdk.kotlin.services.eventbridge.createEventBus
-import aws.sdk.kotlin.services.eventbridge.deleteEventBus
-import aws.sdk.kotlin.services.eventbridge.deleteRule
-import aws.sdk.kotlin.services.eventbridge.listRules
-import aws.sdk.kotlin.services.eventbridge.listTargetsByRule
 import aws.sdk.kotlin.services.eventbridge.model.CreateEventBusResponse
 import aws.sdk.kotlin.services.eventbridge.model.DeleteEventBusResponse
 import aws.sdk.kotlin.services.eventbridge.model.DeleteRuleResponse
@@ -18,10 +13,6 @@ import aws.sdk.kotlin.services.eventbridge.model.PutTargetsResponse
 import aws.sdk.kotlin.services.eventbridge.model.RemoveTargetsResponse
 import aws.sdk.kotlin.services.eventbridge.model.RuleState
 import aws.sdk.kotlin.services.eventbridge.model.Target
-import aws.sdk.kotlin.services.eventbridge.putEvents
-import aws.sdk.kotlin.services.eventbridge.putRule
-import aws.sdk.kotlin.services.eventbridge.putTargets
-import aws.sdk.kotlin.services.eventbridge.removeTargets
 import io.bluetape4k.aws.kotlin.eventbridge.model.createEventBusRequestOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.deleteEventBusRequestOf
 import io.bluetape4k.aws.kotlin.eventbridge.model.deleteRuleRequestOf

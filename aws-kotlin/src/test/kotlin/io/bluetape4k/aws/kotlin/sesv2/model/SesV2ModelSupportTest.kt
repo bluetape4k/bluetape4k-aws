@@ -3,9 +3,15 @@ package io.bluetape4k.aws.kotlin.sesv2.model
 import aws.sdk.kotlin.services.sesv2.model.EmailContent
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import org.junit.jupiter.api.Test
 
 class SesV2ModelSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `destinationOf는 to address를 설정한다`() {
@@ -24,6 +30,7 @@ class SesV2ModelSupportTest {
             this.toAddresses = listOf("to@example.com", "to2@example.com")
         }
 
+        log.debug { "destination=$destination" }
         destination.toAddresses shouldBeEqualTo listOf("to@example.com", "to2@example.com")
         destination.ccAddresses shouldBeEqualTo listOf("cc@example.com")
         destination.bccAddresses shouldBeEqualTo listOf("bcc@example.com")
@@ -33,14 +40,16 @@ class SesV2ModelSupportTest {
     fun `contentOf는 data와 charset을 설정한다`() {
         val content = contentOf("hello")
 
+        log.debug { "content=$content" }
         content.data shouldBeEqualTo "hello"
         content.charset shouldBeEqualTo "UTF-8"
     }
 
     @Test
     fun `rawMessageOf는 data를 설정한다`() {
-        val raw = rawMessageOf("hello".toByteArray())
-        raw.data.decodeToString() shouldBeEqualTo "hello"
+        val raw = rawMessageOf("hello".toUtf8Bytes())
+        log.debug { "raw=$raw" }
+        raw.data.toUtf8String() shouldBeEqualTo "hello"
     }
 
     @Test
@@ -55,7 +64,7 @@ class SesV2ModelSupportTest {
                 )
             },
         )
-
+        log.debug { "request=$request" }
         request.fromEmailAddress shouldBeEqualTo "from@example.com"
         request.destination?.toAddresses shouldBeEqualTo listOf("to@example.com")
         request.content?.simple?.subject?.data shouldBeEqualTo "subject"

@@ -31,11 +31,7 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
     @Test
     @Order(1)
     fun `create queue`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val response = client.createQueue(QUEUE_NAME)
             log.debug { "Create queue response=$response" }
 
@@ -49,34 +45,24 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
     @Test
     @Order(2)
     fun `list queues`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val response = client.listQueues(QUEUE_PREFIX)
+            response.queueUrls?.forEach { log.debug { "Queue URL=$it" } }
 
-            response.queueUrls?.forEach {
-                log.debug { "Queue URL=$it" }
-            }
             val queueUrls = response.queueUrls.shouldNotBeNull()
             queueUrls shouldHaveSize 1
-            queueUrls.first() shouldBeEqualTo testQueueUrl
+            queueUrls.single() shouldBeEqualTo testQueueUrl
         }
     }
 
     @Test
     @Order(3)
     fun `send messages`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val messageBody = randomString()
             val response = client.sendMessage(testQueueUrl, messageBody, 3)
 
-            response.messageId.shouldNotBeNull().shouldNotBeEmpty()
+            response.messageId.shouldNotBeEmpty()
             log.debug { "Send messages response=$response" }
         }
     }
@@ -84,12 +70,9 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
     @Test
     @Order(4)
     fun `send messages in batch mode`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val messageCount = 10
+
             // NOTE: 배치로 한번에 전송할 메시지의 총 크기가 262,144 바이트(256 KB)를 초과할 수 없습니다.
             val entries = List(messageCount) {
                 sendMessageBatchRequestEntryOf(
@@ -100,84 +83,66 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
 
             val response = client.sendMessageBatch(testQueueUrl, entries)
             response.successful shouldHaveSize messageCount
-            response.successful.forEach {
-                log.debug { "result=$it" }
-            }
+            response.successful.forEach { log.debug { "result=$it" } }
         }
     }
 
     @Test
     @Order(5)
     fun `receive messages`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
-            val messages = client.receiveMessage(testQueueUrl, 3).messages.shouldNotBeNull()
+        withTestSqsClient(awsEmulator) { client ->
+            val messages = client
+                .receiveMessage(testQueueUrl, 3)
+                .messages
+                .shouldNotBeNull()
 
             messages shouldHaveSize 3
-            messages.forEach {
-                log.debug { "message=$it" }
-            }
+            messages.forEach { log.debug { "message=$it" } }
         }
     }
 
     @Test
     @Order(6)
     fun `change message visibility`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
-            val messages = client.receiveMessage(testQueueUrl, 3).messages.shouldNotBeNull()
+        withTestSqsClient(awsEmulator) { client ->
+            val messages = client
+                .receiveMessage(testQueueUrl, 3)
+                .messages
+                .shouldNotBeNull()
 
             val responses = messages.map { msg ->
-                async {
+                this@runSuspendIO.async {
                     log.debug { "Change visibility of message=$msg" }
                     client.changeMessageVisibility(testQueueUrl, msg.receiptHandle, 10)
                 }
             }.awaitAll()
 
             responses shouldHaveSize messages.size
-            responses.forEach { response ->
-                log.debug { "response metadata=$response" }
-            }
+            responses.forEach { log.debug { "response metadata=$it" } }
         }
     }
 
     @Test
     @Order(7)
     fun `delete messages`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val messages = client.receiveMessage(testQueueUrl, 3).messages.shouldNotBeNull()
 
             val responses = messages.map { msg ->
-                async {
+                this@runSuspendIO.async {
                     client.deleteMessage(testQueueUrl, msg.receiptHandle)
                 }
             }.awaitAll()
 
             responses shouldHaveSize messages.size
-            responses.forEach {
-                log.debug { "response=$it" }
-            }
+            responses.forEach { log.debug { "response=$it" } }
         }
     }
 
     @Test
     @Order(8)
     fun `delete queue`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val response = client.deleteQueue(testQueueUrl)
             log.debug { "Delete queue response=$response" }
 
@@ -188,16 +153,13 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
     @Test
     @Order(9)
     fun `receiveMessage는 maxNumberOfMessages 범위를 검증한다`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val queueUrl = "https://example.com/queue/demo"
 
             assertFailsWith<IllegalArgumentException> {
                 client.receiveMessage(queueUrl, maxNumberOfMessages = 0)
             }
+
             assertFailsWith<IllegalArgumentException> {
                 client.receiveMessage(queueUrl, maxNumberOfMessages = 11)
             }
@@ -207,11 +169,7 @@ class SqsClientExtensionsTest: AbstractKotlinSqsTest() {
     @Test
     @Order(10)
     fun `sendMessage는 blank messageBody를 허용하지 않는다`() = runSuspendIO {
-        withSqsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSqsClient(awsEmulator) { client ->
             val queueUrl = "https://example.com/queue/demo"
 
             assertFailsWith<IllegalArgumentException> {

@@ -1,13 +1,15 @@
 package io.bluetape4k.aws.kotlin.s3
 
-import io.bluetape4k.assertions.shouldNotBeNull
+import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.listBuckets
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.faker.Fakers
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.info
 import io.bluetape4k.logging.warn
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeAll
 
@@ -40,7 +42,18 @@ abstract class AbstractKotlinS3Test: AbstractAwsTest() {
         }
 
         @JvmStatic
-        protected fun randomKey(): String = Base58.randomString(16).lowercase()
+        protected fun randomKey(): String = Base58.randomString(8).lowercase()
+    }
+
+    protected suspend fun <R> withTestS3Client(
+        awsServer: AwsEmulatorServer,
+        action: suspend (S3Client) -> R,
+    ): R = withS3Client(
+        awsServer.endpointUrl,
+        awsServer.region,
+        awsServer.credentialsProvider,
+    ) { client ->
+        action(client)
     }
 
     @BeforeAll

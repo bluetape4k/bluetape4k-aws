@@ -2,9 +2,10 @@ package io.bluetape4k.aws.kinesis
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.utils.Resourcex
 import org.junit.jupiter.api.Test
 import java.util.*
 
@@ -129,11 +130,12 @@ class KinesisObservationConformanceTest: AbstractKinesisTest() {
         listOf(eventKind, outcome, reason.orEmpty(), retryClass.orEmpty()).joinToString("|")
 
     private fun loadContract(): Properties = Properties().apply {
-        KinesisObservationConformanceTest::class.java.classLoader
-            .getResourceAsStream("kinesis-observation-v1.properties")
-            .use { input -> load(requireNotNull(input)) }
+        Resourcex.getInputStream("kinesis-observation-v1.properties")
+            .use { input ->
+                load(input.requireNotNull("kinesis-observation-v1.properties"))
+            }
     }
 
-    private fun Properties.required(key: String): String = requireNotNull(getProperty(key)) { "Missing $key" }
+    private fun Properties.required(key: String): String = getProperty(key).requireNotNull(key)
     private fun Properties.csv(key: String): Set<String> = required(key).split(',').toSet()
 }

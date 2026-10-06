@@ -1,31 +1,33 @@
 package io.bluetape4k.aws.kotlin.sns
 
+import aws.sdk.kotlin.services.sns.SnsClient
 import aws.sdk.kotlin.services.sns.confirmSubscription
 import aws.sdk.kotlin.services.sns.listSubscriptions
 import aws.sdk.kotlin.services.sns.model.PublishBatchRequest
-import aws.sdk.kotlin.services.sns.model.PublishBatchResponse
 import aws.sdk.kotlin.services.sns.model.PublishBatchRequestEntry
+import aws.sdk.kotlin.services.sns.model.PublishBatchResponse
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.sns.model.publishBatchRequestEntryOf
 import io.bluetape4k.aws.kotlin.sns.model.publishRequestOf
-import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.hashOf
-import io.bluetape4k.assertions.shouldBeFalse
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldHaveSize
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.mockk
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
@@ -46,14 +48,10 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     @Test
     @Order(1)
     fun `create FIFO topic`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val response = client.createFifoTopic(TOPIC_NAME_FIFO)
 
-            response.topicArn.shouldNotBeNull().shouldNotBeEmpty()
+            response.topicArn.shouldNotBeEmpty()
             testTopicArn = response.topicArn.shouldNotBeNull()
             log.debug { "topic name=$TOPIC_NAME_FIFO, topicArn=$testTopicArn" }
         }
@@ -62,14 +60,10 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     @Test
     @Order(2)
     fun `subscribe topic`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val response = client.subscribe(testTopicArn, testPhoneNumber, "sms")
 
-            response.subscriptionArn.shouldNotBeNull().shouldNotBeEmpty()
+            response.subscriptionArn.shouldNotBeEmpty()
             testSubscriptionArn = response.subscriptionArn.shouldNotBeNull()
             log.debug { "subscriptionArn=$testSubscriptionArn" }
         }
@@ -79,17 +73,13 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     @Test
     @Order(3)
     fun `confirm subscription`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val response = client.confirmSubscription {
                 token = testToken
                 topicArn = testTopicArn
             }
 
-            response.subscriptionArn.shouldNotBeNull().shouldNotBeEmpty()
+            response.subscriptionArn.shouldNotBeEmpty()
             log.debug { "subscriptionArn=${response.subscriptionArn}" }
         }
     }
@@ -97,17 +87,13 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     @Test
     @Order(4)
     fun `list subscriptions`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val response = client.listSubscriptions { }
 
             response.subscriptions?.forEach { subscription ->
                 log.debug { "subscriptionArn=${subscription.subscriptionArn}" }
             }
-            response.subscriptions.shouldNotBeNull().shouldNotBeEmpty()
+            response.subscriptions.shouldNotBeEmpty()
         }
     }
 
@@ -116,11 +102,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     fun `check opt out status for phone number`() = runSuspendIO {
         assumeFlociSupports("SNS CheckIfPhoneNumberIsOptedOut")
 
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val response = client.checkIfPhoneNumberIsOptedOut(testPhoneNumber)
             log.debug { "OptOut status=${response.isOptedOut}" }
             response.isOptedOut.shouldBeFalse()
@@ -130,11 +112,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     @Test
     @Order(6)
     fun `publish messages`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val request = publishRequestOf(
                 topicArn = testTopicArn,
                 phoneNumber = testPhoneNumber,
@@ -143,21 +121,19 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
                 messageGroupId = "partitionKey",
                 messageDeduplicationId = hashOf(testTopicArn, "Hello, AWS SNS!", testPhoneNumber).toString()
             )
-            val response = client.publish(request)
+            log.debug { "request=$request" }
 
+            val response = client.publish(request)
             log.debug { "response=$response" }
-            response.messageId.shouldNotBeNull().shouldNotBeEmpty()
+
+            response.messageId.shouldNotBeEmpty()
         }
     }
 
     @Test
     @Order(7)
     fun `publish messages in batch`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val messageSize = 10
             val entries = List(messageSize) {
                 publishBatchRequestEntryOf(
@@ -174,14 +150,14 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
                 result.messageId.shouldNotBeNull().shouldNotBeEmpty()
                 log.debug { "result=$result" }
             }
-            response.successful.shouldNotBeNull() shouldHaveSize messageSize
+            response.successful shouldHaveSize messageSize
         }
     }
 
     @Test
     @Order(10)
-    fun `publishBatch validates topic count entry id and duplicate ids before sdk call`() = runSuspendIO {
-        val client = mockk<aws.sdk.kotlin.services.sns.SnsClient>()
+    fun `publishBatch validates topic count entry id and duplicate ids before sdk call`() = runTest {
+        val client = mockk<SnsClient>()
         val topicArn = "arn:aws:sns:ap-northeast-2:000000000000:batch-topic"
         val validEntry = publishBatchRequestEntryOf(
             id = "entry-${Base58.randomString(16)}",
@@ -212,8 +188,8 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
 
     @Test
     @Order(11)
-    fun `publishBatch accepts one and ten entries`() = runSuspendIO {
-        val client = mockk<aws.sdk.kotlin.services.sns.SnsClient>()
+    fun `publishBatch accepts one and ten entries`() = runTest {
+        val client = mockk<SnsClient>()
         val topicArn = "arn:aws:sns:ap-northeast-2:000000000000:batch-topic"
         val oneEntry = listOf(
             publishBatchRequestEntryOf(
@@ -239,11 +215,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     @Test
     @Order(8)
     fun `unsubscribe topic`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val response = client.unsubscribe(testSubscriptionArn)
             log.debug { "response=$response" }
         }
@@ -252,11 +224,7 @@ class SnsClientExtensionsTest: AbstractKotlinSnsTest() {
     @Test
     @Order(9)
     fun `delete topic`() = runSuspendIO {
-        withSnsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSnsClient(awsEmulator) { client ->
             val response = client.deleteTopic(testTopicArn)
             log.debug { "response=$response" }
         }

@@ -46,7 +46,8 @@ import io.bluetape4k.aws.kotlin.s3tables.model.listTablesRequestOf
 suspend fun S3TablesClient.createTableBucket(
     name: String,
     builder: CreateTableBucketRequest.Builder.() -> Unit = {},
-): CreateTableBucketResponse = createTableBucket(createTableBucketRequestOf(name, builder))
+): CreateTableBucketResponse =
+    createTableBucket(createTableBucketRequestOf(name, builder))
 
 /** table bucket 목록을 한 페이지 조회합니다. */
 suspend fun S3TablesClient.listTableBuckets(
@@ -55,21 +56,24 @@ suspend fun S3TablesClient.listTableBuckets(
     maxBuckets: Int? = null,
     type: TableBucketType? = null,
     builder: ListTableBucketsRequest.Builder.() -> Unit = {},
-): ListTableBucketsResponse = listTableBuckets(
-    listTableBucketsRequestOf(prefix, continuationToken, maxBuckets, type, builder),
-)
+): ListTableBucketsResponse =
+    listTableBuckets(
+        listTableBucketsRequestOf(prefix, continuationToken, maxBuckets, type, builder),
+    )
 
 /** table bucket ARN으로 table bucket을 조회합니다. */
 suspend fun S3TablesClient.getTableBucket(
     tableBucketArn: String,
     builder: GetTableBucketRequest.Builder.() -> Unit = {},
-): GetTableBucketResponse = getTableBucket(getTableBucketRequestOf(tableBucketArn, builder))
+): GetTableBucketResponse =
+    getTableBucket(getTableBucketRequestOf(tableBucketArn, builder))
 
 /** table bucket ARN으로 table bucket을 삭제합니다. */
 suspend fun S3TablesClient.deleteTableBucket(
     tableBucketArn: String,
     builder: DeleteTableBucketRequest.Builder.() -> Unit = {},
-): DeleteTableBucketResponse = deleteTableBucket(deleteTableBucketRequestOf(tableBucketArn, builder))
+): DeleteTableBucketResponse =
+    deleteTableBucket(deleteTableBucketRequestOf(tableBucketArn, builder))
 
 /** table bucket에 namespace를 생성합니다. */
 suspend fun S3TablesClient.createNamespace(
@@ -85,23 +89,26 @@ suspend fun S3TablesClient.listNamespaces(
     continuationToken: String? = null,
     maxNamespaces: Int? = null,
     builder: ListNamespacesRequest.Builder.() -> Unit = {},
-): ListNamespacesResponse = listNamespaces(
-    listNamespacesRequestOf(tableBucketArn, prefix, continuationToken, maxNamespaces, builder),
-)
+): ListNamespacesResponse =
+    listNamespaces(
+        listNamespacesRequestOf(tableBucketArn, prefix, continuationToken, maxNamespaces, builder),
+    )
 
 /** table bucket ARN과 namespace로 namespace를 조회합니다. */
 suspend fun S3TablesClient.getNamespace(
     tableBucketArn: String,
     namespace: String,
     builder: GetNamespaceRequest.Builder.() -> Unit = {},
-): GetNamespaceResponse = getNamespace(getNamespaceRequestOf(tableBucketArn, namespace, builder))
+): GetNamespaceResponse =
+    getNamespace(getNamespaceRequestOf(tableBucketArn, namespace, builder))
 
 /** table bucket ARN과 namespace로 namespace를 삭제합니다. */
 suspend fun S3TablesClient.deleteNamespace(
     tableBucketArn: String,
     namespace: String,
     builder: DeleteNamespaceRequest.Builder.() -> Unit = {},
-): DeleteNamespaceResponse = deleteNamespace(deleteNamespaceRequestOf(tableBucketArn, namespace, builder))
+): DeleteNamespaceResponse =
+    deleteNamespace(deleteNamespaceRequestOf(tableBucketArn, namespace, builder))
 
 /** namespace에 Iceberg table을 생성합니다. */
 suspend fun S3TablesClient.createTable(
@@ -110,7 +117,8 @@ suspend fun S3TablesClient.createTable(
     name: String,
     format: OpenTableFormat = OpenTableFormat.Iceberg,
     builder: CreateTableRequest.Builder.() -> Unit = {},
-): CreateTableResponse = createTable(createTableRequestOf(tableBucketArn, namespace, name, format, builder))
+): CreateTableResponse =
+    createTable(createTableRequestOf(tableBucketArn, namespace, name, format, builder))
 
 /** table 목록을 한 페이지 조회합니다. [namespace]는 선택적 필터입니다. */
 suspend fun S3TablesClient.listTables(
@@ -120,9 +128,10 @@ suspend fun S3TablesClient.listTables(
     continuationToken: String? = null,
     maxTables: Int? = null,
     builder: ListTablesRequest.Builder.() -> Unit = {},
-): ListTablesResponse = listTables(
-    listTablesRequestOf(tableBucketArn, namespace, prefix, continuationToken, maxTables, builder),
-)
+): ListTablesResponse =
+    listTables(
+        listTablesRequestOf(tableBucketArn, namespace, prefix, continuationToken, maxTables, builder),
+    )
 
 /** table ARN 또는 table bucket/namespace/name selector로 table을 조회합니다. */
 suspend fun S3TablesClient.getTable(
@@ -131,7 +140,8 @@ suspend fun S3TablesClient.getTable(
     name: String? = null,
     tableArn: String? = null,
     builder: GetTableRequest.Builder.() -> Unit = {},
-): GetTableResponse = getTable(getTableRequestOf(tableBucketArn, namespace, name, tableArn, builder))
+): GetTableResponse =
+    getTable(getTableRequestOf(tableBucketArn, namespace, name, tableArn, builder))
 
 /** table bucket/namespace/name으로 table을 삭제합니다. */
 suspend fun S3TablesClient.deleteTable(
@@ -140,4 +150,5 @@ suspend fun S3TablesClient.deleteTable(
     name: String,
     versionToken: String? = null,
     builder: DeleteTableRequest.Builder.() -> Unit = {},
-): DeleteTableResponse = deleteTable(deleteTableRequestOf(tableBucketArn, namespace, name, versionToken, builder))
+): DeleteTableResponse =
+    deleteTable(deleteTableRequestOf(tableBucketArn, namespace, name, versionToken, builder))

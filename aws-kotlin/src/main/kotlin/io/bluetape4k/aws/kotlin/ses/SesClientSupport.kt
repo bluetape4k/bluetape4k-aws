@@ -30,14 +30,15 @@ inline fun sesClientOf(
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
     crossinline builder: SesClient.Config.Builder.() -> Unit = {},
-): SesClient = SesClient {
-    endpointUrl?.let { this.endpointUrl = it }
-    region?.let { this.region = it }
-    credentialsProvider?.let { this.credentialsProvider = it }
-    httpClient?.let { this.httpClient = it }
+): SesClient =
+    SesClient {
+        endpointUrl?.let { this.endpointUrl = it }
+        region?.let { this.region = it }
+        credentialsProvider?.let { this.credentialsProvider = it }
+        httpClient?.let { this.httpClient = it }
 
-    builder()
-}
+        builder()
+    }
 
 /**
  * [SesClient]를 생성하고 [block]을 실행한 뒤 client를 자동으로 닫습니다.
@@ -52,15 +53,16 @@ inline fun sesClientOf(
  *
  * @param block client로 실행할 suspend 블록입니다. AWS SDK 작업이 suspend 함수이므로 이 블록도 suspend입니다.
  */
-suspend fun <R> withSesClient(
+suspend inline fun <R> withSesClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (SesClient) -> R,
-): R = withSesClient(
-    clientFactory = { sesClientOf(endpointUrl, region, credentialsProvider) },
-    block = block,
-)
+): R =
+    withSesClient(
+        clientFactory = { sesClientOf(endpointUrl, region, credentialsProvider) },
+        block = block,
+    )
 
 /**
  * [clientFactory]가 생성한 client로 블록을 실행하고 정상 반환, 실패, coroutine 취소 시 client를 닫습니다.
@@ -68,9 +70,10 @@ suspend fun <R> withSesClient(
  * 이 내부 seam은 public helper가 동일한 소유권 경로를 사용하도록 유지하면서
  * 네트워크 I/O 없이 client 수명 주기를 결정적으로 회귀 테스트할 수 있게 합니다.
  */
-internal suspend fun <R> withSesClient(
+suspend inline fun <R> withSesClient(
     clientFactory: () -> SesClient,
     block: suspend (SesClient) -> R,
-): R = clientFactory().useSafe { client ->
-    block(client)
-}
+): R =
+    clientFactory().useSafe { client ->
+        block(client)
+    }

@@ -4,8 +4,10 @@ import aws.sdk.kotlin.services.bedrockruntime.BedrockRuntimeClient
 import aws.sdk.kotlin.services.bedrockruntime.model.ConverseRequest
 import aws.sdk.kotlin.services.bedrockruntime.model.ConverseResponse
 import aws.smithy.kotlin.runtime.ServiceException
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.aws.kotlin.bedrock.model.userMessageOf
+import io.bluetape4k.logging.KLogging
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,9 +19,10 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import io.bluetape4k.assertions.assertFailsWith
 
 class BedrockRuntimeClientExtensionsTest {
+
+    companion object: KLogging()
 
     private val client = mockk<BedrockRuntimeClient>()
 
@@ -33,7 +36,10 @@ class BedrockRuntimeClientExtensionsTest {
         val expected = mockk<ConverseResponse>()
         coEvery { client.converse(any<ConverseRequest>()) } returns expected
 
-        client.converse("model-id", listOf(userMessageOf("hello"))) shouldBeSameInstanceAs expected
+        client.converse(
+            "model-id",
+            listOf(userMessageOf("hello"))
+        ) shouldBeSameInstanceAs expected
 
         coVerify(exactly = 1) { client.converse(any<ConverseRequest>()) }
     }

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class SesV2ClientSupportTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `sesV2ClientOf는 null endpoint로 클라이언트를 생성한다`() {

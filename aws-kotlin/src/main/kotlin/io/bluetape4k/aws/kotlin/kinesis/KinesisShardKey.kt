@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
+import io.bluetape4k.support.requireLe
 import io.bluetape4k.support.requireNotBlank
 import java.io.ObjectInputStream
 import java.io.Serializable
@@ -16,23 +17,22 @@ data class KinesisShardKey(
     val streamIdentity: String,
     val consumerGroup: String,
     val shardId: String,
-) : Serializable {
+): Serializable {
 
     /** store adapter가 사용할 수 있는 deterministic tuple 표현입니다. */
     val canonicalValue: String = canonicalize(streamIdentity, consumerGroup, shardId)
 
     init {
-        streamIdentity.validateIdentifier("streamIdentity", MAX_IDENTIFIER_LENGTH)
-        consumerGroup.validateIdentifier("consumerGroup", MAX_IDENTIFIER_LENGTH)
-        shardId.validateIdentifier("shardId", MAX_IDENTIFIER_LENGTH)
-        require(canonicalValue == canonicalize(streamIdentity, consumerGroup, shardId)) {
-            "canonicalValue does not match shard key components"
-        }
+        validate()
     }
 
     @Suppress("UnusedPrivateMember")
     private fun readObject(stream: ObjectInputStream) {
         stream.defaultReadObject()
+        validate()
+    }
+
+    private fun validate() {
         streamIdentity.validateIdentifier("streamIdentity", MAX_IDENTIFIER_LENGTH)
         consumerGroup.validateIdentifier("consumerGroup", MAX_IDENTIFIER_LENGTH)
         shardId.validateIdentifier("shardId", MAX_IDENTIFIER_LENGTH)
@@ -58,13 +58,8 @@ data class KinesisShardKey(
 }
 
 /** caller 입력에 공통으로 적용하는 bounded identifier 검증입니다. */
-internal fun String.validateIdentifier(name: String, maxLength: Int): String {
-    requireNotBlank(name)
-    require(length <= maxLength) {
-        "$name length must be <= $maxLength, but was $length"
-    }
-    require(none { it.isISOControl() }) {
-        "$name must not contain control characters"
-    }
-    return this
+internal fun String.validateIdentifier(name: String, maxLength: Int): String = apply {
+    this.requireNotBlank(name)
+    this.length.requireLe(maxLength, "length")
+    require(none { it.isISOControl() }) { "$name must not contain control characters" }
 }

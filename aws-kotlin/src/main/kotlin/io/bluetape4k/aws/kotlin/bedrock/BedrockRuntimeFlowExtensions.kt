@@ -9,7 +9,6 @@ import io.bluetape4k.aws.kotlin.bedrock.model.converseStreamRequestOf
 import io.bluetape4k.aws.kotlin.bedrock.model.textDeltaOrNull
 import io.bluetape4k.coroutines.flow.extensions.castNotNull
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
@@ -23,12 +22,11 @@ import kotlinx.coroutines.flow.map
  */
 fun BedrockRuntimeClient.converseStreamFlow(
     request: ConverseStreamRequest,
-): Flow<ConverseStreamOutput> =
-    flow {
-        converseStream(request) { response ->
-            response.stream?.collect { emit(it) }
-        }
+): Flow<ConverseStreamOutput> = flow {
+    converseStream(request) { response ->
+        response.stream?.collect { emit(it) }
     }
+}
 
 /**
  * 모델에 종속되지 않는 Bedrock 네이티브 스트리밍 요청용 콜드 Flow를 반환합니다.
@@ -37,11 +35,11 @@ fun BedrockRuntimeClient.converseStreamFlow(
  * 네이티브 이벤트 순서, SDK 실패, 구조화된 취소를 보존합니다. 이 클라이언트는 호출자가 소유합니다.
  * [withBedrockRuntimeClient]를 사용할 때는 클라이언트가 닫히기 전에 범위 블록 안에서 최종 수집을 완료해야 합니다.
  */
-inline fun BedrockRuntimeClient.converseStreamFlow(
+fun BedrockRuntimeClient.converseStreamFlow(
     modelId: String,
     messages: Collection<Message>,
     inferenceConfig: InferenceConfiguration? = null,
-    crossinline builder: ConverseStreamRequest.Builder.() -> Unit = {},
+    builder: ConverseStreamRequest.Builder.() -> Unit = {},
 ): Flow<ConverseStreamOutput> =
     converseStreamFlow(
         converseStreamRequestOf(

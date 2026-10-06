@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.lambda
 
+import io.bluetape4k.support.hashOf
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
 import java.util.*
 
@@ -32,6 +33,19 @@ data class LambdaInvocationResult<T>(
     /** 함수 실행 오류 문자열이 blank가 아닌지 나타냅니다. */
     val hasFunctionError: Boolean
         get() = !functionError.isNullOrBlank()
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (this === other) return true
+        if (other !is LambdaInvocationResult<*>) return false
+
+        return response == other.response &&
+                value == other.value &&
+                payload.contentEquals(other.payload) &&
+                logTail == other.logTail
+    }
+
+    override fun hashCode(): Int = hashOf(response, value, payload.contentHashCode(), logTail)
 }
 
 /** SDK response를 codec 기반 [LambdaInvocationResult]로 변환합니다. */

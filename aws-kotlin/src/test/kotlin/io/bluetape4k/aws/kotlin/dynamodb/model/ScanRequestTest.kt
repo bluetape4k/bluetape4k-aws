@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class ScanRequestTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `scanRequestOf AttributeValue 오버로드로 tableName으로 요청을 생성한다`() {
