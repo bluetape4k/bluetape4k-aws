@@ -61,6 +61,23 @@ class PublishingSigningSupportTest {
     }
 
     @Test
+    fun `removes identical managed dependencies when child fields are reordered`() {
+        val reordered = Node(null, "dependency").apply {
+            appendNode("version", "2.2.20")
+            appendNode("artifactId", "kotlin-stdlib")
+            appendNode("groupId", "org.jetbrains.kotlin")
+        }
+        val pom = pomWithManagedDependencies(
+            managedDependency("org.jetbrains.kotlin", "kotlin-stdlib", "2.2.20"),
+            reordered,
+        )
+
+        normalizeMavenDependencyManagement(pom)
+
+        assertEquals(1, managedDependencies(pom).size)
+    }
+
+    @Test
     fun `fails when managed dependencies share a key but differ`() {
         val pom = pomWithManagedDependencies(
             managedDependency("org.jetbrains.kotlin", "kotlin-stdlib", "2.2.20"),

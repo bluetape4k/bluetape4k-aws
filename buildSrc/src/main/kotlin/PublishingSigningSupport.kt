@@ -138,7 +138,9 @@ private fun Node.fingerprint(): String {
     val attributes = attributes().toString()
     val childrenFingerprint = children()
         .filterIsInstance<Node>()
-        .joinToString("|") { it.fingerprint() }
+        .map { it.fingerprint() }
+        .sorted()
+        .joinToString("|")
     val value = if (children().filterIsInstance<Node>().isEmpty()) {
         value()?.toString()?.trim().orEmpty()
     } else {
