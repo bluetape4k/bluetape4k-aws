@@ -15,8 +15,8 @@ import aws.sdk.kotlin.services.dynamodb.paginators.scanPaginated
 import aws.sdk.kotlin.services.dynamodb.putItem
 import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemMapper
 import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemReader
+import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 
 /**
@@ -35,7 +35,7 @@ class DynamoDbKtorRepository<T: Any, K: Any>(
     private val keyMapper: DynamoItemMapper<K>,
 ) {
     init {
-        require(tableName.isNotBlank()) { "tableName must not be blank." }
+        tableName.requireNotBlank("tableName")
     }
 
     /**

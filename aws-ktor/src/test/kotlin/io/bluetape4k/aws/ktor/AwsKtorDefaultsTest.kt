@@ -10,8 +10,10 @@ import aws.smithy.kotlin.runtime.http.request.HttpRequest
 import aws.smithy.kotlin.runtime.operation.ExecutionContext
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
-import io.ktor.http.Url
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.ktor.client.HttpClientConfig
+import io.ktor.http.Url
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -22,6 +24,13 @@ import kotlin.coroutines.CoroutineContext
 
 class AwsKtorDefaultsTest {
 
+    private companion object: KLogging() {
+        const val JAVA_CREDENTIAL_SECRET = "java-credential-secret"
+        const val KOTLIN_CREDENTIAL_SECRET = "kotlin-credential-secret"
+        const val CUSTOMIZER_SECRET = "customizer-secret"
+        const val HTTP_ENGINE_SECRET = "http-engine-secret"
+    }
+
     @Test
     fun `toString hides endpoint user info query and path`() {
         val defaults = AwsKtorDefaults(
@@ -30,9 +39,9 @@ class AwsKtorDefaultsTest {
                 "https://endpoint-user:endpoint-password@example.com/private-path?token=endpoint-token",
             ),
         )
+        log.debug { "defaults=$defaults" }
 
         val text = defaults.toString()
-
         text shouldNotContain "endpoint-user"
         text shouldNotContain "endpoint-password"
         text shouldNotContain "private-path"
@@ -47,10 +56,13 @@ class AwsKtorDefaultsTest {
 
         val text = fixture.defaults.toString()
 
+        log.debug { "text=$text" }
         text shouldNotContain JAVA_CREDENTIAL_SECRET
         text shouldNotContain KOTLIN_CREDENTIAL_SECRET
         text shouldNotContain CUSTOMIZER_SECRET
         text shouldNotContain HTTP_ENGINE_SECRET
+
+        log.debug { "fixture.defaults=${fixture.defaults}" }
         fixture.assertNoCollaboratorToStringCalls()
         fixture.defaults shouldBeEqualTo equivalent
         fixture.defaults.hashCode() shouldBeEqualTo equivalent.hashCode()
@@ -62,10 +74,12 @@ class AwsKtorDefaultsTest {
 
         val text = fixture.defaults.toString(limit = 1)
 
+        log.debug { "text=$text" }
         text shouldNotContain JAVA_CREDENTIAL_SECRET
         text shouldNotContain KOTLIN_CREDENTIAL_SECRET
         text shouldNotContain CUSTOMIZER_SECRET
         text shouldNotContain HTTP_ENGINE_SECRET
+
         fixture.assertNoCollaboratorToStringCalls()
     }
 
@@ -108,7 +122,7 @@ class AwsKtorDefaultsTest {
         }
     }
 
-    private class SecretJavaCredentialsProvider : AwsCredentialsProvider {
+    private class SecretJavaCredentialsProvider: AwsCredentialsProvider {
         val toStringCalls = AtomicInteger()
 
         override fun resolveCredentials(): AwsCredentials =
@@ -120,7 +134,7 @@ class AwsKtorDefaultsTest {
         }
     }
 
-    private class SecretKotlinCredentialsProvider : CredentialsProvider {
+    private class SecretKotlinCredentialsProvider: CredentialsProvider {
         val toStringCalls = AtomicInteger()
 
         override suspend fun resolve(attributes: Attributes): Credentials = error("unused")
@@ -131,7 +145,7 @@ class AwsKtorDefaultsTest {
         }
     }
 
-    private class SecretHttpClientCustomizer : AwsKtorHttpClientCustomizer {
+    private class SecretHttpClientCustomizer: AwsKtorHttpClientCustomizer {
         val toStringCalls = AtomicInteger()
 
         override fun customize(config: HttpClientConfig<*>) = Unit
@@ -142,7 +156,7 @@ class AwsKtorDefaultsTest {
         }
     }
 
-    private class SecretHttpClientEngine : HttpClientEngine {
+    private class SecretHttpClientEngine: HttpClientEngine {
         val toStringCalls = AtomicInteger()
 
         override val coroutineContext: CoroutineContext = Dispatchers.Unconfined
@@ -155,12 +169,5 @@ class AwsKtorDefaultsTest {
             toStringCalls.incrementAndGet()
             return HTTP_ENGINE_SECRET
         }
-    }
-
-    private companion object {
-        const val JAVA_CREDENTIAL_SECRET = "java-credential-secret"
-        const val KOTLIN_CREDENTIAL_SECRET = "kotlin-credential-secret"
-        const val CUSTOMIZER_SECRET = "customizer-secret"
-        const val HTTP_ENGINE_SECRET = "http-engine-secret"
     }
 }

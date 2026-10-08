@@ -7,9 +7,12 @@ import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
-import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.kotlin.http.HttpClientEngineProvider
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
+import java.io.Serializable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -112,17 +115,21 @@ class DynamoDbKtorPluginConfig {
 /**
  * [DynamoDbKtorRuntime]이 사용하는 명시적 DynamoDB 테이블 정의입니다.
  */
-class DynamoDbKtorTableDefinition(
+data class DynamoDbKtorTableDefinition(
     val tableName: String,
     val keySchema: List<KeySchemaElement>,
     val attributeDefinitions: List<AttributeDefinition>,
     val readCapacityUnits: Long? = null,
     val writeCapacityUnits: Long? = null,
     val createTable: CreateTableRequest.Builder.() -> Unit = {},
-) {
+): Serializable {
     init {
-        require(tableName.isNotBlank()) { "tableName must not be blank." }
-        require(keySchema.isNotEmpty()) { "keySchema must not be empty." }
-        require(attributeDefinitions.isNotEmpty()) { "attributeDefinitions must not be empty." }
+        tableName.requireNotBlank("tableName")
+        keySchema.requireNotEmpty("keySchema")
+        attributeDefinitions.requireNotEmpty("attributeDefinitions")
+    }
+
+    companion object {
+        private const val serialVersionUID = 1L
     }
 }

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sns
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSnsAsyncClientCustomizer
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -86,6 +87,18 @@ class SnsKtorPluginConfig {
 
         return builder.build()
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("snsAsyncClient", snsAsyncClient)
+            .add("snsOperations", snsOperations)
+            .add("snsHttpMessageParser", snsHttpMessageParser)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .add("topics", topics)
+            .toString()
 }
 
 /**

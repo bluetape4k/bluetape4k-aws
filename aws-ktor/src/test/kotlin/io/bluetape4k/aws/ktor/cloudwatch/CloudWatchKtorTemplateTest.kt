@@ -64,7 +64,7 @@ class CloudWatchKtorTemplateTest {
     @Test
     fun `default namespace is required only for default namespace methods`() = runSuspendIO {
         every { client.putMetricData(any<Consumer<PutMetricDataRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(PutMetricDataResponse.builder().build())
+                CompletableFuture.completedFuture(PutMetricDataResponse.builder().build())
         val operations = CloudWatchKtorTemplate(client)
 
         assertFailsWith<IllegalArgumentException> {

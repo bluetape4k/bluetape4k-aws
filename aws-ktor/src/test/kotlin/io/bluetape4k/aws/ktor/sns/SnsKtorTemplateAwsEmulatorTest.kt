@@ -6,6 +6,8 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldEndWith
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
@@ -14,10 +16,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sns.SnsAsyncClient
-import java.util.UUID
+import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnsKtorTemplateAwsEmulatorTest {
+
+    companion object: KLoggingChannel()
 
     private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("sns") }
 
@@ -28,6 +32,7 @@ class SnsKtorTemplateAwsEmulatorTest {
             val topicName = "ktor-standard-${UUID.randomUUID()}"
             val topicArn = operations.createTopic(topicName)
 
+            log.debug { "topicArn=$topicArn" }
             topicArn shouldEndWith ":$topicName"
             operations.findTopicArn(topicName) shouldBeEqualTo topicArn
 
@@ -38,6 +43,8 @@ class SnsKtorTemplateAwsEmulatorTest {
                     message = "hello ktor sns",
                 )
             )
+
+            log.debug { "published=$published" }
             published.messageId().shouldNotBeBlank()
         }
     }
@@ -56,6 +63,7 @@ class SnsKtorTemplateAwsEmulatorTest {
 
             val topicArn = operations.createConfiguredTopic("ktor-configured")
 
+            log.debug { "topicArn=$topicArn" }
             topicArn shouldEndWith ":ktor-configured"
             operations.findTopicArn("ktor-configured") shouldBeEqualTo topicArn
         }

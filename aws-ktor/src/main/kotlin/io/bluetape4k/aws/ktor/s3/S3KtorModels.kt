@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor.s3
 
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.support.hashOf
 import io.ktor.http.Headers
 import io.ktor.http.Url
 import io.ktor.utils.io.ByteReadChannel
@@ -100,12 +102,14 @@ data class S3KtorGetObjectResponse(
     val contentLength: Long?,
     val metadata: Map<String, String>,
     val headers: Headers,
-) : Serializable {
+): Serializable {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        other as S3KtorGetObjectResponse
-        return bytes.contentEquals(other.bytes) &&
+        if (other == null) return false
+
+        return other is S3KtorGetObjectResponse &&
+                bytes.contentEquals(other.bytes) &&
                 eTag == other.eTag &&
                 contentType == other.contentType &&
                 contentLength == other.contentLength &&
@@ -113,15 +117,18 @@ data class S3KtorGetObjectResponse(
                 headers == other.headers
     }
 
-    override fun hashCode(): Int {
-        var result = bytes.contentHashCode()
-        result = 31 * result + (eTag?.hashCode() ?: 0)
-        result = 31 * result + (contentType?.hashCode() ?: 0)
-        result = 31 * result + (contentLength?.hashCode() ?: 0)
-        result = 31 * result + metadata.hashCode()
-        result = 31 * result + headers.hashCode()
-        return result
-    }
+    override fun hashCode(): Int =
+        hashOf(bytes.contentHashCode(), eTag, contentType, contentLength, metadata, headers)
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("eTag", eTag)
+            .add("contentType", contentType)
+            .add("contentLength", contentLength)
+            .add("metadata", metadata)
+            .add("headers", headers)
+            .add("bytes", bytes.contentToString())
+            .toString()
 
     companion object {
         private const val serialVersionUID: Long = 1L

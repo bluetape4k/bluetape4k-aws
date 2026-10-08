@@ -1,12 +1,14 @@
 package io.bluetape4k.aws.ktor.s3
 
+import io.bluetape4k.codec.encodeBase64String
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
 import java.net.URLConnection
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.util.Base64
+import java.util.*
 
 private const val DEFAULT_BINARY_CONTENT_TYPE = "application/octet-stream"
 
@@ -29,6 +31,7 @@ sealed interface S3KtorServerSideEncryption: Serializable {
      * S3 관리형 서버 측 암호화(`AES256`)입니다.
      */
     data object S3Managed: S3KtorServerSideEncryption {
+        private fun readResolve(): Any = S3Managed
         private const val serialVersionUID: Long = 1L
 
         override fun headers(): Map<String, String> =
@@ -144,15 +147,20 @@ data class S3KtorConfigObject(
 
 private fun ByteArray.md5Base64(): String {
     val digest = MessageDigest.getInstance("MD5").digest(this)
-    return Base64.getEncoder().encodeToString(digest)
+    return digest.encodeBase64String()
 }
 
+// TODO: escape json 기능은 bluetape4k-json 모듈에서 제공하도록 하자
 private fun Map<String, String>.toBase64Json(): String =
-    entries.sortedBy { it.key }.joinToString(prefix = "{", postfix = "}") { (key, value) ->
-        "\"${key.escapeJson()}\":\"${value.escapeJson()}\""
-    }.toByteArray(StandardCharsets.UTF_8)
-        .let(Base64.getEncoder()::encodeToString)
+    entries
+        .sortedBy { it.key }
+        .joinToString(prefix = "{", postfix = "}") { (key, value) ->
+            "\"${key.escapeJson()}\":\"${value.escapeJson()}\""
+        }
+        .toUtf8Bytes()
+        .encodeBase64String()
 
+// TODO: escape json 기능은 bluetape4k-json 모듈에서 제공하도록 하자 
 private fun String.escapeJson(): String =
     buildString(length + 8) {
         this@escapeJson.forEach { ch ->

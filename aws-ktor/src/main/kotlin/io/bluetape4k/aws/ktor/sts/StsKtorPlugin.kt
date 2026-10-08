@@ -29,6 +29,7 @@ val StsKtorPlugin: ApplicationPlugin<StsKtorPluginConfig> = createApplicationPlu
     createConfiguration = ::StsKtorPluginConfig,
 ) {
     val runtime = pluginConfig.toRuntime(application.awsKtorDefaults())
+
     if (runtime != null) {
         application.attributes.put(StsKtorRuntimeKey, runtime)
         application.attributes.put(StsKtorOperationsKey, runtime.operations)

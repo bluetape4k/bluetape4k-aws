@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor.kinesis
 
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
@@ -127,12 +129,12 @@ data class KinesisRecordFlowOptions(
 
         const val MAX_KINESIS_BATCH_LIMIT: Int = 10_000
         const val DEFAULT_BATCH_LIMIT: Int = 100
-        val DEFAULT_POLL_INTERVAL: Duration = Duration.ofMillis(200)
-        val DEFAULT_EMPTY_BACKOFF: Duration = Duration.ofSeconds(1)
+        val DEFAULT_POLL_INTERVAL: Duration = 200.millis()
+        val DEFAULT_EMPTY_BACKOFF: Duration = 1.seconds()
         const val DEFAULT_MAX_ITERATOR_RETRIES: Int = 3
         const val DEFAULT_MAX_THROTTLE_RETRIES: Int = 5
-        val DEFAULT_INITIAL_THROTTLE_BACKOFF: Duration = Duration.ofMillis(500)
-        val DEFAULT_MAX_THROTTLE_BACKOFF: Duration = Duration.ofSeconds(30)
+        val DEFAULT_INITIAL_THROTTLE_BACKOFF: Duration = 500.millis()
+        val DEFAULT_MAX_THROTTLE_BACKOFF: Duration = 30.seconds() 
         const val DEFAULT_JITTER_RATIO: Double = 1.0
     }
 }
@@ -140,22 +142,22 @@ data class KinesisRecordFlowOptions(
 /**
  * Kinesis 샤드 반복자의 시작 위치입니다.
  */
-sealed interface KinesisStartingPosition : Serializable {
+sealed interface KinesisStartingPosition: Serializable {
 
     /** 샤드에서 사용할 수 있는 가장 오래된 레코드부터 읽습니다. */
-    data object TrimHorizon : KinesisStartingPosition {
+    data object TrimHorizon: KinesisStartingPosition {
         private const val serialVersionUID: Long = -5888197472956153464L
         private fun readResolve(): Any = TrimHorizon
     }
 
     /** 반복자를 가져온 뒤 작성된 레코드를 읽습니다. */
-    data object Latest : KinesisStartingPosition {
+    data object Latest: KinesisStartingPosition {
         private const val serialVersionUID: Long = -6388982200191080402L
         private fun readResolve(): Any = Latest
     }
 
     /** [sequenceNumber]에 해당하는 레코드부터 읽습니다. */
-    data class AtSequenceNumber(val sequenceNumber: String) : KinesisStartingPosition {
+    data class AtSequenceNumber(val sequenceNumber: String): KinesisStartingPosition {
 
         init {
             sequenceNumber.requireNotBlank("sequenceNumber")
@@ -173,7 +175,7 @@ sealed interface KinesisStartingPosition : Serializable {
     }
 
     /** [sequenceNumber] 다음 레코드부터 읽습니다. */
-    data class AfterSequenceNumber(val sequenceNumber: String) : KinesisStartingPosition {
+    data class AfterSequenceNumber(val sequenceNumber: String): KinesisStartingPosition {
 
         init {
             sequenceNumber.requireNotBlank("sequenceNumber")
@@ -191,7 +193,7 @@ sealed interface KinesisStartingPosition : Serializable {
     }
 
     /** [timestamp] 이후의 레코드를 해당 시각을 포함해 읽습니다. */
-    data class AtTimestamp(val timestamp: Instant) : KinesisStartingPosition {
+    data class AtTimestamp(val timestamp: Instant): KinesisStartingPosition {
         companion object {
             private const val serialVersionUID: Long = 1523906536953919234L
         }

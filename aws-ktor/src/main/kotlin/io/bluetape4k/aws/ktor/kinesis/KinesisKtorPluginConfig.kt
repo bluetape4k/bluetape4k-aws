@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.kinesis
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorKinesisAsyncClientCustomizer
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -80,4 +81,15 @@ class KinesisKtorPluginConfig {
 
         return builder.build()
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("kinesisAsyncClient", kinesisAsyncClient)
+            .add("kinesisOperations", kinesisOperations)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .add("streams", streams)
+            .toString()
 }

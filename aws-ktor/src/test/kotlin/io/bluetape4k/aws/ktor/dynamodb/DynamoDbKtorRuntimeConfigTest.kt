@@ -5,10 +5,10 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.aws.ktor.AwsKtorDefaults
-import io.bluetape4k.aws.ktor.AwsKtorDynamoDbClientCustomizer
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
+import io.bluetape4k.aws.ktor.AwsKtorDefaults
+import io.bluetape4k.aws.ktor.AwsKtorDynamoDbClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.ktor.core.ApplicationResourceRegistryState

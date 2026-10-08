@@ -56,8 +56,7 @@ val AwsExposedPlugin: ApplicationPlugin<AwsExposedPluginConfig> = createApplicat
  * @throws IllegalStateException [AwsExposedPlugin]이 설치되지 않은 경우
  */
 fun Application.awsExposed(): AwsExposedKtorRuntime =
-    attributes.getOrNull(AwsExposedKtorRuntimeKey)
-        ?: throw IllegalStateException("AwsExposedPlugin is not installed.")
+    attributes.getOrNull(AwsExposedKtorRuntimeKey) ?: error("AwsExposedPlugin is not installed.")
 
 /**
  * 이 호출에 대해 [AwsExposedPlugin]이 설치한 런타임을 반환합니다.

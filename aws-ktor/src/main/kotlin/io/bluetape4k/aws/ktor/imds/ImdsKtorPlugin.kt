@@ -42,7 +42,7 @@ val ImdsKtorPlugin: ApplicationPlugin<ImdsKtorPluginConfig> = createApplicationP
  * @throws IllegalStateException [ImdsKtorPlugin]이 없거나 비활성화된 경우
  */
 fun Application.imds(): ImdsKtorOperations =
-    imdsOrNull() ?: throw IllegalStateException("ImdsKtorPlugin is not installed or is disabled.")
+    imdsOrNull() ?: error("ImdsKtorPlugin is not installed or is disabled.")
 
 /**
  * [ImdsKtorPlugin]이 설치한 IMDS 작업을 반환합니다. 플러그인이 없거나 비활성화되었으면 null을 반환합니다.

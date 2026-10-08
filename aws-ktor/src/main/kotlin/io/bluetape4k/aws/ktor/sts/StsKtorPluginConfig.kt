@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sts
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorStsAsyncClientCustomizer
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -17,22 +18,22 @@ import java.net.URI
  */
 class StsKtorPluginConfig {
 
-/** Ktor STS 런타임 등록을 활성화합니다. */
+    /** Ktor STS 런타임 등록을 활성화합니다. */
     var enabled: Boolean = true
 
-/** 애플리케이션이 소유하는 선택적인 AWS SDK v2 STS 비동기 클라이언트입니다. */
+    /** 애플리케이션이 소유하는 선택적인 AWS SDK v2 STS 비동기 클라이언트입니다. */
     var stsAsyncClient: StsAsyncClient? = null
 
-/** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
+    /** 애플리케이션이 소유하는 선택적인 작업 파사드입니다. */
     var stsOperations: StsKtorOperations? = null
 
-/** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 STS 리전입니다. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 STS 리전입니다. */
     var region: String? = null
 
-/** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 STS 엔드포인트 재정의입니다. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 STS 엔드포인트 재정의입니다. */
     var endpointOverride: URI? = null
 
-/** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
+    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
     var credentialsProvider: AwsCredentialsProvider? = null
 
     private val clientCustomizers = mutableListOf<AwsKtorStsAsyncClientCustomizer>()
@@ -77,4 +78,14 @@ class StsKtorPluginConfig {
 
         return builder.build()
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("stsAsyncClient", stsAsyncClient)
+            .add("stsOperations", stsOperations)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .toString()
 }

@@ -17,6 +17,8 @@ import io.bluetape4k.aws.exposed.AwsSecretString
 import io.bluetape4k.aws.exposed.NoopAwsDatabaseSettingsResolver
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.core.HealthResponse
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
@@ -30,7 +32,7 @@ import io.ktor.server.testing.testApplication
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -40,7 +42,7 @@ import org.junit.jupiter.api.TestInstance
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.SQLException
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
 import javax.sql.DataSource
@@ -51,13 +53,20 @@ import kotlin.time.Duration.Companion.seconds
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AwsExposedPluginTest {
 
+    private companion object: KLoggingChannel() {
+        private const val H2_DRIVER = "org.h2.Driver"
+        private const val SENTINEL_SECRET = "sentinel-secret"
+        private const val SENSITIVE_JDBC_ERROR =
+            "jdbc:h2:mem:secret password=top-secret SELECT payments"
+    }
+
     @Test
     fun `application helper fails before plugin install`() = testApplication {
         application {
             val error = assertFailsWith<IllegalStateException> {
                 awsExposed()
             }
-
+            log.debug { "error=${error.message}" }
             error.message shouldContain "not installed"
         }
     }
@@ -69,7 +78,7 @@ class AwsExposedPluginTest {
         val error = assertFailsWith<IllegalStateException> {
             runtime.registry
         }
-
+        log.debug { "error=${error.message}" }
         error.message shouldContain "not started"
     }
 
@@ -152,12 +161,15 @@ class AwsExposedPluginTest {
         startApplication()
 
         val health = client.get("/healthz/exposed")
+        log.debug { "health=$health" }
         health.status shouldBeEqualTo HttpStatusCode.OK
         health.bodyAsText() shouldContain "\"status\":\"${HealthResponse.UP}\""
 
         val readiness = client.get("/readyz/exposed")
+        log.debug { "readiness=$readiness" }
         readiness.status shouldBeEqualTo HttpStatusCode.OK
         readiness.bodyAsText() shouldContain "\"jdbc\":\"${HealthResponse.UP}\""
+
         meterRegistry.find("bluetape4k.exposed.ktor.core.readiness")
             .tag("backend", "jdbc")
             .tag("operation", "readiness")
@@ -183,10 +195,14 @@ class AwsExposedPluginTest {
         startApplication()
 
         val response = client.get("/readyz/exposed")
+        log.debug { "response=$response" }
         response.status shouldBeEqualTo HttpStatusCode.ServiceUnavailable
+
         val body = response.bodyAsText()
+        log.debug { "body=$body" }
         body shouldContain "\"jdbc\":\"${HealthResponse.DOWN}\""
         body shouldNotContain SENSITIVE_JDBC_ERROR
+
         meterRegistry.find("bluetape4k.exposed.ktor.core.readiness")
             .tag("backend", "jdbc")
             .tag("operation", "readiness")
@@ -267,8 +283,10 @@ class AwsExposedPluginTest {
         startApplication()
 
         val handle = application.awsExposedHandle()
+        log.debug { "handle=$handle" }
         handle.properties.password.toString() shouldBeEqualTo AwsSecretString.REDACTED
         handle.properties.toString() shouldNotContain SENTINEL_SECRET
+
         application.awsExposed().toString() shouldNotContain SENTINEL_SECRET
     }
 
@@ -292,6 +310,7 @@ class AwsExposedPluginTest {
             runtime.start()
         }
 
+        log.debug { "error=${error.message}" }
         error.message shouldContain "Timed out while starting"
     }
 
@@ -308,6 +327,7 @@ class AwsExposedPluginTest {
         val error = assertFailsWith<IllegalStateException> {
             runtime.registry
         }
+        log.debug { "error=${error.message}" }
         error.message shouldContain "not started"
     }
 
@@ -362,6 +382,7 @@ class AwsExposedPluginTest {
             }
         }
 
+        log.debug { "error=${error.message}" }
         error.message shouldContain "cannot be combined"
     }
 
@@ -373,6 +394,7 @@ class AwsExposedPluginTest {
             }.toRuntimeConfig()
         }
 
+        log.debug { "error=${error.message}" }
         error.message shouldContain "startTimeout"
     }
 
@@ -384,6 +406,7 @@ class AwsExposedPluginTest {
             }.toRuntimeConfig()
         }
 
+        log.debug { "error=${error.message}" }
         error.message shouldContain "stopTimeout"
     }
 
@@ -394,6 +417,7 @@ class AwsExposedPluginTest {
             stopTimeout = 1.milliseconds
         }.toRuntimeConfig()
 
+        log.debug { "config=${config}" }
         config.startTimeout shouldBeEqualTo 1.milliseconds
         config.stopTimeout shouldBeEqualTo 1.milliseconds
     }
@@ -448,18 +472,12 @@ class AwsExposedPluginTest {
     private fun h2Url(databaseName: String): String =
         "jdbc:h2:mem:$databaseName;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
 
-    private object RouteRows: Table("aws_exposed_ktor_route_rows") {
-        val id = integer("id").autoIncrement()
+    private object RouteRows: IntIdTable("aws_exposed_ktor_route_rows") {
         val name = varchar("name", 64)
-
-        override val primaryKey = PrimaryKey(id)
     }
 
-    private object RollbackRows: Table("aws_exposed_ktor_rollback_rows") {
-        val id = integer("id").autoIncrement()
+    private object RollbackRows: IntIdTable("aws_exposed_ktor_rollback_rows") {
         val name = varchar("name", 64)
-
-        override val primaryKey = PrimaryKey(id)
     }
 
     private open class CloseTrackingDataSource: DataSource, AutoCloseable {
@@ -506,12 +524,5 @@ class AwsExposedPluginTest {
 
         override fun getConnection(username: String?, password: String?): Connection =
             throw SQLException(SENSITIVE_JDBC_ERROR)
-    }
-
-    private companion object {
-        private const val H2_DRIVER = "org.h2.Driver"
-        private const val SENTINEL_SECRET = "sentinel-secret"
-        private const val SENSITIVE_JDBC_ERROR =
-            "jdbc:h2:mem:secret password=top-secret SELECT payments"
     }
 }

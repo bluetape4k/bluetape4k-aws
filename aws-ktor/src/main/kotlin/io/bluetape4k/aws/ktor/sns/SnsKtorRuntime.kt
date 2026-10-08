@@ -17,7 +17,6 @@ class SnsKtorRuntime(
     val parser: SnsHttpMessageParser = SnsHttpMessageParser.default(),
     private val ownedClient: SnsAsyncClient? = null,
 ) {
-
     companion object: KLoggingChannel()
 
     private val closed = atomic(false)

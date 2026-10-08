@@ -32,9 +32,7 @@ class ImdsKtorRuntime(
      */
     fun stop() {
         if (closed.compareAndSet(false, true)) {
-            ownedClient?.let { client ->
-                client.close()
-            }
+            ownedClient?.close()
         }
     }
 }

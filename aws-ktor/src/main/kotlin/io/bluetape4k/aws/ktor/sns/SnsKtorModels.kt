@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor.sns
 
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import java.io.Serializable
 import java.net.URI
@@ -44,16 +46,14 @@ data class SnsPublishRequest(
 ): Serializable {
     init {
         topicArn.requireTopicArn()
-        require(message.isNotBlank()) { "message must not be blank." }
-        subject?.let { require(it.isNotBlank()) { "subject must not be blank." } }
-        messageGroupId?.let { require(it.isNotBlank()) { "messageGroupId must not be blank." } }
-        messageDeduplicationId?.let { require(it.isNotBlank()) { "messageDeduplicationId must not be blank." } }
+        message.requireNotBlank("message")
+        subject?.requireNotBlank("subject")
+        messageGroupId?.requireNotBlank("messageGroupId")
+        messageDeduplicationId?.requireNotBlank("messageDeduplicationId")
 
         val fifo = topicArn.endsWith(".fifo")
         if (fifo) {
-            require(!messageGroupId.isNullOrBlank()) {
-                "messageGroupId is required for FIFO topic."
-            }
+            messageGroupId.requireNotBlank("messageGroupId")
         } else {
             require(messageGroupId == null && messageDeduplicationId == null) {
                 "messageGroupId and messageDeduplicationId are not allowed for standard topic."
@@ -87,13 +87,13 @@ data class SnsSmsRequest(
 ): Serializable {
 
     init {
-        require(phoneNumber.isNotBlank()) { "phoneNumber must not be blank." }
-        require(message.isNotBlank()) { "message must not be blank." }
-        senderId?.let { require(it.isNotBlank()) { "senderId must not be blank." } }
-        maxPrice?.let { require(it.isNotBlank()) { "maxPrice must not be blank." } }
-        originationNumber?.let { require(it.isNotBlank()) { "originationNumber must not be blank." } }
-        entityId?.let { require(it.isNotBlank()) { "entityId must not be blank." } }
-        templateId?.let { require(it.isNotBlank()) { "templateId must not be blank." } }
+        phoneNumber.requireNotBlank("phoneNumber")
+        message.requireNotBlank("message")
+        senderId?.requireNotBlank("senderId")
+        maxPrice?.requireNotBlank("maxPrice")
+        originationNumber?.requireNotBlank("originationNumber")
+        entityId?.requireNotBlank("entityId")
+        templateId?.requireNotBlank("templateId")
     }
 
     internal fun toMessageAttributes(): Map<String, MessageAttributeValue> =
@@ -186,13 +186,13 @@ data class SnsHttpMessage(
     /** 구독 확인 토큰을 전달할 수 있는 메시지 타입이면 true입니다. */
     val canConfirmSubscription: Boolean
         get() = type == SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION ||
-            type == SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
+                type == SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
 
     internal fun requireConfirmationToken(): String {
         require(canConfirmSubscription) {
             "SNS HTTP message type ${type.value} cannot confirm a subscription."
         }
-        return requireNotNull(token) {
+        return token.requireNotNull {
             "SNS HTTP confirmation message token must not be null."
         }
     }
@@ -226,9 +226,9 @@ class TrustedSnsHttpMessage private constructor(
 }
 
 internal fun String.requireTopicArn() {
-    require(isNotBlank()) { "topicArn must not be blank." }
+    requireNotBlank { "topicArn must not be blank." }
 }
 
 internal fun String.requireTopicName() {
-    require(isNotBlank()) { "topicName must not be blank." }
+    requireNotBlank { "topicName must not be blank." }
 }
