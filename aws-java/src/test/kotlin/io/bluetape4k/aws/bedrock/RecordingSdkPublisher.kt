@@ -3,13 +3,15 @@ package io.bluetape4k.aws.bedrock
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import software.amazon.awssdk.core.async.SdkPublisher
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 internal class RecordingSdkPublisher<T>(
     private val onSubscribed: () -> Unit = {},
     private val onCancelled: () -> Unit = {},
-) : SdkPublisher<T> {
+): SdkPublisher<T> {
 
-    private val lock = Any()
+    private val lock = ReentrantLock()
     private var subscriber: Subscriber<in T>? = null
     private var cancelled = false
     private var terminal = false
@@ -26,18 +28,18 @@ internal class RecordingSdkPublisher<T>(
         private set
 
     override fun subscribe(subscriber: Subscriber<in T>) {
-        synchronized(lock) {
+        lock.withLock {
             check(this.subscriber == null) { "RecordingSdkPublisher supports one subscriber" }
             this.subscriber = subscriber
         }
         subscriber.onSubscribe(
-            object : Subscription {
+            object: Subscription {
                 override fun request(n: Long) {
                     if (n <= 0) {
                         fail(IllegalArgumentException("Reactive Streams demand must be positive"))
                         return
                     }
-                    synchronized(lock) {
+                    lock.withLock {
                         if (cancelled || terminal) return
                         requests += n
                         outstanding += n
@@ -46,7 +48,7 @@ internal class RecordingSdkPublisher<T>(
                 }
 
                 override fun cancel() {
-                    val notifyCancelled = synchronized(lock) {
+                    val notifyCancelled = lock.withLock {
                         if (!cancelled) {
                             cancelled = true
                             cancelCount++
@@ -63,7 +65,7 @@ internal class RecordingSdkPublisher<T>(
     }
 
     fun emitOne(value: T): Boolean {
-        val target = synchronized(lock) {
+        val target = lock.withLock {
             if (cancelled || terminal || outstanding == 0L) return false
             outstanding--
             emitted += value
@@ -74,7 +76,7 @@ internal class RecordingSdkPublisher<T>(
     }
 
     fun complete() {
-        val target = synchronized(lock) {
+        val target = lock.withLock {
             if (cancelled || terminal) return
             terminal = true
             terminalCount++
@@ -84,7 +86,7 @@ internal class RecordingSdkPublisher<T>(
     }
 
     fun fail(cause: Throwable) {
-        val target = synchronized(lock) {
+        val target = lock.withLock {
             if (cancelled || terminal) return
             terminal = true
             terminalCount++
@@ -94,14 +96,14 @@ internal class RecordingSdkPublisher<T>(
     }
 
     fun adversarialNext(value: T) {
-        synchronized(lock) { subscriber }?.onNext(value)
+        lock.withLock { subscriber }?.onNext(value)
     }
 
     fun adversarialError(cause: Throwable) {
-        synchronized(lock) { subscriber }?.onError(cause)
+        lock.withLock { subscriber }?.onError(cause)
     }
 
     fun adversarialComplete() {
-        synchronized(lock) { subscriber }?.onComplete()
+        lock.withLock { subscriber }?.onComplete()
     }
 }

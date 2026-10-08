@@ -2,14 +2,23 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSqsAsyncClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.ktor.http.Url
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.during
+import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -21,11 +30,20 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeConfigTest {
 
+    companion object: KLogging()
+
     private val client = mockk<SqsAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `requires exactly one source queue identity`() {
@@ -111,6 +129,7 @@ class SqsConsumerRuntimeConfigTest {
             .receiptHandle("receipt")
             .build()
 
+        log.debug { "message=$message" }
         StringOrByteArraySqsMessageConverter.convert(message, String::class) shouldBeEqualTo "hello"
         StringOrByteArraySqsMessageConverter.convert(message, ByteArray::class).decodeToString() shouldBeEqualTo "hello"
         StringOrByteArraySqsMessageConverter.convert(message, Message::class) shouldBeEqualTo message
@@ -118,17 +137,19 @@ class SqsConsumerRuntimeConfigTest {
 
     @Test
     fun `shared AWS defaults create plugin owned SQS client`() {
-        val config = SqsConsumerPluginConfig().apply {
-            queueName = "orders"
-            onMessage<String> {}
-        }.toRuntimeConfig(
-            AwsKtorDefaults(
-                region = "ap-northeast-2",
-                endpointOverride = Url("http://localhost:4566"),
+        val config = SqsConsumerPluginConfig()
+            .apply {
+                queueName = "orders"
+                onMessage<String> {}
+            }
+            .toRuntimeConfig(
+                AwsKtorDefaults(
+                    region = "ap-northeast-2",
+                    endpointOverride = Url("http://localhost:4566"),
+                )
             )
-        )
 
-        config.ownsClient shouldBeEqualTo true
+        config.ownsClient.shouldBeTrue()
         config.queueName shouldBeEqualTo "orders"
 
         config.sqsAsyncClient.close()
@@ -137,16 +158,18 @@ class SqsConsumerRuntimeConfigTest {
     @Test
     fun `service SQS customizer runs after shared customizer`() {
         val order = mutableListOf<String>()
-        val config = SqsConsumerPluginConfig().apply {
-            queueName = "orders"
-            sqsAsyncClient { order += "service" }
-            onMessage<String> {}
-        }.toRuntimeConfig(
-            AwsKtorDefaults(
-                region = "ap-northeast-2",
-                sqsAsyncClientCustomizers = listOf(AwsKtorSqsAsyncClientCustomizer { order += "shared" }),
+        val config = SqsConsumerPluginConfig()
+            .apply {
+                queueName = "orders"
+                sqsAsyncClient { order += "service" }
+                onMessage<String> {}
+            }
+            .toRuntimeConfig(
+                AwsKtorDefaults(
+                    region = "ap-northeast-2",
+                    sqsAsyncClientCustomizers = listOf(AwsKtorSqsAsyncClientCustomizer { order += "shared" }),
+                )
             )
-        )
 
         order shouldBeEqualTo listOf("shared", "service")
 
@@ -155,7 +178,6 @@ class SqsConsumerRuntimeConfigTest {
 
     @Test
     fun `runtime closes plugin owned SQS client once`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>(relaxed = true)
         every { client.close() } returns Unit
         val runtime = SqsConsumerRuntime(
             runtimeConfig(client = client, ownsClient = true)
@@ -169,10 +191,11 @@ class SqsConsumerRuntimeConfigTest {
 
     @Test
     fun `stop before start rejects restart and never polls with closed owned client`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>(relaxed = true)
         val receiveCalls = AtomicInteger()
         every { client.close() } returns Unit
-        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+        every {
+            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
+        } answers {
             receiveCalls.incrementAndGet()
             CompletableFuture.completedFuture(ReceiveMessageResponse.builder().build())
         }
@@ -182,20 +205,23 @@ class SqsConsumerRuntimeConfigTest {
 
         runtime.stop()
 
-        assertFailsWith<IllegalStateException> { runtime.start() }
-        runtime.isRunning shouldBeEqualTo false
+        assertFailsWith<IllegalStateException> {
+            runtime.start()
+        }
+        runtime.isRunning.shouldBeFalse()
         receiveCalls.get() shouldBeEqualTo 0
         verify(exactly = 1) { client.close() }
     }
 
     @Test
     fun `stopped runtime rejects restart without reusing closed owned client`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>(relaxed = true)
         val receiveCalls = AtomicInteger()
         val receiveStarted = CountDownLatch(1)
         val pendingReceive = CompletableFuture<ReceiveMessageResponse>()
         every { client.close() } returns Unit
-        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+        every {
+            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
+        } answers {
             receiveCalls.incrementAndGet()
             receiveStarted.countDown()
             pendingReceive
@@ -206,19 +232,19 @@ class SqsConsumerRuntimeConfigTest {
 
         try {
             runtime.start()
-            await.atMost(Duration.ofSeconds(2)).untilAsserted {
+            await atMost 2.seconds untilAsserted {
                 receiveStarted.count shouldBeEqualTo 0L
             }
 
             runtime.stop()
             val receiveCallsAfterStop = receiveCalls.get()
 
-            assertFailsWith<IllegalStateException> { runtime.start() }
-            await.during(Duration.ofMillis(200))
-                .atMost(Duration.ofSeconds(2))
-                .untilAsserted {
-                    receiveCalls.get() shouldBeEqualTo receiveCallsAfterStop
-                }
+            assertFailsWith<IllegalStateException> {
+                runtime.start()
+            }
+            await during 200.milliseconds atMost 2.seconds untilAsserted {
+                receiveCalls.get() shouldBeEqualTo receiveCallsAfterStop
+            }
             verify(exactly = 1) { client.close() }
         } finally {
             pendingReceive.cancel(true)
@@ -228,11 +254,13 @@ class SqsConsumerRuntimeConfigTest {
 
     @Test
     fun `duplicate start creates one poller and injected client stays open after duplicate stop`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>(relaxed = true)
         val receiveCalls = AtomicInteger()
         val receiveStarted = CountDownLatch(1)
         val pendingReceive = CompletableFuture<ReceiveMessageResponse>()
-        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+
+        every {
+            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
+        } answers {
             receiveCalls.incrementAndGet()
             receiveStarted.countDown()
             pendingReceive
@@ -244,14 +272,12 @@ class SqsConsumerRuntimeConfigTest {
         try {
             runtime.start()
             runtime.start()
-            await.atMost(Duration.ofSeconds(2)).untilAsserted {
+            await atMost 2.seconds untilAsserted {
                 receiveStarted.count shouldBeEqualTo 0L
             }
-            await.during(Duration.ofMillis(200))
-                .atMost(Duration.ofSeconds(2))
-                .untilAsserted {
-                    receiveCalls.get() shouldBeEqualTo 1
-                }
+            await during 200.milliseconds atMost 2.seconds untilAsserted {
+                receiveCalls.get() shouldBeEqualTo 1
+            }
 
             runtime.stop()
             runtime.stop()
@@ -264,34 +290,31 @@ class SqsConsumerRuntimeConfigTest {
 
     @Test
     fun `invalid runtime configuration closes plugin owned client`() {
-        val ownedClient = mockk<SqsAsyncClient>(relaxed = true)
-        every { ownedClient.close() } returns Unit
+        every { client.close() } returns Unit
 
         assertFailsWith<IllegalArgumentException> {
             SqsConsumerPluginConfig().apply {
                 queueUrl = null
                 queueName = null
                 onMessage<String> {}
-            }.toRuntimeConfig(clientFactory = { ownedClient })
+            }.toRuntimeConfig(clientFactory = { client })
         }
 
-        verify(exactly = 1) { ownedClient.close() }
+        verify(exactly = 1) { client.close() }
     }
 
     @Test
     fun `invalid runtime configuration leaves injected client open`() {
-        val injectedClient = mockk<SqsAsyncClient>(relaxed = true)
-
         assertFailsWith<IllegalArgumentException> {
             SqsConsumerPluginConfig().apply {
-                sqsAsyncClient = injectedClient
+                sqsAsyncClient = client
                 queueUrl = null
                 queueName = null
                 onMessage<String> {}
             }.toRuntimeConfig()
         }
 
-        verify(exactly = 0) { injectedClient.close() }
+        verify(exactly = 0) { client.close() }
     }
 
     private fun runtimeConfig(

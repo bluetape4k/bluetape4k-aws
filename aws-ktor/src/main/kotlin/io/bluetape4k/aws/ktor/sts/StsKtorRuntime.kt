@@ -16,11 +16,11 @@ class StsKtorRuntime(
     val operations: StsKtorOperations,
     private val ownedClient: StsAsyncClient? = null,
 ) {
-
     companion object: KLoggingChannel()
 
     private val closed = atomic(false)
     private val resourceRegistrationInstalled = atomic(false)
+
     private val ownedClientResource = AutoCloseable {
         runBlocking(Dispatchers.IO) {
             stop()

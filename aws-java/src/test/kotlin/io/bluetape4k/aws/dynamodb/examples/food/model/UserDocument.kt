@@ -8,6 +8,7 @@ import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean
 import java.time.Instant
 
+@Suppress("EqualsOrHashCode")
 @DynamoDbBean
 class UserDocument: AbstractDynamoDocument() {
 
@@ -45,9 +46,10 @@ class UserDocument: AbstractDynamoDocument() {
         DELETED
     }
 
-    override fun equalProperties(other: Any): Boolean {
-        return other is UserDocument && serviceId == other.serviceId && userId == other.userId
-    }
+    override fun equalProperties(other: Any): Boolean =
+        other is UserDocument &&
+                serviceId == other.serviceId &&
+                userId == other.userId
 
     override fun hashCode(): Int = hashOf(serviceId, userId)
 

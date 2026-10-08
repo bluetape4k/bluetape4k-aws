@@ -2,11 +2,16 @@ package io.bluetape4k.aws.client
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption
 import java.util.concurrent.Executors
 
-class ClientConfigurationSupportTest {
+class ClientConfigurationSupportTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `clientOverrideConfiguration은 builder 설정값을 반영한다`() {
@@ -14,6 +19,7 @@ class ClientConfigurationSupportTest {
             putHeader("x-test", "true")
         }
 
+        log.debug { "configuration=$configuration" }
         configuration.headers()["x-test"]?.first() shouldBeEqualTo "true"
     }
 
@@ -25,7 +31,7 @@ class ClientConfigurationSupportTest {
                 SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
                 executor,
             )
-
+            log.debug { "configuration=$configuration" }
             configuration.advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR).shouldNotBeNull()
         } finally {
             executor.shutdownNow()

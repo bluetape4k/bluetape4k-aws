@@ -10,18 +10,20 @@ import aws.sdk.kotlin.services.dynamodbstreams.model.GetShardIteratorRequest
 import aws.sdk.kotlin.services.dynamodbstreams.model.GetShardIteratorResponse
 import aws.sdk.kotlin.services.dynamodbstreams.model.Record
 import aws.sdk.kotlin.services.dynamodbstreams.model.Shard
+import aws.sdk.kotlin.services.dynamodbstreams.model.ShardIteratorType
 import aws.sdk.kotlin.services.dynamodbstreams.model.StreamDescription
 import aws.sdk.kotlin.services.dynamodbstreams.model.StreamRecord
-import aws.sdk.kotlin.services.dynamodbstreams.model.ShardIteratorType
 import aws.sdk.kotlin.services.dynamodbstreams.model.TrimmedDataAccessException
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.coroutines.flow.extensions.log
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -51,9 +53,8 @@ class DynamoDbStreamsRecordFlowUnitTest {
     @Test
     fun `emits records and saves checkpoint only after downstream emit returns`() = runTest {
         val eventLog = mutableListOf<String>()
-        val store = object : DynamoDbStreamsCheckpointStore {
+        val store = object: DynamoDbStreamsCheckpointStore {
             override suspend fun load(streamArn: String, shardId: String): String? = null
-
             override suspend fun save(streamArn: String, shardId: String, sequenceNumber: String) {
                 eventLog += "save:$sequenceNumber"
             }
@@ -62,9 +63,12 @@ class DynamoDbStreamsRecordFlowUnitTest {
         coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-1")
         coEvery { client.getRecords(any<GetRecordsRequest>()) } returns recordsResponse(listOf(item))
 
-        client.recordFlow("stream", "shard", checkpointStore = store).collect {
-            eventLog += "emit"
-        }
+        client
+            .recordFlow("stream", "shard", checkpointStore = store)
+            .log("RECORD")
+            .collect {
+                eventLog += "emit"
+            }
 
         eventLog shouldBeEqualTo listOf("emit", "save:seq-1")
     }
@@ -74,13 +78,21 @@ class DynamoDbStreamsRecordFlowUnitTest {
         val store = InMemoryDynamoDbStreamsCheckpointStore()
         store.save("stream", "shard", "seq-7")
         val requests = mutableListOf<GetShardIteratorRequest>()
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } answers {
+
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } answers {
             requests += firstArg<GetShardIteratorRequest>()
             iteratorResponse("iter-1")
         }
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns recordsResponse(listOf(record("seq-7")))
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns recordsResponse(listOf(record("seq-7")))
 
-        client.recordFlow("stream", "shard", checkpointStore = store).toList()
+        client
+            .recordFlow("stream", "shard", checkpointStore = store)
+            .log("RECORD")
+            .toList()
 
         requests.single().shardIteratorType shouldBeEqualTo ShardIteratorType.AtSequenceNumber
         requests.single().sequenceNumber shouldBeEqualTo "seq-7"
@@ -100,13 +112,20 @@ class DynamoDbStreamsRecordFlowUnitTest {
         for ((position, expected) in cases) {
             val requests = mutableListOf<GetShardIteratorRequest>()
             clearMocks(client)
-            coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } answers {
+            coEvery {
+                client.getShardIterator(any<GetShardIteratorRequest>())
+            } answers {
                 requests += firstArg<GetShardIteratorRequest>()
                 iteratorResponse("iter-position")
             }
-            coEvery { client.getRecords(any<GetRecordsRequest>()) } returns recordsResponse(emptyList())
+            coEvery {
+                client.getRecords(any<GetRecordsRequest>())
+            } returns recordsResponse(emptyList())
 
-            client.recordFlow("stream", "shard", position = position).toList()
+            client
+                .recordFlow("stream", "shard", position = position)
+                .log("RECORD")
+                .toList()
 
             requests.single().shardIteratorType shouldBeEqualTo expected.first
             requests.single().sequenceNumber shouldBeEqualTo expected.second
@@ -115,11 +134,18 @@ class DynamoDbStreamsRecordFlowUnitTest {
 
     @Test
     fun `latest fails fast when iterator expires before first checkpoint`() = runTest {
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-latest")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } throws ExpiredIteratorException { message = "expired" }
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns iteratorResponse("iter-latest")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } throws ExpiredIteratorException { message = "expired" }
 
         assertFailsWith<ExpiredIteratorException> {
-            client.recordFlow("stream", "shard", position = DynamoDbStreamsStartingPosition.Latest).toList()
+            client
+                .recordFlow("stream", "shard", position = DynamoDbStreamsStartingPosition.Latest)
+                .log("RECORD")
+                .toList()
         }
         coVerify(exactly = 1) { client.getShardIterator(any<GetShardIteratorRequest>()) }
     }
@@ -130,23 +156,35 @@ class DynamoDbStreamsRecordFlowUnitTest {
             every { sdkErrorMetadata } returns mockk { every { isRetryable } returns true }
         }
         var calls = 0
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } answers {
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns iteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             if (calls++ == 0) throw retryable else recordsResponse(listOf(record("seq-2")))
         }
 
-        client.recordFlow("stream", "shard").toList().size shouldBeEqualTo 1
+        client
+            .recordFlow("stream", "shard")
+            .log("RECORD")
+            .toList().size shouldBeEqualTo 1
+
         coVerify(exactly = 2) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
     @Test
     fun `recovers from expired iterator using the last emitted sequence`() = runTest {
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returnsMany listOf(
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returnsMany listOf(
             iteratorResponse("iter-1"),
             iteratorResponse("iter-recovered"),
         )
         var calls = 0
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } answers {
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             when (calls++) {
                 0 -> recordsResponse(listOf(record("seq-1")), "iter-expired")
                 1 -> throw ExpiredIteratorException { message = "expired" }
@@ -154,19 +192,26 @@ class DynamoDbStreamsRecordFlowUnitTest {
             }
         }
 
-        client.recordFlow("stream", "shard").toList().size shouldBeEqualTo 2
+        client.recordFlow("stream", "shard")
+            .log("RECORD")
+            .toList().size shouldBeEqualTo 2
+
         coVerify(exactly = 2) { client.getShardIterator(any<GetShardIteratorRequest>()) }
     }
 
     @Test
     fun `propagates trimmed data without fallback`() = runTest {
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } throws
-                TrimmedDataAccessException { message = "trimmed" }
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns iteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } throws TrimmedDataAccessException { message = "trimmed" }
 
         assertFailsWith<TrimmedDataAccessException> {
-            client.recordFlow("stream", "shard").toList()
+            client.recordFlow("stream", "shard").log("RECORD").toList()
         }
+
         coVerify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
@@ -175,8 +220,12 @@ class DynamoDbStreamsRecordFlowUnitTest {
         val nonRetryable = mockk<DynamoDbStreamsException>(relaxed = true) {
             every { sdkErrorMetadata } returns mockk { every { isRetryable } returns false }
         }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } throws nonRetryable
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns iteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } throws nonRetryable
 
         assertFailsWith<DynamoDbStreamsException> {
             client.recordFlow("stream", "shard").toList()
@@ -196,6 +245,7 @@ class DynamoDbStreamsRecordFlowUnitTest {
         assertFailsWith<DynamoDbStreamsException> {
             client.recordFlow("stream", "shard", options = options).toList()
         }
+
         coVerify(exactly = 3) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
@@ -203,32 +253,48 @@ class DynamoDbStreamsRecordFlowUnitTest {
     fun `does not advance checkpoint when save fails`() = runTest {
         val store = InMemoryDynamoDbStreamsCheckpointStore()
         val expected = IllegalStateException("checkpoint unavailable")
-        val failingStore = object : DynamoDbStreamsCheckpointStore {
+        val failingStore = object: DynamoDbStreamsCheckpointStore {
             override suspend fun load(streamArn: String, shardId: String): String? = store.load(streamArn, shardId)
 
             override suspend fun save(streamArn: String, shardId: String, sequenceNumber: String) {
                 throw expected
             }
         }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns recordsResponse(listOf(record("seq-save")))
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns iteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns recordsResponse(listOf(record("seq-save")))
 
         assertFailsWith<IllegalStateException> {
-            client.recordFlow("stream", "shard", checkpointStore = failingStore).toList()
+            client.recordFlow("stream", "shard", checkpointStore = failingStore)
+                .log("RECORD")
+                .toList()
         }
-        store.load("stream", "shard") shouldBeEqualTo null
+
+        store.load("stream", "shard").shouldBeNull()
     }
 
     @Test
     fun `cancellation during downstream collection prevents checkpoint save`() = runTest {
         val store = InMemoryDynamoDbStreamsCheckpointStore()
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
-                recordsResponse(listOf(record("seq-cancel-1"), record("seq-cancel-2")), "iter-2")
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns iteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns recordsResponse(
+            listOf(record("seq-cancel-1"), record("seq-cancel-2")),
+            "iter-2"
+        )
 
-        client.recordFlow("stream", "shard", checkpointStore = store).take(1).toList()
+        client.recordFlow("stream", "shard", checkpointStore = store)
+            .log("RECORD")
+            .take(1)
+            .toList()
 
-        store.load("stream", "shard") shouldBeEqualTo null
+        store.load("stream", "shard").shouldBeNull()
         coVerify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
@@ -246,12 +312,18 @@ class DynamoDbStreamsRecordFlowUnitTest {
             every { sdkErrorMetadata } returns mockk { every { isRetryable } returns true }
         }
         var calls = 0
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns iteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } answers {
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns iteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             if (calls++ == 0) throw retryable else recordsResponse(listOf(record("seq-metrics")))
         }
 
-        client.recordFlow("stream", "shard", metrics = metrics).toList()
+        client.recordFlow("stream", "shard", metrics = metrics)
+            .log("RECORD")
+            .toList()
 
         events shouldBeEqualTo listOf(
             "started:shard",
@@ -276,20 +348,29 @@ class DynamoDbStreamsRecordFlowUnitTest {
             every { shards } returns listOf(parent, child)
             every { lastEvaluatedShardId } returns null
         }
-        coEvery { client.describeStream(any()) } returns mockk<DescribeStreamResponse> {
+        coEvery {
+            client.describeStream(any())
+        } returns mockk<DescribeStreamResponse> {
             every { streamDescription } returns description
         }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } answers {
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } answers {
             iteratorResponse("iter-${firstArg<GetShardIteratorRequest>().shardId}")
         }
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } answers {
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             val iterator = firstArg<GetRecordsRequest>().shardIterator
             recordsResponse(listOf(record(iterator ?: "unknown")))
         }
 
-        val result = client.shardRecordFlow("stream").toList()
+        val result = client
+            .shardRecordFlow("stream")
+            .log("RECORD")
+            .toList()
 
         result.map { it.shardId } shouldBeEqualTo listOf("parent", "child")
-        result.all { it.streamArn == "stream" } shouldBeEqualTo true
+        result.all { it.streamArn == "stream" }.shouldBeTrue()
     }
 }

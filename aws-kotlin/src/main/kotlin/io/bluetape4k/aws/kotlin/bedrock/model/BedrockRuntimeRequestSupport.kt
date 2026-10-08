@@ -29,9 +29,9 @@ inline fun userMessageOf(
 ): Message {
     text.requireNotBlank("text")
     return Message {
-        builder()
         role = ConversationRole.User
         content = listOf(ContentBlock.Text(text))
+        builder()
     }
 }
 
@@ -49,11 +49,12 @@ inline fun converseRequestOf(
 ): ConverseRequest {
     modelId.requireNotBlank("modelId")
     messages.requireNotEmpty("messages")
+
     return ConverseRequest {
-        builder()
         this.modelId = modelId
         this.messages = messages.toList()
         inferenceConfig?.let { this.inferenceConfig = it }
+        builder()
     }
 }
 
@@ -71,10 +72,11 @@ inline fun converseStreamRequestOf(
 ): ConverseStreamRequest {
     modelId.requireNotBlank("modelId")
     messages.requireNotEmpty("messages")
+
     return ConverseStreamRequest {
-        builder()
         this.modelId = modelId
         this.messages = messages.toList()
         inferenceConfig?.let { this.inferenceConfig = it }
+        builder()
     }
 }

@@ -1,12 +1,13 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
+import software.amazon.awssdk.services.sqs.model.Message
 import java.io.Serializable
 import java.time.Duration
 import kotlin.math.roundToInt
 import kotlin.random.Random
-import software.amazon.awssdk.services.sqs.model.Message
 
 /**
  * handler 호출 전에 메시지 변환이 실패했을 때 적용할 정책입니다.
@@ -128,6 +129,13 @@ class SqsLinearFailureVisibilityStrategy(
         val spread = (base * jitterRatio).roundToInt().coerceAtLeast(1)
         return (base + random.nextInt(-spread, spread + 1)).coerceIn(0, maxTimeoutSeconds)
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("baseTimeoutSeconds", baseTimeoutSeconds)
+            .add("maxTimeoutSeconds", maxTimeoutSeconds)
+            .add("jitterRatio", jitterRatio)
+            .toString()
 
     companion object {
         private const val serialVersionUID: Long = 1L

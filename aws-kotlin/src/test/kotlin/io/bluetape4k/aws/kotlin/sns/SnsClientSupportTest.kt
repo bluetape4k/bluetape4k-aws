@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 
 class SnsClientSupportTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `snsClientOf는 null endpoint로 클라이언트를 생성한다`() {

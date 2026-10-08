@@ -122,10 +122,22 @@ tasks.test {
     val lambdaSmokeEnabled = lambdaSmokeRequested && missingLambdaSmokeInputs.isEmpty()
 
     systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
-    systemProperty("bluetape4k.lambda.smoke.functionName", providers.environmentVariable("LAMBDA_SMOKE_FUNCTION_NAME").orNull.orEmpty())
-    systemProperty("bluetape4k.lambda.smoke.region", providers.environmentVariable("LAMBDA_SMOKE_REGION").orNull.orEmpty())
-    systemProperty("bluetape4k.lambda.smoke.emulator", providers.environmentVariable("LAMBDA_SMOKE_EMULATOR").orNull ?: "floci")
-    systemProperty("bluetape4k.lambda.smoke.qualifier", providers.environmentVariable("LAMBDA_SMOKE_QUALIFIER").orNull.orEmpty())
+    systemProperty(
+        "bluetape4k.lambda.smoke.functionName",
+        providers.environmentVariable("LAMBDA_SMOKE_FUNCTION_NAME").orNull.orEmpty()
+    )
+    systemProperty(
+        "bluetape4k.lambda.smoke.region",
+        providers.environmentVariable("LAMBDA_SMOKE_REGION").orNull.orEmpty()
+    )
+    systemProperty(
+        "bluetape4k.lambda.smoke.emulator",
+        providers.environmentVariable("LAMBDA_SMOKE_EMULATOR").orNull ?: "floci"
+    )
+    systemProperty(
+        "bluetape4k.lambda.smoke.qualifier",
+        providers.environmentVariable("LAMBDA_SMOKE_QUALIFIER").orNull.orEmpty()
+    )
     useJUnitPlatform {
         if (smokeEnabled) {
             includeTags(*requestedSmokeTags.toTypedArray())

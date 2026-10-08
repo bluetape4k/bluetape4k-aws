@@ -5,10 +5,14 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.aws.sns.SnsHttpEnvelopeConformanceFixtures
 import io.bluetape4k.aws.sns.SnsHttpEnvelopeValidationException
+import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import tools.jackson.databind.ObjectMapper
 
 class SnsHttpEnvelopeConformanceTest {
+
+    companion object: KLogging()
 
     private val parser = SnsHttpMessageParser.default()
 
@@ -17,6 +21,7 @@ class SnsHttpEnvelopeConformanceTest {
         SnsHttpEnvelopeConformanceFixtures.validCases.forEach { case ->
             val message = parser.parse(case.json, case.messageTypeHeader)
 
+            log.debug { "message=$message" }
             message.type.value shouldBeEqualTo case.expectedType.value
             message.messageId shouldBeEqualTo case.expectedMessageId
         }
@@ -29,6 +34,7 @@ class SnsHttpEnvelopeConformanceTest {
                 parser.parse(case.json, case.messageTypeHeader)
             }
 
+            log.debug { "error=$error" }
             error.reason shouldBeEqualTo case.expectedReason
             error.message.orEmpty() shouldBeEqualTo case.expectedMessage
             error.message.orEmpty().contains("signature-secret").shouldBeFalse()
@@ -38,12 +44,13 @@ class SnsHttpEnvelopeConformanceTest {
     @Test
     fun `주입한 mapper 구성에서도 duplicate detection을 유지한다`() {
         val duplicate = SnsHttpEnvelopeConformanceFixtures.invalidCases.single { it.name == "duplicate-type" }
-        val customParser = SnsHttpMessageParser(ObjectMapper())
+        val customParser = SnsHttpMessageParser(Jackson.defaultJsonMapper)
 
         val error = assertFailsWith<SnsHttpEnvelopeValidationException> {
             customParser.parse(duplicate.json, duplicate.messageTypeHeader)
         }
 
+        log.debug { "error=$error" }
         error.reason shouldBeEqualTo duplicate.expectedReason
         error.message.orEmpty() shouldBeEqualTo duplicate.expectedMessage
     }

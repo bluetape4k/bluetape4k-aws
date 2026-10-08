@@ -211,9 +211,7 @@ class KmsAsyncClientTest: AbstractKmsTest() {
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
         val aliases = response.aliases()
-        aliases.forEach { alias ->
-            log.debug { "alias=$alias" }
-        }
+        aliases.forEach { log.debug { "alias=$it" } }
         aliases.shouldNotBeEmpty()
         aliases.map { it.aliasName() } shouldContain aliasName
     }

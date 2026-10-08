@@ -3,8 +3,11 @@ package io.bluetape4k.aws.eventbridge
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.eventbridge.model.putEventsRequestEntryOf
 import io.bluetape4k.aws.eventbridge.model.targetOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -17,7 +20,9 @@ import software.amazon.awssdk.services.eventbridge.model.PutTargetsResponse
 import software.amazon.awssdk.services.eventbridge.model.RemoveTargetsRequest
 import software.amazon.awssdk.services.eventbridge.model.RemoveTargetsResponse
 
-class EventBridgeClientExtensionsTest {
+class EventBridgeClientExtensionsTest: AbstractAwsTest() {
+
+    companion object: KLogging() 
 
     private val client = mockk<EventBridgeClient>()
 
@@ -29,6 +34,7 @@ class EventBridgeClientExtensionsTest {
 
         val result = client.putEvents(listOf(entry))
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.failedEntryCount() shouldBeEqualTo 1
         verify(exactly = 1) { client.putEvents(any<PutEventsRequest>()) }
@@ -42,6 +48,7 @@ class EventBridgeClientExtensionsTest {
 
         val result = client.putTargets("rule", listOf(target))
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.failedEntryCount() shouldBeEqualTo 1
         verify(exactly = 1) { client.putTargets(any<PutTargetsRequest>()) }
@@ -54,6 +61,7 @@ class EventBridgeClientExtensionsTest {
 
         val result = client.removeTargets("rule", listOf("target"))
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.failedEntryCount() shouldBeEqualTo 1
         verify(exactly = 1) { client.removeTargets(any<RemoveTargetsRequest>()) }

@@ -5,12 +5,15 @@ import io.bluetape4k.exposed.ktor.core.ExposedKtorReadinessBackend
 import io.bluetape4k.exposed.ktor.core.ExposedKtorReadinessOutcome
 import io.bluetape4k.exposed.ktor.core.bluetape4kExposedHealthRoutes
 import io.bluetape4k.exposed.ktor.jdbc.exposedKtorJdbcReadinessProbe
+import io.bluetape4k.support.requireMatches
+import io.bluetape4k.support.requireNotBlank
 import io.ktor.server.application.Application
 import io.ktor.server.routing.routing
 import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.v1.jdbc.Database
+import java.io.Serializable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -30,7 +33,7 @@ data class AwsExposedKtorHealthConfig(
     val readinessProbeTimeout: Duration = DEFAULT_READINESS_PROBE_TIMEOUT,
     val jdbcQueryTimeout: Duration = DEFAULT_JDBC_QUERY_TIMEOUT,
     val meterRegistry: MeterRegistry? = null,
-) {
+): Serializable {
 
     init {
         databaseName?.requireValidDatabaseName()
@@ -45,6 +48,8 @@ data class AwsExposedKtorHealthConfig(
         const val DEFAULT_READINESS_PATH: String = "/readyz/exposed"
         val DEFAULT_READINESS_PROBE_TIMEOUT: Duration = 1.seconds
         val DEFAULT_JDBC_QUERY_TIMEOUT: Duration = 1.seconds
+
+        private const val serialVersionUID: Long = 1L
     }
 }
 
@@ -75,7 +80,7 @@ fun Application.installAwsExposedHealthRoutes(
 private class AwsExposedJdbcReadinessProbe(
     private val runtime: AwsExposedKtorRuntime,
     private val config: AwsExposedKtorHealthConfig,
-) : ExposedKtorCooperativeReadinessProbe {
+): ExposedKtorCooperativeReadinessProbe {
 
     override val component: String = config.component
     override val backend: ExposedKtorReadinessBackend = ExposedKtorReadinessBackend.JDBC
@@ -92,17 +97,15 @@ private class AwsExposedJdbcReadinessProbe(
 private val COMPONENT_PATTERN = Regex("[a-z][a-z0-9_.-]{0,62}")
 
 private fun String.requireValidComponent() {
-    require(COMPONENT_PATTERN.matches(this)) {
+    requireMatches(COMPONENT_PATTERN, "this") {
         "Invalid AWS Exposed health component: reason=unsafe_component."
     }
 }
 
 private fun String.requireValidDatabaseName() {
-    require(isNotBlank()) { "databaseName must not be blank." }
+    requireNotBlank { "databaseName must not be blank." }
 }
 
 private fun Duration.requireFinitePositive(parameterName: String) {
-    require(isFinite() && isPositive()) {
-        "$parameterName must be finite and positive."
-    }
+    require(isFinite() && isPositive()) { "$parameterName must be finite and positive." }
 }

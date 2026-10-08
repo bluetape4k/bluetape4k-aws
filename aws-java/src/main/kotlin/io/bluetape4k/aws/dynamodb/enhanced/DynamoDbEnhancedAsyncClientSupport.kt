@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.dynamodb.enhanced
 
+import io.bluetape4k.utils.ShutdownQueue
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClientExtension
 import software.amazon.awssdk.enhanced.dynamodb.internal.client.ExtensionResolver
@@ -19,9 +20,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
  */
 inline fun dynamoDbEnhancedAsyncClient(
     builder: DynamoDbEnhancedAsyncClient.Builder.() -> Unit,
-): DynamoDbEnhancedAsyncClient {
-    return DynamoDbEnhancedAsyncClient.builder().apply(builder).build()
-}
+): DynamoDbEnhancedAsyncClient =
+    DynamoDbEnhancedAsyncClient.builder().apply(builder).build()
 
 /**
  * [DynamoDbEnhancedAsyncClient] 를 생성합니다.

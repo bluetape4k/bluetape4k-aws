@@ -1,10 +1,6 @@
 package io.bluetape4k.aws.kotlin.s3tables
 
-import aws.smithy.kotlin.runtime.InternalApi
 import aws.smithy.kotlin.runtime.ServiceException
-import io.bluetape4k.aws.kotlin.s3tables.model.createTableBucketRequestOf
-import io.bluetape4k.aws.kotlin.sts.getCallerIdentity
-import io.bluetape4k.aws.kotlin.sts.withStsClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
@@ -12,8 +8,12 @@ import io.bluetape4k.assertions.shouldEndWith
 import io.bluetape4k.assertions.shouldMatch
 import io.bluetape4k.assertions.shouldNotStartWith
 import io.bluetape4k.assertions.shouldStartWith
+import io.bluetape4k.aws.kotlin.s3tables.model.createTableBucketRequestOf
+import io.bluetape4k.aws.kotlin.sts.withStsClient
 import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -32,12 +32,24 @@ import kotlin.time.Duration.Companion.seconds
  */
 class S3TablesSmokeTest {
 
+    private companion object: KLoggingChannel() {
+        const val READ_ONLY_TAG = "s3-tables-read-only-smoke"
+        const val MUTATING_TAG = "s3-tables-mutating-smoke"
+        const val READ_ONLY_REGION = "S3_TABLES_READ_ONLY_REGION"
+        const val READ_ONLY_TABLE_BUCKET_ARN = "S3_TABLES_READ_ONLY_TABLE_BUCKET_ARN"
+        const val EXPECTED_ACCOUNT_ID = "S3_TABLES_EXPECTED_ACCOUNT_ID"
+        const val MUTATING_REGION = "S3_TABLES_MUTATING_REGION"
+        const val MUTATING_PREFIX = "S3_TABLES_MUTATING_PREFIX"
+        val SMOKE_TIMEOUT = 2.minutes
+    }
+
     @Test
     fun `bucket name normalization preserves unique suffix and bucket alphabet`() {
         val suffix = "bucket-0123456789abcdef"
 
         val actual = normalizedTableBucketName("Issue #311 / Production", suffix)
 
+        log.debug { "actual=$actual" }
         actual shouldEndWith "-$suffix"
         actual shouldMatch Regex("[a-z0-9][a-z0-9-]{1,61}[a-z0-9]")
     }
@@ -46,6 +58,7 @@ class S3TablesSmokeTest {
     fun `bucket name normalization avoids reserved aws prefix`() {
         val actual = normalizedTableBucketName("AWS", "bucket-0123456789abcdef")
 
+        log.debug { "actual=$actual" }
         actual shouldStartWith "bt-"
     }
 
@@ -55,6 +68,7 @@ class S3TablesSmokeTest {
 
         val actual = normalizedTableIdentifierName("Issue #311 / Production", suffix)
 
+        log.debug { "actual=$actual" }
         actual shouldEndWith "_$suffix"
         actual shouldMatch Regex("[a-z0-9_]+")
     }
@@ -63,6 +77,7 @@ class S3TablesSmokeTest {
     fun `namespace and table normalization avoids reserved aws prefix`() {
         val actual = normalizedTableIdentifierName("AWS", "namespace_0123456789abcdef")
 
+        log.debug { "actual=$actual" }
         actual.first().isLetterOrDigit().shouldBeTrue()
         actual shouldNotStartWith "aws"
     }
@@ -90,7 +105,6 @@ class S3TablesSmokeTest {
                 throw CancellationException("cleanup-cancelled")
             }
         }
-
         cancellation.message shouldBeEqualTo "cleanup-cancelled"
     }
 
@@ -106,6 +120,7 @@ class S3TablesSmokeTest {
                 withS3TablesClient(region = region, builder = { callTimeout = 30.seconds }) { client ->
                     client.getTableBucket(tableBucketArn)
                     val namespaces = client.listNamespaces(tableBucketArn, maxNamespaces = 1)
+                    namespaces.namespaces.forEach { log.debug { "namespace=$it" } }
                     println(
                         smokeEvidence(
                             lane = READ_ONLY_TAG,
@@ -131,6 +146,7 @@ class S3TablesSmokeTest {
         val expectedAccountId = requiredInput(EXPECTED_ACCOUNT_ID)
         val prefix = requiredInput(MUTATING_PREFIX)
         val startedAt = System.nanoTime()
+
         runMutatingLane(region, expectedAccountId, prefix, startedAt)?.let { failure ->
             if (failure is CancellationException) throw failure
             throw sanitizedSmokeFailure(MUTATING_TAG, failure, elapsedMillis(startedAt), region)
@@ -189,9 +205,7 @@ class S3TablesSmokeTest {
     private suspend fun verifyExpectedAccount(region: String, expectedAccountId: String) {
         withStsClient(region = region) { sts ->
             val actualAccountId = sts.getCallerIdentity().account
-            check(actualAccountId == expectedAccountId) {
-                "configured account does not match the credential account"
-            }
+            actualAccountId shouldBeEqualTo expectedAccountId
         }
     }
 
@@ -282,16 +296,6 @@ class S3TablesSmokeTest {
         }
     }
 
-    private companion object {
-        const val READ_ONLY_TAG = "s3-tables-read-only-smoke"
-        const val MUTATING_TAG = "s3-tables-mutating-smoke"
-        const val READ_ONLY_REGION = "S3_TABLES_READ_ONLY_REGION"
-        const val READ_ONLY_TABLE_BUCKET_ARN = "S3_TABLES_READ_ONLY_TABLE_BUCKET_ARN"
-        const val EXPECTED_ACCOUNT_ID = "S3_TABLES_EXPECTED_ACCOUNT_ID"
-        const val MUTATING_REGION = "S3_TABLES_MUTATING_REGION"
-        const val MUTATING_PREFIX = "S3_TABLES_MUTATING_PREFIX"
-        val SMOKE_TIMEOUT = 2.minutes
-    }
 }
 
 private fun requiredInput(name: String): String =
@@ -355,9 +359,8 @@ private fun smokeEvidence(
     detail: String,
 ): String =
     "s3-tables-smoke lane=$lane result=$result elapsedMs=$elapsedMillis region=$region " +
-        "requestId=not-available detail=$detail"
+            "requestId=not-available detail=$detail"
 
-@OptIn(InternalApi::class)
 private fun sanitizedSmokeFailure(
     lane: String,
     failure: Throwable,
@@ -367,9 +370,9 @@ private fun sanitizedSmokeFailure(
     val serviceFailure = failure as? ServiceException
     return AssertionError(
         "s3-tables-smoke lane=$lane result=FAIL elapsedMs=$elapsedMillis region=$region " +
-            "exceptionClass=${failure.javaClass.name} " +
-            "errorCode=${serviceFailure?.sdkErrorMetadata?.errorCode.orNotAvailable()} " +
-            "requestId=${serviceFailure?.sdkErrorMetadata?.requestId.orNotAvailable()}",
+                "exceptionClass=${failure.javaClass.name} " +
+                "errorCode=${serviceFailure?.sdkErrorMetadata?.errorCode.orNotAvailable()} " +
+                "requestId=${serviceFailure?.sdkErrorMetadata?.requestId.orNotAvailable()}",
     )
 }
 

@@ -13,22 +13,26 @@ import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.seconds
 
 class DynamoDbDistributedLockUnitTest {
 
-    private val client = mockk<DynamoDbClient>()
+    companion object: KLogging()
+
+    private val client = mockk<DynamoDbClient>(relaxed = true)
     private val clock = Clock.fixed(Instant.ofEpochSecond(100), ZoneOffset.UTC)
     private val schema = DynamoDbCoordinationSchema(tableName = "coordination", namespace = "orders")
     private val options = DynamoDbCoordinationOptions(defaultLeaseDuration = 5.seconds, clock = clock)
@@ -41,22 +45,26 @@ class DynamoDbDistributedLockUnitTest {
 
     @Test
     fun `new acquire 성공은 SDK 호출 한 번과 새 token을 반환한다`() = runTest {
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } returns UpdateItemResponse {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } returns UpdateItemResponse {
             attributes = lockItem("worker-1", 105, 1)
         }
 
         val lease = lock.tryAcquire("order-1", "worker-1", 5.seconds)
+        log.debug { "lease=$lease" }
 
         lease?.fencingToken shouldBeEqualTo 1L
         lease?.expiresAtEpochSeconds shouldBeEqualTo 105L
+
         coVerify(exactly = 1) { client.updateItem(any<UpdateItemRequest>()) }
         coVerify(exactly = 1) {
             client.updateItem(match { request ->
                 request.conditionExpression == "attribute_not_exists(#pk)" &&
-                    request.updateExpression == DynamoDbCoordinationExpressions.LOCK_ACQUIRE_UPDATE &&
-                    request.returnValues == ReturnValue.AllNew &&
-                    request.returnValuesOnConditionCheckFailure == ReturnValuesOnConditionCheckFailure.AllOld &&
-                    request.expressionAttributeValues?.get(":owner") == AttributeValue.S("worker-1")
+                        request.updateExpression == DynamoDbCoordinationExpressions.LOCK_ACQUIRE_UPDATE &&
+                        request.returnValues == ReturnValue.AllNew &&
+                        request.returnValuesOnConditionCheckFailure == ReturnValuesOnConditionCheckFailure.AllOld &&
+                        request.expressionAttributeValues?.get(":owner") == AttributeValue.S("worker-1")
             })
         }
     }
@@ -64,7 +72,9 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `active lock acquire는 AllOld 검증 후 null이고 재시도하지 않는다`() = runTest {
         val old = lockItem("other", 110, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } throws conditionalFailure(old)
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } throws conditionalFailure(old)
 
         lock.tryAcquire("order-1", "worker-1", 5.seconds).shouldBeNull()
 
@@ -74,14 +84,18 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `expired takeover는 관찰 owner expiry token equality로 두 번째 호출만 한다`() = runTest {
         val old = lockItem("old-worker", 100, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } coAnswers {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } coAnswers {
             if (
                 firstArg<UpdateItemRequest>().conditionExpression ==
-                    DynamoDbCoordinationExpressions.LOCK_KEY_ABSENT_CONDITION
+                DynamoDbCoordinationExpressions.LOCK_KEY_ABSENT_CONDITION
             ) {
                 throw conditionalFailure(old)
             }
-            UpdateItemResponse { attributes = lockItem("worker-1", 105, 4) }
+            UpdateItemResponse {
+                attributes = lockItem("worker-1", 105, 4)
+            }
         }
 
         val lease = lock.tryAcquire("order-1", "worker-1", 5.seconds)
@@ -91,15 +105,15 @@ class DynamoDbDistributedLockUnitTest {
         coVerify(exactly = 1) {
             client.updateItem(match { request ->
                 request.conditionExpression?.contains("#owner = :observedOwner") == true &&
-                    request.conditionExpression?.contains("#expiresAt = :observedExpiresAt") == true &&
-                    request.conditionExpression?.contains("#fencingToken = :observedToken") == true &&
-                    request.conditionExpression?.contains("#expiresAt <= :now") == true &&
-                    request.conditionExpression?.contains("#fencingToken < :maxToken") == true &&
-                    request.expressionAttributeValues?.get(":observedOwner") == AttributeValue.S("old-worker") &&
-                    request.expressionAttributeValues?.get(":observedExpiresAt") == AttributeValue.N("100") &&
-                    request.expressionAttributeValues?.get(":observedToken") == AttributeValue.N("3") &&
-                    request.expressionAttributeValues?.get(":now") == AttributeValue.N("100") &&
-                    request.expressionAttributeValues?.get(":maxToken") == AttributeValue.N(Long.MAX_VALUE.toString())
+                        request.conditionExpression?.contains("#expiresAt = :observedExpiresAt") == true &&
+                        request.conditionExpression?.contains("#fencingToken = :observedToken") == true &&
+                        request.conditionExpression?.contains("#expiresAt <= :now") == true &&
+                        request.conditionExpression?.contains("#fencingToken < :maxToken") == true &&
+                        request.expressionAttributeValues?.get(":observedOwner") == AttributeValue.S("old-worker") &&
+                        request.expressionAttributeValues?.get(":observedExpiresAt") == AttributeValue.N("100") &&
+                        request.expressionAttributeValues?.get(":observedToken") == AttributeValue.N("3") &&
+                        request.expressionAttributeValues?.get(":now") == AttributeValue.N("100") &&
+                        request.expressionAttributeValues?.get(":maxToken") == AttributeValue.N(Long.MAX_VALUE.toString())
             })
         }
     }
@@ -107,11 +121,15 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `takeover race의 두 번째 conditional failure는 null이고 loop를 만들지 않는다`() = runTest {
         val old = lockItem("old-worker", 100, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } returnsMany emptyList()
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } coAnswers {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } returnsMany emptyList()
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } coAnswers {
             if (
                 firstArg<UpdateItemRequest>().conditionExpression ==
-                    DynamoDbCoordinationExpressions.LOCK_KEY_ABSENT_CONDITION
+                DynamoDbCoordinationExpressions.LOCK_KEY_ABSENT_CONDITION
             ) {
                 throw conditionalFailure(old)
             }
@@ -125,9 +143,10 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `renew과 heartbeat은 stale lease에서 각각 null을 반환한다`() = runTest {
         val lease = lease(105, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } throws conditionalFailure(
-            lockItem("worker-1", 104, 3),
-        )
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } throws
+                conditionalFailure(lockItem("worker-1", 104, 3))
 
         lock.renew(lease, 5.seconds).shouldBeNull()
         lock.heartbeat(lease, 5.seconds).shouldBeNull()
@@ -138,7 +157,9 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `renew 성공은 owner token previous expiry equality를 사용한다`() = runTest {
         val lease = lease(105, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } returns UpdateItemResponse {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } returns UpdateItemResponse {
             attributes = lockItem("worker-1", 110, 3)
         }
 
@@ -147,13 +168,13 @@ class DynamoDbDistributedLockUnitTest {
         coVerify(exactly = 1) {
             client.updateItem(match { request ->
                 request.conditionExpression?.contains("#owner = :owner") == true &&
-                    request.conditionExpression?.contains("#fencingToken = :token") == true &&
-                    request.conditionExpression?.contains("#expiresAt = :previousExpiresAt") == true &&
-                    request.conditionExpression?.contains("#expiresAt > :now") == true &&
-                    request.expressionAttributeValues?.get(":owner") == AttributeValue.S("worker-1") &&
-                    request.expressionAttributeValues?.get(":token") == AttributeValue.N("3") &&
-                    request.expressionAttributeValues?.get(":previousExpiresAt") == AttributeValue.N("105") &&
-                    request.expressionAttributeValues?.get(":now") == AttributeValue.N("100")
+                        request.conditionExpression?.contains("#fencingToken = :token") == true &&
+                        request.conditionExpression?.contains("#expiresAt = :previousExpiresAt") == true &&
+                        request.conditionExpression?.contains("#expiresAt > :now") == true &&
+                        request.expressionAttributeValues?.get(":owner") == AttributeValue.S("worker-1") &&
+                        request.expressionAttributeValues?.get(":token") == AttributeValue.N("3") &&
+                        request.expressionAttributeValues?.get(":previousExpiresAt") == AttributeValue.N("105") &&
+                        request.expressionAttributeValues?.get(":now") == AttributeValue.N("100")
             })
         }
     }
@@ -161,9 +182,9 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `release는 stale lease에서 false를 반환하고 DeleteItem을 호출하지 않는다`() = runTest {
         val lease = lease(99, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } throws conditionalFailure(
-            lockItem("worker-1", 99, 3),
-        )
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } throws conditionalFailure(lockItem("worker-1", 99, 3))
 
         lock.release(lease).shouldBeFalse()
 
@@ -173,7 +194,9 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `release 성공은 owner 제거와 now expiry를 요청하고 fencing token은 보존한다`() = runTest {
         val lease = lease(105, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } returns UpdateItemResponse {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } returns UpdateItemResponse {
             attributes = lockItem("worker-1", 105, 3)
         }
 
@@ -182,21 +205,21 @@ class DynamoDbDistributedLockUnitTest {
         coVerify(exactly = 1) {
             client.updateItem(match { request ->
                 request.updateExpression == "SET #expiresAt = :now REMOVE #owner" &&
-                    request.returnValues == ReturnValue.AllOld &&
-                    request.conditionExpression?.contains("#owner = :owner") == true &&
-                    request.conditionExpression?.contains("#fencingToken = :token") == true &&
-                    request.conditionExpression?.contains("#expiresAt = :previousExpiresAt") == true &&
-                    request.expressionAttributeValues?.get(":token") == AttributeValue.N("3") &&
-                    request.expressionAttributeValues?.get(":now") == AttributeValue.N("100")
+                        request.returnValues == ReturnValue.AllOld &&
+                        request.conditionExpression?.contains("#owner = :owner") == true &&
+                        request.conditionExpression?.contains("#fencingToken = :token") == true &&
+                        request.conditionExpression?.contains("#expiresAt = :previousExpiresAt") == true &&
+                        request.expressionAttributeValues?.get(":token") == AttributeValue.N("3") &&
+                        request.expressionAttributeValues?.get(":now") == AttributeValue.N("100")
             })
         }
     }
 
     @Test
     fun `token Long MAX_VALUE는 fencing token exhausted로 거부한다`() = runTest {
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } throws conditionalFailure(
-            lockItem("worker-1", 100, Long.MAX_VALUE),
-        )
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } throws conditionalFailure(lockItem("worker-1", 100, Long.MAX_VALUE))
 
         val failure = assertFailsWith<IllegalStateException> {
             lock.tryAcquire("order-1", "worker-2", 5.seconds)
@@ -207,9 +230,9 @@ class DynamoDbDistributedLockUnitTest {
 
     @Test
     fun `token Long MAX_VALUE 직전에는 발급 전 exhaustion으로 second update를 막는다`() = runTest {
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } throws conditionalFailure(
-            lockItem("worker-1", 100, Long.MAX_VALUE - 1),
-        )
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } throws conditionalFailure(lockItem("worker-1", 100, Long.MAX_VALUE - 1))
 
         assertFailsWith<IllegalStateException> {
             lock.tryAcquire("order-1", "worker-2", 5.seconds)
@@ -219,9 +242,9 @@ class DynamoDbDistributedLockUnitTest {
 
     @Test
     fun `active lock은 token exhaustion 상태여도 현재 owner가 끝날 때까지 null이다`() = runTest {
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } throws conditionalFailure(
-            lockItem("worker-1", 110, Long.MAX_VALUE - 1),
-        )
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } throws conditionalFailure(lockItem("worker-1", 110, Long.MAX_VALUE - 1))
 
         lock.tryAcquire("order-1", "worker-2", 5.seconds).shouldBeNull()
 
@@ -230,7 +253,9 @@ class DynamoDbDistributedLockUnitTest {
 
     @Test
     fun `AllNew fencing token이 기대값과 다르면 lease를 발급하지 않는다`() = runTest {
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } returns UpdateItemResponse {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } returns UpdateItemResponse {
             attributes = lockItem("worker-1", 105, 2)
         }
 
@@ -243,7 +268,9 @@ class DynamoDbDistributedLockUnitTest {
     @Test
     fun `renew AllNew fencing token이 lease와 다르면 갱신 결과를 노출하지 않는다`() = runTest {
         val lease = lease(105, 3)
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } returns UpdateItemResponse {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } returns UpdateItemResponse {
             attributes = lockItem("worker-1", 110, 4)
         }
 
@@ -257,10 +284,12 @@ class DynamoDbDistributedLockUnitTest {
     fun `takeover race의 malformed AllOld는 정상 race로 숨기지 않는다`() = runTest {
         val old = lockItem("old-worker", 100, 3)
         val malformed = old - "fencingToken"
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } coAnswers {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } coAnswers {
             if (
                 firstArg<UpdateItemRequest>().conditionExpression ==
-                    DynamoDbCoordinationExpressions.LOCK_KEY_ABSENT_CONDITION
+                DynamoDbCoordinationExpressions.LOCK_KEY_ABSENT_CONDITION
             ) {
                 throw conditionalFailure(old)
             }
@@ -315,22 +344,28 @@ class DynamoDbDistributedLockUnitTest {
             scopeId = otherResolved.scopeId,
         )
 
-        assertFailsWith<IllegalArgumentException> { lock.renew(lease, 5.seconds) }
+        assertFailsWith<IllegalArgumentException> {
+            lock.renew(lease, 5.seconds)
+        }
         coVerify(exactly = 0) { client.updateItem(any<UpdateItemRequest>()) }
     }
 
     @Test
     fun `convenience overload는 options default duration을 전달한다`() = runTest {
-        coEvery { client.updateItem(any<UpdateItemRequest>()) } returns UpdateItemResponse {
+        coEvery {
+            client.updateItem(any<UpdateItemRequest>())
+        } returns UpdateItemResponse {
             attributes = lockItem("worker-1", 105, 1)
         }
 
         lock.tryAcquire("order-1", "worker-1")
 
         coVerify(exactly = 1) {
-            client.updateItem(match { request ->
-                request.expressionAttributeValues?.get(":expiresAt") == AttributeValue.N("105")
-            })
+            client.updateItem(
+                match { request ->
+                    request.expressionAttributeValues?.get(":expiresAt") == AttributeValue.N("105")
+                }
+            )
         }
     }
 

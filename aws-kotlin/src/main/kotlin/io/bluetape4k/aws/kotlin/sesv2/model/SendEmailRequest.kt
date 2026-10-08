@@ -21,11 +21,11 @@ import io.bluetape4k.support.requireNotBlank
  * @param content 전송할 [EmailContent]
  * @return [SendEmailRequest] 인스턴스
  */
-fun sendEmailRequestOf(
+inline fun sendEmailRequestOf(
     fromEmailAddress: String,
     destination: Destination,
     content: EmailContent,
-    builder: SendEmailRequest.Builder.() -> Unit = {},
+    crossinline builder: SendEmailRequest.Builder.() -> Unit = {},
 ): SendEmailRequest {
     fromEmailAddress.requireNotBlank("fromEmailAddress")
 
@@ -46,9 +46,10 @@ fun sendEmailRequestOf(
             imports = ["io.bluetape4k.aws.kotlin.sesv2.model.sendEmailRequestOf"]
         )
 )
-fun sendMailRequestOf(
+inline fun sendMailRequestOf(
     fromEmailAddress: String,
     destination: Destination,
     content: EmailContent,
-    builder: SendEmailRequest.Builder.() -> Unit = {},
-): SendEmailRequest = sendEmailRequestOf(fromEmailAddress, destination, content, builder)
+    crossinline builder: SendEmailRequest.Builder.() -> Unit = {},
+): SendEmailRequest =
+    sendEmailRequestOf(fromEmailAddress, destination, content, builder)

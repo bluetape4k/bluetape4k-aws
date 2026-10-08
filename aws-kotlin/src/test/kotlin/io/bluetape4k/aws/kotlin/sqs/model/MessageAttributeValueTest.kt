@@ -4,30 +4,30 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class MessageAttributeValueTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `messageAttributeValueOf String으로 StringValue를 설정한다`() {
         val attr = messageAttributeValueOf("hello")
-
+        log.debug { "attr=$attr" }
         attr.stringValue shouldBeEqualTo "hello"
     }
 
     @Test
     fun `messageAttributeValueOf null String을 허용한다`() {
-        val attr = messageAttributeValueOf(null as String?)
-
-        attr.shouldNotBeNull()
+        val attr = messageAttributeValueOf(null as String?).shouldNotBeNull()
+        log.debug { "attr=$attr" }
     }
 
     @Test
     fun `messageAttributeValueOf String 목록으로 StringListValues를 설정한다`() {
         val attr = messageAttributeValueOf(listOf("a", "b", "c"))
-
+        log.debug { "attr=$attr" }
         attr.stringListValues shouldBeEqualTo listOf("a", "b", "c")
     }
 
@@ -35,7 +35,7 @@ class MessageAttributeValueTest {
     fun `messageAttributeValueOf ByteArray로 BinaryValue를 설정한다`() {
         val bytes = byteArrayOf(1, 2, 3)
         val attr = messageAttributeValueOf(bytes)
-
+        log.debug { "attr=$attr" }
         attr.binaryValue.shouldNotBeNull()
     }
 
@@ -43,7 +43,7 @@ class MessageAttributeValueTest {
     fun `messageAttributeValueOf ByteArray 목록으로 BinaryListValues를 설정한다`() {
         val values = listOf(byteArrayOf(1), byteArrayOf(2))
         val attr = messageAttributeValueOf(values)
-
+        log.debug { "attr=$attr" }
         attr.binaryListValues shouldHaveSize 2
     }
 
@@ -52,7 +52,7 @@ class MessageAttributeValueTest {
         val attr = messageAttributeValueOf("test") {
             dataType = "String"
         }
-
+        log.debug { "attr=$attr" }
         attr.dataType shouldBeEqualTo "String"
     }
 }

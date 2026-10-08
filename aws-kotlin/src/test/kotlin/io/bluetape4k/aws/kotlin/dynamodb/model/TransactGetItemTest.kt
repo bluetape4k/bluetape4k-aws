@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class TransactGetItemTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `transactGetItemOf Get 객체로 TransactGetItem을 생성한다`() {

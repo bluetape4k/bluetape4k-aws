@@ -5,9 +5,13 @@ import aws.sdk.kotlin.services.sfn.model.DescribeExecutionRequest
 import aws.sdk.kotlin.services.sfn.model.DescribeExecutionResponse
 import aws.sdk.kotlin.services.sfn.model.ExecutionStatus
 import aws.sdk.kotlin.services.sfn.model.StopExecutionRequest
+import aws.smithy.kotlin.runtime.time.Instant
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -20,18 +24,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import aws.smithy.kotlin.runtime.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class SfnExecutionFlowTest {
 
-    private companion object {
+    private companion object: KLoggingChannel() {
         const val EXECUTION_ARN = "arn:aws:states:ap-northeast-2:123456789012:execution:orders:run-1"
 
         val INSTANT: Instant = Instant.fromEpochSeconds(0)
+    }
+
+    private val client = mockk<SfnClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
     }
 
     @Test
@@ -40,6 +51,7 @@ class SfnExecutionFlowTest {
             SfnExecutionPollingOptions(999.milliseconds)
         }
         SfnExecutionPollingOptions(1.seconds)
+
         assertFailsWith<IllegalArgumentException> {
             SfnExecutionPollingOptions(Duration.INFINITE)
         }
@@ -52,8 +64,10 @@ class SfnExecutionFlowTest {
     fun `running response is emitted before terminal response`() = runTest {
         val running = response(ExecutionStatus.Running)
         val succeeded = response(ExecutionStatus.Succeeded)
-        val client = mockk<SfnClient>()
-        coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(running, succeeded)
+
+        coEvery {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returnsMany listOf(running, succeeded)
 
         val emissions = client.describeExecutionFlow(EXECUTION_ARN).toList()
 
@@ -65,11 +79,16 @@ class SfnExecutionFlowTest {
     fun `first request is immediate and the next request waits for the polling interval`() = runTest {
         val running = response(ExecutionStatus.Running)
         val succeeded = response(ExecutionStatus.Succeeded)
-        val client = mockk<SfnClient>()
-        coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(running, succeeded)
 
-        val collector = launch { client.describeExecutionFlow(EXECUTION_ARN).toList() }
+        coEvery {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returnsMany listOf(running, succeeded)
+
+        val collector = launch {
+            client.describeExecutionFlow(EXECUTION_ARN).toList()
+        }
         runCurrent()
+
         coVerify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
 
         advanceTimeBy(999.milliseconds)
@@ -78,6 +97,7 @@ class SfnExecutionFlowTest {
 
         advanceTimeBy(1.milliseconds)
         runCurrent()
+
         collector.join()
         coVerify(exactly = 2) { client.describeExecution(any<DescribeExecutionRequest>()) }
     }
@@ -85,8 +105,9 @@ class SfnExecutionFlowTest {
     @Test
     fun `pending redrive is emitted as terminal raw response`() = runTest {
         val pendingRedrive = response(ExecutionStatus.PendingRedrive)
-        val client = mockk<SfnClient>()
-        coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returns pendingRedrive
+        coEvery {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns pendingRedrive
 
         val result = client.describeExecutionFlow(EXECUTION_ARN).toList()
 
@@ -97,8 +118,9 @@ class SfnExecutionFlowTest {
     @Test
     fun `sdk unknown does not emit response or auto stop`() = runTest {
         val unknown = response(ExecutionStatus.SdkUnknown("FUTURE_STATUS"))
-        val client = mockk<SfnClient>()
-        coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returns unknown
+        coEvery {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returns unknown
         val emissions = mutableListOf<DescribeExecutionResponse>()
 
         val error = assertFailsWith<IllegalStateException> {
@@ -108,7 +130,8 @@ class SfnExecutionFlowTest {
         }
 
         error.message shouldBeEqualTo "Unsupported Step Functions execution status: FUTURE_STATUS"
-        emissions shouldBeEqualTo emptyList()
+        emissions.shouldBeEmpty()
+
         coVerify(exactly = 1) { client.describeExecution(any<DescribeExecutionRequest>()) }
         coVerify(exactly = 0) { client.stopExecution(any<StopExecutionRequest>()) }
     }
@@ -116,7 +139,6 @@ class SfnExecutionFlowTest {
     @Test
     fun `take one cancels a running flow without a second request`() = runTest {
         val running = response(ExecutionStatus.Running)
-        val client = mockk<SfnClient>()
         coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returns running
 
         val result = client.describeExecutionFlow(EXECUTION_ARN).take(1).toList()
@@ -129,8 +151,8 @@ class SfnExecutionFlowTest {
     @Test
     fun `cancellation propagates and does not call stop execution`() = runTest {
         val running = response(ExecutionStatus.Running)
-        val client = mockk<SfnClient>()
         coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returns running
+
         val job = launch {
             client.describeExecutionFlow(EXECUTION_ARN).collect()
         }
@@ -145,7 +167,6 @@ class SfnExecutionFlowTest {
     @Test
     fun `SDK describe failure is propagated unchanged without another request`() = runTest {
         val failure = IllegalStateException("describe failed")
-        val client = mockk<SfnClient>()
         coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } throws failure
 
         val error = assertFailsWith<IllegalStateException> {
@@ -160,8 +181,9 @@ class SfnExecutionFlowTest {
     fun `flow is cold and each collection starts a new request`() = runTest {
         val first = response(ExecutionStatus.Succeeded)
         val second = response(ExecutionStatus.Succeeded)
-        val client = mockk<SfnClient>()
-        coEvery { client.describeExecution(any<DescribeExecutionRequest>()) } returnsMany listOf(first, second)
+        coEvery {
+            client.describeExecution(any<DescribeExecutionRequest>())
+        } returnsMany listOf(first, second)
 
         client.describeExecutionFlow(EXECUTION_ARN).toList()
         client.describeExecutionFlow(EXECUTION_ARN).toList()
@@ -175,7 +197,6 @@ class SfnExecutionFlowTest {
             executionArn = EXECUTION_ARN
         }
         val response = response(ExecutionStatus.Succeeded)
-        val client = mockk<SfnClient>()
         coEvery { client.describeExecution(expectedRequest) } returns response
 
         val result = client.describeExecutionFlow(expectedRequest).toList()

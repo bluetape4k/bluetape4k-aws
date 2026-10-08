@@ -2,17 +2,16 @@
 
 package io.bluetape4k.aws.kotlin.kinesis
 
-import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
+import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.sdk.kotlin.services.kinesis.model.ShardIteratorType
 import aws.sdk.kotlin.services.kinesis.model.StreamStatus
-import io.bluetape4k.aws.kotlin.AbstractAwsTest.Companion.endpointUrl
-import io.bluetape4k.aws.kotlin.AbstractAwsTest.Companion.region
 import io.bluetape4k.aws.kotlin.kinesis.model.putRecordsRequestEntryOf
 import io.bluetape4k.idgenerators.uuid.Uuid
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.testcontainers.aws.FlociServer
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
+import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.opentest4j.TestAbortedException
+import org.testcontainers.utility.Base58
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -37,9 +37,12 @@ import kotlin.time.Duration.Companion.seconds
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @Execution(ExecutionMode.SAME_THREAD)
-class KinesisDryRunEmulatorTest : AbstractKotlinKinesisTest() {
+class KinesisDryRunEmulatorTest: AbstractKotlinKinesisTest() {
+
+    companion object: KLogging()
 
     private val backend by lazy { validatedKinesisDryRunBackend(configuredAwsEmulatorName()) }
+
     private val backendVersion by lazy {
         when (backend) {
             "floci" -> FlociServer.TAG
@@ -48,7 +51,7 @@ class KinesisDryRunEmulatorTest : AbstractKotlinKinesisTest() {
         }
     }
     private val reportRows = linkedMapOf<KinesisDryRunOperation, KinesisDryRunCapabilityRow>()
-    private val runNonce = Uuid.V7.nextIdAsString().replace("-", "").take(12)
+    private val runNonce = Base58.randomString(12).lowercase() // Uuid.V7.nextIdAsString().replace("-", "").take(12)
 
     @BeforeAll
     fun resetCapabilityReport() {
@@ -397,9 +400,9 @@ class KinesisDryRunEmulatorTest : AbstractKotlinKinesisTest() {
     ): Set<String> = observeKinesisConditionUntilDeadline(
         pollInterval = 200.milliseconds,
     ) {
-            val persisted = readPersistedMarkers(client, boundary, streamName, markers)
-            persisted.takeIf { it.isNotEmpty() }
-        }.orEmpty()
+        val persisted = readPersistedMarkers(client, boundary, streamName, markers)
+        persisted.takeIf { it.isNotEmpty() }
+    }.orEmpty()
 
     private suspend fun readPersistedMarkers(
         client: KinesisClient,

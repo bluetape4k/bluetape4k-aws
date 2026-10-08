@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class DynamoDbAttributeDefinitionTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `attributeDefinitionOf는 attributeName과 attributeType으로 정의를 생성한다`() {

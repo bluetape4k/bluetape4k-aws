@@ -11,17 +11,22 @@ import io.bluetape4k.coroutines.flow.extensions.repeat
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.transformWhile
+import java.io.Serializable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /** Step Functions 실행 상태 polling 설정입니다. */
 data class SfnExecutionPollingOptions(
     val pollInterval: Duration = 1.seconds,
-) {
+): Serializable {
     init {
         require(pollInterval.isFinite() && pollInterval >= 1.seconds) {
             "pollInterval must be finite and at least 1s"
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 
@@ -40,23 +45,27 @@ data class SfnExecutionPollingOptions(
 fun SfnClient.describeExecutionFlow(
     request: DescribeExecutionRequest,
     options: SfnExecutionPollingOptions = SfnExecutionPollingOptions(),
-): Flow<DescribeExecutionResponse> = flow {
-    val response = describeExecution(request)
-    when (val status = response.status) {
-        ExecutionStatus.Running,
-        ExecutionStatus.Succeeded,
-        ExecutionStatus.Failed,
-        ExecutionStatus.TimedOut,
-        ExecutionStatus.Aborted,
-        ExecutionStatus.PendingRedrive -> emit(response)
-        is ExecutionStatus.SdkUnknown -> error(
-            "Unsupported Step Functions execution status: ${status.value}",
-        )
+): Flow<DescribeExecutionResponse> =
+    flow {
+        val response = describeExecution(request)
+
+        when (val status = response.status) {
+            ExecutionStatus.Running,
+            ExecutionStatus.Succeeded,
+            ExecutionStatus.Failed,
+            ExecutionStatus.TimedOut,
+            ExecutionStatus.Aborted,
+            ExecutionStatus.PendingRedrive,
+                -> emit(response)
+            is ExecutionStatus.SdkUnknown ->
+                error("Unsupported Step Functions execution status: ${status.value}")
+        }
     }
-}.repeat(options.pollInterval).transformWhile { response ->
-    emit(response)
-    response.status == ExecutionStatus.Running
-}
+        .repeat(options.pollInterval)
+        .transformWhile { response ->
+            emit(response)
+            response.status == ExecutionStatus.Running
+        }
 
 /**
  * [executionArn]으로 실행 상태를 polling하는 cold Flow를 반환합니다.
@@ -66,7 +75,8 @@ fun SfnClient.describeExecutionFlow(
 fun SfnClient.describeExecutionFlow(
     executionArn: String,
     options: SfnExecutionPollingOptions = SfnExecutionPollingOptions(),
-): Flow<DescribeExecutionResponse> = describeExecutionFlow(
-    describeExecutionRequestOf(executionArn),
-    options,
-)
+): Flow<DescribeExecutionResponse> =
+    describeExecutionFlow(
+        describeExecutionRequestOf(executionArn),
+        options,
+    )

@@ -28,9 +28,10 @@ class SesAsyncClientTest: AbstractSesTest() {
                 mb.body(bodyOf("본문", "<p1>본문</p1>"))
             }
         }
+        log.debug { "request=$request" }
 
         val response: SendEmailResponse = asyncClient.send(request)
-        response.messageId().shouldNotBeEmpty()
         log.debug { "response=$response" }
+        response.messageId().shouldNotBeEmpty()
     }
 }

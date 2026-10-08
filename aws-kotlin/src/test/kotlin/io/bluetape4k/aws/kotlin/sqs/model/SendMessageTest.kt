@@ -4,11 +4,12 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class SendMessageTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     private val queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue"
 
@@ -18,7 +19,7 @@ class SendMessageTest {
             queueUrl = queueUrl,
             messageBody = "Hello, SQS!"
         )
-
+        log.debug { "req=$req" }
         req.queueUrl shouldBeEqualTo queueUrl
         req.messageBody shouldBeEqualTo "Hello, SQS!"
     }
@@ -32,6 +33,9 @@ class SendMessageTest {
             delaySeconds = 10
         }
 
+        log.debug { "req=$req" }
+        req.queueUrl shouldBeEqualTo queueUrl
+        req.messageBody shouldBeEqualTo "Delayed message"
         req.delaySeconds shouldBeEqualTo 10
     }
 
@@ -44,6 +48,7 @@ class SendMessageTest {
             messageAttributes = mapOf("source" to messageAttributeValueOf("test"))
         }
 
+        log.debug { "req=$req" }
         req.messageAttributes?.get("source")?.stringValue shouldBeEqualTo "test"
     }
 
@@ -68,6 +73,7 @@ class SendMessageTest {
             messageBody = "Batch message"
         )
 
+        log.debug { "entry=$entry" }
         entry.id shouldBeEqualTo "msg-001"
         entry.messageBody shouldBeEqualTo "Batch message"
     }
@@ -81,6 +87,7 @@ class SendMessageTest {
             delaySeconds = 5
         )
 
+        log.debug { "entry=$entry" }
         entry.messageGroupId shouldBeEqualTo "orders"
         entry.delaySeconds shouldBeEqualTo 5
     }
@@ -107,6 +114,7 @@ class SendMessageTest {
         )
         val req = sendMessageBatchRequestOf(queueUrl = queueUrl, entries = entries)
 
+        log.debug { "req=$req" }
         req.queueUrl shouldBeEqualTo queueUrl
         req.entries shouldHaveSize 2
     }
@@ -118,7 +126,7 @@ class SendMessageTest {
             sendMessageBatchRequestEntryOf("id1", "Hello!"),
             sendMessageBatchRequestEntryOf("id2", "World!")
         )
-
+        log.debug { "req=$req" }
         req.entries shouldHaveSize 2
     }
 

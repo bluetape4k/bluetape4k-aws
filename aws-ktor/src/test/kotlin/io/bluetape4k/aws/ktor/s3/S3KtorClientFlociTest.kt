@@ -3,7 +3,10 @@ package io.bluetape4k.aws.ktor.s3
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.javatimes.minutes
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.http.Url
@@ -12,6 +15,10 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 
 class S3KtorClientFlociTest {
+
+    private companion object: KLoggingChannel() {
+        private val floci by lazy { FlociServer.Launcher.floci }
+    }
 
     @Test
     fun `advanced helpers round trip object through Floci S3`() = runSuspendIO {
@@ -39,7 +46,9 @@ class S3KtorClientFlociTest {
                 config.text shouldBeEqualTo payload
                 config.metadata["source"] shouldBeEqualTo "floci"
 
-                val presigned = s3.presignGetObject(bucket, key, java.time.Duration.ofMinutes(10))
+                val presigned = s3.presignGetObject(bucket, key, 10.minutes())
+
+                log.debug { "presigned url=${presigned.url}" }
                 presigned.url.toString() shouldContain bucket
                 presigned.url.toString() shouldContain "X-Amz-Signature"
             }
@@ -53,8 +62,4 @@ class S3KtorClientFlociTest {
             .credentialsProvider(floci.getCredentialProvider())
             .forcePathStyle(true)
             .build()
-
-    private companion object {
-        private val floci by lazy { FlociServer.Launcher.floci }
-    }
 }

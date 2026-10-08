@@ -57,6 +57,7 @@ suspend fun <R> withSnsClient(
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (SnsClient) -> R,
-): R = snsClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-    block(client)
-}
+): R =
+    snsClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
+        block(client)
+    }

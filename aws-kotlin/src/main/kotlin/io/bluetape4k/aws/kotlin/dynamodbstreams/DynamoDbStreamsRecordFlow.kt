@@ -3,9 +3,6 @@
 package io.bluetape4k.aws.kotlin.dynamodbstreams
 
 import aws.sdk.kotlin.services.dynamodbstreams.DynamoDbStreamsClient
-import aws.sdk.kotlin.services.dynamodbstreams.describeStream
-import aws.sdk.kotlin.services.dynamodbstreams.getRecords
-import aws.sdk.kotlin.services.dynamodbstreams.getShardIterator
 import aws.sdk.kotlin.services.dynamodbstreams.model.DescribeStreamRequest
 import aws.sdk.kotlin.services.dynamodbstreams.model.DynamoDbStreamsException
 import aws.sdk.kotlin.services.dynamodbstreams.model.ExpiredIteratorException
@@ -15,24 +12,26 @@ import aws.sdk.kotlin.services.dynamodbstreams.model.Record
 import aws.sdk.kotlin.services.dynamodbstreams.model.Shard
 import aws.sdk.kotlin.services.dynamodbstreams.model.ShardIteratorType
 import aws.sdk.kotlin.services.dynamodbstreams.model.TrimmedDataAccessException
-import io.bluetape4k.logging.KotlinLogging
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.error
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-private val log = KotlinLogging.logger {}
+private object StreamsLgger: KLogging()
 
 /**
  * 단일 DynamoDB Streams shard를 polling해 AWS SDK [Record]를 내보내는 cold Flow입니다.
@@ -60,7 +59,10 @@ fun DynamoDbStreamsClient.recordFlow(
             options = options,
             checkpointStore = checkpointStore,
             metrics = metrics,
-        ).collect { emit(it) }
+        )
+            .collect {
+                emit(it)
+            }
     }
 }
 
@@ -88,10 +90,11 @@ fun DynamoDbStreamsClient.shardRecordFlow(
         val childrenByParent = shards
             .mapNotNull { shard -> shard.parentShardId?.let { parentId -> parentId to shard } }
             .groupBy({ it.first }, { it.second })
+
         val roots = shards.filter { it.parentShardId == null || it.parentShardId !in shardIds }
         check(roots.isNotEmpty()) { "DynamoDB Streams shard graph has no root: streamArn=$streamArn" }
 
-        val visited = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        val visited = ConcurrentHashMap.newKeySet<String>()
         roots.asFlow()
             .flatMapMerge(options.maxShardConcurrency) { root ->
                 consumeShardTree(
@@ -105,7 +108,9 @@ fun DynamoDbStreamsClient.shardRecordFlow(
                     metrics = metrics,
                 )
             }
-            .collect { emit(it) }
+            .collect {
+                emit(it)
+            }
     }
 }
 
@@ -119,13 +124,16 @@ private suspend fun DynamoDbStreamsClient.describeShards(
 
     for (page in 1..options.maxDescribePages) {
         currentCoroutineContext().ensureActive()
-        val response = describeStream(DescribeStreamRequest {
-            this.streamArn = streamArn
-            this.exclusiveStartShardId = exclusiveStartShardId
-        })
+        val response = describeStream(
+            DescribeStreamRequest {
+                this.streamArn = streamArn
+                this.exclusiveStartShardId = exclusiveStartShardId
+            }
+        )
         val description = response.streamDescription
             ?: error("DescribeStream returned no streamDescription for streamArn=$streamArn")
-        shards += description.shards.orEmpty().filterNotNull()
+        shards += description.shards.orEmpty()
+
         exclusiveStartShardId = description.lastEvaluatedShardId
         if (exclusiveStartShardId == null) return shards
     }
@@ -156,7 +164,10 @@ private fun DynamoDbStreamsClient.consumeShardTree(
         options = options,
         checkpointStore = checkpointStore,
         metrics = metrics,
-    ).collect { emit(DynamoDbStreamsShardRecord(streamArn, shardId, it)) }
+    )
+        .collect {
+            emit(DynamoDbStreamsShardRecord(streamArn, shardId, it))
+        }
 
     childrenByParent[shardId].orEmpty().forEach { child ->
         consumeShardTree(
@@ -168,7 +179,8 @@ private fun DynamoDbStreamsClient.consumeShardTree(
             options = options,
             checkpointStore = checkpointStore,
             metrics = metrics,
-        ).collect { emit(it) }
+        )
+            .collect { emit(it) }
     }
 }
 
@@ -204,18 +216,20 @@ private fun DynamoDbStreamsClient.consumeShard(
                 if (shardIterator == null) {
                     shardIterator = fetchShardIterator(streamArn, shardId, currentPosition)
                 }
-                val currentIterator = requireNotNull(shardIterator)
+                val currentIterator = shardIterator.requireNotNull("shardIterator")
 
-                val response = getRecords(GetRecordsRequest {
-                    this.shardIterator = currentIterator
-                    limit = options.batchLimit
-                })
+                val response = getRecords(
+                    GetRecordsRequest {
+                        this.shardIterator = currentIterator
+                        limit = options.batchLimit
+                    }
+                )
                 iteratorRetryCount = 0
                 throttleRetryCount = 0
-                val records = response.records.orEmpty().filterNotNull()
+                val records = response.records.orEmpty()
                 metrics.onBatch(shardId, records.size)
 
-                for (record in records) {
+                records.forEach { record ->
                     emit(record)
                     val sequenceNumber = record.dynamodb?.sequenceNumber
                     if (sequenceNumber == null && checkpointStore !== NoopDynamoDbStreamsCheckpointStore) {
@@ -234,19 +248,17 @@ private fun DynamoDbStreamsClient.consumeShard(
 
             } catch (e: CancellationException) {
                 throw e
-
             } catch (e: TrimmedDataAccessException) {
-                log.error { "DynamoDB Streams data was trimmed: streamArn=$streamArn shard=$shardId" }
+                StreamsLgger.log.error { "DynamoDB Streams data was trimmed: streamArn=$streamArn shard=$shardId" }
                 throw e
-
             } catch (e: ExpiredIteratorException) {
                 iteratorRetryCount++
                 if (lastSeenSequenceNumber == null && currentPosition is DynamoDbStreamsStartingPosition.Latest) {
-                    log.error { "Latest iterator expired before a checkpoint: streamArn=$streamArn shard=$shardId" }
+                    StreamsLgger.log.error { "Latest iterator expired before a checkpoint: streamArn=$streamArn shard=$shardId" }
                     throw e
                 }
                 if (iteratorRetryCount > options.maxIteratorRetries) {
-                    log.error {
+                    StreamsLgger.log.error {
                         "DynamoDB Streams iterator retries exhausted: streamArn=$streamArn " +
                                 "shard=$shardId attempts=$iteratorRetryCount"
                     }
@@ -257,16 +269,15 @@ private fun DynamoDbStreamsClient.consumeShard(
                     ?: currentPosition
                 shardIterator = null
                 metrics.onRetry(shardId, iteratorRetryCount, e)
-                log.warn {
+                StreamsLgger.log.warn {
                     "DynamoDB Streams iterator retry $iteratorRetryCount/${options.maxIteratorRetries}: " +
                             "streamArn=$streamArn shard=$shardId"
                 }
-
             } catch (e: DynamoDbStreamsException) {
                 if (!e.sdkErrorMetadata.isRetryable) throw e
                 throttleRetryCount++
                 if (throttleRetryCount > options.maxThrottleRetries) {
-                    log.error {
+                    StreamsLgger.log.error {
                         "DynamoDB Streams throttle retries exhausted: streamArn=$streamArn " +
                                 "shard=$shardId attempts=$throttleRetryCount"
                     }
@@ -274,7 +285,7 @@ private fun DynamoDbStreamsClient.consumeShard(
                 }
                 metrics.onRetry(shardId, throttleRetryCount, e)
                 val backoff = jitteredDynamoDbStreamsBackoff(throttleRetryCount, options)
-                log.warn {
+                StreamsLgger.log.warn {
                     "DynamoDB Streams retry $throttleRetryCount/${options.maxThrottleRetries}: " +
                             "streamArn=$streamArn shard=$shardId backoff=$backoff"
                 }
@@ -315,7 +326,8 @@ internal fun jitteredDynamoDbStreamsBackoff(
     attempt: Int,
     options: DynamoDbStreamsRecordFlowOptions,
 ): Duration {
-    require(attempt >= 1) { "attempt must be >= 1" }
+    attempt.requirePositiveNumber("attempt")
+
     val shift = (attempt - 1).coerceAtMost(30)
     val initialMs = options.initialThrottleBackoff.inWholeMilliseconds
     val maxMs = options.maxThrottleBackoff.inWholeMilliseconds
@@ -324,7 +336,7 @@ internal fun jitteredDynamoDbStreamsBackoff(
     } else {
         (initialMs shl shift).coerceAtMost(maxMs)
     }
-    return Random.Default.nextLong(0L, cappedMs + 1L).milliseconds
+    return Random.nextLong(0L, cappedMs + 1).milliseconds
 }
 
 /** shard와 원본 record를 함께 전달해 checkpoint key를 보존합니다. */

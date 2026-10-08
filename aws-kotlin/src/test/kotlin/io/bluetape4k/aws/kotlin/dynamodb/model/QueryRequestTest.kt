@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class QueryRequestTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `queryRequestOf AttributeValue 오버로드로 tableName으로 요청을 생성한다`() {

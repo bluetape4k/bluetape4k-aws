@@ -11,6 +11,8 @@ import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.kotlin.bedrock.model.textContents
 import io.bluetape4k.aws.kotlin.bedrock.model.userMessageOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Tag
@@ -18,6 +20,15 @@ import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
 
 class BedrockRuntimeSmokeTest {
+
+    private companion object: KLogging() {
+        const val BEDROCK_SMOKE_TAG = "bedrock-smoke"
+        const val BEDROCK_REGION = "BEDROCK_REGION"
+        const val BEDROCK_MODEL_ID = "BEDROCK_MODEL_ID"
+        const val KOTLIN_SUCCESS_REQUEST_ID = "not-exposed-by-sdk-1.8.0"
+        const val SENTINEL_MESSAGE = "sentinel-secret-message"
+        const val SENTINEL_CAUSE = "sentinel-secret-cause"
+    }
 
     @Test
     @Tag(BEDROCK_SMOKE_TAG)
@@ -75,23 +86,15 @@ class BedrockRuntimeSmokeTest {
             modelId = "approved-model",
         )
 
+        log.debug { "sanitized=$sanitized" }
         sanitized.message shouldBeEqualTo
-            "bedrock-smoke lane=kotlin result=FAIL elapsedMs=17 region=us-east-1 " +
-            "modelId=approved-model exceptionClass=aws.smithy.kotlin.runtime.ServiceException " +
-            "errorCode=AccessDenied requestId=request-123"
+                "bedrock-smoke lane=kotlin result=FAIL elapsedMs=17 region=us-east-1 " +
+                "modelId=approved-model exceptionClass=aws.smithy.kotlin.runtime.ServiceException " +
+                "errorCode=AccessDenied requestId=request-123"
         sanitized.message.orEmpty() shouldNotContain SENTINEL_MESSAGE
         sanitized.message.orEmpty() shouldNotContain SENTINEL_CAUSE
         sanitized.cause.shouldBeNull()
         sanitized.suppressed.isEmpty().shouldBeTrue()
-    }
-
-    private companion object {
-        const val BEDROCK_SMOKE_TAG = "bedrock-smoke"
-        const val BEDROCK_REGION = "BEDROCK_REGION"
-        const val BEDROCK_MODEL_ID = "BEDROCK_MODEL_ID"
-        const val KOTLIN_SUCCESS_REQUEST_ID = "not-exposed-by-sdk-1.8.0"
-        const val SENTINEL_MESSAGE = "sentinel-secret-message"
-        const val SENTINEL_CAUSE = "sentinel-secret-cause"
     }
 }
 
@@ -112,7 +115,7 @@ private fun smokeEvidence(
     requestId: String?,
 ): String =
     "bedrock-smoke lane=kotlin result=$result elapsedMs=$elapsedMillis region=$region " +
-        "modelId=$modelId requestId=${requestId.orNotAvailable()}"
+            "modelId=$modelId requestId=${requestId.orNotAvailable()}"
 
 private fun sanitizedSmokeFailure(
     failure: Throwable,
@@ -123,9 +126,9 @@ private fun sanitizedSmokeFailure(
     val serviceFailure = failure as? ServiceException
     val evidence =
         "bedrock-smoke lane=kotlin result=FAIL elapsedMs=$elapsedMillis region=$region " +
-            "modelId=$modelId exceptionClass=${failure.javaClass.name} " +
-            "errorCode=${serviceFailure?.sdkErrorMetadata?.errorCode.orNotAvailable()} " +
-            "requestId=${serviceFailure?.sdkErrorMetadata?.requestId.orNotAvailable()}"
+                "modelId=$modelId exceptionClass=${failure.javaClass.name} " +
+                "errorCode=${serviceFailure?.sdkErrorMetadata?.errorCode.orNotAvailable()} " +
+                "requestId=${serviceFailure?.sdkErrorMetadata?.requestId.orNotAvailable()}"
     return AssertionError(evidence)
 }
 

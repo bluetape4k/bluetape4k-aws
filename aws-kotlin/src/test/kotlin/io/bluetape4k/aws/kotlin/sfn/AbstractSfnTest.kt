@@ -2,16 +2,18 @@
 
 package io.bluetape4k.aws.kotlin.sfn
 
+import aws.sdk.kotlin.services.sfn.SfnClient
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import org.junit.jupiter.api.Assumptions.assumeFalse
 
 /** Step Functions만 사용하는 Floci-first emulator fixture입니다. */
-abstract class AbstractSfnTest : AbstractAwsTest() {
+abstract class AbstractSfnTest: AbstractAwsTest() {
 
-    companion object {
+    companion object: KLogging() {
         private const val EMULATOR_PROPERTY = "bluetape4k.aws.emulator"
 
         val sfnEmulator: AwsEmulatorServer by lazy {
@@ -23,6 +25,7 @@ abstract class AbstractSfnTest : AbstractAwsTest() {
         }
 
         fun assumeSfnSupported() {
+            // TODO: floci 도 이제 Step Functions 를 지원하는 걸로 안다.
             assumeFalse(
                 configuredSfnEmulatorName() == "floci",
                 "live integration unverified: Floci does not support Step Functions",
@@ -32,4 +35,16 @@ abstract class AbstractSfnTest : AbstractAwsTest() {
         private fun configuredSfnEmulatorName(): String =
             System.getProperty(EMULATOR_PROPERTY, "floci").trim().lowercase()
     }
+
+    protected suspend inline fun <R> withTestSfnClient(
+        awsServer: AwsEmulatorServer = sfnEmulator,
+        action: suspend (SfnClient) -> R,
+    ): R =
+        withSfnClient(
+            endpointUrl = awsServer.endpointUrl,
+            region = awsServer.region,
+            credentialsProvider = awsServer.credentialsProvider,
+        ) { client ->
+            action(client)
+        }
 }

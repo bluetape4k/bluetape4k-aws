@@ -38,7 +38,7 @@ data class KinesisRecordFlowOptions(
     val initialThrottleBackoff: Duration = DEFAULT_INITIAL_THROTTLE_BACKOFF,
     val maxThrottleBackoff: Duration = DEFAULT_MAX_THROTTLE_BACKOFF,
     val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
-) : Serializable {
+): Serializable {
 
     init {
         require(batchLimit in 1..MAX_KINESIS_BATCH_LIMIT) {
@@ -67,10 +67,10 @@ data class KinesisRecordFlowOptions(
     companion object {
         private const val serialVersionUID: Long = 1L
 
-/** 단일 GetRecords 호출에 적용되는 Kinesis API 상한입니다. */
+        /** 단일 GetRecords 호출에 적용되는 Kinesis API 상한입니다. */
         const val MAX_KINESIS_BATCH_LIMIT: Int = 10_000
 
-/** 샤드당 초당 5회 호출 할당량을 넘지 않기 위한 최소 안전 폴링 간격입니다. */
+        /** 샤드당 초당 5회 호출 할당량을 넘지 않기 위한 최소 안전 폴링 간격입니다. */
         val MIN_POLL_INTERVAL: Duration = 200.milliseconds
 
         const val DEFAULT_BATCH_LIMIT: Int = 100

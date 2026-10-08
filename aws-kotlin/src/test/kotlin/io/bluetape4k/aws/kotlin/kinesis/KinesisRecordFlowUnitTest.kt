@@ -10,8 +10,13 @@ import aws.sdk.kotlin.services.kinesis.model.KinesisException
 import aws.sdk.kotlin.services.kinesis.model.Record
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.assertions.shouldBeGreaterThan
+import io.bluetape4k.assertions.shouldBeInRange
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.coroutines.flow.extensions.log
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -28,15 +33,15 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Unit tests for [recordFlow] using MockK and virtual coroutine time.
  *
- * [runTest] auto-advances virtual time so [delay] calls inside the flow complete instantly
+ * [runTest] auto-advances virtual time so `delay` calls inside the flow complete instantly
  * without real wall-clock waiting.
  */
 class KinesisRecordFlowUnitTest {
 
-    companion object : KLogging()
-
-    private val STREAM = "test-stream"
-    private val SHARD_ID = "shardId-000000000000"
+    companion object: KLoggingChannel() {
+        private const val STREAM = "test-stream"
+        private const val SHARD_ID = "shardId-000000000000"
+    }
 
     private val client = mockk<KinesisClient>(relaxed = true)
 
@@ -48,7 +53,7 @@ class KinesisRecordFlowUnitTest {
     private fun makeRecord(seq: String, data: String = "data"): Record = mockk(relaxed = true) {
         every { sequenceNumber } returns seq
         every { partitionKey } returns "pk"
-        every { this@mockk.data } returns data.encodeToByteArray()
+        every { this@mockk.data } returns data.toUtf8Bytes()
     }
 
     private fun shardIteratorResponse(iterator: String) =
@@ -66,26 +71,37 @@ class KinesisRecordFlowUnitTest {
     fun `emits all records from a single getRecords batch`() = runTest {
         val records = listOf(makeRecord("seq-1"), makeRecord("seq-2"), makeRecord("seq-3"))
 
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                shardIteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
-                recordsResponse(records, nextIterator = "iter-2")
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns shardIteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns recordsResponse(records, nextIterator = "iter-2")
 
-        val result = client.recordFlow(STREAM, SHARD_ID).take(3).toList()
+        val result = client.recordFlow(STREAM, SHARD_ID)
+            .log("Record")
+            .take(3)
+            .toList()
 
+        result.forEach { log.debug { "record=$it" } }
         result.size shouldBeEqualTo 3
         result[0].sequenceNumber shouldBeEqualTo "seq-1"
+        result[1].sequenceNumber shouldBeEqualTo "seq-2"
         result[2].sequenceNumber shouldBeEqualTo "seq-3"
     }
 
     @Test
     fun `flow completes when nextShardIterator is null (shard closed)`() = runTest {
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                shardIteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
-                recordsResponse(listOf(makeRecord("seq-1")), nextIterator = null)
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns shardIteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns recordsResponse(listOf(makeRecord("seq-1")), nextIterator = null)
 
-        val result = client.recordFlow(STREAM, SHARD_ID).toList()
+        val result = client.recordFlow(STREAM, SHARD_ID)
+            .log("Record")
+            .toList()
 
         result.size shouldBeEqualTo 1
     }
@@ -98,14 +114,18 @@ class KinesisRecordFlowUnitTest {
         val record2 = makeRecord("seq-101")
 
         // Initial fetch + one recovery fetch
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returnsMany listOf(
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returnsMany listOf(
             shardIteratorResponse("iter-1"),
             shardIteratorResponse("iter-1-recovered"),
         )
 
         // getRecords: first returns records, second expires, third succeeds
         var getRecordsCallCount = 0
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } answers {
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             when (getRecordsCallCount++) {
                 0 -> recordsResponse(listOf(record1), "iter-expired")
                 1 -> throw ExpiredIteratorException { message = "iterator expired" }
@@ -113,27 +133,36 @@ class KinesisRecordFlowUnitTest {
             }
         }
 
-        val result = client.recordFlow(STREAM, SHARD_ID).toList()
+        val result = client.recordFlow(STREAM, SHARD_ID)
+            .log("Record")
+            .toList()
 
-        result.size shouldBeEqualTo 2
+        result.forEach { log.debug { "record=$it" } }
+        result shouldHaveSize 2
         result[0].sequenceNumber shouldBeEqualTo "seq-100"
         result[1].sequenceNumber shouldBeEqualTo "seq-101"
+
         coVerify(exactly = 2) { client.getShardIterator(any()) }
     }
 
     @Test
     fun `throws immediately on ExpiredIteratorException with Latest and no checkpoint`() = runTest {
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                shardIteratorResponse("iter-latest")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } throws
-                ExpiredIteratorException { message = "expired — latest, no checkpoint" }
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns shardIteratorResponse("iter-latest")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } throws ExpiredIteratorException { message = "expired — latest, no checkpoint" }
 
         assertFailsWith<ExpiredIteratorException> {
-            client.recordFlow(
-                streamName = STREAM,
-                shardId = SHARD_ID,
-                position = KinesisStartingPosition.Latest,
-            ).toList()
+            client
+                .recordFlow(
+                    streamName = STREAM,
+                    shardId = SHARD_ID,
+                    position = KinesisStartingPosition.Latest,
+                )
+                .log("Record")
+                .toList()
         }
         // No recovery — only one getShardIterator call
         coVerify(exactly = 1) { client.getShardIterator(any()) }
@@ -144,13 +173,16 @@ class KinesisRecordFlowUnitTest {
         val maxRetries = 2
         val opts = KinesisRecordFlowOptions(maxIteratorRetries = maxRetries)
 
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                shardIteratorResponse("iter-1")
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns shardIteratorResponse("iter-1")
 
         // First call returns a record (so checkpoint is set, avoiding Latest fail-fast);
         // subsequent calls all expire.
         var getRecordsCount = 0
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } answers {
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             if (getRecordsCount++ == 0) {
                 recordsResponse(listOf(makeRecord("seq-1")), "iter-2")
             } else {
@@ -173,11 +205,14 @@ class KinesisRecordFlowUnitTest {
         }
         val record = makeRecord("seq-200")
 
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                shardIteratorResponse("iter-1")
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns shardIteratorResponse("iter-1")
 
         var getRecordsCount = 0
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } answers {
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } answers {
             if (getRecordsCount++ == 0) {
                 throw retryable
             } else {
@@ -185,10 +220,13 @@ class KinesisRecordFlowUnitTest {
             }
         }
 
-        val result = client.recordFlow(STREAM, SHARD_ID).toList()
+        val result = client.recordFlow(STREAM, SHARD_ID)
+            .log("Record")
+            .toList()
 
-        result.size shouldBeEqualTo 1
-        result[0].sequenceNumber shouldBeEqualTo "seq-200"
+        result shouldHaveSize 1
+        log.debug { "record=${result.single()}" }
+        result.single().sequenceNumber shouldBeEqualTo "seq-200"
     }
 
     @Test
@@ -197,9 +235,12 @@ class KinesisRecordFlowUnitTest {
             every { sdkErrorMetadata } returns mockk { every { isRetryable } returns false }
         }
 
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                shardIteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } throws nonRetryable
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns shardIteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } throws nonRetryable
 
         assertFailsWith<KinesisException> {
             client.recordFlow(STREAM, SHARD_ID).toList()
@@ -216,13 +257,17 @@ class KinesisRecordFlowUnitTest {
             every { message } returns "throttled"
         }
 
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                shardIteratorResponse("iter-1")
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } throws retryable
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns shardIteratorResponse("iter-1")
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } throws retryable
 
         assertFailsWith<KinesisException> {
             client.recordFlow(STREAM, SHARD_ID, options = opts).toList()
         }
+
         // 1 initial + maxRetries retries = maxRetries + 1 total calls
         coVerify(exactly = maxRetries + 1) { client.getRecords(any()) }
     }
@@ -236,8 +281,7 @@ class KinesisRecordFlowUnitTest {
             maxThrottleBackoff = 30.seconds,
         )
         val backoff = jitteredBackoff(1, opts)
-        (backoff >= 0.milliseconds).shouldBeTrue()
-        (backoff <= 100.milliseconds).shouldBeTrue()
+        backoff shouldBeInRange 0.milliseconds..100.milliseconds
     }
 
     @Test
@@ -247,18 +291,20 @@ class KinesisRecordFlowUnitTest {
             initialThrottleBackoff = 500.milliseconds,
             maxThrottleBackoff = maxBackoff,
         )
-        repeat(20) { attempt ->
+        repeat(100) { attempt ->
             val backoff = jitteredBackoff(attempt + 1, opts)
-            (backoff <= maxBackoff).shouldBeTrue()
+            backoff shouldBeInRange 0.milliseconds..maxBackoff
         }
     }
 
     @Test
     fun `jitteredBackoff is non-negative at high attempt counts`() {
         val opts = KinesisRecordFlowOptions()
-        repeat(50) { attempt ->
+        log.debug { "opts = $opts" }
+
+        repeat(100) { attempt ->
             val backoff = jitteredBackoff(attempt + 1, opts)
-            (backoff >= 0.milliseconds).shouldBeTrue()
+            backoff shouldBeInRange 0.milliseconds..opts.maxThrottleBackoff
         }
     }
 
@@ -268,9 +314,12 @@ class KinesisRecordFlowUnitTest {
             initialThrottleBackoff = 100.milliseconds,
             maxThrottleBackoff = 10.seconds,
         )
-        val avgAttempt1 = (1..100).map { jitteredBackoff(1, opts).inWholeMilliseconds }.average()
-        val avgAttempt3 = (1..100).map { jitteredBackoff(3, opts).inWholeMilliseconds }.average()
-        (avgAttempt3 > avgAttempt1).shouldBeTrue()
+        val avgAttempt1 = List(100) { jitteredBackoff(1, opts).inWholeMilliseconds }.average()
+        val avgAttempt3 = List(100) { jitteredBackoff(3, opts).inWholeMilliseconds }.average()
+
+        log.debug { "avgAttempt1=$avgAttempt1" }
+        log.debug { "avgAttempt3=$avgAttempt3" }
+        avgAttempt3 shouldBeGreaterThan avgAttempt1
     }
 
     @Test
@@ -279,10 +328,9 @@ class KinesisRecordFlowUnitTest {
         // With attempt=31 (shift=30) and default options, 500 shl 30 = 537_395_200 > maxMs=30_000,
         // so the guard either caps via overflow check or via coerceAtMost — result must be in [0, maxMs].
         val opts = KinesisRecordFlowOptions()
-        repeat(60) { attempt ->
+        repeat(100) { attempt ->
             val backoff = jitteredBackoff(attempt + 1, opts)
-            (backoff >= 0.milliseconds).shouldBeTrue()
-            (backoff <= opts.maxThrottleBackoff).shouldBeTrue()
+            backoff shouldBeInRange 0.milliseconds..opts.maxThrottleBackoff
         }
     }
 }

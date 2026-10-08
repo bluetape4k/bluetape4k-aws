@@ -7,7 +7,6 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.useSafe
 
-
 /**
  * [DynamoDbClient]를 생성합니다.
  *
@@ -20,12 +19,12 @@ import io.bluetape4k.support.useSafe
  * @return [DynamoDbClient] 인스턴스
  * @throws IllegalArgumentException [region]이 blank인 경우
  */
-inline fun dynamoDbClientOf(
+fun dynamoDbClientOf(
     endpointUrl: Url? = null,
     region: String,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    crossinline builder: DynamoDbClient.Config.Builder.() -> Unit = {},
+    builder: DynamoDbClient.Config.Builder.() -> Unit = {},
 ): DynamoDbClient {
     // WHY: region은 AWS SDK Kotlin에서 필수 — null 허용 시 런타임에서 초기화 실패하므로 빠른 실패 보장
     region.requireNotBlank("region")
@@ -55,13 +54,14 @@ inline fun dynamoDbClientOf(
  * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
  * @throws IllegalArgumentException [region]이 blank인 경우
  */
-suspend fun <R> withDynamoDbClient(
+suspend inline fun <R> withDynamoDbClient(
     endpointUrl: Url? = null,
     region: String,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (DynamoDbClient) -> R,
 ): R {
-    return dynamoDbClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-        block(client)
-    }
+    return dynamoDbClientOf(endpointUrl, region, credentialsProvider)
+        .useSafe { client ->
+            block(client)
+        }
 }

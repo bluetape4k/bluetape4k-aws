@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.sts
 
+import aws.sdk.kotlin.services.sts.StsClient
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
@@ -27,4 +28,17 @@ import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 abstract class AbstractKotlinStsTest: AbstractAwsTest() {
 
     companion object: KLoggingChannel()
+
+
+    protected suspend inline fun <R> withTestStsClient(
+        awsServer: AwsEmulatorServer,
+        crossinline action: suspend (StsClient) -> R,
+    ): R =
+        withStsClient(
+            awsServer.endpointUrl,
+            awsServer.region,
+            awsServer.credentialsProvider,
+        ) { client ->
+            action(client)
+        }
 }

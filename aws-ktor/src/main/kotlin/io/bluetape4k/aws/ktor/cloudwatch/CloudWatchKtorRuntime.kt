@@ -16,7 +16,6 @@ class CloudWatchKtorRuntime(
     val operations: CloudWatchKtorOperations,
     private val ownedClient: CloudWatchAsyncClient? = null,
 ) {
-
     companion object: KLoggingChannel()
 
     private val closed = atomic(false)

@@ -1,18 +1,23 @@
 package io.bluetape4k.aws.bedrock
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.contentBlockOf
 import io.bluetape4k.aws.bedrock.model.converseRequestOf
 import io.bluetape4k.aws.bedrock.model.converseStreamRequestOf
 import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.document.Document
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration
-import io.bluetape4k.assertions.assertFailsWith
 
-class BedrockRuntimeRequestSupportTest {
+class BedrockRuntimeRequestSupportTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `content and user message keep helper-owned fields`() {
@@ -24,6 +29,7 @@ class BedrockRuntimeRequestSupportTest {
             role(ConversationRole.ASSISTANT)
             content(contentBlockOf("builder content"))
         }
+        log.debug { "message=$message" }
         message.role() shouldBeEqualTo ConversationRole.USER
         message.content().single().text() shouldBeEqualTo "hello"
     }
@@ -34,6 +40,7 @@ class BedrockRuntimeRequestSupportTest {
             .maxTokens(64)
             .temperature(0.2F)
             .build()
+
         val request = converseRequestOf(
             modelId = "model-id",
             messages = listOf(userMessageOf("hello")),
@@ -47,6 +54,7 @@ class BedrockRuntimeRequestSupportTest {
             )
         }
 
+        log.debug { "request=$request" }
         request.modelId() shouldBeEqualTo "model-id"
         request.messages().size shouldBeEqualTo 1
         request.inferenceConfig() shouldBeEqualTo expectedInference
@@ -59,7 +67,9 @@ class BedrockRuntimeRequestSupportTest {
             modelId = "model-id",
             messages = listOf(userMessageOf("hello")),
         ) {
-            inferenceConfig { it.maxTokens(17) }
+            inferenceConfig {
+                it.maxTokens(17)
+            }
         }.inferenceConfig().maxTokens() shouldBeEqualTo 17
     }
 

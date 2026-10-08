@@ -2,6 +2,9 @@
 
 package io.bluetape4k.aws.s3tables.model
 
+import io.bluetape4k.aws.dynamodb.model.DeleteTableRequest
+import io.bluetape4k.support.requireNotBlank
+
 import software.amazon.awssdk.services.s3tables.model.CreateNamespaceRequest
 import software.amazon.awssdk.services.s3tables.model.CreateTableBucketRequest
 import software.amazon.awssdk.services.s3tables.model.CreateTableRequest

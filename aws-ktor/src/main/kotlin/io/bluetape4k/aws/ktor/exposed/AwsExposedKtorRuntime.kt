@@ -19,7 +19,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 
-internal class AwsExposedKtorRuntimeConfig(
+internal data class AwsExposedKtorRuntimeConfig(
     val databaseProperties: AwsDatabaseProperties,
     val registryFactory: suspend (
         AwsDatabaseProperties,
@@ -43,6 +43,7 @@ internal class AwsExposedKtorRuntimeConfig(
 class AwsExposedKtorRuntime internal constructor(
     private val config: AwsExposedKtorRuntimeConfig,
 ) {
+    companion object: KLogging()
 
     private enum class LifecycleState {
         NEW,
@@ -59,7 +60,7 @@ class AwsExposedKtorRuntime internal constructor(
      * 시작된 레지스트리입니다. 플러그인이 시작을 완료하지 않았으면 예외를 던집니다.
      */
     val registry: AwsExposedDatabaseRegistry
-        get() = registryRef.value ?: throw IllegalStateException("AwsExposedPlugin is not started.")
+        get() = registryRef.value ?: error("AwsExposedPlugin is not started.")
 
     /**
      * 런타임을 시작하고 공유 레지스트리를 생성합니다.
@@ -72,7 +73,7 @@ class AwsExposedKtorRuntime internal constructor(
                 LifecycleState.NEW -> return
                 LifecycleState.STOPPING,
                 LifecycleState.STOPPED,
-                -> throw IllegalStateException("AwsExposedPlugin cannot be started after it has stopped.")
+                    -> throw IllegalStateException("AwsExposedPlugin cannot be started after it has stopped.")
             }
         }
 
@@ -113,7 +114,7 @@ class AwsExposedKtorRuntime internal constructor(
             }
             LifecycleState.STOPPING,
             LifecycleState.STOPPED,
-            -> null
+                -> null
         } ?: return
 
         try {
@@ -138,14 +139,12 @@ class AwsExposedKtorRuntime internal constructor(
     /**
      * 기본 또는 이름이 지정된 데이터베이스 핸들을 반환합니다.
      */
-    fun handle(name: String? = null): AwsExposedDatabaseHandle =
-        registry.get(name)
+    fun handle(name: String? = null): AwsExposedDatabaseHandle = registry[name]
 
     /**
      * 기본 또는 이름이 지정된 Exposed [Database]를 반환합니다.
      */
-    fun database(name: String? = null): Database =
-        handle(name).database
+    fun database(name: String? = null): Database = handle(name).database
 
     /**
      * Exposed JDBC suspend 트랜잭션 안에서 [statement]를 실행합니다.
@@ -154,12 +153,11 @@ class AwsExposedKtorRuntime internal constructor(
         name: String? = null,
         context: CoroutineContext = config.transactionContext,
         statement: suspend JdbcTransaction.() -> T,
-    ): T =
-        withContext(context) {
-            suspendTransaction(db = database(name)) {
-                statement()
-            }
+    ): T = withContext(context) {
+        suspendTransaction(db = database(name)) {
+            statement()
         }
+    }
 
     private suspend fun <T> withLifecycleTimeout(
         timeout: Duration,
@@ -184,6 +182,4 @@ class AwsExposedKtorRuntime internal constructor(
         }
         return false
     }
-
-    companion object: KLogging()
 }

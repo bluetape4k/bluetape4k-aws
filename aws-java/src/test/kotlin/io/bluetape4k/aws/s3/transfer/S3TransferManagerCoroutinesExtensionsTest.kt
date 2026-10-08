@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.s3.transfer
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.aws.s3.AbstractS3Test
 import io.bluetape4k.io.deleteIfExists
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -7,9 +10,6 @@ import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.support.toUtf8String
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.io.File
 
 class S3TransferManagerCoroutinesExtensionsTest: AbstractS3Test() {
+
     companion object: KLoggingChannel() {
         private const val REPEAT_SIZE = 3
     }

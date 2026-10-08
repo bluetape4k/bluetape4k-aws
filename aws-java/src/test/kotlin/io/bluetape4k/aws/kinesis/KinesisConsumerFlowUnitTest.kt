@@ -1,13 +1,17 @@
 package io.bluetape4k.aws.kinesis
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.collect
@@ -15,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.GetRecordsRequest
@@ -26,25 +31,32 @@ import software.amazon.awssdk.services.kinesis.model.ListShardsResponse
 import software.amazon.awssdk.services.kinesis.model.Record
 import software.amazon.awssdk.services.kinesis.model.SequenceNumberRange
 import software.amazon.awssdk.services.kinesis.model.Shard
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class KinesisConsumerFlowUnitTest {
+class KinesisConsumerFlowUnitTest: AbstractKinesisTest() {
+
+    companion object: KLoggingChannel()
+
+    private val mockClient = mockk<KinesisAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(mockClient)
+    }
 
     @Test
     fun `discovers shards and saves each record only after downstream emit returns`() = runTest {
-        val client = mockk<KinesisAsyncClient>(relaxed = true)
         val key = KinesisShardKey("orders-v1", "consumer", "shard-0")
         val leaseStore = InMemoryKinesisLeaseStore()
         val events = mutableListOf<String>()
         val delegateStore = InMemoryKinesisCheckpointStore()
         val terminalSave = CompletableDeferred<Unit>()
         val canonicalRecorder = CanonicalEventRecorder()
-        val checkpointStore = object : KinesisCheckpointStore {
-            override suspend fun load(key: KinesisShardKey): KinesisCheckpoint? = delegateStore.load(key)
 
+        val checkpointStore = object: KinesisCheckpointStore {
+            override suspend fun load(key: KinesisShardKey): KinesisCheckpoint? = delegateStore.load(key)
             override suspend fun save(key: KinesisShardKey, checkpoint: KinesisCheckpoint, lease: KinesisLease) {
                 events += "save:$checkpoint"
                 delegateStore.save(key, checkpoint, lease)
@@ -59,13 +71,18 @@ class KinesisConsumerFlowUnitTest {
             .shardId(key.shardId)
             .sequenceNumberRange(SequenceNumberRange.builder().build())
             .build()
-        every { client.listShards(any<ListShardsRequest>()) } returns CompletableFuture.completedFuture(
-            ListShardsResponse.builder().shards(shard).build(),
-        )
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns CompletableFuture.completedFuture(
-            GetShardIteratorResponse.builder().shardIterator("iter-1").build(),
-        )
-        every { client.getRecords(any<GetRecordsRequest>()) } returns CompletableFuture.completedFuture(
+
+        every {
+            mockClient.listShards(any<ListShardsRequest>())
+        } returns completableFutureOf(ListShardsResponse.builder().shards(shard).build())
+
+        every {
+            mockClient.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(GetShardIteratorResponse.builder().shardIterator("iter-1").build())
+
+        every {
+            mockClient.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(
             GetRecordsResponse.builder()
                 .records(Record.builder().sequenceNumber("1").build())
                 .nextShardIterator(null)
@@ -74,7 +91,7 @@ class KinesisConsumerFlowUnitTest {
 
         val records = mutableListOf<KinesisShardRecord>()
         val job = launch {
-            client.consumerFlow(
+            mockClient.consumerFlow(
                 streamName = "orders",
                 consumerGroup = "consumer",
                 streamIdentity = "orders-v1",
@@ -88,8 +105,8 @@ class KinesisConsumerFlowUnitTest {
                 events += "emit"
             }
         }
-        withTimeout(5_000) { terminalSave.await() }
-        withTimeout(5_000) { canonicalRecorder.completed.await() }
+        withTimeout(5.seconds) { terminalSave.await() }
+        withTimeout(5.seconds) { canonicalRecorder.completed.await() }
         job.cancel()
         job.join()
 
@@ -128,16 +145,18 @@ class KinesisConsumerFlowUnitTest {
 
     @Test
     fun `list shards request is bounded by the configured page size`() = runTest {
-        val client = mockk<KinesisAsyncClient>(relaxed = true)
         val request = slot<ListShardsRequest>()
         val firstRequest = CompletableDeferred<Unit>()
-        every { client.listShards(capture(request)) } answers {
+
+        every {
+            mockClient.listShards(capture(request))
+        } answers {
             firstRequest.complete(Unit)
-            CompletableFuture.completedFuture(ListShardsResponse.builder().shards(emptyList()).build())
+            completableFutureOf(ListShardsResponse.builder().shards(emptyList()).build())
         }
 
         val job = launch {
-            client.consumerFlow(
+            mockClient.consumerFlow(
                 streamName = "orders",
                 consumerGroup = "consumer",
                 streamIdentity = "orders-v1",
@@ -147,12 +166,12 @@ class KinesisConsumerFlowUnitTest {
                 leaseStore = NoopKinesisLeaseStore,
             ).collect()
         }
-        withTimeout(5_000) { firstRequest.await() }
+        withTimeout(5.seconds) { firstRequest.await() }
         job.cancel()
         job.join()
 
         request.captured.streamName() shouldBeEqualTo "orders"
-        (request.captured.maxResults() ?: 0 <= 1_000).shouldBeTrue()
+        request.captured.maxResults() shouldBeLessOrEqualTo 1_000
     }
 
     @Test
@@ -214,7 +233,7 @@ class KinesisConsumerFlowUnitTest {
         cancellation: CancellationException,
         leaseStore: RecordingLeaseStore = RecordingLeaseStore(),
     ): CancellationResult = supervisorScope {
-        val client = mockk<KinesisAsyncClient>(relaxed = true)
+        val mockClient = mockk<KinesisAsyncClient>(relaxed = true)
         val shardId = "shard-0"
         val shard = Shard.builder()
             .shardId(shardId)
@@ -222,13 +241,18 @@ class KinesisConsumerFlowUnitTest {
             .build()
         val collecting = CompletableDeferred<Unit>()
 
-        every { client.listShards(any<ListShardsRequest>()) } returns CompletableFuture.completedFuture(
-            ListShardsResponse.builder().shards(shard).build(),
-        )
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns CompletableFuture.completedFuture(
+        every {
+            mockClient.listShards(any<ListShardsRequest>())
+        } returns completableFutureOf(ListShardsResponse.builder().shards(shard).build())
+
+        every {
+            mockClient.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(
             GetShardIteratorResponse.builder().shardIterator("iter-1").build(),
         )
-        every { client.getRecords(any<GetRecordsRequest>()) } returns CompletableFuture.completedFuture(
+        every {
+            mockClient.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(
             GetRecordsResponse.builder()
                 .records(Record.builder().sequenceNumber("1").build())
                 .nextShardIterator("iter-2")
@@ -237,7 +261,7 @@ class KinesisConsumerFlowUnitTest {
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            client.consumerFlow(
+            mockClient.consumerFlow(
                 streamName = "stream",
                 consumerGroup = "group",
                 streamIdentity = "stream-v1",
@@ -270,20 +294,21 @@ class KinesisConsumerFlowUnitTest {
         primaryFailure: Throwable,
         releaseFailure: Throwable,
     ): CancellationResult = supervisorScope {
-        val client = mockk<KinesisAsyncClient>(relaxed = true)
         val shard = Shard.builder()
             .shardId("shard-0")
             .sequenceNumberRange(SequenceNumberRange.builder().build())
             .build()
         val leaseStore = RecordingLeaseStore { throw releaseFailure }
         val shardStarted = CompletableDeferred<Unit>()
-        every { client.listShards(any<ListShardsRequest>()) } returns CompletableFuture.completedFuture(
+        every {
+            mockClient.listShards(any<ListShardsRequest>())
+        } returns completableFutureOf(
             ListShardsResponse.builder().shards(shard).build(),
         )
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            client.consumerFlow(
+            mockClient.consumerFlow(
                 streamName = "stream",
                 consumerGroup = "group",
                 streamIdentity = "stream-v1",
@@ -291,7 +316,7 @@ class KinesisConsumerFlowUnitTest {
                 options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
                 checkpointStore = InMemoryKinesisCheckpointStore(),
                 leaseStore = leaseStore,
-                metrics = KinesisFlowMetrics { event ->
+                metrics = { event: KinesisFlowEvent ->
                     if (event is KinesisFlowEvent.Shard && event.outcome == "started") {
                         shardStarted.complete(Unit)
                         throw primaryFailure
@@ -313,25 +338,31 @@ class KinesisConsumerFlowUnitTest {
     private suspend fun finishShard(
         releaseFailure: Throwable,
     ): CancellationResult = supervisorScope {
-        val client = mockk<KinesisAsyncClient>(relaxed = true)
         val shard = Shard.builder()
             .shardId("shard-0")
             .sequenceNumberRange(SequenceNumberRange.builder().build())
             .build()
         val leaseStore = RecordingLeaseStore { throw releaseFailure }
-        every { client.listShards(any<ListShardsRequest>()) } returns CompletableFuture.completedFuture(
+
+        every {
+            mockClient.listShards(any<ListShardsRequest>())
+        } returns completableFutureOf(
             ListShardsResponse.builder().shards(shard).build(),
         )
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns CompletableFuture.completedFuture(
+        every {
+            mockClient.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(
             GetShardIteratorResponse.builder().shardIterator("iter-1").build(),
         )
-        every { client.getRecords(any<GetRecordsRequest>()) } returns CompletableFuture.completedFuture(
+        every {
+            mockClient.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(
             GetRecordsResponse.builder().records(emptyList()).nextShardIterator(null).build(),
         )
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            client.consumerFlow(
+            mockClient.consumerFlow(
                 streamName = "stream",
                 consumerGroup = "group",
                 streamIdentity = "stream-v1",
@@ -353,7 +384,7 @@ class KinesisConsumerFlowUnitTest {
 
     private class RecordingLeaseStore(
         private val releaseAction: suspend () -> Unit = {},
-    ) : KinesisLeaseStore {
+    ): KinesisLeaseStore {
         val releaseCount = AtomicInteger()
         val releaseStarted = CompletableDeferred<Unit>()
         val releaseCompleted = CompletableDeferred<Unit>()

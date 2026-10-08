@@ -2,14 +2,15 @@ package io.bluetape4k.aws.kotlin.s3.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 class TestBucketsTest {
     private val buckets = listOf("source", "destination")
@@ -91,7 +92,7 @@ class TestBucketsTest {
         val job = launch {
             try {
                 withTestBuckets(buckets, create = {}, delete = {
-                    delay(1)
+                    delay(1.milliseconds)
                     deleted.add(it)
                 }) {
                     entered.complete(Unit)

@@ -28,18 +28,28 @@ import aws.sdk.kotlin.services.s3tables.model.ListTablesResponse
 import aws.sdk.kotlin.services.s3tables.model.TableBucketType
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class S3TablesExtensionsTest {
 
-    private companion object {
+    private companion object: KLoggingChannel() {
         const val BUCKET_ARN = "arn:aws:s3tables:ap-northeast-2:123456789012:bucket/test"
         const val TABLE_ARN = "$BUCKET_ARN/table/analytics/orders"
+    }
+
+    private val client = mockk<S3TablesClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
     }
 
     @Test
@@ -117,9 +127,9 @@ class S3TablesExtensionsTest {
             client.createTable(
                 match {
                     it.tableBucketArn == BUCKET_ARN &&
-                        it.namespace == "analytics" &&
-                        it.name == "orders" &&
-                        it.format?.value == "ICEBERG"
+                            it.namespace == "analytics" &&
+                            it.name == "orders" &&
+                            it.format?.value == "ICEBERG"
                 },
             )
         }
@@ -127,8 +137,8 @@ class S3TablesExtensionsTest {
             client.listTables(
                 match {
                     it.tableBucketArn == BUCKET_ARN &&
-                        it.namespace == null &&
-                        it.maxTables == 10
+                            it.namespace == null &&
+                            it.maxTables == 10
                 },
             )
         }
@@ -136,9 +146,9 @@ class S3TablesExtensionsTest {
             client.getTable(
                 match {
                     it.tableArn == TABLE_ARN &&
-                        it.tableBucketArn == null &&
-                        it.namespace == null &&
-                        it.name == null
+                            it.tableBucketArn == null &&
+                            it.namespace == null &&
+                            it.name == null
                 },
             )
         }
@@ -146,9 +156,9 @@ class S3TablesExtensionsTest {
             client.deleteTable(
                 match {
                     it.tableBucketArn == BUCKET_ARN &&
-                        it.namespace == "analytics" &&
-                        it.name == "orders" &&
-                        it.versionToken == "v1"
+                            it.namespace == "analytics" &&
+                            it.name == "orders" &&
+                            it.versionToken == "v1"
                 },
             )
         }
@@ -156,7 +166,6 @@ class S3TablesExtensionsTest {
 
     @Test
     fun `suspend operation rethrows operation failure`() = runTest {
-        val client = mockk<S3TablesClient>()
         val expected = IllegalStateException("operation-failed")
         coEvery { client.getTable(any<GetTableRequest>()) } throws expected
 
@@ -170,7 +179,6 @@ class S3TablesExtensionsTest {
 
     @Test
     fun `suspend operation propagates cancellation`() = runTest {
-        val client = mockk<S3TablesClient>()
         val expected = CancellationException("cancelled")
         coEvery { client.getTable(any<GetTableRequest>()) } throws expected
 

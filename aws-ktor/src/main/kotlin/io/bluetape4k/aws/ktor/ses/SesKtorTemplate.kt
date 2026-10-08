@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.ses
 
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
@@ -29,6 +30,8 @@ class SesKtorTemplate(
     private val defaultFrom: String? = null,
     private val configurationSetName: String? = null,
 ): SesKtorOperations {
+
+    companion object: KLogging()
 
     override suspend fun sendEmail(request: SesEmailRequest): SendEmailResponse =
         sendEmailAsync(request).await()
@@ -66,7 +69,7 @@ class SesKtorTemplate(
                 EmailContent.builder()
                     .simple(
                         Message.builder()
-                            .subject(content(subject, body.charset))
+                            .subject(contentOf(subject, body.charset))
                             .body(body.toSdkBody())
                             .apply {
                                 headers.toSdkHeaders().takeIf { it.isNotEmpty() }?.let(::headers)
@@ -129,12 +132,12 @@ class SesKtorTemplate(
     private fun SesEmailBody.toSdkBody(): Body =
         Body.builder()
             .apply {
-                text?.let { text(content(it, charset)) }
-                html?.let { html(content(it, charset)) }
+                text?.let { text(contentOf(it, charset)) }
+                html?.let { html(contentOf(it, charset)) }
             }
             .build()
 
-    private fun content(data: String, charset: String): Content =
+    private fun contentOf(data: String, charset: String): Content =
         Content.builder()
             .data(data)
             .charset(charset)

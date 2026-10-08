@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.s3.accessgrants
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorS3ControlAsyncClientCustomizer
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -77,4 +78,14 @@ class S3AccessGrantsKtorPluginConfig {
 
         return builder.build()
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("s3ControlAsyncClient", s3ControlAsyncClient)
+            .add("s3AccessGrantsOperations", s3AccessGrantsOperations)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .toString()
 }

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.sts
 
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 
@@ -26,11 +27,12 @@ data class StsAssumeRoleRequest(
     init {
         roleArn.requireNotBlank("roleArn")
         sessionName.requireNotBlank("sessionName")
+        durationSeconds.requireInRange(
+            SESSION_TOKEN_MIN_DURATION_SECONDS,
+            SESSION_TOKEN_MAX_DURATION_SECONDS,
+            "durationSeconds"
+        )
         externalId?.requireNotBlank("externalId")
-        require(durationSeconds in ASSUME_ROLE_MIN_DURATION_SECONDS..ASSUME_ROLE_MAX_DURATION_SECONDS) {
-            "durationSeconds must be between $ASSUME_ROLE_MIN_DURATION_SECONDS and " +
-                    "$ASSUME_ROLE_MAX_DURATION_SECONDS for AssumeRole, but was $durationSeconds."
-        }
     }
 
     companion object {
@@ -53,12 +55,13 @@ data class StsSessionTokenRequest(
 ): Serializable {
 
     init {
+        durationSeconds.requireInRange(
+            SESSION_TOKEN_MIN_DURATION_SECONDS,
+            SESSION_TOKEN_MAX_DURATION_SECONDS,
+            "durationSeconds"
+        )
         serialNumber?.requireNotBlank("serialNumber")
         tokenCode?.requireNotBlank("tokenCode")
-        require(durationSeconds in SESSION_TOKEN_MIN_DURATION_SECONDS..SESSION_TOKEN_MAX_DURATION_SECONDS) {
-            "durationSeconds must be between $SESSION_TOKEN_MIN_DURATION_SECONDS and " +
-                    "$SESSION_TOKEN_MAX_DURATION_SECONDS for GetSessionToken, but was $durationSeconds."
-        }
     }
 
     companion object {

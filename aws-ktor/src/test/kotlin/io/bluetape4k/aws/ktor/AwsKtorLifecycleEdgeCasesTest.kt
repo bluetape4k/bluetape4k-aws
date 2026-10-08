@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor
 
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
@@ -13,10 +14,13 @@ import io.bluetape4k.aws.ktor.ses.SesKtorPlugin
 import io.bluetape4k.aws.ktor.sns.SnsKtorPlugin
 import io.bluetape4k.aws.ktor.sts.StsKtorPlugin
 import io.bluetape4k.aws.ktor.sts.StsKtorRuntime
+import io.bluetape4k.concurrent.await
+import io.bluetape4k.concurrent.get
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.core.ApplicationResourceClosePhase
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
 import io.bluetape4k.ktor.core.ApplicationResourceRegistryState
+import io.bluetape4k.logging.KLogging
 import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
@@ -27,8 +31,8 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
-import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
+import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
@@ -47,11 +51,13 @@ import software.amazon.awssdk.services.sts.StsAsyncClient
 import software.amazon.awssdk.services.sts.StsAsyncClientBuilder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 class AwsKtorLifecycleEdgeCasesTest {
+
+    companion object: KLogging()
 
     @Test
     fun `all simple plugins keep owned clients open until ApplicationStopped`() {
@@ -139,7 +145,7 @@ class AwsKtorLifecycleEdgeCasesTest {
         registry.register { closeCount.incrementAndGet() }
 
         closeCount.get() shouldBeEqualTo 1
-        registry.closeReport.failures shouldBeEqualTo emptyList()
+        registry.closeReport.failures.shouldBeEmpty()
         registry.closeReport.closed shouldBeEqualTo 1
     }
 
@@ -151,6 +157,7 @@ class AwsKtorLifecycleEdgeCasesTest {
 
         runtime.registerApplicationResources(registry)
         runtime.stop()
+
         registry.close()
         runtime.stop()
 
@@ -172,18 +179,18 @@ class AwsKtorLifecycleEdgeCasesTest {
         }
         registry.register {
             delayedStarted.countDown()
-            check(releaseDelayed.await(5, TimeUnit.SECONDS))
+            check(releaseDelayed.await(5.seconds))
             order += "delayed"
         }
 
         try {
             val closeTask = executor.submit { registry.close() }
-            delayedStarted.await(5, TimeUnit.SECONDS).shouldBeTrue()
+            delayedStarted.await(5.seconds).shouldBeTrue()
             nextClosed.get().shouldBeFalse()
-            order shouldBeEqualTo emptyList()
+            order.shouldBeEmpty()
 
             releaseDelayed.countDown()
-            closeTask.get(5, TimeUnit.SECONDS)
+            closeTask.get(5.seconds)
             order shouldBeEqualTo listOf("delayed", "next")
         } finally {
             releaseDelayed.countDown()
@@ -202,6 +209,7 @@ class AwsKtorLifecycleEdgeCasesTest {
         val imdsClient = mockk<Ec2MetadataAsyncClient>(relaxed = true)
         val s3ControlClient = mockk<S3ControlAsyncClient>(relaxed = true)
         val closeCounts = List(9) { AtomicInteger() }
+
         init {
             every { stsClient.close() } answers { closeCounts[0].incrementAndGet() }
             every { snsClient.close() } answers { closeCounts[1].incrementAndGet() }
@@ -249,7 +257,6 @@ class AwsKtorLifecycleEdgeCasesTest {
             every { imdsBuilder.build() } returns imdsClient
             every { S3ControlAsyncClient.builder() } returns s3ControlBuilder
             every { s3ControlBuilder.build() } returns s3ControlClient
-
         }
     }
 }

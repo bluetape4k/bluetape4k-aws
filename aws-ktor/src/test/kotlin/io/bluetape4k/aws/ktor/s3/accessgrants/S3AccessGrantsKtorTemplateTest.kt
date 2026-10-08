@@ -2,7 +2,9 @@ package io.bluetape4k.aws.ktor.s3.accessgrants
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -26,6 +28,8 @@ import java.util.concurrent.CompletableFuture
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class S3AccessGrantsKtorTemplateTest {
 
+    companion object: KLoggingChannel()
+
     private val client = mockk<S3ControlAsyncClient>()
 
     @BeforeEach
@@ -35,47 +39,65 @@ class S3AccessGrantsKtorTemplateTest {
 
     @Test
     fun `getDataAccess delegates to S3 Control async client`() = runSuspendIO {
-        val request = GetDataAccessRequest.builder().accountId("123456789012").target("s3://bucket/key").build()
+        val request = GetDataAccessRequest.builder()
+            .accountId("123456789012")
+            .target("s3://bucket/key")
+            .build()
         val response = GetDataAccessResponse.builder().build()
-        every { client.getDataAccess(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.getDataAccess(request)
+        } returns completableFutureOf(response)
 
-        S3AccessGrantsKtorTemplate(client).getDataAccess(request) shouldBeSameInstanceAs response
+        S3AccessGrantsKtorTemplate(client)
+            .getDataAccess(request) shouldBeSameInstanceAs response
     }
 
     @Test
     fun `listCallerAccessGrants delegates to S3 Control async client`() = runSuspendIO {
         val request = ListCallerAccessGrantsRequest.builder().accountId("123456789012").build()
         val response = ListCallerAccessGrantsResponse.builder().build()
-        every { client.listCallerAccessGrants(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listCallerAccessGrants(request)
+        } returns completableFutureOf(response)
 
-        S3AccessGrantsKtorTemplate(client).listCallerAccessGrants(request) shouldBeSameInstanceAs response
+        S3AccessGrantsKtorTemplate(client)
+            .listCallerAccessGrants(request) shouldBeSameInstanceAs response
     }
 
     @Test
     fun `listAccessGrants delegates to S3 Control async client`() = runSuspendIO {
         val request = ListAccessGrantsRequest.builder().accountId("123456789012").build()
         val response = ListAccessGrantsResponse.builder().build()
-        every { client.listAccessGrants(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listAccessGrants(request)
+        } returns completableFutureOf(response)
 
-        S3AccessGrantsKtorTemplate(client).listAccessGrants(request) shouldBeSameInstanceAs response
+        S3AccessGrantsKtorTemplate(client)
+            .listAccessGrants(request) shouldBeSameInstanceAs response
     }
 
     @Test
     fun `listAccessGrantsInstances delegates to S3 Control async client`() = runSuspendIO {
         val request = ListAccessGrantsInstancesRequest.builder().accountId("123456789012").build()
         val response = ListAccessGrantsInstancesResponse.builder().build()
-        every { client.listAccessGrantsInstances(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listAccessGrantsInstances(request)
+        } returns completableFutureOf(response)
 
-        S3AccessGrantsKtorTemplate(client).listAccessGrantsInstances(request) shouldBeSameInstanceAs response
+        S3AccessGrantsKtorTemplate(client)
+            .listAccessGrantsInstances(request) shouldBeSameInstanceAs response
     }
 
     @Test
     fun `listAccessGrantsLocations delegates to S3 Control async client`() = runSuspendIO {
         val request = ListAccessGrantsLocationsRequest.builder().accountId("123456789012").build()
         val response = ListAccessGrantsLocationsResponse.builder().build()
-        every { client.listAccessGrantsLocations(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listAccessGrantsLocations(request)
+        } returns completableFutureOf(response)
 
-        S3AccessGrantsKtorTemplate(client).listAccessGrantsLocations(request) shouldBeSameInstanceAs response
+        S3AccessGrantsKtorTemplate(client)
+            .listAccessGrantsLocations(request) shouldBeSameInstanceAs response
     }
 
     @Test

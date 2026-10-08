@@ -1,3 +1,7 @@
+configurations {
+    testImplementation.get().extendsFrom(compileOnly.get(), runtimeOnly.get())
+}
+
 dependencies {
     api(platform(bt4k.exposed.bom))
     implementation(platform(bt4k.bluetape4k.exposed.bom))
@@ -14,8 +18,12 @@ dependencies {
     testImplementation(bt4k.bluetape4k.junit5)
     testImplementation(bt4k.bluetape4k.testcontainers)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.aws2.rds)
     testImplementation(bt4k.h2.v2)
     testImplementation(bt4k.postgresql)
     testImplementation(libs.testcontainers.postgresql)
+
+    // Binary Serializers
+    testImplementation(bt4k.bluetape4k.io)
+    testImplementation(bt4k.fory.kotlin)
+    testImplementation(bt4k.at.yawk.lz4.java)
 }

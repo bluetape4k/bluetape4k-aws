@@ -2,16 +2,30 @@ package io.bluetape4k.aws.kotlin.lambda
 
 import aws.sdk.kotlin.services.lambda.model.InvokeResponse
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.junit5.faker.Fakers
+import io.bluetape4k.logging.KLogging
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
-import tools.jackson.databind.ObjectMapper
-import java.util.Base64
+import tools.jackson.databind.json.JsonMapper
+import java.util.*
 
 class LambdaPayloadCodecTest {
+
+    companion object: KLogging() {
+        private const val REPEAT_SIZE = 5
+    }
+
+    private val jsonMapper = Jackson.defaultJsonMapper
 
     @Test
     fun `bytes codec copies input and decoded output`() {
@@ -20,32 +34,40 @@ class LambdaPayloadCodecTest {
         val encoded = LambdaPayloadCodecs.bytes.encode(input)
         input[0] = 9
         encoded.toList() shouldBeEqualTo listOf(1.toByte(), 2, 3)
+        encoded shouldContentEqual byteArrayOf(1, 2, 3)
 
         val decoded = LambdaPayloadCodecs.bytes.decode(encoded)
         encoded[0] = 8
-        decoded.toList() shouldBeEqualTo listOf(1.toByte(), 2, 3)
+        decoded shouldContentEqual byteArrayOf(1, 2, 3)
     }
 
-    @Test
-    fun `utf8 codec preserves unicode and empty string`() {
-        val value = "주문 ✅"
+    @RepeatedTest(REPEAT_SIZE)
+    fun `utf8 codec preserves unicode`() {
+        val value = "주문 ✅ " + Fakers.defaultFaker.lorem().paragraph()
         LambdaPayloadCodecs.utf8.decode(LambdaPayloadCodecs.utf8.encode(value)) shouldBeEqualTo value
-        LambdaPayloadCodecs.utf8.decode(LambdaPayloadCodecs.utf8.encode("")) shouldBeEqualTo ""
     }
 
     @Test
-    fun `jackson codec uses caller mapper and class`() {
-        val mapper = ObjectMapper()
-        val codec = LambdaPayloadCodecs.jackson(mapper, String::class.java)
+    fun `utf8 codec preseves empty string`() {
+        val value = ""
+        LambdaPayloadCodecs.utf8.decode(LambdaPayloadCodecs.utf8.encode(value)) shouldBeEqualTo value
+    }
 
-        codec.decode(codec.encode("caller mapper")) shouldBeEqualTo "caller mapper"
+    @RepeatedTest(REPEAT_SIZE)
+    fun `jackson codec uses caller mapper and class`() {
+        val codec = LambdaPayloadCodecs.jackson(jsonMapper, String::class.java)
+
+        val value = Fakers.defaultFaker.lorem().paragraph()
+        codec.decode(codec.encode(value)) shouldBeEqualTo value
     }
 
     @Test
     fun `malformed json propagates and no unsafe typing is enabled`() {
-        val codec = LambdaPayloadCodecs.jackson(ObjectMapper(), String::class.java)
+        val codec = LambdaPayloadCodecs.jackson(jsonMapper, String::class.java)
 
-        assertFailsWith<Exception> { codec.decode("[".toByteArray()) }
+        assertFailsWith<Exception> {
+            codec.decode("[".toByteArray())
+        }
     }
 
     @Test
@@ -84,12 +106,15 @@ class LambdaPayloadCodecTest {
         absent.payload.shouldBeNull()
         absent.value.shouldBeNull()
 
-        val empty = InvokeResponse { payload = ByteArray(0) }
-            .toLambdaInvocationResult(LambdaPayloadCodecs.bytes)
-        val emptyPayload = empty.payload ?: error("empty payload was lost")
-        val emptyValue = empty.value ?: error("empty value was lost")
-        emptyPayload.size shouldBeEqualTo 0
-        emptyValue.size shouldBeEqualTo 0
+        val empty = InvokeResponse {
+            payload = ByteArray(0)
+        }.toLambdaInvocationResult(LambdaPayloadCodecs.bytes)
+
+        val emptyPayload = empty.payload.shouldNotBeNull()
+        val emptyValue = empty.value.shouldNotBeNull()
+
+        emptyPayload.shouldBeEmpty()
+        emptyValue.shouldBeEmpty()
     }
 
     @Test

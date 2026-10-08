@@ -1,11 +1,16 @@
 package io.bluetape4k.aws.ktor.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeLessThan
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class S3KtorXmlTest {
+
+    companion object: KLogging()
 
     @Test
     fun `ListObjectsV2 XML을 파싱한다`() {
@@ -32,6 +37,7 @@ class S3KtorXmlTest {
 
         val result = S3KtorXml.parseListObjectsV2(xml)
 
+        log.debug { "result=$result" }
         result.bucket shouldBeEqualTo "demo-bucket"
         result.prefix shouldBeEqualTo "logs/"
         result.isTruncated.shouldBeTrue()
@@ -51,8 +57,9 @@ class S3KtorXmlTest {
             )
         )
 
+        log.debug { "xml=$xml" }
         xml shouldContain "<CompleteMultipartUpload xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
-        (xml.indexOf("<PartNumber>1</PartNumber>") < xml.indexOf("<PartNumber>2</PartNumber>")).shouldBeTrue()
+        xml.indexOf("<PartNumber>1</PartNumber>") shouldBeLessThan xml.indexOf("<PartNumber>2</PartNumber>")
         xml shouldContain "<ETag>&quot;etag-1&quot;</ETag>"
         xml shouldContain "<ETag>&quot;etag-2&quot;</ETag>"
     }
@@ -67,9 +74,11 @@ class S3KtorXmlTest {
               <HostId>host-1</HostId>
             </Error>
         """.trimIndent()
+        log.debug { "xml=$xml" }
 
         val result = S3KtorXml.parseError(xml)
 
+        log.debug { "result=$result" }
         result.code shouldBeEqualTo "NoSuchKey"
         result.message shouldBeEqualTo "The specified key does not exist."
         result.requestId shouldBeEqualTo "request-1"

@@ -1,5 +1,10 @@
 package io.bluetape4k.aws.kms
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.core.toUtf8SdkBytes
 import io.bluetape4k.aws.kms.model.createAliasRequestOf
 import io.bluetape4k.aws.kms.model.createGrantRequestOf
@@ -15,11 +20,6 @@ import io.bluetape4k.aws.kms.model.revokeGrantRequestOf
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.info
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -79,6 +79,7 @@ class KsmClientTest: AbstractKmsTest() {
             plainText = data.toUtf8SdkBytes()
         )
         val response = client.encrypt(request)
+        log.debug { "response=$response" }
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
         val algorithm = response.encryptionAlgorithmAsString()
@@ -208,9 +209,7 @@ class KsmClientTest: AbstractKmsTest() {
         response.sdkHttpResponse().isSuccessful.shouldBeTrue()
 
         val aliases = response.aliases()
-        aliases.forEach { alias ->
-            log.debug { "alias=$alias" }
-        }
+        aliases.forEach { log.debug { "alias=$it" } }
         aliases.shouldNotBeEmpty()
         aliases.map { it.aliasName() } shouldContain aliasName
     }

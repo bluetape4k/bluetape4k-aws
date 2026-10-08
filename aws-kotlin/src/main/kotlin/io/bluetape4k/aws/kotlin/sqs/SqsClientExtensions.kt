@@ -34,14 +34,15 @@ import aws.sdk.kotlin.services.sqs.sendMessage
 import aws.sdk.kotlin.services.sqs.sendMessageBatch
 import aws.smithy.kotlin.runtime.ServiceException
 import aws.smithy.kotlin.runtime.http.response.statusCode
-import io.bluetape4k.logging.KotlinLogging
-import kotlinx.coroutines.CancellationException
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.info
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
+import kotlinx.coroutines.CancellationException
 
 @PublishedApi
-internal val log = KotlinLogging.logger {}
+internal object SqlClientLogger: KLogging()
 
 @PublishedApi
 internal const val MIN_RECEIVE_MESSAGES = 1
@@ -69,7 +70,7 @@ suspend inline fun SqsClient.createQueue(
         this.queueName = queueName
         builder()
     }.apply {
-        log.info { "Create Queue. response=$this" }
+        SqlClientLogger.log.info { "Create Queue. response=$this" }
     }
 }
 
@@ -303,11 +304,7 @@ suspend inline fun SqsClient.receiveMessage(
     maxNumberOfMessages: Int? = null,
 ): ReceiveMessageResponse {
     queueUrl.requireNotBlank("queueUrl")
-    maxNumberOfMessages?.let {
-        require(it in MIN_RECEIVE_MESSAGES..MAX_RECEIVE_MESSAGES) {
-            "maxNumberOfMessages must be in the range $MIN_RECEIVE_MESSAGES..$MAX_RECEIVE_MESSAGES."
-        }
-    }
+    maxNumberOfMessages?.requireInRange(MIN_RECEIVE_MESSAGES, MAX_RECEIVE_MESSAGES, "maxNumberOfMessages")
 
     return receiveMessage {
         this.queueUrl = queueUrl
@@ -504,23 +501,18 @@ suspend inline fun SqsClient.deleteMessageBatch(
 }
 
 @PublishedApi
-internal fun Throwable.isMissingQueueError(): Boolean =
-    when (this) {
-        is QueueDoesNotExist, is ResourceNotFoundException -> {
-            true
-        }
-        is ServiceException -> {
-            val errorCode = sdkErrorMetadata.errorCode
-            val statusCode = sdkErrorMetadata.protocolResponse.statusCode()?.value
-            errorCode in
-                    setOf(
-                        "QueueDoesNotExist",
-                        "AWS.SimpleQueueService.NonExistentQueue",
-                        "ResourceNotFoundException",
-                        "NotFound"
-                    ) || statusCode == 404
-        }
-        else                -> {
-            false
-        }
+internal fun Throwable.isMissingQueueError(): Boolean = when (this) {
+    is QueueDoesNotExist, is ResourceNotFoundException -> true
+    is ServiceException -> {
+        val errorCode = sdkErrorMetadata.errorCode
+        val statusCode = sdkErrorMetadata.protocolResponse.statusCode()?.value
+        errorCode in
+                setOf(
+                    "QueueDoesNotExist",
+                    "AWS.SimpleQueueService.NonExistentQueue",
+                    "ResourceNotFoundException",
+                    "NotFound"
+                ) || statusCode == 404
     }
+    else -> false
+}

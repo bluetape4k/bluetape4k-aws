@@ -22,33 +22,31 @@ AWS Kotlin SDK 기반 단일 통합 모듈입니다. native `suspend` 함수를 
 
 ## 제공 서비스
 
-| 서비스                 | 주요 기능                                             |
-|---------------------|---------------------------------------------------|
-| **DynamoDB**        | 테이블 CRUD, 스캔/쿼리, DSL 빌더                           |
-| **S3**              | 객체 업로드/다운로드, 멀티파트, 버킷 관리                          |
-| **S3 Tables**       | table bucket, namespace, table 관리와 native suspend helper          |
-| **SES / SESv2**     | 이메일 발송, 템플릿 메일                                    |
-| **SNS**             | 토픽 발행, SMS, 구독 관리                                 |
-| **SQS**             | 메시지 발송/수신/삭제, FIFO 큐                              |
-| **KMS**             | 암호화 키 관리, 데이터 키 생성                                |
-| **CloudWatch**      | 메트릭 발행/조회, DSL(`metricDatum {}`)                  |
-| **CloudWatch Logs** | 로그 이벤트 전송, DSL(`inputLogEvent {}`)                |
+| 서비스              | 주요 기능                                                                          |
+|---------------------|------------------------------------------------------------------------------------|
+| **DynamoDB**        | 테이블 CRUD, 스캔/쿼리, DSL 빌더                                                   |
+| **S3**              | 객체 업로드/다운로드, 멀티파트, 버킷 관리                                          |
+| **S3 Tables**       | table bucket, namespace, table 관리와 native suspend helper                        |
+| **SES / SESv2**     | 이메일 발송, 템플릿 메일                                                           |
+| **SNS**             | 토픽 발행, SMS, 구독 관리                                                          |
+| **SQS**             | 메시지 발송/수신/삭제, FIFO 큐                                                     |
+| **KMS**             | 암호화 키 관리, 데이터 키 생성                                                     |
+| **CloudWatch**      | 메트릭 발행/조회, DSL(`metricDatum {}`)                                            |
+| **CloudWatch Logs** | 로그 이벤트 전송, DSL(`inputLogEvent {}`)                                          |
 | **Kinesis**         | 스트림 레코드 전송, `recordFlow {}` 샤드별 cold Flow, DSL(`putRecordRequestOf {}`) |
-| **EventBridge**     | Event bus, rule, target, list, `PutEvents` suspend helper |
-| **Step Functions**  | 실행 시작/중지/조회/목록과 native suspend `Flow` polling |
-| **Lambda**          | native suspend 호출, typed payload codec, raw response metadata |
-| **Bedrock Runtime** | native suspend `Converse`, `ConverseStream`, cold text-delta `Flow` |
-| **STS**             | AssumeRole, CallerIdentity, DSL(`stsClientOf {}`) |
-| **Secrets Manager** | Redacted secret value, client lifecycle helper, 요청 DSL |
-| **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL |
+| **EventBridge**     | Event bus, rule, target, list, `PutEvents` suspend helper                          |
+| **Step Functions**  | 실행 시작/중지/조회/목록과 native suspend `Flow` polling                           |
+| **Lambda**          | native suspend 호출, typed payload codec, raw response metadata                    |
+| **Bedrock Runtime** | native suspend `Converse`, `ConverseStream`, cold text-delta `Flow`                |
+| **STS**             | AssumeRole, CallerIdentity, DSL(`stsClientOf {}`)                                  |
+| **Secrets Manager** | Redacted secret value, client lifecycle helper, 요청 DSL                           |
+| **Parameter Store** | Parameter 읽기, SecureString wrapper, path query, 요청 DSL                         |
 
 ## Bedrock Runtime Converse와 스트리밍
 
 ![Amazon Bedrock Runtime 스트리밍 시퀀스](../docs/images/readme-diagrams/aws-bedrock-runtime-streaming-sequence-ko-01.png)
 
-이 파사드는 AWS Kotlin SDK의 요청·응답·이벤트·예외·일시 중단 계약을 그대로
-유지합니다. `Converse`는 네이티브 suspend 연산으로 사용하고, `ConverseStream`은
-특정 모델 제공자용 프롬프트 프레임워크를 더하지 않은 cold `Flow`로 수집합니다.
+이 파사드는 AWS Kotlin SDK의 요청·응답·이벤트·예외·일시 중단 계약을 그대로 유지합니다. `Converse`는 네이티브 suspend 연산으로 사용하고, `ConverseStream`은 특정 모델 제공자용 프롬프트 프레임워크를 더하지 않은 cold `Flow`로 수집합니다.
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.bedrock.converseStreamFlow
@@ -82,35 +80,24 @@ suspend fun streamReply(
     }
 ```
 
-최종 수집은 `withBedrockRuntimeClient` 블록 안에서 끝내야 합니다. 블록 밖으로
-돌려보낸 Flow는 이미 닫힌 클라이언트를 사용할 수 없습니다. 애플리케이션
-범위의 장기 클라이언트가 필요하면 `bedrockRuntimeClientOf`로 만들고 직접 닫으세요.
-Flow를 다시 수집하면 과금될 수 있는 새 요청이 실행됩니다. `takeUntil`은 원본 Flow가
-다음 이벤트를 내보낼 때 중단 상태를 확인하므로, 강제 제한 시간은 `withTimeout`으로
-별도로 지정해야 합니다.
+최종 수집은 `withBedrockRuntimeClient` 블록 안에서 끝내야 합니다. 블록 밖으로 돌려보낸 Flow는 이미 닫힌 클라이언트를 사용할 수 없습니다. 애플리케이션 범위의 장기 클라이언트가 필요하면 `bedrockRuntimeClientOf`로 만들고 직접 닫으세요. Flow를 다시 수집하면 과금될 수 있는 새 요청이 실행됩니다. `takeUntil`은 원본 Flow가 다음 이벤트를 내보낼 때 중단 상태를 확인하므로, 강제 제한 시간은 `withTimeout`으로 별도로 지정해야 합니다.
 
-- `textDeltaFlow()`는 bluetape4k-coroutines의 `castNotNull`을 재사용해 네이티브
-  텍스트 델타를 순서대로 고릅니다. 버퍼링·재생·병렬 매핑·로그 기록은 추가하지 않습니다.
+- `textDeltaFlow()`는 bluetape4k-coroutines의 `castNotNull`을 재사용해 네이티브 텍스트 델타를 순서대로 고릅니다. 버퍼링·재생·병렬 매핑·로그 기록은 추가하지 않습니다.
 - 빈 모델 ID, 비어 있는 메시지 컬렉션, `contentBlockOf` 또는
   `userMessageOf`에 전달한 빈 텍스트는 SDK 호출 전에
   `IllegalArgumentException`으로 거절합니다.
-- 네이티브 SDK 오류와 구조화된 취소는 바꾸지 않고 호출자에게 전달합니다. 실패·시간
-  초과·취소 시점에 수집자에게는 이미 일부 텍스트가 전달됐을 수 있습니다.
-- AWS SDK 재시도는 의미가 같은 출력을 반복할 수 있습니다. 정확히 한 번
-  (exactly-once), 중복 제거, 재생, 파사드 차원의 재시도는 제공하지 않습니다.
+- 네이티브 SDK 오류와 구조화된 취소는 바꾸지 않고 호출자에게 전달합니다. 실패·시간 초과·취소 시점에 수집자에게는 이미 일부 텍스트가 전달됐을 수 있습니다.
+- AWS SDK 재시도는 의미가 같은 출력을 반복할 수 있습니다. 정확히 한 번 (exactly-once), 중복 제거, 재생, 파사드 차원의 재시도는 제공하지 않습니다.
 - 트랜잭션 성격의 작업에는 비스트리밍 `Converse`가 더 안전합니다.
-- 자격 증명은 기본 AWS provider chain으로 공급하고, 루프백 주소를 직접 지정한 테스트가
-  아니라면 HTTPS 엔드포인트만 사용하세요. 생성된 출력은 신뢰하지 말고 도구를 자동
-  실행하지 마세요. 운영 로그에는 허용한 메타데이터만 남기며 원문 SDK 예외, 프롬프트,
-  모델 출력은 기록하거나 애플리케이션 경계 밖에 그대로 노출하지 않습니다.
+- 자격 증명은 기본 AWS provider chain으로 공급하고, 루프백 주소를 직접 지정한 테스트가 아니라면 HTTPS 엔드포인트만 사용하세요. 생성된 출력은 신뢰하지 말고 도구를 자동 실행하지 마세요. 운영 로그에는 허용한 메타데이터만 남기며 원문 SDK 예외, 프롬프트, 모델 출력은 기록하거나 애플리케이션 경계 밖에 그대로 노출하지 않습니다.
 
 ## Java SDK v2 vs Kotlin SDK 비교
 
-| 항목         | `bluetape4k-aws-java` (Java SDK) | `bluetape4k-aws-kotlin` (Kotlin SDK) |
-|------------|-----------------------------|--------------------------------------|
-| Coroutines | `.await()` 변환 필요            | native `suspend` 기본 제공               |
-| DSL 지원     | 제한적                         | 풍부한 DSL 빌더                           |
-| 성능         | CRT/Netty NIO 선택            | CRT / OkHttp 선택                      |
+| 항목       | `bluetape4k-aws-java` (Java SDK) | `bluetape4k-aws-kotlin` (Kotlin SDK) |
+|------------|----------------------------------|--------------------------------------|
+| Coroutines | `.await()` 변환 필요             | native `suspend` 기본 제공           |
+| DSL 지원   | 제한적                           | 풍부한 DSL 빌더                      |
+| 성능       | CRT/Netty NIO 선택               | CRT / OkHttp 선택                    |
 
 ## 클라이언트 생성 패턴
 
@@ -118,7 +105,7 @@ Flow를 다시 수집하면 과금될 수 있는 새 요청이 실행됩니다. 
 
 ### `xxxClientOf` — 클라이언트 직접 생성
 
-장기 보유(long-lived) 클라이언트가 필요할 때 사용합니다. **반드시 `close()`를 호출**해야 합니다.
+장기 보유 (long-lived) 클라이언트가 필요할 때 사용합니다. **반드시 `close()`를 호출**해야 합니다.
 
 ```kotlin
 val client = sqsClientOf(
@@ -153,10 +140,7 @@ withSqsClient(endpointUrl, region, credentialsProvider) { client ->
 
 ### DynamoDB coordination (Issue #476)
 
-`DynamoDbDistributedLock`과 `DynamoDbMetadataStore`는 호출자가 소유하는 PK-only DynamoDB
-table에서 coroutine 우선 bounded 조건부 coordination을 제공합니다. Lock은 release 뒤에도
-단조 증가 fencing token을 보존하고, metadata는 제한된 String 값과 선택적 logical/DynamoDB
-TTL 만료를 저장합니다. 이 adapter가 client를 만들거나 닫지는 않습니다.
+`DynamoDbDistributedLock`과 `DynamoDbMetadataStore`는 호출자가 소유하는 PK-only DynamoDB table에서 coroutine 우선 bounded 조건부 coordination을 제공합니다. Lock은 release 뒤에도 단조 증가 fencing token을 보존하고, metadata는 제한된 String 값과 선택적 logical/DynamoDB TTL 만료를 저장합니다. 이 adapter가 client를 만들거나 닫지는 않습니다.
 
 ```kotlin
 val schema = DynamoDbCoordinationSchema(tableName = "coordination", namespace = "orders")
@@ -254,11 +238,7 @@ suspend fun getCallerIdentity() = stsClient.getCallerIdentity {}
 
 ### Kinesis (DSL)
 
-Kinesis DryRun은 opt-in이며 기본값은 `dryRun = false`입니다. `builder`는 계속 마지막
-인자입니다. 서비스 측 검증 성공도 정상 응답이 아니라 `DryRunOperationException`으로 전달됩니다.
-그 밖의 AWS SDK 예외와 coroutine cancellation은 그대로 전파됩니다. 다음 검증은 AWS Kinesis
-endpoint에서만 실행하세요. DryRun capability가 입증되지 않은 emulator에서 write 호출을 실행하면
-안 됩니다.
+Kinesis DryRun은 opt-in이며 기본값은 `dryRun = false`입니다. `builder`는 계속 마지막 인자입니다. 서비스 측 검증 성공도 정상 응답이 아니라 `DryRunOperationException`으로 전달됩니다. 그 밖의 AWS SDK 예외와 coroutine cancellation은 그대로 전파됩니다. 다음 검증은 AWS Kinesis endpoint에서만 실행하세요. DryRun capability가 입증되지 않은 emulator에서 write 호출을 실행하면 안 됩니다.
 
 ```kotlin
 import aws.sdk.kotlin.services.kinesis.KinesisClient
@@ -324,24 +304,20 @@ private suspend fun validateKinesisDryRun(client: KinesisClient, existingShardIt
 }
 ```
 
-DryRun 요청도 payload를 설정된 endpoint로 직렬화해 전송하고 credential provider를 요청 서명에
-사용합니다. client-side validation, encryption 또는 network block을 대신하지 않습니다.
-`getRecords`를 검증하기 전에 일반 non-DryRun `getShardIterator` 호출로 `existingShardIterator`를
-얻어야 합니다. 예제 helper는 DryRun 정상 응답을 미지원으로 간주해 fail-closed 처리하지만,
-production extension은 backend 응답을 그대로 반환합니다.
+DryRun 요청도 payload를 설정된 endpoint로 직렬화해 전송하고 credential provider를 요청 서명에 사용합니다. client-side validation, encryption 또는 network block을 대신하지 않습니다.
+`getRecords`를 검증하기 전에 일반 non-DryRun `getShardIterator` 호출로 `existingShardIterator`를 얻어야 합니다. 예제 helper는 DryRun 정상 응답을 미지원으로 간주해 fail-closed 처리하지만, production extension은 backend 응답을 그대로 반환합니다.
 
-| #620에서 확인한 backend | capability | 예상 결과 |
-| --- | --- | --- |
-| AWS Kinesis | 지원 | 검증 성공 시 `DryRunOperationException`, 실제 읽기/쓰기 없음 |
-| Floci `1.6.0` | 미지원 | 요청 필드를 무시하며 안전성 테스트는 사유를 기록하고 예제를 실행하지 않음 |
-| LocalStack `4` | 미지원 fallback | 요청 필드를 무시하며 진단 결과에 명시적 사유 기록 |
+| #620에서 확인한 backend | capability      | 예상 결과                                                                 |
+|-------------------------|-----------------|---------------------------------------------------------------------------|
+| AWS Kinesis             | 지원            | 검증 성공 시 `DryRunOperationException`, 실제 읽기/쓰기 없음              |
+| Floci `1.6.0`           | 미지원          | 요청 필드를 무시하며 안전성 테스트는 사유를 기록하고 예제를 실행하지 않음 |
+| LocalStack `4`          | 미지원 fallback | 요청 필드를 무시하며 진단 결과에 명시적 사유 기록                         |
 
 [AWS Kinesis DryRun 가이드](https://docs.aws.amazon.com/ko_kr/streams/latest/dev/kds-dryrun-validation.html)를 참고하세요.
 
 ### Kinesis — `recordFlow` (샤드별 cold `Flow<Record>`)
 
-`KinesisClient.recordFlow()`는 단일 샤드를 지속적으로 폴링하여 각 레코드를 emit하는 cold `Flow<Record>`를 반환합니다.
-샤드가 닫히면(리샤딩) 플로우가 자연스럽게 완료됩니다.
+`KinesisClient.recordFlow()`는 단일 샤드를 지속적으로 폴링하여 각 레코드를 emit하는 cold `Flow<Record>`를 반환합니다. 샤드가 닫히면 (리샤딩) 플로우가 자연스럽게 완료됩니다.
 
 ```kotlin
 import aws.sdk.kotlin.services.kinesis.KinesisClient
@@ -385,24 +361,24 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 
 #### 시작 위치 (Starting Position)
 
-| 위치 | 설명 |
-|---|---|
-| `TrimHorizon` | 샤드에서 가장 오래된 레코드부터 (기본값) |
-| `Latest` | 이터레이터 획득 이후에 작성된 레코드. **주의:** 첫 레코드 처리 전에 이터레이터가 만료되면 레코드를 무음 skip하는 대신 즉시 예외를 던집니다. |
-| `AtSequenceNumber(seq)` | 지정한 시퀀스 번호의 레코드 포함 (inclusive) |
-| `AfterSequenceNumber(seq)` | 지정한 시퀀스 번호 이후의 레코드 (exclusive) |
-| `AtTimestamp(instant)` | 지정한 `java.time.Instant` 이후의 레코드 |
+| 위치                       | 설명                                                                                                                                        |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `TrimHorizon`              | 샤드에서 가장 오래된 레코드부터 (기본값)                                                                                                    |
+| `Latest`                   | 이터레이터 획득 이후에 작성된 레코드. **주의:** 첫 레코드 처리 전에 이터레이터가 만료되면 레코드를 무음 skip하는 대신 즉시 예외를 던집니다. |
+| `AtSequenceNumber(seq)`    | 지정한 시퀀스 번호의 레코드 포함 (inclusive)                                                                                                |
+| `AfterSequenceNumber(seq)` | 지정한 시퀀스 번호 이후의 레코드 (exclusive)                                                                                                |
+| `AtTimestamp(instant)`     | 지정한 `java.time.Instant` 이후의 레코드                                                                                                    |
 
 #### 오류 처리
 
-| 오류 | 동작 |
-|---|---|
-| 샤드 닫힘 (`nextShardIterator == null`) | 플로우 정상 완료 |
-| `ExpiredIteratorException` | 마지막 시퀀스 번호로 이터레이터 재획득; `maxIteratorRetries` 초과 시 예외 전파 |
-| `Latest` + 체크포인트 없음 + 만료 | 즉시 예외 — 재획득 시 레코드 skip 발생 방지 |
-| 재시도 가능 `KinesisException` | 지수 지터 백오프; `maxThrottleRetries` 초과 시 예외 전파 |
-| 재시도 불가 `KinesisException` | 즉시 예외 전파 |
-| `CancellationException` | 즉시 예외 전파 |
+| 오류                                    | 동작                                                                           |
+|-----------------------------------------|--------------------------------------------------------------------------------|
+| 샤드 닫힘 (`nextShardIterator == null`) | 플로우 정상 완료                                                               |
+| `ExpiredIteratorException`              | 마지막 시퀀스 번호로 이터레이터 재획득; `maxIteratorRetries` 초과 시 예외 전파 |
+| `Latest` + 체크포인트 없음 + 만료       | 즉시 예외 — 재획득 시 레코드 skip 발생 방지                                    |
+| 재시도 가능 `KinesisException`          | 지수 지터 백오프; `maxThrottleRetries` 초과 시 예외 전파                       |
+| 재시도 불가 `KinesisException`          | 즉시 예외 전파                                                                 |
+| `CancellationException`                 | 즉시 예외 전파                                                                 |
 
 #### Kinesis consumer 관측 schema v1
 
@@ -419,13 +395,9 @@ val metrics = KinesisFlowMetrics { event ->
 
 `KinesisCanonicalObservation`은 `discovery`, `shard`, `batch`, `record`, `lease`,
 `checkpoint`, `retry`로 event vocabulary를 고정합니다. count와 retry count의 범위는
-`0..10000`입니다. stream, shard, owner label은 기존 64자 hash에서 24자 소문자 16진수
-prefix로 정규화합니다. 이 label은 cardinality와 raw identifier 노출을 줄이지만, 인증 또는
-암호학적 identity token으로 사용하면 안 됩니다.
+`0..10000`입니다. stream, shard, owner label은 기존 64자 hash에서 24자 소문자 16진수 prefix로 정규화합니다. 이 label은 cardinality와 raw identifier 노출을 줄이지만, 인증 또는 암호학적 identity token으로 사용하면 안 됩니다.
 
-마이그레이션할 때는 legacy와 canonical exporter를 병행한 뒤 dashboard와 alert를 canonical
-24자 label로 옮기고 legacy exporter를 제거합니다. canonical checkpoint와 shard 성공 순서는
-Java SDK module과 같으며, 기존 sealed event API와 callback ABI는 바뀌지 않습니다.
+마이그레이션할 때는 legacy와 canonical exporter를 병행한 뒤 dashboard와 alert를 canonical 24자 label로 옮기고 legacy exporter를 제거합니다. canonical checkpoint와 shard 성공 순서는 Java SDK module과 같으며, 기존 sealed event API와 callback ABI는 바뀌지 않습니다.
 
 ### EventBridge (native suspend)
 
@@ -447,19 +419,12 @@ suspend fun publishOrderEvent(client: EventBridgeClient) {
 }
 ```
 
-EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK 응답을 그대로 반환합니다.
-런타임에는 `aws.sdk.kotlin:eventbridge`를 추가해야 합니다. Scheduler, framework integration,
-global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은
-이 모듈 범위에 포함하지 않습니다.
+EventBridge helper는 호출 한 번당 SDK 요청 한 번만 수행하며 SDK 응답을 그대로 반환합니다. 런타임에는 `aws.sdk.kotlin:eventbridge`를 추가해야 합니다. Scheduler, framework integration, global endpoint, cross-account target orchestration, SDK model 타입을 넘어서는 target별 검증은 이 모듈 범위에 포함하지 않습니다.
 
 ### S3 Tables 관리 (1.0.0 개발선)
 
-S3 Tables helper는 native AWS Kotlin SDK request·response 타입을 유지하면서 table bucket,
-namespace, table의 생성·목록·조회·삭제를 native suspend로 제공합니다. 목록은 raw service의
-한 페이지를 반환하므로 다음 페이지에는 `continuationToken`을 명시합니다. `ListTables`의
-`namespace`는 선택 사항이므로 bucket 범위 목록에도 사용할 수 있습니다. `CreateTable`의
-기본값은 `OpenTableFormat.Iceberg`이고, `GetTable`은 table ARN 또는
-bucket/namespace/name selector를 사용합니다.
+S3 Tables helper는 native AWS Kotlin SDK request·response 타입을 유지하면서 table bucket, namespace, table의 생성·목록·조회·삭제를 native suspend로 제공합니다. 목록은 raw service의 한 페이지를 반환하므로 다음 페이지에는 `continuationToken`을 명시합니다. `ListTables`의
+`namespace`는 선택 사항이므로 bucket 범위 목록에도 사용할 수 있습니다. `CreateTable`의 기본값은 `OpenTableFormat.Iceberg`이고, `GetTable`은 table ARN 또는 bucket/namespace/name selector를 사용합니다.
 
 서비스 SDK는 `compileOnly`이므로 애플리케이션이 직접 추가해야 합니다.
 
@@ -484,17 +449,13 @@ suspend fun createOrdersTable() = withS3TablesClient(region = "ap-northeast-2") 
 ```
 
 `s3TablesClientOf`가 반환한 application-scoped client를 닫는 책임은 호출자에게 있습니다.
-`withS3TablesClient`는 block이 끝날 때 service client만 닫고, 주입한 HTTP engine은 호출자가
-관리합니다. 이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다.
-Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의
-S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
+`withS3TablesClient`는 block이 끝날 때 service client만 닫고, 주입한 HTTP engine은 호출자가 관리합니다. 이 API는 management surface이며 Iceberg data-plane이나 SQL engine이 아닙니다. Athena, Glue, Redshift, Apache Iceberg 연동은 애플리케이션의 책임으로 남기며, 로컬 emulator의 S3 Tables fidelity를 이 모듈이 보장한다고 주장하지 않습니다.
 
 ### Step Functions 실행 helper (1.0.0 개발선)
 
 `1.0.0` 개발선에서는 `StartExecution`, `StopExecution`, `DescribeExecution`,
 `ListExecutions`를 위한 native suspend helper가 추가됩니다. Polling은 AWS Kotlin SDK의
-`SfnClient`를 사용하며 raw 응답을 `Flow<DescribeExecutionResponse>` cold Flow로
-전달합니다. client, timeout과 cancellation 정책은 호출자가 소유합니다.
+`SfnClient`를 사용하며 raw 응답을 `Flow<DescribeExecutionResponse>` cold Flow로 전달합니다. client, timeout과 cancellation 정책은 호출자가 소유합니다.
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.sfn.describeExecutionFlow
@@ -513,18 +474,13 @@ suspend fun awaitExecution(executionArn: String): DescribeExecutionResponse =
 ```
 
 이 예제는 Standard execution을 대상으로 합니다. Cancellation은 그대로 전파되며
-`StopExecution`을 자동 호출하지 않습니다. 범위 지정 helper는 service client만 닫고 주입한
-HTTP engine은 호출자 소유로 남깁니다. 서비스 SDK는 `compileOnly`로 유지되므로 런타임에
-`aws.sdk.kotlin:sfn`을 직접 추가하세요. 의존성, Standard/Express/Map Run, IAM/KMS, quota와
-emulator 경계는 [Step Functions Kotlin 모듈 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/)에서
-확인할 수 있습니다.
+`StopExecution`을 자동 호출하지 않습니다. 범위 지정 helper는 service client만 닫고 주입한 HTTP engine은 호출자 소유로 남깁니다. 서비스 SDK는 `compileOnly`로 유지되므로 런타임에
+`aws.sdk.kotlin:sfn`을 직접 추가하세요. 의존성, Standard/Express/Map Run, IAM/KMS, quota와 emulator 경계는 [Step Functions Kotlin 모듈 매뉴얼](https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/)에서 확인할 수 있습니다.
 
 ### Lambda 호출 helper (1.0.0 개발선)
 
 `1.0.0` 개발선에서는 `io.bluetape4k.aws.kotlin.lambda` 아래에 native suspend
-`Invoke` helper가 추가됩니다. `LambdaInvocationResult`는 raw response, 복사한 payload,
-status, 선택적 `FunctionError`, 디코드한 tail log를 함께 보존합니다. Typed payload에는
-소비자가 Jackson을 선택한 경우에만 `LambdaPayloadCodecs.jackson(...)`을 사용하세요.
+`Invoke` helper가 추가됩니다. `LambdaInvocationResult`는 raw response, 복사한 payload, status, 선택적 `FunctionError`, 디코드한 tail log를 함께 보존합니다. Typed payload에는 소비자가 Jackson을 선택한 경우에만 `LambdaPayloadCodecs.jackson(...)`을 사용하세요.
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.lambda.invokeString
@@ -538,10 +494,7 @@ suspend fun invokeOrder(): String =
     }
 ```
 
-서비스 SDK는 `compileOnly`로 유지되므로 런타임에 `aws.sdk.kotlin:lambda`를 직접
-추가하세요. `withLambdaClient`는 service client만 닫고 주입한 HTTP engine은 호출자 소유로
-남깁니다. Native suspend cancellation을 그대로 전달하며 retry, 배포, polling, 로깅,
-IAM policy 관리는 추가하지 않습니다.
+서비스 SDK는 `compileOnly`로 유지되므로 런타임에 `aws.sdk.kotlin:lambda`를 직접 추가하세요. `withLambdaClient`는 service client만 닫고 주입한 HTTP engine은 호출자 소유로 남깁니다. Native suspend cancellation을 그대로 전달하며 retry, 배포, polling, 로깅, IAM policy 관리는 추가하지 않습니다.
 
 ### Secrets Manager와 Parameter Store
 
@@ -587,23 +540,17 @@ suspend fun loadAppParameters() =
     }
 ```
 
-Secret 값은 plaintext가 꼭 필요한 consumer boundary까지 `AwsSecretValue` 안에
-유지하세요. Revealed value를 출력, 로그, 예외 메시지에 포함하지 않습니다.
+Secret 값은 plaintext가 꼭 필요한 consumer boundary까지 `AwsSecretValue` 안에 유지하세요. Revealed value를 출력, 로그, 예외 메시지에 포함하지 않습니다.
 
 ## 이 모듈이 제공하지 않는 것
 
-이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책,
-rotation orchestration, IAM/KMS policy 관리, 숨겨진 전체 페이지 수집 abstraction을
-제공하지 않습니다. 해당 책임은 Spring/Exposed 모듈이나 애플리케이션 코드에서 다룹니다.
+이 모듈은 Spring Environment 로딩, JSON flattening, 캐시/refresh 정책, rotation orchestration, IAM/KMS policy 관리, 숨겨진 전체 페이지 수집 abstraction을 제공하지 않습니다. 해당 책임은 Spring/Exposed 모듈이나 애플리케이션 코드에서 다룹니다.
 
-Hot path에서는 애플리케이션 경계에서 caller-owned cache를 두고 refresh/error 정책을
-명시하세요. Create/put helper는 AWS-side state를 변경하므로 의도적으로 사용하고
-감사 가능하게 유지해야 합니다.
+Hot path에서는 애플리케이션 경계에서 caller-owned cache를 두고 refresh/error 정책을 명시하세요. Create/put helper는 AWS-side state를 변경하므로 의도적으로 사용하고 감사 가능하게 유지해야 합니다.
 
 ## 테스트 환경
 
-통합 테스트는 Testcontainers 기반 Floci를 기본 emulator로 사용합니다. Floci coverage
-gap은 `-Dbluetape4k.aws.emulator=localstack` 로 명시 실행해 LocalStack에서 검증합니다.
+통합 테스트는 Testcontainers 기반 Floci를 기본 emulator로 사용합니다. Floci coverage gap은 `-Dbluetape4k.aws.emulator=localstack` 로 명시 실행해 LocalStack에서 검증합니다.
 
 ```kotlin
 abstract class AbstractAwsTest {
@@ -632,8 +579,7 @@ abstract class AbstractAwsTest {
 ## 설치
 
 AWS Kotlin SDK 서비스는 `compileOnly`로 선언되어 있으므로, 사용할 서비스 SDK를 런타임 의존성으로 추가해야 합니다.
-`bluetape4k-aws-kotlin`은 공통 bluetape4k coroutine 유틸리티를 노출하지만, 사용하지 않는 AWS 서비스 클라이언트를
-소비자 애플리케이션에 강제로 올리지는 않습니다.
+`bluetape4k-aws-kotlin`은 공통 bluetape4k coroutine 유틸리티를 노출하지만, 사용하지 않는 AWS 서비스 클라이언트를 소비자 애플리케이션에 강제로 올리지는 않습니다.
 
 ```kotlin
 dependencies {

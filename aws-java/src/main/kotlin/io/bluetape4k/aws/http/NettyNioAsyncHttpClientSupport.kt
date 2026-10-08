@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.http
 
+import io.bluetape4k.support.requirePositiveNumber
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient
 import kotlin.time.Duration
@@ -22,9 +23,8 @@ import kotlin.time.toJavaDuration
  */
 inline fun nettyNioAsyncHttpClient(
     builder: NettyNioAsyncHttpClient.Builder.() -> Unit,
-): SdkAsyncHttpClient {
-    return NettyNioAsyncHttpClient.builder().apply(builder).build()
-}
+): SdkAsyncHttpClient =
+    NettyNioAsyncHttpClient.builder().apply(builder).build()
 
 /**
  * 기본 타임아웃/동시성 값을 적용한 Netty NIO [SdkAsyncHttpClient]를 생성합니다.
@@ -49,7 +49,7 @@ inline fun nettyNioAsyncHttpClientOf(
     writeTimeout: Duration = 30.seconds,
     builder: NettyNioAsyncHttpClient.Builder.() -> Unit = {},
 ): SdkAsyncHttpClient = nettyNioAsyncHttpClient {
-    this.maxConcurrency(maxConcurrency)
+    this.maxConcurrency(maxConcurrency.requirePositiveNumber("maxConcurrency"))
     this.connectionMaxIdleTime(connectionMaxIdleTime.toJavaDuration())
     this.connectionTimeout(connectionTimeout.toJavaDuration())
     this.readTimeout(readTimeout.toJavaDuration())

@@ -9,19 +9,26 @@ import aws.smithy.kotlin.runtime.http.HttpStatusCode
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 @OptIn(InternalApi::class)
 class SqsClientErrorClassifierTest {
 
+    companion object: KLogging()
+
     @Test
     fun `isMissingQueueError는 QueueDoesNotExist를 미존재로 판별한다`() {
-        QueueDoesNotExist { message = "missing queue" }.isMissingQueueError().shouldBeTrue()
+        QueueDoesNotExist {
+            message = "missing queue"
+        }.isMissingQueueError().shouldBeTrue()
     }
 
     @Test
     fun `isMissingQueueError는 ResourceNotFoundException을 미존재로 판별한다`() {
-        ResourceNotFoundException { message = "missing resource" }.isMissingQueueError().shouldBeTrue()
+        ResourceNotFoundException {
+            message = "missing resource"
+        }.isMissingQueueError().shouldBeTrue()
     }
 
     @Test

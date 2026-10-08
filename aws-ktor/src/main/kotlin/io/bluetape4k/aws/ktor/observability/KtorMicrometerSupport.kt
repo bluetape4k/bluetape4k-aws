@@ -32,13 +32,14 @@ internal object KtorMicrometerSupport {
         outcome: String,
         exception: String = EXCEPTION_NONE,
         extras: Iterable<Tag> = emptyList(),
-    ): Tags =
-        Tags.of(
+    ): Tags = Tags
+        .of(
             TAG_SERVICE, service,
             TAG_OPERATION, operation,
             TAG_OUTCOME, outcome,
             TAG_EXCEPTION, exception.ifBlank { UNKNOWN }.substringAfterLast('.'),
-        ).and(extras)
+        )
+        .and(extras)
 
     fun queueNameTag(queueUrl: String?): Tag =
         Tag.of(TAG_QUEUE_NAME, queueName(queueUrl))

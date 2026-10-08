@@ -1,16 +1,11 @@
 package io.bluetape4k.aws.kotlin.ssm
 
 import aws.sdk.kotlin.services.ssm.SsmClient
-import aws.sdk.kotlin.services.ssm.describeParameters
-import aws.sdk.kotlin.services.ssm.getParameter
-import aws.sdk.kotlin.services.ssm.getParameters
-import aws.sdk.kotlin.services.ssm.getParametersByPath
 import aws.sdk.kotlin.services.ssm.model.DescribeParametersResponse
 import aws.sdk.kotlin.services.ssm.model.GetParameterResponse
 import aws.sdk.kotlin.services.ssm.model.GetParametersByPathResponse
 import aws.sdk.kotlin.services.ssm.model.GetParametersResponse
 import aws.sdk.kotlin.services.ssm.model.PutParameterResponse
-import aws.sdk.kotlin.services.ssm.putParameter
 import io.bluetape4k.aws.kotlin.secretsmanager.AwsSecretValue
 import io.bluetape4k.aws.kotlin.secretsmanager.awsSecretValueOf
 import io.bluetape4k.aws.kotlin.ssm.model.describeParametersRequestOf
@@ -34,7 +29,9 @@ suspend fun SsmClient.getParameter(
  * 복호화를 활성화해 SecureString 파라미터를 가져오고 값을 가립니다.
  */
 suspend fun SsmClient.getSecureParameter(name: String): AwsSecretValue =
-    awsSecretValueOf(getParameter(name, withDecryption = true).parameter?.value ?: error("Parameter value is not present."))
+    awsSecretValueOf(
+        getParameter(name, withDecryption = true).parameter?.value ?: error("Parameter value is not present.")
+    )
 
 /**
  * 최대 10개의 파라미터를 가져오고 SDK 원본의 잘못된 파라미터 상세 정보를 보존합니다.

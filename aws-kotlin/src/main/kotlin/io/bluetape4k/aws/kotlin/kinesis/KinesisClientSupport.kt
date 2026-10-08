@@ -4,7 +4,6 @@ import aws.sdk.kotlin.services.kinesis.KinesisClient
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
-import io.bluetape4k.support.useSafe
 
 /**
  * AWS Kotlin SDK [KinesisClient] 인스턴스를 생성합니다.
@@ -30,14 +29,15 @@ inline fun kinesisClientOf(
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
     crossinline builder: KinesisClient.Config.Builder.() -> Unit = {},
-): KinesisClient = KinesisClient {
-    endpointUrl?.let { this.endpointUrl = it }
-    region?.let { this.region = it }
-    credentialsProvider?.let { this.credentialsProvider = it }
-    httpClient?.let { this.httpClient = it }
+): KinesisClient =
+    KinesisClient {
+        endpointUrl?.let { this.endpointUrl = it }
+        region?.let { this.region = it }
+        credentialsProvider?.let { this.credentialsProvider = it }
+        httpClient?.let { this.httpClient = it }
 
-    builder()
-}
+        builder()
+    }
 
 /**
  * [KinesisClient]를 생성하고 [block]을 실행한 후 자동으로 닫습니다.
@@ -52,11 +52,12 @@ inline fun kinesisClientOf(
  *
  * @param block suspend 블록. AWS SDK의 모든 operations는 suspend 함수이므로 이 블록도 suspend로 선언합니다.
  */
-suspend fun <R> withKinesisClient(
+suspend inline fun <R> withKinesisClient(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (KinesisClient) -> R,
-): R = kinesisClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-    block(client)
-}
+): R =
+    kinesisClientOf(endpointUrl, region, credentialsProvider).use { client ->
+        block(client)
+    }

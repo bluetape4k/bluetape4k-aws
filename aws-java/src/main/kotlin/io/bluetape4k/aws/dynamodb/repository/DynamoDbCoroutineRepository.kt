@@ -4,8 +4,10 @@ import io.bluetape4k.aws.dynamodb.enhanced.batchWriteItems
 import io.bluetape4k.aws.dynamodb.model.DynamoDbEntity
 import io.bluetape4k.aws.dynamodb.model.keyOf
 import io.bluetape4k.coroutines.flow.async
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
@@ -95,7 +97,9 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
      * ```
      */
     fun saveAll(items: Collection<T>): Flow<BatchWriteResult> {
-        return client.batchWriteItems(itemClass, table, items = items)
+        return client
+            .batchWriteItems(itemClass, table, items = items)
+            .flowOn(Dispatchers.IO)
     }
 
     /**
@@ -130,6 +134,7 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
                 delete(item)
             }
             .mapNotNull { it }
+            .flowOn(Dispatchers.IO)
     }
 
     /**
@@ -141,5 +146,6 @@ interface DynamoDbCoroutineRepository<T: DynamoDbEntity> {
                 delete(key)
             }
             .mapNotNull { it }
+            .flowOn(Dispatchers.IO)
     }
 }

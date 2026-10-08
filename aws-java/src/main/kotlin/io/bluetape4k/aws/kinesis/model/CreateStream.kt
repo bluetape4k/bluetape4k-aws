@@ -39,6 +39,7 @@ inline fun createStreamRequestOf(
 ): CreateStreamRequest {
     streamName.requireNotBlank("streamName")
     shardCount.validateKinesisShardCount("shardCount")
+
     return createStreamRequest {
         streamName(streamName)
         shardCount(shardCount)

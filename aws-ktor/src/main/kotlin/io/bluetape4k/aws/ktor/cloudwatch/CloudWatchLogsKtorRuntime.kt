@@ -4,6 +4,7 @@ import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -75,7 +76,7 @@ class CloudWatchLogsKtorRuntime(
         shutdownFlushTimeout: Duration,
         createLogGroupOnStart: Boolean,
         createLogStreamOnStart: Boolean,
-    ) : this(
+    ): this(
         operations,
         ownedClient,
         logStream,
@@ -108,9 +109,7 @@ class CloudWatchLogsKtorRuntime(
 
         try {
             val startupLogStream = if (createLogGroupOnStart || createLogStreamOnStart) {
-                requireNotNull(logStream) {
-                    "logGroupName and logStreamName must be configured for startup setup."
-                }
+                logStream.requireNotNull { "logGroupName and logStreamName must be configured for startup setup." }
             } else {
                 null
             }
@@ -292,8 +291,8 @@ class CloudWatchLogsKtorRuntime(
     private fun reportShutdown(observation: CloudWatchLogsShutdownObservation) {
         if (observation.outcome != CloudWatchLogsShutdownOutcome.Success) {
             val message = "CloudWatch Logs shutdown flush ${observation.outcome.name.lowercase()} " +
-                "with ${observation.pendingEventCount} pending event(s); " +
-                "${observation.droppedEventCount} event(s) will not be retried."
+                    "with ${observation.pendingEventCount} pending event(s); " +
+                    "${observation.droppedEventCount} event(s) will not be retried."
             observation.cause?.let { cause ->
                 log.warn(cause) { message }
             } ?: log.warn { message }

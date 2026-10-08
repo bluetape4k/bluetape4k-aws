@@ -1,16 +1,22 @@
 package io.bluetape4k.aws.dynamodbstreams
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
-class DynamoDbStreamsCheckpointStoreTest {
+class DynamoDbStreamsCheckpointStoreTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `in memory store isolates stream and shard keys`() = runTest {
         val store = InMemoryDynamoDbStreamsCheckpointStore()
 
-        store.load("stream-a", "shard-1") shouldBeEqualTo null
+        store.load("stream-a", "shard-1").shouldBeNull()
+
         store.save("stream-a", "shard-1", "seq-1")
         store.save("stream-a", "shard-2", "seq-2")
         store.save("stream-b", "shard-1", "seq-3")
@@ -22,8 +28,8 @@ class DynamoDbStreamsCheckpointStoreTest {
 
     @Test
     fun `noop store never exposes a checkpoint`() = runTest {
-        NoopDynamoDbStreamsCheckpointStore.load("stream", "shard") shouldBeEqualTo null
+        NoopDynamoDbStreamsCheckpointStore.load("stream", "shard").shouldBeNull()
         NoopDynamoDbStreamsCheckpointStore.save("stream", "shard", "seq")
-        NoopDynamoDbStreamsCheckpointStore.load("stream", "shard") shouldBeEqualTo null
+        NoopDynamoDbStreamsCheckpointStore.load("stream", "shard").shouldBeNull()
     }
 }

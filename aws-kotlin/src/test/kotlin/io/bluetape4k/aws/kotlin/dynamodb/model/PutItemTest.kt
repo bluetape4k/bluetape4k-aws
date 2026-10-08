@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 
 class PutItemTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `putItemRequestOf AttributeValue 항목으로 요청을 생성한다`() {

@@ -24,34 +24,32 @@ A unified integration module built on the AWS Kotlin SDK. Provides native
 
 ## Supported Services
 
-| Service             | Key Features                                            |
-|---------------------|---------------------------------------------------------|
-| **DynamoDB**        | Table CRUD, scan/query, DSL builders                    |
-| **S3**              | Object upload/download, multipart, bucket management    |
-| **S3 Tables**       | Table bucket, namespace, and table management with native suspend helpers |
-| **SES / SESv2**     | Email sending, templated email                          |
-| **SNS**             | Topic publishing, SMS, subscription management          |
-| **SQS**             | Message send/receive/delete, FIFO queues                |
-| **KMS**             | Encryption key management, data key generation          |
-| **CloudWatch**      | Metric publishing/querying, DSL (`metricDatum {}`)      |
-| **CloudWatch Logs** | Log event publishing, DSL (`inputLogEvent {}`)          |
+| Service             | Key Features                                                                                 |
+|---------------------|----------------------------------------------------------------------------------------------|
+| **DynamoDB**        | Table CRUD, scan/query, DSL builders                                                         |
+| **S3**              | Object upload/download, multipart, bucket management                                         |
+| **S3 Tables**       | Table bucket, namespace, and table management with native suspend helpers                    |
+| **SES / SESv2**     | Email sending, templated email                                                               |
+| **SNS**             | Topic publishing, SMS, subscription management                                               |
+| **SQS**             | Message send/receive/delete, FIFO queues                                                     |
+| **KMS**             | Encryption key management, data key generation                                               |
+| **CloudWatch**      | Metric publishing/querying, DSL (`metricDatum {}`)                                           |
+| **CloudWatch Logs** | Log event publishing, DSL (`inputLogEvent {}`)                                               |
 | **Kinesis**         | Stream record publishing, `recordFlow {}` cold Flow per shard, DSL (`putRecordRequestOf {}`) |
-| **EventBridge**     | Event bus, rule, target, list, and `PutEvents` suspend helpers |
-| **Step Functions**  | Execution start/stop/describe/list and native suspend `Flow` polling |
-| **Lambda**          | Native suspend invocation, typed payload codecs, raw response metadata |
-| **Bedrock Runtime** | Native suspend `Converse`, `ConverseStream`, and cold text-delta `Flow` |
-| **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)      |
-| **Secrets Manager** | Redacted secret values, client lifecycle helpers, request DSLs |
-| **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs |
+| **EventBridge**     | Event bus, rule, target, list, and `PutEvents` suspend helpers                               |
+| **Step Functions**  | Execution start/stop/describe/list and native suspend `Flow` polling                         |
+| **Lambda**          | Native suspend invocation, typed payload codecs, raw response metadata                       |
+| **Bedrock Runtime** | Native suspend `Converse`, `ConverseStream`, and cold text-delta `Flow`                      |
+| **STS**             | AssumeRole, CallerIdentity, DSL (`stsClientOf {}`)                                           |
+| **Secrets Manager** | Redacted secret values, client lifecycle helpers, request DSLs                               |
+| **Parameter Store** | Parameter reads, SecureString wrappers, path queries, request DSLs                           |
 
 ## Bedrock Runtime Converse and Streaming
 
 ![Amazon Bedrock Runtime streaming sequence](../docs/images/readme-diagrams/aws-bedrock-runtime-streaming-sequence-en-01.png)
 
-The facade keeps native AWS Kotlin SDK request, response, event, exception, and
-suspension contracts. `Converse` stays a native suspend operation, while
-`ConverseStream` becomes a cold `Flow` without adding a provider-specific
-prompt framework.
+The facade keeps native AWS Kotlin SDK request, response, event, exception, and suspension contracts. `Converse` stays a native suspend operation, while
+`ConverseStream` becomes a cold `Flow` without adding a provider-specific prompt framework.
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.bedrock.converseStreamFlow
@@ -85,36 +83,25 @@ suspend fun streamReply(
     }
 ```
 
-Complete terminal collection inside `withBedrockRuntimeClient`; a returned
-Flow cannot outlive the client scope. For application-scoped clients, use
-`bedrockRuntimeClientOf` and close the client explicitly. Every collection is a
-new, potentially billable request. `takeUntil` checks its stop state when the
-source produces the next event, so use `withTimeout` for a hard deadline.
+Complete terminal collection inside `withBedrockRuntimeClient`; a returned Flow cannot outlive the client scope. For application-scoped clients, use
+`bedrockRuntimeClientOf` and close the client explicitly. Every collection is a new, potentially billable request. `takeUntil` checks its stop state when the source produces the next event, so use `withTimeout` for a hard deadline.
 
-- `textDeltaFlow()` reuses bluetape4k-coroutines `castNotNull` to select native
-  text deltas in order without buffering, replay, parallel mapping, or logging.
+- `textDeltaFlow()` reuses bluetape4k-coroutines `castNotNull` to select native text deltas in order without buffering, replay, parallel mapping, or logging.
 - Blank model IDs, empty message collections, and blank text passed to
   `contentBlockOf` or `userMessageOf` fail with `IllegalArgumentException`
   before an SDK call.
-- Native SDK failures and structured cancellation reach the caller unchanged.
-  A streaming collector can already hold partial text when failure, timeout,
-  or cancellation occurs.
-- AWS SDK retries can repeat semantically equivalent output. There is no
-  exactly-once delivery, deduplication, replay, or facade-level retry.
+- Native SDK failures and structured cancellation reach the caller unchanged. A streaming collector can already hold partial text when failure, timeout, or cancellation occurs.
+- AWS SDK retries can repeat semantically equivalent output. There is no exactly-once delivery, deduplication, replay, or facade-level retry.
 - Prefer non-streaming `Converse` when the operation must be transactional.
-- Keep credentials on the default AWS provider chain, use HTTPS except for
-  literal loopback tests, treat generated output as untrusted, and never
-  execute tools from it automatically. Log only allowlisted operation
-  metadata; never log or expose raw SDK exceptions, prompts, or model output
-  beyond the application boundary.
+- Keep credentials on the default AWS provider chain, use HTTPS except for literal loopback tests, treat generated output as untrusted, and never execute tools from it automatically. Log only allowlisted operation metadata; never log or expose raw SDK exceptions, prompts, or model output beyond the application boundary.
 
 ## Java SDK v2 vs Kotlin SDK Comparison
 
 | Aspect      | `bluetape4k-aws-java` (Java SDK) | `bluetape4k-aws-kotlin` (Kotlin SDK) |
-|-------------|--------------------------------|--------------------------------------|
-| Coroutines  | requires `.await()` conversion | native `suspend` built in            |
-| DSL support | limited                        | rich DSL builders                    |
-| Performance | CRT/Netty NIO choice           | CRT / OkHttp choice                  |
+|-------------|----------------------------------|--------------------------------------|
+| Coroutines  | requires `.await()` conversion   | native `suspend` built in            |
+| DSL support | limited                          | rich DSL builders                    |
+| Performance | CRT/Netty NIO choice             | CRT / OkHttp choice                  |
 
 ## Client Creation Patterns
 
@@ -151,18 +138,14 @@ withSqsClient(endpointUrl, region, credentialsProvider) { client ->
 > **[!NOTE]**
 > AWS Kotlin SDK clients hold internal HTTP connection pools and threads, so `close()` must always be called after use.
 > The
-`withXxxClient { }` block ensures resources are released automatically even on coroutine cancellation or exceptions.
+> `withXxxClient { }` block ensures resources are released automatically even on coroutine cancellation or exceptions.
 > If you create a long-lived client directly, call `close()` explicitly when the application shuts down.
 
 ## Usage Examples
 
 ### DynamoDB coordination (Issue #476)
 
-`DynamoDbDistributedLock` and `DynamoDbMetadataStore` provide coroutine-first,
-bounded conditional coordination on a caller-owned PK-only DynamoDB table.
-Locks retain a monotonic fencing token after release; metadata stores bounded
-String values with optional logical/DynamoDB TTL expiry. The client is not
-created or closed by these adapters.
+`DynamoDbDistributedLock` and `DynamoDbMetadataStore` provide coroutine-first, bounded conditional coordination on a caller-owned PK-only DynamoDB table. Locks retain a monotonic fencing token after release; metadata stores bounded String values with optional logical/DynamoDB TTL expiry. The client is not created or closed by these adapters.
 
 ```kotlin
 val schema = DynamoDbCoordinationSchema(tableName = "coordination", namespace = "orders")
@@ -260,11 +243,7 @@ suspend fun getCallerIdentity() = stsClient.getCallerIdentity {}
 
 ### Kinesis (DSL)
 
-Kinesis DryRun is opt-in (`dryRun = false` by default), and `builder` stays last. A successful
-service-side validation is reported as `DryRunOperationException`, not as a normal response.
-Other AWS SDK exceptions and coroutine cancellation propagate unchanged. Run the following
-validation only against an AWS Kinesis endpoint. Do not run the write calls against an emulator
-whose DryRun capability has not been proven.
+Kinesis DryRun is opt-in (`dryRun = false` by default), and `builder` stays last. A successful service-side validation is reported as `DryRunOperationException`, not as a normal response. Other AWS SDK exceptions and coroutine cancellation propagate unchanged. Run the following validation only against an AWS Kinesis endpoint. Do not run the write calls against an emulator whose DryRun capability has not been proven.
 
 ```kotlin
 import aws.sdk.kotlin.services.kinesis.KinesisClient
@@ -330,24 +309,20 @@ private suspend fun validateKinesisDryRun(client: KinesisClient, existingShardIt
 }
 ```
 
-DryRun still serializes and sends payloads to the configured endpoint, and the credential provider
-is used to sign the request. It is not client-side validation, encryption, or a network block.
-Obtain `existingShardIterator` with an ordinary non-DryRun `getShardIterator` call before validating
-`getRecords`. The example helper treats a normal DryRun response as unsupported and fails closed;
-the production extension still returns the backend's response unchanged.
+DryRun still serializes and sends payloads to the configured endpoint, and the credential provider is used to sign the request. It is not client-side validation, encryption, or a network block. Obtain `existingShardIterator` with an ordinary non-DryRun `getShardIterator` call before validating
+`getRecords`. The example helper treats a normal DryRun response as unsupported and fails closed; the production extension still returns the backend's response unchanged.
 
-| Backend observed for #620 | Capability | Expected result |
-| --- | --- | --- |
-| AWS Kinesis | supported | successful validation throws `DryRunOperationException`; no read/write |
-| Floci `1.6.0` | unsupported | request field was ignored; safety test records the reason and does not run the example |
-| LocalStack `4` | unsupported fallback | request field was ignored; diagnostic records an explicit reason |
+| Backend observed for #620 | Capability           | Expected result                                                                        |
+|---------------------------|----------------------|----------------------------------------------------------------------------------------|
+| AWS Kinesis               | supported            | successful validation throws `DryRunOperationException`; no read/write                 |
+| Floci `1.6.0`             | unsupported          | request field was ignored; safety test records the reason and does not run the example |
+| LocalStack `4`            | unsupported fallback | request field was ignored; diagnostic records an explicit reason                       |
 
 See the [AWS Kinesis DryRun guide](https://docs.aws.amazon.com/streams/latest/dev/kds-dryrun-validation.html).
 
 ### Kinesis — `recordFlow` (cold `Flow<Record>` per shard)
 
-`KinesisClient.recordFlow()` returns a cold `Flow<Record>` that continuously polls a single
-shard and emits each record. The flow terminates naturally when the shard is closed (resharding).
+`KinesisClient.recordFlow()` returns a cold `Flow<Record>` that continuously polls a single shard and emits each record. The flow terminates naturally when the shard is closed (resharding).
 
 ```kotlin
 import aws.sdk.kotlin.services.kinesis.KinesisClient
@@ -391,24 +366,24 @@ kinesisClient.recordFlow("my-stream", "shardId-000000000000", options = options)
 
 #### Starting positions
 
-| Position | Description |
-|---|---|
-| `TrimHorizon` | All records from the oldest available (default) |
-| `Latest` | Records written after the iterator is obtained. **Caution:** if the iterator expires before the first record is processed, the flow throws immediately rather than silently skipping records. |
-| `AtSequenceNumber(seq)` | The record with the given sequence number (inclusive) |
-| `AfterSequenceNumber(seq)` | Records after the given sequence number (exclusive) |
-| `AtTimestamp(instant)` | Records at or after the given `java.time.Instant` |
+| Position                   | Description                                                                                                                                                                                   |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `TrimHorizon`              | All records from the oldest available (default)                                                                                                                                               |
+| `Latest`                   | Records written after the iterator is obtained. **Caution:** if the iterator expires before the first record is processed, the flow throws immediately rather than silently skipping records. |
+| `AtSequenceNumber(seq)`    | The record with the given sequence number (inclusive)                                                                                                                                         |
+| `AfterSequenceNumber(seq)` | Records after the given sequence number (exclusive)                                                                                                                                           |
+| `AtTimestamp(instant)`     | Records at or after the given `java.time.Instant`                                                                                                                                             |
 
 #### Error handling
 
-| Error | Behaviour |
-|---|---|
-| Shard closed (`nextShardIterator == null`) | Flow completes normally |
-| `ExpiredIteratorException` | Re-fetches the iterator using the last seen sequence number; throws after `maxIteratorRetries` attempts |
-| `Latest` with no checkpoint + expiry | Throws immediately — re-fetching `Latest` would silently skip records |
-| Retryable `KinesisException` | Exponential jitter backoff; throws after `maxThrottleRetries` attempts |
-| Non-retryable `KinesisException` | Propagated immediately |
-| `CancellationException` | Propagated immediately |
+| Error                                      | Behaviour                                                                                               |
+|--------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| Shard closed (`nextShardIterator == null`) | Flow completes normally                                                                                 |
+| `ExpiredIteratorException`                 | Re-fetches the iterator using the last seen sequence number; throws after `maxIteratorRetries` attempts |
+| `Latest` with no checkpoint + expiry       | Throws immediately — re-fetching `Latest` would silently skip records                                   |
+| Retryable `KinesisException`               | Exponential jitter backoff; throws after `maxThrottleRetries` attempts                                  |
+| Non-retryable `KinesisException`           | Propagated immediately                                                                                  |
+| `CancellationException`                    | Propagated immediately                                                                                  |
 
 #### Kinesis consumer observation schema v1
 
@@ -424,15 +399,9 @@ val metrics = KinesisFlowMetrics { event ->
 ```
 
 `KinesisCanonicalObservation` uses the fixed event vocabulary `discovery`, `shard`, `batch`,
-`record`, `lease`, `checkpoint`, and `retry`. Counts and retry counts are limited to `0..10000`.
-Stream, shard, and owner labels are normalized from the existing 64-character hashes to
-24-character lowercase hexadecimal prefixes. These labels reduce cardinality and raw-identifier
-exposure, but are not authentication or cryptographic identity tokens.
+`record`, `lease`, `checkpoint`, and `retry`. Counts and retry counts are limited to `0..10000`. Stream, shard, and owner labels are normalized from the existing 64-character hashes to 24-character lowercase hexadecimal prefixes. These labels reduce cardinality and raw-identifier exposure, but are not authentication or cryptographic identity tokens.
 
-For migration, run legacy and canonical exporters side by side, move dashboards and alerts to the
-canonical 24-character labels, and then remove the legacy exporter. The canonical checkpoint and
-shard-success sequence matches the Java SDK module while the legacy sealed event API and callback
-ABI remain unchanged.
+For migration, run legacy and canonical exporters side by side, move dashboards and alerts to the canonical 24-character labels, and then remove the legacy exporter. The canonical checkpoint and shard-success sequence matches the Java SDK module while the legacy sealed event API and callback ABI remain unchanged.
 
 ### EventBridge (native suspend)
 
@@ -454,19 +423,13 @@ suspend fun publishOrderEvent(client: EventBridgeClient) {
 }
 ```
 
-EventBridge helpers keep one SDK request per call and return raw SDK responses.
-Add `aws.sdk.kotlin:eventbridge` at runtime. Scheduler, framework integrations,
-global endpoints, cross-account target orchestration, and target-specific
-validation beyond SDK model types are outside this module.
+EventBridge helpers keep one SDK request per call and return raw SDK responses. Add `aws.sdk.kotlin:eventbridge` at runtime. Scheduler, framework integrations, global endpoints, cross-account target orchestration, and target-specific validation beyond SDK model types are outside this module.
 
 ### S3 Tables management (1.0.0 development line)
 
-S3 Tables helpers expose native AWS Kotlin SDK request and response types for
-table bucket, namespace, and table create/list/get/delete operations. Lists
-return one raw service page; pass `continuationToken` for the next page.
+S3 Tables helpers expose native AWS Kotlin SDK request and response types for table bucket, namespace, and table create/list/get/delete operations. Lists return one raw service page; pass `continuationToken` for the next page.
 `ListTables` keeps `namespace` optional for bucket-level listing. `CreateTable`
-defaults to `OpenTableFormat.Iceberg`, and `GetTable` accepts
-either a table ARN or the bucket/namespace/name selector.
+defaults to `OpenTableFormat.Iceberg`, and `GetTable` accepts either a table ARN or the bucket/namespace/name selector.
 
 Add the service SDK directly because it remains `compileOnly`:
 
@@ -490,18 +453,12 @@ suspend fun createOrdersTable() = withS3TablesClient(region = "ap-northeast-2") 
 }
 ```
 
-`s3TablesClientOf` returns an application-scoped client that the caller must
-close. `withS3TablesClient` closes only its service client when the block ends;
-an injected HTTP engine remains caller-owned. This is a management API surface, not an
-Iceberg data-plane or SQL engine. Athena, Glue, Redshift, and Apache Iceberg
-integration remain application concerns, and local emulator fidelity for S3
-Tables is not asserted by this module.
+`s3TablesClientOf` returns an application-scoped client that the caller must close. `withS3TablesClient` closes only its service client when the block ends; an injected HTTP engine remains caller-owned. This is a management API surface, not an Iceberg data-plane or SQL engine. Athena, Glue, Redshift, and Apache Iceberg integration remain application concerns, and local emulator fidelity for S3 Tables is not asserted by this module.
 
 ### Step Functions Execution Helpers (1.0.0 development line)
 
 The `1.0.0` development line provides native suspend helpers for `StartExecution`,
-`StopExecution`, `DescribeExecution`, and `ListExecutions`. Polling uses the
-AWS Kotlin SDK `SfnClient` and returns a cold `Flow<DescribeExecutionResponse>`
+`StopExecution`, `DescribeExecution`, and `ListExecutions`. Polling uses the AWS Kotlin SDK `SfnClient` and returns a cold `Flow<DescribeExecutionResponse>`
 of raw responses. The caller owns the client, timeout, and cancellation policy.
 
 ```kotlin
@@ -520,21 +477,14 @@ suspend fun awaitExecution(executionArn: String): DescribeExecutionResponse =
     }
 ```
 
-The example targets a Standard execution. Cancellation is rethrown and does
-not trigger an implicit `StopExecution`; the scoped helper closes only the
-service client and leaves an injected HTTP engine under caller ownership. Add
+The example targets a Standard execution. Cancellation is rethrown and does not trigger an implicit `StopExecution`; the scoped helper closes only the service client and leaves an injected HTTP engine under caller ownership. Add
 `aws.sdk.kotlin:sfn` directly at runtime because service SDKs remain
-`compileOnly`. See the [Step Functions Kotlin module
-manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/) for dependency,
-Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
+`compileOnly`. See the [Step Functions Kotlin module manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-kotlin/) for dependency, Standard/Express/Map Run, IAM/KMS, quota, and emulator boundaries.
 
 ### Lambda invocation helpers (1.0.0 development line)
 
 The `1.0.0` development line provides native suspend `Invoke` helpers under
-`io.bluetape4k.aws.kotlin.lambda`. A `LambdaInvocationResult` keeps the raw
-response, copied payload, status, optional `FunctionError`, and decoded tail
-log together. Use `LambdaPayloadCodecs.jackson(...)` only when the consumer
-chooses Jackson for typed payloads.
+`io.bluetape4k.aws.kotlin.lambda`. A `LambdaInvocationResult` keeps the raw response, copied payload, status, optional `FunctionError`, and decoded tail log together. Use `LambdaPayloadCodecs.jackson(...)` only when the consumer chooses Jackson for typed payloads.
 
 ```kotlin
 import io.bluetape4k.aws.kotlin.lambda.invokeString
@@ -549,10 +499,7 @@ suspend fun invokeOrder(): String =
 ```
 
 Add `aws.sdk.kotlin:lambda` directly at runtime because service SDKs remain
-`compileOnly`. The helper preserves native suspend cancellation and closes only
-the service client in `withLambdaClient`; an injected HTTP engine remains
-caller-owned. It does not add retry, deployment, polling, logging, or IAM
-policy management.
+`compileOnly`. The helper preserves native suspend cancellation and closes only the service client in `withLambdaClient`; an injected HTTP engine remains caller-owned. It does not add retry, deployment, polling, logging, or IAM policy management.
 
 ### Secrets Manager and Parameter Store
 
@@ -598,25 +545,17 @@ suspend fun loadAppParameters() =
     }
 ```
 
-Keep secret values inside `AwsSecretValue` until the consumer boundary that
-requires plaintext. Do not print, log, or include revealed values in exception
-messages.
+Keep secret values inside `AwsSecretValue` until the consumer boundary that requires plaintext. Do not print, log, or include revealed values in exception messages.
 
 ## Not Provided by This Module
 
-This module does not provide Spring Environment loading, JSON flattening,
-cache/refresh policies, rotation orchestration, IAM/KMS policy management, or a
-hidden all-pages collection abstraction. Use the Spring/Exposed modules or
-application code for those concerns.
+This module does not provide Spring Environment loading, JSON flattening, cache/refresh policies, rotation orchestration, IAM/KMS policy management, or a hidden all-pages collection abstraction. Use the Spring/Exposed modules or application code for those concerns.
 
-For hot paths, keep caller-owned caches at the application boundary and define
-explicit refresh/error policy there. Create and put helpers mutate AWS-side
-state; keep their use deliberate and audited.
+For hot paths, keep caller-owned caches at the application boundary and define explicit refresh/error policy there. Create and put helpers mutate AWS-side state; keep their use deliberate and audited.
 
 ## Test Environment
 
-Integration tests default to Floci through Testcontainers. LocalStack remains
-available as an explicit fallback with `-Dbluetape4k.aws.emulator=localstack`
+Integration tests default to Floci through Testcontainers. LocalStack remains available as an explicit fallback with `-Dbluetape4k.aws.emulator=localstack`
 for emulator coverage gaps.
 
 ```kotlin
@@ -647,8 +586,7 @@ Run module tests:
 
 AWS Kotlin SDK services are declared as
 `compileOnly` dependencies, so you need to add the runtime dependencies for the services you use.
-`bluetape4k-aws-kotlin` exposes common bluetape4k coroutine utilities, but it does not force every
-AWS service client onto consumers that do not use that service.
+`bluetape4k-aws-kotlin` exposes common bluetape4k coroutine utilities, but it does not force every AWS service client onto consumers that do not use that service.
 
 ```kotlin
 dependencies {

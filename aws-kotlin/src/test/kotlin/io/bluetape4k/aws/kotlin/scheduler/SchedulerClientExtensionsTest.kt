@@ -8,6 +8,8 @@ import aws.sdk.kotlin.services.scheduler.model.ListSchedulesResponse
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.aws.kotlin.scheduler.model.targetOf
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class SchedulerClientExtensionsTest {
+
+    companion object: KLoggingChannel()
 
     private val client = mockk<SchedulerClient>()
 
@@ -42,7 +46,7 @@ class SchedulerClientExtensionsTest {
             target = target,
             groupName = "jobs",
         )
-
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.scheduleArn shouldBeEqualTo "arn:aws:scheduler:us-east-1:123456789012:schedule/jobs/daily-job"
         coVerify(exactly = 1) { client.createSchedule(any<CreateScheduleRequest>()) }
@@ -58,6 +62,7 @@ class SchedulerClientExtensionsTest {
 
         val result = client.listSchedules(groupName = "jobs", namePrefix = "daily", maxResults = 10)
 
+        log.debug { "result=$result" }
         result shouldBeSameInstanceAs expected
         result.nextToken shouldBeEqualTo "next"
         coVerify(exactly = 1) { client.listSchedules(any<ListSchedulesRequest>()) }

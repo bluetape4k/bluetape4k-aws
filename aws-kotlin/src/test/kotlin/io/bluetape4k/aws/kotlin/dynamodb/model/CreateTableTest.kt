@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class CreateTableTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `createTableRequestOf는 tableName으로 요청을 생성한다`() {

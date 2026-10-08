@@ -2,17 +2,20 @@ package io.bluetape4k.aws.kotlin.dynamodb.coordination
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
-import org.junit.jupiter.api.Test
 
 class DynamoDbCoordinationSchemaTest {
+
+    companion object: KLogging()
 
     @Test
     fun `default resolver는 delimiter가 있는 tuple을 injective하게 인코딩한다`() {
@@ -22,9 +25,10 @@ class DynamoDbCoordinationSchemaTest {
         val second = resolver.resolve("tenant", DynamoDbCoordinationEntryKind.LOCK, "a:key|one")
         val metadata = resolver.resolve("tenant:a", DynamoDbCoordinationEntryKind.METADATA, "key|one")
 
+        log.debug { "first=$first second=$second" }
         first shouldBeEqualTo resolver.resolve("tenant:a", DynamoDbCoordinationEntryKind.LOCK, "key|one")
-        (first != second).shouldBeTrue()
-        (first != metadata).shouldBeTrue()
+        first shouldNotBeEqualTo second
+        first shouldNotBeEqualTo metadata
     }
 
     @Test
@@ -37,10 +41,11 @@ class DynamoDbCoordinationSchemaTest {
             },
         )
 
+        log.debug { "schema=$schema" }
         schema.tableName shouldBeEqualTo "coordination-table"
         schema.namespace shouldBeEqualTo "orders"
-        schema.resolve(DynamoDbCoordinationEntryKind.LOCK, "order-1").physicalKey shouldBeEqualTo
-                "orders/LOCK/order-1"
+        schema.resolve(DynamoDbCoordinationEntryKind.LOCK, "order-1")
+            .physicalKey shouldBeEqualTo "orders/LOCK/order-1"
 
         assertFailsWith<IllegalArgumentException> {
             DynamoDbCoordinationSchema(tableName = "ab")
@@ -66,7 +71,8 @@ class DynamoDbCoordinationSchemaTest {
     fun `identifier와 metadata value의 UTF-8 상한을 적용한다`() {
         val schema = DynamoDbCoordinationSchema(tableName = "coordination")
         val identifier = "가".repeat(DynamoDbCoordinationSchema.MAX_IDENTIFIER_UTF8_BYTES / 3 + 1)
-
+        log.debug { "schema=$schema" }
+        
         assertFailsWith<IllegalArgumentException> {
             schema.resolve(DynamoDbCoordinationEntryKind.LOCK, identifier)
         }
@@ -105,6 +111,7 @@ class DynamoDbCoordinationSchemaTest {
     @Test
     fun `scopeId는 schema identity를 안정적으로 표현한다`() {
         val clock = Clock.fixed(Instant.parse("2026-08-27T00:00:00Z"), ZoneOffset.UTC)
+
         val first = DynamoDbCoordinationSchema(
             tableName = "coordination",
             namespace = "orders",
@@ -117,9 +124,11 @@ class DynamoDbCoordinationSchemaTest {
         )
         val options = DynamoDbCoordinationOptions(clock = clock)
 
+        log.debug { "first=$first, second=$second" }
         first.lockScopeId shouldBeEqualTo first.lockScopeId
-        (first.lockScopeId != second.lockScopeId).shouldBeFalse()
+        first.lockScopeId shouldBeEqualTo second.lockScopeId
         options.clock.instant() shouldBeEqualTo clock.instant()
-        first.resolve(DynamoDbCoordinationEntryKind.LOCK, "order-1").scopeId shouldBeEqualTo first.lockScopeId
+        first.resolve(DynamoDbCoordinationEntryKind.LOCK, "order-1")
+            .scopeId shouldBeEqualTo first.lockScopeId
     }
 }

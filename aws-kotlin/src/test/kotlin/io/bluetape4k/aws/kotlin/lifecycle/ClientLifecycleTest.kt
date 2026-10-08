@@ -1,28 +1,29 @@
 package io.bluetape4k.aws.kotlin.lifecycle
 
-import io.bluetape4k.aws.kotlin.http.crtHttpEngineOf
-import io.bluetape4k.aws.kotlin.s3.withS3Client
-import io.bluetape4k.aws.kotlin.s3.s3ClientOf
-import io.bluetape4k.aws.kotlin.ses.sesClientOf
-import io.bluetape4k.aws.kotlin.ses.withSesClient
+import aws.sdk.kotlin.services.s3.S3Client
+import aws.sdk.kotlin.services.ses.SesClient
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldNotBeNull
-import io.bluetape4k.logging.KLogging
+import io.bluetape4k.aws.kotlin.http.crtHttpEngineOf
+import io.bluetape4k.aws.kotlin.s3.s3ClientOf
+import io.bluetape4k.aws.kotlin.s3.withS3Client
+import io.bluetape4k.aws.kotlin.ses.sesClientOf
+import io.bluetape4k.aws.kotlin.ses.withSesClient
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.closeSafe
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import aws.sdk.kotlin.services.s3.S3Client
-import aws.sdk.kotlin.services.ses.SesClient
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Regression tests for `xxxClientOf()` and `withXxxClient()` lifecycle ownership.
@@ -36,10 +37,20 @@ import kotlin.time.Duration.Companion.seconds
  */
 class ClientLifecycleTest {
 
-    companion object: KLogging()
+    companion object: KLoggingChannel()
+
+    private val client = mockk<S3Client>(relaxed = true)
+    private val sesClient = mockk<SesClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client, sesClient)
+        every { client.close() } returns Unit
+        every { sesClient.close() } returns Unit
+    }
 
     @Test
-    fun `s3ClientOf without httpClient closes sdk-managed client within timeout`() = runTest(timeout = 10.seconds) {
+    fun `s3ClientOf without httpClient closes sdk-managed client within timeout`() = runTest {
         val client = s3ClientOf(region = "us-east-1")
         client.shouldNotBeNull()
         log.debug { "S3Client created with SDK-managed HTTP engine: $client" }
@@ -48,14 +59,14 @@ class ClientLifecycleTest {
     }
 
     @Test
-    fun `sesClientOf without httpClient closes sdk-managed client within timeout`() = runTest(timeout = 10.seconds) {
-        val client = sesClientOf(region = "us-east-1")
-        client.shouldNotBeNull()
-        client.close()
+    fun `sesClientOf without httpClient closes sdk-managed client within timeout`() = runTest {
+        val sesClient = sesClientOf(region = "us-east-1")
+        sesClient.shouldNotBeNull()
+        sesClient.close()
     }
 
     @Test
-    fun `withS3Client closes sdk-managed client after block exit`() = runTest(timeout = 10.seconds) {
+    fun `withS3Client closes sdk-managed client after block exit`() = runTest {
         withS3Client(region = "us-east-1") { client ->
             client.shouldNotBeNull()
             log.debug { "S3Client inside withS3Client block: $client" }
@@ -64,7 +75,7 @@ class ClientLifecycleTest {
     }
 
     @Test
-    fun `withSesClient closes sdk-managed client after block exit`() = runTest(timeout = 10.seconds) {
+    fun `withSesClient closes sdk-managed client after block exit`() = runTest {
         withSesClient(region = "us-east-1") { client ->
             client.shouldNotBeNull()
         }
@@ -72,18 +83,15 @@ class ClientLifecycleTest {
 
     @Test
     fun `withS3Client closes exactly once after normal return`() = runTest {
-        val client = mockk<S3Client>(relaxed = true)
-        every { client.close() } returns Unit
-
-        withS3Client(clientFactory = { client }) { it shouldBeSameInstanceAs client }
+        withS3Client(clientFactory = { client }) {
+            it shouldBeSameInstanceAs client
+        }
 
         verify(exactly = 1) { client.close() }
     }
 
     @Test
     fun `withS3Client closes exactly once after block failure`() = runTest {
-        val client = mockk<S3Client>(relaxed = true)
-        every { client.close() } returns Unit
         val expected = IllegalStateException("boom")
 
         val actual = assertFailsWith<IllegalStateException> {
@@ -96,10 +104,10 @@ class ClientLifecycleTest {
 
     @Test
     fun `withS3Client closes exactly once after cancellation`() = runTest {
-        val client = mockk<S3Client>(relaxed = true)
-        every { client.close() } returns Unit
         val job = launch {
-            withS3Client(clientFactory = { client }) { awaitCancellation() }
+            withS3Client(clientFactory = { client }) {
+                awaitCancellation()
+            }
         }
         runCurrent()
 
@@ -110,62 +118,55 @@ class ClientLifecycleTest {
 
     @Test
     fun `withSesClient closes exactly once after normal return`() = runTest {
-        val client = mockk<SesClient>(relaxed = true)
-        every { client.close() } returns Unit
-
-        withSesClient(clientFactory = { client }) { it shouldBeSameInstanceAs client }
-
-        verify(exactly = 1) { client.close() }
+        withSesClient(clientFactory = { sesClient }) {
+            it shouldBeSameInstanceAs sesClient
+        }
+        verify(exactly = 1) { sesClient.close() }
     }
 
     @Test
     fun `withSesClient closes exactly once after block failure`() = runTest {
-        val client = mockk<SesClient>(relaxed = true)
-        every { client.close() } returns Unit
         val expected = IllegalStateException("boom")
-
         val actual = assertFailsWith<IllegalStateException> {
-            withSesClient(clientFactory = { client }) { throw expected }
+            withSesClient(clientFactory = { sesClient }) { throw expected }
         }
-
         actual shouldBeSameInstanceAs expected
-        verify(exactly = 1) { client.close() }
+        verify(exactly = 1) { sesClient.close() }
     }
 
     @Test
     fun `withSesClient closes exactly once after cancellation`() = runTest {
-        val client = mockk<SesClient>(relaxed = true)
-        every { client.close() } returns Unit
         val job = launch {
-            withSesClient(clientFactory = { client }) { awaitCancellation() }
+            withSesClient(clientFactory = { sesClient }) {
+                awaitCancellation()
+            }
         }
         runCurrent()
 
         job.cancelAndJoin()
 
-        verify(exactly = 1) { client.close() }
+        verify(exactly = 1) { sesClient.close() }
     }
 
     @Test
-    fun `s3ClientOf with external httpClient leaves engine caller-owned after client close`() =
-        runTest(timeout = 10.seconds) {
-            val sharedEngine = crtHttpEngineOf()
-            try {
-                val client1 = s3ClientOf(region = "us-east-1", httpClient = sharedEngine)
-                client1.close()
+    fun `s3ClientOf with external httpClient leaves engine caller-owned after client close`() = runTest {
+        val sharedCrtEngine = crtHttpEngineOf()
+        try {
+            val client1 = s3ClientOf(region = "us-east-1", httpClient = sharedCrtEngine)
+            client1.close()
 
-                val client2 = s3ClientOf(region = "us-east-1", httpClient = sharedEngine)
-                client2.shouldNotBeNull()
-                log.debug { "Second client created with the caller-owned engine: $client2" }
-                client2.close()
-            } finally {
-                sharedEngine.closeSafe()
-                log.debug { "Caller-owned engine closed" }
-            }
+            val client2 = s3ClientOf(region = "us-east-1", httpClient = sharedCrtEngine)
+            client2.shouldNotBeNull()
+            log.debug { "Second client created with the caller-owned engine: $client2" }
+            client2.close()
+        } finally {
+            sharedCrtEngine.closeSafe()
+            log.debug { "Caller-owned engine closed" }
         }
+    }
 
     @Test
-    fun `s3ClientOf use block closes sdk-managed client`() = runTest(timeout = 10.seconds) {
+    fun `s3ClientOf use block closes sdk-managed client`() = runTest {
         s3ClientOf(region = "us-east-1").use { client ->
             client.shouldNotBeNull()
             log.debug { "S3Client inside use block: $client" }

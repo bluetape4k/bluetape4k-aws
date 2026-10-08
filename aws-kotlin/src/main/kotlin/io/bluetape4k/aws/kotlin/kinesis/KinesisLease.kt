@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
+import io.bluetape4k.support.requirePositiveNumber
 import java.io.ObjectInputStream
 import java.io.Serializable
 
@@ -13,22 +14,21 @@ data class KinesisLease(
     val key: KinesisShardKey,
     val ownerId: String,
     val leaseCounter: Long,
-) : Serializable {
+): Serializable {
 
     init {
-        ownerId.validateIdentifier("ownerId", KinesisShardKey.MAX_IDENTIFIER_LENGTH)
-        require(leaseCounter > 0) {
-            "leaseCounter must be positive, but was $leaseCounter"
-        }
+        validateProperties()
     }
 
     @Suppress("UnusedPrivateMember")
     private fun readObject(stream: ObjectInputStream) {
         stream.defaultReadObject()
+        validateProperties()
+    }
+
+    private fun validateProperties() {
         ownerId.validateIdentifier("ownerId", KinesisShardKey.MAX_IDENTIFIER_LENGTH)
-        require(leaseCounter > 0) {
-            "leaseCounter must be positive, but was $leaseCounter"
-        }
+        leaseCounter.requirePositiveNumber("leaseCounter")
     }
 
     companion object {

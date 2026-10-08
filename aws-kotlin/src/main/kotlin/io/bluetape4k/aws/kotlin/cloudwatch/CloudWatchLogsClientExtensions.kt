@@ -30,9 +30,9 @@ import io.bluetape4k.support.requireNotBlank
  * @param builder [CreateLogGroupRequest.Builder]에 대한 추가 설정 람다
  * @return [CreateLogGroupResponse] 인스턴스
  */
-suspend inline fun CloudWatchLogsClient.createLogGroup(
+suspend fun CloudWatchLogsClient.createLogGroup(
     logGroupName: String,
-    crossinline builder: CreateLogGroupRequest.Builder.() -> Unit = {},
+    builder: CreateLogGroupRequest.Builder.() -> Unit = {},
 ): CreateLogGroupResponse {
     logGroupName.requireNotBlank("logGroupName")
     return createLogGroup {
@@ -56,10 +56,10 @@ suspend inline fun CloudWatchLogsClient.createLogGroup(
  * @param builder [CreateLogStreamRequest.Builder]에 대한 추가 설정 람다
  * @return [CreateLogStreamResponse] 인스턴스
  */
-suspend inline fun CloudWatchLogsClient.createLogStream(
+suspend fun CloudWatchLogsClient.createLogStream(
     logGroupName: String,
     logStreamName: String,
-    crossinline builder: CreateLogStreamRequest.Builder.() -> Unit = {},
+    builder: CreateLogStreamRequest.Builder.() -> Unit = {},
 ): CreateLogStreamResponse {
     logGroupName.requireNotBlank("logGroupName")
     logStreamName.requireNotBlank("logStreamName")
@@ -87,11 +87,11 @@ suspend inline fun CloudWatchLogsClient.createLogStream(
  * @param builder [PutLogEventsRequest.Builder]에 대한 추가 설정 람다
  * @return [PutLogEventsResponse] 인스턴스
  */
-suspend inline fun CloudWatchLogsClient.putLogEvents(
+suspend fun CloudWatchLogsClient.putLogEvents(
     logGroupName: String,
     logStreamName: String,
     logEvents: List<InputLogEvent>,
-    crossinline builder: PutLogEventsRequest.Builder.() -> Unit = {},
+    builder: PutLogEventsRequest.Builder.() -> Unit = {},
 ): PutLogEventsResponse {
     logGroupName.requireNotBlank("logGroupName")
     logStreamName.requireNotBlank("logStreamName")
@@ -115,9 +115,9 @@ suspend inline fun CloudWatchLogsClient.putLogEvents(
  * @param builder [DescribeLogGroupsRequest.Builder]에 대한 추가 설정 람다
  * @return [DescribeLogGroupsResponse] 인스턴스
  */
-suspend inline fun CloudWatchLogsClient.describeLogGroups(
+suspend fun CloudWatchLogsClient.describeLogGroups(
     logGroupNamePrefix: String? = null,
-    crossinline builder: DescribeLogGroupsRequest.Builder.() -> Unit = {},
+    builder: DescribeLogGroupsRequest.Builder.() -> Unit = {},
 ): DescribeLogGroupsResponse =
     describeLogGroups {
         logGroupNamePrefix?.let { this.logGroupNamePrefix = it }
@@ -137,10 +137,10 @@ suspend inline fun CloudWatchLogsClient.describeLogGroups(
  * @param builder [DescribeLogStreamsRequest.Builder]에 대한 추가 설정 람다
  * @return [DescribeLogStreamsResponse] 인스턴스
  */
-suspend inline fun CloudWatchLogsClient.describeLogStreams(
+suspend fun CloudWatchLogsClient.describeLogStreams(
     logGroupName: String,
     logStreamNamePrefix: String? = null,
-    crossinline builder: DescribeLogStreamsRequest.Builder.() -> Unit = {},
+    builder: DescribeLogStreamsRequest.Builder.() -> Unit = {},
 ): DescribeLogStreamsResponse {
     logGroupName.requireNotBlank("logGroupName")
     return describeLogStreams {

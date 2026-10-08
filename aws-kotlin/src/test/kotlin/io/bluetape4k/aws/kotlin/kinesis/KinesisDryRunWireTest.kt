@@ -7,10 +7,17 @@ import aws.sdk.kotlin.services.kinesis.model.PutRecordsRequestEntry
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.sun.net.httpserver.HttpServer
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeLessThan
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.closeSafe
+import io.bluetape4k.support.requireEquals
+import io.bluetape4k.support.requireNull
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -20,13 +27,25 @@ import java.util.concurrent.Executors
 
 class KinesisDryRunWireTest {
 
+    companion object: KLoggingChannel() {
+        private const val LOOPBACK = "127.0.0.1"
+        private const val TEST_ACCESS_KEY = "dry-run-wire-access"
+        private const val TEST_SECRET_KEY = "dry-run-wire-secret"
+        private const val MAX_CAPTURE_BYTES = 16 * 1024
+        private const val ERROR_RESPONSE = "{\"__type\":\"DryRunOperationException\",\"message\":\"dry run accepted\"}"
+
+        private val DRY_RUN_TRUE = Regex("\\\"DryRun\\\"\\s*:\\s*true")
+        private val DRY_RUN_FALSE = Regex("\\\"DryRun\\\"\\s*:\\s*false")
+        private val DRY_RUN_MEMBER = Regex("\\\"DryRun\\\"\\s*:")
+    }
+
     @Test
     fun `PutRecord wire는 false true null을 구분한다`() = runSuspendIO {
         verifyDryRunWire("Kinesis_20131202.PutRecord") { client, dryRun ->
             client.putRecord(
                 streamName = "wire-stream",
                 partitionKey = "partition",
-                data = "payload".toByteArray(),
+                data = "payload".toUtf8Bytes(),
                 dryRun = dryRun ?: true,
             ) {
                 if (dryRun == null) this.dryRun = null
@@ -39,7 +58,7 @@ class KinesisDryRunWireTest {
         val entries = listOf(
             PutRecordsRequestEntry {
                 partitionKey = "partition"
-                data = "payload".toByteArray()
+                data = "payload".toUtf8Bytes()
             },
         )
         verifyDryRunWire("Kinesis_20131202.PutRecords") { client, dryRun ->
@@ -106,7 +125,7 @@ class KinesisDryRunWireTest {
         server.executor = executor
         server.createContext("/") { exchange ->
             val target = exchange.requestHeaders.getFirst("X-Amz-Target").orEmpty()
-            val body = exchange.requestBody.use { it.readBytes() }.decodeToString()
+            val body = exchange.requestBody.use { it.readBytes() }.toUtf8String()
             captures += CapturedRequest(target, body)
 
             val response = ERROR_RESPONSE.encodeToByteArray()
@@ -131,16 +150,17 @@ class KinesisDryRunWireTest {
                 }
             }
         } finally {
-            client.close()
+            client.closeSafe()
             server.stop(0)
             executor.shutdownNow()
         }
 
-        assertEquals(3, captures.size)
-        captures.zip(listOf(false, true, null)).forEach { (capture, expectedDryRun) ->
-            assertEquals(expectedTarget, capture.target)
-            assertDryRunShape(capture.body, expectedDryRun)
-        }
+        captures.size shouldBeEqualTo 3
+        captures.zip(listOf(false, true, null))
+            .forEach { (capture, expectedDryRun) ->
+                capture.target shouldBeEqualTo expectedTarget
+                assertDryRunShape(capture.body, expectedDryRun)
+            }
     }
 
     private fun assertDryRunShape(body: String, expected: Boolean?) {
@@ -167,9 +187,9 @@ class KinesisDryRunWireTest {
                 assertEquals(0, memberCount)
             }
         }
-        assertFalse(body.contains(TEST_ACCESS_KEY))
-        assertFalse(body.contains(TEST_SECRET_KEY))
-        assertTrue(body.length < MAX_CAPTURE_BYTES)
+        body shouldNotContain TEST_ACCESS_KEY
+        body shouldNotContain TEST_SECRET_KEY
+        body.length shouldBeLessThan MAX_CAPTURE_BYTES
     }
 
     private fun requireSafeWireTarget(
@@ -178,28 +198,15 @@ class KinesisDryRunWireTest {
         secretKey: String,
     ) {
         val uri = URI(endpoint.toString())
-        require(uri.scheme == "http") { "wire endpoint must use HTTP loopback" }
-        require(uri.host == LOOPBACK) { "wire endpoint must use literal loopback" }
-        require(uri.userInfo == null) { "wire endpoint must not contain userinfo" }
-        require(accessKey == TEST_ACCESS_KEY) { "wire credentials must use the static fake access marker" }
-        require(secretKey == TEST_SECRET_KEY) { "wire credentials must use the static fake secret marker" }
+        uri.scheme.requireEquals("http", "uri.scheme")
+        uri.host.requireEquals(LOOPBACK, "uri.host")
+        uri.userInfo.requireNull("uri.userInfo")
+        accessKey.requireEquals(TEST_ACCESS_KEY, "accessKey")
+        secretKey.requireEquals(TEST_SECRET_KEY, "secretKey")
     }
 
     private data class CapturedRequest(
         val target: String,
         val body: String,
     )
-
-    companion object {
-        private const val LOOPBACK = "127.0.0.1"
-        private const val TEST_ACCESS_KEY = "dry-run-wire-access"
-        private const val TEST_SECRET_KEY = "dry-run-wire-secret"
-        private const val MAX_CAPTURE_BYTES = 16 * 1024
-        private const val ERROR_RESPONSE =
-            "{\"__type\":\"DryRunOperationException\",\"message\":\"dry run accepted\"}"
-
-        private val DRY_RUN_TRUE = Regex("\\\"DryRun\\\"\\s*:\\s*true")
-        private val DRY_RUN_FALSE = Regex("\\\"DryRun\\\"\\s*:\\s*false")
-        private val DRY_RUN_MEMBER = Regex("\\\"DryRun\\\"\\s*:")
-    }
 }

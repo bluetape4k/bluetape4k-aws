@@ -8,7 +8,8 @@ import kotlin.time.Duration
  * 상태를 저장하지 않으므로 다중 worker 조정·expiry takeover·재시작 lease 보존을
  * 제공하지 않습니다. durable 운영에서는 영속 [KinesisLeaseStore]를 주입해야 합니다.
  */
-object NoopKinesisLeaseStore : KinesisLeaseStore {
+object NoopKinesisLeaseStore: KinesisLeaseStore {
+
     override suspend fun acquire(key: KinesisShardKey, ownerId: String, leaseDuration: Duration): KinesisLease {
         ownerId.validateIdentifier("ownerId", KinesisShardKey.MAX_IDENTIFIER_LENGTH)
         require(leaseDuration.isPositive()) { "leaseDuration must be positive, but was $leaseDuration" }

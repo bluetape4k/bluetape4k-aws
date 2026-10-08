@@ -26,12 +26,11 @@ import java.net.URI
  */
 inline fun dynamoDbClient(
     builder: DynamoDbClientBuilder.() -> Unit,
-): DynamoDbClient {
-    return DynamoDbClient.builder().apply(builder).build()
+): DynamoDbClient =
+    DynamoDbClient.builder().apply(builder).build()
         .apply {
             ShutdownQueue.register(this)
         }
-}
 
 /**
  * [DynamoDbClient]를 빌드해주는 함수입니다.
@@ -55,11 +54,12 @@ inline fun dynamoDbClientOf(
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkHttpClient = SdkHttpClientProvider.defaultHttpClient,
     builder: DynamoDbClientBuilder.() -> Unit = {},
-): DynamoDbClient = dynamoDbClient {
-    endpointOverride?.let { endpointOverride(it) }
-    region?.let { region(it) }
-    credentialsProvider?.let { credentialsProvider(it) }
-    httpClient(httpClient)
+): DynamoDbClient =
+    dynamoDbClient {
+        endpointOverride?.let { endpointOverride(it) }
+        region?.let { region(it) }
+        credentialsProvider?.let { credentialsProvider(it) }
+        httpClient(httpClient)
 
-    builder()
-}
+        builder()
+    }

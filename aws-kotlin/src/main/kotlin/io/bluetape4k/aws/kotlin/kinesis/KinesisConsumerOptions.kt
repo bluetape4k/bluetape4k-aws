@@ -24,7 +24,7 @@ data class KinesisConsumerOptions(
     val maxDiscoveredShards: Int = DEFAULT_MAX_DISCOVERED_SHARDS,
     val maxRecordsPerPoll: Int = DEFAULT_MAX_RECORDS_PER_POLL,
     val leaseReleaseTimeout: Duration = DEFAULT_LEASE_RELEASE_TIMEOUT,
-) : Serializable {
+): Serializable {
 
     init {
         validate()

@@ -1,11 +1,15 @@
 package io.bluetape4k.aws.bedrock
 
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.aws.AbstractAwsTest
 import io.bluetape4k.aws.bedrock.model.textContents
 import io.bluetape4k.aws.bedrock.model.userMessageOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsServiceException
@@ -17,7 +21,15 @@ import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfigurati
 import java.time.Duration
 import java.util.concurrent.CancellationException
 
-class BedrockRuntimeSmokeTest {
+class BedrockRuntimeSmokeTest: AbstractAwsTest() {
+
+    private companion object: KLogging() {
+        const val BEDROCK_SMOKE_TAG = "bedrock-smoke"
+        const val BEDROCK_REGION = "BEDROCK_REGION"
+        const val BEDROCK_MODEL_ID = "BEDROCK_MODEL_ID"
+        const val SENTINEL_MESSAGE = "sentinel-secret-message"
+        const val SENTINEL_CAUSE = "sentinel-secret-cause"
+    }
 
     @Test
     @Tag(BEDROCK_SMOKE_TAG)
@@ -41,7 +53,7 @@ class BedrockRuntimeSmokeTest {
                         .build(),
                 )
 
-                response.textContents().isNotEmpty().shouldBeTrue()
+                response.textContents().shouldNotBeEmpty()
                 println(
                     smokeEvidence(
                         result = "PASS",
@@ -78,22 +90,16 @@ class BedrockRuntimeSmokeTest {
             modelId = "approved-model",
         )
 
+        log.debug { "santinized=$sanitized" }
         sanitized.message shouldBeEqualTo
-            "bedrock-smoke lane=java result=FAIL elapsedMs=17 region=us-east-1 " +
-            "modelId=approved-model exceptionClass=software.amazon.awssdk.core.exception.SdkClientException " +
-            "errorCode=not-available requestId=not-available"
-        sanitized.message.orEmpty() shouldNotContain SENTINEL_MESSAGE
-        sanitized.message.orEmpty() shouldNotContain SENTINEL_CAUSE
-        sanitized.cause.shouldBeNull()
-        sanitized.suppressed.isEmpty().shouldBeTrue()
-    }
+                "bedrock-smoke lane=java result=FAIL elapsedMs=17 region=us-east-1 " +
+                "modelId=approved-model exceptionClass=software.amazon.awssdk.core.exception.SdkClientException " +
+                "errorCode=not-available requestId=not-available"
 
-    private companion object {
-        const val BEDROCK_SMOKE_TAG = "bedrock-smoke"
-        const val BEDROCK_REGION = "BEDROCK_REGION"
-        const val BEDROCK_MODEL_ID = "BEDROCK_MODEL_ID"
-        const val SENTINEL_MESSAGE = "sentinel-secret-message"
-        const val SENTINEL_CAUSE = "sentinel-secret-cause"
+        sanitized.message shouldNotContain SENTINEL_MESSAGE
+        sanitized.message shouldNotContain SENTINEL_CAUSE
+        sanitized.cause.shouldBeNull()
+        sanitized.suppressed.shouldBeEmpty()
     }
 }
 
@@ -114,7 +120,7 @@ private fun smokeEvidence(
     requestId: String?,
 ): String =
     "bedrock-smoke lane=java result=$result elapsedMs=$elapsedMillis region=$region " +
-        "modelId=$modelId requestId=${requestId.orNotAvailable()}"
+            "modelId=$modelId requestId=${requestId.orNotAvailable()}"
 
 private fun sanitizedSmokeFailure(
     failure: Throwable,
@@ -128,8 +134,8 @@ private fun sanitizedSmokeFailure(
     val requestId = (failure as? SdkServiceException)?.requestId()
     val evidence =
         "bedrock-smoke lane=java result=FAIL elapsedMs=$elapsedMillis region=$region " +
-            "modelId=$modelId exceptionClass=${failure.javaClass.name} " +
-            "errorCode=${errorCode.orNotAvailable()} requestId=${requestId.orNotAvailable()}"
+                "modelId=$modelId exceptionClass=${failure.javaClass.name} " +
+                "errorCode=${errorCode.orNotAvailable()} requestId=${requestId.orNotAvailable()}"
     return AssertionError(evidence)
 }
 

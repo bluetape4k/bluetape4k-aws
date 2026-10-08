@@ -22,9 +22,10 @@ import kotlin.coroutines.EmptyCoroutineContext
 suspend inline fun <RES: Any> suspendCommand(
     context: CoroutineContext = EmptyCoroutineContext,
     crossinline method: () -> RES,
-): RES = withContext(context.getOrCurrent() + Dispatchers.IO) {
-    method()
-}
+): RES =
+    withContext(context.getOrCurrent() + Dispatchers.IO) {
+        method()
+    }
 
 /**
  * 요청 객체를 받는 AWS 동기 호출을 `Dispatchers.IO` 기반 suspend 호출로 감쌉니다.
@@ -45,6 +46,7 @@ suspend inline fun <REQ, RES: Any> suspendCommand(
     context: CoroutineContext = EmptyCoroutineContext,
     request: REQ,
     crossinline method: (request: REQ) -> RES,
-): RES = withContext(context.getOrCurrent() + Dispatchers.IO) {
-    method(request)
-}
+): RES =
+    withContext(context.getOrCurrent() + Dispatchers.IO) {
+        method(request)
+    }

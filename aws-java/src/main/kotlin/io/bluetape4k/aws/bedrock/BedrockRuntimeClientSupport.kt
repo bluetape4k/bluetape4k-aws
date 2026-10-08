@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.bedrock
 
 import io.bluetape4k.aws.http.SdkHttpClientProvider
+import io.bluetape4k.support.closeSafe
+import io.bluetape4k.support.equalsIgnoreCase
 import io.bluetape4k.utils.ShutdownQueue
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
@@ -24,11 +26,11 @@ internal fun URI.requireTrustedBedrockEndpoint(): URI = apply {
         "Bedrock endpoint must include a host."
     }
     val isLoopback = normalizedHost == "localhost" ||
-        normalizedHost == "127.0.0.1" ||
-        normalizedHost == "::1"
+            normalizedHost == "127.0.0.1" ||
+            normalizedHost == "::1"
     require(
-        scheme.equals("https", ignoreCase = true) ||
-            (scheme.equals("http", ignoreCase = true) && isLoopback),
+        scheme.equalsIgnoreCase("https") ||
+                (scheme.equalsIgnoreCase("http") && isLoopback),
     ) {
         "Bedrock endpoint must use HTTPS; plain HTTP is allowed only for literal loopback tests."
     }
@@ -51,11 +53,8 @@ inline fun bedrockRuntimeClient(
             .orElse(null)
             ?.requireTrustedBedrockEndpoint()
     } catch (cause: Throwable) {
-        try {
-            client.close()
-        } finally {
-            throw cause
-        }
+        client.closeSafe()
+        throw cause
     }
     return client.apply { ShutdownQueue.register(this) }
 }

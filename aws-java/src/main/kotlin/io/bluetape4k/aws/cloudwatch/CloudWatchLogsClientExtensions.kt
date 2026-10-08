@@ -113,8 +113,10 @@ fun CloudWatchLogsClient.describeLogStreams(
     logStreamNamePrefix: String? = null,
 ): DescribeLogStreamsResponse {
     logGroupName.requireNotBlank("logGroupName")
-    return describeLogStreams {
-        it.logGroupName(logGroupName)
-        logStreamNamePrefix?.let { prefix -> it.logStreamNamePrefix(prefix) }
+    return describeLogStreams { builder ->
+        builder.logGroupName(logGroupName)
+        logStreamNamePrefix?.let { prefix ->
+            builder.logStreamNamePrefix(prefix)
+        }
     }
 }

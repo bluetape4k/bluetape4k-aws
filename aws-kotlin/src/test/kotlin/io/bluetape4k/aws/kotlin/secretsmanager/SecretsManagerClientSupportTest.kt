@@ -12,21 +12,36 @@ import aws.sdk.kotlin.services.secretsmanager.model.ResourceNotFoundException
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.kotlin.auth.LocalCredentialsProvider
 import io.bluetape4k.aws.kotlin.secretsmanager.model.batchGetSecretValueRequestOf
 import io.bluetape4k.aws.kotlin.secretsmanager.model.getSecretValueRequestOf
 import io.bluetape4k.aws.kotlin.secretsmanager.model.listSecretsRequestOf
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SecretsManagerClientSupportTest {
+
+    private companion object: KLoggingChannel() {
+        private const val SENTINEL = "raw-secret-value"
+    }
+
+    private val client = mockk<SecretsManagerClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `client factories use local endpoint static credentials and explicit region`() = runTest {
@@ -53,7 +68,7 @@ class SecretsManagerClientSupportTest {
             getSecretValueRequestOf(" ")
         }
         assertFailsWith<IllegalArgumentException> {
-            batchGetSecretValueRequestOf((1..21).map { "secret-$it" })
+            batchGetSecretValueRequestOf(List(21) { "secret-$it" })
         }
         assertFailsWith<IllegalArgumentException> {
             listSecretsRequestOf(nextToken = " ")
@@ -67,8 +82,10 @@ class SecretsManagerClientSupportTest {
 
     @Test
     fun `helpers wrap secret string preserve raw batch response and propagate missing exceptions`() = runTest {
-        val client = mockk<SecretsManagerClient>()
-        coEvery { client.getSecretValue(any<GetSecretValueRequest>()) } returns GetSecretValueResponse {
+
+        coEvery {
+            client.getSecretValue(any<GetSecretValueRequest>())
+        } returns GetSecretValueResponse {
             secretString = SENTINEL
         }
 
@@ -89,12 +106,11 @@ class SecretsManagerClientSupportTest {
         val error = assertFailsWith<ResourceNotFoundException> {
             client.getSecretString("missing-secret")
         }
-        error.message.orEmpty().contains("missing secret").shouldBeEqualTo(true)
+        error.message shouldContain "missing secret"
     }
 
     @Test
     fun `single page helpers make one sdk call and preserve next token`() = runTest {
-        val client = mockk<SecretsManagerClient>()
         val response = ListSecretsResponse { nextToken = "next" }
         coEvery { client.listSecrets(any<ListSecretsRequest>()) } returns response
 
@@ -105,7 +121,6 @@ class SecretsManagerClientSupportTest {
 
     @Test
     fun `create and put helpers accept redacted values and do not leak diagnostics`() = runTest {
-        val client = mockk<SecretsManagerClient>()
         val secret = awsSecretValueOf(SENTINEL)
         coEvery { client.createSecret(any()) } returns CreateSecretResponse { arn = "arn" }
         coEvery { client.putSecretValue(any()) } returns PutSecretValueResponse { arn = "arn" }
@@ -113,22 +128,19 @@ class SecretsManagerClientSupportTest {
         client.createSecret(name = "secret-name", secretValue = secret)
         client.putSecretValue(secretId = "secret-id", secretValue = secret)
 
-        secret.toString().contains(SENTINEL).shouldBeFalse()
+        secret.toString() shouldNotContain SENTINEL
         coVerify(exactly = 1) { client.createSecret(any()) }
         coVerify(exactly = 1) { client.putSecretValue(any()) }
     }
 
     @Test
     fun `helpers rethrow cancellation`() = runTest {
-        val client = mockk<SecretsManagerClient>()
-        coEvery { client.getSecretValue(any<GetSecretValueRequest>()) } throws CancellationException("cancelled")
+        coEvery {
+            client.getSecretValue(any<GetSecretValueRequest>())
+        } throws CancellationException("cancelled")
 
         assertFailsWith<CancellationException> {
             client.getSecretString("secret-id")
         }
-    }
-
-    private companion object {
-        private const val SENTINEL = "raw-secret-value"
     }
 }

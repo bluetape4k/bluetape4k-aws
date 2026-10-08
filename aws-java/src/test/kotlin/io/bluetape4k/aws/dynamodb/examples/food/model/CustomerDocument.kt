@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.dynamodb.examples.food.model
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.dynamodb.model.makeKeyString
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.hashOf
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean
 import java.time.Instant
-
 
 @Suppress("EqualsOrHashCode")
 @DynamoDbBean
@@ -46,5 +46,10 @@ class CustomerDocument: AbstractDynamoDocument() {
     }
 
     override fun hashCode(): Int = hashOf(customerId, nationId)
-
+    override fun buildStringHelper(): ToStringBuilder =
+        super.buildStringHelper()
+            .add("customerId", customerId)
+            .add("nationId", nationId)
+            .add("grade", grade)
+            .add("updatedAt", updatedAt)
 }

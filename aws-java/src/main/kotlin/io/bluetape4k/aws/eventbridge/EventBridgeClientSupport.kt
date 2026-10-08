@@ -23,9 +23,7 @@ inline fun eventBridgeClient(
     builder: EventBridgeClientBuilder.() -> Unit,
 ): EventBridgeClient =
     EventBridgeClient.builder().apply(builder).build()
-        .apply {
-            ShutdownQueue.register(this)
-        }
+        .apply(ShutdownQueue::register)
 
 /**
  * 리전용 [EventBridgeClient]를 생성합니다.

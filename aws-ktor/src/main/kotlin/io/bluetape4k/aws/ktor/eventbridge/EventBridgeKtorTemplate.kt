@@ -36,7 +36,7 @@ import java.util.concurrent.CompletableFuture
 class EventBridgeKtorTemplate(
     private val eventBridgeAsyncClient: EventBridgeAsyncClient,
     private val defaultEventBusName: String? = null,
-) : EventBridgeKtorOperations {
+): EventBridgeKtorOperations {
 
     override suspend fun createEventBus(name: String): CreateEventBusResponse =
         createEventBusAsync(name).await()

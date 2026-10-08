@@ -1,18 +1,24 @@
 package io.bluetape4k.aws.lambda
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.assertions.shouldNotBe
+import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
-import tools.jackson.databind.ObjectMapper
-import java.util.Base64
+import java.util.*
 
 class LambdaPayloadCodecTest {
+
+    companion object: KLogging()
 
     @Test
     fun `bytes codec copies input and decoded output`() {
@@ -33,22 +39,27 @@ class LambdaPayloadCodecTest {
         LambdaPayloadCodecs.utf8.decode(LambdaPayloadCodecs.utf8.encode(value)) shouldBeEqualTo value
 
         val empty = LambdaPayloadCodecs.utf8.decode(LambdaPayloadCodecs.utf8.encode(""))
-        empty shouldBeEqualTo ""
+        empty.shouldBeEmpty()
     }
 
     @Test
     fun `jackson codec uses caller mapper and class`() {
-        val mapper = ObjectMapper()
-        val codec = LambdaPayloadCodecs.jackson(mapper, String::class.java)
+        val mapper = Jackson.defaultJsonMapper
+        val codec = LambdaPayloadCodecs
+            .jackson(mapper, String::class.java)
 
         codec.decode(codec.encode("caller mapper")) shouldBeEqualTo "caller mapper"
     }
 
     @Test
     fun `malformed json propagates and no unsafe typing is enabled`() {
-        val codec = LambdaPayloadCodecs.jackson(ObjectMapper(), String::class.java)
+        val mapper = Jackson.defaultJsonMapper
+        val codec = LambdaPayloadCodecs
+            .jackson(mapper, String::class.java)
 
-        assertFailsWith<Exception> { codec.decode("[".toByteArray()) }
+        assertFailsWith<Exception> {
+            codec.decode("[".toByteArray())
+        }
     }
 
     @Test
@@ -69,19 +80,20 @@ class LambdaPayloadCodecTest {
         result.value shouldBeEqualTo "ok"
         result.logTail shouldBeEqualTo "tail 로그"
         result.payload?.decodeToString() shouldBeEqualTo "ok"
-        (result.payload !== response.payload().asByteArrayUnsafe()).shouldBeTrue()
+        result.payload shouldNotBe response.payload().asByteArrayUnsafe()
     }
 
     @Test
     fun `blank function error is not treated as function error`() {
         val response = InvokeResponse.builder().functionError(" ").build()
-
         response.toLambdaInvocationResult(LambdaPayloadCodecs.bytes).hasFunctionError.shouldBeFalse()
     }
 
     @Test
     fun `null payload is distinct from empty payload`() {
-        val absent = InvokeResponse.builder().build().toLambdaInvocationResult(LambdaPayloadCodecs.bytes)
+        val absent = InvokeResponse.builder()
+            .build()
+            .toLambdaInvocationResult(LambdaPayloadCodecs.bytes)
         absent.payload.shouldBeNull()
         absent.value.shouldBeNull()
 
@@ -99,7 +111,7 @@ class LambdaPayloadCodecTest {
     fun `large payload copy remains bounded to the codec boundary`() {
         val input = ByteArray(4 * 1024 * 1024) { (it % 251).toByte() }
         var decodeCount = 0
-        val codec = object : LambdaPayloadCodec<ByteArray> {
+        val codec = object: LambdaPayloadCodec<ByteArray> {
             override fun encode(value: ByteArray): ByteArray = value.copyOf()
 
             override fun decode(payload: ByteArray): ByteArray {
@@ -114,12 +126,14 @@ class LambdaPayloadCodecTest {
             .toLambdaInvocationResult(codec)
 
         decodeCount shouldBeEqualTo 1
+
         val payload = result.payload ?: error("payload was lost")
+        payload shouldContentEqual input
+        payload shouldNotBe input
+
         val value = result.value ?: error("decoded value was lost")
-        payload.contentEquals(input).shouldBeTrue()
-        value.contentEquals(input).shouldBeTrue()
-        (payload !== input).shouldBeTrue()
-        (value !== payload).shouldBeTrue()
+        value shouldContentEqual input
+        value shouldNotBe payload
     }
 
     @Test

@@ -17,8 +17,8 @@ import org.junit.jupiter.api.TestMethodOrder
 class CloudWatchClientExtensionsTest: AbstractKotlinCloudWatchTest() {
 
     companion object: KLoggingChannel() {
-        private val NAMESPACE = "bluetape4k/kotlin-test-${Base58.randomString(6).lowercase()}"
-        private val METRIC_NAME = "KotlinTestMetric-${Base58.randomString(4).lowercase()}"
+        private val NAMESPACE = "bluetape4k/kotlin-test-${Base58.randomString(8).lowercase()}"
+        private val METRIC_NAME = "KotlinTestMetric-${Base58.randomString(6).lowercase()}"
     }
 
     @Test
@@ -69,9 +69,7 @@ class CloudWatchClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             val response = client.listMetrics(namespace = NAMESPACE)
             val metrics = response.metrics.shouldNotBeNull()
             metrics.shouldNotBeEmpty()
-            metrics.forEach { metric ->
-                log.debug { "metric: namespace=${metric.namespace}, name=${metric.metricName}" }
-            }
+            metrics.forEach { log.debug { "metric: namespace=${it.namespace}, name=${it.metricName}" } }
         }
     }
 
@@ -86,9 +84,7 @@ class CloudWatchClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             val response = client.listMetrics(namespace = NAMESPACE, metricName = METRIC_NAME)
             val metrics = response.metrics.shouldNotBeNull()
             metrics.shouldNotBeEmpty()
-            metrics.forEach { metric ->
-                log.debug { "filtered metric: ${metric.metricName}" }
-            }
+            metrics.forEach { log.debug { "filtered metric: ${it.metricName}" } }
         }
     }
 }

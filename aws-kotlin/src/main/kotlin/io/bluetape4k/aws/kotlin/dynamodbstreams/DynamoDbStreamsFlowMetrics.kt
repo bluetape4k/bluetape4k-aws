@@ -14,7 +14,7 @@ interface DynamoDbStreamsFlowMetrics {
 }
 
 /** 관측이 필요하지 않을 때 사용하는 no-op metrics 구현입니다. */
-object NoopDynamoDbStreamsFlowMetrics : DynamoDbStreamsFlowMetrics
+object NoopDynamoDbStreamsFlowMetrics: DynamoDbStreamsFlowMetrics
 
 /** 테스트나 애플리케이션 callback을 조합할 때 사용할 간단한 metrics adapter입니다. */
 class LambdaDynamoDbStreamsFlowMetrics(
@@ -23,7 +23,7 @@ class LambdaDynamoDbStreamsFlowMetrics(
     private val onCheckpoint: (String, String) -> Unit = { _, _ -> },
     private val onRetrying: (String, Int, Throwable) -> Unit = { _, _, _ -> },
     private val onCompleted: (String) -> Unit = {},
-) : DynamoDbStreamsFlowMetrics {
+): DynamoDbStreamsFlowMetrics {
     override fun onShardStarted(shardId: String) = onStarted(shardId)
 
     override fun onBatch(shardId: String, recordCount: Int) = onBatchRead(shardId, recordCount)

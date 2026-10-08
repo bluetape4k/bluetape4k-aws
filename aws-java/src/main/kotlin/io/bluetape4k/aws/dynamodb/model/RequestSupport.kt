@@ -315,12 +315,11 @@ inline fun UpdateTimeToLiveRequest(
 inline fun <reified T: Any> WriteBatch(
     table: MappedTableResource<T>,
     builder: WriteBatch.Builder<T>.() -> Unit,
-): WriteBatch {
-    return WriteBatch.builder(T::class.java)
+): WriteBatch =
+    WriteBatch.builder(T::class.java)
         .mappedTableResource(table)
         .apply(builder)
         .build()
-}
 
 inline fun <reified T: Any> writeBatchOf(
     table: MappedTableResource<T>,
@@ -338,14 +337,13 @@ fun <T: Any> writeBatchOf(
     table: MappedTableResource<T>,
     items: Collection<T>,
     itemClass: Class<T>,
-): WriteBatch {
-    return WriteBatch.builder(itemClass)
+): WriteBatch =
+    WriteBatch.builder(itemClass)
         .mappedTableResource(table)
         .apply {
             items.forEach { addPutItem(it) }
         }
         .build()
-}
 
 inline fun WriteRequest(
     builder: WriteRequest.Builder.() -> Unit,

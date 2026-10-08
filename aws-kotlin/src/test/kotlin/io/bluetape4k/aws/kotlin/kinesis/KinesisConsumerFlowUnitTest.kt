@@ -11,15 +11,22 @@ import aws.sdk.kotlin.services.kinesis.model.Record
 import aws.sdk.kotlin.services.kinesis.model.Shard
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.coroutines.flow.extensions.log
+import io.bluetape4k.coroutines.support.log
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
@@ -27,7 +34,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,6 +43,8 @@ import kotlin.time.Duration.Companion.seconds
 /** 단일 shard polling, outer emitter, bounded request와 checkpoint 시점을 검증합니다. */
 class KinesisConsumerFlowUnitTest {
 
+    companion object: KLoggingChannel()
+
     private val client = mockk<KinesisClient>(relaxed = true)
 
     @BeforeEach
@@ -45,7 +53,7 @@ class KinesisConsumerFlowUnitTest {
     }
 
     @Test
-    fun `consumer emits ordered records and saves after downstream emit`() = runTest(timeout = 30.seconds) {
+    fun `consumer emits ordered records and saves after downstream emit`() = runSuspendIO {
         val stream = "consumer-stream"
         val shard = "shardId-000000000000"
         val first = record("1")
@@ -54,32 +62,42 @@ class KinesisConsumerFlowUnitTest {
         val leaseStore = InMemoryKinesisLeaseStore()
         val canonicalRecorder = CanonicalEventRecorder()
 
-        coEvery { client.listShards(any<ListShardsRequest>()) } returns
-                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                GetShardIteratorResponse { shardIterator = "iterator-1" }
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
-                GetRecordsResponse { records = listOf(first); nextShardIterator = null }
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } returns ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns GetShardIteratorResponse { shardIterator = "iterator-1" }
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns GetRecordsResponse {
+            records = listOf(first)
+            nextShardIterator = null
+        }
 
         val records = mutableListOf<KinesisShardRecord>()
         val job = launch {
-            client.consumerFlow(
-            streamName = stream,
-            consumerGroup = "group",
-            streamIdentity = "stream-v1",
-            options = KinesisConsumerOptions(
-                ownerId = "owner",
-                maxShardConcurrency = 1,
-                maxRecordsPerPoll = 1,
-            ),
-            checkpointStore = checkpointStore,
-            leaseStore = leaseStore,
-            metrics = canonicalRecorder.metrics,
-            ).collect {
-                eventLog += "emit:${it.record.sequenceNumber}"
-                records += it
-            }
-        }
+            client
+                .consumerFlow(
+                    streamName = stream,
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    options = KinesisConsumerOptions(
+                        ownerId = "owner",
+                        maxShardConcurrency = 1,
+                        maxRecordsPerPoll = 1,
+                    ),
+                    checkpointStore = checkpointStore,
+                    leaseStore = leaseStore,
+                    metrics = canonicalRecorder.metrics,
+                )
+                .log("Consume")
+                .collect {
+                    eventLog += "emit:${it.record.sequenceNumber}"
+                    records += it
+                }
+        }.log("Job")
+
         checkpointStore.terminalSave.await()
         canonicalRecorder.completed.await()
         job.cancel()
@@ -88,6 +106,7 @@ class KinesisConsumerFlowUnitTest {
         records.map { it.record.sequenceNumber } shouldBeEqualTo listOf("1")
         eventLog shouldBeEqualTo listOf("emit:1", "save:1", "save:ShardEnd")
         canonicalRecorder.assertLifecycle()
+
         coVerify { client.getRecords(match { it.limit == 1 }) }
     }
 
@@ -115,7 +134,7 @@ class KinesisConsumerFlowUnitTest {
     }
 
     @Test
-    fun `consumer uses inclusive checkpoint position on restart`() = runTest(timeout = 30.seconds) {
+    fun `consumer uses inclusive checkpoint position on restart`() = runSuspendIO {
         val stream = "consumer-stream"
         val shard = "shardId-000000000000"
         val requests = mutableListOf<GetShardIteratorRequest>()
@@ -123,43 +142,56 @@ class KinesisConsumerFlowUnitTest {
         val key = KinesisShardKey("stream-v1", "group", shard)
         val leaseStore = InMemoryKinesisLeaseStore()
         val lease = leaseStore.acquire(key, "seed", 60.seconds).shouldNotBeNull()
+
         checkpointStore.save(key, KinesisCheckpoint.Sequence("42"), lease)
         leaseStore.release(lease)
 
-        coEvery { client.listShards(any<ListShardsRequest>()) } returns
-                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } answers {
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } returns ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } answers {
             requests += firstArg<GetShardIteratorRequest>()
             GetShardIteratorResponse { shardIterator = "iterator-1" }
         }
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
-                GetRecordsResponse { records = listOf(record("42")); nextShardIterator = null }
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns GetRecordsResponse {
+            records = listOf(record("42"))
+            nextShardIterator = null
+        }
 
         val saved = CompletableDeferred<Unit>()
         val job = launch {
-            client.consumerFlow(
-            streamName = stream,
-            consumerGroup = "group",
-            streamIdentity = "stream-v1",
-            position = KinesisStartingPosition.Latest,
-            options = KinesisConsumerOptions(ownerId = "owner"),
-            checkpointStore = checkpointStore,
-            leaseStore = leaseStore,
-            metrics = KinesisFlowMetrics { event ->
-                if (event.eventKind == KinesisFlowEvent.EventKind.RECORD) saved.complete(Unit)
-            },
-            ).collect { }
-        }
+            client
+                .consumerFlow(
+                    streamName = stream,
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    position = KinesisStartingPosition.Latest,
+                    options = KinesisConsumerOptions(ownerId = "owner"),
+                    checkpointStore = checkpointStore,
+                    leaseStore = leaseStore,
+                    metrics = { event ->
+                        if (event.eventKind == KinesisFlowEvent.EventKind.RECORD) saved.complete(Unit)
+                    },
+                )
+                .log("Consume")
+                .collect()
+        }.log("Job")
+
         saved.await()
         job.cancel()
         job.join()
 
+        requests.forEach { log.debug { "request=$it" } }
         requests.size shouldBeEqualTo 1
         requests.single().startingSequenceNumber shouldBeEqualTo "42"
     }
 
     @Test
-    fun `discovery follows list shards pagination before launching`() = runTest(timeout = 30.seconds) {
+    fun `discovery follows list shards pagination before launching`() = runSuspendIO {
         val shard = "shardId-000000000000"
         val observed = CompletableDeferred<Unit>()
         val requests = mutableListOf<ListShardsRequest>()
@@ -168,7 +200,9 @@ class KinesisConsumerFlowUnitTest {
             nextShardIterator = null
         }
 
-        coEvery { client.listShards(any<ListShardsRequest>()) } answers {
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } answers {
             val request = firstArg<ListShardsRequest>()
             requests += request
             if (request.nextToken == null) {
@@ -180,63 +214,83 @@ class KinesisConsumerFlowUnitTest {
                 ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
             }
         }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                GetShardIteratorResponse { shardIterator = "iterator-1" }
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns response
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns GetShardIteratorResponse { shardIterator = "iterator-1" }
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns response
 
         val job = launch {
-            client.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                options = KinesisConsumerOptions(ownerId = "owner"),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = InMemoryKinesisLeaseStore(),
-            ).collect { observed.complete(Unit) }
-        }
+            client
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    options = KinesisConsumerOptions(ownerId = "owner"),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = InMemoryKinesisLeaseStore(),
+                )
+                .log("Consume")
+                .collect {
+                    observed.complete(Unit)
+                }
+        }.log("Job")
+
         observed.await()
         job.cancelAndJoin()
 
+        requests.forEach { log.debug { "request=$it" } }
         requests.size shouldBeEqualTo 2
         requests[1].nextToken shouldBeEqualTo "page-2"
     }
 
     @Test
-    fun `discovery rejects a repeated list shards token`() = runTest(timeout = 30.seconds) {
-        coEvery { client.listShards(any<ListShardsRequest>()) } returns
-                ListShardsResponse { nextToken = "repeated-token" }
+    fun `discovery rejects a repeated list shards token`() = runSuspendIO {
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } returns ListShardsResponse { nextToken = "repeated-token" }
 
         val error = assertFailsWith<KinesisShardGraphException> {
-            client.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                options = KinesisConsumerOptions(ownerId = "owner"),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = InMemoryKinesisLeaseStore(),
-            ).first()
+            client
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    options = KinesisConsumerOptions(ownerId = "owner"),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = InMemoryKinesisLeaseStore(),
+                )
+                .log("Consume")
+                .first()
         }
 
         error.message shouldBeEqualTo "ListShards returned a non-progressing nextToken"
+
         coVerify(exactly = 2) { client.listShards(any<ListShardsRequest>()) }
     }
 
     @Test
-    fun `discovery preserves the configured list shards page limit`() = runTest(timeout = 30.seconds) {
+    fun `discovery preserves the configured list shards page limit`() = runSuspendIO {
         var page = 0
-        coEvery { client.listShards(any<ListShardsRequest>()) } answers {
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } answers {
             ListShardsResponse { nextToken = "page-${++page}" }
         }
 
         val error = assertFailsWith<KinesisShardGraphException> {
-            client.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                options = KinesisConsumerOptions(ownerId = "owner", maxListShardsPages = 2),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = InMemoryKinesisLeaseStore(),
-            ).first()
+            client
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    options = KinesisConsumerOptions(ownerId = "owner", maxListShardsPages = 2),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = InMemoryKinesisLeaseStore(),
+                )
+                .log("Consume")
+                .first()
         }
 
         error.message shouldBeEqualTo "ListShards pagination exceeded maxListShardsPages=2"
@@ -244,16 +298,17 @@ class KinesisConsumerFlowUnitTest {
     }
 
     @Test
-    fun `unknown parent is not promoted to root`() = runTest(timeout = 30.seconds) {
-        coEvery { client.listShards(any<ListShardsRequest>()) } returns
-                ListShardsResponse {
-                    shards = listOf(
-                        Shard {
-                            shardId = "child"
-                            parentShardId = "missing-parent"
-                        },
-                    )
-                }
+    fun `unknown parent is not promoted to root`() = runSuspendIO {
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } returns ListShardsResponse {
+            shards = listOf(
+                Shard {
+                    shardId = "child"
+                    parentShardId = "missing-parent"
+                },
+            )
+        }
 
         assertFailsWith<KinesisShardGraphException> {
             client.consumerFlow(
@@ -271,56 +326,61 @@ class KinesisConsumerFlowUnitTest {
     }
 
     @Test
-    fun `cancellation completes one bounded lease release and preserves its cause`() = runTest(timeout = 30.seconds) {
+    fun `cancellation completes one bounded lease release and preserves its cause`() = runSuspendIO {
         val cancellation = CancellationException("collector cancelled")
 
-        val result = terminateConsumer(cancellation)
+        val result: CancellationResult = terminateConsumer(cancellation)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
         result.leaseStore.releaseCompleted.isCompleted.shouldBeTrue()
-        result.completion::class shouldBeEqualTo cancellation::class
+        result.completion shouldBeInstanceOf cancellation::class
         result.completion.message shouldBeEqualTo cancellation.message
         result.completion.failureChain().any { it === cancellation }.shouldBeTrue()
     }
 
     @Test
-    fun `lease release timeout stays bounded and attempts release once`() = runTest(timeout = 30.seconds) {
+    fun `lease release timeout stays bounded and attempts release once`() = runSuspendIO {
         val cancellation = CancellationException("collector cancelled")
         val leaseStore = RecordingLeaseStore { awaitCancellation() }
 
-        val result = terminateConsumer(cancellation, leaseStore)
+        val result: CancellationResult = terminateConsumer(cancellation, leaseStore)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
-        result.leaseStore.releaseCompleted.isCompleted shouldBeEqualTo false
-        result.completion::class shouldBeEqualTo cancellation::class
+        result.leaseStore.releaseCompleted.isCompleted.shouldBeFalse()
+        result.completion shouldBeInstanceOf cancellation::class
         result.completion.message shouldBeEqualTo cancellation.message
         result.completion.failureChain().any { it === cancellation }.shouldBeTrue()
     }
 
     @Test
-    fun `shard failure remains primary when lease release fails`() = runTest(timeout = 30.seconds) {
+    fun `shard failure remains primary when lease release fails`() = runSuspendIO {
         val primaryFailure = IllegalArgumentException("shard failed")
         val releaseFailure = IllegalStateException("release failed")
 
         val result = failShardStart(primaryFailure, releaseFailure)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
-        val failureChain = result.completion.failureChain()
-        result.completion::class shouldBeEqualTo primaryFailure::class
+        result.completion shouldBeInstanceOf primaryFailure::class
         result.completion.message shouldBeEqualTo primaryFailure.message
+
+        val failureChain = result.completion.failureChain()
         failureChain.flatMap { it.suppressed.asIterable() }.any {
             it::class == releaseFailure::class && it.message == releaseFailure.message
         }.shouldBeTrue()
     }
 
     @Test
-    fun `lease release failure is propagated after successful shard completion`() = runTest(timeout = 30.seconds) {
+    fun `lease release failure is propagated after successful shard completion`() = runSuspendIO {
         val releaseFailure = IllegalStateException("release failed")
 
         val result = finishShard(releaseFailure)
 
+        log.debug { "result=$result" }
         result.leaseStore.releaseCount.get() shouldBeEqualTo 1
-        result.completion::class shouldBeEqualTo releaseFailure::class
+        result.completion shouldBeInstanceOf releaseFailure::class
         result.completion.message shouldBeEqualTo releaseFailure.message
         result.completion.failureChain().any { it === releaseFailure }.shouldBeTrue()
     }
@@ -332,35 +392,42 @@ class KinesisConsumerFlowUnitTest {
         val shard = "shardId-000000000000"
         val collecting = CompletableDeferred<Unit>()
 
-        coEvery { client.listShards(any<ListShardsRequest>()) } returns
-                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                GetShardIteratorResponse { shardIterator = "iterator-1" }
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
-                GetRecordsResponse {
-                    records = listOf(record("1"))
-                    nextShardIterator = "iterator-2"
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } returns ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns GetShardIteratorResponse { shardIterator = "iterator-1" }
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns GetRecordsResponse {
+            records = listOf(record("1"))
+            nextShardIterator = "iterator-2"
         }
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            client.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                options = KinesisConsumerOptions(
-                    ownerId = "owner",
-                    leaseDuration = 10.seconds,
-                    leaseRenewInterval = 5.seconds,
-                    leaseReleaseTimeout = 1.seconds,
-                ),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = leaseStore,
-            ).collect {
-                collecting.complete(Unit)
-                throw cancellation
-            }
-        }
+            client
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    options = KinesisConsumerOptions(
+                        ownerId = "owner",
+                        leaseDuration = 10.seconds,
+                        leaseRenewInterval = 5.seconds,
+                        leaseReleaseTimeout = 1.seconds,
+                    ),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = leaseStore,
+                )
+                .log("Consume")
+                .collect {
+                    collecting.complete(Unit)
+                    throw cancellation
+                }
+        }.log("Job")
+
         job.invokeOnCompletion { completion.complete(it) }
 
         val actual = withTimeout(5.seconds) {
@@ -379,8 +446,9 @@ class KinesisConsumerFlowUnitTest {
         val shard = "shardId-000000000000"
         val leaseStore = RecordingLeaseStore { throw releaseFailure }
         val shardStarted = CompletableDeferred<Unit>()
-        coEvery { client.listShards(any<ListShardsRequest>()) } returns
-                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } returns ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
@@ -417,24 +485,32 @@ class KinesisConsumerFlowUnitTest {
     ): CancellationResult = supervisorScope {
         val shard = "shardId-000000000000"
         val leaseStore = RecordingLeaseStore { throw releaseFailure }
-        coEvery { client.listShards(any<ListShardsRequest>()) } returns
-                ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
-        coEvery { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                GetShardIteratorResponse { shardIterator = "iterator-1" }
-        coEvery { client.getRecords(any<GetRecordsRequest>()) } returns
-                GetRecordsResponse { records = emptyList(); nextShardIterator = null }
+
+        coEvery {
+            client.listShards(any<ListShardsRequest>())
+        } returns ListShardsResponse { shards = listOf(Shard { shardId = shard }) }
+        coEvery {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns GetShardIteratorResponse { shardIterator = "iterator-1" }
+        coEvery {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns GetRecordsResponse { records = emptyList(); nextShardIterator = null }
 
         val completion = CompletableDeferred<Throwable?>()
         val job = async {
-            client.consumerFlow(
-                streamName = "stream",
-                consumerGroup = "group",
-                streamIdentity = "stream-v1",
-                options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
-                checkpointStore = InMemoryKinesisCheckpointStore(),
-                leaseStore = leaseStore,
-            ).collect()
-        }
+            client
+                .consumerFlow(
+                    streamName = "stream",
+                    consumerGroup = "group",
+                    streamIdentity = "stream-v1",
+                    options = KinesisConsumerOptions(ownerId = "owner", leaseReleaseTimeout = 1.seconds),
+                    checkpointStore = InMemoryKinesisCheckpointStore(),
+                    leaseStore = leaseStore,
+                )
+                .log("Consume")
+                .collect()
+        }.log("Job")
+
         job.invokeOnCompletion { completion.complete(it) }
 
         val actual = withTimeout(5.seconds) {
@@ -453,7 +529,7 @@ class KinesisConsumerFlowUnitTest {
 
     private class RecordingCheckpointStore(
         private val eventLog: MutableList<String>,
-    ) : KinesisCheckpointStore {
+    ): KinesisCheckpointStore {
         private val delegate = InMemoryKinesisCheckpointStore()
         val firstSave = CompletableDeferred<Unit>()
         val terminalSave = CompletableDeferred<Unit>()
@@ -475,7 +551,7 @@ class KinesisConsumerFlowUnitTest {
 
     private class RecordingLeaseStore(
         private val releaseAction: suspend () -> Unit = {},
-    ) : KinesisLeaseStore {
+    ): KinesisLeaseStore {
         val releaseCount = AtomicInteger()
         val releaseStarted = CompletableDeferred<Unit>()
         val releaseCompleted = CompletableDeferred<Unit>()
@@ -504,5 +580,6 @@ class KinesisConsumerFlowUnitTest {
         val leaseStore: RecordingLeaseStore,
     )
 
-    private fun Throwable.failureChain(): List<Throwable> = generateSequence(this) { it.cause }.toList()
+    private fun Throwable.failureChain(): List<Throwable> =
+        generateSequence(this) { it.cause }.toList()
 }

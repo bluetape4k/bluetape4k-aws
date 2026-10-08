@@ -2,8 +2,8 @@ package io.bluetape4k.aws.kotlin.s3
 
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.createBucket
-import aws.sdk.kotlin.services.s3.listObjectsV2
 import aws.sdk.kotlin.services.s3.listObjectVersions
+import aws.sdk.kotlin.services.s3.listObjectsV2
 import aws.sdk.kotlin.services.s3.model.CreateBucketRequest
 import aws.sdk.kotlin.services.s3.model.CreateBucketResponse
 import aws.sdk.kotlin.services.s3.model.DeleteBucketRequest
@@ -16,8 +16,8 @@ import aws.sdk.kotlin.services.s3.model.ObjectVersion
 import aws.smithy.kotlin.runtime.ServiceException
 import aws.smithy.kotlin.runtime.http.response.statusCode
 import io.bluetape4k.aws.kotlin.s3.model.deleteBucketRequestOf
-import io.bluetape4k.aws.kotlin.s3.model.deleteOf
 import io.bluetape4k.aws.kotlin.s3.model.deleteObjectsRequestOf
+import io.bluetape4k.aws.kotlin.s3.model.deleteOf
 import io.bluetape4k.aws.kotlin.s3.model.headBucketRequestOf
 import io.bluetape4k.aws.kotlin.s3.model.objectIdentifierOf
 import io.bluetape4k.logging.debug
