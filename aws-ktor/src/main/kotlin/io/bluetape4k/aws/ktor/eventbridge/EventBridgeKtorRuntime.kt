@@ -16,7 +16,6 @@ class EventBridgeKtorRuntime(
     val operations: EventBridgeKtorOperations,
     private val ownedClient: EventBridgeAsyncClient? = null,
 ) {
-
     companion object: KLoggingChannel()
 
     private val closed = atomic(false)

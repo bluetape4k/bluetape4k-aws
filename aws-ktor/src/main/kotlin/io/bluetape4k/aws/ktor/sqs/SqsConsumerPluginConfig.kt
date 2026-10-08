@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSqsAsyncClientCustomizer
+import io.bluetape4k.javatimes.seconds
 import kotlinx.coroutines.CoroutineDispatcher
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
@@ -73,7 +75,7 @@ class SqsConsumerPluginConfig {
     var deadLetterQueueName: String? = null
 
     /** graceful shutdown 중 처리 중인 handler를 취소하기 전에 기다릴 timeout입니다. */
-    var shutdownTimeout: Duration = Duration.ofSeconds(30)
+    var shutdownTimeout: Duration = 30.seconds()
 
     /** 일시적인 SQS 실패에 대해 receive loop가 사용할 backoff 정책입니다. */
     var pollBackoff: SqsPollBackoff = SqsPollBackoff()
@@ -205,4 +207,28 @@ class SqsConsumerPluginConfig {
 
         return builder.build()
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("sqsAsyncClient", sqsAsyncClient)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .add("queueUrl", queueUrl)
+            .add("queueName", queueName)
+            .add("coroutines", coroutines)
+            .add("maxMessages", maxMessages)
+            .add("waitTimeSeconds", waitTimeSeconds)
+            .add("visibilityTimeoutSeconds", visibilityTimeoutSeconds)
+            .add("deleteOnSuccess", deleteOnSuccess)
+            .add("failureVisibilityTimeoutSeconds", failureVisibilityTimeoutSeconds)
+            .add("deadLetterQueueUrl", deadLetterQueueUrl)
+            .add("shutdownTimeout", shutdownTimeout)
+            .add("pollBackoff", pollBackoff)
+            .add("visibilityHeartbeatSeconds", visibilityHeartbeatSeconds)
+            .add("dispatcher", dispatcher)
+            .add("converter", converter)
+            .add("conversionFailurePolicy", conversionFailurePolicy)
+            .add("failureVisibilityStrategy", failureVisibilityStrategy)
+            .toString()
 }

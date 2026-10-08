@@ -3,8 +3,17 @@ package io.bluetape4k.aws.ktor.ses
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.concurrent.failedCompletableFutureOf
+import io.bluetape4k.coroutines.support.log
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
+import io.mockk.CapturingSlot
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -12,6 +21,7 @@ import io.mockk.verify
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
@@ -20,7 +30,17 @@ import software.amazon.awssdk.services.sesv2.model.SendEmailRequest
 import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
 import java.util.concurrent.CompletableFuture
 
+@Suppress("UnusedDataClassCopyResult")
 class SesKtorTemplateTest {
+
+    companion object: KLogging()
+
+    private val client = mockk<SesV2AsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `sendEmail maps simple message headers and attachments`() = runTest {
@@ -35,7 +55,7 @@ class SesKtorTemplateTest {
                 attachments = listOf(
                     SesEmailAttachment(
                         fileName = "hello.txt",
-                        content = "attachment".toByteArray(),
+                        content = "attachment".toUtf8Bytes(),
                         contentType = "text/plain",
                         contentDisposition = AttachmentContentDisposition.ATTACHMENT,
                     )
@@ -43,8 +63,12 @@ class SesKtorTemplateTest {
             )
         )
 
-        val request = fixture.request.captured
+        log.debug { "result=$result" }
         result.messageId() shouldBeEqualTo "message-1"
+
+        val request = fixture.request.captured
+
+        log.debug { "request=$request" }
         request.fromEmailAddress() shouldBeEqualTo "sender@example.com"
         request.destination().toAddresses() shouldBeEqualTo listOf("to@example.com")
         request.replyToAddresses() shouldBeEqualTo listOf("reply@example.com")
@@ -55,6 +79,7 @@ class SesKtorTemplateTest {
         request.content().simple().headers().first().name() shouldBeEqualTo "X-Trace-Id"
         request.content().simple().attachments().first().fileName() shouldBeEqualTo "hello.txt"
         request.content().simple().attachments().first().rawContent().asByteArray().shouldNotBeEmpty()
+
         verify(exactly = 1) { fixture.client.sendEmail(any<SendEmailRequest>()) }
     }
 
@@ -72,6 +97,8 @@ class SesKtorTemplateTest {
         )
 
         val request = fixture.request.captured
+
+        log.debug { "request: $request" }
         request.fromEmailAddress() shouldBeEqualTo "sender@example.com"
         request.content().template().templateName() shouldBeEqualTo "welcome"
         request.content().template().templateData() shouldBeEqualTo """{"name":"Bluetape"}"""
@@ -84,12 +111,14 @@ class SesKtorTemplateTest {
 
         template(fixture.client).sendRawEmail(
             SesRawEmailRequest(
-                rawContent = "From: sender@example.com\r\n\r\nbody".toByteArray(),
+                rawContent = "From: sender@example.com\r\n\r\nbody".toUtf8Bytes(),
                 destination = SesEmailAddressSet(to = listOf("to@example.com")),
             )
         )
 
         val request = fixture.request.captured
+
+        log.debug { "request=$request" }
         request.fromEmailAddress() shouldBeEqualTo "sender@example.com"
         request.destination().toAddresses() shouldBeEqualTo listOf("to@example.com")
         request.content().raw().data().asByteArray().shouldNotBeEmpty()
@@ -108,6 +137,7 @@ class SesKtorTemplateTest {
                 )
         }
 
+        log.debug { "error=$error" }
         error.message shouldBeEqualTo "from is required when defaultFrom is not configured."
     }
 
@@ -123,39 +153,54 @@ class SesKtorTemplateTest {
             )
         }
 
-        assertFailsWith<IllegalArgumentException> { request() }
+        assertFailsWith<IllegalArgumentException> {
+            request()
+        }
     }
 
     @Test
     fun `raw content and attachment bytes are defensively copied`() {
-        val rawBytes = "raw".toByteArray()
+        val rawBytes = "raw".toUtf8Bytes()
         val raw = SesRawEmailRequest(rawBytes)
         rawBytes[0] = 'X'.code.toByte()
         raw.rawContent[0] = 'Y'.code.toByte()
 
-        val attachmentBytes = "att".toByteArray()
+        val attachmentBytes = "att".toUtf8Bytes()
         val attachment = SesEmailAttachment("a.txt", attachmentBytes, "text/plain")
         attachmentBytes[0] = 'X'.code.toByte()
         attachment.content[0] = 'Y'.code.toByte()
 
-        raw.rawContent.decodeToString() shouldBeEqualTo "raw"
-        attachment.content.decodeToString() shouldBeEqualTo "att"
+        log.debug { "raw=$raw" }
+        raw.rawContent.toUtf8String() shouldBeEqualTo "raw"
+
+        log.debug { "attachment=$attachment" }
+        attachment.content.toUtf8String() shouldBeEqualTo "att"
     }
 
     @Test
     fun `toString does not expose raw bytes or recipients`() {
-        val raw = SesRawEmailRequest("secret-body".toByteArray(), destination = SesEmailAddressSet(to = listOf("to@example.com")))
-        val attachment = SesEmailAttachment("a.txt", "secret-body".toByteArray(), "text/plain")
+        val raw = SesRawEmailRequest(
+            "secret-body".toUtf8Bytes(),
+            destination = SesEmailAddressSet(to = listOf("to@example.com"))
+        )
+        val attachment = SesEmailAttachment("a.txt", "secret-body".toUtf8Bytes(), "text/plain")
 
+        log.debug { "raw=$raw" }
         raw.toString() shouldNotContain "secret-body"
-        attachment.toString() shouldNotContain "secret-body"
         raw.toString() shouldNotContain "to@example.com"
+
+        log.debug { "attachment=$attachment" }
+        attachment.toString() shouldNotContain "secret-body"
     }
 
     @Test
     fun `attachment rejects SES 40 MB limit`() {
         assertFailsWith<IllegalArgumentException> {
-            SesEmailAttachment("too-large.bin", ByteArray(MAX_SES_MESSAGE_BYTES + 1), "application/octet-stream")
+            SesEmailAttachment(
+                "too-large.bin",
+                ByteArray(MAX_SES_MESSAGE_BYTES + 1),
+                "application/octet-stream"
+            )
         }
     }
 
@@ -200,9 +245,9 @@ class SesKtorTemplateTest {
 
     @Test
     fun `sendEmail cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SesV2AsyncClient>()
         val future = CompletableFuture<SendEmailResponse>()
         every { client.sendEmail(any<SendEmailRequest>()) } returns future
+
         val job = launch {
             template(client).sendEmail(sampleEmail())
         }
@@ -215,9 +260,9 @@ class SesKtorTemplateTest {
 
     @Test
     fun `sendTemplateEmail cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SesV2AsyncClient>()
         val future = CompletableFuture<SendEmailResponse>()
         every { client.sendEmail(any<SendEmailRequest>()) } returns future
+
         val job = launch {
             template(client).sendTemplateEmail(
                 SesTemplateEmailRequest(
@@ -225,7 +270,8 @@ class SesKtorTemplateTest {
                     templateName = "welcome",
                 )
             )
-        }
+        }.log("Template")
+
         runCurrent()
 
         job.cancel()
@@ -235,11 +281,11 @@ class SesKtorTemplateTest {
 
     @Test
     fun `sendRawEmail cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SesV2AsyncClient>()
         val future = CompletableFuture<SendEmailResponse>()
         every { client.sendEmail(any<SendEmailRequest>()) } returns future
+
         val job = launch {
-            template(client).sendRawEmail(SesRawEmailRequest("raw".toByteArray()))
+            template(client).sendRawEmail(SesRawEmailRequest("raw".toUtf8Bytes()))
         }
         runCurrent()
 
@@ -250,9 +296,9 @@ class SesKtorTemplateTest {
 
     @Test
     fun `send raw SDK request cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SesV2AsyncClient>()
         val future = CompletableFuture<SendEmailResponse>()
         every { client.sendEmail(any<SendEmailRequest>()) } returns future
+
         val job = launch {
             template(client).send(SendEmailRequest.builder().build())
         }
@@ -265,9 +311,10 @@ class SesKtorTemplateTest {
 
     @Test
     fun `failed SES future preserves original exception`() = runTest {
-        val client = mockk<SesV2AsyncClient>()
         val failure = SdkClientException.create("boom")
-        every { client.sendEmail(any<SendEmailRequest>()) } returns CompletableFuture.failedFuture(failure)
+        every {
+            client.sendEmail(any<SendEmailRequest>())
+        } returns failedCompletableFutureOf(failure)
 
         val error = assertFailsWith<SdkClientException> {
             template(client).sendEmail(sampleEmail())
@@ -284,10 +331,11 @@ class SesKtorTemplateTest {
         )
 
     private fun mockClient(): SesClientFixture {
-        val client = mockk<SesV2AsyncClient>()
         val request = slot<SendEmailRequest>()
-        every { client.sendEmail(capture(request)) } returns
-            CompletableFuture.completedFuture(SendEmailResponse.builder().messageId("message-1").build())
+        every {
+            client.sendEmail(capture(request))
+        } returns completableFutureOf(sendEmailResponseOf("message-1"))
+
         return SesClientFixture(client, request)
     }
 
@@ -300,6 +348,10 @@ class SesKtorTemplateTest {
 
     private class SesClientFixture(
         val client: SesV2AsyncClient,
-        val request: io.mockk.CapturingSlot<SendEmailRequest>,
+        val request: CapturingSlot<SendEmailRequest>,
     )
+
+
+    fun sendEmailResponseOf(messageId: String): SendEmailResponse =
+        SendEmailResponse.builder().messageId(messageId).build()
 }

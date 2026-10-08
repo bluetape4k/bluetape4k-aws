@@ -5,16 +5,18 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorStsAsyncClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.mockk.clearMocks
-import io.mockk.mockk
-import io.mockk.verify
+import io.bluetape4k.logging.KLogging
 import io.ktor.http.Url
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
+import io.mockk.clearMocks
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -22,6 +24,8 @@ import software.amazon.awssdk.services.sts.StsAsyncClient
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StsKtorPluginTest {
+
+    companion object: KLogging()
 
     private val client = mockk<StsAsyncClient>(relaxed = true)
     private val operations = mockk<StsKtorOperations>(relaxed = true)
@@ -68,10 +72,10 @@ class StsKtorPluginTest {
 
     @Test
     fun `injected client remains application owned`() = runSuspendIO {
-        val runtime = StsKtorPluginConfig().apply {
-            stsAsyncClient = client
-        }.toRuntime()
-        requireNotNull(runtime)
+        val runtime = StsKtorPluginConfig()
+            .apply { stsAsyncClient = client }
+            .toRuntime()
+            .shouldNotBeNull()
 
         runtime.stop()
 
@@ -94,18 +98,20 @@ class StsKtorPluginTest {
     @Test
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
-        val runtime = StsKtorPluginConfig().apply {
-            stsAsyncClient { order += "service" }
-        }.toRuntime(
-            AwsKtorDefaults(
-                region = "ap-northeast-2",
-                endpointOverride = Url("http://localhost:4566"),
-                stsAsyncClientCustomizers = listOf(
-                    AwsKtorStsAsyncClientCustomizer { order += "shared" }
-                ),
+        val runtime = StsKtorPluginConfig()
+            .apply {
+                stsAsyncClient { order += "service" }
+            }
+            .toRuntime(
+                AwsKtorDefaults(
+                    region = "ap-northeast-2",
+                    endpointOverride = Url("http://localhost:4566"),
+                    stsAsyncClientCustomizers = listOf(
+                        AwsKtorStsAsyncClientCustomizer { order += "shared" }
+                    ),
+                )
             )
-        )
-        requireNotNull(runtime)
+            .shouldNotBeNull()
 
         order shouldBeEqualTo listOf("shared", "service")
 

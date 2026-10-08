@@ -11,8 +11,8 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemMapper
 import io.bluetape4k.aws.kotlin.dynamodb.DynamoItemReader
 import io.bluetape4k.aws.kotlin.dynamodb.deleteTableIfExists
@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.io.Serializable
-import java.util.UUID
+import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbKtorRuntimeLocalStackTest {

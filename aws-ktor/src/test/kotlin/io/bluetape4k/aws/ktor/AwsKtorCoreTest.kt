@@ -3,6 +3,8 @@ package io.bluetape4k.aws.ktor
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.ktor.testing.shouldHaveStatus
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
@@ -16,6 +18,8 @@ import java.time.Instant
 import java.time.ZoneOffset
 
 class AwsKtorCoreTest {
+
+    companion object: KLogging()
 
     @Test
     fun `application stores shared AWS defaults`() = testApplication {
@@ -32,7 +36,10 @@ class AwsKtorCoreTest {
         }
 
         startApplication()
+
         val defaults = application.awsKtorDefaults()
+
+        log.debug { "defaults=$defaults" }
         defaults.region shouldBeEqualTo "ap-northeast-2"
         defaults.endpointOverride.toString() shouldBeEqualTo "http://localhost:4566"
         defaults.javaCredentialsProvider shouldBeSameInstanceAs javaCredentials

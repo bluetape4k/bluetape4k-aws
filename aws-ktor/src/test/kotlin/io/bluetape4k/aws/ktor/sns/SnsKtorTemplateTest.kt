@@ -4,12 +4,19 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.concurrent.failedCompletableFutureOf
+import io.bluetape4k.coroutines.support.log
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sns.SnsAsyncClient
@@ -28,11 +35,21 @@ import java.util.function.Consumer
 
 class SnsKtorTemplateTest {
 
+    companion object: KLoggingChannel()
+
+    private val client = mockk<SnsAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
     fun `findTopicArn scans paged topics`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val listRequests = mutableListOf<ListTopicsRequest>()
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             val builder = ListTopicsRequest.builder()
             firstArg<Consumer<ListTopicsRequest.Builder>>().accept(builder)
             listRequests += builder.build()
@@ -46,7 +63,7 @@ class SnsKtorTemplateTest {
                     .topics(Topic.builder().topicArn("arn:aws:sns:us-east-1:000000000000:orders").build())
                     .build()
             }
-            CompletableFuture.completedFuture(response)
+            completableFutureOf(response)
         }
 
         template(client).findTopicArn("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
@@ -55,11 +72,12 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `publish maps topic request`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         lateinit var capturedConsumer: Consumer<PublishRequest.Builder>
-        every { client.publish(any<Consumer<PublishRequest.Builder>>()) } answers {
+        every {
+            client.publish(any<Consumer<PublishRequest.Builder>>())
+        } answers {
             capturedConsumer = firstArg()
-            CompletableFuture.completedFuture(PublishResponse.builder().messageId("message-1").build())
+            completableFutureOf(PublishResponse.builder().messageId("message-1").build())
         }
 
         val result = template(client).publish(
@@ -69,12 +87,14 @@ class SnsKtorTemplateTest {
                 message = "order-json",
             )
         )
+        log.debug { "result=$result" }
+        result.messageId() shouldBeEqualTo "message-1"
 
         val requestBuilder = PublishRequest.builder()
         capturedConsumer.accept(requestBuilder)
-        val request = requestBuilder.build()
 
-        result.messageId() shouldBeEqualTo "message-1"
+        val request = requestBuilder.build()
+        log.debug { "request=$request" }
         request.topicArn() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
         request.subject() shouldBeEqualTo "Order accepted"
         request.message() shouldBeEqualTo "order-json"
@@ -82,11 +102,12 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `publishSms maps phone number and explicit SMS attributes`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         lateinit var capturedConsumer: Consumer<PublishRequest.Builder>
-        every { client.publish(any<Consumer<PublishRequest.Builder>>()) } answers {
+        every {
+            client.publish(any<Consumer<PublishRequest.Builder>>())
+        } answers {
             capturedConsumer = firstArg()
-            CompletableFuture.completedFuture(PublishResponse.builder().messageId("sms-1").build())
+            completableFutureOf(PublishResponse.builder().messageId("sms-1").build())
         }
 
         val result = template(client).publishSms(
@@ -105,11 +126,15 @@ class SnsKtorTemplateTest {
             )
         )
 
+        log.debug { "result=$result" }
+        result.messageId() shouldBeEqualTo "sms-1"
+
         val requestBuilder = PublishRequest.builder()
         capturedConsumer.accept(requestBuilder)
+
         val request = requestBuilder.build()
 
-        result.messageId() shouldBeEqualTo "sms-1"
+        log.debug { "request=$request" }
         request.topicArn().shouldBeNull()
         request.phoneNumber() shouldBeEqualTo "+15550100000"
         request.messageAttributes().asStrings() shouldBeEqualTo mapOf(
@@ -122,15 +147,17 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `confirmSubscription maps explicit token and trusted message`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val requests = mutableListOf<ConfirmSubscriptionRequest>()
-        every { client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>()) } answers {
+        every {
+            client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
+        } answers {
             val builder = ConfirmSubscriptionRequest.builder()
             firstArg<Consumer<ConfirmSubscriptionRequest.Builder>>().accept(builder)
             requests += builder.build()
-            CompletableFuture.completedFuture(ConfirmSubscriptionResponse.builder().subscriptionArn("sub").build())
+            completableFutureOf(ConfirmSubscriptionResponse.builder().subscriptionArn("sub").build())
         }
-        val message = TrustedSnsHttpMessage.fromVerified(SnsHttpMessageParser.default().parse(subscriptionConfirmationJson))
+        val message =
+            TrustedSnsHttpMessage.fromVerified(SnsHttpMessageParser.default().parse(subscriptionConfirmationJson))
 
         template(client).confirmSubscription(
             topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
@@ -139,9 +166,11 @@ class SnsKtorTemplateTest {
         )
         template(client).confirmSubscription(message)
 
+        requests.forEachIndexed { idx, request -> log.debug { "request[$idx]=$request" } }
         requests[0].authenticateOnUnsubscribe() shouldBeEqualTo "false"
         requests[1].topicArn() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
         requests[1].token() shouldBeEqualTo "token-1"
+
         verify(exactly = 2) {
             client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
         }
@@ -150,7 +179,11 @@ class SnsKtorTemplateTest {
     @Test
     fun `request constraints reject invalid topic and SMS shapes`() {
         assertFailsWith<IllegalArgumentException> {
-            SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:000000000000:standard", message = "m", messageGroupId = "g")
+            SnsPublishRequest(
+                topicArn = "arn:aws:sns:us-east-1:000000000000:standard",
+                message = "m",
+                messageGroupId = "g"
+            )
         }
         assertFailsWith<IllegalArgumentException> {
             SnsPublishRequest(topicArn = "arn:aws:sns:us-east-1:000000000000:orders.fifo", message = "m")
@@ -162,9 +195,9 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `publish cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val future = CompletableFuture<PublishResponse>()
         every { client.publish(any<Consumer<PublishRequest.Builder>>()) } returns future
+
         val job = launch {
             template(client).publish(
                 SnsPublishRequest(
@@ -172,7 +205,8 @@ class SnsKtorTemplateTest {
                     message = "order",
                 )
             )
-        }
+        }.log("Template")
+
         runCurrent()
 
         job.cancel()
@@ -182,12 +216,13 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `createTopic cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val future = CompletableFuture<CreateTopicResponse>()
         every { client.createTopic(any<Consumer<CreateTopicRequest.Builder>>()) } returns future
+
         val job = launch {
             template(client).createTopic("orders")
-        }
+        }.log("Template")
+
         runCurrent()
 
         job.cancel()
@@ -197,12 +232,13 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `createFifoTopic cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val future = CompletableFuture<CreateTopicResponse>()
         every { client.createTopic(any<Consumer<CreateTopicRequest.Builder>>()) } returns future
+
         val job = launch {
             template(client).createFifoTopic("orders.fifo")
-        }
+        }.log("Template")
+
         runCurrent()
 
         job.cancel()
@@ -212,12 +248,13 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `findTopicArn cancels paged listing when coroutine is cancelled`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val future = CompletableFuture<ListTopicsResponse>()
         every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns future
+
         val job = launch {
             template(client).findTopicArn("orders")
-        }
+        }.log("Template")
+
         runCurrent()
 
         job.cancel()
@@ -227,12 +264,13 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `publishSms cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val future = CompletableFuture<PublishResponse>()
         every { client.publish(any<Consumer<PublishRequest.Builder>>()) } returns future
+
         val job = launch {
             template(client).publishSms(SnsSmsRequest(phoneNumber = "+15550100000", message = "sms"))
-        }
+        }.log("Template")
+
         runCurrent()
 
         job.cancel()
@@ -242,15 +280,18 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `confirmSubscription cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val future = CompletableFuture<ConfirmSubscriptionResponse>()
-        every { client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>()) } returns future
+        every {
+            client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
+        } returns future
+
         val job = launch {
             template(client).confirmSubscription(
                 topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
                 token = "token-1",
             )
-        }
+        }.log("Template")
+
         runCurrent()
 
         job.cancel()
@@ -260,9 +301,10 @@ class SnsKtorTemplateTest {
 
     @Test
     fun `failed SNS future preserves original exception`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val failure = SdkClientException.create("boom")
-        every { client.publish(any<Consumer<PublishRequest.Builder>>()) } returns CompletableFuture.failedFuture(failure)
+        every {
+            client.publish(any<Consumer<PublishRequest.Builder>>())
+        } returns failedCompletableFutureOf(failure)
 
         val error = assertFailsWith<SdkClientException> {
             template(client).publish(

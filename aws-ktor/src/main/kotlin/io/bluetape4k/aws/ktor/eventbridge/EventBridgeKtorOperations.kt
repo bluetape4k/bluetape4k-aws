@@ -115,5 +115,6 @@ interface EventBridgeKtorOperations {
     ): CompletableFuture<ListTargetsByRuleResponse>
 
     suspend fun putEvents(entries: List<PutEventsRequestEntry>): PutEventsResponse
+
     fun putEventsAsync(entries: List<PutEventsRequestEntry>): CompletableFuture<PutEventsResponse>
 }

@@ -1,10 +1,12 @@
 package io.bluetape4k.aws.ktor.ses
 
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.support.hashOf
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sesv2.model.AttachmentContentDisposition
 import software.amazon.awssdk.services.sesv2.model.AttachmentContentTransferEncoding
 import java.io.Serializable
 import java.nio.charset.Charset
-import java.util.Arrays
 
 /** Ktor 값 객체가 허용하는 최대 SES v2 메시지 크기입니다. */
 const val MAX_SES_MESSAGE_BYTES: Int = 40 * 1024 * 1024
@@ -52,7 +54,7 @@ data class SesEmailBody(
         require(!text.isNullOrBlank() || !html.isNullOrBlank()) {
             "text or html body must not be blank."
         }
-        require(charset.isNotBlank()) { "charset must not be blank." }
+        charset.requireNotBlank("charset")
         require(Charset.isSupported(charset)) { "charset '$charset' is not supported." }
     }
 
@@ -97,30 +99,40 @@ class SesEmailAttachment(
         contentId?.requireEmailHeaderValue("contentId")
     }
 
-    override fun equals(other: Any?): Boolean =
-        this === other ||
-            other is SesEmailAttachment &&
-            fileName == other.fileName &&
-            contentValue.contentEquals(other.contentValue) &&
-            contentType == other.contentType &&
-            contentDisposition == other.contentDisposition &&
-            contentTransferEncoding == other.contentTransferEncoding &&
-            contentDescription == other.contentDescription &&
-            contentId == other.contentId
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (this === other) return true
 
-    override fun hashCode(): Int {
-        var result = fileName.hashCode()
-        result = 31 * result + Arrays.hashCode(contentValue)
-        result = 31 * result + contentType.hashCode()
-        result = 31 * result + contentDisposition.hashCode()
-        result = 31 * result + contentTransferEncoding.hashCode()
-        result = 31 * result + (contentDescription?.hashCode() ?: 0)
-        result = 31 * result + (contentId?.hashCode() ?: 0)
-        return result
+        return other is SesEmailAttachment &&
+                fileName == other.fileName &&
+                contentValue.contentEquals(other.contentValue) &&
+                contentType == other.contentType &&
+                contentDisposition == other.contentDisposition &&
+                contentTransferEncoding == other.contentTransferEncoding &&
+                contentDescription == other.contentDescription &&
+                contentId == other.contentId
     }
 
+    override fun hashCode(): Int = hashOf(
+        fileName,
+        content.contentHashCode(),
+        contentType,
+        contentDisposition,
+        contentTransferEncoding,
+        contentDescription,
+        contentId
+    )
+
     override fun toString(): String =
-        "SesEmailAttachment(fileName=$fileName, contentSize=${contentValue.size}, contentType=$contentType)"
+        ToStringBuilder(this)
+            .add("fileName", fileName)
+            .add("contentSize", contentValue.size)
+            .add("contentType", contentType)
+            .add("contentDisposition", contentDisposition)
+            .add("contentTransferEncoding", contentTransferEncoding)
+            .add("cntentDescription", contentDescription)
+            .add("contentId", contentId)
+            .toString()
 
     companion object {
         private const val serialVersionUID: Long = 175054541493604665L
@@ -185,12 +197,12 @@ data class SesTemplateEmailRequest(
         require((templateName.isNullOrBlank()) xor (templateArn.isNullOrBlank())) {
             "exactly one of templateName or templateArn is required."
         }
-        templateName?.let { require(it.isNotBlank()) { "templateName must not be blank." } }
-        templateArn?.let { require(it.isNotBlank()) { "templateArn must not be blank." } }
-        templateData?.let { require(it.isNotBlank()) { "templateData must not be blank when provided." } }
+        templateName?.requireNotBlank("templateName")
+        templateArn?.requireNotBlank("templateArn")
+        templateData?.requireNotBlank("templateData")
         from?.requireEmailHeaderValue("from")
         replyTo.forEach { it.requireEmailHeaderValue("replyTo") }
-        configurationSetName?.let { require(it.isNotBlank()) { "configurationSetName must not be blank." } }
+        configurationSetName?.requireNotBlank("configurationSetName")
         headers.requireValidSesHeaders()
         require(totalMessageBytes() <= MAX_SES_MESSAGE_BYTES.toLong()) {
             "email content exceeds SES 40 MB limit."
@@ -230,27 +242,28 @@ class SesRawEmailRequest(
         require(rawContent.isNotEmpty()) { "rawContent must not be empty." }
         require(rawContent.size <= MAX_SES_MESSAGE_BYTES) { "rawContent exceeds SES 40 MB limit." }
         from?.requireEmailHeaderValue("from")
-        configurationSetName?.let { require(it.isNotBlank()) { "configurationSetName must not be blank." } }
+        configurationSetName?.requireNotBlank("configurationSetName")
     }
 
-    override fun equals(other: Any?): Boolean =
-        this === other ||
-            other is SesRawEmailRequest &&
-            rawContentValue.contentEquals(other.rawContentValue) &&
-            from == other.from &&
-            destination == other.destination &&
-            configurationSetName == other.configurationSetName
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (this === other) return true
 
-    override fun hashCode(): Int {
-        var result = Arrays.hashCode(rawContentValue)
-        result = 31 * result + (from?.hashCode() ?: 0)
-        result = 31 * result + (destination?.hashCode() ?: 0)
-        result = 31 * result + (configurationSetName?.hashCode() ?: 0)
-        return result
+        return other is SesRawEmailRequest &&
+                rawContentValue.contentEquals(other.rawContentValue) &&
+                from == other.from &&
+                destination == other.destination &&
+                configurationSetName == other.configurationSetName
     }
+
+    override fun hashCode(): Int = hashOf(rawContentValue, from, destination, configurationSetName)
 
     override fun toString(): String =
-        "SesRawEmailRequest(rawContentSize=${rawContentValue.size}, hasFrom=${from != null}, hasDestination=${destination != null})"
+        ToStringBuilder(this)
+            .add("rawContentSize", rawContentValue.size)
+            .add("hasFrom", from != null)
+            .add("hasDestination", destination != null)
+            .toString()
 
     companion object {
         private const val serialVersionUID: Long = 2823247628984838144L
@@ -259,7 +272,7 @@ class SesRawEmailRequest(
 
 internal fun String.requireEmailHeaderValue(name: String): String =
     also {
-        require(it.isNotBlank()) { "$name must not be blank." }
+        requireNotBlank(name)
         require(!it.contains('\r') && !it.contains('\n') && !it.contains('\u0000')) {
             "$name must not contain CR, LF, or NUL characters."
         }
@@ -277,23 +290,23 @@ internal fun Map<String, String>.requireValidSesHeaders() {
 
 private fun SesEmailRequest.totalMessageBytes(): Long =
     subject.encodedSize(body.charset) +
-        body.text.encodedSizeOrZero(body.charset) +
-        body.html.encodedSizeOrZero(body.charset) +
-        from.encodedSizeOrZero() +
-        replyTo.sumOf { it.encodedSize() } +
-        configurationSetName.encodedSizeOrZero() +
-        headers.entries.sumOf { it.key.encodedSize() + it.value.encodedSize() } +
-        totalAttachmentBytes(attachments)
+            body.text.encodedSizeOrZero(body.charset) +
+            body.html.encodedSizeOrZero(body.charset) +
+            from.encodedSizeOrZero() +
+            replyTo.sumOf { it.encodedSize() } +
+            configurationSetName.encodedSizeOrZero() +
+            headers.entries.sumOf { it.key.encodedSize() + it.value.encodedSize() } +
+            totalAttachmentBytes(attachments)
 
 private fun SesTemplateEmailRequest.totalMessageBytes(): Long =
     templateName.encodedSizeOrZero() +
-        templateArn.encodedSizeOrZero() +
-        templateData.encodedSizeOrZero() +
-        from.encodedSizeOrZero() +
-        replyTo.sumOf { it.encodedSize() } +
-        configurationSetName.encodedSizeOrZero() +
-        headers.entries.sumOf { it.key.encodedSize() + it.value.encodedSize() } +
-        totalAttachmentBytes(attachments)
+            templateArn.encodedSizeOrZero() +
+            templateData.encodedSizeOrZero() +
+            from.encodedSizeOrZero() +
+            replyTo.sumOf { it.encodedSize() } +
+            configurationSetName.encodedSizeOrZero() +
+            headers.entries.sumOf { it.key.encodedSize() + it.value.encodedSize() } +
+            totalAttachmentBytes(attachments)
 
 private fun totalAttachmentBytes(attachments: List<SesEmailAttachment>): Long =
     attachments.sumOf { it.contentForSdk.size.toLong() }

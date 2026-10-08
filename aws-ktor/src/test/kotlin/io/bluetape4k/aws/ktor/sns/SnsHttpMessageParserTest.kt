@@ -4,10 +4,14 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.net.URI
 
 class SnsHttpMessageParserTest {
+
+    companion object: KLogging()
 
     private val parser = SnsHttpMessageParser.default()
 
@@ -18,12 +22,12 @@ class SnsHttpMessageParserTest {
             messageTypeHeader = "SubscriptionConfirmation",
         )
 
+        log.debug { "message=$message" }
         message.type shouldBeEqualTo SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION
         message.messageId shouldBeEqualTo "165545c9-2a5c-472c-8df2-7ff2be2b3b1b"
         message.topicArn shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
         message.token shouldBeEqualTo "token-1"
-        message.subscribeUrl shouldBeEqualTo
-            URI.create("https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription&Token=token-1")
+        message.subscribeUrl shouldBeEqualTo URI.create("https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription&Token=token-1")
         message.unsubscribeUrl.shouldBeNull()
         message.canConfirmSubscription.shouldBeTrue()
     }
@@ -35,11 +39,11 @@ class SnsHttpMessageParserTest {
             messageTypeHeader = "Notification",
         )
 
+        log.debug { "message=$message" }
         message.type shouldBeEqualTo SnsHttpMessageType.NOTIFICATION
         message.subject shouldBeEqualTo "Order created"
         message.message shouldBeEqualTo """{"orderId":"order-1"}"""
-        message.unsubscribeUrl shouldBeEqualTo
-            URI.create("https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=sub-1")
+        message.unsubscribeUrl shouldBeEqualTo URI.create("https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=sub-1")
         message.token.shouldBeNull()
     }
 
@@ -52,8 +56,9 @@ class SnsHttpMessageParserTest {
             )
         }
 
-        error.message.orEmpty() shouldBeEqualTo
-            "x-amz-sns-message-type 'SubscriptionConfirmation' does not match JSON Type 'Notification'."
+        log.debug { "error=$error" }
+        error.message shouldBeEqualTo
+                "x-amz-sns-message-type 'SubscriptionConfirmation' does not match JSON Type 'Notification'."
     }
 
     @Test
@@ -62,7 +67,12 @@ class SnsHttpMessageParserTest {
             parser.parse(subscriptionConfirmationJson.replace("""  "Token" : "token-1",""", ""))
         }
         assertFailsWith<IllegalArgumentException> {
-            parser.parse(notificationJson.replace(""""MessageId" : "22b80b92-fdea-4c2c-8f9d-bdfb0c7bf324"""", """"MessageId" : 1"""))
+            parser.parse(
+                notificationJson.replace(
+                    """"MessageId" : "22b80b92-fdea-4c2c-8f9d-bdfb0c7bf324"""",
+                    """"MessageId" : 1"""
+                )
+            )
         }
     }
 
@@ -97,7 +107,12 @@ class SnsHttpMessageParserTest {
             SnsHttpMessageParser(maxMessageBytes = 8).parse(notificationJson)
         }
         assertFailsWith<Exception> {
-            parser.parse(notificationJson.replaceFirst(""""Type" : "Notification",""", """"Type" : "Notification", "Type" : "Notification","""))
+            parser.parse(
+                notificationJson.replaceFirst(
+                    """"Type" : "Notification",""",
+                    """"Type" : "Notification", "Type" : "Notification","""
+                )
+            )
         }
     }
 }

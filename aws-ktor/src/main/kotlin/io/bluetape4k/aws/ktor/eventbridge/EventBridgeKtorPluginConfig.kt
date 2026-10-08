@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.eventbridge
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorEventBridgeAsyncClientCustomizer
 import io.bluetape4k.support.requireNotBlank
@@ -85,5 +86,17 @@ class EventBridgeKtorPluginConfig {
         clientCustomizers.forEach { it.customize(builder) }
 
         return builder.build()
+    }
+
+    override fun toString(): String {
+        return ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("eventBridgeAsyncClient", eventBridgeAsyncClient)
+            .add("eventBridgeOperations", eventBridgeOperations)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .add("defaultEventBusName", defaultEventBusName)
+            .toString()
     }
 }

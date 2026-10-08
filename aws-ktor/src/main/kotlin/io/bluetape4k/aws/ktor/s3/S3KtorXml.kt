@@ -1,7 +1,8 @@
 package io.bluetape4k.aws.ktor.s3
 
+import io.bluetape4k.io.toInputStream
+import io.bluetape4k.support.toUtf8Bytes
 import org.w3c.dom.Element
-import java.io.ByteArrayInputStream
 import java.io.Serializable
 import java.time.Instant
 import javax.xml.XMLConstants
@@ -93,7 +94,7 @@ internal object S3KtorXml {
 
         return factory
             .newDocumentBuilder()
-            .parse(ByteArrayInputStream(xml.toByteArray(Charsets.UTF_8)))
+            .parse(xml.toUtf8Bytes().toInputStream())
             .documentElement
     }
 
@@ -106,7 +107,7 @@ internal object S3KtorXml {
     private fun Element.children(name: String): List<Element> {
         val nodes = getElementsByTagName(name)
         return buildList {
-            for (index in 0 until nodes.length) {
+            repeat(nodes.length) { index ->
                 (nodes.item(index) as? Element)?.let(::add)
             }
         }

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.exposed
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import kotlinx.atomicfu.atomic
@@ -51,4 +52,13 @@ class AwsExposedDatabaseHandle(
             throw it
         }
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("name", name)
+            .add("properties", properties)
+            .add("dataSource", dataSource)
+            .add("database", database)
+            .add("closed", closed.value)
+            .toString()
 }

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorCloudWatchLogsAsyncClientCustomizer
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -138,5 +139,23 @@ class CloudWatchLogsKtorPluginConfig {
         clientCustomizers.forEach { it.customize(builder) }
 
         return builder.build()
+    }
+
+    override fun toString(): String {
+        return ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("cloudWatchLogsAsyncClient", cloudWatchLogsAsyncClient)
+            .add("cloudWatchLogsOperations", cloudWatchLogsOperations)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("logGroupName", logGroupName)
+            .add("logStreamName", logStreamName)
+            .add("batchSize", batchSize)
+            .add("flushInterval", flushInterval)
+            .add("shutdownFlushTimeout", shutdownFlushTimeout)
+            .add("shutdownPolicy", shutdownPolicy)
+            .add("createLogGroupOnStart", createLogGroupOnStart)
+            .add("createLogStreamOnStart", createLogStreamOnStart)
+            .toString()
     }
 }

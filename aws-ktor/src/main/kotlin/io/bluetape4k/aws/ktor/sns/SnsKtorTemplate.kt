@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor.sns
 
 import io.bluetape4k.aws.sns.createFIFOTopic
 import io.bluetape4k.aws.sns.createTopic
+import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
@@ -70,13 +71,17 @@ class SnsKtorTemplate(
         val suffix = ":$topicName"
         var nextToken: String? = null
         do {
-            val response = snsAsyncClient.listTopics {
-                nextToken?.let(it::nextToken)
-            }.await()
+            val response = snsAsyncClient
+                .listTopics {
+                    nextToken?.let(it::nextToken)
+                }
+                .await()
+
             response.topics().orEmpty()
                 .mapNotNull { it.topicArn() }
                 .firstOrNull { it.endsWith(suffix) }
                 ?.let { return it }
+
             nextToken = response.nextToken()
         } while (!nextToken.isNullOrBlank())
 
@@ -84,26 +89,30 @@ class SnsKtorTemplate(
     }
 
     override suspend fun publish(request: SnsPublishRequest): PublishResponse =
-        snsAsyncClient.publish {
-            it.topicArn(request.topicArn)
-            it.message(request.message)
-            request.subject?.let(it::subject)
-            if (request.messageAttributes.isNotEmpty()) {
-                it.messageAttributes(request.messageAttributes)
+        snsAsyncClient
+            .publish {
+                it.topicArn(request.topicArn)
+                it.message(request.message)
+                request.subject?.let(it::subject)
+                if (request.messageAttributes.isNotEmpty()) {
+                    it.messageAttributes(request.messageAttributes)
+                }
+                request.messageGroupId?.let(it::messageGroupId)
+                request.messageDeduplicationId?.let(it::messageDeduplicationId)
             }
-            request.messageGroupId?.let(it::messageGroupId)
-            request.messageDeduplicationId?.let(it::messageDeduplicationId)
-        }.await()
+            .await()
 
     override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
-        snsAsyncClient.publish {
-            it.phoneNumber(request.phoneNumber)
-            it.message(request.message)
-            val attributes = request.toMessageAttributes()
-            if (attributes.isNotEmpty()) {
-                it.messageAttributes(attributes)
+        snsAsyncClient
+            .publish {
+                it.phoneNumber(request.phoneNumber)
+                it.message(request.message)
+                val attributes = request.toMessageAttributes()
+                if (attributes.isNotEmpty()) {
+                    it.messageAttributes(attributes)
+                }
             }
-        }.await()
+            .await()
 
     override suspend fun confirmSubscription(
         topicArn: String,
@@ -111,13 +120,15 @@ class SnsKtorTemplate(
         authenticateOnUnsubscribe: Boolean,
     ): ConfirmSubscriptionResponse {
         topicArn.requireTopicArn()
-        require(token.isNotBlank()) { "token must not be blank." }
+        token.requireNotBlank("token")
 
-        return snsAsyncClient.confirmSubscription {
-            it.topicArn(topicArn)
-            it.token(token)
-            it.authenticateOnUnsubscribe(authenticateOnUnsubscribe.toString())
-        }.await()
+        return snsAsyncClient
+            .confirmSubscription {
+                it.topicArn(topicArn)
+                it.token(token)
+                it.authenticateOnUnsubscribe(authenticateOnUnsubscribe.toString())
+            }
+            .await()
     }
 
     override suspend fun confirmSubscription(

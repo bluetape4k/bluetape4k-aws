@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.ktor.ses
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSesV2AsyncClientCustomizer
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
@@ -58,7 +60,7 @@ class SesKtorPluginConfig {
         sesOperations?.let { return SesKtorRuntime(it) }
 
         defaultFrom?.requireEmailHeaderValue("defaultFrom")
-        configurationSetName?.let { require(it.isNotBlank()) { "configurationSetName must not be blank." } }
+        configurationSetName?.requireNotBlank("configurationSetName")
 
         val injectedClient = sesV2AsyncClient
         val client = injectedClient ?: createSesV2AsyncClient(defaults)
@@ -90,4 +92,16 @@ class SesKtorPluginConfig {
 
         return builder.build()
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("sesV2AsyncClient", sesV2AsyncClient)
+            .add("sesOperations", sesOperations)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .add("defaultFrom", defaultFrom)
+            .add("configurationSetName", configurationSetName)
+            .toString()
 }

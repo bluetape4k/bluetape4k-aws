@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorCloudWatchAsyncClientCustomizer
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -82,5 +83,18 @@ class CloudWatchKtorPluginConfig {
         clientCustomizers.forEach { it.customize(builder) }
 
         return builder.build()
+    }
+
+    override fun toString(): String {
+        return ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("cloudWatchAsyncClient", cloudWatchAsyncClient)
+            .add("cloudWatchOperations", clientCustomizers)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .add("namespace", namespace)
+            .add("batchSize", batchSize)
+            .toString()
     }
 }

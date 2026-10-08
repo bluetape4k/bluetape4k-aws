@@ -4,9 +4,14 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -17,23 +22,35 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeAdvancedTest {
 
+    companion object: KLoggingChannel()
+
+    private val client = mockk<SqsAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
     fun `conversion failure delete policy acknowledges source message`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>()
+
         val deleteCalls = AtomicInteger()
         val handlerCalls = AtomicInteger()
         val message = message("message-1", "receipt-1", "not-json")
 
         stubReceives(client, message)
-        every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } answers {
+        every {
+            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
+        } answers {
             deleteCalls.incrementAndGet()
             completed(mockk())
         }
@@ -49,7 +66,7 @@ class SqsConsumerRuntimeAdvancedTest {
         try {
             runtime.start()
 
-            await.atMost(Duration.ofSeconds(5)).untilAsserted {
+            await atMost 5.seconds untilAsserted {
                 deleteCalls.get() shouldBeEqualTo 1
                 handlerCalls.get() shouldBeEqualTo 0
             }
@@ -60,18 +77,23 @@ class SqsConsumerRuntimeAdvancedTest {
 
     @Test
     fun `manual nack and ack APIs call visibility and delete once`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>()
-        val visibilityTimeouts = CopyOnWriteArrayList<Int>()
+        val visibilityTimeouts = ConcurrentLinkedQueue<Int>()
         val deleteCalls = AtomicInteger()
         val message = message("message-1", "receipt-1", "manual")
 
         stubReceives(client, message)
-        every { client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>()) } answers {
-            val request = ChangeMessageVisibilityRequest.builder().also(firstArg<Consumer<ChangeMessageVisibilityRequest.Builder>>()::accept).build()
+
+        every {
+            client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>())
+        } answers {
+            val request = ChangeMessageVisibilityRequest.builder()
+                .also(firstArg<Consumer<ChangeMessageVisibilityRequest.Builder>>()::accept).build()
             visibilityTimeouts += request.visibilityTimeout()
             completed(mockk())
         }
-        every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } answers {
+        every {
+            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
+        } answers {
             deleteCalls.incrementAndGet()
             completed(mockk())
         }
@@ -88,8 +110,8 @@ class SqsConsumerRuntimeAdvancedTest {
         try {
             runtime.start()
 
-            await.atMost(Duration.ofSeconds(5)).untilAsserted {
-                visibilityTimeouts shouldBeEqualTo listOf(0)
+            await atMost 5.seconds untilAsserted {
+                visibilityTimeouts.toList() shouldBeEqualTo listOf(0)
                 deleteCalls.get() shouldBeEqualTo 1
             }
         } finally {
@@ -99,12 +121,14 @@ class SqsConsumerRuntimeAdvancedTest {
 
     @Test
     fun `interceptors preserve receive invoke and auto ack ordering`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>()
-        val events = CopyOnWriteArrayList<String>()
+        val events = ConcurrentLinkedQueue<String>()
         val message = message("message-1", "receipt-1", "ordered")
 
         stubReceives(client, message)
-        every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } returns completed(mockk())
+
+        every {
+            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
+        } returns completed(mockk())
 
         val runtime = runtime(
             client = client,
@@ -142,11 +166,11 @@ class SqsConsumerRuntimeAdvancedTest {
         try {
             runtime.start()
 
-            await.atMost(Duration.ofSeconds(5)).untilAsserted {
+            await atMost 5.seconds untilAsserted {
                 events.contains("afterAck").shouldBeTrue()
             }
             events.filter { it != "beforeReceive" }.take(5) shouldBeEqualTo
-                listOf("afterReceive", "beforeInvoke", "handler", "afterInvoke", "beforeAck")
+                    listOf("afterReceive", "beforeInvoke", "handler", "afterInvoke", "beforeAck")
             events shouldContain "afterAck"
         } finally {
             runtime.stop()
@@ -155,14 +179,17 @@ class SqsConsumerRuntimeAdvancedTest {
 
     @Test
     fun `failure visibility strategy and observers record handler failure`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>()
-        val visibilityTimeouts = CopyOnWriteArrayList<Int>()
-        val observations = CopyOnWriteArrayList<SqsConsumerObservation>()
+        val visibilityTimeouts = ConcurrentLinkedQueue<Int>()
+        val observations = ConcurrentLinkedQueue<SqsConsumerObservation>()
         val message = message("message-1", "receipt-1", "fail")
 
         stubReceives(client, message)
-        every { client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>()) } answers {
-            val request = ChangeMessageVisibilityRequest.builder().also(firstArg<Consumer<ChangeMessageVisibilityRequest.Builder>>()::accept).build()
+
+        every {
+            client.changeMessageVisibility(any<Consumer<ChangeMessageVisibilityRequest.Builder>>())
+        } answers {
+            val request = ChangeMessageVisibilityRequest.builder()
+                .also(firstArg<Consumer<ChangeMessageVisibilityRequest.Builder>>()::accept).build()
             visibilityTimeouts += request.visibilityTimeout()
             completed(mockk())
         }
@@ -178,8 +205,8 @@ class SqsConsumerRuntimeAdvancedTest {
         try {
             runtime.start()
 
-            await.atMost(Duration.ofSeconds(5)).untilAsserted {
-                visibilityTimeouts shouldBeEqualTo listOf(7)
+            await atMost 5.seconds untilAsserted {
+                visibilityTimeouts.toList() shouldBeEqualTo listOf(7)
                 observations.map { it.operation } shouldContain KtorSqsObservationOperations.INVOKE
             }
             observations
@@ -221,7 +248,9 @@ class SqsConsumerRuntimeAdvancedTest {
 
     private fun stubReceives(client: SqsAsyncClient, firstMessage: Message) {
         val receiveCalls = AtomicInteger()
-        every { client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>()) } answers {
+        every {
+            client.receiveMessage(any<Consumer<ReceiveMessageRequest.Builder>>())
+        } answers {
             val messages = if (receiveCalls.incrementAndGet() == 1) listOf(firstMessage) else emptyList()
             completed(ReceiveMessageResponse.builder().messages(messages).build())
         }

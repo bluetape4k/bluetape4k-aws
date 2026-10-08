@@ -1,6 +1,9 @@
 package io.bluetape4k.aws.ktor.imds
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.http.SdkAsyncHttpClientProvider
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireZeroOrPositiveNumber
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
@@ -36,10 +39,10 @@ class ImdsKtorPluginConfig {
     var endpointMode: EndpointMode? = EndpointMode.IPV4
 
     /** IMDSv2 토큰 TTL입니다. */
-    var tokenTtl: Duration = Duration.ofHours(6)
+    var tokenTtl: Duration = 6.hours()
 
     /** 각 메타데이터 작업에 적용하는 타임아웃입니다. */
-    var requestTimeout: Duration = Duration.ofSeconds(1)
+    var requestTimeout: Duration = 1.seconds()
 
     /** SDK 수준 IMDS 재시도 횟수입니다. 0이면 SDK 재시도를 비활성화합니다. */
     var retries: Int = 0
@@ -100,6 +103,20 @@ class ImdsKtorPluginConfig {
                 .numRetries(retries)
                 .build()
         }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("ec2MetadataAsyncClient", ec2MetadataAsyncClient)
+            .add("imdsOperations", imdsOperations)
+            .add("endpoint", endpoint)
+            .add("endpointMode", endpointMode)
+            .add("tokenTtl", tokenTtl)
+            .add("tokenTtl", tokenTtl)
+            .add("requestTimeout", requestTimeout)
+            .add("retries", retries)
+            .add("client", httpClient)
+            .toString()
 }
 
 /**

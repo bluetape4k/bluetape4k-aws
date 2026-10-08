@@ -3,7 +3,7 @@ package io.bluetape4k.aws.ktor.s3
 import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 import java.security.SecureRandom
-import java.util.Base64
+import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec

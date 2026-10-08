@@ -1,17 +1,18 @@
 package io.bluetape4k.aws.ktor.sqs
 
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requirePositiveNumber
-import java.io.Serializable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -32,13 +33,19 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
+import java.io.Serializable
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.math.roundToLong
 import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toKotlinDuration
 
 private const val MIN_MESSAGE_COUNT = 1
 private const val MAX_MESSAGE_COUNT = 10
@@ -109,7 +116,7 @@ internal class BackoffState(
     fun next(): Duration {
         val current = nextDelay
         val multipliedMillis = (nextDelay.toMillis() * policy.multiplier).roundToLong()
-        nextDelay = Duration.ofMillis(multipliedMillis.coerceAtMost(policy.maxDelay.toMillis()))
+        nextDelay = multipliedMillis.coerceAtMost(policy.maxDelay.toMillis()).millis()
         return current
     }
 }
@@ -123,7 +130,7 @@ internal class BackoffState(
 data class SqsConsumerRuntimeConfig(
     /** receive, delete, visibility 변경, send 요청에 사용할 AWS SDK v2 async SQS client입니다. */
     val sqsAsyncClient: SqsAsyncClient,
-    /** runtime이 [sqsAsyncClient]를 소유하며 [stop] 후 닫아야 하는지 나타냅니다. */
+    /** runtime이 [sqsAsyncClient]를 소유하며 `stop` 후 닫아야 하는지 나타냅니다. */
     val ownsClient: Boolean = false,
     /** 소비할 queue URL입니다. [queueName]과 동시에 설정할 수 없습니다. */
     val queueUrl: String? = null,
@@ -146,7 +153,7 @@ data class SqsConsumerRuntimeConfig(
     /** URL로 확인할 dead-letter queue name입니다. [deadLetterQueueUrl]과 동시에 설정할 수 없습니다. */
     val deadLetterQueueName: String? = null,
     /** shutdown 시 처리 중인 handler가 끝나기를 기다릴 최대 시간입니다. */
-    val shutdownTimeout: Duration = Duration.ofSeconds(30),
+    val shutdownTimeout: Duration = 30.seconds(),
     /** receive loop 실패 후 재시도 전 사용할 backoff 정책입니다. */
     val pollBackoff: SqsPollBackoff = SqsPollBackoff(),
     /** handler 실행 중 메시지 visibility를 주기적으로 연장할 heartbeat 간격 초 단위 값입니다. */
@@ -173,12 +180,8 @@ data class SqsConsumerRuntimeConfig(
         coroutines.requirePositiveNumber("coroutines")
         maxMessages.requireInRange(MIN_MESSAGE_COUNT, MAX_MESSAGE_COUNT, "maxMessages")
         waitTimeSeconds.requireInRange(MIN_WAIT_TIME_SECONDS, MAX_WAIT_TIME_SECONDS, "waitTimeSeconds")
-        visibilityTimeoutSeconds?.let {
-            it.requireInRange(1, MAX_VISIBILITY_SECONDS, "visibilityTimeoutSeconds")
-        }
-        failureVisibilityTimeoutSeconds?.let {
-            it.requireInRange(0, MAX_VISIBILITY_SECONDS, "failureVisibilityTimeoutSeconds")
-        }
+        visibilityTimeoutSeconds?.requireInRange(1, MAX_VISIBILITY_SECONDS, "visibilityTimeoutSeconds")
+        failureVisibilityTimeoutSeconds?.requireInRange(0, MAX_VISIBILITY_SECONDS, "failureVisibilityTimeoutSeconds")
         validateDeadLetterQueue()
         shutdownTimeout.toNanos().requirePositiveNumber("shutdownTimeout")
         visibilityHeartbeatSeconds?.let { heartbeat ->
@@ -232,6 +235,7 @@ data class SqsConsumerRuntimeConfig(
  * - [delete]를 호출하면 메시지를 삭제됨으로 표시하므로 `deleteOnSuccess`가 같은 메시지를 다시 삭제하지 않습니다.
  */
 class SqsMessageContext internal constructor(
+
     private val runtime: SqsConsumerRuntime,
     /** 현재 메시지를 받은 source queue URL입니다. */
     val queueUrl: String,
@@ -268,6 +272,12 @@ class SqsMessageContext internal constructor(
         delaySeconds: Int? = null,
     ): SendMessageResponse =
         runtime.send(messageBody, targetQueueUrl, delaySeconds)
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("queueUrl", queueUrl)
+            .add("message", message)
+            .toString()
 }
 
 /**
@@ -280,7 +290,6 @@ class SqsMessageContext internal constructor(
  *   남은 handler를 취소합니다. 시작 전 호출도 runtime을 영구적으로 종료합니다.
  * - [SqsAsyncClient]는 plugin이 생성한 경우에만 닫습니다.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 class SqsConsumerRuntime(
     private val config: SqsConsumerRuntimeConfig,
 ) {
@@ -294,8 +303,8 @@ class SqsConsumerRuntime(
     }
 
     private val lifecycleState = AtomicReference(LifecycleState.NEW)
-    private val lifecycleLock = Any()
-    private val pollerJobs = CopyOnWriteArrayList<Job>()
+    private val lifecycleLock = ReentrantLock()
+    private val pollerJobs = ConcurrentLinkedQueue<Job>()
     private val handlerJobs = ConcurrentHashMap.newKeySet<Job>()
     private val handlerPermitReleases = ConcurrentHashMap<Job, AtomicBoolean>()
     private val ownedClientClosed = AtomicBoolean(false)
@@ -314,7 +323,7 @@ class SqsConsumerRuntime(
 
     /** runtime을 시작합니다. 종료된 runtime은 다시 시작할 수 없습니다. */
     fun start() {
-        synchronized(lifecycleLock) {
+        lifecycleLock.withLock {
             when (lifecycleState.get()) {
                 LifecycleState.NEW -> {
                     lifecycleState.set(LifecycleState.RUNNING)
@@ -329,19 +338,17 @@ class SqsConsumerRuntime(
                     }
                 }
 
-                LifecycleState.RUNNING,
-                LifecycleState.STOPPING,
-                -> return
+                LifecycleState.RUNNING, LifecycleState.STOPPING -> return
 
                 LifecycleState.STOPPED ->
-                    throw IllegalStateException("SqsConsumerRuntime cannot be started after it has stopped.")
+                    error("SqsConsumerRuntime cannot be started after it has stopped.")
             }
         }
     }
 
     /** shutdown 계약에 따라 poller를 중지하고 처리 중인 handler를 drain합니다. */
     suspend fun stop() {
-        val closeBeforeStart = synchronized(lifecycleLock) {
+        val closeBeforeStart = lifecycleLock.withLock {
             when (lifecycleState.get()) {
                 LifecycleState.NEW -> {
                     lifecycleState.set(LifecycleState.STOPPED)
@@ -355,7 +362,7 @@ class SqsConsumerRuntime(
 
                 LifecycleState.STOPPING,
                 LifecycleState.STOPPED,
-                -> null
+                    -> null
             }
         }
 
@@ -373,8 +380,7 @@ class SqsConsumerRuntime(
             currentPollers.forEach { it.cancel() }
             currentPollers.joinAll()
 
-            val timeoutMillis = config.shutdownTimeout.toMillis()
-            val drained = withTimeoutOrNull(timeoutMillis) {
+            val drained = withTimeoutOrNull(config.shutdownTimeout.toKotlinDuration()) {
                 while (handlerJobs.isNotEmpty()) {
                     handlerJobs.toList().joinAll()
                 }
@@ -427,12 +433,20 @@ class SqsConsumerRuntime(
     ): SendMessageResponse {
         val startedAt = System.nanoTime()
         return try {
-            val response = config.sqsAsyncClient.sendMessage {
-                it.queueUrl(queueUrl)
-                it.messageBody(messageBody)
-                delaySeconds?.let(it::delaySeconds)
-            }.await()
-            observe(KtorSqsObservationOperations.SEND, KtorSqsObservationOutcomes.SUCCESS, queueUrl, startedAt)
+            val response = config.sqsAsyncClient
+                .sendMessage {
+                    it.queueUrl(queueUrl)
+                    it.messageBody(messageBody)
+                    delaySeconds?.let(it::delaySeconds)
+                }
+                .await()
+
+            observe(
+                KtorSqsObservationOperations.SEND,
+                KtorSqsObservationOutcomes.SUCCESS,
+                queueUrl,
+                startedAt
+            )
             response
         } catch (e: CancellationException) {
             throw e
@@ -454,6 +468,7 @@ class SqsConsumerRuntime(
             return
         }
         config.interceptors.forEach { it.beforeAck(context) }
+
         val startedAt = System.nanoTime()
         try {
             delete(context.queueUrl, context.message.receiptHandle())
@@ -483,6 +498,7 @@ class SqsConsumerRuntime(
         try {
             changeVisibility(context.queueUrl, context.message.receiptHandle(), timeoutSeconds)
             config.interceptors.forEach { it.afterNack(context, timeoutSeconds) }
+
             observe(
                 KtorSqsObservationOperations.NACK,
                 KtorSqsObservationOutcomes.SUCCESS,
@@ -567,7 +583,7 @@ class SqsConsumerRuntime(
                 log.warn(e) {
                     "SQS receive loop failed. Retrying after ${retryDelay.toMillis()} ms."
                 }
-                delay(retryDelay.toMillis().coerceAtLeast(1L))
+                delay(retryDelay.toMillis().coerceAtLeast(1L).milliseconds)
             }
         }
     }
@@ -609,6 +625,7 @@ class SqsConsumerRuntime(
         }
         handlerPermitReleases[job] = permitReleased
         handlerJobs += job
+
         job.invokeOnCompletion {
             handlerJobs -= job
             handlerPermitReleases -= job
@@ -680,7 +697,7 @@ class SqsConsumerRuntime(
         return currentScope.launch(CoroutineName("sqs-visibility-heartbeat")) {
             while (currentCoroutineContext().isActive) {
                 try {
-                    delay(Duration.ofSeconds(heartbeatSeconds.toLong()).toMillis())
+                    delay(heartbeatSeconds.seconds)
                     if (context.deleted) {
                         return@launch
                     }
@@ -707,8 +724,7 @@ class SqsConsumerRuntime(
             SqsConversionFailurePolicy.HandleAsFailure ->
                 handleFailure(queueUrl, message, cause, SqsConsumerFailurePhase.Conversion)
 
-            SqsConversionFailurePolicy.Delete ->
-                ack(context)
+            SqsConversionFailurePolicy.Delete -> ack(context)
 
             SqsConversionFailurePolicy.Ignore -> Unit
         }
@@ -836,10 +852,11 @@ class SqsConsumerRuntime(
             tags = tags,
         )
         config.observers.forEach { observer ->
-            runCatching { observer.observe(observation) }
-                .onFailure { e ->
-                    log.warn(e) { "SQS consumer observer failed." }
-                }
+            runCatching {
+                observer.observe(observation)
+            }.onFailure { e ->
+                log.warn(e) { "SQS consumer observer failed." }
+            }
         }
     }
 

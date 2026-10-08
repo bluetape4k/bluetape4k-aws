@@ -6,7 +6,10 @@ import io.bluetape4k.aws.kinesis.describeStream
 import io.bluetape4k.aws.kinesis.getRecords
 import io.bluetape4k.aws.kinesis.putRecord
 import io.bluetape4k.aws.kinesis.putRecords
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
+import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -31,6 +34,7 @@ import software.amazon.awssdk.services.kinesis.model.Record
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import java.time.Duration
 import kotlin.random.Random
+import kotlin.time.toKotlinDuration
 
 /**
  * [KinesisAsyncClient]를 사용하는 코루틴 친화적인 [KinesisKtorOperations] 구현입니다.
@@ -47,7 +51,7 @@ class KinesisKtorTemplate(
 ): KinesisKtorOperations {
 
     override suspend fun createStream(streamName: String, shardCount: Int): CreateStreamResponse {
-        require(shardCount >= 1) { "shardCount must be greater than or equal to 1." }
+        shardCount.requirePositiveNumber("shardCount")
         return kinesisAsyncClient.createStream(streamName, shardCount)
     }
 
@@ -75,7 +79,7 @@ class KinesisKtorTemplate(
         streamName: String,
         entries: List<PutRecordsRequestEntry>,
     ): PutRecordsResponse {
-        require(entries.isNotEmpty()) { "entries must not be empty." }
+        entries.requireNotEmpty("entries")
         return kinesisAsyncClient.putRecords(streamName, entries)
     }
 
@@ -136,7 +140,7 @@ class KinesisKtorTemplate(
                 } else {
                     options.pollInterval
                 }
-                delay(pollDelay.toMillis())
+                delay(pollDelay.toKotlinDuration())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ExpiredIteratorException) {
@@ -162,7 +166,7 @@ class KinesisKtorTemplate(
                     throw e
                 }
 
-                delay(jitteredBackoff(throttleRetryCount, options).toMillis())
+                delay(jitteredBackoff(throttleRetryCount, options).toKotlinDuration())
             }
         }
     }
@@ -220,7 +224,7 @@ class KinesisKtorTemplate(
         }
 
         val floor = (baseMs * (1.0 - options.jitterRatio)).toLong().coerceAtLeast(0L)
-        val jittered = Random.Default.nextLong(floor, baseMs + 1)
-        return Duration.ofMillis(jittered)
+        val jittered = Random.nextLong(floor, baseMs + 1)
+        return jittered.millis()
     }
 }

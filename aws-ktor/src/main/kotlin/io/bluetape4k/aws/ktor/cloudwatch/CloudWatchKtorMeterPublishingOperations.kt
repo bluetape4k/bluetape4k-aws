@@ -92,6 +92,6 @@ class CloudWatchKtorMeterPublishingTemplate(
     private fun Statistic.toStandardUnit(): StandardUnit =
         when (this) {
             Statistic.COUNT -> StandardUnit.COUNT
-            else            -> StandardUnit.NONE
+            else -> StandardUnit.NONE
         }
 }

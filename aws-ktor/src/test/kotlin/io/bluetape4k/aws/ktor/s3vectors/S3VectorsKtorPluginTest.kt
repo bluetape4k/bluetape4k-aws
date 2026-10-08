@@ -5,15 +5,15 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorS3VectorsAsyncClientCustomizer
 import io.bluetape4k.aws.s3vectors.S3VectorsOperations
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.testing.shouldHaveStatus
-import io.mockk.clearMocks
-import io.mockk.mockk
-import io.mockk.verify
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
@@ -22,6 +22,9 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
+import io.mockk.clearMocks
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -32,6 +35,8 @@ import java.net.URI
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class S3VectorsKtorPluginTest {
+
+    companion object: KLogging()
 
     private val sdkClient = mockk<S3VectorsAsyncClient>(relaxed = true)
     private val operations = mockk<S3VectorsOperations>(relaxed = true)
@@ -95,26 +100,32 @@ class S3VectorsKtorPluginTest {
         val error = assertFailsWith<IllegalStateException> {
             application.s3Vectors()
         }
+
+        log.debug { "error=${error.message}" }
         error.message shouldContain "disabled"
     }
 
     @Test
     fun `injected operations bypass client only validation`() {
-        val runtime = S3VectorsKtorPluginConfig().apply {
-            s3VectorsOperations = operations
-            endpointOverride = URI.create("http://localhost:4566")
-        }.toRuntime()
-        requireNotNull(runtime)
+        val runtime = S3VectorsKtorPluginConfig()
+            .apply {
+                s3VectorsOperations = operations
+                endpointOverride = URI.create("http://localhost:4566")
+            }
+            .toRuntime()
+            .shouldNotBeNull()
 
         runtime.operations shouldBeSameInstanceAs operations
     }
 
     @Test
     fun `injected client remains application owned`() = runSuspendIO {
-        val runtime = S3VectorsKtorPluginConfig().apply {
-            s3VectorsAsyncClient = sdkClient
-        }.toRuntime()
-        requireNotNull(runtime)
+        val runtime = S3VectorsKtorPluginConfig()
+            .apply {
+                s3VectorsAsyncClient = sdkClient
+            }
+            .toRuntime()
+            .shouldNotBeNull()
 
         runtime.stop()
 
@@ -137,9 +148,11 @@ class S3VectorsKtorPluginTest {
     @Test
     fun `endpoint override requires region for plugin created client`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            S3VectorsKtorPluginConfig().apply {
-                endpointOverride = URI.create("http://localhost:4566")
-            }.toRuntime()
+            S3VectorsKtorPluginConfig()
+                .apply {
+                    endpointOverride = URI.create("http://localhost:4566")
+                }
+                .toRuntime()
         }
 
         error.message shouldContain "region"
@@ -149,19 +162,21 @@ class S3VectorsKtorPluginTest {
     fun `service customizer runs after shared customizer`() = runSuspendIO {
         val order = mutableListOf<String>()
         val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("ak", "sk"))
-        val runtime = S3VectorsKtorPluginConfig().apply {
-            s3VectorsAsyncClient { order += "service" }
-        }.toRuntime(
-            AwsKtorDefaults(
-                region = "ap-northeast-2",
-                endpointOverride = Url("http://localhost:4566"),
-                javaCredentialsProvider = credentials,
-                s3VectorsAsyncClientCustomizers = listOf(
-                    AwsKtorS3VectorsAsyncClientCustomizer { order += "shared" }
-                ),
+        val runtime = S3VectorsKtorPluginConfig()
+            .apply {
+                s3VectorsAsyncClient { order += "service" }
+            }
+            .toRuntime(
+                AwsKtorDefaults(
+                    region = "ap-northeast-2",
+                    endpointOverride = Url("http://localhost:4566"),
+                    javaCredentialsProvider = credentials,
+                    s3VectorsAsyncClientCustomizers = listOf(
+                        AwsKtorS3VectorsAsyncClientCustomizer { order += "shared" }
+                    ),
+                )
             )
-        )
-        requireNotNull(runtime)
+            .shouldNotBeNull()
 
         order shouldBeEqualTo listOf("shared", "service")
 
