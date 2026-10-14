@@ -2,8 +2,11 @@ package io.bluetape4k.aws.rds
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.regions.Region
@@ -13,10 +16,13 @@ import software.amazon.awssdk.services.rds.model.GenerateAuthenticationTokenRequ
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AwsRdsIamAuthTokenTest {
 
+    companion object: KLogging()
+
     @Test
     fun `auth token redacts diagnostic output`() {
         val token = awsRdsIamAuthTokenOf("raw-rds-token")
 
+        log.debug { "token: $token" }
         token.reveal() shouldBeEqualTo "raw-rds-token"
         token.toString() shouldBeEqualTo AwsRdsIamAuthToken.REDACTED
     }
@@ -85,9 +91,12 @@ class AwsRdsIamAuthTokenTest {
             ),
         )
 
+        log.debug { "generated token: $token" }
         token.reveal() shouldBeEqualTo "generated-token"
         token.toString() shouldBeEqualTo AwsRdsIamAuthToken.REDACTED
-        val request = requireNotNull(captured)
+
+        val request = captured.shouldNotBeNull()
+        log.debug { "generate token request: $request" }
         request.region() shouldBeEqualTo Region.AP_NORTHEAST_2
         request.hostname() shouldBeEqualTo "database-1.cluster-example.ap-northeast-2.rds.amazonaws.com"
         request.port() shouldBeEqualTo 5432
@@ -114,7 +123,7 @@ class AwsRdsIamAuthTokenTest {
             )
         }
 
-        error.message.orEmpty() shouldContain "database.example.com:5432"
-        error.message.orEmpty().contains("raw-token").shouldBeFalse()
+        error.message shouldContain "database.example.com:5432"
+        error.message shouldNotContain "raw-token"
     }
 }

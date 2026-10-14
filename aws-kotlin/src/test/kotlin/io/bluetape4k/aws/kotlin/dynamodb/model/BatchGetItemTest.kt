@@ -2,16 +2,19 @@ package io.bluetape4k.aws.kotlin.dynamodb.model
 
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.KeysAndAttributes
+import aws.sdk.kotlin.services.dynamodb.model.ReturnConsumedCapacity
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBe
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class BatchGetItemTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `batchGetItemRequestOf는 requestItems로 요청을 생성한다`() {
@@ -20,7 +23,7 @@ class BatchGetItemTest {
         val req = batchGetItemRequestOf(mapOf("users" to keysAndAttrs))
 
         req.requestItems shouldHaveSize 1
-        req.requestItems.shouldNotBeNull().containsKey("users") shouldBeEqualTo true
+        req.requestItems?.containsKey("users").shouldBeTrue()
     }
 
     @Test
@@ -31,7 +34,12 @@ class BatchGetItemTest {
         val orderKeys = KeysAndAttributes {
             keys = listOf(mapOf("orderId" to AttributeValue.S("o1")))
         }
-        val req = batchGetItemRequestOf(mapOf("users" to userKeys, "orders" to orderKeys))
+        val req = batchGetItemRequestOf(
+            mapOf(
+                "users" to userKeys,
+                "orders" to orderKeys
+            )
+        )
 
         req.requestItems shouldHaveSize 2
     }
@@ -48,9 +56,11 @@ class BatchGetItemTest {
         val keys = listOf(mapOf("id" to AttributeValue.S("u1")))
         val keysAndAttrs = KeysAndAttributes { this.keys = keys }
         val req = batchGetItemRequestOf(mapOf("users" to keysAndAttrs)) {
-            returnConsumedCapacity = aws.sdk.kotlin.services.dynamodb.model.ReturnConsumedCapacity.Total
+            returnConsumedCapacity = ReturnConsumedCapacity.Total
         }
 
+        log.debug { "batch get item request=$req" }
         req.shouldNotBeNull()
+        req.returnConsumedCapacity shouldBe ReturnConsumedCapacity.Total
     }
 }

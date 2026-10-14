@@ -3,13 +3,21 @@ package io.bluetape4k.aws.ktor.s3
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
+import io.bluetape4k.codec.decodeBase64String
+import io.bluetape4k.javatimes.days
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -21,6 +29,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import io.mockk.every
 import io.mockk.mockk
@@ -34,13 +43,17 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
-import java.util.Base64
 
 class S3KtorClientTest {
+
+    private companion object: KLoggingChannel() {
+        private val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2026-05-10T01:02:03Z"), ZoneOffset.UTC)
+    }
 
     @Test
     fun `PutObject는 S3 path-style URL과 unsigned payload 헤더로 요청한다`() = runSuspendIO {
         lateinit var captured: HttpRequestData
+
         val s3 = s3Client(
             capture = { captured = it },
             response = {
@@ -59,12 +72,14 @@ class S3KtorClientTest {
             metadata = mapOf("source" to "ktor"),
         )
 
+        log.debug { "captured=$captured" }
+
         captured.method shouldBeEqualTo HttpMethod.Put
         captured.url.host shouldBeEqualTo "localhost"
         captured.url.encodedPath shouldBeEqualTo "/demo-bucket/logs/2026/app%20log.txt"
         captured.headers["x-amz-content-sha256"] shouldBeEqualTo "UNSIGNED-PAYLOAD"
         captured.headers["x-amz-meta-source"] shouldBeEqualTo "ktor"
-        captured.headers[HttpHeaders.Authorization].orEmpty() shouldContain "AWS4-HMAC-SHA256"
+        captured.headers[HttpHeaders.Authorization] shouldContain "AWS4-HMAC-SHA256"
         response.eTag shouldBeEqualTo "\"etag-1\""
 
         s3.close()
@@ -84,6 +99,7 @@ class S3KtorClientTest {
             bytes = """{"status":"ok"}""".encodeToByteArray(),
         )
 
+        log.debug { "captured=$captured" }
         captured.body.contentType.toString() shouldBeEqualTo "application/json"
 
         s3.close()
@@ -108,12 +124,11 @@ class S3KtorClientTest {
             ),
         )
 
+        log.debug { "captured=$captured" }
         captured.headers["x-amz-server-side-encryption"] shouldBeEqualTo "aws:kms"
         captured.headers["x-amz-server-side-encryption-aws-kms-key-id"] shouldBeEqualTo "alias/demo"
         captured.headers["x-amz-server-side-encryption-bucket-key-enabled"] shouldBeEqualTo "true"
-        String(
-            Base64.getDecoder().decode(captured.headers["x-amz-server-side-encryption-context"]),
-        ) shouldBeEqualTo """{"tenant":"demo"}"""
+        captured.headers["x-amz-server-side-encryption-context"].decodeBase64String() shouldBeEqualTo """{"tenant":"demo"}"""
 
         s3.close()
     }
@@ -146,7 +161,10 @@ class S3KtorClientTest {
         )
         val config = s3.getConfigObject("demo-bucket", "config/application.conf")
 
+        log.debug { "captured=$captured" }
         captured[0].body.contentType.toString() shouldBeEqualTo "text/plain; charset=UTF-8"
+
+        log.debug { "config=$config" }
         config.text shouldBeEqualTo "ktor { deployment { port = 8080 } }"
         config.contentType shouldBeEqualTo "application/hocon"
         config.metadata["source"] shouldBeEqualTo "s3"
@@ -174,7 +192,7 @@ class S3KtorClientTest {
             },
         )
         val encryption = S3KtorClientSideEncryption(InMemoryDataKeyProvider())
-        val plaintext = "client side secret".encodeToByteArray()
+        val plaintext = "client side secret".toUtf8Bytes()
 
         encryption.putEncryptedObject(
             s3 = s3,
@@ -191,8 +209,8 @@ class S3KtorClientTest {
             encryptionContext = mapOf("purpose" to "test"),
         )
 
-        stored.first.decodeToString() shouldNotBeEqualTo plaintext.decodeToString()
-        decrypted.decodeToString() shouldBeEqualTo plaintext.decodeToString()
+        stored.first.toUtf8String() shouldNotBeEqualTo plaintext.toUtf8String()
+        decrypted.toUtf8String() shouldBeEqualTo plaintext.toUtf8String()
 
         s3.close()
     }
@@ -230,12 +248,15 @@ class S3KtorClientTest {
             )
         )
 
+        log.debug { "captured=$captured" }
         captured.method shouldBeEqualTo HttpMethod.Get
         captured.url.encodedPath shouldBeEqualTo "/demo-bucket"
         captured.url.parameters["list-type"] shouldBeEqualTo "2"
         captured.url.parameters["prefix"] shouldBeEqualTo "logs/"
         captured.url.parameters["continuation-token"] shouldBeEqualTo "next/token+1"
         captured.url.parameters["max-keys"] shouldBeEqualTo "25"
+
+        log.debug { "response=$response" }
         response.contents.single().key shouldBeEqualTo "logs/app.log"
 
         s3.close()
@@ -278,33 +299,36 @@ class S3KtorClientTest {
         val s3 = s3Client(
             capture = { captured += it },
             response = { request ->
-                when {
-                    request.method == HttpMethod.Post && "uploads" in request.url.parameters.names() -> respond(
-                        content = """
-                            <InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                              <Bucket>demo-bucket</Bucket>
-                              <Key>logs/app.log</Key>
-                              <UploadId>upload-1</UploadId>
-                            </InitiateMultipartUploadResult>
-                        """.trimIndent(),
-                        headers = headersOf(HttpHeaders.ContentType, "application/xml"),
-                    )
-                    request.method == HttpMethod.Put -> respond(
-                        content = "",
-                        headers = headersOf(HttpHeaders.ETag, "\"part-etag-1\""),
-                    )
-                    request.method == HttpMethod.Post && request.url.parameters["uploadId"] == "upload-1" -> respond(
-                        content = """
-                            <CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                              <Location>http://localhost:4566/demo-bucket/logs/app.log</Location>
-                              <Bucket>demo-bucket</Bucket>
-                              <Key>logs/app.log</Key>
-                              <ETag>&quot;object-etag&quot;</ETag>
-                            </CompleteMultipartUploadResult>
-                        """.trimIndent(),
-                        headers = headersOf(HttpHeaders.ContentType, "application/xml"),
-                    )
-                    request.method == HttpMethod.Delete && request.url.parameters["uploadId"] == "upload-1" -> respond("")
+                when (request.method) {
+                    HttpMethod.Post if "uploads" in request.url.parameters.names() ->
+                        respond(
+                            content = """
+                                        <InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                          <Bucket>demo-bucket</Bucket>
+                                          <Key>logs/app.log</Key>
+                                          <UploadId>upload-1</UploadId>
+                                        </InitiateMultipartUploadResult>
+                                    """.trimIndent(),
+                            headers = headersOf(HttpHeaders.ContentType, "application/xml"),
+                        )
+                    HttpMethod.Put ->
+                        respond(
+                            content = "",
+                            headers = headersOf(HttpHeaders.ETag, "\"part-etag-1\""),
+                        )
+                    HttpMethod.Post if request.url.parameters["uploadId"] == "upload-1" ->
+                        respond(
+                            content = """
+                                        <CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                          <Location>http://localhost:4566/demo-bucket/logs/app.log</Location>
+                                          <Bucket>demo-bucket</Bucket>
+                                          <Key>logs/app.log</Key>
+                                          <ETag>&quot;object-etag&quot;</ETag>
+                                        </CompleteMultipartUploadResult>
+                                    """.trimIndent(),
+                            headers = headersOf(HttpHeaders.ContentType, "application/xml"),
+                        )
+                    HttpMethod.Delete if request.url.parameters["uploadId"] == "upload-1" -> respond("")
                     else -> respond("unexpected request", HttpStatusCode.BadRequest)
                 }
             },
@@ -318,7 +342,9 @@ class S3KtorClientTest {
         upload.uploadId shouldBeEqualTo "upload-1"
         part.eTag shouldBeEqualTo "\"part-etag-1\""
         complete.eTag shouldBeEqualTo "\"object-etag\""
-        captured[0].url.parameters.names().contains("uploads").shouldBeTrue()
+
+        captured.forEach { log.debug { "captured=$it" } }
+        captured[0].url.parameters.names() shouldContain "uploads"
         captured[1].url.parameters["partNumber"] shouldBeEqualTo "1"
         captured[1].url.parameters["uploadId"] shouldBeEqualTo "upload-1"
         captured[2].url.parameters["uploadId"] shouldBeEqualTo "upload-1"
@@ -337,12 +363,13 @@ class S3KtorClientTest {
             expires = Duration.ofMinutes(15),
         )
 
+        log.debug { "presigned=$presigned" }
         presigned.method shouldBeEqualTo "GET"
         presigned.url.host shouldBeEqualTo "s3.ap-northeast-2.amazonaws.com"
         presigned.url.encodedPath shouldBeEqualTo "/demo.bucket/logs/2026/app%20log.txt"
         presigned.url.parameters["X-Amz-Algorithm"] shouldBeEqualTo "AWS4-HMAC-SHA256"
         presigned.url.parameters["X-Amz-Expires"] shouldBeEqualTo "900"
-        presigned.url.parameters["X-Amz-Signature"].orEmpty().isNotBlank().shouldBeTrue()
+        presigned.url.parameters["X-Amz-Signature"].shouldNotBeEmpty()
 
         s3.close()
     }
@@ -358,6 +385,7 @@ class S3KtorClientTest {
 
         s3.deleteObject("demo-bucket", "logs/app.txt")
 
+        log.debug { "captured=$captured" }
         captured.method shouldBeEqualTo HttpMethod.Delete
         captured.url.host shouldBeEqualTo "demo-bucket.s3.ap-northeast-2.amazonaws.com"
         captured.url.encodedPath shouldBeEqualTo "/logs/app.txt"
@@ -376,6 +404,7 @@ class S3KtorClientTest {
 
         s3.deleteObject("demo.bucket", "logs/app.txt")
 
+        log.debug { "captured=$captured" }
         captured.method shouldBeEqualTo HttpMethod.Delete
         captured.url.host shouldBeEqualTo "s3.ap-northeast-2.amazonaws.com"
         captured.url.encodedPath shouldBeEqualTo "/demo.bucket/logs/app.txt"
@@ -395,6 +424,7 @@ class S3KtorClientTest {
 
         s3.deleteObject("demo-bucket", "logs/app.txt")
 
+        log.debug { "captured=$captured" }
         captured.method shouldBeEqualTo HttpMethod.Delete
         captured.url.host shouldBeEqualTo "s3.ap-northeast-2.amazonaws.com"
         captured.url.encodedPath shouldBeEqualTo "/demo-bucket/logs/app.txt"
@@ -410,7 +440,7 @@ class S3KtorClientTest {
             s3.presignGetObject("demo-bucket", "logs/app.txt", Duration.ZERO)
         }
         assertFailsWith<IllegalArgumentException> {
-            s3.presignPutObject("demo-bucket", "logs/app.txt", Duration.ofDays(7).plusSeconds(1))
+            s3.presignPutObject("demo-bucket", "logs/app.txt", 7.days() + 1.seconds())
         }
 
         s3.close()
@@ -429,8 +459,9 @@ class S3KtorClientTest {
             addressingStyle = S3KtorAddressingStyle.Path,
         )
 
-        val presigned = s3.presignGetObject("demo-bucket", "logs/app.txt", Duration.ofMinutes(15))
+        val presigned = s3.presignGetObject("demo-bucket", "logs/app.txt", 15.minutes())
 
+        log.debug { "presigned=$presigned" }
         presigned.url.host shouldBeEqualTo "localhost"
         presigned.url.encodedPath shouldBeEqualTo "/demo-bucket/logs/app.txt"
         presigned.url.parameters["X-Amz-Date"] shouldBeEqualTo "20260510T010203Z"
@@ -444,6 +475,7 @@ class S3KtorClientTest {
         val clientFailure = IllegalStateException("http client close failed")
         val providerFailure = IllegalStateException("credentials provider close failed")
         every { httpClient.close() } throws clientFailure
+
         val s3 = S3KtorClient(
             httpClient = httpClient,
             region = "ap-northeast-2",
@@ -500,15 +532,11 @@ class S3KtorClientTest {
             closeClient = true,
         )
     }
-
-    private companion object {
-        private val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2026-05-10T01:02:03Z"), ZoneOffset.UTC)
-    }
 }
 
-private suspend fun io.ktor.http.content.OutgoingContent.toByteArray(): ByteArray =
+private fun OutgoingContent.toByteArray(): ByteArray =
     when (this) {
-        is io.ktor.http.content.OutgoingContent.ByteArrayContent -> bytes()
+        is OutgoingContent.ByteArrayContent -> bytes()
         else -> error("Unsupported test content: ${this::class.qualifiedName}")
     }
 
@@ -522,7 +550,10 @@ private class InMemoryDataKeyProvider: S3KtorDataKeyProvider {
             keyId = "in-memory",
         )
 
-    override suspend fun decryptDataKey(encryptedDataKey: ByteArray, encryptionContext: Map<String, String>): ByteArray =
+    override suspend fun decryptDataKey(
+        encryptedDataKey: ByteArray,
+        encryptionContext: Map<String, String>,
+    ): ByteArray =
         encryptedDataKey.reversedArray()
 }
 

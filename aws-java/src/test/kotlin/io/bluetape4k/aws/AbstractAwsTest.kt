@@ -36,7 +36,7 @@ abstract class AbstractAwsTest {
             when (val emulator = configuredAwsEmulatorName()) {
                 "floci" -> FlociServer.Launcher.floci
                 "localstack" -> LocalStackServer.Launcher.getLocalStack(*services.toTypedArray())
-                else -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
+                else    -> error("Unsupported AWS emulator: $emulator. Use floci or localstack.")
             }
         }
 

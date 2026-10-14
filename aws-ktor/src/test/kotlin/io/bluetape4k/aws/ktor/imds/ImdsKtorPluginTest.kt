@@ -2,14 +2,17 @@ package io.bluetape4k.aws.ktor.imds
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.ktor.server.application.install
+import io.ktor.server.testing.testApplication
 import io.mockk.clearMocks
 import io.mockk.mockk
 import io.mockk.verify
-import io.ktor.server.application.install
-import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -19,6 +22,8 @@ import java.time.Duration
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ImdsKtorPluginTest {
+
+    companion object: KLogging()
 
     private val client = mockk<Ec2MetadataAsyncClient>(relaxed = true)
     private val operations = mockk<ImdsKtorOperations>(relaxed = true)
@@ -68,9 +73,10 @@ class ImdsKtorPluginTest {
             requestTimeout = Duration.ZERO
             retries = -1
         }.toRuntime()
-        requireNotNull(runtime)
 
+        runtime.shouldNotBeNull()
         runtime.operations shouldBeSameInstanceAs operations
+
         runtime.stop()
     }
 
@@ -99,7 +105,7 @@ class ImdsKtorPluginTest {
         }.toRuntime()
         requireNotNull(runtime)
 
-        runtime.operations.javaClass shouldBeEqualTo ImdsKtorTemplate::class.java
+        runtime.operations.shouldBeInstanceOf<ImdsKtorTemplate>()
         runtime.stop()
 
         verify(exactly = 0) { client.get(any()) }
@@ -122,9 +128,9 @@ class ImdsKtorPluginTest {
     @Test
     fun `config validation rejects non positive token ttl`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            ImdsKtorPluginConfig().apply {
-                tokenTtl = Duration.ZERO
-            }.toRuntime()
+            ImdsKtorPluginConfig()
+                .apply { tokenTtl = Duration.ZERO }
+                .toRuntime()
         }
 
         error.message shouldContain "tokenTtl"
@@ -133,9 +139,9 @@ class ImdsKtorPluginTest {
     @Test
     fun `config validation rejects non positive request timeout`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            ImdsKtorPluginConfig().apply {
-                requestTimeout = Duration.ZERO
-            }.toRuntime()
+            ImdsKtorPluginConfig()
+                .apply { requestTimeout = Duration.ZERO }
+                .toRuntime()
         }
 
         error.message shouldContain "requestTimeout"
@@ -144,9 +150,9 @@ class ImdsKtorPluginTest {
     @Test
     fun `config validation rejects negative retries`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            ImdsKtorPluginConfig().apply {
-                retries = -1
-            }.toRuntime()
+            ImdsKtorPluginConfig()
+                .apply { retries = -1 }
+                .toRuntime()
         }
 
         error.message shouldContain "retries"

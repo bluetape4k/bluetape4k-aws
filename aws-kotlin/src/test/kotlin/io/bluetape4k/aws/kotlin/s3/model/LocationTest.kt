@@ -1,14 +1,14 @@
 package io.bluetape4k.aws.kotlin.s3.model
 
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class LocationTest {
 
-    companion object: KLoggingChannel()
+    companion object: KLogging()
 
     @Test
     fun `parse location`() {
@@ -35,9 +35,7 @@ class LocationTest {
     @Test
     fun `url property`() {
         val locationUrl = "s3://bucket/key^version"
-
         val location = Location(locationUrl)
-
         location.url shouldBeEqualTo locationUrl
     }
 }

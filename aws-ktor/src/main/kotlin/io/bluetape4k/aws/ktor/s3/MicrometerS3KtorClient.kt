@@ -1,9 +1,11 @@
 package io.bluetape4k.aws.ktor.s3
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.observability.KtorMicrometerSupport
+import io.bluetape4k.logging.KLogging
+import io.ktor.http.content.OutgoingContent
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
-import io.ktor.http.content.OutgoingContent
 import java.time.Duration
 
 /**
@@ -15,6 +17,16 @@ class MicrometerS3KtorClient(
     private val meterName: String = DEFAULT_METER_NAME,
     private val includeBucketTag: Boolean = false,
 ): AutoCloseable {
+
+    companion object: KLogging() {
+        const val DEFAULT_METER_NAME: String = "bluetape4k.aws.ktor.s3.operation"
+        const val OPERATION_PUT_OBJECT: String = "put_object"
+        const val OPERATION_GET_OBJECT: String = "get_object"
+        const val OPERATION_DELETE_OBJECT: String = "delete_object"
+        const val OPERATION_LIST_OBJECTS_V2: String = "list_objects_v2"
+        const val OPERATION_PRESIGN_GET_OBJECT: String = "presign_get_object"
+        const val OPERATION_PRESIGN_PUT_OBJECT: String = "presign_put_object"
+    }
 
     suspend fun putObject(
         bucket: String,
@@ -107,15 +119,13 @@ class MicrometerS3KtorClient(
             extras = KtorMicrometerSupport.bucketTag(bucket, includeBucketTag),
         )
 
-    companion object {
-        const val DEFAULT_METER_NAME: String = "bluetape4k.aws.ktor.s3.operation"
-        const val OPERATION_PUT_OBJECT: String = "put_object"
-        const val OPERATION_GET_OBJECT: String = "get_object"
-        const val OPERATION_DELETE_OBJECT: String = "delete_object"
-        const val OPERATION_LIST_OBJECTS_V2: String = "list_objects_v2"
-        const val OPERATION_PRESIGN_GET_OBJECT: String = "presign_get_object"
-        const val OPERATION_PRESIGN_PUT_OBJECT: String = "presign_put_object"
-    }
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("delegate", delegate)
+            .add("meterRegistry", meterRegistry)
+            .add("meterName", meterName)
+            .add("includeBucketTag", includeBucketTag)
+            .toString()
 }
 
 /**

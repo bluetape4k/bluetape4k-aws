@@ -10,10 +10,10 @@ import java.io.Serializable
  * [Sequence]는 재시작 시 해당 sequence를 포함해 재생하는 at-least-once 경계이고,
  * [ShardEnd]는 부모 샤드가 완전히 종료됐음을 durable하게 표시하는 terminal 상태입니다.
  */
-sealed interface KinesisCheckpoint : Serializable {
+sealed interface KinesisCheckpoint: Serializable {
 
     /** 마지막으로 성공한 record의 sequence number입니다. */
-    data class Sequence(val sequenceNumber: String) : KinesisCheckpoint {
+    data class Sequence(val sequenceNumber: String): KinesisCheckpoint {
         init {
             sequenceNumber.validateSequenceNumber()
         }
@@ -30,7 +30,7 @@ sealed interface KinesisCheckpoint : Serializable {
     }
 
     /** 샤드의 모든 record가 처리된 terminal checkpoint입니다. */
-    data object ShardEnd : KinesisCheckpoint {
+    data object ShardEnd: KinesisCheckpoint {
         private const val serialVersionUID: Long = 1L
 
         private fun readResolve(): Any = ShardEnd

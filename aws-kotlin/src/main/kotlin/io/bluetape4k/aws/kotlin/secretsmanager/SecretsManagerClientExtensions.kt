@@ -1,18 +1,12 @@
 package io.bluetape4k.aws.kotlin.secretsmanager
 
 import aws.sdk.kotlin.services.secretsmanager.SecretsManagerClient
-import aws.sdk.kotlin.services.secretsmanager.batchGetSecretValue
-import aws.sdk.kotlin.services.secretsmanager.createSecret
-import aws.sdk.kotlin.services.secretsmanager.describeSecret
-import aws.sdk.kotlin.services.secretsmanager.getSecretValue
-import aws.sdk.kotlin.services.secretsmanager.listSecrets
 import aws.sdk.kotlin.services.secretsmanager.model.BatchGetSecretValueResponse
 import aws.sdk.kotlin.services.secretsmanager.model.CreateSecretResponse
 import aws.sdk.kotlin.services.secretsmanager.model.DescribeSecretResponse
 import aws.sdk.kotlin.services.secretsmanager.model.GetSecretValueResponse
 import aws.sdk.kotlin.services.secretsmanager.model.ListSecretsResponse
 import aws.sdk.kotlin.services.secretsmanager.model.PutSecretValueResponse
-import aws.sdk.kotlin.services.secretsmanager.putSecretValue
 import io.bluetape4k.aws.kotlin.secretsmanager.model.batchGetSecretValueRequestOf
 import io.bluetape4k.aws.kotlin.secretsmanager.model.createSecretRequestOf
 import io.bluetape4k.aws.kotlin.secretsmanager.model.describeSecretRequestOf

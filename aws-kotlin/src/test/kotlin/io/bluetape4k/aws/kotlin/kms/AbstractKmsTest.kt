@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.kotlin.kms
 
+import aws.sdk.kotlin.services.kms.KmsClient
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
 import io.bluetape4k.junit5.faker.Fakers
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.useSafe
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 
 /**
@@ -17,7 +19,7 @@ import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
  * class MyKmsTest : AbstractKmsTest() {
  *     @Test
  *     fun `키 생성 테스트`() = runTest {
- *         withKmsClient(localStackServer.endpointUrl, localStackServer.region, localStackServer.credentialsProvider) { client ->
+ *         withTestKmsClient(localStackServer) { client ->
  *             val response = client.createKey {
  *                 description = "테스트 키"
  *             }
@@ -37,5 +39,16 @@ abstract class AbstractKmsTest: AbstractAwsTest() {
         protected fun randomString(min: Int = 256, max: Int = 2048): String {
             return Fakers.randomString(min, max)
         }
+    }
+
+    protected suspend fun <R> withTestKmsClient(
+        awsServer: AwsEmulatorServer,
+        block: suspend (KmsClient) -> R,
+    ): R = kmsClientOf(
+        awsServer.endpointUrl,
+        awsServer.region,
+        awsServer.credentialsProvider
+    ).useSafe { client ->
+        block(client)
     }
 }

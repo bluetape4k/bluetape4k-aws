@@ -3,20 +3,30 @@
 package io.bluetape4k.aws.dynamodbstreams
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
+import io.bluetape4k.aws.dynamodb.model.DeleteTableRequest
+import io.bluetape4k.aws.dynamodb.model.PutItemRequest
+import io.bluetape4k.aws.dynamodb.model.attributeValue
 import io.bluetape4k.aws.http.SdkAsyncHttpClientProvider
+import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import kotlinx.coroutines.delay
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withTimeout
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
@@ -28,9 +38,9 @@ import kotlin.time.Duration.Companion.seconds
 
 /** Floci-only DynamoDB Streams capability and Java async Flow contract test. */
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class DynamoDbStreamsFlociTest : AbstractDynamodbTest() {
+class DynamoDbStreamsFlociTest: AbstractDynamodbTest() {
 
-    companion object {
+    companion object: KLogging() {
         private const val RECORD_COUNT = 3
         private val TABLE_NAME = "streams-flow-${System.nanoTime()}"
     }
@@ -41,11 +51,18 @@ class DynamoDbStreamsFlociTest : AbstractDynamodbTest() {
     @Order(1)
     fun `Floci creates a DynamoDB table with Streams enabled`() = runSuspendIO {
         client.createTable(
-            software.amazon.awssdk.services.dynamodb.model.CreateTableRequest.builder()
+            CreateTableRequest.builder()
                 .tableName(TABLE_NAME)
-                .keySchema(KeySchemaElement.builder().attributeName("id").keyType(KeyType.HASH).build())
+                .keySchema(
+                    KeySchemaElement.builder()
+                        .attributeName("id")
+                        .keyType(KeyType.HASH).build()
+                )
                 .attributeDefinitions(
-                    AttributeDefinition.builder().attributeName("id").attributeType(ScalarAttributeType.S).build(),
+                    AttributeDefinition.builder()
+                        .attributeName("id")
+                        .attributeType(ScalarAttributeType.S)
+                        .build(),
                 )
                 .provisionedThroughput(
                     ProvisionedThroughput.builder()
@@ -61,29 +78,29 @@ class DynamoDbStreamsFlociTest : AbstractDynamodbTest() {
                 )
                 .build(),
         )
-        withTimeout(30.seconds) {
-            while (client.describeTable(
-                    software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest.builder()
-                        .tableName(TABLE_NAME).build(),
-                ).table().tableStatus().name != "ACTIVE"
-            ) {
-                delay(100.milliseconds)
-            }
+        val describeReq = DescribeTableRequest.builder().tableName(TABLE_NAME).build()
+
+        await atMost 30.seconds withPollInterval 100.milliseconds untilSuspending {
+            client
+                .describeTable(describeReq)
+                .table()
+                .tableStatus()
+                .name == "ACTIVE"
         }
-        streamArn = withTimeout(30.seconds) {
-            var arn: String? = null
-            while (arn == null) {
-                arn = client.describeTable(
-                    software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest.builder()
-                        .tableName(TABLE_NAME).build(),
-                )
-                    .table()
-                    .latestStreamArn()
-                if (arn == null) delay(100.milliseconds)
-            }
-            checkNotNull(arn)
+
+        await atMost 30.seconds withPollInterval 100.milliseconds untilSuspending {
+            client
+                .describeTable(describeReq)
+                .table()
+                .latestStreamArn() != null
         }
-        streamArn.shouldNotBeNull()
+        streamArn = client
+            .describeTable(describeReq)
+            .table()
+            .latestStreamArn()
+            .shouldNotBeNull()
+
+        log.debug { "streamArn: $streamArn" }
     }
 
     @Test
@@ -91,17 +108,15 @@ class DynamoDbStreamsFlociTest : AbstractDynamodbTest() {
     fun `Floci records are consumed through the Java async Flow`() = runSuspendIO {
         repeat(RECORD_COUNT) { index ->
             client.putItem(
-                software.amazon.awssdk.services.dynamodb.model.PutItemRequest.builder()
-                    .tableName(TABLE_NAME)
-                    .item(
+                PutItemRequest {
+                    tableName(TABLE_NAME)
+                    item(
                         mapOf(
-                            "id" to software.amazon.awssdk.services.dynamodb.model.AttributeValue.builder()
-                                .s("item-$index").build(),
-                            "value" to software.amazon.awssdk.services.dynamodb.model.AttributeValue.builder()
-                                .s("value-$index").build(),
-                        ),
+                            "id" to attributeValue { s("item-$index") },
+                            "value" to attributeValue { s("value-$index") },
+                        )
                     )
-                    .build(),
+                }
             )
         }
 
@@ -125,7 +140,7 @@ class DynamoDbStreamsFlociTest : AbstractDynamodbTest() {
             }
 
             records.size shouldBeEqualTo RECORD_COUNT
-            records.all { it.streamArn == streamArn } shouldBeEqualTo true
+            records.all { it.streamArn == streamArn }.shouldBeTrue()
             records.map { it.shardId }.distinct().size shouldBeEqualTo 1
             checkpointStore.load(streamArn, records.first().shardId).shouldNotBeNull()
         }
@@ -134,10 +149,11 @@ class DynamoDbStreamsFlociTest : AbstractDynamodbTest() {
     @Test
     @Order(3)
     fun `Floci table cleanup completes`() = runSuspendIO {
-        client.deleteTable(
-            software.amazon.awssdk.services.dynamodb.model.DeleteTableRequest.builder()
-                .tableName(TABLE_NAME)
-                .build(),
+        val response = client.deleteTable(
+            DeleteTableRequest {
+                tableName(TABLE_NAME)
+            }
         )
+        log.debug { "delete response=$response" }
     }
 }

@@ -3,7 +3,9 @@ package io.bluetape4k.aws.lambda
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.utils.ShutdownQueue
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -11,6 +13,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
@@ -22,12 +25,20 @@ import java.net.URI
 
 class LambdaClientSupportTest {
 
+    companion object: KLogging()
+
+    private val builder = mockk<LambdaClientBuilder>(relaxed = true)
+    private val client = mockk<LambdaClient>(relaxed = true)
+    private val httpClient = mockk<SdkHttpClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(builder, client, httpClient)
+    }
+
     @Test
     fun `application factory registers client and applies explicit settings`() {
-        val builder = mockk<LambdaClientBuilder>(relaxed = true)
-        val client = mockk<LambdaClient>(relaxed = true)
         val endpoint = URI("http://localhost:4566")
-        val httpClient = mockk<SdkHttpClient>()
         val credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))
 
         mockkStatic(LambdaClient::class)
@@ -64,10 +75,6 @@ class LambdaClientSupportTest {
 
     @Test
     fun `with factory closes service client without registering or closing external HTTP client`() {
-        val builder = mockk<LambdaClientBuilder>(relaxed = true)
-        val client = mockk<LambdaClient>(relaxed = true)
-        val httpClient = mockk<SdkHttpClient>(relaxed = true)
-
         mockkStatic(LambdaClient::class)
         mockkObject(ShutdownQueue)
         try {
@@ -92,10 +99,6 @@ class LambdaClientSupportTest {
 
     @Test
     fun `with factory closes service client when block fails`() {
-        val builder = mockk<LambdaClientBuilder>(relaxed = true)
-        val client = mockk<LambdaClient>(relaxed = true)
-        val httpClient = mockk<SdkHttpClient>()
-
         mockkStatic(LambdaClient::class)
         mockkObject(ShutdownQueue)
         try {
@@ -104,7 +107,9 @@ class LambdaClientSupportTest {
             every { builder.httpClient(httpClient) } returns builder
 
             assertFailsWith<IllegalStateException> {
-                withLambdaClient<Unit>(httpClient = httpClient) { throw IllegalStateException("block failed") }
+                withLambdaClient(httpClient = httpClient) {
+                    throw IllegalStateException("block failed")
+                }
             }
 
             verify(exactly = 1) { client.close() }

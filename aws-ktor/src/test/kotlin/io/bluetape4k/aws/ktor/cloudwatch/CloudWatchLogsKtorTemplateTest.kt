@@ -67,7 +67,7 @@ class CloudWatchLogsKtorTemplateTest {
     @Test
     fun `default log stream is required only for default methods`() = runSuspendIO {
         every { client.putLogEvents(any<Consumer<PutLogEventsRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(PutLogEventsResponse.builder().build())
+                CompletableFuture.completedFuture(PutLogEventsResponse.builder().build())
         val operations = CloudWatchLogsKtorTemplate(client)
 
         assertFailsWith<IllegalArgumentException> {
@@ -79,13 +79,13 @@ class CloudWatchLogsKtorTemplateTest {
     @Test
     fun `create and describe operations delegate to AWS client`() = runSuspendIO {
         every { client.createLogGroup(any<Consumer<CreateLogGroupRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(CreateLogGroupResponse.builder().build())
+                CompletableFuture.completedFuture(CreateLogGroupResponse.builder().build())
         every { client.createLogStream(any<Consumer<CreateLogStreamRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(CreateLogStreamResponse.builder().build())
+                CompletableFuture.completedFuture(CreateLogStreamResponse.builder().build())
         every { client.describeLogGroups(any<Consumer<DescribeLogGroupsRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(DescribeLogGroupsResponse.builder().build())
+                CompletableFuture.completedFuture(DescribeLogGroupsResponse.builder().build())
         every { client.describeLogStreams(any<Consumer<DescribeLogStreamsRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(DescribeLogStreamsResponse.builder().build())
+                CompletableFuture.completedFuture(DescribeLogStreamsResponse.builder().build())
         val operations = CloudWatchLogsKtorTemplate(client)
 
         operations.createLogGroup("/app/test")

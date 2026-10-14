@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.kotlin.lambda
 
 import aws.sdk.kotlin.services.lambda.model.InvokeResponse
-import java.util.Base64
+import io.bluetape4k.support.hashOf
+import io.bluetape4k.support.toUtf8String
+import java.util.*
 
 /** AWS Kotlin SDK Lambda raw response와 codec 변환 결과를 함께 보존합니다. */
 data class LambdaInvocationResult<T>(
@@ -16,7 +18,7 @@ data class LambdaInvocationResult<T>(
 ) {
 
     /** Lambda service가 반환한 HTTP status code입니다. */
-    val statusCode: Int?
+    val statusCode: Int
         get() = response.statusCode
 
     /** 함수 실행 오류의 원본 문자열입니다. */
@@ -26,13 +28,26 @@ data class LambdaInvocationResult<T>(
     /** 함수 실행 오류 문자열이 blank가 아닌지 나타냅니다. */
     val hasFunctionError: Boolean
         get() = !functionError.isNullOrBlank()
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (this === other) return true
+        if (other !is LambdaInvocationResult<*>) return false
+
+        return response == other.response &&
+                value == other.value &&
+                payload.contentEquals(other.payload) &&
+                logTail == other.logTail
+    }
+
+    override fun hashCode(): Int = hashOf(response, value, payload.contentHashCode(), logTail)
 }
 
 /** SDK response를 codec 기반 [LambdaInvocationResult]로 변환합니다. */
 fun <T> InvokeResponse.toLambdaInvocationResult(codec: LambdaPayloadCodec<T>): LambdaInvocationResult<T> {
     val copiedPayload = payload?.copyOf()
     val decodedValue = copiedPayload?.let(codec::decode)
-    val decodedLogTail = logResult?.let { Base64.getDecoder().decode(it).toString(Charsets.UTF_8) }
+    val decodedLogTail = logResult?.let { Base64.getDecoder().decode(it).toUtf8String() }
 
     return LambdaInvocationResult(
         response = this,

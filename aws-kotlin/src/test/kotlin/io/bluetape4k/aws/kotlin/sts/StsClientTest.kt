@@ -22,11 +22,7 @@ class StsClientTest: AbstractKotlinStsTest() {
     @Test
     @Order(1)
     fun `StsClient 인스턴스 생성`() = runSuspendIO {
-        withStsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestStsClient(awsEmulator) { client ->
             client.shouldNotBeNull()
         }
     }
@@ -34,30 +30,21 @@ class StsClientTest: AbstractKotlinStsTest() {
     @Test
     @Order(2)
     fun `호출자 신원 조회`() = runSuspendIO {
-        withStsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestStsClient(awsEmulator) { client ->
             val response = client.getCallerIdentity()
-
             log.debug { "userId=${response.userId}, account=${response.account}, arn=${response.arn}" }
 
             response.shouldNotBeNull()
-            response.userId.shouldNotBeNull().shouldNotBeBlank()
-            response.account.shouldNotBeNull().shouldNotBeBlank()
-            response.arn.shouldNotBeNull().shouldNotBeBlank()
+            response.userId.shouldNotBeBlank()
+            response.account.shouldNotBeBlank()
+            response.arn.shouldNotBeBlank()
         }
     }
 
     @Test
     @Order(3)
     fun `IAM 역할 임시 맡기 (AssumeRole)`() = runSuspendIO {
-        withStsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestStsClient(awsEmulator) { client ->
             // LocalStack 환경에서는 임의의 ARN으로도 동작합니다.
             val roleArn = "arn:aws:iam::000000000000:role/TestRole"
             val sessionName = "kotlin-test-session"
@@ -68,40 +55,32 @@ class StsClientTest: AbstractKotlinStsTest() {
 
             response.shouldNotBeNull()
             response.credentials.shouldNotBeNull()
-            response.credentials.shouldNotBeNull().accessKeyId.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials.shouldNotBeNull().secretAccessKey.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials.shouldNotBeNull().sessionToken.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials?.accessKeyId.shouldNotBeBlank()
+            response.credentials?.secretAccessKey.shouldNotBeBlank()
+            response.credentials?.sessionToken.shouldNotBeBlank()
         }
     }
 
     @Test
     @Order(4)
     fun `임시 세션 자격 증명 발급 (GetSessionToken)`() = runSuspendIO {
-        withStsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestStsClient(awsEmulator) { client ->
             val response = client.getSessionToken(durationSeconds = 900)
 
             log.debug { "sessionToken credentials=${response.credentials}" }
 
             response.shouldNotBeNull()
             response.credentials.shouldNotBeNull()
-            response.credentials.shouldNotBeNull().accessKeyId.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials.shouldNotBeNull().secretAccessKey.shouldNotBeNull().shouldNotBeBlank()
-            response.credentials.shouldNotBeNull().sessionToken.shouldNotBeNull().shouldNotBeBlank()
+            response.credentials?.accessKeyId.shouldNotBeBlank()
+            response.credentials?.secretAccessKey.shouldNotBeBlank()
+            response.credentials?.sessionToken.shouldNotBeBlank()
         }
     }
 
     @Test
     @Order(5)
     fun `AssumeRole durationSeconds 범위 검증`() = runSuspendIO {
-        withStsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestStsClient(awsEmulator) { client ->
             assertFailsWith<IllegalArgumentException> {
                 client.assumeRole(
                     roleArn = "arn:aws:iam::000000000000:role/TestRole",
@@ -115,11 +94,7 @@ class StsClientTest: AbstractKotlinStsTest() {
     @Test
     @Order(6)
     fun `GetSessionToken durationSeconds 범위 검증`() = runSuspendIO {
-        withStsClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestStsClient(awsEmulator) { client ->
             assertFailsWith<IllegalArgumentException> {
                 client.getSessionToken(durationSeconds = 899)
             }

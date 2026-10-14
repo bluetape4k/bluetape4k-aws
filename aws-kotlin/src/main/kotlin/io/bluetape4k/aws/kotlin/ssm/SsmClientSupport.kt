@@ -17,7 +17,7 @@ inline fun ssmClientOf(
     httpClient: HttpClientEngine? = null,
     crossinline builder: SsmClient.Config.Builder.() -> Unit = {},
 ): SsmClient {
-    endpointUrl?.let { it.host.toString().requireNotBlank("endpointUrl.host") }
+    endpointUrl?.host?.toString()?.requireNotBlank("endpointUrl.host")
 
     return SsmClient {
         endpointUrl?.let { this.endpointUrl = it }
@@ -37,6 +37,7 @@ suspend fun <R> withSsmClient(
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (SsmClient) -> R,
-): R = ssmClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-    block(client)
-}
+): R =
+    ssmClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
+        block(client)
+    }

@@ -82,7 +82,7 @@ class CloudWatchLogsKtorRuntimeTest {
         ).joinAll()
 
         captured.flatten().map { it.message() }.sorted() shouldBeEqualTo
-            listOf("message-0", "message-1", "message-2", "message-3", "message-4")
+                listOf("message-0", "message-1", "message-2", "message-3", "message-4")
     }
 
     @Test
@@ -295,7 +295,7 @@ class CloudWatchLogsKtorRuntimeTest {
     @Test
     fun `periodic flush continues after transient failure`() = runSuspendIO {
         coEvery { operations.putLogEvents(any(), any()) } throws IllegalStateException("boom") andThen
-            listOf(PutLogEventsResponse.builder().build())
+                listOf(PutLogEventsResponse.builder().build())
         val runtime = runtime(flushInterval = Duration.ofMillis(20))
 
         runtime.append("message", Instant.EPOCH)

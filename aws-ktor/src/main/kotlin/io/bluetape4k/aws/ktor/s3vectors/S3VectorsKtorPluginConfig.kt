@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.s3vectors
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorS3VectorsAsyncClientCustomizer
 import io.bluetape4k.aws.s3vectors.S3VectorsCoroutinesTemplate
@@ -79,4 +80,14 @@ class S3VectorsKtorPluginConfig {
 
         return builder.build()
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("s3VectorsAsyncClient", s3VectorsAsyncClient)
+            .add("s3VectorsOperations", s3VectorsOperations)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("credentialsProvider", credentialsProvider)
+            .toString()
 }

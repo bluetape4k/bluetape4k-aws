@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
-
         <immediateFlush>true</immediateFlush>
         <encoder>
             <!-- @formatter:off -->
@@ -12,9 +11,9 @@
     </appender>
 
     <logger name="io.bluetape4k.aws.kotlin" level="DEBUG"/>
+    <logger name="bluetape4k" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="Console"/>
     </root>
-
 </configuration>

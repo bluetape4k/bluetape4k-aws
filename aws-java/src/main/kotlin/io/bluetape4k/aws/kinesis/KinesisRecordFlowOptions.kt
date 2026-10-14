@@ -20,7 +20,7 @@ data class KinesisRecordFlowOptions(
     val initialThrottleBackoff: Duration = DEFAULT_INITIAL_THROTTLE_BACKOFF,
     val maxThrottleBackoff: Duration = DEFAULT_MAX_THROTTLE_BACKOFF,
     val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
-) : Serializable {
+): Serializable {
 
     init {
         require(batchLimit in 1..MAX_KINESIS_BATCH_LIMIT) {

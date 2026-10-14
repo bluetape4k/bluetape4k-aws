@@ -2,9 +2,14 @@ package io.bluetape4k.aws.kotlin.sqs.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class SqsModelSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `sendMessageRequestOf는 queueUrl과 messageBody를 설정한다`() {
@@ -14,6 +19,7 @@ class SqsModelSupportTest {
             delaySeconds = 3,
         )
 
+        log.debug { "request=$request" }
         request.queueUrl shouldBeEqualTo "https://localhost:4566/000000000000/test-queue"
         request.messageBody shouldBeEqualTo "hello"
         request.delaySeconds shouldBeEqualTo 3
@@ -28,8 +34,9 @@ class SqsModelSupportTest {
             entries = listOf(entry),
         )
 
-        request.entries?.size shouldBeEqualTo 1
-        request.entries?.first()?.id shouldBeEqualTo "id-1"
+        log.debug { "request=$request" }
+        request.entries shouldHaveSize 1
+        request.entries?.single()?.id shouldBeEqualTo "id-1"
     }
 
     @Test
@@ -40,6 +47,7 @@ class SqsModelSupportTest {
             waitTimeSeconds = 10,
         )
 
+        log.debug { "request=$request" }
         request.maxNumberOfMessages shouldBeEqualTo 5
         request.waitTimeSeconds shouldBeEqualTo 10
     }
@@ -50,6 +58,7 @@ class SqsModelSupportTest {
             queueUrl = "https://localhost:4566/000000000000/test-queue",
         )
 
+        log.debug { "request=$request" }
         request.maxNumberOfMessages shouldBeEqualTo 3
         request.waitTimeSeconds shouldBeEqualTo 20
     }
@@ -61,27 +70,29 @@ class SqsModelSupportTest {
             receiptHandle = "receipt-handle",
             visibilityTimeout = 5,
         )
+        log.debug { "entry=$entry" }
 
         val request = changeMessageVisibilityBatchRequestOf(
             queueUrl = "https://localhost:4566/000000000000/test-queue",
             entries = listOf(entry),
         )
-
-        request.entries?.size shouldBeEqualTo 1
-        request.entries?.first()?.receiptHandle shouldBeEqualTo "receipt-handle"
+        log.debug { "request=$request" }
+        request.entries shouldHaveSize 1
+        request.entries?.single()?.receiptHandle shouldBeEqualTo "receipt-handle"
     }
 
     @Test
     fun `deleteMessageBatchRequestOf는 엔트리를 설정한다`() {
         val entry = deleteMessageBatchRequestEntryOf(id = "id-1", receiptHandle = "receipt-handle")
+        log.debug { "entry=$entry" }
 
         val request = deleteMessageBatchRequestOf(
             queueUrl = "https://localhost:4566/000000000000/test-queue",
             entries = listOf(entry),
         )
-
-        request.entries?.size shouldBeEqualTo 1
-        request.entries?.first()?.id shouldBeEqualTo "id-1"
+        log.debug { "request=$request" }
+        request.entries shouldHaveSize 1
+        request.entries?.single()?.id shouldBeEqualTo "id-1"
     }
 
     @Test

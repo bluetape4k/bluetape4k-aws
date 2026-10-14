@@ -2,10 +2,13 @@ package io.bluetape4k.aws.kinesis
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import kotlin.time.Duration.Companion.milliseconds
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
 
-class KinesisRecordFlowOptionsTest {
+class KinesisRecordFlowOptionsTest: AbstractKinesisTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `defaults match the consumer polling contract`() {

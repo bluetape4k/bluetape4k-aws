@@ -36,7 +36,7 @@ inline fun inputLogEventOf(
     timestamp: Long,
     message: String,
     crossinline builder: InputLogEvent.Builder.() -> Unit = {},
-): InputLogEvent = inputLogEvent {
+): InputLogEvent = InputLogEvent {
     this.timestamp = timestamp
     this.message = message
     builder()

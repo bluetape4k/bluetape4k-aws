@@ -1,16 +1,15 @@
 package io.bluetape4k.aws.s3
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.io.deleteIfExists
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8String
 import io.bluetape4k.utils.Resourcex
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.RepeatedTest
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
@@ -28,7 +27,7 @@ class S3ClientExtensionsTest: AbstractS3Test() {
     @TempDir
     lateinit var tempDir: File
 
-    @Test
+    @RepeatedTest(value = REPEAT_SIZE)
     fun `exists bucket returns false for missing bucket`() {
         val missingBucket = "missing-${randomKey()}"
 
@@ -36,7 +35,7 @@ class S3ClientExtensionsTest: AbstractS3Test() {
         result.getOrThrow().shouldBeFalse()
     }
 
-    @Test
+    @RepeatedTest(value = REPEAT_SIZE)
     fun `put and get s3 object`() {
         val key = randomKey()
         val content = randomString()
@@ -60,7 +59,7 @@ class S3ClientExtensionsTest: AbstractS3Test() {
         response.eTag().shouldNotBeNull()
 
         val download = s3Client.getAsByteArray(BUCKET_NAME, key)
-        download.toUtf8String() shouldBeEqualTo bytes.toUtf8String()
+        download shouldBeEqualTo bytes
     }
 
     @ParameterizedTest(name = "upload/download {0}")

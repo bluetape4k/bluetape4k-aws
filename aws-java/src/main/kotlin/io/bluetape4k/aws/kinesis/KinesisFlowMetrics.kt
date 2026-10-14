@@ -10,7 +10,7 @@ import java.security.MessageDigest
  * 식별자는 생성 시 deterministic redacted token으로 변환됩니다. sealed subtype 추가는
  * exhaustive `when` 소비자에게 source-breaking이므로 다음 major version에서만 가능합니다.
  */
-sealed interface KinesisFlowEvent : Serializable {
+sealed interface KinesisFlowEvent: Serializable {
     val eventKind: String
     val outcome: String
     val reason: String?
@@ -24,7 +24,7 @@ sealed interface KinesisFlowEvent : Serializable {
         override val outcome: String,
         override val reason: String? = null,
         override val retryClass: String? = null,
-    ) : KinesisFlowEvent {
+    ): KinesisFlowEvent {
         init {
             validateKinesisFlowEvent(eventKind, outcome, reason, retryClass)
             requireKinesisMetricToken(streamToken)
@@ -41,7 +41,7 @@ sealed interface KinesisFlowEvent : Serializable {
         override val outcome: String,
         override val reason: String? = null,
         override val retryClass: String? = null,
-    ) : KinesisFlowEvent {
+    ): KinesisFlowEvent {
         init {
             validateKinesisFlowEvent(eventKind, outcome, reason, retryClass)
             requireKinesisMetricToken(streamToken)
@@ -58,7 +58,7 @@ sealed interface KinesisFlowEvent : Serializable {
         override val outcome: String = "read",
         override val reason: String? = null,
         override val retryClass: String? = null,
-    ) : KinesisFlowEvent {
+    ): KinesisFlowEvent {
         init {
             validateKinesisFlowEvent(eventKind, outcome, reason, retryClass)
             requireKinesisMetricToken(streamToken)
@@ -77,7 +77,7 @@ sealed interface KinesisFlowEvent : Serializable {
         override val outcome: String = "saved",
         override val reason: String? = null,
         override val retryClass: String? = null,
-    ) : KinesisFlowEvent {
+    ): KinesisFlowEvent {
         init {
             validateKinesisFlowEvent(eventKind, outcome, reason, retryClass)
             requireKinesisMetricToken(streamToken)
@@ -94,7 +94,7 @@ sealed interface KinesisFlowEvent : Serializable {
         override val outcome: String = "page",
         override val reason: String? = null,
         override val retryClass: String? = null,
-    ) : KinesisFlowEvent {
+    ): KinesisFlowEvent {
         init {
             validateKinesisFlowEvent(eventKind, outcome, reason, retryClass)
             requireKinesisMetricToken(streamToken)
@@ -113,7 +113,7 @@ sealed interface KinesisFlowEvent : Serializable {
         override val outcome: String = "retrying",
         override val reason: String? = null,
         override val retryClass: String? = null,
-    ) : KinesisFlowEvent {
+    ): KinesisFlowEvent {
         init {
             validateKinesisFlowEvent(eventKind, outcome, reason, retryClass)
             requireKinesisMetricToken(streamToken)
@@ -129,14 +129,14 @@ fun interface KinesisFlowMetrics {
 }
 
 /** 관측이 필요하지 않을 때 사용하는 no-op metrics입니다. */
-object NoopKinesisFlowMetrics : KinesisFlowMetrics {
+object NoopKinesisFlowMetrics: KinesisFlowMetrics {
     override suspend fun onEvent(event: KinesisFlowEvent) = Unit
 }
 
 /** callback 기반 metrics adapter입니다. 이벤트 자체는 이미 payload-free/redacted 상태입니다. */
 class LambdaKinesisFlowMetrics(
     private val callback: suspend (KinesisFlowEvent) -> Unit,
-) : KinesisFlowMetrics {
+): KinesisFlowMetrics {
     override suspend fun onEvent(event: KinesisFlowEvent) = callback(event)
 }
 

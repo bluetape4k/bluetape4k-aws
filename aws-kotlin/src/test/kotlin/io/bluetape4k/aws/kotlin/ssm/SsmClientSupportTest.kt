@@ -14,23 +14,38 @@ import aws.sdk.kotlin.services.ssm.model.PutParameterResponse
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.kotlin.auth.LocalCredentialsProvider
 import io.bluetape4k.aws.kotlin.secretsmanager.awsSecretValueOf
 import io.bluetape4k.aws.kotlin.ssm.model.getParameterRequestOf
 import io.bluetape4k.aws.kotlin.ssm.model.getParametersByPathRequestOf
 import io.bluetape4k.aws.kotlin.ssm.model.getParametersRequestOf
 import io.bluetape4k.aws.kotlin.ssm.model.putSecureParameterRequestOf
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SsmClientSupportTest {
+
+    private companion object: KLoggingChannel() {
+        private const val SENTINEL = "raw-secret-value"
+    }
+
+    private val client = mockk<SsmClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `client factories use local endpoint static credentials and explicit region`() = runTest {
@@ -75,8 +90,9 @@ class SsmClientSupportTest {
 
     @Test
     fun `secure and non secure reads map withDecryption and propagate missing exceptions`() = runTest {
-        val client = mockk<SsmClient>()
-        coEvery { client.getParameter(any<GetParameterRequest>()) } returns GetParameterResponse {
+        coEvery {
+            client.getParameter(any<GetParameterRequest>())
+        } returns GetParameterResponse {
             parameter = Parameter {
                 name = "/app/secret"
                 value = SENTINEL
@@ -88,7 +104,9 @@ class SsmClientSupportTest {
 
         secret.reveal() shouldBeEqualTo SENTINEL
 
-        coEvery { client.getParameter(any<GetParameterRequest>()) } returns GetParameterResponse {
+        coEvery {
+            client.getParameter(any<GetParameterRequest>())
+        } returns GetParameterResponse {
             parameter = Parameter {
                 name = "/app/plain"
                 value = "plain"
@@ -104,15 +122,15 @@ class SsmClientSupportTest {
         val error = assertFailsWith<ParameterNotFound> {
             client.getSecureParameter("/app/missing")
         }
-        error.message.orEmpty().contains("missing parameter").shouldBeEqualTo(true)
+        error.message shouldContain "missing parameter"
     }
 
     @Test
     fun `secure writes require redacted value and collection helpers preserve raw responses`() = runTest {
-        val client = mockk<SsmClient>()
         val secret = awsSecretValueOf(SENTINEL)
         val parametersResponse = GetParametersResponse { invalidParameters = listOf("/app/missing") }
         val pathResponse = GetParametersByPathResponse { nextToken = "next" }
+
         coEvery { client.putParameter(any()) } returns PutParameterResponse { version = 1 }
         coEvery { client.getParameters(any<GetParametersRequest>()) } returns parametersResponse
         coEvery { client.getParametersByPath(any<GetParametersByPathRequest>()) } returns pathResponse
@@ -121,7 +139,8 @@ class SsmClientSupportTest {
         client.getParameters(listOf("/app/a")) shouldBeEqualTo parametersResponse
         client.getParametersByPath(path = "/app", maxResults = 5, nextToken = "token") shouldBeEqualTo pathResponse
 
-        secret.toString().contains(SENTINEL).shouldBeFalse()
+        secret.toString() shouldNotContain SENTINEL
+
         coVerify(exactly = 1) { client.putParameter(any()) }
         coVerify(exactly = 1) { client.getParameters(any<GetParametersRequest>()) }
         coVerify(exactly = 1) { client.getParametersByPath(any<GetParametersByPathRequest>()) }
@@ -138,20 +157,17 @@ class SsmClientSupportTest {
         request.name shouldBeEqualTo "/app/secret"
         request.value shouldBeEqualTo SENTINEL
         request.type shouldBeEqualTo ParameterType.SecureString
-        request.toString().contains(SENTINEL).shouldBeFalse()
+        request.toString() shouldNotContain SENTINEL
     }
 
     @Test
     fun `helpers rethrow cancellation`() = runTest {
-        val client = mockk<SsmClient>()
-        coEvery { client.getParameter(any<GetParameterRequest>()) } throws CancellationException("cancelled")
+        coEvery {
+            client.getParameter(any<GetParameterRequest>())
+        } throws CancellationException("cancelled")
 
         assertFailsWith<CancellationException> {
             client.getSecureParameter("/app/secret")
         }
-    }
-
-    private companion object {
-        private const val SENTINEL = "raw-secret-value"
     }
 }

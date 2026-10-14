@@ -80,11 +80,11 @@ inline fun putRuleRequestOf(
 
     return PutRuleRequest {
         this.name = name
-        this.eventBusName = eventBusName
-        this.eventPattern = eventPattern
-        this.scheduleExpression = scheduleExpression
-        this.state = state
-        this.description = description
+        eventBusName?.let { this.eventBusName = it }
+        eventPattern?.let { this.eventPattern = it }
+        scheduleExpression?.let { this.scheduleExpression = it }
+        state?.let { this.state = it }
+        description?.let { this.description = it }
         builder()
     }
 }
@@ -101,7 +101,7 @@ inline fun deleteRuleRequestOf(
     return DeleteRuleRequest {
         this.name = name
         this.eventBusName = eventBusName
-        this.force = force
+        force?.let { this.force = it }
         builder()
     }
 }
@@ -135,7 +135,7 @@ inline fun putTargetsRequestOf(
     return PutTargetsRequest {
         this.rule = rule
         this.targets = targets
-        this.eventBusName = eventBusName
+        eventBusName?.let { this.eventBusName = it }
         builder()
     }
 }
@@ -156,8 +156,8 @@ inline fun removeTargetsRequestOf(
     return RemoveTargetsRequest {
         this.rule = rule
         this.ids = ids
-        this.eventBusName = eventBusName
-        this.force = force
+        eventBusName?.let { this.eventBusName = it }
+        force?.let { this.force = it }
         builder()
     }
 }
@@ -189,12 +189,12 @@ inline fun putEventsRequestEntryOf(
         this.source = source
         this.detailType = detailType
         this.detail = detail
-        this.eventBusName = eventBusName
+        eventBusName?.let { this.eventBusName = it }
         if (resources.isNotEmpty()) {
             this.resources = resources
         }
-        this.time = time
-        this.traceHeader = traceHeader
+        time?.let { this.time = it }
+        traceHeader?.let { this.traceHeader = it }
         builder()
     }
 }
@@ -223,10 +223,10 @@ inline fun listRulesRequestOf(
     namePrefix?.requireNotBlank("namePrefix")
     nextToken?.requireNotBlank("nextToken")
     return ListRulesRequest {
-        this.eventBusName = eventBusName
-        this.namePrefix = namePrefix
-        this.limit = limit
-        this.nextToken = nextToken
+        eventBusName?.let { this.eventBusName = it }
+        namePrefix?.let { this.namePrefix = it }
+        limit?.let { this.limit = it }
+        nextToken?.let { this.nextToken = it }
         builder()
     }
 }
@@ -244,9 +244,9 @@ inline fun listTargetsByRuleRequestOf(
     nextToken?.requireNotBlank("nextToken")
     return ListTargetsByRuleRequest {
         this.rule = rule
-        this.eventBusName = eventBusName
-        this.limit = limit
-        this.nextToken = nextToken
+        eventBusName?.let { this.eventBusName = it }
+        limit?.let { this.limit = it }
+        nextToken?.let { this.nextToken = it }
         builder()
     }
 }

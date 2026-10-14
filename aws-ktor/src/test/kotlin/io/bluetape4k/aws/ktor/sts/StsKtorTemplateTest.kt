@@ -3,12 +3,18 @@ package io.bluetape4k.aws.ktor.sts
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.concurrent.failedCompletableFutureOf
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.sts.StsAsyncClient
@@ -24,9 +30,17 @@ import java.util.concurrent.CompletableFuture
 
 class StsKtorTemplateTest {
 
+    companion object: KLoggingChannel()
+
+    private val client = mockk<StsAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
     fun `callerIdentity delegates to STS getCallerIdentity`() = runTest {
-        val client = mockk<StsAsyncClient>()
         val request = slot<GetCallerIdentityRequest>()
         val response = GetCallerIdentityResponse.builder()
             .account("123456789012")
@@ -34,23 +48,27 @@ class StsKtorTemplateTest {
             .userId("user-1")
             .build()
 
-        every { client.getCallerIdentity(capture(request)) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.getCallerIdentity(capture(request))
+        } returns completableFutureOf(response)
 
         val result = template(client).callerIdentity()
 
+        log.debug { "result=$result" }
         result shouldBeEqualTo response
         request.captured shouldBeEqualTo GetCallerIdentityRequest.builder().build()
     }
 
     @Test
     fun `assumeRole maps role session and duration`() = runTest {
-        val client = mockk<StsAsyncClient>()
         val request = slot<AssumeRoleRequest>()
         val response = AssumeRoleResponse.builder()
             .credentials(credentials())
             .build()
 
-        every { client.assumeRole(capture(request)) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.assumeRole(capture(request))
+        } returns completableFutureOf(response)
 
         val result = template(client).assumeRole(
             StsAssumeRoleRequest(
@@ -61,7 +79,10 @@ class StsKtorTemplateTest {
             )
         )
 
+        log.debug { "result=$result" }
         result shouldBeEqualTo response
+
+        log.debug { "request=${request.captured}" }
         request.captured.roleArn() shouldBeEqualTo "arn:aws:iam::123456789012:role/orders"
         request.captured.roleSessionName() shouldBeEqualTo "orders-api"
         request.captured.durationSeconds() shouldBeEqualTo 1_800
@@ -70,13 +91,14 @@ class StsKtorTemplateTest {
 
     @Test
     fun `sessionToken maps duration and MFA fields`() = runTest {
-        val client = mockk<StsAsyncClient>()
         val request = slot<GetSessionTokenRequest>()
         val response = GetSessionTokenResponse.builder()
             .credentials(credentials())
             .build()
 
-        every { client.getSessionToken(capture(request)) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.getSessionToken(capture(request))
+        } returns completableFutureOf(response)
 
         val result = template(client).sessionToken(
             StsSessionTokenRequest(
@@ -85,8 +107,10 @@ class StsKtorTemplateTest {
                 tokenCode = "123456",
             )
         )
-
+        log.debug { "result=$result" }
         result shouldBeEqualTo response
+
+        log.debug { "request=${request.captured}" }
         request.captured.durationSeconds() shouldBeEqualTo 900
         request.captured.serialNumber() shouldBeEqualTo "arn:aws:iam::123456789012:mfa/debop"
         request.captured.tokenCode() shouldBeEqualTo "123456"
@@ -108,9 +132,11 @@ class StsKtorTemplateTest {
 
     @Test
     fun `callerIdentity cancels the backing future when coroutine is cancelled`() = runTest {
-        val client = mockk<StsAsyncClient>()
         val future = CompletableFuture<GetCallerIdentityResponse>()
-        every { client.getCallerIdentity(any<GetCallerIdentityRequest>()) } returns future
+        every {
+            client.getCallerIdentity(any<GetCallerIdentityRequest>())
+        } returns future
+
         val job = launch {
             template(client).callerIdentity()
         }
@@ -123,9 +149,10 @@ class StsKtorTemplateTest {
 
     @Test
     fun `failed STS future preserves original exception`() = runTest {
-        val client = mockk<StsAsyncClient>()
         val failure = SdkClientException.create("boom")
-        every { client.getCallerIdentity(any<GetCallerIdentityRequest>()) } returns CompletableFuture.failedFuture(failure)
+        every {
+            client.getCallerIdentity(any<GetCallerIdentityRequest>())
+        } returns failedCompletableFutureOf(failure)
 
         val error = assertFailsWith<SdkClientException> {
             template(client).callerIdentity()

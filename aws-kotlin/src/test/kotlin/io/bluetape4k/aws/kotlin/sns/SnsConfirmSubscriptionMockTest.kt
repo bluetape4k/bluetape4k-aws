@@ -4,11 +4,11 @@ import aws.sdk.kotlin.services.sns.SnsClient
 import aws.sdk.kotlin.services.sns.confirmSubscription
 import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionRequest
 import aws.sdk.kotlin.services.sns.model.ConfirmSubscriptionResponse
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeNull
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.mockk

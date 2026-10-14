@@ -4,11 +4,12 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class MessageVisibilityTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     private val queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue"
 
@@ -20,6 +21,7 @@ class MessageVisibilityTest {
             visibilityTimeout = 30
         )
 
+        log.debug { "req=$req" }
         req.queueUrl shouldBeEqualTo queueUrl
         req.receiptHandle shouldBeEqualTo "AQEBreceipt..."
         req.visibilityTimeout shouldBeEqualTo 30
@@ -40,6 +42,7 @@ class MessageVisibilityTest {
             visibilityTimeout = 60
         )
 
+        log.debug { "entry=$entry" }
         entry.id shouldBeEqualTo "entry-1"
         entry.receiptHandle shouldBeEqualTo "AQEBhandle..."
         entry.visibilityTimeout shouldBeEqualTo 60
@@ -53,6 +56,7 @@ class MessageVisibilityTest {
         )
         val req = changeMessageVisibilityBatchRequestOf(queueUrl = queueUrl, entries = entries)
 
+        log.debug { "req=$req" }
         req.queueUrl shouldBeEqualTo queueUrl
         req.entries shouldHaveSize 2
     }
@@ -65,6 +69,7 @@ class MessageVisibilityTest {
             changeMessageVisibilityBatchRequestEntryOf("id2", "rh2", 60)
         )
 
+        log.debug { "req=$req" }
         req.entries shouldHaveSize 2
     }
 

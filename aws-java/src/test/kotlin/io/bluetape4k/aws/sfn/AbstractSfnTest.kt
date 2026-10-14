@@ -3,22 +3,23 @@
 package io.bluetape4k.aws.sfn
 
 import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import org.junit.jupiter.api.Assumptions.assumeFalse
 
 /** Step Functions만 사용하는 Floci-first emulator fixture입니다. */
-abstract class AbstractSfnTest : AbstractAwsTest() {
+abstract class AbstractSfnTest: AbstractAwsTest() {
 
-    companion object {
+    companion object: KLogging() {
         private const val EMULATOR_PROPERTY = "bluetape4k.aws.emulator"
 
         val sfnEmulator: AwsEmulatorServer by lazy {
             when (configuredSfnEmulatorName()) {
                 "floci" -> FlociServer.Launcher.floci
                 "localstack" -> LocalStackServer.Launcher.getLocalStack("stepfunctions")
-                else -> error("Unsupported AWS emulator: ${configuredSfnEmulatorName()}. Use floci or localstack.")
+                else    -> error("Unsupported AWS emulator: ${configuredSfnEmulatorName()}. Use floci or localstack.")
             }
         }
 

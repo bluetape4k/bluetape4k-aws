@@ -28,17 +28,17 @@ import java.nio.ByteBuffer
  * ```
  */
 fun <T> T.toAttributeValue(): AttributeValue = when (this) {
-    null              -> AttributeValue.Null(true)
+    null -> AttributeValue.Null(true)
     is AttributeValue -> this
-    is ByteArray      -> AttributeValue.B(this)
-    is ByteBuffer     -> this.toAttributeValue()
-    is String         -> AttributeValue.S(this)
-    is Number         -> AttributeValue.N(this.toString())
-    is Boolean        -> AttributeValue.Bool(this)
+    is ByteArray -> AttributeValue.B(this)
+    is ByteBuffer -> this.toAttributeValue()
+    is String -> AttributeValue.S(this)
+    is Number -> AttributeValue.N(this.toString())
+    is Boolean -> AttributeValue.Bool(this)
 
-    is Iterable<*>    -> this.toAttributeValue()
-    is Map<*, *>      -> this.toAttributeValue()
-    else              -> this.toString().toAttributeValue()
+    is Iterable<*> -> this.toAttributeValue()
+    is Map<*, *> -> this.toAttributeValue()
+    else -> this.toString().toAttributeValue()
 }
 
 

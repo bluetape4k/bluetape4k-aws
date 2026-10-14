@@ -1,12 +1,22 @@
 package io.bluetape4k.aws.ktor.s3
 
-import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
-import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorHttpClientCustomizer
+import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
+import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
+import io.bluetape4k.javatimes.days
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.requirePositiveNumber
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -19,11 +29,10 @@ import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.Url
 import io.ktor.http.URLBuilder
+import io.ktor.http.Url
 import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
@@ -47,8 +56,8 @@ import java.time.Duration
 private const val S3_SERVICE = "s3"
 private const val UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
 private const val S3_METADATA_PREFIX = "x-amz-meta-"
-private val MIN_PRESIGN_EXPIRY: Duration = Duration.ofSeconds(1)
-private val MAX_PRESIGN_EXPIRY: Duration = Duration.ofDays(7)
+private val MIN_PRESIGN_EXPIRY: Duration = 1.seconds()
+private val MAX_PRESIGN_EXPIRY: Duration = 7.days()
 
 /**
  * Ktor `HttpClient` 기반 S3 REST 클라이언트입니다.
@@ -89,6 +98,11 @@ class S3KtorClient(
     private val signer: AwsV4HttpSigner = AwsV4HttpSigner.create(),
 ): AutoCloseable {
 
+    companion object: KLoggingChannel() {
+        const val X_AMZ_VERSION_ID = "x-amz-version-id"
+        const val X_AMZ_DELETE_MARKER = "x-amz-delete-marker"
+    }
+
     init {
         region.requireNotBlank("region")
     }
@@ -105,11 +119,13 @@ class S3KtorClient(
         contentType: String? = null,
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
-    ): S3KtorPutObjectResponse =
-        putObject(
+    ): S3KtorPutObjectResponse {
+        log.debug { "putObject... bucket=$bucket, key=$key, contentType=$contentType" }
+        return putObject(
             request = S3KtorPutObjectRequest(bucket, key, contentType, metadata, headers),
             body = ByteArrayContent(bytes, contentType?.let(ContentType::parse)),
         )
+    }
 
     /**
      * [key]와 페이로드에서 콘텐츠 타입을 감지해 [bytes]를 저장합니다.
@@ -124,15 +140,14 @@ class S3KtorClient(
         detector: S3KtorContentTypeDetector = S3KtorContentTypes.Default,
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
-    ): S3KtorPutObjectResponse =
-        putObject(
-            bucket = bucket,
-            key = key,
-            bytes = bytes,
-            contentType = S3KtorContentTypes.orFallback(detector.detect(key, bytes)),
-            metadata = metadata,
-            headers = headers,
-        )
+    ): S3KtorPutObjectResponse = putObject(
+        bucket = bucket,
+        key = key,
+        bytes = bytes,
+        contentType = S3KtorContentTypes.orFallback(detector.detect(key, bytes)),
+        metadata = metadata,
+        headers = headers,
+    )
 
     /**
      * S3 서버 측 암호화 요청 헤더와 함께 [bytes]를 저장합니다.
@@ -148,15 +163,14 @@ class S3KtorClient(
         contentType: String? = null,
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
-    ): S3KtorPutObjectResponse =
-        putObject(
-            bucket = bucket,
-            key = key,
-            bytes = bytes,
-            contentType = contentType,
-            metadata = metadata,
-            headers = headers + encryption.headers(),
-        )
+    ): S3KtorPutObjectResponse = putObject(
+        bucket = bucket,
+        key = key,
+        bytes = bytes,
+        contentType = contentType,
+        metadata = metadata,
+        headers = headers + encryption.headers(),
+    )
 
     /**
      * [body]를 S3 객체로 저장합니다.
@@ -167,14 +181,17 @@ class S3KtorClient(
         request: S3KtorPutObjectRequest,
         body: OutgoingContent,
     ): S3KtorPutObjectResponse {
-        val response = httpClient.put(objectUrl(request.bucket, request.key)) {
+        val url = objectUrl(request.bucket, request.key)
+        log.debug { "putObject: $url" }
+
+        val response = httpClient.put(url) {
             applyPutHeaders(request)
             setBody(body)
         }.ensureSuccess()
 
         return S3KtorPutObjectResponse(
             eTag = response.headers[HttpHeaders.ETag],
-            versionId = response.headers["x-amz-version-id"],
+            versionId = response.headers[X_AMZ_VERSION_ID],
             headers = response.headers,
         )
     }
@@ -182,15 +199,16 @@ class S3KtorClient(
     /**
      * S3 객체를 byte array로 가져옵니다.
      */
-    suspend fun getObjectBytes(bucket: String, key: String): ByteArray =
-        getObject(bucket, key).bytes
+    suspend fun getObjectBytes(bucket: String, key: String): ByteArray = getObject(bucket, key).bytes
 
     /**
      * S3 객체를 byte array와 metadata로 가져옵니다.
      */
     suspend fun getObject(bucket: String, key: String): S3KtorGetObjectResponse {
+        log.debug { "getObject... bucket=$bucket, key=$key" }
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
         val bytes = response.bodyAsBytes()
+
         return S3KtorGetObjectResponse(
             bytes = bytes,
             eTag = response.headers[HttpHeaders.ETag],
@@ -207,6 +225,7 @@ class S3KtorClient(
      * 반환된 [S3KtorStreamingObjectResponse.body]는 response channel이므로 caller가 소비를 완료해야 합니다.
      */
     suspend fun getObjectStream(bucket: String, key: String): S3KtorStreamingObjectResponse {
+        log.debug { "getObjectStream... bucket=$bucket, key=$key" }
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
         return S3KtorStreamingObjectResponse(
             body = response.bodyAsChannel(),
@@ -222,10 +241,11 @@ class S3KtorClient(
      * S3 객체를 삭제합니다.
      */
     suspend fun deleteObject(bucket: String, key: String): S3KtorDeleteObjectResponse {
+        log.debug { "deleteObject... bucket=$bucket, key=$key" }
         val response = httpClient.delete(objectUrl(bucket, key)).ensureSuccess()
         return S3KtorDeleteObjectResponse(
-            deleteMarker = response.headers["x-amz-delete-marker"]?.toBooleanStrictOrNull(),
-            versionId = response.headers["x-amz-version-id"],
+            deleteMarker = response.headers[X_AMZ_DELETE_MARKER]?.toBooleanStrictOrNull(),
+            versionId = response.headers[X_AMZ_VERSION_ID],
             headers = response.headers,
         )
     }
@@ -241,15 +261,18 @@ class S3KtorClient(
      * ```
      */
     suspend fun listObjectsV2(request: S3KtorListObjectsRequest): S3KtorListObjectsResponse {
-        val response = httpClient.get(bucketUrl(request.bucket)) {
-            parameter("list-type", "2")
-            request.prefix?.let { parameter("prefix", it) }
-            request.delimiter?.let { parameter("delimiter", it) }
-            request.continuationToken?.let { parameter("continuation-token", it) }
-            request.startAfter?.let { parameter("start-after", it) }
-            request.maxKeys?.let { parameter("max-keys", it.toString()) }
-            request.fetchOwner?.let { parameter("fetch-owner", it.toString()) }
-        }.ensureSuccess()
+        log.debug { "listObjectsV2... request=$request" }
+        val response = httpClient
+            .get(bucketUrl(request.bucket)) {
+                parameter("list-type", "2")
+                request.prefix?.let { parameter("prefix", it) }
+                request.delimiter?.let { parameter("delimiter", it) }
+                request.continuationToken?.let { parameter("continuation-token", it) }
+                request.startAfter?.let { parameter("start-after", it) }
+                request.maxKeys?.let { parameter("max-keys", it.toString()) }
+                request.fetchOwner?.let { parameter("fetch-owner", it.toString()) }
+            }
+            .ensureSuccess()
 
         return S3KtorXml.parseListObjectsV2(response.bodyAsText())
     }
@@ -266,12 +289,15 @@ class S3KtorClient(
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
     ): S3KtorMultipartUpload {
-        val response = httpClient.post(objectUrl(bucket, key)) {
-            parameter("uploads", "")
-            contentType?.let { contentType(ContentType.parse(it)) }
-            metadata.forEach { (name, value) -> header("x-amz-meta-$name", value) }
-            headers.forEach { (name, value) -> header(name, value) }
-        }.ensureSuccess()
+        log.debug { "createMultipartUpload... bucket=$bucket, key=$key" }
+        val response = httpClient
+            .post(objectUrl(bucket, key)) {
+                parameter("uploads", "")
+                contentType?.let { contentType(ContentType.parse(it)) }
+                metadata.forEach { (name, value) -> header(S3_METADATA_PREFIX + name, value) }
+                headers.forEach { (name, value) -> header(name, value) }
+            }
+            .ensureSuccess()
 
         return S3KtorXml.parseCreateMultipartUpload(response.bodyAsText())
     }
@@ -286,14 +312,13 @@ class S3KtorClient(
         contentType: String? = null,
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
-    ): S3KtorMultipartUpload =
-        createMultipartUpload(
-            bucket = bucket,
-            key = key,
-            contentType = contentType,
-            metadata = metadata,
-            headers = headers + encryption.headers(),
-        )
+    ): S3KtorMultipartUpload = createMultipartUpload(
+        bucket = bucket,
+        key = key,
+        contentType = contentType,
+        metadata = metadata,
+        headers = headers + encryption.headers(),
+    )
 
     /**
      * Multipart upload part를 byte array로 업로드합니다.
@@ -304,8 +329,9 @@ class S3KtorClient(
         uploadId: String,
         partNumber: Int,
         bytes: ByteArray,
-    ): S3KtorCompletedPart =
-        uploadPart(bucket, key, uploadId, partNumber, ByteArrayContent(bytes), bytes.size.toLong())
+    ): S3KtorCompletedPart {
+        return uploadPart(bucket, key, uploadId, partNumber, ByteArrayContent(bytes), bytes.size.toLong())
+    }
 
     /**
      * Multipart upload part를 streaming body로 업로드합니다.
@@ -320,15 +346,18 @@ class S3KtorClient(
         body: OutgoingContent,
         contentLength: Long,
     ): S3KtorCompletedPart {
-        require(partNumber > 0) { "partNumber must be positive. partNumber=$partNumber" }
-        require(contentLength >= 0) { "contentLength must be non-negative. contentLength=$contentLength" }
+        partNumber.requirePositiveNumber("partNumber")
+        contentLength.requirePositiveNumber("contentLength")
+        log.debug { "uploadPart... bucket=$bucket, key=$key, uploadId=$uploadId, partNumber=$partNumber" }
 
-        val response = httpClient.put(objectUrl(bucket, key)) {
-            parameter("partNumber", partNumber.toString())
-            parameter("uploadId", uploadId)
-            header(HttpHeaders.ContentLength, contentLength.toString())
-            setBody(body)
-        }.ensureSuccess()
+        val response = httpClient
+            .put(objectUrl(bucket, key)) {
+                parameter("partNumber", partNumber.toString())
+                parameter("uploadId", uploadId)
+                header(HttpHeaders.ContentLength, contentLength.toString())
+                setBody(body)
+            }
+            .ensureSuccess()
 
         return S3KtorCompletedPart(
             partNumber = partNumber,
@@ -347,16 +376,20 @@ class S3KtorClient(
         uploadId: String,
         parts: List<S3KtorCompletedPart>,
     ): S3KtorCompleteMultipartUploadResponse {
-        require(parts.isNotEmpty()) { "parts must not be empty." }
+        parts.requireNotEmpty("parts")
+        log.debug { "completeMultipartUpload... bucket=$bucket, key=$key, uploadId=$uploadId, parts=$parts" }
+
         val body = TextContent(
             text = S3KtorXml.completeMultipartUpload(parts),
             contentType = ContentType.Application.Xml,
         )
 
-        val response = httpClient.post(objectUrl(bucket, key)) {
-            parameter("uploadId", uploadId)
-            setBody(body)
-        }.ensureSuccess()
+        val response = httpClient
+            .post(objectUrl(bucket, key)) {
+                parameter("uploadId", uploadId)
+                setBody(body)
+            }
+            .ensureSuccess()
 
         return S3KtorXml.parseCompleteMultipartUpload(response.bodyAsText())
     }
@@ -365,9 +398,12 @@ class S3KtorClient(
      * Multipart upload를 중단합니다.
      */
     suspend fun abortMultipartUpload(bucket: String, key: String, uploadId: String) {
-        httpClient.delete(objectUrl(bucket, key)) {
-            parameter("uploadId", uploadId)
-        }.ensureSuccess()
+        log.debug { "abortMultipartUpload... bucket=$bucket, key=$key" }
+        httpClient
+            .delete(objectUrl(bucket, key)) {
+                parameter("uploadId", uploadId)
+            }
+            .ensureSuccess()
     }
 
     /**
@@ -412,14 +448,17 @@ class S3KtorClient(
         bucket: String,
         key: String,
         text: String,
-        charset: Charset = StandardCharsets.UTF_8,
+        charset: Charset = Charsets.UTF_8,
         contentType: String? = null,
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
     ): S3KtorPutObjectResponse {
         val bytes = text.toByteArray(charset)
         val resolvedContentType = contentType
-            ?: S3KtorContentTypes.orFallback(S3KtorContentTypes.Default.detect(key, bytes), "text/plain; charset=${charset.name()}")
+            ?: S3KtorContentTypes.orFallback(
+                S3KtorContentTypes.Default.detect(key, bytes),
+                "text/plain; charset=${charset.name()}"
+            )
 
         return putObject(
             bucket = bucket,
@@ -484,10 +523,8 @@ class S3KtorClient(
     }
 
     private fun presign(method: HttpMethod, url: Url, expires: Duration): S3KtorPresignedRequest {
-        require(!expires.isNegative && !expires.isZero) { "expires must be positive. expires=$expires" }
-        require(expires in MIN_PRESIGN_EXPIRY..MAX_PRESIGN_EXPIRY) {
-            "expires must be between $MIN_PRESIGN_EXPIRY and $MAX_PRESIGN_EXPIRY. expires=$expires"
-        }
+        expires.requireGt(Duration.ZERO, "expires")
+        expires.requireInRange(MIN_PRESIGN_EXPIRY, MAX_PRESIGN_EXPIRY, "expires")
 
         val sdkRequest = SdkHttpFullRequest.builder()
             .uri(URI(url.toString()))
@@ -496,8 +533,7 @@ class S3KtorClient(
             .build()
 
         val signed = signer.sign { builder ->
-            builder.identity(credentialsProvider.resolveCredentials())
-                .request(sdkRequest)
+            builder.identity(credentialsProvider.resolveCredentials()).request(sdkRequest)
                 .putProperty(AwsV4HttpSigner.REGION_NAME, region)
                 .putProperty(AwsV4HttpSigner.SERVICE_SIGNING_NAME, S3_SERVICE)
                 .putProperty(AwsV4HttpSigner.DOUBLE_URL_ENCODE, false)
@@ -607,21 +643,19 @@ fun s3KtorClientOf(
     addressingStyle: S3KtorAddressingStyle = S3KtorAddressingStyle.VirtualHosted,
     signingClock: Clock? = null,
     httpClientCustomizers: Iterable<AwsKtorHttpClientCustomizer> = emptyList(),
-): S3KtorClient =
-    s3KtorClientOf(
-        region = requireNotNull(region?.takeIf { it.isNotBlank() } ?: defaults.region?.takeIf { it.isNotBlank() }) {
-            "region must be configured."
-        },
-        credentialsProvider = credentialsProvider ?: defaults.javaCredentialsProvider,
-        endpointOverride = endpointOverride ?: defaults.endpointOverride,
-        addressingStyle = addressingStyle,
-        signingClock = signingClock ?: defaults.signingClock,
-        httpClientCustomizers = defaults.httpClientCustomizers + httpClientCustomizers,
-    )
+): S3KtorClient = s3KtorClientOf(
+    region = region?.takeIf { it.isNotBlank() }
+        ?: defaults.region?.takeIf { it.isNotBlank() }.requireNotNull("region"),
+    credentialsProvider = credentialsProvider ?: defaults.javaCredentialsProvider,
+    endpointOverride = endpointOverride ?: defaults.endpointOverride,
+    addressingStyle = addressingStyle,
+    signingClock = signingClock ?: defaults.signingClock,
+    httpClientCustomizers = defaults.httpClientCustomizers + httpClientCustomizers,
+)
 
-private fun io.ktor.client.request.HttpRequestBuilder.applyPutHeaders(request: S3KtorPutObjectRequest) {
+private fun HttpRequestBuilder.applyPutHeaders(request: S3KtorPutObjectRequest) {
     request.contentType?.let { contentType(ContentType.parse(it)) }
-    request.metadata.forEach { (name, value) -> header("x-amz-meta-$name", value) }
+    request.metadata.forEach { (name, value) -> header(S3_METADATA_PREFIX + name, value) }
     request.headers.forEach { (name, value) -> header(name, value) }
 }
 
@@ -642,24 +676,24 @@ private suspend fun HttpResponse.ensureSuccess(): HttpResponse {
 }
 
 private fun HttpResponse.s3Metadata(): Map<String, String> =
-    headers.entries()
-        .filter { (name, _) -> name.startsWith(S3_METADATA_PREFIX, ignoreCase = true) }
-        .associate { (name, values) -> name.substring(S3_METADATA_PREFIX.length) to values.joinToString(",") }
+    headers.entries().filter { (name, _) -> name.startsWith(S3_METADATA_PREFIX, ignoreCase = true) }
+        .associate { (name, values) ->
+            name.substring(S3_METADATA_PREFIX.length) to values.joinToString(",")
+        }
 
-private fun buildEncodedPathSegments(bucket: String?, key: String?): List<String> =
-    buildList {
-        add("")
-        if (bucket != null) {
-            add(bucket.encodeURLPathPart())
-        }
-        if (key != null) {
-            addAll(key.split('/').map { it.encodeURLPathPart() })
-        }
+private fun buildEncodedPathSegments(bucket: String?, key: String?): List<String> = buildList {
+    add("")
+    if (bucket != null) {
+        add(bucket.encodeURLPathPart())
     }
+    if (key != null) {
+        addAll(key.split('/').map { it.encodeURLPathPart() })
+    }
+}
 
 private fun String.isVirtualHostedSafeBucket(): Boolean {
     if ('.' in this) return false
-    if (!matches(Regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"))) return false
+    if (!matches("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$".toRegex())) return false
     if (".." in this || ".-" in this || "-." in this) return false
     return true
 }

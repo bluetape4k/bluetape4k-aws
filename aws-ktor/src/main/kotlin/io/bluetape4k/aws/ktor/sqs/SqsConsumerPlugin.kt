@@ -2,9 +2,9 @@ package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.aws.ktor.awsKtorDefaults
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.ApplicationStopping
-import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.hooks.MonitoringEvent
 import io.ktor.util.AttributeKey

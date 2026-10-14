@@ -42,20 +42,9 @@ inline fun <T: Any> DynamoDbTable<T>.deleteItem(
     partitionValue: Any,
     sortValue: Any? = null,
 ): T? {
-    val key =
-        when (sortValue) {
-            null -> {
-                Key.builder().partitionValue(partitionValue.toString()).build()
-            }
+    val key = if (sortValue == null) Key.builder().partitionValue(partitionValue.toString()).build()
+    else Key.builder().partitionValue(partitionValue.toString()).sortValue(sortValue.toString()).build()
 
-            else -> {
-                Key
-                    .builder()
-                    .partitionValue(partitionValue.toString())
-                    .sortValue(sortValue.toString())
-                    .build()
-            }
-        }
     return deleteItem(key)
 }
 
@@ -102,7 +91,8 @@ fun <T: Any> DynamoDbTable<T>.findByPartition(partitionValue: String): List<T> {
 inline fun <T: Any> DynamoDbTable<T>.exists(
     partitionValue: Any,
     sortValue: Any? = null,
-): Boolean = getItem(partitionValue, sortValue) != null
+): Boolean =
+    getItem(partitionValue, sortValue) != null
 
 /**
  * 결과를 List로 변환합니다.

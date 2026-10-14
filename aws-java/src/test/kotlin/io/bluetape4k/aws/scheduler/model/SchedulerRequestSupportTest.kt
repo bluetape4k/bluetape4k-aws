@@ -2,11 +2,15 @@ package io.bluetape4k.aws.scheduler.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.scheduler.model.FlexibleTimeWindowMode
 import software.amazon.awssdk.services.scheduler.model.ScheduleState
 
 class SchedulerRequestSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `target builder maps required target arn and role arn`() {
@@ -21,6 +25,7 @@ class SchedulerRequestSupportTest {
             deadLetterConfig = deadLetterConfig,
         )
 
+        log.debug { "target=$target" }
         target.arn() shouldBeEqualTo "arn:aws:scheduler:::aws-sdk:sqs:sendMessage"
         target.roleArn() shouldBeEqualTo "arn:aws:iam::123456789012:role/scheduler-role"
         target.input() shouldBeEqualTo "{}"
@@ -34,11 +39,14 @@ class SchedulerRequestSupportTest {
             arn = "arn:aws:scheduler:::aws-sdk:lambda:invoke",
             roleArn = "arn:aws:iam::123456789012:role/scheduler-role",
         )
+        log.debug { "target=$target" }
+
         val window = flexibleTimeWindowOf(
             mode = FlexibleTimeWindowMode.FLEXIBLE,
             maximumWindowInMinutes = 15,
         )
-
+        log.debug { "window=$window" }
+        
         val request = createScheduleRequestOf(
             name = "daily-job",
             scheduleExpression = "rate(1 day)",
@@ -51,6 +59,7 @@ class SchedulerRequestSupportTest {
             clientToken = "token-1",
         )
 
+        log.debug { "request=$request" }
         request.name() shouldBeEqualTo "daily-job"
         request.groupName() shouldBeEqualTo "jobs"
         request.scheduleExpression() shouldBeEqualTo "rate(1 day)"

@@ -4,7 +4,9 @@ import io.bluetape4k.aws.dynamodb.model.Expression
 import io.bluetape4k.aws.dynamodb.model.toAttributeValue
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.logging.warn
+import io.bluetape4k.support.checkNotNull
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
 import software.amazon.awssdk.enhanced.dynamodb.Expression
@@ -109,7 +111,7 @@ class ConcreteFilter(
 ): FilterQuery {
 
     companion object: KLogging() {
-        private val alphabets = ('a' until 'z') + ('A' until 'Z')
+        private val alphabets = ('a' until 'z').toList() + ('A' until 'Z').toList()
 
         private fun toExprAttrName(attributeName: String): String =
             "#" + generateExprAttrName(attributeName)
@@ -181,11 +183,12 @@ class ConcreteFilter(
                 expressionAttributeNames[exprAttrName] = dynamoFunction.attributeName
             }
 
-            else         -> {
+            else         ->
                 log.warn { "Not supported DynamoFunction: $dynamoFunction" }
-            }
         }
 
+        log.debug { "filterExpression=$filterExpression, expressionAttributeNames=$expressionAttributeNames" }
+        log.debug { "expressionAttributeValues=$expressionAttributeValues" }
         return FilterRequestProperties(expressionAttributeValues, filterExpression, expressionAttributeNames)
     }
 }
@@ -237,7 +240,7 @@ class ConcreteFilterBuilder: FilterQueryBuilder {
 
     override fun build(): FilterQuery {
         // WHY: DSL 빌더에서 dynamoFunction이 설정되지 않으면 명확한 메시지로 실패하도록 함
-        val function = checkNotNull(dynamoFunction) { "dynamoFunction must be set before building filter" }
+        val function = dynamoFunction.checkNotNull { "dynamoFunction must be set before building filter" }
         return ConcreteFilter(function, comparator)
     }
 }
@@ -295,6 +298,8 @@ fun ConcreteFilterBuilder.inList(vararg values: Any) {
  */
 @DynamoDslMarker
 class RootFilterBuilder: FilterQueryBuilder {
+
+    companion object: KLogging()
 
     var currentFilter: FilterQuery? = null
     var filterQueries = mutableListOf<FilterConnection>()

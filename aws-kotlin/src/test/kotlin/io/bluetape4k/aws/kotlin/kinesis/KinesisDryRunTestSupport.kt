@@ -10,15 +10,14 @@ import aws.smithy.kotlin.runtime.ServiceErrorMetadata
 import aws.smithy.kotlin.runtime.ServiceException
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import aws.smithy.kotlin.runtime.net.url.Url
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import org.testcontainers.utility.Base58
 import java.io.IOException
 import java.net.URI
-import java.util.UUID
+
 import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -126,7 +125,7 @@ internal fun classifyKinesisDryRunFailure(failure: Throwable?): KinesisDryRunDec
         KinesisDryRunReason.DRY_RUN_ACCEPTED -> KinesisDryRunStatus.SUPPORTED
         KinesisDryRunReason.NOT_IMPLEMENTED,
         KinesisDryRunReason.UNKNOWN_DRY_RUN_MEMBER,
-        -> KinesisDryRunStatus.UNSUPPORTED
+            -> KinesisDryRunStatus.UNSUPPORTED
         else -> KinesisDryRunStatus.FAILED
     }
     return KinesisDryRunDecision(status, reason)
@@ -244,7 +243,8 @@ internal suspend fun <T> observeKinesisConditionUntilDeadline(
 /** stream 이름에는 실행 nonce와 UUID 일부를 넣어 다른 테스트의 자원을 소유하지 않게 합니다. */
 internal fun newKinesisDryRunStreamToken(prefix: String = "dryrun"): String {
     require(prefix.matches(STREAM_PREFIX_PATTERN)) { "stream token prefix is not generated-safe" }
-    return "$prefix-${UUID.randomUUID().toString().replace("-", "").take(20)}"
+    // return "$prefix-${UUID.randomUUID().toString().replace("-", "").take(20)}"
+    return "$prefix-${Base58.randomString(20).lowercase()}"
 }
 
 /** create ambiguity와 cancellation 중에도 소유한 stream만 bounded cleanup합니다. */
@@ -351,7 +351,7 @@ private fun String.hasUnknownDryRunMemberCause(): Boolean {
     val normalized = lowercase()
     if (!normalized.contains("dryrun")) return false
     return UNKNOWN_MEMBER_WORDS.any { word -> normalized.contains(word) } &&
-        MEMBER_WORDS.any { word -> normalized.contains(word) }
+            MEMBER_WORDS.any { word -> normalized.contains(word) }
 }
 
 private fun isNotImplemented(statusCode: Int?, errorCode: String?): Boolean =
@@ -362,8 +362,8 @@ private fun isUnknownDryRunMember(
     errorCode: String?,
     message: String,
 ): Boolean = statusCode == 400 &&
-    errorCode in UNKNOWN_MEMBER_ERROR_CODES &&
-    message.hasUnknownDryRunMemberCause()
+        errorCode in UNKNOWN_MEMBER_ERROR_CODES &&
+        message.hasUnknownDryRunMemberCause()
 
 private fun Throwable?.isTimeoutFailure(): Boolean {
     if (this == null) return false

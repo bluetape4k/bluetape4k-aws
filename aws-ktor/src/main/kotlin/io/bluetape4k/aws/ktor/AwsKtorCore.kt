@@ -192,30 +192,28 @@ class AwsKtorDefaults(
                 dynamoDbClientCustomizers == other.dynamoDbClientCustomizers &&
                 stsAsyncClientCustomizers == other.stsAsyncClientCustomizers
 
-    override fun equals(other: Any?): Boolean = super.equals(other)
+    override fun equals(other: Any?): Boolean = other != null && super.equals(other)
 
-    override fun hashCode(): Int {
-        return hashOf(
-            region,
-            endpointOverrideValue,
-            javaCredentialsProvider,
-            kotlinCredentialsProvider,
-            signingClock,
-            kotlinHttpClient,
-            httpClientCustomizers,
-            sqsAsyncClientCustomizers,
-            cloudWatchAsyncClientCustomizers,
-            cloudWatchLogsAsyncClientCustomizers,
-            eventBridgeAsyncClientCustomizers,
-            kinesisAsyncClientCustomizers,
-            s3ControlAsyncClientCustomizers,
-            s3VectorsAsyncClientCustomizers,
-            sesV2AsyncClientCustomizers,
-            snsAsyncClientCustomizers,
-            dynamoDbClientCustomizers,
-            stsAsyncClientCustomizers,
-        )
-    }
+    override fun hashCode(): Int = hashOf(
+        region,
+        endpointOverrideValue,
+        javaCredentialsProvider,
+        kotlinCredentialsProvider,
+        signingClock,
+        kotlinHttpClient,
+        httpClientCustomizers,
+        sqsAsyncClientCustomizers,
+        cloudWatchAsyncClientCustomizers,
+        cloudWatchLogsAsyncClientCustomizers,
+        eventBridgeAsyncClientCustomizers,
+        kinesisAsyncClientCustomizers,
+        s3ControlAsyncClientCustomizers,
+        s3VectorsAsyncClientCustomizers,
+        sesV2AsyncClientCustomizers,
+        snsAsyncClientCustomizers,
+        dynamoDbClientCustomizers,
+        stsAsyncClientCustomizers,
+    )
 
     override fun buildStringHelper(): ToStringBuilder =
         super.buildStringHelper()
@@ -421,6 +419,16 @@ class AwsKtorCoreConfig {
             dynamoDbClientCustomizers = dynamoDbClientCustomizers.toList(),
             stsAsyncClientCustomizers = stsAsyncClientCustomizers.toList(),
         )
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("region", region)
+            .add("endpointOverride", endpointOverride)
+            .add("javaCredentialsProvider", javaCredentialsProvider)
+            .add("kotlinCredentialsProvider", kotlinCredentialsProvider)
+            .add("signingClock", signingClock)
+            .add("kotlinHttpClient", kotlinHttpClient)
+            .toString()
 }
 
 /**

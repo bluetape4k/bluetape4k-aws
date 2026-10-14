@@ -7,12 +7,12 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.mockk.clearMocks
-import io.mockk.mockk
-import io.mockk.verify
 import io.ktor.http.Url
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
+import io.mockk.clearMocks
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance

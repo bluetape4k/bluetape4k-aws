@@ -100,7 +100,8 @@ suspend inline fun KinesisClient.putRecord(
     partitionKey: String,
     data: ByteArray,
     crossinline builder: PutRecordRequest.Builder.() -> Unit = {},
-): PutRecordResponse = putRecord(streamName, partitionKey, data, false, builder)
+): PutRecordResponse =
+    putRecord(streamName, partitionKey, data, false, builder)
 
 /**
  * Kinesis 스트림에 복수의 레코드를 배치로 전송합니다.
@@ -192,7 +193,8 @@ suspend inline fun KinesisClient.getShardIterator(
     shardId: String,
     type: ShardIteratorType = ShardIteratorType.TrimHorizon,
     crossinline builder: GetShardIteratorRequest.Builder.() -> Unit = {},
-): GetShardIteratorResponse = getShardIterator(streamName, shardId, type, false, builder)
+): GetShardIteratorResponse =
+    getShardIterator(streamName, shardId, type, false, builder)
 
 /**
  * Kinesis 샤드 이터레이터로부터 레코드를 조회합니다.

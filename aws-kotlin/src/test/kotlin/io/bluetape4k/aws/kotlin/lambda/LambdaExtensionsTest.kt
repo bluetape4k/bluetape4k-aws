@@ -5,9 +5,13 @@ import aws.sdk.kotlin.services.lambda.model.InvocationType
 import aws.sdk.kotlin.services.lambda.model.InvokeRequest
 import aws.sdk.kotlin.services.lambda.model.InvokeResponse
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -23,7 +27,7 @@ import org.junit.jupiter.api.Test
 
 class LambdaExtensionsTest {
 
-    private val client = mockk<LambdaClient>()
+    private val client = mockk<LambdaClient>(relaxed = true)
 
     @BeforeEach
     fun resetMocks() {
@@ -42,15 +46,16 @@ class LambdaExtensionsTest {
         val stringResult = client.invokeString("orders", payload = "hello")
 
         bytesResult.response shouldBeSameInstanceAs expected
-        bytesResult.value?.toList() shouldBeEqualTo listOf(111.toByte(), 107)
+        bytesResult.value shouldContentEqual expected.payload // listOf(111.toByte(), 107)
         stringResult.value shouldBeEqualTo "ok"
+
         coVerify(exactly = 2) { client.invoke(any<InvokeRequest>()) }
         coVerify(exactly = 1) {
             client.invoke(match { request ->
                 request.functionName == "orders" &&
-                    request.qualifier == "live" &&
-                    request.invocationType == InvocationType.RequestResponse &&
-                    request.payload?.contentEquals(byteArrayOf(1, 2)) == true
+                        request.qualifier == "live" &&
+                        request.invocationType == InvocationType.RequestResponse &&
+                        request.payload?.contentEquals(byteArrayOf(1, 2)) == true
             })
         }
     }
@@ -72,7 +77,9 @@ class LambdaExtensionsTest {
 
     @Test
     fun `null payload yields null value while empty payload decodes`() = runTest {
-        coEvery { client.invoke(any<InvokeRequest>()) } returnsMany listOf(
+        coEvery {
+            client.invoke(any<InvokeRequest>())
+        } returnsMany listOf(
             InvokeResponse {},
             InvokeResponse { payload = ByteArray(0) },
         )
@@ -80,27 +87,34 @@ class LambdaExtensionsTest {
         val absent = client.invokeBytes("orders")
         val empty = client.invokeBytes("orders")
 
-        absent.value shouldBeEqualTo null
-        val emptyValue = empty.value ?: error("empty value was lost")
-        emptyValue.size shouldBeEqualTo 0
+        absent.value.shouldBeNull()
+        val emptyValue = empty.value.shouldNotBeNull()
+        emptyValue.shouldBeEmpty()
     }
 
     @Test
     fun `invalid log tail raises codec error without fallback`() = runTest {
-        coEvery { client.invoke(any<InvokeRequest>()) } returns InvokeResponse { logResult = "not-base64" }
+        coEvery {
+            client.invoke(any<InvokeRequest>())
+        } returns InvokeResponse { logResult = "not-base64" }
 
-        assertFailsWith<IllegalArgumentException> { client.invokeString("orders") }
+        assertFailsWith<IllegalArgumentException> {
+            client.invokeString("orders")
+        }
     }
 
     @Test
     fun `suspend cancellation propagates and does not call after cancellation`() = runTest {
         coEvery { client.invoke(any<InvokeRequest>()) } coAnswers { awaitCancellation() }
-        val job = launch { client.invokeString("orders") }
+
+        val job = launch {
+            client.invokeString("orders")
+        }
         runCurrent()
 
         job.cancelAndJoin()
-
         job.isCancelled.shouldBeTrue()
+
         coVerify(exactly = 1) { client.invoke(any<InvokeRequest>()) }
     }
 
@@ -108,7 +122,9 @@ class LambdaExtensionsTest {
     fun `sdk cancellation exception is preserved`() = runTest {
         coEvery { client.invoke(any<InvokeRequest>()) } throws CancellationException("cancelled")
 
-        assertFailsWith<CancellationException> { client.invokeString("orders") }
+        assertFailsWith<CancellationException> {
+            client.invokeString("orders")
+        }
         coVerify(exactly = 1) { client.invoke(any<InvokeRequest>()) }
     }
 }

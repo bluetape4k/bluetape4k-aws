@@ -2,14 +2,18 @@ package io.bluetape4k.aws.kotlin.kinesis.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class PutRecordTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `putRecordRequestOf는 streamName, partitionKey, data로 요청을 생성한다`() {
@@ -20,10 +24,11 @@ class PutRecordTest {
             data = data
         )
 
+        log.debug { "req=$req" }
         req.streamName shouldBeEqualTo "my-stream"
         req.partitionKey shouldBeEqualTo "pk-001"
         req.data shouldBeSameInstanceAs data
-        req.dryRun shouldBeEqualTo false
+        req.dryRun.shouldBeFalse()
     }
 
     @Test
@@ -35,7 +40,8 @@ class PutRecordTest {
             dryRun = true,
         )
 
-        req.dryRun shouldBeEqualTo true
+        log.debug { "req=$req" }
+        req.dryRun.shouldBeTrue()
     }
 
     @Test
@@ -49,7 +55,8 @@ class PutRecordTest {
             dryRun = false
         }
 
-        req.dryRun shouldBeEqualTo false
+        log.debug { "req=$req" }
+        req.dryRun.shouldBeFalse()
     }
 
     @Test
@@ -63,7 +70,8 @@ class PutRecordTest {
             dryRun = null
         }
 
-        req.dryRun shouldBeEqualTo null
+        log.debug { "req=$req" }
+        req.dryRun.shouldBeNull()
     }
 
     @Test
@@ -76,6 +84,7 @@ class PutRecordTest {
             sequenceNumberForOrdering = "49600047091...001"
         }
 
+        log.debug { "req=$req" }
         req.shouldNotBeNull()
         req.sequenceNumberForOrdering shouldBeEqualTo "49600047091...001"
     }
@@ -101,6 +110,10 @@ class PutRecordTest {
             partitionKey = "pk",
             data = ByteArray(0)
         )
-        req.data?.size shouldBeEqualTo 0
+
+        log.debug { "req=$req" }
+        req.streamName shouldBeEqualTo "my-stream"
+        req.partitionKey shouldBeEqualTo "pk"
+        req.data.shouldNotBeNull().size shouldBeEqualTo 0
     }
 }

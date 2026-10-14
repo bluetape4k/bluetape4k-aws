@@ -9,18 +9,19 @@ import io.bluetape4k.aws.ktor.imds.ImdsKtorPluginConfig
 import io.bluetape4k.aws.ktor.imds.ImdsKtorRuntime
 import io.bluetape4k.aws.ktor.kinesis.KinesisKtorPluginConfig
 import io.bluetape4k.aws.ktor.kinesis.KinesisKtorRuntime
-import io.bluetape4k.aws.ktor.s3.accessgrants.S3AccessGrantsKtorRuntime
 import io.bluetape4k.aws.ktor.s3.accessgrants.S3AccessGrantsKtorPluginConfig
+import io.bluetape4k.aws.ktor.s3.accessgrants.S3AccessGrantsKtorRuntime
 import io.bluetape4k.aws.ktor.s3vectors.S3VectorsKtorPluginConfig
 import io.bluetape4k.aws.ktor.s3vectors.S3VectorsKtorRuntime
 import io.bluetape4k.aws.ktor.ses.SesKtorPluginConfig
 import io.bluetape4k.aws.ktor.ses.SesKtorRuntime
 import io.bluetape4k.aws.ktor.sns.SnsKtorPluginConfig
 import io.bluetape4k.aws.ktor.sns.SnsKtorRuntime
-import io.bluetape4k.aws.ktor.sts.StsKtorPluginConfig
 import io.bluetape4k.aws.ktor.sts.StsKtorPlugin
+import io.bluetape4k.aws.ktor.sts.StsKtorPluginConfig
 import io.bluetape4k.aws.ktor.sts.StsKtorRuntime
 import io.bluetape4k.ktor.core.ApplicationResourceRegistry
+import io.bluetape4k.logging.KLogging
 import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
@@ -37,18 +38,20 @@ import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClient
 import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClient
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
+import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sts.StsAsyncClient
 import software.amazon.awssdk.services.sts.StsAsyncClientBuilder
-import software.amazon.awssdk.services.sns.SnsAsyncClient
 import java.util.concurrent.atomic.AtomicInteger
 
 class AwsKtorApplicationResourceLifecycleTest {
 
+    companion object: KLogging()
+
     @Test
     fun `plugin owned client remains open during ApplicationStopping`() {
+        val closeCount = AtomicInteger()
         val builder = mockk<StsAsyncClientBuilder>(relaxed = true)
         val client = mockk<StsAsyncClient>(relaxed = true)
-        val closeCount = AtomicInteger()
         every { client.close() } answers { closeCount.incrementAndGet() }
         var closeCountAtStopping = -1
 

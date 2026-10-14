@@ -103,7 +103,7 @@ class AwsSigV4PluginTest {
         assertFailsWith<IllegalStateException> {
             client.post("https://api.example.com/prod/orders") {
                 setBody(
-                    object : OutgoingContent.WriteChannelContent() {
+                    object: OutgoingContent.WriteChannelContent() {
                         override suspend fun writeTo(channel: ByteWriteChannel) {
                         }
                     }
@@ -123,7 +123,7 @@ class AwsSigV4PluginTest {
 
         client.post("https://api.example.com/prod/orders") {
             setBody(
-                object : OutgoingContent.WriteChannelContent() {
+                object: OutgoingContent.WriteChannelContent() {
                     override suspend fun writeTo(channel: ByteWriteChannel) {
                     }
                 }

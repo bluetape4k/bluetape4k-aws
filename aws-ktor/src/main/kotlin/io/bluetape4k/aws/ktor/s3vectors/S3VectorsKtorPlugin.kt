@@ -3,6 +3,7 @@ package io.bluetape4k.aws.ktor.s3vectors
 import io.bluetape4k.aws.ktor.awsKtorDefaults
 import io.bluetape4k.aws.s3vectors.S3VectorsOperations
 import io.bluetape4k.ktor.core.installApplicationResourceLifecycle
+import io.bluetape4k.support.checkNotNull
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationPlugin
 import io.ktor.server.application.createApplicationPlugin
@@ -46,7 +47,7 @@ val S3VectorsKtorPlugin: ApplicationPlugin<S3VectorsKtorPluginConfig> = createAp
  * @throws IllegalStateException [S3VectorsKtorPlugin]이 없거나 비활성화된 경우
  */
 fun Application.s3Vectors(): S3VectorsOperations =
-    checkNotNull(s3VectorsOrNull()) {
+    s3VectorsOrNull().checkNotNull {
         "S3VectorsKtorPlugin is not installed or is disabled."
     }
 

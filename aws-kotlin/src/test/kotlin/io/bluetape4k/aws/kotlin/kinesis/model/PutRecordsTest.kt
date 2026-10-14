@@ -2,19 +2,22 @@ package io.bluetape4k.aws.kotlin.kinesis.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class PutRecordsTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `putRecordsRequestEntryOf는 partitionKey와 data로 entry를 생성한다`() {
         val data = "hello".toByteArray()
         val entry = putRecordsRequestEntryOf(partitionKey = "pk-001", data = data)
 
+        log.debug { "entry=$entry" }
         entry.partitionKey shouldBeEqualTo "pk-001"
         entry.data shouldBeEqualTo data
     }
@@ -28,6 +31,7 @@ class PutRecordsTest {
             explicitHashKey = "123456789012345678901234567890"
         }
 
+        log.debug { "entry=$entry" }
         entry.shouldNotBeNull()
         entry.explicitHashKey shouldBeEqualTo "123456789012345678901234567890"
     }
@@ -54,8 +58,9 @@ class PutRecordsTest {
             putRecordsRequestEntryOf("pk-3", "data-3".toByteArray()),
         )
 
-        entries.size shouldBeEqualTo 3
+        entries shouldHaveSize 3
         entries[0].partitionKey shouldBeEqualTo "pk-1"
+        entries[1].partitionKey shouldBeEqualTo "pk-2"
         entries[2].partitionKey shouldBeEqualTo "pk-3"
     }
 }

@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.ktor.sqs
 
 import io.bluetape4k.aws.ktor.observability.KtorMicrometerSupport
+import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
 import java.time.Duration
@@ -14,6 +15,10 @@ class MicrometerSqsConsumerObserver(
     private val meterRegistry: MeterRegistry,
     private val meterName: String = DEFAULT_METER_NAME,
 ): SqsConsumerObserver {
+
+    companion object: KLogging() {
+        const val DEFAULT_METER_NAME: String = "bluetape4k.aws.ktor.sqs.operation"
+    }
 
     override fun observe(observation: SqsConsumerObservation) {
         KtorMicrometerSupport.record(
@@ -32,10 +37,6 @@ class MicrometerSqsConsumerObserver(
             exception = observation.tags[KtorSqsObservationTags.EXCEPTION] ?: KtorMicrometerSupport.EXCEPTION_NONE,
             extras = listOf(KtorMicrometerSupport.queueNameTag(observation.queueUrl)),
         )
-
-    companion object {
-        const val DEFAULT_METER_NAME: String = "bluetape4k.aws.ktor.sqs.operation"
-    }
 }
 
 /**

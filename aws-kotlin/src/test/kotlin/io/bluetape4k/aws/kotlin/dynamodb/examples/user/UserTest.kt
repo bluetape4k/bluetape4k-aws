@@ -1,15 +1,14 @@
 package io.bluetape4k.aws.kotlin.dynamodb.examples.user
 
-import io.bluetape4k.aws.kotlin.dynamodb.AbstractKotlinDynamoDbTest
-import io.bluetape4k.aws.kotlin.dynamodb.withDynamoDbClient
-import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.logging.coroutines.KLoggingChannel
-import io.bluetape4k.logging.debug
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.kotlin.dynamodb.AbstractKotlinDynamoDbTest
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -27,11 +26,7 @@ class UserTest: AbstractKotlinDynamoDbTest() {
 
     @BeforeAll
     fun beforeAll() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             val userTableService = UserTableService(client)
             userTableService.createTable()
             userTableService.checkTableStatus()
@@ -40,11 +35,7 @@ class UserTest: AbstractKotlinDynamoDbTest() {
 
     @AfterAll
     fun afterAll() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             val userTableService = UserTableService(client)
             userTableService.deleteTableIfExists()
         }
@@ -52,11 +43,7 @@ class UserTest: AbstractKotlinDynamoDbTest() {
 
     @Test
     fun `insert new user`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             val userService = UserService(client)
             val user = newUser()
 
@@ -70,11 +57,7 @@ class UserTest: AbstractKotlinDynamoDbTest() {
 
     @Test
     fun `get user by id`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             val userService = UserService(client)
             val user = newUser()
             userService.insert(user)
@@ -89,11 +72,7 @@ class UserTest: AbstractKotlinDynamoDbTest() {
 
     @Test
     fun `update user property`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             val userService = UserService(client)
             val user = newUser()
             userService.insert(user)
@@ -114,11 +93,7 @@ class UserTest: AbstractKotlinDynamoDbTest() {
 
     @Test
     fun `delete user by id`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             val userService = UserService(client)
             val user = newUser()
             userService.insert(user)

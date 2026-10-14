@@ -26,10 +26,10 @@ import io.bluetape4k.support.requireNotBlank
  * @param builder [PutMetricDataRequest.Builder]에 대한 추가 설정 람다
  * @return [PutMetricDataResponse] 인스턴스
  */
-suspend inline fun CloudWatchClient.putMetricData(
+suspend fun CloudWatchClient.putMetricData(
     namespace: String,
     metricData: List<MetricDatum>,
-    crossinline builder: PutMetricDataRequest.Builder.() -> Unit = {},
+    builder: PutMetricDataRequest.Builder.() -> Unit = {},
 ): PutMetricDataResponse {
     namespace.requireNotBlank("namespace")
     return putMetricData {
@@ -54,10 +54,10 @@ suspend inline fun CloudWatchClient.putMetricData(
  * @param builder [PutMetricDataRequest.Builder]에 대한 추가 설정 람다
  * @return [PutMetricDataResponse] 인스턴스
  */
-suspend inline fun CloudWatchClient.putMetricData(
+suspend fun CloudWatchClient.putMetricData(
     namespace: String,
     metricDatum: MetricDatum,
-    crossinline builder: PutMetricDataRequest.Builder.() -> Unit = {},
+    builder: PutMetricDataRequest.Builder.() -> Unit = {},
 ): PutMetricDataResponse {
     namespace.requireNotBlank("namespace")
     return putMetricData(namespace, listOf(metricDatum), builder)
@@ -77,11 +77,11 @@ suspend inline fun CloudWatchClient.putMetricData(
  * @param builder [ListMetricsRequest.Builder]에 대한 추가 설정 람다
  * @return [ListMetricsResponse] 인스턴스
  */
-suspend inline fun CloudWatchClient.listMetrics(
+suspend fun CloudWatchClient.listMetrics(
     namespace: String? = null,
     metricName: String? = null,
     dimensions: List<DimensionFilter>? = null,
-    crossinline builder: ListMetricsRequest.Builder.() -> Unit = {},
+    builder: ListMetricsRequest.Builder.() -> Unit = {},
 ): ListMetricsResponse =
     listMetrics {
         namespace?.let { this.namespace = it }

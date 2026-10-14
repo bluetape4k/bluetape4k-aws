@@ -3,17 +3,19 @@ package io.bluetape4k.aws.kotlin.kinesis
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class KinesisRecordFlowOptionsTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `default options are valid`() {
         val opts = KinesisRecordFlowOptions()
+        log.debug { "opts=$opts" }
         opts.batchLimit shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_BATCH_LIMIT
         opts.pollInterval shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_POLL_INTERVAL
         opts.emptyBackoff shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_EMPTY_BACKOFF
@@ -107,6 +109,7 @@ class KinesisRecordFlowOptionsTest {
         original.batchLimit shouldBeEqualTo KinesisRecordFlowOptions.DEFAULT_BATCH_LIMIT
     }
 
+    @Suppress("UnusedDataClassCopyResult")
     @Test
     fun `copy revalidates options`() {
         val original = KinesisRecordFlowOptions()

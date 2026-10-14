@@ -39,12 +39,12 @@ inline fun kinesisAsyncClientOf(
     credentialsProvider: AwsCredentialsProvider? = null,
     httpClient: SdkAsyncHttpClient = SdkAsyncHttpClientProvider.defaultHttpClient,
     builder: KinesisAsyncClientBuilder.() -> Unit = {},
-): KinesisAsyncClient = kinesisAsyncClient {
-    endpoint?.let { endpointOverride(it) }
-    region?.let { region(it) }
-    credentialsProvider?.let { credentialsProvider(it) }
+): KinesisAsyncClient =
+    kinesisAsyncClient {
+        endpoint?.let { endpointOverride(it) }
+        region?.let { region(it) }
+        credentialsProvider?.let { credentialsProvider(it) }
+        httpClient(httpClient)
 
-    httpClient(httpClient)
-
-    builder()
-}
+        builder()
+    }

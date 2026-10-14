@@ -2,13 +2,16 @@ package io.bluetape4k.aws.sfn.model
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sfn.model.ExecutionRedriveFilter
 import software.amazon.awssdk.services.sfn.model.ExecutionStatus
 
 class SfnRequestSupportTest {
 
-    private companion object {
+    private companion object: KLogging() {
         const val STATE_MACHINE_ARN = "arn:aws:states:ap-northeast-2:123456789012:stateMachine:orders"
         const val OTHER_STATE_MACHINE_ARN = "arn:aws:states:ap-northeast-2:123456789012:stateMachine:payments"
         const val EXECUTION_ARN = "arn:aws:states:ap-northeast-2:123456789012:execution:orders:order-1"
@@ -22,16 +25,24 @@ class SfnRequestSupportTest {
 
     @Test
     fun `blank input is rejected`() {
-        assertFailsWith<IllegalArgumentException> { startExecutionRequestOf(STATE_MACHINE_ARN, input = "") }
-        assertFailsWith<IllegalArgumentException> { startExecutionRequestOf(STATE_MACHINE_ARN, input = "   ") }
+        assertFailsWith<IllegalArgumentException> {
+            startExecutionRequestOf(STATE_MACHINE_ARN, input = "")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            startExecutionRequestOf(STATE_MACHINE_ARN, input = "   ")
+        }
     }
 
     @Test
     fun `callback null input is normalized to empty JSON`() {
-        val request = startExecutionRequestOf(STATE_MACHINE_ARN, input = "{\"id\":1}") {
+        val request = startExecutionRequestOf(
+            STATE_MACHINE_ARN,
+            input = "{\"id\":1}"
+        ) {
             input(null)
         }
 
+        log.debug { "request=$request" }
         request.input() shouldBeEqualTo "{}"
     }
 
@@ -72,6 +83,7 @@ class SfnRequestSupportTest {
             traceHeader("callback-trace")
         }
 
+        log.debug { "request=$request" }
         request.stateMachineArn() shouldBeEqualTo OTHER_STATE_MACHINE_ARN
         request.name() shouldBeEqualTo "callback"
         request.input() shouldBeEqualTo "{\"callback\":true}"
@@ -82,15 +94,17 @@ class SfnRequestSupportTest {
     fun `raw input is preserved`() {
         val input = " {\"id\":1,\"items\":[1,2]} "
 
-        startExecutionRequestOf(STATE_MACHINE_ARN, input = input).input() shouldBeEqualTo input
+        startExecutionRequestOf(STATE_MACHINE_ARN, input = input)
+            .input() shouldBeEqualTo input
     }
 
     @Test
     fun `stop request omits nullable KMS fields`() {
         val request = stopExecutionRequestOf(EXECUTION_ARN)
 
-        request.error() shouldBeEqualTo null
-        request.cause() shouldBeEqualTo null
+        log.debug { "request=$request" }
+        request.error().shouldBeNull()
+        request.cause().shouldBeNull()
     }
 
     @Test
@@ -125,6 +139,7 @@ class SfnRequestSupportTest {
             redriveFilter = ExecutionRedriveFilter.NOT_REDRIVEN,
         )
 
+        log.debug { "request=$request" }
         request.mapRunArn() shouldBeEqualTo MAP_RUN_ARN
         request.statusFilter() shouldBeEqualTo ExecutionStatus.PENDING_REDRIVE
         request.redriveFilter() shouldBeEqualTo ExecutionRedriveFilter.NOT_REDRIVEN
@@ -152,8 +167,9 @@ class SfnRequestSupportTest {
             nextToken = "next-page",
         )
 
+        log.debug { "request=$request" }
         request.stateMachineArn() shouldBeEqualTo STATE_MACHINE_ARN
-        request.mapRunArn() shouldBeEqualTo null
+        request.mapRunArn().shouldBeNull()
         request.statusFilter() shouldBeEqualTo ExecutionStatus.RUNNING
         request.maxResults() shouldBeEqualTo 100
         request.nextToken() shouldBeEqualTo "next-page"

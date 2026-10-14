@@ -8,30 +8,37 @@ import io.bluetape4k.aws.sqs.SqsClientFactory
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import io.bluetape4k.utils.Runtimex
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.future.await
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.Message
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SqsConsumerRuntimeLocalStackTest {
+
+    companion object: KLoggingChannel()
 
     private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("sqs") }
 
@@ -47,6 +54,7 @@ class SqsConsumerRuntimeLocalStackTest {
     fun `runtime consumes messages from multithreaded coroutine publishers`() = runSuspendIO {
         val queueUrl = createQueue("ktor-sqs-concurrency")
         val received = ConcurrentHashMap.newKeySet<String>()
+
         val runtime = runtime(queueUrl, coroutines = 4) {
             val body = it as String
             received += body
@@ -56,16 +64,16 @@ class SqsConsumerRuntimeLocalStackTest {
             runtime.start()
 
             val index = AtomicInteger()
+
             SuspendedJobTester()
-                .workers(4)
-                .rounds(40)
+                .rounds(Runtimex.availableProcessors * 4)
                 .add {
                     runtime.send("message-${index.getAndIncrement()}", queueUrl)
                 }
                 .run()
 
-            await.atMost(Duration.ofSeconds(30)).untilAsserted {
-                received.size shouldBeEqualTo 40
+            await atMost 30.seconds untilAsserted {
+                received.size shouldBeEqualTo Runtimex.availableProcessors * 4
             }
         } finally {
             runtime.stop()
@@ -78,6 +86,7 @@ class SqsConsumerRuntimeLocalStackTest {
         val queueUrl = createQueue("ktor-sqs-shutdown")
         val handlerStarted = CountDownLatch(1)
         val handlerCancelled = AtomicBoolean(false)
+
         val runtime = runtime(
             queueUrl = queueUrl,
             coroutines = 1,
@@ -97,16 +106,16 @@ class SqsConsumerRuntimeLocalStackTest {
             runtime.start()
             runtime.send("slow-message", queueUrl)
 
-            await.atMost(Duration.ofSeconds(10)).untilAsserted {
-                (handlerStarted.count == 0L).shouldBeTrue()
+            await atMost 10.seconds untilAsserted {
+                handlerStarted.count shouldBeEqualTo 0L
             }
 
             runtime.stop()
-            await.atMost(Duration.ofSeconds(5)).untilAsserted {
+            await atMost 5.seconds untilAsserted {
                 handlerCancelled.get().shouldBeTrue()
             }
 
-            await.atMost(Duration.ofSeconds(30)).untilSuspending {
+            await atMost 30.seconds untilSuspending {
                 val message = receiveOne(queueUrl)
                 if (message?.body() == "slow-message") {
                     deleteMessage(queueUrl, message)
@@ -125,6 +134,7 @@ class SqsConsumerRuntimeLocalStackTest {
     fun `failed handler forwards message to manual dead letter queue`() = runSuspendIO {
         val queueUrl = createQueue("ktor-sqs-source")
         val deadLetterQueueUrl = createQueue("ktor-sqs-dlq")
+
         val runtime = runtime(
             queueUrl = queueUrl,
             deadLetterQueueUrl = deadLetterQueueUrl,
@@ -136,10 +146,10 @@ class SqsConsumerRuntimeLocalStackTest {
             runtime.start()
             runtime.send("failed-message", queueUrl)
 
-            await.atMost(Duration.ofSeconds(30)).untilSuspending {
+            await atMost 30.seconds untilSuspending {
                 val deadLetter = receiveOne(deadLetterQueueUrl)
                 val receivedExpectedDeadLetter = deadLetter?.body() == "failed-message" &&
-                    deadLetter.messageAttributes().containsKey("bluetape4k-original-queue-url")
+                        deadLetter.messageAttributes().containsKey("bluetape4k-original-queue-url")
 
                 if (receivedExpectedDeadLetter) {
                     deleteMessage(deadLetterQueueUrl, deadLetter)
@@ -179,7 +189,7 @@ class SqsConsumerRuntimeLocalStackTest {
             application.sqsConsumer().isRunning.shouldBeTrue()
             application.sqsConsumer().send("plugin-message", queueUrl)
 
-            await.atMost(Duration.ofSeconds(30)).untilAsserted {
+            await atMost 30.seconds untilAsserted {
                 received.contains("plugin-message").shouldBeTrue()
             }
         } finally {

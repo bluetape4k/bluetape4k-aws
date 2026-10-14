@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.exposed
 
+import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSource
 import io.bluetape4k.jdbc.datasource.RefreshingJdbcPasswordDataSourceConfig
@@ -34,36 +35,8 @@ object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory, KLogging() {
     ): HikariDataSource {
         return hikariDataSourceOf {
             when (properties.authenticationMode) {
-                AwsDatabaseAuthenticationMode.STATIC_PASSWORD -> {
-                    jdbcUrl = properties.url
-                    properties.driverClassName?.let { driverClassName = it }
-                    properties.username?.let { username = it }
-                    properties.password?.let { password = it.reveal() }
-
-                    properties.dataSourceProperties.forEach { (key, value) ->
-                        addDataSourceProperty(key, value)
-                    }
-                }
-                AwsDatabaseAuthenticationMode.RDS_IAM -> {
-                    val rdsIam = requireNotNull(properties.rdsIam)
-                    val passwordProvider = AwsDatabasePasswordProviders.rdsIam(
-                        properties = properties,
-                        tokenGenerator = AwsSdkRdsIamAuthTokenGenerator(),
-                    )
-
-                    dataSource = RefreshingJdbcPasswordDataSource(
-                        config = RefreshingJdbcPasswordDataSourceConfig(
-                            url = properties.url,
-                            driverClassName = properties.driverClassName,
-                            username = rdsIam.effectiveUsername(properties.username),
-                            dataSourceProperties = properties.dataSourceProperties,
-                            nullPasswordMessage = "RDS IAM password provider returned null.",
-                        ),
-                        passwordProvider = {
-                            passwordProvider.currentPassword()?.reveal()
-                        },
-                    )
-                }
+                AwsDatabaseAuthenticationMode.STATIC_PASSWORD -> setupForStaticPassword(properties)
+                AwsDatabaseAuthenticationMode.RDS_IAM         -> setupForRds(properties)
             }
 
             poolName = properties.pool.poolName ?: defaultPoolName(databaseName)
@@ -73,6 +46,38 @@ object HikariAwsJdbcDataSourceFactory: AwsJdbcDataSourceFactory, KLogging() {
             idleTimeout = properties.pool.idleTimeoutMillis
             maxLifetime = properties.pool.maxLifetimeMillis
         }
+    }
+
+    private fun HikariConfig.setupForStaticPassword(properties: AwsDatabaseConnectionProperties) {
+        jdbcUrl = properties.url
+        properties.driverClassName?.let { driverClassName = it }
+        properties.username?.let { username = it }
+        properties.password?.let { password = it.reveal() }
+
+        properties.dataSourceProperties.forEach { (key, value) ->
+            addDataSourceProperty(key, value)
+        }
+    }
+
+    private fun HikariConfig.setupForRds(properties: AwsDatabaseConnectionProperties) {
+        val rdsIam = requireNotNull(properties.rdsIam)
+        val passwordProvider = AwsDatabasePasswordProviders.rdsIam(
+            properties = properties,
+            tokenGenerator = AwsSdkRdsIamAuthTokenGenerator(),
+        )
+
+        dataSource = RefreshingJdbcPasswordDataSource(
+            config = RefreshingJdbcPasswordDataSourceConfig(
+                url = properties.url,
+                driverClassName = properties.driverClassName,
+                username = rdsIam.effectiveUsername(properties.username),
+                dataSourceProperties = properties.dataSourceProperties,
+                nullPasswordMessage = "RDS IAM password provider returned null.",
+            ),
+            passwordProvider = {
+                passwordProvider.currentPassword()?.reveal()
+            },
+        )
     }
 
     private fun defaultPoolName(databaseName: String): String =

@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.math.BigInteger
+import java.io.Serializable
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 단위 테스트와 Floci 계약 검증용 thread-safe checkpoint store입니다.
@@ -11,12 +13,12 @@ import java.math.BigInteger
  * [KinesisCheckpoint.ShardEnd] 이후 sequence 역행도 차단합니다. 영속 adapter의
  * cross-process 원자성을 제공하는 구현은 아닙니다.
  */
-class InMemoryKinesisCheckpointStore : KinesisCheckpointStore {
+class InMemoryKinesisCheckpointStore: KinesisCheckpointStore {
 
-    private data class Entry(val checkpoint: KinesisCheckpoint, val lease: KinesisLease)
+    companion object: KLogging()
 
     private val mutex = Mutex()
-    private val checkpoints = mutableMapOf<KinesisShardKey, Entry>()
+    private val checkpoints = ConcurrentHashMap<KinesisShardKey, Entry>()
 
     override suspend fun load(key: KinesisShardKey): KinesisCheckpoint? = mutex.withLock {
         checkpoints[key]?.checkpoint
@@ -25,9 +27,8 @@ class InMemoryKinesisCheckpointStore : KinesisCheckpointStore {
     @Suppress("ThrowsCount")
     override suspend fun save(key: KinesisShardKey, checkpoint: KinesisCheckpoint, lease: KinesisLease) {
         mutex.withLock {
-            require(lease.key == key) {
-                "lease key does not match checkpoint key: ${key.canonicalValue}"
-            }
+            require(lease.key == key) { "lease key does not match checkpoint key: ${key.canonicalValue}" }
+
             val current = checkpoints[key]
             if (current != null) {
                 if (lease.leaseCounter < current.lease.leaseCounter ||
@@ -64,5 +65,12 @@ class InMemoryKinesisCheckpointStore : KinesisCheckpointStore {
         }
     }
 
-    private fun String.toBigIntegerOrNull(): BigInteger? = runCatching { BigInteger(this) }.getOrNull()
+    private data class Entry(
+        val checkpoint: KinesisCheckpoint,
+        val lease: KinesisLease,
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 }

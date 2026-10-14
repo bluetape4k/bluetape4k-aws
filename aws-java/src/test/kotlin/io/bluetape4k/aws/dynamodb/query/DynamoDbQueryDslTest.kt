@@ -5,12 +5,13 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
 import io.bluetape4k.aws.dynamodb.model.describe
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
-class DynamoDbQueryDslTest {
+class DynamoDbQueryDslTest: AbstractDynamodbTest() {
 
     companion object: KLoggingChannel()
 

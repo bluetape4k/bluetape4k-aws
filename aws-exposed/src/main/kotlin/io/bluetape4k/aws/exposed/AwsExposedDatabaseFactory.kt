@@ -18,22 +18,27 @@ class AwsExposedDatabaseFactory private constructor(
     private val dataSourceFactory: AwsJdbcDataSourceFactory,
     private val databaseConnector: (DataSource) -> Database,
 ) {
-    constructor(
-        resolver: AwsDatabaseSettingsResolver = NoopAwsDatabaseSettingsResolver,
-        dataSourceFactory: AwsJdbcDataSourceFactory = HikariAwsJdbcDataSourceFactory,
-    ): this(resolver, dataSourceFactory, Database::connect)
-
-    internal constructor(
-        resolver: AwsDatabaseSettingsResolver,
-        dataSourceFactory: AwsJdbcDataSourceFactory,
-        databaseConnector: (DataSource) -> Database,
-        @Suppress("UNUSED_PARAMETER") testing: Unit,
-    ): this(resolver, dataSourceFactory, databaseConnector)
     companion object: KLoggingChannel() {
         /**
          * 기본 database handle에 사용하는 이름입니다.
          */
         const val DEFAULT_DATABASE_NAME: String = "default"
+
+        operator fun invoke(
+            resolver: AwsDatabaseSettingsResolver = NoopAwsDatabaseSettingsResolver,
+            dataSourceFactory: AwsJdbcDataSourceFactory = HikariAwsJdbcDataSourceFactory,
+        ): AwsExposedDatabaseFactory {
+            return AwsExposedDatabaseFactory(resolver, dataSourceFactory, Database::connect)
+        }
+
+        internal operator fun invoke(
+            resolver: AwsDatabaseSettingsResolver,
+            dataSourceFactory: AwsJdbcDataSourceFactory,
+            databaseConnector: (DataSource) -> Database,
+            @Suppress("UNUSED_PARAMETER") testing: Unit,
+        ): AwsExposedDatabaseFactory {
+            return AwsExposedDatabaseFactory(resolver, dataSourceFactory, databaseConnector)
+        }
     }
 
     /**

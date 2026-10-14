@@ -24,12 +24,12 @@ import io.bluetape4k.support.useSafe
  * @param builder [CloudWatchClient.Config.Builder]에 대한 추가 설정 람다.
  * @return 설정된 [CloudWatchClient] 인스턴스.
  */
-inline fun cloudWatchClientOf(
+fun cloudWatchClientOf(
     endpointUrl: Url? = null,
     region: String? = null,
     credentialsProvider: CredentialsProvider? = null,
     httpClient: HttpClientEngine? = null,
-    crossinline builder: CloudWatchClient.Config.Builder.() -> Unit = {},
+    builder: CloudWatchClient.Config.Builder.() -> Unit = {},
 ): CloudWatchClient =
     CloudWatchClient {
         endpointUrl?.let { this.endpointUrl = it }
@@ -59,6 +59,7 @@ suspend fun <R> withCloudWatchClient(
     credentialsProvider: CredentialsProvider? = null,
     block: suspend (CloudWatchClient) -> R,
 ): R =
-    cloudWatchClientOf(endpointUrl, region, credentialsProvider).useSafe { client ->
-        block(client)
-    }
+    cloudWatchClientOf(endpointUrl, region, credentialsProvider)
+        .useSafe { client ->
+            block(client)
+        }

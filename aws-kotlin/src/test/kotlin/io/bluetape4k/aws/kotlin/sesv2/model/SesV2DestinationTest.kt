@@ -1,7 +1,6 @@
 package io.bluetape4k.aws.kotlin.sesv2.model
 
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
@@ -10,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class SesV2DestinationTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     @Test
     fun `destinationOf vararg로 수신자를 설정한다`() {

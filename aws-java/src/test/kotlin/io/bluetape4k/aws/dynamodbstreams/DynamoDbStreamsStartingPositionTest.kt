@@ -1,13 +1,14 @@
 package io.bluetape4k.aws.dynamodbstreams
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBe
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
+import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-import org.junit.jupiter.api.Test
 
 class DynamoDbStreamsStartingPositionTest {
 
@@ -16,7 +17,7 @@ class DynamoDbStreamsStartingPositionTest {
             ObjectOutputStream(output).use { it.writeObject(value) }
         }.toByteArray()
         return ObjectInputStream(ByteArrayInputStream(bytes)).use { it.readObject() }
-            as DynamoDbStreamsStartingPosition
+                as DynamoDbStreamsStartingPosition
     }
 
     @Test
@@ -39,10 +40,8 @@ class DynamoDbStreamsStartingPositionTest {
 
     @Test
     fun `positions survive serialization and singleton identity is preserved`() {
-        (roundtrip(DynamoDbStreamsStartingPosition.TrimHorizon) === DynamoDbStreamsStartingPosition.TrimHorizon)
-            .shouldBeTrue()
-        (roundtrip(DynamoDbStreamsStartingPosition.Latest) === DynamoDbStreamsStartingPosition.Latest)
-            .shouldBeTrue()
+        roundtrip(DynamoDbStreamsStartingPosition.TrimHorizon) shouldBe DynamoDbStreamsStartingPosition.TrimHorizon
+        roundtrip(DynamoDbStreamsStartingPosition.Latest) shouldBe DynamoDbStreamsStartingPosition.Latest
         roundtrip(DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")) shouldBeEqualTo
                 DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")
         roundtrip(DynamoDbStreamsStartingPosition.AfterSequenceNumber("seq-after")) shouldBeEqualTo

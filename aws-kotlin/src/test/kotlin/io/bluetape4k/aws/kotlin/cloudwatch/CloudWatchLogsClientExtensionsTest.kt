@@ -76,9 +76,7 @@ class CloudWatchLogsClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             val response = client.describeLogGroups(logGroupNamePrefix = "/bluetape4k")
             val logGroups = response.logGroups.shouldNotBeNull()
             logGroups.shouldNotBeEmpty()
-            logGroups.forEach { group ->
-                log.debug { "logGroup: ${group.logGroupName}" }
-            }
+            logGroups.forEach { log.debug { "logGroup: ${it.logGroupName}" } }
         }
     }
 
@@ -93,8 +91,8 @@ class CloudWatchLogsClientExtensionsTest: AbstractKotlinCloudWatchTest() {
             val response = client.describeLogStreams(LOG_GROUP_NAME)
             val logStreams = response.logStreams.shouldNotBeNull()
             logStreams.shouldNotBeEmpty()
-            logStreams.forEach { stream ->
-                log.debug { "logStream: ${stream.logStreamName}" }
+            logStreams.forEach {
+                log.debug { "logStream: ${it.logStreamName}" }
             }
         }
     }

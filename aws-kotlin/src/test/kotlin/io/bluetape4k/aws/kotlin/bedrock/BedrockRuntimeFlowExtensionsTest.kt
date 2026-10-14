@@ -3,14 +3,16 @@ package io.bluetape4k.aws.kotlin.bedrock
 import aws.sdk.kotlin.services.bedrockruntime.BedrockRuntimeClient
 import aws.sdk.kotlin.services.bedrockruntime.model.ContentBlockDelta
 import aws.sdk.kotlin.services.bedrockruntime.model.ContentBlockDeltaEvent
-import aws.sdk.kotlin.services.bedrockruntime.model.ConverseStreamRequest
 import aws.sdk.kotlin.services.bedrockruntime.model.ConverseStreamOutput
+import aws.sdk.kotlin.services.bedrockruntime.model.ConverseStreamRequest
 import aws.sdk.kotlin.services.bedrockruntime.model.ConverseStreamResponse
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.aws.kotlin.bedrock.model.userMessageOf
 import io.bluetape4k.coroutines.flow.extensions.takeUntil
+import io.bluetape4k.logging.KLogging
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -20,6 +22,7 @@ import io.mockk.verify
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -30,6 +33,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class BedrockRuntimeFlowExtensionsTest {
+
+    companion object: KLogging()
 
     private val client = mockk<BedrockRuntimeClient>()
 
@@ -105,7 +110,7 @@ class BedrockRuntimeFlowExtensionsTest {
         client.converseStreamFlow(
             "model-id",
             listOf(userMessageOf("hello")),
-        ).toList() shouldBeEqualTo emptyList()
+        ).toList().shouldBeEmpty()
     }
 
     @Test
@@ -156,7 +161,7 @@ class BedrockRuntimeFlowExtensionsTest {
                 it.converseStreamFlow(
                     "model-id",
                     listOf(userMessageOf("hello")),
-                ).collect {}
+                ).collect()
             }
         }
         runCurrent()

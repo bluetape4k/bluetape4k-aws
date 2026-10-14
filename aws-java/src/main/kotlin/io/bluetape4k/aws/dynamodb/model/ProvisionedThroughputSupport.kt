@@ -16,9 +16,8 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
  */
 inline fun ProvisionedThroughput(
     builder: ProvisionedThroughput.Builder.() -> Unit,
-): ProvisionedThroughput {
-    return ProvisionedThroughput.builder().apply(builder).build()
-}
+): ProvisionedThroughput =
+    ProvisionedThroughput.builder().apply(builder).build()
 
 /**
  * DynamoDB 테이블의 프로비저닝된 처리량 설정을 생성합니다.
@@ -36,6 +35,6 @@ fun provisionedThroughputOf(
     readCapacityUnits: Long? = null,
     writeCapacityUnits: Long? = null,
 ): ProvisionedThroughput = ProvisionedThroughput {
-    readCapacityUnits(readCapacityUnits)
-    writeCapacityUnits(writeCapacityUnits)
+    readCapacityUnits?.let { readCapacityUnits(it) }
+    writeCapacityUnits?.let { writeCapacityUnits(it) }
 }

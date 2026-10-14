@@ -1,13 +1,12 @@
 package io.bluetape4k.aws.kotlin.dynamodb.examples.json
 
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.kotlin.dynamodb.AbstractKotlinDynamoDbTest
 import io.bluetape4k.aws.kotlin.dynamodb.waitForTableReady
-import io.bluetape4k.aws.kotlin.dynamodb.withDynamoDbClient
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
-import io.bluetape4k.assertions.shouldBeEqualTo
 import org.junit.jupiter.api.Test
 
 class MovieServiceTest: AbstractKotlinDynamoDbTest() {
@@ -18,11 +17,7 @@ class MovieServiceTest: AbstractKotlinDynamoDbTest() {
 
     @Test
     fun `load movie data and put to dynamodb table`() = runSuspendIO {
-        withDynamoDbClient(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withLocalDynamoDbClient { client ->
             val movieService = MovieService(client)
 
             movieService.createMovieTable(MOVIE_TABLE_NAME)
@@ -31,14 +26,15 @@ class MovieServiceTest: AbstractKotlinDynamoDbTest() {
             movieService.loadMovies(MOVIE_TABLE_NAME)
 
             val films2222 = movieService.moviesInYear(MOVIE_TABLE_NAME, 2222)
+            log.debug { "films2222=$films2222" }
             films2222.count shouldBeEqualTo 0
 
             val films2013 = movieService.moviesInYear(MOVIE_TABLE_NAME, 2013)
+            log.debug { "films2013=$films2013" }
             films2013.count shouldBeEqualTo 2
 
-            val titles = films2013.items.shouldNotBeNull().mapNotNull { it["title"]?.asS() }
+            val titles = films2013.items?.mapNotNull { it["title"]?.asS() }.shouldNotBeNull()
             log.debug { "2013 film titles: " }
-
             titles.forEach {
                 log.debug { "\ttitle=$it" }
             }

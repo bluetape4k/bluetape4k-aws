@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class S3ModelTest {
@@ -17,14 +18,14 @@ class S3ModelTest {
     @Test
     fun `objectIdentifierOf는 key로 ObjectIdentifier를 생성한다`() {
         val id = objectIdentifierOf("my-object-key")
-
+        log.debug { "id=$id" }
         id.key shouldBeEqualTo "my-object-key"
     }
 
     @Test
     fun `objectIdentifierOf는 key와 versionId로 ObjectIdentifier를 생성한다`() {
         val id = objectIdentifierOf("my-key", versionId = "v1")
-
+        log.debug { "id=$id" }
         id.key shouldBeEqualTo "my-key"
         id.versionId shouldBeEqualTo "v1"
     }
@@ -32,7 +33,7 @@ class S3ModelTest {
     @Test
     fun `String toObjectIdentifier 확장으로 ObjectIdentifier를 생성한다`() {
         val id = "my-key".toObjectIdentifier()
-
+        log.debug { "id=$id" }
         id.key shouldBeEqualTo "my-key"
     }
 
@@ -48,7 +49,7 @@ class S3ModelTest {
     @Test
     fun `deleteOf vararg String으로 Delete를 생성한다`() {
         val delete = deleteOf("key-1", "key-2", "key-3")
-
+        log.debug { "delete=$delete" }
         delete.objects.shouldNotBeNull() shouldHaveSize 3
     }
 
@@ -56,14 +57,14 @@ class S3ModelTest {
     fun `deleteOf Collection String으로 Delete를 생성한다`() {
         val keys = listOf("key-1", "key-2")
         val delete = deleteOf(keys)
-
+        log.debug { "delete=$delete" }
         delete.objects.shouldNotBeNull() shouldHaveSize 2
     }
 
     @Test
     fun `deleteOf는 quiet 옵션을 설정할 수 있다`() {
         val delete = deleteOf("key-1", quiet = true)
-
+        log.debug { "delete=$delete" }
         delete.quiet.shouldNotBeNull().shouldBeTrue()
     }
 
@@ -79,7 +80,7 @@ class S3ModelTest {
     @Test
     fun `getObjectRequestOf는 bucket과 key로 요청을 생성한다`() {
         val req = getObjectRequestOf(bucket = "my-bucket", key = "path/to/object.txt")
-
+        log.debug { "req=$req" }
         req.bucket shouldBeEqualTo "my-bucket"
         req.key shouldBeEqualTo "path/to/object.txt"
     }
@@ -87,7 +88,7 @@ class S3ModelTest {
     @Test
     fun `getObjectRequestOf는 versionId를 설정할 수 있다`() {
         val req = getObjectRequestOf(bucket = "my-bucket", key = "obj.txt", versionId = "v1")
-
+        log.debug { "req=$req" }
         req.versionId shouldBeEqualTo "v1"
     }
 
@@ -110,7 +111,7 @@ class S3ModelTest {
     @Test
     fun `headObjectRequestOf는 bucket과 key로 요청을 생성한다`() {
         val req = headObjectRequestOf(bucket = "my-bucket", key = "path/to/object.txt")
-
+        log.debug { "req=$req" }
         req.bucket shouldBeEqualTo "my-bucket"
         req.key shouldBeEqualTo "path/to/object.txt"
     }

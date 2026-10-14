@@ -1,11 +1,15 @@
 package io.bluetape4k.aws.kotlin.dynamodb
 
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldContainSame
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class ReservedWordsTest {
+
+    companion object: KLogging()
 
     @Test
     fun `예약어 enum에 주요 DynamoDB 예약어가 포함되어 있다`() {
@@ -31,12 +35,13 @@ class ReservedWordsTest {
         val entries = ReservedWords.entries
         val uniqueNames = entries.map { it.name }.toSet()
 
-        (entries.size == uniqueNames.size).shouldBeTrue()
+        entries shouldContainSame entries.distinctBy { it.name }
+        entries.size shouldBeEqualTo uniqueNames.size
     }
 
     @Test
     fun `예약어 수가 AWS 문서 기준 573개 이상이다`() {
         // AWS DynamoDB 예약어 공식 목록은 573개
-        (ReservedWords.entries.size >= 573).shouldBeTrue()
+        ReservedWords.entries.size shouldBeGreaterOrEqualTo 573
     }
 }

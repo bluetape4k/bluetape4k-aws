@@ -55,7 +55,8 @@ inline fun dynamoDbEnhancedClientOf(
 fun dynamoDbEnhancedClientOf(
     client: DynamoDbClient,
     vararg extensions: DynamoDbEnhancedClientExtension = ExtensionResolver.defaultExtensions().toTypedArray(),
-): DynamoDbEnhancedClient = dynamoDbEnhancedClient {
-    dynamoDbClient(client)
-    extensions(*extensions)
-}
+): DynamoDbEnhancedClient =
+    dynamoDbEnhancedClient {
+        dynamoDbClient(client)
+        extensions(*extensions)
+    }

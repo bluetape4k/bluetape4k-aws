@@ -16,10 +16,10 @@ import io.bluetape4k.support.requireNotBlank
  * @param charset 문자 인코딩 (기본값: UTF-8)
  * @return [Content] 인스턴스
  */
-fun contentOf(
+inline fun contentOf(
     data: String,
     charset: String = Charsets.UTF_8.name(),
-    builder: Content.Builder.() -> Unit = {},
+    crossinline builder: Content.Builder.() -> Unit = {},
 ): Content {
     data.requireNotBlank("data")
 
@@ -41,9 +41,9 @@ fun contentOf(
  * @param html HTML [Content] (null이면 생략)
  * @return [Body] 인스턴스
  */
-fun htmlBodyOf(
+inline fun htmlBodyOf(
     html: Content? = null,
-    builder: Body.Builder.() -> Unit = {},
+    crossinline builder: Body.Builder.() -> Unit = {},
 ): Body =
     Body {
         html?.let { this.html = it }
@@ -60,9 +60,9 @@ fun htmlBodyOf(
  * @param text 텍스트 [Content] (null이면 생략)
  * @return [Body] 인스턴스
  */
-fun textBodyOf(
+inline fun textBodyOf(
     text: Content? = null,
-    builder: Body.Builder.() -> Unit = {},
+    crossinline builder: Body.Builder.() -> Unit = {},
 ): Body =
     Body {
         text?.let { this.text = it }
@@ -83,10 +83,10 @@ fun textBodyOf(
  * @param body 이메일 본문 [Body]
  * @return [Message] 인스턴스
  */
-fun messageOf(
+inline fun messageOf(
     subject: Content,
     body: Body,
-    builder: Message.Builder.() -> Unit = {},
+    crossinline builder: Message.Builder.() -> Unit = {},
 ): Message =
     Message {
         this.subject = subject

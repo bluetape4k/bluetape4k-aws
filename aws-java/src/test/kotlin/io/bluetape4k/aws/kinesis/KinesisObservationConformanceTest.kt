@@ -2,11 +2,16 @@ package io.bluetape4k.aws.kinesis
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.utils.Resourcex
 import org.junit.jupiter.api.Test
-import java.util.Properties
+import java.util.*
 
-class KinesisObservationConformanceTest {
+class KinesisObservationConformanceTest: AbstractKinesisTest() {
+
+    companion object: KLoggingChannel()
 
     private val contract = loadContract()
     private val streamToken = redactedKinesisToken(contract.required("token.input.stream"))
@@ -31,9 +36,11 @@ class KinesisObservationConformanceTest {
         ownerToken shouldBeEqualTo contract.required("token.expected.principal")
 
         KinesisCanonicalObservation("batch", "success", count = KinesisCanonicalObservation.MAX_COUNT)
+
         assertFailsWith<IllegalArgumentException> {
             KinesisCanonicalObservation("batch", "success", count = KinesisCanonicalObservation.MAX_COUNT + 1)
         }
+
         assertFailsWith<IllegalArgumentException> {
             KinesisCanonicalObservation("batch", "success", shardToken = "raw-shard")
         }
@@ -100,7 +107,9 @@ class KinesisObservationConformanceTest {
     fun `canonical shape exposes no raw or secret-bearing fields`() {
         val names = KinesisCanonicalObservation::class.java.declaredFields.map { it.name }.toSet()
         listOf("payload", "sequenceToken", "exception", "message", "streamName", "shardId", "ownerId")
-            .forEach { field -> names.contains(field).shouldBeFalse() }
+            .forEach { field ->
+                names shouldNotContain field
+            }
     }
 
     @Test
@@ -110,7 +119,7 @@ class KinesisObservationConformanceTest {
             KinesisCanonicalObservation(secret, "success")
         }
 
-        failure.message?.contains(secret).shouldBeFalse()
+        failure.message shouldNotContain secret
     }
 
     private fun assertVector(key: String, actual: List<KinesisCanonicalObservation>) {
@@ -121,11 +130,12 @@ class KinesisObservationConformanceTest {
         listOf(eventKind, outcome, reason.orEmpty(), retryClass.orEmpty()).joinToString("|")
 
     private fun loadContract(): Properties = Properties().apply {
-        KinesisObservationConformanceTest::class.java.classLoader
-            .getResourceAsStream("kinesis-observation-v1.properties")
-            .use { input -> load(requireNotNull(input)) }
+        Resourcex.getInputStream("kinesis-observation-v1.properties")
+            .use { input ->
+                load(input.requireNotNull("kinesis-observation-v1.properties"))
+            }
     }
 
-    private fun Properties.required(key: String): String = requireNotNull(getProperty(key)) { "Missing $key" }
+    private fun Properties.required(key: String): String = getProperty(key).requireNotNull(key)
     private fun Properties.csv(key: String): Set<String> = required(key).split(',').toSet()
 }

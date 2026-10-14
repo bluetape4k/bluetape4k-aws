@@ -3,13 +3,18 @@ package io.bluetape4k.aws.kotlin
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class PaginationGuardTest {
 
+    companion object: KLogging()
+
     @Test
     fun `guard rejects a missing continuation token`() {
         val guard = paginationGuard(maxPages = 2)
+        log.debug { "guard=$guard" }
 
         val error = assertFailsWith<IllegalStateException> {
             guard.nextTokenOrNull(hasNext = true, nextToken = null)
@@ -21,8 +26,9 @@ class PaginationGuardTest {
     @Test
     fun `guard rejects a repeated continuation token`() {
         val guard = paginationGuard(maxPages = 3)
-
+        log.debug { "guard=$guard" }
         guard.nextTokenOrNull(hasNext = true, nextToken = "page-a") shouldBeEqualTo "page-a"
+
         val error = assertFailsWith<IllegalStateException> {
             guard.nextTokenOrNull(hasNext = true, nextToken = "page-a")
         }
@@ -33,7 +39,7 @@ class PaginationGuardTest {
     @Test
     fun `guard permits the configured final page`() {
         val guard = paginationGuard(maxPages = 2)
-
+        log.debug { "guard=$guard" }
         guard.nextTokenOrNull(hasNext = true, nextToken = "page-a") shouldBeEqualTo "page-a"
         guard.nextTokenOrNull(hasNext = false, nextToken = null).shouldBeNull()
     }
@@ -41,8 +47,9 @@ class PaginationGuardTest {
     @Test
     fun `guard rejects continuation beyond the page limit`() {
         val guard = paginationGuard(maxPages = 2)
-
+        log.debug { "guard=$guard" }
         guard.nextTokenOrNull(hasNext = true, nextToken = "page-a") shouldBeEqualTo "page-a"
+
         val error = assertFailsWith<IllegalStateException> {
             guard.nextTokenOrNull(hasNext = true, nextToken = "page-b")
         }

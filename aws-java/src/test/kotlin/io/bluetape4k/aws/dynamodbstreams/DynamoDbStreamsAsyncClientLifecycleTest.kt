@@ -2,20 +2,32 @@ package io.bluetape4k.aws.dynamodbstreams
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClient
 
-class DynamoDbStreamsAsyncClientLifecycleTest {
+class DynamoDbStreamsAsyncClientLifecycleTest: AbstractAwsTest() {
+
+    companion object: KLogging()
+
+    private val client = mockk<DynamoDbStreamsAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `factory overload closes client after normal block`() = runTest {
-        val client = mockk<DynamoDbStreamsAsyncClient>(relaxed = true)
         every { client.close() } just runs
 
         withDynamoDbStreamsAsyncClient({ client }) {
@@ -27,7 +39,6 @@ class DynamoDbStreamsAsyncClientLifecycleTest {
 
     @Test
     fun `factory overload closes client after block failure`() = runTest {
-        val client = mockk<DynamoDbStreamsAsyncClient>(relaxed = true)
         every { client.close() } just runs
         val expected = IllegalStateException("boom")
 

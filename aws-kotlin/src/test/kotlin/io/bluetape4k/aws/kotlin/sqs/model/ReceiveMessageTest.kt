@@ -4,11 +4,12 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class ReceiveMessageTest {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     private val queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/MyQueue"
 
@@ -16,6 +17,7 @@ class ReceiveMessageTest {
     fun `receiveMessageRequestOf는 queueUrl로 요청을 생성한다`() {
         val req = receiveMessageRequestOf(queueUrl = queueUrl)
 
+        log.debug { "req=$req" }
         req.queueUrl shouldBeEqualTo queueUrl
         req.maxNumberOfMessages shouldBeEqualTo 3
         req.waitTimeSeconds shouldBeEqualTo 20
@@ -24,14 +26,14 @@ class ReceiveMessageTest {
     @Test
     fun `receiveMessageRequestOf는 maxNumberOfMessages를 설정할 수 있다`() {
         val req = receiveMessageRequestOf(queueUrl = queueUrl, maxNumberOfMessages = 5)
-
+        log.debug { "req=$req" }
         req.maxNumberOfMessages shouldBeEqualTo 5
     }
 
     @Test
     fun `receiveMessageRequestOf는 waitTimeSeconds를 설정할 수 있다`() {
         val req = receiveMessageRequestOf(queueUrl = queueUrl, waitTimeSeconds = 10)
-
+        log.debug { "req=$req" }
         req.waitTimeSeconds shouldBeEqualTo 10
     }
 
@@ -40,8 +42,11 @@ class ReceiveMessageTest {
         val minReq = receiveMessageRequestOf(queueUrl = queueUrl, maxNumberOfMessages = 1, waitTimeSeconds = 0)
         val maxReq = receiveMessageRequestOf(queueUrl = queueUrl, maxNumberOfMessages = 10, waitTimeSeconds = 20)
 
+        log.debug { "minReq=$minReq" }
         minReq.maxNumberOfMessages shouldBeEqualTo 1
         minReq.waitTimeSeconds shouldBeEqualTo 0
+
+        log.debug { "maxReq=$maxReq" }
         maxReq.maxNumberOfMessages shouldBeEqualTo 10
         maxReq.waitTimeSeconds shouldBeEqualTo 20
     }
@@ -49,7 +54,7 @@ class ReceiveMessageTest {
     @Test
     fun `receiveMessageRequestOf는 visibilityTimeout을 설정할 수 있다`() {
         val req = receiveMessageRequestOf(queueUrl = queueUrl, visibilityTimeout = 30)
-
+        log.debug { "req=$req" }
         req.visibilityTimeout shouldBeEqualTo 30
     }
 
@@ -60,8 +65,9 @@ class ReceiveMessageTest {
             attributeNames = listOf("All")
         )
 
+        log.debug { "req=$req" }
         req.messageAttributeNames.shouldNotBeNull()
-        req.messageAttributeNames.shouldNotBeNull() shouldBeEqualTo listOf("All")
+        req.messageAttributeNames shouldBeEqualTo listOf("All")
     }
 
     @Test
@@ -69,7 +75,7 @@ class ReceiveMessageTest {
         val req = receiveMessageRequestOf(queueUrl = queueUrl) {
             receiveRequestAttemptId = "attempt-001"
         }
-
+        log.debug { "req=$req" }
         req.receiveRequestAttemptId shouldBeEqualTo "attempt-001"
     }
 

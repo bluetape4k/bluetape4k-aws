@@ -8,9 +8,9 @@ import aws.sdk.kotlin.services.dynamodb.model.TableDescription
 import aws.sdk.kotlin.services.dynamodb.model.TableStatus
 import aws.sdk.kotlin.services.dynamodb.model.ThrottlingException
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class DynamoDbClientExtensionsMockTest {
+
+    companion object: KLoggingChannel()
 
     private val client = mockk<DynamoDbClient>()
 
@@ -29,8 +31,9 @@ class DynamoDbClientExtensionsMockTest {
 
     @Test
     fun `getTableStatus returns null for missing tables`() = runSuspendIO {
-        coEvery { client.describeTable(any<DescribeTableRequest>()) } throws
-                ResourceNotFoundException { message = "missing table" }
+        coEvery {
+            client.describeTable(any<DescribeTableRequest>())
+        } throws ResourceNotFoundException { message = "missing table" }
 
         val result = client.getTableStatus("missing-table")
 
@@ -40,8 +43,9 @@ class DynamoDbClientExtensionsMockTest {
 
     @Test
     fun `getTableStatus propagates retryable describe failures`() = runSuspendIO {
-        coEvery { client.describeTable(any<DescribeTableRequest>()) } throws
-                ThrottlingException { message = "throttled" }
+        coEvery {
+            client.describeTable(any<DescribeTableRequest>())
+        } throws ThrottlingException { message = "throttled" }
 
         assertFailsWith<ThrottlingException> {
             client.getTableStatus("orders")
@@ -52,8 +56,9 @@ class DynamoDbClientExtensionsMockTest {
 
     @Test
     fun `waitForTableReady propagates retryable describe failures`() = runSuspendIO {
-        coEvery { client.describeTable(any<DescribeTableRequest>()) } throws
-                ThrottlingException { message = "throttled" }
+        coEvery {
+            client.describeTable(any<DescribeTableRequest>())
+        } throws ThrottlingException { message = "throttled" }
 
         assertFailsWith<ThrottlingException> {
             client.waitForTableReady("orders")
@@ -64,7 +69,9 @@ class DynamoDbClientExtensionsMockTest {
 
     @Test
     fun `waitForTableReady completes only after table becomes active`() = runSuspendIO {
-        coEvery { client.describeTable(any<DescribeTableRequest>()) } returnsMany listOf(
+        coEvery {
+            client.describeTable(any<DescribeTableRequest>())
+        } returnsMany listOf(
             describeTableResponse(TableStatus.Creating),
             describeTableResponse(TableStatus.Active),
         )
@@ -76,7 +83,9 @@ class DynamoDbClientExtensionsMockTest {
 
     @Test
     fun `waitForTableReady does not treat null status as ready`() = runSuspendIO {
-        coEvery { client.describeTable(any<DescribeTableRequest>()) } returnsMany listOf(
+        coEvery {
+            client.describeTable(any<DescribeTableRequest>())
+        } returnsMany listOf(
             DescribeTableResponse {},
             describeTableResponse(TableStatus.Active),
         )

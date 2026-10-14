@@ -10,10 +10,19 @@ import aws.smithy.kotlin.runtime.http.HttpStatusCode
 import aws.smithy.kotlin.runtime.http.response.HttpResponse
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.assertNotFails
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeLessThan
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.assertions.shouldStartWith
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -21,11 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.util.concurrent.TimeoutException
@@ -35,6 +40,8 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(InternalApi::class)
 class KinesisDryRunSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `collision retries without deleting pre-existing stream`() = runTest {
@@ -124,12 +131,14 @@ class KinesisDryRunSupportTest {
         assertFailsWith<IllegalStateException> {
             withOwnedKinesisStream(
                 nameFactory = { attempt -> "foreign-$attempt" },
-                describe = { Unit },
+                describe = { },
                 create = { error("must not create") },
                 delete = { deleted += it },
-            ) { error("unreachable") }
+            ) {
+                error("unreachable")
+            }
         }
-        deleted shouldBeEqualTo emptyList()
+        deleted.shouldBeEmpty()
     }
 
     @Test
@@ -177,7 +186,7 @@ class KinesisDryRunSupportTest {
                     describe = { throw ResourceNotFoundException { message = "missing" } },
                     create = { },
                     delete = {
-                        delay(1)
+                        delay(1.milliseconds)
                         cleanupCompleted.complete(Unit)
                     },
                 ) {
@@ -193,8 +202,9 @@ class KinesisDryRunSupportTest {
 
         cleanupCompleted.await()
         val observedFailure = observed.await()
-        assertTrue(observedFailure is CancellationException)
-        assertEquals(cancellation.message, observedFailure.message)
+
+        observedFailure.shouldBeInstanceOf<CancellationException>()
+        observedFailure.message shouldBeEqualTo cancellation.message
     }
 
     @Test
@@ -223,7 +233,7 @@ class KinesisDryRunSupportTest {
                 describe = { throw ResourceNotFoundException { message = "missing" } },
                 create = { },
                 delete = { throw cleanupFailure },
-            ) { "ok" }
+            ) { }
         }
         actual shouldBeSameInstanceAs cleanupFailure
     }
@@ -252,7 +262,7 @@ class KinesisDryRunSupportTest {
         }
 
         actual shouldBeSameInstanceAs primary
-        assertEquals(1, actual.suppressed.size)
+        actual.suppressed shouldHaveSize 1
     }
 
     @Test
@@ -269,7 +279,7 @@ class KinesisDryRunSupportTest {
         }
 
         actual shouldBeSameInstanceAs preflightFailure
-        deleted shouldBeEqualTo emptyList()
+        deleted.shouldBeEmpty()
     }
 
     @Test
@@ -300,7 +310,7 @@ class KinesisDryRunSupportTest {
 
     @Test
     fun `classifier never skips access denied transport timeout assertion or normal response`() {
-        val failures = listOf<Throwable?>(
+        val failures = listOf(
             serviceException("AccessDenied", 403, "DryRun denied"),
             serviceException("AccessDenied", 403, "forbidden"),
             IOException("connection failed"),
@@ -332,8 +342,7 @@ class KinesisDryRunSupportTest {
             serviceException("InvalidArgumentException", 500, "DryRun unknown member"),
             serviceException("NotImplemented", 400, "not implemented"),
         ).forEach { failure ->
-            classifyKinesisDryRunFailure(failure).status
-                .shouldBeEqualTo(KinesisDryRunStatus.FAILED)
+            classifyKinesisDryRunFailure(failure).status shouldBeEqualTo KinesisDryRunStatus.FAILED
         }
     }
 
@@ -355,17 +364,19 @@ class KinesisDryRunSupportTest {
         row.backendVersion shouldBeEqualTo "1.6.0"
         row.status shouldBeEqualTo KinesisDryRunStatus.FAILED
         row.sanitizedReason shouldBeEqualTo KinesisDryRunReason.ACCESS_DENIED
+
         val rendered = row.assumptionMessage()
-        rendered.contains("Authorization").shouldBeFalse()
-        rendered.contains("payload").shouldBeFalse()
-        rendered.contains("access-key-id").shouldBeFalse()
-        rendered.contains("session-token").shouldBeFalse()
+        log.debug { "rendered=$rendered" }
+        rendered shouldNotContain "Authorization"
+        rendered shouldNotContain "payload"
+        rendered shouldNotContain "access-key-id"
+        rendered shouldNotContain "session-token"
         rendered.length shouldBeLessThan 512
     }
 
     @Test
     fun `sanitizer rejects unapproved backend and stream token`() {
-        assertThrows(IllegalArgumentException::class.java) {
+        assertFailsWith<IllegalArgumentException> {
             sanitizedKinesisDryRunEvidence(
                 backend = "aws",
                 backendVersion = "1",
@@ -374,7 +385,7 @@ class KinesisDryRunSupportTest {
                 streamToken = "dryrun-token",
             )
         }
-        assertThrows(IllegalArgumentException::class.java) {
+        assertFailsWith<IllegalArgumentException> {
             sanitizedKinesisDryRunEvidence(
                 backend = "floci",
                 backendVersion = "1",
@@ -391,7 +402,7 @@ class KinesisDryRunSupportTest {
         validatedKinesisDryRunBackend("localstack") shouldBeEqualTo "localstack"
 
         listOf("../../outside", "floci/../outside", "aws").forEach { backend ->
-            assertThrows(IllegalArgumentException::class.java) {
+            assertFailsWith<IllegalArgumentException> {
                 validatedKinesisDryRunBackend(backend)
             }
         }
@@ -410,16 +421,20 @@ class KinesisDryRunSupportTest {
 
         targets.forEach { boundary ->
             val calls = AtomicInteger(0)
-            assertThrows(IllegalArgumentException::class.java) {
+            assertFailsWith<IllegalArgumentException> {
                 verifyKinesisDryRunTestBoundary(boundary)
                 calls.incrementAndGet()
             }
             calls.get() shouldBeEqualTo 0
         }
 
-        assertDoesNotThrow {
+        assertNotFails {
             verifyKinesisDryRunTestBoundary(
-                KinesisDryRunTestBoundary(Url.parse("http://127.0.0.1:4566"), "test", "test"),
+                KinesisDryRunTestBoundary(
+                    Url.parse("http://127.0.0.1:4566"),
+                    "test",
+                    "test"
+                )
             )
         }
     }
@@ -461,7 +476,7 @@ class KinesisDryRunSupportTest {
             },
         ) { null }
 
-        result shouldBeEqualTo null
+        result.shouldBeNull()
         intervals shouldBeEqualTo listOf(500.milliseconds, 500.milliseconds)
         now shouldBeEqualTo 1.seconds.inWholeNanoseconds
     }
@@ -499,6 +514,7 @@ class KinesisDryRunSupportTest {
 
     @Test
     fun `operation deadline rejects budgets above thirty seconds`() = runTest {
+        @Suppress("UnusedExpression")
         assertFailsWith<IllegalArgumentException> {
             withinKinesisOperationDeadline(timeout = 31.seconds) { "unreachable" }
         }
@@ -507,7 +523,7 @@ class KinesisDryRunSupportTest {
     @Test
     fun `stream tokens are bounded and generated`() {
         val token = newKinesisDryRunStreamToken("run-123")
-        token.startsWith("run-123-").shouldBeTrue()
+        token shouldStartWith "run-123-"
         token.length shouldBeLessThan 128
     }
 
@@ -519,9 +535,5 @@ class KinesisDryRunSupportTest {
         exception.sdkErrorMetadata.attributes[ServiceErrorMetadata.ErrorCode] = errorCode
         exception.sdkErrorMetadata.attributes[ServiceErrorMetadata.ProtocolResponse] =
             HttpResponse(status = HttpStatusCode.fromValue(statusCode))
-    }
-
-    private infix fun Int.shouldBeLessThan(other: Int) {
-        if (this >= other) error("Expected $this < $other")
     }
 }

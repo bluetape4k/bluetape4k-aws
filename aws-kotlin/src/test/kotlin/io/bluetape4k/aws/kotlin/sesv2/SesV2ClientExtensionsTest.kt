@@ -3,14 +3,13 @@ package io.bluetape4k.aws.kotlin.sesv2
 import aws.sdk.kotlin.services.sesv2.model.CreateEmailTemplateRequest
 import aws.sdk.kotlin.services.sesv2.model.SendCustomVerificationEmailRequest
 import aws.sdk.kotlin.services.sesv2.model.SendEmailRequest
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8Bytes
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeEmpty
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
@@ -30,11 +29,7 @@ class SesV2ClientExtensionsTest: AbstractKotlinSesV2Test() {
 
     @Test
     fun `send email`() = runSuspendIO {
-        withSesV2Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSesV2Client(awsEmulator) { client ->
             client.sendCustomVerificationEmail(SendCustomVerificationEmailRequest {
                 this.emailAddress = senderEmail
             })
@@ -57,19 +52,17 @@ class SesV2ClientExtensionsTest: AbstractKotlinSesV2Test() {
                     }
                 }
             }
+            log.debug { "request=$request" }
+
             val response = client.sendEmail(request)
             log.debug { "response=$response" }
-            response.messageId.shouldNotBeNull().shouldNotBeEmpty()
+            response.messageId.shouldNotBeEmpty()
         }
     }
 
     @Test
     fun `send raw email`() = runSuspendIO {
-        withSesV2Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSesV2Client(awsEmulator) { client ->
             client.sendCustomVerificationEmail(SendCustomVerificationEmailRequest {
                 this.emailAddress = senderEmail
             })
@@ -88,19 +81,17 @@ class SesV2ClientExtensionsTest: AbstractKotlinSesV2Test() {
                     }
                 }
             }
+            log.debug { "request=$request" }
+
             val response = client.sendEmail(request)
             log.debug { "response=$response" }
-            response.messageId.shouldNotBeNull().shouldNotBeEmpty()
+            response.messageId.shouldNotBeEmpty()
         }
     }
 
     @Test
     fun `send templated email`() = runSuspendIO {
-        withSesV2Client(
-            localStackServer.endpointUrl,
-            localStackServer.region,
-            localStackServer.credentialsProvider,
-        ) { client ->
+        withTestSesV2Client(awsEmulator) { client ->
             client.sendCustomVerificationEmail(SendCustomVerificationEmailRequest {
                 this.emailAddress = senderEmail
             })
@@ -120,6 +111,7 @@ class SesV2ClientExtensionsTest: AbstractKotlinSesV2Test() {
                     text = "Hello, {{name}}"
                 }
             }
+            log.debug { "createTemplateRequest=$createTemplateRequest" }
 
             val createTemplateResponse = client.createEmailTemplate(createTemplateRequest)
             log.debug { "createTemplateResponse=$createTemplateResponse" }
@@ -140,10 +132,11 @@ class SesV2ClientExtensionsTest: AbstractKotlinSesV2Test() {
                     }
                 }
             }
+            log.debug { "request=$request" }
 
             val response = client.sendEmail(request)
             log.debug { "response=$response" }
-            response.messageId.shouldNotBeNull().shouldNotBeEmpty()
+            response.messageId.shouldNotBeEmpty()
         }
     }
 }

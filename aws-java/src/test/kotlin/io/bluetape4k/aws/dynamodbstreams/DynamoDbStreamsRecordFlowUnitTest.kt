@@ -1,21 +1,29 @@
 package io.bluetape4k.aws.dynamodbstreams
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.AbstractAwsTest
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.exception.SdkException
-import software.amazon.awssdk.services.dynamodb.model.DescribeStreamResponse
 import software.amazon.awssdk.services.dynamodb.model.DescribeStreamRequest
+import software.amazon.awssdk.services.dynamodb.model.DescribeStreamResponse
 import software.amazon.awssdk.services.dynamodb.model.ExpiredIteratorException
 import software.amazon.awssdk.services.dynamodb.model.GetRecordsRequest
 import software.amazon.awssdk.services.dynamodb.model.GetRecordsResponse
@@ -29,7 +37,9 @@ import software.amazon.awssdk.services.dynamodb.model.StreamRecord
 import software.amazon.awssdk.services.dynamodb.streams.DynamoDbStreamsAsyncClient
 import java.util.concurrent.CompletableFuture
 
-class DynamoDbStreamsRecordFlowUnitTest {
+class DynamoDbStreamsRecordFlowUnitTest: AbstractAwsTest() {
+
+    companion object: KLogging()
 
     private val client = mockk<DynamoDbStreamsAsyncClient>(relaxed = true)
 
@@ -38,38 +48,42 @@ class DynamoDbStreamsRecordFlowUnitTest {
         clearMocks(client)
     }
 
-    private fun record(sequenceNumber: String): Record = Record.builder()
-        .dynamodb(StreamRecord.builder().sequenceNumber(sequenceNumber).build())
-        .build()
+    private fun record(sequenceNumber: String): Record =
+        Record.builder()
+            .dynamodb(StreamRecord.builder().sequenceNumber(sequenceNumber).build())
+            .build()
 
-    private fun iteratorResponse(iterator: String) = GetShardIteratorResponse.builder()
-        .shardIterator(iterator)
-        .build()
+    private fun iteratorResponse(iterator: String) =
+        GetShardIteratorResponse.builder()
+            .shardIterator(iterator)
+            .build()
 
-    private fun recordsResponse(records: List<Record>, nextIterator: String? = null) = GetRecordsResponse.builder()
-        .records(records)
-        .nextShardIterator(nextIterator)
-        .build()
+    private fun recordsResponse(records: List<Record>, nextIterator: String? = null) =
+        GetRecordsResponse.builder()
+            .records(records)
+            .nextShardIterator(nextIterator)
+            .build()
 
     @Test
     fun `emits records and saves checkpoint only after downstream emit returns`() = runTest {
         val eventLog = mutableListOf<String>()
-        val store = object : DynamoDbStreamsCheckpointStore {
+        val store = object: DynamoDbStreamsCheckpointStore {
             override suspend fun load(streamArn: String, shardId: String): String? = null
-
             override suspend fun save(streamArn: String, shardId: String, sequenceNumber: String) {
                 eventLog += "save:$sequenceNumber"
             }
         }
         every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(iteratorResponse("iter-1"))
+                completableFutureOf(iteratorResponse("iter-1"))
         every { client.getRecords(any<GetRecordsRequest>()) } returns
-                CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-1"))))
+                completableFutureOf(recordsResponse(listOf(record("seq-1"))))
 
-        client.recordFlow("stream", "shard", checkpointStore = store).collect {
-            eventLog += "emit"
-        }
+        client.recordFlow("stream", "shard", checkpointStore = store)
+            .collect {
+                eventLog += "emit"
+            }
 
+        log.debug { "eventLog=${eventLog.joinToString()}" }
         eventLog shouldBeEqualTo listOf("emit", "save:seq-1")
     }
 
@@ -77,14 +91,18 @@ class DynamoDbStreamsRecordFlowUnitTest {
     fun `checkpoint resumes inclusively at the saved sequence`() = runTest {
         val store = InMemoryDynamoDbStreamsCheckpointStore()
         store.save("stream", "shard", "seq-7")
+
         val request = slot<GetShardIteratorRequest>()
         every { client.getShardIterator(capture(request)) } returns
                 CompletableFuture.completedFuture(iteratorResponse("iter-1"))
         every { client.getRecords(any<GetRecordsRequest>()) } returns
                 CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-7"))))
 
-        client.recordFlow("stream", "shard", checkpointStore = store).toList()
+        val records = client
+            .recordFlow("stream", "shard", checkpointStore = store)
+            .toList()
 
+        log.debug { "records=${records.joinToString()}" }
         request.captured.shardIteratorType() shouldBeEqualTo ShardIteratorType.AT_SEQUENCE_NUMBER
         request.captured.sequenceNumber() shouldBeEqualTo "seq-7"
     }
@@ -108,7 +126,12 @@ class DynamoDbStreamsRecordFlowUnitTest {
             every { client.getRecords(any<GetRecordsRequest>()) } returns
                     CompletableFuture.completedFuture(recordsResponse(emptyList()))
 
-            client.recordFlow("stream", "shard", position = position).toList()
+            val records = client
+                .recordFlow("stream", "shard", position = position)
+                .toList()
+
+            records.forEach { record -> log.debug { "record=$record" } }
+            records.shouldBeEmpty()
 
             request.captured.shardIteratorType() shouldBeEqualTo expected.first
             request.captured.sequenceNumber() shouldBeEqualTo expected.second
@@ -142,7 +165,12 @@ class DynamoDbStreamsRecordFlowUnitTest {
             else CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-2"))))
         }
 
-        client.recordFlow("stream", "shard").toList().size shouldBeEqualTo 1
+        val records = client
+            .recordFlow("stream", "shard")
+            .toList()
+
+        records.forEach { log.debug { "record=$it" } }
+        records shouldHaveSize 1
         verify(exactly = 2) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
@@ -161,7 +189,9 @@ class DynamoDbStreamsRecordFlowUnitTest {
             }
         }
 
-        client.recordFlow("stream", "shard").toList().size shouldBeEqualTo 2
+        val records = client.recordFlow("stream", "shard").toList()
+        records.forEach { log.debug { "record=$it" } }
+        records shouldHaveSize 2
         verify(exactly = 2) { client.getShardIterator(any<GetShardIteratorRequest>()) }
     }
 
@@ -216,7 +246,7 @@ class DynamoDbStreamsRecordFlowUnitTest {
     fun `does not advance checkpoint when save fails`() = runTest {
         val store = InMemoryDynamoDbStreamsCheckpointStore()
         val expected = IllegalStateException("checkpoint unavailable")
-        val failingStore = object : DynamoDbStreamsCheckpointStore {
+        val failingStore = object: DynamoDbStreamsCheckpointStore {
             override suspend fun load(streamArn: String, shardId: String): String? = store.load(streamArn, shardId)
 
             override suspend fun save(streamArn: String, shardId: String, sequenceNumber: String) {
@@ -244,7 +274,12 @@ class DynamoDbStreamsRecordFlowUnitTest {
                     recordsResponse(listOf(record("seq-cancel-1"), record("seq-cancel-2")), "iter-2"),
                 )
 
-        client.recordFlow("stream", "shard", checkpointStore = store).take(1).toList()
+        val record = client
+            .recordFlow("stream", "shard", checkpointStore = store)
+            .take(1)
+            .firstOrNull()
+        record.shouldNotBeNull()
+        log.debug { "record=$record" }
 
         store.load("stream", "shard") shouldBeEqualTo null
         verify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
@@ -271,7 +306,11 @@ class DynamoDbStreamsRecordFlowUnitTest {
             else CompletableFuture.completedFuture(recordsResponse(listOf(record("seq-metrics"))))
         }
 
-        client.recordFlow("stream", "shard", metrics = metrics).toList()
+        val records = client
+            .recordFlow("stream", "shard", metrics = metrics)
+            .toList()
+        records.forEach { log.debug { "record=$it" } }
+        records shouldHaveSize 1
 
         events shouldBeEqualTo listOf(
             "started:shard",
@@ -287,6 +326,7 @@ class DynamoDbStreamsRecordFlowUnitTest {
         val parent = Shard.builder().shardId("parent").build()
         val child = Shard.builder().shardId("child").parentShardId("parent").build()
         val description = StreamDescription.builder().shards(parent, child).build()
+
         every { client.describeStream(any<DescribeStreamRequest>()) } returns CompletableFuture.completedFuture(
             DescribeStreamResponse.builder().streamDescription(description).build(),
         )
@@ -300,9 +340,9 @@ class DynamoDbStreamsRecordFlowUnitTest {
         }
 
         val result = client.shardRecordFlow("stream").toList()
-
+        result.size shouldBeEqualTo 2
         result.map { it.shardId } shouldBeEqualTo listOf("parent", "child")
-        result.all { it.streamArn == "stream" } shouldBeEqualTo true
+        result.all { it.streamArn == "stream" }.shouldBeTrue()
     }
 
     private fun <T> failedFuture(cause: Throwable): CompletableFuture<T> = CompletableFuture<T>().apply {

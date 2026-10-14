@@ -97,16 +97,17 @@ class DynamoDbBatchExecutor<T: Any>(
         items: List<T>,
         primaryKeySelector: (T) -> Map<String, AttributeValue>,
     ) {
-        val writeRequests =
-            items
-                .map { item ->
-                    WriteRequest
-                        .builder()
-                        .deleteRequest { it.key(primaryKeySelector(item)) }
-                        .build()
-                }.map { TableItemTuple(tableName, it) }
+        val tuples = items
+            .map { item ->
+                val writeReq = WriteRequest
+                    .builder()
+                    .deleteRequest { it.key(primaryKeySelector(item)) }
+                    .build()
 
-        writeRequests
+                TableItemTuple(tableName, writeReq)
+            }
+
+        tuples
             .chunked(MAX_BATCH_ITEM_SIZE)
             .forEach {
                 executeBatchPersist(it)
@@ -137,7 +138,9 @@ class DynamoDbBatchExecutor<T: Any>(
         persist(
             items
                 .buildWriteRequest(mapper)
-                .map { TableItemTuple(tableName, it) }
+                .map { req ->
+                    TableItemTuple(tableName, req)
+                }
         )
     }
 
@@ -160,7 +163,12 @@ class DynamoDbBatchExecutor<T: Any>(
         tableName: String,
         items: List<Map<String, AttributeValue>>,
     ) {
-        persist(items.map { TableItemTuple(tableName, writeRequestOf(it)) })
+        persist(
+            items
+                .map { item ->
+                    TableItemTuple(tableName, writeRequestOf(item))
+                }
+        )
     }
 
     /**
@@ -194,10 +202,9 @@ class DynamoDbBatchExecutor<T: Any>(
 
         while (pending.isNotEmpty()) {
             attempt++
-            val result =
-                retry.executeSuspendFunction {
-                    batchPersistOnce(pending)
-                }
+            val result = retry.executeSuspendFunction {
+                batchPersistOnce(pending)
+            }
 
             val unprocessed = result.unprocessedItems()
             if (unprocessed.isEmpty()) return
@@ -226,6 +233,8 @@ class DynamoDbBatchExecutor<T: Any>(
     ): List<TableItemTuple> =
         items.entries
             .flatMap { entry ->
-                entry.value.map { TableItemTuple(entry.key, it) }
+                entry.value.map { req ->
+                    TableItemTuple(entry.key, req)
+                }
             }
 }

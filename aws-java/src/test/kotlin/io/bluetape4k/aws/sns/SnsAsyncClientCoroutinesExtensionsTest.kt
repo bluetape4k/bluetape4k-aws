@@ -2,9 +2,9 @@ package io.bluetape4k.aws.sns
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
 import io.bluetape4k.aws.sns.model.publishBatchRequestOf
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.assertResourceCancelledOnCoroutineCancellation
 import io.mockk.every
 import io.mockk.mockk
@@ -16,9 +16,9 @@ import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointRequest
 import software.amazon.awssdk.services.sns.model.CreatePlatformEndpointResponse
 import software.amazon.awssdk.services.sns.model.PublishBatchRequest
 import software.amazon.awssdk.services.sns.model.PublishBatchResponse
-import java.util.function.Consumer
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 
 class SnsAsyncClientCoroutinesExtensionsTest {
 

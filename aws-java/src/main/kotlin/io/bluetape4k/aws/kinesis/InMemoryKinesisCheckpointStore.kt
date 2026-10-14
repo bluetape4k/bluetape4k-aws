@@ -1,9 +1,11 @@
 package io.bluetape4k.aws.kinesis
 
-import java.math.BigInteger
-import java.util.concurrent.ConcurrentHashMap
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.math.BigInteger
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * thread-safe process-local checkpoint 저장소입니다.
@@ -12,7 +14,9 @@ import kotlinx.coroutines.sync.withLock
  * restart와 다중 worker를 지원하려면 lease/checkpoint/ShardEnd 조건부 commit을 하나의
  * consistency domain에서 구현해야 합니다.
  */
-class InMemoryKinesisCheckpointStore : KinesisCheckpointStore {
+class InMemoryKinesisCheckpointStore: KinesisCheckpointStore {
+
+    companion object: KLogging()
 
     private val checkpoints = ConcurrentHashMap<KinesisShardKey, KinesisCheckpoint>()
     private val owners = ConcurrentHashMap<KinesisShardKey, KinesisLease>()
@@ -21,15 +25,23 @@ class InMemoryKinesisCheckpointStore : KinesisCheckpointStore {
     override suspend fun load(key: KinesisShardKey): KinesisCheckpoint? = checkpoints[key]
 
     @Suppress("ThrowsCount")
-    override suspend fun save(key: KinesisShardKey, checkpoint: KinesisCheckpoint, lease: KinesisLease) {
+    override suspend fun save(
+        key: KinesisShardKey,
+        checkpoint: KinesisCheckpoint,
+        lease: KinesisLease
+    ) {
         mutex.withLock {
-            require(lease.key == key) { "lease key must match checkpoint key" }
+            require(key == lease.key) { "lease key must match checkpoint key" }
+            log.debug { "save key=$key, checkpoint=$checkpoint, lease=$lease" }
+
             val previousLease = owners[key]
-            when {
-                previousLease == null -> Unit
-                lease.leaseCounter < previousLease.leaseCounter -> throw KinesisLeaseLostException()
-                lease.leaseCounter == previousLease.leaseCounter && lease.ownerId != previousLease.ownerId ->
+
+            if (previousLease != null) {
+                if (lease.leaseCounter < previousLease.leaseCounter) {
                     throw KinesisLeaseLostException()
+                } else if (lease.leaseCounter == previousLease.leaseCounter && lease.ownerId != previousLease.ownerId) {
+                    throw KinesisLeaseLostException()
+                }
             }
 
             val previousCheckpoint = checkpoints[key]
@@ -47,6 +59,7 @@ class InMemoryKinesisCheckpointStore : KinesisCheckpointStore {
     }
 
     private fun compareSequenceNumbers(left: String, right: String): Int =
-        runCatching { BigInteger(left).compareTo(BigInteger(right)) }
-            .getOrElse { left.compareTo(right) }
+        runCatching {
+            BigInteger(left).compareTo(BigInteger(right))
+        }.getOrElse { left.compareTo(right) }
 }

@@ -7,7 +7,6 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
 import aws.sdk.kotlin.services.dynamodb.model.ConditionalCheckFailedException
 import aws.sdk.kotlin.services.dynamodb.model.ReturnValue
 import aws.sdk.kotlin.services.dynamodb.model.ReturnValuesOnConditionCheckFailure
-import aws.sdk.kotlin.services.dynamodb.putItem
 import aws.sdk.kotlin.services.dynamodb.updateItem
 import aws.smithy.kotlin.runtime.SdkBaseException
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -25,9 +24,9 @@ class DynamoDbDistributedLock(
     private val client: DynamoDbClient,
     private val schema: DynamoDbCoordinationSchema,
     private val options: DynamoDbCoordinationOptions = DynamoDbCoordinationOptions(),
-) : DistributedLock {
+): DistributedLock {
 
-    companion object : KLoggingChannel() {
+    companion object: KLoggingChannel() {
         private const val MAX_USABLE_FENCING_TOKEN: Long = Long.MAX_VALUE - 1
     }
 
@@ -224,13 +223,13 @@ class DynamoDbDistributedLock(
         val condition = listOf(
             ownerCondition,
             "${DynamoDbCoordinationExpressions.EXPIRES_AT_ALIAS} = " +
-                DynamoDbCoordinationExpressions.OBSERVED_EXPIRES_AT_VALUE,
+                    DynamoDbCoordinationExpressions.OBSERVED_EXPIRES_AT_VALUE,
             "${DynamoDbCoordinationExpressions.FENCING_TOKEN_ALIAS} = " +
-                DynamoDbCoordinationExpressions.OBSERVED_TOKEN_VALUE,
+                    DynamoDbCoordinationExpressions.OBSERVED_TOKEN_VALUE,
             "${DynamoDbCoordinationExpressions.EXPIRES_AT_ALIAS} <= " +
-                DynamoDbCoordinationExpressions.NOW_VALUE,
+                    DynamoDbCoordinationExpressions.NOW_VALUE,
             "${DynamoDbCoordinationExpressions.FENCING_TOKEN_ALIAS} < " +
-                DynamoDbCoordinationExpressions.MAX_TOKEN_VALUE,
+                    DynamoDbCoordinationExpressions.MAX_TOKEN_VALUE,
         ).joinToString(" AND ")
         val values = buildMap<String, AttributeValue> {
             put(DynamoDbCoordinationExpressions.OWNER_VALUE, AttributeValue.S(ownerId))
@@ -282,7 +281,7 @@ class DynamoDbDistributedLock(
         "${DynamoDbCoordinationExpressions.OWNER_ALIAS} = ${DynamoDbCoordinationExpressions.OWNER_VALUE}",
         "${DynamoDbCoordinationExpressions.FENCING_TOKEN_ALIAS} = ${DynamoDbCoordinationExpressions.TOKEN_VALUE}",
         "${DynamoDbCoordinationExpressions.EXPIRES_AT_ALIAS} = " +
-            DynamoDbCoordinationExpressions.PREVIOUS_EXPIRES_AT_VALUE,
+                DynamoDbCoordinationExpressions.PREVIOUS_EXPIRES_AT_VALUE,
         "${DynamoDbCoordinationExpressions.EXPIRES_AT_ALIAS} > ${DynamoDbCoordinationExpressions.NOW_VALUE}",
     ).joinToString(" AND ")
 
@@ -371,24 +370,25 @@ class DynamoDbDistributedLock(
         throw failure
     }
 
-    private suspend fun <T> executeSdk(operation: String, block: suspend () -> T): T = try {
-        block()
-    } catch (error: CancellationException) {
-        throw error
-    } catch (error: ConditionalCheckFailedException) {
-        throw error
-    } catch (error: SdkBaseException) {
-        log.error {
-            "DynamoDB coordination SDK failure: operation=$operation table=${schema.tableName} " +
-                "kind=LOCK namespace=${schema.namespace} error=${error::class.simpleName}"
+    private suspend fun <T> executeSdk(operation: String, block: suspend () -> T): T =
+        try {
+            block()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: ConditionalCheckFailedException) {
+            throw error
+        } catch (error: SdkBaseException) {
+            log.error {
+                "DynamoDB coordination SDK failure: operation=$operation table=${schema.tableName} " +
+                        "kind=LOCK namespace=${schema.namespace} error=${error::class.simpleName}"
+            }
+            throw error
         }
-        throw error
-    }
 
     private fun logMalformed(operation: String, error: IllegalStateException) {
-        log.error {
+        log.error(error) {
             "DynamoDB coordination malformed response: operation=$operation table=${schema.tableName} " +
-                "kind=LOCK namespace=${schema.namespace} error=${error::class.simpleName}"
+                    "kind=LOCK namespace=${schema.namespace}"
         }
     }
 }

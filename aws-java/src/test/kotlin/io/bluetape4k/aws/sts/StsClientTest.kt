@@ -24,7 +24,7 @@ class StsClientTest: AbstractStsTest() {
     @Test
     @Order(1)
     fun `호출자 신원 조회`() {
-        val response = client.getCallerIdentity()
+        val response = client.callerIdentity
 
         log.debug { "userId=${response.userId()}, account=${response.account()}, arn=${response.arn()}" }
 

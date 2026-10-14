@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.ktor.cloudwatch
 
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
 import java.io.Serializable
 import java.time.Duration
 
@@ -49,11 +51,8 @@ data class CloudWatchLogsShutdownObservation(
 ): Serializable {
 
     init {
-        require(pendingEventCount >= 0) { "pendingEventCount must not be negative." }
-        require(droppedEventCount >= 0) { "droppedEventCount must not be negative." }
-        require(droppedEventCount <= pendingEventCount) {
-            "droppedEventCount must not exceed pendingEventCount."
-        }
+        pendingEventCount.requireGe(0, "pendingEventCount")
+        droppedEventCount.requireInRange(0, pendingEventCount, "droppedEventCount")
     }
 
     companion object {
@@ -80,13 +79,13 @@ class CloudWatchLogsShutdownTimeoutException(
     val pendingEventCount: Int,
 ): IllegalStateException(
     "CloudWatch Logs shutdown flush timed out after $timeout with " +
-        "$pendingEventCount pending event(s).",
+            "$pendingEventCount pending event(s).",
 ) {
 
     init {
         require(!timeout.isNegative && !timeout.isZero) {
             "timeout must be positive."
         }
-        require(pendingEventCount >= 0) { "pendingEventCount must not be negative." }
+        pendingEventCount.requireGe(0, "pendingEventCount")
     }
 }

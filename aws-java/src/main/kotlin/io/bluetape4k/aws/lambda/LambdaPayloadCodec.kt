@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.lambda
 
+import io.bluetape4k.jackson3.Jackson
 import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 
 /**
  * Lambda 호출 payload를 SDK가 전송할 바이트와 호출자가 사용할 값으로 변환합니다.
@@ -21,14 +23,14 @@ interface LambdaPayloadCodec<T> {
 object LambdaPayloadCodecs {
 
     /** 원시 바이트 payload를 복사 기반으로 처리하는 codec입니다. */
-    val bytes: LambdaPayloadCodec<ByteArray> = object : LambdaPayloadCodec<ByteArray> {
+    val bytes: LambdaPayloadCodec<ByteArray> = object: LambdaPayloadCodec<ByteArray> {
         override fun encode(value: ByteArray): ByteArray = value.copyOf()
 
         override fun decode(payload: ByteArray): ByteArray = payload.copyOf()
     }
 
     /** UTF-8 문자열 payload를 처리하는 codec입니다. */
-    val utf8: LambdaPayloadCodec<String> = object : LambdaPayloadCodec<String> {
+    val utf8: LambdaPayloadCodec<String> = object: LambdaPayloadCodec<String> {
         override fun encode(value: String): ByteArray = value.toByteArray(Charsets.UTF_8)
 
         override fun decode(payload: ByteArray): String = payload.toString(Charsets.UTF_8)
@@ -36,9 +38,9 @@ object LambdaPayloadCodecs {
 
     /** 호출자가 제공한 Jackson 3 mapper와 구체적인 대상 타입을 연결합니다. */
     fun <T> jackson(
-        objectMapper: ObjectMapper,
+        objectMapper: JsonMapper = Jackson.defaultJsonMapper,
         valueType: Class<T>,
-    ): LambdaPayloadCodec<T> = object : LambdaPayloadCodec<T> {
+    ): LambdaPayloadCodec<T> = object: LambdaPayloadCodec<T> {
         override fun encode(value: T): ByteArray = objectMapper.writeValueAsBytes(value)
 
         override fun decode(payload: ByteArray): T = objectMapper.readValue(payload, valueType)

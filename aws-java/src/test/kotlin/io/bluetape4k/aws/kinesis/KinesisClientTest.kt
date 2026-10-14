@@ -1,11 +1,15 @@
 package io.bluetape4k.aws.kinesis
 
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.aws.kinesis.model.putRecordsRequestEntry
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
-import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
-import io.bluetape4k.assertions.shouldNotBeEmpty
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.until
+import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -15,7 +19,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import software.amazon.awssdk.services.kinesis.model.StreamStatus
-import java.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * [KinesisClient] 동기 API 테스트.
@@ -38,13 +43,13 @@ class KinesisClientTest: AbstractKinesisTest() {
     fun `스트림 생성`() {
         val response = client.createStream(STREAM_NAME, shardCount = 1)
         log.debug { "createStream response httpStatus=${response.sdkHttpResponse().statusCode()}" }
-        response.sdkHttpResponse().statusCode() shouldBeGreaterOrEqualTo 200
+        response.sdkHttpResponse().isSuccessful.shouldBeTrue()
     }
 
     @Test
     @Order(2)
     fun `스트림 ACTIVE 상태 대기`() {
-        await.atMost(Duration.ofSeconds(30)).until {
+        await atMost 10.seconds withPollInterval 100.milliseconds until {
             val desc = client.describeStream(STREAM_NAME)
             val status = desc.streamDescription().streamStatus()
             log.debug { "stream=$STREAM_NAME status=$status" }
@@ -67,11 +72,11 @@ class KinesisClientTest: AbstractKinesisTest() {
     @Test
     @Order(4)
     fun `복수 레코드 배치 전송`() {
-        val entries = (1..5).map { i ->
-            software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry.builder()
-                .partitionKey("partition-$i")
-                .data(SdkBytes.fromUtf8String("message-$i"))
-                .build()
+        val entries = List(5) { i ->
+            putRecordsRequestEntry {
+                partitionKey("partition-$i")
+                data(SdkBytes.fromUtf8String("message-$i"))
+            }
         }
         val response = client.putRecords(STREAM_NAME, entries)
 
@@ -95,6 +100,7 @@ class KinesisClientTest: AbstractKinesisTest() {
         val response = client.getRecords(shardIterator, limit = 100)
 
         log.debug { "getRecords count=${response.records().size}" }
+        response.records().shouldNotBeEmpty()
         response.records().forEach { record ->
             log.debug { "record partitionKey=${record.partitionKey()}, data=${record.data().asUtf8String()}" }
         }
@@ -105,6 +111,6 @@ class KinesisClientTest: AbstractKinesisTest() {
     fun `스트림 삭제`() {
         val response = client.deleteStream(STREAM_NAME)
         log.debug { "deleteStream httpStatus=${response.sdkHttpResponse().statusCode()}" }
-        response.sdkHttpResponse().statusCode() shouldBeGreaterOrEqualTo 200
+        response.sdkHttpResponse().isSuccessful.shouldBeTrue()
     }
 }

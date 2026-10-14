@@ -2,7 +2,9 @@ package io.bluetape4k.aws.s3vectors
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -33,6 +35,8 @@ import java.util.concurrent.CompletableFuture
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class S3VectorsCoroutinesTemplateTest {
 
+    companion object: KLoggingChannel()
+
     private val client = mockk<S3VectorsAsyncClient>()
     private val template = S3VectorsCoroutinesTemplate(client)
 
@@ -45,7 +49,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `listVectorBuckets delegates to S3 Vectors async client`() = runSuspendIO {
         val request = ListVectorBucketsRequest.builder().build()
         val response = ListVectorBucketsResponse.builder().build()
-        every { client.listVectorBuckets(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.listVectorBuckets(request) } returns completableFutureOf(response)
 
         template.listVectorBuckets(request) shouldBeSameInstanceAs response
 
@@ -56,7 +61,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `getVectorBucket delegates to S3 Vectors async client`() = runSuspendIO {
         val request = GetVectorBucketRequest.builder().vectorBucketName("vectors").build()
         val response = GetVectorBucketResponse.builder().build()
-        every { client.getVectorBucket(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.getVectorBucket(request) } returns completableFutureOf(response)
 
         template.getVectorBucket(request) shouldBeSameInstanceAs response
 
@@ -67,7 +73,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `listIndexes delegates to S3 Vectors async client`() = runSuspendIO {
         val request = ListIndexesRequest.builder().vectorBucketName("vectors").build()
         val response = ListIndexesResponse.builder().build()
-        every { client.listIndexes(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.listIndexes(request) } returns completableFutureOf(response)
 
         template.listIndexes(request) shouldBeSameInstanceAs response
 
@@ -78,7 +85,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `getIndex delegates to S3 Vectors async client`() = runSuspendIO {
         val request = GetIndexRequest.builder().vectorBucketName("vectors").indexName("semantic").build()
         val response = GetIndexResponse.builder().build()
-        every { client.getIndex(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.getIndex(request) } returns completableFutureOf(response)
 
         template.getIndex(request) shouldBeSameInstanceAs response
 
@@ -89,7 +97,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `putVectors delegates to S3 Vectors async client`() = runSuspendIO {
         val request = PutVectorsRequest.builder().vectorBucketName("vectors").indexName("semantic").build()
         val response = PutVectorsResponse.builder().build()
-        every { client.putVectors(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.putVectors(request) } returns completableFutureOf(response)
 
         template.putVectors(request) shouldBeSameInstanceAs response
 
@@ -100,7 +109,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `getVectors delegates to S3 Vectors async client`() = runSuspendIO {
         val request = GetVectorsRequest.builder().vectorBucketName("vectors").indexName("semantic").build()
         val response = GetVectorsResponse.builder().build()
-        every { client.getVectors(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.getVectors(request) } returns completableFutureOf(response)
 
         template.getVectors(request) shouldBeSameInstanceAs response
 
@@ -111,7 +121,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `listVectors delegates to S3 Vectors async client`() = runSuspendIO {
         val request = ListVectorsRequest.builder().vectorBucketName("vectors").indexName("semantic").build()
         val response = ListVectorsResponse.builder().build()
-        every { client.listVectors(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.listVectors(request) } returns completableFutureOf(response)
 
         template.listVectors(request) shouldBeSameInstanceAs response
 
@@ -122,7 +133,8 @@ class S3VectorsCoroutinesTemplateTest {
     fun `queryVectors delegates to S3 Vectors async client`() = runSuspendIO {
         val request = QueryVectorsRequest.builder().vectorBucketName("vectors").indexName("semantic").build()
         val response = QueryVectorsResponse.builder().build()
-        every { client.queryVectors(request) } returns CompletableFuture.completedFuture(response)
+
+        every { client.queryVectors(request) } returns completableFutureOf(response)
 
         template.queryVectors(request) shouldBeSameInstanceAs response
 
@@ -134,6 +146,7 @@ class S3VectorsCoroutinesTemplateTest {
         val request = GetVectorBucketRequest.builder().vectorBucketName("vectors").build()
         val future = CompletableFuture<GetVectorBucketResponse>()
         future.cancel(true)
+
         every { client.getVectorBucket(request) } returns future
 
         assertFailsWith<CancellationException> {

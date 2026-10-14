@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.ktor.exposed
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.exposed.AwsDatabaseAuthenticationMode
 import io.bluetape4k.aws.exposed.AwsDatabaseConfigSource
 import io.bluetape4k.aws.exposed.AwsDatabaseConfigSourceType
@@ -41,23 +42,23 @@ import kotlin.time.Duration.Companion.seconds
  */
 class AwsExposedPluginConfig {
 
-/** 경로 수준 Exposed JDBC suspend 트랜잭션이 사용하는 컨텍스트입니다. */
+    /** 경로 수준 Exposed JDBC suspend 트랜잭션이 사용하는 컨텍스트입니다. */
     var transactionContext: CoroutineContext = Dispatchers.IO
 
-/** 플러그인 시작 시 레지스트리 생성에 허용되는 최대 시간입니다. */
+    /** 플러그인 시작 시 레지스트리 생성에 허용되는 최대 시간입니다. */
     var startTimeout: Duration = 30.seconds
 
-/** 플러그인 종료 시 레지스트리 닫기에 허용되는 최대 시간입니다. */
+    /** 플러그인 종료 시 레지스트리 닫기에 허용되는 최대 시간입니다. */
     var stopTimeout: Duration = 10.seconds
 
-/** 공유 Exposed 팩토리가 데이터 소스를 생성하기 전에 사용하는 리졸버입니다. */
+    /** 공유 Exposed 팩토리가 데이터 소스를 생성하기 전에 사용하는 리졸버입니다. */
     var settingsResolver: AwsDatabaseSettingsResolver = NoopAwsDatabaseSettingsResolver
 
     private var explicitDatabaseProperties: AwsDatabaseProperties? = null
     private var defaultDatabaseConfig: AwsExposedConnectionConfig? = null
     private val namedDatabaseConfigs = linkedMapOf<String, AwsExposedConnectionConfig>()
     private var registryFactory:
-        (suspend (AwsDatabaseProperties, AwsDatabaseSettingsResolver) -> AwsExposedDatabaseRegistry)? = null
+            (suspend (AwsDatabaseProperties, AwsDatabaseSettingsResolver) -> AwsExposedDatabaseRegistry)? = null
 
     /**
      * Ktor DSL 대신 미리 구성된 공유 데이터베이스 속성을 사용합니다.
@@ -125,6 +126,13 @@ class AwsExposedPluginConfig {
             stopTimeout = stopTimeout,
         )
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("startTimeout", startTimeout)
+            .add("stopTimeout", stopTimeout)
+            .add("settingsResolver", settingsResolver)
+            .toString()
 }
 
 /**
@@ -132,28 +140,28 @@ class AwsExposedPluginConfig {
  */
 class AwsExposedConnectionConfig {
 
-/** JDBC URL입니다. [secretSource] 또는 [parameterSource]에서 제공할 수 있습니다. */
+    /** JDBC URL입니다. [secretSource] 또는 [parameterSource]에서 제공할 수 있습니다. */
     var url: String = ""
 
-/** 선택적인 JDBC 드라이버 클래스 이름입니다. */
+    /** 선택적인 JDBC 드라이버 클래스 이름입니다. */
     var driverClassName: String? = null
 
-/** 선택적인 JDBC 사용자 이름입니다. */
+    /** 선택적인 JDBC 사용자 이름입니다. */
     var username: String? = null
 
-/** 선택적인 정적 JDBC 비밀번호입니다. 변환 후에는 값이 가려진 상태로 표시됩니다. */
+    /** 선택적인 정적 JDBC 비밀번호입니다. 변환 후에는 값이 가려진 상태로 표시됩니다. */
     var password: String? = null
 
-/** 추가 Hikari 데이터 소스 속성입니다. */
+    /** 추가 Hikari 데이터 소스 속성입니다. */
     var dataSourceProperties: Map<String, String> = emptyMap()
 
-/** 연결 속성과 함께 보존하는 호출자 메타데이터입니다. */
+    /** 연결 속성과 함께 보존하는 호출자 메타데이터입니다. */
     var metadata: Map<String, String> = emptyMap()
 
-/** 공유 Exposed 기반 계층이 사용하는 인증 모드입니다. */
+    /** 공유 Exposed 기반 계층이 사용하는 인증 모드입니다. */
     var authenticationMode: AwsDatabaseAuthenticationMode = AwsDatabaseAuthenticationMode.STATIC_PASSWORD
 
-/** 선택적인 RDS IAM 인증 설정입니다. */
+    /** 선택적인 RDS IAM 인증 설정입니다. */
     var rdsIam: AwsRdsIamAuthenticationProperties? = null
 
     private val poolConfig = AwsExposedPoolConfig()
@@ -210,6 +218,18 @@ class AwsExposedConnectionConfig {
             rdsIam = rdsIam,
         )
     }
+
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("url", url)
+            .add("driverClassName", driverClassName)
+            .add("username", username)
+            .add("dataSourceProperties", dataSourceProperties)
+            .add("metadata", metadata)
+            .add("authenticationMode", authenticationMode)
+            .add("rdsIam", rdsIam)
+            .toString()
 }
 
 /**
@@ -233,6 +253,16 @@ class AwsExposedPoolConfig {
             idleTimeoutMillis = idleTimeoutMillis,
             maxLifetimeMillis = maxLifetimeMillis,
         )
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("poolName", poolName)
+            .add("maximumPoolSize", maximumPoolSize)
+            .add("minimumIdle", minimumIdle)
+            .add("connectionTimeoutMillis", connectionTimeoutMillis)
+            .add("idleTimeoutMillis", idleTimeoutMillis)
+            .add("maxLifetimeMillis", maxLifetimeMillis)
+            .toString()
 }
 
 /**
@@ -240,10 +270,10 @@ class AwsExposedPoolConfig {
  */
 class AwsExposedConfigSourceConfig {
 
-/** 원격 값을 매핑할 때 리졸버가 사용하는 선택적인 키 접두사입니다. */
+    /** 원격 값을 매핑할 때 리졸버가 사용하는 선택적인 키 접두사입니다. */
     var prefix: String? = null
 
-/** 리졸버가 누락된 원격 소스 값을 무시할지 여부입니다. */
+    /** 리졸버가 누락된 원격 소스 값을 무시할지 여부입니다. */
     var optional: Boolean = false
 
     internal fun toConfigSource(
@@ -260,4 +290,10 @@ class AwsExposedConfigSourceConfig {
             optional = optional,
         )
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("prefix", prefix)
+            .add("optional", optional)
+            .toString()
 }

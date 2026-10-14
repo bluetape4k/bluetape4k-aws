@@ -1,16 +1,15 @@
 package io.bluetape4k.aws.s3
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.io.deleteIfExists
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.toUtf8String
 import io.bluetape4k.utils.Resourcex
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
-import io.bluetape4k.assertions.shouldNotBeNull
 import org.junit.jupiter.api.RepeatedTest
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
@@ -28,7 +27,7 @@ class S3AsyncClientCoroutinesExtensionsTest: AbstractS3Test() {
     @TempDir
     lateinit var tempDir: File
 
-    @Test
+    @RepeatedTest(value = REPEAT_SIZE)
     fun `put and get s3 object`() = runSuspendIO {
         val key = randomKey()
         val content = randomString()

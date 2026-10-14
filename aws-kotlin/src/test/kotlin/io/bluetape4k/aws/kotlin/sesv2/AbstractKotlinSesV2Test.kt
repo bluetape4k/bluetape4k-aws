@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.kotlin.sesv2
 
+import aws.sdk.kotlin.services.sesv2.SesV2Client
 import io.bluetape4k.aws.kotlin.AbstractAwsTest
 import io.bluetape4k.junit5.faker.Fakers
 import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 
 abstract class AbstractKotlinSesV2Test: AbstractAwsTest() {
 
@@ -19,4 +21,16 @@ abstract class AbstractKotlinSesV2Test: AbstractAwsTest() {
         const val senderEmail = "from-user@example.com"
         const val receiverEmail = "to-use@example.com"
     }
+
+    protected suspend inline fun <R> withTestSesV2Client(
+        awsServer: AwsEmulatorServer,
+        block: suspend (SesV2Client) -> R,
+    ): R =
+        withSesV2Client(
+            localStackServer.endpointUrl,
+            localStackServer.region,
+            localStackServer.credentialsProvider,
+        ) { client ->
+            block(client)
+        }
 }

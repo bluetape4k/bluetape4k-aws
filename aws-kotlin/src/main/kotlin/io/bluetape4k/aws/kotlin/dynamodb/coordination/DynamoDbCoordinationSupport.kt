@@ -33,7 +33,7 @@ internal object DynamoDbCoordinationExpressions {
 
     const val LOCK_ACQUIRE_UPDATE =
         "SET #owner = :owner, #expiresAt = :expiresAt, " +
-            "#fencingToken = if_not_exists(#fencingToken, :zero) + :one"
+                "#fencingToken = if_not_exists(#fencingToken, :zero) + :one"
     const val LOCK_KEY_ABSENT_CONDITION = "attribute_not_exists(#pk)"
     const val LOCK_RENEW_UPDATE = "SET #expiresAt = :expiresAt"
     const val LOCK_RELEASE_UPDATE = "SET #expiresAt = :now REMOVE #owner"
