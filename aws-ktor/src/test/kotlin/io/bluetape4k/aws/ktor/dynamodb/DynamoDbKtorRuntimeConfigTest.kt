@@ -5,6 +5,7 @@ import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
@@ -17,10 +18,17 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.io.Serializable
 import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbKtorRuntimeConfigTest {
+
+    @Test
+    fun `runtime configuration does not claim Java serialization support`() {
+        Serializable::class.java.isAssignableFrom(DynamoDbKtorRuntimeConfig::class.java).shouldBeFalse()
+        Serializable::class.java.isAssignableFrom(DynamoDbKtorTableDefinition::class.java).shouldBeFalse()
+    }
 
     @Test
     fun `requires region when client is not injected`() {

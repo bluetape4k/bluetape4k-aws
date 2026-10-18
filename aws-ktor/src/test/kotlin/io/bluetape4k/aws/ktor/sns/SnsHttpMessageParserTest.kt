@@ -27,7 +27,9 @@ class SnsHttpMessageParserTest {
         message.messageId shouldBeEqualTo "165545c9-2a5c-472c-8df2-7ff2be2b3b1b"
         message.topicArn shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
         message.token shouldBeEqualTo "token-1"
-        message.subscribeUrl shouldBeEqualTo URI.create("https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription&Token=token-1")
+        message.subscribeUrl shouldBeEqualTo URI.create(
+            "https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription&Token=token-1"
+        )
         message.unsubscribeUrl.shouldBeNull()
         message.canConfirmSubscription.shouldBeTrue()
     }
@@ -43,7 +45,9 @@ class SnsHttpMessageParserTest {
         message.type shouldBeEqualTo SnsHttpMessageType.NOTIFICATION
         message.subject shouldBeEqualTo "Order created"
         message.message shouldBeEqualTo """{"orderId":"order-1"}"""
-        message.unsubscribeUrl shouldBeEqualTo URI.create("https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=sub-1")
+        message.unsubscribeUrl shouldBeEqualTo URI.create(
+            "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=sub-1"
+        )
         message.token.shouldBeNull()
     }
 

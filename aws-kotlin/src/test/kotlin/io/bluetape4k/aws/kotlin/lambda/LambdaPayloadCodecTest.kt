@@ -94,6 +94,12 @@ class LambdaPayloadCodecTest {
     }
 
     @Test
+    fun `status code getter preserves nullable JVM ABI`() {
+        val getterReturnType = LambdaInvocationResult::class.java.getMethod("getStatusCode").returnType
+        getterReturnType shouldBeEqualTo Int::class.javaObjectType
+    }
+
+    @Test
     fun `blank function error is not treated as function error`() {
         val response = InvokeResponse { functionError = " " }
 

@@ -297,7 +297,9 @@ class S3ClientSideEncryptionTransferTemplate(
             }
             withContext(ioDispatcher) {
                 val size = Files.size(temporaryPath)
-                size.requireLe(MAX_CIPHERTEXT_BYTES.toLong()) { "Encrypted S3 object exceeds max ciphertext size: $size" }
+                size.requireLe(MAX_CIPHERTEXT_BYTES.toLong()) {
+                    "Encrypted S3 object exceeds max ciphertext size: $size"
+                }
                 val ciphertext = Files.readAllBytes(temporaryPath)
                 try {
                     plaintext = providerTemplate.decryptProviderPayload(

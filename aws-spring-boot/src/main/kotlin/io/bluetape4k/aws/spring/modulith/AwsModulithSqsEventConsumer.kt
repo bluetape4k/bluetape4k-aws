@@ -514,7 +514,10 @@ private fun AwsModulithFailurePhase.defaultCode(): AwsModulithDiagnosticCode = w
     AwsModulithFailurePhase.SOURCE -> AwsModulithDiagnosticCode.SOURCE
     AwsModulithFailurePhase.DECODE -> AwsModulithDiagnosticCode.INBOUND
     AwsModulithFailurePhase.CLAIM -> AwsModulithDiagnosticCode.CLAIM
-    AwsModulithFailurePhase.DISPATCH, AwsModulithFailurePhase.ACK, AwsModulithFailurePhase.CLEANUP -> AwsModulithDiagnosticCode.DISPATCH_ACK
+    AwsModulithFailurePhase.DISPATCH,
+    AwsModulithFailurePhase.ACK,
+    AwsModulithFailurePhase.CLEANUP,
+        -> AwsModulithDiagnosticCode.DISPATCH_ACK
     AwsModulithFailurePhase.CONFIGURATION -> AwsModulithDiagnosticCode.CONFIGURATION
     AwsModulithFailurePhase.SERIALIZATION -> AwsModulithDiagnosticCode.ENVELOPE
     AwsModulithFailurePhase.LIFECYCLE -> AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE

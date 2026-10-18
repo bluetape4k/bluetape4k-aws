@@ -113,7 +113,8 @@ class DynamoDbDistributedLockUnitTest {
                         request.expressionAttributeValues?.get(":observedExpiresAt") == AttributeValue.N("100") &&
                         request.expressionAttributeValues?.get(":observedToken") == AttributeValue.N("3") &&
                         request.expressionAttributeValues?.get(":now") == AttributeValue.N("100") &&
-                        request.expressionAttributeValues?.get(":maxToken") == AttributeValue.N(Long.MAX_VALUE.toString())
+                        request.expressionAttributeValues?.get(":maxToken") ==
+                            AttributeValue.N(Long.MAX_VALUE.toString())
             })
         }
     }

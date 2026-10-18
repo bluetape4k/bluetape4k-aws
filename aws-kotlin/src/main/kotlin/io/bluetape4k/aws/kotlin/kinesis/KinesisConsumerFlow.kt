@@ -424,7 +424,8 @@ private suspend fun consumeShardRecords(
             }
             if (response.nextShardIterator == null) {
                 throw KinesisCheckpointException(
-                    "Kinesis closed shard did not reach ending sequence for shard=${KinesisFlowEvent.redactedToken(key.shardId)}"
+                    "Kinesis closed shard did not reach ending sequence for " +
+                        "shard=${KinesisFlowEvent.redactedToken(key.shardId)}"
                 )
             }
             shardIterator = response.nextShardIterator

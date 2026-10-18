@@ -110,7 +110,10 @@ fun KinesisClient.recordFlow(
         } catch (e: ExpiredIteratorException) {
             iteratorRetryCount++
             if (iteratorRetryCount > options.maxIteratorRetries) {
-                RecordFlowLogger.log.error { "Shard iterator expired after $iteratorRetryCount attempts: stream=$streamName shard=$shardId" }
+                RecordFlowLogger.log.error {
+                    "Shard iterator expired after $iteratorRetryCount attempts: " +
+                        "stream=$streamName shard=$shardId"
+                }
                 throw e
             }
 

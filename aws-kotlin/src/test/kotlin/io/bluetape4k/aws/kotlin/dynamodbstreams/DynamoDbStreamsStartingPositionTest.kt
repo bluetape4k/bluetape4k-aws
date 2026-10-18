@@ -54,7 +54,8 @@ class DynamoDbStreamsStartingPositionTest {
 
     @Test
     fun `positions survive fastfory serialization and singleton identity is preserved`() {
-        roundtripFastFory(DynamoDbStreamsStartingPosition.TrimHorizon) shouldBe DynamoDbStreamsStartingPosition.TrimHorizon
+        roundtripFastFory(DynamoDbStreamsStartingPosition.TrimHorizon) shouldBe
+            DynamoDbStreamsStartingPosition.TrimHorizon
         roundtripFastFory(DynamoDbStreamsStartingPosition.Latest) shouldBe DynamoDbStreamsStartingPosition.Latest
 
         roundtripFastFory(DynamoDbStreamsStartingPosition.AtSequenceNumber("seq-at")) shouldBeEqualTo

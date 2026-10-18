@@ -236,7 +236,9 @@ internal object ProviderEnvelope {
             }
             wrapNonce = decodedWrapNonce
             if (material.providerToken == "aes") {
-                decodedWrapNonce?.size.requireEquals(NONCE_SIZE) { "AES provider envelope wrap nonce must be 12 bytes." }
+                decodedWrapNonce?.size.requireEquals(NONCE_SIZE) {
+                    "AES provider envelope wrap nonce must be 12 bytes."
+                }
             } else {
                 decodedWrapNonce.requireNull { "RSA provider envelope must not contain a wrap nonce." }
             }

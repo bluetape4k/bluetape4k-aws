@@ -38,7 +38,8 @@ object StringOrByteArraySqsMessageConverter: SqsMessageConverter {
             ByteArray::class -> body.encodeToByteArray()
             Message::class -> message
             else -> throw IllegalArgumentException(
-                "Unsupported SQS message target type: ${targetType.qualifiedName}. Configure a custom SqsMessageConverter."
+                "Unsupported SQS message target type: ${targetType.qualifiedName}. " +
+                    "Configure a custom SqsMessageConverter."
             )
         }
         return converted as T

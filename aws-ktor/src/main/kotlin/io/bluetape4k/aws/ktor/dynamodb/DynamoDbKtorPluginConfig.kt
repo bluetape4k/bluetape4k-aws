@@ -12,7 +12,6 @@ import io.bluetape4k.aws.kotlin.http.HttpClientEngineProvider
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
-import java.io.Serializable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -122,14 +121,10 @@ data class DynamoDbKtorTableDefinition(
     val readCapacityUnits: Long? = null,
     val writeCapacityUnits: Long? = null,
     val createTable: CreateTableRequest.Builder.() -> Unit = {},
-): Serializable {
+) {
     init {
         tableName.requireNotBlank("tableName")
         keySchema.requireNotEmpty("keySchema")
         attributeDefinitions.requireNotEmpty("attributeDefinitions")
-    }
-
-    companion object {
-        private const val serialVersionUID = 1L
     }
 }

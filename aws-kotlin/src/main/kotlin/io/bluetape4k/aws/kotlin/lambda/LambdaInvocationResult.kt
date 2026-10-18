@@ -18,7 +18,7 @@ data class LambdaInvocationResult<T>(
 ) {
 
     /** Lambda service가 반환한 HTTP status code입니다. */
-    val statusCode: Int
+    val statusCode: Int?
         get() = response.statusCode
 
     /** 함수 실행 오류의 원본 문자열입니다. */

@@ -206,7 +206,10 @@ class S3AutoConfiguration {
             s3AsyncClient = s3AsyncClient,
             properties = properties,
             aesProvider = aesProvider.getIfUnique()
-                ?: error("S3AesProvider is required exactly once when bluetape4k.aws.s3.client-side-encryption.provider=AES."),
+                ?: error(
+                    "S3AesProvider is required exactly once when " +
+                        "bluetape4k.aws.s3.client-side-encryption.provider=AES."
+                ),
         )
 
     @Bean(destroyMethod = "close")
@@ -226,7 +229,10 @@ class S3AutoConfiguration {
             s3AsyncClient = s3AsyncClient,
             properties = properties,
             rsaProvider = rsaProvider.getIfUnique()
-                ?: error("S3RsaProvider is required exactly once when bluetape4k.aws.s3.client-side-encryption.provider=RSA."),
+                ?: error(
+                    "S3RsaProvider is required exactly once when " +
+                        "bluetape4k.aws.s3.client-side-encryption.provider=RSA."
+                ),
         )
 
     private fun S3ClientBuilder.applyCommon(

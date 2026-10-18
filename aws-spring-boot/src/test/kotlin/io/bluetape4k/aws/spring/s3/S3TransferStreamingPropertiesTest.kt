@@ -48,7 +48,8 @@ class S3TransferStreamingPropertiesTest {
         }
 
         property["deprecation"]["level"].asText() shouldBeEqualTo "warning"
-        property["deprecation"]["replacement"].asText() shouldBeEqualTo "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"
+        property["deprecation"]["replacement"].asText() shouldBeEqualTo
+            "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"
         metadata["properties"]
             .any {
                 it["name"].asText() == "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"

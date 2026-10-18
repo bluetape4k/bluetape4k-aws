@@ -254,7 +254,9 @@ private fun DynamoDbStreamsClient.consumeShard(
             } catch (e: ExpiredIteratorException) {
                 iteratorRetryCount++
                 if (lastSeenSequenceNumber == null && currentPosition is DynamoDbStreamsStartingPosition.Latest) {
-                    StreamsLgger.log.error { "Latest iterator expired before a checkpoint: streamArn=$streamArn shard=$shardId" }
+                    StreamsLgger.log.error {
+                        "Latest iterator expired before a checkpoint: streamArn=$streamArn shard=$shardId"
+                    }
                     throw e
                 }
                 if (iteratorRetryCount > options.maxIteratorRetries) {

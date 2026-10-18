@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.Serializable
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -30,11 +29,7 @@ data class DynamoDbKtorRuntimeConfig(
     val tableDefinitions: List<DynamoDbKtorTableDefinition> = emptyList(),
     val tableReadyTimeout: Duration = 60.seconds,
     val closeTimeout: Duration = 10.seconds,
-): Serializable {
-    companion object {
-        private const val serialVersionUID: Long = 1L
-    }
-}
+)
 
 /**
  * [DynamoDbKtorPlugin]이 설치하는 런타임입니다.

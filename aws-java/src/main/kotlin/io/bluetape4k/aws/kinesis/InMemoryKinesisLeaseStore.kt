@@ -22,7 +22,11 @@ class InMemoryKinesisLeaseStore(
 
     companion object: KLogging()
 
-    private data class Entry(val lease: KinesisLease, val expiresAt: Instant): Serializable
+    private data class Entry(val lease: KinesisLease, val expiresAt: Instant): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     private val entries = ConcurrentHashMap<KinesisShardKey, Entry>()
     private val counters = ConcurrentHashMap<KinesisShardKey, Long>()

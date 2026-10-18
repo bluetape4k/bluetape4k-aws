@@ -42,7 +42,7 @@ import io.bluetape4k.support.requireNotEmpty
 import kotlinx.coroutines.CancellationException
 
 @PublishedApi
-internal object SqlClientLogger: KLogging()
+internal object SqsClientExtensions: KLogging()
 
 @PublishedApi
 internal const val MIN_RECEIVE_MESSAGES = 1
@@ -70,7 +70,7 @@ suspend inline fun SqsClient.createQueue(
         this.queueName = queueName
         builder()
     }.apply {
-        SqlClientLogger.log.info { "Create Queue. response=$this" }
+        SqsClientExtensions.log.info { "Create Queue. response=$this" }
     }
 }
 
