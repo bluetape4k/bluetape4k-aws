@@ -31,6 +31,7 @@ class KinesisConsumerFlociTest: AbstractKotlinKinesisTest() {
     companion object: KLoggingChannel()
 
     @Test
+    @Suppress("LongMethod")
     fun `Floci consumer reads explicit hash records from multiple shards`() = runSuspendIO {
         val server = localStackServer
         check(server.awsEndpoint.scheme == "http" || server.awsEndpoint.scheme == "https") {

@@ -30,7 +30,7 @@ data class DynamoDbStreamsRecordFlowOptions(
         maxThrottleBackoff.requireGe(initialThrottleBackoff, "maxThrottleBackoff")
         maxThrottleRetries.requireZeroOrPositiveNumber("maxThrottleRetries")
         maxShardConcurrency.requireGe(1, "maxShardConcurrency")
-        maxDescribePages.requireGt(1, "maxDescribePages")
+        maxDescribePages.requireGe(1, "maxDescribePages")
     }
 
     companion object {

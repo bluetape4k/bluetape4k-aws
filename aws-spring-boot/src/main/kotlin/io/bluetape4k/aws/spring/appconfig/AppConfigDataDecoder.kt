@@ -51,7 +51,7 @@ internal object AppConfigDataDecoder: KLogging() {
         require(values.size <= maxPropertyCount) { "AWS AppConfig payload exceeds the property-count budget." }
         values.keys.forEach { key -> validateDepth(key, maxDepth) }
         return values.toMap().apply {
-            log.debug { "decoded result=$this" }
+            log.debug { "decoded AppConfig payload (format=$resolvedFormat, propertyCount=$size)" }
         }
     }
 

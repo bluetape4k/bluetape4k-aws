@@ -23,6 +23,11 @@ class DynamoDbStreamsRecordFlowOptionsTest: AbstractAwsTest() {
     }
 
     @Test
+    fun `max describe pages accepts its minimum`() {
+        DynamoDbStreamsRecordFlowOptions(maxDescribePages = 1)
+    }
+
+    @Test
     fun `invalid limits fail fast`() {
         assertFailsWith<IllegalArgumentException> {
             DynamoDbStreamsRecordFlowOptions(batchLimit = 0)

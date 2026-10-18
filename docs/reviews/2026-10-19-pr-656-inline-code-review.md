@@ -56,3 +56,31 @@
 - run `39171801549`는 SHA `227e492e`에서 실행 중이었다. 이 문서와 KDoc가 추가된 최종 PR SHA에 대한 CI는 별도로 확인해야 한다. 최종 exact-head CI, PR review/thread, mergeability는 병합 직전 live GitHub에서 다시 읽는다.
 
 **후속 독립 리뷰 verdict:** 현재 코드 후보 P0=0, P1=0, P2=0. 병합 여부는 최종 exact-head CI와 PR 상태 검증이 완료된 후 별도로 판단한다.
+
+## 2026-10-19 추가 독립 리뷰와 수정 계획
+
+후속 architecture review가 exact HEAD `947fad86fd5f9aee3a1183f14bf9705fd18d14a4`에서 P1 네 묶음과 P2 equality 결함을 발견했다. 이 판정은 앞의 후보 판정을 대체하며, 수정 전 현재 상태는 **BLOCK**이다.
+
+| 우선순위 | 발견 | 수정 계획 | 먼저 고정할 회귀 계약 |
+|---|---|---|---|
+| P1 | AssumeRole 검증이 session token의 129,600초 상한을 사용한다. | AssumeRole 전용 900..43,200 상수를 다시 사용한다. | 43,200 허용, 43,201 거부; session token은 129,600 허용 |
+| P1 | AWS Kotlin Bedrock builder가 명시 설정 뒤에 실행되어 endpoint, region, credentials, engine을 덮어쓴다. | builder를 먼저 적용하고 명시 인자를 나중에 적용한다. | 서로 충돌하는 네 설정에서 명시 인자가 유지됨 |
+| P1 | 새 `toString()`이 data key, nonce, AAD, 암호화 메타데이터와 S3 object bytes를 노출한다. Ktor plugin config도 provider/client/endpoint 객체를 직접 렌더링한다. | 원문 대신 길이·개수·설정 여부만 출력한다. | 고정 canary 문자열, credential, endpoint userinfo가 진단 문자열에 없음 |
+| P1 | helper 치환이 multipart 길이 0, Kinesis retry 0, DynamoDB Streams page 수 1을 거부한다. | 원래의 inclusive 경계 조건을 되살린다. | 각각 0, 0, 1 경계를 허용하고 음수/0 경계는 기존대로 거부 |
+| P2 | `WrappedDataKey.equals`가 null nonce 비교에서 대칭성을 위반한다. | nonce 비교를 양쪽 null 상태를 고려하는 content 비교로 바꾼다. | null/non-null 양방향 비교와 동등 객체의 hash 일치 |
+| P2 | `ProviderStreamingEnvelope.equals`가 byte 배열 내용 비교를 쓰지만 `hashCode`에는 배열 참조를 포함한다. | `hashCode`를 equality의 동일 필드로 구성한다. | 별도 배열 인스턴스의 같은 내용이 같은 hash를 가짐 |
+
+수정 순서는 계약 테스트를 먼저 추가하고, 위 결함만 고친 다음 해당 모듈의 테스트·ABI·정적 분석 및 최종 exact-head CI를 실행하는 것이다. 병합은 새 HEAD에 대한 별도 최종 리뷰와 새 승인이 있기 전에는 진행하지 않는다.
+
+## 2026-10-19 추가 source review 증거와 보완
+
+독립 source review는 `947fad86fd5f9aee3a1183f14bf9705fd18d14a4`에서 아래 문제를 더 확인했다. workflow 버전 지적은 PR base와 파일을 직접 비교해 재현했다.
+
+| 우선순위 | 발견 | 수정 |
+|---|---|---|
+| P1 | KMS `GenerateDataKeyResponse` 전체가 debug 로그에 포함되어 plaintext 키를 노출할 수 있다. | key ID와 ciphertext 크기만 기록하고, 응답·평문 canary가 로그에 없는 테스트를 추가했다. |
+| P1 | AppConfig 디코더가 설정 값이 든 전체 맵을 로그에 출력한다. | 형식과 property 개수만 기록하고, 비밀값 canary 로그 테스트를 추가했다. |
+| P2 | DynamoDB 필터 DSL이 expression attribute 값을 로그에 출력한다. | 값 대신 바인딩 개수만 기록하고 로그 canary 테스트를 추가했다. |
+| P2 | `.github/workflows/{code-quality,dependency-submission,nightly-tests,publish-snapshot,release}.yml`이 base의 `setup-java` v6.0.1에서 v6.0.0으로 후퇴했다. | tag 및 pinned SHA를 base의 v6.0.1로 복원했다. |
+
+이후 테스트는 작업 worktree의 현재 코드에서 Ktor 29개, AWS Kotlin 9개, AWS Java 13개, Spring Boot 29개가 통과했다. `compatibilityCheck --no-configuration-cache`도 성공했다. 첫 캐시 사용 시 실행은 Central snapshot 요청의 TLS `bad_record_mac` 및 configuration-cache 직렬화 문제로 실패했으나, 캐시 비활성 재실행에서 통과했다. 전체 detekt는 수정 전 PR 변경 코드에서 9건(Kotlin 1건, Spring Boot 8건)을 보고했다. Serializable 내부 타입에 `serialVersionUID`를 추가하고 긴 테스트 및 통합 facade에 국소 suppression을 적용한 뒤 전체 `detekt`가 통과했다. exact-head 원격 CI와 새 독립 리뷰는 아직 별도 완료가 필요하다.

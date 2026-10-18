@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorStsAsyncClientCustomizer
@@ -15,12 +16,16 @@ import io.ktor.http.Url
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import software.amazon.awssdk.services.sts.StsAsyncClient
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import java.net.URI
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StsKtorPluginTest {
@@ -93,6 +98,36 @@ class StsKtorPluginTest {
         runtime.stop()
 
         verify(exactly = 1) { client.close() }
+    }
+
+    @Test
+    fun `config diagnostics redact endpoint credentials and injected dependencies`() {
+        every { client.toString() } returns "sts-client-secret"
+        every { operations.toString() } returns "sts-operations-secret"
+        val provider = object: AwsCredentialsProvider {
+            override fun resolveCredentials() = AwsBasicCredentials.create("access-key", "secret-key")
+            override fun toString() = "credentials-provider-secret"
+        }
+
+        val rendered = StsKtorPluginConfig().apply {
+            stsAsyncClient = client
+            stsOperations = operations
+            endpointOverride = URI("https://endpoint-user:endpoint-password@example.com/private?token=endpoint-secret")
+            credentialsProvider = provider
+        }.toString()
+
+        listOf(
+            "sts-client-secret",
+            "sts-operations-secret",
+            "credentials-provider-secret",
+            "secret-key",
+            "endpoint-user",
+            "endpoint-password",
+            "private",
+            "endpoint-secret",
+        ).forEach { rendered shouldNotContain it }
+        rendered shouldContain "endpointConfigured=true"
+        rendered shouldContain "credentialsProviderConfigured=true"
     }
 
     @Test

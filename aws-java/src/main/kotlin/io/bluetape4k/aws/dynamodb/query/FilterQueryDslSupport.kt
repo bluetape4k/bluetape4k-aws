@@ -188,7 +188,7 @@ class ConcreteFilter(
         }
 
         log.debug { "filterExpression=$filterExpression, expressionAttributeNames=$expressionAttributeNames" }
-        log.debug { "expressionAttributeValues=$expressionAttributeValues" }
+        log.debug { "expressionAttributeValueCount=${expressionAttributeValues.size}" }
         return FilterRequestProperties(expressionAttributeValues, filterExpression, expressionAttributeNames)
     }
 }

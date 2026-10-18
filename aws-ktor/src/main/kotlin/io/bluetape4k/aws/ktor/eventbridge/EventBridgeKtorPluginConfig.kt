@@ -91,11 +91,11 @@ class EventBridgeKtorPluginConfig {
     override fun toString(): String {
         return ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("eventBridgeAsyncClient", eventBridgeAsyncClient)
-            .add("eventBridgeOperations", eventBridgeOperations)
+            .add("eventBridgeAsyncClientConfigured", eventBridgeAsyncClient != null)
+            .add("eventBridgeOperationsConfigured", eventBridgeOperations != null)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
-            .add("credentialsProvider", credentialsProvider)
+            .add("endpointConfigured", endpointOverride != null)
+            .add("credentialsProviderConfigured", credentialsProvider != null)
             .add("defaultEventBusName", defaultEventBusName)
             .toString()
     }

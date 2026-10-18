@@ -82,7 +82,10 @@ class KmsCoroutinesEncryptor(
                 effectiveContext.takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
             }
             .await()
-        log.debug { "response=$response" }
+        val ciphertextBytes = response.ciphertextBlob().asByteArray().size
+        log.debug {
+            "generated data key (keyId=${response.keyId()}, ciphertextBytes=$ciphertextBytes)"
+        }
 
         val sdkPlaintext = response.plaintext().asByteArray()
         try {

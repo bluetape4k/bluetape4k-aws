@@ -73,9 +73,13 @@ internal data class WrappedDataKey(
         if (this === other) return true
         if (other == null) return false
 
-        return other is WrappedDataKey &&
-                ciphertext.contentEquals(other.ciphertext) &&
-                nonce?.contentEquals(other.nonce) ?: true
+        if (other !is WrappedDataKey || !ciphertext.contentEquals(other.ciphertext)) return false
+
+        return when {
+            nonce == null -> other.nonce == null
+            other.nonce == null -> false
+            else -> nonce.contentEquals(other.nonce)
+        }
     }
 
     override fun hashCode(): Int {
@@ -84,8 +88,8 @@ internal data class WrappedDataKey(
 
     override fun toString(): String =
         ToStringBuilder(this)
-            .add("ciphertext", ciphertext.contentToString())
-            .add("nonce", nonce?.contentToString())
+            .add("ciphertextSize", ciphertext.size)
+            .add("nonceSize", nonce?.size)
             .toString()
 }
 
@@ -105,8 +109,8 @@ internal data class ProviderEncryptedPayload(
     override fun hashCode(): Int = hashOf(ciphertext.contentHashCode(), metadata)
 
     override fun toString(): String = ToStringBuilder(this)
-        .add("ciphertext", ciphertext.contentToString())
-        .add("metadata", metadata)
+        .add("ciphertextSize", ciphertext.size)
+        .add("metadataCount", metadata.size)
         .toString()
 }
 
@@ -131,14 +135,14 @@ internal data class ProviderStreamingEnvelope(
         dataKey.contentHashCode(),
         nonce.contentHashCode(),
         aad.contentHashCode(),
-        nonce
+        metadata
     )
 
     override fun toString(): String = ToStringBuilder(this)
-        .add("dataKey", dataKey.contentToString())
-        .add("nonce", nonce.contentToString())
-        .add("aad", aad.contentToString())
-        .add("metadata", metadata)
+        .add("dataKeySize", dataKey.size)
+        .add("nonceSize", nonce.size)
+        .add("aadSize", aad.size)
+        .add("metadataCount", metadata.size)
         .toString()
 }
 

@@ -82,10 +82,10 @@ class S3AccessGrantsKtorPluginConfig {
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("s3ControlAsyncClient", s3ControlAsyncClient)
-            .add("s3AccessGrantsOperations", s3AccessGrantsOperations)
+            .add("s3ControlAsyncClientConfigured", s3ControlAsyncClient != null)
+            .add("s3AccessGrantsOperationsConfigured", s3AccessGrantsOperations != null)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
-            .add("credentialsProvider", credentialsProvider)
+            .add("endpointConfigured", endpointOverride != null)
+            .add("credentialsProviderConfigured", credentialsProvider != null)
             .toString()
 }

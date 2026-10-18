@@ -190,6 +190,7 @@ class AwsModulithEventsFlociTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `Floci malformed delivery is never acknowledged and records redrive capability deterministically`(
         reporter: TestReporter,
     ) {

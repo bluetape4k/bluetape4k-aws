@@ -49,6 +49,7 @@ class S3PropertiesCompatibilityTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `legacy JVM descriptors remain available`() {
         val type = S3Properties.ClientSideEncryption::class.java
         val properties = S3Properties.ClientSideEncryption(

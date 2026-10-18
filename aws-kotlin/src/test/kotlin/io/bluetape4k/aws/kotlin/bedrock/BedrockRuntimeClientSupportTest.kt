@@ -56,6 +56,31 @@ class BedrockRuntimeClientSupportTest {
     }
 
     @Test
+    fun `explicit configuration takes precedence over builder values`() {
+        val endpoint = Url.parse("http://localhost:4566")
+        val otherEndpoint = Url.parse("https://builder.example.com")
+        val otherCredentialsProvider = mockk<CredentialsProvider>()
+        val otherHttpClient = mockk<HttpClientEngine>(relaxed = true)
+
+        bedrockRuntimeClientOf(
+            endpointUrl = endpoint,
+            region = "us-east-1",
+            credentialsProvider = credentialsProvider,
+            httpClient = httpClient,
+        ) {
+            endpointUrl = otherEndpoint
+            region = "us-west-2"
+            credentialsProvider = otherCredentialsProvider
+            httpClient = otherHttpClient
+        }.use { configuredClient ->
+            configuredClient.config.endpointUrl shouldBeEqualTo endpoint
+            configuredClient.config.region shouldBeEqualTo "us-east-1"
+            configuredClient.config.credentialsProvider shouldBeSameInstanceAs credentialsProvider
+            configuredClient.config.httpClient shouldBeSameInstanceAs httpClient
+        }
+    }
+
+    @Test
     fun `trusted endpoints accept HTTPS and literal loopback HTTP`() {
         listOf(
             "https://example.com",

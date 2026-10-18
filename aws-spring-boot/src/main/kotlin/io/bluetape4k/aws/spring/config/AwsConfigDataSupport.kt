@@ -20,7 +20,11 @@ internal object AwsConfigDataSupport: KLogging() {
         val aws: AwsProperties,
         val backend: Any,
         val bootstrapContext: ConfigurableBootstrapContext,
-    ): Serializable
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     fun resolve(
         binder: Binder,

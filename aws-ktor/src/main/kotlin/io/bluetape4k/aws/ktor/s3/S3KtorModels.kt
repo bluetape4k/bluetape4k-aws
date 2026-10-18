@@ -125,9 +125,9 @@ data class S3KtorGetObjectResponse(
             .add("eTag", eTag)
             .add("contentType", contentType)
             .add("contentLength", contentLength)
-            .add("metadata", metadata)
-            .add("headers", headers)
-            .add("bytes", bytes.contentToString())
+            .add("metadataCount", metadata.size)
+            .add("headerNames", headers.names().sorted())
+            .add("bytesSize", bytes.size)
             .toString()
 
     companion object {

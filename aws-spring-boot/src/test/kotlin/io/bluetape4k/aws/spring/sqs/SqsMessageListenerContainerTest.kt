@@ -1483,6 +1483,7 @@ class SqsMessageListenerContainerTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `single message heartbeat repeats while handler is active and stops after success`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val handlerStarted = CompletableDeferred<Unit>()
@@ -2035,6 +2036,7 @@ class SqsMessageListenerContainerTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `batch heartbeat protects pending messages and excludes manually acknowledged items`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val handlerStarted = CompletableDeferred<Unit>()
