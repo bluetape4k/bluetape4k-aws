@@ -285,7 +285,10 @@ class AwsKtorCoreConfig {
     /** 결정론적 테스트를 위한 공유 SigV4 서명 시계입니다. */
     var signingClock: Clock? = null
 
-    /** 공유 AWS SDK for Kotlin HTTP 엔진입니다. */
+    /**
+     * AWS 클라이언트가 공유하는 호출자 소유 HTTP 엔진입니다. 설정하면 모든 클라이언트를 닫은 뒤
+     * 호출자가 엔진을 닫아야 합니다.
+     */
     var kotlinHttpClient: HttpClientEngine? = null
 
     private val httpClientCustomizers = mutableListOf<AwsKtorHttpClientCustomizer>()
