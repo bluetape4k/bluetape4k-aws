@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.examples.spring.dynamodb
 
+import io.bluetape4k.aws.dynamodb.model.keyOf
 import io.bluetape4k.aws.spring.dynamodb.AbstractCoroutinesDynamoDbRepository
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
 import org.springframework.stereotype.Repository
@@ -10,7 +11,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import java.io.Serializable
 
 @DynamoDbBean
-class Order : Serializable {
+class Order: Serializable {
     @get:DynamoDbPartitionKey
     var id: String = ""
     var status: String = ""
@@ -33,16 +34,13 @@ class Order : Serializable {
 class OrderRepository(
     enhancedClient: DynamoDbEnhancedAsyncClient,
     tableNameResolver: DynamoDbTableNameResolver,
-) : AbstractCoroutinesDynamoDbRepository<Order, String>(
+): AbstractCoroutinesDynamoDbRepository<Order, String>(
     enhancedClient = enhancedClient,
     tableNameResolver = tableNameResolver,
     entityClass = Order::class.java,
 ) {
     override val tableName: String = "orders"
 
-    override fun keyFromId(id: String): Key =
-        Key.builder().partitionValue(id).build()
-
-    override fun keyFromItem(item: Order): Key =
-        Key.builder().partitionValue(item.id).build()
+    override fun keyFromId(id: String): Key = keyOf(id)
+    override fun keyFromItem(item: Order): Key = keyOf(item.id)
 }

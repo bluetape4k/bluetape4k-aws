@@ -5,12 +5,15 @@ package io.bluetape4k.aws.examples.spring.dynamodb
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbTableNameResolver
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
@@ -18,9 +21,12 @@ import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import org.awaitility.core.ConditionTimeoutException
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.http.MediaType
@@ -36,15 +42,16 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
 import software.amazon.awssdk.services.dynamodb.model.TableStatus
-import java.time.Duration
-import java.util.UUID
+import java.util.*
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OrderControllerLocalStackTest {
 
-    companion object {
-        private val TABLE_ACTIVE_TIMEOUT = Duration.ofSeconds(30)
-        private val TABLE_ACTIVE_POLL_INTERVAL = Duration.ofMillis(100)
+    companion object: KLogging() {
+        private val TABLE_ACTIVE_TIMEOUT = 30.seconds
+        private val TABLE_ACTIVE_POLL_INTERVAL = 100.milliseconds
 
         val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("dynamodb") }
 
@@ -73,9 +80,9 @@ class OrderControllerLocalStackTest {
     @Test
     fun `repository supports CRUD and scan`() {
         contextRunner().run { context ->
-            val asyncClient = context.getBean(DynamoDbAsyncClient::class.java)
-            val enhancedClient = context.getBean(DynamoDbEnhancedAsyncClient::class.java)
-            val tableNameResolver = context.getBean(DynamoDbTableNameResolver::class.java)
+            val asyncClient = context.getBean<DynamoDbAsyncClient>()
+            val enhancedClient = context.getBean<DynamoDbEnhancedAsyncClient>()
+            val tableNameResolver = context.getBean<DynamoDbTableNameResolver>()
             val repository = OrderRepository(enhancedClient, tableNameResolver)
 
             runSuspendIO {
@@ -89,9 +96,10 @@ class OrderControllerLocalStackTest {
 
                 repository.save(order)
 
-                val found = repository.findById(order.id)
-                found?.id shouldBeEqualTo order.id
-                found?.status shouldBeEqualTo order.status
+                val found = repository.findById(order.id).shouldNotBeNull()
+                log.debug { "Found: $found" }
+                found.id shouldBeEqualTo order.id
+                found.status shouldBeEqualTo order.status
 
                 val all = repository.scan().toList()
                 all.any { it.id == order.id }.shouldBeTrue()
@@ -106,9 +114,9 @@ class OrderControllerLocalStackTest {
     @Test
     fun `concurrent saves and findById are consistent`() {
         contextRunner().run { context ->
-            val asyncClient = context.getBean(DynamoDbAsyncClient::class.java)
-            val enhancedClient = context.getBean(DynamoDbEnhancedAsyncClient::class.java)
-            val tableNameResolver = context.getBean(DynamoDbTableNameResolver::class.java)
+            val asyncClient = context.getBean<DynamoDbAsyncClient>()
+            val enhancedClient = context.getBean<DynamoDbEnhancedAsyncClient>()
+            val tableNameResolver = context.getBean<DynamoDbTableNameResolver>()
             val repository = OrderRepository(enhancedClient, tableNameResolver)
 
             runSuspendIO {
@@ -123,8 +131,8 @@ class OrderControllerLocalStackTest {
                             status = "CONCURRENT",
                             description = "stress test",
                         )
-                        repository.save(order)
-                        repository.findById(order.id)?.id shouldBeEqualTo order.id
+                        repository.save(order).shouldNotBeNull()
+                        repository.findById(order.id).shouldNotBeNull().id shouldBeEqualTo order.id
                     }
                     .run()
             }
@@ -134,9 +142,9 @@ class OrderControllerLocalStackTest {
     @Test
     fun `controller HTTP layer - POST findById and DELETE via WebTestClient`() {
         contextRunner().run { context ->
-            val asyncClient = context.getBean(DynamoDbAsyncClient::class.java)
-            val enhancedClient = context.getBean(DynamoDbEnhancedAsyncClient::class.java)
-            val tableNameResolver = context.getBean(DynamoDbTableNameResolver::class.java)
+            val asyncClient = context.getBean<DynamoDbAsyncClient>()
+            val enhancedClient = context.getBean<DynamoDbEnhancedAsyncClient>()
+            val tableNameResolver = context.getBean<DynamoDbTableNameResolver>()
             val repository = OrderRepository(enhancedClient, tableNameResolver)
             val controller = OrderController(repository)
 
@@ -156,6 +164,7 @@ class OrderControllerLocalStackTest {
                 .responseBody
                 ?: error("POST /orders returned empty body")
 
+            log.debug { "created order=$created" }
             created.status shouldBeEqualTo "HTTP_TEST"
 
             val found = requireNotNull(
@@ -166,6 +175,8 @@ class OrderControllerLocalStackTest {
                     .returnResult()
                     .responseBody
             ) { "GET /orders/${created.id} returned empty body" }
+
+            log.debug { "found order=$found" }
             found.id shouldBeEqualTo created.id
 
             webClient.delete().uri("/orders/${created.id}")
@@ -207,17 +218,14 @@ class OrderControllerLocalStackTest {
 
         var lastStatus: TableStatus? = null
         try {
-            await
-                .atMost(TABLE_ACTIVE_TIMEOUT)
-                .pollInterval(TABLE_ACTIVE_POLL_INTERVAL)
-                .untilSuspending {
-                    lastStatus = client.describeTable { it.tableName(tableName) }.await().table().tableStatus()
-                    lastStatus == TableStatus.ACTIVE
-                }
+            await atMost TABLE_ACTIVE_TIMEOUT withPollInterval TABLE_ACTIVE_POLL_INTERVAL untilSuspending {
+                lastStatus = client.describeTable { it.tableName(tableName) }.await().table().tableStatus()
+                lastStatus == TableStatus.ACTIVE
+            }
         } catch (e: ConditionTimeoutException) {
             throw IllegalStateException(
                 "Table $tableName did not become ACTIVE within $TABLE_ACTIVE_TIMEOUT " +
-                    "(poll interval=$TABLE_ACTIVE_POLL_INTERVAL, last status=$lastStatus).",
+                        "(poll interval=$TABLE_ACTIVE_POLL_INTERVAL, last status=$lastStatus).",
                 e,
             )
         }

@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.examples.ktor.exposed
 
-import io.bluetape4k.aws.ktor.exposed.AwsExposedPlugin
 import io.bluetape4k.aws.ktor.exposed.AwsExposedKtorHealthConfig
+import io.bluetape4k.aws.ktor.exposed.AwsExposedPlugin
 import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
 import io.bluetape4k.aws.ktor.exposed.installAwsExposedHealthRoutes
 import io.bluetape4k.ktor.core.requiredPathParameter
@@ -9,7 +9,6 @@ import io.bluetape4k.support.requireNotBlank
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive

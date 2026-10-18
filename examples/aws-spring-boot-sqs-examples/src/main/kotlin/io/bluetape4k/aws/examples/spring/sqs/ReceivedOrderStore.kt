@@ -7,8 +7,8 @@ import io.bluetape4k.aws.spring.sqs.SqsListenerInterceptor
 import io.bluetape4k.aws.spring.sqs.SqsListenerInvocationContext
 import org.springframework.stereotype.Component
 import java.io.Serializable
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** SQS listener 예제에서 수신한 메시지와 lifecycle event를 보관합니다. */
 @Component
@@ -72,7 +72,7 @@ data class ListenerEvent(
     val listenerId: String,
     val action: String,
     val attempt: Int,
-) : Serializable {
+): Serializable {
     companion object {
         private const val serialVersionUID: Long = 6240484093828939919L
     }
@@ -109,7 +109,7 @@ class OrderMessageListener(
     suspend fun handleWithRetry(message: String, acknowledgement: SqsAcknowledgement) {
         val attempt = store.recordAttempt(message)
         if (attempt < 2) {
-            throw IllegalStateException("Retryable example failure for $message")
+            error("Retryable example failure for $message")
         }
         store.record("retried:$message")
         acknowledgement.acknowledge()

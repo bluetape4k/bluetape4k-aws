@@ -12,6 +12,7 @@ import io.bluetape4k.aws.ktor.sns.SnsKtorOperations
 import io.bluetape4k.aws.ktor.sns.SnsPublishRequest
 import io.bluetape4k.aws.ktor.sts.StsKtorOperations
 import io.bluetape4k.ktor.testing.shouldHaveStatus
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
@@ -22,9 +23,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.testing.testApplication
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.parallel.Execution
@@ -42,6 +45,13 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
 @Execution(ExecutionMode.SAME_THREAD)
 class ServiceCoverageExampleRoutesTest {
 
+    private companion object: KLoggingChannel() {
+        private const val NAMESPACE = "Bluetape4k/AwsKtorExamples"
+        private const val STREAM_NAME = "service-coverage-events"
+        private const val TOPIC_ARN = "arn:aws:sns:us-east-1:000000000000:service-coverage"
+        private val LOG_STREAM = CloudWatchLogStream("bluetape4k-aws-ktor-examples", "service-coverage")
+    }
+
     private val sesOperations = mockk<SesKtorOperations>()
     private val snsOperations = mockk<SnsKtorOperations>()
     private val cloudWatchOperations = mockk<CloudWatchKtorOperations>()
@@ -49,11 +59,19 @@ class ServiceCoverageExampleRoutesTest {
     private val kinesisOperations = mockk<KinesisKtorOperations>()
     private val stsOperations = mockk<StsKtorOperations>()
 
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
+    }
+
     @Test
     fun `email route sends SES v2 email`() = testApplication {
-        coEvery { sesOperations.sendEmail(any()) } returns SendEmailResponse.builder()
+        coEvery {
+            sesOperations.sendEmail(any())
+        } returns SendEmailResponse.builder()
             .messageId("ses-message-1")
             .build()
+
         application { installServiceCoverageExamples() }
 
         val response = jsonClient().post("/coverage/email") {
@@ -63,20 +81,24 @@ class ServiceCoverageExampleRoutesTest {
 
         response shouldHaveStatus HttpStatusCode.OK
         response.body<SendEmailExampleResponse>().messageId shouldBeEqualTo "ses-message-1"
+
         coVerify(exactly = 1) {
             sesOperations.sendEmail(match<SesEmailRequest> { request ->
                 request.destination.to == listOf("dev@example.com") &&
-                    request.subject == "Coverage" &&
-                    request.body.text == "hello"
+                        request.subject == "Coverage" &&
+                        request.body.text == "hello"
             })
         }
     }
 
     @Test
     fun `notification route publishes SNS message`() = testApplication {
-        coEvery { snsOperations.publish(any()) } returns PublishResponse.builder()
+        coEvery {
+            snsOperations.publish(any())
+        } returns PublishResponse.builder()
             .messageId("sns-message-1")
             .build()
+
         application { installServiceCoverageExamples() }
 
         val response = jsonClient().post("/coverage/notifications") {
@@ -86,20 +108,22 @@ class ServiceCoverageExampleRoutesTest {
 
         response shouldHaveStatus HttpStatusCode.OK
         response.body<PublishNotificationExampleResponse>().messageId shouldBeEqualTo "sns-message-1"
+
         coVerify(exactly = 1) {
             snsOperations.publish(match<SnsPublishRequest> { request ->
                 request.topicArn == TOPIC_ARN &&
-                    request.message == "build finished" &&
-                    request.subject == "Coverage"
+                        request.message == "build finished" &&
+                        request.subject == "Coverage"
             })
         }
     }
 
     @Test
     fun `metric route publishes CloudWatch metric`() = testApplication {
-        coEvery { cloudWatchOperations.putMetricData(NAMESPACE, any()) } returns listOf(
-            PutMetricDataResponse.builder().build(),
-        )
+        coEvery {
+            cloudWatchOperations.putMetricData(NAMESPACE, any())
+        } returns listOf(PutMetricDataResponse.builder().build())
+
         application { installServiceCoverageExamples() }
 
         val response = jsonClient().post("/coverage/metrics") {
@@ -109,12 +133,13 @@ class ServiceCoverageExampleRoutesTest {
 
         response shouldHaveStatus HttpStatusCode.OK
         response.body<MetricExampleResponse>() shouldBeEqualTo MetricExampleResponse(NAMESPACE, 1)
+
         coVerify(exactly = 1) {
             cloudWatchOperations.putMetricData(
                 NAMESPACE,
                 match<List<MetricDatum>> { metrics ->
                     metrics.single().metricName() == "ProcessedJobs" &&
-                        metrics.single().value() == 3.0
+                            metrics.single().value() == 3.0
                 },
             )
         }
@@ -122,9 +147,10 @@ class ServiceCoverageExampleRoutesTest {
 
     @Test
     fun `logs route writes CloudWatch Logs event`() = testApplication {
-        coEvery { cloudWatchLogsOperations.putLogEvents(LOG_STREAM, any()) } returns listOf(
-            PutLogEventsResponse.builder().build(),
-        )
+        coEvery {
+            cloudWatchLogsOperations.putLogEvents(LOG_STREAM, any())
+        } returns listOf(PutLogEventsResponse.builder().build())
+
         application { installServiceCoverageExamples() }
 
         val response = jsonClient().post("/coverage/logs") {
@@ -134,7 +160,8 @@ class ServiceCoverageExampleRoutesTest {
 
         response shouldHaveStatus HttpStatusCode.OK
         response.body<LogEventExampleResponse>() shouldBeEqualTo
-            LogEventExampleResponse(LOG_STREAM.logGroupName, LOG_STREAM.logStreamName, 1)
+                LogEventExampleResponse(LOG_STREAM.logGroupName, LOG_STREAM.logStreamName, 1)
+
         coVerify(exactly = 1) {
             cloudWatchLogsOperations.putLogEvents(
                 LOG_STREAM,
@@ -145,10 +172,13 @@ class ServiceCoverageExampleRoutesTest {
 
     @Test
     fun `stream route writes Kinesis record`() = testApplication {
-        coEvery { kinesisOperations.putRecord(any()) } returns PutRecordResponse.builder()
+        coEvery {
+            kinesisOperations.putRecord(any())
+        } returns PutRecordResponse.builder()
             .sequenceNumber("sequence-1")
             .shardId("shard-000")
             .build()
+
         application { installServiceCoverageExamples() }
 
         val response = jsonClient().post("/coverage/stream-records") {
@@ -158,23 +188,27 @@ class ServiceCoverageExampleRoutesTest {
 
         response shouldHaveStatus HttpStatusCode.OK
         response.body<StreamRecordExampleResponse>() shouldBeEqualTo
-            StreamRecordExampleResponse("sequence-1", "shard-000")
+                StreamRecordExampleResponse("sequence-1", "shard-000")
+
         coVerify(exactly = 1) {
             kinesisOperations.putRecord(match<KinesisPutRecordRequest> { request ->
                 request.streamName == STREAM_NAME &&
-                    request.partitionKey == "partition-a" &&
-                    request.data.asUtf8String() == "payload"
+                        request.partitionKey == "partition-a" &&
+                        request.data.asUtf8String() == "payload"
             })
         }
     }
 
     @Test
     fun `identity route returns STS caller identity`() = testApplication {
-        coEvery { stsOperations.callerIdentity() } returns GetCallerIdentityResponse.builder()
+        coEvery {
+            stsOperations.callerIdentity()
+        } returns GetCallerIdentityResponse.builder()
             .account("123456789012")
             .arn("arn:aws:sts::123456789012:assumed-role/example/session")
             .userId("user-1")
             .build()
+
         application { installServiceCoverageExamples() }
 
         val response = jsonClient().get("/coverage/identity")
@@ -209,11 +243,4 @@ class ServiceCoverageExampleRoutesTest {
         createClient {
             install(ContentNegotiation) { jackson() }
         }
-
-    private companion object {
-        private const val NAMESPACE = "Bluetape4k/AwsKtorExamples"
-        private const val STREAM_NAME = "service-coverage-events"
-        private const val TOPIC_ARN = "arn:aws:sns:us-east-1:000000000000:service-coverage"
-        private val LOG_STREAM = CloudWatchLogStream("bluetape4k-aws-ktor-examples", "service-coverage")
-    }
 }

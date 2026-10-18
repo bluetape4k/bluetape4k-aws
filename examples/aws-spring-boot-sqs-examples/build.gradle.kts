@@ -18,6 +18,8 @@ dependencies {
     implementation(libs.aws2.sns)
     implementation(libs.aws2.sqs)
     implementation(libs.aws2.auth)
+
+    implementation(bt4k.bluetape4k.coroutines)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
 

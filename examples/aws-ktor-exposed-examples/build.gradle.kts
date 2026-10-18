@@ -23,6 +23,7 @@ dependencies {
     implementation("io.github.bluetape4k.exposed:bluetape4k-exposed-ktor-jdbc")
     implementation(bt4k.bluetape4k.ktor.core)
     implementation(bt4k.exposed.jdbc)
+
     // Direct Ktor artifacts remain intentional: the example runs on CIO and uses Jackson DTO binding.
     implementation(libs.ktor.serialization.jackson)
     implementation(libs.ktor.server.cio)

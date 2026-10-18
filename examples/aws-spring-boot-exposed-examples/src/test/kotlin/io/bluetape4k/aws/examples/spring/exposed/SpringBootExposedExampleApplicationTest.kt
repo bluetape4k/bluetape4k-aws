@@ -73,16 +73,16 @@ class SpringBootExposedExampleApplicationTest {
     fun `testcontainers bridge resolves AWS database placeholders`() {
         environment.getRequiredProperty("testcontainers.postgresql.jdbc-url") shouldBeEqualTo postgres.jdbcUrl
         environment.getRequiredProperty("testcontainers.postgresql.driver-class-name") shouldBeEqualTo
-            postgres.getDriverClassName()
+                postgres.getDriverClassName()
         environment.getRequiredProperty("testcontainers.postgresql.username") shouldBeEqualTo postgres.getUsername()
         environment.getRequiredProperty("testcontainers.postgresql.password") shouldBeEqualTo postgres.getPassword()
         environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.url") shouldBeEqualTo postgres.jdbcUrl
         environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.driver-class-name") shouldBeEqualTo
-            postgres.getDriverClassName()
+                postgres.getDriverClassName()
         environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.username") shouldBeEqualTo
-            postgres.getUsername()
+                postgres.getUsername()
         environment.getRequiredProperty("bluetape4k.aws.exposed.default-database.password") shouldBeEqualTo
-            postgres.getPassword()
+                postgres.getPassword()
     }
 
     @Test
@@ -221,7 +221,7 @@ class SpringBootExposedExampleApplicationTest {
         OrderRepository.save(OrderRecord(customerId = customerId, status = OrderStatus.CANCELLED, notes = "three"))
 
         val probe = OrderEntity.find {
-            (OrdersTable.customerId eq customerId) and (OrdersTable.status eq OrderStatus.PAID.name)
+            (OrdersTable.customerId eq customerId) and (OrdersTable.status eq OrderStatus.PAID)
         }.first()
         val example = Example.of(
             probe,
@@ -245,7 +245,7 @@ class SpringBootExposedExampleApplicationTest {
                 .all()
         }
 
-        projected shouldBeEqualTo listOf(OrderSummaryProjection(customerId, OrderStatus.PAID.name))
+        projected shouldBeEqualTo listOf(OrderSummaryProjection(customerId, OrderStatus.PAID))
         val selectStatements = statements.filter { it.trimStart().startsWith("SELECT", ignoreCase = true) }
         selectStatements shouldHaveSize 1
         val select = selectStatements.single()
@@ -277,7 +277,7 @@ class SpringBootExposedExampleApplicationTest {
     private fun readPage(response: HttpResponse<String>): OrderPagePayload =
         objectMapper.readValue(
             response.body(),
-            object : tools.jackson.core.type.TypeReference<OrderPagePayload>() {},
+            object: tools.jackson.core.type.TypeReference<OrderPagePayload>() {},
         )
 
     private fun recordSql(statements: MutableList<String>) = object: SqlLogger {
