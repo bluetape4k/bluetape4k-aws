@@ -1,9 +1,10 @@
 package io.bluetape4k.aws.spring.sns
 
-import software.amazon.awssdk.services.sns.model.PublishResponse
+import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
+import software.amazon.awssdk.services.sns.model.PublishResponse
 
-object NoopSnsOperations: SnsOperations {
+object NoopSnsOperations: SnsOperations, KLogging() {
 
     override suspend fun createTopic(
         topicName: String,

@@ -7,30 +7,39 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.io.serializer.JdkBinarySerializer
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Configuration
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.time.Duration
 
 class SqsBatchPropertiesTest {
+
+    companion object: KLogging() {
+        private val contextRunner = ApplicationContextRunner()
+            .withUserConfiguration(TestConfiguration::class.java)
+    }
 
     @Test
     fun `batch properties expose safe defaults`() {
         val properties = SqsBatchProperties()
 
+        log.debug { "properties=$properties" }
         properties.enabled.shouldBeFalse()
         properties.maxBatchSize shouldBeEqualTo 10
-        properties.flushInterval shouldBeEqualTo Duration.ofMillis(200)
+        properties.flushInterval shouldBeEqualTo 200.millis()
         properties.maxEntriesPerCall shouldBeEqualTo 1_000
         properties.maxInFlightEntries shouldBeEqualTo 100
         properties.schedulerThreads shouldBeEqualTo 1
-        properties.shutdownTimeout shouldBeEqualTo Duration.ofSeconds(5)
+        properties.shutdownTimeout shouldBeEqualTo 5.seconds()
         roundTrip(properties) shouldBeEqualTo properties
+
         SqsBatchProperties::class.java.getDeclaredField("serialVersionUID")
             .apply { isAccessible = true }
             .getLong(null) shouldBeEqualTo 1L
@@ -41,11 +50,11 @@ class SqsBatchPropertiesTest {
         SqsBatchProperties(
             enabled = true,
             maxBatchSize = 1,
-            flushInterval = Duration.ofMillis(1),
+            flushInterval = 1.millis(),
             maxEntriesPerCall = 1,
             maxInFlightEntries = 1,
             schedulerThreads = 1,
-            shutdownTimeout = Duration.ofMillis(1),
+            shutdownTimeout = 1.millis(),
         )
         SqsBatchProperties(
             enabled = true,
@@ -65,7 +74,7 @@ class SqsBatchPropertiesTest {
             Triple("max-batch-size", "11") { SqsBatchProperties(maxBatchSize = 11) },
             Triple("flush-interval", "PT0S") { SqsBatchProperties(flushInterval = Duration.ZERO) },
             Triple("flush-interval", "PT1M0.001S") {
-                SqsBatchProperties(flushInterval = Duration.ofMinutes(1).plusMillis(1))
+                SqsBatchProperties(flushInterval = 1.minutes() + 1.millis())
             },
             Triple("max-entries-per-call", "0") { SqsBatchProperties(maxEntriesPerCall = 0) },
             Triple("max-entries-per-call", "10001") { SqsBatchProperties(maxEntriesPerCall = 10_001) },
@@ -75,7 +84,7 @@ class SqsBatchPropertiesTest {
             Triple("scheduler-threads", "17") { SqsBatchProperties(schedulerThreads = 17) },
             Triple("shutdown-timeout", "PT0S") { SqsBatchProperties(shutdownTimeout = Duration.ZERO) },
             Triple("shutdown-timeout", "PT1M0.001S") {
-                SqsBatchProperties(shutdownTimeout = Duration.ofMinutes(1).plusMillis(1))
+                SqsBatchProperties(shutdownTimeout = 1.minutes() + 1.millis())
             },
         )
 
@@ -92,13 +101,14 @@ class SqsBatchPropertiesTest {
             enabled = false,
             maxBatchSize = 10,
             maxInFlightEntries = 1,
-            flushInterval = Duration.ofSeconds(5),
-            shutdownTimeout = Duration.ofMillis(1),
+            flushInterval = 5.seconds(),
+            shutdownTimeout = 1.millis(),
         ).maxInFlightEntries shouldBeEqualTo 1
 
         assertFailsWith<IllegalArgumentException> {
             SqsBatchProperties(enabled = true, maxBatchSize = 10, maxInFlightEntries = 9)
         }.message shouldContain "$SQS_BATCH_PROPERTIES_PREFIX.max-in-flight-entries"
+
         assertFailsWith<IllegalArgumentException> {
             SqsBatchProperties(
                 enabled = true,
@@ -197,17 +207,11 @@ class SqsBatchPropertiesTest {
         val rawValue: String,
     )
 
-    @Suppress("UNCHECKED_CAST")
-    private fun <T> roundTrip(value: T): T {
-        val bytes = ByteArrayOutputStream().use { output ->
-            ObjectOutputStream(output).use { it.writeObject(value) }
-            output.toByteArray()
-        }
-        return ObjectInputStream(ByteArrayInputStream(bytes)).use { it.readObject() as T }
-    }
+    private val jdkSerializer = JdkBinarySerializer(objectInputFilter = null)
 
-    companion object {
-        private val contextRunner = ApplicationContextRunner()
-            .withUserConfiguration(TestConfiguration::class.java)
+    @Suppress("UNCHECKED_CAST")
+    private fun <T: Any> roundTrip(value: T): T {
+        val bytes = jdkSerializer.serialize(value)
+        return jdkSerializer.deserialize<T>(bytes).shouldNotBeNull()
     }
 }

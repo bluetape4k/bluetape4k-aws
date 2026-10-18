@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.apache.endsWithIgnoreCase
+import io.bluetape4k.support.equalsIgnoreCase
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
@@ -46,8 +48,8 @@ data class SqsQueueAttributes(
     }
 
     val isFifo: Boolean
-        get() = values[QueueAttributeName.FIFO_QUEUE].equals("true", ignoreCase = true) ||
-            queueUrl.endsWith(".fifo", ignoreCase = true)
+        get() = values[QueueAttributeName.FIFO_QUEUE].equalsIgnoreCase("true") ||
+                queueUrl.endsWithIgnoreCase(".fifo")
 }
 
 /** queue URL과 attribute 이름을 받아 cache 가능한 속성 결과를 반환합니다. */
@@ -63,7 +65,7 @@ class DefaultSqsQueueAttributesResolver(
     private val operations: SqsOperations,
     private val cacheTtl: Duration = Duration.ofMinutes(1),
     private val nanoTime: () -> Long = System::nanoTime,
-) : SqsQueueAttributesResolver {
+): SqsQueueAttributesResolver {
 
     private data class CachedAttributes(
         val attributes: SqsQueueAttributes,

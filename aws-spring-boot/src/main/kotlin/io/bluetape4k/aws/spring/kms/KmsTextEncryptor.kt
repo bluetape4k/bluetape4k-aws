@@ -1,10 +1,11 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.support.toUtf8String
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.springframework.security.crypto.encrypt.TextEncryptor
 import java.nio.charset.StandardCharsets
-import java.util.Base64
+import java.util.*
 
 /**
  * [KmsOperations]를 사용하는 Spring Security Crypto [TextEncryptor] 어댑터입니다.
@@ -28,19 +29,19 @@ class KmsTextEncryptor(
     private val encoder = Base64.getEncoder()
     private val decoder = Base64.getDecoder()
 
-    override fun encrypt(text: String): String =
-        encoder.encodeToString(
-            runBlocking(Dispatchers.IO) {
-                kmsOperations.encrypt(
-                    plaintext = text.toByteArray(StandardCharsets.UTF_8),
-                    keyId = keyId,
-                    encryptionContext = encryptionContext,
-                )
-            }
-        )
+    override fun encrypt(text: String): String {
+        val encrypted = runBlocking(Dispatchers.IO) {
+            kmsOperations.encrypt(
+                plaintext = text.toByteArray(StandardCharsets.UTF_8),
+                keyId = keyId,
+                encryptionContext = encryptionContext,
+            )
+        }
+        return encoder.encodeToString(encrypted)
+    }
 
     override fun decrypt(encryptedText: String): String {
-        val plaintext = runBlocking(Dispatchers.IO) {
+        val plainBytes = runBlocking(Dispatchers.IO) {
             kmsOperations.decrypt(
                 ciphertext = decoder.decode(encryptedText),
                 keyId = keyId,
@@ -48,9 +49,9 @@ class KmsTextEncryptor(
             )
         }
         return try {
-            plaintext.toString(StandardCharsets.UTF_8)
+            plainBytes.toUtf8String()
         } finally {
-            plaintext.fill(0)
+            plainBytes.fill(0)
         }
     }
 }

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.support.requireMatches
 import kotlinx.coroutines.CancellationException
 
 /** AWS publisher가 transport에 전달하는 외부화 명령입니다. */
@@ -54,7 +55,7 @@ private val AWS_MODULITH_DESTINATION_PATTERN = Regex("[A-Za-z0-9_-]+(?:\\.fifo)?
 
 /** publisher 경계에서 ARN·URL·partition-qualified destination을 거부합니다. */
 internal fun requireAwsModulithDestinationName(destination: String): String {
-    require(AWS_MODULITH_DESTINATION_PATTERN.matches(destination)) {
+    destination.requireMatches(AWS_MODULITH_DESTINATION_PATTERN, "destination") {
         "destination must be a logical SNS topic or SQS queue name."
     }
     return destination

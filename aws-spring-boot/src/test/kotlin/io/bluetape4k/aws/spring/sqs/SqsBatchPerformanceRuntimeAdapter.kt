@@ -1,13 +1,15 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.coroutines.support.awaitUntil
+import io.bluetape4k.support.requireInRange
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.asCoroutineDispatcher
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
@@ -16,6 +18,7 @@ import java.lang.management.ManagementFactory
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 실제 SQS listener container/invoker 경로를 fake AWS boundary에 연결하는 성능 adapter입니다.
@@ -48,7 +51,7 @@ internal class SqsBatchPerformanceRuntimeAdapter(
         batchSize: Int,
         micrometer: Boolean,
     ): Sample {
-        require(batchSize in 1..10)
+        batchSize.requireInRange(1, 10, "batchSize")
         val workerIds = mutableListOf<Long>()
         val threadFactory = RecordingThreadFactory(workerIds)
         val executor = Executors.newFixedThreadPool(workerCount, threadFactory)
@@ -85,24 +88,24 @@ internal class SqsBatchPerformanceRuntimeAdapter(
             interceptors = interceptors,
             dispatcher = dispatcher,
         )
-        withContext(dispatcher) { Unit }
+        withContext(dispatcher) { }
         val allocationStart = allocatedBytes(workerIds)
         val startedAt = System.nanoTime()
-        var allocated = 0L
+        var allocated: Long 
         try {
             container.start()
             try {
-                withTimeout(5_000) { handler.completed.await() }
+                handler.completed.awaitUntil(5.seconds)
             } catch (e: Throwable) {
                 throw IllegalStateException(
                     "performance handler did not complete: path=$path batchSize=$batchSize " +
-                        "invocations=${handler.invocationCount}",
+                            "invocations=${handler.invocationCount}",
                     e,
                 )
             }
             val stopped = CompletableDeferred<Unit>()
             container.stop { stopped.complete(Unit) }
-            withTimeout(5_000) { stopped.await() }
+            stopped.awaitUntil(5.seconds)
             allocated = (allocatedBytes(workerIds) - allocationStart).coerceAtLeast(0L)
         } finally {
             dispatcher.close()
@@ -125,7 +128,9 @@ internal class SqsBatchPerformanceRuntimeAdapter(
     private fun allocatedBytes(workerIds: List<Long>): Long {
         val bean = ManagementFactory.getThreadMXBean() as? com.sun.management.ThreadMXBean
             ?: error("ThreadMXBean allocated memory is unavailable")
+
         require(bean.isThreadAllocatedMemorySupported) { "ThreadMXBean allocated memory is unavailable" }
+
         if (!bean.isThreadAllocatedMemoryEnabled) {
             bean.isThreadAllocatedMemoryEnabled = true
         }
@@ -134,7 +139,7 @@ internal class SqsBatchPerformanceRuntimeAdapter(
 
     private class RecordingThreadFactory(
         private val workerIds: MutableList<Long>,
-    ) : ThreadFactory {
+    ): ThreadFactory {
         private val sequence = AtomicInteger()
 
         override fun newThread(runnable: Runnable): Thread = Thread(runnable).also { thread ->
@@ -153,14 +158,14 @@ internal class SqsBatchPerformanceRuntimeAdapter(
             get() = invocations.get()
 
         @Suppress("UNUSED_PARAMETER")
-        suspend fun single(message: SqsReceivedMessage) {
+        fun single(message: SqsReceivedMessage) {
             if (invocations.incrementAndGet() >= expectedInvocations) {
                 completed.complete(Unit)
             }
         }
 
         @Suppress("UNUSED_PARAMETER")
-        suspend fun batch(messages: List<SqsReceivedMessage>) {
+        fun batch(messages: List<SqsReceivedMessage>) {
             check(path == RuntimePath.BATCH)
             invocations.incrementAndGet()
             completed.complete(Unit)
@@ -169,7 +174,7 @@ internal class SqsBatchPerformanceRuntimeAdapter(
 
     private class RecordingOperations(
         private val batch: List<SqsReceivedMessage>,
-    ) : SqsOperations {
+    ): SqsOperations {
         private val receiveCalls = AtomicInteger()
         val deleteCalls = AtomicInteger()
         val deleteBatchCalls = AtomicInteger()
@@ -194,7 +199,7 @@ internal class SqsBatchPerformanceRuntimeAdapter(
             visibilityTimeoutSeconds: Int?,
         ): List<SqsReceivedMessage> {
             if (receiveCalls.incrementAndGet() == 1) return batch
-            kotlinx.coroutines.awaitCancellation()
+            awaitCancellation()
         }
 
         override suspend fun delete(queueUrl: String, receiptHandle: String): DeleteMessageResponse {

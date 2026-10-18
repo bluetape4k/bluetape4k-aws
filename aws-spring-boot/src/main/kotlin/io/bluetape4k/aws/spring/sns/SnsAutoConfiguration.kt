@@ -1,16 +1,17 @@
 package io.bluetape4k.aws.spring.sns
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
-import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
-import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
 import io.bluetape4k.aws.spring.connection.SnsConnectionDetails
+import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
+import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -22,7 +23,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * AWS SNS용 Spring Boot 4 자동 구성입니다.
@@ -45,7 +45,7 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
         "software.amazon.awssdk.services.sns.SnsAsyncClient",
     ]
 )
-@ConditionalOnProperty(prefix = "bluetape4k.aws.sns", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = SnsProperties.PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(SnsProperties::class)
 class SnsAutoConfiguration {
 
@@ -74,8 +74,8 @@ class SnsAutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("sns", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("sns", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 
@@ -119,7 +119,7 @@ class SnsAutoConfiguration {
         }.getOrElse { cause ->
             throw IllegalStateException(
                 "SNS client identity is unavailable; provide a custom SnsTopicArnResolver " +
-                    "for a client with an uninspectable configuration.",
+                        "for a client with an uninspectable configuration.",
                 cause,
             )
         }
@@ -127,11 +127,11 @@ class SnsAutoConfiguration {
         val actualEndpointOverride = clientIdentity.second
         require(
             (defaults.region == null || actualRegion == defaults.region) &&
-                actualEndpointOverride == defaults.endpointOverride,
+                    actualEndpointOverride == defaults.endpointOverride,
         ) {
             "SNS client customizer must not change explicitly configured endpoint or region after AWS defaults " +
-                "are applied; " +
-                "provide a custom SnsTopicArnResolver for a different client identity."
+                    "are applied; " +
+                    "provide a custom SnsTopicArnResolver for a different client identity."
         }
         val scope = SnsTopicArnResolverScope(
             endpointOverride = actualEndpointOverride,

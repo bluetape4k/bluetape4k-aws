@@ -1,19 +1,22 @@
 package io.bluetape4k.aws.spring.s3
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
-import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.boot.test.context.FilteredClassLoader
+import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder
@@ -48,8 +51,8 @@ class S3CrtAsyncClientAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(S3AsyncClient::class.java).javaClass.name shouldContain "Crt"
+                context.getBeansOfType<S3AsyncClient>() shouldHaveSize 1
+                context.getBean<S3AsyncClient>().javaClass.name shouldContain "Crt"
             }
     }
 
@@ -57,8 +60,8 @@ class S3CrtAsyncClientAutoConfigurationTest {
     fun `default SDK client remains when CRT is disabled`() {
         contextRunner.run { context ->
             context.startupFailure.shouldBeNull()
-            context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBean(S3AsyncClient::class.java).javaClass.name shouldContain "DefaultS3AsyncClient"
+            context.getBeansOfType<S3AsyncClient>() shouldHaveSize 1
+            context.getBean<S3AsyncClient>().javaClass.name shouldContain "DefaultS3AsyncClient"
         }
     }
 
@@ -70,7 +73,7 @@ class S3CrtAsyncClientAutoConfigurationTest {
             .withBean(S3AsyncClient::class.java, { explicit })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(S3AsyncClient::class.java) shouldBeEqualTo explicit
+                context.getBean<S3AsyncClient>() shouldBeEqualTo explicit
             }
     }
 
@@ -93,7 +96,7 @@ class S3CrtAsyncClientAutoConfigurationTest {
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.http.crt"))
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(S3AsyncClient::class.java).javaClass.name shouldContain "DefaultS3AsyncClient"
+                context.getBean<S3AsyncClient>().javaClass.name shouldContain "DefaultS3AsyncClient"
             }
     }
 

@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 /** 자동 배치 coordinator가 사용하는 internal 전송 경계입니다. */
 internal interface SqsBatchTransport {
+
     fun send(entry: SqsBatchSendEntry): CompletableFuture<SqsBatchOutcome>
 
     fun delete(entry: SqsBatchDeleteEntry): CompletableFuture<SqsBatchOutcome>
@@ -14,7 +15,7 @@ internal interface SqsBatchTransport {
 /** caller가 소유한 [SqsAsyncClient]로 단건 요청을 전송하는 transport입니다. */
 internal class DirectSqsBatchTransport(
     private val client: SqsAsyncClient,
-) : SqsBatchTransport {
+): SqsBatchTransport {
 
     override fun send(entry: SqsBatchSendEntry): CompletableFuture<SqsBatchOutcome> {
         val request = entry.request
@@ -91,7 +92,7 @@ internal fun <T: Any> CompletableFuture<T>.mapBatchOutcome(
 
 private class SqsBatchOutcomeFuture(
     source: CompletableFuture<*>,
-) : CompletableFuture<SqsBatchOutcome>() {
+): CompletableFuture<SqsBatchOutcome>() {
     private val sourceReference = AtomicReference<CompletableFuture<*>?>(source)
 
     override fun cancel(mayInterruptIfRunning: Boolean): Boolean {

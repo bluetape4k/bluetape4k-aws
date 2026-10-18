@@ -1,10 +1,9 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.s3.getAsInputStream
+import io.bluetape4k.aws.s3.model.headObjectRequestOf
 import org.springframework.core.io.AbstractResource
-import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.GetObjectRequest
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 import software.amazon.awssdk.services.s3.model.S3Exception
@@ -23,7 +22,7 @@ class S3Resource(
             .recover { error ->
                 when {
                     error.isMissingObjectError() -> false
-                    else                         -> throw error
+                    else -> throw error
                 }
             }
             .getOrThrow()
@@ -41,27 +40,18 @@ class S3Resource(
         headObject().lastModified().toEpochMilli()
 
     override fun getInputStream(): InputStream {
-        val request = GetObjectRequest.builder()
-            .bucket(location.bucket)
-            .key(location.key)
-            .build()
-        return s3Client.getObject(request, ResponseTransformer.toInputStream())
+        return s3Client.getAsInputStream(location.bucket, location.key)
     }
 
     private fun headObject() =
-        s3Client.headObject(
-            HeadObjectRequest.builder()
-                .bucket(location.bucket)
-                .key(location.key)
-                .build()
-        )
+        s3Client.headObject(headObjectRequestOf(location.bucket, location.key))
 
     private fun Throwable.isMissingObjectError(): Boolean =
         when (this) {
             is NoSuchBucketException -> true
-            is NoSuchKeyException    -> true
-            is S3Exception           -> statusCode() == 404 ||
+            is NoSuchKeyException -> true
+            is S3Exception -> statusCode() == 404 ||
                     awsErrorDetails()?.errorCode() in setOf("NoSuchBucket", "NoSuchKey", "NotFound")
-            else                     -> false
+            else -> false
         }
 }

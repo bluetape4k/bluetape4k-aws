@@ -2,11 +2,16 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import kotlin.jvm.internal.DefaultConstructorMarker
 import java.net.URI
+import kotlin.jvm.internal.DefaultConstructorMarker
 
 class SnsPropertiesCompatibilityTest {
+
+    companion object: KLogging()
 
     @Test
     fun `legacy constructor and copy preserve the five field API`() {
@@ -19,6 +24,7 @@ class SnsPropertiesCompatibilityTest {
             SnsProperties.Verification(false),
         )
 
+        log.debug { "properties=$properties" }
         properties.enabled shouldBeEqualTo false
         properties.region shouldBeEqualTo "us-east-1"
         properties.topics shouldBeEqualTo topics
@@ -32,6 +38,7 @@ class SnsPropertiesCompatibilityTest {
             emptyMap(),
             SnsProperties.Verification(),
         )
+        log.debug { "copied=$copied" }
         copied.region shouldBeEqualTo "eu-west-1"
         copied.topics shouldBeEqualTo emptyMap()
         copied.accountId.shouldBeNull()
@@ -125,8 +132,8 @@ class SnsPropertiesCompatibilityTest {
             31,
             null,
         ) as SnsProperties
-        legacyDefaultConstructor.enabled shouldBeEqualTo true
+        legacyDefaultConstructor.enabled.shouldBeTrue()
         legacyDefaultConstructor.region.shouldBeNull()
-        legacyDefaultConstructor.topics shouldBeEqualTo emptyMap<String, SnsProperties.Topic>()
+        legacyDefaultConstructor.topics shouldBeEqualTo emptyMap()
     }
 }

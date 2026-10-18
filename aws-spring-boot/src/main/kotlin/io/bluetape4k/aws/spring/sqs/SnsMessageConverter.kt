@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.json.JsonParserFactory
 import tools.jackson.databind.ObjectMapper
 import java.lang.reflect.ParameterizedType
@@ -23,7 +24,7 @@ class SnsMessageConversionException(
     /** 실패한 원본 SNS envelope입니다. */
     val rawEnvelope: String,
     cause: Throwable,
-) : IllegalArgumentException("SNS notification envelope conversion failed", cause)
+): IllegalArgumentException("SNS notification envelope conversion failed", cause)
 
 /**
  * SQS 본문에 포함된 SNS `Notification` envelope를 풀어 typed payload로 변환합니다.
@@ -38,12 +39,29 @@ class SnsMessageConverter(
     private val malformedEnvelopeStrategy: SnsMalformedEnvelopeStrategy =
         SnsMalformedEnvelopeStrategy.FALLBACK_TO_SQS,
     private val preserveRawEnvelope: Boolean = true,
-) : SqsMessageConverter {
+): SqsMessageConverter {
+
+    private companion object: KLogging() {
+        const val NOTIFICATION_TYPE: String = "Notification"
+        const val TYPE_KEY: String = "Type"
+        const val MESSAGE_ID_KEY: String = "MessageId"
+        const val TOPIC_ARN_KEY: String = "TopicArn"
+        const val MESSAGE_KEY: String = "Message"
+        const val TIMESTAMP_KEY: String = "Timestamp"
+        const val SUBJECT_KEY: String = "Subject"
+        const val SIGNATURE_VERSION_KEY: String = "SignatureVersion"
+        const val SIGNATURE_KEY: String = "Signature"
+        const val SIGNING_CERT_URL_KEY: String = "SigningCertURL"
+    }
 
     override fun convert(message: SqsReceivedMessage, targetType: Class<*>): Any =
         convert(message, targetType, null)
 
-    override fun convert(message: SqsReceivedMessage, targetType: Class<*>, genericType: Type?): Any {
+    override fun convert(
+        message: SqsReceivedMessage,
+        targetType: Class<*>,
+        genericType: Type?,
+    ): Any {
         val envelope = parseNotification(message) ?: return convertBody(message.body, targetType)
         val payloadType = payloadType(genericType, targetType)
         val payload = convertPayload(envelope.message, payloadType)
@@ -56,7 +74,7 @@ class SnsMessageConverter(
     }
 
     /** [message]를 [payloadType]으로 변환한 SNS notification을 반환합니다. */
-    fun <T : Any> convertNotification(
+    fun <T: Any> convertNotification(
         message: SqsReceivedMessage,
         payloadType: Class<T>,
     ): SnsNotification<T> {
@@ -65,6 +83,7 @@ class SnsMessageConverter(
                 rawEnvelope = message.body,
                 cause = IllegalArgumentException("SQS body is not an SNS Notification envelope"),
             )
+
         @Suppress("UNCHECKED_CAST")
         val payload = convertPayload(envelope.message, payloadType) as T
         return notification(envelope, payload, message)
@@ -108,7 +127,7 @@ class SnsMessageConverter(
         }
     }
 
-    private fun <T : Any> notification(
+    private fun <T: Any> notification(
         envelope: ParsedNotification,
         payload: T,
         sqs: SqsReceivedMessage,
@@ -179,16 +198,5 @@ class SnsMessageConverter(
         }
     }
 
-    private companion object {
-        const val NOTIFICATION_TYPE: String = "Notification"
-        const val TYPE_KEY: String = "Type"
-        const val MESSAGE_ID_KEY: String = "MessageId"
-        const val TOPIC_ARN_KEY: String = "TopicArn"
-        const val MESSAGE_KEY: String = "Message"
-        const val TIMESTAMP_KEY: String = "Timestamp"
-        const val SUBJECT_KEY: String = "Subject"
-        const val SIGNATURE_VERSION_KEY: String = "SignatureVersion"
-        const val SIGNATURE_KEY: String = "Signature"
-        const val SIGNING_CERT_URL_KEY: String = "SigningCertURL"
-    }
+
 }

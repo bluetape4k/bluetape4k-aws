@@ -13,6 +13,8 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.services.s3.S3Client
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * 기존 S3 client 뒤에 exact protocol과 단일 bucket pattern resolver를 등록한다.
@@ -80,8 +82,10 @@ internal class S3ProtocolResolverRegistrar(
     private val resolverProvider: ObjectProvider<S3ProtocolResolver>,
 ): BeanFactoryPostProcessor {
 
+    private val lock = ReentrantLock()
+
     override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) {
-        synchronized(beanFactory) {
+        lock.withLock {
             if (beanFactory.containsSingleton(REGISTRATION_GUARD)) {
                 return
             }

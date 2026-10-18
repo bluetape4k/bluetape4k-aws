@@ -1,18 +1,39 @@
 package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.assertions.assertFailsWith
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotSame
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
+import io.bluetape4k.assertions.shouldBe
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldNotBe
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
-import java.util.concurrent.CancellationException
-import java.lang.reflect.Proxy
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.lang.reflect.Proxy
+import java.util.concurrent.CancellationException
 
 class AwsModulithEventTypeRegistryTest {
+
+    companion object: KLogging() {
+        private const val MAX_REGISTRATIONS = 256
+        private const val MAX_EVENT_TYPE_LENGTH = 128
+
+        private val MARKER_INTERFACES = arrayOf(
+            Marker0::class.java,
+            Marker1::class.java,
+            Marker2::class.java,
+            Marker3::class.java,
+            Marker4::class.java,
+            Marker5::class.java,
+            Marker6::class.java,
+            Marker7::class.java,
+            Marker8::class.java,
+        )
+        private const val HOSTILE_MARKER = "secret-value:event-id:header-value:arn:request-response"
+    }
 
     @ParameterizedTest
     @ValueSource(strings = ["", "Order.Placed", "-order", "order placed"])
@@ -89,7 +110,7 @@ class AwsModulithEventTypeRegistryTest {
 
     @Test
     fun `registration count and type length boundaries are enforced`() {
-        val registrations = (0 until MAX_REGISTRATIONS).map { index ->
+        val registrations = List(MAX_REGISTRATIONS) { index ->
             registration(
                 type = "event.$index",
                 eventClass = proxyEventClass(index + 1),
@@ -120,7 +141,8 @@ class AwsModulithEventTypeRegistryTest {
         val registry = AwsModulithEventTypeRegistry.of(registration())
         val event = OrderPlaced("evt-1")
 
-        registry.registrationFor(event).eventId(event) shouldEqual "evt-1"
+        registry.registrationFor(event).eventId(event) shouldBeEqualTo "evt-1"
+
         assertFailsWith<AwsModulithEventRegistrationMismatchException> {
             registry.registrationFor(PreferredOrderPlaced("evt-2"))
         }
@@ -149,9 +171,9 @@ class AwsModulithEventTypeRegistryTest {
             registry.registrationFor(OrderPlaced("evt-1")).eventId(OrderPlaced("evt-1"))
         }
 
-        assertEquals("BT4K-MOD-102:SERIALIZATION", failure.message)
-        assertEquals(null, failure.cause)
-        assertFalse(failure.toString().contains(HOSTILE_MARKER))
+        failure.message shouldBeEqualTo "BT4K-MOD-102:SERIALIZATION"
+        failure.cause.shouldBeNull()
+        failure.toString() shouldNotContain HOSTILE_MARKER
     }
 
     @Test
@@ -163,7 +185,7 @@ class AwsModulithEventTypeRegistryTest {
         val actualCancellation = assertFailsWith<CancellationException> {
             cancellationRegistry.registrationFor(OrderPlaced("evt-1")).eventId(OrderPlaced("evt-1"))
         }
-        assertSame(cancellation, actualCancellation)
+        actualCancellation shouldBe cancellation
 
         val error = AssertionError(HOSTILE_MARKER)
         val errorRegistry = AwsModulithEventTypeRegistry.of(
@@ -172,7 +194,8 @@ class AwsModulithEventTypeRegistryTest {
         val actualError = assertFailsWith<AssertionError> {
             errorRegistry.registrationFor(OrderPlaced("evt-1")).eventId(OrderPlaced("evt-1"))
         }
-        assertSame(error, actualError)
+        actualError shouldBe error
+
     }
 
     @Test
@@ -207,17 +230,19 @@ class AwsModulithEventTypeRegistryTest {
         val maximumUtf8 = AwsModulithEventTypeRegistry.of(
             registration(eventId = { maximumUtf8Id }),
         )
-        assertEquals(
-            maximumUtf8Id,
-            maximumUtf8.registrationFor(OrderPlaced("evt-1")).eventId(OrderPlaced("evt-1")),
-        )
+
+        maximumUtf8
+            .registrationFor(OrderPlaced("evt-1"))
+            .eventId(OrderPlaced("evt-1")) shouldBeEqualTo maximumUtf8Id
+
 
         listOf(maximumUtf8Id + "c", "evt\u0000id").forEach { invalidId ->
             val invalid = AwsModulithEventTypeRegistry.of(
                 registration(eventId = { invalidId }),
             )
             assertFailsWith<AwsModulithEventRegistrationMismatchException> {
-                invalid.registrationFor(OrderPlaced("evt-1")).eventId(OrderPlaced("evt-1"))
+                invalid.registrationFor(OrderPlaced("evt-1"))
+                    .eventId(OrderPlaced("evt-1"))
             }
         }
     }
@@ -232,7 +257,8 @@ class AwsModulithEventTypeRegistryTest {
         )
 
         assertFailsWith<AwsModulithEventRegistrationMismatchException> {
-            registry.registrationFor(OrderPlaced("evt-1")).headers(OrderPlaced("evt-1"))
+            registry.registrationFor(OrderPlaced("evt-1"))
+                .headers(OrderPlaced("evt-1"))
         }
     }
 
@@ -250,9 +276,9 @@ class AwsModulithEventTypeRegistryTest {
         allowedHeaders += "unexpected"
         eventHeaders["unexpected"] = "not-exported"
 
-        assertEquals(mapOf("tenant" to "acme"), headers)
-        assertNotSame(eventHeaders, headers)
-        assertTrue(headers is Map<*, *>)
+        headers shouldBeEqualTo mapOf("tenant" to "acme")
+        headers shouldNotBe eventHeaders
+        headers.shouldBeInstanceOf<Map<*, *>>()
     }
 
     @Test
@@ -260,12 +286,13 @@ class AwsModulithEventTypeRegistryTest {
         val registry = AwsModulithEventTypeRegistry.of(registration())
         val resolved = registry.registrationFor(OrderPlaced("evt-1"))
 
-        assertEquals("order.placed", resolved.type)
-        assertEquals(1, resolved.version)
-        assertSame(OrderPlaced::class.java, resolved.eventClass)
-        assertFalse(resolved.headers(OrderPlaced("evt-1")).containsKey("secret"))
+        resolved.type shouldBeEqualTo "order.placed"
+        resolved.version shouldBeEqualTo 1
+        resolved.eventClass shouldBe OrderPlaced::class.java
+        resolved.headers(OrderPlaced("evt-1")).containsKey("secret").shouldBeFalse()
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun registration(
         type: String = "order.placed",
         version: Int = 1,
@@ -282,10 +309,6 @@ class AwsModulithEventTypeRegistryTest {
             allowedHeaderNames = allowedHeaderNames,
             headers = headers,
         )
-
-    private infix fun String.shouldEqual(expected: String) {
-        assertEquals(expected, this)
-    }
 
     private class OrderPlaced(val id: String)
 
@@ -317,21 +340,4 @@ class AwsModulithEventTypeRegistryTest {
     private interface Marker6
     private interface Marker7
     private interface Marker8
-
-    companion object {
-        private const val MAX_REGISTRATIONS = 256
-        private const val MAX_EVENT_TYPE_LENGTH = 128
-        private val MARKER_INTERFACES = arrayOf(
-            Marker0::class.java,
-            Marker1::class.java,
-            Marker2::class.java,
-            Marker3::class.java,
-            Marker4::class.java,
-            Marker5::class.java,
-            Marker6::class.java,
-            Marker7::class.java,
-            Marker8::class.java,
-        )
-        private const val HOSTILE_MARKER = "secret-value:event-id:header-value:arn:request-response"
-    }
 }

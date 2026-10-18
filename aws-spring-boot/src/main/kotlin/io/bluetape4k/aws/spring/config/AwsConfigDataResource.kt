@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.spring.config
 
+import io.bluetape4k.support.toUtf8Bytes
 import org.springframework.boot.context.config.ConfigDataResource
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 /**
@@ -15,7 +15,7 @@ class AwsConfigDataResource private constructor(
     internal val location: AwsConfigDataLocation,
     internal val boundProperties: Any?,
     internal val disabled: Boolean,
-) : ConfigDataResource(location.optional) {
+): ConfigDataResource(location.optional) {
 
     internal val isOptionalResource: Boolean
         get() = location.optional
@@ -26,8 +26,9 @@ class AwsConfigDataResource private constructor(
     internal val backendKey: String
         get() = location.backend.key
 
-    internal val opaqueIdentity: String
-        get() = "bluetape4k.aws.configdata.${location.backend.key}.${digest(location)}"
+    internal val opaqueIdentity: String by lazy {
+        "bluetape4k.aws.configdata.${location.backend.key}.${digest(location)}"
+    }
 
     override fun equals(other: Any?): Boolean =
         other is AwsConfigDataResource && location == other.location
@@ -48,8 +49,9 @@ class AwsConfigDataResource private constructor(
 
         private fun digest(location: AwsConfigDataLocation): String {
             val input = "${location.backend.key}\u0000${location.optional}\u0000${location.canonicalDecodedLocation}"
+
             return MessageDigest.getInstance("SHA-256")
-                .digest(input.toByteArray(StandardCharsets.UTF_8))
+                .digest(input.toUtf8Bytes())
                 .joinToString(separator = "") { byte -> "%02x".format(byte) }
                 .take(DIGEST_LENGTH)
         }

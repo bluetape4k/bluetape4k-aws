@@ -1,7 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
-import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import org.springframework.beans.factory.ObjectProvider
@@ -37,6 +36,7 @@ internal class SqsObservationActivation
 @ConditionalOnProperty(prefix = "bluetape4k.aws.sqs", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @ConditionalOnProperty(prefix = "bluetape4k.aws.sqs.observation", name = ["enabled"], havingValue = "true")
 @ConditionalOnClass(
+    value = [ObservationRegistry::class],
     name = [
         "io.micrometer.observation.ObservationRegistry",
     ],
@@ -92,7 +92,7 @@ internal class SqsObservationRuntimeConnector(
     }
 }
 
-internal class SqsObservationPrerequisitesCondition : SpringBootCondition(), ConfigurationCondition {
+internal class SqsObservationPrerequisitesCondition: SpringBootCondition(), ConfigurationCondition {
 
     override fun getConfigurationPhase(): ConfigurationCondition.ConfigurationPhase =
         ConfigurationCondition.ConfigurationPhase.REGISTER_BEAN

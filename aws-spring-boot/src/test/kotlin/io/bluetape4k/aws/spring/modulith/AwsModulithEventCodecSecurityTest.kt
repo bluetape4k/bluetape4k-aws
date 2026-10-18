@@ -1,17 +1,26 @@
 package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
+import org.springframework.modulith.events.core.EventSerializer
 
 class AwsModulithEventCodecSecurityTest {
 
     @Test
     fun `duplicate outer keys are rejected`() {
-        assertDecodeFails("""
+        assertDecodeFails(
+            """
             {"specVersion":1,"id":"evt-1","id":"evt-2","type":"order.placed","version":1,"payload":"{}","headers":{}}
-        """)
+        """
+        )
     }
 
     @Test
@@ -25,7 +34,8 @@ class AwsModulithEventCodecSecurityTest {
         val parameterTypes = DefaultAwsModulithEventCodec::class.java.declaredConstructors
             .flatMap { it.parameterTypes.asList() }
 
-        assertFalse(tools.jackson.databind.ObjectMapper::class.java in parameterTypes)
+        parameterTypes shouldContain AwsModulithEventTypeRegistry::class.java
+        parameterTypes shouldNotContain tools.jackson.databind.ObjectMapper::class.java
     }
 
     @Test
@@ -50,9 +60,10 @@ class AwsModulithEventCodecSecurityTest {
     fun `token count boundary accepts 100000 and rejects 100001`() {
         val codec = testCodec(maxSerializedPayloadBytes = 262_144)
 
-        codec.decode(envelope(payload = tokenArray(100_000)), emptyMap<String, String>())
+        codec.decode(envelope(payload = tokenArray(100_000)), emptyMap())
+
         assertFailsWith<AwsModulithInboundEnvelopeException> {
-            codec.decode(envelope(payload = tokenArray(100_001)), emptyMap<String, String>())
+            codec.decode(envelope(payload = tokenArray(100_001)), emptyMap())
         }
     }
 
@@ -73,13 +84,15 @@ class AwsModulithEventCodecSecurityTest {
         val configuredAsciiOverLimit = jsonString("x".repeat(196_609))
         val configuredUtf8AtLimit = jsonString("가".repeat(65_536))
         val configuredUtf8OverLimit = jsonString("가".repeat(65_536) + "x")
-        configuredCodec.decode(envelope(payload = configuredAsciiAtLimit), emptyMap<String, String>())
-        configuredCodec.decode(envelope(payload = configuredUtf8AtLimit), emptyMap<String, String>())
+
+        configuredCodec.decode(envelope(payload = configuredAsciiAtLimit), emptyMap())
+        configuredCodec.decode(envelope(payload = configuredUtf8AtLimit), emptyMap())
+
         assertFailsWith<AwsModulithInboundEnvelopeException> {
-            configuredCodec.decode(envelope(payload = configuredAsciiOverLimit), emptyMap<String, String>())
+            configuredCodec.decode(envelope(payload = configuredAsciiOverLimit), emptyMap())
         }
         assertFailsWith<AwsModulithInboundEnvelopeException> {
-            configuredCodec.decode(envelope(payload = configuredUtf8OverLimit), emptyMap<String, String>())
+            configuredCodec.decode(envelope(payload = configuredUtf8OverLimit), emptyMap())
         }
     }
 
@@ -113,9 +126,9 @@ class AwsModulithEventCodecSecurityTest {
             val failure = assertFailsWith<AwsModulithInboundEnvelopeException> {
                 codec.decode(body, mismatched)
             }
-            assertEquals(null, failure.cause)
+            failure.cause.shouldBeNull()
             mismatched.values.forEach { value ->
-                assertFalse(failure.toString().contains(value))
+                failure.message shouldNotContain value
             }
         }
     }
@@ -124,8 +137,8 @@ class AwsModulithEventCodecSecurityTest {
     fun `business attributes do not widen body headers`() {
         val codec = testCodec()
         val decoded = codec.decode(envelope(headers = "{}"), mapOf("not-registered" to "value"))
-
-        assertEquals(OrderPlacedSecurity("evt-1", "acme"), decoded)
+        log.debug { "decoded=$decoded" }
+        decoded shouldBeEqualTo OrderPlacedSecurity("evt-1", "acme")
     }
 
     @Test
@@ -143,22 +156,27 @@ class AwsModulithEventCodecSecurityTest {
         assertEncodeFails(headerNames = setOf("bad name"), headers = mapOf("bad name" to "value"))
         assertEncodeFails(headerNames = setOf("tenant"), headers = mapOf("tenant" to "x".repeat(1_025)))
         val sevenHeaders = (1..7).associate { "header$it" to "value" }
-        assertEquals(10, encodeHeaders(sevenHeaders.keys, sevenHeaders).messageAttributes.size)
+
+        encodeHeaders(sevenHeaders.keys, sevenHeaders).messageAttributes.size shouldBeEqualTo 10
+
         val maxName = "n".repeat(128)
-        assertEquals("value", encodeHeaders(setOf(maxName), mapOf(maxName to "value")).messageAttributes[maxName])
-        assertEncodeFails(headerNames = setOf("n".repeat(129)), headers = mapOf("n".repeat(129) to "value"))
-        val maxUtf8Value = "가".repeat(341) + "x"
-        assertEquals(
-            maxUtf8Value,
-            encodeHeaders(setOf("tenant"), mapOf("tenant" to maxUtf8Value)).messageAttributes["tenant"],
+        encodeHeaders(setOf(maxName), mapOf(maxName to "value"))
+            .messageAttributes[maxName] shouldBeEqualTo "value"
+        assertEncodeFails(
+            headerNames = setOf("n".repeat(129)),
+            headers = mapOf("n".repeat(129) to "value")
         )
+
+        val maxUtf8Value = "가".repeat(341) + "x"
+        encodeHeaders(setOf("tenant"), mapOf("tenant" to maxUtf8Value))
+            .messageAttributes["tenant"] shouldBeEqualTo maxUtf8Value
         assertEncodeFails(
             headerNames = setOf("tenant"),
             headers = mapOf("tenant" to maxUtf8Value + "y"),
         )
         assertEncodeFails(
-            headerNames = (1..8).map { "header$it" }.toSet(),
-            headers = (1..8).associate { "header$it" to "value" },
+            headerNames = List(8) { "header$it" }.toSet(),
+            headers = List(8) { it }.associate { "header$it" to "value" },
         )
 
         listOf("authorization", "cookie", "credential", "password", "secret", "token", "bt4k-custom")
@@ -175,11 +193,12 @@ class AwsModulithEventCodecSecurityTest {
         }
 
         val failure = assertFailsWith<AwsModulithOutboundEnvelopeException> {
-            testCodec(serializer).encode(OrderPlacedSecurity("evt-1", "acme"))
+            testCodec(serializer)
+                .encode(OrderPlacedSecurity("evt-1", "acme"))
         }
 
-        assertEquals(null, failure.cause)
-        assertFalse(failure.toString().contains("secret-serializer-value"))
+        failure.cause.shouldBeNull()
+        failure.toString() shouldNotContain "secret-serializer-value"
     }
 
     private fun decode(payload: String) = decodeEnvelope(envelope(payload = payload))
@@ -190,12 +209,12 @@ class AwsModulithEventCodecSecurityTest {
         assertDecodeFailsAs<AwsModulithInboundEnvelopeException>(body)
     }
 
-    private inline fun <reified T : Throwable> assertDecodeFailsAs(body: String) {
+    private inline fun <reified T: Throwable> assertDecodeFailsAs(body: String) {
         val failure = assertFailsWith<T> {
-            testCodec().decode(body, emptyMap<String, String>())
+            testCodec().decode(body, emptyMap())
         }
         if (failure is AwsModulithEventException) {
-            assertEquals(null, failure.cause)
+            failure.cause.shouldBeNull()
         }
     }
 
@@ -221,7 +240,7 @@ class AwsModulithEventCodecSecurityTest {
         return DefaultAwsModulithEventCodec(registry, TestSerializerSecurity(event)).encode(event)
     }
 
-    private inline fun <reified T : Throwable> assertEncodeFailsAs(
+    private inline fun <reified T: Throwable> assertEncodeFailsAs(
         headerNames: Set<String>,
         headers: Map<String, String>,
     ) {
@@ -253,7 +272,7 @@ class AwsModulithEventCodecSecurityTest {
         maxSerializedPayloadBytes = maxSerializedPayloadBytes,
     )
 
-    private companion object {
+    private companion object: KLogging() {
         val testRegistry: AwsModulithEventTypeRegistry = AwsModulithEventTypeRegistry.of(
             AwsModulithEventTypeRegistration(
                 type = "order.placed",
@@ -275,9 +294,9 @@ class AwsModulithEventCodecSecurityTest {
             extra: String = "",
         ): String = """
             {"specVersion":$specVersion,"id":"$id","type":"$type","version":$version,"payload":${jsonString(payload)},"headers":$headers$extra}
-        """
+        """.trimIndent()
 
-        fun jsonString(value: String): String = tools.jackson.databind.ObjectMapper().writeValueAsString(value)
+        fun jsonString(value: String): String = Jackson.defaultJsonMapper.writeValueAsString(value)
 
         fun nestedArrays(depth: Int): String = "[".repeat(depth) + "0" + "]".repeat(depth)
 
@@ -298,10 +317,10 @@ private data class OrderPlacedSecurity(
 
 private class TestSerializerSecurity(
     private val event: OrderPlacedSecurity,
-) : org.springframework.modulith.events.core.EventSerializer {
+): EventSerializer {
     var serializedValue: Any = "{}"
 
     override fun serialize(event: Any): Any = serializedValue
 
-    override fun <T : Any> deserialize(event: Any, targetType: Class<T>): T = targetType.cast(this.event)
+    override fun <T: Any> deserialize(event: Any, targetType: Class<T>): T = targetType.cast(this.event)
 }

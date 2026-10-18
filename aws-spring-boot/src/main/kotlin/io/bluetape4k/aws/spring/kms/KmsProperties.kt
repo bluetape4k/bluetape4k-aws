@@ -1,5 +1,9 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.kms.model.EncryptionAlgorithmSpec
@@ -42,7 +46,7 @@ data class KmsProperties(
         require(endpointOverride == null || !region.isNullOrBlank()) {
             "bluetape4k.aws.kms.region is required when endpointOverride is configured."
         }
-        keyId?.let { require(it.isNotBlank()) { "bluetape4k.aws.kms.key-id must not be blank." } }
+        keyId?.requireNotBlank { "bluetape4k.aws.kms.key-id must not be blank." }
     }
 
     data class DataKey(
@@ -56,13 +60,11 @@ data class KmsProperties(
     data class DataKeyCache(
         val enabled: Boolean = true,
         val maxSize: Int = 64,
-        val ttl: Duration = Duration.ofMinutes(5),
+        val ttl: Duration = 5.minutes(),
     ): Serializable {
         init {
-            require(maxSize > 0) { "bluetape4k.aws.kms.data-key-cache.max-size must be greater than 0." }
-            require(!ttl.isNegative && !ttl.isZero) {
-                "bluetape4k.aws.kms.data-key-cache.ttl must be greater than zero."
-            }
+            maxSize.requirePositiveNumber { "bluetape4k.aws.kms.data-key-cache.max-size must be greater than 0." }
+            ttl.requireGt(Duration.ZERO) { "bluetape4k.aws.kms.data-key-cache.ttl must be greater than zero." }
         }
 
         companion object {

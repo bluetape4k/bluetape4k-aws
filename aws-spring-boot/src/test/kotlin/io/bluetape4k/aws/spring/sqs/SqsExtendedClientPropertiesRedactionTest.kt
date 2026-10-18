@@ -2,9 +2,13 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class SqsExtendedClientPropertiesRedactionTest {
+
+    companion object: KLogging()
 
     @Test
     fun `nested properties and policy display omit queue bucket prefix and context`() {
@@ -13,6 +17,7 @@ class SqsExtendedClientPropertiesRedactionTest {
         val queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/${Base58.randomString(16)}"
         val contextValue = "context-${Base58.randomString(16)}"
         val fingerprint = "fingerprint-${Base58.randomString(16)}"
+
         val policy = SqsExtendedClientProperties.Policy(
             bucket = bucket,
             keyPrefix = prefix,
@@ -34,6 +39,7 @@ class SqsExtendedClientPropertiesRedactionTest {
         )
 
         listOf(properties.toString(), policy.toString(), policy.encryption.toString()).forEach { rendered ->
+            log.debug { "rendered=$rendered" }
             rendered shouldNotContain bucket
             rendered shouldNotContain prefix
             rendered shouldNotContain queueUrl

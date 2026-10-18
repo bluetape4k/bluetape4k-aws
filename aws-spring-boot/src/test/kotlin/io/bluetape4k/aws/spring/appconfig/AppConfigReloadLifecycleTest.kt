@@ -1,23 +1,34 @@
 package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
-import org.awaitility.kotlin.await
-import org.junit.jupiter.api.Test
-import org.springframework.boot.context.config.ConfigDataLocation
 import io.bluetape4k.aws.spring.config.AwsConfigDataLocationParser
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.Test
+import org.springframework.boot.context.config.ConfigDataLocation
 import java.time.Duration
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 class AppConfigReloadLifecycleTest {
+
+    companion object: KLogging()
 
     @Test
     fun `one scheduler and one task per refreshable source update the latest values`() {
         val client = RefreshingClient()
-        val source = source(client, refreshInterval = Duration.ofSeconds(15))
+        val source = source(client, refreshInterval = 15.seconds())
         var createdPoolSize = 0
         val lifecycle = AppConfigReloadLifecycle(
             sourcesSupplier = { listOf(source, source) },
@@ -26,11 +37,11 @@ class AppConfigReloadLifecycleTest {
                 ScheduledThreadPoolExecutor(size)
             },
             initialDelay = { Duration.ZERO },
-            randomDelay = { Duration.ofMillis(1) },
+            randomDelay = { 1.millis() },
         )
 
         lifecycle.start()
-        await.atMost(Duration.ofSeconds(2)).untilAsserted {
+        await atMost 2.seconds untilAsserted {
             source.getProperty("feature.value") shouldBeEqualTo "new"
         }
         lifecycle.scheduledResourceCount() shouldBeEqualTo 1
@@ -39,14 +50,14 @@ class AppConfigReloadLifecycleTest {
         client.requestedTokens shouldBeEqualTo listOf("token-1")
 
         lifecycle.stop()
-        lifecycle.isRunning shouldBeEqualTo false
+        lifecycle.isRunning.shouldBeFalse()
         lifecycle.scheduledResourceCount() shouldBeEqualTo 0
     }
 
     @Test
     fun `empty response retains values while advancing the token`() {
         val client = EmptyResponseClient()
-        val source = source(client, refreshInterval = Duration.ofSeconds(15))
+        val source = source(client, refreshInterval = 15.seconds())
         val lifecycle = AppConfigReloadLifecycle(
             sourcesSupplier = { listOf(source) },
             executorFactory = ::ScheduledThreadPoolExecutor,
@@ -54,7 +65,7 @@ class AppConfigReloadLifecycleTest {
         )
 
         lifecycle.start()
-        await.atMost(Duration.ofSeconds(2)).untilAsserted {
+        await atMost 2.seconds untilAsserted {
             client.polls.get() shouldBeEqualTo 1
         }
         source.getProperty("feature.value") shouldBeEqualTo "old"
@@ -66,7 +77,7 @@ class AppConfigReloadLifecycleTest {
     fun `runtime client replaces bootstrap client before polling`() {
         val bootstrapClient = RecordingClient("bootstrap")
         val runtimeClient = RecordingClient("runtime")
-        val source = source(bootstrapClient, refreshInterval = Duration.ofSeconds(15))
+        val source = source(bootstrapClient, refreshInterval = 15.seconds())
         val lifecycle = AppConfigReloadLifecycle(
             sourcesSupplier = { listOf(source) },
             executorFactory = ::ScheduledThreadPoolExecutor,
@@ -75,11 +86,11 @@ class AppConfigReloadLifecycleTest {
         )
 
         lifecycle.start()
-        await.atMost(Duration.ofSeconds(2)).untilAsserted {
+        await atMost 2.seconds untilAsserted {
             source.getProperty("feature.value") shouldBeEqualTo "runtime"
         }
 
-        bootstrapClient.requestedTokens shouldBeEqualTo emptyList()
+        bootstrapClient.requestedTokens.shouldBeEmpty()
         runtimeClient.requestedTokens shouldBeEqualTo listOf("token-1")
         lifecycle.stop()
     }
@@ -89,7 +100,7 @@ class AppConfigReloadLifecycleTest {
         val client = InvalidJsonClient()
         val source = source(
             client = client,
-            refreshInterval = Duration.ofSeconds(15),
+            refreshInterval = 15.seconds(),
             format = AppConfigFormat.JSON,
             initialResponse = AppConfigDataResponse("token-1", 0, "application/json", byteArrayOf()),
         )
@@ -100,7 +111,7 @@ class AppConfigReloadLifecycleTest {
         )
 
         lifecycle.start()
-        await.atMost(Duration.ofSeconds(2)).untilAsserted {
+        await atMost 2.seconds untilAsserted {
             client.polls.get() shouldBeEqualTo 1
         }
         source.getProperty("feature.value") shouldBeEqualTo "old"
@@ -111,16 +122,16 @@ class AppConfigReloadLifecycleTest {
     @Test
     fun `transport failure discards session and retries with a new session`() {
         val client = RetryingClient()
-        val source = source(client, refreshInterval = Duration.ofSeconds(15))
+        val source = source(client, refreshInterval = 15.seconds())
         val lifecycle = AppConfigReloadLifecycle(
             sourcesSupplier = { listOf(source) },
             executorFactory = ::ScheduledThreadPoolExecutor,
             initialDelay = { Duration.ZERO },
-            randomDelay = { Duration.ofMillis(1) },
+            randomDelay = { 1.millis() },
         )
 
         lifecycle.start()
-        await.atMost(Duration.ofSeconds(2)).untilAsserted {
+        await atMost 2.seconds untilAsserted {
             source.getProperty("feature.value") shouldBeEqualTo "new"
         }
         client.startCount shouldBeEqualTo 1
@@ -131,7 +142,7 @@ class AppConfigReloadLifecycleTest {
     @Test
     fun `cancellation does not log or reschedule a failed poll`() {
         val client = CancellationClient()
-        val source = source(client, refreshInterval = Duration.ofSeconds(15))
+        val source = source(client, refreshInterval = 15.seconds())
         val lifecycle = AppConfigReloadLifecycle(
             sourcesSupplier = { listOf(source) },
             executorFactory = ::ScheduledThreadPoolExecutor,
@@ -139,7 +150,7 @@ class AppConfigReloadLifecycleTest {
         )
 
         lifecycle.start()
-        await.atMost(Duration.ofSeconds(2)).untilAsserted {
+        await atMost 2.seconds untilAsserted {
             client.polls.get() shouldBeEqualTo 1
         }
         lifecycle.stop()
@@ -149,17 +160,20 @@ class AppConfigReloadLifecycleTest {
     @Test
     fun `startup failure rolls back scheduled resources and runtime client`() {
         val client = ClosableClient()
-        val source = source(client, refreshInterval = Duration.ofSeconds(15))
+        val source = source(client, refreshInterval = 15.seconds())
         val lifecycle = AppConfigReloadLifecycle(
             sourcesSupplier = { listOf(source) },
             executorFactory = { error("scheduler unavailable") },
             runtimeClientSupplier = { client },
         )
 
-        assertFailsWith<IllegalStateException> { lifecycle.start() }
+        assertFailsWith<IllegalStateException> {
+            lifecycle.start()
+        }
+
         client.closed.shouldBeTrue()
         lifecycle.scheduledResourceCount() shouldBeEqualTo 0
-        lifecycle.isRunning shouldBeEqualTo false
+        lifecycle.isRunning.shouldBeFalse()
     }
 
     @Test
@@ -167,14 +181,15 @@ class AppConfigReloadLifecycleTest {
         val client = EmptyResponseClient()
         val source = source(
             client = client,
-            refreshInterval = Duration.ofSeconds(15),
+            refreshInterval = 15.seconds(),
             initialResponse = AppConfigDataResponse("token-1", 86_401, "text/plain", byteArrayOf()),
         )
         val lifecycle = AppConfigReloadLifecycle(sourcesSupplier = { listOf(source) })
 
-        lifecycle.effectivePollDelay(source) shouldBeEqualTo Duration.ofSeconds(15)
+        lifecycle.effectivePollDelay(source) shouldBeEqualTo 15.seconds()
+
         source.advance(AppConfigDataResponse("token-2", 30, "text/plain", byteArrayOf()))
-        lifecycle.effectivePollDelay(source) shouldBeEqualTo Duration.ofSeconds(30)
+        lifecycle.effectivePollDelay(source) shouldBeEqualTo 30.seconds()
     }
 
     private fun source(
@@ -191,16 +206,21 @@ class AppConfigReloadLifecycleTest {
             initialValues = mapOf("feature.value" to "old"),
             resource = resource,
             client = client,
-            request = AppConfigDataStartRequest("app", "profile", "env", 15),
+            request = AppConfigDataStartRequest(
+                "app",
+                "profile",
+                "env",
+                15
+            ),
             initialResponse = initialResponse,
             format = format,
             prefix = null,
             refreshInterval = refreshInterval,
-            requiredMinimumPollInterval = Duration.ofSeconds(15),
+            requiredMinimumPollInterval = 15.seconds(),
         )
     }
 
-    private class RefreshingClient : AppConfigDataSessionClient {
+    private class RefreshingClient: AppConfigDataSessionClient {
         val requestedTokens = mutableListOf<String>()
 
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession =
@@ -214,7 +234,7 @@ class AppConfigReloadLifecycleTest {
         override fun close() = Unit
     }
 
-    private class EmptyResponseClient : AppConfigDataSessionClient {
+    private class EmptyResponseClient: AppConfigDataSessionClient {
         val polls = AtomicInteger()
 
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession =
@@ -228,7 +248,7 @@ class AppConfigReloadLifecycleTest {
         override fun close() = Unit
     }
 
-    private class RecordingClient(private val value: String) : AppConfigDataSessionClient {
+    private class RecordingClient(private val value: String): AppConfigDataSessionClient {
         val requestedTokens = mutableListOf<String>()
 
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession =
@@ -242,7 +262,7 @@ class AppConfigReloadLifecycleTest {
         override fun close() = Unit
     }
 
-    private class InvalidJsonClient : AppConfigDataSessionClient {
+    private class InvalidJsonClient: AppConfigDataSessionClient {
         val polls = AtomicInteger()
 
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession =
@@ -256,7 +276,7 @@ class AppConfigReloadLifecycleTest {
         override fun close() = Unit
     }
 
-    private class RetryingClient : AppConfigDataSessionClient {
+    private class RetryingClient: AppConfigDataSessionClient {
         val requestedTokens = mutableListOf<String>()
         var startCount = 0
             private set
@@ -275,7 +295,7 @@ class AppConfigReloadLifecycleTest {
         override fun close() = Unit
     }
 
-    private class CancellationClient : AppConfigDataSessionClient {
+    private class CancellationClient: AppConfigDataSessionClient {
         val polls = AtomicInteger()
 
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession =
@@ -283,13 +303,13 @@ class AppConfigReloadLifecycleTest {
 
         override fun getLatestConfiguration(configurationToken: String): AppConfigDataResponse {
             polls.incrementAndGet()
-            throw java.util.concurrent.CancellationException("cancelled")
+            throw CancellationException("cancelled")
         }
 
         override fun close() = Unit
     }
 
-    private class ClosableClient : AppConfigDataSessionClient {
+    private class ClosableClient: AppConfigDataSessionClient {
         var closed = false
             private set
 

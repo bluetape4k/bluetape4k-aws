@@ -20,7 +20,7 @@ data class EventBridgeProperties(
     val region: String? = null,
     val endpointOverride: URI? = null,
     val defaultEventBusName: String? = null,
-) : Serializable {
+): Serializable {
 
     init {
         defaultEventBusName?.requireNotBlank("defaultEventBusName")

@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.spring.cloudwatch
 
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
@@ -54,16 +57,16 @@ data class CloudWatchProperties(
                     MAX_BATCH_SIZE,
                     "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.batch-size",
                 )
-                require(step >= MIN_STEP) {
+                step.requireGe(MIN_STEP) {
                     "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.step must be at least 1s."
                 }
-                require(readTimeout >= MIN_READ_TIMEOUT && readTimeout <= MAX_READ_TIMEOUT) {
+                readTimeout.requireInRange(MIN_READ_TIMEOUT, MAX_READ_TIMEOUT) {
                     "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.read-timeout must be between 1s and 5m."
                 }
                 commonTags.forEach { (key, value) ->
                     require(key.isNotBlank() && value.isNotBlank()) {
                         "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.common-tags must not contain " +
-                            "blank keys or values."
+                                "blank keys or values."
                     }
                 }
                 (filters.includes + filters.excludes).forEach { prefix ->
@@ -79,9 +82,9 @@ data class CloudWatchProperties(
                 private const val DEFAULT_READ_TIMEOUT_SECONDS: Long = 10
                 private const val MIN_BATCH_SIZE: Int = 1
                 private const val MAX_BATCH_SIZE: Int = 1_000
-                private val MIN_STEP: Duration = Duration.ofSeconds(1)
-                private val MIN_READ_TIMEOUT: Duration = Duration.ofSeconds(1)
-                private val MAX_READ_TIMEOUT: Duration = Duration.ofMinutes(5)
+                private val MIN_STEP: Duration = 1.seconds()
+                private val MIN_READ_TIMEOUT: Duration = 1.seconds()
+                private val MAX_READ_TIMEOUT: Duration = 5.minutes()
                 private const val serialVersionUID: Long = -3585477261009725865L
             }
         }

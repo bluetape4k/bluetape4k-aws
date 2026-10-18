@@ -2,8 +2,9 @@
 
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.context.properties.ConfigurationProperties
-import java.util.Base64
+import java.util.*
 
 @ConfigurationProperties(prefix = "bluetape4k.aws.sqs.extended")
 data class SqsExtendedClientProperties(
@@ -95,7 +96,7 @@ data class SqsExtendedClientProperties(
             }
             require(
                 configuredMaxVisibilityRetryWindowSeconds == null ||
-                    configuredMaxVisibilityRetryWindowSeconds in 1..604_740,
+                        configuredMaxVisibilityRetryWindowSeconds in 1..604_740,
             ) {
                 "configuredMaxVisibilityRetryWindowSeconds must be between 1 and 604740."
             }
@@ -198,13 +199,13 @@ data class SqsExtendedClientProperties(
         }
     }
 
-    private companion object {
+    private companion object: KLogging() {
         fun requireCanonicalQueueUrl(queueUrl: String) {
             require(
                 queueUrl.startsWith("https://") &&
-                    queueUrl.none(::isControl) &&
-                    queueUrl == queueUrl.trim() &&
-                    !queueUrl.contains('?') && !queueUrl.contains('#'),
+                        queueUrl.none(::isControl) &&
+                        queueUrl == queueUrl.trim() &&
+                        !queueUrl.contains('?') && !queueUrl.contains('#'),
             ) { "queueUrl must be a canonical HTTPS URL without query or fragment." }
         }
 
@@ -215,8 +216,8 @@ data class SqsExtendedClientProperties(
 private fun requireCanonicalQueueUrl(queueUrl: String) {
     require(
         queueUrl.startsWith("https://") &&
-            queueUrl.none { it == '\r' || it == '\n' || it == '\u0000' } &&
-            queueUrl == queueUrl.trim() &&
-            !queueUrl.contains('?') && !queueUrl.contains('#'),
+                queueUrl.none { it == '\r' || it == '\n' || it == '\u0000' } &&
+                queueUrl == queueUrl.trim() &&
+                !queueUrl.contains('?') && !queueUrl.contains('#'),
     ) { "queueUrl must be a canonical HTTPS URL without query or fragment." }
 }

@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.config
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.springframework.boot.context.config.ConfigDataLoader
 import org.springframework.boot.context.config.ConfigDataLocationResolver
@@ -9,11 +11,18 @@ import org.springframework.core.io.support.SpringFactoriesLoader
 @Suppress("DEPRECATION")
 class AwsConfigDataFactoryRegistrationTest {
 
+    companion object: KLogging()
+
     @Test
     fun `spring factories keeps legacy EPP and registers each ConfigData pair once`() {
         val classLoader = javaClass.classLoader
+
         val resolverNames = SpringFactoriesLoader.loadFactoryNames(ConfigDataLocationResolver::class.java, classLoader)
+        resolverNames.forEach { log.debug { "resolver=$it" } }
+
         val loaderNames = SpringFactoriesLoader.loadFactoryNames(ConfigDataLoader::class.java, classLoader)
+        loaderNames.forEach { log.debug { "loader=$it" } }
+
         val expectedResolvers = listOf(
             "io.bluetape4k.aws.spring.s3.S3ConfigDataLocationResolver",
             "io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLocationResolver",

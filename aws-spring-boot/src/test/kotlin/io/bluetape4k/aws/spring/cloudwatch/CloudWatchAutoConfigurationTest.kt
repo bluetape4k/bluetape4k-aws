@@ -1,15 +1,25 @@
 package io.bluetape4k.aws.spring.cloudwatch
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.clearMocks
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -17,6 +27,8 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 
 class CloudWatchAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val customCloudWatchClient = mockk<CloudWatchAsyncClient>(relaxed = true)
     private val customCloudWatchLogsClient = mockk<CloudWatchLogsAsyncClient>(relaxed = true)
@@ -45,10 +57,10 @@ class CloudWatchAutoConfigurationTest {
     @Test
     fun `register CloudWatch and CloudWatch Logs clients and operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(CloudWatchAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(CloudWatchOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(CloudWatchLogsAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(CloudWatchLogsOperations::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<CloudWatchAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<CloudWatchOperations>() shouldHaveSize 1
+            context.getBeansOfType<CloudWatchLogsAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<CloudWatchLogsOperations>() shouldHaveSize 1
         }
     }
 
@@ -57,14 +69,14 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
             .run { context ->
-                context.getBeansOfType(CloudWatchMeterPublishingOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<CloudWatchMeterPublishingOperations>() shouldHaveSize 1
             }
     }
 
     @Test
     fun `Micrometer publishing helper backs off without registry`() {
         contextRunner.run { context ->
-            context.getBeansOfType(CloudWatchMeterPublishingOperations::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType<CloudWatchMeterPublishingOperations>().shouldBeEmpty()
         }
     }
 
@@ -74,7 +86,7 @@ class CloudWatchAutoConfigurationTest {
             .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
             .withPropertyValues("bluetape4k.aws.cloudwatch.micrometer.enabled=false")
             .run { context ->
-                context.getBeansOfType(CloudWatchMeterPublishingOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<CloudWatchMeterPublishingOperations>().shouldBeEmpty()
             }
     }
 
@@ -83,9 +95,9 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withBean(CloudWatchAsyncClient::class.java, { customCloudWatchClient })
             .run { context ->
-                context.getBeansOfType(CloudWatchAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(CloudWatchAsyncClient::class.java) shouldBeSameInstanceAs customCloudWatchClient
-                context.getBeansOfType(CloudWatchOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<CloudWatchAsyncClient>() shouldHaveSize 1
+                context.getBean<CloudWatchAsyncClient>() shouldBeSameInstanceAs customCloudWatchClient
+                context.getBeansOfType<CloudWatchOperations>() shouldHaveSize 1
             }
     }
 
@@ -94,9 +106,9 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withBean(CloudWatchLogsAsyncClient::class.java, { customCloudWatchLogsClient })
             .run { context ->
-                context.getBeansOfType(CloudWatchLogsAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(CloudWatchLogsAsyncClient::class.java) shouldBeSameInstanceAs customCloudWatchLogsClient
-                context.getBeansOfType(CloudWatchLogsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<CloudWatchLogsAsyncClient>() shouldHaveSize 1
+                context.getBean<CloudWatchLogsAsyncClient>() shouldBeSameInstanceAs customCloudWatchLogsClient
+                context.getBeansOfType<CloudWatchLogsOperations>() shouldHaveSize 1
             }
     }
 
@@ -105,8 +117,8 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.cloudwatch.enabled=false")
             .run { context ->
-                context.getBeansOfType(CloudWatchAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(CloudWatchOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<CloudWatchAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<CloudWatchOperations>().shouldBeEmpty()
             }
     }
 
@@ -115,8 +127,8 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.cloudwatch-logs.enabled=false")
             .run { context ->
-                context.getBeansOfType(CloudWatchLogsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(CloudWatchLogsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<CloudWatchLogsAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<CloudWatchLogsOperations>().shouldBeEmpty()
             }
     }
 
@@ -130,6 +142,8 @@ class CloudWatchAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "region is required"
             }
     }
@@ -144,6 +158,8 @@ class CloudWatchAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "region is required"
             }
     }
@@ -164,15 +180,17 @@ class CloudWatchAutoConfigurationTest {
                 "bluetape4k.aws.cloudwatch.micrometer.registry.filters.excludes=jvm.",
             )
             .run { context ->
-                val properties = context.getBean(CloudWatchProperties::class.java)
+                val properties = context.getBean<CloudWatchProperties>()
+
+                log.debug { "properties=$properties" }
                 properties.namespace shouldBeEqualTo "Test/App"
                 properties.batchSize shouldBeEqualTo 250
-                properties.micrometer.enabled shouldBeEqualTo false
-                properties.micrometer.registry.enabled shouldBeEqualTo true
+                properties.micrometer.enabled.shouldBeFalse()
+                properties.micrometer.registry.enabled.shouldBeTrue()
                 properties.micrometer.registry.namespace shouldBeEqualTo "orders-native"
-                properties.micrometer.registry.step shouldBeEqualTo java.time.Duration.ofSeconds(59)
+                properties.micrometer.registry.step shouldBeEqualTo 59.seconds()
                 properties.micrometer.registry.batchSize shouldBeEqualTo 20
-                properties.micrometer.registry.readTimeout shouldBeEqualTo java.time.Duration.ofSeconds(15)
+                properties.micrometer.registry.readTimeout shouldBeEqualTo 15.seconds()
                 properties.micrometer.registry.commonTags["application"] shouldBeEqualTo "orders"
                 properties.micrometer.registry.filters.includes shouldContain "orders."
                 properties.micrometer.registry.filters.excludes shouldContain "jvm."
@@ -182,8 +200,8 @@ class CloudWatchAutoConfigurationTest {
     @Test
     fun `native registry property defaults to disabled`() {
         contextRunner.run { context ->
-            val properties = context.getBean(CloudWatchProperties::class.java)
-            properties.micrometer.registry.enabled shouldBeEqualTo false
+            val properties = context.getBean<CloudWatchProperties>()
+            properties.micrometer.registry.enabled.shouldBeFalse()
             properties.micrometer.registry.batchSize shouldBeEqualTo 20
         }
     }
@@ -201,8 +219,10 @@ class CloudWatchAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "micrometer.registry"
-        }
+            }
     }
 
     @Test
@@ -215,6 +235,8 @@ class CloudWatchAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "micrometer.registry.batch-size"
             }
     }
@@ -224,8 +246,10 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.cloudwatch.micrometer.registry.enabled=true")
             .run { context ->
-                val properties = context.getBean(CloudWatchProperties::class.java)
-                properties.micrometer.registry.namespace shouldBeEqualTo null
+                val properties = context.getBean<CloudWatchProperties>()
+
+                log.debug { "properties=$properties" }
+                properties.micrometer.registry.namespace.shouldBeNull()
                 properties.namespace shouldBeEqualTo "Test/App"
             }
     }
@@ -235,7 +259,9 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.cloudwatch-logs.batch-size=500")
             .run { context ->
-                val properties = context.getBean(CloudWatchLogsProperties::class.java)
+                val properties = context.getBean<CloudWatchLogsProperties>()
+
+                log.debug { "properties=$properties" }
                 properties.logGroupName shouldBeEqualTo "/app/test"
                 properties.logStreamName shouldBeEqualTo "default"
                 properties.batchSize shouldBeEqualTo 500
@@ -247,8 +273,8 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.cloudwatch"))
             .run { context ->
-                context.getBeansOfType(CloudWatchAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(CloudWatchOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<CloudWatchAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<CloudWatchOperations>().shouldBeEmpty()
             }
     }
 
@@ -257,8 +283,8 @@ class CloudWatchAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.cloudwatchlogs"))
             .run { context ->
-                context.getBeansOfType(CloudWatchLogsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(CloudWatchLogsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<CloudWatchLogsAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<CloudWatchLogsOperations>().shouldBeEmpty()
             }
     }
 }

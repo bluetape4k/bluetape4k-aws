@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
@@ -8,8 +10,7 @@ import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessageAttri
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.RequestMapping
@@ -17,8 +18,10 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.ResponseStatus
 import kotlin.reflect.KClass
 
-class SnsHttpEndpointAnnotationTest {
+class SnsHttpEndpointAnnotationTest: AbstractSnsTest() {
 
+    companion object: KLogging()
+    
     @Test
     fun `mapping annotations expose post header and no content`() {
         assertMapping(NotificationMessageMapping::class, "Notification")
@@ -40,7 +43,8 @@ class SnsHttpEndpointAnnotationTest {
             NotificationMessageAttributes::class,
             NotificationRawMessage::class,
         ).forEach { annotation ->
-            annotation.java.getAnnotation(Target::class.java).allowedTargets
+            annotation.java.getAnnotation(Target::class.java)
+                .allowedTargets
                 .contains(AnnotationTarget.VALUE_PARAMETER).shouldBeTrue()
         }
         NotificationStatus::class.java.isInterface.shouldBeTrue()

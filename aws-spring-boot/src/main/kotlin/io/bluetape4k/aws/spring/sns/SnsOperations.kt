@@ -1,8 +1,9 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.CancellationException
-import software.amazon.awssdk.services.sns.model.PublishResponse
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
+import software.amazon.awssdk.services.sns.model.PublishResponse
 
 /**
  * Spring 애플리케이션을 위한 코루틴 기반 SNS 작업입니다.
@@ -71,7 +72,7 @@ interface SnsOperations {
         options: SnsBatchExecutionOptions = SnsBatchExecutionOptions(),
     ): SnsPublishBatchResult {
         // Legacy implementations intentionally remain sequential regardless of this option.
-        require(options.maxInFlightBatches > 0) { "maxInFlightBatches must be positive." }
+        options.maxInFlightBatches.requirePositiveNumber { "maxInFlightBatches must be positive." }
         if (request.entries.isEmpty()) {
             return SnsPublishBatchResult(emptyList(), emptyList())
         }
@@ -89,10 +90,7 @@ interface SnsOperations {
                         messageDeduplicationId = entry.messageDeduplicationId,
                     )
                 )
-                successful += SnsPublishBatchSuccess(
-                    entryId = entry.id,
-                    messageId = response.messageId(),
-                )
+                successful += SnsPublishBatchSuccess(entryId = entry.id, messageId = response.messageId())
             } catch (cause: CancellationException) {
                 throw cause
             } catch (cause: RuntimeException) {

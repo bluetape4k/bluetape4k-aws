@@ -12,21 +12,23 @@ import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException
 /** 기존 EPP와 ConfigData의 오류 처리 정책을 구분합니다. */
 internal object AwsConfigDataFailurePolicy {
 
-    @Suppress("TooGenericExceptionCaught")
+    // @Suppress("TooGenericExceptionCaught")
     fun load(
         resource: AwsConfigDataResource,
         fetch: () -> Map<String, Any>,
-    ): Map<String, Any>? = try {
-        fetch()
-    } catch (error: RuntimeException) {
-        if (isNotFound(resource.location.backend, error)) {
-            if (resource.isOptionalResource) {
-                null
+    ): Map<String, Any>? {
+        return try {
+            fetch()
+        } catch (error: RuntimeException) {
+            if (isNotFound(resource.location.backend, error)) {
+                if (resource.isOptionalResource) {
+                    null
+                } else {
+                    throw ConfigDataResourceNotFoundException(resource)
+                }
             } else {
-                throw ConfigDataResourceNotFoundException(resource)
+                throw AwsConfigDataLoadException(resource.backendKey, error::class.java.simpleName)
             }
-        } else {
-            throw AwsConfigDataLoadException(resource.backendKey, error::class.java.simpleName)
         }
     }
 
@@ -54,4 +56,4 @@ internal object AwsConfigDataFailurePolicy {
 internal class AwsConfigDataLoadException(
     backend: String,
     errorType: String,
-) : RuntimeException("AWS ConfigData $backend load failed ($errorType).")
+): RuntimeException("AWS ConfigData $backend load failed ($errorType).")

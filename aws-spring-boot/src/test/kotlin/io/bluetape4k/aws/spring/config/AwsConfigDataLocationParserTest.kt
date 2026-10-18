@@ -1,13 +1,17 @@
 package io.bluetape4k.aws.spring.config
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.springframework.boot.context.config.ConfigDataLocation
 
 class AwsConfigDataLocationParserTest {
+
+    companion object: KLogging()
 
     private val parser = AwsConfigDataLocationParser()
 
@@ -54,7 +58,7 @@ class AwsConfigDataLocationParserTest {
             prefix = "app",
             format = io.bluetape4k.aws.spring.secretsmanager.SecretFormat.TEXT,
         )
-        secret.optional shouldBeEqualTo true
+        secret.optional.shouldBeTrue()
     }
 
     @Test
@@ -107,6 +111,7 @@ class AwsConfigDataLocationParserTest {
     @Test
     fun `keeps parser errors free of raw secret identifiers`() {
         val secretId = "arn:aws:secretsmanager:us-east-1:123456789012:secret/prod-secret"
+
         val error = assertFailsWith<IllegalArgumentException> {
             parser.parse(ConfigDataLocation.of("aws-secretsmanager:$secretId?format=text"))
         }

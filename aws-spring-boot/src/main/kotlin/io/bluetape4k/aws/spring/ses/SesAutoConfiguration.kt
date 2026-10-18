@@ -1,9 +1,10 @@
 package io.bluetape4k.aws.spring.ses
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
@@ -20,7 +21,6 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClientBuilder
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * AWS SES용 Spring Boot 4 자동 구성입니다.
@@ -38,7 +38,7 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
         "software.amazon.awssdk.services.sesv2.SesV2AsyncClient",
     ]
 )
-@ConditionalOnProperty(prefix = "bluetape4k.aws.ses", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = SesProperties.PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(SesProperties::class)
 class SesAutoConfiguration {
 
@@ -55,12 +55,15 @@ class SesAutoConfiguration {
         SesV2AsyncClient.builder()
             .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveAwsProperties(awsProperties).resolveClientDefaults(
+                    properties.region,
+                    properties.endpointOverride
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("ses", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("ses", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 

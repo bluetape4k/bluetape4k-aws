@@ -2,6 +2,8 @@ package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
+import io.bluetape4k.codec.encodeHexString
+import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
@@ -10,7 +12,7 @@ import java.security.MessageDigest
 /** 기존 [SnsOperations]에 Modulith envelope를 연결하는 내부 SNS publisher입니다. */
 internal class AwsModulithSnsTargetPublisher(
     private val snsOperations: SnsOperations,
-) : AwsModulithTargetPublisher {
+): AwsModulithTargetPublisher {
 
     override suspend fun publish(command: AwsModulithPublishCommand): AwsModulithPublishResult {
         currentCoroutineContext().ensureActive()
@@ -18,6 +20,7 @@ internal class AwsModulithSnsTargetPublisher(
         val routingKey = validateAwsModulithRoutingKey(destination, command.routingKey)
         val topicArn = sanitizeAwsModulithResolutionCall { snsOperations.findTopicArn(destination) }
             ?: throw AwsModulithTargetResolutionException()
+
         currentCoroutineContext().ensureActive()
         val response = sanitizeAwsModulithPublishCall {
             snsOperations.publish(
@@ -46,6 +49,7 @@ private fun Map<String, String>.toAwsMessageAttributes(): Map<String, MessageAtt
             .build()
     }
 
-private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
-    .digest(value.toByteArray(Charsets.UTF_8))
-    .joinToString(separator = "") { "%02x".format(it) }
+private fun sha256(value: String): String =
+    MessageDigest.getInstance("SHA-256")
+        .digest(value.toUtf8Bytes())
+        .encodeHexString()

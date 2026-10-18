@@ -16,7 +16,7 @@ class SecretsManagerConfigDataLocationResolver(
     @Suppress("UNUSED_PARAMETER") private val deferredLogFactory: DeferredLogFactory,
     private val binder: Binder,
     private val bootstrapContext: ConfigurableBootstrapContext,
-) : ConfigDataLocationResolver<AwsConfigDataResource> {
+): ConfigDataLocationResolver<AwsConfigDataResource> {
 
     override fun isResolvable(
         context: ConfigDataLocationResolverContext,

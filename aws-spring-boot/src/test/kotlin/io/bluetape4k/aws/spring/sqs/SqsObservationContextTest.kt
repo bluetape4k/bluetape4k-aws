@@ -8,21 +8,24 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.observability.AwsMicrometerSupport
+import io.bluetape4k.io.lookup
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.ObjectStreamClass
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
+import kotlin.reflect.KClass
 
 class SqsObservationContextTest {
 
     @Test
     fun `observation properties are disabled by default and serializable contracts use uid one`() {
         SqsObservationProperties().enabled.shouldBeFalse()
-        serialVersionUid(SqsObservationProperties::class.java) shouldBeEqualTo 1L
-        serialVersionUid(SqsObservationMetadata::class.java) shouldBeEqualTo 1L
+        serialVersionUid(SqsObservationProperties::class) shouldBeEqualTo 1L
+        serialVersionUid(SqsObservationMetadata::class) shouldBeEqualTo 1L
     }
 
     @Test
@@ -104,6 +107,7 @@ class SqsObservationContextTest {
                 initialAttempt = 1,
             )
         )
+        log.debug { "context=$context" }
 
         context.attempt shouldBeEqualTo 1
         context.currentAttempt = 2
@@ -143,11 +147,14 @@ class SqsObservationContextTest {
 
         legacyQueueName shouldContain "orders?token=secret#fragment"
         metadata.queueName shouldBeEqualTo "orders"
-        metadata.toString() shouldNotContain "https://"
-        metadata.toString() shouldNotContain "secret"
-        metadata.toString() shouldNotContain "123456789012"
-        metadata.toString() shouldNotContain "token"
-        metadata.toString() shouldNotContain "fragment"
+        metadata.toString().let {
+            log.debug { "metadata=$it" }
+            it shouldNotContain "https://"
+            it shouldNotContain "secret"
+            it shouldNotContain "123456789012"
+            it shouldNotContain "token"
+            it shouldNotContain "fragment"
+        }
     }
 
     @Test
@@ -185,9 +192,12 @@ class SqsObservationContextTest {
 
         metadata.listenerId shouldBeEqualTo "unknown"
         metadata.queueName shouldBeEqualTo "unknown"
-        metadata.toString() shouldNotContain "body-message-id"
-        metadata.toString() shouldNotContain "body-group-id"
-        metadata.toString() shouldNotContain "body-deduplication-id"
+        metadata.toString().let {
+            log.debug { "metadata=$it" }
+            it shouldNotContain "body-message-id"
+            it shouldNotContain "body-group-id"
+            it shouldNotContain "body-deduplication-id"
+        }
     }
 
     @Test
@@ -201,6 +211,7 @@ class SqsObservationContextTest {
         )
         val text = metadata.toString()
 
+        log.debug { "metadata=$text" }
         text shouldContain "listener-1"
         text shouldContain "orders"
         text shouldContain "PROCESS"
@@ -235,10 +246,10 @@ class SqsObservationContextTest {
         batchSize = batchSize,
     )
 
-    private fun serialVersionUid(type: Class<*>): Long =
-        ObjectStreamClass.lookup(type).serialVersionUID
+    private fun <T: Any> serialVersionUid(type: KClass<T>): Long =
+        type.lookup().serialVersionUID
 
-    companion object {
+    companion object: KLogging() {
         @JvmStatic
         fun receiveCountCases(): Stream<Arguments> = Stream.of(
             Arguments.of(null, SqsObservationDelivery.UNKNOWN),
@@ -256,6 +267,7 @@ class SqsObservationContextTest {
         fun queueNameCases(): Stream<Arguments> {
             val eightyCharacters = "a".repeat(80)
             val eightyOneCharacters = "a".repeat(81)
+
             return Stream.of(
                 Arguments.of(null, "unknown"),
                 Arguments.of("", "unknown"),

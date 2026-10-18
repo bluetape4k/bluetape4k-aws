@@ -12,7 +12,7 @@ import java.io.Serializable
 @ConfigurationProperties(prefix = "bluetape4k.aws.sqs.observation")
 data class SqsObservationProperties(
     val enabled: Boolean = false,
-) : Serializable {
+): Serializable {
 
     companion object {
         @Suppress("MayBeConstant", "SerialVersionUIDInSerializableClass")

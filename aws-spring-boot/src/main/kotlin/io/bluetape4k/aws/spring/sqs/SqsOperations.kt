@@ -176,8 +176,10 @@ private fun validateDeleteBatchHandles(handles: List<String>) {
 
 private fun validateVisibilityBatchRequests(requests: List<SqsChangeVisibilityRequest>) {
     requireBatchSize(requests.size, "batch visibility supports at most 10 messages")
-    require(requests.map { it.messageId }.distinct().size == requests.size &&
-        requests.map { it.receiptHandle }.distinct().size == requests.size) {
+    require(
+        requests.map { it.messageId }.distinct().size == requests.size &&
+                requests.map { it.receiptHandle }.distinct().size == requests.size
+    ) {
         "duplicate batch visibility request"
     }
     requests.forEach { requireVisibilityTimeout(it.timeoutSeconds) }
@@ -187,7 +189,7 @@ private fun validateVisibilityBatchRequests(requests: List<SqsChangeVisibilityRe
  * queue URL 속성 조회가 필요한 adapter가 선택적으로 구현하는 additive capability입니다.
  * 기존 [SqsOperations] 구현의 public ABI는 변경하지 않습니다.
  */
-interface SqsQueueAttributesOperations : SqsOperations {
+interface SqsQueueAttributesOperations: SqsOperations {
 
     suspend fun getQueueAttributes(
         queueUrl: String,

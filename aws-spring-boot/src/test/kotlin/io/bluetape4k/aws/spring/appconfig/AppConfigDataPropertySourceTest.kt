@@ -1,14 +1,20 @@
 package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.assertions.shouldBeEqualTo
-import org.junit.jupiter.api.Test
-import org.springframework.boot.context.properties.bind.Binder
-import org.springframework.boot.context.config.ConfigDataLocation
-import org.springframework.core.env.StandardEnvironment
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.aws.spring.config.AwsConfigDataLocationParser
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import org.junit.jupiter.api.Test
+import org.springframework.boot.context.config.ConfigDataLocation
+import org.springframework.boot.context.properties.bind.Binder
+import org.springframework.core.env.StandardEnvironment
 
 class AppConfigDataPropertySourceTest {
+
+    companion object: KLogging()
 
     @Test
     fun `property names and values switch atomically`() {
@@ -25,13 +31,14 @@ class AppConfigDataPropertySourceTest {
             format = AppConfigFormat.PROPERTIES,
             prefix = null,
             refreshInterval = null,
-            requiredMinimumPollInterval = java.time.Duration.ofSeconds(15),
+            requiredMinimumPollInterval = 15.seconds(),
         )
+        log.debug { "source=$source" }
 
         source.getProperty("feature.old") shouldBeEqualTo "old"
         source.replace(mapOf("feature.new" to "new"))
         source.getPropertyNames().toSet() shouldBeEqualTo setOf("feature.new")
-        source.getProperty("feature.old") shouldBeEqualTo null
+        source.getProperty("feature.old").shouldBeNull()
     }
 
     @Test
@@ -40,9 +47,12 @@ class AppConfigDataPropertySourceTest {
         val environment = StandardEnvironment().apply {
             propertySources.addFirst(source)
         }
+        log.debug { "environment=$environment" }
+
         val bound = Binder.get(environment)
             .bind("feature", FeatureProperties::class.java)
             .get()
+        log.debug { "bound=$bound" }
 
         environment.getProperty("feature.value") shouldBeEqualTo "old"
         source.replace(mapOf("feature.value" to "new"))
@@ -65,7 +75,7 @@ class AppConfigDataPropertySourceTest {
             format = AppConfigFormat.PROPERTIES,
             prefix = null,
             refreshInterval = null,
-            requiredMinimumPollInterval = java.time.Duration.ofSeconds(15),
+            requiredMinimumPollInterval = 15.seconds(),
         )
     }
 
@@ -73,7 +83,7 @@ class AppConfigDataPropertySourceTest {
         var value: String = "",
     )
 
-    private object NoopSessionClient : AppConfigDataSessionClient {
+    private object NoopSessionClient: AppConfigDataSessionClient {
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession =
             AppConfigDataSession("token")
 

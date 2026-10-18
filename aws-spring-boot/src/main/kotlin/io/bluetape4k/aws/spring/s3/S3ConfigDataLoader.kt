@@ -13,7 +13,7 @@ import org.springframework.boot.logging.DeferredLogFactory
 class S3ConfigDataLoader(
     @Suppress("UNUSED_PARAMETER") private val deferredLogFactory: DeferredLogFactory,
     private val bootstrapContext: ConfigurableBootstrapContext,
-) : ConfigDataLoader<AwsConfigDataResource> {
+): ConfigDataLoader<AwsConfigDataResource> {
 
     override fun isLoadable(context: ConfigDataLoaderContext, resource: AwsConfigDataResource): Boolean =
         resource.backendKey == AwsConfigDataBackend.S3.key
@@ -22,8 +22,12 @@ class S3ConfigDataLoader(
         if (resource.isDisabled) {
             return AwsConfigDataFailurePolicy.toConfigData(resource, emptyMap())
         }
-        return AwsConfigDataFailurePolicy.load(resource) {
-            S3ConfigDataSdkAdapter.load(bootstrapContext, resource)
-        }?.let { values -> AwsConfigDataFailurePolicy.toConfigData(resource, values) }
+        return AwsConfigDataFailurePolicy
+            .load(resource) {
+                S3ConfigDataSdkAdapter.load(bootstrapContext, resource)
+            }
+            ?.let { values ->
+                AwsConfigDataFailurePolicy.toConfigData(resource, values)
+            }
     }
 }

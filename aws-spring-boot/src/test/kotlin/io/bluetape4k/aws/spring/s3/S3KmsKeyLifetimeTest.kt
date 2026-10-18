@@ -2,10 +2,14 @@ package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContentEqual
 import io.bluetape4k.aws.spring.kms.KmsDataKey
 import io.bluetape4k.aws.spring.kms.KmsOperations
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
@@ -13,6 +17,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.core.async.AsyncRequestBody
@@ -26,39 +31,49 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import java.nio.ByteBuffer
-import java.util.Base64
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.reflect.KClass
 
 class S3KmsKeyLifetimeTest {
 
+    private val client = mockk<S3AsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
     fun `successful upload closes its generated data key`() = runSuspendIO {
-        upload(CompletableFuture.completedFuture(PutObjectResponse.builder().build()))
+        upload(completableFutureOf(PutObjectResponse.builder().build()))
     }
 
     @Test
     fun `failed upload closes its generated data key`() = runSuspendIO {
         upload(
             CompletableFuture.failedFuture(IllegalStateException("upload failed")),
-            IllegalStateException::class.java,
+            IllegalStateException::class,
         )
     }
 
     @Test
     fun `cancelled upload closes its generated data key and propagates cancellation`() = runSuspendIO {
-        upload(CompletableFuture<PutObjectResponse>().apply { cancel(false) }, CancellationException::class.java)
+        upload(
+            CompletableFuture<PutObjectResponse>().apply { cancel(false) },
+            CancellationException::class
+        )
     }
 
     @Test
     fun `cancelling an in flight upload clears key and cancels the AWS future`() = runSuspendIO {
         coroutineScope {
             val kms = RecordingKms()
-            val client = mockk<S3AsyncClient>()
             val response = CompletableFuture<PutObjectResponse>()
             val submitted = CompletableDeferred<Unit>()
             every {
@@ -99,13 +114,13 @@ class S3KmsKeyLifetimeTest {
     fun `cancelled downloads propagate cancellation before requesting a key`() = runSuspendIO {
         for (bounded in listOf(false, true)) {
             val kms = RecordingKms()
-            val client = mockk<S3AsyncClient>()
             every {
                 client.getObject(
-                    any<Consumer<GetObjectRequest.Builder>>(),
+                    any<GetObjectRequest>(),
                     any<AsyncResponseTransformer<GetObjectResponse, Any>>(),
                 )
             } returns CompletableFuture<Any>().apply { cancel(false) }
+
             val template = template(client, kms)
 
             assertFailsWith<CancellationException> {
@@ -118,26 +133,29 @@ class S3KmsKeyLifetimeTest {
 
     private suspend fun upload(
         response: CompletableFuture<PutObjectResponse>,
-        expectedFailure: Class<out Throwable>? = null,
+        expectedFailure: KClass<out Throwable>? = null,
     ) {
         val kms = RecordingKms()
-        val client = mockk<S3AsyncClient>()
+
         every {
             client.putObject(any<Consumer<PutObjectRequest.Builder>>(), any<AsyncRequestBody>())
         } returns response
+
         val failure = runCatching {
             template(client, kms).uploadEncrypted("bucket", "key", byteArrayOf(1, 2, 3))
         }.exceptionOrNull()
-        if (expectedFailure == null) failure shouldBeEqualTo null
+
+        if (expectedFailure == null) failure.shouldBeNull()
         else expectedFailure.isInstance(failure).shouldBeTrue()
 
         kms.issuedPlaintext.all { it == 0.toByte() }.shouldBeTrue()
-        assertFailsWith<IllegalStateException> { kms.generated.plaintext }
+        assertFailsWith<IllegalStateException> {
+            kms.generated.plaintext
+        }
     }
 
     private suspend fun download(bounded: Boolean, corrupt: Boolean) {
         val kms = RecordingKms()
-        val client = mockk<S3AsyncClient>()
         val nonce = ByteArray(12) { 2 }
         val plaintext = byteArrayOf(1, 2, 3)
         val ciphertext = Cipher.getInstance("AES/GCM/NoPadding").run {
@@ -145,6 +163,7 @@ class S3KmsKeyLifetimeTest {
             doFinal(plaintext)
         }
         if (corrupt) ciphertext[0] = (ciphertext[0].toInt() xor 1).toByte()
+
         val metadata = mapOf(
             "bt4k-cek-alg" to "AES/GCM/NoPadding",
             "bt4k-cek" to Base64.getEncoder().encodeToString(byteArrayOf(7)),
@@ -155,19 +174,19 @@ class S3KmsKeyLifetimeTest {
         if (bounded) {
             every {
                 client.getObject(
-                    any<Consumer<GetObjectRequest.Builder>>(),
+                    any<GetObjectRequest>(),
                     any<AsyncResponseTransformer<GetObjectResponse, ResponsePublisher<GetObjectResponse>>>(),
                 )
-            } returns CompletableFuture.completedFuture(
+            } returns completableFutureOf(
                 ResponsePublisher(response, SdkPublisher.fromIterable(listOf(ByteBuffer.wrap(ciphertext)))),
             )
         } else {
             every {
                 client.getObject(
-                    any<Consumer<GetObjectRequest.Builder>>(),
+                    any<GetObjectRequest>(),
                     any<AsyncResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>(),
                 )
-            } returns CompletableFuture.completedFuture(ResponseBytes.fromByteArray(response, ciphertext))
+            } returns completableFutureOf(ResponseBytes.fromByteArray(response, ciphertext))
         }
         val template = template(client, kms)
         suspend fun read(): ByteArray = if (bounded) {
@@ -175,19 +194,23 @@ class S3KmsKeyLifetimeTest {
         } else {
             template.downloadEncryptedBytes("bucket", "key")
         }
-        if (corrupt) assertFailsWith<AEADBadTagException> { read() }
-        else read().toList() shouldBeEqualTo plaintext.toList()
+        if (corrupt) {
+            assertFailsWith<AEADBadTagException> {
+                read()
+            }
+        } else read() shouldContentEqual plaintext
         kms.decryptCalls shouldBeEqualTo 1
         kms.decrypted.all { it == 0.toByte() }.shouldBeTrue()
     }
 
-    private fun template(client: S3AsyncClient, kms: KmsOperations) = S3ClientSideEncryptionTemplate(
-        client,
-        kms,
-        S3Properties(clientSideEncryption = S3Properties.ClientSideEncryption(enabled = true, keyId = "key-id")),
-    )
+    private fun template(client: S3AsyncClient, kms: KmsOperations) =
+        S3ClientSideEncryptionTemplate(
+            client,
+            kms,
+            S3Properties(clientSideEncryption = S3Properties.ClientSideEncryption(enabled = true, keyId = "key-id")),
+        )
 
-    private class RecordingKms : KmsOperations {
+    private class RecordingKms: KmsOperations {
         val decrypted = ByteArray(32) { 3 }
         val generated by lazy { KmsDataKey("key-id", ByteArray(32) { 4 }, byteArrayOf(7)) }
         val issuedPlaintext: ByteArray by lazy {

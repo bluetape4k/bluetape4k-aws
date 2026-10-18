@@ -2,11 +2,12 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.io.lookup
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CoroutineDispatcher
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.core.env.Environment
-import java.io.ObjectStreamClass
 
 class SqsObservationBinaryCompatibilityTest {
 
@@ -50,8 +51,7 @@ class SqsObservationBinaryCompatibilityTest {
             Long::class.javaPrimitiveType,
             SqsProperties.Retry::class.java,
         )
-        ObjectStreamClass.lookup(SqsProperties.Listener::class.java).serialVersionUID shouldBeEqualTo
-            -3742913463973215849L
+        SqsProperties.Listener::class.lookup().serialVersionUID shouldBeEqualTo -3742913463973215849L
 
         val javap = javap(
             SqsListenerAnnotationBeanPostProcessor::class.java,
@@ -77,24 +77,24 @@ class SqsObservationBinaryCompatibilityTest {
         return output
     }
 
-    private companion object {
+    private companion object: KLogging() {
         val LEGACY_DESCRIPTORS = listOf(
             "(Lorg/springframework/core/env/Environment;Lio/bluetape4k/aws/spring/sqs/SqsProperties;" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsOperations;" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsMessageListenerContainerRegistry;" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsMessageConverter;Ljava/util/List;)V",
+                    "Lio/bluetape4k/aws/spring/sqs/SqsOperations;" +
+                    "Lio/bluetape4k/aws/spring/sqs/SqsMessageListenerContainerRegistry;" +
+                    "Lio/bluetape4k/aws/spring/sqs/SqsMessageConverter;Ljava/util/List;)V",
             "(Lorg/springframework/core/env/Environment;Lio/bluetape4k/aws/spring/sqs/SqsProperties;" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsOperations;" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsMessageListenerContainerRegistry;" +
-                "Lorg/springframework/beans/factory/ObjectProvider;" +
-                "Lorg/springframework/beans/factory/ObjectProvider;)" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsListenerAnnotationBeanPostProcessor;",
+                    "Lio/bluetape4k/aws/spring/sqs/SqsOperations;" +
+                    "Lio/bluetape4k/aws/spring/sqs/SqsMessageListenerContainerRegistry;" +
+                    "Lorg/springframework/beans/factory/ObjectProvider;" +
+                    "Lorg/springframework/beans/factory/ObjectProvider;)" +
+                    "Lio/bluetape4k/aws/spring/sqs/SqsListenerAnnotationBeanPostProcessor;",
             "(Lio/bluetape4k/aws/spring/sqs/SqsListenerEndpoint;" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsOperations;" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsListenerMethodInvoker;" +
-                "Ljava/util/List;Lkotlinx/coroutines/CoroutineDispatcher;)V",
+                    "Lio/bluetape4k/aws/spring/sqs/SqsOperations;" +
+                    "Lio/bluetape4k/aws/spring/sqs/SqsListenerMethodInvoker;" +
+                    "Ljava/util/List;Lkotlinx/coroutines/CoroutineDispatcher;)V",
             "(ZZIIILjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;IJ" +
-                "Lio/bluetape4k/aws/spring/sqs/SqsProperties\$Retry;)V",
+                    "Lio/bluetape4k/aws/spring/sqs/SqsProperties\$Retry;)V",
         )
     }
 }

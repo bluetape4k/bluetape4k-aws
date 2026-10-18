@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.config
 import io.bluetape4k.aws.spring.appconfig.AppConfigFormat
 import io.bluetape4k.aws.spring.s3.S3ConfigFormat
 import io.bluetape4k.aws.spring.secretsmanager.SecretFormat
+import java.io.Serializable
 
 /** ConfigData location이 사용하는 AWS backend입니다. */
 internal enum class AwsConfigDataBackend(
@@ -16,7 +17,7 @@ internal enum class AwsConfigDataBackend(
 }
 
 /** Resolver가 검증한 backend별 원격 source입니다. */
-internal sealed interface AwsConfigDataSource {
+internal sealed interface AwsConfigDataSource: Serializable {
     val canonicalSource: String
 
     data class S3(
@@ -24,9 +25,8 @@ internal sealed interface AwsConfigDataSource {
         val key: String,
         val prefix: String?,
         val format: S3ConfigFormat,
-    ) : AwsConfigDataSource {
-        override val canonicalSource: String
-            get() = "/$bucket/$key"
+    ): AwsConfigDataSource {
+        override val canonicalSource: String = "/$bucket/$key"
     }
 
     data class ParameterStore(
@@ -34,18 +34,16 @@ internal sealed interface AwsConfigDataSource {
         val prefix: String?,
         val recursive: Boolean,
         val withDecryption: Boolean,
-    ) : AwsConfigDataSource {
-        override val canonicalSource: String
-            get() = path
+    ): AwsConfigDataSource {
+        override val canonicalSource: String = path
     }
 
     data class SecretsManager(
         val secretId: String,
         val prefix: String?,
         val format: SecretFormat,
-    ) : AwsConfigDataSource {
-        override val canonicalSource: String
-            get() = secretId
+    ): AwsConfigDataSource {
+        override val canonicalSource: String = secretId
     }
 
     data class AppConfig(
@@ -54,9 +52,10 @@ internal sealed interface AwsConfigDataSource {
         val environment: String,
         val prefix: String?,
         val format: AppConfigFormat,
-    ) : AwsConfigDataSource {
-        override val canonicalSource: String
-            get() = listOf(application, profile, environment).joinToString(separator = "\u0000")
+    ): AwsConfigDataSource {
+        override val canonicalSource: String by lazy {
+            listOf(application, profile, environment).joinToString(separator = "\u0000")
+        }
     }
 }
 
@@ -67,8 +66,8 @@ internal data class AwsConfigDataLocation(
     val optional: Boolean,
     val options: Map<String, String>,
 ) {
-    val canonicalDecodedLocation: String
-        get() = buildString {
+    val canonicalDecodedLocation: String by lazy {
+        buildString {
             append(source.canonicalSource)
             if (options.isNotEmpty()) {
                 append('?')
@@ -77,4 +76,5 @@ internal data class AwsConfigDataLocation(
                 }
             }
         }
+    }
 }

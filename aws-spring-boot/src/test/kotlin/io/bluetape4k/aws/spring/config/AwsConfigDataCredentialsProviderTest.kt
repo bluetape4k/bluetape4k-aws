@@ -6,6 +6,8 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
@@ -13,10 +15,11 @@ import java.nio.file.Files
 
 class AwsConfigDataCredentialsProviderTest {
 
+    companion object: KLogging()
+
     @Test
     fun `disabled web identity uses the SDK default chain`() {
-        AwsProperties().configDataCredentialsProvider()
-            .shouldBeInstanceOf(DefaultCredentialsProvider::class)
+        AwsProperties().configDataCredentialsProvider().shouldBeInstanceOf<DefaultCredentialsProvider>()
     }
 
     @Test
@@ -24,6 +27,7 @@ class AwsConfigDataCredentialsProviderTest {
         val role = "arn:aws:iam::123456789012:role/${Base58.randomString(16)}"
         val session = "session-${Base58.randomString(16)}"
         val tokenFile = Files.createTempFile("aws-${Base58.randomString(16)}", ".token")
+
         try {
             val properties = AwsProperties(
                 credentials = AwsProperties.Credentials(
@@ -36,20 +40,22 @@ class AwsConfigDataCredentialsProviderTest {
                 ),
             )
 
-            properties.configDataCredentialsProvider()
-                .shouldBeInstanceOf<WebIdentityTokenFileCredentialsProvider>()
+            properties.configDataCredentialsProvider().shouldBeInstanceOf<WebIdentityTokenFileCredentialsProvider>()
 
             val malformed = properties.copy(
                 credentials = properties.credentials.copy(
                     webIdentity = properties.credentials.webIdentity.copy(roleSessionName = " "),
                 ),
             )
+            log.debug { "malformed=$malformed" }
+
             val error = assertFailsWith<IllegalArgumentException> {
                 malformed.configDataCredentialsProvider()
             }
-            error.message.orEmpty() shouldContain "configuration is invalid"
-            error.message.orEmpty() shouldNotContain role
-            error.message.orEmpty() shouldNotContain tokenFile.toString()
+            log.debug { "error=$error" }
+            error.message shouldContain "configuration is invalid"
+            error.message shouldNotContain role
+            error.message shouldNotContain tokenFile.toString()
         } finally {
             Files.deleteIfExists(tokenFile)
         }

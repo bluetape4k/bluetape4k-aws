@@ -1,7 +1,11 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeGreaterThan
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.toUtf8Bytes
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import software.amazon.awssdk.http.AbortableInputStream
@@ -15,7 +19,6 @@ import software.amazon.awssdk.regions.Region
 import java.io.ByteArrayInputStream
 import java.lang.management.ManagementFactory
 import java.lang.management.MemoryPoolMXBean
-import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
@@ -27,7 +30,28 @@ import kotlin.math.ceil
  * 이 테스트는 절대 성능 기준선이 아닙니다. 동일 JVM에서 certificate cache hit/miss를
  * 고정된 warmup·반복 수로 실행하고 raw 결과를 JSON으로 남겨 호스트별 차이를 보존합니다.
  */
-class SnsHttpMessageVerifierMeasurementTest {
+class SnsHttpMessageVerifierMeasurementTest: AbstractSnsTest() {
+
+    private companion object: KLogging() {
+        const val MEASUREMENT_PROPERTY = "bluetape4k.aws.sns.signature-measurement"
+        const val OUTPUT_PROPERTY = "bluetape4k.aws.sns.signature-measurement.output"
+        const val TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:issue-513-topic"
+        const val BASE_CERTIFICATE_URL = "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-issue-513.pem"
+        const val WARMUP_OPERATIONS = 10
+        const val MEASUREMENT_SAMPLES = 5
+        const val MEASUREMENT_OPERATIONS = 200
+
+        val notificationV2 = fixture("notification-v2.json")
+        val signingCertificate = fixture("signing-cert.pem").toUtf8Bytes()
+
+        fun certificateUrl(index: Int): String =
+            "https://sns.us-west-2.amazonaws.com/issue-513-measurement-$index.pem"
+
+        fun fixture(name: String): String =
+            SnsHttpMessageVerifierMeasurementTest::class.java.getResource("/sns-signature/$name")
+                .requireNotNull(name)
+                .readText(Charsets.UTF_8)
+    }
 
     @Test
     @EnabledIfSystemProperty(named = MEASUREMENT_PROPERTY, matches = "true")
@@ -41,18 +65,17 @@ class SnsHttpMessageVerifierMeasurementTest {
         )
 
         rows.single { it.scenario == "cache-hit" }.certificateFetches shouldBeEqualTo 1
-        (rows.single { it.scenario == "cache-miss" }.certificateFetches > 1).shouldBeTrue()
+        rows.single { it.scenario == "cache-miss" }.certificateFetches shouldBeGreaterThan 1
         rows.all { row ->
             row.samples.all { sample ->
                 sample.elapsedNanos > 0L && sample.throughputOpsPerSecond > 0.0
             }
-        }
-            .shouldBeTrue()
+        }.shouldBeTrue()
         rows.all { row -> row.samples.all { it.peakHeapBytes >= 0L } }.shouldBeTrue()
 
         Files.createDirectories(output.parent ?: Path.of("."))
-        Files.writeString(output, reportJson(rows), StandardCharsets.UTF_8)
-        require(Files.size(output) > 0L) { "measurement artifact must not be empty: ${output.fileName}" }
+        Files.writeString(output, reportJson(rows), Charsets.UTF_8)
+        Files.size(output) shouldBeGreaterThan 0L
     }
 
     private fun measureScenario(
@@ -60,15 +83,14 @@ class SnsHttpMessageVerifierMeasurementTest {
         message: (Int) -> String,
     ): MeasurementRow {
         val client = MeasurementHttpClient(signingCertificate)
-        val verifier = SnsHttpMessageVerifier(
+        val pools = memoryPools()
+
+        return SnsHttpMessageVerifier(
             SnsMessageManager.builder()
                 .httpClient(client)
                 .region(Region.US_WEST_2)
                 .build(),
-        )
-        val pools = memoryPools()
-
-        return try {
+        ).use { verifier ->
             repeat(WARMUP_OPERATIONS) { index ->
                 verifier.verify(
                     message(index),
@@ -99,8 +121,6 @@ class SnsHttpMessageVerifierMeasurementTest {
                 }
             }
             MeasurementRow(scenario, client.requestCount, samples)
-        } finally {
-            verifier.close()
         }
     }
 
@@ -157,7 +177,7 @@ class SnsHttpMessageVerifierMeasurementTest {
 
     private class MeasurementHttpClient(
         private val certificate: ByteArray,
-    ) : SdkHttpClient {
+    ): SdkHttpClient {
 
         private val requests = AtomicInteger()
 
@@ -166,7 +186,7 @@ class SnsHttpMessageVerifierMeasurementTest {
 
         override fun prepareRequest(request: HttpExecuteRequest): ExecutableHttpRequest {
             requests.incrementAndGet()
-            return object : ExecutableHttpRequest {
+            return object: ExecutableHttpRequest {
                 override fun call(): HttpExecuteResponse = HttpExecuteResponse.builder()
                     .response(SdkHttpFullResponse.builder().statusCode(200).build())
                     .responseBody(AbortableInputStream.create(ByteArrayInputStream(certificate)))
@@ -190,27 +210,4 @@ class SnsHttpMessageVerifierMeasurementTest {
         val throughputOpsPerSecond: Double,
         val peakHeapBytes: Long,
     )
-
-    private companion object {
-        const val MEASUREMENT_PROPERTY = "bluetape4k.aws.sns.signature-measurement"
-        const val OUTPUT_PROPERTY = "bluetape4k.aws.sns.signature-measurement.output"
-        const val TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:issue-513-topic"
-        const val BASE_CERTIFICATE_URL =
-            "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-issue-513.pem"
-        const val WARMUP_OPERATIONS = 10
-        const val MEASUREMENT_SAMPLES = 5
-        const val MEASUREMENT_OPERATIONS = 200
-
-        val notificationV2 = fixture("notification-v2.json")
-        val signingCertificate = fixture("signing-cert.pem").toByteArray(StandardCharsets.UTF_8)
-
-        fun certificateUrl(index: Int): String =
-            "https://sns.us-west-2.amazonaws.com/issue-513-measurement-$index.pem"
-
-        fun fixture(name: String): String =
-            requireNotNull(
-                SnsHttpMessageVerifierMeasurementTest::class.java.getResource("/sns-signature/$name"),
-            )
-                .readText(StandardCharsets.UTF_8)
-    }
 }

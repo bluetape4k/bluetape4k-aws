@@ -1,10 +1,13 @@
 package io.bluetape4k.aws.spring.sns
 
-import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
+import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.support.DefaultListableBeanFactory
 import org.springframework.beans.factory.support.RootBeanDefinition
@@ -20,7 +23,9 @@ import tools.jackson.databind.ObjectMapper
 
 class SnsHttpMessagePayloadConverterTest {
 
-    private val converter = SnsHttpMessagePayloadConverter(ObjectMapper())
+    companion object: KLogging()
+
+    private val converter = SnsHttpMessagePayloadConverter(Jackson.defaultJsonMapper)
 
     @Test
     fun `message attributes expose typed snapshots`() {
@@ -28,18 +33,23 @@ class SnsHttpMessagePayloadConverterTest {
             notificationJson.replace(
                 "\"UnsubscribeURL\"",
                 "\"MessageAttributes\": { " +
-                    "\"contentType\": { \"Type\": \"String\", \"Value\": \"application/json\" } }, " +
-                    "\"UnsubscribeURL\"",
+                        "\"contentType\": { \"Type\": \"String\", \"Value\": \"application/json\" } }, " +
+                        "\"UnsubscribeURL\"",
             )
         )
 
+        log.debug { "message=$message" }
         message.messageAttributes["contentType"] shouldBeEqualTo
-            SnsMessageAttribute("String", "application/json")
+                SnsMessageAttribute("String", "application/json")
     }
 
     @Test
     fun `json payload converts with configured object mapper`() {
-        converter.convert("{\"id\":7}", Map::class.java, "application/json") shouldBeEqualTo mapOf("id" to 7)
+        converter.convert(
+            "{\"id\":7}",
+            Map::class.java,
+            "application/json"
+        ) shouldBeEqualTo mapOf("id" to 7)
     }
 
     @Test
@@ -100,7 +110,11 @@ class SnsHttpMessagePayloadConverterTest {
     @Test
     fun `typed payload rejects non json nested media type`() {
         val error = assertFailsWith<ResponseStatusException> {
-            converter.convert("not-json", Map::class.java, "text/plain")
+            converter.convert(
+                "not-json",
+                Map::class.java,
+                "text/plain"
+            )
         }
 
         error.statusCode shouldBeEqualTo HttpStatus.BAD_REQUEST

@@ -43,7 +43,7 @@ inline fun deleteObjectRequestOf(
     bucket: String,
     key: String,
     versionId: String? = null,
-    builder: DeleteObjectRequest.Builder.() -> Unit,
+    builder: DeleteObjectRequest.Builder.() -> Unit = {},
 ): DeleteObjectRequest =
     deleteObjectRequest(bucket, key) {
         versionId?.run { versionId(this) }

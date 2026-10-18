@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.config
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLoader
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataLocationResolver
 import io.bluetape4k.aws.spring.s3.S3ConfigDataLoader
@@ -9,29 +10,33 @@ import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLoader
 import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataLocationResolver
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.bootstrap.DefaultBootstrapContext
-import org.springframework.boot.context.config.ConfigDataLocation
 import org.springframework.boot.context.config.ConfigDataLoaderContext
+import org.springframework.boot.context.config.ConfigDataLocation
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.ParameterType
-import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 
 /** Floci 우선으로 세 ConfigData backend의 실제 payload와 bootstrap client 공유를 검증합니다. */
 @Suppress("UNCHECKED_CAST")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AwsConfigDataEmulatorTest {
 
-    companion object {
+    companion object: KLogging() {
         private val emulator by lazy {
             AwsSpringBootTestEmulator.get("s3", "ssm", "secretsmanager")
         }
@@ -39,28 +44,27 @@ class AwsConfigDataEmulatorTest {
         private var previousAccessKeyId: String? = null
         private var previousSecretAccessKey: String? = null
 
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            systemProperties = emulator.registerSystemProperties()
-            previousAccessKeyId = System.getProperty("aws.accessKeyId")
-            previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
-            System.setProperty("aws.accessKeyId", "test")
-            System.setProperty("aws.secretAccessKey", "test")
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            restore("aws.accessKeyId", previousAccessKeyId)
-            restore("aws.secretAccessKey", previousSecretAccessKey)
-            systemProperties?.close()
-        }
-
         private fun restore(name: String, value: String?) {
             if (value == null) System.clearProperty(name) else System.setProperty(name, value)
         }
     }
+
+    @BeforeAll
+    fun beforeAll() {
+        systemProperties = emulator.registerSystemProperties()
+        previousAccessKeyId = System.getProperty("aws.accessKeyId")
+        previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
+        System.setProperty("aws.accessKeyId", "test")
+        System.setProperty("aws.secretAccessKey", "test")
+    }
+
+    @AfterAll
+    fun afterAll() {
+        restore("aws.accessKeyId", previousAccessKeyId)
+        restore("aws.secretAccessKey", previousSecretAccessKey)
+        systemProperties?.close()
+    }
+
 
     @Test
     fun `Floci S3 ConfigData imports properties with prefix`() {
@@ -86,10 +90,13 @@ class AwsConfigDataEmulatorTest {
                 mockk(relaxed = true),
                 ConfigDataLocation.of("aws-s3:/$bucket/$key?prefix=app&format=properties"),
             ).single()
+
             val data = S3ConfigDataLoader(mockk(relaxed = true), bootstrap)
-                .load(loaderContext(bootstrap), resource)!!
+                .load(loaderContext(bootstrap), resource)
+                .shouldNotBeNull()
 
             val values = data.propertySources.single().source as Map<String, Any>
+            log.debug { "values=$values" }
             values["app.service.name"] shouldBeEqualTo "orders"
             values["app.service.retries"] shouldBeEqualTo "2"
         } finally {
@@ -100,6 +107,7 @@ class AwsConfigDataEmulatorTest {
     @Test
     fun `Floci Parameter Store ConfigData imports recursive values`() {
         val path = "/config/${Base58.randomString(16)}"
+
         ssmClient().use { client ->
             client.putParameter {
                 it.name("$path/db/username").value("scott").type(ParameterType.STRING)
@@ -120,10 +128,12 @@ class AwsConfigDataEmulatorTest {
                 mockk(relaxed = true),
                 ConfigDataLocation.of("aws-parameterstore:$path?prefix=app&recursive=true&withDecryption=true"),
             ).single()
+
             val data = ParameterStoreConfigDataLoader(mockk(relaxed = true), bootstrap)
                 .load(loaderContext(bootstrap), resource)!!
 
             val values = data.propertySources.single().source as Map<String, Any>
+            log.debug { "values=$values" }
             values["app.db.username"] shouldBeEqualTo "scott"
             values["app.db.password"] shouldBeEqualTo "tiger"
         } finally {
@@ -155,6 +165,7 @@ class AwsConfigDataEmulatorTest {
                 .load(loaderContext(bootstrap), resource)!!
 
             val values = data.propertySources.single().source as Map<String, Any>
+            log.debug { "values=$values" }
             values["app.db.username"] shouldBeEqualTo "scott"
             values["app.feature"] shouldBeEqualTo true
         } finally {
@@ -165,9 +176,10 @@ class AwsConfigDataEmulatorTest {
     private fun binderOf(vararg properties: Pair<String, Any>): Binder =
         Binder(MapConfigurationPropertySource(properties.toMap()))
 
-    private fun loaderContext(bootstrap: DefaultBootstrapContext): ConfigDataLoaderContext = mockk {
-        every { getBootstrapContext() } returns bootstrap
-    }
+    private fun loaderContext(bootstrap: DefaultBootstrapContext): ConfigDataLoaderContext =
+        mockk {
+            every { bootstrapContext } returns bootstrap
+        }
 
     private fun s3Client(): S3Client = S3Client.builder()
         .credentialsProvider(emulator.getCredentialProvider())

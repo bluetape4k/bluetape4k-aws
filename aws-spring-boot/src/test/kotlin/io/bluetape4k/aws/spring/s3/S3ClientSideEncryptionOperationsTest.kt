@@ -5,11 +5,25 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.aws.spring.kms.KmsOperations
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
-class S3ClientSideEncryptionOperationsTest {
+class S3ClientSideEncryptionOperationsTest: AbstractS3Test() {
+
+    companion object: KLogging()
+
+    private val asyncClient = mockk<S3AsyncClient>(relaxed = true)
+    private val kmsOperations = mockk<KmsOperations>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(asyncClient, kmsOperations)
+    }
 
     @Test
     fun `KMS key fingerprint is order independent and delimiter safe`() {
@@ -26,6 +40,9 @@ class S3ClientSideEncryptionOperationsTest {
             ),
         )
 
+        log.debug { "ordered.keyFingerprint=${ordered.keyFingerprint}" }
+        log.debug { "reordered.keyFingerprint=${reordered.keyFingerprint}" }
+        
         ordered.keyFingerprint shouldBeEqualTo reordered.keyFingerprint
 
         val delimiterBearing = template(mapOf("a" to "b;c=d"))
@@ -35,10 +52,12 @@ class S3ClientSideEncryptionOperationsTest {
                 "c" to "d",
             ),
         )
+        log.debug { "delimiterBearing=$delimiterBearing" }
+        log.debug { "splitEntries=$splitEntries" }
         delimiterBearing.keyFingerprint shouldNotBeEqualTo splitEntries.keyFingerprint
 
         template(mapOf("a=b" to "c")).keyFingerprint shouldNotBeEqualTo
-            template(mapOf("a" to "b=c")).keyFingerprint
+                template(mapOf("a" to "b=c")).keyFingerprint
 
         template(emptyMap()).keyFingerprint shouldNotBeEqualTo template(mapOf("empty" to "")).keyFingerprint
     }
@@ -48,20 +67,22 @@ class S3ClientSideEncryptionOperationsTest {
         val error = assertFailsWith<IllegalArgumentException> {
             S3Properties.ClientSideEncryption(encryptionContext = mapOf("" to "value"))
         }
-
-        error.message.orEmpty() shouldContain "encryptionContext"
+        log.debug { "error=$error" }
+        error.message shouldContain "encryptionContext"
     }
 
     @Test
     fun `KMS delimiter safe fingerprint preserves the v1 vector`() {
-        template(mapOf("purpose" to "orders")).keyFingerprint shouldBeEqualTo
-            "GlgsgfhByuQVvRFR7Xzew5jn-IbRgBmaVfR9KT4SodI"
+        val keyFingerprint = template(mapOf("purpose" to "orders")).keyFingerprint
+
+        log.debug { "keyFingerprint=$keyFingerprint" }
+        keyFingerprint shouldBeEqualTo "GlgsgfhByuQVvRFR7Xzew5jn-IbRgBmaVfR9KT4SodI"
     }
 
     private fun template(context: Map<String, String>): S3ClientSideEncryptionTemplate =
         S3ClientSideEncryptionTemplate(
-            s3AsyncClient = mockk<S3AsyncClient>(),
-            kmsOperations = mockk<KmsOperations>(),
+            s3AsyncClient = asyncClient,
+            kmsOperations = kmsOperations,
             properties = S3Properties(
                 clientSideEncryption = S3Properties.ClientSideEncryption(
                     enabled = true,

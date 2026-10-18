@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.springframework.aop.framework.ProxyFactory
 import org.springframework.modulith.events.EventExternalizationConfiguration
@@ -20,8 +21,7 @@ import org.springframework.transaction.event.TransactionalApplicationListenerMet
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
-import java.util.Optional
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CopyOnWriteArrayList
@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
 
 class AwsModulithPublicationCompletionIntegrationTest {
+
+    companion object: KLogging()
 
     @Test
     fun `publication completes only after the actual transport future succeeds`() {
@@ -58,7 +60,9 @@ class AwsModulithPublicationCompletionIntegrationTest {
         val completion = fixture.listener.externalize(event)
         fixture.transportFuture.completeExceptionally(IllegalStateException("publish failed"))
 
-        assertFailsWith<CompletionException> { completion.join() }
+        assertFailsWith<CompletionException> {
+            completion.join()
+        }
         fixture.repository.findIncompletePublications().size shouldBeEqualTo 1
         fixture.repository.findCompletedPublications().isEmpty().shouldBeTrue()
     }
@@ -69,14 +73,14 @@ class AwsModulithPublicationCompletionIntegrationTest {
         val registry = DefaultEventPublicationRegistry(repository, clock)
         val transportFuture = CompletableFuture<Any>()
         val serializerCalls = AtomicInteger()
-        val serializer = object : EventSerializer {
+        val serializer = object: EventSerializer {
             override fun serialize(event: Any): Any = "serialized:${(event as TestEvent).id}"
                 .also { serializerCalls.incrementAndGet() }
 
-            override fun <T : Any> deserialize(serialized: Any, type: Class<T>): T =
+            override fun <T: Any> deserialize(serialized: Any, type: Class<T>): T =
                 type.cast(TestEvent(serialized.toString().substringAfter(':')))
         }
-        val configuration = object : EventExternalizationConfiguration {
+        val configuration = object: EventExternalizationConfiguration {
             override fun supports(event: Any): Boolean = event is TestEvent
 
             override fun map(event: Any): Any = serializer.serialize(event)
@@ -121,7 +125,7 @@ class AwsModulithPublicationCompletionIntegrationTest {
         }
     }
 
-    private class RecordingEventPublicationRepository : EventPublicationRepository {
+    private class RecordingEventPublicationRepository: EventPublicationRepository {
         private val publications = CopyOnWriteArrayList<TargetEventPublication>()
 
         override fun create(publication: TargetEventPublication): TargetEventPublication =
@@ -164,7 +168,9 @@ class AwsModulithPublicationCompletionIntegrationTest {
 
         override fun deleteCompletedPublicationsBefore(instant: Instant) {
             publications.removeIf {
-                it.completionDate.map { completed -> completed.isBefore(instant) }.orElse(false)
+                it.completionDate
+                    .map { it.isBefore(instant) }
+                    .orElse(false)!!
             }
         }
     }

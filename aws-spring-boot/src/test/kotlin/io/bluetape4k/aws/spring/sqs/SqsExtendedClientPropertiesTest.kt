@@ -2,19 +2,25 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
+@Suppress("UnusedDataClassCopyResult")
 class SqsExtendedClientPropertiesTest {
+
+    companion object: KLogging()
 
     @Test
     fun `extended client is disabled by default and keeps bounded defaults`() {
         val properties = SqsExtendedClientProperties()
 
-        properties.enabled shouldBeEqualTo false
-        properties.producerEnabled shouldBeEqualTo false
-        properties.consumerEnabled shouldBeEqualTo false
+        properties.enabled.shouldBeFalse()
+        properties.producerEnabled.shouldBeFalse()
+        properties.consumerEnabled.shouldBeFalse()
         properties.shutdownDrainTimeoutSeconds shouldBeEqualTo 20
         properties.toString() shouldContain "enabled=false"
     }
@@ -66,6 +72,7 @@ class SqsExtendedClientPropertiesTest {
         val retention = assertFailsWith<IllegalArgumentException> {
             base.copy(orphanRetentionHours = 1, rollbackDeadlineSeconds = 8 * 3_600)
         }
+        log.debug { "retention=$retention" }
         retention.message shouldContain "retention"
     }
 
@@ -100,6 +107,7 @@ class SqsExtendedClientPropertiesTest {
         val secret = "secret-${Base58.randomString(16)}"
         val security = SqsExtendedClientProperties.Security(mapOf("primary" to secret))
 
+        log.debug { "security=$security" }
         security.toString() shouldContain "keyCount=1"
         security.toString() shouldBeEqualTo "SqsExtendedClientSecurity(keyCount=1)"
     }

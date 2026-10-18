@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.observability
 
+import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
@@ -7,7 +8,7 @@ import io.micrometer.core.instrument.Timer
 import kotlinx.coroutines.CancellationException
 import java.time.Duration
 
-internal object AwsMicrometerSupport {
+internal object AwsMicrometerSupport: KLogging() {
 
     const val SERVICE_S3: String = "s3"
     const val SERVICE_SQS: String = "sqs"

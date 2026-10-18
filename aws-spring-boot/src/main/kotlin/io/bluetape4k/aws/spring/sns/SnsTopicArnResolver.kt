@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.aws.spring.sns.InMemorySnsTopicArnCache.Entry
 import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.future.await
@@ -10,8 +11,7 @@ import java.net.URI
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.util.LinkedHashMap
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -50,10 +50,10 @@ data class SnsTopicArnResolverScope(
 
     override fun toString(): String =
         "SnsTopicArnResolverScope(" +
-            "endpointOverride=${endpointOverride?.let { "${it.scheme}://${it.host}" }}, " +
-            "region=$region, accountId=${accountId?.let { "<configured>" }}, " +
-            "cacheNamespace=<isolated>" +
-            ")"
+                "endpointOverride=${endpointOverride?.let { "${it.scheme}://${it.host}" }}, " +
+                "region=$region, accountId=${accountId?.let { "<configured>" }}, " +
+                "cacheNamespace=<isolated>" +
+                ")"
 
     companion object {
         private const val serialVersionUID: Long = 1L
@@ -101,7 +101,8 @@ sealed interface SnsTopicArnCacheEntry: java.io.Serializable {
     }
 
     /** AWS 목록에 topic이 없음을 나타내는 bounded negative entry입니다. */
-    data object NotFound : SnsTopicArnCacheEntry {
+    data object NotFound: SnsTopicArnCacheEntry {
+        private fun readResolve(): Any = NotFound
         private const val serialVersionUID: Long = 1L
     }
 }
@@ -125,7 +126,7 @@ interface SnsTopicArnCache {
  *
  * cache를 끄더라도 resolver의 single-flight 중복 억제는 유지됩니다.
  */
-object NoopSnsTopicArnCache : SnsTopicArnCache {
+object NoopSnsTopicArnCache: SnsTopicArnCache {
 
     override fun get(key: SnsTopicArnCacheKey): SnsTopicArnCacheEntry? = null
 
@@ -222,6 +223,7 @@ class SnsTopicArnResolver(
 
     private class Flight {
         val mutex: Mutex = Mutex()
+
         @Volatile
         var invalidated: Boolean = false
         var users: Int = 0
@@ -397,9 +399,9 @@ class SnsTopicArnResolver(
         val parts = arn.split(':', limit = ARN_PART_COUNT)
         require(
             parts.size == ARN_PART_COUNT &&
-                parts[0] == "arn" &&
-                parts[1].matches(PARTITION_PATTERN) &&
-                parts[2] == "sns",
+                    parts[0] == "arn" &&
+                    parts[1].matches(PARTITION_PATTERN) &&
+                    parts[2] == "sns",
         ) {
             "topicArn must be a valid SNS ARN."
         }
@@ -408,8 +410,8 @@ class SnsTopicArnResolver(
         val topicName = parts[5]
         require(
             region.matches(REGION_PATTERN) &&
-                accountId.matches(accountPattern) &&
-                topicName.isValidSnsTopicName(),
+                    accountId.matches(accountPattern) &&
+                    topicName.isValidSnsTopicName(),
         ) {
             "topicArn must be a valid SNS topic ARN."
         }
@@ -430,7 +432,7 @@ class SnsTopicArnResolver(
             if (explicit) {
                 require(allowCrossAccountTopicArn) {
                     "scope.accountId must be configured before resolving an explicit ARN " +
-                        "unless cross-account topicArn is enabled."
+                            "unless cross-account topicArn is enabled."
                 }
             }
             return
@@ -438,7 +440,7 @@ class SnsTopicArnResolver(
         if (!explicit) {
             require(accountId == configuredAccountId) {
                 "ListTopics returned topicArn account '$accountId' that does not match " +
-                    "resolver account '$configuredAccountId'."
+                        "resolver account '$configuredAccountId'."
             }
             return
         }
@@ -465,7 +467,7 @@ class SnsTopicArnResolver(
     private fun String.isValidSnsTopicName(): Boolean =
         length in MIN_TOPIC_NAME_LENGTH..MAX_TOPIC_NAME_LENGTH && matches(TOPIC_NAME_PATTERN)
 
-    companion object : KLogging() {
+    companion object: KLogging() {
         private const val ARN_PART_COUNT: Int = 6
         private val PARTITION_PATTERN: Regex = Regex("[A-Za-z0-9-]+")
         private val REGION_PATTERN: Regex = Regex("[a-z0-9-]+")

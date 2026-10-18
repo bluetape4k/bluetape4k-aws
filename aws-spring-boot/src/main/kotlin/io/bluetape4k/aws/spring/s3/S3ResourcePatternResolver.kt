@@ -1,12 +1,13 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.s3.model.listObjectsV2Request
+import io.bluetape4k.logging.KLogging
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.ApplicationContext
 import org.springframework.core.io.Resource
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 import org.springframework.core.io.support.ResourcePatternResolver
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
 import java.io.IOException
 
 /**
@@ -23,6 +24,8 @@ open class S3ResourcePatternResolver(
     private val applicationContext: ApplicationContext,
     private val s3ClientProvider: ObjectProvider<S3Client>,
 ): ResourcePatternResolver {
+
+    companion object: KLogging()
 
     private val delegate = PathMatchingResourcePatternResolver(applicationContext)
     private val parser = S3ResourceLocationParser()
@@ -60,10 +63,9 @@ open class S3ResourcePatternResolver(
 
         return try {
             val preparedPattern = pattern.prepareMatcher()
-            val request = ListObjectsV2Request.builder()
-                .bucket(pattern.bucket)
-                .prefix(pattern.prefix)
-                .build()
+            val request = listObjectsV2Request(pattern.bucket) {
+                prefix(pattern.prefix)
+            }
             val s3Client = s3ClientProvider.getObject()
             val matchedKeys = HashSet<String>()
             for (page in s3Client.listObjectsV2Paginator(request)) {
@@ -78,13 +80,13 @@ open class S3ResourcePatternResolver(
             val sortedKeys = matchedKeys.toMutableList().apply {
                 sortWith(Comparator { left, right -> left.compareTo(right) })
             }
-            Array<Resource>(sortedKeys.size) { index ->
+            Array(sortedKeys.size) { index ->
                 S3Resource(s3Client, S3ObjectLocation(pattern.bucket, sortedKeys[index]))
             }
         } catch (cause: Exception) {
             throw IOException(
                 "S3 resource listing failed for bucket ${safeS3DiagnosticPart(pattern.bucket)} " +
-                    "and prefix ${safeS3DiagnosticPart(pattern.prefix)}.",
+                        "and prefix ${safeS3DiagnosticPart(pattern.prefix)}.",
                 cause,
             )
         }

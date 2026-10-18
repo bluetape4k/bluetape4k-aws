@@ -4,12 +4,13 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import org.junit.jupiter.api.Test
 import java.lang.management.ManagementFactory
-import java.util.Random
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
@@ -20,6 +21,19 @@ import java.util.concurrent.atomic.AtomicLong
  * paired 차이를 사용합니다. bootstrap 표본도 고정 seed를 사용해 회귀 gate를 재현할 수 있습니다.
  */
 class SqsObservationAllocationTest {
+
+    private companion object: KLogging() {
+        private const val WARMUP_OPERATIONS: Int = 100_000
+        private const val MEASUREMENT_OPERATIONS: Int = 1_000_000
+        private const val MEASUREMENT_SAMPLES: Int = 30
+        private const val BOOTSTRAP_RESAMPLES: Int = 10_000
+        private const val BOOTSTRAP_SEED: Long = 473L
+        private const val MAX_DISABLED_ALLOCATION_DELTA_BYTES: Double = 0.5
+        private const val ACTIVE_INVOCATIONS: Int = 1_000
+        private const val DISABLED_EXECUTION_INVOCATIONS: Int = 100
+        private const val QUEUE_LOOKUPS: Int = 10_000
+        private const val QUEUE_URL: String = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders"
+    }
 
     private val sentinel = AtomicLong()
     private val disabledContextFactoryCalls = AtomicInteger()
@@ -52,7 +66,7 @@ class SqsObservationAllocationTest {
                 directBytes = measureAllocatedBytes(allocationBean, ::directBaseline)
             }
             disabledBytes.toDouble() / MEASUREMENT_OPERATIONS -
-                directBytes.toDouble() / MEASUREMENT_OPERATIONS
+                    directBytes.toDouble() / MEASUREMENT_OPERATIONS
         }
         val expectedInvocations = 2L * MEASUREMENT_OPERATIONS * MEASUREMENT_SAMPLES
         sentinel.get() - measuredBefore shouldBeEqualTo expectedInvocations
@@ -62,7 +76,7 @@ class SqsObservationAllocationTest {
         val upperConfidenceBound = bootstrapMedianUpperBound(pairedDifferences)
         println(
             "SQS observation disabled allocation delta: median=$medianDelta B/op, " +
-                "upper95=$upperConfidenceBound B/op, samples=$MEASUREMENT_SAMPLES",
+                    "upper95=$upperConfidenceBound B/op, samples=$MEASUREMENT_SAMPLES",
         )
         upperConfidenceBound shouldBeLessOrEqualTo MAX_DISABLED_ALLOCATION_DELTA_BYTES
     }
@@ -190,7 +204,7 @@ class SqsObservationAllocationTest {
         ),
     )
 
-    private class CountingObservationHandler : ObservationHandler<SqsObservationContext> {
+    private class CountingObservationHandler: ObservationHandler<SqsObservationContext> {
         val starts = AtomicInteger()
         val stops = AtomicInteger()
         val retryEvents = AtomicInteger()
@@ -213,18 +227,5 @@ class SqsObservationAllocationTest {
             stops.incrementAndGet()
             active.decrementAndGet()
         }
-    }
-
-    private companion object {
-        private const val WARMUP_OPERATIONS: Int = 100_000
-        private const val MEASUREMENT_OPERATIONS: Int = 1_000_000
-        private const val MEASUREMENT_SAMPLES: Int = 30
-        private const val BOOTSTRAP_RESAMPLES: Int = 10_000
-        private const val BOOTSTRAP_SEED: Long = 473L
-        private const val MAX_DISABLED_ALLOCATION_DELTA_BYTES: Double = 0.5
-        private const val ACTIVE_INVOCATIONS: Int = 1_000
-        private const val DISABLED_EXECUTION_INVOCATIONS: Int = 100
-        private const val QUEUE_LOOKUPS: Int = 10_000
-        private const val QUEUE_URL: String = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/orders"
     }
 }

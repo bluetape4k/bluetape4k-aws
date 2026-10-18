@@ -24,15 +24,15 @@ import org.springframework.boot.context.properties.bind.Bindable
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Condition
 import org.springframework.context.annotation.ConditionContext
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.ImportSelector
-import org.springframework.core.type.AnnotationMetadata
 import org.springframework.core.type.AnnotatedTypeMetadata
+import org.springframework.core.type.AnnotationMetadata
 import org.springframework.modulith.events.EventExternalizationConfiguration
 import org.springframework.modulith.events.core.EventSerializer
 import org.springframework.modulith.events.support.EventExternalizationTransport
@@ -64,7 +64,7 @@ import java.time.Clock
 class AwsModulithEventsAutoConfiguration
 
 /** Outer condition 통과 뒤에만 optional-type configuration 이름을 반환합니다. */
-internal class AwsModulithEventsImportSelector : ImportSelector {
+internal class AwsModulithEventsImportSelector: ImportSelector {
     override fun selectImports(importingClassMetadata: AnnotationMetadata): Array<String> =
         arrayOf(MODULITH_CONFIGURATION)
 
@@ -89,6 +89,7 @@ internal class AwsModulithEventsConfiguration
 
 @Configuration(proxyBeanMethods = false)
 @Conditional(AwsModulithCodecRequiredCondition::class)
+@EnableConfigurationProperties(AwsModulithEventsProperties::class)
 internal class AwsModulithEventCodecConfiguration {
 
     @Bean
@@ -201,14 +202,16 @@ internal class AwsModulithSqsPublisherConfiguration {
 }
 
 /** SQS target이 실제로 선언된 producer에만 SQS publisher를 조립합니다. */
-internal class AwsModulithSqsTargetConfiguredCondition : Condition {
+internal class AwsModulithSqsTargetConfiguredCondition: Condition {
     override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean =
         Binder.get(context.environment)
             .bind(
                 "bluetape4k.aws.modulith.events.targets",
                 Bindable.mapOf(String::class.java, AwsModulithEventsProperties.Target::class.java),
             )
-            .map { targets -> targets.values.any { it.service == AwsModulithTargetService.SQS } }
+            .map { targets ->
+                targets.values.any { it.service == AwsModulithTargetService.SQS }
+            }
             .orElse(false) == true
 }
 
@@ -344,7 +347,8 @@ internal class AwsModulithSqsConsumerConfiguration {
         val redrive = try {
             runBlocking(Dispatchers.IO) {
                 val queueUrl = operations.getQueueUrl(queue)
-                attributes.getQueueAttributes(queueUrl, listOf(QueueAttributeName.REDRIVE_POLICY))
+                attributes
+                    .getQueueAttributes(queueUrl, listOf(QueueAttributeName.REDRIVE_POLICY))
                     .get(QueueAttributeName.REDRIVE_POLICY)
             }
         } catch (cancellation: CancellationException) {
@@ -356,7 +360,7 @@ internal class AwsModulithSqsConsumerConfiguration {
     }
 }
 
-internal class AwsModulithCodecRequiredCondition :
+internal class AwsModulithCodecRequiredCondition:
     AnyNestedCondition(ConfigurationPhase.REGISTER_BEAN) {
 
     @ConditionalOnProperty(
@@ -378,6 +382,6 @@ internal class AwsModulithCodecRequiredCondition :
 private const val SNS_PUBLISHER_BEAN = "awsModulithSnsTargetPublisher"
 private const val SQS_PUBLISHER_BEAN = "awsModulithSqsTargetPublisher"
 
-private fun <T : Any> ObjectProvider<T>.required(): T = getIfAvailable() ?: configurationFailure()
+private fun <T: Any> ObjectProvider<T>.required(): T = getIfAvailable() ?: configurationFailure()
 
 private fun configurationFailure(): Nothing = throw AwsModulithConfigurationException()

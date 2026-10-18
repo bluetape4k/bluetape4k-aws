@@ -1,10 +1,14 @@
 package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.assertions.assertFailsWith
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -24,49 +28,47 @@ class AwsModulithExceptionsTest {
         expectedRetryable: Boolean,
         expectedAction: AwsModulithCallerAction,
     ) {
-        assertEquals(expectedType, exception.javaClass)
-        assertEquals(expectedCode, exception.code)
-        assertEquals(expectedPhase, exception.phase)
-        assertEquals(expectedRetryable, exception.retryable)
-        assertEquals(expectedAction, exception.callerAction)
-        assertEquals("${expectedCode.value}:${expectedPhase.name}", exception.message)
-        assertNull(exception.cause)
-        assertTrue(exception.suppressed.isEmpty())
-        assertFalse(exception.message.orEmpty().contains(HOSTILE_MARKER))
+        exception.javaClass shouldBeEqualTo expectedType
+        exception.code shouldBeEqualTo expectedCode
+        exception.phase shouldBeEqualTo expectedPhase
+        exception.retryable shouldBeEqualTo expectedRetryable
+        exception.callerAction shouldBeEqualTo expectedAction
+        exception.message shouldBeEqualTo "${expectedCode.value}:${expectedPhase.name}"
+        exception.cause.shouldBeNull()
+        exception.suppressed.shouldBeEmpty()
+        exception.message shouldNotContain HOSTILE_MARKER
 
         assertFailsWith<IllegalStateException> {
             exception.initCause(IllegalStateException(HOSTILE_MARKER))
         }
         exception.addSuppressed(AwsModulithCleanupException())
-        assertEquals(1, exception.suppressed.size)
+        exception.suppressed shouldHaveSize 1
     }
 
     @Test
     fun `diagnostic code mapping is fixed`() {
-        assertEquals(
-            AwsModulithCallerAction.STOP_DEPLOYMENT,
-            AwsModulithDiagnosticCode.CONFIGURATION.callerAction,
-        )
-        assertFalse(AwsModulithDiagnosticCode.CONFIGURATION.retryable)
-        assertTrue(AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE.retryable)
-        assertTrue(AwsModulithDiagnosticCode.AWS_PUBLISH.retryable)
-        assertFalse(AwsModulithDiagnosticCode.SOURCE.retryable)
-        assertFalse(AwsModulithDiagnosticCode.INBOUND.retryable)
-        assertTrue(AwsModulithDiagnosticCode.CLAIM.retryable)
-        assertTrue(AwsModulithDiagnosticCode.DISPATCH_ACK.retryable)
+        AwsModulithDiagnosticCode.CONFIGURATION.callerAction shouldBeEqualTo AwsModulithCallerAction.STOP_DEPLOYMENT
+
+        AwsModulithDiagnosticCode.CONFIGURATION.retryable.shouldBeFalse()
+        AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE.retryable.shouldBeTrue()
+        AwsModulithDiagnosticCode.AWS_PUBLISH.retryable.shouldBeTrue()
+        AwsModulithDiagnosticCode.SOURCE.retryable.shouldBeFalse()
+        AwsModulithDiagnosticCode.INBOUND.retryable.shouldBeFalse()
+        AwsModulithDiagnosticCode.CLAIM.retryable.shouldBeTrue()
+        AwsModulithDiagnosticCode.DISPATCH_ACK.retryable.shouldBeTrue()
     }
 
     @Test
     fun `cleanup exception stays internal and bounded`() {
         val exception = AwsModulithCleanupException()
 
-        assertEquals(AwsModulithDiagnosticCode.DISPATCH_ACK, exception.code)
-        assertEquals(AwsModulithFailurePhase.CLEANUP, exception.phase)
-        assertEquals("BT4K-MOD-204:CLEANUP", exception.message)
-        assertNull(exception.cause)
+        exception.code shouldBeEqualTo AwsModulithDiagnosticCode.DISPATCH_ACK
+        exception.phase shouldBeEqualTo AwsModulithFailurePhase.CLEANUP
+        exception.message shouldBeEqualTo "BT4K-MOD-204:CLEANUP"
+        exception.cause.shouldBeNull()
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val HOSTILE_MARKER = "secret-value:event-id:header-value:arn:request-response"
 
         @JvmStatic
@@ -75,11 +77,11 @@ class AwsModulithExceptionsTest {
 
         private fun exceptionCatalogEntries(): List<Arguments> =
             configurationEntries() +
-                producerEntries() +
-                resolutionEntries() +
-                inboundEntries() +
-                claimEntries() +
-                dispatchEntries()
+                    producerEntries() +
+                    resolutionEntries() +
+                    inboundEntries() +
+                    claimEntries() +
+                    dispatchEntries()
 
         private fun configurationEntries() = listOf(
             Arguments.of(

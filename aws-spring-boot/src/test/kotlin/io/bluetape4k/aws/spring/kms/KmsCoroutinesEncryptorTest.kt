@@ -1,29 +1,43 @@
 package io.bluetape4k.aws.spring.kms
 
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldContentEqual
 import io.bluetape4k.assertions.shouldNotBeNull
-import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.kms.model.GenerateDataKeyRequest
 import software.amazon.awssdk.services.kms.model.GenerateDataKeyResponse
-import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
 class KmsCoroutinesEncryptorTest {
 
+    companion object: KLogging()
+
+    private val client = mockk<KmsAsyncClient>()
+    private val sdkPlaintextBytes = mockk<SdkBytes>()
+    private val response = mockk<GenerateDataKeyResponse>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client, sdkPlaintextBytes, response)
+    }
+
     @Test
-    fun `cache put failure closes generated data key`() = runSuspendIO {
+    fun `cache put failure closes generated data key`() = runTest {
         val sdkPlaintext = ByteArray(32) { 7 }
-        val client = mockk<KmsAsyncClient>()
+
         every {
             client.generateDataKey(any<Consumer<GenerateDataKeyRequest.Builder>>())
-        } returns CompletableFuture.completedFuture(
+        } returns completableFutureOf(
             GenerateDataKeyResponse.builder()
                 .keyId("alias/test")
                 .plaintext(SdkBytes.fromByteArray(sdkPlaintext))
@@ -45,27 +59,22 @@ class KmsCoroutinesEncryptorTest {
         }.exceptionOrNull()
 
         failure.shouldBeInstanceOf<IllegalStateException>()
-        val offered = cache.offered.shouldNotBeNull()
-        try {
-            ownedPlaintext(offered).toList() shouldBeEqualTo List(32) { 0.toByte() }
-        } finally {
-            offered.close()
+        cache.offered.shouldNotBeNull().use { offered ->
+            ownedPlaintext(offered) shouldContentEqual ByteArray(32) { 0 }
         }
     }
 
     @Test
-    fun `successful generation clears SDK plaintext temporary after copying`() = runSuspendIO {
+    fun `successful generation clears SDK plaintext temporary after copying`() = runTest {
         val sdkPlaintext = ByteArray(32) { 7 }
-        val sdkPlaintextBytes = mockk<SdkBytes>()
         every { sdkPlaintextBytes.asByteArray() } returns sdkPlaintext
-        val response = mockk<GenerateDataKeyResponse>()
         every { response.keyId() } returns "alias/test"
         every { response.plaintext() } returns sdkPlaintextBytes
         every { response.ciphertextBlob() } returns SdkBytes.fromByteArray(byteArrayOf(1, 2, 3))
-        val client = mockk<KmsAsyncClient>()
+
         every {
             client.generateDataKey(any<Consumer<GenerateDataKeyRequest.Builder>>())
-        } returns CompletableFuture.completedFuture(response)
+        } returns completableFutureOf(response)
 
         val generated = KmsCoroutinesEncryptor(
             kmsAsyncClient = client,
@@ -77,8 +86,8 @@ class KmsCoroutinesEncryptorTest {
         )
 
         try {
-            sdkPlaintext.toList() shouldBeEqualTo List(32) { 0.toByte() }
-            generated.plaintext.toList() shouldBeEqualTo List(32) { 7.toByte() }
+            sdkPlaintext shouldContentEqual ByteArray(32) { 0 }
+            generated.plaintext shouldContentEqual ByteArray(32) { 7 }
         } finally {
             generated.close()
         }
@@ -100,7 +109,7 @@ class KmsCoroutinesEncryptorTest {
     }
 
     private fun ownedPlaintext(dataKey: KmsDataKey): ByteArray =
-        KmsDataKey::class.java.getDeclaredField("plaintextBytes").apply {
-            isAccessible = true
-        }.get(dataKey) as ByteArray
+        KmsDataKey::class.java.getDeclaredField("plaintextBytes")
+            .apply { isAccessible = true }
+            .get(dataKey) as ByteArray
 }

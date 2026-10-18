@@ -1,10 +1,11 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import org.springframework.util.AntPathMatcher
 import java.nio.ByteBuffer
-import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
-import java.nio.charset.StandardCharsets
 
 internal enum class S3WildcardKind {
     STAR,
@@ -70,7 +71,7 @@ internal class S3ResourceLocationParser {
 
         val remainder = location.substring(S3_SCHEME.length)
         val separator = remainder.indexOf('/')
-        require(separator > 0) {
+        separator.requirePositiveNumber {
             "S3 location must contain one literal bucket and a non-empty key."
         }
         val rawBucket = remainder.substring(0, separator)
@@ -80,9 +81,7 @@ internal class S3ResourceLocationParser {
 
         val decoded = decodePath(rawPath)
         val decodedText = decoded.joinToString(separator = "") { it.value.toString() }
-        require(decodedText.isNotBlank()) {
-            "S3 object key must not be empty."
-        }
+        decodedText.requireNotBlank { "S3 object key must not be empty." }
 
         val tokens = tokenize(decoded)
         val hasWildcards = tokens.any { it is S3PatternToken.Wildcard }
@@ -98,21 +97,18 @@ internal class S3ResourceLocationParser {
         }
 
         val key = tokens.joinToString(separator = "") { (it as S3PatternToken.Literal).value }
-        require(key.isNotBlank()) {
-            "S3 object key must not be empty."
-        }
+        key.requireNotBlank { "S3 object key must not be empty." }
+
         return S3Pattern(rawBucket, key, tokens)
     }
 
     private fun validateBucket(bucket: String) {
-        require(bucket.isNotBlank()) { "S3 bucket must not be blank." }
+        bucket.requireNotBlank { "S3 bucket must not be blank." }
         require('%' !in bucket) { "S3 bucket must be a literal authority." }
         require("," !in bucket && "s3://" !in bucket.lowercase()) {
             "S3 location must contain one bucket only."
         }
-        require(bucket.none { character ->
-            character.isWhitespace() || character.isISOControl() || character in "@:*?[]/#"
-        }) {
+        require(bucket.none { character -> character.isWhitespace() || character.isISOControl() || character in "@:*?[]/#" }) {
             "S3 bucket must be a single literal authority."
         }
     }
@@ -199,6 +195,7 @@ internal class S3ResourceLocationParser {
             }
 
             val bytes = ArrayList<Byte>()
+
             while (index < path.length && path[index] == '%') {
                 require(index + PERCENT_LOW_OFFSET < path.length) { "Malformed S3 percent escape." }
                 val high = hex(path[index + PERCENT_HEX_OFFSET])
@@ -216,7 +213,7 @@ internal class S3ResourceLocationParser {
 
     private fun strictUtf8(bytes: ByteArray): String =
         try {
-            StandardCharsets.UTF_8.newDecoder()
+            Charsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT)
                 .decode(ByteBuffer.wrap(bytes))
@@ -234,7 +231,7 @@ internal class S3ResourceLocationParser {
         val escaped: Boolean,
     )
 
-    private companion object {
+    private companion object: KLogging() {
         const val S3_SCHEME = "s3://"
         const val PERCENT_ESCAPE_LENGTH = 3
         const val PERCENT_HEX_OFFSET = 1
@@ -249,6 +246,7 @@ private class AntS3PatternMatcher(
 ): S3PatternMatcher {
 
     private val pathMatcher = AntPathMatcher()
+
     private val literalCharacters = tokens
         .asSequence()
         .filterIsInstance<S3PatternToken.Literal>()
@@ -256,34 +254,34 @@ private class AntS3PatternMatcher(
         .toSet()
 
     override fun matches(key: String): Boolean {
-        val sentinels = selectSentinels(key)
-            ?: throw IllegalStateException("No safe S3 wildcard sentinel is available.")
+        val sentinels = selectSentinels(key) ?: error("No safe S3 wildcard sentinel is available.")
+
         val renderedPattern = renderPattern(sentinels)
         val renderedKey = key
             .replace("*", sentinels.star)
             .replace("?", sentinels.question)
+
         return pathMatcher.match(renderedPattern, renderedKey)
     }
 
-    private fun renderPattern(sentinels: SentinelPair): String =
-        buildString {
-            tokens.forEach { token ->
-                when (token) {
-                    is S3PatternToken.Literal -> append(
-                        token.value
-                            .replace("*", sentinels.star)
-                            .replace("?", sentinels.question),
-                    )
-                    is S3PatternToken.Wildcard -> append(
-                        when (token.kind) {
-                            S3WildcardKind.STAR -> "*"
-                            S3WildcardKind.DOUBLE_STAR -> "**"
-                            S3WildcardKind.QUESTION -> "?"
-                        },
-                    )
-                }
+    private fun renderPattern(sentinels: SentinelPair): String = buildString {
+        tokens.forEach { token ->
+            when (token) {
+                is S3PatternToken.Literal -> append(
+                    token.value
+                        .replace("*", sentinels.star)
+                        .replace("?", sentinels.question),
+                )
+                is S3PatternToken.Wildcard -> append(
+                    when (token.kind) {
+                        S3WildcardKind.STAR -> "*"
+                        S3WildcardKind.DOUBLE_STAR -> "**"
+                        S3WildcardKind.QUESTION -> "?"
+                    },
+                )
             }
         }
+    }
 
     private fun selectSentinels(key: String): SentinelPair? {
         val available = privateUseSentinels().filter { candidate ->
@@ -309,7 +307,7 @@ private class AntS3PatternMatcher(
         val question: String,
     )
 
-    private companion object {
+    private companion object: KLogging() {
         const val SENTINEL_COUNT = 2
         const val BMP_PRIVATE_USE_START = 0xE000
         const val BMP_PRIVATE_USE_END = 0xF8FF

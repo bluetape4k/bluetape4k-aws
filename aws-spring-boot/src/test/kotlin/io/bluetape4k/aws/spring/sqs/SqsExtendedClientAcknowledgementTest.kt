@@ -2,59 +2,82 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.codec.Base58
 import io.bluetape4k.aws.spring.s3.S3BoundedObjectReadOperations
 import io.bluetape4k.aws.spring.s3.S3HeadMetadata
 import io.bluetape4k.aws.spring.s3.S3ObjectMetadataOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
 import io.bluetape4k.aws.spring.s3.S3PutIfAbsentResult
+import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
-import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
-import java.util.Base64
+import java.util.*
 
 class SqsExtendedClientAcknowledgementTest {
+
+    companion object: KLoggingChannel()
+
+    private val sqs = mockk<SqsFullRequestOperations>(relaxed = true)
+    private val s3 = mockk<S3Operations>(relaxed = true)
+    private val metadata = mockk<S3ObjectMetadataOperations>(relaxed = true)
+    private val bounded = mockk<S3BoundedObjectReadOperations>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
+    }
 
     @Test
     fun `SQS delete precedes marker and payload cleanup`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy(deleteOnAck = true)
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val metadata = mockk<S3ObjectMetadataOperations>()
-        val bounded = mockk<S3BoundedObjectReadOperations>()
+
         val events = mutableListOf<String>()
         val client = client(sqs, s3, metadata, bounded, policy, queueUrl)
         val message = receivePointer(client, sqs, bounded, policy, queueUrl)
-        coEvery { sqs.delete(queueUrl, message.rawReceiptHandle()) } answers {
+
+        coEvery {
+            sqs.delete(queueUrl, message.rawReceiptHandle())
+        } answers {
             events += "sqs-delete"
             DeleteMessageResponse.builder().build()
         }
-        coEvery { metadata.headObjectWithMetadata(policy.bucket, any()) } throws IllegalStateException("missing")
+        coEvery {
+            metadata.headObjectWithMetadata(policy.bucket, any())
+        } throws IllegalStateException("missing")
         coEvery {
             metadata.putObjectIfAbsentWithMetadata(policy.bucket, any(), any(), any(), any())
         } answers {
             events += "marker-create"
             S3PutIfAbsentResult.Created
         }
-        coEvery { s3.delete(policy.bucket, any()) } answers {
+        coEvery {
+            s3.delete(policy.bucket, any())
+        } answers {
             events += "payload-delete"
             DeleteObjectResponse.builder().build()
         }
 
         val result = client.acknowledge(message)
 
-        result.sqsDeleted shouldBeEqualTo true
-        result.payloadDeleted shouldBeEqualTo true
-        result.cleanupRequired shouldBeEqualTo false
+        log.debug { "result=$result" }
+        result.sqsDeleted.shouldBeTrue()
+        result.payloadDeleted.shouldBeTrue()
+        result.cleanupRequired.shouldBeFalse()
         events shouldBeEqualTo listOf("sqs-delete", "marker-create", "payload-delete")
     }
 
@@ -62,20 +85,20 @@ class SqsExtendedClientAcknowledgementTest {
     fun `SQS acknowledgement failure never deletes payload`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy(deleteOnAck = true)
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val metadata = mockk<S3ObjectMetadataOperations>()
-        val bounded = mockk<S3BoundedObjectReadOperations>()
         val client = client(sqs, s3, metadata, bounded, policy, queueUrl)
         val message = receivePointer(client, sqs, bounded, policy, queueUrl)
-        coEvery { sqs.delete(queueUrl, message.rawReceiptHandle()) } throws IllegalStateException("sqs-secret")
+
+        coEvery {
+            sqs.delete(queueUrl, message.rawReceiptHandle())
+        } throws IllegalStateException("sqs-secret")
 
         val error = assertFailsWith<SqsExtendedAcknowledgementException> {
             client.acknowledge(message)
         }
 
-        error.sqsDeleted shouldBeEqualTo false
+        error.sqsDeleted.shouldBeFalse()
         error.toString() shouldNotContain "sqs-secret"
+
         coVerify(exactly = 0) { s3.delete(any(), any()) }
         coVerify(exactly = 0) { metadata.putObjectIfAbsentWithMetadata(any(), any(), any(), any(), any()) }
     }
@@ -84,20 +107,21 @@ class SqsExtendedClientAcknowledgementTest {
     fun `deleteOnAck false leaves payload lifecycle owned`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy(deleteOnAck = false)
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val metadata = mockk<S3ObjectMetadataOperations>()
-        val bounded = mockk<S3BoundedObjectReadOperations>()
         val client = client(sqs, s3, metadata, bounded, policy, queueUrl)
         val message = receivePointer(client, sqs, bounded, policy, queueUrl)
-        coEvery { sqs.delete(queueUrl, message.rawReceiptHandle()) } returns DeleteMessageResponse.builder().build()
+
+        coEvery {
+            sqs.delete(queueUrl, message.rawReceiptHandle())
+        } returns DeleteMessageResponse.builder().build()
 
         val result = client.acknowledge(message)
 
-        result.sqsDeleted shouldBeEqualTo true
-        result.payloadDeleted shouldBeEqualTo false
-        result.cleanupRequired shouldBeEqualTo false
+        log.debug { "result=$result" }
+        result.sqsDeleted.shouldBeTrue()
+        result.payloadDeleted.shouldBeFalse()
+        result.cleanupRequired.shouldBeFalse()
         result.cleanupHandle.shouldBeNull()
+
         coVerify(exactly = 0) { s3.delete(any(), any()) }
         coVerify(exactly = 0) { metadata.headObjectWithMetadata(any(), any()) }
     }
@@ -106,24 +130,28 @@ class SqsExtendedClientAcknowledgementTest {
     fun `payload delete failure returns opaque retry handle`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy(deleteOnAck = true)
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val metadata = mockk<S3ObjectMetadataOperations>()
-        val bounded = mockk<S3BoundedObjectReadOperations>()
         val client = client(sqs, s3, metadata, bounded, policy, queueUrl)
         val message = receivePointer(client, sqs, bounded, policy, queueUrl)
-        coEvery { sqs.delete(queueUrl, message.rawReceiptHandle()) } returns DeleteMessageResponse.builder().build()
-        coEvery { metadata.headObjectWithMetadata(policy.bucket, any()) } throws IllegalStateException("missing")
+
+        coEvery {
+            sqs.delete(queueUrl, message.rawReceiptHandle())
+        } returns DeleteMessageResponse.builder().build()
+        coEvery {
+            metadata.headObjectWithMetadata(policy.bucket, any())
+        } throws IllegalStateException("missing")
         coEvery {
             metadata.putObjectIfAbsentWithMetadata(policy.bucket, any(), any(), any(), any())
         } returns S3PutIfAbsentResult.Created
-        coEvery { s3.delete(policy.bucket, any()) } throws IllegalStateException("delete-secret")
+        coEvery {
+            s3.delete(policy.bucket, any())
+        } throws IllegalStateException("delete-secret")
 
         val result = client.acknowledge(message)
 
-        result.sqsDeleted shouldBeEqualTo true
-        result.payloadDeleted shouldBeEqualTo false
-        result.cleanupRequired shouldBeEqualTo true
+        log.debug { "result=$result" }
+        result.sqsDeleted.shouldBeTrue()
+        result.payloadDeleted.shouldBeFalse()
+        result.cleanupRequired.shouldBeTrue()
         result.cleanupHandle.toString() shouldBeEqualTo "SqsExtendedCleanupHandle(available=true)"
         result.toString() shouldNotContain "delete-secret"
     }
@@ -132,36 +160,42 @@ class SqsExtendedClientAcknowledgementTest {
     fun `cleanup retries marker verified payload deletion with same handle`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy(deleteOnAck = true)
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val metadata = mockk<S3ObjectMetadataOperations>()
-        val bounded = mockk<S3BoundedObjectReadOperations>()
         val client = client(sqs, s3, metadata, bounded, policy, queueUrl)
         val message = receivePointer(client, sqs, bounded, policy, queueUrl)
-        coEvery { sqs.delete(queueUrl, message.rawReceiptHandle()) } returns DeleteMessageResponse.builder().build()
-        coEvery { metadata.headObjectWithMetadata(policy.bucket, any()) } throws IllegalStateException("missing")
+        coEvery {
+            sqs.delete(queueUrl, message.rawReceiptHandle())
+        } returns DeleteMessageResponse.builder().build()
+        coEvery {
+            metadata.headObjectWithMetadata(policy.bucket, any())
+        } throws IllegalStateException("missing")
         coEvery {
             metadata.putObjectIfAbsentWithMetadata(policy.bucket, any(), any(), any(), any())
         } returns S3PutIfAbsentResult.Created
-        coEvery { s3.delete(policy.bucket, any()) } throws IllegalStateException("delete-secret")
+        coEvery {
+            s3.delete(policy.bucket, any())
+        } throws IllegalStateException("delete-secret")
 
         val acknowledgement = client.acknowledge(message)
-        val handle = requireNotNull(acknowledgement.cleanupHandle)
+        val handle = acknowledgement.cleanupHandle.shouldNotBeNull()
         val expectedMetadata = mapOf(
             "bt4k-marker-version" to "1",
             "bt4k-pointer-digest" to requireNotNull(handle.pointerDigest),
             "bt4k-policy-fingerprint" to handle.policyFingerprint,
             "bt4k-queue-url-digest" to sha256(queueUrl),
         )
-        coEvery { metadata.headObjectWithMetadata(policy.bucket, requireNotNull(handle.markerKey)) } returns
-            S3HeadMetadata(0, null, "application/octet-stream", expectedMetadata)
-        coEvery { s3.delete(policy.bucket, handle.pointer.key) } returns DeleteObjectResponse.builder().build()
+        coEvery {
+            metadata.headObjectWithMetadata(policy.bucket, handle.markerKey.shouldNotBeNull())
+        } returns S3HeadMetadata(0, null, "application/octet-stream", expectedMetadata)
+        coEvery {
+            s3.delete(policy.bucket, handle.pointer.key)
+        } returns DeleteObjectResponse.builder().build()
 
         val cleanup = client.cleanup(handle)
 
-        cleanup.deleted shouldBeEqualTo true
-        cleanup.cleanupRequired shouldBeEqualTo false
+        cleanup.deleted.shouldBeTrue()
+        cleanup.cleanupRequired.shouldBeFalse()
         cleanup.cleanupHandle.shouldBeNull()
+
         coVerify(exactly = 2) { s3.delete(policy.bucket, handle.pointer.key) }
     }
 
@@ -169,17 +203,19 @@ class SqsExtendedClientAcknowledgementTest {
     fun `foreign marker blocks payload deletion`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy(deleteOnAck = true)
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val metadata = mockk<S3ObjectMetadataOperations>()
-        val bounded = mockk<S3BoundedObjectReadOperations>()
         val client = client(sqs, s3, metadata, bounded, policy, queueUrl)
         val message = receivePointer(client, sqs, bounded, policy, queueUrl)
-        coEvery { sqs.delete(queueUrl, message.rawReceiptHandle()) } returns DeleteMessageResponse.builder().build()
-        coEvery { metadata.headObjectWithMetadata(policy.bucket, any()) } returns
-            S3HeadMetadata(0, null, "application/octet-stream", mapOf("bt4k-marker-version" to "foreign"))
 
-        assertFailsWith<SqsExtendedCleanupException> { client.acknowledge(message) }
+        coEvery {
+            sqs.delete(queueUrl, message.rawReceiptHandle())
+        } returns DeleteMessageResponse.builder().build()
+        coEvery {
+            metadata.headObjectWithMetadata(policy.bucket, any())
+        } returns S3HeadMetadata(0, null, "application/octet-stream", mapOf("bt4k-marker-version" to "foreign"))
+
+        assertFailsWith<SqsExtendedCleanupException> {
+            client.acknowledge(message)
+        }
 
         coVerify(exactly = 0) { s3.delete(any(), any()) }
     }
@@ -201,9 +237,9 @@ class SqsExtendedClientAcknowledgementTest {
             signingKey = signingKey(),
         )
         coEvery { sqs.receive(queueUrl, 1, 20, policy.minimumVisibilityTimeoutSeconds) } returns
-            listOf(received(queueUrl, pointer))
+                listOf(received(queueUrl, pointer))
         coEvery { bounded.downloadBytesBounded(policy.bucket, any(), policy.maxOffloadPayloadBytes) } returns
-            "payload-${Base58.randomString(16)}".encodeToByteArray()
+                "payload-${Base58.randomString(16)}".encodeToByteArray()
         return client.receive(queueUrl, visibilityTimeoutSeconds = policy.minimumVisibilityTimeoutSeconds).single()
     }
 
@@ -229,7 +265,7 @@ class SqsExtendedClientAcknowledgementTest {
             security = SqsExtendedClientProperties.Security(
                 mapOf(
                     policy.pointerSigningKeyRef to
-                        Base64.getUrlEncoder().withoutPadding().encodeToString(signingKey()),
+                            Base64.getUrlEncoder().withoutPadding().encodeToString(signingKey()),
                 ),
             ),
         ),

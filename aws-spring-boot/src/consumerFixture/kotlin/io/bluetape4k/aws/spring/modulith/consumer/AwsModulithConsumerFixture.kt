@@ -47,7 +47,7 @@ val fixtureRegistry = AwsModulithEventTypeRegistry.of(
 data class ConsumerInjection(val consumer: AwsModulithSqsEventConsumer)
 
 /** 외부 애플리케이션이 구현할 수 있는 최소 idempotency store 계약입니다. */
-class FixtureStore : AwsModulithEventIdempotencyStore {
+class FixtureStore: AwsModulithEventIdempotencyStore {
     override suspend fun claim(key: AwsModulithEventKey, leaseDuration: Duration): AwsModulithClaimResult =
         AwsModulithClaimResult.Acquired(
             AwsModulithClaimToken(

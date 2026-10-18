@@ -1,11 +1,19 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.s3.getAsPublisher
+import io.bluetape4k.aws.s3.model.getObjectRequest
 import io.bluetape4k.aws.spring.kms.KmsOperations
+import io.bluetape4k.aws.spring.s3.S3BoundedEncryptedReadOperations.Companion.MAX_CIPHERTEXT_BYTES
 import io.bluetape4k.aws.spring.sqs.SqsExtendedPayloadReadException
+import io.bluetape4k.support.closeSafe
+import io.bluetape4k.support.requireEquals
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.reactive.asFlow
+import io.bluetape4k.support.toUtf8Bytes
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.kms.model.DataKeySpec
@@ -13,10 +21,9 @@ import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
-import java.security.SecureRandom
 import java.security.MessageDigest
-import java.util.Base64
+import java.security.SecureRandom
+import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -84,7 +91,7 @@ class S3ClientSideEncryptionTemplate(
     private val kmsOperations: KmsOperations,
     private val properties: S3Properties,
     private val random: SecureRandom = SecureRandom(),
-) : S3BoundedEncryptedReadOperations, S3ClientSideEncryptionIdentity {
+): S3BoundedEncryptedReadOperations, S3ClientSideEncryptionIdentity {
 
     override val canonicalKeyIdentity: String
         get() = canonicalKeyIdentity()
@@ -107,8 +114,8 @@ class S3ClientSideEncryptionTemplate(
                     .joinToString(";") { (name, value) -> "$name=$value" }
                 "$KMS_IDENTITY_DOMAIN_V1\u0000$canonicalKeyIdentity\u0000$legacyContext"
             }
-            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
-                MessageDigest.getInstance("SHA-256").digest(source.toByteArray(StandardCharsets.UTF_8)),
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(
+                MessageDigest.getInstance("SHA-256").digest(source.toUtf8Bytes()),
             )
         }
 
@@ -133,11 +140,13 @@ class S3ClientSideEncryptionTemplate(
         val (ciphertext, encryptionMetadata) = dataKey.use {
             val nonce = ByteArray(GCM_NONCE_BYTES).also(random::nextBytes)
             val plaintextKey = dataKey.plaintext
+
             val ciphertext = try {
                 encrypt(bytes, plaintextKey, nonce)
             } finally {
                 plaintextKey.fill(0)
             }
+
             val encryptionMetadata = buildMap {
                 put(METADATA_ALGORITHM, ENCRYPTION_ALGORITHM)
                 put(METADATA_ENCRYPTED_KEY, Base64.getEncoder().encodeToString(dataKey.encryptedDataKey))
@@ -168,15 +177,14 @@ class S3ClientSideEncryptionTemplate(
         key.requireNotBlank("key")
 
         val response = s3AsyncClient.getObject(
-            { request ->
-                request.bucket(bucket)
-                request.key(key)
-            },
+            getObjectRequest(bucket, key),
             AsyncResponseTransformer.toBytes(),
         ).await()
+
         val metadata = response.response().metadata()
         val algorithm = metadata.requiredMetadata(METADATA_ALGORITHM)
-        require(algorithm == ENCRYPTION_ALGORITHM) {
+
+        algorithm.requireEquals(ENCRYPTION_ALGORITHM) {
             "Unsupported S3 client-side encryption algorithm: $algorithm"
         }
 
@@ -202,35 +210,33 @@ class S3ClientSideEncryptionTemplate(
         encryptionContext: Map<String, String>,
         maxCiphertextBytes: Int,
     ): ByteArray {
-        require(maxCiphertextBytes in 1..S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
-            "maxCiphertextBytes must be between 1 and ${S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES}."
-        }
-        val publisher = s3AsyncClient.getObject(
-            { request ->
-                request.bucket(bucket)
-                request.key(key)
-            },
-            AsyncResponseTransformer.toPublisher(),
-        ).await()
+        maxCiphertextBytes.requireInRange(1, MAX_CIPHERTEXT_BYTES, "maxCiphertextBytes")
+        val publisher = s3AsyncClient.getAsPublisher(bucket, key)
+
         val output = ByteArrayOutputStream(minOf(maxCiphertextBytes, 8 * 1024))
         var size = 0
-        publisher.asFlow().collect { chunk ->
-            val copy = chunk.slice()
-            val chunkSize = copy.remaining()
-            if (chunkSize > maxCiphertextBytes - size) {
-                throw SqsExtendedPayloadReadException.create(pointerPresent = true, retryable = false)
+        publisher.asFlow()
+            .collect { chunk ->
+                val copy = chunk.slice()
+                val chunkSize = copy.remaining()
+                if (chunkSize > maxCiphertextBytes - size) {
+                    throw SqsExtendedPayloadReadException.create(pointerPresent = true, retryable = false)
+                }
+                val bytes = ByteArray(copy.remaining())
+                copy.get(bytes)
+
+                withContext(Dispatchers.IO) {
+                    output.write(bytes)
+                }
+                size += chunkSize
             }
-            val bytes = ByteArray(copy.remaining())
-            copy.get(bytes)
-            output.write(bytes)
-            size += chunkSize
-        }
 
         val metadata = publisher.response().metadata()
         val algorithm = metadata.requiredMetadata(METADATA_ALGORITHM)
-        require(algorithm == ENCRYPTION_ALGORITHM) {
+        algorithm.requireEquals(ENCRYPTION_ALGORITHM) {
             "Unsupported S3 client-side encryption algorithm: $algorithm"
         }
+
         val encryptedKey = Base64.getDecoder().decode(metadata.requiredMetadata(METADATA_ENCRYPTED_KEY))
         val keyId = metadata[METADATA_KEY_ID] ?: properties.clientSideEncryption.keyId
         val nonce = Base64.getDecoder().decode(metadata.requiredMetadata(METADATA_NONCE))
@@ -243,6 +249,7 @@ class S3ClientSideEncryptionTemplate(
             decrypt(output.toByteArray(), plaintextKey, nonce)
         } finally {
             plaintextKey.fill(0)
+            output.closeSafe()
         }
     }
 

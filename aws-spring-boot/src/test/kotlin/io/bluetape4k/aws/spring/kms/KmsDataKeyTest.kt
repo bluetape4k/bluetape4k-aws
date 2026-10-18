@@ -1,32 +1,42 @@
 package io.bluetape4k.aws.spring.kms
 
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.concurrent.get
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 class KmsDataKeyTest {
+
+    companion object: KLogging()
 
     @Test
     fun `close clears owned plaintext and preserves caller arrays`() {
         val original = byteArrayOf(1, 2, 3)
         val key = KmsDataKey("key", original, byteArrayOf(4, 5))
-        val owned = KmsDataKey::class.java.getDeclaredField("plaintextBytes").apply {
-            isAccessible = true
-        }.get(key) as ByteArray
+        val owned = KmsDataKey::class.java.getDeclaredField("plaintextBytes")
+            .apply { isAccessible = true }
+
+            .get(key) as ByteArray
         val issued = key.plaintext
 
-        (key as Any as AutoCloseable).close()
-        (key as Any as AutoCloseable).close()
+        key.close()
+        key.close()  // close 를 중복호출해도 문제없다.
 
-        owned.toList() shouldBeEqualTo listOf<Byte>(0, 0, 0)
-        original.toList() shouldBeEqualTo listOf<Byte>(1, 2, 3)
-        issued.toList() shouldBeEqualTo listOf<Byte>(1, 2, 3)
-        key.encryptedDataKey.toList() shouldBeEqualTo listOf<Byte>(4, 5)
-        assertFailsWith<IllegalStateException> { key.plaintext }
+        owned shouldContentEqual ByteArray(3) { 0 }
+        original shouldContentEqual byteArrayOf(1, 2, 3)
+        issued shouldContentEqual byteArrayOf(1, 2, 3)
+        key.encryptedDataKey shouldContentEqual byteArrayOf(4, 5)
+
+        assertFailsWith<IllegalStateException> {
+            key.plaintext
+        }
         issued.fill(0)
     }
 
@@ -37,6 +47,7 @@ class KmsDataKeyTest {
         val start = CountDownLatch(1)
         val failures = ConcurrentLinkedQueue<Throwable>()
         val executor = Executors.newFixedThreadPool(2)
+
         val reader = executor.submit {
             try {
                 start.await()
@@ -51,7 +62,10 @@ class KmsDataKeyTest {
                             if (snapshot !== key) snapshot.close()
                         }
                     } catch (cause: IllegalStateException) {
-                        if (cause.message != "KmsDataKey is closed.") failures.add(cause)
+                        log.warn { cause.message }
+                        if (cause.message != "KmsDataKey is closed.") {
+                            failures.add(cause)
+                        }
                     }
                 }
             } catch (cause: Throwable) {
@@ -65,9 +79,10 @@ class KmsDataKeyTest {
 
         try {
             start.countDown()
-            reader.get(5, TimeUnit.SECONDS)
-            closer.get(5, TimeUnit.SECONDS)
-            failures.peek()?.let { throw AssertionError("key copy/close race failed", it) }
+            reader.get(5.seconds)
+            closer.get(5.seconds)
+
+            failures.peek().shouldBeNull() // "key copy/close race failed"
         } finally {
             key.close()
             executor.shutdownNow()

@@ -16,7 +16,7 @@ data class KinesisPutRecordRequest(
     val streamName: String,
     val partitionKey: String,
     val data: SdkBytes,
-) : Serializable {
+): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
     }
@@ -35,7 +35,7 @@ data class KinesisShardIteratorRequest(
     val shardId: String,
     val type: ShardIteratorType = ShardIteratorType.TRIM_HORIZON,
     val startingSequenceNumber: String? = null,
-) : Serializable {
+): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
     }
@@ -54,7 +54,7 @@ data class KinesisRecordFlowRequest(
     val shardId: String,
     val position: KinesisStartingPosition = KinesisStartingPosition.TrimHorizon,
     val options: KinesisRecordFlowOptions? = null,
-) : Serializable {
+): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
     }

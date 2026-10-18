@@ -21,7 +21,7 @@ enum class SqsBatchStartupComponent {
 /** 실패 항목을 모두 수집한 자동 배치 전송 예외입니다. */
 class SqsSendBatchFailedException(
     val result: SqsSendManyResult,
-) : IllegalStateException(
+): IllegalStateException(
     "SQS send batch failed: status=${result.status}, failureCount=${result.failed.size}",
 ) {
     override fun toString(): String =
@@ -36,10 +36,10 @@ class SqsSendBatchFailedException(
 class SqsBatchCloseException private constructor(
     val components: List<SqsBatchCleanupComponent>,
     @Suppress("UNUSED_PARAMETER") normalizedMarker: Boolean,
-) : IllegalStateException(
+): IllegalStateException(
     "SQS batch close failed: components=${components.joinToString(",")}, failureCount=${components.size}",
 ) {
-    constructor(components: Collection<SqsBatchCleanupComponent>) : this(
+    constructor(components: Collection<SqsBatchCleanupComponent>): this(
         normalizeCleanupComponents(components),
         true,
     )
@@ -59,22 +59,22 @@ class SqsBatchStartupException private constructor(
     val startupComponent: SqsBatchStartupComponent,
     val cleanupComponents: List<SqsBatchCleanupComponent>,
     @Suppress("UNUSED_PARAMETER") normalizedMarker: Boolean,
-) : IllegalStateException(
+): IllegalStateException(
     "SQS batch startup failed: component=$startupComponent, " +
-        "cleanupComponents=${cleanupComponents.joinToString(",")}, " +
-        "cleanupFailureCount=${cleanupComponents.size}",
+            "cleanupComponents=${cleanupComponents.joinToString(",")}, " +
+            "cleanupFailureCount=${cleanupComponents.size}",
 ) {
     constructor(
         startupComponent: SqsBatchStartupComponent,
         cleanupComponents: Collection<SqsBatchCleanupComponent> = emptyList(),
-    ) : this(startupComponent, normalizeCleanupComponents(cleanupComponents), true)
+    ): this(startupComponent, normalizeCleanupComponents(cleanupComponents), true)
 
     val cleanupFailureCount: Int get() = cleanupComponents.size
 
     override fun toString(): String =
         "SqsBatchStartupException(component=$startupComponent, " +
-            "cleanupComponents=${cleanupComponents.joinToString(",")}, " +
-            "cleanupFailureCount=$cleanupFailureCount)"
+                "cleanupComponents=${cleanupComponents.joinToString(",")}, " +
+                "cleanupFailureCount=$cleanupFailureCount)"
 
     companion object {
         private const val serialVersionUID: Long = 1L
@@ -87,15 +87,15 @@ internal class SqsBatchProtocolException private constructor(
     val unknownEntryCount: Int,
     val duplicateEntryCount: Int,
     val missingEntryCount: Int,
-) : IllegalStateException(
+): IllegalStateException(
     "SQS batch response protocol mismatch: submittedCount=$submittedEntryCount, " +
-        "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
-        "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount",
+            "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
+            "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount",
 ) {
     override fun toString(): String =
         "SqsBatchProtocolException(submittedCount=$submittedEntryCount, " +
-            "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
-            "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount)"
+                "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
+                "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount)"
 
     companion object {
         private const val serialVersionUID: Long = 1L

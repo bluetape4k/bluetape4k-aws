@@ -3,20 +3,27 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.json.JsonMapper
 import java.io.ByteArrayOutputStream
+import java.io.NotSerializableException
 import java.io.ObjectOutputStream
 
 class SqsExtendedClientJacksonAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -33,8 +40,8 @@ class SqsExtendedClientJacksonAutoConfigurationTest {
         contextRunner
             .withBean(ObjectMapper::class.java, { ObjectMapper() })
             .run { context ->
-                context.getBeansOfType(SqsMessageConverter::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(SqsExtendedClientJacksonModule::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<SqsMessageConverter>() shouldHaveSize 1
+                context.getBeansOfType<SqsExtendedClientJacksonModule>() shouldHaveSize 1
             }
     }
 
@@ -45,8 +52,8 @@ class SqsExtendedClientJacksonAutoConfigurationTest {
             .withBean(ObjectMapper::class.java, { ObjectMapper() })
             .withBean(SqsExtendedClientJacksonModule::class.java, { userModule })
             .run { context ->
-                context.getBeansOfType(SqsExtendedClientJacksonModule::class.java).size shouldBeEqualTo 1
-                context.getBean(SqsExtendedClientJacksonModule::class.java) shouldBeSameInstanceAs userModule
+                context.getBeansOfType<SqsExtendedClientJacksonModule>() shouldHaveSize 1
+                context.getBean<SqsExtendedClientJacksonModule>() shouldBeSameInstanceAs userModule
             }
     }
 
@@ -65,6 +72,7 @@ class SqsExtendedClientJacksonAutoConfigurationTest {
 
         val json = mapper.writeValueAsString(request)
 
+        log.debug { "json=$json" }
         json shouldContain "contentTypePresent"
         json shouldContain "idempotencyKeyPresent"
         json shouldNotContain body
@@ -80,7 +88,7 @@ class SqsExtendedClientJacksonAutoConfigurationTest {
                 body = Base58.randomString(16),
             ),
         )
-        assertFailsWith<java.io.NotSerializableException> {
+        assertFailsWith<NotSerializableException> {
             ObjectOutputStream(ByteArrayOutputStream()).use { stream -> stream.writeObject(request) }
         }
     }

@@ -3,6 +3,13 @@ package io.bluetape4k.aws.spring.modulith
 import io.bluetape4k.aws.spring.sns.SnsHttpMessage
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireEquals
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
@@ -20,8 +27,7 @@ import tools.jackson.core.JsonToken
 import tools.jackson.core.StreamReadConstraints
 import tools.jackson.core.StreamReadFeature
 import tools.jackson.core.json.JsonFactory
-import tools.jackson.databind.ObjectMapper
-import java.nio.charset.StandardCharsets
+import tools.jackson.databind.json.JsonMapper
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicReference
@@ -50,7 +56,7 @@ internal fun interface AwsModulithSnsNotificationVerifier {
 
 internal class DefaultAwsModulithSnsNotificationVerifier(
     private val delegate: SnsHttpMessageVerifier,
-) : AwsModulithSnsNotificationVerifier {
+): AwsModulithSnsNotificationVerifier {
     override fun verify(json: String, expectedTopicArn: String): SnsHttpMessage =
         delegate.verify(json, expectedTopicArn = expectedTopicArn)
 }
@@ -61,7 +67,7 @@ internal class DefaultAwsModulithInboundSourceDecoder(
     expectedTopicArns: Set<String>,
     private val codec: AwsModulithEventCodec,
     private val snsVerifier: AwsModulithSnsNotificationVerifier? = null,
-) : AwsModulithInboundSourceDecoder {
+): AwsModulithInboundSourceDecoder {
 
     private val expectedTopicArns = expectedTopicArns.toSet()
 
@@ -88,17 +94,18 @@ internal class DefaultAwsModulithInboundSourceDecoder(
         val preflight = sourceBoundary { SnsNotificationPreflight.parse(json) }
         if (preflight.topicArn !in expectedTopicArns) throw AwsModulithSourceException()
         val verified = sourceBoundary {
-            requireNotNull(snsVerifier).verify(json, preflight.topicArn)
+            snsVerifier.requireNotNull("snsVerifier")
+                .verify(json, preflight.topicArn)
         }
         val verifiedEnvelopeMatches = verified.isNotification &&
-            verified.topicArn == preflight.topicArn &&
-            verified.message == preflight.message
+                verified.topicArn == preflight.topicArn &&
+                verified.message == preflight.message
         if (!verifiedEnvelopeMatches) {
             throw AwsModulithSourceException()
         }
         val attributes = sourceBoundary {
             verified.messageAttributes.mapValues { (_, attribute) ->
-                require(attribute.type == "String")
+                attribute.type.requireEquals("String", "attribute.type")
                 attribute.value
             }
         }
@@ -109,13 +116,15 @@ internal class DefaultAwsModulithInboundSourceDecoder(
         val event = codec.decode(body, attributes)
         val eventId = attributes[DefaultAwsModulithEventCodec.SYSTEM_EVENT_ID]
             ?: throw AwsModulithInboundEnvelopeException()
+
         val type = attributes[DefaultAwsModulithEventCodec.SYSTEM_EVENT_TYPE]
             ?: throw AwsModulithInboundEnvelopeException()
+
         return AwsModulithDecodedInboundEvent(event, AwsModulithEventKey(type, eventId))
     }
 
     private fun requireRawBodyBound(body: String) {
-        if (body.isBlank() || body.toByteArray(StandardCharsets.UTF_8).size > MAX_SOURCE_BYTES) {
+        if (body.isBlank() || body.toUtf8Bytes().size > MAX_SOURCE_BYTES) {
             throw AwsModulithSourceException()
         }
     }
@@ -153,8 +162,8 @@ class AwsModulithSqsEventConsumer internal constructor(
     private val heartbeatInterval: Duration = properties.idempotency.leaseDuration.dividedBy(HEARTBEAT_DIVISOR),
 ) {
     init {
-        require(!cleanupTimeout.isZero && !cleanupTimeout.isNegative)
-        require(!heartbeatInterval.isZero && !heartbeatInterval.isNegative)
+        cleanupTimeout.requireGt(Duration.ZERO, "cleanupTimeout")
+        heartbeatInterval.requireGt(Duration.ZERO, "heartbeatInterval")
     }
 
     suspend fun consume(message: SqsReceivedMessage): AwsModulithConsumeOutcome {
@@ -163,6 +172,7 @@ class AwsModulithSqsEventConsumer internal constructor(
         }
         val decoded = decode(message)
         validateDecodedKey(decoded)
+
         return when (val claim = claim(decoded.key)) {
             AwsModulithClaimResult.Completed -> {
                 record(AwsModulithFailurePhase.CLAIM, AwsModulithMetricOutcome.DUPLICATE)
@@ -189,23 +199,25 @@ class AwsModulithSqsEventConsumer internal constructor(
     private suspend fun processWithMetrics(event: Any, token: AwsModulithClaimToken): AwsModulithConsumeOutcome {
         val startedAt = System.nanoTime()
         metrics.changeInFlight(AwsModulithMetricService.SQS, 1)
+
         return try {
-            process(event, token).also {
-                metrics.recordLatency(
-                    AwsModulithMetricService.SQS,
-                    AwsModulithFailurePhase.DISPATCH,
-                    AwsModulithMetricOutcome.SUCCESS,
-                    AwsModulithDiagnosticCode.DISPATCH_ACK,
-                    Duration.ofNanos(System.nanoTime() - startedAt),
-                )
-            }
+            process(event, token)
+                .also {
+                    metrics.recordLatency(
+                        AwsModulithMetricService.SQS,
+                        AwsModulithFailurePhase.DISPATCH,
+                        AwsModulithMetricOutcome.SUCCESS,
+                        AwsModulithDiagnosticCode.DISPATCH_ACK,
+                        Duration.ofNanos(System.nanoTime() - startedAt),
+                    )
+                }
         } catch (failure: Throwable) {
             metrics.recordLatency(
                 AwsModulithMetricService.SQS,
                 AwsModulithFailurePhase.DISPATCH,
                 AwsModulithMetricOutcome.FAILURE,
                 primaryCode(failure),
-                Duration.ofNanos(System.nanoTime() - startedAt),
+                (System.nanoTime() - startedAt).nanos(),
             )
             throw failure
         } finally {
@@ -213,12 +225,13 @@ class AwsModulithSqsEventConsumer internal constructor(
         }
     }
 
-    private fun decode(message: SqsReceivedMessage): AwsModulithDecodedInboundEvent = try {
-        sourceDecoder.decode(message)
-    } catch (failure: AwsModulithEventException) {
-        record(failure.phase, AwsModulithMetricOutcome.REJECTED, failure.code)
-        throw failure
-    }
+    private fun decode(message: SqsReceivedMessage): AwsModulithDecodedInboundEvent =
+        try {
+            sourceDecoder.decode(message)
+        } catch (failure: AwsModulithEventException) {
+            record(failure.phase, AwsModulithMetricOutcome.REJECTED, failure.code)
+            throw failure
+        }
 
     private fun validateDecodedKey(decoded: AwsModulithDecodedInboundEvent) {
         val registration = registry.registrationFor(decoded.event)
@@ -233,6 +246,7 @@ class AwsModulithSqsEventConsumer internal constructor(
     @Suppress("ThrowsCount")
     private suspend fun process(event: Any, initialToken: AwsModulithClaimToken): AwsModulithConsumeOutcome {
         if (!initialToken.leaseUntil.isAfter(clock.instant())) throw AwsModulithStaleClaimException()
+
         val outboundLoopRisk = try {
             externalization.supports(event)
         } catch (failure: Throwable) {
@@ -243,11 +257,13 @@ class AwsModulithSqsEventConsumer internal constructor(
         }
 
         val latestToken = AtomicReference(initialToken)
+
         val dispatch = try {
             dispatchWithHeartbeat(event, latestToken)
         } catch (failure: Throwable) {
             failAfterRelease(latestToken.get(), failure)
         }
+
         if (dispatch.handlerFailure != null) failAfterRelease(dispatch.token, dispatch.handlerFailure)
         dispatch.heartbeatFailure?.let { heartbeatFailure ->
             record(AwsModulithFailurePhase.CLAIM, AwsModulithMetricOutcome.FAILURE, primaryCode(heartbeatFailure))
@@ -262,12 +278,14 @@ class AwsModulithSqsEventConsumer internal constructor(
         } catch (cancellation: CancellationException) {
             failAfterRelease(token, cancellation)
         }
+
         if (completion != AwsModulithStoreMutation.APPLIED && completion != AwsModulithStoreMutation.ALREADY_APPLIED) {
             record(AwsModulithFailurePhase.CLAIM, AwsModulithMetricOutcome.FAILURE)
             throw AwsModulithClaimMutationException()
         }
         record(AwsModulithFailurePhase.CLAIM, AwsModulithMetricOutcome.COMPLETED)
         record(AwsModulithFailurePhase.DISPATCH, AwsModulithMetricOutcome.SUCCESS)
+
         return AwsModulithConsumeOutcome.PROCESSED
     }
 
@@ -279,7 +297,7 @@ class AwsModulithSqsEventConsumer internal constructor(
         val heartbeat = launch {
             try {
                 while (isActive) {
-                    delay(heartbeatInterval.toMillis())
+                    delay(timeMillis = heartbeatInterval.toMillis())
                     token.set(claimBoundary { store.renew(token.get(), properties.idempotency.leaseDuration) })
                 }
             } catch (cancellation: CancellationException) {
@@ -299,6 +317,7 @@ class AwsModulithSqsEventConsumer internal constructor(
         } catch (failure: Throwable) {
             failure
         }
+
         withContext(NonCancellable) {
             heartbeat.cancelAndJoin()
         }
@@ -319,7 +338,7 @@ class AwsModulithSqsEventConsumer internal constructor(
     /** Store SPI의 non-blocking, cancellation-cooperative suspend 계약 안에서 cleanup을 제한합니다. */
     private suspend fun cleanupFailure(token: AwsModulithClaimToken): AwsModulithCleanupException? = try {
         withContext(NonCancellable) {
-            withTimeout(cleanupTimeout.toMillis()) {
+            withTimeout(timeMillis = cleanupTimeout.toMillis()) {
                 val result = store.release(token)
                 if (result == AwsModulithStoreMutation.STALE) throw AwsModulithCleanupException()
             }
@@ -329,31 +348,33 @@ class AwsModulithSqsEventConsumer internal constructor(
         AwsModulithCleanupException()
     }
 
-    private fun sanitizeDispatchFailure(failure: Throwable): Throwable = when (failure) {
-        is CancellationException -> failure
-        is Error -> failure
-        is AwsModulithInboundLoopRiskException -> failure
-        else -> AwsModulithDispatchException()
-    }
-
-    private suspend fun <T> claimBoundary(block: suspend () -> T): T = try {
-        block()
-    } catch (cancellation: CancellationException) {
-        throw cancellation
-    } catch (error: Error) {
-        throw error
-    } catch (failure: AwsModulithEventException) {
-        val outcome = if (failure is AwsModulithClaimCapacityException) {
-            AwsModulithMetricOutcome.REJECTED
-        } else {
-            AwsModulithMetricOutcome.FAILURE
+    private fun sanitizeDispatchFailure(failure: Throwable): Throwable =
+        when (failure) {
+            is CancellationException -> failure
+            is Error -> failure
+            is AwsModulithInboundLoopRiskException -> failure
+            else -> AwsModulithDispatchException()
         }
-        record(AwsModulithFailurePhase.CLAIM, outcome, failure.code)
-        throw failure
-    } catch (_: Throwable) {
-        record(AwsModulithFailurePhase.CLAIM, AwsModulithMetricOutcome.FAILURE)
-        throw AwsModulithClaimMutationException()
-    }
+
+    private suspend fun <T> claimBoundary(block: suspend () -> T): T =
+        try {
+            block()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (error: Error) {
+            throw error
+        } catch (failure: AwsModulithEventException) {
+            val outcome = if (failure is AwsModulithClaimCapacityException) {
+                AwsModulithMetricOutcome.REJECTED
+            } else {
+                AwsModulithMetricOutcome.FAILURE
+            }
+            record(AwsModulithFailurePhase.CLAIM, outcome, failure.code)
+            throw failure
+        } catch (_: Throwable) {
+            record(AwsModulithFailurePhase.CLAIM, AwsModulithMetricOutcome.FAILURE)
+            throw AwsModulithClaimMutationException()
+        }
 
     private fun record(
         phase: AwsModulithFailurePhase,
@@ -369,13 +390,14 @@ class AwsModulithSqsEventConsumer internal constructor(
     private fun primaryCode(primary: Throwable): AwsModulithDiagnosticCode =
         (primary as? AwsModulithEventException)?.code ?: AwsModulithDiagnosticCode.DISPATCH_ACK
 
-    companion object {
+    companion object: KLogging() {
         private const val HEARTBEAT_DIVISOR = 3L
 
         internal fun cleanupTimeout(sqsStopTimeoutMillis: Long, leaseDuration: Duration): Duration =
-            Duration.ofMillis(
-                minOf(sqsStopTimeoutMillis, leaseDuration.toMillis() / HEARTBEAT_DIVISOR).coerceAtLeast(1)
-            )
+            minOf(
+                sqsStopTimeoutMillis,
+                leaseDuration.toMillis() / HEARTBEAT_DIVISOR
+            ).coerceAtLeast(1).millis()
     }
 
     private data class DispatchAttempt(
@@ -386,8 +408,8 @@ class AwsModulithSqsEventConsumer internal constructor(
 }
 
 private object SnsNotificationPreflight {
-    private val mapper = ObjectMapper(
-        JsonFactory.builder()
+    private val mapper: JsonMapper by lazy {
+        val factory = JsonFactory.builder()
             .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
             .streamReadConstraints(
                 StreamReadConstraints.builder()
@@ -399,22 +421,26 @@ private object SnsNotificationPreflight {
                     .build()
             )
             .build()
-    )
+
+        JsonMapper.builder(factory)
+            .findAndAddModules()
+            .build()
+    }
 
     @Suppress("CyclomaticComplexMethod", "ThrowsCount")
     fun parse(json: String): SnsNotificationFields {
         validateAllTokens(json)
-        val parser = mapper.createParser(json)
-        parser.use {
-            if (it.nextToken() != JsonToken.START_OBJECT) throw AwsModulithSourceException()
+
+        mapper.createParser(json).use { parser ->
+            if (parser.nextToken() != JsonToken.START_OBJECT) throw AwsModulithSourceException()
             val fields = HashSet<String>()
             var type: String? = null
             var topicArn: String? = null
             var message: String? = null
             while (true) {
-                when (it.nextToken() ?: throw AwsModulithSourceException()) {
+                when (parser.nextToken() ?: throw AwsModulithSourceException()) {
                     JsonToken.PROPERTY_NAME -> {
-                        val (name, value) = it.readProperty(fields)
+                        val (name, value) = parser.readProperty(fields)
                         when (name) {
                             "Type" -> type = value
                             "TopicArn" -> topicArn = value
@@ -427,7 +453,7 @@ private object SnsNotificationPreflight {
                     else -> throw AwsModulithSourceException()
                 }
             }
-            if (it.nextToken() != null || type != "Notification" || !fields.containsAll(SNS_REQUIRED_FIELDS)) {
+            if (parser.nextToken() != null || type != "Notification" || !fields.containsAll(SNS_REQUIRED_FIELDS)) {
                 throw AwsModulithSourceException()
             }
             return SnsNotificationFields(
@@ -443,7 +469,7 @@ private object SnsNotificationPreflight {
                 when (parser.nextToken() ?: break) {
                     JsonToken.PROPERTY_NAME, JsonToken.VALUE_STRING,
                     JsonToken.VALUE_NUMBER_INT, JsonToken.VALUE_NUMBER_FLOAT,
-                    -> parser.getString().requireUtf8Bound()
+                        -> parser.string.requireUtf8Bound()
 
                     else -> Unit
                 }
@@ -453,11 +479,13 @@ private object SnsNotificationPreflight {
 
     private fun JsonParser.requiredNonBlankString(token: JsonToken): String {
         if (token != JsonToken.VALUE_STRING) throw AwsModulithSourceException()
-        return getString().takeIf(String::isNotBlank) ?: throw AwsModulithSourceException()
+
+        return string.takeIf(String::isNotBlank)
+            ?: throw AwsModulithSourceException()
     }
 
     private fun String.requireUtf8Bound() {
-        if (toByteArray(StandardCharsets.UTF_8).size > MAX_SOURCE_STRING_LENGTH) {
+        if (toUtf8Bytes().size > MAX_SOURCE_STRING_LENGTH) {
             throw AwsModulithSourceException()
         }
     }
@@ -465,7 +493,10 @@ private object SnsNotificationPreflight {
     @Suppress("ThrowsCount")
     private fun JsonParser.readProperty(fields: MutableSet<String>): Pair<String, String?> {
         val name = currentName() ?: throw AwsModulithSourceException()
-        if (name !in SNS_NOTIFICATION_FIELDS || !fields.add(name)) throw AwsModulithSourceException()
+        if (name !in SNS_NOTIFICATION_FIELDS || !fields.add(name)) {
+            throw AwsModulithSourceException()
+        }
+
         val token = nextToken() ?: throw AwsModulithSourceException()
         val value = if (name in SNS_REQUIRED_FIELDS) {
             requiredNonBlankString(token)
@@ -483,8 +514,7 @@ private fun AwsModulithFailurePhase.defaultCode(): AwsModulithDiagnosticCode = w
     AwsModulithFailurePhase.SOURCE -> AwsModulithDiagnosticCode.SOURCE
     AwsModulithFailurePhase.DECODE -> AwsModulithDiagnosticCode.INBOUND
     AwsModulithFailurePhase.CLAIM -> AwsModulithDiagnosticCode.CLAIM
-    AwsModulithFailurePhase.DISPATCH, AwsModulithFailurePhase.ACK, AwsModulithFailurePhase.CLEANUP ->
-        AwsModulithDiagnosticCode.DISPATCH_ACK
+    AwsModulithFailurePhase.DISPATCH, AwsModulithFailurePhase.ACK, AwsModulithFailurePhase.CLEANUP -> AwsModulithDiagnosticCode.DISPATCH_ACK
     AwsModulithFailurePhase.CONFIGURATION -> AwsModulithDiagnosticCode.CONFIGURATION
     AwsModulithFailurePhase.SERIALIZATION -> AwsModulithDiagnosticCode.ENVELOPE
     AwsModulithFailurePhase.LIFECYCLE -> AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE

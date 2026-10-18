@@ -5,9 +5,13 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.aws.sns.SnsHttpEnvelopeConformanceFixtures
 import io.bluetape4k.aws.sns.SnsHttpEnvelopeValidationException
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
-class SnsHttpEnvelopeConformanceTest {
+class SnsHttpEnvelopeConformanceTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `공통 valid corpus를 같은 wire 결과로 변환한다`() {
@@ -25,7 +29,7 @@ class SnsHttpEnvelopeConformanceTest {
             val error = assertFailsWith<SnsHttpEnvelopeValidationException>(case.name) {
                 SnsHttpMessageParser.parse(case.json, case.messageTypeHeader)
             }
-
+            log.debug { "error=$error" }
             error.reason shouldBeEqualTo case.expectedReason
             error.message.orEmpty() shouldBeEqualTo case.expectedMessage
             error.message.orEmpty().contains("signature-secret").shouldBeFalse()

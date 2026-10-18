@@ -1,11 +1,14 @@
 package io.bluetape4k.aws.spring.connection
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.testcontainers.aws.FlociServer
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
@@ -13,11 +16,13 @@ import java.net.URI
 
 class AwsServiceConnectionDetailsRedactionTest {
 
+    companion object: KLogging()
+
     @Test
     fun `snapshot copies values and redacts credentials in diagnostics`() {
         val accessKey = "access-key-that-must-not-leak"
         val secretKey = "secret-key-that-must-not-leak"
-        val floci = mockk<io.bluetape4k.testcontainers.aws.FlociServer>(relaxed = true)
+        val floci = mockk<FlociServer>(relaxed = true)
         var endpoint = URI.create("http://localhost:4566")
         var region = "us-east-1"
         var access = accessKey
@@ -33,15 +38,19 @@ class AwsServiceConnectionDetailsRedactionTest {
         access = "changed-access"
         secret = "changed-secret"
 
+        log.debug { "values=$values" }
         values.endpoint shouldBeEqualTo URI.create("http://localhost:4566")
         values.region shouldBeEqualTo "us-east-1"
         values.accessKey shouldBeEqualTo accessKey
         values.secretKey shouldBeEqualTo secretKey
-        values.toString().contains(accessKey).shouldBeFalse()
-        values.toString().contains(secretKey).shouldBeFalse()
-        values.toString() shouldBeEqualTo
-            "AwsServiceConnectionValues(endpoint=http://localhost:4566, region=us-east-1, " +
-            "accessKey=[REDACTED], secretKey=[REDACTED])"
+
+        values.toString().also {
+            it shouldNotContain accessKey
+            it shouldNotContain secretKey
+            it shouldBeEqualTo
+                    "AwsServiceConnectionValues(endpoint=http://localhost:4566, region=us-east-1, " +
+                    "accessKey=[REDACTED], secretKey=[REDACTED])"
+        }
     }
 
     @Test
@@ -55,19 +64,18 @@ class AwsServiceConnectionDetailsRedactionTest {
         )
         original += "sqs"
 
+        log.debug { "error=$error" }
         error.reason shouldBeEqualTo AwsServiceConnectionConfigurationException.Reason.CREDENTIAL_CONFLICT
         error.serviceNames shouldBeEqualTo setOf("s3")
         error.candidateCount shouldBeEqualTo 2
         error.cause.shouldBeNull()
-        error.suppressed.size shouldBeEqualTo 0
-        error.message.orEmpty().contains("secret-key-value").shouldBeFalse()
+        error.suppressed.shouldBeEmpty()
+        error.message shouldNotContain "secret-key-value"
+
         @Suppress("UNCHECKED_CAST")
         (error.serviceNames as? MutableSet<String>)?.let { mutable ->
-            try {
+            assertFailsWith<UnsupportedOperationException> {
                 mutable.add("sqs")
-                throw AssertionError("serviceNames must be immutable")
-            } catch (_: UnsupportedOperationException) {
-                // expected immutable view
             }
         }
     }
@@ -77,14 +85,16 @@ class AwsServiceConnectionDetailsRedactionTest {
         val error = assertFailsWith<AwsServiceConnectionConfigurationException> {
             throw malformedDetails("dynamodb", 1)
         }
+
+        log.debug { "error=$error" }
         error.reason shouldBeEqualTo AwsServiceConnectionConfigurationException.Reason.MALFORMED_DETAILS
-        error.message.orEmpty() shouldBeEqualTo
-            "AWS ServiceConnection configuration failed: reason=MALFORMED_DETAILS, " +
-            "services=[dynamodb], candidates=1"
-        error.message.orEmpty().contains("endpoint").shouldBeFalse()
-        error.message.orEmpty().contains("credential").shouldBeFalse()
-        error.message.orEmpty().contains("secret").shouldBeFalse()
+        error.message shouldBeEqualTo
+                "AWS ServiceConnection configuration failed: reason=MALFORMED_DETAILS, " +
+                "services=[dynamodb], candidates=1"
+        error.message shouldNotContain "endpoint"
+        error.message shouldNotContain "credential"
+        error.message shouldNotContain "secret"
         error.cause.shouldBeNull()
-        error.suppressed.isEmpty().shouldBeTrue()
+        error.suppressed.shouldBeEmpty()
     }
 }

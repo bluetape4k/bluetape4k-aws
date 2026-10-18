@@ -7,17 +7,21 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.jackson3.Jackson
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
-import tools.jackson.databind.ObjectMapper
 
 class SqsSnsMessageConverterTest {
 
-    private val objectMapper = ObjectMapper()
+    companion object: KLogging()
+
+    private val objectMapper = Jackson.defaultJsonMapper
 
     @Test
     fun `SNS notification converts typed payload and preserves SNS and SQS metadata`() {
@@ -30,6 +34,7 @@ class SqsSnsMessageConverterTest {
         val notification = SnsMessageConverter(objectMapper)
             .convertNotification(message, OrderPayload::class.java)
 
+        log.debug { "notification=$notification" }
         notification.type shouldBeEqualTo "Notification"
         notification.message.orderId shouldContain "order-"
         notification.messageId shouldBeEqualTo "sns-message-1"
@@ -47,9 +52,9 @@ class SqsSnsMessageConverterTest {
         notification.sqs.messageAttributes.getValue("tenant").stringValue() shouldBeEqualTo "tenant-1"
         notification.headers.getValue(SnsNotificationHeaders.MESSAGE_ID) shouldBeEqualTo "sns-message-1"
         notification.headers.getValue(SnsNotificationHeaders.TOPIC_ARN) shouldBeEqualTo
-            "arn:aws:sns:us-east-1:000000000000:orders"
+                "arn:aws:sns:us-east-1:000000000000:orders"
         notification.headers.getValue(SnsNotificationHeaders.MESSAGE_ATTRIBUTES) shouldBeEqualTo
-            notification.messageAttributes
+                notification.messageAttributes
         notification.rawEnvelope shouldBeEqualTo message.body
     }
 
@@ -60,6 +65,7 @@ class SqsSnsMessageConverterTest {
         val notification = SnsMessageConverter(objectMapper)
             .convertNotification(message, String::class.java)
 
+        log.debug { "notification=$notification" }
         notification.message shouldBeEqualTo "plain-text"
     }
 
@@ -67,7 +73,8 @@ class SqsSnsMessageConverterTest {
     fun `ordinary SQS message falls back to the existing body conversion`() {
         val message = snsMessage("ordinary-sqs-body")
 
-        SnsMessageConverter(objectMapper).convert(message, String::class.java) shouldBeEqualTo "ordinary-sqs-body"
+        SnsMessageConverter(objectMapper)
+            .convert(message, String::class.java) shouldBeEqualTo "ordinary-sqs-body"
     }
 
     @Test
@@ -94,8 +101,9 @@ class SqsSnsMessageConverterTest {
             ).convert(snsMessage(body), String::class.java)
         }
 
+        log.debug { "error=$error" }
         error.rawEnvelope shouldBeEqualTo body
-        error.message.orEmpty() shouldContain "SNS notification envelope"
+        error.message shouldContain "SNS notification envelope"
     }
 
     @Test
@@ -107,6 +115,7 @@ class SqsSnsMessageConverterTest {
             preserveRawEnvelope = false,
         ).convertNotification(message, String::class.java)
 
+        log.debug { "notification=$notification" }
         notification.rawEnvelope.shouldBeNull()
     }
 
@@ -122,6 +131,7 @@ class SqsSnsMessageConverterTest {
         )
 
         val notification = probe.notification.shouldNotBeNull()
+        log.debug { "notification=$notification" }
         notification.message.orderId shouldBeEqualTo "order-1"
         notification.sqs.messageGroupId shouldBeEqualTo "orders"
     }
@@ -171,7 +181,7 @@ class SqsSnsMessageConverterTest {
     class OrderPayload() {
         var orderId: String = ""
 
-        constructor(orderId: String) : this() {
+        constructor(orderId: String): this() {
             this.orderId = orderId
         }
     }
@@ -179,7 +189,7 @@ class SqsSnsMessageConverterTest {
     class NotificationListenerProbe {
         var notification: SnsNotification<OrderPayload>? = null
 
-        suspend fun handle(notification: SnsNotification<OrderPayload>) {
+        fun handle(notification: SnsNotification<OrderPayload>) {
             this.notification = notification
         }
     }

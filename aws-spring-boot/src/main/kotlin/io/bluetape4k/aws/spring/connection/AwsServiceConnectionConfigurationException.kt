@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.connection
 
-import java.util.Collections
+import io.bluetape4k.support.requireGe
+import java.util.*
 
 /**
  * AWS ServiceConnection 설정을 안전하게 중단할 때 사용하는 예외입니다.
@@ -26,7 +27,7 @@ class AwsServiceConnectionConfigurationException(
     val serviceNames: Set<String> = Collections.unmodifiableSet(serviceNames.toSortedSet())
 
     init {
-        require(candidateCount >= 0) { "candidateCount must not be negative" }
+        candidateCount.requireGe(0, "candidateCount")
     }
 
     companion object {
@@ -42,6 +43,7 @@ class AwsServiceConnectionConfigurationException(
             val safeCause = causeSummary
                 ?.takeIf { CLASS_NAME.matches(it) }
                 ?.substringAfterLast('.')
+
             return buildString {
                 append("AWS ServiceConnection configuration failed: reason=")
                 append(reason)

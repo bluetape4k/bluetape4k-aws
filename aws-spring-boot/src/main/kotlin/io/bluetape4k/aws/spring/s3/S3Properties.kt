@@ -1,10 +1,11 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
-import kotlin.jvm.internal.DefaultConstructorMarker
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
+import kotlin.jvm.internal.DefaultConstructorMarker
 
 private const val DEFAULT_OUTPUT_STREAM_THRESHOLD_BYTES: Long = 8L * 1024 * 1024
 private const val DEFAULT_OUTPUT_STREAM_PART_SIZE_BYTES: Long = 8L * 1024 * 1024
@@ -29,10 +30,10 @@ data class S3Properties(
     val presign: Presign = Presign(),
     val transfer: Transfer = Transfer(),
     val clientSideEncryption: ClientSideEncryption = ClientSideEncryption(),
-) : Serializable {
+): Serializable {
     data class Presign(
         val duration: Duration = Duration.ofMinutes(15),
-    ) : Serializable {
+    ): Serializable {
         companion object {
             private const val serialVersionUID: Long = 6142960232232931590L
         }
@@ -54,10 +55,10 @@ data class S3Properties(
          */
         @Deprecated(
             message = "요청별 part size는 AWS SDK v2 TransferManager에서 지원하지 않습니다. " +
-                "CRT 클라이언트는 bluetape4k.aws.s3.crt.minimum-part-size-in-bytes를 사용하세요.",
+                    "CRT 클라이언트는 bluetape4k.aws.s3.crt.minimum-part-size-in-bytes를 사용하세요.",
         )
         val outputStreamPartSizeBytes: Long = DEFAULT_OUTPUT_STREAM_PART_SIZE_BYTES,
-    ) : Serializable {
+    ): Serializable {
         init {
             require(uploadDirectoryMaxDepth == null || uploadDirectoryMaxDepth >= 0) {
                 "bluetape4k.aws.s3.transfer.uploadDirectoryMaxDepth must be greater than or equal to 0."
@@ -89,14 +90,14 @@ data class S3Properties(
         // 기존 positional source call의 의미를 유지하도록 새 parameter를 뒤에 추가합니다.
         val provider: ClientSideEncryptionProvider = ClientSideEncryptionProvider.KMS,
         val keyVersion: String? = null,
-    ) : Serializable {
+    ): Serializable {
         /** 기존 4-인자 생성자와의 source/JVM descriptor 호환성을 유지합니다. */
         constructor(
             enabled: Boolean,
             keyId: String?,
             encryptionContext: Map<String, String>,
             useDataKeyCache: Boolean,
-        ) : this(
+        ): this(
             enabled = enabled,
             keyId = keyId,
             encryptionContext = encryptionContext,
@@ -114,7 +115,7 @@ data class S3Properties(
             useDataKeyCache: Boolean,
             mask: Int,
             marker: DefaultConstructorMarker?,
-        ) : this(
+        ): this(
             enabled = if (mask and COPY_ENABLED_MASK != 0) false else enabled,
             keyId = if (mask and COPY_KEY_ID_MASK != 0) null else keyId,
             encryptionContext = if (mask and COPY_ENCRYPTION_CONTEXT_MASK != 0) emptyMap() else encryptionContext,
@@ -147,7 +148,7 @@ data class S3Properties(
             }
             require(encryptionContext.keys.none { it.isBlank() || it.any(Char::isISOControl) }) {
                 "bluetape4k.aws.s3.client-side-encryption.encryptionContext keys must not be blank " +
-                    "or contain control characters."
+                        "or contain control characters."
             }
             require(encryptionContext.values.none { it.any(Char::isISOControl) }) {
                 "bluetape4k.aws.s3.client-side-encryption.encryptionContext values must not contain control characters."
@@ -199,7 +200,7 @@ data class S3Properties(
 }
 
 private fun String.isSafeCseToken(name: String): Boolean {
-    require(isNotBlank()) {
+    requireNotBlank {
         "bluetape4k.aws.s3.client-side-encryption.$name must not be blank."
     }
     require(none(Char::isISOControl)) {

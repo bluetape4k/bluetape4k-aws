@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.kinesis
 
 import kotlinx.coroutines.flow.Flow
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.CreateStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DeleteStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DescribeStreamResponse
@@ -34,6 +35,7 @@ import software.amazon.awssdk.services.kinesis.model.Record
  * ```
  */
 interface KinesisOperations {
+    val client: KinesisAsyncClient
     suspend fun createStream(streamName: String, shardCount: Int = 1): CreateStreamResponse
     suspend fun createConfiguredStream(streamName: String): CreateStreamResponse
     suspend fun deleteStream(streamName: String): DeleteStreamResponse

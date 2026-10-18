@@ -1,14 +1,13 @@
 package io.bluetape4k.aws.spring.modulith
 
-import kotlinx.coroutines.ensureActive
+import io.bluetape4k.codec.Base58
+import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.currentCoroutineContext
-import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.ensureActive
 import java.time.Clock
 import java.time.DateTimeException
 import java.time.Duration
 import java.time.Instant
-import java.util.LinkedHashMap
-import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -23,10 +22,10 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
     properties: AwsModulithEventsProperties.Idempotency,
     private val clock: Clock,
     private val ownerIdSupplier: () -> String,
-) : AwsModulithEventIdempotencyStore, AutoCloseable {
+): AwsModulithEventIdempotencyStore, AutoCloseable {
 
-    constructor(properties: AwsModulithEventsProperties.Idempotency = AwsModulithEventsProperties.Idempotency()) :
-        this(properties, Clock.systemUTC(), { UUID.randomUUID().toString() })
+    constructor(properties: AwsModulithEventsProperties.Idempotency = AwsModulithEventsProperties.Idempotency()):
+            this(properties, Clock.systemUTC(), { Base58.randomString(12).lowercase() })
 
     private val limits = properties.copy()
     private val lock = ReentrantLock()
@@ -42,6 +41,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
     ): AwsModulithClaimResult {
         currentCoroutineContext().ensureActive()
         requireLeaseDuration(leaseDuration)
+
         return lock.withLock {
             ensureOpen()
             val now = clock.instant()
@@ -60,6 +60,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
     ): AwsModulithClaimToken {
         currentCoroutineContext().ensureActive()
         requireLeaseDuration(leaseDuration)
+
         return lock.withLock {
             ensureOpen()
             val now = clock.instant()
@@ -75,6 +76,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
 
     override suspend fun complete(token: AwsModulithClaimToken): AwsModulithStoreMutation {
         currentCoroutineContext().ensureActive()
+
         return lock.withLock {
             ensureOpen()
             val now = clock.instant()
@@ -93,6 +95,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
 
     override suspend fun release(token: AwsModulithClaimToken): AwsModulithStoreMutation {
         currentCoroutineContext().ensureActive()
+
         return lock.withLock {
             ensureOpen()
             val now = clock.instant()
@@ -106,6 +109,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
 
     override suspend fun recoverExpired(now: Instant): Int {
         currentCoroutineContext().ensureActive()
+
         return lock.withLock {
             ensureOpen()
             val recoveredKeys = entries.entries
@@ -146,6 +150,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
         }
         val takeover = newToken(entry.token.key, entry.token.generation, leaseDuration, now)
         entries[entry.token.key] = StoreEntry.InProgress(takeover)
+
         return AwsModulithClaimResult.Acquired(takeover)
     }
 
@@ -155,12 +160,15 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
         now: Instant,
     ): AwsModulithClaimResult {
         ensureInProgressCapacity()
+
         val keyBytes = key.utf8Bytes()
         ensureEntryCapacity(keyBytes)
+
         val token = newToken(key, 0, leaseDuration, now)
         entries[key] = StoreEntry.InProgress(token)
         inProgressCount++
         retainedKeyBytes += keyBytes
+
         return AwsModulithClaimResult.Acquired(token)
     }
 
@@ -263,14 +271,14 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
     }
 
     private sealed interface StoreEntry {
-        data class InProgress(val token: AwsModulithClaimToken) : StoreEntry {
+        data class InProgress(val token: AwsModulithClaimToken): StoreEntry {
             fun matches(candidate: AwsModulithClaimToken): Boolean = token == candidate
         }
 
         data class Completed(
             val token: AwsModulithClaimToken,
             val completedAt: Instant,
-        ) : StoreEntry {
+        ): StoreEntry {
             fun matches(candidate: AwsModulithClaimToken): Boolean = token == candidate
         }
     }
@@ -285,7 +293,6 @@ internal data class InMemoryAwsModulithEventIdempotencyStoreMetrics(
 )
 
 private fun AwsModulithEventKey.utf8Bytes(): Long =
-    type.toByteArray(StandardCharsets.UTF_8).size.toLong() +
-        eventId.toByteArray(StandardCharsets.UTF_8).size.toLong()
+    type.toUtf8Bytes().size.toLong() + eventId.toUtf8Bytes().size.toLong()
 
 private fun Instant.isActiveAt(now: Instant): Boolean = !isBefore(now)

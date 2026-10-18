@@ -7,7 +7,13 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.sns.SnsHttpEnvelopeRejectionReason
 import io.bluetape4k.aws.sns.SnsHttpEnvelopeValidationException
+import io.bluetape4k.concurrent.await
+import io.bluetape4k.concurrent.awaitTermination
 import io.bluetape4k.junit5.concurrency.MultithreadingTester
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.toUtf8Bytes
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.http.AbortableInputStream
@@ -25,12 +31,11 @@ import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.URI
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * AWS SNS signed HTTP fixture를 외부 AWS endpoint 없이 검증합니다.
@@ -39,6 +44,30 @@ import java.util.concurrent.atomic.AtomicInteger
  * `SdkHttpClient` 경계를 결정적인 로컬 double로 대체합니다.
  */
 class SnsHttpMessageVerifierFixtureTest {
+
+    private companion object: KLogging() {
+        const val TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:issue-513-topic"
+        const val OTHER_TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:other-topic"
+        const val BASE_CERTIFICATE_URL = "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-issue-513.pem"
+        const val TEST_CERT_HOST = "my-test-service.amazonaws.com"
+        const val CERTIFICATE_CACHE_SIZE = 10
+
+        val notificationV1 = fixture("notification-v1.json")
+        val notificationV2 = fixture("notification-v2.json")
+        val signingCertificate = fixture("signing-cert.pem").toUtf8Bytes()
+        val expiredCertificate = fixture("expired-cert.pem").toUtf8Bytes()
+
+        private fun fixture(name: String): String =
+            SnsHttpMessageVerifierFixtureTest::class.java.getResource("/sns-signature/$name")
+                .requireNotNull(name)
+                .readText(Charsets.UTF_8)
+
+        fun successResponse(body: ByteArray): HttpExecuteResponse =
+            HttpExecuteResponse.builder()
+                .response(SdkHttpFullResponse.builder().statusCode(200).build())
+                .responseBody(AbortableInputStream.create(ByteArrayInputStream(body)))
+                .build()
+    }
 
     @Test
     fun `verifier accepts the long lived AWS format signature version 1 fixture`() {
@@ -51,6 +80,7 @@ class SnsHttpMessageVerifierFixtureTest {
                 expectedTopicArn = TOPIC_ARN,
             )
 
+            log.debug { "message=$message" }
             message.topicArn shouldBeEqualTo TOPIC_ARN
             message.signatureVersion shouldBeEqualTo "1"
             client.requestCount shouldBeEqualTo 1
@@ -68,6 +98,7 @@ class SnsHttpMessageVerifierFixtureTest {
                 expectedTopicArn = TOPIC_ARN,
             )
 
+            log.debug { "message=$message" }
             message.topicArn shouldBeEqualTo TOPIC_ARN
             message.signatureVersion shouldBeEqualTo "2"
             client.requestCount shouldBeEqualTo 1
@@ -84,7 +115,8 @@ class SnsHttpMessageVerifierFixtureTest {
                 verifier.verify(tampered, messageTypeHeader = "Notification")
             }
 
-            failure.message.orEmpty() shouldContain "signature"
+            log.debug { "failure=$failure" }
+            failure.message shouldContain "signature"
             client.requestCount shouldBeEqualTo 1
         }
     }
@@ -99,7 +131,8 @@ class SnsHttpMessageVerifierFixtureTest {
                 verifier.verify(tampered, messageTypeHeader = "Notification")
             }
 
-            failure.message.orEmpty() shouldContain "signature"
+            log.debug { "failure=$failure" }
+            failure.message shouldContain "signature"
             client.requestCount shouldBeEqualTo 1
         }
     }
@@ -117,8 +150,9 @@ class SnsHttpMessageVerifierFixtureTest {
                 verifier.verify(tampered, messageTypeHeader = "Notification")
             }
 
+            log.debug { "failure=$failure" }
             failure.reason shouldBeEqualTo SnsHttpEnvelopeRejectionReason.INVALID_SIGNING_CERT_URI
-            failure.message.orEmpty() shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
+            failure.message shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
             client.requestCount shouldBeEqualTo 0
         }
     }
@@ -137,7 +171,8 @@ class SnsHttpMessageVerifierFixtureTest {
                 )
             }
 
-            failure.message.orEmpty() shouldContain "does not match expectedTopicArn"
+            log.debug { "failure=$failure" }
+            failure.message shouldContain "does not match expectedTopicArn"
             client.requestCount shouldBeEqualTo 0
         }
     }
@@ -151,7 +186,8 @@ class SnsHttpMessageVerifierFixtureTest {
                 verifier.verify(notificationV2, messageTypeHeader = "Notification")
             }
 
-            failure.message.orEmpty() shouldContain "X509 PEM"
+            log.debug { "failure=$failure" }
+            failure.message shouldContain "X509 PEM"
             client.requestCount shouldBeEqualTo 1
         }
     }
@@ -159,21 +195,18 @@ class SnsHttpMessageVerifierFixtureTest {
     @Test
     fun `official expired certificate fixture is rejected by sdk retriever`() {
         val client = StubHttpClient { successResponse(expiredCertificate) }
-        val retriever = CertificateRetriever(
+        CertificateRetriever(
             client,
             TEST_CERT_HOST,
             TEST_CERT_HOST,
-        )
-
-        try {
+        ).use { retriever ->
             val failure = assertFailsWith<SdkClientException> {
                 retriever.retrieveCertificate(URI.create("https://$TEST_CERT_HOST/expired.pem"))
             }
 
-            failure.message.orEmpty() shouldContain "certificate is expired"
+            log.debug { "failure=$failure" }
+            failure.message shouldContain "certificate is expired"
             client.requestCount shouldBeEqualTo 1
-        } finally {
-            retriever.close()
         }
     }
 
@@ -238,6 +271,7 @@ class SnsHttpMessageVerifierFixtureTest {
                 verifier.verify(notificationV2, messageTypeHeader = "Notification")
             }
 
+            log.debug { "failure=$failure" }
             failure.cause shouldBeSameInstanceAs timeout
             client.requestCount shouldBeEqualTo 1
         }
@@ -253,6 +287,7 @@ class SnsHttpMessageVerifierFixtureTest {
                 verifier.verify(notificationV2, messageTypeHeader = "Notification")
             }
 
+            log.debug { "failure=$failure" }
             failure.cause shouldBeSameInstanceAs timeout
             client.requestCount shouldBeEqualTo 1
         }
@@ -263,7 +298,7 @@ class SnsHttpMessageVerifierFixtureTest {
         val cleanupFailure = IOException("response body cleanup failed")
         val bodyClosed = AtomicBoolean(false)
         val client = StubHttpClient {
-            val body = object : ByteArrayInputStream(signingCertificate) {
+            val body = object: ByteArrayInputStream(signingCertificate) {
                 override fun close() {
                     bodyClosed.set(true)
                     throw cleanupFailure
@@ -280,6 +315,7 @@ class SnsHttpMessageVerifierFixtureTest {
                 verifier.verify(notificationV2, messageTypeHeader = "Notification")
             }
 
+            log.debug { "failure=$failure" }
             failure.cause shouldBeSameInstanceAs cleanupFailure
             bodyClosed.get().shouldBeTrue()
             client.requestCount shouldBeEqualTo 1
@@ -307,14 +343,14 @@ class SnsHttpMessageVerifierFixtureTest {
         }
 
         try {
-            requestStarted.await(5, TimeUnit.SECONDS).shouldBeTrue()
+            requestStarted.await(5.seconds).shouldBeTrue()
             future.cancel(true).shouldBeTrue()
-            requestInterrupted.await(5, TimeUnit.SECONDS).shouldBeTrue()
+            requestInterrupted.await(5.seconds).shouldBeTrue()
             future.isCancelled.shouldBeTrue()
             client.requestCount shouldBeEqualTo 1
         } finally {
             executor.shutdownNow()
-            executor.awaitTermination(5, TimeUnit.SECONDS).shouldBeTrue()
+            executor.awaitTermination(5.seconds).shouldBeTrue()
             verifier.close()
         }
     }
@@ -341,7 +377,7 @@ class SnsHttpMessageVerifierFixtureTest {
 
     private class StubHttpClient(
         private val responseFactory: (URI) -> HttpExecuteResponse,
-    ) : SdkHttpClient {
+    ): SdkHttpClient {
 
         private val requests = CopyOnWriteArrayList<URI>()
 
@@ -351,7 +387,7 @@ class SnsHttpMessageVerifierFixtureTest {
         override fun prepareRequest(request: HttpExecuteRequest): ExecutableHttpRequest {
             val uri = request.httpRequest().getUri()
             requests.add(uri)
-            return object : ExecutableHttpRequest {
+            return object: ExecutableHttpRequest {
                 override fun call(): HttpExecuteResponse = responseFactory(uri)
 
                 override fun abort() = Unit
@@ -359,29 +395,5 @@ class SnsHttpMessageVerifierFixtureTest {
         }
 
         override fun close() = Unit
-    }
-
-    private companion object {
-        const val TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:issue-513-topic"
-        const val OTHER_TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:other-topic"
-        const val BASE_CERTIFICATE_URL =
-            "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-issue-513.pem"
-        const val TEST_CERT_HOST = "my-test-service.amazonaws.com"
-        const val CERTIFICATE_CACHE_SIZE = 10
-
-        val notificationV1 = fixture("notification-v1.json")
-        val notificationV2 = fixture("notification-v2.json")
-        val signingCertificate = fixture("signing-cert.pem").toByteArray(StandardCharsets.UTF_8)
-        val expiredCertificate = fixture("expired-cert.pem").toByteArray(StandardCharsets.UTF_8)
-
-        private fun fixture(name: String): String =
-            requireNotNull(SnsHttpMessageVerifierFixtureTest::class.java.getResource("/sns-signature/$name"))
-                .readText(StandardCharsets.UTF_8)
-
-        fun successResponse(body: ByteArray): HttpExecuteResponse =
-            HttpExecuteResponse.builder()
-                .response(SdkHttpFullResponse.builder().statusCode(200).build())
-                .responseBody(AbortableInputStream.create(ByteArrayInputStream(body)))
-                .build()
     }
 }

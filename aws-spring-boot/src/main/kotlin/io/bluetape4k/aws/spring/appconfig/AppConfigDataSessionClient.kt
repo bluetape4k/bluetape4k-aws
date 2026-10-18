@@ -1,10 +1,17 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.support.hashOf
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
+import java.io.Serializable
+
 /**
  * AWS SDK 타입을 ConfigData와 poller에서 분리하는 테스트 가능한 AppConfig Data 계약입니다.
  * token과 payload를 객체 문자열 표현에 포함하지 않습니다.
  */
-internal interface AppConfigDataSessionClient : AutoCloseable {
+internal interface AppConfigDataSessionClient: AutoCloseable {
     fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession
 
     fun getLatestConfiguration(configurationToken: String): AppConfigDataResponse
@@ -17,31 +24,21 @@ internal data class AppConfigDataStartRequest(
     val configurationProfileIdentifier: String,
     val environmentIdentifier: String,
     val requiredMinimumPollIntervalSeconds: Int,
-) {
+): Serializable {
     init {
-        require(applicationIdentifier.isNotBlank()) { "AppConfig application identifier must not be blank." }
-        require(configurationProfileIdentifier.isNotBlank()) {
-            "AppConfig configuration profile identifier must not be blank."
-        }
-        require(environmentIdentifier.isNotBlank()) { "AppConfig environment identifier must not be blank." }
-        require(requiredMinimumPollIntervalSeconds > 0) {
-            "AppConfig required minimum poll interval must be positive."
-        }
+        applicationIdentifier.requireNotBlank { "AppConfig application identifier must not be blank." }
+        configurationProfileIdentifier.requireNotBlank { "AppConfig configuration profile identifier must not be blank." }
+        environmentIdentifier.requireNotBlank { "AppConfig environment identifier must not be blank." }
+        requiredMinimumPollIntervalSeconds.requirePositiveNumber { "AppConfig required minimum poll interval must be positive." }
     }
-
-    override fun toString(): String =
-        "AppConfigDataStartRequest(applicationConfigured=true, profileConfigured=true, environmentConfigured=true, " +
-            "requiredMinimumPollIntervalSeconds=$requiredMinimumPollIntervalSeconds)"
 }
 
 internal data class AppConfigDataSession(
     val initialConfigurationToken: String,
 ) {
     init {
-        require(initialConfigurationToken.isNotBlank()) { "AppConfig initial configuration token must not be blank." }
+        initialConfigurationToken.requireNotBlank { "AppConfig initial configuration token must not be blank." }
     }
-
-    override fun toString(): String = "AppConfigDataSession(initialConfigurationTokenPresent=true)"
 }
 
 internal data class AppConfigDataResponse(
@@ -51,34 +48,29 @@ internal data class AppConfigDataResponse(
     val configuration: ByteArray,
 ) {
     init {
-        require(nextPollConfigurationToken.isNotBlank()) {
-            "AppConfig next poll configuration token must not be blank."
-        }
-        require(nextPollIntervalSeconds == null || nextPollIntervalSeconds >= 0) {
+        nextPollConfigurationToken.requireNotBlank { "AppConfig next poll configuration token must not be blank." }
+        nextPollIntervalSeconds?.requireGe(0) {
             "AppConfig next poll interval must not be negative when present."
         }
     }
 
     override fun equals(other: Any?): Boolean =
         other is AppConfigDataResponse &&
-            nextPollConfigurationToken == other.nextPollConfigurationToken &&
-            nextPollIntervalSeconds == other.nextPollIntervalSeconds &&
-            contentType == other.contentType &&
-            configuration.contentEquals(other.configuration)
+                nextPollConfigurationToken == other.nextPollConfigurationToken &&
+                nextPollIntervalSeconds == other.nextPollIntervalSeconds &&
+                contentType == other.contentType &&
+                configuration.contentEquals(other.configuration)
 
-    override fun hashCode(): Int {
-        var result = nextPollConfigurationToken.hashCode()
-        result = 31 * result + (nextPollIntervalSeconds?.hashCode() ?: 0)
-        result = 31 * result + (contentType?.hashCode() ?: 0)
-        result = 31 * result + configuration.contentHashCode()
-        return result
-    }
+    override fun hashCode(): Int =
+        hashOf(nextPollConfigurationToken, nextPollIntervalSeconds, contentType, configuration.contentHashCode())
 
     override fun toString(): String =
-        "AppConfigDataResponse(" +
-            "nextPollConfigurationTokenPresent=true, " +
-            "nextPollIntervalSeconds=$nextPollIntervalSeconds, " +
-            "contentType=$contentType, configurationBytes=${configuration.size})"
+        ToStringBuilder(this)
+            .add("nextPollConfigurationToken", nextPollConfigurationToken.isNotBlank())
+            .add("nextPollIntervalSeconds", nextPollIntervalSeconds)
+            .add("contentType", contentType)
+            .add("configurationBytes", configuration.size)
+            .toString()
 }
 
 /** response token을 매 호출 한 번만 소비하고 다음 token으로 교체하는 cursor입니다. */
@@ -86,11 +78,14 @@ internal class AppConfigDataSessionCursor(
     private val client: AppConfigDataSessionClient,
     request: AppConfigDataStartRequest,
 ) {
-    private var currentToken: String = client.startConfigurationSession(request).initialConfigurationToken
+    private var currentToken: String =
+        client.startConfigurationSession(request).initialConfigurationToken
 
-    fun poll(): AppConfigDataResponse = client.getLatestConfiguration(currentToken).also {
-        currentToken = it.nextPollConfigurationToken
-    }
+    fun poll(): AppConfigDataResponse =
+        client.getLatestConfiguration(currentToken)
+            .also {
+                currentToken = it.nextPollConfigurationToken
+            }
 
     fun discard() {
         currentToken = ""

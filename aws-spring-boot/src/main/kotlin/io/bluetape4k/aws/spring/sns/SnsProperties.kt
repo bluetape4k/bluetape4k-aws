@@ -1,10 +1,11 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.aws.spring.sns.SnsProperties.Companion.PREFIX
 import org.springframework.boot.context.properties.ConfigurationProperties
-import kotlin.jvm.internal.DefaultConstructorMarker
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
+import kotlin.jvm.internal.DefaultConstructorMarker
 
 /**
  * SNS 자동 구성용 구성 속성입니다.
@@ -33,7 +34,7 @@ import java.time.Duration
  *         enabled: true
  * ```
  */
-@ConfigurationProperties(prefix = "bluetape4k.aws.sns")
+@ConfigurationProperties(prefix = PREFIX)
 data class SnsProperties(
     val enabled: Boolean = true,
     val region: String? = null,
@@ -47,6 +48,7 @@ data class SnsProperties(
     /** topic name 조회 결과의 bounded cache 설정입니다. */
     val topicArnCache: TopicArnCache = TopicArnCache(),
 ): Serializable {
+
     /** 기존 5-인자 생성자와의 source/JVM descriptor 호환성을 유지합니다. */
     constructor(
         enabled: Boolean,
@@ -54,7 +56,7 @@ data class SnsProperties(
         endpointOverride: URI?,
         topics: Map<String, Topic>,
         verification: Verification,
-    ) : this(
+    ): this(
         enabled = enabled,
         region = region,
         endpointOverride = endpointOverride,
@@ -75,7 +77,7 @@ data class SnsProperties(
         verification: Verification,
         mask: Int,
         marker: DefaultConstructorMarker?,
-    ) : this(
+    ): this(
         enabled = if (mask and COPY_ENABLED_MASK != 0) true else enabled,
         region = if (mask and COPY_REGION_MASK != 0) null else region,
         endpointOverride = if (mask and COPY_ENDPOINT_MASK != 0) null else endpointOverride,
@@ -106,11 +108,11 @@ data class SnsProperties(
 
     init {
         require(endpointOverride == null || !region.isNullOrBlank()) {
-            "bluetape4k.aws.sns.region is required when endpointOverride is configured."
+            "$PREFIX.region is required when endpointOverride is configured."
         }
         accountId?.let {
             require(it.matches(ACCOUNT_ID_PATTERN)) {
-                "bluetape4k.aws.sns.account-id must contain exactly 12 digits."
+                "$PREFIX.account-id must contain exactly 12 digits."
             }
         }
     }
@@ -127,13 +129,13 @@ data class SnsProperties(
     ): Serializable {
         init {
             require(maxSize > 0) {
-                "bluetape4k.aws.sns.topic-arn-cache.max-size must be greater than zero."
+                "$PREFIX.topic-arn-cache.max-size must be greater than zero."
             }
             require(!ttl.isNegative && !ttl.isZero) {
-                "bluetape4k.aws.sns.topic-arn-cache.ttl must be greater than zero."
+                "$PREFIX.topic-arn-cache.ttl must be greater than zero."
             }
             require(ttl <= InMemorySnsTopicArnCache.MAX_TTL) {
-                "bluetape4k.aws.sns.topic-arn-cache.ttl must not exceed 24 hours."
+                "$PREFIX.topic-arn-cache.ttl must not exceed 24 hours."
             }
         }
 
@@ -163,13 +165,16 @@ data class SnsProperties(
      */
     data class Verification(
         val enabled: Boolean = true,
-    ) : Serializable {
+    ): Serializable {
         companion object {
             private const val serialVersionUID: Long = 1L
         }
     }
 
     companion object {
+
+        const val PREFIX = "bluetape4k.aws.sns"
+
         /** Kotlin compiler가 생성하던 기존 5-인자 `copy$default` descriptor를 보존합니다. */
         @JvmStatic
         @Suppress("FunctionNaming", "unused")

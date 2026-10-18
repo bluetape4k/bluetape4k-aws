@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.parameterstore
 import io.bluetape4k.aws.spring.config.AwsConfigDataBackend
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSupport
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import org.springframework.boot.context.config.ConfigDataLocation
 import org.springframework.boot.context.config.ConfigDataLocationResolver
@@ -16,7 +17,9 @@ class ParameterStoreConfigDataLocationResolver(
     @Suppress("UNUSED_PARAMETER") private val deferredLogFactory: DeferredLogFactory,
     private val binder: Binder,
     private val bootstrapContext: ConfigurableBootstrapContext,
-) : ConfigDataLocationResolver<AwsConfigDataResource> {
+): ConfigDataLocationResolver<AwsConfigDataResource> {
+
+    companion object: KLogging()
 
     override fun isResolvable(
         context: ConfigDataLocationResolverContext,

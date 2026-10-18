@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.s3.accessgrants
 
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClient
 import software.amazon.awssdk.services.s3control.model.GetDataAccessRequest
@@ -19,6 +20,8 @@ import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsRes
 class S3AccessGrantsCoroutinesTemplate(
     private val s3ControlAsyncClient: S3ControlAsyncClient,
 ): S3AccessGrantsOperations {
+
+    companion object: KLogging()
 
     override suspend fun getDataAccess(request: GetDataAccessRequest): GetDataAccessResponse =
         s3ControlAsyncClient.getDataAccess(request).await()

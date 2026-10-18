@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.support.requireGe
 import java.io.Serializable
 import java.time.Instant
 
@@ -14,10 +15,10 @@ data class S3ObjectMetadata(
     val etag: String? = null,
     val contentType: String? = null,
     val lastModified: Instant? = null,
-) : Serializable {
+): Serializable {
 
     init {
-        require(sizeBytes >= 0) { "sizeBytes must be greater than or equal to 0." }
+        sizeBytes.requireGe(0, "sizeBytes")
     }
 
     companion object {

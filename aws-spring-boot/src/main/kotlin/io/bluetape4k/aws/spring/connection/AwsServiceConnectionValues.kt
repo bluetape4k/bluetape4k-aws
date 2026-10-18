@@ -3,7 +3,7 @@ package io.bluetape4k.aws.spring.connection
 import java.net.URI
 
 /** Immutable, redacted snapshot used by AWS service connection details. */
-internal class AwsServiceConnectionValues(
+internal data class AwsServiceConnectionValues(
     override val endpoint: URI,
     override val region: String,
     override val accessKey: String,

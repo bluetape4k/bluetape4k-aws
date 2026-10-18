@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kms.KmsAsyncClient
@@ -14,18 +17,22 @@ class KmsCoroutinesEncryptor(
     private val dataKeyCache: DataKeyCache,
 ): KmsOperations {
 
+    companion object: KLoggingChannel()
+
     override suspend fun encrypt(
         plaintext: ByteArray,
         keyId: String?,
         encryptionContext: Map<String, String>,
     ): ByteArray {
         val effectiveKeyId = resolveRequiredKeyId(keyId)
-        val response = kmsAsyncClient.encrypt { request ->
-            request.keyId(effectiveKeyId)
-            request.plaintext(SdkBytes.fromByteArray(plaintext))
-            mergedEncryptionContext(encryptionContext).takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
-            properties.encryptionAlgorithm?.let(request::encryptionAlgorithm)
-        }.await()
+        val response = kmsAsyncClient
+            .encrypt { request ->
+                request.keyId(effectiveKeyId)
+                request.plaintext(SdkBytes.fromByteArray(plaintext))
+                mergedEncryptionContext(encryptionContext).takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
+                properties.encryptionAlgorithm?.let(request::encryptionAlgorithm)
+            }
+            .await()
 
         return response.ciphertextBlob().asByteArray()
     }
@@ -35,12 +42,13 @@ class KmsCoroutinesEncryptor(
         keyId: String?,
         encryptionContext: Map<String, String>,
     ): ByteArray {
-        val response = kmsAsyncClient.decrypt { request ->
-            request.ciphertextBlob(SdkBytes.fromByteArray(ciphertext))
-            resolveOptionalKeyId(keyId)?.let(request::keyId)
-            mergedEncryptionContext(encryptionContext).takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
-            properties.encryptionAlgorithm?.let(request::encryptionAlgorithm)
-        }.await()
+        val response = kmsAsyncClient
+            .decrypt { request ->
+                request.ciphertextBlob(SdkBytes.fromByteArray(ciphertext))
+                resolveOptionalKeyId(keyId)?.let(request::keyId)
+                mergedEncryptionContext(encryptionContext).takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
+                properties.encryptionAlgorithm?.let(request::encryptionAlgorithm)
+            }.await()
 
         return response.plaintext().asByteArray()
     }
@@ -66,12 +74,15 @@ class KmsCoroutinesEncryptor(
             dataKeyCache.get(cacheKey)?.let { return it }
         }
 
-        val response = kmsAsyncClient.generateDataKey { request ->
-            request.keyId(effectiveKeyId)
-            effectiveKeySpec?.let(request::keySpec)
-            numberOfBytes?.let(request::numberOfBytes)
-            effectiveContext.takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
-        }.await()
+        val response = kmsAsyncClient
+            .generateDataKey { request ->
+                request.keyId(effectiveKeyId)
+                effectiveKeySpec?.let(request::keySpec)
+                numberOfBytes?.let(request::numberOfBytes)
+                effectiveContext.takeIf { it.isNotEmpty() }?.let(request::encryptionContext)
+            }
+            .await()
+        log.debug { "response=$response" }
 
         val sdkPlaintext = response.plaintext().asByteArray()
         try {
@@ -101,15 +112,15 @@ class KmsCoroutinesEncryptor(
 
     private fun resolveRequiredKeyId(keyId: String?): String {
         val effectiveKeyId = keyId ?: properties.keyId
-        require(!effectiveKeyId.isNullOrBlank()) {
+        effectiveKeyId.requireNotBlank {
             "KMS keyId is required. Configure bluetape4k.aws.kms.key-id or pass keyId to the operation."
         }
-        return effectiveKeyId
+        return effectiveKeyId!!
     }
 
     private fun resolveOptionalKeyId(keyId: String?): String? {
         val effectiveKeyId = keyId ?: properties.keyId
-        effectiveKeyId?.let { require(it.isNotBlank()) { "keyId must not be blank." } }
+        effectiveKeyId?.requireNotBlank { "KMS keyId must not be blank." }
         return effectiveKeyId
     }
 

@@ -2,7 +2,11 @@ package io.bluetape4k.aws.spring.parameterstore
 
 import io.bluetape4k.aws.spring.env.requireOptionalName
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireStartsWith
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
@@ -15,6 +19,7 @@ import java.time.Duration
  * `bluetape4k.aws.parameter-store`를 바인딩하고 Spring Environment 후처리 중 로드할
  * SSM 파라미터 경로를 정의합니다. [sources]가 비어 있으면 AWS를 요청하지 않습니다.
  */
+@EnableConfigurationProperties(ParameterStoreProperties::class)
 @ConfigurationProperties(prefix = "bluetape4k.aws.parameter-store")
 data class ParameterStoreProperties(
     val enabled: Boolean = true,
@@ -26,9 +31,7 @@ data class ParameterStoreProperties(
 ): Serializable {
     init {
         requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.parameter-store")
-        refreshInterval?.let {
-            require(!it.isZero && !it.isNegative) { "refreshInterval must be positive." }
-        }
+        refreshInterval?.requireGt(Duration.ZERO) { "refreshInterval must be positive" }
     }
 
     /**
@@ -45,12 +48,13 @@ data class ParameterStoreProperties(
         init {
             requireOptionalName(name, "name")
             requireOptionalName(prefix, "prefix")
-            require(path.isNotBlank()) { "path must not be blank." }
-            require(path.startsWith("/")) { "path must start with /." }
+            path.requireNotBlank("path")
+            path.requireStartsWith("/", "path")
         }
 
-        val propertySourceName: String
-            get() = "bluetape4k.aws.parameter-store.${name ?: path.trim('/').replace('/', '.')}"
+        val propertySourceName: String by lazy {
+            "bluetape4k.aws.parameter-store.${name ?: path.trim('/').replace('/', '.')}"
+        }
 
         companion object {
             private const val serialVersionUID: Long = 1L

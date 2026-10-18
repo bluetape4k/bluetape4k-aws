@@ -6,7 +6,7 @@ import software.amazon.awssdk.transfer.s3.model.CompletedUpload
 interface S3ObjectOperations {
 
     /** converter로 [value]를 직렬화해 S3 객체로 업로드합니다. */
-    suspend fun <T : Any> uploadObject(
+    suspend fun <T: Any> uploadObject(
         bucket: String,
         key: String,
         value: T,
@@ -16,7 +16,7 @@ interface S3ObjectOperations {
     ): CompletedUpload
 
     /** S3 객체를 다운로드해 [converter]로 [targetType] typed 객체로 복원합니다. */
-    suspend fun <T : Any> downloadObject(
+    suspend fun <T: Any> downloadObject(
         bucket: String,
         key: String,
         targetType: Class<T>,

@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -9,6 +11,8 @@ import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * S3 TransferManager에 연결되는 blocking [OutputStream]입니다.
@@ -30,13 +34,13 @@ class S3OutputStream(
      */
     @Deprecated(
         message = "요청별 part size는 AWS SDK v2 TransferManager에서 지원하지 않습니다. " +
-            "S3AsyncClient multipart configuration 또는 CRT 클라이언트 설정을 사용하세요.",
+                "S3AsyncClient multipart configuration 또는 CRT 클라이언트 설정을 사용하세요.",
     )
     val partSizeBytes: Long = DEFAULT_PART_SIZE_BYTES,
     private val contentType: String? = null,
     private val metadata: Map<String, String> = emptyMap(),
     private val temporaryDirectory: Path = defaultTemporaryDirectory(),
-) : OutputStream() {
+): OutputStream() {
 
     internal var temporaryFileOpen: (Path) -> OutputStream = Files::newOutputStream
     internal var temporaryFileDelete: (Path) -> Boolean = Files::deleteIfExists
@@ -47,11 +51,13 @@ class S3OutputStream(
     private var completionStarted = false
     private var completionFailure: Throwable? = null
 
+    private val lock = ReentrantLock()
+
     init {
-        require(bucket.isNotBlank()) { "bucket must not be blank." }
-        require(key.isNotBlank()) { "key must not be blank." }
-        require(thresholdBytes > 0) { "thresholdBytes must be greater than 0." }
-        require(partSizeBytes > 0) { "partSizeBytes must be greater than 0." }
+        bucket.requireNotBlank("bucket")
+        key.requireNotBlank("key")
+        thresholdBytes.requirePositiveNumber("thresholdBytes")
+        partSizeBytes.requirePositiveNumber("partSizeBytes")
     }
 
     override fun write(b: Int) {
@@ -60,8 +66,9 @@ class S3OutputStream(
 
     override fun write(b: ByteArray, off: Int, len: Int) {
         require(off >= 0 && len >= 0 && off <= b.size - len) { "Invalid byte range." }
+
         if (len == 0) return
-        synchronized(this) {
+        lock.withLock {
             check(!completionStarted) { "S3OutputStream is already closed." }
             if (fileOutput == null && memoryBuffer.size().toLong() + len <= thresholdBytes) {
                 memoryBuffer.write(b, off, len)
@@ -72,7 +79,7 @@ class S3OutputStream(
     }
 
     override fun flush() {
-        synchronized(this) {
+        lock.withLock {
             check(!completionStarted) { "S3OutputStream is already closed." }
             fileOutput?.flush()
         }
@@ -98,7 +105,7 @@ class S3OutputStream(
         try {
             runBlocking { complete() }
         } catch (error: Throwable) {
-            synchronized(this) {
+            lock.withLock {
                 completionFailure = error
             }
             throw error
@@ -110,7 +117,8 @@ class S3OutputStream(
         var file: Path? = null
         var output: OutputStream? = null
         var retryCleanup = false
-        synchronized(this) {
+
+        lock.withLock {
             if (completionStarted) {
                 retryCleanup = completionFailure is S3TransferCleanupException
                 if (!retryCleanup) return
@@ -130,7 +138,9 @@ class S3OutputStream(
         var failure: Throwable? = null
         var cleanupFailure: Throwable? = null
         try {
-            output?.close()
+            withContext(Dispatchers.IO) {
+                output?.close()
+            }
             if (bytes != null) {
                 operations.upload(bucket, key, bytes) {
                     putObjectRequest(buildPutObjectRequest())
@@ -142,7 +152,7 @@ class S3OutputStream(
             }
         } catch (error: Throwable) {
             failure = error
-            synchronized(this) {
+            lock.withLock {
                 completionFailure = error
             }
             throw error
@@ -151,7 +161,8 @@ class S3OutputStream(
             cleanupFailure = runCatching { file?.let(temporaryFileDelete) }
                 .exceptionOrNull()
                 ?.let { S3TransferCleanupException(S3TransferCleanupOperation.TEMPORARY_FILE_DELETE, listOf(it)) }
-            synchronized(this) {
+
+            lock.withLock {
                 if (cleanupFailure != null) {
                     val failureToReport = failure
                     if (failureToReport == null) {
@@ -164,13 +175,14 @@ class S3OutputStream(
                 if (cleanupFailure == null) temporaryFile = null
             }
         }
-        if (cleanupFailure != null && failure == null) throw cleanupFailure as Throwable
+        if (cleanupFailure != null) throw cleanupFailure as Throwable
     }
 
     internal fun discardBlocking() {
         val file: Path?
         val output: OutputStream?
-        synchronized(this) {
+
+        lock.withLock {
             if (!completionStarted) {
                 completionStarted = true
                 memoryBuffer.reset()
@@ -180,31 +192,36 @@ class S3OutputStream(
             if (output == null && file == null) return
         }
         val failures = mutableListOf<Throwable>()
+
         runCatching { output?.close() }
-            .onSuccess { synchronized(this) { if (fileOutput === output) fileOutput = null } }
+            .onSuccess { lock.withLock { if (fileOutput === output) fileOutput = null } }
             .onFailure(failures::add)
+
         runCatching { file?.let(temporaryFileDelete) }
-            .onSuccess { synchronized(this) { if (temporaryFile == file) temporaryFile = null } }
+            .onSuccess { lock.withLock { if (temporaryFile == file) temporaryFile = null } }
             .onFailure(failures::add)
+
         if (failures.isNotEmpty()) {
             val cleanup = S3TransferCleanupException(S3TransferCleanupOperation.OUTPUT_STREAM_DISCARD, failures)
-            synchronized(this) {
+            lock.withLock {
                 if (completionFailure == null) completionFailure = cleanup
             }
             throw cleanup
         }
-        synchronized(this) {
+        lock.withLock {
             if (completionFailure is S3TransferCleanupException) completionFailure = null
         }
     }
 
     private fun ensureFileOutput(): OutputStream {
         fileOutput?.let { return it }
+
         Files.createDirectories(temporaryDirectory)
         val file = Files.createTempFile(temporaryDirectory, "bluetape-s3-", ".part")
         temporaryFile = file
         var output: OutputStream? = null
         var buffered: ByteArray? = null
+
         try {
             output = temporaryFileOpen(file)
             fileOutput = output
@@ -214,12 +231,15 @@ class S3OutputStream(
             return output
         } catch (error: Throwable) {
             val failures = mutableListOf<Throwable>()
+
             runCatching { output?.close() }
                 .onSuccess { if (fileOutput === output) fileOutput = null }
                 .onFailure(failures::add)
+
             runCatching { temporaryFileDelete(file) }
                 .onSuccess { if (temporaryFile == file) temporaryFile = null }
                 .onFailure(failures::add)
+
             if (failures.isNotEmpty()) {
                 error.addSuppressed(
                     S3TransferCleanupException(S3TransferCleanupOperation.OUTPUT_STREAM_DISCARD, failures),
@@ -241,7 +261,7 @@ class S3OutputStream(
             }
             .build()
 
-    private fun isComplete(): Boolean = synchronized(this) { completionStarted && completionFailure == null }
+    private fun isComplete(): Boolean = lock.withLock { completionStarted && completionFailure == null }
 
     companion object {
         const val DEFAULT_THRESHOLD_BYTES: Long = 8 * 1024 * 1024

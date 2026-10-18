@@ -2,6 +2,9 @@ package io.bluetape4k.aws.spring.config
 
 import io.bluetape4k.aws.spring.AwsClientCustomizationContext
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
+import io.bluetape4k.aws.spring.support.get
+import io.bluetape4k.aws.spring.support.isRegistered
+import io.bluetape4k.support.checkNotNull
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder
 
@@ -9,9 +12,10 @@ import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder
 internal fun <B, C> B.applyConfigDataBootstrapCustomizer(
     bootstrapContext: ConfigurableBootstrapContext,
     serviceName: String,
-): B where B : AwsSyncClientBuilder<B, C> = apply {
-    if (bootstrapContext.isRegistered(AwsSyncClientCustomizer::class.java)) {
-        checkNotNull(bootstrapContext.get(AwsSyncClientCustomizer::class.java))
+): B where B: AwsSyncClientBuilder<B, C> = apply {
+    if (bootstrapContext.isRegistered<AwsSyncClientCustomizer>()) {
+        bootstrapContext.get<AwsSyncClientCustomizer>()
+            .checkNotNull("AwsSyncClientCustomizer")
             .customize(AwsClientCustomizationContext(serviceName), this)
     }
 }

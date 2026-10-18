@@ -161,6 +161,7 @@ testcontainers = { module = "org.testcontainers:testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 testcontainers-localstack = { module = "org.testcontainers:testcontainers-localstack" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+testcontainers-mysql = { module = "org.testcontainers:testcontainers-mysql" }
 
 # Exposed / JDBC
 exposed-bom = { module = "org.jetbrains.exposed:exposed-bom" }

@@ -1,11 +1,14 @@
 package io.bluetape4k.aws.spring.cloudwatch
 
-import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
-import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.aws.cloudwatch.model.cloudwatchlogs.inputLogEventOf
+import io.bluetape4k.aws.cloudwatch.model.metricDatumOf
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -19,10 +22,11 @@ import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
-import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
 class CloudWatchCoroutinesTemplateTest {
+
+    companion object: KLoggingChannel()
 
     private val cloudWatchClient = mockk<CloudWatchAsyncClient>(relaxed = true)
     private val cloudWatchLogsClient = mockk<CloudWatchLogsAsyncClient>(relaxed = true)
@@ -36,7 +40,7 @@ class CloudWatchCoroutinesTemplateTest {
     fun `publish metric data with configured namespace and batching`() = runSuspendIO {
         every {
             cloudWatchClient.putMetricData(any<Consumer<PutMetricDataRequest.Builder>>())
-        } returns CompletableFuture.completedFuture(PutMetricDataResponse.builder().build())
+        } returns completableFutureOf(PutMetricDataResponse.builder().build())
 
         val template = CloudWatchCoroutinesTemplate(
             cloudWatchClient,
@@ -49,8 +53,9 @@ class CloudWatchCoroutinesTemplateTest {
         )
 
         val responses = template.putMetricData(metrics)
+        responses.forEach { log.debug { "response=$it" } }
+        responses shouldHaveSize 2
 
-        responses.size shouldBeEqualTo 2
         verify(exactly = 2) {
             cloudWatchClient.putMetricData(any<Consumer<PutMetricDataRequest.Builder>>())
         }
@@ -68,14 +73,15 @@ class CloudWatchCoroutinesTemplateTest {
                 template.putMetricData(listOf(metricDatumOf("orders", 1.0)))
             }
         }
-        error.message.orEmpty() shouldContain "namespace is required"
+        log.debug { "error=${error.message}" }
+        error.message shouldContain "namespace is required"
     }
 
     @Test
     fun `publish log events with configured group stream and batching`() = runSuspendIO {
         every {
             cloudWatchLogsClient.putLogEvents(any<Consumer<PutLogEventsRequest.Builder>>())
-        } returns CompletableFuture.completedFuture(PutLogEventsResponse.builder().build())
+        } returns completableFutureOf(PutLogEventsResponse.builder().build())
 
         val template = CloudWatchLogsCoroutinesTemplate(
             cloudWatchLogsClient,
@@ -92,8 +98,9 @@ class CloudWatchCoroutinesTemplateTest {
         )
 
         val responses = template.putLogEvents(events)
+        responses.forEach { log.debug { "response=$it" } }
+        responses shouldHaveSize 2
 
-        responses.size shouldBeEqualTo 2
         verify(exactly = 2) {
             cloudWatchLogsClient.putLogEvents(any<Consumer<PutLogEventsRequest.Builder>>())
         }
@@ -111,7 +118,8 @@ class CloudWatchCoroutinesTemplateTest {
                 template.putLogEvents(listOf(inputLogEventOf(1L, "one")))
             }
         }
-        error.message.orEmpty() shouldContain "log-group-name is required"
+        log.debug { "error=${error.message}" }
+        error.message shouldContain "log-group-name is required"
     }
 
     @Test
@@ -126,6 +134,7 @@ class CloudWatchCoroutinesTemplateTest {
                 template.createLogGroup(" ")
             }
         }
-        error.message.orEmpty() shouldContain "logGroupName"
+        log.debug { "error=${error.message}" }
+        error.message shouldContain "logGroupName"
     }
 }

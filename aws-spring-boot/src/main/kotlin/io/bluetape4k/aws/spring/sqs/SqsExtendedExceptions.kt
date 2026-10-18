@@ -32,12 +32,12 @@ sealed class SqsExtendedClientException(
     val failureKind: SqsExtendedFailureKind,
     val retryable: Boolean,
     val diagnosticCode: String,
-) : RuntimeException(diagnosticCode, null, false, false)
+): RuntimeException(diagnosticCode, null, false, false)
 
 class SqsExtendedConfigurationException private constructor(
     retryable: Boolean,
     diagnostic: SqsExtendedDiagnosticCode,
-) : SqsExtendedClientException(SqsExtendedFailureKind.CONFIGURATION, retryable, diagnostic.value) {
+): SqsExtendedClientException(SqsExtendedFailureKind.CONFIGURATION, retryable, diagnostic.value) {
     internal companion object {
         fun create(retryable: Boolean = false): SqsExtendedConfigurationException =
             SqsExtendedConfigurationException(retryable, SqsExtendedDiagnosticCode.CONFIGURATION)
@@ -47,7 +47,7 @@ class SqsExtendedConfigurationException private constructor(
     }
 }
 
-class SqsExtendedPointerFormatException private constructor() : SqsExtendedClientException(
+class SqsExtendedPointerFormatException private constructor(): SqsExtendedClientException(
     SqsExtendedFailureKind.POINTER_FORMAT,
     false,
     SqsExtendedDiagnosticCode.POINTER_FORMAT.value,
@@ -60,7 +60,7 @@ class SqsExtendedPointerFormatException private constructor() : SqsExtendedClien
 class SqsExtendedPayloadReadException private constructor(
     val pointerPresent: Boolean,
     retryable: Boolean,
-) : SqsExtendedClientException(SqsExtendedFailureKind.S3_READ, retryable, SqsExtendedDiagnosticCode.S3_READ.value) {
+): SqsExtendedClientException(SqsExtendedFailureKind.S3_READ, retryable, SqsExtendedDiagnosticCode.S3_READ.value) {
     internal companion object {
         fun create(pointerPresent: Boolean, retryable: Boolean): SqsExtendedPayloadReadException =
             SqsExtendedPayloadReadException(pointerPresent, retryable)
@@ -73,7 +73,7 @@ class SqsExtendedSendException private constructor(
     failureKind: SqsExtendedFailureKind,
     retryable: Boolean,
     diagnostic: SqsExtendedDiagnosticCode,
-) : SqsExtendedClientException(failureKind, retryable, diagnostic.value) {
+): SqsExtendedClientException(failureKind, retryable, diagnostic.value) {
     init {
         require(orphanCleanupRequired || !pointerPresent)
         require(failureKind == SqsExtendedFailureKind.S3_UPLOAD || failureKind == SqsExtendedFailureKind.SQS_SEND)
@@ -81,13 +81,31 @@ class SqsExtendedSendException private constructor(
 
     internal companion object {
         fun upload(): SqsExtendedSendException =
-            SqsExtendedSendException(false, false, SqsExtendedFailureKind.S3_UPLOAD, true, SqsExtendedDiagnosticCode.S3_UPLOAD)
+            SqsExtendedSendException(
+                pointerPresent = false,
+                orphanCleanupRequired = false,
+                failureKind = SqsExtendedFailureKind.S3_UPLOAD,
+                retryable = true,
+                diagnostic = SqsExtendedDiagnosticCode.S3_UPLOAD
+            )
 
         fun inlineSqs(): SqsExtendedSendException =
-            SqsExtendedSendException(false, false, SqsExtendedFailureKind.SQS_SEND, true, SqsExtendedDiagnosticCode.SQS_SEND)
+            SqsExtendedSendException(
+                pointerPresent = false,
+                orphanCleanupRequired = false,
+                failureKind = SqsExtendedFailureKind.SQS_SEND,
+                retryable = true,
+                diagnostic = SqsExtendedDiagnosticCode.SQS_SEND
+            )
 
         fun offloadedSqs(): SqsExtendedSendException =
-            SqsExtendedSendException(true, true, SqsExtendedFailureKind.SQS_SEND, true, SqsExtendedDiagnosticCode.SQS_SEND)
+            SqsExtendedSendException(
+                pointerPresent = true,
+                orphanCleanupRequired = true,
+                failureKind = SqsExtendedFailureKind.SQS_SEND,
+                retryable = true,
+                diagnostic = SqsExtendedDiagnosticCode.SQS_SEND
+            )
     }
 }
 
@@ -95,7 +113,7 @@ class SqsExtendedAcknowledgementException private constructor(
     val sqsDeleted: Boolean,
     val cleanupRequired: Boolean,
     retryable: Boolean,
-) : SqsExtendedClientException(SqsExtendedFailureKind.SQS_ACK, retryable, SqsExtendedDiagnosticCode.SQS_ACK.value) {
+): SqsExtendedClientException(SqsExtendedFailureKind.SQS_ACK, retryable, SqsExtendedDiagnosticCode.SQS_ACK.value) {
     internal companion object {
         fun create(
             sqsDeleted: Boolean,
@@ -111,19 +129,29 @@ class SqsExtendedCleanupException private constructor(
     failureKind: SqsExtendedFailureKind,
     retryable: Boolean,
     diagnostic: SqsExtendedDiagnosticCode,
-) : SqsExtendedClientException(failureKind, retryable, diagnostic.value) {
+): SqsExtendedClientException(failureKind, retryable, diagnostic.value) {
     internal companion object {
         fun configuration(handlePresent: Boolean = false): SqsExtendedCleanupException =
-            SqsExtendedCleanupException(handlePresent, SqsExtendedFailureKind.CONFIGURATION, false, SqsExtendedDiagnosticCode.CONFIGURATION)
+            SqsExtendedCleanupException(
+                handlePresent,
+                SqsExtendedFailureKind.CONFIGURATION,
+                false,
+                SqsExtendedDiagnosticCode.CONFIGURATION
+            )
 
         fun delete(handlePresent: Boolean = true): SqsExtendedCleanupException =
-            SqsExtendedCleanupException(handlePresent, SqsExtendedFailureKind.S3_DELETE, true, SqsExtendedDiagnosticCode.S3_DELETE)
+            SqsExtendedCleanupException(
+                handlePresent,
+                SqsExtendedFailureKind.S3_DELETE,
+                true,
+                SqsExtendedDiagnosticCode.S3_DELETE
+            )
     }
 }
 
 class SqsExtendedDrainTimeoutException(
     val activeOperations: Int,
-) : SqsExtendedClientException(
+): SqsExtendedClientException(
     SqsExtendedFailureKind.DRAIN_TIMEOUT,
     true,
     SqsExtendedDiagnosticCode.DRAIN_TIMEOUT.value,
@@ -134,11 +162,11 @@ class SqsExtendedDrainTimeoutException(
 }
 
 class SqsExtendedCancellationException private constructor(
-    val failureKind: SqsExtendedFailureKind,
-    val pointerPresent: Boolean,
-    val orphanCleanupRequired: Boolean,
+    failureKind: SqsExtendedFailureKind,
+    pointerPresent: Boolean,
+    orphanCleanupRequired: Boolean,
     val diagnosticCode: String,
-) : CancellationException() {
+): CancellationException() {
     init {
         require(!orphanCleanupRequired || pointerPresent)
         require(failureKind == SqsExtendedFailureKind.S3_UPLOAD || failureKind == SqsExtendedFailureKind.SQS_SEND)

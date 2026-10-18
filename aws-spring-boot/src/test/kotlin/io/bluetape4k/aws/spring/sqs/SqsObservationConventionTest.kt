@@ -1,26 +1,29 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.assertions.shouldBe
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBe
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
 import io.micrometer.common.KeyValues
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SqsObservationConventionTest {
+
+    companion object: KLogging()
 
     @Test
     fun `default conventions expose only the three bounded names`() {
         val conventions = defaultSqsObservationConventions()
 
-        assertEquals(SqsObservationStage.entries.toSet(), conventions.keys)
-        assertEquals(
-            setOf(
-                SQS_RECEIVE_OBSERVATION_NAME,
-                SQS_PROCESS_OBSERVATION_NAME,
-                SQS_ACKNOWLEDGEMENT_OBSERVATION_NAME,
-            ),
-            conventions.values.mapTo(mutableSetOf()) { it.name },
+        conventions.keys shouldBeEqualTo SqsObservationStage.entries.toSet()
+        conventions.values.map { it.name }.toSet() shouldBeEqualTo setOf(
+            SQS_RECEIVE_OBSERVATION_NAME,
+            SQS_PROCESS_OBSERVATION_NAME,
+            SQS_ACKNOWLEDGEMENT_OBSERVATION_NAME,
         )
     }
 
@@ -41,21 +44,18 @@ class SqsObservationConventionTest {
         }
         val convention = defaultSqsObservationConventions().getValue(SqsObservationStage.ACKNOWLEDGEMENT)
 
-        assertEquals(
-            mapOf(
-                "messaging.system" to "sqs",
-                "messaging.operation" to "acknowledgement",
-                "messaging.destination.name" to "orders",
-                "bluetape4k.aws.sqs.listener.id" to "listener-1",
-                "bluetape4k.aws.sqs.outcome" to "partial",
-                "bluetape4k.aws.sqs.ack.action" to "change_visibility",
-                "bluetape4k.aws.sqs.batch.size" to "6-10",
-                "bluetape4k.aws.sqs.delivery" to "unknown",
-                "bluetape4k.aws.sqs.failure.stage" to "acknowledgement",
-            ),
-            convention.getLowCardinalityKeyValues(context).asMap(),
+        convention.getLowCardinalityKeyValues(context).asMap() shouldBeEqualTo mapOf(
+            "messaging.system" to "sqs",
+            "messaging.operation" to "acknowledgement",
+            "messaging.destination.name" to "orders",
+            "bluetape4k.aws.sqs.listener.id" to "listener-1",
+            "bluetape4k.aws.sqs.outcome" to "partial",
+            "bluetape4k.aws.sqs.ack.action" to "change_visibility",
+            "bluetape4k.aws.sqs.batch.size" to "6-10",
+            "bluetape4k.aws.sqs.delivery" to "unknown",
+            "bluetape4k.aws.sqs.failure.stage" to "acknowledgement",
         )
-        assertEquals("orders change_visibility", convention.getContextualName(context))
+        convention.getContextualName(context) shouldBeEqualTo "orders change_visibility"
     }
 
     @Test
@@ -65,14 +65,14 @@ class SqsObservationConventionTest {
         )
         val convention = defaultSqsObservationConventions().getValue(SqsObservationStage.PROCESS)
 
-        assertEquals("unknown", convention.getLowCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.outcome"])
-        assertEquals("1", convention.getHighCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.attempt"])
+        convention.getLowCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.outcome"] shouldBeEqualTo "unknown"
+        convention.getHighCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.attempt"] shouldBeEqualTo "1"
 
         context.outcome = SqsObservationOutcome.RETRIED
         context.currentAttempt = 2
 
-        assertEquals("retried", convention.getLowCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.outcome"])
-        assertEquals("2", convention.getHighCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.attempt"])
+        convention.getLowCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.outcome"] shouldBeEqualTo "retried"
+        convention.getHighCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.attempt"] shouldBeEqualTo "2"
     }
 
     @Test
@@ -89,17 +89,14 @@ class SqsObservationConventionTest {
         val convention = defaultSqsObservationConventions().getValue(SqsObservationStage.PROCESS)
         val receiveConvention = defaultSqsObservationConventions().getValue(SqsObservationStage.RECEIVE)
 
-        assertEquals(
-            mapOf(
-                "messaging.message.id" to "message-id",
-                "messaging.sqs.message.group.id" to "group-id",
-                "messaging.sqs.message.deduplication.id" to "dedup-id",
-                "bluetape4k.aws.sqs.attempt" to "3",
-            ),
-            convention.getHighCardinalityKeyValues(single).asMap(),
+        convention.getHighCardinalityKeyValues(single).asMap() shouldBeEqualTo mapOf(
+            "messaging.message.id" to "message-id",
+            "messaging.sqs.message.group.id" to "group-id",
+            "messaging.sqs.message.deduplication.id" to "dedup-id",
+            "bluetape4k.aws.sqs.attempt" to "3",
         )
-        assertTrue(convention.getHighCardinalityKeyValues(batch).asMap().isEmpty())
-        assertTrue(receiveConvention.getHighCardinalityKeyValues(receive).asMap().isEmpty())
+        convention.getHighCardinalityKeyValues(batch).asMap().shouldBeEmpty()
+        receiveConvention.getHighCardinalityKeyValues(receive).shouldBeEmpty()
     }
 
     @Test
@@ -118,16 +115,11 @@ class SqsObservationConventionTest {
         )
         val conventions = defaultSqsObservationConventions()
 
-        assertEquals(
-            "unknown",
-            conventions.getValue(SqsObservationStage.RECEIVE)
-                .getLowCardinalityKeyValues(receive).asMap()["bluetape4k.aws.sqs.delivery"],
-        )
-        assertEquals(
-            "unknown",
-            conventions.getValue(SqsObservationStage.PROCESS)
-                .getLowCardinalityKeyValues(batch).asMap()["bluetape4k.aws.sqs.delivery"],
-        )
+        conventions.getValue(SqsObservationStage.RECEIVE)
+            .getLowCardinalityKeyValues(receive).asMap()["bluetape4k.aws.sqs.delivery"] shouldBeEqualTo "unknown"
+
+        conventions.getValue(SqsObservationStage.PROCESS)
+            .getLowCardinalityKeyValues(batch).asMap()["bluetape4k.aws.sqs.delivery"] shouldBeEqualTo "unknown"
     }
 
     @Test
@@ -137,21 +129,19 @@ class SqsObservationConventionTest {
 
         expectedBuckets.forEach { (size, expected) ->
             val context = SqsObservationContext(metadata(batch = size > 0, batchSize = size))
-            val batchSize = convention.getLowCardinalityKeyValues(context)
-                .asMap()["bluetape4k.aws.sqs.batch.size"]
-            assertEquals(expected, batchSize)
+            val batchSize = convention.getLowCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.batch.size"]
+            batchSize shouldBeEqualTo expected
         }
 
         listOf("receive", "conversion", "handler", "acknowledgement", "observation").forEach { stage ->
             val context = SqsObservationContext(metadata()).apply { failureStage = stage }
-            val failureStage = convention.getLowCardinalityKeyValues(context)
-                .asMap()["bluetape4k.aws.sqs.failure.stage"]
-            assertEquals(stage, failureStage)
+            val failureStage =
+                convention.getLowCardinalityKeyValues(context).asMap()["bluetape4k.aws.sqs.failure.stage"]
+            failureStage shouldBeEqualTo stage
         }
         val invalid = SqsObservationContext(metadata()).apply { failureStage = "secret-stage" }
-        val failureStage = convention.getLowCardinalityKeyValues(invalid)
-            .asMap()["bluetape4k.aws.sqs.failure.stage"]
-        assertEquals("observation", failureStage)
+        val failureStage = convention.getLowCardinalityKeyValues(invalid).asMap()["bluetape4k.aws.sqs.failure.stage"]
+        failureStage shouldBeEqualTo "observation"
     }
 
     @Test
@@ -163,7 +153,7 @@ class SqsObservationConventionTest {
             resolveSqsObservationConventions(listOf(first, second))
         }
 
-        assertTrue(error.message.orEmpty().contains("PROCESS"))
+        error.message shouldContain "PROCESS"
     }
 
     @Test
@@ -171,9 +161,9 @@ class SqsObservationConventionTest {
         val user = TestConvention(SqsObservationStage.PROCESS)
         val conventions = resolveSqsObservationConventions(listOf(user))
 
-        assertTrue(conventions.getValue(SqsObservationStage.PROCESS) === user)
-        assertFalse(conventions.getValue(SqsObservationStage.RECEIVE) === user)
-        assertFalse(conventions.getValue(SqsObservationStage.ACKNOWLEDGEMENT) === user)
+        conventions.getValue(SqsObservationStage.PROCESS) shouldBe user
+        conventions.getValue(SqsObservationStage.RECEIVE) shouldNotBe user
+        conventions.getValue(SqsObservationStage.ACKNOWLEDGEMENT) shouldNotBe user
     }
 
     @Test
@@ -191,7 +181,9 @@ class SqsObservationConventionTest {
         }
 
         listOf("https://", "user", "secret", "host", "123456789012", "token", "fragment", "receipt", "body")
-            .forEach { assertFalse(text.contains(it)) }
+            .forEach {
+                text shouldNotContain it
+            }
     }
 
     private fun metadata(
@@ -218,7 +210,7 @@ class SqsObservationConventionTest {
 
     private class TestConvention(
         override val stage: SqsObservationStage,
-    ) : SqsObservationConvention
+    ): SqsObservationConvention
 }
 
 private fun KeyValues.asMap(): Map<String, String> = associate { it.key to it.value }

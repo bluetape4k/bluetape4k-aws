@@ -3,9 +3,14 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import org.junit.jupiter.api.Test
 
 class SqsOperationsBinaryCompatibilityTest {
+
+    companion object: KLoggingChannel() {
+        private const val QUEUE_URL = "https://sqs.local/orders"
+    }
 
     @Test
     fun `batch operations remain JVM interface defaults for old implementations`() = runSuspendIO {
@@ -18,8 +23,10 @@ class SqsOperationsBinaryCompatibilityTest {
         deleteBatch.isDefault.shouldBeTrue()
         visibilityBatch.isDefault.shouldBeTrue()
 
-        NoopSqsOperations.deleteBatch(QUEUE_URL, listOf("receipt-1", "receipt-2"))
+        NoopSqsOperations
+            .deleteBatch(QUEUE_URL, listOf("receipt-1", "receipt-2"))
             .successfulEntryIds shouldBeEqualTo listOf("entry-0", "entry-1")
+
         NoopSqsOperations.changeVisibilityBatch(
             QUEUE_URL,
             listOf(
@@ -27,9 +34,5 @@ class SqsOperationsBinaryCompatibilityTest {
                 SqsChangeVisibilityRequest("message-2", "receipt-2", 30),
             ),
         ).successfulMessageIds shouldBeEqualTo listOf("message-1", "message-2")
-    }
-
-    companion object {
-        private const val QUEUE_URL = "https://sqs.local/orders"
     }
 }

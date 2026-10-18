@@ -2,6 +2,7 @@ package io.bluetape4k.aws.s3
 
 import io.bluetape4k.aws.s3.model.MoveObjectResult
 import io.bluetape4k.aws.s3.model.getObjectRequest
+import io.bluetape4k.aws.s3.model.headObjectRequestOf
 import io.bluetape4k.aws.s3.model.putObjectRequest
 import io.bluetape4k.aws.s3.model.toRequestBody
 import io.bluetape4k.io.exists
@@ -18,12 +19,14 @@ import software.amazon.awssdk.services.s3.model.CreateBucketResponse
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Exception
 import software.amazon.awssdk.services.s3.model.S3Object
 import java.io.File
+import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.file.Path
 import java.util.concurrent.CompletionException
@@ -56,7 +59,7 @@ fun S3Client.existsBucket(bucketName: String): Result<Boolean> {
     }.recover { error ->
         when {
             error.isMissingBucketError() -> false
-            else                         -> throw error
+            else -> throw error
         }
     }
 }
@@ -65,9 +68,9 @@ private fun Throwable.isMissingBucketError(): Boolean {
     val cause = unwrapKnownWrapper()
     return when (cause) {
         is NoSuchBucketException -> true
-        is S3Exception           -> cause.statusCode() == 404 ||
+        is S3Exception -> cause.statusCode() == 404 ||
                 cause.awsErrorDetails()?.errorCode() in setOf("NoSuchBucket", "NotFound")
-        else                     -> false
+        else -> false
     }
 }
 
@@ -101,6 +104,12 @@ fun S3Client.createBucket(
     return createBucket {
         it.bucket(bucketName).createBucketConfiguration(builder)
     }
+}
+
+// Head
+
+fun S3Client.headObject(bucket: String, key: String): HeadObjectResponse {
+    return headObject(headObjectRequestOf(bucket, key))
 }
 
 //
@@ -234,6 +243,15 @@ inline fun S3Client.getAsFile(
     return getObject(request, ResponseTransformer.toFile(path))
 }
 
+inline fun S3Client.getAsInputStream(
+    bucket: String,
+    key: String,
+    builder: GetObjectRequest.Builder.() -> Unit = {},
+): InputStream {
+    val request = getObjectRequest(bucket, key, builder)
+    return getObject(request, ResponseTransformer.toInputStream())
+}
+
 //
 // 객체 저장
 //
@@ -257,9 +275,10 @@ inline fun S3Client.put(
     bucket: String,
     key: String,
     body: RequestBody,
+    contentType: String? = null,
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse {
-    val request = putObjectRequest(bucket, key, builder)
+    val request = putObjectRequest(bucket, key, contentType, builder)
     return putObject(request, body)
 }
 
@@ -282,9 +301,10 @@ inline fun S3Client.putAsByteArray(
     bucket: String,
     key: String,
     bytes: ByteArray,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
-    put(bucket, key, bytes.toRequestBody(), builder)
+    put(bucket, key, bytes.toRequestBody(), contentType, builder)
 
 /**
  * S3 서버로 [contents]를 Upload 합니다.
@@ -306,9 +326,10 @@ inline fun S3Client.putAsString(
     key: String,
     contents: String,
     charset: Charset = Charsets.UTF_8,
+    contentType: String? = "text/plain",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
-    put(bucket, key, contents.toRequestBody(charset), builder)
+    put(bucket, key, contents.toRequestBody(charset), contentType, builder)
 
 /**
  * S3 서버로 [file]을 Upload 합니다.
@@ -331,11 +352,12 @@ inline fun S3Client.putAsFile(
     bucket: String,
     key: String,
     file: File,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse {
     require(file.exists()) { "File does not exist. file=$file" }
 
-    return put(bucket, key, file.toRequestBody(), builder)
+    return put(bucket, key, file.toRequestBody(), contentType, builder)
 }
 
 /**
@@ -359,11 +381,12 @@ inline fun S3Client.putAsFile(
     bucket: String,
     key: String,
     path: Path,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse {
     require(path.exists()) { "file does not exist. path=$path" }
 
-    return put(bucket, key, path.toRequestBody(), builder)
+    return put(bucket, key, path.toRequestBody(), contentType, builder)
 }
 
 //

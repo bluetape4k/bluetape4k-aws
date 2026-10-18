@@ -1,14 +1,19 @@
 package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.assertions.assertFailsWith
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
+import io.bluetape4k.assertions.shouldBe
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
 import org.junit.jupiter.api.Test
 import org.springframework.modulith.events.core.EventSerializer
 import tools.jackson.databind.ObjectMapper
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.CancellationException
 
 class AwsModulithEventCodecTest {
@@ -22,18 +27,18 @@ class AwsModulithEventCodecTest {
         val encoded = codec.encode(event)
         val decoded = codec.decode(encoded.body, encoded.messageAttributes)
 
-        assertEquals(event, decoded)
-        assertEquals(1, serializer.serializeCalls)
-        assertEquals(
-            mapOf(
-                "tenant" to "acme",
-                "bt4k-event-id" to "evt-1",
-                "bt4k-event-type" to "order.placed",
-                "bt4k-event-version" to "1",
-            ),
-            encoded.messageAttributes,
+        log.debug { "decoded=$decoded" }
+        decoded shouldBeEqualTo event
+        serializer.serializeCalls shouldBeEqualTo 1
+
+        log.debug { "encoded=$encoded" }
+        encoded.messageAttributes shouldBeEqualTo mapOf(
+            "tenant" to "acme",
+            "bt4k-event-id" to "evt-1",
+            "bt4k-event-type" to "order.placed",
+            "bt4k-event-version" to "1",
         )
-        assertTrue(encoded.body.contains("\"payload\":\"{\\\"orderId\\\":\\\"42\\\"}\""))
+        encoded.body shouldContain "\"payload\":\"{\\\"orderId\\\":\\\"42\\\"}\""
     }
 
     @Test
@@ -41,9 +46,11 @@ class AwsModulithEventCodecTest {
         val serializer = RecordingSerializer(payload = "{\"value\":1}", decoded = OrderPlaced("evt-1", "acme"))
         val encoded = codec(serializer).encode(OrderPlaced("evt-1", "acme"))
 
-        assertEquals(1, serializer.serializeCalls)
-        assertEquals("{\"value\":1}", serializer.lastSerialized)
-        assertTrue(encoded.body.contains("value"))
+        serializer.serializeCalls shouldBeEqualTo 1
+        serializer.lastSerialized shouldBeEqualTo "{\"value\":1}"
+
+        log.debug { "encoded=$encoded" }
+        encoded.body shouldContain "value"
     }
 
     @Test
@@ -55,8 +62,8 @@ class AwsModulithEventCodecTest {
             codec(serializer).encode(OrderPlaced("evt-1", "acme"))
         }
 
-        assertEquals(null, failure.cause)
-        assertFalse(failure.toString().contains("42"))
+        failure.cause.shouldBeNull()
+        failure.toString() shouldNotContain "42"
     }
 
     @Test
@@ -65,8 +72,9 @@ class AwsModulithEventCodecTest {
         val acceptedSerializer = RecordingSerializer(payload = "x".repeat(196_608), decoded = event)
 
         val accepted = codec(acceptedSerializer).encode(event)
+        log.debug { "accepted=$accepted" }
+        accepted.body.shouldNotBeEmpty()
 
-        assertTrue(accepted.body.isNotEmpty())
         val rejectedSerializer = RecordingSerializer(payload = "x".repeat(196_609), decoded = event)
         assertFailsWith<AwsModulithOutboundEnvelopeException> {
             codec(rejectedSerializer).encode(event)
@@ -80,8 +88,8 @@ class AwsModulithEventCodecTest {
         val acceptedSerializer = RecordingSerializer(payload = acceptedPayload, decoded = event)
 
         val accepted = codec(acceptedSerializer).encode(event)
+        accepted.body.utf8Size() shouldBeEqualTo 262_144
 
-        assertEquals(262_144, accepted.body.utf8Size())
         val rejectedPayload = payloadForEnvelopeSize(262_145, event)
         val rejectedSerializer = RecordingSerializer(payload = rejectedPayload, decoded = event)
         assertFailsWith<AwsModulithOutboundEnvelopeException> {
@@ -105,12 +113,19 @@ class AwsModulithEventCodecTest {
         mutableHeaders["tenant"] = "mutated"
         mutableAttributes["tenant"] = "mutated"
 
-        assertEquals("secret-tenant", envelope.headers["tenant"])
-        assertEquals("secret-attribute", encoded.messageAttributes["tenant"])
-        assertFalse(envelope.toString().contains("secret-payload"))
-        assertFalse(envelope.toString().contains("secret-tenant"))
-        assertFalse(encoded.toString().contains("secret-body"))
-        assertFalse(encoded.toString().contains("secret-attribute"))
+        log.debug { "encoded=$encoded" }
+        envelope.headers["tenant"] shouldBeEqualTo "secret-tenant"
+        envelope.toString().also {
+            it shouldNotContain "secret-payload"
+            it shouldNotContain "secret-tenant"
+        }
+
+        log.debug { "encoded=$encoded" }
+        encoded.messageAttributes["tenant"] shouldBeEqualTo "secret-attribute"
+        encoded.toString().also {
+            it shouldNotContain "secret-body"
+            it shouldNotContain "secret-attribute"
+        }
     }
 
     @Test
@@ -120,12 +135,9 @@ class AwsModulithEventCodecTest {
         val codec = codec(serializer)
         val body = envelope(payload = serializer.payload)
 
-        assertSame(
-            event,
-            codec.decode(body, emptyMap<String, String>()),
-        )
-        assertEquals(OrderPlaced::class.java, serializer.deserializedType)
-        assertEquals(serializer.payload, serializer.deserializedInput)
+        codec.decode(body, emptyMap()) shouldBe event
+        serializer.deserializedType shouldBeEqualTo OrderPlaced::class.java
+        serializer.deserializedInput shouldBeEqualTo serializer.payload
     }
 
     @Test
@@ -133,27 +145,28 @@ class AwsModulithEventCodecTest {
         val hostile = "secret-payload"
         val ordinary = RecordingSerializer(payload = "{}", decoded = OrderPlaced("evt-1", "acme"))
         ordinary.deserializeFailure = IllegalStateException(hostile)
+
         val ordinaryFailure = assertFailsWith<AwsModulithInboundEnvelopeException> {
-            codec(ordinary).decode(envelope(payload = "{}"), emptyMap<String, String>())
+            codec(ordinary).decode(envelope(payload = "{}"), emptyMap())
         }
-        assertEquals(null, ordinaryFailure.cause)
-        assertFalse(ordinaryFailure.toString().contains(hostile))
+        ordinaryFailure.cause.shouldBeNull()
+        ordinaryFailure.toString() shouldNotContain hostile
 
         val cancellation = CancellationException(hostile)
         val cancelled = RecordingSerializer(payload = "{}", decoded = OrderPlaced("evt-1", "acme"))
         cancelled.deserializeFailure = cancellation
         val actualCancellation = assertFailsWith<CancellationException> {
-            codec(cancelled).decode(envelope(payload = "{}"), emptyMap<String, String>())
+            codec(cancelled).decode(envelope(payload = "{}"), emptyMap())
         }
-        assertSame(cancellation, actualCancellation)
+        actualCancellation shouldBe cancellation
 
         val fatal = AssertionError(hostile)
         val failed = RecordingSerializer(payload = "{}", decoded = OrderPlaced("evt-1", "acme"))
         failed.deserializeFailure = fatal
         val actualFatal = assertFailsWith<AssertionError> {
-            codec(failed).decode(envelope(payload = "{}"), emptyMap<String, String>())
+            codec(failed).decode(envelope(payload = "{}"), emptyMap())
         }
-        assertSame(fatal, actualFatal)
+        actualFatal shouldBe fatal
     }
 
     @Test
@@ -166,15 +179,15 @@ class AwsModulithEventCodecTest {
         val actualCancellation = assertFailsWith<CancellationException> {
             codec(cancelled).encode(event)
         }
+        actualCancellation shouldBe cancellation
 
-        assertSame(cancellation, actualCancellation)
         val fatal = AssertionError("secret-payload")
         val failed = RecordingSerializer(payload = "{}", decoded = event)
         failed.serializeFailure = fatal
         val actualFatal = assertFailsWith<AssertionError> {
             codec(failed).encode(event)
         }
-        assertSame(fatal, actualFatal)
+        actualFatal shouldBe fatal
     }
 
     private fun codec(
@@ -195,13 +208,14 @@ class AwsModulithEventCodecTest {
             .body
             .utf8Size()
         val encodedPayloadBytes = targetBytes - baseBytes
-        require(encodedPayloadBytes >= 0)
+        encodedPayloadBytes shouldBeGreaterOrEqualTo 0
+
         val escapedCount = encodedPayloadBytes / JSON_ESCAPED_NULL_BYTES
         val plainCount = encodedPayloadBytes % JSON_ESCAPED_NULL_BYTES
         return "\u0000".repeat(escapedCount) + "x".repeat(plainCount)
     }
 
-    private companion object {
+    private companion object: KLogging() {
         const val JSON_ESCAPED_NULL_BYTES = 6
 
         val registry: AwsModulithEventTypeRegistry = AwsModulithEventTypeRegistry.of(
@@ -234,7 +248,7 @@ class AwsModulithEventCodecTest {
     }
 }
 
-private fun String.utf8Size(): Int = toByteArray(StandardCharsets.UTF_8).size
+private fun String.utf8Size(): Int = toUtf8Bytes().size
 
 private data class OrderPlaced(
     val eventId: String,
@@ -244,7 +258,7 @@ private data class OrderPlaced(
 private class RecordingSerializer(
     val payload: String,
     private val decoded: Any,
-) : EventSerializer {
+): EventSerializer {
     var serializedValue: Any = payload
     var serializeCalls: Int = 0
     var lastSerialized: String? = null
@@ -261,7 +275,7 @@ private class RecordingSerializer(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : Any> deserialize(event: Any, targetType: Class<T>): T {
+    override fun <T: Any> deserialize(event: Any, targetType: Class<T>): T {
         deserializedInput = event
         deserializedType = targetType
         deserializeFailure?.let { throw it }

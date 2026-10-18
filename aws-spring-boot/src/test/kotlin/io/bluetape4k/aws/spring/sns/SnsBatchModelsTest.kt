@@ -2,19 +2,20 @@ package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
-import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.io.serializer.JdkBinarySerializer
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.io.Serializable
 
-class SnsBatchModelsTest {
+class SnsBatchModelsTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `six public models are serializable and preserve values`() {
@@ -42,7 +43,9 @@ class SnsBatchModelsTest {
 
         val rendered = "$entry$request$result$success$failure"
         listOf("entry-secret", "payload-secret", "topic-secret", "message-secret", "raw-failure")
-            .forEach { secret -> rendered shouldNotContain secret }
+            .forEach { secret ->
+                rendered shouldNotContain secret
+            }
     }
 
     @Test
@@ -77,10 +80,11 @@ class SnsBatchModelsTest {
         }
     }
 
+    private val serializer = JdkBinarySerializer(objectInputFilter = null)
+
     @Suppress("UNCHECKED_CAST")
-    private fun <T> roundTrip(value: T): T {
-        val bytes = ByteArrayOutputStream()
-        ObjectOutputStream(bytes).use { it.writeObject(value) }
-        return ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { it.readObject() as T }
+    private fun <T: Any> roundTrip(value: T): T {
+        val bytes = serializer.serialize(value)
+        return serializer.deserialize<T>(bytes).shouldNotBeNull()
     }
 }

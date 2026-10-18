@@ -1,21 +1,30 @@
 package io.bluetape4k.aws.spring.modulith
 
-import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
-import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerificationAutoConfiguration
-import io.bluetape4k.aws.spring.sns.SnsOperations
-import io.bluetape4k.aws.spring.sqs.SqsFullRequestOperations
-import io.bluetape4k.aws.spring.sqs.SqsOperations
-import io.bluetape4k.aws.spring.sqs.SqsCoroutinesTemplate
-import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerificationAutoConfiguration
+import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
+import io.bluetape4k.aws.spring.sns.SnsOperations
+import io.bluetape4k.aws.spring.sqs.SqsCoroutinesTemplate
+import io.bluetape4k.aws.spring.sqs.SqsFullRequestOperations
+import io.bluetape4k.aws.spring.sqs.SqsOperations
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.modulith.events.EventExternalizationConfiguration
@@ -23,10 +32,14 @@ import org.springframework.modulith.events.RoutingTarget
 import org.springframework.modulith.events.core.EventSerializer
 import org.springframework.modulith.events.support.EventExternalizationTransport
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
-import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 
 class AwsModulithEventsAutoConfigurationTest {
+
+    companion object: KLogging() {
+        private const val QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/000000000000/events"
+    }
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(AutoConfigurations.of(AwsModulithEventsAutoConfiguration::class.java))
@@ -35,7 +48,7 @@ class AwsModulithEventsAutoConfigurationTest {
     fun `root opt-in is disabled by default`() {
         contextRunner.run { context ->
             context.startupFailure.shouldBeNull()
-            context.getBeansOfType(AwsModulithEventsProperties::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType<AwsModulithEventsProperties>().shouldBeEmpty()
         }
     }
 
@@ -45,8 +58,8 @@ class AwsModulithEventsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.modulith.events.enabled=true")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithEventsProperties::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AwsModulithEventsProperties>() shouldHaveSize 1
+                context.getBeansOfType<AwsModulithSqsEventConsumer>().shouldBeEmpty()
             }
     }
 
@@ -57,11 +70,11 @@ class AwsModulithEventsAutoConfigurationTest {
                 "bluetape4k.aws.modulith.events.enabled=true",
                 "bluetape4k.aws.modulith.events.consumer.source-mode=sns",
                 "bluetape4k.aws.modulith.events.consumer.expected-topic-arns[0]=" +
-                    "arn:aws:sns:us-east-1:000000000000:events",
+                        "arn:aws:sns:us-east-1:000000000000:events",
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithInboundSourceDecoder::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AwsModulithInboundSourceDecoder>().shouldBeEmpty()
             }
     }
 
@@ -101,7 +114,7 @@ class AwsModulithEventsAutoConfigurationTest {
             .withPropertyValues(*sqsProducerProperties())
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(EventExternalizationTransport::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<EventExternalizationTransport>() shouldHaveSize 1
             }
 
         configuredRunner()
@@ -126,15 +139,15 @@ class AwsModulithEventsAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(EventExternalizationTransport::class.java).size shouldBeEqualTo 1
-                context.containsBean("awsModulithSqsTargetPublisher") shouldBeEqualTo false
+                context.getBeansOfType<EventExternalizationTransport>() shouldHaveSize 1
+                context.containsBean("awsModulithSqsTargetPublisher").shouldBeFalse()
             }
     }
 
     @Test
     fun `custom transport backs off producer and does not suppress DIRECT consumer`() {
         val transport = EventExternalizationTransport { _, _ ->
-            java.util.concurrent.CompletableFuture.completedFuture(null)
+            CompletableFuture.completedFuture(null)
         }
         val operations = mockk<SqsFullRequestOperations>(relaxed = true)
 
@@ -145,9 +158,9 @@ class AwsModulithEventsAutoConfigurationTest {
             .withPropertyValues(*directConsumerProperties(redriveRequired = false))
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(EventExternalizationTransport::class.java) shouldBeSameInstanceAs transport
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(AwsModulithSqsEventListener::class.java).size shouldBeEqualTo 1
+                context.getBean<EventExternalizationTransport>() shouldBeSameInstanceAs transport
+                context.getBeansOfType<AwsModulithSqsEventConsumer>() shouldHaveSize 1
+                context.getBeansOfType<AwsModulithSqsEventListener>() shouldHaveSize 1
             }
     }
 
@@ -167,8 +180,8 @@ class AwsModulithEventsAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(EventExternalizationTransport::class.java) shouldBeSameInstanceAs transport
-                context.getBeansOfType(AwsModulithEventCodec::class.java).size shouldBeEqualTo 0
+                context.getBean<EventExternalizationTransport>() shouldBeSameInstanceAs transport
+                context.getBeansOfType<AwsModulithEventCodec>().shouldBeEmpty()
             }
     }
 
@@ -201,8 +214,8 @@ class AwsModulithEventsAutoConfigurationTest {
             .withPropertyValues(*directConsumerProperties(redriveRequired = false))
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithEventIdempotencyStore::class.java).size shouldBeEqualTo 1
-                context.getBean(AwsModulithEventIdempotencyStore::class.java) shouldBeSameInstanceAs store
+                context.getBeansOfType<AwsModulithEventIdempotencyStore>() shouldHaveSize 1
+                context.getBean<AwsModulithEventIdempotencyStore>() shouldBeSameInstanceAs store
             }
     }
 
@@ -221,21 +234,20 @@ class AwsModulithEventsAutoConfigurationTest {
                 *directConsumerProperties(redriveRequired = false),
             )
             .run { context ->
-                val transport = context.getBean(EventExternalizationTransport::class.java)
-                val store = context.getBean(InMemoryAwsModulithEventIdempotencyStore::class.java)
+                val transport = context.getBean<EventExternalizationTransport>()
+                val store = context.getBean<InMemoryAwsModulithEventIdempotencyStore>()
 
                 context.close()
 
-                runCatching {
+                assertFailsWith<CompletionException> {
                     transport.externalize(TestEvent("closed"), RoutingTarget.forTarget("events").withoutKey()).join()
-                }.exceptionOrNull()
-                    .shouldBeInstanceOf<CompletionException>()
-                    .cause.shouldBeInstanceOf<AwsModulithProducerClosedException>()
-                runCatching {
-                    runBlocking {
-                        store.claim(AwsModulithEventKey("test.event", "closed"), Duration.ofMinutes(1))
+                }.cause.shouldBeInstanceOf<AwsModulithProducerClosedException>()
+
+                assertFailsWith<AwsModulithClaimMutationException> {
+                    runSuspendIO {
+                        store.claim(AwsModulithEventKey("test.event", "closed"), 1.minutes())
                     }
-                }.exceptionOrNull().shouldBeInstanceOf<AwsModulithClaimMutationException>()
+                }
             }
     }
 
@@ -280,7 +292,7 @@ class AwsModulithEventsAutoConfigurationTest {
             .withPropertyValues(*directConsumerProperties(redriveRequired = true))
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<AwsModulithSqsEventConsumer>() shouldHaveSize 1
             }
     }
 
@@ -296,8 +308,9 @@ class AwsModulithEventsAutoConfigurationTest {
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
                 val messages = failureMessages(context.startupFailure)
+                log.debug { "messages=$messages" }
                 messages shouldContain AwsModulithDiagnosticCode.CONFIGURATION.value
-                ("sensitive provider failure" in messages) shouldBeEqualTo false
+                messages shouldNotContain "sensitive provider failure"
             }
     }
 
@@ -322,7 +335,7 @@ class AwsModulithEventsAutoConfigurationTest {
             .withPropertyValues(*snsConsumerProperties())
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<AwsModulithSqsEventConsumer>() shouldHaveSize 1
             }
     }
 
@@ -345,8 +358,8 @@ class AwsModulithEventsAutoConfigurationTest {
             .withPropertyValues(*snsConsumerProperties())
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SnsHttpMessageVerifier::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<SnsHttpMessageVerifier>() shouldHaveSize 1
+                context.getBeansOfType<AwsModulithSqsEventConsumer>() shouldHaveSize 1
             }
     }
 
@@ -384,8 +397,7 @@ class AwsModulithEventsAutoConfigurationTest {
         "bluetape4k.aws.modulith.events.consumer.enabled=true",
         "bluetape4k.aws.modulith.events.consumer.queue=events",
         "bluetape4k.aws.modulith.events.consumer.source-mode=sns",
-        "bluetape4k.aws.modulith.events.consumer.expected-topic-arns[0]=" +
-            "arn:aws:sns:us-east-1:000000000000:events",
+        "bluetape4k.aws.modulith.events.consumer.expected-topic-arns[0]=arn:aws:sns:us-east-1:000000000000:events",
         "bluetape4k.aws.modulith.events.consumer.redrive-required=false",
     )
 
@@ -396,14 +408,10 @@ class AwsModulithEventsAutoConfigurationTest {
 
     private data class TestEvent(val id: String)
 
-    private object TestEventSerializer : EventSerializer {
+    private object TestEventSerializer: EventSerializer {
         override fun serialize(event: Any): Any = "{\"id\":\"${(event as TestEvent).id}\"}"
 
-        override fun <T : Any> deserialize(serialized: Any, type: Class<T>): T =
+        override fun <T: Any> deserialize(serialized: Any, type: Class<T>): T =
             type.cast(TestEvent("decoded"))
-    }
-
-    companion object {
-        private const val QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/000000000000/events"
     }
 }

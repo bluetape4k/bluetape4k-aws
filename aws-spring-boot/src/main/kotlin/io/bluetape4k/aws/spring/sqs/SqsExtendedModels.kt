@@ -2,6 +2,7 @@
 
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 
 /** 외부에 안전하게 노출하는 SQS message attribute입니다. */
@@ -16,11 +17,12 @@ class SqsExtendedMessageAttribute private constructor(
     override fun toString(): String =
         "SqsExtendedMessageAttribute(dataTypePresent=${dataType.isNotBlank()}, stringValuePresent=${stringValue != null}, binaryValuePresent=${binaryBytes != null})"
 
-    internal companion object {
+    internal companion object: KLogging() {
+        const val MAX_RAW_DATA_TYPE_LENGTH = 256
         fun create(value: MessageAttributeValue): SqsExtendedMessageAttribute {
             val rawDataType = value.dataType()
             val rawStringValue = value.stringValue()
-            require(rawDataType.isNotBlank() && rawDataType.length <= 256) {
+            require(rawDataType.isNotBlank() && rawDataType.length <= MAX_RAW_DATA_TYPE_LENGTH) {
                 "message attribute dataType must be 1..256 characters."
             }
             require(rawDataType.all { it in '\u0020'..'\u007e' && it != '\r' && it != '\n' }) {

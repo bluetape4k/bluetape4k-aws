@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.config
 
+import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.bootstrap.BootstrapRegistry
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
-import org.springframework.context.ApplicationListener
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -17,7 +17,7 @@ internal object AwsConfigDataBootstrapBridge {
         className: String,
         classLoader: ClassLoader? = Thread.currentThread().contextClassLoader,
     ): Boolean = try {
-        Class.forName(className, false, classLoader)
+        Class.forName(className.requireNotBlank(className), false, classLoader)
         true
     } catch (_: ClassNotFoundException) {
         false
@@ -49,12 +49,13 @@ internal object AwsConfigDataBootstrapBridge {
         }
 
         val holder = InitializedClientHolder(supplier, closer)
+
         @Suppress("UNCHECKED_CAST")
         bootstrapContext.registerIfAbsent(
             clientType as Class<Any>,
             BootstrapRegistry.InstanceSupplier.from { holder.getOrCreate() },
         )
-        bootstrapContext.addCloseListener(ApplicationListener { holder.closeIfInitialized() })
+        bootstrapContext.addCloseListener { holder.closeIfInitialized() }
         return true
     }
 
@@ -72,7 +73,9 @@ internal object AwsConfigDataBootstrapBridge {
 
         fun closeIfInitialized() {
             val value = lock.withLock {
-                initialized.also { initialized = null }
+                val snapshot = initialized
+                initialized = null
+                snapshot
             }
             value?.let(close)
         }

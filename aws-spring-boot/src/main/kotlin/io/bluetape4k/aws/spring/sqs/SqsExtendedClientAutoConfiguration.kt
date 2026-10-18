@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.s3.S3AutoConfiguration
 import io.bluetape4k.aws.spring.s3.S3BoundedEncryptedReadOperations
 import io.bluetape4k.aws.spring.s3.S3BoundedObjectReadOperations
@@ -46,10 +46,7 @@ class SqsExtendedClientAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(SqsExtendedClientOperations::class)
     @Conditional(SqsExtendedLifecycleBudgetCondition::class)
-    @ConditionalOnBean(
-        SqsFullRequestOperations::class,
-        S3Operations::class,
-    )
+    @ConditionalOnBean(SqsFullRequestOperations::class, S3Operations::class)
     fun sqsExtendedClient(
         sqsOperations: SqsFullRequestOperations,
         s3Operations: S3Operations,
@@ -101,7 +98,8 @@ class SqsExtendedClientAutoConfiguration {
         identity: S3ClientSideEncryptionIdentity?,
     ) {
         val policies = properties.queues.values.map { it.policy } +
-            listOfNotNull(properties.defaultPolicy.takeIf { properties.defaultQueueUrls.isNotEmpty() })
+                listOfNotNull(properties.defaultPolicy.takeIf { properties.defaultQueueUrls.isNotEmpty() })
+
         val invalid = buildList {
             if (policies.any { it.deleteOnAck } && metadata == null) add(Unit)
             if (properties.consumerEnabled && policies.any { !it.encryption.enabled } && bounded == null) add(Unit)
@@ -112,6 +110,8 @@ class SqsExtendedClientAutoConfiguration {
                 }
             }
         }
-        if (invalid.isNotEmpty()) throw SqsExtendedConfigurationException.create()
+        if (invalid.isNotEmpty()) {
+            throw SqsExtendedConfigurationException.create()
+        }
     }
 }

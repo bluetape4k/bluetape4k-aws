@@ -11,9 +11,9 @@ internal enum class S3TransferCleanupOperation {
 internal class S3TransferCleanupException(
     val operation: S3TransferCleanupOperation,
     failures: List<Throwable>,
-) : IllegalStateException(
+): IllegalStateException(
     "S3 transfer cleanup failed: operation=${operation.name.lowercase()}, attempts=${failures.size}, " +
-        "failureTypes=${failures.joinToString(",") { it.safeTypeName() }}",
+            "failureTypes=${failures.joinToString(",") { it.safeTypeName() }}",
 ) {
     val attemptFailureTypes: List<String> = failures.map(Throwable::safeTypeName)
 }

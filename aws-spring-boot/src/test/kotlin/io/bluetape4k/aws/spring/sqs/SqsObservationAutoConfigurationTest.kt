@@ -1,16 +1,22 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.logging.KLogging
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport
@@ -20,9 +26,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Supplier
 
 class SqsObservationAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(AutoConfigurations.of(SqsObservationAutoConfiguration::class.java))
@@ -30,12 +37,12 @@ class SqsObservationAutoConfigurationTest {
     @Test
     fun `observation is disabled by default`() {
         contextRunner
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
-            .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, { SupportingObservationHandler })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SqsObservationRuntime::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
+                context.getBeansOfType<SqsObservationRuntime>().shouldBeEmpty()
             }
     }
 
@@ -45,7 +52,7 @@ class SqsObservationAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=false")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
             }
     }
 
@@ -55,7 +62,7 @@ class SqsObservationAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.enabled=false")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
             }
     }
 
@@ -65,7 +72,7 @@ class SqsObservationAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.sqs.enabled=false")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
             }
     }
 
@@ -73,15 +80,15 @@ class SqsObservationAutoConfigurationTest {
     fun `observation activates only with registry and supporting Spring handler`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
-            .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, { SupportingObservationHandler })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationProperties::class.java).size shouldBeEqualTo 1
-                context.getBean(SqsObservationProperties::class.java).enabled shouldBeEqualTo true
-                context.getBean(SqsObservationActivation::class.java).shouldNotBeNull()
-                context.getBean(SqsObservationRuntime::class.java).shouldNotBeNull()
-                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationProperties>() shouldHaveSize 1
+                context.getBean<SqsObservationProperties>().enabled.shouldBeTrue()
+                context.getBean<SqsObservationActivation>().shouldNotBeNull()
+                context.getBean<SqsObservationRuntime>().shouldNotBeNull()
+                context.getBeansOfType<SqsAsyncClient>().shouldBeEmpty()
             }
     }
 
@@ -100,15 +107,15 @@ class SqsObservationAutoConfigurationTest {
                 "bluetape4k.aws.sqs.observation.enabled=true",
                 "bluetape4k.aws.sqs.listener.auto-startup=false",
             )
-            .withBean(SqsOperations::class.java, Supplier { NoopSqsOperations })
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
-            .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+            .withBean(SqsOperations::class.java, { NoopSqsOperations })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, { SupportingObservationHandler })
             .withUserConfiguration(RecordingListenerConfiguration::class.java)
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                val runtime = context.getBean(SqsObservationRuntime::class.java)
-                val processor = context.getBean(SqsListenerAnnotationBeanPostProcessor::class.java)
-                val containers = context.getBean(SqsMessageListenerContainerRegistry::class.java).containers
+                val runtime = context.getBean<SqsObservationRuntime>()
+                val processor = context.getBean<SqsListenerAnnotationBeanPostProcessor>()
+                val containers = context.getBean<SqsMessageListenerContainerRegistry>().containers
 
                 processor.observationRuntimeOrNull() shouldBeSameInstanceAs runtime
                 containers.size shouldBeEqualTo 2
@@ -125,12 +132,12 @@ class SqsObservationAutoConfigurationTest {
     fun `NOOP registry does not activate observation`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.NOOP })
-            .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.NOOP })
+            .withBean(ObservationHandler::class.java, { SupportingObservationHandler })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SqsObservationRuntime::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
+                context.getBeansOfType<SqsObservationRuntime>().shouldBeEmpty()
             }
     }
 
@@ -138,10 +145,10 @@ class SqsObservationAutoConfigurationTest {
     fun `missing registry does not activate observation`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+            .withBean(ObservationHandler::class.java, { SupportingObservationHandler })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
             }
     }
 
@@ -158,7 +165,7 @@ class SqsObservationAutoConfigurationTest {
                     .mapNotNull { conditionAndOutcome -> conditionAndOutcome.outcome.message }
                     .toList()
 
-                messages.any { message -> message.contains("BT4K-SQS-OBS-101 registry-missing") } shouldBeEqualTo true
+                messages.any { message -> message.contains("BT4K-SQS-OBS-101 registry-missing") }.shouldBeTrue()
             }
     }
 
@@ -166,7 +173,7 @@ class SqsObservationAutoConfigurationTest {
     fun `missing supporting handler exposes the documented diagnostic reason`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
             .run { context ->
                 val messages = ConditionEvaluationReport.get(context.beanFactory)
                     .conditionAndOutcomesBySource
@@ -176,7 +183,7 @@ class SqsObservationAutoConfigurationTest {
                     .mapNotNull { conditionAndOutcome -> conditionAndOutcome.outcome.message }
                     .toList()
 
-                messages.any { message -> message.contains("BT4K-SQS-OBS-101 handler-missing") } shouldBeEqualTo true
+                messages.any { message -> message.contains("BT4K-SQS-OBS-101 handler-missing") }.shouldBeTrue()
             }
     }
 
@@ -186,7 +193,7 @@ class SqsObservationAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
             .withBean(
                 ObservationRegistry::class.java,
-                Supplier {
+                {
                     ObservationRegistry.create().apply {
                         observationConfig().observationHandler(SupportingObservationHandler)
                     }
@@ -194,7 +201,7 @@ class SqsObservationAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
             }
     }
 
@@ -202,11 +209,11 @@ class SqsObservationAutoConfigurationTest {
     fun `unsupported Spring handler does not activate observation`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
-            .withBean(ObservationHandler::class.java, Supplier { UnsupportedObservationHandler })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, { UnsupportedObservationHandler })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
             }
     }
 
@@ -214,14 +221,14 @@ class SqsObservationAutoConfigurationTest {
     fun `handler probe failure is not hidden as a missing handler`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
-            .withBean(ObservationHandler::class.java, Supplier { FailingObservationHandler })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, { FailingObservationHandler })
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                messages.contains("probe failure") shouldBeEqualTo true
+                messages.contains("probe failure").shouldBeTrue()
             }
     }
 
@@ -229,10 +236,10 @@ class SqsObservationAutoConfigurationTest {
     fun `missing Spring handler does not activate observation`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
             }
     }
 
@@ -242,7 +249,7 @@ class SqsObservationAutoConfigurationTest {
         validPrerequisitesRunner()
             .withBean(
                 SqsObservationFactory::class.java,
-                Supplier {
+                {
                     SqsObservationFactory { _, _ ->
                         calls.incrementAndGet()
                         Observation.NOOP
@@ -250,11 +257,12 @@ class SqsObservationAutoConfigurationTest {
                 },
             )
             .run { context ->
-                val runtime = context.getBean(SqsObservationRuntime::class.java)
+                val runtime = context.getBean<SqsObservationRuntime>()
                 runBlocking {
-                    runtime.observe(processContext()) { Unit }
+                    runtime.observe(processContext()) { }
                 }
                 calls.get() shouldBeEqualTo 1
+
                 val conditionMessages = ConditionEvaluationReport.get(context.beanFactory)
                     .conditionAndOutcomesBySource
                     .values
@@ -262,9 +270,10 @@ class SqsObservationAutoConfigurationTest {
                     .flatMap { outcomes -> outcomes.asSequence() }
                     .mapNotNull { conditionAndOutcome -> conditionAndOutcome.outcome.message }
                     .toList()
+
                 conditionMessages.any { message ->
                     message.contains("BT4K-SQS-OBS-101 user-factory")
-                } shouldBeEqualTo true
+                }.shouldBeTrue()
             }
     }
 
@@ -272,28 +281,28 @@ class SqsObservationAutoConfigurationTest {
     fun `user factory cannot bypass missing handler prerequisite`() {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
             .withBean(
                 SqsObservationFactory::class.java,
-                Supplier { SqsObservationFactory { _, _ -> Observation.NOOP } },
+                { SqsObservationFactory { _, _ -> Observation.NOOP } },
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationRuntime::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationRuntime>().shouldBeEmpty()
             }
     }
 
     @Test
     fun `duplicate conventions for one stage fail fast`() {
         validPrerequisitesRunner()
-            .withBean("firstProcessConvention", SqsObservationConvention::class.java, Supplier { ProcessConvention })
-            .withBean("secondProcessConvention", SqsObservationConvention::class.java, Supplier { ProcessConvention })
+            .withBean("firstProcessConvention", SqsObservationConvention::class.java, { ProcessConvention })
+            .withBean("secondProcessConvention", SqsObservationConvention::class.java, { ProcessConvention })
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
-                messages.contains("Only one SqsObservationConvention") shouldBeEqualTo true
+                messages.contains("Only one SqsObservationConvention").shouldBeTrue()
             }
     }
 
@@ -313,11 +322,12 @@ class SqsObservationAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("io.micrometer.context.ContextSnapshot"))
             .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-            .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
-            .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+            .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+            .withBean(ObservationHandler::class.java, { SupportingObservationHandler })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
+
                 val messages = ConditionEvaluationReport.get(context.beanFactory)
                     .conditionAndOutcomesBySource
                     .values
@@ -325,9 +335,10 @@ class SqsObservationAutoConfigurationTest {
                     .flatMap { outcomes -> outcomes.asSequence() }
                     .mapNotNull { conditionAndOutcome -> conditionAndOutcome.outcome.message }
                     .toList()
+
                 messages.any { message ->
                     message.contains("BT4K-SQS-OBS-101 context-propagation-missing")
-                } shouldBeEqualTo true
+                }.shouldBeTrue()
             }
     }
 
@@ -350,7 +361,7 @@ class SqsObservationAutoConfigurationTest {
 
         resource.readText().lineSequence().map(String::trim).toList().contains(
             SqsObservationAutoConfiguration::class.java.name,
-        ) shouldBeEqualTo true
+        ).shouldBeTrue()
     }
 
     @Test
@@ -358,21 +369,21 @@ class SqsObservationAutoConfigurationTest {
         validPrerequisitesRunner().run { context ->
             context.beanDefinitionNames.none { name ->
                 name.contains("sqsObservationHealth", ignoreCase = true) ||
-                    name.contains("sqsObservationReadiness", ignoreCase = true)
-            } shouldBeEqualTo true
+                        name.contains("sqsObservationReadiness", ignoreCase = true)
+            }.shouldBeTrue()
         }
     }
 
     private fun validPrerequisitesRunner(): ApplicationContextRunner = contextRunner
         .withPropertyValues("bluetape4k.aws.sqs.observation.enabled=true")
-        .withBean(ObservationRegistry::class.java, Supplier { ObservationRegistry.create() })
-        .withBean(ObservationHandler::class.java, Supplier { SupportingObservationHandler })
+        .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
+        .withBean(ObservationHandler::class.java, { SupportingObservationHandler })
 
     private fun ApplicationContextRunner.runAndCountActivations(): Int {
         var count = -1
         run { context ->
             context.startupFailure.shouldBeNull()
-            count = context.getBeansOfType(SqsObservationActivation::class.java).size
+            count = context.getBeansOfType<SqsObservationActivation>().size
         }
         return count
     }
@@ -387,26 +398,26 @@ class SqsObservationAutoConfigurationTest {
         ),
     )
 
-    private object SupportingObservationHandler : ObservationHandler<Observation.Context> {
+    private object SupportingObservationHandler: ObservationHandler<Observation.Context> {
         override fun onStart(context: Observation.Context) = Unit
 
         override fun supportsContext(context: Observation.Context): Boolean =
             context is SqsObservationContext && context.metadata.stage == SqsObservationStage.PROCESS
     }
 
-    private object UnsupportedObservationHandler : ObservationHandler<Observation.Context> {
+    private object UnsupportedObservationHandler: ObservationHandler<Observation.Context> {
         override fun onStart(context: Observation.Context) = Unit
 
         override fun supportsContext(context: Observation.Context): Boolean = false
     }
 
-    private object FailingObservationHandler : ObservationHandler<Observation.Context> {
+    private object FailingObservationHandler: ObservationHandler<Observation.Context> {
         override fun onStart(context: Observation.Context) = Unit
 
         override fun supportsContext(context: Observation.Context): Boolean = error("probe failure")
     }
 
-    private object ProcessConvention : SqsObservationConvention {
+    private object ProcessConvention: SqsObservationConvention {
         override val stage: SqsObservationStage = SqsObservationStage.PROCESS
 
         override fun getName(): String = "test.process"

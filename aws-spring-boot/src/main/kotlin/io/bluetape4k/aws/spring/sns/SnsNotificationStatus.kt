@@ -7,7 +7,7 @@ import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 internal class SnsNotificationStatus(
     private val message: SnsHttpMessage,
     private val operations: SnsOperations,
-) : NotificationStatus {
+): NotificationStatus {
     override val topicArn: String
         get() = message.topicArn
 

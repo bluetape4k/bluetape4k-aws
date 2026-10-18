@@ -12,14 +12,19 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.futureOf
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
@@ -32,12 +37,21 @@ import java.util.concurrent.atomic.AtomicReference
 
 class SqsBatchLifecycleTest {
 
+    companion object: KLogging()
+
+    private val client = mockk<SqsAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
     fun `close drains accepted work before manager and executor and rejects new admission`() = runTest {
         val future = CoordinatorCountingFuture<SqsBatchOutcome>()
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val attached = CompletableFuture<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterFutureAttached(token: Long) {
                 attached.complete(Unit)
             }
@@ -45,7 +59,7 @@ class SqsBatchLifecycleTest {
         val events = mutableListOf<String>()
         val resources = resources(transport = transport, events = events)
         val runtime = RecordingCloseRuntime()
-        val properties = templateProperties(enabled = true, shutdownTimeout = Duration.ofSeconds(5))
+        val properties = templateProperties(enabled = true, shutdownTimeout = 5.seconds())
         val template = SqsBatchCoroutinesTemplate(
             coordinator = SqsBatchCoordinator(properties, transport, hooks),
             resources = resources,
@@ -75,7 +89,9 @@ class SqsBatchLifecycleTest {
         runtime.completionTimeouts.zipWithNext().forEach { (first, second) ->
             second shouldBeLessOrEqualTo first
         }
-        assertFailsWith<IllegalStateException> { template.deleteMany(emptyList()) }
+        assertFailsWith<IllegalStateException> {
+            template.deleteMany(emptyList())
+        }
     }
 
     @Test
@@ -83,7 +99,7 @@ class SqsBatchLifecycleTest {
         val future = CoordinatorCountingFuture<SqsBatchOutcome>()
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val attached = CompletableFuture<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterFutureAttached(token: Long) {
                 attached.complete(Unit)
             }
@@ -97,10 +113,10 @@ class SqsBatchLifecycleTest {
             },
         )
         val executor = LifecycleExecutor()
-        val properties = templateProperties(enabled = true, shutdownTimeout = Duration.ofMillis(1))
+        val properties = templateProperties(enabled = true, shutdownTimeout = 1.millis())
         val template = SqsBatchCoroutinesTemplate(
             coordinator = SqsBatchCoordinator(properties, transport, hooks),
-            resources = SqsBatchTransportResources(transport, AutoCloseable {}, executor),
+            resources = SqsBatchTransportResources(transport, {}, executor),
             properties = properties,
             closeRuntime = runtime,
         )
@@ -110,7 +126,7 @@ class SqsBatchLifecycleTest {
 
         val closeExecutor = Executors.newSingleThreadExecutor()
         try {
-            val closed = CompletableFuture.runAsync(template::close, closeExecutor)
+            val closed = futureOf(closeExecutor) { template.close() }
             runtime.firstAwaitEntered.join()
             runCurrent()
             closed.join()
@@ -130,10 +146,10 @@ class SqsBatchLifecycleTest {
         val clockIndex = AtomicInteger()
         val runtime = RecordingCloseRuntime(clock = { clockValues[clockIndex.getAndIncrement()] })
         val transport = CoordinatorTestTransport()
-        val properties = templateProperties(enabled = true, shutdownTimeout = Duration.ofMillis(1))
+        val properties = templateProperties(enabled = true, shutdownTimeout = 1.millis())
         val template = SqsBatchCoroutinesTemplate(
             coordinator = SqsBatchCoordinator(properties, transport),
-            resources = SqsBatchTransportResources(transport, AutoCloseable {}, LifecycleExecutor()),
+            resources = SqsBatchTransportResources(transport, {}, LifecycleExecutor()),
             properties = properties,
             closeRuntime = runtime,
         )
@@ -150,7 +166,7 @@ class SqsBatchLifecycleTest {
         val future = CoordinatorCountingFuture<SqsBatchOutcome>()
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val attached = CompletableFuture<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterFutureAttached(token: Long) {
                 attached.complete(Unit)
             }
@@ -164,18 +180,24 @@ class SqsBatchLifecycleTest {
             properties = properties,
             closeRuntime = runtime,
         )
-        val operation = async { template.sendMany(listOf(sendEntry("timeout"))) }
+        val operation = async {
+            template.sendMany(listOf(sendEntry("timeout")))
+        }
         runCurrent()
         attached.join()
 
-        val error = assertFailsWith<SqsBatchCloseException> { template.close() }
+        val error = assertFailsWith<SqsBatchCloseException> {
+            template.close()
+        }
         runCurrent()
         operation.await().failed shouldHaveSize 1
 
         error.components shouldBeEqualTo listOf(SqsBatchCleanupComponent.TIMEOUT)
         future.cancelCount.get() shouldBeEqualTo 1
         events shouldBeEqualTo listOf("manager", "executor-now")
-        val repeated = assertFailsWith<SqsBatchCloseException> { template.close() }
+        val repeated = assertFailsWith<SqsBatchCloseException> {
+            template.close()
+        }
         repeated shouldBeSameInstanceAs error
     }
 
@@ -184,19 +206,19 @@ class SqsBatchLifecycleTest {
         val future = CoordinatorCountingFuture<SqsBatchOutcome>()
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val attached = CompletableFuture<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterFutureAttached(token: Long) {
                 attached.complete(Unit)
             }
         }
         val managerSecret = "manager-${Base58.randomString(16)}"
         val runtime = RecordingCloseRuntime()
-        val properties = templateProperties(enabled = true, shutdownTimeout = Duration.ofSeconds(5))
+        val properties = templateProperties(enabled = true, shutdownTimeout = 5.seconds())
         val template = SqsBatchCoroutinesTemplate(
             coordinator = SqsBatchCoordinator(properties, transport, hooks),
             resources = SqsBatchTransportResources(
                 transport,
-                AutoCloseable { throw IllegalStateException(managerSecret) },
+                { throw IllegalStateException(managerSecret) },
                 LifecycleExecutor(),
             ),
             properties = properties,
@@ -209,19 +231,15 @@ class SqsBatchLifecycleTest {
 
         val closeExecutor = Executors.newFixedThreadPool(2)
         try {
-            val owner = CompletableFuture.supplyAsync(
-                { assertFailsWith<SqsBatchCloseException> { template.close() } },
-                closeExecutor,
-            )
+            val owner = futureOf(closeExecutor) {
+                assertFailsWith<SqsBatchCloseException> { template.close() }
+            }
             runtime.firstAwaitEntered.join()
             val observerStarted = CountDownLatch(1)
-            val observer = CompletableFuture.supplyAsync(
-                {
-                    observerStarted.countDown()
-                    assertFailsWith<SqsBatchCloseException> { template.close() }
-                },
-                closeExecutor,
-            )
+            val observer = futureOf(closeExecutor) {
+                observerStarted.countDown()
+                assertFailsWith<SqsBatchCloseException> { template.close() }
+            }
             observerStarted.await()
             runtime.nanoTimeCount.get() shouldBeEqualTo 2
             future.complete(sendSuccess(entry)).shouldBeTrue()
@@ -246,7 +264,7 @@ class SqsBatchLifecycleTest {
         val executor = LifecycleExecutor(shutdownFailure = executorSecret)
         val resources = SqsBatchTransportResources(
             transport,
-            AutoCloseable { throw IllegalStateException(managerSecret) },
+            { throw IllegalStateException(managerSecret) },
             executor,
         )
         val properties = templateProperties(enabled = true)
@@ -259,13 +277,10 @@ class SqsBatchLifecycleTest {
         val closeExecutor = Executors.newFixedThreadPool(4)
         try {
             val callers = List(4) {
-                CompletableFuture.supplyAsync(
-                    {
-                        start.await()
-                        assertFailsWith<SqsBatchCloseException> { template.close() }
-                    },
-                    closeExecutor,
-                )
+                futureOf(closeExecutor) {
+                    start.await()
+                    assertFailsWith<SqsBatchCloseException> { template.close() }
+                }
             }
 
             start.countDown()
@@ -273,7 +288,7 @@ class SqsBatchLifecycleTest {
 
             failures.forEach { it shouldBeSameInstanceAs failures.first() }
             failures.first().components shouldBeEqualTo
-                listOf(SqsBatchCleanupComponent.MANAGER, SqsBatchCleanupComponent.EXECUTOR)
+                    listOf(SqsBatchCleanupComponent.MANAGER, SqsBatchCleanupComponent.EXECUTOR)
             failures.first().cause.shouldBeNull()
             failures.first().suppressed.shouldBeEmpty()
             failures.first().toString() shouldNotContain managerSecret
@@ -302,7 +317,7 @@ class SqsBatchLifecycleTest {
         val executor = LifecycleExecutor()
         val template = SqsBatchCoroutinesTemplate(
             coordinator = SqsBatchCoordinator(properties, transport),
-            resources = SqsBatchTransportResources(transport, AutoCloseable {}, executor),
+            resources = SqsBatchTransportResources(transport, {}, executor),
             properties = properties,
             closeRuntime = runtime,
         )
@@ -331,7 +346,7 @@ class SqsBatchLifecycleTest {
             coordinator = SqsBatchCoordinator(properties, transport),
             resources = SqsBatchTransportResources(
                 transport,
-                AutoCloseable { managerEntered.countDown() },
+                { managerEntered.countDown() },
                 executor,
             ),
             properties = properties,
@@ -340,13 +355,12 @@ class SqsBatchLifecycleTest {
         val closeExecutor = Executors.newSingleThreadExecutor()
 
         try {
-            val result = CompletableFuture.supplyAsync(
-                {
-                    val failure = assertFailsWith<SqsBatchCloseException> { template.close() }
-                    failure to Thread.currentThread().isInterrupted
-                },
-                closeExecutor,
-            ).join()
+            val result = futureOf(closeExecutor) {
+                val failure = assertFailsWith<SqsBatchCloseException> {
+                    template.close()
+                }
+                failure to Thread.currentThread().isInterrupted
+            }.join()
 
             result.first.components shouldBeEqualTo listOf(SqsBatchCleanupComponent.TIMEOUT)
             result.second.shouldBeTrue()
@@ -366,13 +380,15 @@ class SqsBatchLifecycleTest {
             coordinator = SqsBatchCoordinator(properties, transport),
             resources = SqsBatchTransportResources(
                 transport,
-                AutoCloseable { events += "manager" },
+                { events += "manager" },
                 executor,
             ),
             properties = properties,
         )
 
-        val failure = assertFailsWith<SqsBatchCloseException> { template.close() }
+        val failure = assertFailsWith<SqsBatchCloseException> {
+            template.close()
+        }
 
         failure.components shouldBeEqualTo listOf(SqsBatchCleanupComponent.TIMEOUT)
         events shouldBeEqualTo listOf("manager", "executor", "executor-now")
@@ -450,12 +466,16 @@ class SqsBatchLifecycleTest {
             closeRuntime = runtime,
         )
 
-        val first = assertFailsWith<SqsBatchCloseException> { template.close() }
+        val first = assertFailsWith<SqsBatchCloseException> {
+            template.close()
+        }
         first.components shouldBeEqualTo listOf(SqsBatchCleanupComponent.TIMEOUT)
         releaseManager.countDown()
         cleanupThread.get().join(1_000)
 
-        val repeated = assertFailsWith<SqsBatchCloseException> { template.close() }
+        val repeated = assertFailsWith<SqsBatchCloseException> {
+            template.close()
+        }
         repeated shouldBeSameInstanceAs first
         repeated.components shouldBeEqualTo listOf(SqsBatchCleanupComponent.TIMEOUT)
         repeated.toString() shouldNotContain managerSecret
@@ -467,12 +487,12 @@ class SqsBatchLifecycleTest {
         val managerSecret = "manager-${Base58.randomString(16)}"
         val executorSecret = "executor-${Base58.randomString(16)}"
         val events = mutableListOf<String>()
-        val client = mockk<SqsAsyncClient>()
+
         val transport = CoordinatorTestTransport()
         val executor = LifecycleExecutor(events, shutdownNowFailure = executorSecret)
         val resources = SqsBatchTransportResources(
             transport,
-            AutoCloseable {
+            {
                 events += "manager"
                 throw IllegalStateException(managerSecret)
             },
@@ -509,12 +529,11 @@ class SqsBatchLifecycleTest {
         val managerEntered = CountDownLatch(1)
         val releaseManager = CountDownLatch(1)
         val cleanupThread = AtomicReference<Thread>()
-        val client = mockk<SqsAsyncClient>()
         val transport = CoordinatorTestTransport()
         val executor = LifecycleExecutor()
         val resources = SqsBatchTransportResources(
             transport,
-            AutoCloseable {
+            {
                 cleanupThread.set(Thread.currentThread())
                 managerEntered.countDown()
                 while (releaseManager.count > 0) {
@@ -564,7 +583,6 @@ class SqsBatchLifecycleTest {
     fun `template assembly rollback normalizes runtime clock failure and still shuts down executor`() {
         val startupSecret = "startup-${Base58.randomString(16)}"
         val runtimeSecret = "runtime-${Base58.randomString(16)}"
-        val client = mockk<SqsAsyncClient>()
         val transport = CoordinatorTestTransport()
         val executor = LifecycleExecutor()
         val runtime = RecordingCloseRuntime(clock = { throw AssertionError(runtimeSecret) })
@@ -576,7 +594,7 @@ class SqsBatchLifecycleTest {
                 properties = templateProperties(enabled = true),
                 closeRuntime = runtime,
                 resourcesFactory = { _, _ ->
-                    SqsBatchTransportResources(transport, AutoCloseable {}, executor)
+                    SqsBatchTransportResources(transport, {}, executor)
                 },
                 templateFactory = { _, _, _, _ -> throw IllegalStateException(startupSecret) },
                 exceptionFactory = { component, cleanup ->
@@ -600,7 +618,7 @@ class SqsBatchLifecycleTest {
     ): SqsBatchTransportResources {
         return SqsBatchTransportResources(
             transport,
-            AutoCloseable { events += "manager" },
+            { events += "manager" },
             LifecycleExecutor(events, shutdownEvent = "executor", shutdownNowEvent = shutdownNowEvent),
         )
     }
@@ -611,7 +629,7 @@ private class RecordingCloseRuntime(
     private val onAwait: (Int) -> Unit = {},
     private val timeoutAtAwait: Int? = null,
     private val interruptAtAwait: Int? = null,
-) : SqsBatchCloseRuntime {
+): SqsBatchCloseRuntime {
     val completionTimeouts = mutableListOf<Long>()
     val terminationTimeouts = mutableListOf<Long>()
     val firstAwaitEntered = CompletableFuture<Unit>()
@@ -660,7 +678,7 @@ private class LifecycleExecutor(
     private val shutdownFailure: String? = null,
     private val shutdownNowFailure: String? = null,
     private val terminationResult: Boolean = true,
-) : ScheduledThreadPoolExecutor(1) {
+): ScheduledThreadPoolExecutor(1) {
     val shutdownCount = AtomicInteger()
 
     override fun shutdown() {

@@ -23,7 +23,7 @@ data class SnsPublishBatchEntry private constructor(
         messageAttributes: Map<String, MessageAttributeValue> = emptyMap(),
         messageGroupId: String? = null,
         messageDeduplicationId: String? = null,
-    ) : this(
+    ): this(
         id = id,
         message = message,
         subject = subject,
@@ -43,7 +43,7 @@ data class SnsPublishBatchEntry private constructor(
 
     override fun toString(): String =
         "SnsPublishBatchEntry(idPresent=${id.isNotEmpty()}, messagePresent=${message.isNotEmpty()}, " +
-            "attributeCount=${messageAttributes.size}, fifo=${messageGroupId != null})"
+                "attributeCount=${messageAttributes.size}, fifo=${messageGroupId != null})"
 
     companion object {
         private const val serialVersionUID: Long = 1L
@@ -61,7 +61,7 @@ data class SnsPublishBatchRequest private constructor(
     constructor(
         topicArn: String,
         entries: List<SnsPublishBatchEntry>,
-    ) : this(topicArn = topicArn, entries = entries.toList(), snapshotMarker = true)
+    ): this(topicArn = topicArn, entries = entries.toList(), snapshotMarker = true)
 
     init {
         topicArn.requireNotBlank("topicArn")
@@ -101,7 +101,8 @@ data class SnsPublishBatchResult private constructor(
     constructor(
         successful: List<SnsPublishBatchSuccess>,
         failed: List<SnsPublishBatchFailure>,
-    ) : this(successful = successful.toList(), failed = failed.toList(), snapshotMarker = true)
+    ): this(successful = successful.toList(), failed = failed.toList(), snapshotMarker = true)
+
     val isFullySuccessful: Boolean get() = failed.isEmpty()
 
     override fun toString(): String =
@@ -146,7 +147,7 @@ data class SnsPublishBatchFailure(
 
     override fun toString(): String =
         "SnsPublishBatchFailure(entryIdPresent=${entryId.isNotEmpty()}, " +
-            "codePresent=${!code.isNullOrEmpty()}, senderFault=$senderFault)"
+                "codePresent=${!code.isNullOrEmpty()}, senderFault=$senderFault)"
 
     companion object {
         private const val serialVersionUID: Long = 1L

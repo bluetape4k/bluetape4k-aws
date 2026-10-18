@@ -2,17 +2,25 @@ package io.bluetape4k.aws.spring.kinesis
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.aws.core.toSdkBytes
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.coroutines.flow.extensions.log
+import io.bluetape4k.coroutines.support.log
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.flow.toList
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
@@ -35,13 +43,23 @@ import java.util.concurrent.CompletableFuture
 
 class KinesisCoroutinesTemplateTest {
 
+    companion object: KLogging()
+
+    private val client = mockk<KinesisAsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
     fun `createConfiguredStream uses configured shard count`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
         val request = slot<CreateStreamRequest>()
         val response = CreateStreamResponse.builder().build()
 
-        every { client.createStream(capture(request)) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.createStream(capture(request))
+        } returns completableFutureOf(response)
 
         val result = template(
             client = client,
@@ -50,7 +68,6 @@ class KinesisCoroutinesTemplateTest {
                 streams = mapOf("orders" to KinesisProperties.Stream(shardCount = 3)),
             ),
         ).createConfiguredStream("orders")
-
         result shouldBeEqualTo response
         request.captured.streamName() shouldBeEqualTo "orders"
         request.captured.shardCount() shouldBeEqualTo 3
@@ -62,29 +79,31 @@ class KinesisCoroutinesTemplateTest {
         val error = assertFailsWith<IllegalArgumentException> {
             template(mockk(relaxed = true)).createConfiguredStream("missing")
         }
-
-        error.message.orEmpty() shouldContain "not configured"
+        log.debug { "error message=${error.message}" }
+        error.message shouldContain "not configured"
     }
 
     @Test
     fun `putRecord maps stream partition key and bytes`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
         val request = slot<PutRecordRequest>()
         val response = PutRecordResponse.builder()
             .sequenceNumber("seq-1")
             .shardId("shardId-000000000000")
             .build()
 
-        every { client.putRecord(capture(request)) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.putRecord(capture(request))
+        } returns completableFutureOf(response)
 
-        val payload = SdkBytes.fromUtf8String("hello")
-        val result = template(client).putRecord(
-            KinesisPutRecordRequest(
-                streamName = "orders",
-                partitionKey = "order-1",
-                data = payload,
+        val payload = "hello".toSdkBytes()
+        val result = template(client)
+            .putRecord(
+                KinesisPutRecordRequest(
+                    streamName = "orders",
+                    partitionKey = "order-1",
+                    data = payload,
+                )
             )
-        )
 
         result.sequenceNumber() shouldBeEqualTo "seq-1"
         request.captured.streamName() shouldBeEqualTo "orders"
@@ -97,13 +116,12 @@ class KinesisCoroutinesTemplateTest {
         val error = assertFailsWith<IllegalArgumentException> {
             template(mockk(relaxed = true)).putRecords("orders", emptyList())
         }
-
-        error.message.orEmpty() shouldContain "entries"
+        log.debug { "error message=${error.message}" }
+        error.message shouldContain "entries"
     }
 
     @Test
     fun `putRecords maps entries`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
         val request = slot<PutRecordsRequest>()
         val response = PutRecordsResponse.builder().failedRecordCount(0).build()
         val entries = listOf(
@@ -113,7 +131,9 @@ class KinesisCoroutinesTemplateTest {
                 .build()
         )
 
-        every { client.putRecords(capture(request)) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.putRecords(capture(request))
+        } returns completableFutureOf(response)
 
         val result = template(client).putRecords("orders", entries)
 
@@ -125,11 +145,12 @@ class KinesisCoroutinesTemplateTest {
 
     @Test
     fun `getShardIterator maps explicit iterator request`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
         val request = slot<GetShardIteratorRequest>()
         val response = GetShardIteratorResponse.builder().shardIterator("iterator-1").build()
 
-        every { client.getShardIterator(capture(request)) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.getShardIterator(capture(request))
+        } returns completableFutureOf(response)
 
         val result = template(client).getShardIterator(
             KinesisShardIteratorRequest(
@@ -155,25 +176,36 @@ class KinesisCoroutinesTemplateTest {
             FlowCase(KinesisStartingPosition.Latest, ShardIteratorType.LATEST),
             FlowCase(KinesisStartingPosition.AtSequenceNumber("10"), ShardIteratorType.AT_SEQUENCE_NUMBER, "10"),
             FlowCase(KinesisStartingPosition.AfterSequenceNumber("11"), ShardIteratorType.AFTER_SEQUENCE_NUMBER, "11"),
-            FlowCase(KinesisStartingPosition.AtTimestamp(timestamp), ShardIteratorType.AT_TIMESTAMP, timestamp = timestamp),
+            FlowCase(
+                KinesisStartingPosition.AtTimestamp(timestamp),
+                ShardIteratorType.AT_TIMESTAMP,
+                timestamp = timestamp
+            ),
         )
 
         cases.forEach { case ->
-            val client = mockk<KinesisAsyncClient>()
+            clearMocks(client)
             val request = slot<GetShardIteratorRequest>()
-            every { client.getShardIterator(capture(request)) } returns
-                    CompletableFuture.completedFuture(GetShardIteratorResponse.builder().shardIterator("it").build())
-            every { client.getRecords(any<GetRecordsRequest>()) } returns
-                    CompletableFuture.completedFuture(GetRecordsResponse.builder().records(emptyList()).build())
 
-            template(client).recordFlow(
-                KinesisRecordFlowRequest(
-                    streamName = "orders",
-                    shardId = "shardId-000000000000",
-                    position = case.position,
-                    options = flowOptions(),
+            every {
+                client.getShardIterator(capture(request))
+            } returns completableFutureOf(GetShardIteratorResponse.builder().shardIterator("it").build())
+
+            every {
+                client.getRecords(any<GetRecordsRequest>())
+            } returns completableFutureOf(GetRecordsResponse.builder().records(emptyList()).build())
+
+            template(client)
+                .recordFlow(
+                    KinesisRecordFlowRequest(
+                        streamName = "orders",
+                        shardId = "shardId-000000000000",
+                        position = case.position,
+                        options = flowOptions(),
+                    )
                 )
-            ).toList()
+                .log("RECORD")
+                .toList()
 
             request.captured.shardIteratorType() shouldBeEqualTo case.type
             request.captured.startingSequenceNumber() shouldBeEqualTo case.sequenceNumber
@@ -183,25 +215,28 @@ class KinesisCoroutinesTemplateTest {
 
     @Test
     fun `recordFlow is cold and stops when next shard iterator is absent`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
         val record = Record.builder()
             .sequenceNumber("seq-1")
             .partitionKey("order-1")
             .data(SdkBytes.fromUtf8String("payload-1"))
             .build()
 
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(GetShardIteratorResponse.builder().shardIterator("it-1").build())
-        every { client.getRecords(any<GetRecordsRequest>()) } returns
-                CompletableFuture.completedFuture(GetRecordsResponse.builder().records(record).build())
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(GetShardIteratorResponse.builder().shardIterator("it-1").build())
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(GetRecordsResponse.builder().records(record).build())
 
-        val flow = template(client).recordFlow(
-            KinesisRecordFlowRequest(
-                streamName = "orders",
-                shardId = "shardId-000000000000",
-                options = flowOptions(),
+        val flow = template(client)
+            .recordFlow(
+                KinesisRecordFlowRequest(
+                    streamName = "orders",
+                    shardId = "shardId-000000000000",
+                    options = flowOptions(),
+                )
             )
-        )
+            .log("RECORD")
 
         verify(exactly = 0) { client.getShardIterator(any<GetShardIteratorRequest>()) }
         verify(exactly = 0) { client.getRecords(any<GetRecordsRequest>()) }
@@ -210,26 +245,29 @@ class KinesisCoroutinesTemplateTest {
 
         records.size shouldBeEqualTo 1
         records.first().sequenceNumber() shouldBeEqualTo "seq-1"
+
         verify(exactly = 1) { client.getShardIterator(any<GetShardIteratorRequest>()) }
         verify(exactly = 1) { client.getRecords(any<GetRecordsRequest>()) }
     }
 
     @Test
     fun `recordFlow can be collected twice and refetches iterator`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(GetShardIteratorResponse.builder().shardIterator("it").build())
+        every {
+            client.getRecords(any<GetRecordsRequest>())
+        } returns completableFutureOf(GetRecordsResponse.builder().records(emptyList()).build())
 
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(GetShardIteratorResponse.builder().shardIterator("it").build())
-        every { client.getRecords(any<GetRecordsRequest>()) } returns
-                CompletableFuture.completedFuture(GetRecordsResponse.builder().records(emptyList()).build())
-
-        val flow = template(client).recordFlow(
-            KinesisRecordFlowRequest(
-                streamName = "orders",
-                shardId = "shardId-000000000000",
-                options = flowOptions(),
+        val flow = template(client)
+            .recordFlow(
+                KinesisRecordFlowRequest(
+                    streamName = "orders",
+                    shardId = "shardId-000000000000",
+                    options = flowOptions(),
+                )
             )
-        )
+            .log("RECORD")
 
         flow.toList()
         flow.toList()
@@ -240,44 +278,49 @@ class KinesisCoroutinesTemplateTest {
 
     @Test
     fun `recordFlow propagates cancellation to pending AWS future`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
         val pending = CompletableFuture<GetRecordsResponse>()
 
-        every { client.getShardIterator(any<GetShardIteratorRequest>()) } returns
-                CompletableFuture.completedFuture(GetShardIteratorResponse.builder().shardIterator("it").build())
+        every {
+            client.getShardIterator(any<GetShardIteratorRequest>())
+        } returns completableFutureOf(GetShardIteratorResponse.builder().shardIterator("it").build())
         every { client.getRecords(any<GetRecordsRequest>()) } returns pending
 
         val job = launch {
-            template(client).recordFlow(
-                KinesisRecordFlowRequest(
-                    streamName = "orders",
-                    shardId = "shardId-000000000000",
-                    options = flowOptions(),
+            template(client)
+                .recordFlow(
+                    KinesisRecordFlowRequest(
+                        streamName = "orders",
+                        shardId = "shardId-000000000000",
+                        options = flowOptions(),
+                    )
                 )
-            ).toList()
-        }
+                .log("RECORD")
+                .toList()
+        }.log("JOB")
 
         advanceUntilIdle()
         job.cancelAndJoin()
 
-        pending.isCancelled shouldBeEqualTo true
+        pending.isCancelled.shouldBeTrue()
     }
 
     @Test
     fun `future failures propagate without wrapping`() = runTest {
-        val client = mockk<KinesisAsyncClient>()
         val failure = IllegalStateException("sdk failed")
 
-        every { client.putRecord(any<PutRecordRequest>()) } returns CompletableFuture.failedFuture(failure)
+        every {
+            client.putRecord(any<PutRecordRequest>())
+        } returns CompletableFuture.failedFuture(failure)
 
         val error = assertFailsWith<IllegalStateException> {
-            template(client).putRecord(
-                KinesisPutRecordRequest(
-                    streamName = "orders",
-                    partitionKey = "order-1",
-                    data = SdkBytes.fromUtf8String("payload"),
+            template(client)
+                .putRecord(
+                    KinesisPutRecordRequest(
+                        streamName = "orders",
+                        partitionKey = "order-1",
+                        data = SdkBytes.fromUtf8String("payload"),
+                    )
                 )
-            )
         }
 
         error shouldBeEqualTo failure

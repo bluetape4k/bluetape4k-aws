@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.connection
 
+import io.bluetape4k.support.hashOf
 import org.springframework.beans.factory.ObjectProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -45,9 +46,11 @@ internal object AwsServiceConnectionCredentialsResolver {
         val secretKey: String,
     ) {
         override fun equals(other: Any?): Boolean =
-            other is CredentialTuple && accessKey == other.accessKey && secretKey == other.secretKey
+            other is CredentialTuple &&
+                    accessKey == other.accessKey &&
+                    secretKey == other.secretKey
 
-        override fun hashCode(): Int = 31 * accessKey.hashCode() + secretKey.hashCode()
+        override fun hashCode(): Int = hashOf(accessKey, secretKey)
 
         override fun toString(): String = "CredentialTuple(accessKey=[REDACTED], secretKey=[REDACTED])"
     }

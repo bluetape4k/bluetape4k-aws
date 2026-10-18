@@ -1,12 +1,18 @@
 package io.bluetape4k.aws.spring.kms
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -17,6 +23,8 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 
 class KmsAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -39,14 +47,14 @@ class KmsAutoConfigurationTest {
     @Test
     fun `register KMS client operations cache and text encryptor`() {
         contextRunner.run { context ->
-            context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KmsProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(DataKeyCache::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KmsCoroutinesEncryptor::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<KmsAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<KmsProperties>() shouldHaveSize 1
+            context.getBeansOfType<DataKeyCache>() shouldHaveSize 1
+            context.getBeansOfType<KmsOperations>() shouldHaveSize 1
+            context.getBeansOfType<KmsEncryptedFieldCodec>() shouldHaveSize 1
+            context.getBeansOfType<KmsCoroutinesEncryptor>() shouldHaveSize 1
+            context.getBeansOfType<TextEncryptor>() shouldHaveSize 1
+            context.getBeansOfType<KmsTextEncryptor>() shouldHaveSize 1
         }
     }
 
@@ -56,10 +64,10 @@ class KmsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.kms.enabled=false")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<KmsAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<KmsOperations>().shouldBeEmpty()
+                context.getBeansOfType<KmsEncryptedFieldCodec>().shouldBeEmpty()
+                context.getBeansOfType<TextEncryptor>().shouldBeEmpty()
             }
     }
 
@@ -70,11 +78,11 @@ class KmsAutoConfigurationTest {
             .withBean(KmsOperations::class.java, { NoopKmsOperations })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
-                context.getBean(KmsOperations::class.java) shouldBeSameInstanceAs NoopKmsOperations
-                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<KmsOperations>() shouldHaveSize 1
+                context.getBean<KmsOperations>() shouldBeSameInstanceAs NoopKmsOperations
+                context.getBeansOfType<KmsEncryptedFieldCodec>().shouldBeEmpty()
+                context.getBeansOfType<TextEncryptor>().shouldBeEmpty()
+                context.getBeansOfType<KmsTextEncryptor>().shouldBeEmpty()
             }
     }
 
@@ -89,8 +97,8 @@ class KmsAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(KmsProperties::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<KmsProperties>() shouldHaveSize 1
+                context.getBeansOfType<KmsEncryptedFieldCodec>() shouldHaveSize 1
             }
     }
 
@@ -100,8 +108,8 @@ class KmsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.kms.field-encryption.enabled=false")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(KmsEncryptedFieldCodec::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<KmsOperations>() shouldHaveSize 1
+                context.getBeansOfType<KmsEncryptedFieldCodec>().shouldBeEmpty()
             }
     }
 
@@ -116,9 +124,9 @@ class KmsAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(KmsProperties::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<KmsProperties>() shouldHaveSize 1
+                context.getBeansOfType<TextEncryptor>() shouldHaveSize 1
+                context.getBeansOfType<KmsTextEncryptor>() shouldHaveSize 1
             }
     }
 
@@ -127,9 +135,9 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withBean(KmsOperations::class.java, { NoopKmsOperations })
             .run { context ->
-                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(KmsCoroutinesEncryptor::class.java).size shouldBeEqualTo 0
-                context.getBean(KmsOperations::class.java) shouldBeSameInstanceAs NoopKmsOperations
+                context.getBeansOfType<KmsOperations>() shouldHaveSize 1
+                context.getBeansOfType<KmsCoroutinesEncryptor>().shouldBeEmpty()
+                context.getBean<KmsOperations>() shouldBeSameInstanceAs NoopKmsOperations
             }
     }
 
@@ -138,10 +146,10 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.kms"))
             .run { context ->
-                context.getBeansOfType(KmsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 0
-                context.containsBean("kmsEncryptedFieldCodec") shouldBeEqualTo false
-                context.containsBean("kmsTextEncryptor") shouldBeEqualTo false
+                context.getBeansOfType<KmsAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<KmsOperations>().shouldBeEmpty()
+                context.containsBean("kmsEncryptedFieldCodec").shouldBeFalse()
+                context.containsBean("kmsTextEncryptor").shouldBeFalse()
             }
     }
 
@@ -155,9 +163,9 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withBean(TextEncryptor::class.java, { custom })
             .run { context ->
-                context.getBeansOfType(TextEncryptor::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(KmsTextEncryptor::class.java).size shouldBeEqualTo 0
-                context.getBean(TextEncryptor::class.java) shouldBeSameInstanceAs custom
+                context.getBeansOfType<TextEncryptor>() shouldHaveSize 1
+                context.getBeansOfType<KmsTextEncryptor>().shouldBeEmpty()
+                context.getBean<TextEncryptor>() shouldBeSameInstanceAs custom
             }
     }
 
@@ -166,8 +174,8 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("org.springframework.security.crypto.encrypt"))
             .run { context ->
-                context.getBeansOfType(KmsOperations::class.java).size shouldBeEqualTo 1
-                context.containsBean("kmsTextEncryptor") shouldBeEqualTo false
+                context.getBeansOfType<KmsOperations>() shouldHaveSize 1
+                context.containsBean("kmsTextEncryptor").shouldBeFalse()
             }
     }
 
@@ -176,15 +184,16 @@ class KmsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.kms.data-key-cache.enabled=false")
             .run { context ->
-                context.getBeansOfType(DataKeyCache::class.java).size shouldBeEqualTo 1
-                context.getBean(DataKeyCache::class.java) shouldBeSameInstanceAs NoopDataKeyCache
+                context.getBeansOfType<DataKeyCache>() shouldHaveSize 1
+                context.getBean<DataKeyCache>() shouldBeSameInstanceAs NoopDataKeyCache
             }
     }
 
     @Test
     fun `data key cache bean clears retained keys when context closes`() {
         contextRunner.run { context ->
-            val cache = context.getBean(DataKeyCache::class.java) as InMemoryDataKeyCache
+            val cache = context.getBean<DataKeyCache>() as InMemoryDataKeyCache
+
             val key = KmsDataKeyCacheKey(
                 keyId = "alias/test",
                 keySpec = software.amazon.awssdk.services.kms.model.DataKeySpec.AES_256,
@@ -196,17 +205,13 @@ class KmsAutoConfigurationTest {
                 plaintext = byteArrayOf(7, 8, 9),
                 encryptedDataKey = byteArrayOf(1, 2, 3),
             )
+
             cache.put(key, dataKey)
             dataKey.close()
 
             context.close()
 
-            val cached = cache.get(key)
-            try {
-                cached.shouldBeNull()
-            } finally {
-                cached?.close()
-            }
+            cache[key].shouldBeNull()
         }
     }
 
@@ -223,6 +228,8 @@ class KmsAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "region is required"
             }
     }

@@ -1,16 +1,17 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
-import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
-import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
 import io.bluetape4k.aws.spring.connection.SqsConnectionDetails
+import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
+import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -23,7 +24,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * SQS용 Spring Boot 4 자동 설정.
@@ -37,7 +37,7 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
     ]
 )
 @ConditionalOnProperty(prefix = "bluetape4k.aws.sqs", name = ["enabled"], havingValue = "true", matchIfMissing = true)
-@EnableConfigurationProperties(SqsProperties::class)
+@EnableConfigurationProperties(SqsProperties::class, SqsBatchProperties::class)
 class SqsAutoConfiguration {
 
     @Bean(destroyMethod = "close")

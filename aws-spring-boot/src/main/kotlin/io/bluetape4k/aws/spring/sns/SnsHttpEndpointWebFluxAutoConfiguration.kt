@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.ListableBeanFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -16,19 +16,20 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ImportRuntimeHints
 import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer
-import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver
 import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping
 
 /** Spring WebFlux 애플리케이션에 SNS HTTP adapter를 자동 설정합니다. */
 @AutoConfiguration(after = [SnsAutoConfiguration::class])
 @ConditionalOnAwsEnabled
 @ConditionalOnWebApplication(type = REACTIVE)
-@ConditionalOnClass(name = [
-    "org.springframework.web.reactive.config.WebFluxConfigurer",
-    "org.springframework.web.server.WebFilter",
-    "software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse",
-])
-@ConditionalOnProperty(prefix = "bluetape4k.aws.sns", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnClass(
+    name = [
+        "org.springframework.web.reactive.config.WebFluxConfigurer",
+        "org.springframework.web.server.WebFilter",
+        "software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse",
+    ]
+)
+@ConditionalOnProperty(prefix = SnsProperties.PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @ConditionalOnProperty(
     prefix = SNS_HTTP_ENDPOINTS_PROPERTIES_PREFIX,
     name = ["enabled"],
@@ -77,7 +78,7 @@ class SnsHttpEndpointWebFluxAutoConfiguration {
     @ConditionalOnMissingBean(name = ["snsHttpEndpointWebFluxConfigurer"])
     fun snsHttpEndpointWebFluxConfigurer(
         resolver: SnsWebFluxHttpMessageArgumentResolver,
-    ): WebFluxConfigurer = object : WebFluxConfigurer {
+    ): WebFluxConfigurer = object: WebFluxConfigurer {
         override fun configureArgumentResolvers(configurer: ArgumentResolverConfigurer) {
             configurer.addCustomResolver(resolver)
         }

@@ -4,6 +4,7 @@ import io.bluetape4k.aws.spring.env.addAwsPropertySource
 import io.bluetape4k.aws.spring.env.bindOrCreate
 import io.bluetape4k.aws.spring.env.isAwsEnabled
 import io.bluetape4k.aws.spring.env.requireAwsSdkClass
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.EnvironmentPostProcessor
 import org.springframework.boot.SpringApplication
 import org.springframework.core.Ordered
@@ -19,6 +20,8 @@ import org.springframework.core.env.ConfigurableEnvironment
  */
 class SecretsManagerEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered {
 
+    companion object: KLogging()
+
     override fun getOrder(): Int = Ordered.LOWEST_PRECEDENCE - 20
 
     override fun postProcessEnvironment(
@@ -29,7 +32,7 @@ class SecretsManagerEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered 
             return
         }
 
-        val properties = environment.bindOrCreate<SecretsManagerProperties>("bluetape4k.aws.secrets-manager")
+        val properties = environment.bindOrCreate<SecretsManagerProperties>(SecretsManagerProperties.PREFIX)
         if (!properties.enabled || properties.sources.isEmpty()) {
             return
         }

@@ -1,15 +1,16 @@
 package io.bluetape4k.aws.spring.cloudwatch
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
 import io.micrometer.cloudwatch2.CloudWatchConfig
 import io.micrometer.cloudwatch2.CloudWatchMeterRegistry
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.config.MeterFilter
 import io.micrometer.core.instrument.util.NamedThreadFactory
+import kotlinx.atomicfu.atomic
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import java.time.Duration
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Native Micrometer CloudWatch registry의 설정 adapter와 lifecycle을 구성합니다.
@@ -33,7 +34,7 @@ internal object CloudWatchMeterRegistryConfiguration: KLogging() {
             ?: properties.namespace?.takeIf(String::isNotBlank)
             ?: error(
                 "$CLOUDWATCH_PROPERTIES_PREFIX.micrometer.registry.namespace or " +
-                    "$CLOUDWATCH_PROPERTIES_PREFIX.namespace must be configured when native registry is enabled.",
+                        "$CLOUDWATCH_PROPERTIES_PREFIX.namespace must be configured when native registry is enabled.",
             )
 
         val config = CloudWatchRegistryConfig(namespace, registryProperties)
@@ -57,12 +58,10 @@ internal object CloudWatchMeterRegistryConfiguration: KLogging() {
         }
 
         if (config.highResolution()) {
-            log.warn(
+            log.warn {
                 "CloudWatch native registry uses high-resolution storageResolution=1 " +
-                    "(namespace={}, step={}); verify metric and API cost before production rollout.",
-                namespace,
-                registryProperties.step,
-            )
+                        "(namespace=$namespace, step=${registryProperties.step}); verify metric and API cost before production rollout."
+            }
         }
 
         config.enable()
@@ -75,7 +74,7 @@ internal object CloudWatchMeterRegistryConfiguration: KLogging() {
         private val namespaceValue: String,
         private val properties: CloudWatchProperties.Micrometer.Registry,
     ): CloudWatchConfig {
-        private val enabledGate = AtomicBoolean(false)
+        private val enabledGate = atomic(false)
 
         override fun prefix(): String = "cloudwatch"
 
@@ -84,7 +83,7 @@ internal object CloudWatchMeterRegistryConfiguration: KLogging() {
             "step" -> properties.step.toString()
             "batchSize" -> properties.batchSize.toString()
             "readTimeout" -> properties.readTimeout.toString()
-            "enabled" -> enabledGate.get().toString()
+            "enabled" -> enabledGate.value.toString()
             else -> null
         }
 
@@ -94,14 +93,15 @@ internal object CloudWatchMeterRegistryConfiguration: KLogging() {
 
         override fun batchSize(): Int = properties.batchSize
 
+        @Suppress("OVERRIDE_DEPRECATION")
         override fun readTimeout(): Duration = properties.readTimeout
 
-        override fun enabled(): Boolean = enabledGate.get()
+        override fun enabled(): Boolean = enabledGate.value
 
         override fun highResolution(): Boolean = step() < HIGH_RESOLUTION_STEP
 
         fun enable() {
-            enabledGate.set(true)
+            enabledGate.value = true
         }
     }
 }

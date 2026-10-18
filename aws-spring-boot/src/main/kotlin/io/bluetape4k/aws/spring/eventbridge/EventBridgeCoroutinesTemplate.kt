@@ -9,6 +9,7 @@ import io.bluetape4k.aws.eventbridge.putEvents
 import io.bluetape4k.aws.eventbridge.putRule
 import io.bluetape4k.aws.eventbridge.putTargets
 import io.bluetape4k.aws.eventbridge.removeTargets
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse
 import software.amazon.awssdk.services.eventbridge.model.DeleteEventBusResponse
@@ -34,7 +35,9 @@ import software.amazon.awssdk.services.eventbridge.model.Target
 class EventBridgeCoroutinesTemplate(
     private val eventBridgeAsyncClient: EventBridgeAsyncClient,
     private val properties: EventBridgeProperties,
-) : EventBridgeOperations {
+): EventBridgeOperations {
+
+    companion object: KLoggingChannel()
 
     override suspend fun createEventBus(name: String): CreateEventBusResponse =
         eventBridgeAsyncClient.createEventBus(name)

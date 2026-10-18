@@ -1,21 +1,26 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.spring.s3.S3BoundedEncryptedReadOperations.Companion.MAX_CIPHERTEXT_BYTES
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireLe
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.future.await
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.transfer.s3.model.DownloadFileRequest
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.locks.ReentrantLock
 import javax.crypto.Cipher
+import kotlin.concurrent.withLock
 
 /** provider 봉투를 TransferManager 기반 stream/file 작업으로 확장하는 계약입니다. */
 interface S3ClientSideEncryptionTransferOperations {
@@ -41,12 +46,12 @@ class S3EncryptedOutputStream internal constructor(
     private val delegate: S3OutputStream,
     private val cipher: Cipher,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : OutputStream() {
+): OutputStream() {
 
     override fun write(b: ByteArray, off: Int, len: Int) {
         require(off >= 0 && len >= 0 && off <= b.size - len) { "Invalid byte range." }
         var writeFailure: Throwable? = null
-        synchronized(stateLock) {
+        stateLock.withLock {
             check(!terminalStarted) { "S3EncryptedOutputStream is already closed." }
             if (len == 0) return
             try {
@@ -71,33 +76,28 @@ class S3EncryptedOutputStream internal constructor(
     /** GCM final tag를 기록하고 delegate completion을 정확히 한 번 수행합니다. */
     suspend fun complete() {
         try {
-            withContext(ioDispatcher) { completeOnIo() }
-        } catch (cancelled: CancellationException) {
-            val ownsCleanup = synchronized(stateLock) {
-                if (completed || terminalStarted) {
-                    false
-                } else {
-                    terminalStarted = true
-                    completed = true
-                    terminalFailure = cancelled
-                    true
-                }
+            withContext(ioDispatcher) {
+                completeOnIo()
             }
+        } catch (cancelled: CancellationException) {
+            val ownsCleanup = isOwnsCleanup(cancelled)
             if (ownsCleanup) cleanupDelegate(cancelled)
             throw cancelled
         } catch (error: Throwable) {
-            val ownsCleanup = synchronized(stateLock) {
-                if (completed || terminalStarted) {
-                    false
-                } else {
-                    terminalStarted = true
-                    completed = true
-                    terminalFailure = error
-                    true
-                }
-            }
+            val ownsCleanup = isOwnsCleanup(error)
             if (ownsCleanup) cleanupDelegate(error)
             throw error
+        }
+    }
+
+    private fun isOwnsCleanup(failure: Throwable): Boolean = stateLock.withLock {
+        if (completed || terminalStarted) {
+            false
+        } else {
+            terminalStarted = true
+            completed = true
+            terminalFailure = failure
+            true
         }
     }
 
@@ -105,10 +105,10 @@ class S3EncryptedOutputStream internal constructor(
         runBlocking { complete() }
     }
 
-    private suspend fun completeOnIo() = completionMutex.withLock {
-        synchronized(stateLock) {
+    private suspend fun completeOnIo() = completionMutex.withLock mutexLock@{
+        stateLock.withLock {
             terminalFailure?.let { throw it }
-            if (completed) return@withLock
+            if (completed) return@mutexLock
             check(!terminalStarted) { "S3EncryptedOutputStream completion already started." }
             terminalStarted = true
         }
@@ -122,14 +122,14 @@ class S3EncryptedOutputStream internal constructor(
             delegate.complete()
         } catch (cancelled: CancellationException) {
             cleanupDelegate(cancelled)
-            synchronized(stateLock) { terminalFailure = cancelled }
+            stateLock.withLock { terminalFailure = cancelled }
             throw cancelled
         } catch (error: Throwable) {
             cleanupDelegate(error)
-            synchronized(stateLock) { terminalFailure = error }
+            stateLock.withLock { terminalFailure = error }
             throw error
         } finally {
-            synchronized(stateLock) { completed = true }
+            stateLock.withLock { completed = true }
         }
     }
 
@@ -160,7 +160,7 @@ class S3EncryptedOutputStream internal constructor(
     )
 
     private val completionMutex = Mutex()
-    private val stateLock = Any()
+    private val stateLock = ReentrantLock()
     private var terminalStarted: Boolean = false
     private var completed: Boolean = false
     private var terminalFailure: Throwable? = null
@@ -230,7 +230,7 @@ class S3ClientSideEncryptionTransferTemplate(
     private val transferOperations: S3TransferOperations,
     private val outputStreamProvider: S3OutputStreamProvider,
     internal val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : S3ClientSideEncryptionTransferOperations {
+): S3ClientSideEncryptionTransferOperations {
 
     internal var temporaryFileDelete: (Path) -> Boolean = Files::deleteIfExists
 
@@ -267,14 +267,16 @@ class S3ClientSideEncryptionTransferTemplate(
             builder.bucket(bucket)
             builder.key(key)
         }.await()
-        val remoteSize = requireNotNull(head.contentLength()) {
+
+        val remoteSize = head.contentLength().requireNotNull {
             "Encrypted S3 object content length is unavailable: s3://$bucket/$key"
         }
-        require(remoteSize >= 0) { "Encrypted S3 object content length must not be negative." }
-        val remoteETag = requireNotNull(head.eTag()) {
+        remoteSize.requireGe(0) { "Encrypted S3 object content length must not be negative." }
+
+        val remoteETag = head.eTag().requireNotNull {
             "Encrypted S3 object ETag is unavailable: s3://$bucket/$key"
         }
-        require(remoteSize <= S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
+        remoteSize.requireLe(MAX_CIPHERTEXT_BYTES.toLong()) {
             "Encrypted S3 object exceeds max ciphertext size: $remoteSize"
         }
 
@@ -285,7 +287,8 @@ class S3ClientSideEncryptionTransferTemplate(
             withContext(NonCancellable + ioDispatcher) {
                 temporary = Files.createTempFile("bluetape-s3-cse-", ".ciphertext")
             }
-            val completed = transferOperations.downloadFile(bucket, key, requireNotNull(temporary)) {
+            val temporaryPath = temporary.requireNotNull("temporary")
+            val completed = transferOperations.downloadFile(bucket, key, temporaryPath) {
                 getObjectRequest { builder ->
                     builder.bucket(bucket)
                     builder.key(key)
@@ -293,11 +296,8 @@ class S3ClientSideEncryptionTransferTemplate(
                 }
             }
             withContext(ioDispatcher) {
-                val temporaryPath = requireNotNull(temporary)
                 val size = Files.size(temporaryPath)
-                require(size <= S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
-                    "Encrypted S3 object exceeds max ciphertext size: $size"
-                }
+                size.requireLe(MAX_CIPHERTEXT_BYTES.toLong()) { "Encrypted S3 object exceeds max ciphertext size: $size" }
                 val ciphertext = Files.readAllBytes(temporaryPath)
                 try {
                     plaintext = providerTemplate.decryptProviderPayload(
@@ -333,7 +333,7 @@ class S3ClientSideEncryptionTransferTemplate(
     private fun commitPlaintext(destination: Path, plaintext: ByteArray) {
         val previous = if (Files.exists(destination)) {
             val size = Files.size(destination)
-            require(size <= S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
+            size.requireLe(MAX_CIPHERTEXT_BYTES.toLong()) {
                 "Existing destination is too large to preserve on write failure: $size"
             }
             Files.readAllBytes(destination)
@@ -369,7 +369,9 @@ private suspend fun preserveCleanupFailure(
     val failures = mutableListOf<Throwable>()
     for (dispatcher in listOf(configuredDispatcher, Dispatchers.IO)) {
         try {
-            withContext(NonCancellable + dispatcher) { cleanup() }
+            withContext(NonCancellable + dispatcher) {
+                cleanup()
+            }
             return
         } catch (failure: Throwable) {
             failures += failure

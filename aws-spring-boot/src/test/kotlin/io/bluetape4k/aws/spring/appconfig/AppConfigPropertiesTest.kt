@@ -2,22 +2,30 @@ package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.time.Duration
 
 class AppConfigPropertiesTest {
 
+    companion object: KLogging()
+
     @Test
     fun `defaults keep refresh disabled and enforce the minimum poll interval`() {
         val properties = AppConfigProperties()
 
-        properties.enabled shouldBeEqualTo true
-        properties.failFast shouldBeEqualTo true
+        properties.enabled.shouldBeTrue()
+        properties.failFast.shouldBeTrue()
         properties.separator shouldBeEqualTo "#"
-        properties.refreshInterval shouldBeEqualTo null
-        properties.requiredMinimumPollInterval shouldBeEqualTo Duration.ofSeconds(15)
+        properties.refreshInterval.shouldBeNull()
+        properties.requiredMinimumPollInterval shouldBeEqualTo 15.seconds()
     }
 
     @Test
@@ -31,8 +39,8 @@ class AppConfigPropertiesTest {
 
         listOf(
             Duration.ZERO,
-            Duration.ofSeconds(14),
-            Duration.ofHours(24).plusSeconds(1),
+            14.seconds(),
+            24.hours() + 1.seconds(),
         ).forEach { interval ->
             assertFailsWith<IllegalArgumentException> {
                 AppConfigProperties(requiredMinimumPollInterval = interval)
@@ -59,7 +67,10 @@ class AppConfigPropertiesTest {
             endpointOverride = URI("http://localhost:2772"),
         )
 
-        properties.toString() shouldNotContain "localhost"
-        properties.toString() shouldNotContain "token"
+        log.debug { "properties=$properties" }
+        with(properties.toString()) {
+            this shouldNotContain "localhost"
+            this shouldNotContain "token"
+        }
     }
 }

@@ -5,6 +5,7 @@ import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
@@ -25,7 +26,6 @@ import software.amazon.awssdk.services.s3control.S3ControlAsyncClient
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
 import software.amazon.awssdk.services.s3control.S3ControlClient
 import software.amazon.awssdk.services.s3control.S3ControlClientBuilder
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * S3 Control을 통한 S3 Access Grants용 Spring Boot 4 자동 구성입니다.
@@ -41,7 +41,7 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
     ]
 )
 @ConditionalOnProperty(prefix = "bluetape4k.aws.s3", name = ["enabled"], havingValue = "true", matchIfMissing = true)
-@ConditionalOnProperty(prefix = S3_ACCESS_GRANTS_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true")
+@ConditionalOnProperty(prefix = S3AccessGrantsProperties.PREFIX, name = ["enabled"], havingValue = "true")
 @EnableConfigurationProperties(S3AccessGrantsProperties::class)
 class S3AccessGrantsAutoConfiguration {
 
@@ -58,7 +58,10 @@ class S3AccessGrantsAutoConfiguration {
         S3ControlClient.builder()
             .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveAwsProperties(awsProperties).resolveClientDefaults(
+                    properties.region,
+                    properties.endpointOverride
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
@@ -80,7 +83,10 @@ class S3AccessGrantsAutoConfiguration {
         S3ControlAsyncClient.builder()
             .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveAwsProperties(awsProperties).resolveClientDefaults(
+                    properties.region,
+                    properties.endpointOverride
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }

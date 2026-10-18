@@ -13,7 +13,7 @@ import tools.jackson.databind.ser.std.StdSerializer
  * bucket, object key, pointer signature, receipt handle, encryption context, cleanup handle
  * 같은 내부 자격 증명·위치 정보는 serializer 결과에 포함하지 않습니다.
  */
-class SqsExtendedClientJacksonModule : SimpleModule("SqsExtendedClientJacksonModule") {
+class SqsExtendedClientJacksonModule: SimpleModule("SqsExtendedClientJacksonModule") {
 
     init {
         addSerializer(SqsExtendedSendRequest::class.java, SendRequestSerializer())
@@ -28,14 +28,14 @@ class SqsExtendedClientJacksonModule : SimpleModule("SqsExtendedClientJacksonMod
     }
 }
 
-private abstract class ExtendedSerializer<T>(type: Class<T>) : StdSerializer<T>(type) {
+private abstract class ExtendedSerializer<T>(type: Class<T>): StdSerializer<T>(type) {
     protected fun JsonGenerator.writeNullableString(name: String, value: String?) {
         writeName(name)
         if (value == null) writeNull() else writeString(value)
     }
 }
 
-private class SendRequestSerializer : ExtendedSerializer<SqsExtendedSendRequest>(SqsExtendedSendRequest::class.java) {
+private class SendRequestSerializer: ExtendedSerializer<SqsExtendedSendRequest>(SqsExtendedSendRequest::class.java) {
     override fun serialize(value: SqsExtendedSendRequest, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeBooleanProperty("contentTypePresent", value.contentType != null)
@@ -44,7 +44,8 @@ private class SendRequestSerializer : ExtendedSerializer<SqsExtendedSendRequest>
     }
 }
 
-private class ReceivedMessageSerializer : ExtendedSerializer<SqsExtendedReceivedMessage>(SqsExtendedReceivedMessage::class.java) {
+private class ReceivedMessageSerializer:
+    ExtendedSerializer<SqsExtendedReceivedMessage>(SqsExtendedReceivedMessage::class.java) {
     override fun serialize(value: SqsExtendedReceivedMessage, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeStringProperty("body", value.body)
@@ -57,7 +58,7 @@ private class ReceivedMessageSerializer : ExtendedSerializer<SqsExtendedReceived
     }
 }
 
-private class PointerSerializer : ExtendedSerializer<SqsExtendedClientPointer>(SqsExtendedClientPointer::class.java) {
+private class PointerSerializer: ExtendedSerializer<SqsExtendedClientPointer>(SqsExtendedClientPointer::class.java) {
     override fun serialize(value: SqsExtendedClientPointer, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeNullableString("contentType", value.contentType)
@@ -66,7 +67,7 @@ private class PointerSerializer : ExtendedSerializer<SqsExtendedClientPointer>(S
     }
 }
 
-private class SendResponseSerializer : ExtendedSerializer<SqsExtendedSendResponse>(SqsExtendedSendResponse::class.java) {
+private class SendResponseSerializer: ExtendedSerializer<SqsExtendedSendResponse>(SqsExtendedSendResponse::class.java) {
     override fun serialize(value: SqsExtendedSendResponse, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeNullableString("messageId", value.messageId)
@@ -77,7 +78,7 @@ private class SendResponseSerializer : ExtendedSerializer<SqsExtendedSendRespons
     }
 }
 
-private class SendResultSerializer : ExtendedSerializer<SqsExtendedSendResult>(SqsExtendedSendResult::class.java) {
+private class SendResultSerializer: ExtendedSerializer<SqsExtendedSendResult>(SqsExtendedSendResult::class.java) {
     override fun serialize(value: SqsExtendedSendResult, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeName("response")
@@ -91,7 +92,8 @@ private class SendResultSerializer : ExtendedSerializer<SqsExtendedSendResult>(S
     }
 }
 
-private class AcknowledgementResultSerializer : ExtendedSerializer<SqsExtendedAcknowledgementResult>(SqsExtendedAcknowledgementResult::class.java) {
+private class AcknowledgementResultSerializer:
+    ExtendedSerializer<SqsExtendedAcknowledgementResult>(SqsExtendedAcknowledgementResult::class.java) {
     override fun serialize(value: SqsExtendedAcknowledgementResult, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeBooleanProperty("sqsDeleted", value.sqsDeleted)
@@ -103,7 +105,8 @@ private class AcknowledgementResultSerializer : ExtendedSerializer<SqsExtendedAc
     }
 }
 
-private class CleanupResultSerializer : ExtendedSerializer<SqsExtendedCleanupResult>(SqsExtendedCleanupResult::class.java) {
+private class CleanupResultSerializer:
+    ExtendedSerializer<SqsExtendedCleanupResult>(SqsExtendedCleanupResult::class.java) {
     override fun serialize(value: SqsExtendedCleanupResult, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeBooleanProperty("deleted", value.deleted)
@@ -115,7 +118,8 @@ private class CleanupResultSerializer : ExtendedSerializer<SqsExtendedCleanupRes
     }
 }
 
-private class CleanupHandleSerializer : ExtendedSerializer<SqsExtendedCleanupHandle>(SqsExtendedCleanupHandle::class.java) {
+private class CleanupHandleSerializer:
+    ExtendedSerializer<SqsExtendedCleanupHandle>(SqsExtendedCleanupHandle::class.java) {
     override fun serialize(value: SqsExtendedCleanupHandle, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeBooleanProperty("available", true)
@@ -123,7 +127,8 @@ private class CleanupHandleSerializer : ExtendedSerializer<SqsExtendedCleanupHan
     }
 }
 
-private class MessageAttributeSerializer : ExtendedSerializer<SqsExtendedMessageAttribute>(SqsExtendedMessageAttribute::class.java) {
+private class MessageAttributeSerializer:
+    ExtendedSerializer<SqsExtendedMessageAttribute>(SqsExtendedMessageAttribute::class.java) {
     override fun serialize(value: SqsExtendedMessageAttribute, gen: JsonGenerator, ctxt: SerializationContext) {
         gen.writeStartObject()
         gen.writeStringProperty("dataType", value.dataType)

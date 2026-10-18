@@ -1,10 +1,15 @@
 package io.bluetape4k.aws.spring
 
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -14,14 +19,16 @@ import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsPr
 
 class AwsAutoConfigurationTest {
 
+    companion object: KLogging()
+
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(AutoConfigurations.of(AwsAutoConfiguration::class.java))
 
     @Test
     fun `DefaultCredentialsProvider bean registered`() {
         contextRunner.run { context ->
-            context.getBean(AwsCredentialsProvider::class.java)
-                .shouldBeInstanceOf(DefaultCredentialsProvider::class)
+            context.getBean<AwsCredentialsProvider>()
+                .shouldBeInstanceOf<DefaultCredentialsProvider>()
         }
     }
 
@@ -34,7 +41,7 @@ class AwsAutoConfigurationTest {
                 "bluetape4k.aws.endpoint-override=http://localhost:4566",
             )
             .run { context ->
-                val properties = context.getBean(AwsProperties::class.java)
+                val properties = context.getBean<AwsProperties>()
                 properties.enabled shouldBeEqualTo true
                 properties.region shouldBeEqualTo "ap-northeast-2"
                 properties.endpointOverride.toString() shouldBeEqualTo "http://localhost:4566"
@@ -46,8 +53,8 @@ class AwsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.enabled=false")
             .run { context ->
-                context.getBeansOfType(AwsProperties::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(AwsCredentialsProvider::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AwsProperties>().shouldBeEmpty()
+                context.getBeansOfType<AwsCredentialsProvider>().shouldBeEmpty()
             }
     }
 
@@ -60,6 +67,8 @@ class AwsAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "message=$messages" }
                 messages shouldContain "bluetape4k.aws.region is required"
             }
     }
@@ -74,8 +83,8 @@ class AwsAutoConfigurationTest {
                 "bluetape4k.aws.credentials.web-identity.token-file=/tmp/aws-web-identity-token",
             )
             .run { context ->
-                context.getBean(AwsCredentialsProvider::class.java)
-                    .shouldBeInstanceOf(WebIdentityTokenFileCredentialsProvider::class)
+                context.getBean<AwsCredentialsProvider>()
+                    .shouldBeInstanceOf<WebIdentityTokenFileCredentialsProvider>()
             }
     }
 
@@ -88,8 +97,8 @@ class AwsAutoConfigurationTest {
                 "bluetape4k.aws.credentials.web-identity.role-arn=arn:aws:iam::123456789012:role/app",
             )
             .run { context ->
-                context.getBean(AwsCredentialsProvider::class.java)
-                    .shouldBeInstanceOf(DefaultCredentialsProvider::class)
+                context.getBean<AwsCredentialsProvider>()
+                    .shouldBeInstanceOf<DefaultCredentialsProvider>()
             }
     }
 }

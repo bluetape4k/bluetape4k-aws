@@ -1,20 +1,28 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeIn
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.support.GenericApplicationContext
-import org.springframework.core.io.Resource
 import org.springframework.core.io.support.ResourcePatternResolver
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.s3.S3Client
@@ -27,20 +35,29 @@ import java.io.IOException
 
 class S3ResourcePatternResolverTest {
 
+    companion object: KLogging()
+
+    private val client = mockk<S3Client>(relaxed = true)
+    private val provider = mockk<ObjectProvider<S3Client>>()
+    private val iterable = mockk<ListObjectsV2Iterable>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client, provider, iterable)
+    }
+
     @Test
     fun `exact S3 resources do not list and return one resource`() {
-        val client = mockk<S3Client>(relaxed = true)
-        val provider = mockk<ObjectProvider<S3Client>>()
         every { provider.getObject() } returns client
         val context = GenericApplicationContext().apply { refresh() }
+
         try {
             val resolver = S3ResourcePatternResolver(context, provider)
-
             val resources = resolver.getResources("s3://bucket/config/application.yml")
+            resources shouldHaveSize 1
+            resources.single().shouldBeInstanceOf<S3Resource>()
+                .location shouldBeEqualTo S3ObjectLocation("bucket", "config/application.yml")
 
-            resources.size shouldBeEqualTo 1
-            (resources.single() as S3Resource).location shouldBeEqualTo
-                S3ObjectLocation("bucket", "config/application.yml")
             verify(exactly = 0) { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) }
         } finally {
             context.close()
@@ -49,9 +66,6 @@ class S3ResourcePatternResolverTest {
 
     @Test
     fun `pattern resources consume all pages deduplicate and sort without delimiter`() {
-        val client = mockk<S3Client>(relaxed = true)
-        val provider = mockk<ObjectProvider<S3Client>>()
-        val iterable = mockk<ListObjectsV2Iterable>()
         val request = slot<ListObjectsV2Request>()
         every { provider.getObject() } returns client
         every { client.listObjectsV2Paginator(capture(request)) } returns iterable
@@ -59,6 +73,7 @@ class S3ResourcePatternResolverTest {
             page("config/z.json", "config/a.json"),
             page("config/nested/b.json", "other/no.json"),
         ).iterator()
+
         val context = GenericApplicationContext().apply { refresh() }
         try {
             val resolver = S3ResourcePatternResolver(context, provider)
@@ -70,6 +85,7 @@ class S3ResourcePatternResolverTest {
             request.captured.bucket() shouldBeEqualTo "bucket"
             request.captured.prefix() shouldBeEqualTo "config/"
             request.captured.delimiter().shouldBeNull()
+
             verify(exactly = 1) { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) }
         } finally {
             context.close()
@@ -78,17 +94,16 @@ class S3ResourcePatternResolverTest {
 
     @Test
     fun `no match returns an empty array and does not perform per key calls`() {
-        val client = mockk<S3Client>(relaxed = true)
-        val provider = mockk<ObjectProvider<S3Client>>()
-        val iterable = mockk<ListObjectsV2Iterable>()
         every { provider.getObject() } returns client
         every { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) } returns iterable
         every { iterable.iterator() } returns mutableListOf(page("config/readme.txt")).iterator()
+
         val context = GenericApplicationContext().apply { refresh() }
         try {
             val resolver = S3ResourcePatternResolver(context, provider)
 
-            resolver.getResources("s3://bucket/config/**/*.json").size shouldBeEqualTo 0
+            resolver.getResources("s3://bucket/config/**/*.json").shouldBeEmpty()
+
             verify(exactly = 1) { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) }
             verify(exactly = 0) { client.headObject(any<HeadObjectRequest>()) }
         } finally {
@@ -98,12 +113,11 @@ class S3ResourcePatternResolverTest {
 
     @Test
     fun `listing failures become IOException with cause and bounded diagnostics`() {
-        val client = mockk<S3Client>(relaxed = true)
-        val provider = mockk<ObjectProvider<S3Client>>()
         val failure = IllegalStateException("synthetic-secret\nAuthorization: Bearer secret")
         every { provider.getObject() } returns client
         every { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) } throws failure
         val context = GenericApplicationContext().apply { refresh() }
+
         try {
             val resolver = S3ResourcePatternResolver(context, provider)
 
@@ -111,11 +125,12 @@ class S3ResourcePatternResolverTest {
                 resolver.getResources("s3://safe-bucket/config/**/*.json")
             }
 
+            log.debug { "error=$error" }
             error.cause shouldBeSameInstanceAs failure
             error.message shouldContain "safe-bucket"
             error.message shouldContain "config/"
-            error.message.orEmpty().contains("synthetic-secret").shouldBeEqualTo(false)
-            error.message.orEmpty().contains("Authorization").shouldBeEqualTo(false)
+            error.message shouldNotContain "synthetic-secret"
+            error.message shouldNotContain "Authorization"
         } finally {
             context.close()
         }
@@ -123,13 +138,10 @@ class S3ResourcePatternResolverTest {
 
     @Test
     fun `mid-page failure becomes IOException without partial results or retry`() {
-        val client = mockk<S3Client>(relaxed = true)
-        val provider = mockk<ObjectProvider<S3Client>>()
-        val iterable = mockk<ListObjectsV2Iterable>()
         val failure = SdkClientException.create("synthetic transport failure")
         every { provider.getObject() } returns client
         every { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) } returns iterable
-        every { iterable.iterator() } returns object : MutableIterator<ListObjectsV2Response> {
+        every { iterable.iterator() } returns object: MutableIterator<ListObjectsV2Response> {
             private var index = 0
 
             override fun hasNext(): Boolean = index < 2
@@ -139,6 +151,7 @@ class S3ResourcePatternResolverTest {
 
             override fun remove(): Unit = throw UnsupportedOperationException()
         }
+
         val context = GenericApplicationContext().apply { refresh() }
         try {
             val resolver = S3ResourcePatternResolver(context, provider)
@@ -147,7 +160,9 @@ class S3ResourcePatternResolverTest {
                 resolver.getResources("s3://bucket/config/**/*.json")
             }
 
+            log.debug { "error=$error" }
             error.cause shouldBeSameInstanceAs failure
+
             verify(exactly = 1) { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) }
         } finally {
             context.close()
@@ -156,7 +171,6 @@ class S3ResourcePatternResolverTest {
 
     @Test
     fun `invalid pattern never queries provider`() {
-        val provider = mockk<ObjectProvider<S3Client>>()
         val context = GenericApplicationContext().apply { refresh() }
         try {
             val resolver = S3ResourcePatternResolver(context, provider)
@@ -176,20 +190,18 @@ class S3ResourcePatternResolverTest {
 
     @Test
     fun `escaped wildcard is matched literally and PUA key collision remains safe`() {
-        val client = mockk<S3Client>(relaxed = true)
-        val provider = mockk<ObjectProvider<S3Client>>()
-        val iterable = mockk<ListObjectsV2Iterable>()
         every { provider.getObject() } returns client
         every { client.listObjectsV2Paginator(any<ListObjectsV2Request>()) } returns iterable
         every { iterable.iterator() } returns mutableListOf(
             page("config/*/literal.txt", "config/x/literal.txt", "config/${'\uE000'}/literal.txt"),
         ).iterator()
+
         val context = GenericApplicationContext().apply { refresh() }
         try {
             val resolver = S3ResourcePatternResolver(context, provider)
 
             val resources = resolver.getResources("s3://bucket/config/%2A/literal.txt")
-            resources.map { (it as S3Resource).location.key } shouldBeEqualTo listOf("config/*/literal.txt")
+            resources.map { it.shouldBeInstanceOf<S3Resource>().location.key } shouldBeEqualTo listOf("config/*/literal.txt")
         } finally {
             context.close()
         }
@@ -199,7 +211,8 @@ class S3ResourcePatternResolverTest {
     fun `Java declaration exposes IOException`() {
         val method = S3ResourcePatternResolver::class.java.getDeclaredMethod("getResources", String::class.java)
 
-        method.exceptionTypes.toList() shouldContain IOException::class.java
+//        method.exceptionTypes shouldContain IOException::class.java
+        IOException::class.java shouldBeIn method.exceptionTypes
     }
 
     @Test
@@ -214,9 +227,8 @@ class S3ResourcePatternResolverTest {
             resolver.getResource("classpath:missing-resource.txt").shouldNotBeNull()
             resolver.getResources(
                 "classpath*:META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports",
-            )
-                .isNotEmpty().shouldBeTrue()
-            resolver.getClassLoader() shouldBeSameInstanceAs context.classLoader
+            ).shouldNotBeEmpty()
+            resolver.classLoader shouldBeSameInstanceAs context.classLoader
         } finally {
             context.close()
         }

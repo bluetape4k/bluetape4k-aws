@@ -3,7 +3,7 @@ package io.bluetape4k.aws.spring.s3
 import tools.jackson.databind.ObjectMapper
 
 /** S3 객체 payload와 도메인 객체 사이의 typed 변환 계약입니다. */
-interface S3ObjectConverter<T : Any> {
+interface S3ObjectConverter<T: Any> {
 
     /** [value]를 S3에 저장할 바이트로 직렬화합니다. */
     fun write(value: T): ByteArray
@@ -20,7 +20,7 @@ interface S3ObjectConverter<T : Any> {
 class JacksonS3ObjectConverter(
     private val objectMapper: ObjectMapper,
     defaultContentType: String? = "application/json",
-) : S3ObjectConverter<Any> {
+): S3ObjectConverter<Any> {
 
     override val contentType: String? = defaultContentType
 
@@ -29,4 +29,7 @@ class JacksonS3ObjectConverter(
     @Suppress("UNCHECKED_CAST")
     override fun read(bytes: ByteArray, targetType: Class<out Any>): Any =
         objectMapper.readValue(bytes, targetType)
+
+    inline fun <reified T: Any> read(bytes: ByteArray): T =
+        read(bytes, T::class.java) as T
 }

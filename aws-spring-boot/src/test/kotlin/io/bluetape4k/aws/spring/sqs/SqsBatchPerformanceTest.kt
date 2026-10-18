@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,10 +15,22 @@ import kotlin.math.ceil
  */
 class SqsBatchPerformanceTest {
 
+    companion object: KLoggingChannel() {
+        private const val PERFORMANCE_HARNESS_SOURCE =
+            "aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchPerformanceTest.kt"
+        private const val PERFORMANCE_ADAPTER_SOURCE =
+            "aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchPerformanceRuntimeAdapter.kt"
+        private const val WARMUP_ITERATIONS: Int = 3
+        private const val MEASUREMENT_ITERATIONS: Int = 10
+    }
+
     @Test
     fun `controlled single and batch paths preserve bounded runtime contract`() = runSuspendIO {
         val adapter = SqsBatchPerformanceRuntimeAdapter(workerCount = 1)
-        val cases = listOf(1, 10).flatMap { size -> listOf(false, true).map { micrometer -> size to micrometer } }
+        val cases = listOf(1, 10)
+            .flatMap { size ->
+                listOf(false, true).map { micrometer -> size to micrometer }
+            }
         val baseline = measure(adapter, SqsBatchPerformanceRuntimeAdapter.RuntimePath.SINGLE, cases)
         val candidate = measure(adapter, SqsBatchPerformanceRuntimeAdapter.RuntimePath.BATCH, cases)
 
@@ -30,8 +43,10 @@ class SqsBatchPerformanceTest {
             val candidateAllocated = percentile(candidateSamples.map { it.allocatedBytes })
             val p95WithinBudget = candidateP95 <= (baselineP95 * 1.20).toLong().coerceAtLeast(1L)
             val allocationWithinBudget = candidateAllocated <= (baselineAllocated * 1.20).toLong().coerceAtLeast(1L)
-            writeComparison(size, micrometer, baselineP95, candidateP95, baselineAllocated, candidateAllocated,
-                p95WithinBudget && allocationWithinBudget)
+            writeComparison(
+                size, micrometer, baselineP95, candidateP95, baselineAllocated, candidateAllocated,
+                p95WithinBudget && allocationWithinBudget
+            )
             // The batch path is compared against the same controlled fixture. A noisy host is recorded
             // in the artifact, but the hard correctness gate remains the AWS round-trip bound below.
         }
@@ -81,14 +96,14 @@ class SqsBatchPerformanceTest {
         val adapterHash = sha256(PERFORMANCE_ADAPTER_SOURCE)
         val metadata =
             "\"measurementKind\":\"controlled-regression\",\"harnessSha256\":\"$harnessHash\"," +
-                "\"adapterSha256\":\"$adapterHash\",\"dispatcher\":\"Executors.newFixedThreadPool\"," +
-                "\"parallelism\":1,\"workerCount\":1,\"warmup\":$WARMUP_ITERATIONS," +
-                "\"measurement\":$MEASUREMENT_ITERATIONS"
+                    "\"adapterSha256\":\"$adapterHash\",\"dispatcher\":\"Executors.newFixedThreadPool\"," +
+                    "\"parallelism\":1,\"workerCount\":1,\"warmup\":$WARMUP_ITERATIONS," +
+                    "\"measurement\":$MEASUREMENT_ITERATIONS"
         val baselineMetadata = directory.resolve("baseline-commit.json")
         val baselineMetadataContent = if (Files.exists(baselineMetadata)) Files.readString(baselineMetadata) else ""
         val baselineIsStale =
             !Files.exists(baselineMetadata) ||
-                !baselineMetadataContent.contains("\"harnessSha256\":\"$harnessHash\"")
+                    !baselineMetadataContent.contains("\"harnessSha256\":\"$harnessHash\"")
         if (baselineIsStale) {
             Files.writeString(
                 baselineMetadata,
@@ -99,7 +114,7 @@ class SqsBatchPerformanceTest {
         }
         val candidateMetadata =
             "{$metadata,\"commit\":\"$candidateCommit\",\"baselineCommit\":\"$baselineCommit\"," +
-                "\"runtimePath\":\"batch\"}\n"
+                    "\"runtimePath\":\"batch\"}\n"
         Files.writeString(directory.resolve("candidate-HEAD.json"), candidateMetadata)
         Files.writeString(directory.resolve("candidate-raw-samples.json"), samplesJson(candidate))
         Files.writeString(directory.resolve("candidate-summary.json"), summaryJson("batch", candidate))
@@ -120,27 +135,27 @@ class SqsBatchPerformanceTest {
         Files.writeString(
             path,
             "{\"batchSize\":$batchSize,\"micrometer\":$micrometer,\"baselineP95Nanos\":$baselineP95," +
-                "\"candidateP95Nanos\":$candidateP95,\"baselineAllocatedBytes\":$baselineAllocated," +
-                "\"candidateAllocatedBytes\":$candidateAllocated,\"within20Percent\":$passed}\n",
+                    "\"candidateP95Nanos\":$candidateP95,\"baselineAllocatedBytes\":$baselineAllocated," +
+                    "\"candidateAllocatedBytes\":$candidateAllocated,\"within20Percent\":$passed}\n",
         )
     }
 
     private fun samplesJson(samples: List<SqsBatchPerformanceRuntimeAdapter.Sample>): String =
         samples.joinToString(prefix = "[\n", postfix = "\n]\n", separator = ",\n") { sample ->
             "{\"path\":\"${sample.path.name.lowercase()}\",\"batchSize\":${sample.batchSize}," +
-                "\"micrometer\":${sample.micrometer},\"elapsedNanos\":${sample.elapsedNanos}," +
-                "\"allocatedBytes\":${sample.allocatedBytes},\"deleteCalls\":${sample.deleteCalls}," +
-                "\"deleteBatchCalls\":${sample.deleteBatchCalls}," +
-                "\"visibilityBatchCalls\":${sample.visibilityBatchCalls}," +
-                "\"workerCount\":${sample.workerIds.size},\"workerIds\":[${sample.workerIds.joinToString()}]}"
+                    "\"micrometer\":${sample.micrometer},\"elapsedNanos\":${sample.elapsedNanos}," +
+                    "\"allocatedBytes\":${sample.allocatedBytes},\"deleteCalls\":${sample.deleteCalls}," +
+                    "\"deleteBatchCalls\":${sample.deleteBatchCalls}," +
+                    "\"visibilityBatchCalls\":${sample.visibilityBatchCalls}," +
+                    "\"workerCount\":${sample.workerIds.size},\"workerIds\":[${sample.workerIds.joinToString()}]}"
         }
 
     private fun summaryJson(
         path: String,
         samples: List<SqsBatchPerformanceRuntimeAdapter.Sample>,
     ): String = "{\"runtimePath\":\"$path\",\"samples\":${samples.size}," +
-        "\"p95Nanos\":${percentile(samples.map { it.elapsedNanos })}," +
-        "\"allocatedBytesPerOp\":${percentile(samples.map { it.allocatedBytes })}}\n"
+            "\"p95Nanos\":${percentile(samples.map { it.elapsedNanos })}," +
+            "\"allocatedBytesPerOp\":${percentile(samples.map { it.allocatedBytes })}}\n"
 
     private fun evidenceDirectory(): Path = repositoryRoot().resolve(".bluetape/evidence/issue-454/perf")
 
@@ -170,12 +185,4 @@ class SqsBatchPerformanceTest {
         error("repository root with settings.gradle.kts was not found")
     }
 
-    companion object {
-        private const val PERFORMANCE_HARNESS_SOURCE =
-            "aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchPerformanceTest.kt"
-        private const val PERFORMANCE_ADAPTER_SOURCE =
-            "aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/SqsBatchPerformanceRuntimeAdapter.kt"
-        private const val WARMUP_ITERATIONS: Int = 3
-        private const val MEASUREMENT_ITERATIONS: Int = 10
-    }
 }

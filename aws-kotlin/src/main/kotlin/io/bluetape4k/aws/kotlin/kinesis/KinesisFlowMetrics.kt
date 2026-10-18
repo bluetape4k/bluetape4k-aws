@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.kotlin.kinesis
 
+import io.bluetape4k.codec.encodeHexString
 import io.bluetape4k.support.toUtf8Bytes
 import java.io.Serializable
 import java.security.MessageDigest
@@ -115,8 +116,7 @@ sealed interface KinesisFlowEvent: Serializable {
         /** 원본 식별자를 metrics/log에 노출하지 않는 deterministic token으로 바꿉니다. */
         fun redactedToken(value: String): String {
             val digest = MessageDigest.getInstance("SHA-256").digest(value.toUtf8Bytes())
-            return digest.joinToString(separator = "") { "%02x".format(it) }
-                .take(MAX_TOKEN_LENGTH)
+            return digest.encodeHexString().take(MAX_TOKEN_LENGTH)
         }
     }
 }

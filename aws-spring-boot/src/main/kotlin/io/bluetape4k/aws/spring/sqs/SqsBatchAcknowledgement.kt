@@ -1,7 +1,8 @@
 package io.bluetape4k.aws.spring.sqs
 
-import kotlinx.coroutines.CompletableDeferred
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.sync.Mutex
@@ -53,7 +54,9 @@ internal class DefaultSqsBatchAcknowledgement(
     private val operationGuard: () -> Unit = {},
     private val observationRuntime: SqsObservationRuntime? = null,
     private val observationQueueName: String? = null,
-) : SqsBatchAcknowledgement {
+): SqsBatchAcknowledgement {
+
+    companion object: KLogging()
 
     private enum class ItemState {
         PENDING,
@@ -83,10 +86,10 @@ internal class DefaultSqsBatchAcknowledgement(
             val preSuccessIds: List<String>,
             val preFailures: List<SqsBatchAcknowledgementFailure>,
             val deferred: CompletableDeferred<Unit>,
-        ) : Decision
+        ): Decision
 
-        data class Wait(val deferreds: List<CompletableDeferred<Unit>>) : Decision
-        data class Done(val result: SqsBatchAcknowledgementResult) : Decision
+        data class Wait(val deferreds: List<CompletableDeferred<Unit>>): Decision
+        data class Done(val result: SqsBatchAcknowledgementResult): Decision
     }
 
     private val mutex = Mutex()
@@ -274,6 +277,7 @@ internal class DefaultSqsBatchAcknowledgement(
                     onCancellationFinalized()
                     throw e
                 }
+
             val activeRuntime = observationRuntime.activeOrNull()
             if (activeRuntime == null) {
                 performDecision()
@@ -523,7 +527,8 @@ internal class DefaultSqsBatchAcknowledgement(
                     }
             }
             SqsBatchAcknowledgementOperation.NACK,
-            SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY -> {
+            SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY,
+                -> {
                 val timeout = requireNotNull(timeoutSeconds)
                 val requests = runnable.map {
                     SqsChangeVisibilityRequest(it.message.messageId, it.message.receiptHandle, timeout)

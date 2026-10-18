@@ -1,10 +1,12 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
+import software.amazon.awssdk.services.sqs.model.Message
 import java.io.Serializable
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.InvocationTargetException
@@ -12,15 +14,14 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
-import software.amazon.awssdk.services.sqs.model.Message
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KType
 import kotlin.reflect.KVariance
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.valueParameters
-import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.jvm.javaType
+import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.jvm.kotlinFunction
 
 internal class SqsListenerMethodInvoker(
@@ -29,6 +30,9 @@ internal class SqsListenerMethodInvoker(
     private val messageConverter: SqsMessageConverter,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+
+    companion object: KLogging()
+
     private val kotlinFunction: KFunction<*>? = method.kotlinFunction
     private val parameterPlan: ParameterPlan = ParameterPlan.from(method, kotlinFunction)
     private val suspendFunction: Boolean = kotlinFunction?.isSuspend == true
@@ -198,11 +202,25 @@ internal class SqsListenerMethodInvoker(
     }
 
     private sealed class Parameter: Serializable {
-        data object Body: Parameter()
-        data object AwsMessage: Parameter()
-        data object ReceivedMessage: Parameter()
-        data object Acknowledgement: Parameter()
-        data object BatchAcknowledgement: Parameter()
+        data object Body: Parameter() {
+            private fun readResolve(): Any = Body
+        }
+
+        data object AwsMessage: Parameter() {
+            private fun readResolve(): Any = AwsMessage
+        }
+
+        data object ReceivedMessage: Parameter() {
+            private fun readResolve(): Any = ReceivedMessage
+        }
+
+        data object Acknowledgement: Parameter() {
+            private fun readResolve(): Any = Acknowledgement
+        }
+
+        data object BatchAcknowledgement: Parameter() {
+            private fun readResolve(): Any = BatchAcknowledgement
+        }
 
         class ListPayload(
             private val name: String?,
@@ -227,8 +245,7 @@ internal class SqsListenerMethodInvoker(
                 messages: List<SqsReceivedMessage>,
                 converter: SqsMessageConverter,
             ): List<Any> {
-                val targetType = resolveElementType()
-                return when (targetType) {
+                return when (val targetType = resolveElementType()) {
                     SqsReceivedMessage::class.java -> messages
                     Message::class.java -> messages.map { it.message }
                     else -> messages.mapIndexed { index, message ->
@@ -273,8 +290,10 @@ internal class SqsListenerMethodInvoker(
                 require(target != List::class.java && !List::class.java.isAssignableFrom(target)) {
                     unsupported(description)
                 }
-                require(target != Any::class.java &&
-                    target != Serializable::class.java) {
+                require(
+                    target != Any::class.java &&
+                            target != Serializable::class.java
+                ) {
                     unsupported(description)
                 }
                 require(!target.isInterface && !Modifier.isAbstract(target.modifiers)) {

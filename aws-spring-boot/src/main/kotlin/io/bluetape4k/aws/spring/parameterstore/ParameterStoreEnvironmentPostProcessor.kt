@@ -4,6 +4,8 @@ import io.bluetape4k.aws.spring.env.addAwsPropertySource
 import io.bluetape4k.aws.spring.env.bindOrCreate
 import io.bluetape4k.aws.spring.env.isAwsEnabled
 import io.bluetape4k.aws.spring.env.requireAwsSdkClass
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.springframework.boot.EnvironmentPostProcessor
 import org.springframework.boot.SpringApplication
 import org.springframework.core.Ordered
@@ -19,6 +21,8 @@ import org.springframework.core.env.ConfigurableEnvironment
  */
 class ParameterStoreEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered {
 
+    companion object: KLogging()
+
     override fun getOrder(): Int = Ordered.LOWEST_PRECEDENCE - 10
 
     override fun postProcessEnvironment(
@@ -30,6 +34,7 @@ class ParameterStoreEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered 
         }
 
         val properties = environment.bindOrCreate<ParameterStoreProperties>("bluetape4k.aws.parameter-store")
+        log.debug { "load ParameterStoreProperties. properties=$properties" }
         if (!properties.enabled || properties.sources.isEmpty()) {
             return
         }

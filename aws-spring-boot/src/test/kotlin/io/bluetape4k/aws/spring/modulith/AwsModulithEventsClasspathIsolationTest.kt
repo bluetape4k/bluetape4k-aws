@@ -1,24 +1,31 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sqs.SqsFullRequestOperations
 import io.bluetape4k.aws.spring.sqs.SqsOperations
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.modulith.events.EventExternalizationConfiguration
 import org.springframework.modulith.events.core.EventSerializer
-import org.springframework.modulith.events.support.EventExternalizerModuleListener
 import org.springframework.modulith.events.support.EventExternalizationTransport
+import org.springframework.modulith.events.support.EventExternalizerModuleListener
 
 class AwsModulithEventsClasspathIsolationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(AutoConfigurations.of(AwsModulithEventsAutoConfiguration::class.java))
@@ -26,7 +33,9 @@ class AwsModulithEventsClasspathIsolationTest {
 
     @Test
     fun `outer configuration uses only name conditions and stable ordering`() {
-        val annotation = AwsModulithEventsAutoConfiguration::class.java.getAnnotation(AutoConfiguration::class.java)
+        // val annotation = AwsModulithEventsAutoConfiguration::class.java.getAnnotation(AutoConfiguration::class.java)
+        val annotation = AwsModulithEventsAutoConfiguration::class.annotations
+            .filterIsInstance<AutoConfiguration>().single()
 
         annotation.afterName.toSet() shouldBeEqualTo setOf(
             "io.bluetape4k.aws.spring.sns.SnsAutoConfiguration",
@@ -42,12 +51,13 @@ class AwsModulithEventsClasspathIsolationTest {
                 "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports"
             )
         ).bufferedReader().use { it.readLines() }
-
+        log.debug { "imports=$imports" }
+        
         imports.count { it == AwsModulithEventsAutoConfiguration::class.qualifiedName } shouldBeEqualTo 1
         imports.none {
             it.startsWith("io.bluetape4k.aws.spring.modulith.") &&
-                it != AwsModulithEventsAutoConfiguration::class.qualifiedName
-        }.shouldBeEqualTo(true)
+                    it != AwsModulithEventsAutoConfiguration::class.qualifiedName
+        }.shouldBeTrue()
     }
 
     @Test
@@ -82,7 +92,7 @@ class AwsModulithEventsClasspathIsolationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(EventExternalizationTransport::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<EventExternalizationTransport>() shouldHaveSize 1
             }
     }
 
@@ -98,7 +108,7 @@ class AwsModulithEventsClasspathIsolationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(EventExternalizationTransport::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<EventExternalizationTransport>() shouldHaveSize 1
             }
     }
 
@@ -111,7 +121,7 @@ class AwsModulithEventsClasspathIsolationTest {
             .withPropertyValues(*consumerProperties("direct"))
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<AwsModulithSqsEventConsumer>() shouldHaveSize 1
             }
     }
 
@@ -124,7 +134,7 @@ class AwsModulithEventsClasspathIsolationTest {
             .withPropertyValues(
                 *consumerProperties("sns"),
                 "bluetape4k.aws.modulith.events.consumer.expected-topic-arns[0]=" +
-                    "arn:aws:sns:us-east-1:000000000000:events",
+                        "arn:aws:sns:us-east-1:000000000000:events",
             )
             .run { context ->
                 context.startupFailure.shouldNotBeNull()
@@ -162,10 +172,10 @@ class AwsModulithEventsClasspathIsolationTest {
 
     private data class TestEvent(val id: String)
 
-    private object TestEventSerializer : EventSerializer {
+    private object TestEventSerializer: EventSerializer {
         override fun serialize(event: Any): Any = "{\"id\":\"${(event as TestEvent).id}\"}"
 
-        override fun <T : Any> deserialize(serialized: Any, type: Class<T>): T =
+        override fun <T: Any> deserialize(serialized: Any, type: Class<T>): T =
             type.cast(TestEvent("decoded"))
     }
 }

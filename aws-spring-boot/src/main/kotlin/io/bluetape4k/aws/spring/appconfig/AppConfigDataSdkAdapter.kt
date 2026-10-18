@@ -1,23 +1,30 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.spring.applyAwsDefaults
+import io.bluetape4k.aws.spring.support.get
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSupport
 import io.bluetape4k.aws.spring.config.applyConfigDataBootstrapCustomizer
 import io.bluetape4k.aws.spring.config.configDataCredentialsProvider
 import io.bluetape4k.aws.spring.resolveClientDefaults
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.checkNotNull
+import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import software.amazon.awssdk.services.appconfigdata.AppConfigDataClient
 import software.amazon.awssdk.services.appconfigdata.model.GetLatestConfigurationRequest
 import software.amazon.awssdk.services.appconfigdata.model.StartConfigurationSessionRequest
 
 /** AWS SDK AppConfig Data 호출을 SDK-free 내부 계약으로 감쌉니다. */
-internal object AppConfigDataSdkAdapter {
+internal object AppConfigDataSdkAdapter: KLogging() {
 
     fun create(configuration: AwsConfigDataSupport.ResolverConfiguration): Any {
         val properties = configuration.backend as AppConfigProperties
         val defaults = configuration.aws.resolveClientDefaults(properties.region, properties.endpointOverride)
+
         return AppConfigDataClient.builder()
             .credentialsProvider(configuration.aws.configDataCredentialsProvider())
             .applyAwsDefaults(defaults)
@@ -26,11 +33,13 @@ internal object AppConfigDataSdkAdapter {
     }
 
     fun close(client: Any) {
-        (client as AppConfigDataClient).close()
+        log.debug { "Closing ${client::class.simpleName}" }
+        (client as? AppConfigDataClient)?.close()
     }
 
     fun sessionClient(bootstrapContext: ConfigurableBootstrapContext): AppConfigDataSessionClient {
-        val client = checkNotNull(bootstrapContext.get(AppConfigDataClient::class.java))
+        val client = bootstrapContext.get<AppConfigDataClient>().checkNotNull("client")
+        log.debug { "Create AppConfigDataSessonClient. client=$client" }
         return sessionClient(client)
     }
 
@@ -45,6 +54,7 @@ internal object AppConfigDataSdkAdapter {
         val properties = configuration.backend as AppConfigProperties
         val source = resource.location.source as AwsConfigDataSource.AppConfig
         val client = sessionClient(bootstrapContext)
+
         val request = AppConfigDataStartRequest(
             applicationIdentifier = source.application,
             configurationProfileIdentifier = source.profile,
@@ -72,26 +82,26 @@ internal object AppConfigDataSdkAdapter {
 
     private class SdkAppConfigDataSessionClient(
         private val delegate: AppConfigDataClient,
-    ) : AppConfigDataSessionClient {
+    ): AppConfigDataSessionClient {
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession {
-            val response = delegate.startConfigurationSession(
-                StartConfigurationSessionRequest.builder()
-                    .applicationIdentifier(request.applicationIdentifier)
-                    .configurationProfileIdentifier(request.configurationProfileIdentifier)
-                    .environmentIdentifier(request.environmentIdentifier)
-                    .requiredMinimumPollIntervalInSeconds(request.requiredMinimumPollIntervalSeconds)
-                    .build(),
-            )
+            val request = StartConfigurationSessionRequest.builder()
+                .applicationIdentifier(request.applicationIdentifier)
+                .configurationProfileIdentifier(request.configurationProfileIdentifier)
+                .environmentIdentifier(request.environmentIdentifier)
+                .requiredMinimumPollIntervalInSeconds(request.requiredMinimumPollIntervalSeconds)
+                .build()
+            val response = delegate.startConfigurationSession(request)
             return AppConfigDataSession(response.initialConfigurationToken())
         }
 
         override fun getLatestConfiguration(configurationToken: String): AppConfigDataResponse {
-            require(configurationToken.isNotBlank()) { "AppConfig configuration token must not be blank." }
-            val response = delegate.getLatestConfiguration(
-                GetLatestConfigurationRequest.builder()
-                    .configurationToken(configurationToken)
-                    .build(),
-            )
+            configurationToken.requireNotBlank("configurationToken")
+            val request = GetLatestConfigurationRequest.builder()
+                .configurationToken(configurationToken)
+                .build()
+
+            val response = delegate.getLatestConfiguration(request)
+
             return AppConfigDataResponse(
                 nextPollConfigurationToken = response.nextPollConfigurationToken(),
                 nextPollIntervalSeconds = response.nextPollIntervalInSeconds()?.toLong(),
@@ -117,6 +127,11 @@ internal data class AppConfigDataInitialLoad(
     val prefix: String?,
 ) {
     override fun toString(): String =
-        "AppConfigDataInitialLoad(values=${values.size}, response=$response, format=$format, " +
-            "prefixConfigured=${!prefix.isNullOrBlank()}, refreshIntervalConfigured=${refreshInterval != null})"
+        ToStringBuilder(this)
+            .add("values", values.size)
+            .add("response", response)
+            .add("format", format)
+            .add("prefix", prefix)
+            .add("refreshInterval", refreshInterval)
+            .toString()
 }

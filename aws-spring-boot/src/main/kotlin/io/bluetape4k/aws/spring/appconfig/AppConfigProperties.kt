@@ -1,6 +1,11 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.support.requireEquals
+import io.bluetape4k.support.requireInRange
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
@@ -25,7 +30,7 @@ data class AppConfigProperties(
 
     init {
         requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.app-config")
-        require(separator.length == 1) { "bluetape4k.aws.app-config.separator must be one character." }
+        separator.length.requireEquals(1) { "bluetape4k.aws.app-config.separator must be one character." }
         require(separator[0] !in CONTROL_CHARACTERS && separator[0] !in "?%&=") {
             "bluetape4k.aws.app-config.separator must be a safe character."
         }
@@ -34,23 +39,26 @@ data class AppConfigProperties(
     }
 
     override fun toString(): String =
-        "AppConfigProperties(enabled=$enabled, failFast=$failFast, separator='$separator', " +
-            "refreshIntervalConfigured=${refreshInterval != null}, " +
-            "requiredMinimumPollInterval=$requiredMinimumPollInterval, regionConfigured=${!region.isNullOrBlank()}, " +
-            "endpointConfigured=${endpointOverride != null})"
+        ToStringBuilder(this)
+            .add("enabled", enabled)
+            .add("failFast", failFast)
+            .add("separator", "'$separator'")
+            .add("refreshInterval", refreshInterval)
+            .add("requiredMinimumPollInterval", requiredMinimumPollInterval)
+            .add("regionConfigured", !region.isNullOrBlank())
+            .add("endpointConfigured", endpointOverride != null)
+            .toString()
 
     companion object {
         const val DEFAULT_SEPARATOR: String = "#"
-        val DEFAULT_REQUIRED_MINIMUM_POLL_INTERVAL: Duration = Duration.ofSeconds(15)
-        val MIN_POLL_INTERVAL: Duration = Duration.ofSeconds(15)
-        val MAX_POLL_INTERVAL: Duration = Duration.ofHours(24)
+        val DEFAULT_REQUIRED_MINIMUM_POLL_INTERVAL: Duration = 15.seconds()
+        val MIN_POLL_INTERVAL: Duration = 15.seconds()
+        val MAX_POLL_INTERVAL: Duration = 24.hours()
 
         private val CONTROL_CHARACTERS: CharRange = '\u0000'..'\u001F'
 
         internal fun validatePollInterval(value: Duration, name: String) {
-            require(value >= MIN_POLL_INTERVAL && value <= MAX_POLL_INTERVAL) {
-                "$name must be between $MIN_POLL_INTERVAL and $MAX_POLL_INTERVAL."
-            }
+            value.requireInRange(MIN_POLL_INTERVAL, MAX_POLL_INTERVAL, name)
         }
 
         private const val serialVersionUID: Long = -7227108500640758653L

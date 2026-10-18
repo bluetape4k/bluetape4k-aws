@@ -4,6 +4,7 @@ import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
@@ -20,7 +21,6 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClientBuilder
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * CloudWatch Logs 이벤트 게시용 Spring Boot 4 자동 구성입니다.
@@ -55,7 +55,10 @@ class CloudWatchLogsAutoConfiguration {
         CloudWatchLogsAsyncClient.builder()
             .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveAwsProperties(awsProperties).resolveClientDefaults(
+                    properties.region,
+                    properties.endpointOverride
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }

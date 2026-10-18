@@ -1,40 +1,74 @@
 package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.assertions.assertFailsWith
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.javatimes.days
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import org.springframework.boot.context.properties.bind.Bindable
-import org.springframework.boot.context.properties.bind.Binder
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.time.Duration
+import org.springframework.boot.context.properties.bind.Bindable
+import org.springframework.boot.context.properties.bind.Binder
+import org.springframework.boot.context.properties.source.MapConfigurationPropertySource
 import java.util.stream.Stream
 
 class AwsModulithEventsPropertiesTest {
+
+    companion object: KLogging() {
+        private const val VALID_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:orders"
+        private const val MAX_TOPIC_NAME_LENGTH = 256
+        private const val MAX_QUEUE_NAME_LENGTH = 80
+
+        @JvmStatic
+        fun producerIntegerBoundaries(): Stream<Arguments> = Stream.of(
+            Arguments.of("maxInFlight", 1, true),
+            Arguments.of("maxInFlight", 1_024, true),
+            Arguments.of("maxInFlight", 0, false),
+            Arguments.of("maxInFlight", 1_025, false),
+            Arguments.of("maxSerializedPayloadBytes", 1, true),
+            Arguments.of("maxSerializedPayloadBytes", 262_144, true),
+            Arguments.of("maxSerializedPayloadBytes", 0, false),
+            Arguments.of("maxSerializedPayloadBytes", 262_145, false),
+            Arguments.of("maxEnvelopeBytes", 1, true),
+            Arguments.of("maxEnvelopeBytes", 262_144, true),
+            Arguments.of("maxEnvelopeBytes", 0, false),
+            Arguments.of("maxEnvelopeBytes", 262_145, false),
+        )
+    }
 
     @Test
     fun `root producer and consumer are opt in by default`() {
         val properties = AwsModulithEventsProperties()
 
-        assertEquals(false, properties.enabled)
-        assertEquals(false, properties.producer.enabled)
-        assertEquals(false, properties.consumer.enabled)
-        assertEquals(64, properties.producer.maxInFlight)
-        assertEquals(196_608, properties.producer.maxSerializedPayloadBytes)
-        assertEquals(262_144, properties.producer.maxEnvelopeBytes)
-        assertEquals(Duration.ofSeconds(25), properties.producer.shutdownTimeout)
-        assertEquals(null, properties.consumer.queue)
-        assertEquals(null, properties.consumer.sourceMode)
-        assertEquals(emptySet<String>(), properties.consumer.expectedTopicArns)
-        assertEquals(true, properties.consumer.redriveRequired)
-        assertEquals(10_000, properties.consumer.idempotency.maxEntries)
-        assertEquals(256, properties.consumer.idempotency.maxInProgress)
-        assertEquals(2_097_152, properties.consumer.idempotency.maxKeyBytes)
-        assertEquals(Duration.ofHours(24), properties.consumer.idempotency.retention)
-        assertEquals(Duration.ofMinutes(2), properties.consumer.idempotency.leaseDuration)
+        log.debug { "default properties=$properties" }
+
+        properties.enabled.shouldBeFalse()
+        properties.producer.enabled.shouldBeFalse()
+        properties.consumer.enabled.shouldBeFalse()
+        properties.producer.maxInFlight shouldBeEqualTo 64
+        properties.producer.maxSerializedPayloadBytes shouldBeEqualTo 196_608
+        properties.producer.maxEnvelopeBytes shouldBeEqualTo 262_144
+        properties.producer.shutdownTimeout shouldBeEqualTo 25.seconds()
+        properties.consumer.queue.shouldBeNull()
+        properties.consumer.sourceMode.shouldBeNull()
+        properties.consumer.expectedTopicArns.shouldBeEmpty()
+        properties.consumer.redriveRequired.shouldBeTrue()
+        properties.consumer.idempotency.maxEntries shouldBeEqualTo 10_000
+        properties.consumer.idempotency.maxInProgress shouldBeEqualTo 256
+        properties.consumer.idempotency.maxKeyBytes shouldBeEqualTo 2_097_152
+        properties.consumer.idempotency.retention shouldBeEqualTo 24.hours()
+        properties.consumer.idempotency.leaseDuration shouldBeEqualTo 2.minutes()
     }
 
     @ParameterizedTest
@@ -61,13 +95,13 @@ class AwsModulithEventsPropertiesTest {
 
     @Test
     fun `producer duration boundaries are inclusive`() {
-        AwsModulithEventsProperties.Producer(shutdownTimeout = Duration.ofSeconds(1))
-        AwsModulithEventsProperties.Producer(shutdownTimeout = Duration.ofMinutes(5))
+        AwsModulithEventsProperties.Producer(shutdownTimeout = 1.seconds())
+        AwsModulithEventsProperties.Producer(shutdownTimeout = 5.minutes())
         assertFailsWith<IllegalArgumentException> {
-            AwsModulithEventsProperties.Producer(shutdownTimeout = Duration.ofMillis(999))
+            AwsModulithEventsProperties.Producer(shutdownTimeout = 999.millis())
         }
         assertFailsWith<IllegalArgumentException> {
-            AwsModulithEventsProperties.Producer(shutdownTimeout = Duration.ofMinutes(5).plusNanos(1))
+            AwsModulithEventsProperties.Producer(shutdownTimeout = 5.minutes() + 1.nanos())
         }
     }
 
@@ -137,10 +171,10 @@ class AwsModulithEventsPropertiesTest {
     fun `idempotency boundaries are enforced`() {
         AwsModulithEventsProperties.Idempotency(maxInProgress = 1)
         AwsModulithEventsProperties.Idempotency(maxInProgress = 10_000, maxEntries = 10_000)
-        AwsModulithEventsProperties.Idempotency(retention = Duration.ofMinutes(1))
-        AwsModulithEventsProperties.Idempotency(retention = Duration.ofDays(7))
-        AwsModulithEventsProperties.Idempotency(leaseDuration = Duration.ofSeconds(30))
-        AwsModulithEventsProperties.Idempotency(leaseDuration = Duration.ofMinutes(30))
+        AwsModulithEventsProperties.Idempotency(retention = 1.minutes())
+        AwsModulithEventsProperties.Idempotency(retention = 7.days())
+        AwsModulithEventsProperties.Idempotency(leaseDuration = 30.seconds())
+        AwsModulithEventsProperties.Idempotency(leaseDuration = 30.minutes())
 
         assertFailsWith<IllegalArgumentException> {
             AwsModulithEventsProperties.Idempotency(maxEntries = 0)
@@ -152,16 +186,16 @@ class AwsModulithEventsPropertiesTest {
             AwsModulithEventsProperties.Idempotency(maxKeyBytes = 0)
         }
         assertFailsWith<IllegalArgumentException> {
-            AwsModulithEventsProperties.Idempotency(retention = Duration.ofSeconds(59))
+            AwsModulithEventsProperties.Idempotency(retention = 59.seconds())
         }
         assertFailsWith<IllegalArgumentException> {
-            AwsModulithEventsProperties.Idempotency(retention = Duration.ofDays(7).plusNanos(1))
+            AwsModulithEventsProperties.Idempotency(retention = 7.days() + 1.nanos())
         }
         assertFailsWith<IllegalArgumentException> {
-            AwsModulithEventsProperties.Idempotency(leaseDuration = Duration.ofSeconds(29))
+            AwsModulithEventsProperties.Idempotency(leaseDuration = 29.seconds())
         }
         assertFailsWith<IllegalArgumentException> {
-            AwsModulithEventsProperties.Idempotency(leaseDuration = Duration.ofMinutes(30).plusNanos(1))
+            AwsModulithEventsProperties.Idempotency(leaseDuration = 30.minutes() + 1.nanos())
         }
         assertFailsWith<IllegalArgumentException> {
             AwsModulithEventsProperties.Idempotency(maxEntries = 1, maxInProgress = 2)
@@ -188,16 +222,15 @@ class AwsModulithEventsPropertiesTest {
             "arn:aws:sns:us-east-1:123456789012:orders",
             "http://localhost/queue",
             "https://sqs.us-east-1.amazonaws.com/123/orders",
-        )
-            .forEach { invalid ->
-                assertFailsWith<IllegalArgumentException> {
-                    AwsModulithEventsProperties(
-                        targets = mapOf(
-                            "orders" to AwsModulithEventsProperties.Target(AwsModulithTargetService.SNS, invalid)
-                        ),
-                    )
-                }
+        ).forEach { invalid ->
+            assertFailsWith<IllegalArgumentException> {
+                AwsModulithEventsProperties(
+                    targets = mapOf(
+                        "orders" to AwsModulithEventsProperties.Target(AwsModulithTargetService.SNS, invalid)
+                    ),
+                )
             }
+        }
 
         val hundredTargets = (0 until 100).associate { "target-$it" to valid }
         AwsModulithEventsProperties(targets = hundredTargets)
@@ -249,10 +282,12 @@ class AwsModulithEventsPropertiesTest {
 
     @Test
     fun `routing key validation distinguishes standard and FIFO destinations`() {
-        assertEquals(null, validateAwsModulithRoutingKey("orders", null))
+        validateAwsModulithRoutingKey("orders", null).shouldBeNull()
+
         assertFailsWith<IllegalArgumentException> {
             validateAwsModulithRoutingKey("orders", "partition-1")
         }
+
         listOf(null, "", "  ", "\u0000").forEach { invalidKey ->
             assertFailsWith<IllegalArgumentException> {
                 validateAwsModulithRoutingKey("orders.fifo", invalidKey)
@@ -260,7 +295,8 @@ class AwsModulithEventsPropertiesTest {
         }
 
         val maximumKey = "가".repeat(42) + "ab"
-        assertEquals(maximumKey, validateAwsModulithRoutingKey("orders.fifo", maximumKey))
+        validateAwsModulithRoutingKey("orders.fifo", maximumKey) shouldBeEqualTo maximumKey
+
         assertFailsWith<IllegalArgumentException> {
             validateAwsModulithRoutingKey("orders.fifo", maximumKey + "c")
         }
@@ -282,27 +318,28 @@ class AwsModulithEventsPropertiesTest {
             "bluetape4k.aws.modulith.events",
             Bindable.ofInstance(properties),
         )
+        log.debug { "properties=$properties" }
 
         properties.validate()
-        assertTrue(properties.producer.enabled)
-        assertEquals(8, properties.producer.maxInFlight)
-        assertEquals(AwsModulithTargetService.SNS, properties.targets["orders"]?.service)
-        assertEquals("orders", properties.targets["orders"]?.destination)
+        properties.producer.enabled.shouldBeTrue()
+        properties.producer.maxInFlight shouldBeEqualTo 8
+        properties.targets["orders"]?.service shouldBeEqualTo AwsModulithTargetService.SNS
+        properties.targets["orders"]?.destination shouldBeEqualTo "orders"
     }
 
     @Test
     fun `Spring Binder bound producer enablement still rejects empty targets`() {
         val properties = AwsModulithEventsProperties()
         Binder(
-            MapConfigurationPropertySource(
-                mapOf("bluetape4k.aws.modulith.events.producer.enabled" to "true")
-            )
+            MapConfigurationPropertySource(mapOf("bluetape4k.aws.modulith.events.producer.enabled" to "true"))
         ).bind(
             "bluetape4k.aws.modulith.events",
             Bindable.ofInstance(properties),
         )
 
-        assertFailsWith<AwsModulithConfigurationException> { properties.validate() }
+        assertFailsWith<AwsModulithConfigurationException> {
+            properties.validate()
+        }
     }
 
     @Test
@@ -320,11 +357,12 @@ class AwsModulithEventsPropertiesTest {
             ),
             targets = targets,
         )
+        log.debug { "properties=$properties" }
         expectedArns += "arn:aws:sns:us-east-1:123456789012:unexpected"
         targets["unexpected"] = AwsModulithEventsProperties.Target(AwsModulithTargetService.SQS, "unexpected")
 
-        assertEquals(setOf(VALID_TOPIC_ARN), properties.consumer.expectedTopicArns)
-        assertEquals(1, properties.targets.size)
+        properties.consumer.expectedTopicArns shouldBeEqualTo setOf(VALID_TOPIC_ARN)
+        properties.targets.size shouldBeEqualTo 1
 
         val reboundExpectedArns = linkedSetOf(VALID_TOPIC_ARN)
         val reboundTargets = linkedMapOf(
@@ -332,34 +370,13 @@ class AwsModulithEventsPropertiesTest {
         )
         properties.consumer.expectedTopicArns = reboundExpectedArns
         properties.targets = reboundTargets
+        log.debug { "properties=$properties" }
         properties.validate()
 
         reboundExpectedArns += "arn:aws:sns:us-east-1:123456789012:rebound"
         reboundTargets["rebound"] = AwsModulithEventsProperties.Target(AwsModulithTargetService.SQS, "rebound")
 
-        assertEquals(setOf(VALID_TOPIC_ARN), properties.consumer.expectedTopicArns)
-        assertEquals(setOf("orders"), properties.targets.keys)
-    }
-
-    companion object {
-        private const val VALID_TOPIC_ARN = "arn:aws:sns:us-east-1:123456789012:orders"
-        private const val MAX_TOPIC_NAME_LENGTH = 256
-        private const val MAX_QUEUE_NAME_LENGTH = 80
-
-        @JvmStatic
-        fun producerIntegerBoundaries(): Stream<Arguments> = Stream.of(
-            Arguments.of("maxInFlight", 1, true),
-            Arguments.of("maxInFlight", 1_024, true),
-            Arguments.of("maxInFlight", 0, false),
-            Arguments.of("maxInFlight", 1_025, false),
-            Arguments.of("maxSerializedPayloadBytes", 1, true),
-            Arguments.of("maxSerializedPayloadBytes", 262_144, true),
-            Arguments.of("maxSerializedPayloadBytes", 0, false),
-            Arguments.of("maxSerializedPayloadBytes", 262_145, false),
-            Arguments.of("maxEnvelopeBytes", 1, true),
-            Arguments.of("maxEnvelopeBytes", 262_144, true),
-            Arguments.of("maxEnvelopeBytes", 0, false),
-            Arguments.of("maxEnvelopeBytes", 262_145, false),
-        )
+        properties.consumer.expectedTopicArns shouldBeEqualTo setOf(VALID_TOPIC_ARN)
+        properties.targets.keys shouldBeEqualTo setOf("orders")
     }
 }

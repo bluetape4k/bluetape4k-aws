@@ -1,17 +1,18 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition
+import org.springframework.context.SmartLifecycle
 import org.springframework.context.annotation.ConditionContext
 import org.springframework.context.annotation.Conditional
+import org.springframework.core.env.getProperty
 import org.springframework.core.type.AnnotatedTypeMetadata
-import org.springframework.context.SmartLifecycle
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import java.time.Duration as JavaDuration
 
@@ -19,7 +20,7 @@ import java.time.Duration as JavaDuration
 class SqsExtendedClientLifecycle(
     private val client: SqsExtendedClient,
     private val properties: SqsExtendedClientProperties,
-) : SmartLifecycle {
+): SmartLifecycle {
 
     @Volatile
     private var running: Boolean = true
@@ -75,37 +76,37 @@ class SqsExtendedClientLifecycle(
         }
     }
 
-    companion object {
+    companion object: KLogging() {
         /** AWS client destroy보다 먼저 동작하는 명시적 lifecycle phase입니다. */
         const val PHASE: Int = Int.MAX_VALUE - 100
     }
 }
 
 /** Spring shutdown phase가 drain budget을 보장하는지 판정합니다. */
-class SqsExtendedLifecycleBudgetCondition : SpringBootCondition() {
+class SqsExtendedLifecycleBudgetCondition: SpringBootCondition() {
 
     override fun getMatchOutcome(
         context: ConditionContext,
         metadata: AnnotatedTypeMetadata,
     ): ConditionOutcome {
         val drainSeconds = context.environment
-            .getProperty("bluetape4k.aws.sqs.extended.shutdown-drain-timeout-seconds", Int::class.java, 20)
+            .getProperty<Int>("bluetape4k.aws.sqs.extended.shutdown-drain-timeout-seconds", 20)
             .toLong()
         val phaseSeconds = parseSeconds(
             context.environment.getProperty("spring.lifecycle.timeout-per-shutdown-phase"),
         )
         val requiredSeconds = drainSeconds + PHASE_MARGIN_SECONDS
+
         return if (phaseSeconds >= requiredSeconds) {
             ConditionOutcome.match("shutdown phase budget is sufficient")
         } else {
-            ConditionOutcome.noMatch(
-                "shutdown phase budget must be at least ${requiredSeconds}s for extended drain",
-            )
+            ConditionOutcome.noMatch("shutdown phase budget must be at least ${requiredSeconds}s for extended drain")
         }
     }
 
     private fun parseSeconds(raw: String?): Long {
         if (raw.isNullOrBlank()) return DEFAULT_PHASE_SECONDS
+
         return when {
             raw.startsWith("PT") -> JavaDuration.parse(raw).seconds
             raw.endsWith("ms") -> raw.removeSuffix("ms").toDouble().div(MILLIS_PER_SECOND).toLong()
@@ -115,7 +116,7 @@ class SqsExtendedLifecycleBudgetCondition : SpringBootCondition() {
         }
     }
 
-    companion object {
+    companion object: KLogging() {
         const val PHASE_MARGIN_SECONDS: Long = 5
         private const val DEFAULT_PHASE_SECONDS: Long = 30
         private const val MILLIS_PER_SECOND: Double = 1_000.0

@@ -1,10 +1,13 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.info
+import io.bluetape4k.logging.warn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -14,26 +17,27 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import org.springframework.context.SmartLifecycle
+import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import java.time.Duration
-import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.coroutines.coroutineContext
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * 하나의 `@SqsListener` 엔드포인트를 실행하는 SQS 메시지 리스너 컨테이너.
@@ -52,7 +56,7 @@ class SqsMessageListenerContainer internal constructor(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): SmartLifecycle {
 
-    companion object : KLogging()
+    companion object: KLogging()
 
     private class ReceiveAdmissionGate {
         private data class State(
@@ -60,7 +64,7 @@ class SqsMessageListenerContainer internal constructor(
             val active: Int = 0,
         )
 
-        class Admission internal constructor(
+        class Admission(
             private val gate: ReceiveAdmissionGate,
         ): AutoCloseable {
             private val released = AtomicBoolean()
@@ -166,12 +170,13 @@ class SqsMessageListenerContainer internal constructor(
     private val generation = AtomicReference<ListenerGeneration?>()
     private val lifecycleState = AtomicReference(LifecycleState.STOPPED)
     private val generationSequence = AtomicLong()
-    private val lifecycleLock = Any()
+    private val lifecycleLock = ReentrantLock()
     private val queueAttributesResolver = DefaultSqsQueueAttributesResolver(
         operations = operations,
         cacheTtl = endpoint.queueAttributeCacheTtl,
     )
     private val observationQueueNameCache = SqsObservationQueueNameCache()
+
     @Volatile
     private var observationRuntime: SqsObservationRuntime? = null
     private var resolvedQueueUrl: String? = null
@@ -192,11 +197,11 @@ class SqsMessageListenerContainer internal constructor(
 
     override fun start() {
         val current: ListenerGeneration
-        synchronized(lifecycleLock) {
+        lifecycleLock.withLock {
             when (lifecycleState.get()) {
                 LifecycleState.STOPPING_RECEIVE,
                 LifecycleState.DRAINING,
-                -> throw IllegalStateException("listener is stopping")
+                    -> throw IllegalStateException("listener is stopping")
                 LifecycleState.RUNNING -> return
                 LifecycleState.STOPPED -> {
                     current = ListenerGeneration(
@@ -218,12 +223,12 @@ class SqsMessageListenerContainer internal constructor(
     }
 
     override fun stop() {
-        stop(Runnable {})
+        stop {}
     }
 
     override fun stop(callback: Runnable) {
         val current: ListenerGeneration
-        synchronized(lifecycleLock) {
+        lifecycleLock.withLock {
             if (lifecycleState.get() != LifecycleState.RUNNING) {
                 callback.run()
                 return
@@ -240,7 +245,7 @@ class SqsMessageListenerContainer internal constructor(
                 current.pollerJobs.joinAll()
 
                 lifecycleState.set(LifecycleState.DRAINING)
-                val drained = withTimeoutOrNull(endpoint.stopTimeoutMillis) {
+                val drained = withTimeoutOrNull(timeMillis = endpoint.stopTimeoutMillis) {
                     while (current.handlerJobs.isNotEmpty()) {
                         current.handlerJobs.toTypedArray().asList().joinAll()
                     }
@@ -248,7 +253,7 @@ class SqsMessageListenerContainer internal constructor(
                 if (!drained) {
                     current.handlerJobs.toTypedArray().also { activeHandlers ->
                         activeHandlers.forEach { it.cancel() }
-                        withTimeoutOrNull(endpoint.stopTimeoutMillis) {
+                        withTimeoutOrNull(timeMillis = endpoint.stopTimeoutMillis) {
                             activeHandlers.asList().joinAll()
                         }
                     }
@@ -256,7 +261,7 @@ class SqsMessageListenerContainer internal constructor(
                 current.scope.cancel()
                 current.groupDispatchOrder.clear()
             } finally {
-                synchronized(lifecycleLock) {
+                lifecycleLock.withLock {
                     if (generation.get() === current) {
                         generation.set(null)
                     }
@@ -311,7 +316,7 @@ class SqsMessageListenerContainer internal constructor(
         }
         while (current.inFlight.availablePermits < requiredPermits) {
             current.ensureActiveOperation()
-            delay(1)
+            delay(1.milliseconds)
         }
         current.ensureActiveOperation()
     }
@@ -327,14 +332,14 @@ class SqsMessageListenerContainer internal constructor(
         failGeneration(current)
         throw e
     } catch (e: QueueDoesNotExistException) {
-        log.warn("BT4K-SQS-OBS-201 SQS queue URL resolution failed: listenerId=${endpoint.id}, stage=resolution")
+        log.warn { "BT4K-SQS-OBS-201 SQS queue URL resolution failed: listenerId=${endpoint.id}, stage=resolution" }
         when (endpoint.queueNotFoundStrategy) {
             SqsQueueNotFoundStrategy.FAIL_FAST -> {
                 failGeneration(current)
                 throw e
             }
             SqsQueueNotFoundStrategy.IGNORE -> {
-                log.info("SQS queue does not exist; stopping listener: listenerId=${endpoint.id}")
+                log.info { "SQS queue does not exist; stopping listener: listenerId=${endpoint.id}" }
                 failGeneration(current)
                 null
             }
@@ -350,18 +355,18 @@ class SqsMessageListenerContainer internal constructor(
                     failGeneration(current)
                     throw createFailure
                 } catch (_: Throwable) {
-                    log.warn(
+                    log.warn {
                         "BT4K-SQS-OBS-201 SQS queue URL resolution failed: " +
-                            "listenerId=${endpoint.id}, stage=resolution, reason=queue_creation",
-                    )
-                    delay(endpoint.retry.nextDelay(receiveAttempt))
+                                "listenerId=${endpoint.id}, stage=resolution, reason=queue_creation"
+                    }
+                    delay(timeMillis = endpoint.retry.nextDelay(receiveAttempt))
                     null
                 }
             }
         }
     } catch (_: Throwable) {
-        log.warn("BT4K-SQS-OBS-201 SQS queue URL resolution failed: listenerId=${endpoint.id}, stage=resolution")
-        delay(endpoint.retry.nextDelay(receiveAttempt))
+        log.warn { "BT4K-SQS-OBS-201 SQS queue URL resolution failed: listenerId=${endpoint.id}, stage=resolution" }
+        delay(timeMillis = endpoint.retry.nextDelay(receiveAttempt))
         null
     }
 
@@ -374,42 +379,42 @@ class SqsMessageListenerContainer internal constructor(
         var receiveFailure: Throwable? = null
         return try {
             observeSqs(
-            runtime = observationRuntime,
-            contextFactory = { receiveObservationContext(queueUrl, receiveAttempt) },
-        ) {
-            var receiveStarted = false
-            try {
-                receiveStarted = true
-                interceptors.forEach { it.beforeReceive(endpoint.id, queueUrl, correlation) }
-                val admission = current.receiveAdmissions.acquire()
-                    ?: throw CancellationException("SQS listener generation is stopping")
-                val received = try {
-                    operations.receive(
-                        queueUrl = queueUrl,
-                        maxMessages = endpoint.maxMessages,
-                        waitTimeSeconds = endpoint.waitTimeSeconds,
-                        visibilityTimeoutSeconds = endpoint.visibilityTimeoutSeconds,
-                    )
-                } finally {
-                    admission.close()
-                }
-                interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, received, null, correlation) }
-                received
-            } catch (e: CancellationException) {
-                cancel("receive")
-                if (receiveStarted) {
-                    runCancellationCleanup(e) {
-                        interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
+                runtime = observationRuntime,
+                contextFactory = { receiveObservationContext(queueUrl, receiveAttempt) },
+            ) {
+                var receiveStarted = false
+                try {
+                    receiveStarted = true
+                    interceptors.forEach { it.beforeReceive(endpoint.id, queueUrl, correlation) }
+                    val admission = current.receiveAdmissions.acquire()
+                        ?: throw CancellationException("SQS listener generation is stopping")
+                    val received = try {
+                        operations.receive(
+                            queueUrl = queueUrl,
+                            maxMessages = endpoint.maxMessages,
+                            waitTimeSeconds = endpoint.waitTimeSeconds,
+                            visibilityTimeoutSeconds = endpoint.visibilityTimeoutSeconds,
+                        )
+                    } finally {
+                        admission.close()
                     }
+                    interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, received, null, correlation) }
+                    received
+                } catch (e: CancellationException) {
+                    cancel("receive")
+                    if (receiveStarted) {
+                        runCancellationCleanup(e) {
+                            interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
+                        }
+                    }
+                    throw e
+                } catch (e: Throwable) {
+                    receiveFailure = e
+                    fail("receive")
+                    interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
+                    throw e
                 }
-                throw e
-            } catch (e: Throwable) {
-                receiveFailure = e
-                fail("receive")
-                interceptors.forEach { it.afterReceive(endpoint.id, queueUrl, emptyList(), e, correlation) }
-                throw e
             }
-        }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Error) {
@@ -421,7 +426,7 @@ class SqsMessageListenerContainer internal constructor(
             } else {
                 logObservationFailure(target = "poll", stage = "receive", reason = "telemetry_setup")
             }
-            delay(endpoint.retry.nextDelay(receiveAttempt))
+            delay(timeMillis = endpoint.retry.nextDelay(receiveAttempt))
             null
         }
     }
@@ -497,7 +502,7 @@ class SqsMessageListenerContainer internal constructor(
                 } catch (e: FatalHeartbeatError) {
                     log.error(
                         "SQS listener handler terminated with a fatal heartbeat error: " +
-                            "listenerId=${endpoint.id}, errorType=${e.original::class.java.name}",
+                                "listenerId=${endpoint.id}, errorType=${e.original::class.java.name}",
                     )
                 } catch (e: Error) {
                     log.error("SQS listener handler terminated with an error: listenerId=${endpoint.id}", e)
@@ -575,7 +580,7 @@ class SqsMessageListenerContainer internal constructor(
                     return
                 }
                 attempt++
-                delay(endpoint.retry.nextDelay(attempt - 1))
+                delay(timeMillis = endpoint.retry.nextDelay(attempt - 1))
             }
         }
     }
@@ -694,7 +699,7 @@ class SqsMessageListenerContainer internal constructor(
                 }
                 attempt++
                 onRetry(attempt)
-                delay(endpoint.retry.nextDelay(attempt - 1))
+                delay(timeMillis = endpoint.retry.nextDelay(attempt - 1))
             }
         }
     }
@@ -810,8 +815,8 @@ class SqsMessageListenerContainer internal constructor(
         if (result.failed.isNotEmpty()) {
             log.warn(
                 "SQS batch visibility heartbeat partially failed: " +
-                    "listenerId=${endpoint.id}, queueUrl=$queueUrl, " +
-                    "batchSize=${pending.size}, failed=${result.failed.size}",
+                        "listenerId=${endpoint.id}, queueUrl=$queueUrl, " +
+                        "batchSize=${pending.size}, failed=${result.failed.size}",
             )
         }
     }
@@ -936,7 +941,7 @@ class SqsMessageListenerContainer internal constructor(
         onCancellation: (String) -> Unit,
     ) {
         try {
-            delay(endpoint.retry.nextDelay(attempt - 1))
+            delay(timeMillis = endpoint.retry.nextDelay(attempt - 1))
         } catch (e: CancellationException) {
             notifyBatchCancellation(e, context, correlation, batchSize, stage, onCancellation)
             throw e
@@ -974,7 +979,7 @@ class SqsMessageListenerContainer internal constructor(
             val heartbeatJob = launch(CoroutineName("sqs-visibility-heartbeat")) {
                 while (isActive) {
                     try {
-                        delay(Duration.ofSeconds(intervalSeconds.toLong()).toMillis())
+                        delay(timeMillis = Duration.ofSeconds(intervalSeconds.toLong()).toMillis())
                         if (!isActive) {
                             return@launch
                         }
@@ -1008,15 +1013,15 @@ class SqsMessageListenerContainer internal constructor(
     private fun logHeartbeatObservationFailure(target: String) {
         log.warn(
             "BT4K-SQS-OBS-202 SQS visibility heartbeat observation cleanup failed: " +
-                "listenerId=${endpoint.id}, target=$target, stage=acknowledgement, " +
-                "action=change_visibility, reason=telemetry_cleanup",
+                    "listenerId=${endpoint.id}, target=$target, stage=acknowledgement, " +
+                    "action=change_visibility, reason=telemetry_cleanup",
         )
     }
 
     private fun logObservationFailure(target: String, stage: String, reason: String) {
         log.warn(
             "BT4K-SQS-OBS-202 SQS observation failed: " +
-                "listenerId=${endpoint.id}, target=$target, stage=$stage, reason=$reason",
+                    "listenerId=${endpoint.id}, target=$target, stage=$stage, reason=$reason",
         )
     }
 
@@ -1078,7 +1083,7 @@ class SqsMessageListenerContainer internal constructor(
                 } else {
                     log.warn(
                         "SQS batch changeVisibility failed: listenerId=${endpoint.id}, queueUrl=$queueUrl, " +
-                            "batchSize=${pending.size}",
+                                "batchSize=${pending.size}",
                         e,
                     )
                 }
@@ -1097,7 +1102,7 @@ class SqsMessageListenerContainer internal constructor(
         } else {
             log.warn(
                 "SQS message handling failed: " +
-                    "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
+                        "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
                 error,
             )
         }
@@ -1124,7 +1129,7 @@ class SqsMessageListenerContainer internal constructor(
                 } else {
                     log.warn(
                         "SQS changeVisibility failed: " +
-                            "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
+                                "listenerId=${endpoint.id}, queueUrl=$queueUrl, messageId=${message.messageId}",
                         ve,
                     )
                 }
@@ -1198,7 +1203,7 @@ class SqsMessageListenerContainer internal constructor(
     }
 
     private fun failGeneration(current: ListenerGeneration) {
-        synchronized(lifecycleLock) {
+        lifecycleLock.withLock {
             if (generation.get() !== current) {
                 return
             }
@@ -1212,7 +1217,7 @@ class SqsMessageListenerContainer internal constructor(
 
 @Suppress("TooGenericExceptionCaught")
 internal suspend fun runSqsNonCancellableFinalization(finalize: suspend () -> Unit) {
-    val parentJob = coroutineContext[Job]
+    val parentJob = currentCoroutineContext()[Job]
     try {
         withContext(NonCancellable) {
             finalize()
@@ -1240,7 +1245,7 @@ private class HeartbeatAwareSqsAcknowledgement(
     private val delegate: DefaultSqsAcknowledgement,
     private val onObservationCleanupFailure: (Throwable) -> Unit,
     private val onObservationSetupFailure: (Throwable) -> Unit,
-) : SqsAcknowledgement {
+): SqsAcknowledgement {
 
     override val completed: Boolean
         get() = delegate.completed
@@ -1297,5 +1302,5 @@ private fun SqsProperties.Retry.nextDelay(failedAttempt: Int): Long {
         val delta = capped * jitterRatio
         ThreadLocalRandom.current().nextDouble(capped - delta, capped + delta)
     }
-    return Duration.ofMillis(jittered.toLong().coerceAtLeast(0L)).toMillis()
+    return jittered.toLong().coerceAtLeast(0L).millis().toMillis()
 }

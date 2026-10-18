@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.cloudwatch.model.Dimension
 import software.amazon.awssdk.services.cloudwatch.model.MetricDatum
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse
 import software.amazon.awssdk.services.cloudwatch.model.StandardUnit
-import java.util.Locale
+import java.util.*
 
 private const val CLOUDWATCH_MAX_DIMENSIONS = 30
 
@@ -55,6 +55,7 @@ class CloudWatchMeterPublishingTemplate(
             .filter(predicate)
             .flatMap { it.toMetricData().asSequence() }
             .toList()
+
         if (metricData.isEmpty()) {
             return emptyList()
         }
@@ -72,7 +73,9 @@ class CloudWatchMeterPublishingTemplate(
 
         return measure()
             .filter { it.value.isFinite() }
-            .map { measurement -> measurement.toMetricDatum(id.name, dimensions) }
+            .map { measurement ->
+                measurement.toMetricDatum(id.name, dimensions)
+            }
     }
 
     private fun Meter.toCloudWatchDimensions(): List<Dimension> =

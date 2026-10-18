@@ -1,8 +1,5 @@
 package io.bluetape4k.aws.spring.sns
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.AwsClientCustomizer
-import io.bluetape4k.aws.spring.connection.SnsConnectionDetails
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
@@ -11,19 +8,27 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.aws.spring.connection.SnsConnectionDetails
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.SnsAsyncClientBuilder
-import software.amazon.awssdk.regions.Region
 import java.net.URI
 
-class SnsAutoConfigurationTest {
+class SnsAutoConfigurationTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -37,12 +42,12 @@ class SnsAutoConfigurationTest {
     @Test
     fun `register SNS client and operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 1
-            context.getBeansOfType(SnsProperties::class.java) shouldHaveSize 1
-            context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
-            context.getBeansOfType(SnsCoroutinesTemplate::class.java) shouldHaveSize 1
-            context.getBeansOfType(SnsTopicArnCache::class.java) shouldHaveSize 1
-            context.getBeansOfType(SnsTopicArnResolver::class.java) shouldHaveSize 1
+            context.getBeansOfType<SnsAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<SnsProperties>() shouldHaveSize 1
+            context.getBeansOfType<SnsOperations>() shouldHaveSize 1
+            context.getBeansOfType<SnsCoroutinesTemplate>() shouldHaveSize 1
+            context.getBeansOfType<SnsTopicArnCache>() shouldHaveSize 1
+            context.getBeansOfType<SnsTopicArnResolver>() shouldHaveSize 1
         }
     }
 
@@ -57,14 +62,13 @@ class SnsAutoConfigurationTest {
                 "bluetape4k.aws.sns.topic-arn-cache.ttl=10m",
             )
             .run { context ->
-                val properties = context.getBean(SnsProperties::class.java)
+                val properties = context.getBean<SnsProperties>()
                 properties.accountId shouldBeEqualTo "123456789012"
                 properties.allowCrossAccountTopicArn shouldBeEqualTo true
                 properties.topicArnCache.enabled shouldBeEqualTo false
                 properties.topicArnCache.maxSize shouldBeEqualTo 8
                 properties.topicArnCache.ttl.toMinutes() shouldBeEqualTo 10
-                context.getBean(SnsTopicArnCache::class.java)
-                    .shouldBeInstanceOf<NoopSnsTopicArnCache>()
+                context.getBean<SnsTopicArnCache>().shouldBeInstanceOf<NoopSnsTopicArnCache>()
             }
     }
 
@@ -77,8 +81,8 @@ class SnsAutoConfigurationTest {
             .withBean(SnsTopicArnCache::class.java, { customCache })
             .withBean(SnsTopicArnResolver::class.java, { customResolver })
             .run { context ->
-                context.getBean(SnsTopicArnCache::class.java) shouldBeSameInstanceAs customCache
-                context.getBean(SnsTopicArnResolver::class.java) shouldBeSameInstanceAs customResolver
+                context.getBean<SnsTopicArnCache>() shouldBeSameInstanceAs customCache
+                context.getBean<SnsTopicArnResolver>() shouldBeSameInstanceAs customResolver
             }
     }
 
@@ -94,7 +98,7 @@ class SnsAutoConfigurationTest {
                 TestSnsDetails(URI.create("http://details:4566"), "eu-west-1", "access", "secret")
             })
             .run { context ->
-                val resolver = context.getBean(SnsTopicArnResolver::class.java)
+                val resolver = context.getBean<SnsTopicArnResolver>()
                 resolver.scope.endpointOverride shouldBeEqualTo URI.create("http://details:4566")
                 resolver.scope.region shouldBeEqualTo "eu-west-1"
                 resolver.scope.accountId shouldBeEqualTo "123456789012"
@@ -106,8 +110,8 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sns.enabled=false")
             .run { context ->
-                context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsAsyncClient>() shouldHaveSize 0
+                context.getBeansOfType<SnsOperations>() shouldHaveSize 0
             }
     }
 
@@ -121,9 +125,9 @@ class SnsAutoConfigurationTest {
             contextRunner
                 .withBean(SnsAsyncClient::class.java, { customClient })
                 .run { context ->
-                    context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 1
-                    context.getBean(SnsAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                    context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
+                    context.getBeansOfType<SnsAsyncClient>() shouldHaveSize 1
+                    context.getBean<SnsAsyncClient>() shouldBeSameInstanceAs customClient
+                    context.getBeansOfType<SnsOperations>() shouldHaveSize 1
                 }
         } finally {
             customClient.close()
@@ -134,7 +138,7 @@ class SnsAutoConfigurationTest {
     fun `uninspectable custom client fails resolver creation fast`() {
         val customClient = mockk<SnsAsyncClient>(relaxed = true)
         every { customClient.serviceClientConfiguration() } throws
-            IllegalStateException("configuration unavailable")
+                IllegalStateException("configuration unavailable")
 
         contextRunner
             .withBean(SnsAsyncClient::class.java, { customClient })
@@ -152,7 +156,7 @@ class SnsAutoConfigurationTest {
     fun `custom resolver permits uninspectable custom client`() {
         val customClient = mockk<SnsAsyncClient>(relaxed = true)
         every { customClient.serviceClientConfiguration() } throws
-            IllegalStateException("configuration unavailable")
+                IllegalStateException("configuration unavailable")
         val customResolver = mockk<SnsTopicArnResolver>(relaxed = true)
 
         contextRunner
@@ -160,7 +164,7 @@ class SnsAutoConfigurationTest {
             .withBean(SnsTopicArnResolver::class.java, { customResolver })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(SnsTopicArnResolver::class.java) shouldBeSameInstanceAs customResolver
+                context.getBean<SnsTopicArnResolver>() shouldBeSameInstanceAs customResolver
             }
     }
 
@@ -169,9 +173,9 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withBean(SnsOperations::class.java, { NoopSnsOperations })
             .run { context ->
-                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 1
-                context.getBeansOfType(SnsCoroutinesTemplate::class.java) shouldHaveSize 0
-                context.getBean(SnsOperations::class.java) shouldBeSameInstanceAs NoopSnsOperations
+                context.getBeansOfType<SnsOperations>() shouldHaveSize 1
+                context.getBeansOfType<SnsCoroutinesTemplate>() shouldHaveSize 0
+                context.getBean<SnsOperations>() shouldBeSameInstanceAs NoopSnsOperations
             }
     }
 
@@ -195,8 +199,8 @@ class SnsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.sns.endpoint-override=http://localhost:4566")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(SnsProperties::class.java).endpointOverride.toString() shouldBeEqualTo
-                    "http://localhost:4566"
+                context.getBean<SnsProperties>().endpointOverride.toString() shouldBeEqualTo
+                        "http://localhost:4566"
             }
     }
 
@@ -205,8 +209,8 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.sns"))
             .run { context ->
-                context.getBeansOfType(SnsAsyncClient::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsOperations::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsAsyncClient>() shouldHaveSize 0
+                context.getBeansOfType<SnsOperations>() shouldHaveSize 0
             }
     }
 
@@ -214,14 +218,14 @@ class SnsAutoConfigurationTest {
     fun `FIFO throughput scope property binds`() {
         contextRunner
             .withPropertyValues(
-                "bluetape4k.aws.sns.topics[orders.fifo].fifo=true",
-                "bluetape4k.aws.sns.topics[orders.fifo].fifo-throughput-scope=message-group",
+                "${SnsProperties.PREFIX}.topics[orders.fifo].fifo=true",
+                "${SnsProperties.PREFIX}.topics[orders.fifo].fifo-throughput-scope=message-group",
             )
             .run { context ->
-                val properties = context.getBean(SnsProperties::class.java)
+                val properties = context.getBean<SnsProperties>()
 
                 properties.topics["orders.fifo"]?.fifoThroughputScope shouldBeEqualTo
-                    SnsFifoThroughputScope.MESSAGE_GROUP
+                        SnsFifoThroughputScope.MESSAGE_GROUP
             }
     }
 
@@ -230,28 +234,28 @@ class SnsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sns.topics.orders.fifo=true")
             .run { context ->
-                val operations = context.getBean(SnsOperations::class.java)
+                val operations = context.getBean<SnsOperations>()
 
                 val error = assertFailsWith<IllegalArgumentException> {
                     runSuspendIO {
                         operations.createConfiguredTopic("orders")
                     }
                 }
-                error.message.orEmpty() shouldContain "FIFO topic name"
+                error.message shouldContain "FIFO topic name"
             }
     }
 
     @Test
     fun `missing configured topic fails fast`() {
         contextRunner.run { context ->
-            val operations = context.getBean(SnsOperations::class.java)
+            val operations = context.getBean<SnsOperations>()
 
             val error = assertFailsWith<IllegalArgumentException> {
                 runSuspendIO {
                     operations.createConfiguredTopic("missing")
                 }
             }
-            error.message.orEmpty() shouldContain "not configured"
+            error.message shouldContain "not configured"
         }
     }
 
@@ -270,7 +274,7 @@ class SnsAutoConfigurationTest {
                 "bluetape4k.aws.sns.account-id=123456789012",
             )
             .run { context ->
-                val resolver = context.getBean(SnsTopicArnResolver::class.java)
+                val resolver = context.getBean<SnsTopicArnResolver>()
                 resolver.scope.endpointOverride shouldBeEqualTo URI.create("http://global:4566")
                 resolver.scope.region shouldBeEqualTo "ap-northeast-2"
             }
@@ -288,7 +292,7 @@ class SnsAutoConfigurationTest {
             .withSystemProperties("aws.region=us-east-1")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(SnsTopicArnResolver::class.java).scope.region shouldBeEqualTo "us-east-1"
+                context.getBean<SnsTopicArnResolver>().scope.region shouldBeEqualTo "us-east-1"
             }
     }
 

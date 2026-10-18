@@ -1,18 +1,26 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.assertions.assertFails
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
+import io.bluetape4k.logging.KLogging
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.Message
 import java.util.concurrent.atomic.AtomicInteger
 
 class AwsModulithSqsEventListenerTest {
+
+    private companion object: KLogging() {
+        const val HOSTILE = "secret:event-id:arn:payload"
+    }
 
     @Test
     fun `acknowledges only a successful consumer outcome`() = runTest {
@@ -32,9 +40,9 @@ class AwsModulithSqsEventListenerTest {
         val failure = AwsModulithEventInProgressException()
         val listener = AwsModulithSqsEventListener(consumeEvent = { throw failure })
 
-        val actual = kotlin.runCatching {
+        val actual = assertFails {
             listener.onMessage(message(), acknowledgement(acknowledgements))
-        }.exceptionOrNull()
+        }
 
         actual shouldBeSameInstanceAs failure
         acknowledgements.get() shouldBeEqualTo 0
@@ -52,39 +60,44 @@ class AwsModulithSqsEventListenerTest {
             metrics = AwsModulithMetrics(registry),
         )
         val raw = acknowledgement(failure = IllegalStateException(HOSTILE))
-        val sanitized = kotlin.runCatching { listener.onMessage(message(), raw) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithAcknowledgementException>()
-        sanitized.cause shouldBeEqualTo null
-        sanitized.message.orEmpty().contains(HOSTILE) shouldBeEqualTo false
+
+        val sanitized = assertFailsWith<AwsModulithAcknowledgementException> {
+            listener.onMessage(message(), raw)
+        }
+
+        sanitized.cause.shouldBeNull()
+        sanitized.message shouldNotContain HOSTILE
         completed.get() shouldBeEqualTo 1
+
         registry.get("bluetape4k.aws.modulith.events")
             .tag("phase", "ack")
             .tag("outcome", "failure")
             .counter()
             .count() shouldBeEqualTo 1.0
 
-        kotlin.runCatching {
+        assertFailsWith<AwsModulithAcknowledgementException> {
             listener.onMessage(message(), acknowledgement(failure = AwsModulithSourceException()))
-        }.exceptionOrNull().shouldBeInstanceOf<AwsModulithAcknowledgementException>()
+        }
 
         val duplicateListener = AwsModulithSqsEventListener(
             consumeEvent = { AwsModulithConsumeOutcome.COMPLETED_DUPLICATE }
         )
-        kotlin.runCatching {
+
+        assertFailsWith<AwsModulithAcknowledgementException> {
             duplicateListener.onMessage(message(), acknowledgement(failure = IllegalStateException(HOSTILE)))
-        }.exceptionOrNull().shouldBeInstanceOf<AwsModulithAcknowledgementException>()
+        }
 
         val cancellation = CancellationException(HOSTILE)
-        val cancelled = kotlin.runCatching {
+        val cancelled = assertFails {
             duplicateListener.onMessage(message(), acknowledgement(failure = cancellation))
-        }.exceptionOrNull()
+        }
         cancelled shouldBeSameInstanceAs cancellation
     }
 
     private fun acknowledgement(
         calls: AtomicInteger = AtomicInteger(),
         failure: Throwable? = null,
-    ): SqsAcknowledgement = object : SqsAcknowledgement {
+    ): SqsAcknowledgement = object: SqsAcknowledgement {
         override val completed: Boolean = false
 
         override suspend fun acknowledge() {
@@ -99,10 +112,10 @@ class AwsModulithSqsEventListenerTest {
 
     private fun message(): SqsReceivedMessage = SqsReceivedMessage(
         queueUrl = "http://localhost/queue/events",
-        message = Message.builder().messageId("message-1").receiptHandle("receipt").body("{}").build(),
+        message = Message.builder()
+            .messageId("message-1")
+            .receiptHandle("receipt")
+            .body("{}")
+            .build(),
     )
-
-    private companion object {
-        const val HOSTILE = "secret:event-id:arn:payload"
-    }
 }

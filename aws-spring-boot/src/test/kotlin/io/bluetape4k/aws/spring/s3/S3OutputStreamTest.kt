@@ -1,14 +1,24 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.aws.s3.transfer.uploadFileRequestOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.core.ResponseBytes
+import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.transfer.s3.model.CompletedDownload
 import software.amazon.awssdk.transfer.s3.model.CompletedFileDownload
@@ -19,15 +29,18 @@ import software.amazon.awssdk.transfer.s3.model.DownloadRequest
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
 import software.amazon.awssdk.transfer.s3.model.UploadRequest
 import java.io.OutputStream
+import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.assertFailsWith
 
 class S3OutputStreamTest {
 
+    companion object: KLogging()
+
     @Test
     fun `small payload is uploaded from memory on close`() {
-    val operations = RecordingTransferOperations()
+        val operations = RecordingTransferOperations()
         val output = S3OutputStream(
             operations = operations,
             bucket = "bucket",
@@ -37,12 +50,12 @@ class S3OutputStreamTest {
             metadata = mapOf("source" to "test"),
         )
 
-        output.write("hello".encodeToByteArray())
+        output.write("hello".toUtf8Bytes())
         operations.uploadedBytes.size shouldBeEqualTo 0
 
         output.close()
 
-        operations.uploadedBytes.single().decodeToString() shouldBeEqualTo "hello"
+        operations.uploadedBytes.single().toUtf8String() shouldBeEqualTo "hello"
         operations.uploadedContentTypes.single() shouldBeEqualTo "text/plain"
         operations.uploadedMetadata.single() shouldBeEqualTo mapOf("source" to "test")
     }
@@ -59,13 +72,13 @@ class S3OutputStreamTest {
                 thresholdBytes = 4,
                 temporaryDirectory = tempDirectory,
             )
-            output.write("large-payload".encodeToByteArray())
+            output.write("large-payload".toUtf8Bytes())
             output.flush()
-            operations.uploadedFiles.size shouldBeEqualTo 0
+            operations.uploadedFiles.shouldBeEmpty()
 
             output.close()
 
-            operations.uploadedFileContents.single().decodeToString() shouldBeEqualTo "large-payload"
+            operations.uploadedFileContents.single().toUtf8String() shouldBeEqualTo "large-payload"
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
         } finally {
             Files.deleteIfExists(tempDirectory)
@@ -86,7 +99,9 @@ class S3OutputStreamTest {
             )
             output.write(byteArrayOf(1, 2))
 
-            assertFailsWith<IllegalStateException> { output.close() }
+            assertFailsWith<IllegalStateException> {
+                output.close()
+            }
             output.close()
 
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
@@ -102,16 +117,16 @@ class S3OutputStreamTest {
         val output = S3OutputStream(operations, "bucket", "key", thresholdBytes = 8)
 
         runBlocking {
-            output.write("ok".encodeToByteArray())
+            output.write("ok".toUtf8Bytes())
             output.complete()
         }
 
-        operations.uploadedBytes.single().decodeToString() shouldBeEqualTo "ok"
+        operations.uploadedBytes.single().toUtf8String() shouldBeEqualTo "ok"
         operations.ioCompletionObserved.shouldBeTrue()
     }
 
     @Test
-    fun `discard drops buffered payload without uploading`() = runBlocking {
+    fun `discard drops buffered payload without uploading`() = runTest {
         val tempDirectory = Files.createTempDirectory("bluetape-s3-output-discard-")
         val operations = RecordingTransferOperations()
         try {
@@ -122,7 +137,7 @@ class S3OutputStreamTest {
                 thresholdBytes = 1,
                 temporaryDirectory = tempDirectory,
             )
-            output.write("discard me".encodeToByteArray())
+            output.write("discard me".toUtf8Bytes())
 
             output.discard()
             output.discard()
@@ -130,8 +145,10 @@ class S3OutputStreamTest {
             operations.uploadedBytes.size shouldBeEqualTo 0
             operations.uploadedFiles.size shouldBeEqualTo 0
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
-            assertFailsWith<IllegalStateException> { output.write(1) }
-            Unit
+
+            assertFailsWith<IllegalStateException> {
+                output.write(1)
+            }
         } finally {
             Files.deleteIfExists(tempDirectory)
         }
@@ -148,16 +165,18 @@ class S3OutputStreamTest {
                 thresholdBytes = 1,
                 temporaryDirectory = tempDirectory,
             )
-            output.write("spill me".encodeToByteArray())
+            output.write("spill me".toUtf8Bytes())
 
             val fileOutputField = S3OutputStream::class.java.getDeclaredField("fileOutput").apply {
                 isAccessible = true
             }
-            val originalFileOutput = fileOutputField.get(output) as OutputStream
+            val originalFileOutput = fileOutputField.get(output).shouldBeInstanceOf<OutputStream>()
             originalFileOutput.close()
             fileOutputField.set(output, FailingCloseOutputStream())
 
-            assertFailsWith<IllegalStateException> { output.close() }
+            assertFailsWith<IllegalStateException> {
+                output.close()
+            }
 
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
         } finally {
@@ -178,20 +197,24 @@ class S3OutputStreamTest {
                 thresholdBytes = 1,
                 temporaryDirectory = tempDirectory,
             )
-            output.write("spill me".encodeToByteArray())
+            output.write("spill me".toUtf8Bytes())
             val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
             var deleteAttempts = 0
+
             output.temporaryFileDelete = { path ->
                 deleteAttempts++
                 throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
             }
 
-            val thrown = assertFailsWith<NonCopyableUploadException> { output.close() }
+            val thrown = assertFailsWith<NonCopyableUploadException> {
+                output.close()
+            }
 
             thrown.shouldBeSameInstanceAs(primary)
             deleteAttempts shouldBeEqualTo 1
             Files.exists(temporary).shouldBeTrue()
-            val cleanup = thrown.suppressed.single() as S3TransferCleanupException
+
+            val cleanup = thrown.suppressed.single().shouldBeInstanceOf<S3TransferCleanupException>()
             cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.TEMPORARY_FILE_DELETE
             cleanup.message?.contains(temporary.toString()).shouldBeFalse()
             cleanup.message?.contains("secret-delete-marker").shouldBeFalse()
@@ -223,7 +246,7 @@ class S3OutputStreamTest {
             }
 
             val thrown = assertFailsWith<NonCopyableUploadException> {
-                output.write("spill me".encodeToByteArray())
+                output.write("spill me".toUtf8Bytes())
             }
 
             thrown.shouldBeSameInstanceAs(primary)
@@ -256,19 +279,21 @@ class S3OutputStreamTest {
                 thresholdBytes = 1,
                 temporaryDirectory = tempDirectory,
             )
-            output.write("spill me".encodeToByteArray())
+            output.write("spill me".toUtf8Bytes())
             val temporary = Files.list(tempDirectory).use { it.findFirst().orElseThrow() }
             var deleteAttempts = 0
             output.temporaryFileDelete = { path ->
                 deleteAttempts++
                 if (deleteAttempts == 1) {
-                    throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+                    throw FileSystemException(path.toString(), null, "secret-delete-marker")
                 }
                 Files.deleteIfExists(path)
             }
 
-            val cleanup = assertFailsWith<S3TransferCleanupException> { output.close() }
-
+            val cleanup = assertFailsWith<S3TransferCleanupException> {
+                output.close()
+            }
+            log.debug { "cleanup=$cleanup" }
             cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.TEMPORARY_FILE_DELETE
             cleanup.message?.contains(temporary.toString()).shouldBeFalse()
             Files.exists(temporary).shouldBeTrue()
@@ -288,9 +313,9 @@ class S3OutputStreamTest {
 
 private class NonCopyableUploadException(
     @Suppress("unused") private val identityGuard: Any,
-) : RuntimeException("upload failed")
+): RuntimeException("upload failed")
 
-private class FailingCloseOutputStream : OutputStream() {
+private class FailingCloseOutputStream: OutputStream() {
 
     override fun write(b: Int) = Unit
 
@@ -301,7 +326,7 @@ private class FailingCloseOutputStream : OutputStream() {
 
 private class RecordingTransferOperations(
     private val failure: Throwable? = null,
-) : S3TransferOperations {
+): S3TransferOperations {
     val uploadedBytes = mutableListOf<ByteArray>()
     val uploadedFiles = mutableListOf<Path>()
     val uploadedFileContents = mutableListOf<ByteArray>()
@@ -322,8 +347,8 @@ private class RecordingTransferOperations(
         uploadedBytes += bytes.copyOf()
         uploadedContentTypes += request.putObjectRequest().contentType()
         uploadedMetadata += request.putObjectRequest().metadata().orEmpty()
-        ioCompletionObserved = Thread.currentThread().name.contains("DefaultDispatcher") ||
-            Thread.currentThread().name.contains("IO")
+        ioCompletionObserved =
+            Thread.currentThread().name.contains("DefaultDispatcher") || Thread.currentThread().name.contains("IO")
         failure?.let { throw it }
         return mockk(relaxed = true)
     }
@@ -334,15 +359,14 @@ private class RecordingTransferOperations(
         source: Path,
         configure: UploadFileRequest.Builder.() -> Unit,
     ): CompletedFileUpload {
-        val request = UploadFileRequest.builder()
-            .source(source)
-            .apply(configure)
-            .build()
+        val request = uploadFileRequestOf(bucket, key, source, configure)
+
         uploadedFiles.add(source)
-        uploadedFileContents.add(Files.readAllBytes(source))
+        uploadedFileContents.add(withContext(Dispatchers.IO) { Files.readAllBytes(source) })
         uploadedContentTypes.add(request.putObjectRequest().contentType())
         uploadedMetadata.add(request.putObjectRequest().metadata().orEmpty())
         failure?.let { throw it }
+
         return mockk(relaxed = true)
     }
 

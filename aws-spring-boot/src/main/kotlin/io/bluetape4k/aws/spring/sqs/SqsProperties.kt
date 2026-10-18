@@ -19,7 +19,7 @@ data class SqsProperties(
     val endpointOverride: URI? = null,
     val listener: Listener = Listener(),
     val queues: Map<String, Queue> = emptyMap(),
-) : Serializable {
+): Serializable {
     data class Listener(
         val enabled: Boolean = true,
         val autoStartup: Boolean = true,
@@ -42,7 +42,7 @@ data class SqsProperties(
         val queueAttributeCacheTtl: Duration = Duration.ofMinutes(1),
         val queueNotFoundStrategy: SqsQueueNotFoundStrategy = SqsQueueNotFoundStrategy.FAIL_FAST,
         val retry: Retry = Retry(),
-    ) : Serializable {
+    ): Serializable {
         /**
          * 기존 0.1.x consumer가 호출하던 constructor descriptor를 유지합니다.
          * 새 listener flow 정책은 이 legacy 경로에서 기존 기본값으로 채웁니다.
@@ -61,7 +61,7 @@ data class SqsProperties(
             concurrency: Int = 1,
             stopTimeoutMillis: Long = 25_000,
             retry: Retry = Retry(),
-        ) : this(
+        ): this(
             enabled = enabled,
             autoStartup = autoStartup,
             phase = phase,
@@ -111,7 +111,7 @@ data class SqsProperties(
         val maxBackoff: Duration? = null,
         val multiplier: Double = 2.0,
         val jitterRatio: Double = 0.0,
-    ) : Serializable {
+    ): Serializable {
         init {
             maxAttempts.requireGe(1, "maxAttempts")
             initialBackoff.requireGe(Duration.ZERO, "initialBackoff")
@@ -128,7 +128,7 @@ data class SqsProperties(
     data class Queue(
         val url: String? = null,
         val redrivePolicy: RedrivePolicy? = null,
-    ) : Serializable {
+    ): Serializable {
         companion object {
             private const val serialVersionUID: Long = -493034477206069305L
         }
@@ -137,7 +137,7 @@ data class SqsProperties(
     data class RedrivePolicy(
         val deadLetterTargetArn: String,
         val maxReceiveCount: Int,
-    ) : Serializable {
+    ): Serializable {
         init {
             deadLetterTargetArn.requireNotBlank("deadLetterTargetArn")
             maxReceiveCount.requireGe(1, "maxReceiveCount")
@@ -166,7 +166,7 @@ internal fun requireVisibilityHeartbeat(
     }
     require(intervalSeconds != null && heartbeatSeconds != null) {
         "messageVisibilityHeartbeatIntervalSeconds and messageVisibilityHeartbeatSeconds " +
-            "must be configured together."
+                "must be configured together."
     }
     intervalSeconds.requireInRange(1, 43_200, "messageVisibilityHeartbeatIntervalSeconds")
     heartbeatSeconds.requireInRange(1, 43_200, "messageVisibilityHeartbeatSeconds")

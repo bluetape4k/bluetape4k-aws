@@ -7,7 +7,7 @@ package io.bluetape4k.aws.spring.sns
  * 호출자는 각 chunk를 한 번만 전송하고 typed 결과를 반환해야 하며, template이 포트를 닫을 때까지
  * 호출 범위를 구조화된 coroutine scope 안에 유지해야 합니다.
  */
-public interface SnsBatchExecutionPort {
+interface SnsBatchExecutionPort {
 
     /**
      * 최대 10개의 이미 검증된 항목을 SNS에 전송합니다.
@@ -15,7 +15,7 @@ public interface SnsBatchExecutionPort {
      * 구현체는 입력 list와 반환 결과를 변경하지 않아야 하며, 취소 예외를 다른 예외로 바꾸지 않아야
      * 합니다. 이 메서드가 반환된 뒤에는 strategy가 같은 항목을 재호출해서는 안 됩니다.
      */
-    public suspend fun publishChunk(entries: List<SnsPublishBatchEntry>): SnsPublishBatchResult
+    suspend fun publishChunk(entries: List<SnsPublishBatchEntry>): SnsPublishBatchResult
 }
 
 /**
@@ -26,7 +26,7 @@ public interface SnsBatchExecutionPort {
  * 호출 사이에 공유되지 않습니다. strategy가 전송 이후 실패하면 원격 partial publish 상태가
  * 불확실할 수 있으므로 호출자는 불확실한 전체 요청을 자동 재생하지 않아야 합니다.
  */
-public fun interface SnsBatchExecutionStrategy {
+fun interface SnsBatchExecutionStrategy {
 
     /**
      * typed SNS batch 요청을 실행합니다.
@@ -34,7 +34,7 @@ public fun interface SnsBatchExecutionStrategy {
      * strategy는 raw [software.amazon.awssdk.services.sns.SnsAsyncClient] 대신 guarded port만
      * 사용해야 하며, [SnsBatchExecutionPort.publishChunk] 반환 결과를 요청 ID 집합과 일치시켜야 합니다.
      */
-    public suspend fun execute(
+    suspend fun execute(
         request: SnsPublishBatchRequest,
         options: SnsBatchExecutionOptions,
         port: SnsBatchExecutionPort,
@@ -42,7 +42,7 @@ public fun interface SnsBatchExecutionStrategy {
 }
 
 /** strategy와 library-owned port 사이의 계약 위반 유형입니다. */
-public enum class SnsBatchExecutionContractError {
+enum class SnsBatchExecutionContractError {
     /** chunk가 1..10 범위를 벗어났습니다. */
     INVALID_CHUNK,
 
@@ -71,13 +71,13 @@ public enum class SnsBatchExecutionContractError {
  * 원본 cause, payload, ARN, credential은 보관하거나 문자열에 포함하지 않습니다. 취소·transport·
  * protocol 예외는 별도의 기존 타입 의미를 유지합니다.
  */
-public class SnsBatchExecutionContractException(
+class SnsBatchExecutionContractException(
     /** 계약 위반의 안정적인 분류입니다. */
-    public val error: SnsBatchExecutionContractError,
-) : IllegalStateException("SNS batch execution contract failed: error=$error")
+    val error: SnsBatchExecutionContractError,
+): IllegalStateException("SNS batch execution contract failed: error=$error")
 
 /** 기본 strategy: guarded port를 bounded coordinator에 연결합니다. */
-internal object DefaultSnsBatchExecutionStrategy : SnsBatchExecutionStrategy {
+internal object DefaultSnsBatchExecutionStrategy: SnsBatchExecutionStrategy {
 
     override suspend fun execute(
         request: SnsPublishBatchRequest,

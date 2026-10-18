@@ -4,6 +4,7 @@ import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
@@ -22,7 +23,6 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClientBuilder
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * CloudWatch 메트릭 게시용 Spring Boot 4 자동 구성입니다.
@@ -35,7 +35,12 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
         "software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient",
     ]
 )
-@ConditionalOnProperty(prefix = CLOUDWATCH_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    prefix = CLOUDWATCH_PROPERTIES_PREFIX,
+    name = ["enabled"],
+    havingValue = "true",
+    matchIfMissing = true
+)
 @EnableConfigurationProperties(CloudWatchProperties::class)
 class CloudWatchAutoConfiguration {
 
@@ -52,7 +57,10 @@ class CloudWatchAutoConfiguration {
         CloudWatchAsyncClient.builder()
             .credentialsProvider(resolveCredentialsProvider(credentialsProvider))
             .applyAwsDefaults(
-                resolveAwsProperties(awsProperties).resolveClientDefaults(properties.region, properties.endpointOverride)
+                resolveAwsProperties(awsProperties).resolveClientDefaults(
+                    properties.region,
+                    properties.endpointOverride
+                )
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }

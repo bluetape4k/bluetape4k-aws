@@ -3,60 +3,57 @@ package io.bluetape4k.aws.spring.parameterstore
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.junit5.system.SystemProperties
+import io.bluetape4k.junit5.system.SystemProperty
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.SpringApplication
 import org.springframework.core.env.MapPropertySource
 import org.springframework.core.env.StandardEnvironment
+import org.testcontainers.utility.Base58
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.ParameterType
-import java.time.Duration
-import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@SystemProperties(
+    value = [
+        SystemProperty("aws.accessKeyId", "test"),
+        SystemProperty("aws.secretAccessKey", "test"),
+    ]
+)
 class ParameterStoreEnvironmentPostProcessorAwsEmulatorTest {
 
-    companion object {
+    companion object: KLogging() {
         private val awsEmulator by lazy {
             AwsSpringBootTestEmulator.get("ssm")
         }
-        private var systemProperties: AutoCloseable? = null
-        private var previousAccessKeyId: String? = null
-        private var previousSecretAccessKey: String? = null
+    }
 
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            systemProperties = awsEmulator.registerSystemProperties()
-            previousAccessKeyId = System.getProperty("aws.accessKeyId")
-            previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
-            System.setProperty("aws.accessKeyId", "test")
-            System.setProperty("aws.secretAccessKey", "test")
-        }
+    private var systemProperties: AutoCloseable? = null
 
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            restoreSystemProperty("aws.accessKeyId", previousAccessKeyId)
-            restoreSystemProperty("aws.secretAccessKey", previousSecretAccessKey)
-            systemProperties?.close()
-        }
+    @BeforeAll
+    fun beforeAll() {
+        systemProperties = awsEmulator.registerSystemProperties()
+    }
 
-        private fun restoreSystemProperty(name: String, value: String?) {
-            if (value == null) {
-                System.clearProperty(name)
-            } else {
-                System.setProperty(name, value)
-            }
-        }
+    @AfterAll
+    fun afterAll() {
+        systemProperties?.close()
     }
 
     @Test
     fun `load recursive parameter path into Environment properties`() {
-        val rootPath = "/config/${UUID.randomUUID()}"
+        val rootPath = "/config/${Base58.randomString(12).lowercase()}"
+
         ssmClient().use { client ->
             client.putParameter {
                 it.name("$rootPath/db/username")
@@ -96,7 +93,8 @@ class ParameterStoreEnvironmentPostProcessorAwsEmulatorTest {
 
     @Test
     fun `refresh configured parameter source after refresh interval`() {
-        val rootPath = "/config/${UUID.randomUUID()}"
+        val rootPath = "/config/${Base58.randomString(12).lowercase()}"
+
         ssmClient().use { client ->
             client.putParameter {
                 it.name("$rootPath/db/password")
@@ -126,7 +124,7 @@ class ParameterStoreEnvironmentPostProcessorAwsEmulatorTest {
             }
         }
 
-        await.atMost(Duration.ofSeconds(10)).untilAsserted {
+        await atMost 10.seconds untilAsserted {
             environment.getProperty("app.db.password") shouldBeEqualTo "refreshed"
         }
     }

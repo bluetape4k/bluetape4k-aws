@@ -7,7 +7,7 @@ import org.springframework.web.method.HandlerMethod
 internal class SnsHttpEndpointHandlerMethodValidator(
     private val support: SnsHttpMessageResolverSupport,
     private val handlerMethods: () -> Map<*, HandlerMethod>,
-) : SmartInitializingSingleton {
+): SmartInitializingSingleton {
 
     override fun afterSingletonsInstantiated() {
         handlerMethods().values.forEach { handlerMethod ->

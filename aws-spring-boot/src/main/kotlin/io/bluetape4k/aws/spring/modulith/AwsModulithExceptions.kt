@@ -47,10 +47,10 @@ enum class AwsModulithFailurePhase {
  * payload, event ID, header, ARN, URL, AWS 응답을 포함하지 않는 공통 실패 타입입니다.
  * retryability와 caller action은 diagnostic code에서만 파생됩니다.
  */
-sealed class AwsModulithEventException protected constructor(
+sealed class AwsModulithEventException(
     val code: AwsModulithDiagnosticCode,
     val phase: AwsModulithFailurePhase,
-) : RuntimeException("${code.value}:${phase.name}", null, true, true) {
+): RuntimeException("${code.value}:${phase.name}", null, true, true) {
     val retryable: Boolean
         get() = code.retryable
 
@@ -59,77 +59,77 @@ sealed class AwsModulithEventException protected constructor(
 }
 
 /** 설정이 현재 application에서 안전하게 시작될 수 없음을 나타냅니다. */
-class AwsModulithConfigurationException internal constructor() :
+class AwsModulithConfigurationException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.CONFIGURATION, AwsModulithFailurePhase.CONFIGURATION)
 
 /** 등록된 이벤트 class와 실제 payload가 일치하지 않음을 나타냅니다. */
-class AwsModulithEventRegistrationMismatchException internal constructor() :
+class AwsModulithEventRegistrationMismatchException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.ENVELOPE, AwsModulithFailurePhase.SERIALIZATION)
 
 /** outbound envelope를 만들 수 없음을 나타냅니다. */
-class AwsModulithOutboundEnvelopeException internal constructor() :
+class AwsModulithOutboundEnvelopeException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.ENVELOPE, AwsModulithFailurePhase.SERIALIZATION)
 
 /** producer admission 상한을 초과했음을 나타냅니다. */
-class AwsModulithProducerCapacityException internal constructor() :
+class AwsModulithProducerCapacityException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE, AwsModulithFailurePhase.LIFECYCLE)
 
 /** producer가 종료되어 publication을 받을 수 없음을 나타냅니다. */
-class AwsModulithProducerClosedException internal constructor() :
+class AwsModulithProducerClosedException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.PRODUCER_LIFECYCLE, AwsModulithFailurePhase.LIFECYCLE)
 
 /** logical target을 AWS destination으로 해석할 수 없음을 나타냅니다. */
-class AwsModulithTargetResolutionException internal constructor() :
+class AwsModulithTargetResolutionException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.AWS_PUBLISH, AwsModulithFailurePhase.RESOLUTION)
 
 /** AWS publish가 완료되지 않았음을 나타냅니다. */
-class AwsModulithPublishException internal constructor() :
+class AwsModulithPublishException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.AWS_PUBLISH, AwsModulithFailurePhase.PUBLISH)
 
 /** inbound source 또는 signature 검증에 실패했음을 나타냅니다. */
-class AwsModulithSourceException internal constructor() :
+class AwsModulithSourceException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.SOURCE, AwsModulithFailurePhase.SOURCE)
 
 /** inbound envelope decode가 실패했음을 나타냅니다. */
-class AwsModulithInboundEnvelopeException internal constructor() :
+class AwsModulithInboundEnvelopeException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.INBOUND, AwsModulithFailurePhase.DECODE)
 
 /** 등록되지 않은 event type입니다. */
-class AwsModulithUnknownEventTypeException internal constructor() :
+class AwsModulithUnknownEventTypeException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.INBOUND, AwsModulithFailurePhase.DECODE)
 
 /** 등록된 type에 해당 version이 없습니다. */
-class AwsModulithUnsupportedEventVersionException internal constructor() :
+class AwsModulithUnsupportedEventVersionException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.INBOUND, AwsModulithFailurePhase.DECODE)
 
 /** inbound event가 다시 외부화되는 loop를 나타냅니다. */
-class AwsModulithInboundLoopRiskException internal constructor() :
+class AwsModulithInboundLoopRiskException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.INBOUND, AwsModulithFailurePhase.DECODE)
 
 /** idempotency claim capacity가 부족합니다. */
-class AwsModulithClaimCapacityException internal constructor() :
+class AwsModulithClaimCapacityException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.CLAIM, AwsModulithFailurePhase.CLAIM)
 
 /** 같은 event가 다른 handler에 의해 처리 중입니다. */
-class AwsModulithEventInProgressException internal constructor() :
+class AwsModulithEventInProgressException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.CLAIM, AwsModulithFailurePhase.CLAIM)
 
 /** fencing token 또는 lease가 오래되었습니다. */
-class AwsModulithStaleClaimException internal constructor() :
+class AwsModulithStaleClaimException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.CLAIM, AwsModulithFailurePhase.CLAIM)
 
 /** claim 상태 변경에 실패했습니다. */
-class AwsModulithClaimMutationException internal constructor() :
+class AwsModulithClaimMutationException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.CLAIM, AwsModulithFailurePhase.CLAIM)
 
 /** local dispatch가 실패했습니다. */
-class AwsModulithDispatchException internal constructor() :
+class AwsModulithDispatchException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.DISPATCH_ACK, AwsModulithFailurePhase.DISPATCH)
 
 /** SQS acknowledgement가 실패했습니다. */
-class AwsModulithAcknowledgementException internal constructor() :
+class AwsModulithAcknowledgementException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.DISPATCH_ACK, AwsModulithFailurePhase.ACK)
 
 /** cleanup 실패를 bounded suppressed exception으로 보관하는 내부 타입입니다. */
-internal class AwsModulithCleanupException internal constructor() :
+internal class AwsModulithCleanupException internal constructor():
     AwsModulithEventException(AwsModulithDiagnosticCode.DISPATCH_ACK, AwsModulithFailurePhase.CLEANUP)

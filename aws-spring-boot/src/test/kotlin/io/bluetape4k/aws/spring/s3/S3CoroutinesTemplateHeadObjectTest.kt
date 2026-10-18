@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.concurrent.completableFutureOf
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -15,21 +16,23 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 class S3CoroutinesTemplateHeadObjectTest {
 
-    private val asyncClient = mockk<S3AsyncClient>()
+    private val asyncClient = mockk<S3AsyncClient>(relaxed = true)
+    private val s3Client = mockk<S3Client>(relaxed = true)
+    private val s3Presigner = mockk<S3Presigner>(relaxed = true)
+
     private val template = S3CoroutinesTemplate(
         s3AsyncClient = asyncClient,
-        s3Client = mockk<S3Client>(relaxed = true),
-        s3Presigner = mockk<S3Presigner>(relaxed = true),
+        s3Client = s3Client,
+        s3Presigner = s3Presigner,
         properties = S3Properties(),
     )
 
     @BeforeEach
     fun resetMocks() {
-        clearMocks(asyncClient)
+        clearMocks(asyncClient, s3Client, s3Presigner)
     }
 
     @Test
@@ -41,9 +44,11 @@ class S3CoroutinesTemplateHeadObjectTest {
             .contentType("image/png")
             .lastModified(lastModified)
             .build()
+
         val requestSlot = slot<HeadObjectRequest>()
-        every { asyncClient.headObject(any<HeadObjectRequest>()) } returns
-            CompletableFuture.completedFuture(response)
+        every {
+            asyncClient.headObject(any<HeadObjectRequest>())
+        } returns completableFutureOf(response)
 
         val metadata = template.headObject("images", "sample.png")
 

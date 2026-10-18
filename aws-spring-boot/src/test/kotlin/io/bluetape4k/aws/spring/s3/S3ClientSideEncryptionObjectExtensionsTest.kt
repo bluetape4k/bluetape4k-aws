@@ -1,14 +1,18 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 
-class S3ClientSideEncryptionObjectExtensionsTest {
+class S3ClientSideEncryptionObjectExtensionsTest: AbstractS3Test() {
 
+    companion object: KLogging()
+
+    @Suppress("UNCHECKED_CAST")
     @Test
-    fun `typed encrypted extensions reuse converter`() = runSuspendIO {
+    fun `typed encrypted extensions reuse converter`() = runTest {
         val converter = RecordingObjectConverter()
         val operations = FakeEncryptedOperations(byteArrayOf(4, 5, 6))
         val value = mapOf("name" to "bluetape")
@@ -20,12 +24,13 @@ class S3ClientSideEncryptionObjectExtensionsTest {
             Map::class.java as Class<Map<String, String>>,
             converter,
         ) shouldBeEqualTo value
+
         converter.writes shouldBeEqualTo 1
         converter.reads shouldBeEqualTo 1
     }
 }
 
-private class RecordingObjectConverter : S3ObjectConverter<Map<String, String>> {
+private class RecordingObjectConverter: S3ObjectConverter<Map<String, String>> {
     var writes: Int = 0
     var reads: Int = 0
 
@@ -44,7 +49,7 @@ private class RecordingObjectConverter : S3ObjectConverter<Map<String, String>> 
 
 private class FakeEncryptedOperations(
     private val plaintext: ByteArray,
-) : S3ClientSideEncryptionOperations {
+): S3ClientSideEncryptionOperations {
     override suspend fun uploadEncrypted(
         bucket: String,
         key: String,

@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.exposed
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.exposed.AwsDatabaseConnectionProperties
 import io.bluetape4k.aws.exposed.AwsDatabaseProperties
@@ -10,6 +11,7 @@ import io.bluetape4k.aws.exposed.AwsDatabaseSettingsResolver
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseFactory
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
 import io.bluetape4k.aws.exposed.AwsSecretString
+import io.bluetape4k.logging.KLogging
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -17,6 +19,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -24,6 +28,8 @@ import org.springframework.core.env.MapPropertySource
 import javax.sql.DataSource
 
 class AwsExposedAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -37,12 +43,12 @@ class AwsExposedAutoConfigurationTest {
     @Test
     fun `register Exposed registry and default database aliases`() {
         contextRunner.run { context ->
-            context.getBeansOfType(AwsExposedProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(AwsDatabaseSettingsResolver::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(AwsExposedDatabaseFactory::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(AwsExposedDatabaseRegistry::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(DataSource::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(Database::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<AwsExposedProperties>() shouldHaveSize 1
+            context.getBeansOfType<AwsDatabaseSettingsResolver>() shouldHaveSize 1
+            context.getBeansOfType<AwsExposedDatabaseFactory>() shouldHaveSize 1
+            context.getBeansOfType<AwsExposedDatabaseRegistry>() shouldHaveSize 1
+            context.getBeansOfType<DataSource>() shouldHaveSize 1
+            context.getBeansOfType<Database>() shouldHaveSize 1
         }
     }
 
@@ -56,10 +62,10 @@ class AwsExposedAutoConfigurationTest {
                 )
             )
             .run { context ->
-                context.getBeansOfType(AwsExposedProperties::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(AwsExposedDatabaseRegistry::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(DataSource::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(Database::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AwsExposedProperties>() shouldHaveSize 1
+                context.getBeansOfType<AwsExposedDatabaseRegistry>() shouldHaveSize 0
+                context.getBeansOfType<DataSource>() shouldHaveSize 0
+                context.getBeansOfType<Database>() shouldHaveSize 0
             }
     }
 
@@ -68,10 +74,10 @@ class AwsExposedAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.exposed.enabled=false")
             .run { context ->
-                context.getBeansOfType(AwsExposedProperties::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(AwsExposedDatabaseRegistry::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(DataSource::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(Database::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AwsExposedProperties>() shouldHaveSize 0
+                context.getBeansOfType<AwsExposedDatabaseRegistry>() shouldHaveSize 0
+                context.getBeansOfType<DataSource>() shouldHaveSize 0
+                context.getBeansOfType<Database>() shouldHaveSize 0
             }
     }
 
@@ -80,10 +86,10 @@ class AwsExposedAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("io.bluetape4k.aws.exposed"))
             .run { context ->
-                context.getBeansOfType(AwsExposedProperties::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(AwsExposedDatabaseRegistry::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(DataSource::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(Database::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AwsExposedProperties>() shouldHaveSize 0
+                context.getBeansOfType<AwsExposedDatabaseRegistry>() shouldHaveSize 0
+                context.getBeansOfType<DataSource>() shouldHaveSize 0
+                context.getBeansOfType<Database>() shouldHaveSize 0
             }
     }
 
@@ -96,9 +102,9 @@ class AwsExposedAutoConfigurationTest {
         contextRunner
             .withBean(AwsDatabaseSettingsResolver::class.java, { customResolver })
             .run { context ->
-                context.getBeansOfType(AwsDatabaseSettingsResolver::class.java).size shouldBeEqualTo 1
-                context.getBean(AwsDatabaseSettingsResolver::class.java) shouldBeSameInstanceAs customResolver
-                context.getBean(AwsExposedDatabaseRegistry::class.java)
+                context.getBeansOfType<AwsDatabaseSettingsResolver>() shouldHaveSize 1
+                context.getBean<AwsDatabaseSettingsResolver>() shouldBeSameInstanceAs customResolver
+                context.getBean<AwsExposedDatabaseRegistry>()
                     .defaultHandle.properties.metadata["resolved"] shouldBeEqualTo "true"
             }
     }
@@ -110,8 +116,8 @@ class AwsExposedAutoConfigurationTest {
         contextRunner
             .withBean(AwsExposedDatabaseFactory::class.java, { customFactory })
             .run { context ->
-                context.getBeansOfType(AwsExposedDatabaseFactory::class.java).size shouldBeEqualTo 1
-                context.getBean(AwsExposedDatabaseFactory::class.java) shouldBeSameInstanceAs customFactory
+                context.getBeansOfType<AwsExposedDatabaseFactory>() shouldHaveSize 1
+                context.getBean<AwsExposedDatabaseFactory>() shouldBeSameInstanceAs customFactory
             }
     }
 
@@ -124,15 +130,14 @@ class AwsExposedAutoConfigurationTest {
             .withPropertyValues(*defaultDatabaseProperties("ignored"))
             .withBean(AwsExposedDatabaseRegistry::class.java, { customRegistry })
             .run { context ->
-                context.getBeansOfType(AwsExposedDatabaseRegistry::class.java).size shouldBeEqualTo 1
-                context.getBean(AwsExposedDatabaseRegistry::class.java) shouldBeSameInstanceAs customRegistry
+                context.getBeansOfType<AwsExposedDatabaseRegistry>() shouldHaveSize 1
+                context.getBean<AwsExposedDatabaseRegistry>() shouldBeSameInstanceAs customRegistry
             }
     }
 
     @Test
     fun `custom DataSource and Database beans back off default aliases`() {
-        val customRegistry = createRegistry("custom-datasource")
-        try {
+        createRegistry("custom-datasource").use { customRegistry ->
             val dataSource = customRegistry.defaultHandle.dataSource
             val database = Database.connect(dataSource)
 
@@ -140,14 +145,12 @@ class AwsExposedAutoConfigurationTest {
                 .withBean(DataSource::class.java, { dataSource })
                 .withBean(Database::class.java, { database })
                 .run { context ->
-                    context.getBeansOfType(AwsExposedDatabaseRegistry::class.java).size shouldBeEqualTo 1
-                    context.getBeansOfType(DataSource::class.java).size shouldBeEqualTo 1
-                    context.getBeansOfType(Database::class.java).size shouldBeEqualTo 1
-                    context.getBean(DataSource::class.java) shouldBeSameInstanceAs dataSource
-                    context.getBean(Database::class.java) shouldBeSameInstanceAs database
+                    context.getBeansOfType<AwsExposedDatabaseRegistry>() shouldHaveSize 1
+                    context.getBeansOfType<DataSource>() shouldHaveSize 1
+                    context.getBeansOfType<Database>() shouldHaveSize 1
+                    context.getBean<DataSource>() shouldBeSameInstanceAs dataSource
+                    context.getBean<Database>() shouldBeSameInstanceAs database
                 }
-        } finally {
-            customRegistry.close()
         }
     }
 
@@ -161,15 +164,15 @@ class AwsExposedAutoConfigurationTest {
                 "bluetape4k.aws.exposed.named-databases.analytics.pool.maximum-pool-size=2",
             )
             .run { context ->
-                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
-                registry.get("analytics").properties.url shouldContain "analytics"
+                val registry = context.getBean<AwsExposedDatabaseRegistry>()
+                registry["analytics"].properties.url shouldContain "analytics"
             }
     }
 
     @Test
     fun `bind password as redacted secret string`() {
         contextRunner.run { context ->
-            val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+            val registry = context.getBean<AwsExposedDatabaseRegistry>()
             val password = registry.defaultHandle.properties.password.shouldNotBeNull()
             password.toString() shouldBeEqualTo AwsSecretString.REDACTED
             password.reveal() shouldBeEqualTo "secret"
@@ -199,7 +202,7 @@ class AwsExposedAutoConfigurationTest {
                 )
             }
             .run { context ->
-                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+                val registry = context.getBean<AwsExposedDatabaseRegistry>()
                 registry.defaultHandle.properties.url shouldContain "secret"
                 registry.defaultHandle.properties.password.shouldNotBeNull()
                     .reveal() shouldBeEqualTo "secret-from-source"
@@ -236,7 +239,7 @@ class AwsExposedAutoConfigurationTest {
                 )
             }
             .run { context ->
-                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+                val registry = context.getBean<AwsExposedDatabaseRegistry>()
                 val properties = registry.defaultHandle.properties
 
                 properties.url shouldContain "secret_descriptor"
@@ -274,7 +277,7 @@ class AwsExposedAutoConfigurationTest {
                 )
             }
             .run { context ->
-                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+                val registry = context.getBean<AwsExposedDatabaseRegistry>()
                 val properties = registry.defaultHandle.properties
 
                 properties.url shouldContain "parameter_descriptor"
@@ -291,7 +294,7 @@ class AwsExposedAutoConfigurationTest {
                 "bluetape4k.aws.exposed.default-database.secret-source.optional=true",
             )
             .run { context ->
-                val registry = context.getBean(AwsExposedDatabaseRegistry::class.java)
+                val registry = context.getBean<AwsExposedDatabaseRegistry>()
 
                 registry.defaultHandle.properties.url shouldContain "default"
                 registry.defaultHandle.properties.password.shouldNotBeNull().reveal() shouldBeEqualTo "secret"
@@ -319,7 +322,7 @@ class AwsExposedAutoConfigurationTest {
     @Test
     fun `default Exposed database supports JDBC transaction usage`() {
         contextRunner.run { context ->
-            val database = context.getBean(Database::class.java)
+            val database = context.getBean<Database>()
             val count = transaction(database) {
                 SchemaUtils.create(ExposedAutoConfigurationRows)
                 ExposedAutoConfigurationRows.insert { row -> row[name] = "spring" }
@@ -355,8 +358,8 @@ class AwsExposedAutoConfigurationTest {
 
     private fun h2Url(name: String): String =
         "jdbc:h2:mem:aws_exposed_$name;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
-}
 
-private object ExposedAutoConfigurationRows: Table("exposed_auto_configuration_rows") {
-    val name = varchar("name", 64)
+    private object ExposedAutoConfigurationRows: Table("exposed_auto_configuration_rows") {
+        val name = varchar("name", 64)
+    }
 }

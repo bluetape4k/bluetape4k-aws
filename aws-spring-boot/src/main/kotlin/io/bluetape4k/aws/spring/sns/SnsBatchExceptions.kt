@@ -29,16 +29,16 @@ class SnsBatchTransportException private constructor(
      */
     @Deprecated("entryFingerprint는 privacy-safe 진단 계약이 아니므로 직접 사용을 피하세요.")
     val entryFingerprint: String,
-) : IllegalStateException(
+): IllegalStateException(
     "SNS batch transport failed: type=$failureType, " +
-        "completedCount=${completedEntryIds.size}",
+            "completedCount=${completedEntryIds.size}",
 ) {
 
     val completedEntryIds: List<String> = completedEntryIds.toList()
 
     override fun toString(): String =
         "SnsBatchTransportException(failureType=$failureType, " +
-            "completedCount=${completedEntryIds.size})"
+                "completedCount=${completedEntryIds.size})"
 
     companion object {
         private const val serialVersionUID: Long = 1L
@@ -59,8 +59,8 @@ class SnsBatchTransportException private constructor(
 
         private fun classify(cause: Throwable): SnsBatchFailureType = when {
             cause is ApiCallTimeoutException ||
-                cause is ApiCallAttemptTimeoutException ||
-                cause is TimeoutException ->
+                    cause is ApiCallAttemptTimeoutException ||
+                    cause is TimeoutException ->
                 SnsBatchFailureType.TIMEOUT
             cause is SdkServiceException -> SnsBatchFailureType.SDK_SERVICE
             cause is SdkClientException -> SnsBatchFailureType.CLIENT
@@ -83,18 +83,18 @@ class SnsBatchProtocolException private constructor(
     val unknownEntryCount: Int,
     val duplicateEntryCount: Int,
     val missingEntryCount: Int,
-) : IllegalStateException(
+): IllegalStateException(
     "SNS batch response protocol mismatch: submittedCount=$submittedEntryCount, " +
-        "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
-        "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount",
+            "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
+            "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount",
 ) {
 
     val completedEntryIds: List<String> = emptyList()
 
     override fun toString(): String =
         "SnsBatchProtocolException(submittedCount=$submittedEntryCount, " +
-            "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
-            "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount)"
+                "responseCount=$responseEntryCount, unknownCount=$unknownEntryCount, " +
+                "duplicateCount=$duplicateEntryCount, missingCount=$missingEntryCount)"
 
     companion object {
         private const val serialVersionUID: Long = 1L

@@ -1,16 +1,23 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.mockk.mockk
 import kotlinx.coroutines.asCoroutineDispatcher
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Test
+import software.amazon.awssdk.services.sqs.model.Message
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
 class SqsListenerMethodInvokerTest {
+
+    companion object: KLoggingChannel()
 
     @Test
     fun `invoker executes suspend listener on injected dispatcher`() = runSuspendIO {
@@ -30,6 +37,7 @@ class SqsListenerMethodInvokerTest {
 
             invoker.invoke(message(), mockk())
 
+            log.debug { "listener=$listener" }
             listener.threadName.get() shouldContain "sqs-invoker-test"
         } finally {
             dispatcher.close()
@@ -46,6 +54,7 @@ class SqsListenerMethodInvokerTest {
 
         invoker.invokeBatch(listOf(message(), message("message-2")), mockk())
 
+        log.debug { "listener=$listener" }
         listener.messageIds shouldContain "message-1"
         listener.messageIds shouldContain "message-2"
     }
@@ -64,7 +73,7 @@ class SqsListenerMethodInvokerTest {
     @Test
     fun `phase callback preserves conversion and handler failure identity`() = runSuspendIO {
         val conversionFailure = IllegalArgumentException("conversion")
-        val converter = object : SqsMessageConverter {
+        val converter = object: SqsMessageConverter {
             override fun convert(message: SqsReceivedMessage, targetType: Class<*>): Any = throw conversionFailure
         }
         val conversionInvoker = SqsListenerMethodInvoker(
@@ -78,8 +87,8 @@ class SqsListenerMethodInvokerTest {
             conversionInvoker.invoke(message(), mockk()) { conversionEnteredHandler = true }
         }.exceptionOrNull()
 
-        assertSame(conversionFailure, actualConversionFailure)
-        conversionEnteredHandler shouldBeEqualTo false
+        actualConversionFailure shouldBeEqualTo conversionFailure
+        conversionEnteredHandler.shouldBeFalse()
 
         val handlerFailure = IllegalStateException("handler")
         val handlerInvoker = SqsListenerMethodInvoker(
@@ -94,14 +103,14 @@ class SqsListenerMethodInvokerTest {
         }.exceptionOrNull()
 
         assertSame(handlerFailure, actualHandlerFailure)
-        handlerEntered shouldBeEqualTo true
+        handlerEntered.shouldBeTrue()
     }
 
     class DispatcherProbe {
         val threadName = AtomicReference("")
 
         @Suppress("UNUSED_PARAMETER")
-        suspend fun handle(payload: String) {
+        fun handle(payload: String) {
             threadName.set(Thread.currentThread().name)
         }
     }
@@ -110,7 +119,7 @@ class SqsListenerMethodInvokerTest {
         val messageIds = mutableListOf<String>()
 
         @Suppress("UNUSED_PARAMETER")
-        suspend fun handle(messages: List<SqsReceivedMessage>, acknowledgement: SqsBatchAcknowledgement) {
+        fun handle(messages: List<SqsReceivedMessage>, acknowledgement: SqsBatchAcknowledgement) {
             messageIds += messages.map { it.messageId }
         }
     }
@@ -126,9 +135,7 @@ class SqsListenerMethodInvokerTest {
 
     class ConvertedPayload
 
-    class ThrowingProbe(
-        private val failure: RuntimeException,
-    ) {
+    class ThrowingProbe(private val failure: RuntimeException) {
         @Suppress("UNUSED_PARAMETER")
         fun handle(payload: String): Nothing = throw failure
     }
@@ -136,7 +143,7 @@ class SqsListenerMethodInvokerTest {
     private fun message(messageId: String = "message-1"): SqsReceivedMessage =
         SqsReceivedMessage(
             queueUrl = "https://sqs.local/orders",
-            message = software.amazon.awssdk.services.sqs.model.Message.builder()
+            message = Message.builder()
                 .messageId(messageId)
                 .receiptHandle("receipt-1")
                 .body("payload")

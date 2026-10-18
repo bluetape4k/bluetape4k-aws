@@ -3,6 +3,10 @@ package io.bluetape4k.aws.spring.config
 import io.bluetape4k.aws.spring.appconfig.AppConfigFormat
 import io.bluetape4k.aws.spring.s3.S3ConfigFormat
 import io.bluetape4k.aws.spring.secretsmanager.SecretFormat
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireInOpenRange
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
 import org.springframework.boot.context.config.ConfigDataLocation
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -21,8 +25,9 @@ internal class AwsConfigDataLocationParser {
         separator: String = "#",
     ): AwsConfigDataLocation {
         val value = location.value
-        require(value.isNotEmpty()) { "AWS ConfigData location must not be empty." }
+        value.requireNotEmpty { "AWS ConfigData location must not be empty." }
         rejectControl(value)
+
         require(separator.length == 1) { "AWS ConfigData separator must be one character." }
         require(separator[0] !in "?%&=" && separator[0] !in CONTROL_CHARACTERS) {
             "AWS ConfigData separator must be a safe character."
@@ -31,8 +36,10 @@ internal class AwsConfigDataLocationParser {
 
         val backend = AwsConfigDataBackend.entries.firstOrNull { value.startsWith(it.prefix) }
             ?: throw IllegalArgumentException("Unsupported AWS ConfigData location prefix.")
+
         val nonPrefixed = value.removePrefix(backend.prefix)
         val (rawSource, rawQuery) = nonPrefixed.splitQuery()
+
         val source = if (backend == AwsConfigDataBackend.APP_CONFIG) {
             rawSource
         } else {
@@ -64,14 +71,17 @@ internal class AwsConfigDataLocationParser {
         val path = source.removePrefix("/")
         val separator = path.indexOf('/')
         require(separator > 0 && separator < path.lastIndex) { "S3 ConfigData source must contain bucket and key." }
+
         val bucket = path.substring(0, separator).requireNonBlank("S3 bucket")
         val key = path.substring(separator + 1).requireNonBlank("S3 key")
         val format = options[FORMAT]?.let(::parseS3Format) ?: S3ConfigFormat.AUTO
+
         return AwsConfigDataSource.S3(bucket, key, options[PREFIX], format)
     }
 
     private fun parseParameterStore(source: String, options: Map<String, String>): AwsConfigDataSource.ParameterStore {
         require(source.startsWith('/')) { "Parameter Store ConfigData source must start with /." }
+
         return AwsConfigDataSource.ParameterStore(
             path = source.requireNonBlank("Parameter Store path"),
             prefix = options[PREFIX],
@@ -89,7 +99,11 @@ internal class AwsConfigDataLocationParser {
         require(format != SecretFormat.TEXT || !prefix.isNullOrBlank()) {
             "Secrets Manager text format requires prefix."
         }
-        return AwsConfigDataSource.SecretsManager(source.requireNonBlank("Secrets Manager secret"), prefix, format)
+        return AwsConfigDataSource.SecretsManager(
+            source.requireNonBlank("Secrets Manager secret"),
+            prefix,
+            format
+        )
     }
 
     private fun parseAppConfig(
@@ -106,6 +120,7 @@ internal class AwsConfigDataLocationParser {
                 .requireNonBlank("AppConfig component ${index + 1}")
         }
         val format = options[FORMAT]?.let(::parseAppConfigFormat) ?: AppConfigFormat.AUTO
+
         return AwsConfigDataSource.AppConfig(
             application = decoded[0],
             profile = decoded[1],
@@ -119,16 +134,19 @@ internal class AwsConfigDataLocationParser {
         if (rawQuery.isNullOrEmpty()) return emptyMap()
         val allowed = allowedOptions(backend)
         val parsed = linkedMapOf<String, String>()
+
         rawQuery.split('&').forEach { pair ->
-            require(pair.isNotEmpty()) { "AWS ConfigData query option must not be empty." }
+            pair.requireNotEmpty { "AWS ConfigData query option must not be empty." }
             val separator = pair.indexOf('=')
-            require(separator > 0 && separator < pair.lastIndex) {
+            separator.requireInOpenRange(1, pair.lastIndex) {
                 "AWS ConfigData query option must contain a non-empty key and value."
             }
             val key = decodeComponent(pair.substring(0, separator), "query key")
             val value = decodeComponent(pair.substring(separator + 1), "query value")
+
             require(key in allowed) { "Unsupported AWS ConfigData query option." }
             require(parsed.put(key, value) == null) { "Duplicate AWS ConfigData query option." }
+
             validateOption(backend, key, value)
         }
         return parsed.toSortedMap()
@@ -138,7 +156,7 @@ internal class AwsConfigDataLocationParser {
         AwsConfigDataBackend.S3,
         AwsConfigDataBackend.SECRETS_MANAGER,
         AwsConfigDataBackend.APP_CONFIG,
-        -> setOf(PREFIX, FORMAT)
+            -> setOf(PREFIX, FORMAT)
 
         AwsConfigDataBackend.PARAMETER_STORE -> setOf(PREFIX, RECURSIVE, WITH_DECRYPTION)
     }
@@ -190,6 +208,7 @@ internal class AwsConfigDataLocationParser {
 
     private fun decodeComponent(value: String, label: String): String {
         rejectControl(value)
+
         return try {
             URLDecoder.decode(value.replace("+", "%2B"), StandardCharsets.UTF_8)
         } catch (ex: IllegalArgumentException) {
@@ -205,17 +224,16 @@ internal class AwsConfigDataLocationParser {
         }
     }
 
-    private fun String.requireNonBlank(label: String): String {
-        require(isNotBlank()) { "$label must not be blank." }
-        return this
-    }
+    private fun String.requireNonBlank(label: String): String =
+        requireNotBlank { "$label must not be blank." }
 
     private fun String.splitQuery(): Pair<String, String?> {
         val separator = indexOf('?')
-        return if (separator < 0) this to null else substring(0, separator) to substring(separator + 1)
+        return if (separator < 0) this to null
+        else substring(0, separator) to substring(separator + 1)
     }
 
-    private companion object {
+    private companion object: KLogging() {
         const val PREFIX = "prefix"
         const val FORMAT = "format"
         const val RECURSIVE = "recursive"

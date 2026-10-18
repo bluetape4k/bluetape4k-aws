@@ -5,15 +5,19 @@ import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMappi
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.method.HandlerMethod
 
-class SnsHttpEndpointHandlerMethodValidatorTest {
+class SnsHttpEndpointHandlerMethodValidatorTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `unsupported SNS parameter fails while handler methods are registered`() {
-        val method = InvalidController::class.java.getDeclaredMethod("invalid", Int::class.javaPrimitiveType)
+        val method = InvalidController::class.java
+            .getDeclaredMethod("invalid", Int::class.javaPrimitiveType)
         val mapping = FakeHandlerMapping(mapOf("/invalid" to HandlerMethod(InvalidController(), method)))
         val validator = SnsHttpEndpointHandlerMethodValidator(
             support = SnsHttpMessageResolverSupport(
@@ -29,7 +33,8 @@ class SnsHttpEndpointHandlerMethodValidatorTest {
 
     @Test
     fun `notification mapping rejects confirmation status while handler methods are registered`() {
-        val method = NotificationController::class.java.getDeclaredMethod("invalid", NotificationStatus::class.java)
+        val method = NotificationController::class.java
+            .getDeclaredMethod("invalid", NotificationStatus::class.java)
         val mapping = FakeHandlerMapping(mapOf("/invalid" to HandlerMethod(NotificationController(), method)))
         val validator = SnsHttpEndpointHandlerMethodValidator(
             support = SnsHttpMessageResolverSupport(
@@ -45,7 +50,8 @@ class SnsHttpEndpointHandlerMethodValidatorTest {
 
     @Test
     fun `confirmation mapping rejects notification parameters while handler methods are registered`() {
-        val method = ConfirmationController::class.java.getDeclaredMethod("invalid", String::class.java)
+        val method = ConfirmationController::class.java
+            .getDeclaredMethod("invalid", String::class.java)
         val mapping = FakeHandlerMapping(mapOf("/invalid" to HandlerMethod(ConfirmationController(), method)))
         val validator = SnsHttpEndpointHandlerMethodValidator(
             support = SnsHttpMessageResolverSupport(

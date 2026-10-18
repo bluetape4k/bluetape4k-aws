@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.dynamodb
 
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.resolveClientDefaults
 import io.bluetape4k.support.requireNotNull
 import org.springframework.beans.factory.ObjectProvider
@@ -16,7 +17,6 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.dax.ClusterDaxAsyncClient
 import software.amazon.dax.Configuration
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * DAX SDK가 있고 DAX를 명시적으로 활성화하면 DAX 기반 [DynamoDbAsyncClient]를 자동 구성합니다.
@@ -33,7 +33,12 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 )
 @ConditionalOnAwsEnabled
 @ConditionalOnClass(name = ["software.amazon.dax.ClusterDaxAsyncClient"])
-@ConditionalOnProperty(prefix = DYNAMODB_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    prefix = DYNAMODB_PROPERTIES_PREFIX,
+    name = ["enabled"],
+    havingValue = "true",
+    matchIfMissing = true
+)
 @ConditionalOnProperty(prefix = DYNAMODB_DAX_PROPERTIES_PREFIX, name = ["enabled"], havingValue = "true")
 @EnableConfigurationProperties(DynamoDbProperties::class)
 class DynamoDbDaxAutoConfiguration {

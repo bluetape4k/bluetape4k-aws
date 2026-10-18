@@ -1,9 +1,10 @@
 package io.bluetape4k.aws.spring.parameterstore
 
 import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
-import io.bluetape4k.aws.spring.env.parameterPathPropertyKey
 import io.bluetape4k.aws.spring.env.opaqueAwsDiagnosticIdentity
+import io.bluetape4k.aws.spring.env.parameterPathPropertyKey
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException
@@ -11,26 +12,24 @@ import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException
 internal object ParameterStorePropertySourceLoader: KLogging() {
 
     fun load(properties: ParameterStoreProperties): List<AwsLoadedPropertySource> =
-        buildClient(properties)
-            .use { client ->
-                properties.sources.mapNotNull { source ->
-                    loadSource(client, properties, source)?.let { values ->
-                        AwsLoadedPropertySource(
-                            name = source.propertySourceName,
-                            values = values,
-                            reload = { loadSingleSource(properties, source) },
-                        )
-                    }
+        buildClient(properties).use { client ->
+            properties.sources.mapNotNull { source ->
+                loadSource(client, properties, source)?.let { values ->
+                    AwsLoadedPropertySource(
+                        name = source.propertySourceName,
+                        values = values,
+                        reload = { loadSingleSource(properties, source) },
+                    )
                 }
             }
+        }
 
     private fun loadSingleSource(
         properties: ParameterStoreProperties,
         source: ParameterStoreProperties.Source,
-    ): Map<String, Any>? =
-        buildClient(properties).use { client ->
-            loadSource(client, properties, source)
-        }
+    ): Map<String, Any>? = buildClient(properties).use { client ->
+        loadSource(client, properties, source)
+    }
 
     private fun buildClient(properties: ParameterStoreProperties): SsmClient =
         SsmClient.builder()
@@ -89,11 +88,11 @@ internal object ParameterStorePropertySourceLoader: KLogging() {
         error: RuntimeException,
     ): Map<String, Any>? {
         if (source.optional || !properties.failFast) {
-            log.warn(
+            log.warn {
                 "Skipping Parameter Store source " +
-                    "${opaqueAwsDiagnosticIdentity("parameter-store", source.propertySourceName)} " +
-                    "(${error::class.java.simpleName}).",
-            )
+                        "${opaqueAwsDiagnosticIdentity("parameter-store", source.propertySourceName)} " +
+                        "(${error::class.java.simpleName})."
+            }
             return null
         }
         throw error

@@ -1,16 +1,21 @@
 package io.bluetape4k.aws.spring.eventbridge
 
-import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.AwsClientCustomizationContext
-import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizationContext
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -35,6 +40,8 @@ import software.amazon.awssdk.services.eventbridge.model.Target
 
 class EventBridgeAutoConfigurationTest {
 
+    companion object: KLogging()
+
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
             AutoConfigurations.of(
@@ -47,10 +54,10 @@ class EventBridgeAutoConfigurationTest {
     @Test
     fun `register EventBridge client and operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(EventBridgeAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(EventBridgeProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(EventBridgeOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(EventBridgeCoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<EventBridgeAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<EventBridgeProperties>() shouldHaveSize 1
+            context.getBeansOfType<EventBridgeOperations>() shouldHaveSize 1
+            context.getBeansOfType<EventBridgeCoroutinesTemplate>() shouldHaveSize 1
         }
     }
 
@@ -59,8 +66,8 @@ class EventBridgeAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.eventbridge.enabled=false")
             .run { context ->
-                context.getBeansOfType(EventBridgeAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(EventBridgeOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<EventBridgeAsyncClient>() shouldHaveSize 0
+                context.getBeansOfType<EventBridgeOperations>() shouldHaveSize 0
             }
     }
 
@@ -71,9 +78,9 @@ class EventBridgeAutoConfigurationTest {
         contextRunner
             .withBean(EventBridgeAsyncClient::class.java, { customClient })
             .run { context ->
-                context.getBeansOfType(EventBridgeAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(EventBridgeAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                context.getBeansOfType(EventBridgeOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<EventBridgeAsyncClient>() shouldHaveSize 1
+                context.getBean<EventBridgeAsyncClient>() shouldBeSameInstanceAs customClient
+                context.getBeansOfType<EventBridgeOperations>() shouldHaveSize 1
             }
     }
 
@@ -82,9 +89,9 @@ class EventBridgeAutoConfigurationTest {
         contextRunner
             .withBean(EventBridgeOperations::class.java, { NoopEventBridgeOperations })
             .run { context ->
-                context.getBeansOfType(EventBridgeOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(EventBridgeCoroutinesTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(EventBridgeOperations::class.java) shouldBeSameInstanceAs NoopEventBridgeOperations
+                context.getBeansOfType<EventBridgeOperations>() shouldHaveSize 1
+                context.getBeansOfType<EventBridgeCoroutinesTemplate>() shouldHaveSize 0
+                context.getBean<EventBridgeOperations>() shouldBeSameInstanceAs NoopEventBridgeOperations
             }
     }
 
@@ -98,6 +105,8 @@ class EventBridgeAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "region is required"
             }
     }
@@ -117,7 +126,7 @@ class EventBridgeAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(EventBridgeAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<EventBridgeAsyncClient>() shouldHaveSize 1
             }
     }
 
@@ -128,7 +137,7 @@ class EventBridgeAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(EventBridgeCustomizerConfig::class.java)
             .run { context ->
-                context.getBean(EventBridgeAsyncClient::class.java).shouldNotBeNull()
+                context.getBean<EventBridgeAsyncClient>().shouldNotBeNull()
                 EventBridgeCustomizerConfig.calls shouldBeEqualTo listOf("global:eventbridge", "eventbridge")
             }
     }
@@ -138,8 +147,8 @@ class EventBridgeAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.eventbridge"))
             .run { context ->
-                context.getBeansOfType(EventBridgeAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(EventBridgeOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<EventBridgeAsyncClient>() shouldHaveSize 0
+                context.getBeansOfType<EventBridgeOperations>() shouldHaveSize 0
             }
     }
 
@@ -148,7 +157,7 @@ class EventBridgeAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.eventbridge.default-event-bus-name=orders")
             .run { context ->
-                context.getBean(EventBridgeProperties::class.java).defaultEventBusName shouldBeEqualTo "orders"
+                context.getBean<EventBridgeProperties>().defaultEventBusName shouldBeEqualTo "orders"
             }
     }
 
@@ -164,7 +173,7 @@ class EventBridgeAutoConfigurationTest {
 
         private class RecordingAsyncCustomizer(
             private val name: String,
-        ) : AwsAsyncClientCustomizer, Ordered {
+        ): AwsAsyncClientCustomizer, Ordered {
             override fun customize(
                 context: AwsClientCustomizationContext,
                 builder: AwsAsyncClientBuilder<*, *>,
@@ -180,7 +189,7 @@ class EventBridgeAutoConfigurationTest {
         }
     }
 
-    private object NoopEventBridgeOperations : EventBridgeOperations {
+    private object NoopEventBridgeOperations: EventBridgeOperations {
         override suspend fun createEventBus(name: String): CreateEventBusResponse = error("not used")
         override suspend fun deleteEventBus(name: String): DeleteEventBusResponse = error("not used")
         override suspend fun putRule(

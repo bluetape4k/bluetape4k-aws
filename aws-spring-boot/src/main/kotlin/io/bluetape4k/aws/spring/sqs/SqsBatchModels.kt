@@ -46,7 +46,7 @@ data class SqsBatchAcknowledgementResult(
 ) {
     override fun toString(): String =
         "SqsBatchAcknowledgementResult(operation=$operation, status=$status, " +
-            "successfulCount=${successfulMessageIds.size}, failedCount=${failed.size})"
+                "successfulCount=${successfulMessageIds.size}, failedCount=${failed.size})"
 }
 
 /**
@@ -101,7 +101,7 @@ data class SqsBatchVisibilityResult(
 class SqsBatchDeleteProtocolException(
     val submittedEntryIds: List<String>,
     val responseEntryIds: List<String>,
-) : IllegalStateException("SQS DeleteMessageBatch response did not match submitted entries")
+): IllegalStateException("SQS DeleteMessageBatch response did not match submitted entries")
 
 /**
  * ChangeMessageVisibilityBatch 응답 entry 집합이 요청과 일치하지 않을 때 발생하는 오류입니다.
@@ -109,7 +109,7 @@ class SqsBatchDeleteProtocolException(
 class SqsBatchVisibilityProtocolException(
     val submittedEntryIds: List<String>,
     val responseEntryIds: List<String>,
-) : IllegalStateException("SQS ChangeMessageVisibilityBatch response did not match submitted entries")
+): IllegalStateException("SQS ChangeMessageVisibilityBatch response did not match submitted entries")
 
 internal const val MAX_SQS_BATCH_SIZE: Int = 10
 internal const val MAX_SQS_VISIBILITY_TIMEOUT_SECONDS: Int = 43_200
@@ -149,23 +149,23 @@ data class SqsBatchSendEntry private constructor(
     val entryId: String,
     val request: SqsSendRequest,
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
-) : Serializable {
-
-    init {
-        validateAutomaticBatchEntryId(entryId)
-    }
-
-    constructor(entryId: String, request: SqsSendRequest) : this(
-        entryId = entryId,
-        request = request.copy(messageAttributes = request.messageAttributes.toMap()),
-        snapshotMarker = true,
-    )
-
-    override fun toString(): String = "SqsBatchSendEntry(request=<redacted>)"
+): Serializable {
 
     companion object {
         private const val serialVersionUID: Long = 1L
+
+        operator fun invoke(entryId: String, request: SqsSendRequest): SqsBatchSendEntry {
+            validateAutomaticBatchEntryId(entryId)
+            return SqsBatchSendEntry(
+                entryId = entryId,
+                request = request.copy(messageAttributes = request.messageAttributes.toMap()),
+                snapshotMarker = true,
+            )
+        }
+
     }
+
+    override fun toString(): String = "SqsBatchSendEntry(request=<redacted>)"
 }
 
 /** 자동 배치 삭제의 개별 입력 항목입니다. */
@@ -175,24 +175,23 @@ data class SqsBatchDeleteEntry private constructor(
     val queueUrl: String,
     val receiptHandle: String,
     @Suppress("UNUSED_PARAMETER") private val validatedMarker: Boolean,
-) : Serializable {
-
-    init {
-        validateAutomaticBatchEntryId(entryId)
-    }
-
-    constructor(entryId: String, queueUrl: String, receiptHandle: String) : this(
-        entryId = entryId,
-        queueUrl = queueUrl.requireNotBlank("queueUrl"),
-        receiptHandle = receiptHandle.requireNotBlank("receiptHandle"),
-        validatedMarker = true,
-    )
-
-    override fun toString(): String = "SqsBatchDeleteEntry(<redacted>)"
+): Serializable {
 
     companion object {
         private const val serialVersionUID: Long = 1L
+
+        operator fun invoke(entryId: String, queueUrl: String, receiptHandle: String): SqsBatchDeleteEntry {
+            validateAutomaticBatchEntryId(entryId)
+            return SqsBatchDeleteEntry(
+                entryId = entryId,
+                queueUrl = queueUrl.requireNotBlank("queueUrl"),
+                receiptHandle = receiptHandle.requireNotBlank("receiptHandle"),
+                validatedMarker = true,
+            )
+        }
     }
+
+    override fun toString(): String = "SqsBatchDeleteEntry(<redacted>)"
 }
 
 /** 자동 배치 항목의 안전한 실패 결과입니다. */
@@ -202,27 +201,34 @@ data class SqsBatchEntryFailure private constructor(
     val kind: SqsBatchFailureKind,
     val code: String?,
     @Suppress("UNUSED_PARAMETER") private val normalizedMarker: Boolean,
-) : Serializable {
+): Serializable {
+
+    companion object {
+        operator fun invoke(
+            entryId: String,
+            kind: SqsBatchFailureKind,
+            code: String?,
+        ): SqsBatchEntryFailure {
+            return SqsBatchEntryFailure(
+                entryId = entryId,
+                kind = kind,
+                code = if (kind == SqsBatchFailureKind.TRANSPORT) null else normalizeAutomaticBatchErrorCode(code),
+                normalizedMarker = true,
+            )
+        }
+
+        private const val serialVersionUID: Long = 1L
+    }
 
     init {
         validateAutomaticBatchEntryId(entryId)
         require(kind == SqsBatchFailureKind.SERVICE || code == null) {
             "code must be null for transport failure."
         }
-    }
 
-    constructor(entryId: String, kind: SqsBatchFailureKind, code: String?) : this(
-        entryId = entryId,
-        kind = kind,
-        code = if (kind == SqsBatchFailureKind.TRANSPORT) null else normalizeAutomaticBatchErrorCode(code),
-        normalizedMarker = true,
-    )
+    }
 
     override fun toString(): String = "SqsBatchEntryFailure(kind=$kind)"
-
-    companion object {
-        private const val serialVersionUID: Long = 1L
-    }
 }
 
 /** 자동 배치 전송의 성공 결과입니다. */
@@ -232,13 +238,13 @@ data class SqsBatchSendSuccess private constructor(
     val messageId: String,
     val sequenceNumber: String?,
     @Suppress("UNUSED_PARAMETER") private val validatedMarker: Boolean,
-) : Serializable {
+): Serializable {
 
     init {
         validateAutomaticBatchEntryId(entryId)
     }
 
-    constructor(entryId: String, messageId: String, sequenceNumber: String?) : this(
+    constructor(entryId: String, messageId: String, sequenceNumber: String?): this(
         entryId = entryId,
         messageId = messageId.requireNotBlank("messageId"),
         sequenceNumber = sequenceNumber?.requireNotBlank("sequenceNumber"),
@@ -258,26 +264,30 @@ data class SqsSendManyResult private constructor(
     val successful: List<SqsBatchSendSuccess>,
     val failed: List<SqsBatchEntryFailure>,
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
-) : Serializable {
+): Serializable {
 
-    init {
-        validateAutomaticBatchResultIds(successful.map { it.entryId }, failed.map { it.entryId })
+    companion object {
+        operator fun invoke(
+            successful: List<SqsBatchSendSuccess>,
+            failed: List<SqsBatchEntryFailure>,
+        ): SqsSendManyResult {
+            validateAutomaticBatchResultIds(successful.map { it.entryId }, failed.map { it.entryId })
+
+            return SqsSendManyResult(
+                successful.toList(),
+                failed.toList(),
+                true
+            )
+        }
+
+        private const val serialVersionUID: Long = 1L
     }
 
     val status: SqsBatchResultStatus
         get() = automaticBatchResultStatus(successful.size, failed.size)
 
-    constructor(
-        successful: List<SqsBatchSendSuccess>,
-        failed: List<SqsBatchEntryFailure>,
-    ) : this(successful.toList(), failed.toList(), true)
-
     override fun toString(): String =
         "SqsSendManyResult(status=$status, successful=${successful.size}, failed=${failed.size})"
-
-    companion object {
-        private const val serialVersionUID: Long = 1L
-    }
 }
 
 /** 자동 배치 삭제의 정규화된 결과입니다. */
@@ -286,26 +296,25 @@ data class SqsDeleteManyResult private constructor(
     val successfulEntryIds: List<String>,
     val failed: List<SqsBatchEntryFailure>,
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
-) : Serializable {
+): Serializable {
 
-    init {
-        validateAutomaticBatchResultIds(successfulEntryIds, failed.map { it.entryId })
+    companion object {
+        operator fun invoke(
+            successfulEntryIds: List<String>,
+            failed: List<SqsBatchEntryFailure>,
+        ): SqsDeleteManyResult {
+            validateAutomaticBatchResultIds(successfulEntryIds, failed.map { it.entryId })
+            return SqsDeleteManyResult(successfulEntryIds.toList(), failed.toList(), true)
+        }
+
+        private const val serialVersionUID: Long = 1L
     }
 
     val status: SqsBatchResultStatus
         get() = automaticBatchResultStatus(successfulEntryIds.size, failed.size)
 
-    constructor(
-        successfulEntryIds: List<String>,
-        failed: List<SqsBatchEntryFailure>,
-    ) : this(successfulEntryIds.toList(), failed.toList(), true)
-
     override fun toString(): String =
         "SqsDeleteManyResult(status=$status, successful=${successfulEntryIds.size}, failed=${failed.size})"
-
-    companion object {
-        private const val serialVersionUID: Long = 1L
-    }
 }
 
 internal sealed interface SqsBatchOutcome {
@@ -315,15 +324,15 @@ internal sealed interface SqsBatchOutcome {
         override val entryId: String,
         val messageId: String?,
         val sequenceNumber: String?,
-    ) : SqsBatchOutcome
+    ): SqsBatchOutcome
 
     data class DeleteSuccess(
         override val entryId: String,
-    ) : SqsBatchOutcome
+    ): SqsBatchOutcome
 
     data class Failure(
         val failure: SqsBatchEntryFailure,
-    ) : SqsBatchOutcome {
+    ): SqsBatchOutcome {
         override val entryId: String get() = failure.entryId
     }
 }
@@ -420,8 +429,8 @@ private fun validateAutomaticBatchProtocol(
     val expectedSet = expectedEntryIds.toSet()
     val responseCounts = responseEntryIds.groupingBy { it }.eachCount()
     val protocolMatches = responseEntryIds.none { it !in expectedSet } &&
-        responseCounts.values.all { it == 1 } &&
-        expectedEntryIds.all { it in responseCounts }
+            responseCounts.values.all { it == 1 } &&
+            expectedEntryIds.all { it in responseCounts }
     if (!protocolMatches) {
         throw SqsBatchProtocolException.from(expectedEntryIds, responseEntryIds)
     }

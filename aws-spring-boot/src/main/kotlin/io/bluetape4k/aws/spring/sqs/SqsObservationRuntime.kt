@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.checkNotNull
 import io.micrometer.context.ContextRegistry
 import io.micrometer.context.ContextSnapshot
 import io.micrometer.context.ContextSnapshotFactory
@@ -19,10 +21,14 @@ internal class SqsObservationRuntime(
     private val factory: SqsObservationFactory,
     contextSnapshotFactory: ContextSnapshotFactory? = null,
 ) {
+
+    companion object: KLogging()
+
     private val customizers: List<SqsObservationContextCustomizer> = orderedSqsObservationCustomizers(customizers)
     private val snapshotFactory: ContextSnapshotFactory = contextSnapshotFactory ?: run {
         val contextRegistry = ContextRegistry()
             .registerThreadLocalAccessor(ObservationThreadLocalAccessor(registry))
+
         ContextSnapshotFactory.builder()
             .contextRegistry(contextRegistry)
             .build()
@@ -140,8 +146,8 @@ private suspend fun <T> runObservedBlock(
 }
 
 private sealed interface SqsObservedResult<out T> {
-    data class Success<T>(val value: T) : SqsObservedResult<T>
-    data class Failure(val throwable: Throwable) : SqsObservedResult<Nothing>
+    data class Success<T>(val value: T): SqsObservedResult<T>
+    data class Failure(val throwable: Throwable): SqsObservedResult<Nothing>
 }
 
 private fun SqsObservedResult<*>.failureOrNull(): Throwable? =
@@ -166,7 +172,7 @@ internal class SqsObservationExecution internal constructor(
     private var retryEventEmitted: Boolean = false
 
     val context: SqsObservationContext
-        get() = checkNotNull(observationContext) { "No observation context exists on the direct path." }
+        get() = observationContext.checkNotNull { "No observation context exists on the direct path." }
 
     fun retry(attempt: Int) {
         require(attempt >= 1) { "attempt must be greater than or equal to 1." }
@@ -268,8 +274,8 @@ private fun ContextSnapshot.asContextElement(): CoroutineContext = ContextSnapsh
 
 private class ContextSnapshotElement(
     private val snapshot: ContextSnapshot,
-) : ThreadContextElement<ContextSnapshot.Scope?>,
-    AbstractCoroutineContextElement(Key) {
+): ThreadContextElement<ContextSnapshot.Scope?>,
+   AbstractCoroutineContextElement(Key) {
 
     override fun updateThreadContext(context: CoroutineContext): ContextSnapshot.Scope =
         snapshot.setThreadLocals()
@@ -281,5 +287,5 @@ private class ContextSnapshotElement(
         oldState?.close()
     }
 
-    private companion object Key : CoroutineContext.Key<ContextSnapshotElement>
+    private companion object Key: CoroutineContext.Key<ContextSnapshotElement>
 }

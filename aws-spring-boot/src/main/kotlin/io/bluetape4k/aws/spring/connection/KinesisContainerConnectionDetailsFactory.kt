@@ -4,18 +4,18 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource
 import org.testcontainers.containers.Container
 
-internal class KinesisContainerConnectionDetailsFactory :
+internal class KinesisContainerConnectionDetailsFactory:
     ContainerConnectionDetailsFactory<Container<*>, KinesisConnectionDetails>(
         "kinesis",
         "software.amazon.awssdk.services.kinesis.KinesisClient",
-) {
+    ) {
     override fun sourceAccepts(
         source: ContainerConnectionSource<Container<*>>,
         requiredContainerType: Class<*>,
         requiredConnectionDetailsType: Class<*>,
     ): Boolean =
         super.sourceAccepts(source, requiredContainerType, requiredConnectionDetailsType) ||
-            source.accepts(null, requiredContainerType, requiredConnectionDetailsType)
+                source.accepts(null, requiredContainerType, requiredConnectionDetailsType)
 
     override fun getContainerConnectionDetails(
         source: ContainerConnectionSource<Container<*>>,
@@ -43,8 +43,8 @@ internal class KinesisContainerConnectionDetailsFactory :
         override val secretKey get() = requireValues().secretKey
 
         override fun toString(): String = values?.toString()
-            ?: "KinesisConnectionDetails(endpoint=[UNINITIALIZED], region=[UNINITIALIZED], " +
-            "accessKey=[REDACTED], secretKey=[REDACTED])"
+            ?: ("KinesisConnectionDetails(endpoint=[UNINITIALIZED], region=[UNINITIALIZED], " +
+                    "accessKey=[REDACTED], secretKey=[REDACTED])")
 
         private fun requireValues(): AwsServiceConnectionValues =
             checkNotNull(values) { "Kinesis connection details have not been initialized" }

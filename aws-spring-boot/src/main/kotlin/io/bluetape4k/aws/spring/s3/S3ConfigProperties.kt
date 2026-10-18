@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.spring.s3
 
-import io.bluetape4k.aws.spring.env.requireOptionalName
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
@@ -15,6 +17,7 @@ import java.time.Duration
  * `bluetape4k.aws.s3.config`를 바인딩하고 Spring Environment 후처리 중 로드할 S3 객체를
  * 정의합니다. [sources]가 비어 있으면 AWS를 요청하지 않습니다.
  */
+@EnableConfigurationProperties(S3ConfigProperties::class)
 @ConfigurationProperties(prefix = "bluetape4k.aws.s3.config")
 data class S3ConfigProperties(
     val enabled: Boolean = true,
@@ -24,12 +27,10 @@ data class S3ConfigProperties(
     val failFast: Boolean = true,
     val refreshInterval: Duration? = null,
     val sources: List<Source> = emptyList(),
-) : Serializable {
+): Serializable {
     init {
         requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.s3.config")
-        refreshInterval?.let {
-            require(!it.isZero && !it.isNegative) { "refreshInterval must be positive." }
-        }
+        refreshInterval?.requireGt(Duration.ZERO, "refreshInterval")
     }
 
     /**
@@ -42,12 +43,12 @@ data class S3ConfigProperties(
         val prefix: String? = null,
         val format: S3ConfigFormat = S3ConfigFormat.AUTO,
         val optional: Boolean = false,
-    ) : Serializable {
+    ): Serializable {
         init {
-            requireOptionalName(name, "name")
-            requireOptionalName(prefix, "prefix")
-            require(bucket.isNotBlank()) { "bucket must not be blank." }
-            require(key.isNotBlank()) { "key must not be blank." }
+            name?.requireNotBlank("name")
+            prefix?.requireNotBlank("prefix")
+            bucket.requireNotBlank("bucket")
+            key.requireNotBlank("key")
         }
 
         val propertySourceName: String

@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 
-object NoopKmsOperations: KmsOperations {
+object NoopKmsOperations: KmsOperations, KLogging() {
+
     override suspend fun encrypt(
         plaintext: ByteArray,
         keyId: String?,

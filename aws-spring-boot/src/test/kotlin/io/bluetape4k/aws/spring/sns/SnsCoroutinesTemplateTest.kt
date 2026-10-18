@@ -3,45 +3,63 @@ package io.bluetape4k.aws.spring.sns
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionRequest
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import software.amazon.awssdk.services.sns.model.CreateTopicRequest
 import software.amazon.awssdk.services.sns.model.CreateTopicResponse
+import software.amazon.awssdk.services.sns.model.ListTopicsRequest
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import software.amazon.awssdk.services.sns.model.PublishBatchRequest
 import software.amazon.awssdk.services.sns.model.PublishBatchResponse
+import software.amazon.awssdk.services.sns.model.PublishBatchResultEntry
 import software.amazon.awssdk.services.sns.model.PublishRequest
 import software.amazon.awssdk.services.sns.model.PublishResponse
-import software.amazon.awssdk.services.sns.model.PublishBatchResultEntry
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
-class SnsCoroutinesTemplateTest {
+class SnsCoroutinesTemplateTest: AbstractSnsTest() {
+
+    companion object: KLoggingChannel()
+
+    private val client = mockk<SnsAsyncClient>(relaxed = true)
+    private val resolver = mockk<SnsTopicArnResolver>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client, resolver)
+    }
 
     @Test
     fun `publishBatch uses SDK batch calls and preserves entry fields`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val capturedRequests = mutableListOf<PublishBatchRequest>()
-        every { client.publishBatch(any<PublishBatchRequest>()) } answers {
+        every {
+            client.publishBatch(any<PublishBatchRequest>())
+        } answers {
             val request = firstArg<PublishBatchRequest>()
             capturedRequests += request
-            CompletableFuture.completedFuture(
+            completableFutureOf(
                 PublishBatchResponse.builder()
                     .successful(
                         request.publishBatchRequestEntries().map { entry ->
@@ -76,24 +94,27 @@ class SnsCoroutinesTemplateTest {
             },
         )
 
-        val result = template(client).publishBatch(request, SnsBatchExecutionOptions(maxInFlightBatches = 2))
+        val result = template(client)
+            .publishBatch(request, SnsBatchExecutionOptions(maxInFlightBatches = 2))
 
         capturedRequests shouldHaveSize 2
-        capturedRequests.flatMap { it.publishBatchRequestEntries() }.map { it.id() } shouldBeEqualTo
-            request.entries.map { it.id }
+        capturedRequests.flatMap { it.publishBatchRequestEntries() }
+            .map { it.id() } shouldBeEqualTo request.entries.map { it.id }
+
         val firstEntry = capturedRequests.first().publishBatchRequestEntries().first()
+        log.debug { "firstEntry=$firstEntry" }
         firstEntry.subject() shouldBeEqualTo "subject-1"
-        firstEntry.messageAttributes()["trace"]?.stringValue() shouldBeEqualTo
-            attributes.getValue("trace").stringValue()
+        firstEntry.messageAttributes()["trace"]?.stringValue() shouldBeEqualTo attributes.getValue("trace")
+            .stringValue()
         firstEntry.messageGroupId() shouldBeEqualTo "group-1"
         firstEntry.messageDeduplicationId() shouldBeEqualTo "dedup-1"
+
         result.successful.map { it.entryId } shouldBeEqualTo request.entries.map { it.id }
         verify(exactly = 2) { client.publishBatch(any<PublishBatchRequest>()) }
     }
 
     @Test
     fun `publishBatch empty request avoids SDK call`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val request = SnsPublishBatchRequest(
             topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
             entries = emptyList(),
@@ -101,21 +122,26 @@ class SnsCoroutinesTemplateTest {
 
         val result = template(client).publishBatch(request)
 
+        log.debug { "result=$result" }
         result.successful.shouldBeEmpty()
         result.failed.shouldBeEmpty()
+
         verify(exactly = 0) { client.publishBatch(any<PublishBatchRequest>()) }
         verify(exactly = 0) { client.publish(any<PublishRequest>()) }
     }
 
     @Test
     fun `publishBatch caller cancellation preserves identity and cancels SDK future`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val futureStarted = CompletableDeferred<Unit>()
         val sdkFuture = TrackingPublishBatchFuture()
-        every { client.publishBatch(any<PublishBatchRequest>()) } answers {
+
+        every {
+            client.publishBatch(any<PublishBatchRequest>())
+        } answers {
             futureStarted.complete(Unit)
             sdkFuture
         }
+
         val request = SnsPublishBatchRequest(
             topicArn = "arn:aws:sns:us-east-1:000000000000:orders",
             entries = listOf(
@@ -127,6 +153,7 @@ class SnsCoroutinesTemplateTest {
         )
         val cancellation = CancellationException("caller-${Base58.randomString(16)}")
         val observed = CompletableDeferred<Throwable>()
+
         val call = launch {
             try {
                 template(client).publishBatch(request)
@@ -142,14 +169,14 @@ class SnsCoroutinesTemplateTest {
         val actual = observed.await()
         actual.cause shouldBeSameInstanceAs cancellation
         sdkFuture.cancelled.shouldBeTrue()
-        sdkFuture.cancelArgument shouldBeEqualTo false
+        sdkFuture.cancelArgument.shouldBeFalse()
         sdkFuture.isCancelled.shouldBeTrue()
+
         verify(exactly = 1) { client.publishBatch(any<PublishBatchRequest>()) }
     }
 
     @Test
     fun `publishSms maps phone number and explicit SMS attributes`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         lateinit var capturedConsumer: Consumer<PublishRequest.Builder>
         val response = PublishResponse.builder().messageId("sms-1").build()
 
@@ -157,7 +184,7 @@ class SnsCoroutinesTemplateTest {
             client.publish(any<Consumer<PublishRequest.Builder>>())
         } answers {
             capturedConsumer = firstArg()
-            CompletableFuture.completedFuture(response)
+            completableFutureOf(response)
         }
 
         val result = template(client).publishSms(
@@ -183,6 +210,8 @@ class SnsCoroutinesTemplateTest {
         capturedConsumer.accept(requestBuilder)
         val request = requestBuilder.build()
 
+        log.debug { "result=$result" }
+        log.debug { "request=$request" }
         result.messageId() shouldBeEqualTo "sms-1"
         request.topicArn().shouldBeNull()
         request.phoneNumber() shouldBeEqualTo "+15550100000"
@@ -201,7 +230,6 @@ class SnsCoroutinesTemplateTest {
 
     @Test
     fun `confirmSubscription maps token and authenticate flag`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         lateinit var capturedConsumer: Consumer<ConfirmSubscriptionRequest.Builder>
         val response = ConfirmSubscriptionResponse.builder()
             .subscriptionArn("arn:aws:sns:us-east-1:000000000000:orders:sub")
@@ -211,7 +239,7 @@ class SnsCoroutinesTemplateTest {
             client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
         } answers {
             capturedConsumer = firstArg()
-            CompletableFuture.completedFuture(response)
+            completableFutureOf(response)
         }
 
         val result = template(client).confirmSubscription(
@@ -225,9 +253,11 @@ class SnsCoroutinesTemplateTest {
         val request = requestBuilder.build()
 
         result.subscriptionArn() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders:sub"
+        log.debug { "result=$result" }
         request.topicArn() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
         request.token() shouldBeEqualTo "token-1"
         request.authenticateOnUnsubscribe() shouldBeEqualTo "false"
+
         verify(exactly = 1) {
             client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
         }
@@ -235,7 +265,6 @@ class SnsCoroutinesTemplateTest {
 
     @Test
     fun `confirmSubscription from HTTP message delegates topic and token`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         lateinit var capturedConsumer: Consumer<ConfirmSubscriptionRequest.Builder>
         val response = ConfirmSubscriptionResponse.builder()
             .subscriptionArn("arn:aws:sns:us-east-1:000000000000:orders:sub")
@@ -245,7 +274,7 @@ class SnsCoroutinesTemplateTest {
             client.confirmSubscription(any<Consumer<ConfirmSubscriptionRequest.Builder>>())
         } answers {
             capturedConsumer = firstArg()
-            CompletableFuture.completedFuture(response)
+            completableFutureOf(response)
         }
 
         val message = SnsHttpMessageParser.parse(subscriptionConfirmationJson)
@@ -254,8 +283,9 @@ class SnsCoroutinesTemplateTest {
 
         val requestBuilder = ConfirmSubscriptionRequest.builder()
         capturedConsumer.accept(requestBuilder)
-        val request = requestBuilder.build()
 
+        val request = requestBuilder.build()
+        log.debug { "request=$request" }
         request.topicArn() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000000:orders"
         request.token() shouldBeEqualTo "token-1"
         request.authenticateOnUnsubscribe() shouldBeEqualTo "true"
@@ -264,17 +294,15 @@ class SnsCoroutinesTemplateTest {
     @Test
     fun `confirmSubscription from notification message fails fast`() = runTest {
         val error = assertFailsWith<IllegalArgumentException> {
-            template(mockk(relaxed = true)).confirmSubscription(SnsHttpMessageParser.parse(notificationJson))
+            template(mockk(relaxed = true))
+                .confirmSubscription(SnsHttpMessageParser.parse(notificationJson))
         }
 
-        error.message.orEmpty() shouldBeEqualTo
-            "SNS HTTP message type Notification cannot confirm a subscription."
+        error.message shouldBeEqualTo "SNS HTTP message type Notification cannot confirm a subscription."
     }
 
     @Test
     fun `findTopicArn delegates to injected resolver`() = runTest {
-        val client = mockk<SnsAsyncClient>()
-        val resolver = mockk<SnsTopicArnResolver>()
         val arn = "arn:aws:sns:us-east-1:000000000000:orders"
         coEvery { resolver.findTopicArn("orders") } returns arn
 
@@ -286,16 +314,15 @@ class SnsCoroutinesTemplateTest {
         ).findTopicArn("orders")
 
         result shouldBeEqualTo arn
+
         coVerify(exactly = 1) { resolver.findTopicArn("orders") }
         verify(exactly = 0) {
-            client.listTopics(any<Consumer<software.amazon.awssdk.services.sns.model.ListTopicsRequest.Builder>>())
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
         }
     }
 
     @Test
     fun `findTopicArn accepts explicit arn through resolver`() = runTest {
-        val client = mockk<SnsAsyncClient>()
-        val resolver = mockk<SnsTopicArnResolver>()
         val arn = "arn:aws:sns:us-east-1:000000000000:orders"
         coEvery { resolver.resolve(arn) } returns arn
 
@@ -307,19 +334,20 @@ class SnsCoroutinesTemplateTest {
         ).findTopicArn(arn)
 
         result shouldBeEqualTo arn
+
         coVerify(exactly = 1) { resolver.resolve(arn) }
         verify(exactly = 0) {
-            client.listTopics(any<Consumer<software.amazon.awssdk.services.sns.model.ListTopicsRequest.Builder>>())
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
         }
     }
 
     @Test
     fun `createTopic invalidates resolver after successful create`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val resolver = mockk<SnsTopicArnResolver>(relaxed = true)
         val arn = "arn:aws:sns:us-east-1:000000000000:orders"
-        every { client.createTopic(any<Consumer<CreateTopicRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(CreateTopicResponse.builder().topicArn(arn).build())
+        every {
+            client.createTopic(any<Consumer<CreateTopicRequest.Builder>>())
+        } returns completableFutureOf(CreateTopicResponse.builder().topicArn(arn).build())
 
         val result = SnsCoroutinesTemplate(
             snsAsyncClient = client,
@@ -375,7 +403,7 @@ class SnsCoroutinesTemplateTest {
             value.stringValue()
         }
 
-    private class TrackingPublishBatchFuture : CompletableFuture<PublishBatchResponse>() {
+    private class TrackingPublishBatchFuture: CompletableFuture<PublishBatchResponse>() {
         var cancelled: Boolean = false
             private set
         var cancelArgument: Boolean? = null

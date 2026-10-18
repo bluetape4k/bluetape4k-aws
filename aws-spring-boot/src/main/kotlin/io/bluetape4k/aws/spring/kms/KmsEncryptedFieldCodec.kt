@@ -1,8 +1,9 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.support.toUtf8Bytes
 import java.lang.reflect.Field
 import java.nio.charset.StandardCharsets
-import java.util.Base64
+import java.util.*
 
 /**
  * [KmsOperations]를 사용하는 명시적인 필드 수준 String 암호화 코덱입니다.
@@ -24,11 +25,10 @@ class KmsEncryptedFieldCodec(
 
         return try {
             val ciphertext = kmsOperations.encrypt(
-                plaintext = value.toByteArray(StandardCharsets.UTF_8),
+                plaintext = value.toUtf8Bytes(),
                 keyId = annotation.effectiveKeyId(),
                 encryptionContext = effectiveEncryptionContext(annotation),
             )
-
             CIPHERTEXT_PREFIX + encoder.encodeToString(ciphertext)
         } catch (e: KmsEncryptedFieldUsageException) {
             throw e

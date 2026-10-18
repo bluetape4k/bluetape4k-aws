@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.imds
 
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireZeroOrPositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -23,8 +25,8 @@ data class ImdsProperties(
     val enabled: Boolean = true,
     val endpoint: URI? = null,
     val endpointMode: EndpointMode? = EndpointMode.IPV4,
-    val tokenTtl: Duration = Duration.ofHours(6),
-    val requestTimeout: Duration = Duration.ofSeconds(1),
+    val tokenTtl: Duration = 6.hours(),
+    val requestTimeout: Duration = 1.seconds(),
     val retries: Int = 0,
 ): Serializable {
 

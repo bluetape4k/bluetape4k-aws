@@ -1,29 +1,45 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityBatchRequest
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityBatchResponse
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityBatchResultEntry
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchResultEntry
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
-import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
 class SqsOperationsBatchTest {
+
+    companion object: KLoggingChannel() {
+        private const val QUEUE_URL = "https://sqs.local/orders"
+    }
+
+    private val client = mockk<SqsAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `default deleteBatch falls back to single delete in input order`() = runSuspendIO {
@@ -31,6 +47,7 @@ class SqsOperationsBatchTest {
 
         val result = operations.deleteBatch(QUEUE_URL, listOf("receipt-1", "receipt-2", "receipt-3"))
 
+        log.debug { "result=$result" }
         result.successfulEntryIds shouldBeEqualTo listOf("entry-0", "entry-1", "entry-2")
         operations.deleteRequests shouldBeEqualTo listOf("receipt-1", "receipt-2", "receipt-3")
     }
@@ -45,6 +62,7 @@ class SqsOperationsBatchTest {
 
         val result = operations.changeVisibilityBatch(QUEUE_URL, requests)
 
+        log.debug { "result=$result" }
         result.successfulMessageIds shouldBeEqualTo listOf("message-1", "message-2")
         operations.visibilityRequests.map { it.receiptHandle } shouldBeEqualTo listOf("receipt-1", "receipt-2")
     }
@@ -62,19 +80,21 @@ class SqsOperationsBatchTest {
                 listOf(SqsChangeVisibilityRequest("message-1", "receipt-1", -1)),
             )
         }
-        operations.deleteRequests shouldBeEqualTo emptyList()
-        operations.visibilityRequests shouldBeEqualTo emptyList()
+
+        operations.deleteRequests.shouldBeEmpty()
+        operations.visibilityRequests.shouldBeEmpty()
     }
 
     @Test
     fun `template sends one delete batch request and maps successful entries`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>()
         val requests = mutableListOf<DeleteMessageBatchRequest>()
-        every { client.deleteMessageBatch(any<Consumer<DeleteMessageBatchRequest.Builder>>()) } answers {
+        every {
+            client.deleteMessageBatch(any<Consumer<DeleteMessageBatchRequest.Builder>>())
+        } answers {
             val builder = DeleteMessageBatchRequest.builder()
             firstArg<Consumer<DeleteMessageBatchRequest.Builder>>().accept(builder)
             requests += builder.build()
-            CompletableFuture.completedFuture(
+            completableFutureOf(
                 DeleteMessageBatchResponse.builder()
                     .successful(
                         DeleteMessageBatchResultEntry.builder().id("entry-0").build(),
@@ -94,7 +114,6 @@ class SqsOperationsBatchTest {
 
     @Test
     fun `template sends one visibility batch request and preserves item failures`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>()
         val requests = mutableListOf<ChangeMessageVisibilityBatchRequest>()
         every {
             client.changeMessageVisibilityBatch(
@@ -104,7 +123,7 @@ class SqsOperationsBatchTest {
             val builder = ChangeMessageVisibilityBatchRequest.builder()
             firstArg<Consumer<ChangeMessageVisibilityBatchRequest.Builder>>().accept(builder)
             requests += builder.build()
-            CompletableFuture.completedFuture(
+            completableFutureOf(
                 ChangeMessageVisibilityBatchResponse.builder()
                     .successful(ChangeMessageVisibilityBatchResultEntry.builder().id("entry-1").build())
                     .failed(
@@ -136,13 +155,13 @@ class SqsOperationsBatchTest {
 
     @Test
     fun `template rejects incomplete delete batch response`() = runSuspendIO {
-        val client = mockk<SqsAsyncClient>()
-        every { client.deleteMessageBatch(any<Consumer<DeleteMessageBatchRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(
-                DeleteMessageBatchResponse.builder()
-                    .successful(DeleteMessageBatchResultEntry.builder().id("entry-0").build())
-                    .build()
-            )
+        every {
+            client.deleteMessageBatch(any<Consumer<DeleteMessageBatchRequest.Builder>>())
+        } returns completableFutureOf(
+            DeleteMessageBatchResponse.builder()
+                .successful(DeleteMessageBatchResultEntry.builder().id("entry-0").build())
+                .build()
+        )
         val template = SqsCoroutinesTemplate(client, SqsProperties())
 
         assertFailsWith<SqsBatchDeleteProtocolException> {
@@ -150,7 +169,7 @@ class SqsOperationsBatchTest {
         }
     }
 
-    private class FallbackOperations : SqsOperations {
+    private class FallbackOperations: SqsOperations {
         val deleteRequests = mutableListOf<String>()
         val visibilityRequests = mutableListOf<SqsChangeVisibilityRequest>()
 
@@ -159,19 +178,23 @@ class SqsOperationsBatchTest {
             queueName: String,
             attributes: Map<QueueAttributeName, String>,
         ): String = QUEUE_URL
+
         override suspend fun createConfiguredQueue(queueName: String): String = QUEUE_URL
         override suspend fun send(queueUrl: String, body: String, delaySeconds: Int?): SendMessageResponse =
             SendMessageResponse.builder().build()
+
         override suspend fun receive(
             queueUrl: String,
             maxMessages: Int,
             waitTimeSeconds: Int,
             visibilityTimeoutSeconds: Int?,
         ): List<SqsReceivedMessage> = emptyList()
+
         override suspend fun delete(queueUrl: String, receiptHandle: String): DeleteMessageResponse {
             deleteRequests += receiptHandle
             return DeleteMessageResponse.builder().build()
         }
+
         override suspend fun changeVisibility(
             queueUrl: String,
             receiptHandle: String,
@@ -184,15 +207,12 @@ class SqsOperationsBatchTest {
             )
             return ChangeMessageVisibilityResponse.builder().build()
         }
+
         override fun receiveFlow(
             queueUrl: String,
             maxMessages: Int,
             waitTimeSeconds: Int,
             visibilityTimeoutSeconds: Int?,
         ): Flow<SqsReceivedMessage> = emptyFlow()
-    }
-
-    companion object {
-        private const val QUEUE_URL = "https://sqs.local/orders"
     }
 }

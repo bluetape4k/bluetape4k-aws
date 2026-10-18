@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.support.requireInRange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -46,7 +48,9 @@ internal class DefaultSqsAcknowledgement(
     private val operationGuard: () -> Unit = {},
     private val observationRuntime: SqsObservationRuntime? = null,
     private val observationQueueName: String? = null,
-) : SqsAcknowledgement {
+): SqsAcknowledgement {
+
+    companion object: KLoggingChannel()
 
     private val terminal = AtomicBoolean(false)
     private val inFlightTerminal = AtomicBoolean(false)
@@ -66,7 +70,7 @@ internal class DefaultSqsAcknowledgement(
     }
 
     override suspend fun nack(timeoutSeconds: Int) {
-        require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
+        requireValidTimeout(timeoutSeconds)
         runTerminalAcknowledgement(SqsAcknowledgementAction.NACK) {
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
@@ -81,7 +85,7 @@ internal class DefaultSqsAcknowledgement(
         onObservationSetupFailure: (Throwable) -> Unit = {},
         onObservationCleanupFailure: (Throwable) -> Unit,
     ) {
-        require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
+        requireValidTimeout(timeoutSeconds)
         if (terminal.get() || inFlightTerminal.get()) return
         runAcknowledgement(
             action = SqsAcknowledgementAction.CHANGE_VISIBILITY,
@@ -97,10 +101,14 @@ internal class DefaultSqsAcknowledgement(
         action: SqsAcknowledgementAction,
         timeoutSeconds: Int,
     ) {
-        require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
+        requireValidTimeout(timeoutSeconds)
         runAcknowledgement(action) {
             operations.changeVisibility(context.queueUrl, context.message.receiptHandle, timeoutSeconds)
         }
+    }
+
+    private fun requireValidTimeout(timeoutSeconds: Int) {
+        timeoutSeconds.requireInRange(0, 43_200, "timeoutSeconds")
     }
 
     private suspend fun runTerminalAcknowledgement(
@@ -149,6 +157,7 @@ internal class DefaultSqsAcknowledgement(
                 onObservationSetupFailure?.invoke(e)
                 throw e
             }
+
             suspend fun performAcknowledgement() {
                 ticket.awaitTurn()
                 try {
@@ -197,7 +206,9 @@ internal class DefaultSqsAcknowledgement(
             ticket.completeAfterPredecessor()
         }
         val cleanupFailure = runCatchingAcknowledgementFinalization {
-            interceptors.forEach { it.afterAcknowledgement(context, action, failure) }
+            interceptors.forEach {
+                it.afterAcknowledgement(context, action, failure)
+            }
         }
         throwAcknowledgementFailures(failure, cleanupFailure)
     }

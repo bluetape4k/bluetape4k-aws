@@ -1,25 +1,12 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
-import org.junit.jupiter.api.Test
-import org.springframework.aot.hint.RuntimeHints
-import org.springframework.aot.hint.annotation.ReflectiveRuntimeHintsRegistrar
-import org.springframework.aot.hint.predicate.RuntimeHintsPredicates
-import org.springframework.boot.autoconfigure.AutoConfigurations
-import org.springframework.boot.test.context.FilteredClassLoader
-import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner
-import org.springframework.boot.test.context.runner.WebApplicationContextRunner
-import org.springframework.context.annotation.ImportRuntimeHints
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
-import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping as WebFluxRequestMappingHandlerMapping
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
@@ -28,8 +15,26 @@ import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessageAttri
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
+import io.bluetape4k.logging.KLogging
+import org.junit.jupiter.api.Test
+import org.springframework.aot.hint.RuntimeHints
+import org.springframework.aot.hint.annotation.ReflectiveRuntimeHintsRegistrar
+import org.springframework.aot.hint.predicate.RuntimeHintsPredicates
+import org.springframework.beans.factory.getBeansOfType
+import org.springframework.boot.autoconfigure.AutoConfigurations
+import org.springframework.boot.test.context.FilteredClassLoader
+import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner
+import org.springframework.boot.test.context.runner.WebApplicationContextRunner
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.ImportRuntimeHints
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
+import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping as WebFluxRequestMappingHandlerMapping
 
-class SnsHttpEndpointAutoConfigurationTest {
+class SnsHttpEndpointAutoConfigurationTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `MVC auto configuration registers resolver filter and properties`() {
@@ -41,9 +46,9 @@ class SnsHttpEndpointAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SnsMvcHttpMessageArgumentResolver::class.java) shouldHaveSize 1
-                context.getBeansOfType(SnsHttpMessageServletFilter::class.java) shouldHaveSize 1
-                context.getBeansOfType(SnsHttpEndpointProperties::class.java) shouldHaveSize 1
+                context.getBeansOfType<SnsMvcHttpMessageArgumentResolver>() shouldHaveSize 1
+                context.getBeansOfType<SnsHttpMessageServletFilter>() shouldHaveSize 1
+                context.getBeansOfType<SnsHttpEndpointProperties>() shouldHaveSize 1
             }
     }
 
@@ -57,9 +62,9 @@ class SnsHttpEndpointAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SnsWebFluxHttpMessageArgumentResolver::class.java) shouldHaveSize 1
-                context.getBeansOfType(SnsHttpMessageWebFilter::class.java) shouldHaveSize 1
-                context.getBeansOfType(SnsHttpEndpointProperties::class.java) shouldHaveSize 1
+                context.getBeansOfType<SnsWebFluxHttpMessageArgumentResolver>() shouldHaveSize 1
+                context.getBeansOfType<SnsHttpMessageWebFilter>() shouldHaveSize 1
+                context.getBeansOfType<SnsHttpEndpointProperties>() shouldHaveSize 1
             }
     }
 
@@ -73,8 +78,8 @@ class SnsHttpEndpointAutoConfigurationTest {
                 "bluetape4k.aws.sns.http-endpoints.allow-structural-only=true",
             )
             .run { context ->
-                context.getBeansOfType(SnsMvcHttpMessageArgumentResolver::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsHttpMessageServletFilter::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsMvcHttpMessageArgumentResolver>().shouldBeEmpty()
+                context.getBeansOfType<SnsHttpMessageServletFilter>().shouldBeEmpty()
             }
 
         ReactiveWebApplicationContextRunner()
@@ -85,8 +90,8 @@ class SnsHttpEndpointAutoConfigurationTest {
                 "bluetape4k.aws.sns.http-endpoints.allow-structural-only=true",
             )
             .run { context ->
-                context.getBeansOfType(SnsWebFluxHttpMessageArgumentResolver::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsHttpMessageWebFilter::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsWebFluxHttpMessageArgumentResolver>().shouldBeEmpty()
+                context.getBeansOfType<SnsHttpMessageWebFilter>().shouldBeEmpty()
             }
     }
 
@@ -96,8 +101,8 @@ class SnsHttpEndpointAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(SnsHttpEndpointWebMvcAutoConfiguration::class.java))
             .withClassLoader(FilteredClassLoader("org.springframework.web.servlet"))
             .run { context ->
-                context.getBeansOfType(SnsMvcHttpMessageArgumentResolver::class.java) shouldHaveSize 0
-        }
+                context.getBeansOfType<SnsMvcHttpMessageArgumentResolver>().shouldBeEmpty()
+            }
     }
 
     @Test
@@ -106,16 +111,16 @@ class SnsHttpEndpointAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(SnsHttpEndpointWebMvcAutoConfiguration::class.java))
             .withPropertyValues("bluetape4k.aws.enabled=false")
             .run { context ->
-                context.getBeansOfType(SnsMvcHttpMessageArgumentResolver::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsHttpMessageServletFilter::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsMvcHttpMessageArgumentResolver>().shouldBeEmpty()
+                context.getBeansOfType<SnsHttpMessageServletFilter>().shouldBeEmpty()
             }
 
         ReactiveWebApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(SnsHttpEndpointWebFluxAutoConfiguration::class.java))
             .withPropertyValues("bluetape4k.aws.enabled=false")
             .run { context ->
-                context.getBeansOfType(SnsWebFluxHttpMessageArgumentResolver::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsHttpMessageWebFilter::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsWebFluxHttpMessageArgumentResolver>().shouldBeEmpty()
+                context.getBeansOfType<SnsHttpMessageWebFilter>().shouldBeEmpty()
             }
     }
 
@@ -130,7 +135,7 @@ class SnsHttpEndpointAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SnsMvcHttpMessageArgumentResolver::class.java) shouldHaveSize 1
+                context.getBeansOfType<SnsMvcHttpMessageArgumentResolver>() shouldHaveSize 1
             }
     }
 
@@ -141,8 +146,8 @@ class SnsHttpEndpointAutoConfigurationTest {
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.sns"))
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SnsMvcHttpMessageArgumentResolver::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsHttpMessageServletFilter::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsMvcHttpMessageArgumentResolver>().shouldBeEmpty()
+                context.getBeansOfType<SnsHttpMessageServletFilter>().shouldBeEmpty()
             }
     }
 
@@ -153,8 +158,8 @@ class SnsHttpEndpointAutoConfigurationTest {
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.sns"))
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SnsWebFluxHttpMessageArgumentResolver::class.java) shouldHaveSize 0
-                context.getBeansOfType(SnsHttpMessageWebFilter::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsWebFluxHttpMessageArgumentResolver>().shouldBeEmpty()
+                context.getBeansOfType<SnsHttpMessageWebFilter>().shouldBeEmpty()
             }
     }
 
@@ -192,7 +197,7 @@ class SnsHttpEndpointAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(SnsHttpEndpointWebFluxAutoConfiguration::class.java))
             .withClassLoader(FilteredClassLoader("org.springframework.web.reactive"))
             .run { context ->
-                context.getBeansOfType(SnsWebFluxHttpMessageArgumentResolver::class.java) shouldHaveSize 0
+                context.getBeansOfType<SnsWebFluxHttpMessageArgumentResolver>().shouldBeEmpty()
             }
     }
 
@@ -204,7 +209,7 @@ class SnsHttpEndpointAutoConfigurationTest {
         assertFailsWith<IllegalArgumentException> {
             SnsHttpEndpointProperties(verificationRequired = false, allowStructuralOnly = false)
         }
-        SnsHttpEndpointProperties(verificationRequired = false, allowStructuralOnly = true).enabled shouldBeEqualTo true
+        SnsHttpEndpointProperties(verificationRequired = false, allowStructuralOnly = true).enabled.shouldBeTrue()
     }
 
     @Test
@@ -221,7 +226,7 @@ class SnsHttpEndpointAutoConfigurationTest {
             NotificationRawMessage::class.java,
             NotificationStatus::class.java,
         ).forEach { type ->
-            RuntimeHintsPredicates.reflection().onType(type).test(hints) shouldBeEqualTo true
+            RuntimeHintsPredicates.reflection().onType(type).test(hints).shouldBeTrue()
         }
         SnsHttpEndpointWebMvcAutoConfiguration::class.java
             .getAnnotation(ImportRuntimeHints::class.java)
@@ -230,15 +235,15 @@ class SnsHttpEndpointAutoConfigurationTest {
         val controllerMethod = NativeController::class.java
             .getDeclaredMethod("notification", NativePayload::class.java)
         ReflectiveRuntimeHintsRegistrar().registerRuntimeHints(hints, NativeController::class.java)
-        RuntimeHintsPredicates.reflection().onMethodInvocation(controllerMethod).test(hints) shouldBeEqualTo true
-        RuntimeHintsPredicates.reflection().onType(NativePayload::class.java).test(hints) shouldBeEqualTo true
+        RuntimeHintsPredicates.reflection().onMethodInvocation(controllerMethod).test(hints).shouldBeTrue()
+        RuntimeHintsPredicates.reflection().onType(NativePayload::class.java).test(hints).shouldBeTrue()
 
         val readValue = tools.jackson.databind.ObjectMapper::class.java.getMethod(
             "readValue",
             String::class.java,
             Class::class.java,
         )
-        RuntimeHintsPredicates.reflection().onMethodInvocation(readValue).test(hints) shouldBeEqualTo true
+        RuntimeHintsPredicates.reflection().onMethodInvocation(readValue).test(hints).shouldBeTrue()
     }
 
     @Configuration(proxyBeanMethods = false)

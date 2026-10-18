@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 
@@ -12,6 +13,12 @@ import io.micrometer.core.instrument.MeterRegistry
 class SqsExtendedClientMetrics(
     private val meterRegistry: MeterRegistry,
 ) {
+    companion object: KLogging() {
+        const val OFFLOAD_METRIC = "bluetape4k.aws.sqs.extended.offload.total"
+        const val ORPHAN_METRIC = "bluetape4k.aws.sqs.extended.orphan.total"
+        const val PAYLOAD_READ_FAILURE_METRIC = "bluetape4k.aws.sqs.extended.payload-read.failure"
+        const val CLEANUP_FAILURE_METRIC = "bluetape4k.aws.sqs.extended.cleanup.failure"
+    }
 
     fun recordOffloadInline() = offloadCounter("inline").increment()
 
@@ -58,12 +65,5 @@ class SqsExtendedClientMetrics(
     enum class CleanupFailureKind {
         S3_DELETE,
         CONFIGURATION,
-    }
-
-    companion object {
-        const val OFFLOAD_METRIC = "bluetape4k.aws.sqs.extended.offload.total"
-        const val ORPHAN_METRIC = "bluetape4k.aws.sqs.extended.orphan.total"
-        const val PAYLOAD_READ_FAILURE_METRIC = "bluetape4k.aws.sqs.extended.payload-read.failure"
-        const val CLEANUP_FAILURE_METRIC = "bluetape4k.aws.sqs.extended.cleanup.failure"
     }
 }

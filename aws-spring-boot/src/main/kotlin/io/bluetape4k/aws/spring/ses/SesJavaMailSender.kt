@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.ses
 
+import io.bluetape4k.concurrent.FutureUtils
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.requireNotNull
 import jakarta.mail.Message.RecipientType
 import jakarta.mail.MessagingException
@@ -16,7 +18,7 @@ import software.amazon.awssdk.services.sesv2.model.SesV2Exception
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.util.Properties
+import java.util.*
 import java.util.concurrent.CompletionException
 
 /**
@@ -31,6 +33,10 @@ class SesJavaMailSender(
     private val sesOperations: SesOperations,
 ): JavaMailSender {
 
+    companion object: KLogging() {
+        private val mailSession: Session by lazy { Session.getInstance(Properties()) }
+    }
+
     override fun createMimeMessage(): MimeMessage =
         MimeMessage(mailSession)
 
@@ -44,13 +50,15 @@ class SesJavaMailSender(
     override fun send(vararg mimeMessages: MimeMessage) {
         val failedMessages = linkedMapOf<Any, Exception>()
 
-        mimeMessages.forEach { message ->
-            try {
-                sesOperations.sendRawEmailAsync(message.toRawEmailRequest()).join()
-            } catch (e: Exception) {
-                failedMessages[message] = e.toMailException()
-            }
+        val responses = mimeMessages.map { message ->
+            sesOperations.sendRawEmailAsync(message.toRawEmailRequest())
+                .whenComplete { response, throwable ->
+                    if (throwable != null) {
+                        failedMessages[message] = throwable.toMailException()
+                    }
+                }
         }
+        FutureUtils.allAsList(responses).join()
 
         if (failedMessages.isNotEmpty()) {
             throw MailSendException(failedMessages)
@@ -60,13 +68,15 @@ class SesJavaMailSender(
     override fun send(vararg simpleMessages: SimpleMailMessage) {
         val failedMessages = linkedMapOf<Any, Exception>()
 
-        simpleMessages.forEach { message ->
-            try {
-                sesOperations.sendEmailAsync(message.toEmailRequest()).join()
-            } catch (e: Exception) {
-                failedMessages[message] = e.toMailException()
-            }
+        val repsonses = simpleMessages.map { message ->
+            sesOperations.sendEmailAsync(message.toEmailRequest())
+                .whenComplete { response, throwable ->
+                    if (throwable != null) {
+                        failedMessages[message] = throwable.toMailException()
+                    }
+                }
         }
+        FutureUtils.allAsList(repsonses).join()
 
         if (failedMessages.isNotEmpty()) {
             throw MailSendException(failedMessages)
@@ -117,7 +127,7 @@ class SesJavaMailSender(
             throw MailParseException(e)
         }
 
-    private fun Exception.toMailException(): Exception {
+    private fun Throwable.toMailException(): Exception {
         val cause = unwrapCompletion()
         if (cause !is Exception) {
             throw cause
@@ -127,7 +137,7 @@ class SesJavaMailSender(
             is MailAuthenticationException,
             is MailPreparationException,
             is MailSendException,
-            -> cause
+                -> cause
 
             is IllegalArgumentException -> MailParseException(cause)
             is MessagingException -> MailParseException(cause)
@@ -143,15 +153,11 @@ class SesJavaMailSender(
         }
     }
 
-    private fun Exception.unwrapCompletion(): Throwable {
+    private fun Throwable.unwrapCompletion(): Throwable {
         var current: Throwable = this
         while (current is CompletionException && current.cause != null) {
             current = current.cause.requireNotNull("cause")
         }
         return current
-    }
-
-    companion object {
-        private val mailSession: Session = Session.getInstance(Properties())
     }
 }

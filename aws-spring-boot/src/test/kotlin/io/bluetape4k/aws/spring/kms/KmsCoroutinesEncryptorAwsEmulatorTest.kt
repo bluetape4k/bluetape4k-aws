@@ -1,26 +1,35 @@
 package io.bluetape4k.aws.spring.kms
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldNotBe
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
-import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.junit5.faker.Fakers
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
-import java.io.Serializable
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.security.crypto.encrypt.TextEncryptor
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.kms.KmsAsyncClient
 import software.amazon.awssdk.services.kms.model.DataKeySpec
+import java.io.Serializable
 
 class KmsCoroutinesEncryptorAwsEmulatorTest {
 
-    companion object {
-        private val awsEmulator by lazy {
+    companion object: KLogging() {
+        private const val REPEAT_SIZE = 5
+
+        private val awsEmulator: AwsEmulatorServer by lazy {
             AwsSpringBootTestEmulator.get("kms")
         }
     }
@@ -46,29 +55,37 @@ class KmsCoroutinesEncryptorAwsEmulatorTest {
     @Test
     fun `encrypt decrypt and cache data key through KMS operations`() {
         contextRunner().run { context ->
-            val kmsAsyncClient = context.getBean(KmsAsyncClient::class.java)
-            val operations = context.getBean(KmsOperations::class.java)
+            val kmsAsyncClient = context.getBean<KmsAsyncClient>()
+            val operations = context.getBean<KmsOperations>()
 
             runSuspendIO {
-                val keyId = kmsAsyncClient.createKey {
-                    it.description("bluetape4k aws-spring-boot kms test")
-                }.await().keyMetadata().keyId()
+                val keyId = kmsAsyncClient
+                    .createKey {
+                        it.description("bluetape4k aws-spring-boot kms test")
+                    }
+                    .await()
+                    .keyMetadata()
+                    .keyId()
 
-                val plaintext = "hello kms".encodeToByteArray()
-                val encryptionContext = mapOf("purpose" to "roundtrip")
+                repeat(REPEAT_SIZE) {
+                    val plain = Fakers.defaultFaker.lorem().paragraph()
+                    val plaintext = plain.encodeToByteArray()
+                    val encryptionContext = mapOf("purpose" to "roundtrip")
 
-                val ciphertext = operations.encrypt(
-                    plaintext = plaintext,
-                    keyId = keyId,
-                    encryptionContext = encryptionContext,
-                )
+                    val ciphertext = operations.encrypt(
+                        plaintext = plaintext,
+                        keyId = keyId,
+                        encryptionContext = encryptionContext,
+                    )
 
-                ciphertext.contentEquals(plaintext) shouldBeEqualTo false
-                operations.decrypt(
-                    ciphertext = ciphertext,
-                    keyId = keyId,
-                    encryptionContext = encryptionContext,
-                ) shouldBeEqualTo plaintext
+                    ciphertext.contentEquals(plaintext).shouldBeFalse()
+
+                    operations.decrypt(
+                        ciphertext = ciphertext,
+                        keyId = keyId,
+                        encryptionContext = encryptionContext,
+                    ) shouldBeEqualTo plaintext
+                }
 
                 val firstDataKey = operations.generateDataKey(
                     keyId = keyId,
@@ -82,9 +99,12 @@ class KmsCoroutinesEncryptorAwsEmulatorTest {
                 )
 
                 try {
-                    require(cachedDataKey !== firstDataKey) {
-                        "cache reads must return independent caller-owned snapshots"
-                    }
+                    // cache reads must return independent caller-owned snapshots
+                    cachedDataKey shouldNotBe firstDataKey
+
+                    log.debug { "firstDataKey=$firstDataKey" }
+                    log.debug { "cacheDataKey=$cachedDataKey" }
+
                     firstDataKey.plaintext.shouldNotBeEmpty()
                     firstDataKey.encryptedDataKey.shouldNotBeEmpty()
                     cachedDataKey.plaintext.shouldNotBeEmpty()
@@ -100,23 +120,31 @@ class KmsCoroutinesEncryptorAwsEmulatorTest {
     @Test
     fun `text encryptor adapter round trips UTF-8 text`() {
         contextRunner().run { context ->
-            val kmsAsyncClient = context.getBean(KmsAsyncClient::class.java)
-            val operations = context.getBean(KmsOperations::class.java)
+            val kmsAsyncClient = context.getBean<KmsAsyncClient>()
+            val operations = context.getBean<KmsOperations>()
 
             runSuspendIO {
-                val keyId = kmsAsyncClient.createKey {
-                    it.description("bluetape4k aws-spring-boot text encryptor test")
-                }.await().keyMetadata().keyId()
+                val keyId = kmsAsyncClient
+                    .createKey {
+                        it.description("bluetape4k aws-spring-boot text encryptor test")
+                    }
+                    .await()
+                    .keyMetadata()
+                    .keyId()
+
                 val textEncryptor: TextEncryptor = KmsTextEncryptor(
                     kmsOperations = operations,
                     keyId = keyId,
                     encryptionContext = mapOf("purpose" to "text"),
                 )
 
-                val ciphertext = textEncryptor.encrypt("short secret value")
+                repeat(REPEAT_SIZE) {
+                    val text = Fakers.defaultFaker.lorem().paragraph()
+                    val ciphertext = textEncryptor.encrypt(text)
 
-                ciphertext shouldNotBeEqualTo "short secret value"
-                textEncryptor.decrypt(ciphertext) shouldBeEqualTo "short secret value"
+                    ciphertext shouldNotBeEqualTo text
+                    textEncryptor.decrypt(ciphertext) shouldBeEqualTo text
+                }
             }
         }
     }
@@ -124,27 +152,37 @@ class KmsCoroutinesEncryptorAwsEmulatorTest {
     @Test
     fun `field encryption codec round trips annotated String`() {
         contextRunner().run { context ->
-            val kmsAsyncClient = context.getBean(KmsAsyncClient::class.java)
-            val beanCodec = context.getBean(KmsEncryptedFieldCodec::class.java)
+            val kmsAsyncClient = context.getBean<KmsAsyncClient>()
+            val beanCodec = context.getBean<KmsEncryptedFieldCodec>()
 
             runSuspendIO {
-                val keyId = kmsAsyncClient.createKey {
-                    it.description("bluetape4k aws-spring-boot field encryption test")
-                }.await().keyMetadata().keyId()
+                val keyId = kmsAsyncClient
+                    .createKey {
+                        it.description("bluetape4k aws-spring-boot field encryption test")
+                    }
+                    .await()
+                    .keyMetadata()
+                    .keyId()
+
                 val annotation = FieldEncryptionFixture::class.java
                     .getDeclaredField("secret")
                     .getAnnotation(KmsEncrypted::class.java)
+
                 beanCodec.validate(FieldEncryptionFixture::class.java)
+
                 val keySpecificCodec = KmsEncryptedFieldCodec(
-                    kmsOperations = context.getBean(KmsOperations::class.java),
+                    kmsOperations = context.getBean<KmsOperations>(),
                     keyId = keyId,
                     encryptionContext = mapOf("service" to "kms-emulator-test"),
                 )
 
-                val ciphertext = keySpecificCodec.encrypt("field secret value", annotation)
+                repeat(REPEAT_SIZE) {
+                    val fieldValue = Fakers.defaultFaker.lorem().paragraph()
+                    val ciphertext = keySpecificCodec.encrypt(fieldValue, annotation)
 
-                ciphertext shouldNotBeEqualTo "field secret value"
-                beanCodec.decrypt(ciphertext, annotation) shouldBeEqualTo "field secret value"
+                    ciphertext shouldNotBeEqualTo fieldValue
+                    beanCodec.decrypt(ciphertext, annotation) shouldBeEqualTo fieldValue
+                }
             }
         }
     }

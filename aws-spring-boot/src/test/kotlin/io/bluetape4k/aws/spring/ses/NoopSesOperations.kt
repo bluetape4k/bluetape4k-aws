@@ -1,10 +1,13 @@
 package io.bluetape4k.aws.spring.ses
 
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import software.amazon.awssdk.services.sesv2.model.SendEmailRequest
 import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
 import java.util.concurrent.CompletableFuture
 
-object NoopSesOperations: SesOperations {
+object NoopSesOperations: SesOperations, KLogging() {
 
     override suspend fun sendEmail(request: SesEmailRequest): SendEmailResponse =
         response()
@@ -19,19 +22,22 @@ object NoopSesOperations: SesOperations {
         response()
 
     override fun sendEmailAsync(request: SesEmailRequest): CompletableFuture<SendEmailResponse> =
-        CompletableFuture.completedFuture(response())
+        completableFutureOf(response())
 
     override fun sendTemplateEmailAsync(request: SesTemplateEmailRequest): CompletableFuture<SendEmailResponse> =
-        CompletableFuture.completedFuture(response())
+        completableFutureOf(response())
 
     override fun sendRawEmailAsync(request: SesRawEmailRequest): CompletableFuture<SendEmailResponse> =
-        CompletableFuture.completedFuture(response())
+        completableFutureOf(response())
 
     override fun sendAsync(request: SendEmailRequest): CompletableFuture<SendEmailResponse> =
-        CompletableFuture.completedFuture(response())
+        completableFutureOf(response())
 
     private fun response(): SendEmailResponse =
         SendEmailResponse.builder()
             .messageId("noop")
             .build()
+            .also {
+                log.debug { "Noop SendMailResponse" }
+            }
 }

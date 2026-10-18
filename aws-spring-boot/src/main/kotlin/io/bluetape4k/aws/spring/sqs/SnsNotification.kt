@@ -13,7 +13,7 @@ data class SnsMessageAttribute(
     val type: String,
     /** SNS 속성 문자열 값입니다. */
     val value: String,
-) : Serializable {
+): Serializable {
 
     init {
         type.requireNotBlank("type")
@@ -35,7 +35,7 @@ data class SnsMessageAttribute(
  * 확인할 수 있습니다.
  */
 @ConsistentCopyVisibility
-data class SnsNotification<T : Any> private constructor(
+data class SnsNotification<T: Any> private constructor(
     /** SNS envelope 타입입니다. 일반적으로 `Notification`입니다. */
     val type: String,
     /** SNS 메시지 ID입니다. */
@@ -61,39 +61,43 @@ data class SnsNotification<T : Any> private constructor(
     /** 보존이 활성화된 경우의 원본 SNS JSON envelope입니다. */
     val rawEnvelope: String?,
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
-) : Serializable {
+): Serializable {
 
-    /**
-     * SNS envelope와 변환 결과를 생성합니다.
-     */
-    constructor(
-        type: String,
-        messageId: String,
-        topicArn: String,
-        message: T,
-        timestamp: String,
-        subject: String?,
-        signatureVersion: String?,
-        signature: String?,
-        signingCertUrl: String?,
-        messageAttributes: Map<String, SnsMessageAttribute>,
-        sqs: SqsReceivedMessage,
-        rawEnvelope: String?,
-    ) : this(
-        type = type,
-        messageId = messageId,
-        topicArn = topicArn,
-        message = message,
-        timestamp = timestamp,
-        subject = subject,
-        signatureVersion = signatureVersion,
-        signature = signature,
-        signingCertUrl = signingCertUrl,
-        messageAttributes = messageAttributes.toMap(),
-        sqs = sqs,
-        rawEnvelope = rawEnvelope,
-        snapshotMarker = true,
-    )
+    companion object {
+        private const val serialVersionUID: Long = 1L
+
+        /**
+         * SNS envelope와 변환 결과를 생성합니다.
+         */
+        operator fun <T: Any> invoke(
+            type: String,
+            messageId: String,
+            topicArn: String,
+            message: T,
+            timestamp: String,
+            subject: String?,
+            signatureVersion: String?,
+            signature: String?,
+            signingCertUrl: String?,
+            messageAttributes: Map<String, SnsMessageAttribute>,
+            sqs: SqsReceivedMessage,
+            rawEnvelope: String?,
+        ): SnsNotification<T> = SnsNotification(
+            type = type,
+            messageId = messageId,
+            topicArn = topicArn,
+            message = message,
+            timestamp = timestamp,
+            subject = subject,
+            signatureVersion = signatureVersion,
+            signature = signature,
+            signingCertUrl = signingCertUrl,
+            messageAttributes = messageAttributes.toMap(),
+            sqs = sqs,
+            rawEnvelope = rawEnvelope,
+            snapshotMarker = true,
+        )
+    }
 
     init {
         type.requireNotBlank("type")
@@ -128,12 +132,8 @@ data class SnsNotification<T : Any> private constructor(
 
     override fun toString(): String =
         "SnsNotification(type=$type, messageIdPresent=${messageId.isNotEmpty()}, " +
-            "topicArnPresent=${topicArn.isNotEmpty()}, payloadType=${message.javaClass.name}, " +
-            "attributeCount=${messageAttributes.size}, rawEnvelopePresent=${rawEnvelope != null})"
-
-    companion object {
-        private const val serialVersionUID: Long = 1L
-    }
+                "topicArnPresent=${topicArn.isNotEmpty()}, payloadType=${message.javaClass.name}, " +
+                "attributeCount=${messageAttributes.size}, rawEnvelopePresent=${rawEnvelope != null})"
 }
 
 /** SNS notification metadata를 Spring 메시지 header로 노출할 때 사용하는 키입니다. */

@@ -3,9 +3,12 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 
 class SqsExtendedClientPolicyResolutionTest {
+
+    companion object: KLogging()
 
     @Test
     fun `queue specific policy wins over exact default allowlist`() {
@@ -22,8 +25,7 @@ class SqsExtendedClientPolicyResolutionTest {
 
         properties.resolvePolicy(specificQueue) shouldBeEqualTo specificPolicy
         properties.resolvePolicy(defaultQueue) shouldBeEqualTo defaultPolicy
-        properties.resolvePolicy("https://sqs.us-east-1.amazonaws.com/123456789012/foreign")
-            .shouldBeNull()
+        properties.resolvePolicy("https://sqs.us-east-1.amazonaws.com/123456789012/foreign").shouldBeNull()
     }
 
     @Test
@@ -33,8 +35,7 @@ class SqsExtendedClientPolicyResolutionTest {
             queues = emptyMap(),
         )
 
-        properties.resolvePolicy("https://sqs.us-east-1.amazonaws.com/123456789012/unknown")
-            .shouldBeNull()
+        properties.resolvePolicy("https://sqs.us-east-1.amazonaws.com/123456789012/unknown").shouldBeNull()
     }
 
     private fun policy(bucket: String): SqsExtendedClientProperties.Policy =

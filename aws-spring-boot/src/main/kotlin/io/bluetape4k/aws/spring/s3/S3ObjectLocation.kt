@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.support.requireNotBlank
 import java.io.Serializable
 
 /**
@@ -10,8 +11,8 @@ data class S3ObjectLocation(
     val key: String,
 ): Serializable {
     init {
-        require(bucket.isNotBlank()) { "bucket must not be blank." }
-        require(key.isNotBlank()) { "key must not be blank." }
+        bucket.requireNotBlank("bucket")
+        key.requireNotBlank("key")
     }
 
     override fun toString(): String = "s3://$bucket/$key"

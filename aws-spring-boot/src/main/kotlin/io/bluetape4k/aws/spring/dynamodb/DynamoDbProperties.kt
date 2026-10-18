@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.dynamodb
 
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
@@ -49,14 +50,14 @@ data class DynamoDbDaxProperties(
     val enabled: Boolean = false,
     val url: URI? = null,
     val region: String? = null,
-    val connectTimeout: Duration = Duration.ofSeconds(1),
-    val requestTimeout: Duration = Duration.ofSeconds(1),
-    val idleTimeout: Duration = Duration.ofSeconds(30),
+    val connectTimeout: Duration = 1.seconds(),
+    val requestTimeout: Duration = 1.seconds(),
+    val idleTimeout: Duration = 30.seconds(),
     val connectionTtl: Duration = Duration.ZERO,
     val writeRetries: Int = 2,
     val readRetries: Int = 2,
-    val clusterUpdateInterval: Duration = Duration.ofSeconds(4),
-    val endpointRefreshTimeout: Duration = Duration.ofSeconds(6),
+    val clusterUpdateInterval: Duration = 4.seconds(),
+    val endpointRefreshTimeout: Duration = 6.seconds(),
     val maxConcurrency: Int = 1000,
     val maxPendingConnectionAcquires: Int = 10000,
     val skipHostNameVerification: Boolean = false,

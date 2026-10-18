@@ -19,7 +19,7 @@ data class S3CrtClientProperties(
     val checksumValidationEnabled: Boolean? = null,
     val requestChecksumCalculation: RequestChecksumCalculation? = null,
     val responseChecksumValidation: ResponseChecksumValidation? = null,
-) : Serializable {
+): Serializable {
 
     init {
         require(targetThroughputInGbps == null || targetThroughputInGbps > 0) {

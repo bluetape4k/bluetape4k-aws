@@ -17,7 +17,6 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
-import java.util.LinkedHashMap
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -33,7 +32,7 @@ internal class SqsBatchCoordinator(
     private val transport: SqsBatchTransport,
     private val hooks: SqsBatchCoordinatorHooks = SqsBatchCoordinatorHooks.None,
 ) {
-    companion object : KLogging()
+    companion object: KLogging()
 
     private val permits = Semaphore(properties.maxInFlightEntries)
     private val lifecycleLock = ReentrantLock()
@@ -124,8 +123,8 @@ internal class SqsBatchCoordinator(
                 SqsBatchCloseOutcome.Success -> log.info("SQS batch coordinator close completed.")
                 is SqsBatchCloseOutcome.Failure -> log.warn(
                     "SQS batch coordinator close failed " +
-                        "(components=${outcome.exception.components.joinToString(",")}, " +
-                        "failureCount=${outcome.exception.failureCount}).",
+                            "(components=${outcome.exception.components.joinToString(",")}, " +
+                            "failureCount=${outcome.exception.failureCount}).",
                 )
             }
         }
@@ -356,7 +355,7 @@ internal class SqsBatchCoordinator(
     private inner class AcceptedEntry(
         val token: Long,
         val entryId: String,
-    ) : SqsAcceptedBatchEntry {
+    ): SqsAcceptedBatchEntry {
         private val future = AtomicReference<CompletableFuture<SqsBatchOutcome>?>()
         private val cancelRequested = AtomicBoolean()
         private val cancelInvoked = AtomicBoolean()
@@ -382,8 +381,8 @@ internal class SqsBatchCoordinator(
     }
 
     private sealed interface CloseDecision {
-        class Owner(val accepted: List<AcceptedEntry>) : CloseDecision
-        data object Observer : CloseDecision
+        class Owner(val accepted: List<AcceptedEntry>): CloseDecision
+        data object Observer: CloseDecision
     }
 
     private enum class CoordinatorState {
@@ -400,11 +399,11 @@ internal sealed interface SqsBatchCloseClaim {
     class Owner(
         val accepted: List<SqsAcceptedBatchEntry>,
         override val completion: CompletableFuture<SqsBatchCloseOutcome>,
-    ) : SqsBatchCloseClaim
+    ): SqsBatchCloseClaim
 
     class Observer(
         override val completion: CompletableFuture<SqsBatchCloseOutcome>,
-    ) : SqsBatchCloseClaim
+    ): SqsBatchCloseClaim
 }
 
 /** close owner가 drain과 timeout cancel에 사용하는 accepted entry handle입니다. */
@@ -416,9 +415,9 @@ internal interface SqsAcceptedBatchEntry {
 
 /** 모든 close caller가 같은 identity로 관찰하는 coordinator close 결과입니다. */
 internal sealed interface SqsBatchCloseOutcome {
-    data object Success : SqsBatchCloseOutcome
+    data object Success: SqsBatchCloseOutcome
 
-    class Failure(val exception: SqsBatchCloseException) : SqsBatchCloseOutcome
+    class Failure(val exception: SqsBatchCloseException): SqsBatchCloseOutcome
 }
 
 /** deterministic concurrency test에만 노출하는 coordinator 계측 스냅숏입니다. */
@@ -450,7 +449,7 @@ internal interface SqsBatchCoordinatorHooks {
     suspend fun afterTransportResponse(token: Long) = Unit
 
     companion object {
-        val None: SqsBatchCoordinatorHooks = object : SqsBatchCoordinatorHooks {}
+        val None: SqsBatchCoordinatorHooks = object: SqsBatchCoordinatorHooks {}
     }
 }
 

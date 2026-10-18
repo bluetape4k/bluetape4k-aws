@@ -1,15 +1,17 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerificationAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sqs.SqsCoroutinesTemplate
 import io.bluetape4k.aws.spring.sqs.SqsFullRequestOperations
 import io.bluetape4k.aws.spring.sqs.SqsOperations
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.logging.KLogging
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.modulith.events.EventExternalizationConfiguration
@@ -18,6 +20,10 @@ import org.springframework.modulith.events.support.EventExternalizationTransport
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 
 class AwsModulithDocumentationRecipeTest {
+
+    private companion object: KLogging() {
+        const val QUEUE_URL = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/order-events"
+    }
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(AutoConfigurations.of(AwsModulithEventsAutoConfiguration::class.java))
@@ -36,7 +42,7 @@ class AwsModulithDocumentationRecipeTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(EventExternalizationTransport::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<EventExternalizationTransport>() shouldHaveSize 1
             }
     }
 
@@ -52,7 +58,7 @@ class AwsModulithDocumentationRecipeTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(EventExternalizationTransport::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<EventExternalizationTransport>() shouldHaveSize 1
             }
     }
 
@@ -68,7 +74,7 @@ class AwsModulithDocumentationRecipeTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<AwsModulithSqsEventConsumer>() shouldHaveSize 1
             }
     }
 
@@ -82,20 +88,24 @@ class AwsModulithDocumentationRecipeTest {
                 "bluetape4k.aws.modulith.events.consumer.queue=sns-order-events",
                 "bluetape4k.aws.modulith.events.consumer.source-mode=sns",
                 "bluetape4k.aws.modulith.events.consumer.expected-topic-arns[0]=" +
-                    "arn:aws:sns:ap-northeast-2:123456789012:order-events",
+                        "arn:aws:sns:ap-northeast-2:123456789012:order-events",
                 "bluetape4k.aws.modulith.events.consumer.redrive-required=true",
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(AwsModulithSqsEventConsumer::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<AwsModulithSqsEventConsumer>() shouldHaveSize 1
             }
     }
 
     private fun consumerRunner(): ApplicationContextRunner {
         val operations = mockk<SqsCoroutinesTemplate>()
+
         coEvery { operations.getQueueUrl(any()) } returns QUEUE_URL
         coEvery {
-            operations.getQueueAttributes(QUEUE_URL, listOf(QueueAttributeName.REDRIVE_POLICY))
+            operations.getQueueAttributes(
+                QUEUE_URL,
+                listOf(QueueAttributeName.REDRIVE_POLICY)
+            )
         } returns mapOf(QueueAttributeName.REDRIVE_POLICY to "{\"maxReceiveCount\":\"3\"}")
 
         return contextRunner
@@ -106,8 +116,8 @@ class AwsModulithDocumentationRecipeTest {
             )
     }
 
-    private fun snsConsumerRunner(): ApplicationContextRunner = consumerRunner()
-        .withConfiguration(
+    private fun snsConsumerRunner(): ApplicationContextRunner =
+        consumerRunner().withConfiguration(
             AutoConfigurations.of(SnsHttpMessageVerificationAutoConfiguration::class.java)
         )
 
@@ -122,14 +132,10 @@ class AwsModulithDocumentationRecipeTest {
 
     private data class RecipeEvent(val id: String)
 
-    private object RecipeEventSerializer : EventSerializer {
+    private object RecipeEventSerializer: EventSerializer {
         override fun serialize(event: Any): Any = "{\"id\":\"${(event as RecipeEvent).id}\"}"
 
-        override fun <T : Any> deserialize(serialized: Any, type: Class<T>): T =
+        override fun <T: Any> deserialize(serialized: Any, type: Class<T>): T =
             type.cast(RecipeEvent("decoded"))
-    }
-
-    private companion object {
-        const val QUEUE_URL = "https://sqs.ap-northeast-2.amazonaws.com/123456789012/order-events"
     }
 }

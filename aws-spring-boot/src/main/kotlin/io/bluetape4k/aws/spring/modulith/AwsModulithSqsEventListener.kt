@@ -11,7 +11,7 @@ internal class AwsModulithSqsEventListener internal constructor(
     private val consumeEvent: suspend (SqsReceivedMessage) -> AwsModulithConsumeOutcome,
     private val metrics: AwsModulithMetrics = AwsModulithMetrics(),
 ) {
-    constructor(consumer: AwsModulithSqsEventConsumer) : this(consumer::consume, consumer.metrics)
+    constructor(consumer: AwsModulithSqsEventConsumer): this(consumer::consume, consumer.metrics)
 
     @SqsListener(
         queue = "\${bluetape4k.aws.modulith.events.consumer.queue}",

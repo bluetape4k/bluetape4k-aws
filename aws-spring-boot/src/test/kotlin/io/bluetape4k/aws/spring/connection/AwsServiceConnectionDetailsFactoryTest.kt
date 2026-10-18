@@ -1,11 +1,14 @@
 package io.bluetape4k.aws.spring.connection
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.mockk.every
@@ -22,6 +25,8 @@ import java.net.URI
 
 @Suppress("DEPRECATION")
 class AwsServiceConnectionDetailsFactoryTest {
+
+    companion object: KLogging()
 
     @Test
     fun `five factories keep service names required SDK classes and exact detail interfaces`() {
@@ -40,6 +45,7 @@ class AwsServiceConnectionDetailsFactoryTest {
                 KinesisConnectionDetails::class.java,
             ),
         )
+
         val requiredClasses = listOf(
             "software.amazon.awssdk.services.s3.S3Client",
             "software.amazon.awssdk.services.sqs.SqsClient",
@@ -57,12 +63,14 @@ class AwsServiceConnectionDetailsFactoryTest {
 
             val namesField = ContainerConnectionDetailsFactory::class.java.getDeclaredField("connectionNames")
             namesField.trySetAccessible().shouldBeTrue()
+
             @Suppress("UNCHECKED_CAST")
             val connectionNames = namesField.get(factory) as List<String>
             connectionNames shouldBeEqualTo listOf(serviceName)
 
             val requiredField = ContainerConnectionDetailsFactory::class.java.getDeclaredField("requiredClassNames")
             requiredField.trySetAccessible().shouldBeTrue()
+
             val required = requiredField.get(factory) as Array<*>
             required.single() shouldBeEqualTo requiredClasses[index]
         }
@@ -70,10 +78,6 @@ class AwsServiceConnectionDetailsFactoryTest {
 
     @Test
     fun `spring factories registers every AWS container factory exactly once`() {
-        val names = SpringFactoriesLoader.loadFactoryNames(
-            ContainerConnectionDetailsFactory::class.java,
-            javaClass.classLoader,
-        )
         val expected = listOf(
             "io.bluetape4k.aws.spring.connection.S3ContainerConnectionDetailsFactory",
             "io.bluetape4k.aws.spring.connection.SqsContainerConnectionDetailsFactory",
@@ -82,13 +86,23 @@ class AwsServiceConnectionDetailsFactoryTest {
             "io.bluetape4k.aws.spring.connection.KinesisContainerConnectionDetailsFactory",
         )
 
-        expected.forEach { name -> names.count { it == name } shouldBeEqualTo 1 }
+        val names = SpringFactoriesLoader.loadFactoryNames(
+            ContainerConnectionDetailsFactory::class.java,
+            javaClass.classLoader,
+        )
+        names.forEach { log.debug { "name=$it" } }
+        expected.forEach { name ->
+            names.count { it == name } shouldBeEqualTo 1
+        }
 
         val runtimeNames = SpringFactoriesLoader.loadFactoryNames(
             ConnectionDetailsFactory::class.java,
             javaClass.classLoader,
         )
-        expected.forEach { name -> runtimeNames.count { it == name } shouldBeEqualTo 1 }
+        runtimeNames.forEach { log.debug { "runtimeName=$it" } }
+        expected.forEach { name ->
+            runtimeNames.count { it == name } shouldBeEqualTo 1
+        }
     }
 
     @Test
@@ -112,15 +126,16 @@ class AwsServiceConnectionDetailsFactoryTest {
         every { floci.awsAccessKey } returns "access-secret-value"
         every { floci.awsSecretKey } returns "secret-value"
 
-        val error = io.bluetape4k.assertions.assertFailsWith<AwsServiceConnectionConfigurationException> {
+        val error = assertFailsWith<AwsServiceConnectionConfigurationException> {
             snapshotAwsServiceConnection(floci, "s3")
         }
+        log.debug { "error=$error" }
         error.reason shouldBeEqualTo AwsServiceConnectionConfigurationException.Reason.MALFORMED_DETAILS
         error.serviceNames shouldContain "s3"
-        error.message.orEmpty() shouldBeEqualTo
-            "AWS ServiceConnection configuration failed: reason=MALFORMED_DETAILS, " +
-            "services=[s3], candidates=1"
-        error.message.orEmpty().contains("access-secret-value").shouldBeFalse()
-        error.message.orEmpty().contains("secret-value").shouldBeFalse()
+        error.message shouldBeEqualTo
+                "AWS ServiceConnection configuration failed: reason=MALFORMED_DETAILS, " +
+                "services=[s3], candidates=1"
+        error.message shouldNotContain "access-secret-value"
+        error.message shouldNotContain "secret-value"
     }
 }

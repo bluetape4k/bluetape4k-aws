@@ -13,10 +13,11 @@ import org.springframework.boot.logging.DeferredLogFactory
 
 /** `aws-app-config:` ConfigData location을 해석합니다. */
 class AppConfigDataLocationResolver(
-    @Suppress("UNUSED_PARAMETER") private val deferredLogFactory: DeferredLogFactory,
+    @Suppress("UNUSED_PARAMETER")
+    private val deferredLogFactory: DeferredLogFactory,
     private val binder: Binder,
     private val bootstrapContext: ConfigurableBootstrapContext,
-) : ConfigDataLocationResolver<AwsConfigDataResource> {
+): ConfigDataLocationResolver<AwsConfigDataResource> {
 
     override fun isResolvable(
         context: ConfigDataLocationResolverContext,
