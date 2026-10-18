@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap
  * val loaded = template.getItem("orders", key, Order::class.java)
  * ```
  */
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "TooManyFunctions")
 class DynamoDbTemplate(
     private val enhancedClient: DynamoDbEnhancedAsyncClient,
     private val tableNameResolver: DynamoDbTableNameResolver,
@@ -219,7 +219,11 @@ class DynamoDbTemplate(
     private data class TableCacheKey(
         val physicalTableName: String,
         val entityClass: Class<*>,
-    ): Serializable
+    ): Serializable {
+        companion object {
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     companion object: KLogging() {
         const val MAX_BATCH_WRITE_ITEMS: Int = 25

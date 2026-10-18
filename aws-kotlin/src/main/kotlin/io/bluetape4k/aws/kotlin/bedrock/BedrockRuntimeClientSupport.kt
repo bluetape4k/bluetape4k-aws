@@ -59,11 +59,11 @@ fun bedrockRuntimeClientOf(
     builder: BedrockRuntimeClient.Config.Builder.() -> Unit = {},
 ): BedrockRuntimeClient =
     BedrockRuntimeClient {
+        builder()
         endpointUrl?.requireTrustedBedrockEndpoint()?.let { this.endpointUrl = it }
         region?.let { this.region = it }
         credentialsProvider?.let { this.credentialsProvider = it }
         httpClient?.let { this.httpClient = it }
-        builder()
     }.requireTrustedBedrockConfiguration()
 
 /**

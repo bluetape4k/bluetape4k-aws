@@ -43,7 +43,7 @@ class ImdsKtorTemplate(
 
     override fun toString(): String =
         ToStringBuilder(this)
-            .add("ec2MetadataAsyncClient", ec2MetadataAsyncClient)
+            .add("ec2MetadataAsyncClientConfigured", true)
             .add("requestTimeout", requestTimeout)
             .toString()
 }

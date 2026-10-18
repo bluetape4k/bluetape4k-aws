@@ -144,10 +144,10 @@ class CloudWatchLogsKtorPluginConfig {
     override fun toString(): String {
         return ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("cloudWatchLogsAsyncClient", cloudWatchLogsAsyncClient)
-            .add("cloudWatchLogsOperations", cloudWatchLogsOperations)
+            .add("cloudWatchLogsAsyncClientConfigured", cloudWatchLogsAsyncClient != null)
+            .add("cloudWatchLogsOperationsConfigured", cloudWatchLogsOperations != null)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
+            .add("endpointConfigured", endpointOverride != null)
             .add("logGroupName", logGroupName)
             .add("logStreamName", logStreamName)
             .add("batchSize", batchSize)

@@ -112,6 +112,7 @@ class S3OutputStream(
         }
     }
 
+    @Suppress("LongMethod")
     private suspend fun completeOnIo() {
         var bytes: ByteArray? = null
         var file: Path? = null

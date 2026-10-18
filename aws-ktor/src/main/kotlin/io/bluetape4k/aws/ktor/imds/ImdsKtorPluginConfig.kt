@@ -107,15 +107,15 @@ class ImdsKtorPluginConfig {
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("ec2MetadataAsyncClient", ec2MetadataAsyncClient)
-            .add("imdsOperations", imdsOperations)
-            .add("endpoint", endpoint)
+            .add("ec2MetadataAsyncClientConfigured", ec2MetadataAsyncClient != null)
+            .add("imdsOperationsConfigured", imdsOperations != null)
+            .add("endpointConfigured", endpoint != null)
             .add("endpointMode", endpointMode)
             .add("tokenTtl", tokenTtl)
             .add("tokenTtl", tokenTtl)
             .add("requestTimeout", requestTimeout)
             .add("retries", retries)
-            .add("client", httpClient)
+            .add("httpClientConfigured", httpClient != null)
             .toString()
 }
 

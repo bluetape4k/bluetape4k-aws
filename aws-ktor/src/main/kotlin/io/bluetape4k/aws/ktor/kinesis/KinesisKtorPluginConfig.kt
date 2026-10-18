@@ -85,11 +85,11 @@ class KinesisKtorPluginConfig {
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("kinesisAsyncClient", kinesisAsyncClient)
-            .add("kinesisOperations", kinesisOperations)
+            .add("kinesisAsyncClientConfigured", kinesisAsyncClient != null)
+            .add("kinesisOperationsConfigured", kinesisOperations != null)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
-            .add("credentialsProvider", credentialsProvider)
-            .add("streams", streams)
+            .add("endpointConfigured", endpointOverride != null)
+            .add("credentialsProviderConfigured", credentialsProvider != null)
+            .add("streamsCount", streams.size)
             .toString()
 }

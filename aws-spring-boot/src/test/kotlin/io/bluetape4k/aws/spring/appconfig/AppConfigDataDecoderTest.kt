@@ -1,10 +1,16 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.support.toUtf8Bytes
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 
 class AppConfigDataDecoderTest {
 
@@ -82,5 +88,30 @@ class AppConfigDataDecoderTest {
                 maxPropertyCount = 1,
             )
         }
+    }
+
+    @Test
+    fun `decoded property diagnostics omit configured values`() {
+        val logger = LoggerFactory.getLogger(AppConfigDataDecoder::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = logger.level
+        logger.addAppender(appender)
+        logger.level = Level.DEBUG
+
+        try {
+            AppConfigDataDecoder.decode(
+                payload = "{\"database.password\":\"appconfig-secret-canary\"}".toUtf8Bytes(),
+                contentType = "application/json",
+                format = AppConfigFormat.JSON,
+                prefix = null,
+            )
+        } finally {
+            logger.detachAppender(appender)
+            logger.level = previousLevel
+        }
+
+        val diagnostics = appender.list.joinToString("\n") { it.formattedMessage }
+        diagnostics shouldNotContain "appconfig-secret-canary"
+        diagnostics shouldContain "propertyCount=1"
     }
 }

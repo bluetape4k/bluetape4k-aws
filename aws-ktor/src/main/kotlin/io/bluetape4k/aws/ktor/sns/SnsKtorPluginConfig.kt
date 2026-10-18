@@ -91,13 +91,13 @@ class SnsKtorPluginConfig {
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("snsAsyncClient", snsAsyncClient)
-            .add("snsOperations", snsOperations)
-            .add("snsHttpMessageParser", snsHttpMessageParser)
+            .add("snsAsyncClientConfigured", snsAsyncClient != null)
+            .add("snsOperationsConfigured", snsOperations != null)
+            .add("snsHttpMessageParserConfigured", snsHttpMessageParser != null)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
-            .add("credentialsProvider", credentialsProvider)
-            .add("topics", topics)
+            .add("endpointConfigured", endpointOverride != null)
+            .add("credentialsProviderConfigured", credentialsProvider != null)
+            .add("topicsCount", topics.size)
             .toString()
 }
 

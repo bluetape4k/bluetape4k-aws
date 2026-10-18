@@ -6,6 +6,7 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.client.AwsSigV4AuthLocation
 import io.bluetape4k.aws.ktor.client.AwsSigV4Plugin
@@ -48,6 +49,21 @@ class S3KtorClientTest {
 
     private companion object: KLoggingChannel() {
         private val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2026-05-10T01:02:03Z"), ZoneOffset.UTC)
+    }
+
+    @Test
+    fun `get object response does not render body bytes`() {
+        val body = byteArrayOf(83, 69, 67, 82, 69, 84)
+        val rendered = S3KtorGetObjectResponse(
+            bytes = body,
+            eTag = "etag",
+            contentType = "application/octet-stream",
+            contentLength = body.size.toLong(),
+            metadata = emptyMap(),
+            headers = headersOf(),
+        ).toString()
+
+        rendered shouldNotContain body.contentToString()
     }
 
     @Test
@@ -351,6 +367,24 @@ class S3KtorClientTest {
         captured[2].url.parameters["uploadId"] shouldBeEqualTo "upload-1"
         captured[3].method shouldBeEqualTo HttpMethod.Delete
 
+        s3.close()
+    }
+
+    @Test
+    fun `multipart upload accepts an empty final part body`() = runSuspendIO {
+        val s3 = s3Client(
+            response = { respond(content = "", headers = headersOf(HttpHeaders.ETag, "\"empty-etag\"")) },
+        )
+
+        val part = s3.uploadPart(
+            bucket = "demo-bucket",
+            key = "logs/app.log",
+            uploadId = "upload-1",
+            partNumber = 1,
+            bytes = byteArrayOf(),
+        )
+
+        part.eTag shouldBeEqualTo "\"empty-etag\""
         s3.close()
     }
 

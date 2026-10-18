@@ -9,6 +9,7 @@ import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
@@ -347,7 +348,7 @@ class S3KtorClient(
         contentLength: Long,
     ): S3KtorCompletedPart {
         partNumber.requirePositiveNumber("partNumber")
-        contentLength.requirePositiveNumber("contentLength")
+        contentLength.requireGe(0L, "contentLength")
         log.debug { "uploadPart... bucket=$bucket, key=$key, uploadId=$uploadId, partNumber=$partNumber" }
 
         val response = httpClient

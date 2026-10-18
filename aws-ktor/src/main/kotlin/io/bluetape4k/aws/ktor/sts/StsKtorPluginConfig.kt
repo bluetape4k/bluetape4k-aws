@@ -82,10 +82,10 @@ class StsKtorPluginConfig {
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("stsAsyncClient", stsAsyncClient)
-            .add("stsOperations", stsOperations)
+            .add("stsAsyncClientConfigured", stsAsyncClient != null)
+            .add("stsOperationsConfigured", stsOperations != null)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
-            .add("credentialsProvider", credentialsProvider)
+            .add("endpointConfigured", endpointOverride != null)
+            .add("credentialsProviderConfigured", credentialsProvider != null)
             .toString()
 }

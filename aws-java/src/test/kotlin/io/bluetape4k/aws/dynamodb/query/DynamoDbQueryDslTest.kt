@@ -1,15 +1,20 @@
 package io.bluetape4k.aws.dynamodb.query
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.dynamodb.AbstractDynamodbTest
 import io.bluetape4k.aws.dynamodb.model.describe
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 
 class DynamoDbQueryDslTest: AbstractDynamodbTest() {
 
@@ -138,5 +143,28 @@ class DynamoDbQueryDslTest: AbstractDynamodbTest() {
 
         request.keyConditions()["orderId"].shouldNotBeNull()
         request.tableName() shouldBeEqualTo "orders"
+    }
+
+    @Test
+    fun `filter diagnostics omit bound attribute values`() {
+        val logger = LoggerFactory.getLogger(ConcreteFilter::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = logger.level
+        logger.addAppender(appender)
+        logger.level = Level.DEBUG
+
+        try {
+            ConcreteFilter(
+                dynamoFunction = Attribute("account"),
+                comparator = Equals("dynamodb-secret-canary"),
+            ).getFilterRequestProperties()
+        } finally {
+            logger.detachAppender(appender)
+            logger.level = previousLevel
+        }
+
+        val diagnostics = appender.list.joinToString("\n") { it.formattedMessage }
+        diagnostics shouldNotContain "dynamodb-secret-canary"
+        diagnostics shouldContain "expressionAttributeValueCount=1"
     }
 }

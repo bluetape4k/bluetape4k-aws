@@ -7,6 +7,7 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
@@ -74,6 +75,61 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
 
         aesProvider.generateSecretKey() shouldBeSameInstanceAs secretKey
         rsaProvider.generateKeyPair() shouldBeSameInstanceAs keyPair
+    }
+
+    @Test
+    fun `provider envelope diagnostics redact key material and metadata`() {
+        val sensitiveBytes = byteArrayOf(83, 69, 67, 82, 69, 84)
+        val rendered = listOf(
+            WrappedDataKey(sensitiveBytes, sensitiveBytes).toString(),
+            ProviderEncryptedPayload(
+                ciphertext = sensitiveBytes,
+                metadata = mapOf("sensitive-key" to "sensitive-value"),
+            ).toString(),
+            ProviderStreamingEnvelope(
+                dataKey = sensitiveBytes,
+                nonce = sensitiveBytes,
+                aad = sensitiveBytes,
+                metadata = mapOf("sensitive-key" to "sensitive-value"),
+            ).toString(),
+        )
+
+        rendered.forEach { diagnostic ->
+            diagnostic shouldNotContain sensitiveBytes.contentToString()
+            diagnostic shouldNotContain "sensitive-key"
+            diagnostic shouldNotContain "sensitive-value"
+        }
+    }
+
+    @Test
+    fun `wrapped data key equality is symmetric for nullable nonce`() {
+        val withoutNonce = WrappedDataKey(byteArrayOf(1), null)
+        val withNonce = WrappedDataKey(byteArrayOf(1), byteArrayOf(2))
+        val equivalent = WrappedDataKey(byteArrayOf(1), byteArrayOf(2))
+
+        (withoutNonce == withNonce) shouldBeEqualTo false
+        (withNonce == withoutNonce) shouldBeEqualTo false
+        (withNonce == equivalent) shouldBeEqualTo true
+        withNonce.hashCode() shouldBeEqualTo equivalent.hashCode()
+    }
+
+    @Test
+    fun `streaming envelope hash uses byte content equality`() {
+        val first = ProviderStreamingEnvelope(
+            dataKey = byteArrayOf(1, 2),
+            nonce = byteArrayOf(3, 4),
+            aad = byteArrayOf(5, 6),
+            metadata = mapOf("key" to "value"),
+        )
+        val second = ProviderStreamingEnvelope(
+            dataKey = byteArrayOf(1, 2),
+            nonce = byteArrayOf(3, 4),
+            aad = byteArrayOf(5, 6),
+            metadata = mapOf("key" to "value"),
+        )
+
+        (first == second) shouldBeEqualTo true
+        first.hashCode() shouldBeEqualTo second.hashCode()
     }
 
     @Test

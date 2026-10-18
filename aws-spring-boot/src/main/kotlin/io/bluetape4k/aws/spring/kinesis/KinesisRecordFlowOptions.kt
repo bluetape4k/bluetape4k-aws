@@ -4,7 +4,7 @@ import io.bluetape4k.javatimes.millis
 import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
-import io.bluetape4k.support.requirePositiveNumber
+import io.bluetape4k.support.requireZeroOrPositiveNumber
 import java.io.Serializable
 import java.time.Duration
 
@@ -31,8 +31,8 @@ data class KinesisRecordFlowOptions(
         batchLimit.requireInRange(1, KinesisRecordFlowOptions.MAX_KINESIS_BATCH_LIMIT, "batchLimit")
         pollInterval.requireGe(Duration.ZERO, "pollInterval")
         emptyBackoff.requireGe(Duration.ZERO, "emptyBackoff")
-        maxIteratorRetries.requirePositiveNumber("maxIteratorRetries")
-        maxThrottleRetries.requirePositiveNumber("maxThrottleRetries")
+        maxIteratorRetries.requireZeroOrPositiveNumber("maxIteratorRetries")
+        maxThrottleRetries.requireZeroOrPositiveNumber("maxThrottleRetries")
         initialThrottleBackoff.requireGe(Duration.ZERO, "initialThrottleBackoff")
         maxThrottleBackoff.requireGe(Duration.ZERO, "maxThrottleBackoff")
         jitterRatio.requireInRange(0.0, 1.0, "jitterRatio")

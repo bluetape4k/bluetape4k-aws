@@ -118,11 +118,25 @@ class StsKtorTemplateTest {
 
     @Test
     fun `STS request models validate duration ranges`() {
+        StsAssumeRoleRequest(
+            roleArn = "arn:aws:iam::123456789012:role/orders",
+            sessionName = "orders-api",
+            durationSeconds = 43_200,
+        )
+        StsSessionTokenRequest(durationSeconds = 129_600)
+
         assertFailsWith<IllegalArgumentException> {
             StsAssumeRoleRequest(
                 roleArn = "arn:aws:iam::123456789012:role/orders",
                 sessionName = "orders-api",
                 durationSeconds = 899,
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            StsAssumeRoleRequest(
+                roleArn = "arn:aws:iam::123456789012:role/orders",
+                sessionName = "orders-api",
+                durationSeconds = 43_201,
             )
         }
         assertFailsWith<IllegalArgumentException> {

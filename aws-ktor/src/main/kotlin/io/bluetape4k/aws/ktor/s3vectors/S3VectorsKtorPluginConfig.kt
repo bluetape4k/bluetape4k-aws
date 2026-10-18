@@ -84,10 +84,10 @@ class S3VectorsKtorPluginConfig {
     override fun toString(): String =
         ToStringBuilder(this)
             .add("enabled", enabled)
-            .add("s3VectorsAsyncClient", s3VectorsAsyncClient)
-            .add("s3VectorsOperations", s3VectorsOperations)
+            .add("s3VectorsAsyncClientConfigured", s3VectorsAsyncClient != null)
+            .add("s3VectorsOperationsConfigured", s3VectorsOperations != null)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
-            .add("credentialsProvider", credentialsProvider)
+            .add("endpointConfigured", endpointOverride != null)
+            .add("credentialsProviderConfigured", credentialsProvider != null)
             .toString()
 }

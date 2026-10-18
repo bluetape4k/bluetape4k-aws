@@ -28,8 +28,8 @@ data class StsAssumeRoleRequest(
         roleArn.requireNotBlank("roleArn")
         sessionName.requireNotBlank("sessionName")
         durationSeconds.requireInRange(
-            SESSION_TOKEN_MIN_DURATION_SECONDS,
-            SESSION_TOKEN_MAX_DURATION_SECONDS,
+            ASSUME_ROLE_MIN_DURATION_SECONDS,
+            ASSUME_ROLE_MAX_DURATION_SECONDS,
             "durationSeconds"
         )
         externalId?.requireNotBlank("externalId")
