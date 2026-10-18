@@ -2,6 +2,7 @@ package io.bluetape4k.aws.examples.spring.s3
 
 import io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.springframework.beans.factory.ObjectProvider
@@ -135,7 +136,7 @@ class S3DocumentController(
     }
 
     private fun encryptedS3(): S3ClientSideEncryptionOperations =
-        requireNotNull(encryptedS3Provider.getIfAvailable()) {
+        encryptedS3Provider.getIfAvailable().requireNotNull {
             "S3 client-side encryption is not configured. Enable bluetape4k.aws.s3.client-side-encryption and provide KmsOperations."
         }
 }

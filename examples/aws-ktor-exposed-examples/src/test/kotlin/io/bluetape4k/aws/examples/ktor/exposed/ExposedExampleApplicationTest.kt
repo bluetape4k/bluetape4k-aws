@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.examples.ktor.exposed
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.ktor.exposed.AwsExposedKtorHealthConfig
@@ -10,6 +12,8 @@ import io.bluetape4k.aws.ktor.exposed.awsExposedTransaction
 import io.bluetape4k.exposed.core.ExposedCursorPage
 import io.bluetape4k.ktor.core.HealthResponse
 import io.bluetape4k.ktor.testing.shouldHaveStatus
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.database.PostgreSQLServer
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -53,8 +57,11 @@ class ExposedExampleApplicationTest {
             contentType(ContentType.Application.Json)
             setBody(request)
         }
+        log.debug { "createResponse=$createResponse" }
         createResponse shouldHaveStatus HttpStatusCode.Created
+
         val created = createResponse.body<OrderRecord>()
+        log.debug { "created=$created" }
         created.customerId shouldBeEqualTo request.customerId
         created.status shouldBeEqualTo request.status
 
@@ -63,13 +70,17 @@ class ExposedExampleApplicationTest {
         readResponse.body<OrderRecord>() shouldBeEqualTo created
 
         val listResponse = client.get("/exposed/orders?customerId=${request.customerId}")
+        log.debug { "listResponse=$listResponse" }
         listResponse shouldHaveStatus HttpStatusCode.OK
+
         val listed = listResponse.body<ExposedCursorPage<OrderRecord, Long>>()
+        log.debug { "listed=$listed" }
         listed.content.map { it.id } shouldContain created.id
         listed.hasNext.shouldBeFalse()
-        listed.nextCursor shouldBeEqualTo null
+        listed.nextCursor.shouldBeNull()
 
         val missingResponse = client.get("/exposed/orders/${Long.MAX_VALUE}")
+        log.debug { "missingResponse=$missingResponse" }
         missingResponse shouldHaveStatus HttpStatusCode.NotFound
     }
 
@@ -118,11 +129,12 @@ class ExposedExampleApplicationTest {
             "/exposed/orders?customerId=$customerId&limit=2&cursor=$cursor",
         )
         secondResponse shouldHaveStatus HttpStatusCode.OK
+
         val second = secondResponse.body<ExposedCursorPage<OrderRecord, Long>>()
         second.content.size shouldBeEqualTo 1
         second.content.map { it.customerId }.toSet() shouldBeEqualTo setOf(customerId)
         second.hasNext.shouldBeFalse()
-        second.nextCursor shouldBeEqualTo null
+        second.nextCursor.shouldBeNull()
 
         val pageIds = first.content.map { it.id } + second.content.map { it.id }
         pageIds.toSet().size shouldBeEqualTo 3
@@ -148,9 +160,9 @@ class ExposedExampleApplicationTest {
             )
         }
 
-        page.content shouldBeEqualTo emptyList()
+        page.content.shouldBeEmpty()
         page.hasNext.shouldBeFalse()
-        page.nextCursor shouldBeEqualTo null
+        page.nextCursor.shouldBeNull()
         statements.count { it.trimStart().startsWith("SELECT", ignoreCase = true) } shouldBeEqualTo 1
         statements.any { it.contains("COUNT(", ignoreCase = true) }.shouldBeFalse()
     }
@@ -194,13 +206,12 @@ class ExposedExampleApplicationTest {
         val health = client.get("/healthz/exposed")
         health shouldHaveStatus HttpStatusCode.OK
         health.body<HealthResponse>() shouldBeEqualTo
-            HealthResponse.up(mapOf("exposed" to HealthResponse.UP))
+                HealthResponse.up(mapOf("exposed" to HealthResponse.UP))
         meterRegistry.find("bluetape4k.exposed.ktor.core.readiness").timer()?.count() shouldBeEqualTo 0L
 
         val readiness = client.get("/readyz/exposed")
         readiness shouldHaveStatus HttpStatusCode.OK
-        readiness.body<HealthResponse>() shouldBeEqualTo
-            HealthResponse.up(mapOf("jdbc" to HealthResponse.UP))
+        readiness.body<HealthResponse>() shouldBeEqualTo HealthResponse.up(mapOf("jdbc" to HealthResponse.UP))
         meterRegistry.find("bluetape4k.exposed.ktor.core.readiness")
             .tag("backend", "jdbc")
             .tag("operation", "readiness")
@@ -218,17 +229,17 @@ class ExposedExampleApplicationTest {
                 status = OrderStatus.CREATED,
             )
         }
-
+        log.debug { "error=$error" }
         error.message shouldContain "id"
     }
 
-    private fun recordSql(statements: MutableList<String>) = object : SqlLogger {
+    private fun recordSql(statements: MutableList<String>) = object: SqlLogger {
         override fun log(context: StatementContext, transaction: Transaction) {
             statements += context.sql(transaction)
         }
     }
 
-    private companion object {
+    private companion object: KLogging() {
         val postgres = PostgreSQLServer.Launcher.postgres
 
         fun ExampleDatabaseConfig.Companion.from(postgres: PostgreSQLServer): ExampleDatabaseConfig =

@@ -1,11 +1,12 @@
 package io.bluetape4k.aws.examples.ktor.sqs
 
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.aws.sqs.SqsClientFactory
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.SuspendedJobTester
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.ktor.testing.shouldHaveStatus
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.ktor.client.request.get
@@ -27,12 +28,14 @@ import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.SAME_THREAD)
 class SqsExampleRoutesFlociTest {
 
-    companion object {
+    companion object: KLoggingChannel() {
         val floci: FlociServer by lazy { FlociServer.Launcher.floci }
 
         val sqsClient: SqsAsyncClient by lazy {
@@ -67,7 +70,7 @@ class SqsExampleRoutesFlociTest {
             setBody("hello-${Base58.randomString(8)}")
         }
         response shouldHaveStatus HttpStatusCode.OK
-        response.bodyAsText().contains("messageId").shouldBeTrue()
+        response.bodyAsText() shouldContain "messageId"
     }
 
     @Test
@@ -76,7 +79,7 @@ class SqsExampleRoutesFlociTest {
 
         val response = client.get("/sqs/queues/attributes?url=$queueUrl")
         response shouldHaveStatus HttpStatusCode.OK
-        response.bodyAsText().contains("approximateMessageCount").shouldBeTrue()
+        response.bodyAsText() shouldContain "approximateMessageCount"
     }
 
     @Test
@@ -86,7 +89,7 @@ class SqsExampleRoutesFlociTest {
         val queueName = "ktor-sqs-created-${Base58.randomString(8)}"
         val response = client.post("/sqs/queues/$queueName")
         response shouldHaveStatus HttpStatusCode.OK
-        response.bodyAsText().contains("queueUrl").shouldBeTrue()
+        response.bodyAsText() shouldContain "queueUrl"
     }
 
     @Test
@@ -110,21 +113,24 @@ class SqsExampleRoutesFlociTest {
         val advancedQueueUrl = sqsClient.createQueue {
             it.queueName("ktor-sqs-advanced-${Base58.randomString(8)}")
         }.await().queueUrl()
+
         application { sqsExampleModule(sqsClient, advancedQueueUrl) }
 
         try {
             val normalBody = "manual-ack:${Base58.randomString(8)}"
             val retryBody = "retry-once:${Base58.randomString(8)}"
+
             client.post("/sqs/messages") {
                 contentType(ContentType.Text.Plain)
                 setBody(normalBody)
             } shouldHaveStatus HttpStatusCode.OK
+
             client.post("/sqs/messages") {
                 contentType(ContentType.Text.Plain)
                 setBody(retryBody)
             } shouldHaveStatus HttpStatusCode.OK
 
-            withTimeout(15_000) {
+            withTimeout(15.seconds) {
                 while (true) {
                     val received = client.get("/sqs/messages/received").bodyAsText()
                     val lifecycleEvents = client.get("/sqs/messages/lifecycle-events").bodyAsText()
@@ -138,7 +144,7 @@ class SqsExampleRoutesFlociTest {
                     ) {
                         break
                     }
-                    delay(100)
+                    delay(100.milliseconds)
                 }
             }
         } finally {

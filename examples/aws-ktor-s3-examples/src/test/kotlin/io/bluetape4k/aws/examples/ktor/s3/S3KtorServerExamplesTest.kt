@@ -1,9 +1,11 @@
 package io.bluetape4k.aws.examples.ktor.s3
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.aws.ktor.s3.S3KtorAddressingStyle
 import io.bluetape4k.aws.ktor.s3.S3KtorClient
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.ktor.testing.shouldHaveStatus
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -22,6 +24,8 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 
 class S3KtorServerExamplesTest {
+
+    companion object: KLoggingChannel()
 
     @Test
     fun `Ktor routes upload download presign list and delete through S3KtorClient`() = testApplication {
@@ -47,8 +51,8 @@ class S3KtorServerExamplesTest {
             } shouldHaveStatus HttpStatusCode.OK
             client.get("/s3/config/config/application.conf")
                 .bodyAsText() shouldBeEqualTo "ktor { deployment { port = 8080 } }"
-            client.get("/s3/presigned-get/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm") shouldBeEqualTo true
-            client.get("/s3/presigned-put/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm") shouldBeEqualTo true
+            client.get("/s3/presigned-get/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm").shouldBeTrue()
+            client.get("/s3/presigned-put/docs/hello.txt").bodyAsText().contains("X-Amz-Algorithm").shouldBeTrue()
             client.delete("/s3/objects/docs/hello.txt") shouldHaveStatus HttpStatusCode.NoContent
         } finally {
             s3.close()

@@ -6,10 +6,10 @@ import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
-import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.delete
@@ -24,7 +24,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.UUID
+import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DynamoDbExampleRoutesLocalStackTest {
@@ -42,17 +42,18 @@ class DynamoDbExampleRoutesLocalStackTest {
         }
     }
 
-    private fun testModule(block: suspend ApplicationTestBuilder.() -> Unit) =
-        testApplication {
-            application {
-                dynamoDbExampleModule(
-                    endpointUrl = endpointUrl,
-                    region = awsEmulator.regionName,
-                    credentialsProvider = credentialsProvider,
-                )
-            }
-            block()
+    private inline fun testModule(crossinline block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
+        application {
+            dynamoDbExampleModule(
+                endpointUrl = endpointUrl,
+                region = awsEmulator.regionName,
+                credentialsProvider = credentialsProvider,
+            )
         }
+        startApplication()
+
+        block()
+    }
 
     @Test
     fun `CRUD - save findById scan delete`() = testModule {

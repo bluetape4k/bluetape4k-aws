@@ -5,6 +5,7 @@ import io.bluetape4k.aws.spring.sns.SnsPublishRequest
 import io.bluetape4k.aws.spring.sqs.SqsOperations
 import io.bluetape4k.support.requireGt
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.future.await
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sns.SnsAsyncClient
@@ -95,7 +96,7 @@ class SqsSnsExampleService(
             queueName = request.queueName,
             attributes = mapOf(
                 QueueAttributeName.REDRIVE_POLICY to
-                    """{"deadLetterTargetArn":"$dlqArn","maxReceiveCount":"${request.maxReceiveCount}"}""",
+                        """{"deadLetterTargetArn":"$dlqArn","maxReceiveCount":"${request.maxReceiveCount}"}""",
             ),
         )
 
@@ -115,14 +116,14 @@ class SqsSnsExampleService(
         }
 
     private suspend fun queueArn(queueUrl: String): String =
-        requireNotNull(
-            sqsAsyncClient.getQueueAttributes {
-                it.queueUrl(queueUrl)
-                it.attributeNames(QueueAttributeName.QUEUE_ARN)
-            }.await().attributes()[QueueAttributeName.QUEUE_ARN]
-        ) {
-            "QueueArn attribute must be returned by SQS for queueUrl=$queueUrl."
-        }
+        sqsAsyncClient.getQueueAttributes {
+            it.queueUrl(queueUrl)
+            it.attributeNames(QueueAttributeName.QUEUE_ARN)
+        }.await()
+            .attributes()[QueueAttributeName.QUEUE_ARN]
+            .requireNotNull {
+                "QueueArn attribute must be returned by SQS for queueUrl=$queueUrl."
+            }
 
     private fun queuePolicy(queueArn: String, topicArn: String): String =
         """

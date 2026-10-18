@@ -4,18 +4,20 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.io.serializer.JdkBinarySerializer
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.io.Serializable
 
 class SqsSnsExampleModelsTest {
 
+    companion object: KLogging()
+
     @Test
     fun `public SQS SNS models preserve values through Java serialization`() {
-        val models = listOf<Serializable>(
+        val models = listOf(
             QueueResponse("orders", "https://sqs.example.test/orders", "arn:aws:sqs:region:account:orders"),
             SendQueueMessageRequest("payload", delaySeconds = 2),
             QueueSendResponse("https://sqs.example.test/orders", "message-id"),
@@ -30,6 +32,7 @@ class SqsSnsExampleModelsTest {
 
         models.forEach { model ->
             model.shouldBeInstanceOf<Serializable>()
+            log.debug { "roundTrip test for $model" }
             roundTrip(model) shouldBeEqualTo model
         }
 
@@ -82,13 +85,15 @@ class SqsSnsExampleModelsTest {
 
     private fun assertInvalid(field: String, block: () -> Unit) {
         val error = assertFailsWith<IllegalArgumentException>(block = block)
+        log.debug { "error=$error" }
         error.message.orEmpty() shouldContain field
     }
 
+    private val serializer = JdkBinarySerializer(objectInputFilter = null)
+
     @Suppress("UNCHECKED_CAST")
-    private fun <T> roundTrip(value: T): T {
-        val bytes = ByteArrayOutputStream()
-        ObjectOutputStream(bytes).use { it.writeObject(value) }
-        return ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { it.readObject() as T }
+    private fun <T: Any> roundTrip(value: T): T {
+        val bytes = serializer.serialize(value)
+        return serializer.deserialize<T>(bytes).shouldNotBeNull()
     }
 }

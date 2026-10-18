@@ -17,6 +17,8 @@ dependencies {
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.aws2.dynamodb.enhanced)
     implementation(libs.aws2.auth)
+
+    implementation(bt4k.bluetape4k.coroutines)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.reactor)
 

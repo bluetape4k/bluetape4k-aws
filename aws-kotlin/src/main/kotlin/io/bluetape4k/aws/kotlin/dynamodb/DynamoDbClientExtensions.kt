@@ -163,13 +163,15 @@ suspend fun DynamoDbClient.waitForTableReady(
 
     // HINT: wait 관련 함수가 상당히 많다. 이를 이용하자.
     this.waitUntilTableExists { tableName = name }
+    DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비되었습니다." }
+
 //    withTimeout(timeout) {
 //        while (true) {
 //            if (getTableStatus(name) == TableStatus.Active) {
 //                DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비되었습니다." }
 //                return@withTimeout
 //            }
-//            delay(50.milliseconds)
+//            delay(100.milliseconds)
 //        }
 //    }
 }

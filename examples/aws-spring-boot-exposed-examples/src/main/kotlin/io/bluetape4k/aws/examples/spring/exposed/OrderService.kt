@@ -91,7 +91,7 @@ class OrderService(
         }.map { projected ->
             OrderSummaryRecord(
                 customerId = projected.customerId,
-                status = OrderStatus.valueOf(projected.status),
+                status = projected.status,
             )
         }
     }
@@ -99,14 +99,14 @@ class OrderService(
     private fun findProbe(customerId: String?, status: OrderStatus?): OrderEntity? = when {
         customerId != null && status != null ->
             OrderEntity.find {
-                (OrdersTable.customerId eq customerId) and (OrdersTable.status eq status.name)
+                (OrdersTable.customerId eq customerId) and (OrdersTable.status eq status)
             }.firstOrNull()
 
         customerId != null ->
             OrderEntity.find { OrdersTable.customerId eq customerId }.firstOrNull()
 
         status != null ->
-            OrderEntity.find { OrdersTable.status eq status.name }.firstOrNull()
+            OrderEntity.find { OrdersTable.status eq status }.firstOrNull()
 
         else -> OrderEntity.all().firstOrNull()
     }

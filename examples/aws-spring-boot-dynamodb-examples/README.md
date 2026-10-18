@@ -2,11 +2,8 @@
 
 English | [한국어](./README.ko.md)
 
-Spring Boot 4 WebFlux examples for the `aws-spring-boot` DynamoDB
-auto-configuration. The module wires `DynamoDbAutoConfiguration`, exposes an
-`OrderRepository` based on `AbstractCoroutinesDynamoDbRepository`, and provides a
-small `/orders` REST API. It is a compact copy point for coroutine CRUD on top of
-the DynamoDB enhanced async client.
+Spring Boot 4 WebFlux examples for the `aws-spring-boot` DynamoDB auto-configuration. The module wires `DynamoDbAutoConfiguration`, exposes an
+`OrderRepository` based on `AbstractCoroutinesDynamoDbRepository`, and provides a small `/orders` REST API. It is a compact copy point for coroutine CRUD on top of the DynamoDB enhanced async client.
 
 ## Architecture
 
@@ -26,19 +23,16 @@ class Order {
 }
 ```
 
-`OrderRepository` resolves the table name as `orders` and converts both item and
-id values to enhanced client `Key` instances. Repository methods remain suspend
-or `Flow`-based, while the enhanced client and table name resolver come from
-Spring Boot auto-configuration.
+`OrderRepository` resolves the table name as `orders` and converts both item and id values to enhanced client `Key` instances. Repository methods remain suspend or `Flow`-based, while the enhanced client and table name resolver come from Spring Boot auto-configuration.
 
 ## API
 
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/orders` | Create an order with a generated UUID. |
-| `GET` | `/orders/{id}` | Find an order by id. Missing orders return `404`. |
-| `DELETE` | `/orders/{id}` | Delete an order by id. |
-| `GET` | `/orders` | Return a `Flow<Order>` scan result. |
+| Method   | Path           | Purpose                                           |
+|----------|----------------|---------------------------------------------------|
+| `POST`   | `/orders`      | Create an order with a generated UUID.            |
+| `GET`    | `/orders/{id}` | Find an order by id. Missing orders return `404`. |
+| `DELETE` | `/orders/{id}` | Delete an order by id.                            |
+| `GET`    | `/orders`      | Return a `Flow<Order>` scan result.               |
 
 Request body:
 
@@ -61,8 +55,7 @@ bluetape4k:
 ```
 
 LocalStack or Floci tests provide `bluetape4k.aws.dynamodb.region` and
-`bluetape4k.aws.dynamodb.endpoint-override` through `ApplicationContextRunner`.
-The runner also supplies emulator credentials as an `AwsCredentialsProvider`
+`bluetape4k.aws.dynamodb.endpoint-override` through `ApplicationContextRunner`. The runner also supplies emulator credentials as an `AwsCredentialsProvider`
 bean.
 
 ## Run
@@ -82,8 +75,7 @@ The suite covers repository CRUD, scan, concurrent save/find operations through
 
 ## AOT
 
-The module applies the Spring Boot plugin, so the standard Boot AOT tasks are
-available when validating native-image metadata:
+The module applies the Spring Boot plugin, so the standard Boot AOT tasks are available when validating native-image metadata:
 
 ```bash
 ./gradlew :aws-spring-boot-dynamodb-examples:processAot

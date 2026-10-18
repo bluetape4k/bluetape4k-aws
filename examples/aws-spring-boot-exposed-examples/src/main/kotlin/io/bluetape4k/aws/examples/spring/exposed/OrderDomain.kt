@@ -2,7 +2,6 @@ package io.bluetape4k.aws.examples.spring.exposed
 
 import io.bluetape4k.exposed.core.ExposedCursorPage
 import io.bluetape4k.exposed.jdbc.repository.LongJdbcRepository
-import io.bluetape4k.exposed.jdbc.repository.findCursorPage as findTypedCursorPage
 import io.bluetape4k.spring.data.exposed.common.annotation.ExposedEntity
 import io.bluetape4k.support.requireGe
 import io.bluetape4k.support.requireInRange
@@ -16,6 +15,7 @@ import org.jetbrains.exposed.v1.dao.LongEntity
 import org.jetbrains.exposed.v1.dao.LongEntityClass
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import java.io.Serializable
+import io.bluetape4k.exposed.jdbc.repository.findCursorPage as findTypedCursorPage
 
 /**
  * 예제 주문 API에서 사용하는 생명주기 상태입니다.
@@ -69,7 +69,7 @@ data class OrderRecord(
  */
 object OrdersTable: LongIdTable("spring_example_orders") {
     val customerId = varchar("customer_id", 96)
-    val status = varchar("status", 32)
+    val status = enumerationByName<OrderStatus>("status", 32)
     val notes = varchar("notes", 512).nullable()
 }
 
@@ -118,7 +118,7 @@ class OrderEntity(id: EntityID<Long>): LongEntity(id) {
     companion object: LongEntityClass<OrderEntity>(OrdersTable)
 
     var customerId: String by OrdersTable.customerId
-    var status: String by OrdersTable.status
+    var status: OrderStatus by OrdersTable.status
     var notes: String? by OrdersTable.notes
 }
 
@@ -127,7 +127,7 @@ class OrderEntity(id: EntityID<Long>): LongEntity(id) {
  */
 data class OrderSummaryProjection(
     val customerId: String,
-    val status: String,
+    val status: OrderStatus,
 )
 
 /**
@@ -156,14 +156,14 @@ object OrderRepository: LongJdbcRepository<OrderRecord> {
         OrderRecord(
             id = this[OrdersTable.id].value,
             customerId = this[OrdersTable.customerId],
-            status = OrderStatus.valueOf(this[OrdersTable.status]),
+            status = this[OrdersTable.status],
             notes = this[OrdersTable.notes],
         )
 
     fun save(entity: OrderRecord): OrderRecord {
         val id = OrdersTable.insertAndGetId { statement ->
             statement[customerId] = entity.customerId
-            statement[status] = entity.status.name
+            statement[status] = entity.status
             statement[notes] = entity.notes
         }
         return entity.copy(id = id.value)

@@ -29,7 +29,7 @@ data class Order(
     val id: String,
     val status: String,
     val description: String = "",
-) : Serializable {
+): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
     }
@@ -45,7 +45,7 @@ private val orderMapper = DynamoItemMapper<Order> { order ->
     )
 }
 
-private val orderReader = DynamoItemReader<Order> { item ->
+private val orderReader = DynamoItemReader { item ->
     Order(
         id = item.getValue("id").asS(),
         status = item.getValue("status").asS(),

@@ -2,32 +2,38 @@
 
 package io.bluetape4k.aws.examples.spring.s3
 
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.assertions.shouldNotContentEqual
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.kms.KmsDataKey
 import io.bluetape4k.aws.spring.kms.KmsOperations
 import io.bluetape4k.aws.spring.s3.S3AutoConfiguration
+import io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
-import io.bluetape4k.assertions.shouldBeEmpty
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import software.amazon.awssdk.services.s3.S3Client
-import java.util.UUID
+import java.util.*
 
 class S3DocumentControllerLocalStackTest {
 
-    companion object {
+    companion object: KLogging() {
         @Suppress("DEPRECATION")
         private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("s3") }
 
@@ -62,12 +68,12 @@ class S3DocumentControllerLocalStackTest {
     @Test
     fun `controller uploads downloads lists and presigns through AWS emulator S3`() {
         contextRunner().run { context ->
-            val s3Client = context.getBean(S3Client::class.java)
+            val s3Client = context.getBean<S3Client>()
             s3Client.createBucket { it.bucket(bucketName) }
             val controller = S3DocumentController(
-                s3 = context.getBean(S3Operations::class.java),
+                s3 = context.getBean<S3Operations>(),
                 encryptedS3Provider = context.getBeanProvider(
-                    io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionOperations::class.java
+                    S3ClientSideEncryptionOperations::class.java
                 ),
             )
 
@@ -79,17 +85,28 @@ class S3DocumentControllerLocalStackTest {
                     bytes = "hello spring s3".encodeToByteArray(),
                     contentType = "text/plain",
                 )
-
+                log.debug { "upload=$upload" }
                 upload.bucket shouldBeEqualTo bucketName
                 upload.key shouldBeEqualTo key
                 upload.eTag.orEmpty().shouldNotBeEmpty()
 
-                controller.download(bucketName, key).body.contentEquals("hello spring s3".encodeToByteArray()) shouldBeEqualTo true
+                controller.download(bucketName, key)
+                    .body shouldContentEqual "hello spring s3".encodeToByteArray()
+
                 controller.listObjects(bucketName, "docs/").toList().map { it.key } shouldContain key
                 controller.presignedDownload(bucketName, key).url.toString() shouldContain bucketName
                 controller.presignedDownload(bucketName, key).url.toString() shouldContain key
-                controller.presignedUpload(bucketName, "docs/write.txt", "text/plain").url.toString() shouldContain bucketName
-                controller.presignedUpload(bucketName, "docs/write.txt", "text/plain").url.toString() shouldContain "docs/write.txt"
+                controller.presignedUpload(
+                    bucketName,
+                    "docs/write.txt",
+                    "text/plain"
+                ).url.toString() shouldContain bucketName
+
+                controller.presignedUpload(
+                    bucketName,
+                    "docs/write.txt",
+                    "text/plain"
+                ).url.toString() shouldContain "docs/write.txt"
 
                 val encryptedKey = "docs/secret.txt"
                 val plaintext = "encrypted spring s3".encodeToByteArray()
@@ -100,11 +117,19 @@ class S3DocumentControllerLocalStackTest {
                     bytes = plaintext,
                     contentType = "text/plain",
                 )
-                encryptedUpload.eTag.orEmpty().shouldNotBeEmpty()
+                log.debug { "encryptedUpload=$encryptedUpload" }
+                encryptedUpload.eTag.shouldNotBeEmpty()
+
                 val stored = s3Client.getObjectAsBytes { it.bucket(bucketName).key(encryptedKey) }
-                stored.asByteArray().contentEquals(plaintext) shouldBeEqualTo false
+                log.debug { "stored=$stored" }
+                stored.asByteArray() shouldNotContentEqual plaintext
                 stored.response().metadata().keys shouldContain "bt4k-cek-alg"
-                controller.downloadEncrypted(bucketName, encryptedKey, tenant = "demo").body.contentEquals(plaintext) shouldBeEqualTo true
+
+                controller.downloadEncrypted(
+                    bucketName,
+                    encryptedKey,
+                    tenant = "demo"
+                ).body shouldContentEqual plaintext
 
                 controller.delete(bucketName, key)
                 controller.delete(bucketName, encryptedKey)
