@@ -2,9 +2,9 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.time.Duration
@@ -12,6 +12,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 class SqsBatchCoroutinesTemplateTest {
+
+    companion object: KLogging()
 
     @Test
     fun `direct and batch templates preserve requests and return the same outcomes`() = runTest {
@@ -34,6 +36,7 @@ class SqsBatchCoroutinesTemplateTest {
 
         val directSend = direct.template.sendMany(sends)
         val batchSend = batch.template.sendMany(sends)
+
         directSend shouldBeEqualTo batchSend
         directSend.successful.map { it.entryId } shouldBeEqualTo listOf(sends[0].entryId)
         directSend.failed.map { it.entryId } shouldBeEqualTo listOf(sends[1].entryId)
@@ -72,7 +75,10 @@ class SqsBatchCoroutinesTemplateTest {
         val duplicateId = entryId("duplicate-template")
         assertFailsWith<IllegalArgumentException> {
             template.sendMany(
-                listOf(sendEntry("first", duplicateId), sendEntry("second", duplicateId)),
+                listOf(
+                    sendEntry("first", duplicateId),
+                    sendEntry("second", duplicateId)
+                ),
             )
         }
         transport.sendEntries shouldHaveSize 1

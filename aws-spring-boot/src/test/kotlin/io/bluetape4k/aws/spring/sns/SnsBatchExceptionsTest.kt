@@ -1,16 +1,21 @@
 package io.bluetape4k.aws.spring.sns
 
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldMatch
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.exception.ApiCallAttemptTimeoutException
 import software.amazon.awssdk.core.exception.ApiCallTimeoutException
 import software.amazon.awssdk.services.sns.model.SnsException
 import java.util.concurrent.TimeoutException
 
-class SnsBatchExceptionsTest {
+class SnsBatchExceptionsTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `transport exception keeps safe type and completed ids without raw cause`() {
@@ -28,6 +33,7 @@ class SnsBatchExceptionsTest {
             exception.stackTrace.forEach { append(it) }
             exception.suppressed.forEach { append(it) }
         }
+        log.debug { "rendered=$rendered" }
         rendered shouldNotContain "payload-secret"
         rendered shouldNotContain "arn-secret"
         rendered shouldNotContain "\r"
@@ -43,10 +49,13 @@ class SnsBatchExceptionsTest {
         )
 
         val rendered = "${exception.message}$exception"
+        log.debug { "rendered=$rendered" }
         rendered shouldNotContain "fingerprint="
         rendered shouldNotContain exception.entryFingerprint
+
+        log.debug { "exception=$exception" }
         exception.entryFingerprint.length shouldBeEqualTo 12
-        exception.entryFingerprint.matches(Regex("[0-9a-f]{12}")) shouldBeEqualTo true
+        exception.entryFingerprint shouldMatch "[0-9a-f]{12}".toRegex()
         exception.completedEntryIds shouldBeEqualTo listOf("entry-1", "entry-2")
     }
 
@@ -57,6 +66,7 @@ class SnsBatchExceptionsTest {
             emptyList(),
         )
 
+        log.debug { "exception=$exception" }
         exception.failureType shouldBeEqualTo SnsBatchFailureType.SDK_SERVICE
         exception.toString() shouldNotContain "service-secret"
     }
@@ -87,6 +97,7 @@ class SnsBatchExceptionsTest {
             responseEntryIds = listOf("entry-1", "entry-1", "entry-secret"),
         )
 
+        log.debug { "exception=$exception" }
         exception.submittedEntryCount shouldBeEqualTo 2
         exception.responseEntryCount shouldBeEqualTo 3
         exception.unknownEntryCount shouldBeEqualTo 1
@@ -95,9 +106,11 @@ class SnsBatchExceptionsTest {
         exception.completedEntryIds.shouldBeEmpty()
 
         val rendered = "${exception.message}$exception"
+
+        log.debug { "rendered=$rendered" }
         rendered shouldNotContain "entry-1"
         rendered shouldNotContain "entry-secret"
     }
 }
 
-private class NamedTimeoutFailure : RuntimeException("timeout")
+private class NamedTimeoutFailure: RuntimeException("timeout")

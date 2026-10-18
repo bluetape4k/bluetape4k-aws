@@ -1,6 +1,12 @@
 package io.bluetape4k.aws.spring.env
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.concurrent.await
+import io.bluetape4k.concurrent.get
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.springframework.core.env.StandardEnvironment
 import java.time.Clock
@@ -9,10 +15,12 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 class AwsEnvironmentPropertySourceSupportTest {
+
+    companion object: KLogging()
 
     @Test
     fun `refreshing property source reloads after refresh interval`() {
@@ -28,15 +36,15 @@ class AwsEnvironmentPropertySourceSupportTest {
                     mapOf("app.secret" to "refreshed-${reloadCount.incrementAndGet()}")
                 },
             ),
-            refreshInterval = Duration.ofSeconds(1),
+            refreshInterval = 1.seconds(),
             clock = clock,
         )
 
         environment.getProperty("app.secret") shouldBeEqualTo "initial"
-        clock.advance(Duration.ofMillis(999))
+        clock.advance(999.millis())
         environment.getProperty("app.secret") shouldBeEqualTo "initial"
 
-        clock.advance(Duration.ofMillis(1))
+        clock.advance(1.millis())
         environment.getProperty("app.secret") shouldBeEqualTo "refreshed-1"
         environment.getProperty("app.secret") shouldBeEqualTo "refreshed-1"
     }
@@ -52,11 +60,11 @@ class AwsEnvironmentPropertySourceSupportTest {
                 values = mapOf("app.secret" to "initial"),
                 reload = { null },
             ),
-            refreshInterval = Duration.ofMillis(1),
+            refreshInterval = 1.seconds(),
             clock = clock,
         )
 
-        clock.advance(Duration.ofMillis(1))
+        clock.advance(1.millis())
 
         environment.getProperty("app.secret") shouldBeEqualTo "initial"
     }
@@ -72,11 +80,11 @@ class AwsEnvironmentPropertySourceSupportTest {
                 values = mapOf("app.secret" to "initial"),
                 reload = { throw IllegalStateException("remote unavailable") },
             ),
-            refreshInterval = Duration.ofMillis(1),
+            refreshInterval = 1.millis(),
             clock = clock,
         )
 
-        clock.advance(Duration.ofMillis(1))
+        clock.advance(1.millis())
 
         environment.getProperty("app.secret") shouldBeEqualTo "initial"
     }
@@ -102,25 +110,25 @@ class AwsEnvironmentPropertySourceSupportTest {
                     )
                 },
             ),
-            refreshInterval = Duration.ofMillis(1),
+            refreshInterval = 1.millis(),
             clock = clock,
         )
 
         val propertySource = environment.propertySources
             .get("bluetape4k.aws.test") as RefreshingAwsMapPropertySource
 
-        clock.advance(Duration.ofMillis(1))
+        clock.advance(1.millis())
         val refresh = executor.submit<String> {
             environment.getProperty("app.secret")
         }
 
         try {
-            reloadStarted.await(5, TimeUnit.SECONDS) shouldBeEqualTo true
+            reloadStarted.await(5.seconds).shouldBeTrue()
 
             propertySource.currentValues()["app.secret"] shouldBeEqualTo "initial"
 
             releaseReload.countDown()
-            refresh.get(5, TimeUnit.SECONDS) shouldBeEqualTo "refreshed"
+            refresh.get(5.seconds) shouldBeEqualTo "refreshed"
             environment.getProperty("app.secret") shouldBeEqualTo "refreshed"
         } finally {
             releaseReload.countDown()
@@ -152,7 +160,7 @@ class AwsEnvironmentPropertySourceSupportTest {
         override val entries: Set<Map.Entry<String, Any>>
             get() {
                 started.countDown()
-                release.await(5, TimeUnit.SECONDS)
+                release.await(5.seconds)
                 return backing.entries
             }
 

@@ -11,6 +11,7 @@ import io.bluetape4k.logging.warn
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
+import software.amazon.awssdk.core.async.ResponsePublisher
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest
 import software.amazon.awssdk.services.s3.model.CreateBucketConfiguration
@@ -52,9 +53,9 @@ fun S3AsyncClient.existsBucketAsync(bucketName: String): CompletableFuture<Boole
     return headBucket { it.bucket(bucketName) }
         .handle { _, error ->
             when {
-                error == null                -> true
+                error == null -> true
                 error.isMissingBucketError() -> false
-                else                         -> throw error
+                else -> throw error
             }
         }
 }
@@ -63,9 +64,9 @@ private fun Throwable.isMissingBucketError(): Boolean {
     val cause = unwrapKnownWrapper()
     return when (cause) {
         is NoSuchBucketException -> true
-        is S3Exception           -> cause.statusCode() == 404 ||
+        is S3Exception -> cause.statusCode() == 404 ||
                 cause.awsErrorDetails()?.errorCode() in setOf("NoSuchBucket", "NotFound")
-        else                     -> false
+        else -> false
     }
 }
 
@@ -181,6 +182,15 @@ inline fun S3AsyncClient.getAsFileAsync(
     return getObject(request, destinationPath)
 }
 
+inline fun S3AsyncClient.getAsPublisherAsync(
+    bucket: String,
+    key: String,
+    builder: GetObjectRequest.Builder.() -> Unit = {},
+): CompletableFuture<ResponsePublisher<GetObjectResponse>> {
+    val request = getObjectRequest(bucket, key, builder)
+    return getObject(request, AsyncResponseTransformer.toPublisher())
+}
+
 
 //
 // 객체 저장
@@ -205,12 +215,13 @@ inline fun S3AsyncClient.putAsync(
     bucket: String,
     key: String,
     body: AsyncRequestBody,
+    contentType: String? = null,
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): CompletableFuture<PutObjectResponse> {
     bucket.requireNotBlank("bucket")
     key.requireNotBlank("key")
 
-    val request = putObjectRequest(bucket, key, builder)
+    val request = putObjectRequest(bucket, key, contentType, builder)
     return putObject(request, body)
 }
 
@@ -233,9 +244,10 @@ inline fun S3AsyncClient.putAsByteArrayAsync(
     bucket: String,
     key: String,
     bytes: ByteArray,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): CompletableFuture<PutObjectResponse> =
-    putAsync(bucket, key, bytes.toAsyncRequestBody(), builder)
+    putAsync(bucket, key, bytes.toAsyncRequestBody(), contentType, builder)
 
 /**
  * S3 서버로 [contents]를 Upload 합니다.
@@ -257,9 +269,10 @@ inline fun S3AsyncClient.putAsStringAsync(
     key: String,
     contents: String,
     charset: Charset = Charsets.UTF_8,
+    contentType: String? = "text/plain",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): CompletableFuture<PutObjectResponse> =
-    putAsync(bucket, key, contents.toAsyncRequestBody(charset), builder)
+    putAsync(bucket, key, contents.toAsyncRequestBody(charset), contentType, builder)
 
 /**
  * S3 서버로 [file]을 Upload 합니다.
@@ -281,9 +294,10 @@ inline fun S3AsyncClient.putAsFileAsync(
     bucket: String,
     key: String,
     file: File,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): CompletableFuture<PutObjectResponse> =
-    putAsync(bucket, key, file.toAsyncRequestBody(), builder)
+    putAsync(bucket, key, file.toAsyncRequestBody(), contentType, builder)
 
 /**
  * S3 서버로 [path]의 파일을 Upload 합니다.
@@ -305,9 +319,10 @@ inline fun S3AsyncClient.putAsFileAsync(
     bucket: String,
     key: String,
     path: Path,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): CompletableFuture<PutObjectResponse> =
-    putAsync(bucket, key, path.toAsyncRequestBody(), builder)
+    putAsync(bucket, key, path.toAsyncRequestBody(), contentType, builder)
 
 //
 // 객체 이동

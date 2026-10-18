@@ -1,24 +1,33 @@
 package io.bluetape4k.aws.spring.imds
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import software.amazon.awssdk.imds.EndpointMode
-import java.time.Duration
 
 class ImdsAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val customClient = mockk<Ec2MetadataAsyncClient>(relaxed = true)
     private val customHttpClient = mockk<SdkAsyncHttpClient>(relaxed = true)
@@ -40,9 +49,9 @@ class ImdsAutoConfigurationTest {
     @Test
     fun `register IMDS client and operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(ImdsProperties::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<Ec2MetadataAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<ImdsOperations>() shouldHaveSize 1
+            context.getBeansOfType<ImdsProperties>() shouldHaveSize 1
         }
     }
 
@@ -51,8 +60,8 @@ class ImdsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.imds.enabled=false")
             .run { context ->
-                context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<Ec2MetadataAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<ImdsOperations>().shouldBeEmpty()
             }
     }
 
@@ -61,9 +70,9 @@ class ImdsAutoConfigurationTest {
         contextRunner
             .withBean(Ec2MetadataAsyncClient::class.java, { customClient })
             .run { context ->
-                context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(Ec2MetadataAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<Ec2MetadataAsyncClient>() shouldHaveSize 1
+                context.getBean<Ec2MetadataAsyncClient>() shouldBeSameInstanceAs customClient
+                context.getBeansOfType<ImdsOperations>() shouldHaveSize 1
                 verify(exactly = 0) { customClient.get(any()) }
             }
     }
@@ -74,8 +83,8 @@ class ImdsAutoConfigurationTest {
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.http.nio.netty"))
             .withBean(SdkAsyncHttpClient::class.java, { customHttpClient })
             .run { context ->
-                context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<Ec2MetadataAsyncClient>() shouldHaveSize 1
+                context.getBeansOfType<ImdsOperations>() shouldHaveSize 1
             }
     }
 
@@ -84,8 +93,8 @@ class ImdsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.http.async"))
             .run { context ->
-                context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<Ec2MetadataAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<ImdsOperations>().shouldBeEmpty()
             }
     }
 
@@ -94,8 +103,8 @@ class ImdsAutoConfigurationTest {
         contextRunner
             .withBean(ImdsOperations::class.java, { customOperations })
             .run { context ->
-                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 1
-                context.getBean(ImdsOperations::class.java) shouldBeSameInstanceAs customOperations
+                context.getBeansOfType<ImdsOperations>() shouldHaveSize 1
+                context.getBean<ImdsOperations>() shouldBeSameInstanceAs customOperations
             }
     }
 
@@ -110,11 +119,11 @@ class ImdsAutoConfigurationTest {
                 "bluetape4k.aws.imds.retries=1",
             )
             .run { context ->
-                val properties = context.getBean(ImdsProperties::class.java)
+                val properties = context.getBean<ImdsProperties>()
                 properties.endpoint.toString() shouldBeEqualTo "http://169.254.169.254"
                 properties.endpointMode shouldBeEqualTo EndpointMode.IPV6
-                properties.tokenTtl shouldBeEqualTo Duration.ofMinutes(5)
-                properties.requestTimeout shouldBeEqualTo Duration.ofMillis(750)
+                properties.tokenTtl shouldBeEqualTo 5.minutes()
+                properties.requestTimeout shouldBeEqualTo 750.millis()
                 properties.retries shouldBeEqualTo 1
             }
     }
@@ -128,6 +137,8 @@ class ImdsAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "bluetape4k.aws.imds.request-timeout"
             }
     }
@@ -137,8 +148,8 @@ class ImdsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.imds"))
             .run { context ->
-                context.getBeansOfType(Ec2MetadataAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(ImdsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<Ec2MetadataAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<ImdsOperations>().shouldBeEmpty()
             }
     }
 }

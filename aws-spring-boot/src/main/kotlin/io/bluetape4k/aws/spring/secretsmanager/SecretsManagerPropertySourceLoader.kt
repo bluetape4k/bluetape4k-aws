@@ -77,8 +77,8 @@ internal object SecretsManagerPropertySourceLoader: KLogging() {
         if (source.optional || !properties.failFast) {
             log.warn(
                 "Skipping Secrets Manager source " +
-                    "${opaqueAwsDiagnosticIdentity("secrets-manager", source.propertySourceName)} " +
-                    "(${error::class.java.simpleName}).",
+                        "${opaqueAwsDiagnosticIdentity("secrets-manager", source.propertySourceName)} " +
+                        "(${error::class.java.simpleName}).",
             )
             return null
         }

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.support.requireInRange
 import kotlinx.benchmark.Benchmark
 import kotlinx.benchmark.Param
 import kotlinx.benchmark.Scope
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong
  * 실제 AWS 지연과 서비스 비용은 이 fake publisher 결과에 포함하지 않습니다.
  */
 @State(Scope.Benchmark)
-open class SnsBatchBenchmark {
+class SnsBatchBenchmark {
 
     @Param("1", "10", "11", "20", "21", "100")
     var entryCount: Int = 0
@@ -40,7 +41,7 @@ open class SnsBatchBenchmark {
     fun setup() {
         request = SnsPublishBatchRequest(
             topicArn = "arn:aws:sns:us-east-1:000000000000:benchmark-topic",
-            entries = (1..entryCount).map { index ->
+            entries = List(entryCount) { index ->
                 SnsPublishBatchEntry(
                     id = "entry-$index",
                     message = "message-$index",
@@ -59,7 +60,7 @@ open class SnsBatchBenchmark {
                         try {
                             yield()
                             if (scenario == "transport" && entries.first().id == "entry-1") {
-                                throw IllegalStateException("synthetic-transport-failure")
+                                error("synthetic-transport-failure")
                             }
                             successResponseFor(entries)
                         } finally {
@@ -87,7 +88,7 @@ open class SnsBatchBenchmark {
  */
 @AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
-open class SnsBatchBenchmarkCounters {
+class SnsBatchBenchmarkCounters {
 
     private val active = AtomicInteger()
     private val maxActive = AtomicInteger()
@@ -128,7 +129,7 @@ open class SnsBatchBenchmarkCounters {
         val current = active.incrementAndGet()
         maxActive.accumulateAndGet(current, ::maxOf)
         chunks.incrementAndGet()
-        require(entryCount in 1..10) { "SNS benchmark chunk size must be between 1 and 10." }
+        entryCount.requireInRange(1, 10, "entryCount")
     }
 
     fun recordCompletion(entryCount: Int) {

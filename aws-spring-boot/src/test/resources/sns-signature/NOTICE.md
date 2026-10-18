@@ -1,9 +1,6 @@
 # SNS 서명 fixture 출처
 
-이 디렉터리의 JSON은 AWS SNS HTTP 알림의 `SignatureVersion` 1/2 canonical
-필드 순서를 재현한 결정적 테스트 fixture입니다. 형식과 변조 시나리오는
-AWS SDK for Java v2 `sns-message-manager`의 공식 테스트 리소스를 기준으로
-작성했습니다.
+이 디렉터리의 JSON은 AWS SNS HTTP 알림의 `SignatureVersion` 1/2 canonical 필드 순서를 재현한 결정적 테스트 fixture입니다. 형식과 변조 시나리오는 AWS SDK for Java v2 `sns-message-manager`의 공식 테스트 리소스를 기준으로 작성했습니다.
 
 - 기준 리소스: <https://github.com/aws/aws-sdk-java-v2/tree/master/services-custom/sns-message-manager/src/test/resources/software/amazon/awssdk/messagemanager/sns/internal>
 - 형식 문서: <https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message-verify-message-signature.html>

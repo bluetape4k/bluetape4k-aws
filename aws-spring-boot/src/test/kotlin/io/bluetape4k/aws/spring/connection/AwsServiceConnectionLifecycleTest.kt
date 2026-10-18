@@ -2,19 +2,24 @@ package io.bluetape4k.aws.spring.connection
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CancellationException
 import org.junit.jupiter.api.Test
 
 class AwsServiceConnectionLifecycleTest {
 
+    companion object: KLogging()
+
     @Test
     fun `normal cleanup runs fixture context and container in order`() {
         val events = mutableListOf<String>()
-
         executeLifecycle(events, fixtureCreated = true)
-
         events shouldBeEqualTo listOf("fixture cleanup", "context close", "container teardown")
     }
 
@@ -33,13 +38,14 @@ class AwsServiceConnectionLifecycleTest {
 
         thrown.shouldBeSameInstanceAs(primary)
         thrown.suppressed.size shouldBeEqualTo 2
-        thrown.suppressed.all { it.message.orEmpty().contains("secret") }.shouldBeEqualTo(false)
+        thrown.suppressed.all { it.message.orEmpty().contains("secret") }.shouldBeFalse()
         events shouldBeEqualTo listOf("fixture cleanup", "context close", "container teardown")
     }
 
     @Test
     fun `cleanup failure is promoted when there is no primary failure`() {
         val events = mutableListOf<String>()
+
         val thrown = assertFailsWith<IllegalStateException> {
             executeLifecycle(
                 events = events,
@@ -48,9 +54,11 @@ class AwsServiceConnectionLifecycleTest {
             )
         }
 
-        thrown.message.orEmpty() shouldContain "IllegalStateException"
-        thrown.message.orEmpty().contains("secret").shouldBeEqualTo(false)
-        thrown.suppressed.size shouldBeEqualTo 1
+        log.debug { "thrown=$thrown" }
+        thrown.message shouldContain "IllegalStateException"
+        thrown.message shouldNotContain "secret"
+        thrown.suppressed shouldHaveSize 1
+        
         events shouldBeEqualTo listOf("fixture cleanup", "context close", "container teardown")
     }
 
@@ -58,6 +66,7 @@ class AwsServiceConnectionLifecycleTest {
     fun `cancellation is rethrown after every cleanup boundary`() {
         val events = mutableListOf<String>()
         val cancellation = CancellationException("cancelled by test")
+
         val thrown = assertFailsWith<CancellationException> {
             executeLifecycle(
                 events = events,
@@ -67,18 +76,18 @@ class AwsServiceConnectionLifecycleTest {
             )
         }
 
-        thrown.shouldBeSameInstanceAs(cancellation)
-        thrown.suppressed.size shouldBeEqualTo 2
-        thrown.suppressed.all { it.message.orEmpty().contains("secret") }.shouldBeEqualTo(false)
+        log.debug { "thrown=$thrown" }
+        thrown shouldBeSameInstanceAs cancellation
+        thrown.suppressed shouldHaveSize 2
+        thrown.suppressed.all { it.message.orEmpty().contains("secret") }.shouldBeFalse()
+        
         events shouldBeEqualTo listOf("fixture cleanup", "context close", "container teardown")
     }
 
     @Test
     fun `startup failure skips absent fixture but still closes context before teardown`() {
         val events = mutableListOf<String>()
-
         executeLifecycle(events, fixtureCreated = false)
-
         events shouldBeEqualTo listOf("fixture cleanup skipped", "context close", "container teardown")
     }
 
@@ -98,7 +107,7 @@ class AwsServiceConnectionLifecycleTest {
                 action()
             } catch (candidate: Throwable) {
                 if (failure == null) {
-                    failure = if (candidate is CancellationException) candidate else sanitize(candidate)
+                    failure = candidate as? CancellationException ?: sanitize(candidate)
                 } else {
                     failure?.addSuppressed(sanitize(candidate))
                 }

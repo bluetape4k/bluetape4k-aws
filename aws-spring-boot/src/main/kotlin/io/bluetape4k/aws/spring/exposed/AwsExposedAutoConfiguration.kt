@@ -5,6 +5,7 @@ import io.bluetape4k.aws.exposed.AwsExposedDatabaseFactory
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseHandle
 import io.bluetape4k.aws.exposed.AwsExposedDatabaseRegistry
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.jdbc.Database
@@ -21,7 +22,6 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.core.env.Environment
 import org.springframework.core.type.AnnotatedTypeMetadata
 import javax.sql.DataSource
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * AWS 기반 Exposed database registry를 구성하는 Spring Boot auto-configuration입니다.
@@ -42,7 +42,12 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
         "javax.sql.DataSource",
     ]
 )
-@ConditionalOnProperty(prefix = "bluetape4k.aws.exposed", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    prefix = "bluetape4k.aws.exposed",
+    name = ["enabled"],
+    havingValue = "true",
+    matchIfMissing = true
+)
 @EnableConfigurationProperties(AwsExposedProperties::class)
 class AwsExposedAutoConfiguration {
 
@@ -76,7 +81,7 @@ class AwsExposedAutoConfiguration {
         properties: AwsExposedProperties,
         factory: AwsExposedDatabaseFactory,
     ): AwsExposedDatabaseRegistry =
-        // Spring @Bean factory method는 동기식이고 registry 생성은 suspend 함수입니다.
+    // Spring @Bean factory method는 동기식이고 registry 생성은 suspend 함수입니다.
         // context startup 중 JDBC pool 초기화가 blocking 될 수 있어 IO dispatcher에서 실행합니다.
         runBlocking(Dispatchers.IO) {
             factory.createRegistry(properties.toDatabaseProperties())
@@ -98,7 +103,12 @@ class AwsExposedAutoConfiguration {
         "javax.sql.DataSource",
     ]
 )
-@ConditionalOnProperty(prefix = "bluetape4k.aws.exposed", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    prefix = "bluetape4k.aws.exposed",
+    name = ["enabled"],
+    havingValue = "true",
+    matchIfMissing = true
+)
 class AwsExposedDefaultDatabaseAutoConfiguration {
 
     /**
@@ -142,8 +152,8 @@ internal class AwsExposedDatabaseConfiguredCondition: Condition {
     ): Boolean {
         val environment = context.environment
         return environment.containsProperty("$DEFAULT_DATABASE_PREFIX.url") ||
-            environment.hasConfiguredSource("$DEFAULT_DATABASE_PREFIX.secret-source") ||
-            environment.hasConfiguredSource("$DEFAULT_DATABASE_PREFIX.parameter-source")
+                environment.hasConfiguredSource("$DEFAULT_DATABASE_PREFIX.secret-source") ||
+                environment.hasConfiguredSource("$DEFAULT_DATABASE_PREFIX.parameter-source")
     }
 
     private fun Environment.hasConfiguredSource(prefix: String): Boolean =

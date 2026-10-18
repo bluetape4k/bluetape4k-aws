@@ -5,9 +5,13 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeEqualTo
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 
 class SqsExtendedPolicyFingerprintTest {
+
+    companion object: KLogging()
 
     @Test
     fun `policy fingerprint is deterministic across map order and mutates on bound changes`() {
@@ -32,10 +36,16 @@ class SqsExtendedPolicyFingerprintTest {
 
         val first = SqsExtendedPolicyFingerprint.calculate(queueUrl, base)
         val second = SqsExtendedPolicyFingerprint.calculate(queueUrl, reordered)
+
+        log.debug { "first=$first" }
         first shouldBeEqualTo second
-        SqsExtendedPolicyFingerprint.calculate(queueUrl, base.copy(deleteOnAck = !base.deleteOnAck))
+
+        SqsExtendedPolicyFingerprint
+            .calculate(queueUrl, base.copy(deleteOnAck = !base.deleteOnAck))
             .shouldNotBeEqualTo(first)
-        SqsExtendedPolicyFingerprint.calculate("$queueUrl/foreign", base)
+
+        SqsExtendedPolicyFingerprint
+            .calculate("$queueUrl/foreign", base)
             .shouldNotBeEqualTo(first)
     }
 
@@ -56,7 +66,7 @@ class SqsExtendedPolicyFingerprintTest {
         )
 
         SqsExtendedPolicyFingerprint.calculate(queueUrl, ordered) shouldBeEqualTo
-            SqsExtendedPolicyFingerprint.calculate(queueUrl, reordered)
+                SqsExtendedPolicyFingerprint.calculate(queueUrl, reordered)
 
         val delimiterBearing = policy(mapOf("a" to "b;c=d"))
         val splitEntries = policy(
@@ -81,7 +91,7 @@ class SqsExtendedPolicyFingerprintTest {
             SqsExtendedClientProperties.Encryption(encryptionContext = mapOf("" to "value"))
         }
 
-        error.message.orEmpty() shouldContain "encryption context keys"
+        error.message shouldContain "encryption context keys"
     }
 
     @Test

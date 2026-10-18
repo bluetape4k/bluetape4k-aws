@@ -19,13 +19,13 @@ import org.springframework.context.annotation.Bean
 @ConditionalOnAwsEnabled
 @ConditionalOnClass(name = ["software.amazon.awssdk.messagemanager.sns.SnsMessageManager"])
 @ConditionalOnProperty(
-    prefix = "bluetape4k.aws.sns",
+    prefix = SnsProperties.PREFIX,
     name = ["enabled"],
     havingValue = "true",
     matchIfMissing = true,
 )
 @ConditionalOnProperty(
-    prefix = "bluetape4k.aws.sns.verification",
+    prefix = "${SnsProperties.PREFIX}.verification",
     name = ["enabled"],
     havingValue = "true",
     matchIfMissing = true,

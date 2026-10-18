@@ -1,12 +1,15 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.spring.observability.AwsMicrometerSupport
-import io.micrometer.core.instrument.MeterRegistry
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.DistributionSummary
+import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.Timer
-import io.micrometer.core.instrument.DistributionSummary
+import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -18,9 +21,42 @@ class MicrometerSqsListenerInterceptor(
     private val meterName: String = DEFAULT_METER_NAME,
 ): SqsListenerInterceptor {
 
+    companion object: KLogging() {
+        const val DEFAULT_METER_NAME: String = "bluetape4k.aws.sqs.listener"
+        const val OPERATION_RECEIVE: String = "receive"
+        const val OPERATION_HANDLE: String = "handle"
+        const val OPERATION_ACKNOWLEDGEMENT: String = "acknowledgement"
+        const val TAG_MESSAGE_COUNT: String = "message.count"
+        const val TAG_ACK_ACTION: String = "ack.action"
+        const val BATCH_INVOCATIONS: String = "bluetape4k.sqs.batch.invocations"
+        const val BATCH_ACKNOWLEDGEMENTS: String = "bluetape4k.sqs.batch.acknowledgements"
+        const val BATCH_HANDLER_DURATION: String = "bluetape4k.sqs.batch.handler.duration"
+        const val BATCH_RETRY: String = "bluetape4k.sqs.batch.retry"
+        const val BATCH_PARTIAL_FAILURES: String = "bluetape4k.sqs.batch.partial.failures"
+        const val BATCH_VISIBILITY_FAILURES: String = "bluetape4k.sqs.batch.visibility.failures"
+        const val BATCH_CANCELLATIONS: String = "bluetape4k.sqs.batch.cancellations"
+        const val BATCH_REDELIVERY_AGE: String = "bluetape4k.sqs.batch.redelivery.age"
+        const val TAG_BATCH_SIZE_BUCKET: String = "batch.size.bucket"
+        const val TAG_IMPLEMENTATION_PATH: String = "implementation.path"
+        const val TAG_OPERATION: String = "operation"
+        const val TAG_OUTCOME: String = "outcome"
+        const val OPERATION_BATCH_RECEIVE: String = "receive"
+
+        private const val SMALL_BATCH_MIN_SIZE: Int = 2
+        private const val SMALL_BATCH_MAX_SIZE: Int = 5
+
+        private fun batchSizeBucket(size: Int): String = when (size) {
+            0 -> "0"
+            1 -> "1"
+            in SMALL_BATCH_MIN_SIZE..SMALL_BATCH_MAX_SIZE -> "2-5"
+            else -> "6-10"
+        }
+    }
+
     private val receiveStarts = ConcurrentHashMap<String, Long>()
     private val handleStarts = ConcurrentHashMap<String, Long>()
     private val acknowledgementStarts = ConcurrentHashMap<String, Long>()
+
     private data class BatchMetricKey(
         val listenerId: String,
         val queueUrl: String,
@@ -78,12 +114,16 @@ class MicrometerSqsListenerInterceptor(
             BATCH_INVOCATIONS,
             batchTags(listenerId, queueUrl, OPERATION_BATCH_RECEIVE, outcome(error), messages.size),
         ).increment()
-        messages.mapNotNull { redeliveryAgeMillis(it) }.maxOrNull()?.let { ageMillis ->
-            DistributionSummary.builder(BATCH_REDELIVERY_AGE)
-                .tags(batchTags(listenerId, queueUrl, null, outcome(error), messages.size))
-                .register(meterRegistry)
-                .record(ageMillis.toDouble())
-        }
+
+        messages
+            .mapNotNull { redeliveryAgeMillis(it) }
+            .maxOrNull()
+            ?.let { ageMillis ->
+                DistributionSummary.builder(BATCH_REDELIVERY_AGE)
+                    .tags(batchTags(listenerId, queueUrl, null, outcome(error), messages.size))
+                    .register(meterRegistry)
+                    .record(ageMillis.toDouble())
+            }
     }
 
     override suspend fun beforeHandle(context: SqsListenerInvocationContext) {
@@ -101,6 +141,7 @@ class MicrometerSqsListenerInterceptor(
     override suspend fun afterHandle(context: SqsListenerInvocationContext, error: Throwable?) {
         val key = contextKey(context)
         val startedAt = handleStarts.remove(key) ?: System.nanoTime()
+
         AwsMicrometerSupport.record(
             meterRegistry = meterRegistry,
             meterName = meterName,
@@ -124,10 +165,11 @@ class MicrometerSqsListenerInterceptor(
         val startedAt = batchHandleStarts.remove(
             batchMetricKey(context.listenerId, context.queueUrl, correlation)
         ) ?: System.nanoTime()
+
         Timer.builder(BATCH_HANDLER_DURATION)
             .tags(batchTags(context.listenerId, context.queueUrl, null, outcome(error), batchSize))
             .register(meterRegistry)
-            .record(java.time.Duration.ofNanos(System.nanoTime() - startedAt))
+            .record((System.nanoTime() - startedAt).nanos())
     }
 
     override suspend fun beforeAcknowledgement(
@@ -143,9 +185,8 @@ class MicrometerSqsListenerInterceptor(
         correlation: SqsListenerBatchCorrelation,
         batchSize: Int,
     ) {
-        batchAcknowledgementStarts[
-            batchMetricKey(context.listenerId, context.queueUrl, correlation)
-        ] = System.nanoTime()
+        val key = batchMetricKey(context.listenerId, context.queueUrl, correlation)
+        batchAcknowledgementStarts[key] = System.nanoTime()
     }
 
     override suspend fun afterAcknowledgement(
@@ -155,6 +196,7 @@ class MicrometerSqsListenerInterceptor(
     ) {
         val key = ackKey(context, action)
         val startedAt = acknowledgementStarts.remove(key) ?: System.nanoTime()
+
         AwsMicrometerSupport.record(
             meterRegistry = meterRegistry,
             meterName = meterName,
@@ -262,9 +304,11 @@ class MicrometerSqsListenerInterceptor(
         Counter.builder(name).tags(tags).register(meterRegistry)
 
     private fun redeliveryAgeMillis(message: SqsReceivedMessage): Long? =
-        message.attributes[software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName.APPROXIMATE_FIRST_RECEIVE_TIMESTAMP]
+        message.attributes[MessageSystemAttributeName.APPROXIMATE_FIRST_RECEIVE_TIMESTAMP]
             ?.toLongOrNull()
-            ?.let { timestamp -> (System.currentTimeMillis() - timestamp).coerceAtLeast(0L) }
+            ?.let { timestamp ->
+                (System.currentTimeMillis() - timestamp).coerceAtLeast(0L)
+            }
 
     private fun batchTags(
         listenerId: String,
@@ -325,36 +369,4 @@ class MicrometerSqsListenerInterceptor(
         queueUrl: String,
         correlation: SqsListenerBatchCorrelation,
     ): BatchMetricKey = BatchMetricKey(listenerId, queueUrl, correlation)
-
-    companion object {
-        const val DEFAULT_METER_NAME: String = "bluetape4k.aws.sqs.listener"
-        const val OPERATION_RECEIVE: String = "receive"
-        const val OPERATION_HANDLE: String = "handle"
-        const val OPERATION_ACKNOWLEDGEMENT: String = "acknowledgement"
-        const val TAG_MESSAGE_COUNT: String = "message.count"
-        const val TAG_ACK_ACTION: String = "ack.action"
-        const val BATCH_INVOCATIONS: String = "bluetape4k.sqs.batch.invocations"
-        const val BATCH_ACKNOWLEDGEMENTS: String = "bluetape4k.sqs.batch.acknowledgements"
-        const val BATCH_HANDLER_DURATION: String = "bluetape4k.sqs.batch.handler.duration"
-        const val BATCH_RETRY: String = "bluetape4k.sqs.batch.retry"
-        const val BATCH_PARTIAL_FAILURES: String = "bluetape4k.sqs.batch.partial.failures"
-        const val BATCH_VISIBILITY_FAILURES: String = "bluetape4k.sqs.batch.visibility.failures"
-        const val BATCH_CANCELLATIONS: String = "bluetape4k.sqs.batch.cancellations"
-        const val BATCH_REDELIVERY_AGE: String = "bluetape4k.sqs.batch.redelivery.age"
-        const val TAG_BATCH_SIZE_BUCKET: String = "batch.size.bucket"
-        const val TAG_IMPLEMENTATION_PATH: String = "implementation.path"
-        const val TAG_OPERATION: String = "operation"
-        const val TAG_OUTCOME: String = "outcome"
-        const val OPERATION_BATCH_RECEIVE: String = "receive"
-
-        private const val SMALL_BATCH_MIN_SIZE: Int = 2
-        private const val SMALL_BATCH_MAX_SIZE: Int = 5
-
-        private fun batchSizeBucket(size: Int): String = when (size) {
-            0 -> "0"
-            1 -> "1"
-            in SMALL_BATCH_MIN_SIZE..SMALL_BATCH_MAX_SIZE -> "2-5"
-            else -> "6-10"
-        }
-    }
 }

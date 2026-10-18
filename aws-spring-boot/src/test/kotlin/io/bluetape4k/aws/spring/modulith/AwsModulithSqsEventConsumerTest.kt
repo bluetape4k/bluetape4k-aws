@@ -1,19 +1,34 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.assertions.assertFails
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
+import io.bluetape4k.concurrent.await
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.until
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.modulith.events.EventExternalizationConfiguration
@@ -21,27 +36,50 @@ import software.amazon.awssdk.services.sqs.model.Message
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.milliseconds
 
 class AwsModulithSqsEventConsumerTest {
 
+    private companion object: KLogging() {
+        const val HOSTILE = "secret:event-id:arn:payload"
+        const val TEST_TIMEOUT_MILLIS = 2_000L
+        val TEST_TIMEOUT = 2000.milliseconds
+        val NOW: Instant = Instant.parse("2026-08-26T00:00:00Z")
+        val EVENT = TestEvent("evt-1")
+        val KEY = AwsModulithEventKey("orders.created", "evt-1")
+
+        val REGISTRY = AwsModulithEventTypeRegistry.of(
+            AwsModulithEventTypeRegistration("orders.created", 1, TestEvent::class.java, TestEvent::id)
+        )
+
+        val PROPERTIES = AwsModulithEventsProperties.Consumer(
+            enabled = true,
+            queue = "events",
+            sourceMode = AwsModulithSourceMode.DIRECT,
+            idempotency = AwsModulithEventsProperties.Idempotency(leaseDuration = 30.seconds()),
+        )
+    }
+
     @Test
     fun `cleanup timeout uses the smaller SQS stop timeout or lease third`() {
-        AwsModulithSqsEventConsumer.cleanupTimeout(1_000, Duration.ofSeconds(30)) shouldBeEqualTo
-            Duration.ofSeconds(1)
-        AwsModulithSqsEventConsumer.cleanupTimeout(25_000, Duration.ofSeconds(30)) shouldBeEqualTo
-            Duration.ofSeconds(10)
-        AwsModulithSqsEventConsumer.cleanupTimeout(0, Duration.ofNanos(1)) shouldBeEqualTo
-            Duration.ofMillis(1)
+        AwsModulithSqsEventConsumer
+            .cleanupTimeout(1_000, 30.seconds()) shouldBeEqualTo 1.seconds()
+
+        AwsModulithSqsEventConsumer
+            .cleanupTimeout(25_000, 30.seconds()) shouldBeEqualTo 10.seconds()
+
+        AwsModulithSqsEventConsumer
+            .cleanupTimeout(0, 1.nanos()) shouldBeEqualTo 1.millis()
     }
 
     @Test
     fun `decode and registry validation finish before claim and completed duplicate skips publish`() = runTest {
         val store = RecordingStore(AwsModulithClaimResult.Completed)
         val published = AtomicInteger()
-        val consumer = consumer(store = store, publisher = ApplicationEventPublisher { published.incrementAndGet() })
+        val consumer = consumer(store = store, publisher = { published.incrementAndGet() })
 
         consumer.consume(message()) shouldBeEqualTo AwsModulithConsumeOutcome.COMPLETED_DUPLICATE
 
@@ -51,12 +89,13 @@ class AwsModulithSqsEventConsumerTest {
 
     @Test
     fun `in progress is retryable and never publishes`() = runTest {
-        val store = RecordingStore(AwsModulithClaimResult.InProgress(NOW.plusSeconds(30)))
+        val store = RecordingStore(AwsModulithClaimResult.InProgress(NOW + 30.seconds()))
         val published = AtomicInteger()
-        val consumer = consumer(store = store, publisher = ApplicationEventPublisher { published.incrementAndGet() })
+        val consumer = consumer(store = store, publisher = { published.incrementAndGet() })
 
-        kotlin.runCatching { consumer.consume(message()) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithEventInProgressException>()
+        assertFailsWith<AwsModulithEventInProgressException> {
+            consumer.consume(message())
+        }
         published.get() shouldBeEqualTo 0
     }
 
@@ -64,16 +103,20 @@ class AwsModulithSqsEventConsumerTest {
     fun `handler success completes claim and loop risk releases it`() = runTest {
         val registry = SimpleMeterRegistry()
         val successStore = RecordingStore(acquired())
-        consumer(store = successStore, metrics = AwsModulithMetrics(registry)).consume(message()) shouldBeEqualTo
-            AwsModulithConsumeOutcome.PROCESSED
+
+        consumer(store = successStore, metrics = AwsModulithMetrics(registry))
+            .consume(message()) shouldBeEqualTo AwsModulithConsumeOutcome.PROCESSED
+
         successStore.completed.get() shouldBeEqualTo 1
         successStore.released.get() shouldBeEqualTo 0
         successStore.activeClaims.get() shouldBeEqualTo 0
+
         registry.get("bluetape4k.aws.modulith.events")
             .tag("phase", "claim")
             .tag("outcome", "success")
             .counter()
             .count() shouldBeEqualTo 1.0
+
         registry.get("bluetape4k.aws.modulith.events")
             .tag("phase", "claim")
             .tag("outcome", "completed")
@@ -82,8 +125,10 @@ class AwsModulithSqsEventConsumerTest {
 
         val loopStore = RecordingStore(acquired())
         val loopConsumer = consumer(store = loopStore, externalization = externalizing())
-        kotlin.runCatching { loopConsumer.consume(message()) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithInboundLoopRiskException>()
+
+        assertFailsWith<AwsModulithInboundLoopRiskException> {
+            loopConsumer.consume(message())
+        }
         loopStore.released.get() shouldBeEqualTo 1
         loopStore.completed.get() shouldBeEqualTo 0
     }
@@ -93,9 +138,9 @@ class AwsModulithSqsEventConsumerTest {
         val store = RecordingStore(acquired())
         val published = AtomicInteger()
         val listener = AwsModulithSqsEventListener(
-            consumer(store = store, publisher = ApplicationEventPublisher { published.incrementAndGet() })
+            consumer(store = store, publisher = { published.incrementAndGet() })
         )
-        val failingAcknowledgement = object : SqsAcknowledgement {
+        val failingAcknowledgement = object: SqsAcknowledgement {
             override val completed: Boolean = false
             override suspend fun acknowledge() = throw IllegalStateException(HOSTILE)
             override suspend fun nack(timeoutSeconds: Int) = Unit
@@ -103,8 +148,9 @@ class AwsModulithSqsEventConsumerTest {
         }
 
         repeat(2) {
-            kotlin.runCatching { listener.onMessage(message(), failingAcknowledgement) }.exceptionOrNull()
-                .shouldBeInstanceOf<AwsModulithAcknowledgementException>()
+            assertFailsWith<AwsModulithAcknowledgementException> {
+                listener.onMessage(message(), failingAcknowledgement)
+            }
         }
 
         store.completed.get() shouldBeEqualTo 1
@@ -117,16 +163,17 @@ class AwsModulithSqsEventConsumerTest {
         val store = RecordingStore(acquired(), releaseFailure = IllegalStateException(HOSTILE))
         val consumer = consumer(
             store = store,
-            publisher = ApplicationEventPublisher { throw IllegalArgumentException(HOSTILE) },
+            publisher = { throw IllegalArgumentException(HOSTILE) },
         )
 
-        val actual = kotlin.runCatching { consumer.consume(message()) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithDispatchException>()
+        val actual = assertFailsWith<AwsModulithDispatchException> {
+            consumer.consume(message())
+        }
 
-        actual.cause shouldBeEqualTo null
-        actual.message.orEmpty().contains(HOSTILE) shouldBeEqualTo false
+        actual.cause.shouldBeNull()
+        actual.message.orEmpty().contains(HOSTILE).shouldBeFalse()
         actual.suppressed.single().shouldBeInstanceOf<AwsModulithCleanupException>()
-        actual.suppressed.single().message.orEmpty().contains(HOSTILE) shouldBeEqualTo false
+        actual.suppressed.single().message shouldNotContain HOSTILE
     }
 
     @Test
@@ -135,15 +182,16 @@ class AwsModulithSqsEventConsumerTest {
         val cancelledStore = RecordingStore(acquired())
         val cancelled = consumer(
             store = cancelledStore,
-            publisher = ApplicationEventPublisher { throw cancellation },
+            publisher = { throw cancellation },
         )
-        kotlin.runCatching { cancelled.consume(message()) }.exceptionOrNull() shouldBeSameInstanceAs cancellation
+        assertFails { cancelled.consume(message()) } shouldBeSameInstanceAs cancellation
         cancelledStore.released.get() shouldBeEqualTo 1
 
         val fatal = AssertionError(HOSTILE)
         val fatalStore = RecordingStore(acquired())
-        val failed = consumer(store = fatalStore, publisher = ApplicationEventPublisher { throw fatal })
-        kotlin.runCatching { failed.consume(message()) }.exceptionOrNull() shouldBeSameInstanceAs fatal
+        val failed = consumer(store = fatalStore, publisher = { throw fatal })
+
+        assertFails { failed.consume(message()) } shouldBeSameInstanceAs fatal
         fatalStore.released.get() shouldBeEqualTo 1
     }
 
@@ -152,10 +200,10 @@ class AwsModulithSqsEventConsumerTest {
         val registry = SimpleMeterRegistry()
         val store = RecordingStore(acquired(), completeResult = AwsModulithStoreMutation.STALE)
 
-        kotlin.runCatching {
+        assertFailsWith<AwsModulithClaimMutationException> {
             consumer(store = store, metrics = AwsModulithMetrics(registry)).consume(message())
-        }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithClaimMutationException>()
+        }
+
         registry.get("bluetape4k.aws.modulith.events")
             .tag("phase", "claim")
             .tag("outcome", "failure")
@@ -164,67 +212,74 @@ class AwsModulithSqsEventConsumerTest {
     }
 
     @Test
-    fun `heartbeat renews during dispatch and stops before complete`() = runBlocking<Unit> {
+    fun `heartbeat renews during dispatch and stops before complete`() = runSuspendIO {
         val store = RecordingStore(acquired())
         val dispatchEntered = CountDownLatch(1)
         val releaseDispatch = CountDownLatch(1)
         val consumer = consumer(
             store = store,
-            publisher = ApplicationEventPublisher {
+            publisher = {
                 dispatchEntered.countDown()
-                check(releaseDispatch.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+                check(releaseDispatch.await(TEST_TIMEOUT))
             },
-            heartbeatInterval = Duration.ofMillis(10),
+            heartbeatInterval = 10.millis(),
         )
 
-        val outcome = async(Dispatchers.Default) { consumer.consume(message()) }
-        dispatchEntered.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS) shouldBeEqualTo true
-        withTimeout(TEST_TIMEOUT_MILLIS) {
-            while (store.renewed.get() == 0) delay(1)
+        val outcome = async(Dispatchers.Default) {
+            consumer.consume(message())
+        }
+        dispatchEntered.await(TEST_TIMEOUT).shouldBeTrue()
+
+        await atMost TEST_TIMEOUT until {
+            store.renewed.get() > 0
         }
         releaseDispatch.countDown()
 
         outcome.await() shouldBeEqualTo AwsModulithConsumeOutcome.PROCESSED
         val renewalsAfterComplete = store.renewed.get()
-        delay(40)
+        delay(40.milliseconds)
+
+        log.debug { "store=$store" }
         store.renewed.get() shouldBeEqualTo renewalsAfterComplete
         store.completed.get() shouldBeEqualTo 1
         store.activeClaims.get() shouldBeEqualTo 0
     }
 
     @Test
-    fun `renew and complete raw failures stay no-ack typed claim failures`() = runBlocking<Unit> {
+    fun `renew and complete raw failures stay no-ack typed claim failures`() = runSuspendIO {
         val renewStore = RecordingStore(acquired(), renewFailure = IllegalStateException(HOSTILE))
         val dispatchEntered = CountDownLatch(1)
         val releaseDispatch = CountDownLatch(1)
         val renewConsumer = consumer(
             store = renewStore,
             publisher = blockingPublisher(dispatchEntered, releaseDispatch),
-            heartbeatInterval = Duration.ofMillis(5),
+            heartbeatInterval = 5.millis(),
         )
         val renewOutcome = async(Dispatchers.Default) {
-            kotlin.runCatching { renewConsumer.consume(message()) }.exceptionOrNull()
+            runCatching { renewConsumer.consume(message()) }.exceptionOrNull()
         }
-        dispatchEntered.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS) shouldBeEqualTo true
-        withTimeout(TEST_TIMEOUT_MILLIS) {
-            while (renewStore.renewed.get() == 0) delay(1)
+        dispatchEntered.await(TEST_TIMEOUT).shouldBeTrue()
+
+        await atMost TEST_TIMEOUT until {
+            renewStore.renewed.get() > 0
         }
+
         releaseDispatch.countDown()
-        val renewFailure = renewOutcome.await()
-            .shouldBeInstanceOf<AwsModulithClaimMutationException>()
-        renewFailure.cause shouldBeEqualTo null
+        val renewFailure = renewOutcome.await().shouldBeInstanceOf<AwsModulithClaimMutationException>()
+        renewFailure.cause.shouldBeNull()
         renewStore.completed.get() shouldBeEqualTo 0
 
         val completeStore = RecordingStore(acquired(), completeFailure = IllegalStateException(HOSTILE))
-        val completeFailure = kotlin.runCatching { consumer(store = completeStore).consume(message()) }
-            .exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithClaimMutationException>()
-        completeFailure.cause shouldBeEqualTo null
+        val completeFailure = assertFailsWith<AwsModulithClaimMutationException> {
+            consumer(store = completeStore).consume(message())
+        }
+
+        completeFailure.cause.shouldBeNull()
         completeStore.released.get() shouldBeEqualTo 0
     }
 
     @Test
-    fun `renew cancellation is a no-complete failure and keeps identity`() = runBlocking<Unit> {
+    fun `renew cancellation is a no-complete failure and keeps identity`() = runSuspendIO {
         val cancellation = CancellationException(HOSTILE)
         val store = RecordingStore(acquired(), renewFailure = cancellation)
         val dispatchEntered = CountDownLatch(1)
@@ -232,9 +287,9 @@ class AwsModulithSqsEventConsumerTest {
         val consumer = consumer(
             store = store,
             publisher = blockingPublisher(dispatchEntered, releaseDispatch),
-            heartbeatInterval = Duration.ofMillis(5),
+            heartbeatInterval = 5.millis(),
         )
-        val observed = java.util.concurrent.atomic.AtomicReference<Throwable?>()
+        val observed = AtomicReference<Throwable?>()
 
         val outcome = async(Dispatchers.Default) {
             try {
@@ -244,12 +299,14 @@ class AwsModulithSqsEventConsumerTest {
                 throw failure
             }
         }
-        dispatchEntered.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS) shouldBeEqualTo true
-        withTimeout(TEST_TIMEOUT_MILLIS) {
-            while (store.renewed.get() == 0) delay(1)
+        dispatchEntered.await(TEST_TIMEOUT).shouldBeTrue()
+
+        await atMost TEST_TIMEOUT until {
+            store.renewed.get() > 0
         }
+
         releaseDispatch.countDown()
-        kotlin.runCatching { outcome.await() }
+        assertFails { outcome.await() }
 
         observed.get() shouldBeSameInstanceAs cancellation
         store.completed.get() shouldBeEqualTo 0
@@ -262,7 +319,7 @@ class AwsModulithSqsEventConsumerTest {
         val cancellation = CancellationException(HOSTILE)
         val store = RecordingStore(acquired(), completeFailure = cancellation)
 
-        val actual = kotlin.runCatching { consumer(store = store).consume(message()) }.exceptionOrNull()
+        val actual = assertFails { consumer(store = store).consume(message()) }
 
         actual shouldBeSameInstanceAs cancellation
         store.completed.get() shouldBeEqualTo 1
@@ -271,7 +328,7 @@ class AwsModulithSqsEventConsumerTest {
     }
 
     @Test
-    fun `parent cancellation after blocked dispatch releases claim before propagation`() = runBlocking<Unit> {
+    fun `parent cancellation after blocked dispatch releases claim before propagation`() = runSuspendIO {
         val store = RecordingStore(acquired())
         val dispatchEntered = CountDownLatch(1)
         val releaseDispatch = CountDownLatch(1)
@@ -279,9 +336,9 @@ class AwsModulithSqsEventConsumerTest {
         val observed = java.util.concurrent.atomic.AtomicReference<Throwable?>()
         val consumer = consumer(
             store = store,
-            publisher = ApplicationEventPublisher {
+            publisher = {
                 dispatchEntered.countDown()
-                check(releaseDispatch.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+                check(releaseDispatch.await(TEST_TIMEOUT))
             },
             heartbeatInterval = Duration.ofMillis(10),
         )
@@ -294,11 +351,12 @@ class AwsModulithSqsEventConsumerTest {
                 throw failure
             }
         }
-        dispatchEntered.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS) shouldBeEqualTo true
+        dispatchEntered.await(TEST_TIMEOUT).shouldBeTrue()
         outcome.cancel(cancellation)
         releaseDispatch.countDown()
 
-        kotlin.runCatching { outcome.await() }
+        assertFails { outcome.await() }
+
         observed.get().shouldBeInstanceOf<CancellationException>()
         store.released.get() shouldBeEqualTo 1
         store.completed.get() shouldBeEqualTo 0
@@ -312,17 +370,23 @@ class AwsModulithSqsEventConsumerTest {
         val store = RecordingStore(acquired())
         val sourceFailure = consumer(
             store = store,
-            sourceDecoder = AwsModulithInboundSourceDecoder { throw AwsModulithSourceException() },
+            sourceDecoder = { throw AwsModulithSourceException() },
             metrics = metrics,
         )
-        kotlin.runCatching { sourceFailure.consume(message()) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithSourceException>()
+        assertFailsWith<AwsModulithSourceException> {
+            sourceFailure.consume(message())
+        }
         store.claimedKeys.size shouldBeEqualTo 0
 
         val capacityStore = RecordingStore(acquired(), claimFailure = AwsModulithClaimCapacityException())
-        kotlin.runCatching { consumer(store = capacityStore, metrics = metrics).consume(message()) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithClaimCapacityException>()
-        registry.get("bluetape4k.aws.modulith.events").tag("phase", "source").counter().count() shouldBeEqualTo 1.0
+        assertFailsWith<AwsModulithClaimCapacityException> {
+            consumer(store = capacityStore, metrics = metrics).consume(message())
+        }
+
+        registry.get("bluetape4k.aws.modulith.events")
+            .tag("phase", "source")
+            .counter()
+            .count() shouldBeEqualTo 1.0
         registry.get("bluetape4k.aws.modulith.events")
             .tag("phase", "claim")
             .tag("outcome", "rejected")
@@ -335,11 +399,11 @@ class AwsModulithSqsEventConsumerTest {
         val store = RecordingStore(acquired(), releaseBlock = { awaitCancellation() })
         val consumer = consumer(
             store = store,
-            publisher = ApplicationEventPublisher { throw IllegalStateException(HOSTILE) },
+            publisher = { throw IllegalStateException(HOSTILE) },
             cleanupTimeout = Duration.ofMillis(20),
         )
-        val actual = withTimeout(500) {
-            kotlin.runCatching { consumer.consume(message()) }.exceptionOrNull()
+        val actual = withTimeout(500.milliseconds) {
+            assertFails { consumer.consume(message()) }
         }
 
         actual.shouldBeInstanceOf<AwsModulithDispatchException>()
@@ -369,7 +433,7 @@ class AwsModulithSqsEventConsumerTest {
         heartbeatInterval = heartbeatInterval,
     )
 
-    private fun externalizing(): EventExternalizationConfiguration = object : EventExternalizationConfiguration {
+    private fun externalizing(): EventExternalizationConfiguration = object: EventExternalizationConfiguration {
         override fun supports(event: Any): Boolean = true
         override fun map(event: Any): Any = event
         override fun determineTarget(event: Any) = error("not used")
@@ -382,7 +446,7 @@ class AwsModulithSqsEventConsumerTest {
         release: CountDownLatch,
     ): ApplicationEventPublisher = ApplicationEventPublisher {
         entered.countDown()
-        check(release.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+        check(release.await(TEST_TIMEOUT))
     }
 
     private fun message(): SqsReceivedMessage = SqsReceivedMessage(
@@ -402,7 +466,7 @@ class AwsModulithSqsEventConsumerTest {
         private val renewFailure: Throwable? = null,
         private val completeFailure: Throwable? = null,
         private val releaseBlock: (suspend () -> Unit)? = null,
-    ) : AwsModulithEventIdempotencyStore {
+    ): AwsModulithEventIdempotencyStore {
         val claimedKeys = mutableListOf<AwsModulithEventKey>()
         val completed = AtomicInteger()
         val released = AtomicInteger()
@@ -451,20 +515,4 @@ class AwsModulithSqsEventConsumerTest {
 
     private data class TestEvent(val id: String)
 
-    private companion object {
-        const val HOSTILE = "secret:event-id:arn:payload"
-        const val TEST_TIMEOUT_MILLIS = 2_000L
-        val NOW: Instant = Instant.parse("2026-08-26T00:00:00Z")
-        val EVENT = TestEvent("evt-1")
-        val KEY = AwsModulithEventKey("orders.created", "evt-1")
-        val REGISTRY = AwsModulithEventTypeRegistry.of(
-            AwsModulithEventTypeRegistration("orders.created", 1, TestEvent::class.java, TestEvent::id)
-        )
-        val PROPERTIES = AwsModulithEventsProperties.Consumer(
-            enabled = true,
-            queue = "events",
-            sourceMode = AwsModulithSourceMode.DIRECT,
-            idempotency = AwsModulithEventsProperties.Idempotency(leaseDuration = Duration.ofSeconds(30)),
-        )
-    }
 }

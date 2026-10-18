@@ -5,19 +5,22 @@ import io.bluetape4k.aws.spring.appconfig.AppConfigProperties
 import io.bluetape4k.aws.spring.parameterstore.ParameterStoreProperties
 import io.bluetape4k.aws.spring.s3.S3ConfigProperties
 import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerProperties
+import io.bluetape4k.aws.spring.support.bindOrCreate
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import org.springframework.boot.context.config.ConfigDataLocation
 import org.springframework.boot.context.config.ConfigDataLocationResolverContext
 import org.springframework.boot.context.properties.bind.Binder
+import java.io.Serializable
 
 /** Resolver가 공유하는 Binder, guard, bootstrap 등록 경계입니다. */
-internal object AwsConfigDataSupport {
+internal object AwsConfigDataSupport: KLogging() {
 
     data class ResolverConfiguration(
         val aws: AwsProperties,
         val backend: Any,
         val bootstrapContext: ConfigurableBootstrapContext,
-    )
+    ): Serializable
 
     fun resolve(
         binder: Binder,
@@ -26,15 +29,15 @@ internal object AwsConfigDataSupport {
         backend: AwsConfigDataBackend,
         clientClassName: String,
         dependency: String,
-        clientSupplier: (ResolverConfiguration) -> Any = {
-            error("ConfigData client adapter is not initialized.")
-        },
+        clientSupplier: (ResolverConfiguration) -> Any = { error("ConfigData client adapter is not initialized.") },
         clientCloser: (Any) -> Unit = { },
     ): AwsConfigDataResource {
         val configuration = bindConfiguration(binder, bootstrapContext, backend)
+
         val separator = (configuration.backend as? AppConfigProperties)?.separator ?: "#"
         val parsed = AwsConfigDataLocationParser().parse(location, separator)
         check(parsed.backend == backend) { "ConfigData backend does not match resolver." }
+
         val disabled = !configuration.aws.enabled || !backendEnabled(configuration.backend)
         if (!disabled) {
             AwsConfigDataBootstrapBridge.requireClass(clientClassName, dependency)
@@ -72,19 +75,20 @@ internal object AwsConfigDataSupport {
         bootstrapContext: ConfigurableBootstrapContext,
         backend: AwsConfigDataBackend,
     ): ResolverConfiguration {
-        val aws = binder.bindOrCreate("bluetape4k.aws", AwsProperties::class.java)
+        val aws = binder.bindOrCreate<AwsProperties>("bluetape4k.aws")
+
         val backendProperties = when (backend) {
             AwsConfigDataBackend.S3 ->
-                binder.bindOrCreate("bluetape4k.aws.s3.config", S3ConfigProperties::class.java)
+                binder.bindOrCreate<S3ConfigProperties>("bluetape4k.aws.s3.config")
 
             AwsConfigDataBackend.PARAMETER_STORE ->
-                binder.bindOrCreate("bluetape4k.aws.parameter-store", ParameterStoreProperties::class.java)
+                binder.bindOrCreate<ParameterStoreProperties>("bluetape4k.aws.parameter-store")
 
             AwsConfigDataBackend.SECRETS_MANAGER ->
-                binder.bindOrCreate("bluetape4k.aws.secrets-manager", SecretsManagerProperties::class.java)
+                binder.bindOrCreate<SecretsManagerProperties>("bluetape4k.aws.secrets-manager")
 
             AwsConfigDataBackend.APP_CONFIG ->
-                binder.bindOrCreate("bluetape4k.aws.app-config", AppConfigProperties::class.java)
+                binder.bindOrCreate<AppConfigProperties>("bluetape4k.aws.app-config")
         }
         return ResolverConfiguration(aws, backendProperties, bootstrapContext)
     }

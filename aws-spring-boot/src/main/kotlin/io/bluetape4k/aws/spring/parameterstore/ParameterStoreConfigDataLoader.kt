@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.parameterstore
 import io.bluetape4k.aws.spring.config.AwsConfigDataBackend
 import io.bluetape4k.aws.spring.config.AwsConfigDataFailurePolicy
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import org.springframework.boot.context.config.ConfigData
 import org.springframework.boot.context.config.ConfigDataLoader
@@ -13,12 +14,16 @@ import org.springframework.boot.logging.DeferredLogFactory
 class ParameterStoreConfigDataLoader(
     @Suppress("UNUSED_PARAMETER") private val deferredLogFactory: DeferredLogFactory,
     private val bootstrapContext: ConfigurableBootstrapContext,
-) : ConfigDataLoader<AwsConfigDataResource> {
+): ConfigDataLoader<AwsConfigDataResource> {
+
+    companion object: KLogging()
 
     override fun isLoadable(context: ConfigDataLoaderContext, resource: AwsConfigDataResource): Boolean =
         resource.backendKey == AwsConfigDataBackend.PARAMETER_STORE.key
 
     override fun load(context: ConfigDataLoaderContext, resource: AwsConfigDataResource): ConfigData? {
+        log.debug("Loading parameters from ${resource.backendKey}")
+        
         if (resource.isDisabled) {
             return AwsConfigDataFailurePolicy.toConfigData(resource, emptyMap())
         }

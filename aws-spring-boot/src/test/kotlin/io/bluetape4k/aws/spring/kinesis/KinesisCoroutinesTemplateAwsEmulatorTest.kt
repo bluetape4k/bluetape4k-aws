@@ -1,29 +1,32 @@
 package io.bluetape4k.aws.spring.kinesis
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.core.toSdkBytes
+import io.bluetape4k.aws.kinesis.model.putRecordsRequestEntryOf
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.coroutines.flow.extensions.log
+import io.bluetape4k.javatimes.millis
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withTimeout
-import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.testcontainers.utility.Base58
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
-import software.amazon.awssdk.services.kinesis.model.StreamStatus
-import java.time.Duration
-import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class KinesisCoroutinesTemplateAwsEmulatorTest {
 
-    companion object {
+    companion object: KLogging() {
         private val awsEmulator by lazy {
             AwsSpringBootTestEmulator.get("kinesis")
         }
@@ -47,8 +50,8 @@ class KinesisCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `create put and collect records through KinesisOperations`() {
         contextRunner().run { context ->
-            val operations = context.getBean(KinesisOperations::class.java)
-            val streamName = "spring-${UUID.randomUUID()}"
+            val operations = context.getBean<KinesisOperations>().shouldNotBeNull()
+            val streamName = "spring-${Base58.randomString(12).lowercase()}"
 
             runSuspendIO {
                 var streamCreated = false
@@ -57,11 +60,8 @@ class KinesisCoroutinesTemplateAwsEmulatorTest {
                     streamCreated = true
                     waitUntilActive(operations, streamName)
 
-                    val entries = (1..3).map { i ->
-                        PutRecordsRequestEntry.builder()
-                            .partitionKey("order-$i")
-                            .data(SdkBytes.fromUtf8String("payload-$i"))
-                            .build()
+                    val entries = List(3) { i ->
+                        putRecordsRequestEntryOf("order-$i", "payload-$i".toSdkBytes())
                     }
                     operations.putRecords(streamName, entries).failedRecordCount() shouldBeEqualTo 0
 
@@ -72,24 +72,31 @@ class KinesisCoroutinesTemplateAwsEmulatorTest {
                         .shardId()
                     shardId.shouldNotBeBlank()
 
-                    val records = withTimeout(15_000) {
-                        operations.recordFlow(
-                            KinesisRecordFlowRequest(
-                                streamName = streamName,
-                                shardId = shardId,
-                                position = KinesisStartingPosition.TrimHorizon,
-                                options = KinesisRecordFlowOptions(
-                                    batchLimit = 10,
-                                    pollInterval = Duration.ofMillis(100),
-                                    emptyBackoff = Duration.ofMillis(100),
-                                ),
+                    val records = withTimeout(15.seconds) {
+                        operations
+                            .recordFlow(
+                                KinesisRecordFlowRequest(
+                                    streamName = streamName,
+                                    shardId = shardId,
+                                    position = KinesisStartingPosition.TrimHorizon,
+                                    options = KinesisRecordFlowOptions(
+                                        batchLimit = 10,
+                                        pollInterval = 100.millis(),
+                                        emptyBackoff = 100.millis(),
+                                    ),
+                                )
                             )
-                        ).take(3).toList()
+                            .log("RECORD")
+                            .take(3)
+                            .toList()
                     }
 
                     records shouldHaveSize 3
-                    records.map { it.data().asUtf8String() } shouldBeEqualTo
-                            listOf("payload-1", "payload-2", "payload-3")
+                    records.map { it.data().asUtf8String() } shouldBeEqualTo listOf(
+                        "payload-0",
+                        "payload-1",
+                        "payload-2"
+                    )
                 } finally {
                     if (streamCreated) {
                         operations.deleteStream(streamName)
@@ -100,12 +107,7 @@ class KinesisCoroutinesTemplateAwsEmulatorTest {
     }
 
     private fun waitUntilActive(operations: KinesisOperations, streamName: String) {
-        await.atMost(Duration.ofSeconds(30)).until {
-            var active = false
-            runSuspendIO {
-                active = operations.describeStream(streamName).streamDescription().streamStatus() == StreamStatus.ACTIVE
-            }
-            active
-        }
+        log.debug("Waiting for Kinesis stream[$streamName] to be active...")
+        operations.client.waiter().waitUntilStreamExists { it.streamName(streamName) }
     }
 }

@@ -1,10 +1,14 @@
 package io.bluetape4k.aws.spring.dynamodb
 
 import io.bluetape4k.aws.dynamodb.model.writeBatchOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
+import software.amazon.awssdk.enhanced.dynamodb.Document
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient
 import software.amazon.awssdk.enhanced.dynamodb.Key
@@ -16,6 +20,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult
 import software.amazon.awssdk.enhanced.dynamodb.model.ReadBatch
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactGetItemsEnhancedRequest
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest
+import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -42,12 +47,12 @@ class DynamoDbTemplate(
 
     /** logical table name과 entity class로 typed async table을 얻습니다. */
     @Suppress("UNCHECKED_CAST")
-    fun <T : Any> table(
+    fun <T: Any> table(
         tableName: String,
         entityClass: Class<T>,
         schema: TableSchema<T>? = null,
     ): DynamoDbAsyncTable<T> {
-        require(tableName.isNotBlank()) { "tableName must not be blank." }
+        tableName.requireNotBlank("tableName")
         val physicalTableName = tableNameResolver.resolve(tableName)
         if (schema != null) {
             return enhancedClient.table(physicalTableName, schema)
@@ -60,13 +65,13 @@ class DynamoDbTemplate(
     }
 
     /** reified entity class를 이용하는 [table] 단축 진입점입니다. */
-    inline fun <reified T : Any> table(
+    inline fun <reified T: Any> table(
         tableName: String,
         schema: TableSchema<T>? = null,
     ): DynamoDbAsyncTable<T> = table(tableName, T::class.java, schema)
 
     /** item을 저장하고 입력 item을 반환합니다. */
-    suspend fun <T : Any> putItem(
+    suspend fun <T: Any> putItem(
         tableName: String,
         item: T,
         schema: TableSchema<T>? = null,
@@ -76,7 +81,7 @@ class DynamoDbTemplate(
     }
 
     /** key로 item을 조회합니다. */
-    suspend fun <T : Any> getItem(
+    suspend fun <T: Any> getItem(
         tableName: String,
         key: Key,
         entityClass: Class<T>,
@@ -85,8 +90,11 @@ class DynamoDbTemplate(
         table(tableName, entityClass, schema).getItem(key).await()
     }
 
+    suspend inline fun <reified T: Any> getItem(tableName: String, key: Key, schema: TableSchema<T>? = null): T? =
+        getItem(tableName, key, T::class.java, schema)
+
     /** key로 item을 삭제하고 삭제된 item을 반환합니다. */
-    suspend fun <T : Any> deleteItem(
+    suspend fun <T: Any> deleteItem(
         tableName: String,
         key: Key,
         entityClass: Class<T>,
@@ -95,8 +103,11 @@ class DynamoDbTemplate(
         table(tableName, entityClass, schema).deleteItem(key).await()
     }
 
+    suspend inline fun <reified T: Any> deleteItem(tableName: String, key: Key, schema: TableSchema<T>? = null): T? =
+        deleteItem(tableName, key, T::class.java, schema)
+
     /** item을 갱신하고 DynamoDB가 반환한 값을 반환합니다. */
-    suspend fun <T : Any> updateItem(
+    suspend fun <T: Any> updateItem(
         tableName: String,
         item: T,
         schema: TableSchema<T>? = null,
@@ -109,76 +120,94 @@ class DynamoDbTemplate(
      *
      * DynamoDB가 반환한 unprocessed item은 숨기지 않고 결과에 남깁니다.
      */
-    suspend fun <T : Any> batchWrite(
+    suspend fun <T: Any> batchWrite(
         tableName: String,
         items: Collection<T>,
         chunkSize: Int = MAX_BATCH_WRITE_ITEMS,
         schema: TableSchema<T>? = null,
     ): DynamoDbBatchWriteResult<T> = execute("batchWrite") {
-        require(chunkSize in 1..MAX_BATCH_WRITE_ITEMS) {
-            "chunkSize must be between 1 and $MAX_BATCH_WRITE_ITEMS."
+        chunkSize.requireInRange(1, MAX_BATCH_WRITE_ITEMS, "chunkSize")
+
+        if (items.isEmpty()) {
+            return@execute DynamoDbBatchWriteResult.empty()
         }
-        if (items.isEmpty()) return@execute DynamoDbBatchWriteResult(emptyList(), emptyList())
 
         val table = table(tableName, items.first().javaClass, schema)
-        val responses = items.chunked(chunkSize).map { chunk ->
-            val request = BatchWriteItemEnhancedRequest.builder()
-                .addWriteBatch(writeBatchOf(table, chunk, items.first().javaClass))
-                .build()
-            enhancedClient.batchWriteItem(request).await()
-        }
-        val unprocessed = responses.flatMap { response -> response.unprocessedPutItemsForTable(table) }
+        val responses = items
+            .chunked(chunkSize)
+            .map { chunk ->
+                val request = BatchWriteItemEnhancedRequest.builder()
+                    .addWriteBatch(writeBatchOf(table, chunk, items.first().javaClass))
+                    .build()
+                enhancedClient.batchWriteItem(request).await()
+            }
+        val unprocessed = responses
+            .flatMap { response ->
+                response.unprocessedPutItemsForTable(table)
+            }
         DynamoDbBatchWriteResult(responses, unprocessed)
     }
 
     /** 최대 100개씩 Enhanced batch get을 실행하고 page/unprocessed key를 함께 반환합니다. */
-    suspend fun <T : Any> batchGet(
+    suspend fun <T: Any> batchGet(
         tableName: String,
         keys: Collection<Key>,
         entityClass: Class<T>,
         chunkSize: Int = MAX_BATCH_GET_ITEMS,
         schema: TableSchema<T>? = null,
     ): DynamoDbBatchGetResult<T> = execute("batchGet") {
-        require(chunkSize in 1..MAX_BATCH_GET_ITEMS) {
-            "chunkSize must be between 1 and $MAX_BATCH_GET_ITEMS."
+        chunkSize.requireInRange(1, MAX_BATCH_GET_ITEMS, "chunkSize")
+
+        if (keys.isEmpty()) {
+            return@execute DynamoDbBatchGetResult.empty()
         }
-        if (keys.isEmpty()) return@execute DynamoDbBatchGetResult(emptyList(), emptyList(), emptyList())
 
         val table = table(tableName, entityClass, schema)
-        val pages = keys.chunked(chunkSize).flatMap { chunk ->
-            val readBatch = ReadBatch.builder(entityClass)
-                .mappedTableResource(table)
-                .apply { chunk.forEach { addGetItem(it) } }
-                .build()
-            val request = BatchGetItemEnhancedRequest.builder()
-                .addReadBatch(readBatch)
-                .build()
-            enhancedClient.batchGetItem(request).asFlow().toList()
-        }
+        val pages = keys
+            .chunked(chunkSize)
+            .flatMap { chunk ->
+                val readBatch = ReadBatch.builder(entityClass)
+                    .mappedTableResource(table)
+                    .apply { chunk.forEach { addGetItem(it) } }
+                    .build()
+                val request = BatchGetItemEnhancedRequest.builder()
+                    .addReadBatch(readBatch)
+                    .build()
+                enhancedClient.batchGetItem(request).asFlow().toList()
+            }
         val items = pages.flatMap { it.resultsForTable(table) }
         val unprocessedKeys = pages.flatMap { it.unprocessedKeysForTable(table) }
+
         DynamoDbBatchGetResult(items, pages, unprocessedKeys)
     }
+
+    suspend inline fun <reified T: Any> batchGet(
+        tableName: String,
+        keys: Collection<Key>,
+        chunkSize: Int = MAX_BATCH_GET_ITEMS,
+        schema: TableSchema<T>? = null,
+    ): DynamoDbBatchGetResult<T> =
+        batchGet(tableName, keys, T::class.java, chunkSize, schema)
 
     /** builder에서 조건식/put/update/delete를 조합해 atomic transaction을 실행합니다. */
     suspend fun transactWrite(
         builder: TransactWriteItemsEnhancedRequest.Builder.() -> Unit,
-    ) = execute("transactWrite") {
-        enhancedClient.transactWriteItems(
-            TransactWriteItemsEnhancedRequest.builder().apply(builder).build()
-        ).await()
+    ) {
+        execute("transactWrite") {
+            val request = TransactWriteItemsEnhancedRequest.builder().apply(builder).build()
+            enhancedClient.transactWriteItems(request).await()
+        }
     }
 
     /** typed table을 builder에서 조합해 transaction get을 실행합니다. */
     suspend fun transactGet(
         builder: TransactGetItemsEnhancedRequest.Builder.() -> Unit,
-    ) = execute("transactGet") {
-        enhancedClient.transactGetItems(
-            TransactGetItemsEnhancedRequest.builder().apply(builder).build()
-        ).await()
+    ): List<Document> = execute("transactGet") {
+        val request = TransactGetItemsEnhancedRequest.builder().apply(builder).build()
+        enhancedClient.transactGetItems(request).await()
     }
 
-    private suspend fun <T> execute(operation: String, block: suspend () -> T): T =
+    private suspend inline fun <T> execute(operation: String, block: suspend () -> T): T =
         try {
             block()
         } catch (error: CancellationException) {
@@ -190,9 +219,9 @@ class DynamoDbTemplate(
     private data class TableCacheKey(
         val physicalTableName: String,
         val entityClass: Class<*>,
-    )
+    ): Serializable
 
-    companion object {
+    companion object: KLogging() {
         const val MAX_BATCH_WRITE_ITEMS: Int = 25
         const val MAX_BATCH_GET_ITEMS: Int = 100
     }
@@ -202,17 +231,27 @@ class DynamoDbTemplate(
 data class DynamoDbBatchWriteResult<T>(
     val responses: List<BatchWriteResult>,
     val unprocessedItems: List<T>,
-)
+): Serializable {
+    companion object {
+        fun <T> empty() = DynamoDbBatchWriteResult<T>(emptyList(), emptyList())
+        private const val serialVersionUID = 1L
+    }
+}
 
 /** batch get page와 unprocessed key를 함께 표현합니다. */
 data class DynamoDbBatchGetResult<T>(
     val items: List<T>,
     val pages: List<BatchGetResultPage>,
     val unprocessedKeys: List<Key>,
-)
+): Serializable {
+    companion object {
+        fun <T> empty() = DynamoDbBatchGetResult<T>(emptyList(), emptyList(), emptyList())
+        private const val serialVersionUID = 1L
+    }
+}
 
 /** DynamoDB template 작업 실패를 operation과 원인과 함께 표현합니다. */
 class DynamoDbTemplateException(
     val operation: String,
     cause: Throwable,
-) : RuntimeException("DynamoDB $operation failed.", cause)
+): RuntimeException("DynamoDB $operation failed.", cause)

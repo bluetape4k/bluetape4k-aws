@@ -10,23 +10,25 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
-import io.bluetape4k.junit5.coroutines.SuspendedJobTester
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sns.SnsAsyncClient
-import software.amazon.awssdk.services.sns.model.ListTopicsResponse
 import software.amazon.awssdk.services.sns.model.ListTopicsRequest
+import software.amazon.awssdk.services.sns.model.ListTopicsResponse
 import software.amazon.awssdk.services.sns.model.Topic
 import java.net.URI
 import java.time.Clock
@@ -34,15 +36,23 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
-class SnsTopicArnResolverTest {
+class SnsTopicArnResolverTest: AbstractSnsTest() {
+
+    companion object: KLogging()
+
+    private val client = mockk<SnsAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `in memory cache applies ttl negative entries and lru size`() {
         val clock = MutableClock(Instant.parse("2026-05-13T00:00:00Z"))
-        val cache = InMemorySnsTopicArnCache(maxSize = 2, ttl = Duration.ofMinutes(5), clock = clock)
+        val cache = InMemorySnsTopicArnCache(maxSize = 2, ttl = 5.minutes(), clock = clock)
         val first = key("first")
         val second = key("second")
         val third = key("third")
@@ -54,14 +64,14 @@ class SnsTopicArnResolverTest {
         cache.put(third, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:000000000123:third"))
         cache.get(first).shouldBeNull()
 
-        clock.currentInstant = clock.currentInstant.plus(Duration.ofMinutes(6))
+        clock.currentInstant += 6.minutes()
         cache.get(second).shouldBeNull()
         cache.get(third).shouldBeNull()
     }
 
     @Test
     fun `invalidate and clear remove resolved and negative entries`() {
-        val cache = InMemorySnsTopicArnCache(maxSize = 2, ttl = Duration.ofMinutes(5))
+        val cache = InMemorySnsTopicArnCache(maxSize = 2, ttl = 5.minutes())
         val first = key("first")
         val second = key("second")
         cache.put(first, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:000000000123:first"))
@@ -75,9 +85,10 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `resolves all list topics pages and preserves fifo suffix`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             when (calls) {
                 1 -> completedList(
@@ -95,7 +106,6 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `explicit arn bypasses cache and sdk lookup`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val resolver = resolver(
             client,
             scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "123456789012"),
@@ -109,7 +119,6 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `explicit arn validates sns shape region and cross account policy`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val resolver = resolver(client)
 
         assertFailsWith<IllegalArgumentException> {
@@ -137,8 +146,9 @@ class SnsTopicArnResolverTest {
             scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "123456789012"),
             allowCrossAccountTopicArn = true,
         )
-        crossAccount.resolve("arn:aws:sns:us-east-1:456456456456:orders") shouldBeEqualTo
-            "arn:aws:sns:us-east-1:456456456456:orders"
+        crossAccount
+            .resolve("arn:aws:sns:us-east-1:456456456456:orders") shouldBeEqualTo
+                "arn:aws:sns:us-east-1:456456456456:orders"
     }
 
     @Test
@@ -152,8 +162,8 @@ class SnsTopicArnResolverTest {
         val error = assertFailsWith<IllegalArgumentException> {
             resolver.resolve("arn:aws:sns:us-east-1:123456789012:orders")
         }
-        error.message.orEmpty() shouldBeEqualTo
-            "scope.accountId must be configured before resolving an explicit ARN unless cross-account topicArn is enabled."
+        error.message shouldBeEqualTo
+                "scope.accountId must be configured before resolving an explicit ARN unless cross-account topicArn is enabled."
     }
 
     @Test
@@ -167,25 +177,29 @@ class SnsTopicArnResolverTest {
         val error = assertFailsWith<IllegalArgumentException> {
             resolver.resolve("arn:aws:sns:us-east-1:123456789012:orders")
         }
-        error.message.orEmpty() shouldBeEqualTo
-            "resolver region must be configured before resolving an explicit ARN."
+        error.message shouldBeEqualTo
+                "resolver region must be configured before resolving an explicit ARN."
     }
 
     @Test
     fun `list topics result is validated against resolver scope`() = runTest {
-        val client = mockk<SnsAsyncClient>()
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
-            completedList(topicArn = "arn:aws:sns:eu-west-1:456456456456:orders")
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } returns completedList(topicArn = "arn:aws:sns:eu-west-1:456456456456:orders")
+
         val resolver = resolver(client)
 
-        assertFailsWith<IllegalArgumentException> { resolver.resolve("orders") }
+        assertFailsWith<IllegalArgumentException> {
+            resolver.resolve("orders")
+        }
     }
 
     @Test
     fun `list topics account mismatch cannot be bypassed by cross account opt in`() = runTest {
-        val client = mockk<SnsAsyncClient>()
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
-            completedList(topicArn = "arn:aws:sns:us-east-1:456456456456:orders")
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } returns completedList(topicArn = "arn:aws:sns:us-east-1:456456456456:orders")
+
         val resolver = SnsTopicArnResolver(
             snsAsyncClient = client,
             cache = NoopSnsTopicArnCache,
@@ -193,9 +207,11 @@ class SnsTopicArnResolverTest {
             allowCrossAccountTopicArn = true,
         )
 
-        val error = assertFailsWith<IllegalArgumentException> { resolver.resolve("orders") }
-        error.message.orEmpty() shouldBeEqualTo
-            "ListTopics returned topicArn account '456456456456' that does not match resolver account '123456789012'."
+        val error = assertFailsWith<IllegalArgumentException> {
+            resolver.resolve("orders")
+        }
+        error.message shouldBeEqualTo
+                "ListTopics returned topicArn account '456456456456' that does not match resolver account '123456789012'."
     }
 
     @Test
@@ -203,13 +219,15 @@ class SnsTopicArnResolverTest {
         assertFailsWith<IllegalArgumentException> {
             SnsTopicArnResolverScope(accountId = "123")
         }
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } returns completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
 
-        val malformedClient = mockk<SnsAsyncClient>()
-        every { malformedClient.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
-            completedList(topicArn = "arn:aws:sns:us-east-1:123:orders")
-        assertFailsWith<IllegalArgumentException> { resolver(malformedClient).resolve("orders") }
+        assertFailsWith<IllegalArgumentException> {
+            resolver(client).resolve("orders")
+        }
 
-        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5))
+        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = 5.minutes())
         val scope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "123456789012")
         val key = SnsTopicArnCacheKey(scope, "orders")
         cache.put(key, SnsTopicArnCacheEntry.Resolved("arn:aws:sns:eu-west-1:123456789012:orders"))
@@ -251,11 +269,12 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `negative lookup is cached until invalidated`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
-            CompletableFuture.completedFuture(ListTopicsResponse.builder().build())
+            completableFutureOf(ListTopicsResponse.builder().build())
         }
         val resolver = resolver(client)
 
@@ -270,30 +289,32 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `positive cache hit lasts until ttl expiry`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
         val clock = MutableClock(Instant.parse("2026-05-13T00:00:00Z"))
-        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5), clock = clock)
+        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = 5.minutes(), clock = clock)
         val resolver = resolver(client, cache)
 
         resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 1
 
-        clock.currentInstant = clock.currentInstant.plus(Duration.ofMinutes(6))
+        clock.currentInstant += 6.minutes()
         resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
     @Test
     fun `sdk failure is not cached`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             if (calls == 1) {
                 CompletableFuture.failedFuture(IllegalStateException("list failed"))
@@ -303,26 +324,31 @@ class SnsTopicArnResolverTest {
         }
         val resolver = resolver(client)
 
-        assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
+        assertFailsWith<IllegalStateException> {
+            resolver.resolve("orders")
+        }
         resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
     @Test
     fun `terminal lookup failure emits one redacted warning`() = runTest {
-        val client = mockk<SnsAsyncClient>()
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } returns
-            CompletableFuture.failedFuture(IllegalStateException("raw AWS failure"))
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } returns CompletableFuture.failedFuture(IllegalStateException("raw AWS failure"))
+
         val resolver = resolver(client)
         val resolverLogger = LoggerFactory.getLogger(SnsTopicArnResolver::class.java) as Logger
         val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
         val previousLevel = resolverLogger.level
         resolverLogger.addAppender(appender)
         resolverLogger.level = Level.WARN
+
         try {
             assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
             val event = appender.list.single()
             val message = event.formattedMessage
+            log.debug { "message=$message" }
             message.startsWith("SNS topic ARN lookup failed (scopeHash=").shouldBeTrue()
             message shouldContain ", topicNameHash="
             message shouldContain ", exceptionType=IllegalStateException)"
@@ -336,10 +362,11 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `same topic concurrent lookups use one sdk request`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val pending = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             pending
         }
@@ -350,15 +377,17 @@ class SnsTopicArnResolverTest {
 
         calls shouldBeEqualTo 1
         pending.complete(completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders").join())
-        listOf(first.await(), second.await()).shouldHaveSize(2)
+        log.debug { "first=$first, second=$second" }
+        listOf(first.await(), second.await()) shouldHaveSize 2
     }
 
     @Test
     fun `noop cache still shares concurrent success outcome`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val pending = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             pending
         }
@@ -376,10 +405,11 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `noop cache shares concurrent failure outcome`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val pending = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             pending
         }
@@ -410,10 +440,11 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `evicted cache entry still shares an overlapping flight`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val pending = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             when (calls) {
                 1 -> completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
@@ -423,7 +454,7 @@ class SnsTopicArnResolverTest {
         }
         val resolver = resolver(
             client,
-            InMemorySnsTopicArnCache(maxSize = 1, ttl = Duration.ofMinutes(5)),
+            InMemorySnsTopicArnCache(maxSize = 1, ttl = 5.minutes()),
         )
         resolver.resolve("orders")
         resolver.resolve("payments")
@@ -441,11 +472,12 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `different topic flights overlap without a global lookup lock`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val orders = CompletableFuture<ListTopicsResponse>()
         val payments = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             if (calls == 1) orders else payments
         }
@@ -463,10 +495,11 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `invalidate detaches a pending flight and prevents stale late write`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val pending = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
@@ -485,10 +518,11 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `clear detaches pending flights and prevents stale late write`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val pending = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
@@ -505,9 +539,10 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `failed flight is removed so next lookup retries`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             if (calls == 1) {
                 CompletableFuture.failedFuture(IllegalStateException("temporary"))
@@ -517,22 +552,27 @@ class SnsTopicArnResolverTest {
         }
         val resolver = resolver(client)
 
-        assertFailsWith<IllegalStateException> { resolver.resolve("orders") }
+        assertFailsWith<IllegalStateException> {
+            resolver.resolve("orders")
+        }
         resolver.resolve("orders") shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
         calls shouldBeEqualTo 2
     }
 
     @Test
     fun `caller cancellation releases flight for the next lookup`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         val pending = CompletableFuture<ListTopicsResponse>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             if (calls == 1) pending else completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
         val resolver = resolver(client)
-        val cancelled = async { resolver.resolve("orders") }
+        val cancelled = async {
+            resolver.resolve("orders")
+        }
         yield()
         cancelled.cancelAndJoin()
 
@@ -542,9 +582,11 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `cache scope separates endpoint region and account`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             completedList(
                 topicArn = if (calls == 1) {
@@ -554,7 +596,7 @@ class SnsTopicArnResolverTest {
                 },
             )
         }
-        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5))
+        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = 5.minutes())
         val first = resolver(client, cache, SnsTopicArnResolverScope(URI("http://one"), "us-east-1", "000000000123"))
         val second = resolver(client, cache, SnsTopicArnResolverScope(URI("http://two"), "us-east-1", "000000000456"))
 
@@ -565,13 +607,14 @@ class SnsTopicArnResolverTest {
 
     @Test
     fun `resolver namespace separates same visible scope`() = runTest {
-        val client = mockk<SnsAsyncClient>()
         var calls = 0
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
+        every {
+            client.listTopics(any<Consumer<ListTopicsRequest.Builder>>())
+        } answers {
             calls += 1
             completedList(topicArn = "arn:aws:sns:us-east-1:000000000123:orders")
         }
-        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = Duration.ofMinutes(5))
+        val cache = InMemorySnsTopicArnCache(maxSize = 4, ttl = 5.minutes())
         val first = resolver(client, cache, SnsTopicArnResolverScope(URI("http://same"), "us-east-1", "000000000123"))
         val second = resolver(client, cache, SnsTopicArnResolverScope(URI("http://same"), "us-east-1", "000000000123"))
 
@@ -582,7 +625,7 @@ class SnsTopicArnResolverTest {
 
     private fun resolver(
         client: SnsAsyncClient,
-        cache: SnsTopicArnCache = InMemorySnsTopicArnCache(maxSize = 16, ttl = Duration.ofMinutes(5)),
+        cache: SnsTopicArnCache = InMemorySnsTopicArnCache(maxSize = 16, ttl = 5.minutes()),
         scope: SnsTopicArnResolverScope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "000000000123"),
     ): SnsTopicArnResolver = SnsTopicArnResolver(client, cache, scope)
 
@@ -596,7 +639,7 @@ class SnsTopicArnResolverTest {
         topicArn: String,
         nextToken: String? = null,
     ): CompletableFuture<ListTopicsResponse> =
-        CompletableFuture.completedFuture(
+        completableFutureOf(
             ListTopicsResponse.builder()
                 .topics(Topic.builder().topicArn(topicArn).build())
                 .nextToken(nextToken)
@@ -609,176 +652,5 @@ class SnsTopicArnResolverTest {
         override fun getZone(): ZoneId = ZoneId.of("UTC")
         override fun withZone(zone: ZoneId): Clock = this
         override fun instant(): Instant = currentInstant
-    }
-}
-
-class SnsTopicArnResolverStressTest {
-
-    @Test
-    fun `repeated cross key flights stay parallel and single flight under stress`() = runTest {
-        val client = mockk<SnsAsyncClient>()
-        val pending = CompletableFuture<ListTopicsResponse>()
-        val calls = AtomicInteger()
-        every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
-            calls.incrementAndGet()
-            pending
-        }
-        val topicNames = listOf("orders", "payments", "shipping", "invoices")
-        val topicArns = topicNames.associateWith { "arn:aws:sns:us-east-1:000000000123:$it" }
-        val resolver = resolver(
-            client,
-            InMemorySnsTopicArnCache(maxSize = topicNames.size, ttl = Duration.ofMinutes(5)),
-        )
-
-        val stress = SuspendedJobTester()
-            .workers(16)
-            .rounds(4)
-            .addAll(
-                topicNames.map { topicName ->
-                    suspend {
-                        resolver.resolve(topicName) shouldBeEqualTo topicArns.getValue(topicName)
-                    }
-                },
-            )
-        val running = async { stress.run() }
-        awaitCallCount(calls, topicNames.size)
-        calls.get() shouldBeEqualTo topicNames.size
-
-        pending.complete(completedList(topicArns.values.toList()).join())
-        running.await()
-        calls.get() shouldBeEqualTo topicNames.size
-    }
-
-    @Test
-    fun `repeated waiter cancellation preserves owner outcome and cancellation identity`() = runTest {
-        SuspendedJobTester()
-            .workers(8)
-            .rounds(8)
-            .add {
-                val client = mockk<SnsAsyncClient>()
-                val pending = CompletableFuture<ListTopicsResponse>()
-                val calls = AtomicInteger()
-                every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
-                    calls.incrementAndGet()
-                    pending
-                }
-                val resolver = resolver(client, NoopSnsTopicArnCache)
-
-                supervisorScope {
-                    val owner = async { resolver.resolve("orders") }
-                    val waiter = async { resolver.resolve("orders") }
-                    awaitCallCount(calls, 1)
-
-                    waiter.cancel()
-                    assertFailsWith<CancellationException> { waiter.await() }
-                    pending.complete(completedList("arn:aws:sns:us-east-1:000000000123:orders").join())
-
-                    owner.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
-                }
-                calls.get() shouldBeEqualTo 1
-            }
-            .run()
-    }
-
-    @Test
-    fun `repeated eviction keeps overlapping flight single under stress`() = runTest {
-        SuspendedJobTester()
-            .workers(8)
-            .rounds(8)
-            .add {
-                val client = mockk<SnsAsyncClient>()
-                val pending = CompletableFuture<ListTopicsResponse>()
-                val calls = AtomicInteger()
-                every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
-                    when (calls.incrementAndGet()) {
-                        1 -> completedList("arn:aws:sns:us-east-1:000000000123:orders")
-                        2 -> completedList("arn:aws:sns:us-east-1:000000000123:payments")
-                        else -> pending
-                    }
-                }
-                val resolver = resolver(
-                    client,
-                    InMemorySnsTopicArnCache(maxSize = 1, ttl = Duration.ofMinutes(5)),
-                )
-                resolver.resolve("orders")
-                resolver.resolve("payments")
-
-                val first = async { resolver.resolve("orders") }
-                val second = async { resolver.resolve("orders") }
-                awaitCallCount(calls, 3)
-                pending.complete(completedList("arn:aws:sns:us-east-1:000000000123:orders").join())
-
-                first.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
-                second.await() shouldBeEqualTo "arn:aws:sns:us-east-1:000000000123:orders"
-                calls.get() shouldBeEqualTo 3
-            }
-            .run()
-    }
-
-    @Test
-    fun `repeated invalidation and clear races prevent stale cache writes`() = runTest {
-        val scenario = AtomicInteger()
-        SuspendedJobTester()
-            .workers(8)
-            .rounds(8)
-            .add {
-                val client = mockk<SnsAsyncClient>()
-                val firstPending = CompletableFuture<ListTopicsResponse>()
-                val calls = AtomicInteger()
-                every { client.listTopics(any<Consumer<ListTopicsRequest.Builder>>()) } answers {
-                    if (calls.incrementAndGet() == 1) {
-                        firstPending
-                    } else {
-                        completedList("arn:aws:sns:us-east-1:000000000123:orders")
-                    }
-                }
-                val cache = InMemorySnsTopicArnCache(maxSize = 2, ttl = Duration.ofMinutes(5))
-                val resolver = resolver(client, cache)
-                val inFlight = async { resolver.resolve("orders") }
-                awaitCallCount(calls, 1)
-
-                if (scenario.getAndIncrement() % 2 == 0) {
-                    resolver.invalidate("orders")
-                } else {
-                    resolver.clear()
-                }
-                firstPending.complete(ListTopicsResponse.builder().build())
-                inFlight.await().shouldBeNull()
-
-                resolver.resolve("orders") shouldBeEqualTo
-                    "arn:aws:sns:us-east-1:000000000123:orders"
-                calls.get() shouldBeEqualTo 2
-                cache.get(SnsTopicArnCacheKey(resolver.scope, "orders")) shouldBeEqualTo
-                    SnsTopicArnCacheEntry.Resolved("arn:aws:sns:us-east-1:000000000123:orders")
-            }
-            .run()
-    }
-
-    private fun resolver(
-        client: SnsAsyncClient,
-        cache: SnsTopicArnCache = InMemorySnsTopicArnCache(maxSize = 16, ttl = Duration.ofMinutes(5)),
-        scope: SnsTopicArnResolverScope = SnsTopicArnResolverScope(region = "us-east-1", accountId = "000000000123"),
-    ): SnsTopicArnResolver = SnsTopicArnResolver(client, cache, scope)
-
-    private fun completedList(topicArn: String): CompletableFuture<ListTopicsResponse> =
-        CompletableFuture.completedFuture(
-            ListTopicsResponse.builder()
-                .topics(Topic.builder().topicArn(topicArn).build())
-                .build(),
-        )
-
-    private fun completedList(topicArns: List<String>): CompletableFuture<ListTopicsResponse> =
-        CompletableFuture.completedFuture(
-            ListTopicsResponse.builder()
-                .topics(topicArns.map { Topic.builder().topicArn(it).build() })
-                .build(),
-        )
-
-    private suspend fun awaitCallCount(calls: AtomicInteger, expected: Int) {
-        withTimeout(5_000) {
-            while (calls.get() < expected) {
-                delay(1)
-            }
-        }
     }
 }

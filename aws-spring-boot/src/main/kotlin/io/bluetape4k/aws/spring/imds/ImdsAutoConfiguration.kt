@@ -3,6 +3,7 @@ package io.bluetape4k.aws.spring.imds
 import io.bluetape4k.aws.http.SdkAsyncHttpClientProvider
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -13,7 +14,6 @@ import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
 import software.amazon.awssdk.imds.Ec2MetadataRetryPolicy
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * EC2 Instance Metadata Service 접근용 Spring Boot 4 자동 구성입니다.
@@ -41,8 +41,7 @@ class ImdsAutoConfiguration {
             .tokenTtl(properties.tokenTtl)
             .retryPolicy(resolveRetryPolicy(properties))
             .apply {
-                properties.endpoint?.let { endpoint(it) }
-                    ?: properties.endpointMode?.let { endpointMode(it) }
+                properties.endpoint?.let { endpoint(it) } ?: properties.endpointMode?.let { endpointMode(it) }
                 httpClient(httpClient.getIfAvailable() ?: SdkAsyncHttpClientProvider.defaultHttpClient)
                 customizers.orderedStream().forEach { it.customize(this) }
             }
@@ -60,8 +59,6 @@ class ImdsAutoConfiguration {
         if (properties.retries == 0) {
             Ec2MetadataRetryPolicy.none()
         } else {
-            Ec2MetadataRetryPolicy.builder()
-                .numRetries(properties.retries)
-                .build()
+            Ec2MetadataRetryPolicy.builder().numRetries(properties.retries).build()
         }
 }

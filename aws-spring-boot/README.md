@@ -3,10 +3,7 @@
 English | [한국어](README.ko.md)
 
 Spring Boot 4 auto-configuration for AWS Java SDK v2 without an `awspring`
-runtime dependency. The module provides coroutine-first templates, an SQS
-listener container, CloudWatch metric/log helpers, EC2 IMDS metadata operations,
-Kinesis and EventBridge operations, remote Environment sources, and AWS-backed
-Exposed database wiring.
+runtime dependency. The module provides coroutine-first templates, an SQS listener container, CloudWatch metric/log helpers, EC2 IMDS metadata operations, Kinesis and EventBridge operations, remote Environment sources, and AWS-backed Exposed database wiring.
 
 ## Diagrams
 
@@ -24,59 +21,52 @@ Exposed database wiring.
 
 ## Core Features
 
-- **S3** — `S3CoroutinesTemplate` for bucket-existence, upload/download (bytes
-  or text), delete, paginated listing (`listPage`/`listFlow`), Spring
-  `Resource` view, and presigned GET/PUT URLs. Opt-in
-  `S3ClientSideEncryptionOperations` supports KMS or application-provided AES/RSA
-  providers, converter-based typed objects, and provider-only encrypted transfer
-  streams/files.
-- **S3 Vectors** — optional `S3VectorsOperations` for vector bucket/index
-  discovery and vector put/get/list/query calls.
-- **SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, single and batch
-  topic publishing, FIFO publish fields, direct SMS publish options, HTTP(S) notification
-  JSON parsing, token-based subscription confirmation, and MVC/WebFlux composed endpoint
-  mappings for notification, subscription, and unsubscribe confirmation handlers.
-- **Kinesis** — `KinesisCoroutinesTemplate` for stream creation, record
-  publishing, shard iterator lookup, bounded `GetRecords` polling, and a cold
-  single-shard `Flow<Record>`.
-- **EventBridge** — `EventBridgeCoroutinesTemplate` for event bus, rule,
-  target, list, and `PutEvents` operations while preserving raw partial-failure
-  responses.
-- **SES** — `SesCoroutinesMailSender` for simple, templated, raw, attachment,
-  and custom-header email sends, plus an optional Spring `JavaMailSender`
-  adapter.
-- **SQS** — `SqsCoroutinesTemplate` for queue lookup/creation, send, receive,
-  visibility change, and a cold `Flow<SqsReceivedMessage>` stream.
-- **SQS listener** — `@SqsListener` annotation drives a coroutine-based
-  message listener container with configurable concurrency, visibility, and
-  error-visibility timeouts. Opt-in SQS Observation covers receive, process,
-  and actual acknowledgement I/O; the [manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/) is the detailed source of truth.
+-
+
+**S3** — `S3CoroutinesTemplate` for bucket-existence, upload/download (bytes or text), delete, paginated listing (`listPage`/`listFlow`), Spring
+`Resource` view, and presigned GET/PUT URLs. Opt-in
+`S3ClientSideEncryptionOperations` supports KMS or application-provided AES/RSA providers, converter-based typed objects, and provider-only encrypted transfer streams/files.
+
+- **S3 Vectors** — optional `S3VectorsOperations` for vector bucket/index discovery and vector put/get/list/query calls.
+-
+
+**SNS** — `SnsCoroutinesTemplate` for topic creation/lookup, single and batch topic publishing, FIFO publish fields, direct SMS publish options, HTTP (S) notification JSON parsing, token-based subscription confirmation, and MVC/WebFlux composed endpoint mappings for notification, subscription, and unsubscribe confirmation handlers.
+-
+**Kinesis** — `KinesisCoroutinesTemplate` for stream creation, record publishing, shard iterator lookup, bounded `GetRecords` polling, and a cold single-shard `Flow<Record>`.
+-
+**EventBridge** — `EventBridgeCoroutinesTemplate` for event bus, rule, target, list, and `PutEvents` operations while preserving raw partial-failure responses.
+-
+**SES** — `SesCoroutinesMailSender` for simple, templated, raw, attachment, and custom-header email sends, plus an optional Spring `JavaMailSender`
+adapter.
+
+-
+
+**SQS** — `SqsCoroutinesTemplate` for queue lookup/creation, send, receive, visibility change, and a cold `Flow<SqsReceivedMessage>` stream.
+
+- **SQS
+  listener** — `@SqsListener` annotation drives a coroutine-based message listener container with configurable concurrency, visibility, and error-visibility timeouts. Opt-in SQS Observation covers receive, process, and actual acknowledgement I/O; the [manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/) is the detailed source of truth.
 - **DynamoDB** — `CoroutinesDynamoDbRepository<T, ID>` abstract base over
   `DynamoDbAsyncTable` with `save`/`findById`/`update`/`delete`, plus
-  `scan`/`query`/`queryIndex` `Flow` results. Logical table names are resolved
-  through `DynamoDbTableNameResolver` (default applies `tablePrefix`), and the
-  async client can optionally be backed by DynamoDB Accelerator (DAX).
+  `scan`/`query`/`queryIndex` `Flow` results. Logical table names are resolved through `DynamoDbTableNameResolver` (default applies `tablePrefix`), and the async client can optionally be backed by DynamoDB Accelerator (DAX).
 - **CloudWatch / CloudWatch Logs** — `CloudWatchCoroutinesTemplate` and
-  `CloudWatchLogsCoroutinesTemplate` for coroutine metric/log publishing, an
-  opt-in `CloudWatchMeterPublishingOperations` helper for explicit snapshots,
-  and an opt-in native Micrometer `CloudWatchMeterRegistry` exporter.
-- **EC2 IMDS** — `ImdsOperations` wraps AWS SDK v2 IMDS calls with coroutine
-  methods and per-operation timeouts for EC2 instance metadata reads.
-- **KMS** — `KmsOperations` for coroutine encryption/decryption and data-key
-  generation, optional Spring Security `TextEncryptor`, and explicit
-  `@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
-- **S3 / Secrets Manager / Parameter Store config** — startup Environment sources for
-  S3 objects, remote secrets, and parameters, optional lazy refresh, and composed
+  `CloudWatchLogsCoroutinesTemplate` for coroutine metric/log publishing, an opt-in `CloudWatchMeterPublishingOperations` helper for explicit snapshots, and an opt-in native Micrometer `CloudWatchMeterRegistry` exporter.
+- **EC2
+  IMDS** — `ImdsOperations` wraps AWS SDK v2 IMDS calls with coroutine methods and per-operation timeouts for EC2 instance metadata reads.
+-
+
+**KMS** — `KmsOperations` for coroutine encryption/decryption and data-key generation, optional Spring Security `TextEncryptor`, and explicit
+`@KmsEncrypted` + `KmsEncryptedFieldCodec` support for `String` fields.
+
+- **S3 / Secrets Manager / Parameter Store
+  config** — startup Environment sources for S3 objects, remote secrets, and parameters, optional lazy refresh, and composed
   `@SecretsValue` / `@ParameterStoreValue` annotations over Spring `@Value`.
-- **AWS AppConfig Data ConfigData** — `aws-app-config:` imports for
-  application/profile/environment identifiers, properties/YAML/JSON decoding, and
-  opt-in token-aware runtime reload without Spring Cloud Context.
+- **AWS AppConfig Data
+  ConfigData** — `aws-app-config:` imports for application/profile/environment identifiers, properties/YAML/JSON decoding, and opt-in token-aware runtime reload without Spring Cloud Context.
 - **Exposed databases** — auto-configures an AWS-backed
   `AwsExposedDatabaseRegistry`, default Exposed `Database`, and default
-  `DataSource` from explicit properties or remote Environment values loaded
-  from Secrets Manager / Parameter Store.
-- **No awspring runtime dependency** — AWS SDK v2 services are `compileOnly`;
-  the consumer adds only the services they actually use.
+  `DataSource` from explicit properties or remote Environment values loaded from Secrets Manager / Parameter Store.
+- **No awspring runtime
+  dependency** — AWS SDK v2 services are `compileOnly`; the consumer adds only the services they actually use.
 
 ## Dependency
 
@@ -121,9 +111,7 @@ dependencies {
 ## Testcontainers ServiceConnection
 
 For Floci or LocalStack integration tests, the preferred migration is from a
-`DynamicPropertySource` that copies endpoint and credentials into properties to
-Spring Boot's named `@ServiceConnection` contract. Boot 4.1 uses a single
-service name value:
+`DynamicPropertySource` that copies endpoint and credentials into properties to Spring Boot's named `@ServiceConnection` contract. Boot 4.1 uses a single service name value:
 
 ```kotlin
 testImplementation(libs.spring.boot.testcontainers)
@@ -134,22 +122,12 @@ testImplementation(bt4k.bluetape4k.testcontainers)
 val floci: FlociServer = FlociServer.Launcher.floci
 ```
 
-The connection supplies endpoint, region, and test credentials only. Existing
-service properties remain a properties-only fallback when the optional
-Testcontainers dependencies or annotation are absent. `bluetape4k.aws.emulator`
+The connection supplies endpoint, region, and test credentials only. Existing service properties remain a properties-only fallback when the optional Testcontainers dependencies or annotation are absent. `bluetape4k.aws.emulator`
 selects the Floci/LocalStack backend; it is not a resource URL source.
 
-An unnamed `@ServiceConnection` is an explicit all-services opt-in and should
-not be added beside a named declaration. A factory never creates an SQS queue,
-SNS topic, DynamoDB table, or Kinesis stream. Fixtures create the resource,
-inject its queue URL/topic ARN/table name/stream name, and clean up only the
-owner-token resources.
+An unnamed `@ServiceConnection` is an explicit all-services opt-in and should not be added beside a named declaration. A factory never creates an SQS queue, SNS topic, DynamoDB table, or Kinesis stream. Fixtures create the resource, inject its queue URL/topic ARN/table name/stream name, and clean up only the owner-token resources.
 
-Keep S3 integration tests within one bucket and include an `owner-token` in the
-bucket and object key. Reject wildcard or foreign literals before an AWS call.
-The cleanup order is fixture cleanup, application context close, then
-Testcontainers teardown; cleanup failures are sanitized and suppressed, while
-cancellation is rethrown. Missing optional linkage is a clear
+Keep S3 integration tests within one bucket and include an `owner-token` in the bucket and object key. Reject wildcard or foreign literals before an AWS call. The cleanup order is fixture cleanup, application context close, then Testcontainers teardown; cleanup failures are sanitized and suppressed, while cancellation is rethrown. Missing optional linkage is a clear
 `FACTORY_LINKAGE` failure, not a silent credential fallback.
 
 ## Configuration
@@ -323,50 +301,27 @@ bluetape4k:
           password: ${app.analytics.password}
 ```
 
-`bluetape4k.aws.region` and `bluetape4k.aws.endpoint-override` are shared
-defaults for auto-configured AWS SDK v2 clients. Service-specific properties
-such as `bluetape4k.aws.s3.region` or `bluetape4k.aws.sqs.endpoint-override`
-override the shared defaults. Any effective `endpoint-override` requires an
-effective region.
+`bluetape4k.aws.region` and `bluetape4k.aws.endpoint-override` are shared defaults for auto-configured AWS SDK v2 clients. Service-specific properties such as `bluetape4k.aws.s3.region` or `bluetape4k.aws.sqs.endpoint-override`
+override the shared defaults. Any effective `endpoint-override` requires an effective region.
 `bluetape4k.aws.credentials.web-identity.enabled=true` registers an opt-in
-`WebIdentityTokenFileCredentialsProvider` when `software.amazon.awssdk:sts` is
-on the runtime classpath. Otherwise the module falls back to the default AWS SDK
-credentials provider chain.
-Applications can customize generated AWS SDK v2 builders by registering ordered
+`WebIdentityTokenFileCredentialsProvider` when `software.amazon.awssdk:sts` is on the runtime classpath. Otherwise the module falls back to the default AWS SDK credentials provider chain. Applications can customize generated AWS SDK v2 builders by registering ordered
 `AwsSyncClientCustomizer`, `AwsAsyncClientCustomizer`, or typed
 `AwsClientCustomizer<S3ClientBuilder>` / `AwsClientCustomizer<SqsAsyncClientBuilder>`
 beans.
 `sns.topics.<name>` configures topic creation defaults used by
 `SnsOperations.createConfiguredTopic("<name>")`.
-`sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a
-logical queue alias. `SqsOperations.getQueueUrl("<name>")` still performs an
-AWS SQS `GetQueueUrl` call.
-`cloudwatch.namespace` is used by default-namespace metric publishing methods.
-The Micrometer helper is registered only when an application `MeterRegistry`
-bean exists; it reads meter snapshots on explicit method calls and does not
-replace the active registry.
-`cloudwatch-logs.log-group-name` and `cloudwatch-logs.log-stream-name` are used
-by default log-event publishing methods.
-`imds.request-timeout` bounds each metadata operation. IMDS bean creation never
-calls the metadata endpoint, so non-EC2 environments do not pay a startup
-probe cost. Keep credential retrieval on the AWS SDK default provider chain or
-STS web identity; `ImdsOperations` exposes safe metadata helpers only.
-S3 config, Secrets Manager, and Parameter Store sources are loaded by
-`EnvironmentPostProcessor` before normal bean binding. S3 config sources load
-single objects in `properties`, `yaml`, or `json` format; `auto` format detects
-the parser from the object key extension and defaults to `properties`. When
-`refresh-interval` is set, the property source reloads lazily on property access
-after the interval has elapsed; failed reloads keep the previous values. When
-multiple remote sources define the same key, the earlier configured source has
-higher Spring property-source precedence.
-Setting `bluetape4k.aws.enabled=false` disables these startup Environment sources
-as well as AWS auto-configuration, so configured remote sources are not accessed.
+`sqs.queues.<name>.url` is used by `@SqsListener(queue = "<name>")` as a logical queue alias. `SqsOperations.getQueueUrl("<name>")` still performs an AWS SQS `GetQueueUrl` call.
+`cloudwatch.namespace` is used by default-namespace metric publishing methods. The Micrometer helper is registered only when an application `MeterRegistry`
+bean exists; it reads meter snapshots on explicit method calls and does not replace the active registry.
+`cloudwatch-logs.log-group-name` and `cloudwatch-logs.log-stream-name` are used by default log-event publishing methods.
+`imds.request-timeout` bounds each metadata operation. IMDS bean creation never calls the metadata endpoint, so non-EC2 environments do not pay a startup probe cost. Keep credential retrieval on the AWS SDK default provider chain or STS web identity; `ImdsOperations` exposes safe metadata helpers only. S3 config, Secrets Manager, and Parameter Store sources are loaded by
+`EnvironmentPostProcessor` before normal bean binding. S3 config sources load single objects in `properties`, `yaml`, or `json` format; `auto` format detects the parser from the object key extension and defaults to `properties`. When
+`refresh-interval` is set, the property source reloads lazily on property access after the interval has elapsed; failed reloads keep the previous values. When multiple remote sources define the same key, the earlier configured source has higher Spring property-source precedence. Setting `bluetape4k.aws.enabled=false` disables these startup Environment sources as well as AWS auto-configuration, so configured remote sources are not accessed.
 
 ### ConfigData imports
 
 Spring Boot ConfigData imports provide startup loading for `aws-s3:`,
-`aws-parameterstore:`, `aws-secretsmanager:`, and `aws-app-config:` locations.
-For example:
+`aws-parameterstore:`, `aws-secretsmanager:`, and `aws-app-config:` locations. For example:
 
 ```properties
 spring.config.import=optional:aws-s3:/config-bucket/application.yml?prefix=app&format=yaml,aws-parameterstore:/application?prefix=app&recursive=true&withDecryption=true,optional:aws-secretsmanager:application?prefix=app&format=json
@@ -379,20 +334,13 @@ For an AppConfig Data source, use the same property with the three identifiers:
 spring.config.import=aws-app-config:orders-api#production#ap-northeast-2?format=yaml&prefix=app
 ```
 
-`optional:` skips only a backend-specific not-found result. Authentication,
-network, parsing, and other service failures still fail startup. The same
-`bluetape4k.aws.enabled=false` switch prevents ConfigData client creation and
-remote access. AppConfig Data reload is disabled by default; set
-`bluetape4k.aws.app-config.refresh-interval` to enable one fixed-delay poller per
-resource. Empty responses and decode/transport failures retain the last good map,
-and `Environment` sees new values without automatic `@Value` or
-`@ConfigurationProperties` rebind. Floci is the preferred local emulator; use
-LocalStack only as an explicit fallback. See the [runtime operations manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/)
+`optional:` skips only a backend-specific not-found result. Authentication, network, parsing, and other service failures still fail startup. The same
+`bluetape4k.aws.enabled=false` switch prevents ConfigData client creation and remote access. AppConfig Data reload is disabled by default; set
+`bluetape4k.aws.app-config.refresh-interval` to enable one fixed-delay poller per resource. Empty responses and decode/transport failures retain the last good map, and `Environment` sees new values without automatic `@Value` or
+`@ConfigurationProperties` rebind. Floci is the preferred local emulator; use LocalStack only as an explicit fallback. See the [runtime operations manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/)
 for the complete contract.
 
-`bluetape4k.aws.exposed.default-database.url` activates the Exposed registry.
-If the URL is absent, the Exposed auto-configuration contributes only property
-binding and does not create a registry or database pool.
+`bluetape4k.aws.exposed.default-database.url` activates the Exposed registry. If the URL is absent, the Exposed auto-configuration contributes only property binding and does not create a registry or database pool.
 
 ## Usage Examples
 
@@ -415,13 +363,8 @@ class DatabaseTokenReader(
 )
 ```
 
-JSON secrets are flattened with dot notation. Parameter names under the
-configured path are mapped to dot-separated keys, and `prefix` is prepended to
-both source types. `@SecretsValue` and `@ParameterStoreValue` use normal Spring
-`@Value` placeholder syntax.
-S3 config JSON objects are flattened the same way; S3 `.properties` and YAML
-objects are loaded through Spring Boot property-source loaders and then receive
-the configured `prefix`.
+JSON secrets are flattened with dot notation. Parameter names under the configured path are mapped to dot-separated keys, and `prefix` is prepended to both source types. `@SecretsValue` and `@ParameterStoreValue` use normal Spring
+`@Value` placeholder syntax. S3 config JSON objects are flattened the same way; S3 `.properties` and YAML objects are loaded through Spring Boot property-source loaders and then receive the configured `prefix`.
 
 ### Exposed — AWS-backed database registry
 
@@ -452,14 +395,7 @@ class OrderQueryService(
 }
 ```
 
-The Spring adapter creates the registry through `bluetape4k-aws-exposed` and
-aliases the default handle as a Spring `DataSource` and Exposed `Database` when
-the application has not already supplied those beans. Named databases are
-available through `AwsExposedDatabaseRegistry`. To load database credentials
-from Secrets Manager or Parameter Store, configure those Environment sources
-with a `prefix` such as `bluetape4k.aws.exposed.default-database`; the resolved
-keys bind before the registry is created. Pool lifecycle is owned by the
-registry, so the alias beans do not close the pool separately.
+The Spring adapter creates the registry through `bluetape4k-aws-exposed` and aliases the default handle as a Spring `DataSource` and Exposed `Database` when the application has not already supplied those beans. Named databases are available through `AwsExposedDatabaseRegistry`. To load database credentials from Secrets Manager or Parameter Store, configure those Environment sources with a `prefix` such as `bluetape4k.aws.exposed.default-database`; the resolved keys bind before the registry is created. Pool lifecycle is owned by the registry, so the alias beans do not close the pool separately.
 
 ### S3 — coroutine-friendly template
 
@@ -499,28 +435,18 @@ class DocumentStorage(
 }
 ```
 
-`S3Operations` is the default small-object API for upload/download, resources,
-listing, and presigned URLs. `S3TransferOperations` is available only when
+`S3Operations` is the default small-object API for upload/download, resources, listing, and presigned URLs. `S3TransferOperations` is available only when
 `software.amazon.awssdk:s3-transfer-manager` is on the classpath and
 `bluetape4k.aws.s3.transfer.enabled=true` (default). It delegates to the `aws`
-module's coroutine `S3TransferManager` extensions for multipart file and byte
-transfers. To use CRT-backed transfers, provide a CRT-backed `S3AsyncClient`
-bean; the transfer manager auto-configuration reuses it instead of forcing CRT
-dependencies on basic S3 users.
+module's coroutine `S3TransferManager` extensions for multipart file and byte transfers. To use CRT-backed transfers, provide a CRT-backed `S3AsyncClient`
+bean; the transfer manager auto-configuration reuses it instead of forcing CRT dependencies on basic S3 users.
 
 `S3ClientSideEncryptionOperations` is opt-in through
-`bluetape4k.aws.s3.client-side-encryption.enabled=true`. `provider=KMS` is the
-default and preserves the existing `KmsOperations`-backed, byte-array-only
-behavior. `provider=AES` requires exactly one `S3AesProvider` bean, and
-`provider=RSA` requires exactly one `S3RsaProvider` bean; the selected provider
-does not fall back to another provider when its bean is absent or ambiguous.
+`bluetape4k.aws.s3.client-side-encryption.enabled=true`. `provider=KMS` is the default and preserves the existing `KmsOperations`-backed, byte-array-only behavior. `provider=AES` requires exactly one `S3AesProvider` bean, and
+`provider=RSA` requires exactly one `S3RsaProvider` bean; the selected provider does not fall back to another provider when its bean is absent or ambiguous.
 
-The provider contracts supply stable application-owned key material. The
-template creates a per-object 32-byte AES data key, encrypts the payload with
-AES-GCM, and stores the Bluetape4k-specific `bt4k-cek-*` envelope metadata.
-AES wraps the data key with AES-GCM; RSA uses
-`RSA/ECB/OAEPWithSHA-1AndMGF1Padding`. Register the provider after loading the
-key from the application's secret-management boundary:
+The provider contracts supply stable application-owned key material. The template creates a per-object 32-byte AES data key, encrypts the payload with AES-GCM, and stores the Bluetape4k-specific `bt4k-cek-*` envelope metadata. AES wraps the data key with AES-GCM; RSA uses
+`RSA/ECB/OAEPWithSHA-1AndMGF1Padding`. Register the provider after loading the key from the application's secret-management boundary:
 
 ```kotlin
 import io.bluetape4k.aws.spring.s3.S3AesProvider
@@ -538,31 +464,13 @@ class S3EncryptionConfiguration {
 
 `S3RsaProvider.of(keyPair)` is the corresponding RSA factory.
 `uploadEncryptedObject`/`downloadEncryptedObject` are common extensions on
-`S3ClientSideEncryptionOperations` that use `S3ObjectConverter`; they work with
-both the KMS and provider templates. When the transfer manager is available and enabled,
-`S3ClientSideEncryptionTransferOperations` adds encrypted streams and file
-downloads: `complete()` writes the GCM tag, threshold spill files contain only
-ciphertext, and a file download authenticates the complete ciphertext before
-writing the destination. `close()` is the blocking compatibility path.
+`S3ClientSideEncryptionOperations` that use `S3ObjectConverter`; they work with both the KMS and provider templates. When the transfer manager is available and enabled,
+`S3ClientSideEncryptionTransferOperations` adds encrypted streams and file downloads: `complete()` writes the GCM tag, threshold spill files contain only ciphertext, and a file download authenticates the complete ciphertext before writing the destination. `close()` is the blocking compatibility path.
 
-When an encrypted transfer fails or is cancelled, cleanup of owned delegates
-and temporary ciphertext files is attempted at most twice: first on the
-configured dispatcher and then on `Dispatchers.IO`. The original failure or
-cancellation remains primary. If both cleanup attempts fail, a suppressed,
-sanitized signal records only the fixed operation, attempt count, and failure
-class names; it does not retain bucket, key, path, credential, or original
-failure messages. A cleanup-only failure is thrown directly. Cleanup does not
-start a background retry or delete caller-owned S3 objects, so a reported
-residue must be investigated by the application operator. Calling `close()`
-again after a cleanup-only failure retries only owned local cleanup and never
-repeats the completed upload.
+When an encrypted transfer fails or is cancelled, cleanup of owned delegates and temporary ciphertext files is attempted at most twice: first on the configured dispatcher and then on `Dispatchers.IO`. The original failure or cancellation remains primary. If both cleanup attempts fail, a suppressed, sanitized signal records only the fixed operation, attempt count, and failure class names; it does not retain bucket, key, path, credential, or original failure messages. A cleanup-only failure is thrown directly. Cleanup does not start a background retry or delete caller-owned S3 objects, so a reported residue must be investigated by the application operator. Calling `close()`
+again after a cleanup-only failure retries only owned local cleanup and never repeats the completed upload.
 
-The application owns key storage, rotation, source-key lifecycle, and HSM
-integration. Encryption context is authenticated as AES-GCM AAD and is not
-written to metadata, logs, or temporary files. Malformed metadata and
-authentication failures do not return plaintext. The `bt4k-cek-*` envelope is
-a Bluetape4k wire format, not an AWS Encryption SDK or general S3-client
-format. See the [S3 client-side encryption manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/#s3-client-side-encryption)
+The application owns key storage, rotation, source-key lifecycle, and HSM integration. Encryption context is authenticated as AES-GCM AAD and is not written to metadata, logs, or temporary files. Malformed metadata and authentication failures do not return plaintext. The `bt4k-cek-*` envelope is a Bluetape4k wire format, not an AWS Encryption SDK or general S3-client format. See the [S3 client-side encryption manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/#s3-client-side-encryption)
 for key validation, lifecycle, and failure details.
 
 ### S3 — ResourceLoader and patterns
@@ -576,8 +484,7 @@ val resource = applicationContext.getResource(
 ```
 
 The same exact form can be injected with `@Value("s3://order-config/config/application.yml")`.
-`ApplicationContext.getResources(...)` is not automatically intercepted by this
-pattern resolver. Inject the concrete `S3ResourcePatternResolver`, or inject a
+`ApplicationContext.getResources(...)` is not automatically intercepted by this pattern resolver. Inject the concrete `S3ResourcePatternResolver`, or inject a
 `ResourcePatternResolver` with `@Qualifier("s3ResourcePatternResolver")`:
 
 ```kotlin
@@ -592,20 +499,13 @@ class ConfigReader(
 
 Patterns use one literal bucket, a non-empty prefix, and only `*`, `?`, and
 `**`. Cross-bucket patterns, root listings such as `s3://order-config/*.json`
-or `s3://order-config/**`, and object writes/output streams are unsupported.
-The default bean name `s3ResourcePatternResolver` is reserved for the default or
-custom S3 pattern implementation; a replacement must keep that name and an
-unrelated resolver must not reuse it. The caller closes each returned stream and
-uses resources only while the owning client and application context are alive.
-The default protocol and pattern resolvers provide parser guards. Direct
-`S3Resource` construction, custom resolver replacements, and IAM enforcement
-remain the caller's responsibility.
+or `s3://order-config/**`, and object writes/output streams are unsupported. The default bean name `s3ResourcePatternResolver` is reserved for the default or custom S3 pattern implementation; a replacement must keep that name and an unrelated resolver must not reuse it. The caller closes each returned stream and uses resources only while the owning client and application context are alive. The default protocol and pattern resolvers provide parser guards. Direct
+`S3Resource` construction, custom resolver replacements, and IAM enforcement remain the caller's responsibility.
 
 ### S3 Vectors — Spring Boot operations
 
 S3 Vectors support is disabled by default and uses the separate AWS SDK v2
-`s3vectors` service. Applications that enable it must add the runtime service
-dependency:
+`s3vectors` service. Applications that enable it must add the runtime service dependency:
 
 ```kotlin
 runtimeOnly("software.amazon.awssdk:s3vectors")
@@ -633,8 +533,7 @@ class SemanticSearch(
 
 The auto-configuration contributes `S3VectorsAsyncClient` and
 `S3VectorsOperations` only when `bluetape4k.aws.s3-vectors.enabled=true` and the
-`s3vectors` SDK is present. It does not imply LocalStack, Floci, or Ministack
-S3 Vectors behavior.
+`s3vectors` SDK is present. It does not imply LocalStack, Floci, or Ministack S3 Vectors behavior.
 
 ### SQS — send and receive
 
@@ -656,9 +555,7 @@ class OrderQueue(private val sqs: SqsOperations) {
 
 ### SQS Extended Client — opt-in S3 offload
 
-Enable the coroutine-native Extended Client explicitly when payloads can exceed
-the SQS `256 KiB` limit. Small messages keep the existing SQS body; larger
-messages are authenticated pointers to an S3 object.
+Enable the coroutine-native Extended Client explicitly when payloads can exceed the SQS `256 KiB` limit. Small messages keep the existing SQS body; larger messages are authenticated pointers to an S3 object.
 
 ```yaml
 bluetape4k:
@@ -677,15 +574,8 @@ bluetape4k:
           delete-on-ack: true
 ```
 
-Use `SqsExtendedClientOperations` for `send`, bounded `receive`/`receiveFlow`,
-identity-bound `acknowledge`, and retryable `cleanup` handles. The legacy
-`@SqsListener` consumer must not be attached to a queue carrying these pointer
-messages. The optional Jackson 3 module serializes safe DTO fields only; raw
-AWS requests, bodies, pointers, and receipt handles are never serialized.
-Client-side encryption is an opt-in Bluetape4k wire format and is not
-interoperable with the AWS Java Extended Client library. External publisher
-latency/cleanup telemetry and heap/throughput measurements remain tracked in
-follow-up issue [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
+Use `SqsExtendedClientOperations` for `send`, bounded `receive`/`receiveFlow`, identity-bound `acknowledge`, and retryable `cleanup` handles. The legacy
+`@SqsListener` consumer must not be attached to a queue carrying these pointer messages. The optional Jackson 3 module serializes safe DTO fields only; raw AWS requests, bodies, pointers, and receipt handles are never serialized. Client-side encryption is an opt-in Bluetape4k wire format and is not interoperable with the AWS Java Extended Client library. External publisher latency/cleanup telemetry and heap/throughput measurements remain tracked in follow-up issue [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
 ### SES — simple, template, raw, and JavaMail sends
 
@@ -745,9 +635,7 @@ class OrderEmail(
 
 `SesOperations` applies `bluetape4k.aws.ses.default-from` and
 `configuration-set-name` to convenience requests. The lower-level
-`send(SendEmailRequest)` method sends the AWS SDK request as-is. The JavaMail
-adapter is registered only when Spring `JavaMailSender`, Jakarta Mail, and an
-Angus Mail provider are on the runtime classpath.
+`send(SendEmailRequest)` method sends the AWS SDK request as-is. The JavaMail adapter is registered only when Spring `JavaMailSender`, Jakarta Mail, and an Angus Mail provider are on the runtime classpath.
 
 ### SNS — publish, SMS, and HTTP endpoint messages
 
@@ -800,16 +688,10 @@ class OrderNotifications(
 
 ### SNS HTTP endpoint mappings
 
-The module also provides composed mappings for SNS HTTP(S) delivery. The three
-mappings accept `POST` requests with the matching `x-amz-sns-message-type`
-header and return `204 No Content`. MVC and WebFlux controllers, including
-Kotlin `suspend` handlers, resolve the parsed envelope from one bounded,
-replayable request body.
+The module also provides composed mappings for SNS HTTP (S) delivery. The three mappings accept `POST` requests with the matching `x-amz-sns-message-type`
+header and return `204 No Content`. MVC and WebFlux controllers, including Kotlin `suspend` handlers, resolve the parsed envelope from one bounded, replayable request body.
 
-The endpoint adapter requires the AWS SNS service SDK at runtime, including for
-notification-only mappings, because the public `NotificationStatus` contract
-returns `ConfirmSubscriptionResponse`. Add `software.amazon.awssdk:sns` to
-the consumer runtime; auto-configuration backs off when that SDK is absent.
+The endpoint adapter requires the AWS SNS service SDK at runtime, including for notification-only mappings, because the public `NotificationStatus` contract returns `ConfirmSubscriptionResponse`. Add `software.amazon.awssdk:sns` to the consumer runtime; auto-configuration backs off when that SDK is absent.
 
 ```kotlin
 import io.bluetape4k.aws.spring.sns.SnsHttpMessage
@@ -853,8 +735,7 @@ class OrderPayload {
 }
 ```
 
-The adapter is fail-closed by default. Configure the expected topic ARN and
-keep the SNS verifier enabled before accepting traffic:
+The adapter is fail-closed by default. Configure the expected topic ARN and keep the SNS verifier enabled before accepting traffic:
 
 ```yaml
 bluetape4k:
@@ -868,32 +749,22 @@ bluetape4k:
           - arn:aws:sns:us-west-2:123456789012:orders
 ```
 
-An empty allowlist rejects requests with `403`, and a missing verifier rejects
-requests with `503`; neither path invokes the handler. SNS commonly sends the
-outer HTTP body as `text/plain`, which is accepted. A non-`String`
+An empty allowlist rejects requests with `403`, and a missing verifier rejects requests with `503`; neither path invokes the handler. SNS commonly sends the outer HTTP body as `text/plain`, which is accepted. A non-`String`
 `@NotificationMessage` parameter requires the envelope attribute
-`MessageAttributes.contentType=application/json`; malformed JSON, signature,
-header/type, and size failures return `400` before handler invocation.
+`MessageAttributes.contentType=application/json`; malformed JSON, signature, header/type, and size failures return `400` before handler invocation.
 
 `SnsHttpMessageVerifier` keeps `software.amazon.awssdk:sns-message-manager`
-as a `compileOnly` dependency, so applications must add it at runtime when
-signature verification is enabled. This adapter does not retry rejected HTTP
-deliveries or handler invocations.
+as a `compileOnly` dependency, so applications must add it at runtime when signature verification is enabled. This adapter does not retry rejected HTTP deliveries or handler invocations.
 
-`NotificationUnsubscribeConfirmationMapping` covers unsubscribe confirmation
-separately from `NotificationSubscriptionMapping`; both expose
-`NotificationStatus` for an explicit `confirmSubscription()` call. For a
-temporary diagnostic rollback only, set both `verification-required=false`
-and `allow-structural-only=true`; this bypasses signature verification and
-must not be used for production SNS traffic. Disable the adapter entirely with
+`NotificationUnsubscribeConfirmationMapping` covers unsubscribe confirmation separately from `NotificationSubscriptionMapping`; both expose
+`NotificationStatus` for an explicit `confirmSubscription()` call. For a temporary diagnostic rollback only, set both `verification-required=false`
+and `allow-structural-only=true`; this bypasses signature verification and must not be used for production SNS traffic. Disable the adapter entirely with
 `bluetape4k.aws.sns.http-endpoints.enabled=false`.
 
 ### SNS — AWS SDK wrappers
 
-The sibling `bluetape4k-aws-java` extensions keep AWS SDK responses and exceptions visible while
-validating the topic ARN, entry IDs, duplicate IDs, and the ten-entry `PublishBatch` limit. The sync,
-`CompletableFuture`, and coroutine APIs share one request model; the AWS Kotlin SDK wrapper provides
-the native suspend equivalent.
+The sibling `bluetape4k-aws-java` extensions keep AWS SDK responses and exceptions visible while validating the topic ARN, entry IDs, duplicate IDs, and the ten-entry `PublishBatch` limit. The sync,
+`CompletableFuture`, and coroutine APIs share one request model; the AWS Kotlin SDK wrapper provides the native suspend equivalent.
 
 ```kotlin
 import io.bluetape4k.aws.sns.model.publishBatchRequestEntryOf
@@ -924,18 +795,13 @@ val kotlinEntries = listOf(
 val kotlinResponse = kotlinSnsClient.publishBatch(topicArn, kotlinEntries)
 ```
 
-Raw responses can contain successful and failed entries together; reconcile by entry ID. These
-wrappers do not retry or roll back partial sends, and cancellation is propagated (the Java coroutine
-extension also cancels its underlying future). FIFO group/deduplication fields and an external
-idempotency key remain caller responsibilities. Use the Spring API below when a redacted
-transport/protocol exception boundary is preferred.
+Raw responses can contain successful and failed entries together; reconcile by entry ID. These wrappers do not retry or roll back partial sends, and cancellation is propagated (the Java coroutine extension also cancels its underlying future). FIFO group/deduplication fields and an external idempotency key remain caller responsibilities. Use the Spring API below when a redacted transport/protocol exception boundary is preferred.
 
 #### SNS batch publishing
 
 `SnsCoroutinesTemplate.publishBatch` maps `SnsPublishBatchEntry` to AWS
 `PublishBatchRequestEntry` and sends at most 10 entries per SDK request. Set
-`maxInFlightBatches` to bound concurrent requests; an empty request avoids an
-SDK call.
+`maxInFlightBatches` to bound concurrent requests; an empty request avoids an SDK call.
 
 ```kotlin
 val result = sns.publishBatch(
@@ -954,43 +820,25 @@ val result = sns.publishBatch(
 )
 ```
 
-`result.successful` and `result.failed` keep input order within each list and
-include the entry ID for reconciliation. Transport or protocol failures use a
-redacted Spring exception; cancellation is propagated and no automatic retry
-is attempted. FIFO group/deduplication values and external idempotency remain
-the caller's responsibility. The low-level Java/Kotlin SDK APIs pass raw SDK
-responses and exceptions through, while this Spring template provides the safe
-transport/protocol boundary.
+`result.successful` and `result.failed` keep input order within each list and include the entry ID for reconciliation. Transport or protocol failures use a redacted Spring exception; cancellation is propagated and no automatic retry is attempted. FIFO group/deduplication values and external idempotency remain the caller's responsibility. The low-level Java/Kotlin SDK APIs pass raw SDK responses and exceptions through, while this Spring template provides the safe transport/protocol boundary.
 
 Existing `SnsOperations` implementations that do not override `publishBatch`
 use the additive default implementation. It invokes the existing single-message
-`publish` operation sequentially, stops at the first non-cancellation failure,
-records only the successful prefix in `completedEntryIds`, and treats
+`publish` operation sequentially, stops at the first non-cancellation failure, records only the successful prefix in `completedEntryIds`, and treats
 `maxInFlightBatches` as 1. It does not retry or roll back a partial send.
 
-When a sibling chunk fails after a preceding chunk returned mixed results, do
-not replay the complete input blindly. Reconcile by entry ID, use FIFO
-deduplication or an external idempotency store, and manually resolve entries
-without a known terminal response. Business rollback and compensation are not
-provided. Spring Cloud AWS-style public `BatchExecutionStrategy` and converter
-expansion research is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514).
-Publisher cleanup/latency telemetry and heap/throughput measurement are tracked in
+When a sibling chunk fails after a preceding chunk returned mixed results, do not replay the complete input blindly. Reconcile by entry ID, use FIFO deduplication or an external idempotency store, and manually resolve entries without a known terminal response. Business rollback and compensation are not provided. Spring Cloud AWS-style public `BatchExecutionStrategy` and converter expansion research is tracked in [#514](https://github.com/bluetape4k/bluetape4k-aws/issues/514). Publisher cleanup/latency telemetry and heap/throughput measurement are tracked in
 [#515](https://github.com/bluetape4k/bluetape4k-aws/issues/515).
 
 SNS can publish to an SQS subscription when the queue policy allows
-`sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` applies the shared
-256 KiB decoded-envelope policy, checks required string fields and the optional
-`x-amz-sns-message-type` header, and restricts `SigningCertURL` to the exact SNS
-partition and region allowlist. Structural failures expose a low-cardinality
+`sqs:SendMessage` from the topic ARN. `SnsHttpMessageParser` applies the shared 256 KiB decoded-envelope policy, checks required string fields and the optional
+`x-amz-sns-message-type` header, and restricts `SigningCertURL` to the exact SNS partition and region allowlist. Structural failures expose a low-cardinality
 `SnsHttpEnvelopeRejectionReason` and redacted messages. `SnsHttpMessageVerifier`
-must still run after the parser and before notification processing or subscription
-confirmation; parsing alone does not verify Signature v1/v2, the certificate chain,
-credentials, IAM policy, replay protection, or retries.
+must still run after the parser and before notification processing or subscription confirmation; parsing alone does not verify Signature v1/v2, the certificate chain, credentials, IAM policy, replay protection, or retries.
 
 ### SNS HTTP message signature verification
 
-Add `software.amazon.awssdk:sns-message-manager` to the application runtime
-because this module keeps it `compileOnly`. Verification is enabled by default:
+Add `software.amazon.awssdk:sns-message-manager` to the application runtime because this module keeps it `compileOnly`. Verification is enabled by default:
 
 ```yaml
 bluetape4k:
@@ -1000,14 +848,7 @@ bluetape4k:
         enabled: true
 ```
 
-Setting `verification.enabled=false` removes the auto-configured verifier and is
-an explicit security opt-out; parser output alone is not authenticated. Floci
-does not create signed SNS HTTP payloads, so the deterministic fixture test uses
-the AWS SDK v2 manager with a local `SdkHttpClient` double. The fixture covers
-SignatureVersion 1/2, forged and canonical-field mutations, corrupt and expired
-certificates, SNS host and TopicArn rejection, connect/read timeout causes,
-cancellation, response-body cleanup, the SDK's bounded 10-entry certificate
-cache, and concurrent cache access:
+Setting `verification.enabled=false` removes the auto-configured verifier and is an explicit security opt-out; parser output alone is not authenticated. Floci does not create signed SNS HTTP payloads, so the deterministic fixture test uses the AWS SDK v2 manager with a local `SdkHttpClient` double. The fixture covers SignatureVersion 1/2, forged and canonical-field mutations, corrupt and expired certificates, SNS host and TopicArn rejection, connect/read timeout causes, cancellation, response-body cleanup, the SDK's bounded 10-entry certificate cache, and concurrent cache access:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test \
@@ -1015,10 +856,7 @@ cache, and concurrent cache access:
   --no-build-cache
 ```
 
-The opt-in local measurement records cache hit/miss certificate fetch counts,
-throughput, and peak heap snapshots using fixed warmup and sample counts. It
-writes a JSON artifact under `aws-spring-boot/build/reports/benchmarks/` and
-does not set an absolute performance target:
+The opt-in local measurement records cache hit/miss certificate fetch counts, throughput, and peak heap snapshots using fixed warmup and sample counts. It writes a JSON artifact under `aws-spring-boot/build/reports/benchmarks/` and does not set an absolute performance target:
 
 ```bash
 JAVA_TOOL_OPTIONS="-Dbluetape4k.aws.sns.signature-measurement=true \
@@ -1028,10 +866,7 @@ JAVA_TOOL_OPTIONS="-Dbluetape4k.aws.sns.signature-measurement=true \
   --no-build-cache
 ```
 
-`SnsHttpMessageVerifier` directly retains no root `Throwable` reference; the
-adapter only owns the SDK manager and its idempotent close flag. The measurement
-is a same-JVM SDK snapshot, not an AWS service or production heap guarantee.
-Floci can verify the SNS API path, but not signed HTTP delivery:
+`SnsHttpMessageVerifier` directly retains no root `Throwable` reference; the adapter only owns the SDK manager and its idempotent close flag. The measurement is a same-JVM SDK snapshot, not an AWS service or production heap guarantee. Floci can verify the SNS API path, but not signed HTTP delivery:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test \
@@ -1039,8 +874,7 @@ Floci can verify the SNS API path, but not signed HTTP delivery:
   -Dbluetape4k.aws.emulator=floci --no-build-cache
 ```
 
-Credential-gated real AWS signed-delivery smoke and hosted certificate endpoint
-evidence remain intentionally N/A for this local/Docker-only scope.
+Credential-gated real AWS signed-delivery smoke and hosted certificate endpoint evidence remain intentionally N/A for this local/Docker-only scope.
 
 ### Kinesis — stream operations and record Flow
 
@@ -1098,9 +932,7 @@ class OrderStream(
 }
 ```
 
-`KinesisOperations` is intentionally an explicit operations API. It does not
-start listener containers or manage checkpoints; store sequence numbers or
-application checkpoints in your own persistence layer when you collect the Flow.
+`KinesisOperations` is intentionally an explicit operations API. It does not start listener containers or manage checkpoints; store sequence numbers or application checkpoints in your own persistence layer when you collect the Flow.
 
 ### EventBridge — event bus, rules, targets, and PutEvents
 
@@ -1136,11 +968,8 @@ class OrderEvents(
 }
 ```
 
-Add `software.amazon.awssdk:eventbridge` when using EventBridge operations. The
-template uses `default-event-bus-name` for rule, target, and list calls that
-omit an event bus name; it does not rewrite `PutEvents` entries. `PutEvents`,
-`PutTargets`, and `RemoveTargets` return raw SDK responses so callers can
-inspect partial failures.
+Add `software.amazon.awssdk:eventbridge` when using EventBridge operations. The template uses `default-event-bus-name` for rule, target, and list calls that omit an event bus name; it does not rewrite `PutEvents` entries. `PutEvents`,
+`PutTargets`, and `RemoveTargets` return raw SDK responses so callers can inspect partial failures.
 
 ### SQS — `@SqsListener` annotation
 
@@ -1173,20 +1002,11 @@ class OrderListener {
 }
 ```
 
-Listener method may receive `String`, AWS SDK `Message`, `SqsReceivedMessage`,
-or a typed payload when a `SqsMessageConverter` bean is present. A Jackson 3
-converter is auto-registered when `tools.jackson.databind.ObjectMapper` is
-available. Declaring `SqsAcknowledgement` switches the listener to manual
-acknowledgement, so the container does not delete the message unless the handler
-calls `acknowledge()`.
-SpEL is not supported in `queue`; `${...}` placeholders are.
-If `bluetape4k.aws.sqs.queues.orders.url` is configured, `queue = "orders"`
+Listener method may receive `String`, AWS SDK `Message`, `SqsReceivedMessage`, or a typed payload when a `SqsMessageConverter` bean is present. A Jackson 3 converter is auto-registered when `tools.jackson.databind.ObjectMapper` is available. Declaring `SqsAcknowledgement` switches the listener to manual acknowledgement, so the container does not delete the message unless the handler calls `acknowledge()`. SpEL is not supported in `queue`; `${...}` placeholders are. If `bluetape4k.aws.sqs.queues.orders.url` is configured, `queue = "orders"`
 uses that URL directly.
 
-When an SNS topic fans out to SQS, the default Jackson converter recognizes the
-SNS `Notification` envelope. A listener can receive a typed
-`SnsNotification<OrderEvent>` and access the SNS subject, topic ARN, timestamp,
-signature metadata, SNS message attributes, and original `SqsReceivedMessage`:
+When an SNS topic fans out to SQS, the default Jackson converter recognizes the SNS `Notification` envelope. A listener can receive a typed
+`SnsNotification<OrderEvent>` and access the SNS subject, topic ARN, timestamp, signature metadata, SNS message attributes, and original `SqsReceivedMessage`:
 
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SnsNotification
@@ -1201,57 +1021,32 @@ suspend fun handle(notification: SnsNotification<OrderEvent>) {
 
 Non-SNS bodies retain the existing SQS conversion path. A malformed
 `Notification` falls back to that path by default; use
-`SnsMalformedEnvelopeStrategy.THROW` when the listener must reject malformed
-envelopes. `SnsNotification.rawEnvelope` is preserved by default and can be
-disabled when the original JSON is not needed.
+`SnsMalformedEnvelopeStrategy.THROW` when the listener must reject malformed envelopes. `SnsNotification.rawEnvelope` is preserved by default and can be disabled when the original JSON is not needed.
 
-Listener acknowledgement is delete-on-success: the container deletes the message
-only after the listener method returns normally. If the listener throws, the
-message is not deleted; when `error-visibility-timeout-seconds` is configured,
-the container changes visibility so retry timing is explicit. `listener.retry`
-adds in-process retry attempts with linear/exponential backoff and optional
-jitter before the final failure path. Register `SqsListenerInterceptor` beans to
-observe receive, handler, ack/nack, and failure phases with Micrometer or a
-logging/tracing library. `stop-timeout-millis` bounds container shutdown after
-poller cancellation.
+Listener acknowledgement is delete-on-success: the container deletes the message only after the listener method returns normally. If the listener throws, the message is not deleted; when `error-visibility-timeout-seconds` is configured, the container changes visibility so retry timing is explicit. `listener.retry`
+adds in-process retry attempts with linear/exponential backoff and optional jitter before the final failure path. Register `SqsListenerInterceptor` beans to observe receive, handler, ack/nack, and failure phases with Micrometer or a logging/tracing library. `stop-timeout-millis` bounds container shutdown after poller cancellation.
 
 Native SQS Observation is separately opt-in with
-`bluetape4k.aws.sqs.observation.enabled=true`. It preserves coroutine parentage
-across receive, process, and actual acknowledgement I/O. See the
+`bluetape4k.aws.sqs.observation.enabled=true`. It preserves coroutine parentage across receive, process, and actual acknowledgement I/O. See the
 [storage and messaging manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)
 for prerequisites, safe tags, extension points, and Floci acceptance, and the
 [runtime operations manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/runtime-operations/)
 for canary and rollback rules.
 
 The opt-in visibility heartbeat requires both `message-visibility-heartbeat-interval-seconds`
-and `message-visibility-heartbeat-seconds`; it is disabled by default. The interval must be
-positive, shorter than the heartbeat timeout, and no greater than 43,200 seconds. The annotation
-properties with the same names in camelCase override the global listener values. Each heartbeat
-is an additional `ChangeMessageVisibility` request, so choose an interval that leaves margin
-before expiry and account for SQS request cost and throttling. A heartbeat failure is logged and
-observed through the existing Micrometer operations without changing the handler result.
+and `message-visibility-heartbeat-seconds`; it is disabled by default. The interval must be positive, shorter than the heartbeat timeout, and no greater than 43,200 seconds. The annotation properties with the same names in camelCase override the global listener values. Each heartbeat is an additional `ChangeMessageVisibility` request, so choose an interval that leaves margin before expiry and account for SQS request cost and throttling. A heartbeat failure is logged and observed through the existing Micrometer operations without changing the handler result.
 
-For batch listeners, only messages still pending acknowledgement are extended. A partial
-acknowledgement removes completed messages from later heartbeat requests, while FIFO ordering
-metadata remains under the existing batch acknowledgement rules.
+For batch listeners, only messages still pending acknowledgement are extended. A partial acknowledgement removes completed messages from later heartbeat requests, while FIFO ordering metadata remains under the existing batch acknowledgement rules.
 
 Batch delivery is opt-in with `batch = true` and accepts one `List<SqsReceivedMessage>`,
-`List<software.amazon.awssdk.services.sqs.model.Message>`, or concrete `List<T>` payload plus
-an optional `SqsBatchAcknowledgement`. `maxMessages` remains within the AWS limit of 1..10.
+`List<software.amazon.awssdk.services.sqs.model.Message>`, or concrete `List<T>` payload plus an optional `SqsBatchAcknowledgement`. `maxMessages` remains within the AWS limit of 1..10.
 `acknowledgementMode` supports `INHERIT`, `ON_SUCCESS`, and `MANUAL`; partial handling uses
 `acknowledge(messages)`, `nack(messages, timeoutSeconds = 0)`, or `changeVisibility` and returns
 `SqsBatchAcknowledgementResult` with per-item status. `SqsOperations.deleteBatch` and
-`changeVisibilityBatch` use one optimized AWS request when available and a sequential fallback
-otherwise. FIFO groups preserve a contiguous successful prefix, and at-least-once delivery still
-requires idempotent side effects or message-id deduplication. Receipt handles, bodies, and raw
-message identifiers are not emitted in result `toString()`, logs, metric tags, or correlation
-values. Use the [storage and messaging manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)
-for the canary/rollback sequence (`STOPPING_RECEIVE -> DRAINING -> STOPPED`, DLQ redrive, and
-idempotency checks).
+`changeVisibilityBatch` use one optimized AWS request when available and a sequential fallback otherwise. FIFO groups preserve a contiguous successful prefix, and at-least-once delivery still requires idempotent side effects or message-id deduplication. Receipt handles, bodies, and raw message identifiers are not emitted in result `toString()`, logs, metric tags, or correlation values. Use the [storage and messaging manual](https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/bluetape4k-aws-spring-boot/storage-and-messaging/)
+for the canary/rollback sequence (`STOPPING_RECEIVE -> DRAINING -> STOPPED`, DLQ redrive, and idempotency checks).
 
-FIFO queue metadata is preserved in `SqsReceivedMessage` when messages are
-received. Use `SqsSendRequest` to publish FIFO messages with group and
-deduplication IDs:
+FIFO queue metadata is preserved in `SqsReceivedMessage` when messages are received. Use `SqsSendRequest` to publish FIFO messages with group and deduplication IDs:
 
 ```kotlin
 import io.bluetape4k.aws.spring.sqs.SqsSendRequest
@@ -1270,8 +1065,7 @@ suspend fun publishOrder(sqs: SqsOperations, queueUrl: String, body: String) {
 ```
 
 `SqsReceivedMessage.messageGroupId`, `messageDeduplicationId`, `sequenceNumber`,
-`approximateReceiveCount`, and `messageAttributes` expose the SQS metadata that
-is needed for FIFO and retry handling.
+`approximateReceiveCount`, and `messageAttributes` expose the SQS metadata that is needed for FIFO and retry handling.
 
 ### DynamoDB — Coroutines repository
 
@@ -1296,11 +1090,9 @@ class OrderRepository(
 }
 ```
 
-`aws-spring-boot` does not create DynamoDB tables. Use migrations,
-deployment automation, or explicit test setup to provision tables.
+`aws-spring-boot` does not create DynamoDB tables. Use migrations, deployment automation, or explicit test setup to provision tables.
 
-Enable DynamoDB Accelerator (DAX) only when the application also carries the DAX
-runtime dependency:
+Enable DynamoDB Accelerator (DAX) only when the application also carries the DAX runtime dependency:
 
 ```kotlin
 runtimeOnly("software.amazon.dax:amazon-dax-client:2.0.9")
@@ -1321,11 +1113,7 @@ bluetape4k:
 ```
 
 When DAX is active, the auto-configuration contributes a DAX-backed
-`DynamoDbAsyncClient`; the existing `DynamoDbEnhancedAsyncClient` and repository
-base classes continue to be used unchanged. DAX is a real AWS cluster cache, not
-an emulator feature. Keep LocalStack, Floci, and DynamoDB Local tests on the
-normal DynamoDB client path and document any DAX cache-consistency assumptions
-at the application boundary.
+`DynamoDbAsyncClient`; the existing `DynamoDbEnhancedAsyncClient` and repository base classes continue to be used unchanged. DAX is a real AWS cluster cache, not an emulator feature. Keep LocalStack, Floci, and DynamoDB Local tests on the normal DynamoDB client path and document any DAX cache-consistency assumptions at the application boundary.
 
 ### CloudWatch — Metrics, Logs, and Micrometer
 
@@ -1354,13 +1142,10 @@ class OrderObservability(
 }
 ```
 
-`bluetape4k-aws-spring-boot` includes `micrometer-core` as a normal dependency
-because Spring Boot applications already treat Micrometer as part of the
-observability baseline. The native CloudWatch exporter is optional: add
+`bluetape4k-aws-spring-boot` includes `micrometer-core` as a normal dependency because Spring Boot applications already treat Micrometer as part of the observability baseline. The native CloudWatch exporter is optional: add
 `io.micrometer:micrometer-registry-cloudwatch2` at runtime and explicitly set
 `bluetape4k.aws.cloudwatch.micrometer.registry.enabled=true`. The existing
-`CloudWatchMeterPublishingOperations` helper remains an explicit snapshot
-publisher over the current `MeterRegistry`; its
+`CloudWatchMeterPublishingOperations` helper remains an explicit snapshot publisher over the current `MeterRegistry`; its
 `bluetape4k.aws.cloudwatch.micrometer.enabled` switch is independent.
 
 ```yaml
@@ -1387,24 +1172,13 @@ bluetape4k:
 
 The native registry backs off when the application already provides any
 `MeterRegistry` (including `CompositeMeterRegistry`), and it reuses the shared
-`CloudWatchAsyncClient` without closing it itself. An empty `includes` list
-allows every meter in this registry; use a low-cardinality allow-list and never
-put secrets, object keys, request IDs, or other unbounded identifiers in tags.
-`step < 1m` sends `storageResolution=1` and can increase CloudWatch cost. The
-publisher uses Micrometer's official close lifecycle; each batch may wait up to
-`read-timeout` during shutdown. Registry-level retry is not added; AWS SDK retry
-configuration remains the consumer's responsibility. Production endpoints must
-use HTTPS and the role needs the minimum `cloudwatch:PutMetricData` permission.
-Set `bluetape4k.aws.cloudwatch.enabled=false` or
+`CloudWatchAsyncClient` without closing it itself. An empty `includes` list allows every meter in this registry; use a low-cardinality allow-list and never put secrets, object keys, request IDs, or other unbounded identifiers in tags.
+`step < 1m` sends `storageResolution=1` and can increase CloudWatch cost. The publisher uses Micrometer's official close lifecycle; each batch may wait up to
+`read-timeout` during shutdown. Registry-level retry is not added; AWS SDK retry configuration remains the consumer's responsibility. Production endpoints must use HTTPS and the role needs the minimum `cloudwatch:PutMetricData` permission. Set `bluetape4k.aws.cloudwatch.enabled=false` or
 `bluetape4k.aws.enabled=false` to disable the client and native exporter. Use
 `--debug` to inspect condition back-off when the registry dependency is absent.
 
-When a `MeterRegistry` bean exists, the module also registers low-cardinality
-SQS/S3 operation timers automatically. SQS instrumentation covers send,
-receive, listener handler, acknowledgement, and failure phases. S3
-instrumentation covers upload, download, delete, list, resource, and presign
-operations. Queue URLs, message IDs, receipt handles, object keys, and raw
-exception messages are not default tags.
+When a `MeterRegistry` bean exists, the module also registers low-cardinality SQS/S3 operation timers automatically. SQS instrumentation covers send, receive, listener handler, acknowledgement, and failure phases. S3 instrumentation covers upload, download, delete, list, resource, and presign operations. Queue URLs, message IDs, receipt handles, object keys, and raw exception messages are not default tags.
 
 ### EC2 IMDS — Metadata Operations
 
@@ -1427,18 +1201,12 @@ class InstanceMetadataReporter(
 }
 ```
 
-`ImdsOperations` delegates to AWS SDK v2 `Ec2MetadataAsyncClient` and wraps each
-call in the configured timeout. It is passive during Spring startup and should
-be used only by EC2-hosted applications that need instance metadata. It does not
-expose IAM role credential documents; applications should keep credentials on
-`DefaultCredentialsProvider`, STS web identity, or another explicit AWS SDK
-credentials provider.
+`ImdsOperations` delegates to AWS SDK v2 `Ec2MetadataAsyncClient` and wraps each call in the configured timeout. It is passive during Spring startup and should be used only by EC2-hosted applications that need instance metadata. It does not expose IAM role credential documents; applications should keep credentials on
+`DefaultCredentialsProvider`, STS web identity, or another explicit AWS SDK credentials provider.
 
 ### KMS — explicit field encryption
 
-`@KmsEncrypted` is metadata for mapper/converter boundaries. It does not
-transparently mutate DTOs, entities, configuration properties, or existing
-plaintext data. The first supported field type is `String`/`String?`.
+`@KmsEncrypted` is metadata for mapper/converter boundaries. It does not transparently mutate DTOs, entities, configuration properties, or existing plaintext data. The first supported field type is `String`/`String?`.
 
 ```kotlin
 import io.bluetape4k.aws.spring.kms.KmsEncrypted
@@ -1463,12 +1231,7 @@ class CustomerSecretMapper(private val codec: KmsEncryptedFieldCodec) {
 }
 ```
 
-Ciphertext strings use the `b4k-kms:v1:` prefix. Malformed ciphertext,
-unsupported annotated field types, missing key ids, and KMS decrypt failures
-fail with deterministic exceptions. Use direct `KmsOperations` for service-level
-payloads or envelope-encryption flows; use field encryption only where a
-single short `String` needs a stable persistence or serialization boundary.
-
+Ciphertext strings use the `b4k-kms:v1:` prefix. Malformed ciphertext, unsupported annotated field types, missing key ids, and KMS decrypt failures fail with deterministic exceptions. Use direct `KmsOperations` for service-level payloads or envelope-encryption flows; use field encryption only where a single short `String` needs a stable persistence or serialization boundary.
 
 ### Plaintext data key ownership
 
@@ -1511,8 +1274,7 @@ For deployment, package application bytecode and its tested AWS library version 
 
 ## Testing
 
-Local AWS emulator integration tests are provided under `src/test/...`. They
-default to Floci and can be switched with `-Dbluetape4k.aws.emulator=...`:
+Local AWS emulator integration tests are provided under `src/test/...`. They default to Floci and can be switched with `-Dbluetape4k.aws.emulator=...`:
 
 ```bash
 ./gradlew :bluetape4k-aws-spring-boot:test -Dbluetape4k.aws.emulator=floci

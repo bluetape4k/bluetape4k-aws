@@ -1,6 +1,12 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.concurrent.awaitTermination
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
+import kotlinx.atomicfu.atomic
 import org.springframework.context.SmartLifecycle
 import org.springframework.core.env.ConfigurableEnvironment
 import java.time.Duration
@@ -8,10 +14,12 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.math.min
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.seconds
 
 /** context마다 하나의 executor와 resource마다 하나의 self-rescheduling task를 소유합니다. */
 @Suppress("TooGenericExceptionCaught", "TooManyFunctions")
@@ -21,29 +29,29 @@ internal class AppConfigReloadLifecycle(
     private val initialDelay: (AppConfigDataPropertySource) -> Duration = { it.refreshInterval ?: Duration.ZERO },
     private val randomDelay: (Int) -> Duration = ::fullJitterBackoff,
     private val runtimeClientSupplier: (() -> AppConfigDataSessionClient)? = null,
-) : SmartLifecycle {
+): SmartLifecycle {
 
     constructor(
         environment: ConfigurableEnvironment,
         runtimeClientSupplier: () -> AppConfigDataSessionClient,
-    ) : this(
+    ): this(
         sourcesSupplier = {
             environment.propertySources
-                .mapNotNull { it as? AppConfigDataPropertySource }
+                .filterIsInstance<AppConfigDataPropertySource>()
         },
         runtimeClientSupplier = runtimeClientSupplier,
     )
 
-    constructor(environment: ConfigurableEnvironment) : this(
+    constructor(environment: ConfigurableEnvironment): this(
         sourcesSupplier = {
             environment.propertySources
-                .mapNotNull { it as? AppConfigDataPropertySource }
+                .filterIsInstance<AppConfigDataPropertySource>()
         },
     )
 
     companion object: KLogging() {
-        private val MAX_BACKOFF: Duration = Duration.ofMinutes(5)
-        private val INITIAL_BACKOFF: Duration = Duration.ofSeconds(1)
+        private val MAX_BACKOFF: Duration = 5.minutes()
+        private val INITIAL_BACKOFF: Duration = 1.seconds()
         private const val MIN_SERVER_POLL_SECONDS = 15L
         private const val MAX_SERVER_POLL_SECONDS = 24L * 60L * 60L
         private const val MAX_POOL_SIZE = 8
@@ -60,44 +68,49 @@ internal class AppConfigReloadLifecycle(
         private fun fullJitterBackoff(attempt: Int): Duration {
             val exponent = min(attempt.coerceAtLeast(0), 18)
             val capMillis = min(MAX_BACKOFF.toMillis(), INITIAL_BACKOFF.toMillis() shl exponent)
-            val millis = if (capMillis <= 1L) 0L else ThreadLocalRandom.current().nextLong(capMillis + 1)
-            return Duration.ofMillis(millis.coerceAtLeast(1L))
+            val millis = if (capMillis <= 1L) 0L else Random.nextLong(capMillis + 1)
+
+            return millis.coerceAtLeast(1L).millis()
         }
     }
 
-    private val lifecycleLock = Any()
-    private val stopping = AtomicBoolean(false)
+    private val lifecycleLock = ReentrantLock()
+    private val stopping = atomic(false)
     private val futures = ConcurrentHashMap<AppConfigDataPropertySource, ScheduledFuture<*>>()
     private val retryAttempts = ConcurrentHashMap<AppConfigDataPropertySource, Int>()
     private var executor: ScheduledThreadPoolExecutor? = null
     private var runtimeClient: AppConfigDataSessionClient? = null
+
+    @Volatile
     private var running = false
 
     override fun isAutoStartup(): Boolean = true
 
     override fun getPhase(): Int = Int.MAX_VALUE
 
-    override fun isRunning(): Boolean = synchronized(lifecycleLock) { running }
+    override fun isRunning(): Boolean = lifecycleLock.withLock { running }
 
     override fun start() {
-        synchronized(lifecycleLock) {
+        lifecycleLock.withLock {
             if (running) return
-            stopping.set(false)
+            stopping.value = false
             val sources = sourcesSupplier().distinctBy { it.name }.filter { it.refreshInterval != null }
             if (sources.isEmpty()) {
                 running = true
                 return
             }
+
             val createdClient = runtimeClientSupplier?.invoke()
             createdClient?.let { client -> sources.forEach { it.replaceClient(client) } }
             runtimeClient = createdClient
+
             try {
                 val created = executorFactory(min(MAX_POOL_SIZE, maxOf(1, sources.size)))
                 executor = created
                 sources.forEach { source -> schedule(source, initialDelay(source)) }
                 running = true
             } catch (error: RuntimeException) {
-                stopping.set(true)
+                stopping.value = true
                 executor?.let(::cancelAndShutdown)
                 executor = null
                 runtimeClient?.close()
@@ -108,9 +121,9 @@ internal class AppConfigReloadLifecycle(
     }
 
     override fun stop() {
-        val resources = synchronized(lifecycleLock) {
+        val resources = lifecycleLock.withLock {
             if (!running && executor == null) return
-            stopping.set(true)
+            stopping.value = true
             running = false
             val value = executor
             executor = null
@@ -137,8 +150,8 @@ internal class AppConfigReloadLifecycle(
     internal fun effectivePollDelay(source: AppConfigDataPropertySource): Duration = baseDelay(source)
 
     private fun schedule(source: AppConfigDataPropertySource, delay: Duration) {
-        synchronized(lifecycleLock) {
-            if (!stopping.get()) {
+        lifecycleLock.withLock {
+            if (!stopping.value) {
                 executor?.let { currentExecutor ->
                     val existing = futures[source]
                     if (existing == null || existing.isDone || existing.isCancelled) {
@@ -159,8 +172,9 @@ internal class AppConfigReloadLifecycle(
     }
 
     private fun pollAndReschedule(source: AppConfigDataPropertySource) {
-        if (stopping.get()) return
+        if (stopping.value) return
         var nextDelay = baseDelay(source)
+
         try {
             val response = fetch(source)
             source.advance(response)
@@ -174,10 +188,9 @@ internal class AppConfigReloadLifecycle(
                     )
                     source.replace(values)
                 } catch (error: RuntimeException) {
-                    log.warn(
-                        "Keeping previous AppConfig values after decode failure: " +
-                            "${source.resource.opaqueIdentity} (${error::class.java.simpleName}).",
-                    )
+                    log.warn(error) {
+                        "Keeping previous AppConfig values after decode failure: ${source.resource.opaqueIdentity}"
+                    }
                 }
             }
             retryAttempts.remove(source)
@@ -188,12 +201,11 @@ internal class AppConfigReloadLifecycle(
             source.discardSession()
             val attempt = retryAttempts.merge(source, 1, Int::plus) ?: 1
             nextDelay = randomDelay(attempt)
-            log.warn(
-                "AppConfig poll failed; retaining previous values and retrying: " +
-                    "${source.resource.opaqueIdentity} (${error::class.java.simpleName}).",
-            )
+            log.warn(error) {
+                "AppConfig poll failed; retaining previous values and retrying: ${source.resource.opaqueIdentity}"
+            }
         }
-        if (!stopping.get()) schedule(source, nextDelay)
+        if (!stopping.value) schedule(source, nextDelay)
     }
 
     private fun fetch(source: AppConfigDataPropertySource): AppConfigDataResponse {
@@ -221,10 +233,11 @@ internal class AppConfigReloadLifecycle(
         futures.clear()
         retryAttempts.clear()
         current.shutdown()
+
         try {
-            if (!current.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)) {
+            if (!current.awaitTermination(shutdownTimeoutSeconds.seconds)) {
                 current.shutdownNow()
-                current.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)
+                current.awaitTermination(shutdownTimeoutSeconds.seconds)
             }
         } catch (_: InterruptedException) {
             current.shutdownNow()

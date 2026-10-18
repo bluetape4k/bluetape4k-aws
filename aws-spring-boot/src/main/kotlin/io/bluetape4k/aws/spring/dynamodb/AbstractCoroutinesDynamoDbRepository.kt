@@ -68,6 +68,7 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
         val request = ScanEnhancedRequest.builder()
             .apply(builder)
             .build()
+
         return table.scan(request).toItemsFlow()
     }
 
@@ -79,6 +80,7 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
             .queryConditional(queryConditional)
             .apply(builder)
             .build()
+
         return table.query(request).toItemsFlow()
     }
 
@@ -91,13 +93,16 @@ abstract class AbstractCoroutinesDynamoDbRepository<T: Any, ID: Any>(
             .queryConditional(queryConditional)
             .apply(builder)
             .build()
+
         return table.index(indexName).query(request).toItemsFlow()
     }
 
-    private fun SdkPublisher<Page<T>>.toItemsFlow(): Flow<T> =
-        flow {
-            asFlow().collect { page ->
-                page.items().forEach { emit(it) }
+    private fun SdkPublisher<Page<T>>.toItemsFlow(): Flow<T> = flow {
+        this@toItemsFlow.asFlow()
+            .collect { page ->
+                page.items().forEach {
+                    emit(it)
+                }
             }
-        }
+    }
 }

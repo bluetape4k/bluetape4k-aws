@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.concurrent.awaitTermination
+import io.bluetape4k.logging.KLogging
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.batchmanager.BatchOverrideConfiguration
 import software.amazon.awssdk.services.sqs.batchmanager.SqsAsyncBatchManager
@@ -10,11 +12,14 @@ import java.util.concurrent.Future
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.toKotlinDuration
 
 /** AWS SDK [SqsAsyncBatchManager]를 공통 batch transport 경계에 연결합니다. */
 internal class SqsAsyncBatchManagerTransport(
     private val manager: SqsAsyncBatchManager,
-) : SqsBatchTransport {
+): SqsBatchTransport {
+
+    companion object: KLogging()
 
     override fun send(entry: SqsBatchSendEntry) = submitBatchOutcome(
         entryId = entry.entryId,
@@ -44,6 +49,8 @@ internal class SqsBatchTransportResources(
     private val manager: AutoCloseable,
     private val executor: ScheduledThreadPoolExecutor,
 ) {
+    companion object: KLogging()
+
     fun closeManager() {
         manager.close()
     }
@@ -58,12 +65,15 @@ internal class SqsBatchTransportResources(
 
     fun executorService(): ExecutorService = executor
 
+    fun awaitExecutorTermination(timeout: kotlin.time.Duration): Boolean =
+        executor.awaitTermination(timeout)
+
     fun awaitExecutorTermination(timeout: Long, unit: TimeUnit): Boolean =
         executor.awaitTermination(timeout, unit)
 }
 
 /** batch mode 전용 SDK manager와 daemon scheduler를 원자적으로 조립합니다. */
-internal object SqsBatchTransportFactory {
+internal object SqsBatchTransportFactory: KLogging() {
 
     fun create(
         properties: SqsBatchProperties,
@@ -169,19 +179,20 @@ private fun SqsSendRequest.toSdkRequest(): SendMessageRequest = SendMessageReque
 private fun cleanupExecutor(
     executor: ScheduledThreadPoolExecutor,
     properties: SqsBatchProperties,
-): List<SqsBatchCleanupComponent> = try {
-    executor.shutdownNow()
-    if (executor.awaitTermination(properties.shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-        emptyList()
-    } else {
+): List<SqsBatchCleanupComponent> =
+    try {
+        executor.shutdownNow()
+        if (executor.awaitTermination(properties.shutdownTimeout.toKotlinDuration())) {
+            emptyList()
+        } else {
+            listOf(SqsBatchCleanupComponent.EXECUTOR)
+        }
+    } catch (_: InterruptedException) {
+        Thread.currentThread().interrupt()
+        listOf(SqsBatchCleanupComponent.EXECUTOR)
+    } catch (_: Throwable) {
         listOf(SqsBatchCleanupComponent.EXECUTOR)
     }
-} catch (_: InterruptedException) {
-    Thread.currentThread().interrupt()
-    listOf(SqsBatchCleanupComponent.EXECUTOR)
-} catch (_: Throwable) {
-    listOf(SqsBatchCleanupComponent.EXECUTOR)
-}
 
 private const val SQS_BATCH_THREAD_PREFIX = "bluetape4k-sqs-batch-"
 private val SQS_BATCH_THREAD_SEQUENCE = AtomicLong()

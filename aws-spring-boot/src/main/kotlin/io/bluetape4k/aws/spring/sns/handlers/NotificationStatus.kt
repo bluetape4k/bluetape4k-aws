@@ -21,7 +21,5 @@ interface NotificationStatus {
      * 적용할지 여부입니다.
      * @return AWS SDK의 [ConfirmSubscriptionResponse]입니다.
      */
-    suspend fun confirmSubscription(
-        authenticateOnUnsubscribe: Boolean = true,
-    ): ConfirmSubscriptionResponse
+    suspend fun confirmSubscription(authenticateOnUnsubscribe: Boolean = true): ConfirmSubscriptionResponse
 }

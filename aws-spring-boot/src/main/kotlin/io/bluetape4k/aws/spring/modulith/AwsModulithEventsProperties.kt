@@ -1,8 +1,18 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.javatimes.days
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.support.requireBeTrue
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireLe
+import io.bluetape4k.support.requireMatches
+import io.bluetape4k.support.requireNull
+import io.bluetape4k.support.requirePositiveNumber
+import io.bluetape4k.support.toUtf8Bytes
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
-import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 /**
@@ -18,7 +28,7 @@ data class AwsModulithEventsProperties(
     var producer: Producer = Producer(),
     var consumer: Consumer = Consumer(),
     var targets: Map<String, Target> = emptyMap(),
-) : Serializable {
+): Serializable {
     init {
         targets = targets.toMap()
         validate()
@@ -27,9 +37,10 @@ data class AwsModulithEventsProperties(
     /** 바인딩 이후의 교차 속성까지 포함해 설정을 다시 검증합니다. */
     internal fun validate() {
         targets = targets.toMap()
-        require(targets.size <= MAX_TARGETS) {
+        targets.size.requireLe(MAX_TARGETS) {
             "bluetape4k.aws.modulith.events.targets must contain at most $MAX_TARGETS entries."
         }
+
         targets.forEach { (alias, target) ->
             requireLogicalName(alias, "target alias")
             target.validate()
@@ -47,20 +58,20 @@ data class AwsModulithEventsProperties(
     data class Target(
         val service: AwsModulithTargetService = AwsModulithTargetService.SNS,
         val destination: String = "",
-    ) : Serializable {
+    ): Serializable {
         init {
             validate()
         }
 
         internal fun validate() {
-            require(destination.isAwsDestinationName()) {
+            destination.isAwsDestinationName().requireBeTrue {
                 "destination must be a logical SNS topic or SQS queue name."
             }
             val maximumLength = when (service) {
                 AwsModulithTargetService.SNS -> MAX_TOPIC_NAME_LENGTH
                 AwsModulithTargetService.SQS -> MAX_QUEUE_NAME_LENGTH
             }
-            require(destination.length <= maximumLength) {
+            destination.length.requireLe(maximumLength) {
                 "destination must not exceed $maximumLength characters."
             }
         }
@@ -77,24 +88,16 @@ data class AwsModulithEventsProperties(
         var maxSerializedPayloadBytes: Int = DEFAULT_MAX_SERIALIZED_PAYLOAD_BYTES,
         var maxEnvelopeBytes: Int = DEFAULT_MAX_ENVELOPE_BYTES,
         var shutdownTimeout: Duration = DEFAULT_SHUTDOWN_TIMEOUT,
-    ) : Serializable {
+    ): Serializable {
         init {
             validate()
         }
 
         internal fun validate() {
-            require(maxInFlight in MIN_MAX_IN_FLIGHT..MAX_MAX_IN_FLIGHT) {
-                "maxInFlight must be between $MIN_MAX_IN_FLIGHT and $MAX_MAX_IN_FLIGHT."
-            }
-            require(maxSerializedPayloadBytes in MIN_BYTES..MAX_BYTES) {
-                "maxSerializedPayloadBytes must be between $MIN_BYTES and $MAX_BYTES."
-            }
-            require(maxEnvelopeBytes in MIN_BYTES..MAX_BYTES) {
-                "maxEnvelopeBytes must be between $MIN_BYTES and $MAX_BYTES."
-            }
-            require(shutdownTimeout inDuration MIN_SHUTDOWN_TIMEOUT..MAX_SHUTDOWN_TIMEOUT) {
-                "shutdownTimeout must be between 1 second and 5 minutes."
-            }
+            maxInFlight.requireInRange(MIN_MAX_IN_FLIGHT, MAX_MAX_IN_FLIGHT, "maxInFlight")
+            maxSerializedPayloadBytes.requireInRange(MIN_BYTES, MAX_BYTES, "maxSerializedPayloadBytes")
+            maxEnvelopeBytes.requireInRange(MIN_BYTES, MAX_BYTES, "maxEnvelopeBytes")
+            shutdownTimeout.requireInRange(MIN_SHUTDOWN_TIMEOUT, MAX_SHUTDOWN_TIMEOUT, "shutdownTimeout")
         }
 
         companion object {
@@ -110,7 +113,7 @@ data class AwsModulithEventsProperties(
         var expectedTopicArns: Set<String> = emptySet(),
         var redriveRequired: Boolean = true,
         var idempotency: Idempotency = Idempotency(),
-    ) : Serializable {
+    ): Serializable {
         init {
             expectedTopicArns = expectedTopicArns.toSet()
             validate()
@@ -126,12 +129,8 @@ data class AwsModulithEventsProperties(
         }
 
         private fun validateQueue(value: String) {
-            require(value.isAwsDestinationName()) {
-                "queue must be a logical SQS queue name."
-            }
-            require(value.length <= MAX_QUEUE_NAME_LENGTH) {
-                "queue must not exceed $MAX_QUEUE_NAME_LENGTH characters."
-            }
+            value.isAwsDestinationName().requireBeTrue { "queue must be a logical SQS queue name." }
+            value.length.requireLe(MAX_QUEUE_NAME_LENGTH) { "queue must not exceed $MAX_QUEUE_NAME_LENGTH characters." }
         }
 
         private fun validateSourceConstraints() {
@@ -162,27 +161,17 @@ data class AwsModulithEventsProperties(
         var maxKeyBytes: Int = DEFAULT_MAX_KEY_BYTES,
         var retention: Duration = DEFAULT_RETENTION,
         var leaseDuration: Duration = DEFAULT_LEASE_DURATION,
-    ) : Serializable {
+    ): Serializable {
         init {
             validate()
         }
 
         internal fun validate() {
-            require(maxEntries > 0) {
-                "maxEntries must be greater than zero."
-            }
-            require(maxInProgress in MIN_MAX_IN_PROGRESS..maxEntries) {
-                "maxInProgress must be between $MIN_MAX_IN_PROGRESS and maxEntries."
-            }
-            require(maxKeyBytes > 0) {
-                "maxKeyBytes must be greater than zero."
-            }
-            require(retention inDuration MIN_RETENTION..MAX_RETENTION) {
-                "retention must be between 1 minute and 7 days."
-            }
-            require(leaseDuration inDuration MIN_LEASE_DURATION..MAX_LEASE_DURATION) {
-                "leaseDuration must be between 30 seconds and 30 minutes."
-            }
+            maxEntries.requirePositiveNumber("maxEntries")
+            maxInProgress.requireInRange(MIN_MAX_IN_PROGRESS, maxEntries, "maxInProgress")
+            maxKeyBytes.requirePositiveNumber("maxKeyBytes")
+            retention.requireInRange(MIN_RETENTION, MAX_RETENTION, "retention")
+            leaseDuration.requireInRange(MIN_LEASE_DURATION, MAX_LEASE_DURATION, "leaseDuration")
         }
 
         companion object {
@@ -206,15 +195,15 @@ data class AwsModulithEventsProperties(
         private const val DEFAULT_MAX_IN_PROGRESS = 256
         private const val MIN_MAX_IN_PROGRESS = 1
         private const val DEFAULT_MAX_KEY_BYTES = 2_097_152
-        private val DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(25)
-        private val MIN_SHUTDOWN_TIMEOUT = Duration.ofSeconds(1)
-        private val MAX_SHUTDOWN_TIMEOUT = Duration.ofMinutes(5)
-        private val DEFAULT_RETENTION = Duration.ofHours(24)
-        private val MIN_RETENTION = Duration.ofMinutes(1)
-        private val MAX_RETENTION = Duration.ofDays(7)
-        private val DEFAULT_LEASE_DURATION = Duration.ofMinutes(2)
-        private val MIN_LEASE_DURATION = Duration.ofSeconds(30)
-        private val MAX_LEASE_DURATION = Duration.ofMinutes(30)
+        private val DEFAULT_SHUTDOWN_TIMEOUT = 25.seconds()
+        private val MIN_SHUTDOWN_TIMEOUT = 1.seconds()
+        private val MAX_SHUTDOWN_TIMEOUT = 5.minutes()
+        private val DEFAULT_RETENTION = 24.hours()
+        private val MIN_RETENTION = 1.minutes()
+        private val MAX_RETENTION = 7.days()
+        private val DEFAULT_LEASE_DURATION = 2.minutes()
+        private val MIN_LEASE_DURATION = 30.seconds()
+        private val MAX_LEASE_DURATION = 30.minutes()
     }
 }
 
@@ -234,9 +223,7 @@ enum class AwsModulithSourceMode {
 internal fun validateAwsModulithRoutingKey(destination: String, routingKey: String?): String? {
     val fifo = destination.endsWith(".fifo")
     if (!fifo) {
-        require(routingKey == null) {
-            "routingKey is not allowed for a standard destination."
-        }
+        routingKey.requireNull { "routingKey is not allowed for a standard destination." }
         return null
     }
     require(!routingKey.isNullOrBlank()) {
@@ -245,7 +232,7 @@ internal fun validateAwsModulithRoutingKey(destination: String, routingKey: Stri
     require(routingKey.none(Char::isISOControl)) {
         "routingKey must not contain control characters."
     }
-    require(routingKey.toByteArray(StandardCharsets.UTF_8).size <= MAX_ROUTING_KEY_BYTES) {
+    routingKey.toUtf8Bytes().size.requireLe(MAX_ROUTING_KEY_BYTES) {
         "routingKey must not exceed $MAX_ROUTING_KEY_BYTES UTF-8 bytes."
     }
     return routingKey
@@ -259,26 +246,23 @@ private fun requireLogicalName(value: String, field: String) {
 
 private fun String.isLogicalAwsName(): Boolean =
     matches(LOGICAL_ALIAS_PATTERN) &&
-        !startsWith("arn:", ignoreCase = true) &&
-        !startsWith("http://", ignoreCase = true) &&
-        !startsWith("https://", ignoreCase = true) &&
-        !contains("://")
+            !startsWith("arn:", ignoreCase = true) &&
+            !startsWith("http://", ignoreCase = true) &&
+            !startsWith("https://", ignoreCase = true) &&
+            !contains("://")
 
 private fun String.isAwsDestinationName(): Boolean =
     matches(SNS_QUEUE_NAME_PATTERN) &&
-        !startsWith("arn:", ignoreCase = true) &&
-        !startsWith("http://", ignoreCase = true) &&
-        !startsWith("https://", ignoreCase = true) &&
-        !contains("://")
+            !startsWith("arn:", ignoreCase = true) &&
+            !startsWith("http://", ignoreCase = true) &&
+            !startsWith("https://", ignoreCase = true) &&
+            !contains("://")
 
 private fun requireSnsTopicArn(value: String) {
-    require(SNS_TOPIC_ARN_PATTERN.matches(value)) {
+    value.requireMatches(SNS_TOPIC_ARN_PATTERN, "value") {
         "expectedTopicArns must contain valid SNS topic ARNs."
     }
 }
-
-private infix fun Duration.inDuration(range: ClosedRange<Duration>): Boolean =
-    this >= range.start && this <= range.endInclusive
 
 private val LOGICAL_ALIAS_PATTERN = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 private val SNS_QUEUE_NAME_PATTERN = Regex("[A-Za-z0-9_-]+(?:\\.fifo)?")

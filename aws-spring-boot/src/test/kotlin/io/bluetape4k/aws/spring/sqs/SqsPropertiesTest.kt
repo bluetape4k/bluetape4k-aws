@@ -3,10 +3,14 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.time.Duration
 
 class SqsPropertiesTest {
+
+    companion object: KLogging()
 
     @Test
     fun `heartbeat requires interval and timeout together`() {
@@ -113,6 +117,7 @@ class SqsPropertiesTest {
         val maxReceiveCount = assertFailsWith<IllegalArgumentException> {
             SqsProperties.RedrivePolicy(deadLetterTargetArn = "arn:aws:sqs:region:account:dead", maxReceiveCount = 0)
         }
+        log.debug { "maxReceiveCount=$maxReceiveCount" }
         maxReceiveCount.message shouldContain "maxReceiveCount"
     }
 
@@ -150,6 +155,7 @@ class SqsPropertiesTest {
             messageVisibilityHeartbeatSeconds = 30,
         )
 
+        log.debug { "listener=$listener" }
         listener.messageVisibilityHeartbeatIntervalSeconds shouldBeEqualTo 10
         listener.messageVisibilityHeartbeatSeconds shouldBeEqualTo 30
     }

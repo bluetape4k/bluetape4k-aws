@@ -1,10 +1,10 @@
 package io.bluetape4k.aws.spring.ses
 
+import io.bluetape4k.support.hashOf
 import software.amazon.awssdk.services.sesv2.model.AttachmentContentDisposition
 import software.amazon.awssdk.services.sesv2.model.AttachmentContentTransferEncoding
 import java.io.Serializable
 import java.nio.charset.Charset
-import java.util.Arrays
 
 internal const val MAX_SES_MESSAGE_BYTES: Int = 40 * 1024 * 1024
 
@@ -77,25 +77,25 @@ class SesEmailAttachment(
 
     override fun equals(other: Any?): Boolean =
         this === other ||
-            other is SesEmailAttachment &&
-            fileName == other.fileName &&
-            content.contentEquals(other.content) &&
-            contentType == other.contentType &&
-            contentDisposition == other.contentDisposition &&
-            contentTransferEncoding == other.contentTransferEncoding &&
-            contentDescription == other.contentDescription &&
-            contentId == other.contentId
+                other is SesEmailAttachment &&
+                fileName == other.fileName &&
+                content.contentEquals(other.content) &&
+                contentType == other.contentType &&
+                contentDisposition == other.contentDisposition &&
+                contentTransferEncoding == other.contentTransferEncoding &&
+                contentDescription == other.contentDescription &&
+                contentId == other.contentId
 
-    override fun hashCode(): Int {
-        var result = fileName.hashCode()
-        result = 31 * result + Arrays.hashCode(content)
-        result = 31 * result + contentType.hashCode()
-        result = 31 * result + contentDisposition.hashCode()
-        result = 31 * result + contentTransferEncoding.hashCode()
-        result = 31 * result + (contentDescription?.hashCode() ?: 0)
-        result = 31 * result + (contentId?.hashCode() ?: 0)
-        return result
-    }
+    override fun hashCode(): Int =
+        hashOf(
+            fileName,
+            content.contentHashCode(),
+            contentType,
+            contentDisposition,
+            contentTransferEncoding,
+            contentDescription,
+            contentId
+        )
 
     override fun toString(): String =
         "SesEmailAttachment(fileName=$fileName, contentSize=${content.size}, contentType=$contentType)"
@@ -192,19 +192,14 @@ class SesRawEmailRequest(
 
     override fun equals(other: Any?): Boolean =
         this === other ||
-            other is SesRawEmailRequest &&
-            rawContent.contentEquals(other.rawContent) &&
-            from == other.from &&
-            destination == other.destination &&
-            configurationSetName == other.configurationSetName
+                other is SesRawEmailRequest &&
+                rawContent.contentEquals(other.rawContent) &&
+                from == other.from &&
+                destination == other.destination &&
+                configurationSetName == other.configurationSetName
 
-    override fun hashCode(): Int {
-        var result = Arrays.hashCode(rawContent)
-        result = 31 * result + (from?.hashCode() ?: 0)
-        result = 31 * result + (destination?.hashCode() ?: 0)
-        result = 31 * result + (configurationSetName?.hashCode() ?: 0)
-        return result
-    }
+    override fun hashCode(): Int =
+        hashOf(rawContent.contentHashCode(), from, destination, configurationSetName)
 
     override fun toString(): String =
         "SesRawEmailRequest(rawContentSize=${rawContent.size}, from=$from, destination=$destination)"

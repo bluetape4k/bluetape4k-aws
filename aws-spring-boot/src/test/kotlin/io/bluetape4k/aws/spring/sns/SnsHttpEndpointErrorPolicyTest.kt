@@ -6,10 +6,14 @@ import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 
-class SnsHttpEndpointErrorPolicyTest {
+class SnsHttpEndpointErrorPolicyTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `rejection diagnostics keep only bounded safe fields`() {
@@ -26,6 +30,7 @@ class SnsHttpEndpointErrorPolicyTest {
             )
 
             val message = appender.list.single().formattedMessage
+            log.debug { "message=$message" }
             message shouldContain "category=invalid-input"
             message shouldContain "status=400"
             message shouldContain "size=${SnsHttpMessageLimits.MAX_READ_BYTES}"

@@ -1,18 +1,19 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
+import io.bluetape4k.support.requireNotNull
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate
-import org.springframework.beans.factory.ObjectProvider
-import org.springframework.context.annotation.Bean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import tools.jackson.databind.ObjectMapper
+import org.springframework.context.annotation.Bean
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.transfer.s3.S3TransferManager
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
+import tools.jackson.databind.ObjectMapper
 
 /**
  * 고처리량 S3 전송을 위한 [S3TransferManager]와 [S3TransferTemplate] Bean을 자동 구성합니다.
@@ -125,13 +126,13 @@ class S3TransferAutoConfiguration {
         transferOperationsCandidates: ObjectProvider<S3TransferOperations>,
         outputStreamProviderCandidates: ObjectProvider<S3OutputStreamProvider>,
     ): S3ClientSideEncryptionTransferOperations {
-        val providerTemplate = requireNotNull(providerTemplates.getIfUnique()) {
+        val providerTemplate = providerTemplates.getIfUnique().requireNotNull {
             "S3 client-side encryption transfer requires exactly one provider template."
         }
-        val transferOperations = requireNotNull(transferOperationsCandidates.getIfUnique()) {
+        val transferOperations = transferOperationsCandidates.getIfUnique().requireNotNull {
             "S3 client-side encryption transfer requires exactly one transfer operations bean."
         }
-        val outputStreamProvider = requireNotNull(outputStreamProviderCandidates.getIfUnique()) {
+        val outputStreamProvider = outputStreamProviderCandidates.getIfUnique().requireNotNull {
             "S3 client-side encryption transfer requires exactly one output stream provider."
         }
         return S3ClientSideEncryptionTransferTemplate(

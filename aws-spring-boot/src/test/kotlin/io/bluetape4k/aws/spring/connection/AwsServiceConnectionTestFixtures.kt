@@ -3,6 +3,8 @@ package io.bluetape4k.aws.spring.connection
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.support.requireContains
+import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.testcontainers.aws.AwsEmulatorServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,6 +34,7 @@ internal object AwsServiceConnectionTestFixtures {
         var bucketCreated = false
         var objectCreated = false
         var receipt: S3RoundTripReceipt? = null
+
         runSuspendIO {
             try {
                 withContext(Dispatchers.IO) {
@@ -42,6 +45,7 @@ internal object AwsServiceConnectionTestFixtures {
                         RequestBody.fromString("service-connection-$ownerToken"),
                     )
                     objectCreated = true
+
                     val payload = client.getObjectAsBytes { it.bucket(bucket).key(key) }.asUtf8String()
                     payload shouldBeEqualTo "service-connection-$ownerToken"
                 }
@@ -68,9 +72,10 @@ internal object AwsServiceConnectionTestFixtures {
     }
 
     private fun requireOwnedResource(ownerToken: String, bucket: String, key: String) {
-        require(ownerToken.isNotBlank()) { "owner token must not be blank" }
-        require(bucket.contains(ownerToken)) { "foreign bucket rejected" }
-        require(key.contains(ownerToken)) { "foreign object rejected" }
+        ownerToken.requireNotBlank { "owner token must not be blank" }
+        bucket.requireContains(ownerToken) { "foreign bucket rejected" }
+        key.requireContains(ownerToken) { "foreign object rejected" }
+        
         require(!bucket.contains('*') && !key.contains('*')) { "wildcard resource rejected" }
     }
 }

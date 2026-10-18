@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
@@ -20,7 +21,7 @@ class S3ObjectMetadataTest {
 
         metadata.sizeBytes shouldBeEqualTo 42L
         metadata.etag shouldBeEqualTo "\"multipart-token\""
-        metadata.contentType shouldBeEqualTo null
+        metadata.contentType.shouldBeNull()
         metadata.lastModified shouldBeEqualTo lastModified
     }
 

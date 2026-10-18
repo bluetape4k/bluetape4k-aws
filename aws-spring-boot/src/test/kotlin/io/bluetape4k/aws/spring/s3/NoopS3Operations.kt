@@ -11,6 +11,7 @@ import java.nio.charset.Charset
 import java.time.Duration
 
 object NoopS3Operations: S3Operations {
+
     override suspend fun existsBucket(bucket: String): Boolean = false
 
     override suspend fun upload(

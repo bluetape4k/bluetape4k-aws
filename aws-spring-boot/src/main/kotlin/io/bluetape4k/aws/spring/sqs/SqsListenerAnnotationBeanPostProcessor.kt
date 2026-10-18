@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireInRange
 import org.springframework.aop.support.AopUtils
 import org.springframework.beans.BeansException
 import org.springframework.beans.factory.config.BeanPostProcessor
@@ -20,6 +22,8 @@ class SqsListenerAnnotationBeanPostProcessor(
     private val messageConverter: SqsMessageConverter,
     private val interceptors: List<SqsListenerInterceptor>,
 ): BeanPostProcessor {
+
+    companion object: KLogging()
 
     @Volatile
     private var observationRuntime: SqsObservationRuntime? = null
@@ -60,9 +64,8 @@ class SqsListenerAnnotationBeanPostProcessor(
 
         val effective = properties.listener
         val maxMessages = listener.maxMessages.takeIf { it != -1 } ?: effective.maxMessages
-        require(maxMessages in 1..MAX_SQS_BATCH_SIZE) {
-            "maxMessages must be between 1 and 10."
-        }
+        maxMessages.requireInRange(1, MAX_SQS_BATCH_SIZE, "maxMessages")
+
         val invoker = SqsListenerMethodInvoker(
             bean,
             AopUtils.selectInvocableMethod(method, bean.javaClass),

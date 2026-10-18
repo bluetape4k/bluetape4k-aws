@@ -1,13 +1,24 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.concurrent.await
+import io.bluetape4k.concurrent.futureOf
+import io.bluetape4k.concurrent.get
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
@@ -16,6 +27,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import org.junit.jupiter.api.Test
 import org.springframework.modulith.events.RoutingTarget
 import org.springframework.modulith.events.support.EventExternalizationTransport
@@ -24,22 +36,32 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 class AwsModulithEventExternalizationTransportTest {
 
+    private companion object: KLogging() {
+        const val TEST_TIMEOUT_MILLIS = 2_000L
+        const val MAX_IN_FLIGHT = 4
+        const val EXCESS_ADMISSIONS = 32
+        const val TOTAL_ADMISSIONS = MAX_IN_FLIGHT + EXCESS_ADMISSIONS
+        const val HOSTILE_MARKER = "secret-value:event-id:header-value:arn:request-response"
+        val EVENT = TestEvent("evt-1")
+    }
+
     @Test
     fun `implements the exact Modulith transport signature`() {
-        EventExternalizationTransport::class.java.isAssignableFrom(
-            AwsModulithEventExternalizationTransport::class.java,
-        ).shouldBeTrue()
+        EventExternalizationTransport::class.java
+            .isAssignableFrom(AwsModulithEventExternalizationTransport::class.java)
+            .shouldBeTrue()
 
-        val method = AwsModulithEventExternalizationTransport::class.java.getMethod(
-            "externalize",
-            Any::class.java,
-            RoutingTarget::class.java,
-        )
+        val method = AwsModulithEventExternalizationTransport::class.java
+            .getMethod(
+                "externalize",
+                Any::class.java,
+                RoutingTarget::class.java,
+            )
         method.returnType shouldBeSameInstanceAs CompletableFuture::class.java
     }
 
@@ -51,9 +73,11 @@ class AwsModulithEventExternalizationTransportTest {
             val pending = publisher.next()
 
             future.isDone.shouldBeFalse()
+
+            log.debug { "pending command=${pending.command}" }
             pending.command.targetAlias shouldBeEqualTo "events"
             pending.command.destination shouldBeEqualTo "events"
-            pending.command.routingKey shouldBeEqualTo null
+            pending.command.routingKey.shouldBeNull()
             pending.command.eventId shouldBeEqualTo EVENT.id
 
             pending.succeed()
@@ -72,8 +96,9 @@ class AwsModulithEventExternalizationTransportTest {
 
             pending.fail(failure)
 
-            val actual = kotlin.runCatching { future.join() }.exceptionOrNull()
-                .shouldBeInstanceOf<CompletionException>()
+            val actual = assertFailsWith<CompletionException> {
+                future.join()
+            }
             actual.cause shouldBeSameInstanceAs failure
         }
     }
@@ -86,12 +111,13 @@ class AwsModulithEventExternalizationTransportTest {
             publisher.next().fail(IllegalStateException(HOSTILE_MARKER))
 
             val sanitized = rawFuture.failureCause().shouldBeInstanceOf<AwsModulithPublishException>()
-            sanitized.cause shouldBeEqualTo null
-            sanitized.message.orEmpty().contains(HOSTILE_MARKER).shouldBeFalse()
+            log.debug { "sanitized: $sanitized" }
+            sanitized.cause.shouldBeNull()
+            sanitized.message shouldNotContain HOSTILE_MARKER
         }
 
         val fatal = AssertionError(HOSTILE_MARKER)
-        transport(publisher = AwsModulithTargetPublisher { throw fatal }).use { transport ->
+        transport(publisher = { throw fatal }).use { transport ->
             val fatalFuture = transport.externalize(EVENT.copy(id = "evt-fatal"), target("events"))
             fatalFuture.failureCause() shouldBeSameInstanceAs fatal
         }
@@ -106,22 +132,20 @@ class AwsModulithEventExternalizationTransportTest {
                 transport(publisher = publisher, maxInFlight = MAX_IN_FLIGHT).use { transport ->
                     val ready = CountDownLatch(TOTAL_ADMISSIONS)
                     val start = CountDownLatch(1)
-                    val admissionCalls = (1..TOTAL_ADMISSIONS).map { index ->
-                        CompletableFuture.supplyAsync(
-                            {
-                                ready.countDown()
-                                check(start.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
-                                transport.externalize(EVENT.copy(id = "evt-$index"), target("events"))
-                            },
-                            executor,
-                        )
+                    val admissionCalls = List(TOTAL_ADMISSIONS) { index ->
+                        futureOf(executor) {
+                            ready.countDown()
+                            start.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+                            transport.externalize(EVENT.copy(id = "evt-$index"), target("events"))
+                        }
                     }
-                    ready.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).shouldBeTrue()
+                    ready.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
                     start.countDown()
-                    val admissions = admissionCalls.map { it.get(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS) }
+
+                    val admissions = admissionCalls.map { it.get(TEST_TIMEOUT_MILLIS.milliseconds) }
                     val accepted = admissions.filterNot(CompletableFuture<*>::isDone)
                     val rejected = admissions.filter(CompletableFuture<*>::isDone)
-                    val pending = (1..MAX_IN_FLIGHT).map { publisher.next() }
+                    val pending = List(MAX_IN_FLIGHT) { publisher.next() }
 
                     accepted.size shouldBeEqualTo MAX_IN_FLIGHT
                     rejected.size shouldBeEqualTo EXCESS_ADMISSIONS
@@ -133,8 +157,10 @@ class AwsModulithEventExternalizationTransportTest {
                     transport.metrics().acceptedCount shouldBeEqualTo MAX_IN_FLIGHT
 
                     pending.first().succeed()
-                    withTimeout(TEST_TIMEOUT_MILLIS) {
-                        while (accepted.none(CompletableFuture<*>::isDone)) kotlinx.coroutines.yield()
+                    withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
+                        while (accepted.none(CompletableFuture<*>::isDone)) {
+                            yield()
+                        }
                     }
                     val readmitted = transport.externalize(EVENT.copy(id = "readmitted"), target("events"))
                     val readmittedPending = publisher.next()
@@ -159,8 +185,8 @@ class AwsModulithEventExternalizationTransportTest {
             publisher.next()
 
             future.cancel(false).shouldBeTrue()
-            withTimeout(TEST_TIMEOUT_MILLIS) { publisher.cancelled.await() }
-            withTimeout(TEST_TIMEOUT_MILLIS) { transport.awaitIdle() }
+            withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) { publisher.cancelled.await() }
+            withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) { transport.awaitIdle() }
 
             val readmitted = transport.externalize(EVENT.copy(id = "evt-2"), target("events"))
             publisher.next().succeed()
@@ -182,82 +208,78 @@ class AwsModulithEventExternalizationTransportTest {
     }
 
     @Test
-    fun `future terminal state is published before close observes cleanup`() {
-        runBlocking {
-            val publisher = BlockingPublisher()
-            val completionEntered = CountDownLatch(1)
-            val releaseCompletion = CountDownLatch(1)
-            val transport = transport(
-                publisher = publisher,
-                dispatcher = Dispatchers.Default,
-                futureFactory = { PausingCompletionFuture(completionEntered, releaseCompletion) },
-            )
-            val future = transport.externalize(EVENT, target("events"))
-            publisher.next().succeed()
+    fun `future terminal state is published before close observes cleanup`() = runSuspendIO {
+        val publisher = BlockingPublisher()
+        val completionEntered = CountDownLatch(1)
+        val releaseCompletion = CountDownLatch(1)
+        val transport = transport(
+            publisher = publisher,
+            dispatcher = Dispatchers.Default,
+            futureFactory = { PausingCompletionFuture(completionEntered, releaseCompletion) },
+        )
+        val future = transport.externalize(EVENT, target("events"))
+        publisher.next().succeed()
 
-            completionEntered.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).shouldBeTrue()
-            transport.metrics().acceptedCount shouldBeEqualTo 1
-            val closeStarted = CountDownLatch(1)
-            val closing = CompletableFuture.runAsync {
-                closeStarted.countDown()
-                transport.close()
-            }
-            closeStarted.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).shouldBeTrue()
-            closing.isDone.shouldBeFalse()
+        completionEntered.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+        transport.metrics().acceptedCount shouldBeEqualTo 1
 
-            releaseCompletion.countDown()
-            future.await()
-            closing.await()
-            transport.metrics().acceptedCount shouldBeEqualTo 0
+        val closeStarted = CountDownLatch(1)
+        val closing = futureOf {
+            closeStarted.countDown()
+            transport.close()
         }
+        closeStarted.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+        closing.isDone.shouldBeFalse()
+
+        releaseCompletion.countDown()
+        future.await()
+        closing.await()
+        transport.metrics().acceptedCount shouldBeEqualTo 0
     }
 
     @Test
-    fun `close observes an admitted lazy child before its start`() {
-        runBlocking {
-            val publisher = BlockingPublisher()
-            val executor = Executors.newFixedThreadPool(2)
-            val startHookEntered = CountDownLatch(1)
-            val releaseStartHook = CountDownLatch(1)
-            val transport = transport(
-                publisher = publisher,
-                beforeJobStart = {
-                    startHookEntered.countDown()
-                    check(releaseStartHook.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
-                },
-            )
-            try {
-                val externalize = CompletableFuture.supplyAsync(
-                    { transport.externalize(EVENT, target("events")) },
-                    executor,
-                )
-                startHookEntered.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).shouldBeTrue()
-                val closeStarted = CountDownLatch(1)
-                val closing = CompletableFuture.runAsync(
-                    {
-                        closeStarted.countDown()
-                        transport.close()
-                    },
-                    executor,
-                )
-                closeStarted.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).shouldBeTrue()
-                withTimeout(TEST_TIMEOUT_MILLIS) {
-                    while (!transport.metrics().closing) kotlinx.coroutines.yield()
-                }
-                closing.isDone.shouldBeFalse()
-                transport.metrics().acceptedCount shouldBeEqualTo 1
-
-                releaseStartHook.countDown()
-                val future = externalize.get(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-                publisher.next().succeed()
-                future.await()
-                closing.await()
-                transport.metrics().acceptedCount shouldBeEqualTo 0
-            } finally {
-                releaseStartHook.countDown()
-                transport.close()
-                executor.shutdownNow()
+    fun `close observes an admitted lazy child before its start`() = runSuspendIO {
+        val publisher = BlockingPublisher()
+        val executor = Executors.newFixedThreadPool(2)
+        val startHookEntered = CountDownLatch(1)
+        val releaseStartHook = CountDownLatch(1)
+        val transport = transport(
+            publisher = publisher,
+            beforeJobStart = {
+                startHookEntered.countDown()
+                releaseStartHook.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+            },
+        )
+        try {
+            val externalize = futureOf(executor) {
+                transport.externalize(EVENT, target("events"))
             }
+
+            startHookEntered.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+            val closeStarted = CountDownLatch(1)
+            val closing = futureOf(executor) {
+                closeStarted.countDown()
+                transport.close()
+            }
+            closeStarted.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
+            withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
+                while (!transport.metrics().closing) {
+                    yield()
+                }
+            }
+            closing.isDone.shouldBeFalse()
+            transport.metrics().acceptedCount shouldBeEqualTo 1
+
+            releaseStartHook.countDown()
+            val future = externalize.get(TEST_TIMEOUT_MILLIS.milliseconds)
+            publisher.next().succeed()
+            future.await()
+            closing.await()
+            transport.metrics().acceptedCount shouldBeEqualTo 0
+        } finally {
+            releaseStartHook.countDown()
+            transport.close()
+            executor.shutdownNow()
         }
     }
 
@@ -268,10 +290,12 @@ class AwsModulithEventExternalizationTransportTest {
         val inFlight = transport.externalize(EVENT, target("events"))
         val pending = publisher.next()
 
-        val firstClose = CompletableFuture.runAsync { transport.close() }
-        val secondClose = CompletableFuture.runAsync { transport.close() }
-        withTimeout(TEST_TIMEOUT_MILLIS) {
-            while (!transport.metrics().closing) kotlinx.coroutines.yield()
+        val firstClose = futureOf { transport.close() }
+        val secondClose = futureOf { transport.close() }
+        withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
+            while (!transport.metrics().closing) {
+                yield()
+            }
         }
 
         val rejected = transport.externalize(EVENT.copy(id = "evt-2"), target("events"))
@@ -294,15 +318,17 @@ class AwsModulithEventExternalizationTransportTest {
         val publisher = BlockingPublisher()
         val transport = transport(
             publisher = publisher,
-            shutdownTimeout = Duration.ofMillis(50),
+            shutdownTimeout = 50.millis(),
         )
         val future = transport.externalize(EVENT, target("events"))
         publisher.next()
 
-        CompletableFuture.runAsync { transport.close() }.await()
+        futureOf { transport.close() }.await()
 
         future.isCancelled.shouldBeTrue()
-        withTimeout(TEST_TIMEOUT_MILLIS) { publisher.cancelled.await() }
+        withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
+            publisher.cancelled.await()
+        }
         transport.metrics().acceptedCount shouldBeEqualTo 0
         transport.metrics().residentChildCount shouldBeEqualTo 0
         publisher.closed.get() shouldBeEqualTo 0
@@ -313,7 +339,7 @@ class AwsModulithEventExternalizationTransportTest {
         val publisher = NonCooperativePublisher()
         val transport = transport(
             publisher = publisher,
-            shutdownTimeout = Duration.ofMillis(50),
+            shutdownTimeout = 50.millis(),
         )
         val future = transport.externalize(EVENT, target("events"))
         publisher.started.await()
@@ -325,7 +351,10 @@ class AwsModulithEventExternalizationTransportTest {
         transport.metrics().residentChildCount shouldBeEqualTo 1
 
         publisher.release.complete(Unit)
-        withTimeout(TEST_TIMEOUT_MILLIS) { transport.awaitIdle() }
+
+        withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
+            transport.awaitIdle()
+        }
         transport.metrics().acceptedCount shouldBeEqualTo 0
         transport.metrics().residentChildCount shouldBeEqualTo 0
     }
@@ -333,7 +362,7 @@ class AwsModulithEventExternalizationTransportTest {
     private fun transport(
         publisher: AwsModulithTargetPublisher,
         maxInFlight: Int = 4,
-        shutdownTimeout: Duration = Duration.ofSeconds(2),
+        shutdownTimeout: Duration = 2.seconds(),
         dispatcher: CoroutineDispatcher = Dispatchers.Unconfined,
         futureFactory: () -> CompletableFuture<AwsModulithPublishResult> = { CompletableFuture() },
         beforeJobStart: (() -> Unit)? = null,
@@ -344,7 +373,7 @@ class AwsModulithEventExternalizationTransportTest {
                 destination = "events",
             )
         ),
-        codec = object : AwsModulithEventCodec {
+        codec = object: AwsModulithEventCodec {
             override fun encode(event: Any): AwsModulithEncodedEvent {
                 val typed = event as TestEvent
                 return AwsModulithEncodedEvent(
@@ -367,7 +396,7 @@ class AwsModulithEventExternalizationTransportTest {
 
     private data class TestEvent(val id: String)
 
-    private class BlockingPublisher : AwsModulithTargetPublisher, AutoCloseable {
+    private class BlockingPublisher: AwsModulithTargetPublisher, AutoCloseable {
         val calls = AtomicInteger()
         val closed = AtomicInteger()
         val cancelled = CompletableDeferred<Unit>()
@@ -391,14 +420,17 @@ class AwsModulithEventExternalizationTransportTest {
             }
         }
 
-        suspend fun next(): PendingPublish = withTimeout(TEST_TIMEOUT_MILLIS) { pending.receive() }
+        suspend fun next(): PendingPublish =
+            withTimeout(timeMillis = TEST_TIMEOUT_MILLIS) {
+                pending.receive()
+            }
 
         override fun close() {
             closed.incrementAndGet()
         }
     }
 
-    private class NonCooperativePublisher : AwsModulithTargetPublisher {
+    private class NonCooperativePublisher: AwsModulithTargetPublisher {
         val started = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
 
@@ -416,10 +448,10 @@ class AwsModulithEventExternalizationTransportTest {
     private class PausingCompletionFuture(
         private val completionEntered: CountDownLatch,
         private val releaseCompletion: CountDownLatch,
-    ) : CompletableFuture<AwsModulithPublishResult>() {
+    ): CompletableFuture<AwsModulithPublishResult>() {
         override fun complete(value: AwsModulithPublishResult): Boolean {
             completionEntered.countDown()
-            check(releaseCompletion.await(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+            releaseCompletion.await(TEST_TIMEOUT_MILLIS.milliseconds).shouldBeTrue()
             return super.complete(value)
         }
     }
@@ -441,15 +473,6 @@ class AwsModulithEventExternalizationTransportTest {
         fun fail(failure: Throwable) {
             response.completeExceptionally(failure)
         }
-    }
-
-    private companion object {
-        const val TEST_TIMEOUT_MILLIS = 2_000L
-        const val MAX_IN_FLIGHT = 4
-        const val EXCESS_ADMISSIONS = 32
-        const val TOTAL_ADMISSIONS = MAX_IN_FLIGHT + EXCESS_ADMISSIONS
-        const val HOSTILE_MARKER = "secret-value:event-id:header-value:arn:request-response"
-        val EVENT = TestEvent("evt-1")
     }
 }
 

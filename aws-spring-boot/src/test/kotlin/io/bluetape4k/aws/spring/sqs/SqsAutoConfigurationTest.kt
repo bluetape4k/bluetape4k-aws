@@ -1,20 +1,27 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
-import io.bluetape4k.aws.spring.AwsClientCustomizationContext
-import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizationContext
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -27,6 +34,8 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder
 import tools.jackson.databind.ObjectMapper
 
 class SqsAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -43,13 +52,13 @@ class SqsAutoConfigurationTest {
     @Test
     fun `register SQS client operations registry and processor`() {
         contextRunner.run { context ->
-            context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SqsProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SqsMessageListenerContainerRegistry::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SqsListenerAnnotationBeanPostProcessor::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SqsMessageConverter::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType<SqsAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<SqsProperties>() shouldHaveSize 1
+            context.getBeansOfType<SqsOperations>() shouldHaveSize 1
+            context.getBeansOfType<SqsCoroutinesTemplate>() shouldHaveSize 1
+            context.getBeansOfType<SqsMessageListenerContainerRegistry>() shouldHaveSize 1
+            context.getBeansOfType<SqsListenerAnnotationBeanPostProcessor>() shouldHaveSize 1
+            context.getBeansOfType<SqsMessageConverter>().shouldBeEmpty()
         }
     }
 
@@ -58,10 +67,10 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
             .run { context ->
-                context.getBean(SqsOperations::class.java).javaClass shouldBeEqualTo MicrometerSqsOperations::class.java
-                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 2
-                context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 1
+                context.getBean<SqsOperations>() shouldBeInstanceOf MicrometerSqsOperations::class
+                context.getBeansOfType<SqsOperations>() shouldHaveSize 2
+                context.getBeansOfType<SqsCoroutinesTemplate>() shouldHaveSize 1
+                context.getBeansOfType<MicrometerSqsListenerInterceptor>() shouldHaveSize 1
             }
     }
 
@@ -75,13 +84,12 @@ class SqsAutoConfigurationTest {
             .withBean(SqsListenerInterceptor::class.java, { UserSqsListenerInterceptor })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SqsListenerInterceptor::class.java).values.contains(
-                    UserSqsListenerInterceptor,
-                ) shouldBeEqualTo true
-                context.getBeansOfType(MicrometerSqsOperations::class.java).size shouldBeEqualTo 1
-                context.getBean(SqsOperations::class.java).javaClass shouldBeEqualTo MicrometerSqsOperations::class.java
+                context.getBeansOfType<SqsObservationActivation>() shouldHaveSize 1
+                context.getBeansOfType<MicrometerSqsListenerInterceptor>() shouldHaveSize 0
+                context.getBeansOfType<SqsListenerInterceptor>().values
+                    .contains(UserSqsListenerInterceptor).shouldBeTrue()
+                context.getBeansOfType<MicrometerSqsOperations>() shouldHaveSize 1
+                context.getBean<SqsOperations>() shouldBeInstanceOf MicrometerSqsOperations::class
             }
     }
 
@@ -94,9 +102,9 @@ class SqsAutoConfigurationTest {
             .withBean(ObservationHandler::class.java, { SupportingSqsObservationHandler })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(MicrometerSqsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
+                context.getBeansOfType<MicrometerSqsListenerInterceptor>() shouldHaveSize 1
+                context.getBeansOfType<MicrometerSqsOperations>() shouldHaveSize 1
             }
     }
 
@@ -108,9 +116,9 @@ class SqsAutoConfigurationTest {
             .withBean(ObservationRegistry::class.java, { ObservationRegistry.create() })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsObservationActivation::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(MicrometerSqsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<SqsObservationActivation>().shouldBeEmpty()
+                context.getBeansOfType<MicrometerSqsListenerInterceptor>() shouldHaveSize 1
+                context.getBeansOfType<MicrometerSqsOperations>() shouldHaveSize 1
             }
     }
 
@@ -124,8 +132,8 @@ class SqsAutoConfigurationTest {
             .withBean(SqsObservationActivation::class.java, { SqsObservationActivation() })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(MicrometerSqsListenerInterceptor::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(MicrometerFullRequestSqsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<MicrometerSqsListenerInterceptor>().shouldBeEmpty()
+                context.getBeansOfType<MicrometerFullRequestSqsOperations>() shouldHaveSize 1
             }
     }
 
@@ -134,9 +142,9 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.sqs.enabled=false")
             .run { context ->
-                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SqsMessageListenerContainerRegistry::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<SqsOperations>().shouldBeEmpty()
+                context.getBeansOfType<SqsMessageListenerContainerRegistry>().shouldBeEmpty()
             }
     }
 
@@ -145,9 +153,9 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withBean(SqsOperations::class.java, { NoopSqsOperations })
             .run { context ->
-                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(SqsCoroutinesTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(SqsOperations::class.java) shouldBeSameInstanceAs NoopSqsOperations
+                context.getBeansOfType<SqsOperations>() shouldHaveSize 1
+                context.getBeansOfType<SqsCoroutinesTemplate>().shouldBeEmpty()
+                context.getBean<SqsOperations>() shouldBeSameInstanceAs NoopSqsOperations
             }
     }
 
@@ -185,7 +193,7 @@ class SqsAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<SqsAsyncClient>() shouldHaveSize 1
             }
     }
 
@@ -196,7 +204,7 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(SqsCustomizerConfig::class.java)
             .run { context ->
-                context.getBean(SqsAsyncClient::class.java).shouldNotBeNull()
+                context.getBean<SqsAsyncClient>().shouldNotBeNull()
                 SqsCustomizerConfig.calls shouldBeEqualTo listOf("global:sqs", "sqs")
             }
     }
@@ -207,8 +215,8 @@ class SqsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.sqs.endpoint-override=http://localhost:4566")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(SqsProperties::class.java).endpointOverride.toString() shouldBeEqualTo
-                    "http://localhost:4566"
+                context.getBean<SqsProperties>().endpointOverride.toString() shouldBeEqualTo
+                        "http://localhost:4566"
             }
     }
 
@@ -217,8 +225,8 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.sqs"))
             .run { context ->
-                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SqsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<SqsAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<SqsOperations>().shouldBeEmpty()
             }
     }
 
@@ -299,8 +307,8 @@ class SqsAutoConfigurationTest {
         contextRunner
             .withBean(ObjectMapper::class.java, { ObjectMapper() })
             .run { context ->
-                context.getBeansOfType(SqsMessageConverter::class.java).size shouldBeEqualTo 1
-                context.getBean(SqsMessageConverter::class.java)
+                context.getBeansOfType<SqsMessageConverter>() shouldHaveSize 1
+                context.getBean<SqsMessageConverter>()
                     .javaClass shouldBeEqualTo JacksonSqsMessageConverter::class.java
             }
     }
@@ -351,7 +359,7 @@ class SqsAutoConfigurationTest {
             .withUserConfiguration(SpelListenerConfig::class.java)
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(SqsMessageListenerContainerRegistry::class.java)
+                context.getBean<SqsMessageListenerContainerRegistry>()
                     .getContainer("listener.handle.#{queueName}")
                     .shouldBeNull()
             }
@@ -363,10 +371,10 @@ class SqsAutoConfigurationTest {
             .withUserConfiguration(UrlQueueListenerConfig::class.java)
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                val registry = context.getBean(SqsMessageListenerContainerRegistry::class.java)
+                val registry = context.getBean<SqsMessageListenerContainerRegistry>()
 
                 registry.getContainer("listener.handle.orders").shouldNotBeNull()
-                registry.containers.size shouldBeEqualTo 1
+                registry.containers shouldHaveSize 1
             }
     }
 
@@ -430,7 +438,7 @@ class SqsAutoConfigurationTest {
     }
 
     internal class UnresolvedPlaceholderListener {
-        @SqsListener("\${missing.queue-url}")
+        @SqsListener($$"${missing.queue-url}")
         fun handle(body: String) {
             check(body.isNotBlank())
         }
@@ -547,12 +555,12 @@ class SqsAutoConfigurationTest {
         }
     }
 
-    private object SupportingSqsObservationHandler : ObservationHandler<Observation.Context> {
+    private object SupportingSqsObservationHandler: ObservationHandler<Observation.Context> {
         override fun onStart(context: Observation.Context) = Unit
 
         override fun supportsContext(context: Observation.Context): Boolean =
             context is SqsObservationContext && context.metadata.stage == SqsObservationStage.PROCESS
     }
 
-    private object UserSqsListenerInterceptor : SqsListenerInterceptor
+    private object UserSqsListenerInterceptor: SqsListenerInterceptor
 }

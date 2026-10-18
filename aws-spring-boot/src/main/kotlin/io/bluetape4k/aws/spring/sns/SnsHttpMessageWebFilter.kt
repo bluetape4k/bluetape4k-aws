@@ -1,8 +1,10 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
@@ -16,7 +18,9 @@ import java.util.concurrent.CancellationException
 /** Reactive handler 전에 SNS gate를 수행하고 크기가 제한된 request body를 다시 읽을 수 있게 제공합니다. */
 class SnsHttpMessageWebFilter(
     private val support: SnsHttpMessageResolverSupport,
-) : WebFilter {
+): WebFilter {
+
+    companion object: KLoggingChannel()
 
     override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
         val header = exchange.request.headers.getFirst(SnsHttpMessageResolverSupport.SNS_MESSAGE_TYPE_HEADER)
@@ -24,31 +28,32 @@ class SnsHttpMessageWebFilter(
 
         val prepared: Mono<Pair<SnsHttpMessage, ByteArray>> =
             DataBufferUtils.join(exchange.request.body, SnsHttpMessageLimits.MAX_READ_BYTES)
-            .flatMap { joined ->
-                val bytes = try {
-                    ByteArray(joined.readableByteCount()).also { joined.read(it) }
-                } finally {
-                    DataBufferUtils.release(joined)
+                .flatMap { joined ->
+                    val bytes = try {
+                        ByteArray(joined.readableByteCount()).also { joined.read(it) }
+                    } finally {
+                        DataBufferUtils.release(joined)
+                    }
+                    Mono.fromCallable {
+                        support.prepare(bytes.toString(Charsets.UTF_8), header) to bytes
+                    }.subscribeOn(Schedulers.boundedElastic())
                 }
-                Mono.fromCallable {
-                    support.prepare(bytes.toString(Charsets.UTF_8), header) to bytes
-                }.subscribeOn(Schedulers.boundedElastic())
-            }
-            .onErrorResume { cause ->
-                if (cause is CancellationException || Exceptions.isCancel(cause)) {
-                    Mono.error<Pair<SnsHttpMessage, ByteArray>>(cause)
-                } else {
-                    val decision = SnsHttpEndpointErrorPolicy.classify(cause)
-                    SnsHttpEndpointErrorPolicy.record(decision, messageType = header)
-                    exchange.response.statusCode = org.springframework.http.HttpStatusCode.valueOf(decision.status)
-                    exchange.response.setComplete().then(Mono.empty())
+                .onErrorResume { cause ->
+                    if (cause is CancellationException || Exceptions.isCancel(cause)) {
+                        Mono.error(cause)
+                    } else {
+                        val decision = SnsHttpEndpointErrorPolicy.classify(cause)
+                        SnsHttpEndpointErrorPolicy.record(decision, messageType = header)
+                        exchange.response.statusCode = HttpStatusCode.valueOf(decision.status)
+                        exchange.response.setComplete().then(Mono.empty())
+                    }
                 }
-            }
 
-        return prepared.flatMap { (message, bytes) ->
+        return prepared
+            .flatMap { (message, bytes) ->
                 val cached = Mono.just(message).cache()
                 exchange.attributes[SnsHttpMessageResolverSupport.WEBFLUX_MESSAGE_ATTRIBUTE] = cached
-                val decoratedRequest = object : ServerHttpRequestDecorator(exchange.request) {
+                val decoratedRequest = object: ServerHttpRequestDecorator(exchange.request) {
                     override fun getBody(): Flux<DataBuffer> =
                         Flux.defer {
                             Flux.just(exchange.response.bufferFactory().wrap(bytes.copyOf()))

@@ -1,7 +1,7 @@
 package io.bluetape4k.aws.spring.sns.annotation.endpoint
 
-import org.springframework.core.annotation.AliasFor
 import org.springframework.aot.hint.annotation.Reflective
+import org.springframework.core.annotation.AliasFor
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod

@@ -1,6 +1,5 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -8,25 +7,24 @@ import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.first
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
-import java.util.UUID
+import java.util.*
 
-class SqsCoroutinesTemplateAwsEmulatorTest {
+class SqsCoroutinesTemplateAwsEmulatorTest: AbstractSqsTest() {
 
-    companion object {
-        private val awsEmulator by lazy {
-            AwsSpringBootTestEmulator.get("sqs")
-        }
-    }
+    companion object: KLoggingChannel()
 
     private fun contextRunner(): ApplicationContextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -45,14 +43,18 @@ class SqsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `create send receive and delete message through SqsOperations`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SqsOperations::class.java)
+            val operations = context.getBean<SqsOperations>()
 
             runSuspendIO {
                 val queueUrl = operations.createQueue("template-${UUID.randomUUID()}")
                 val sent = operations.send(queueUrl, "hello sqs")
+
+                log.debug { "sent=$sent" }
                 sent.messageId().shouldNotBeBlank()
 
-                val received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                val received = operations
+                    .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                    .onEach { log.debug { "received=$it" } }
                 received shouldHaveSize 1
                 received.single().body shouldBeEqualTo "hello sqs"
 
@@ -65,7 +67,7 @@ class SqsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `receiveFlow emits messages without deleting automatically`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SqsOperations::class.java)
+            val operations = context.getBean<SqsOperations>()
 
             runSuspendIO {
                 val queueUrl = operations.createQueue("flow-${UUID.randomUUID()}")
@@ -75,7 +77,11 @@ class SqsCoroutinesTemplateAwsEmulatorTest {
                 received.body shouldBeEqualTo "flow sqs"
 
                 operations.changeVisibility(queueUrl, received.receiptHandle, 0)
-                val receivedAgain = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+
+                val receivedAgain = operations
+                    .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                    .onEach { log.debug { "received=$it" } }
+
                 receivedAgain.map { it.body } shouldContain "flow sqs"
                 operations.delete(queueUrl, receivedAgain.single().receiptHandle)
             }
@@ -85,7 +91,7 @@ class SqsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `FIFO message exposes group deduplication and message attributes`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SqsOperations::class.java)
+            val operations = context.getBean<SqsOperations>()
 
             runSuspendIO {
                 val queueUrl = operations.createQueue(
@@ -109,7 +115,9 @@ class SqsCoroutinesTemplateAwsEmulatorTest {
                     )
                 )
 
-                val received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                val received = operations
+                    .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                    .onEach { log.debug { "received=$it" } }
                 received shouldHaveSize 1
 
                 val message = received.single()
@@ -125,6 +133,7 @@ class SqsCoroutinesTemplateAwsEmulatorTest {
         }
     }
 
+    @Suppress("UnusedDataClassCopyResult")
     @Test
     fun `send request copy revalidates fields`() {
         val request = SqsSendRequest(

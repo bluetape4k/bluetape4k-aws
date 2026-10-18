@@ -19,11 +19,11 @@ data class AwsModulithClaimToken(
 
 /** claim 시점의 atomic 상태입니다. */
 sealed interface AwsModulithClaimResult {
-    data class Acquired(val token: AwsModulithClaimToken) : AwsModulithClaimResult
+    data class Acquired(val token: AwsModulithClaimToken): AwsModulithClaimResult
 
-    data object Completed : AwsModulithClaimResult
+    data object Completed: AwsModulithClaimResult
 
-    data class InProgress(val leaseUntil: Instant) : AwsModulithClaimResult
+    data class InProgress(val leaseUntil: Instant): AwsModulithClaimResult
 }
 
 /** complete와 release mutation의 bounded 결과입니다. */

@@ -1,18 +1,25 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.s3.model.getObjectRequestOf
+import io.bluetape4k.aws.spring.s3.S3BoundedEncryptedReadOperations.Companion.MAX_CIPHERTEXT_BYTES
 import io.bluetape4k.aws.spring.sqs.SqsExtendedPayloadReadException
+import io.bluetape4k.support.checkBeFalse
+import io.bluetape4k.support.requireInRange
 import io.bluetape4k.support.requireNotBlank
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import java.io.ByteArrayOutputStream
 import java.security.SecureRandom
-import java.util.Base64
+import java.util.*
+import java.util.concurrent.locks.ReentrantLock
 import javax.crypto.Cipher
+import kotlin.concurrent.withLock
 
 /** AES/RSA provider를 사용하는 S3 클라이언트 측 봉투 암호화 작업입니다. */
 class S3ClientSideEncryptionProviderTemplate(
@@ -21,9 +28,9 @@ class S3ClientSideEncryptionProviderTemplate(
     aesProvider: S3AesProvider? = null,
     rsaProvider: S3RsaProvider? = null,
     private val random: SecureRandom = SecureRandom(),
-) : S3BoundedEncryptedReadOperations,
-    S3ClientSideEncryptionIdentity,
-    AutoCloseable {
+): S3BoundedEncryptedReadOperations,
+   S3ClientSideEncryptionIdentity,
+   AutoCloseable {
 
     private val material: ClientSideEncryptionKeyMaterial = when (properties.clientSideEncryption.provider) {
         ClientSideEncryptionProvider.AES ->
@@ -43,7 +50,7 @@ class S3ClientSideEncryptionProviderTemplate(
     }
 
     private var closed = false
-    private val lifecycleLock = Any()
+    private val lifecycleLock = ReentrantLock()
 
     override suspend fun uploadEncrypted(
         bucket: String,
@@ -68,6 +75,11 @@ class S3ClientSideEncryptionProviderTemplate(
                 },
                 AsyncRequestBody.fromBytes(envelope.ciphertext),
             ).await()
+
+//            s3AsyncClient.putAsByteArray(bucket, key, envelope.ciphertext) {
+//                contentType?.let { contentType(it) }
+//                metadata(ProviderEnvelope.mergeMetadata(metadata, envelope.metadata))
+//            }
         } finally {
             envelope.ciphertext.fill(0)
         }
@@ -110,37 +122,34 @@ class S3ClientSideEncryptionProviderTemplate(
         requireOpen()
         bucket.requireNotBlank("bucket")
         key.requireNotBlank("key")
-        require(maxCiphertextBytes in 1..S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES) {
-            "maxCiphertextBytes must be between 1 and " +
-                "${S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES}."
-        }
+        maxCiphertextBytes.requireInRange(1, MAX_CIPHERTEXT_BYTES, "maxCiphertextBytes")
 
         val publisher = s3AsyncClient.getObject(
-            { builder ->
-                builder.bucket(bucket)
-                builder.key(key)
-            },
+            getObjectRequestOf(bucket, key),
             AsyncResponseTransformer.toPublisher(),
         ).await()
         val accumulator = ZeroizingByteArrayOutputStream(minOf(maxCiphertextBytes, 8 * 1024))
         var size = 0
         var ciphertext: ByteArray? = null
         try {
-            publisher.asFlow().collect { chunk ->
-                val copy = chunk.slice()
-                val chunkSize = copy.remaining()
-                if (chunkSize > maxCiphertextBytes - size) {
-                    throw SqsExtendedPayloadReadException.create(pointerPresent = true, retryable = false)
+            publisher.asFlow()
+                .collect { chunk ->
+                    val copy = chunk.slice()
+                    val chunkSize = copy.remaining()
+                    if (chunkSize > maxCiphertextBytes - size) {
+                        throw SqsExtendedPayloadReadException.create(pointerPresent = true, retryable = false)
+                    }
+                    val bytes = ByteArray(chunkSize)
+                    copy.get(bytes)
+                    try {
+                        withContext(Dispatchers.IO) {
+                            accumulator.write(bytes)
+                        }
+                    } finally {
+                        bytes.fill(0)
+                    }
+                    size += chunkSize
                 }
-                val bytes = ByteArray(chunkSize)
-                copy.get(bytes)
-                try {
-                    accumulator.write(bytes)
-                } finally {
-                    bytes.fill(0)
-                }
-                size += chunkSize
-            }
             ciphertext = accumulator.toByteArray()
             return decryptProviderPayload(
                 ciphertext,
@@ -172,15 +181,15 @@ class S3ClientSideEncryptionProviderTemplate(
     override val canonicalKeyIdentity: String
         get() = withOpenMaterial {
             "bluetape4k.s3.cse/" + material.providerToken + "/" +
-                effectiveProviderKeyIdentity(material, properties.clientSideEncryption.keyId) + "/" +
-                properties.effectiveKeyVersion()
+                    effectiveProviderKeyIdentity(material, properties.clientSideEncryption.keyId) + "/" +
+                    properties.effectiveKeyVersion()
         }
 
     override val keyFingerprint: String
         get() = withOpenMaterial {
             sha256Url(
                 "${canonicalKeyIdentity}/" +
-                    providerEncryptionContextIdentity(properties.effectiveEncryptionContext(emptyMap())),
+                        providerEncryptionContextIdentity(properties.effectiveEncryptionContext(emptyMap())),
             )
         }
 
@@ -219,18 +228,18 @@ class S3ClientSideEncryptionProviderTemplate(
     }
 
     internal fun requireOpen() {
-        synchronized(lifecycleLock) {
-            check(!closed) { "S3 client-side encryption provider is already closed." }
+        lifecycleLock.withLock {
+            closed.checkBeFalse { "S3 client-side encryption provider is already closed." }
         }
     }
 
-    private fun <T> withOpenMaterial(block: () -> T): T = synchronized(lifecycleLock) {
-        check(!closed) { "S3 client-side encryption provider is already closed." }
+    private inline fun <T> withOpenMaterial(block: () -> T): T = lifecycleLock.withLock {
+        closed.checkBeFalse { "S3 client-side encryption provider is already closed." }
         block()
     }
 
     override fun close() {
-        synchronized(lifecycleLock) {
+        lifecycleLock.withLock {
             if (!closed) {
                 closed = true
                 material.close()
@@ -239,7 +248,7 @@ class S3ClientSideEncryptionProviderTemplate(
     }
 }
 
-private class ZeroizingByteArrayOutputStream(initialCapacity: Int) : ByteArrayOutputStream(initialCapacity) {
+private class ZeroizingByteArrayOutputStream(initialCapacity: Int): ByteArrayOutputStream(initialCapacity) {
     fun zeroizeAndReset() {
         buf.fill(0, 0, count)
         reset()

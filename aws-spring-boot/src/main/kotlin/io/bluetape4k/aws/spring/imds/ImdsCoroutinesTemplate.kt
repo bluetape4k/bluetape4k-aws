@@ -1,9 +1,9 @@
 package io.bluetape4k.aws.spring.imds
 
+import io.bluetape4k.coroutines.support.awaitUntil
 import io.bluetape4k.support.requireNotBlank
-import kotlinx.coroutines.future.await
-import kotlinx.coroutines.withTimeout
 import software.amazon.awssdk.imds.Ec2MetadataAsyncClient
+import kotlin.time.toKotlinDuration
 
 /**
  * AWS SDK v2 [Ec2MetadataAsyncClient]를 사용하는 코루틴 친화적인 [ImdsOperations]입니다.
@@ -15,16 +15,18 @@ class ImdsCoroutinesTemplate(
 
     override suspend fun get(path: String): String {
         val normalizedPath = normalizePath(path)
-        return withTimeout(properties.requestTimeout.toMillis()) {
-            ec2MetadataAsyncClient.get(normalizedPath).await().asString()
-        }
+
+        return ec2MetadataAsyncClient.get(normalizedPath)
+            .awaitUntil(properties.requestTimeout.toKotlinDuration())
+            .asString()
     }
 
     override suspend fun getList(path: String): List<String> {
         val normalizedPath = normalizePath(path)
-        return withTimeout(properties.requestTimeout.toMillis()) {
-            ec2MetadataAsyncClient.get(normalizedPath).await().asList()
-        }
+
+        return ec2MetadataAsyncClient.get(normalizedPath)
+            .awaitUntil(properties.requestTimeout.toKotlinDuration())
+            .asList()
     }
 
     private fun normalizePath(path: String): String {

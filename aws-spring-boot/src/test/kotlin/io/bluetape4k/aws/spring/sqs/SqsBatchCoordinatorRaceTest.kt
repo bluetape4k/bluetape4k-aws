@@ -8,6 +8,9 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -17,10 +20,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 class SqsBatchCoordinatorRaceTest {
+
+    companion object: KLogging()
 
     @Test
     fun `close claim has one owner shared completion and safe lifecycle rejection`() = runTest {
@@ -53,7 +57,7 @@ class SqsBatchCoordinatorRaceTest {
     fun `close after permit acquisition rejects without placeholder or submit and releases permit`() = runTest {
         val permitReached = CompletableDeferred<Unit>()
         val releasePermit = CompletableDeferred<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterPermitAcquired() {
                 permitReached.complete(Unit)
                 releasePermit.await()
@@ -85,7 +89,7 @@ class SqsBatchCoordinatorRaceTest {
     @Test
     fun `caller cancellation after placeholder registration preserves identity and skips submit`() = runTest {
         val placeholderReached = CompletableDeferred<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterPlaceholderRegistered(token: Long) {
                 placeholderReached.complete(Unit)
                 CompletableDeferred<Unit>().await()
@@ -113,7 +117,7 @@ class SqsBatchCoordinatorRaceTest {
     fun `accepted before future handoff participates in close cancellation exactly once`() = runTest {
         val submitted = CompletableDeferred<Unit>()
         val releaseHandoff = CompletableDeferred<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterTransportSubmitted(
                 token: Long,
                 future: CompletableFuture<SqsBatchOutcome>,
@@ -166,7 +170,7 @@ class SqsBatchCoordinatorRaceTest {
     @Test
     fun `response then caller cancellation preserves root identity without cancelling completed future`() = runTest {
         val responseReached = CompletableDeferred<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterTransportResponse(token: Long) {
                 responseReached.complete(Unit)
                 CompletableDeferred<Unit>().await()
@@ -231,7 +235,7 @@ class SqsBatchCoordinatorRaceTest {
     @Test
     fun `close timeout and caller cancellation share one future cancel guard`() = runTest {
         val attached = CompletableDeferred<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterFutureAttached(token: Long) {
                 attached.complete(Unit)
                 CompletableDeferred<Unit>().await()
@@ -240,8 +244,11 @@ class SqsBatchCoordinatorRaceTest {
         val future = CoordinatorCountingFuture<SqsBatchOutcome>()
         val transport = CoordinatorTestTransport().apply { enqueueSend(future) }
         val coordinator = coordinator(transport, maxInFlight = 1, hooks = hooks)
-        val operation = async { coordinator.sendMany(listOf(sendEntry("timeout-cancel"))) }
+        val operation = async {
+            coordinator.sendMany(listOf(sendEntry("timeout-cancel")))
+        }
         attached.await()
+
         val owner = coordinator.beginClose().shouldBeOwner()
         val cancellation = CancellationException("timeout-${Base58.randomString(16)}")
         val readyCount = java.util.concurrent.atomic.AtomicInteger()
@@ -299,11 +306,11 @@ class SqsBatchCoordinatorRaceTest {
         properties = SqsBatchProperties(
             enabled = false,
             maxBatchSize = 10,
-            flushInterval = Duration.ofMillis(50),
+            flushInterval = 50.millis(),
             maxEntriesPerCall = 8,
             maxInFlightEntries = maxInFlight,
             schedulerThreads = 1,
-            shutdownTimeout = Duration.ofSeconds(1),
+            shutdownTimeout = 1.seconds(),
         ),
         hooks = hooks,
     )

@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.ToStringBuilder
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -18,7 +19,7 @@ class KmsDataKey(
     plaintext: ByteArray,
     encryptedDataKey: ByteArray,
     val createdAt: Instant = Instant.now(),
-) : AutoCloseable {
+): AutoCloseable {
     private val lock = ReentrantLock()
     private val plaintextBytes: ByteArray = plaintext.copyOf()
     private val encryptedDataKeyBytes: ByteArray = encryptedDataKey.copyOf()
@@ -26,7 +27,7 @@ class KmsDataKey(
 
     val plaintext: ByteArray
         get() = lock.withLock {
-            check(!closed) { "KmsDataKey is closed." }
+            checkNotClosed()
             plaintextBytes.copyOf()
         }
 
@@ -38,7 +39,7 @@ class KmsDataKey(
      * 호출자와 캐시가 같은 평문 배열을 공유하지 않도록 잠금 안에서 복사합니다.
      */
     internal fun copy(): KmsDataKey = lock.withLock {
-        check(!closed) { "KmsDataKey is closed." }
+        checkNotClosed()
         KmsDataKey(keyId, plaintextBytes, encryptedDataKeyBytes, createdAt)
     }
 
@@ -52,5 +53,15 @@ class KmsDataKey(
                 closed = true
             }
         }
+    }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("keyId", keyId)
+            .add("createdAt", createdAt)
+            .toString()
+
+    private fun checkNotClosed() {
+        check(!closed) { "KmsDataKey is closed." }
     }
 }

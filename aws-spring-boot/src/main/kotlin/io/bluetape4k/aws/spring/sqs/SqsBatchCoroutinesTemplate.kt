@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
+import io.bluetape4k.support.checkNotNull
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
@@ -21,7 +23,7 @@ class SqsBatchCoroutinesTemplate internal constructor(
     private val resources: SqsBatchTransportResources?,
     private val properties: SqsBatchProperties,
     private val closeRuntime: SqsBatchCloseRuntime = DefaultSqsBatchCloseRuntime,
-) : SqsBatchOperations, AutoCloseable {
+): SqsBatchOperations, AutoCloseable {
 
     override suspend fun sendMany(
         entries: Collection<SqsBatchSendEntry>,
@@ -42,7 +44,7 @@ class SqsBatchCoroutinesTemplate internal constructor(
     @Suppress("TooGenericExceptionCaught")
     private fun closeOwner(claim: SqsBatchCloseClaim.Owner): SqsBatchCloseOutcome {
         val components = linkedSetOf<SqsBatchCleanupComponent>()
-        var outcome: SqsBatchCloseOutcome? = null
+        var outcome: SqsBatchCloseOutcome?
         try {
             val deadlineNanos = closeRuntime.deadlineAfterOrNull(properties.shutdownTimeout.toNanos())
             var timedOut = deadlineNanos == null || !drainAccepted(claim.accepted, deadlineNanos)
@@ -64,9 +66,9 @@ class SqsBatchCoroutinesTemplate internal constructor(
             resources?.let { closeExecutor(it, null, true, components) }
         } finally {
             outcome = components.toCloseOutcome()
-            coordinator.finishClose(checkNotNull(outcome))
+            coordinator.finishClose(outcome.checkNotNull("outcome"))
         }
-        return checkNotNull(outcome)
+        return outcome.checkNotNull("outcome")
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -118,20 +120,18 @@ class SqsBatchCoroutinesTemplate internal constructor(
     ): Boolean {
         val completion = CompletableFuture<Boolean>()
         val cleanupThread = try {
-            closeRuntime.newManagerCleanupThread(
-                Runnable {
-                    val succeeded = try {
-                        owned.closeManager()
-                        true
-                    } catch (_: Throwable) {
-                        false
-                    }
-                    completion.complete(succeeded)
-                    if (!succeeded) {
-                        log.warn("SQS batch manager cleanup failed (component=MANAGER).")
-                    }
-                },
-            ).also(Thread::start)
+            closeRuntime.newManagerCleanupThread {
+                val succeeded = try {
+                    owned.closeManager()
+                    true
+                } catch (_: Throwable) {
+                    false
+                }
+                completion.complete(succeeded)
+                if (!succeeded) {
+                    log.warn { "SQS batch manager cleanup failed (component=MANAGER)." }
+                }
+            }.also(Thread::start)
         } catch (_: Throwable) {
             components += SqsBatchCleanupComponent.MANAGER
             null
@@ -140,6 +140,7 @@ class SqsBatchCoroutinesTemplate internal constructor(
         var timedOut = false
         if (cleanupThread != null) {
             val remaining = deadlineNanos?.let(closeRuntime::remainingNanosOrNull)
+
             timedOut = if (remaining == null || remaining <= 0L) {
                 cleanupThread.interrupt()
                 true
@@ -213,7 +214,7 @@ class SqsBatchCoroutinesTemplate internal constructor(
         }
     }
 
-    companion object : KLogging() {
+    companion object: KLogging() {
 
         internal fun create(
             client: SqsAsyncClient,
@@ -286,18 +287,16 @@ class SqsBatchCoroutinesTemplate internal constructor(
             val managerCompletion = CompletableFuture<Boolean>()
             var cleanupThread: Thread? = null
             try {
-                cleanupThread = closeRuntime.newManagerCleanupThread(
-                    Runnable {
-                        managerCompletion.complete(
-                            try {
-                                owned.closeManager()
-                                true
-                            } catch (_: Throwable) {
-                                false
-                            },
-                        )
-                    },
-                ).also(Thread::start)
+                cleanupThread = closeRuntime.newManagerCleanupThread {
+                    managerCompletion.complete(
+                        try {
+                            owned.closeManager()
+                            true
+                        } catch (_: Throwable) {
+                            false
+                        },
+                    )
+                }.also(Thread::start)
                 val remaining = deadlineNanos?.let(closeRuntime::remainingNanosOrNull)
                 if (remaining == null || remaining <= 0L) {
                     components += SqsBatchCleanupComponent.TIMEOUT
@@ -359,7 +358,7 @@ internal interface SqsBatchCloseRuntime {
     fun newManagerCleanupThread(task: Runnable): Thread
 }
 
-private object DefaultSqsBatchCloseRuntime : SqsBatchCloseRuntime {
+private object DefaultSqsBatchCloseRuntime: SqsBatchCloseRuntime {
     override fun nanoTime(): Long = System.nanoTime()
 
     override fun awaitCompletion(future: CompletableFuture<*>, timeoutNanos: Long) {
@@ -370,9 +369,10 @@ private object DefaultSqsBatchCloseRuntime : SqsBatchCloseRuntime {
         executor.awaitTermination(timeoutNanos, TimeUnit.NANOSECONDS)
 
     override fun newManagerCleanupThread(task: Runnable): Thread =
-        Thread(task, "$SQS_BATCH_CLEANUP_THREAD_PREFIX${SQS_BATCH_CLEANUP_THREAD_SEQUENCE.incrementAndGet()}").apply {
-            isDaemon = true
-        }
+        Thread(task, "$SQS_BATCH_CLEANUP_THREAD_PREFIX${SQS_BATCH_CLEANUP_THREAD_SEQUENCE.incrementAndGet()}")
+            .apply {
+                isDaemon = true
+            }
 }
 
 private fun SqsBatchCloseRuntime.deadlineAfter(timeoutNanos: Long): Long {

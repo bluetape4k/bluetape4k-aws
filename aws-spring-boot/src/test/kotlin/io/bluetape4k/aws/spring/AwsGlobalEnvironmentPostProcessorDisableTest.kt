@@ -7,6 +7,7 @@ import io.bluetape4k.aws.spring.s3.S3ConfigEnvironmentPostProcessor
 import io.bluetape4k.aws.spring.s3.S3ConfigPropertySourceLoader
 import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerEnvironmentPostProcessor
 import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerPropertySourceLoader
+import io.bluetape4k.logging.KLogging
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
@@ -17,6 +18,8 @@ import org.springframework.core.env.MapPropertySource
 import org.springframework.core.env.StandardEnvironment
 
 class AwsGlobalEnvironmentPostProcessorDisableTest {
+
+    companion object: KLogging()
 
     @Test
     fun `global enabled keeps Secrets Manager bootstrap active`() {

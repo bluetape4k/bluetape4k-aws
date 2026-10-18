@@ -2,28 +2,32 @@ package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.toUtf8Bytes
 import org.junit.jupiter.api.Test
 
 class AppConfigDataDecoderTest {
 
+    companion object: KLogging()
+
     @Test
     fun `decodes properties yaml and json with a common prefix`() {
         AppConfigDataDecoder.decode(
-            payload = "feature.enabled=true".toByteArray(),
+            payload = "feature.enabled=true".toUtf8Bytes(),
             contentType = "text/plain",
             format = AppConfigFormat.PROPERTIES,
             prefix = "app",
         ) shouldBeEqualTo mapOf("app.feature.enabled" to "true")
 
         AppConfigDataDecoder.decode(
-            payload = "feature:\n  enabled: true\n".toByteArray(),
+            payload = "feature:\n  enabled: true\n".toUtf8Bytes(),
             contentType = "application/yaml",
             format = AppConfigFormat.YAML,
             prefix = "app",
         ) shouldBeEqualTo mapOf("app.feature.enabled" to true)
 
         AppConfigDataDecoder.decode(
-            payload = "{\"feature\": {\"enabled\": true}, \"items\": [\"a\"]}".toByteArray(),
+            payload = "{\"feature\": {\"enabled\": true}, \"items\": [\"a\"]}".toUtf8Bytes(),
             contentType = "application/json",
             format = AppConfigFormat.JSON,
             prefix = "app",
@@ -33,7 +37,7 @@ class AppConfigDataDecoderTest {
     @Test
     fun `auto format follows content type and rejects malformed or over-budget payloads`() {
         AppConfigDataDecoder.decode(
-            payload = "feature.enabled=true".toByteArray(),
+            payload = "feature.enabled=true".toUtf8Bytes(),
             contentType = "text/plain",
             format = AppConfigFormat.AUTO,
             prefix = null,
@@ -41,7 +45,7 @@ class AppConfigDataDecoderTest {
 
         assertFailsWith<IllegalArgumentException> {
             AppConfigDataDecoder.decode(
-                payload = "{}".toByteArray(),
+                payload = "{}".toUtf8Bytes(),
                 contentType = "application/octet-stream",
                 format = AppConfigFormat.JSON,
                 prefix = null,
@@ -50,7 +54,7 @@ class AppConfigDataDecoderTest {
         }
         assertFailsWith<IllegalArgumentException> {
             AppConfigDataDecoder.decode(
-                payload = "not-json".toByteArray(),
+                payload = "not-json".toUtf8Bytes(),
                 contentType = "application/json",
                 format = AppConfigFormat.AUTO,
                 prefix = null,
@@ -62,7 +66,7 @@ class AppConfigDataDecoderTest {
     fun `enforces flatten depth and property count budgets`() {
         assertFailsWith<IllegalArgumentException> {
             AppConfigDataDecoder.decode(
-                payload = "{\"outer\": {\"inner\": true}}".toByteArray(),
+                payload = "{\"outer\": {\"inner\": true}}".toUtf8Bytes(),
                 contentType = "application/json",
                 format = AppConfigFormat.JSON,
                 prefix = null,
@@ -71,7 +75,7 @@ class AppConfigDataDecoderTest {
         }
         assertFailsWith<IllegalArgumentException> {
             AppConfigDataDecoder.decode(
-                payload = "{\"first\": true, \"second\": false}".toByteArray(),
+                payload = "{\"first\": true, \"second\": false}".toUtf8Bytes(),
                 contentType = "application/json",
                 format = AppConfigFormat.JSON,
                 prefix = null,

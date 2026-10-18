@@ -45,4 +45,4 @@ data class SqsExtendedDrainResult(
 }
 
 /** 전체 SQS 요청 필드를 보존하는 additive capability marker입니다. */
-interface SqsFullRequestOperations : SqsOperations
+interface SqsFullRequestOperations: SqsOperations

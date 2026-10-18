@@ -3,7 +3,6 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.invoking
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
@@ -12,9 +11,14 @@ import io.bluetape4k.assertions.shouldNotBeEmpty
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.assertions.shouldStartWith
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.await
+import io.bluetape4k.concurrent.awaitTermination
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.batchmanager.SqsAsyncBatchManager
@@ -23,13 +27,22 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.seconds
 
 class SqsBatchTransportFactoryTest {
 
+    companion object: KLogging()
+
+    private val client = mockk<SqsAsyncClient>(relaxed = true)
+    private val manager = mockk<SqsAsyncBatchManager>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client, manager)
+    }
+
     @Test
     fun `factory connects properties client scheduler manager and adapter`() {
-        val client = mockk<SqsAsyncClient>()
-        val manager = mockk<SqsAsyncBatchManager>()
         every { manager.close() } returns Unit
         val transport = mockk<SqsBatchTransport>()
         val scheduler = TrackingScheduledExecutor()
@@ -65,7 +78,6 @@ class SqsBatchTransportFactoryTest {
     @Test
     fun `manager build failure shuts down scheduler without closing caller client`() {
         val secret = "manager-${Base58.randomString(16)}"
-        val client = mockk<SqsAsyncClient>()
         val scheduler = TrackingScheduledExecutor()
 
         val error = invoking {
@@ -92,7 +104,6 @@ class SqsBatchTransportFactoryTest {
     fun `manager build cleanup restores the interrupted status`() {
         Thread.interrupted()
         try {
-            val client = mockk<SqsAsyncClient>()
             val scheduler = TrackingScheduledExecutor(interruptOnAwait = true)
 
             val error = invoking {
@@ -119,7 +130,6 @@ class SqsBatchTransportFactoryTest {
     @Test
     fun `scheduler creation failure becomes one safe manager startup exception`() {
         val secret = "scheduler-${Base58.randomString(16)}"
-        val client = mockk<SqsAsyncClient>()
 
         val error = invoking {
             SqsBatchTransportFactory.create(
@@ -145,8 +155,7 @@ class SqsBatchTransportFactoryTest {
         val startupSecret = "startup-${Base58.randomString(16)}"
         val managerCleanupSecret = "manager-cleanup-${Base58.randomString(16)}"
         val executorCleanupSecret = "executor-cleanup-${Base58.randomString(16)}"
-        val client = mockk<SqsAsyncClient>()
-        val manager = mockk<SqsAsyncBatchManager>()
+
         every { manager.close() } answers {
             events += "manager"
             throw IllegalStateException(managerCleanupSecret)
@@ -171,7 +180,7 @@ class SqsBatchTransportFactoryTest {
         error shouldBeSameInstanceAs safe
         events shouldBeEqualTo listOf("manager", "executor")
         error.cleanupComponents shouldBeEqualTo
-            listOf(SqsBatchCleanupComponent.MANAGER, SqsBatchCleanupComponent.EXECUTOR)
+                listOf(SqsBatchCleanupComponent.MANAGER, SqsBatchCleanupComponent.EXECUTOR)
         error.cause.shouldBeNull()
         error.suppressed.shouldBeEmpty()
         error.toString() shouldNotContain startupSecret
@@ -194,13 +203,13 @@ class SqsBatchTransportFactoryTest {
             completed.countDown()
         }
 
-        completed.await(5, TimeUnit.SECONDS).shouldBeTrue()
+        completed.await(5.seconds).shouldBeTrue()
         thread.get().isDaemon.shouldBeTrue()
         thread.get().name shouldStartWith "bluetape4k-sqs-batch-"
         thread.get().name shouldNotContain secret
         scheduler.removeOnCancelPolicy.shouldBeTrue()
         scheduler.shutdownNow()
-        scheduler.awaitTermination(5, TimeUnit.SECONDS).shouldBeTrue()
+        scheduler.awaitTermination(5.seconds).shouldBeTrue()
         scheduler.schedule({}, 0, TimeUnit.MILLISECONDS).isCancelled.shouldBeTrue()
     }
 
@@ -231,7 +240,7 @@ private class TrackingScheduledExecutor(
     private val events: MutableList<String>? = null,
     private val failureMessage: String? = null,
     private val interruptOnAwait: Boolean = false,
-) : ScheduledThreadPoolExecutor(1) {
+): ScheduledThreadPoolExecutor(1) {
     var shutdownNowCount: Int = 0
         private set
 
@@ -252,7 +261,7 @@ private class TrackingScheduledExecutor(
 
 private class ManagerIsolatingClassLoader(
     private val source: ClassLoader,
-) : ClassLoader(source) {
+): ClassLoader(source) {
 
     override fun loadClass(name: String, resolve: Boolean): Class<*> = synchronized(getClassLoadingLock(name)) {
         if (name == MANAGER_SDK_CLASS) {

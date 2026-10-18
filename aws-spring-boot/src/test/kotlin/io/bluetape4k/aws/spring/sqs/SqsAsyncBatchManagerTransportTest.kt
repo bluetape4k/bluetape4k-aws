@@ -1,7 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
@@ -96,7 +95,7 @@ class SqsAsyncBatchManagerTransportTest {
         )
         every { manager.sendMessage(any<SendMessageRequest>()) } returns sendSource
         every { manager.deleteMessage(any<DeleteMessageRequest>()) } returnsMany
-            listOf(deleteSuccessSource, deleteServiceSource, deleteTransportSource)
+                listOf(deleteSuccessSource, deleteServiceSource, deleteTransportSource)
         val transport = SqsAsyncBatchManagerTransport(manager)
         val sendEntry = sendEntry("success")
         val deleteSuccessEntry = deleteEntry("delete-success")
@@ -109,7 +108,7 @@ class SqsAsyncBatchManagerTransportTest {
             sequenceNumber = sequenceNumber,
         )
         transport.delete(deleteSuccessEntry).join() shouldBeEqualTo
-            SqsBatchOutcome.DeleteSuccess(deleteSuccessEntry.entryId)
+                SqsBatchOutcome.DeleteSuccess(deleteSuccessEntry.entryId)
         transport.delete(deleteServiceEntry).join() shouldBeEqualTo SqsBatchOutcome.Failure(
             SqsBatchEntryFailure(deleteServiceEntry.entryId, SqsBatchFailureKind.SERVICE, serviceCode),
         )
@@ -192,7 +191,7 @@ class SqsAsyncBatchManagerTransportTest {
 
         listOf(queueA, queueB, mixedSend, mixedDelete).forEach { it.join() }
         sendBatches.map { it.queueUrl() }.toSet() shouldBeEqualTo
-            setOf("queue-same", "queue-a", "queue-b", "queue-mixed")
+                setOf("queue-same", "queue-a", "queue-b", "queue-mixed")
         deleteBatches.map { it.queueUrl() } shouldBeEqualTo listOf("queue-mixed")
         manager.close()
         scheduler.shutdownNow()
@@ -320,7 +319,7 @@ class SqsAsyncBatchManagerTransportTest {
     private fun firstEntryId(prefix: String): String = "$prefix-${Base58.randomString(16)}"
 }
 
-private class ManualScheduledExecutor : ScheduledThreadPoolExecutor(1) {
+private class ManualScheduledExecutor: ScheduledThreadPoolExecutor(1) {
     private val scheduledTasks = CopyOnWriteArrayList<ManualScheduledFuture>()
 
     val activeTaskCount: Int get() = scheduledTasks.count { !it.isCancelled }
@@ -339,7 +338,7 @@ private class ManualScheduledExecutor : ScheduledThreadPoolExecutor(1) {
 
 private class ManualScheduledFuture(
     val command: Runnable,
-) : ScheduledFuture<Unit> {
+): ScheduledFuture<Unit> {
     @Volatile
     private var cancelled = false
 

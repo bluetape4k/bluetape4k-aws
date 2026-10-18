@@ -1,18 +1,22 @@
 package io.bluetape4k.aws.spring.dynamodb
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContainAll
-import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.aws.dynamodb.model.attributeDefinitionOf
+import io.bluetape4k.aws.dynamodb.model.keySchemaElementOf
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.hashOf
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.flow.toList
-import org.awaitility.kotlin.await
+import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
-import java.io.Serializable
+import org.junit.platform.commons.util.ToStringBuilder
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -25,22 +29,19 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
-import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex
-import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.amazon.awssdk.services.dynamodb.model.Projection
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
-import software.amazon.awssdk.services.dynamodb.model.TableStatus
-import java.time.Duration
-import java.util.UUID
+import java.io.Serializable
+import java.util.*
 
 class DynamoDbRepositoryAwsEmulatorTest {
 
-    companion object {
+    companion object: KLogging() {
         private const val TABLE_NAME = "orders"
         private const val TABLE_PREFIX = "spring-dynamodb-"
         private const val CUSTOMER_INDEX = "customer-createdAt-index"
@@ -67,9 +68,9 @@ class DynamoDbRepositoryAwsEmulatorTest {
     @Test
     fun `repository supports CRUD scan query and index query`() {
         contextRunner().run { context ->
-            val asyncClient = context.getBean(DynamoDbAsyncClient::class.java)
-            val enhancedClient = context.getBean(DynamoDbEnhancedAsyncClient::class.java)
-            val tableNameResolver = context.getBean(DynamoDbTableNameResolver::class.java)
+            val asyncClient = context.getBean<DynamoDbAsyncClient>()
+            val enhancedClient = context.getBean<DynamoDbEnhancedAsyncClient>()
+            val tableNameResolver = context.getBean<DynamoDbTableNameResolver>()
             val repository = OrderRepository(enhancedClient, tableNameResolver)
             val actualTableName = tableNameResolver.resolve(TABLE_NAME)
 
@@ -106,11 +107,11 @@ class DynamoDbRepositoryAwsEmulatorTest {
                 repository.update(order1)?.status shouldBeEqualTo "SHIPPED"
 
                 repository.findByOrder(order1.orderId).toList().map { it.createdAt } shouldBeEqualTo
-                    listOf(order1.createdAt, order2.createdAt)
+                        listOf(order1.createdAt, order2.createdAt)
                 repository.findByCustomer("customer-a").toList().map { it.orderId } shouldContainAll
-                    listOf(order1.orderId, order2.orderId)
+                        listOf(order1.orderId, order2.orderId)
                 repository.scan().toList().map { it.orderId } shouldContainAll
-                    listOf(order1.orderId, order2.orderId, order3.orderId)
+                        listOf(order1.orderId, order2.orderId, order3.orderId)
 
                 repository.deleteById(OrderId(order1.orderId, order1.createdAt))?.status shouldBeEqualTo "SHIPPED"
                 repository.findById(OrderId(order1.orderId, order1.createdAt)).shouldBeNull()
@@ -132,20 +133,20 @@ class DynamoDbRepositoryAwsEmulatorTest {
             client.createTable {
                 it.tableName(tableName)
                 it.attributeDefinitions(
-                    AttributeDefinition.builder().attributeName("orderId").attributeType(ScalarAttributeType.S).build(),
-                    AttributeDefinition.builder().attributeName("createdAt").attributeType(ScalarAttributeType.S).build(),
-                    AttributeDefinition.builder().attributeName("customerId").attributeType(ScalarAttributeType.S).build(),
+                    attributeDefinitionOf("orderId", ScalarAttributeType.S),
+                    attributeDefinitionOf("createdAt", ScalarAttributeType.S),
+                    attributeDefinitionOf("customerId", ScalarAttributeType.S),
                 )
                 it.keySchema(
-                    KeySchemaElement.builder().attributeName("orderId").keyType(KeyType.HASH).build(),
-                    KeySchemaElement.builder().attributeName("createdAt").keyType(KeyType.RANGE).build(),
+                    keySchemaElementOf("orderId", KeyType.HASH),
+                    keySchemaElementOf("createdAt", KeyType.RANGE),
                 )
                 it.globalSecondaryIndexes(
                     GlobalSecondaryIndex.builder()
                         .indexName(CUSTOMER_INDEX)
                         .keySchema(
-                            KeySchemaElement.builder().attributeName("customerId").keyType(KeyType.HASH).build(),
-                            KeySchemaElement.builder().attributeName("createdAt").keyType(KeyType.RANGE).build(),
+                            keySchemaElementOf("customerId", KeyType.HASH),
+                            keySchemaElementOf("createdAt", KeyType.RANGE),
                         )
                         .projection(Projection.builder().projectionType(ProjectionType.ALL).build())
                         .provisionedThroughput(provisionedThroughput())
@@ -155,12 +156,7 @@ class DynamoDbRepositoryAwsEmulatorTest {
             }.await()
         }
 
-        await.atMost(Duration.ofSeconds(20)).until {
-            client.describeTable { it.tableName(tableName) }
-                .get()
-                .table()
-                .tableStatus() == TableStatus.ACTIVE
-        }
+        client.waiter().waitUntilTableExists { it.tableName(tableName) }
     }
 
     private fun provisionedThroughput(): ProvisionedThroughput =
@@ -234,22 +230,22 @@ class DynamoDbRepositoryAwsEmulatorTest {
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (other !is OrderDocument) return false
-            return orderId == other.orderId &&
-                createdAt == other.createdAt &&
-                customerId == other.customerId &&
-                status == other.status
+            return other is OrderDocument &&
+                    orderId == other.orderId &&
+                    createdAt == other.createdAt &&
+                    customerId == other.customerId &&
+                    status == other.status
         }
 
-        override fun hashCode(): Int {
-            var result = orderId.hashCode()
-            result = 31 * result + createdAt.hashCode()
-            result = 31 * result + customerId.hashCode()
-            result = 31 * result + status.hashCode()
-            return result
-        }
+        override fun hashCode(): Int =
+            hashOf(orderId, createdAt, customerId, status)
 
         override fun toString(): String =
-            "OrderDocument(orderId='$orderId', createdAt='$createdAt', customerId='$customerId', status='$status')"
+            ToStringBuilder(this)
+                .append("orderId", orderId)
+                .append("createdAt", createdAt)
+                .append("customerId", customerId)
+                .append("status", status)
+                .toString()
     }
 }

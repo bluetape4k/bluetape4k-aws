@@ -1,8 +1,12 @@
 package io.bluetape4k.aws.spring.sns
 
-import kotlinx.coroutines.future.await
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
@@ -39,11 +43,13 @@ class SnsCoroutinesTemplate private constructor(
     @Suppress("UNUSED_PARAMETER") private val constructorMarker: Unit,
 ): SnsOperations {
 
+    companion object: KLoggingChannel()
+
     /** 기존 SNS template 경로를 사용하는 기본 bounded strategy 생성자입니다. */
     constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
-    ) : this(
+    ): this(
         snsAsyncClient,
         properties,
         defaultSnsTopicArnResolver(snsAsyncClient, properties),
@@ -56,7 +62,7 @@ class SnsCoroutinesTemplate private constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
         batchExecutionStrategy: SnsBatchExecutionStrategy,
-    ) : this(
+    ): this(
         snsAsyncClient,
         properties,
         defaultSnsTopicArnResolver(snsAsyncClient, properties),
@@ -69,7 +75,7 @@ class SnsCoroutinesTemplate private constructor(
         snsAsyncClient: SnsAsyncClient,
         properties: SnsProperties,
         topicArnResolver: SnsTopicArnResolver,
-    ) : this(snsAsyncClient, properties, topicArnResolver, DefaultSnsBatchExecutionStrategy, Unit)
+    ): this(snsAsyncClient, properties, topicArnResolver, DefaultSnsBatchExecutionStrategy, Unit)
 
     /** resolver와 명시적 SNS batch strategy를 함께 주입하는 생성자입니다. */
     constructor(
@@ -77,7 +83,7 @@ class SnsCoroutinesTemplate private constructor(
         properties: SnsProperties,
         topicArnResolver: SnsTopicArnResolver,
         batchExecutionStrategy: SnsBatchExecutionStrategy,
-    ) : this(snsAsyncClient, properties, topicArnResolver, batchExecutionStrategy, Unit)
+    ): this(snsAsyncClient, properties, topicArnResolver, batchExecutionStrategy, Unit)
 
     override suspend fun createTopic(
         topicName: String,
@@ -91,6 +97,8 @@ class SnsCoroutinesTemplate private constructor(
             }
         }.await().topicArn()
         topicArnResolver.invalidate(topicName)
+
+        log.debug { "Create topic. topicName=$topicName, topicArn=$topicArn" }
         return topicArn
     }
 
@@ -163,6 +171,7 @@ class SnsCoroutinesTemplate private constructor(
         val guard = SnsBatchExecutionGuard(snsAsyncClient, request, options)
         var result: SnsPublishBatchResult? = null
         var failure: Throwable? = null
+
         try {
             result = batchExecutionStrategy.execute(request, options, guard)
             guard.validateAggregate(result, request)
@@ -179,18 +188,20 @@ class SnsCoroutinesTemplate private constructor(
         }
 
         failure?.let { throw it }
-        return requireNotNull(result)
+        return result.requireNotNull("publishBatch result")
     }
 
     override suspend fun publishSms(request: SnsSmsRequest): PublishResponse =
-        snsAsyncClient.publish {
-            it.phoneNumber(request.phoneNumber)
-            it.message(request.message)
-            val attributes = request.toMessageAttributes()
-            if (attributes.isNotEmpty()) {
-                it.messageAttributes(attributes)
+        snsAsyncClient
+            .publish {
+                it.phoneNumber(request.phoneNumber)
+                it.message(request.message)
+                val attributes = request.toMessageAttributes()
+                if (attributes.isNotEmpty()) {
+                    it.messageAttributes(attributes)
+                }
             }
-        }.await()
+            .await()
 
     override suspend fun confirmSubscription(
         topicArn: String,
@@ -198,7 +209,7 @@ class SnsCoroutinesTemplate private constructor(
         authenticateOnUnsubscribe: Boolean,
     ): ConfirmSubscriptionResponse {
         topicArn.requireTopicArn()
-        require(token.isNotBlank()) { "token must not be blank." }
+        token.requireNotBlank { "token must not be blank." }
 
         return snsAsyncClient.confirmSubscription {
             it.topicArn(topicArn)
@@ -217,13 +228,11 @@ class SnsCoroutinesTemplate private constructor(
             authenticateOnUnsubscribe = authenticateOnUnsubscribe,
         )
 
-    private fun String.requireTopicArn() {
-        require(isNotBlank()) { "topicArn must not be blank." }
-    }
+    private fun String.requireTopicArn() =
+        requireNotBlank { "topicArn must not be blank." }
 
-    private fun String.requireTopicName() {
-        require(isNotBlank()) { "topicName must not be blank." }
-    }
+    private fun String.requireTopicName() =
+        requireNotBlank { "topicName must not be blank." }
 
     @Suppress("TooGenericExceptionCaught")
     private fun normalizeStrategyFailure(cause: Throwable): Throwable = when (cause) {
@@ -231,7 +240,8 @@ class SnsCoroutinesTemplate private constructor(
         is SnsBatchTransportException,
         is SnsBatchProtocolException,
         is SnsBatchExecutionContractException,
-        is Error -> cause
+        is Error,
+            -> cause
         else -> SnsBatchExecutionContractException(SnsBatchExecutionContractError.STRATEGY_FAILURE)
     }
 }

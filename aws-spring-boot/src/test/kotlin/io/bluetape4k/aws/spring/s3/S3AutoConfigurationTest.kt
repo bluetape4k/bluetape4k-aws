@@ -1,19 +1,25 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizationContext
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
 import io.bluetape4k.aws.spring.kms.KmsDataKey
 import io.bluetape4k.aws.spring.kms.KmsOperations
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.debug
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -43,7 +49,7 @@ import software.amazon.awssdk.transfer.s3.model.UploadRequest
 import java.nio.file.Path
 import javax.crypto.spec.SecretKeySpec
 
-class S3AutoConfigurationTest {
+class S3AutoConfigurationTest: AbstractS3Test() {
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -59,18 +65,18 @@ class S3AutoConfigurationTest {
     @Test
     fun `register S3 clients and operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(S3Client::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3Presigner::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3Properties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3OutputStreamProvider::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3ObjectOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3ObjectContentTypeResolver::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<S3Client>() shouldHaveSize 1
+            context.getBeansOfType<S3AsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<S3Presigner>() shouldHaveSize 1
+            context.getBeansOfType<S3Properties>() shouldHaveSize 1
+            context.getBeansOfType<S3Operations>() shouldHaveSize 1
+            context.getBeansOfType<S3CoroutinesTemplate>() shouldHaveSize 1
+            context.getBeansOfType<S3TransferManager>() shouldHaveSize 1
+            context.getBeansOfType<S3TransferOperations>() shouldHaveSize 1
+            context.getBeansOfType<S3TransferTemplate>() shouldHaveSize 1
+            context.getBeansOfType<S3OutputStreamProvider>() shouldHaveSize 1
+            context.getBeansOfType<S3ObjectOperations>() shouldHaveSize 1
+            context.getBeansOfType<S3ObjectContentTypeResolver>() shouldHaveSize 1
         }
     }
 
@@ -79,9 +85,9 @@ class S3AutoConfigurationTest {
         contextRunner
             .withBean(SimpleMeterRegistry::class.java, { SimpleMeterRegistry() })
             .run { context ->
-                context.getBean(S3Operations::class.java).javaClass shouldBeEqualTo MicrometerS3Operations::class.java
-                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 2
-                context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 1
+                context.getBean<S3Operations>() shouldBeInstanceOf MicrometerS3Operations::class
+                context.getBeansOfType<S3Operations>() shouldHaveSize 2
+                context.getBeansOfType<S3CoroutinesTemplate>() shouldHaveSize 1
             }
     }
 
@@ -90,13 +96,13 @@ class S3AutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.s3.enabled=false")
             .run { context ->
-                context.getBeansOfType(S3Client::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3Presigner::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3OutputStreamProvider::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3Client>().shouldBeEmpty()
+                context.getBeansOfType<S3AsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<S3Presigner>().shouldBeEmpty()
+                context.getBeansOfType<S3Operations>().shouldBeEmpty()
+                context.getBeansOfType<S3TransferManager>().shouldBeEmpty()
+                context.getBeansOfType<S3TransferOperations>().shouldBeEmpty()
+                context.getBeansOfType<S3OutputStreamProvider>().shouldBeEmpty()
             }
     }
 
@@ -105,30 +111,30 @@ class S3AutoConfigurationTest {
         contextRunner
             .withBean(S3Operations::class.java, { NoopS3Operations })
             .run { context ->
-                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3CoroutinesTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(S3Operations::class.java) shouldBeSameInstanceAs NoopS3Operations
+                context.getBeansOfType<S3Operations>() shouldHaveSize 1
+                context.getBeansOfType<S3CoroutinesTemplate>().shouldBeEmpty()
+                context.getBean<S3Operations>() shouldBeSameInstanceAs NoopS3Operations
             }
     }
 
     @Test
     fun `client side encryption operations are opt in and require KMS operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 0
+            context.getBeansOfType<S3ClientSideEncryptionOperations>().shouldBeEmpty()
         }
 
         contextRunner
             .withPropertyValues("bluetape4k.aws.s3.client-side-encryption.enabled=true")
             .run { context ->
-                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3ClientSideEncryptionOperations>().shouldBeEmpty()
             }
 
         contextRunner
             .withPropertyValues("bluetape4k.aws.s3.client-side-encryption.enabled=true")
             .withBean(KmsOperations::class.java, { FixedKmsOperations })
             .run { context ->
-                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3ClientSideEncryptionTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3ClientSideEncryptionOperations>() shouldHaveSize 1
+                context.getBeansOfType<S3ClientSideEncryptionTemplate>() shouldHaveSize 1
             }
     }
 
@@ -137,9 +143,9 @@ class S3AutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.s3.transfer.enabled=false")
             .run { context ->
-                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3Operations>() shouldHaveSize 1
+                context.getBeansOfType<S3TransferManager>().shouldBeEmpty()
+                context.getBeansOfType<S3TransferOperations>().shouldBeEmpty()
             }
     }
 
@@ -148,10 +154,10 @@ class S3AutoConfigurationTest {
         contextRunner
             .withBean(S3TransferOperations::class.java, { NoopS3TransferOperations })
             .run { context ->
-                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(S3TransferOperations::class.java) shouldBeSameInstanceAs NoopS3TransferOperations
+                context.getBeansOfType<S3TransferManager>().shouldBeEmpty()
+                context.getBeansOfType<S3TransferOperations>() shouldHaveSize 1
+                context.getBeansOfType<S3TransferTemplate>().shouldBeEmpty()
+                context.getBean<S3TransferOperations>() shouldBeSameInstanceAs NoopS3TransferOperations
             }
     }
 
@@ -160,9 +166,9 @@ class S3AutoConfigurationTest {
         contextRunner
             .withBean(S3TransferManager::class.java, { mockk(relaxed = true) })
             .run { context ->
-                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3TransferManager>() shouldHaveSize 1
+                context.getBeansOfType<S3TransferOperations>() shouldHaveSize 1
+                context.getBeansOfType<S3TransferTemplate>() shouldHaveSize 1
             }
     }
 
@@ -172,9 +178,9 @@ class S3AutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.s3.transfer.enabled=false")
             .withBean(S3TransferManager::class.java, { mockk(relaxed = true) })
             .run { context ->
-                context.getBeansOfType(S3TransferManager::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3TransferTemplate::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3TransferManager>() shouldHaveSize 1
+                context.getBeansOfType<S3TransferOperations>().shouldBeEmpty()
+                context.getBeansOfType<S3TransferTemplate>().shouldBeEmpty()
             }
     }
 
@@ -183,8 +189,8 @@ class S3AutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.transfer.s3"))
             .run { context ->
-                context.getBeansOfType(S3Operations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3TransferOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3Operations>() shouldHaveSize 1
+                context.getBeansOfType<S3TransferOperations>().shouldBeEmpty()
             }
     }
 
@@ -206,6 +212,8 @@ class S3AutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "region is required"
             }
     }
@@ -225,8 +233,8 @@ class S3AutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3Client::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3AsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3Client>() shouldHaveSize 1
+                context.getBeansOfType<S3AsyncClient>() shouldHaveSize 1
             }
     }
 
@@ -237,7 +245,7 @@ class S3AutoConfigurationTest {
         contextRunner
             .withUserConfiguration(S3CustomizerConfig::class.java)
             .run { context ->
-                context.getBean(S3Client::class.java).shouldNotBeNull()
+                context.getBean<S3Client>().shouldNotBeNull()
                 S3CustomizerConfig.calls shouldBeEqualTo listOf("global:s3", "s3")
             }
     }
@@ -283,8 +291,8 @@ class S3AutoConfigurationTest {
             .withBean(KmsOperations::class.java, { FixedKmsOperations })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ClientSideEncryptionProviderTemplate::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3ClientSideEncryptionTemplate::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3ClientSideEncryptionProviderTemplate>() shouldHaveSize 1
+                context.getBeansOfType<S3ClientSideEncryptionTemplate>().shouldBeEmpty()
             }
     }
 
@@ -300,8 +308,8 @@ class S3AutoConfigurationTest {
             })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ClientSideEncryptionTransferOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3ClientSideEncryptionTransferTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3ClientSideEncryptionTransferOperations>() shouldHaveSize 1
+                context.getBeansOfType<S3ClientSideEncryptionTransferTemplate>() shouldHaveSize 1
             }
 
         contextRunner
@@ -315,7 +323,7 @@ class S3AutoConfigurationTest {
             })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ClientSideEncryptionTransferOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3ClientSideEncryptionTransferOperations>().shouldBeEmpty()
             }
     }
 
@@ -331,6 +339,8 @@ class S3AutoConfigurationTest {
                 val messages = generateSequence(failure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "S3RsaProvider"
                 messages shouldContain "client-side-encryption.provider"
             }
@@ -347,7 +357,7 @@ class S3AutoConfigurationTest {
             })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3ClientSideEncryptionOperations>().shouldBeEmpty()
             }
     }
 
@@ -365,7 +375,7 @@ class S3AutoConfigurationTest {
                     .mapNotNull { it.message }
                     .joinToString("\n")
                 messages shouldContain "exactly once"
-        }
+            }
     }
 
     @Test
@@ -382,9 +392,9 @@ class S3AutoConfigurationTest {
             .withBean(S3ClientSideEncryptionOperations::class.java, { customOperations })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ClientSideEncryptionOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3ClientSideEncryptionProviderTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(S3ClientSideEncryptionOperations::class.java) shouldBeSameInstanceAs customOperations
+                context.getBeansOfType<S3ClientSideEncryptionOperations>() shouldHaveSize 1
+                context.getBeansOfType<S3ClientSideEncryptionProviderTemplate>().shouldBeEmpty()
+                context.getBean<S3ClientSideEncryptionOperations>() shouldBeSameInstanceAs customOperations
             }
     }
 
@@ -400,6 +410,8 @@ class S3AutoConfigurationTest {
                 val messages = generateSequence(failure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "provider"
             }
     }

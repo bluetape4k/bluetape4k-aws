@@ -6,6 +6,7 @@ pluginManagement {
     }
     plugins {
         id("org.gradle.toolchains.foojay-resolver-convention") version ("1.0.0")
+        kotlin("kapt") version "2.4.10"
     }
 }
 

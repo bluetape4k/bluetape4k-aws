@@ -1,11 +1,13 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.support.requireGt
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requirePositiveNumber
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import java.io.Serializable
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.util.LinkedHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -22,11 +24,11 @@ data class KmsDataKeyCacheKey(
     val encryptionContext: Map<String, String>,
 ): Serializable {
     init {
-        require(keyId.isNotBlank()) { "keyId must not be blank." }
+        keyId.requireNotBlank("keyId")
         require((keySpec == null) xor (numberOfBytes == null)) {
             "Exactly one of keySpec or numberOfBytes must be configured."
         }
-        numberOfBytes?.let { require(it > 0) { "numberOfBytes must be greater than 0." } }
+        numberOfBytes?.requirePositiveNumber("numberOfBytes")
     }
 
     companion object {
@@ -95,11 +97,11 @@ class InMemoryDataKeyCache(
     private val entries = LinkedHashMap<KmsDataKeyCacheKey, Entry>(maxSize, 0.75f, true)
 
     init {
-        require(maxSize > 0) { "maxSize must be greater than 0." }
-        require(!ttl.isNegative && !ttl.isZero) { "ttl must be greater than zero." }
+        maxSize.requirePositiveNumber("maxSize")
+        ttl.requireGt(Duration.ZERO, "ttl")
     }
 
-    override fun get(key: KmsDataKeyCacheKey): KmsDataKey? {
+    override operator fun get(key: KmsDataKeyCacheKey): KmsDataKey? {
         var expired: KmsDataKey? = null
         val result = lock.withLock {
             val entry = entries[key] ?: return@withLock null
@@ -123,6 +125,7 @@ class InMemoryDataKeyCache(
                 // 만료 시각 계산을 snapshot publish보다 먼저 수행해 clock 실패 시 새 entry를 남기지 않습니다.
                 val expiresAt = clock.instant().plus(ttl)
                 val replaced = entries.put(key, Entry(snapshot, expiresAt))?.value
+
                 // 이 지점부터 snapshot은 cache 소유이므로 이후 예외가 발생해도 닫지 않습니다.
                 published = true
                 val evicted = if (entries.size > maxSize) {

@@ -14,7 +14,7 @@ class SnsHttpMessagePayloadConverter(
     private val readValueMethod: Method? by lazy {
         objectMapper?.javaClass?.methods?.firstOrNull { method ->
             method.name == "readValue" &&
-                method.parameterTypes.contentEquals(arrayOf(String::class.java, Class::class.java))
+                    method.parameterTypes.contentEquals(arrayOf(String::class.java, Class::class.java))
         }
     }
 
@@ -43,8 +43,8 @@ class SnsHttpMessagePayloadConverter(
         if (this.isNullOrBlank()) return false
         val mediaType = runCatching { MediaType.parseMediaType(this) }.getOrNull() ?: return false
         return mediaType.type.equals("application", ignoreCase = true) &&
-            (mediaType.subtype.equals("json", ignoreCase = true) ||
-                mediaType.subtype.endsWith("+json", ignoreCase = true))
+                (mediaType.subtype.equals("json", ignoreCase = true) ||
+                        mediaType.subtype.endsWith("+json", ignoreCase = true))
     }
 
     private fun badRequest(message: String, cause: Throwable? = null): ResponseStatusException =

@@ -6,9 +6,10 @@ import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
@@ -19,14 +20,18 @@ import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.core.exception.SdkClientException
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.SqsException
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 class SqsBatchCoordinatorTest {
+
+    companion object: KLogging()
 
     @Test
     fun `bounded snapshot covers count matrix and never reads beyond limit plus one`() = runTest {
@@ -40,6 +45,7 @@ class SqsBatchCoordinatorTest {
 
             val result = coordinator.sendMany(entries)
 
+            log.debug { "result=$result" }
             result.successful shouldHaveSize count
             result.failed shouldHaveSize 0
             transport.sendEntries shouldHaveSize count
@@ -78,7 +84,10 @@ class SqsBatchCoordinatorTest {
         val duplicateId = entryId("duplicate")
         assertFailsWith<IllegalArgumentException> {
             duplicateCoordinator.sendMany(
-                listOf(sendEntry("first", duplicateId), sendEntry("second", duplicateId)),
+                listOf(
+                    sendEntry("first", duplicateId),
+                    sendEntry("second", duplicateId)
+                ),
             )
         }
         duplicateTransport.sendEntries shouldHaveSize 0
@@ -94,7 +103,7 @@ class SqsBatchCoordinatorTest {
     fun `admission snapshots mutable collection and message attributes before suspension`() = runTest {
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterPermitAcquired() {
                 entered.complete(Unit)
                 release.await()
@@ -106,7 +115,9 @@ class SqsBatchCoordinatorTest {
         val first = sendEntry("snapshot-first", attributes = attributes)
         val second = sendEntry("snapshot-second")
         val entries = mutableListOf(first, second)
-        val operation = async(start = CoroutineStart.UNDISPATCHED) { coordinator.sendMany(entries) }
+        val operation = async(start = CoroutineStart.UNDISPATCHED) {
+            coordinator.sendMany(entries)
+        }
         entered.await()
 
         attributes["trace"] = messageAttribute("after")
@@ -124,11 +135,15 @@ class SqsBatchCoordinatorTest {
     @Test
     fun `global admission and per call windows bound active resident and pending results`() = runTest {
         val transport = CoordinatorTestTransport()
-        val futures = List(3) { CoordinatorCountingFuture<SqsBatchOutcome>() }
+        val futures = List(3) {
+            CoordinatorCountingFuture<SqsBatchOutcome>()
+        }
         futures.forEach(transport::enqueueSend)
         val coordinator = coordinator(transport, maxInFlight = 2, maxEntries = 5)
         val entries = List(3) { sendEntry("window-$it") }
-        val operation = async { coordinator.sendMany(entries) }
+        val operation = async {
+            coordinator.sendMany(entries)
+        }
         runCurrent()
 
         transport.maxActive shouldBeLessOrEqualTo 2
@@ -249,7 +264,7 @@ class SqsBatchCoordinatorTest {
         val coordinator = coordinator(transport, maxInFlight = 1, maxEntries = 1)
 
         val failure = assertFailsWith<IllegalStateException> {
-            withTimeout(100) {
+            withTimeout(100.milliseconds) {
                 coordinator.sendMany(listOf(sendEntry("malformed")))
             }
         }
@@ -273,7 +288,7 @@ class SqsBatchCoordinatorTest {
         val tokens = CopyOnWriteArrayList<Long>()
         val bothRegistered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
-        val hooks = object : SqsBatchCoordinatorHooks {
+        val hooks = object: SqsBatchCoordinatorHooks {
             override suspend fun afterPlaceholderRegistered(token: Long) {
                 tokens += token
                 if (tokens.size == 2) {
@@ -320,7 +335,7 @@ class SqsBatchCoordinatorTest {
     )
 }
 
-internal class CoordinatorTestTransport : SqsBatchTransport {
+internal class CoordinatorTestTransport: SqsBatchTransport {
     private val sendQueue = ConcurrentLinkedQueue<CompletableFuture<SqsBatchOutcome>>()
     private val deleteQueue = ConcurrentLinkedQueue<CompletableFuture<SqsBatchOutcome>>()
     private val active = AtomicInteger()
@@ -367,7 +382,7 @@ internal class CoordinatorTestTransport : SqsBatchTransport {
     }
 }
 
-internal class CoordinatorCountingFuture<T> : CompletableFuture<T>() {
+internal class CoordinatorCountingFuture<T>: CompletableFuture<T>() {
     val cancelCount = AtomicInteger()
 
     override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
@@ -379,7 +394,7 @@ internal class CoordinatorCountingFuture<T> : CompletableFuture<T>() {
 internal fun sendEntry(
     prefix: String,
     entryId: String = entryId(prefix),
-    attributes: Map<String, software.amazon.awssdk.services.sqs.model.MessageAttributeValue> = emptyMap(),
+    attributes: Map<String, MessageAttributeValue> = emptyMap(),
     groupId: String? = null,
 ): SqsBatchSendEntry = SqsBatchSendEntry(
     entryId = entryId,
@@ -406,7 +421,7 @@ internal fun sendSuccess(entry: SqsBatchSendEntry): SqsBatchOutcome.SendSuccess 
     sequenceNumber = entry.request.messageGroupId?.let { "sequence-${Base58.randomString(16)}" },
 )
 
-private fun messageAttribute(value: String) = software.amazon.awssdk.services.sqs.model.MessageAttributeValue.builder()
+private fun messageAttribute(value: String) = MessageAttributeValue.builder()
     .dataType("String")
     .stringValue(value)
     .build()
@@ -414,7 +429,7 @@ private fun messageAttribute(value: String) = software.amazon.awssdk.services.sq
 private class BoundedProbeCollection<T>(
     private val values: List<T>,
     private val maximumAllowedReads: Int,
-) : AbstractCollection<T>() {
+): AbstractCollection<T>() {
     private val observedReads = AtomicInteger()
 
     override val size: Int
@@ -422,7 +437,7 @@ private class BoundedProbeCollection<T>(
 
     val readCount: Int get() = observedReads.get()
 
-    override fun iterator(): Iterator<T> = object : Iterator<T> {
+    override fun iterator(): Iterator<T> = object: Iterator<T> {
         private var index = 0
 
         override fun hasNext(): Boolean = index < values.size

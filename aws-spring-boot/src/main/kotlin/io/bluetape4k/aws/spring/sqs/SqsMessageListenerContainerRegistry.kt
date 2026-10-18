@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import org.springframework.context.SmartLifecycle
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -11,6 +12,8 @@ import kotlin.concurrent.withLock
  * 애플리케이션의 SQS 리스너 컨테이너를 수명주기 단위로 관리하는 레지스트리.
  */
 class SqsMessageListenerContainerRegistry: SmartLifecycle {
+
+    companion object: KLogging()
 
     private val lifecycleStarted = AtomicBoolean(false)
     private val containerMap = ConcurrentHashMap<String, SqsMessageListenerContainer>()
@@ -80,7 +83,7 @@ class SqsMessageListenerContainerRegistry: SmartLifecycle {
     }
 
     override fun stop() {
-        stop(Runnable {})
+        stop {}
     }
 
     override fun stop(callback: Runnable) {

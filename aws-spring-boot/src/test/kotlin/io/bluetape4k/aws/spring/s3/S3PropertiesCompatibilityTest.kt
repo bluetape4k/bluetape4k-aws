@@ -1,11 +1,19 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeNull
-import kotlin.jvm.internal.DefaultConstructorMarker
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
+import kotlin.jvm.internal.DefaultConstructorMarker
 
 class S3PropertiesCompatibilityTest {
+
+    companion object: KLogging()
 
     @Test
     fun `legacy constructor and copy preserve the four field API`() {
@@ -16,10 +24,11 @@ class S3PropertiesCompatibilityTest {
             false,
         )
 
-        properties.enabled shouldBeEqualTo false
+        log.debug { "properties=$properties" }
+        properties.enabled.shouldBeFalse()
         properties.keyId shouldBeEqualTo "alias/legacy"
         properties.encryptionContext shouldBeEqualTo mapOf("purpose" to "test")
-        properties.useDataKeyCache shouldBeEqualTo false
+        properties.useDataKeyCache.shouldBeFalse()
         properties.provider shouldBeEqualTo ClientSideEncryptionProvider.KMS
         properties.keyVersion.shouldBeNull()
 
@@ -28,12 +37,13 @@ class S3PropertiesCompatibilityTest {
             keyVersion = "v2",
         )
         val copied = providerProperties.copy(
-            false,
-            "alias/copied",
-            emptyMap(),
-            false,
+            enabled = false,
+            keyId = "alias/copied",
+            encryptionContext = emptyMap(),
+            useDataKeyCache = false,
         )
 
+        log.debug { "copied=$copied" }
         copied.provider shouldBeEqualTo ClientSideEncryptionProvider.AES
         copied.keyVersion shouldBeEqualTo "v2"
     }
@@ -47,6 +57,7 @@ class S3PropertiesCompatibilityTest {
             emptyMap(),
             true,
         )
+        log.debug { "properties=$properties" }
 
         type.getConstructor(
             Boolean::class.javaPrimitiveType,
@@ -64,7 +75,7 @@ class S3PropertiesCompatibilityTest {
         )
 
         val legacyCopyDefault = type.getMethod(
-            "copy\$default",
+            $$"copy$default",
             type,
             Boolean::class.javaPrimitiveType,
             String::class.java,
@@ -82,23 +93,26 @@ class S3PropertiesCompatibilityTest {
             properties.useDataKeyCache,
             15,
             null,
-        ) as S3Properties.ClientSideEncryption
+        ).shouldBeInstanceOf<S3Properties.ClientSideEncryption>()
         copiedWithDefaults shouldBeEqualTo properties
 
-        val legacyDefaultConstructor = type.getConstructor(
-            Boolean::class.javaPrimitiveType,
-            String::class.java,
-            Map::class.java,
-            Boolean::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-            DefaultConstructorMarker::class.java,
-        ).newInstance(false, "alias/legacy", emptyMap<String, String>(), true, 15, null)
-            as S3Properties.ClientSideEncryption
+        val legacyDefaultConstructor = type
+            .getConstructor(
+                Boolean::class.javaPrimitiveType,
+                String::class.java,
+                Map::class.java,
+                Boolean::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                DefaultConstructorMarker::class.java,
+            )
+            .newInstance(false, "alias/legacy", emptyMap<String, String>(), true, 15, null)
+            .shouldBeInstanceOf<S3Properties.ClientSideEncryption>()
 
-        legacyDefaultConstructor.enabled shouldBeEqualTo false
+        log.debug { "legacyDefaultConstructor=$legacyDefaultConstructor" }
+        legacyDefaultConstructor.enabled.shouldBeFalse()
         legacyDefaultConstructor.keyId.shouldBeNull()
-        legacyDefaultConstructor.encryptionContext shouldBeEqualTo emptyMap()
-        legacyDefaultConstructor.useDataKeyCache shouldBeEqualTo true
+        legacyDefaultConstructor.encryptionContext.shouldBeEmpty()
+        legacyDefaultConstructor.useDataKeyCache.shouldBeTrue()
         legacyDefaultConstructor.provider shouldBeEqualTo ClientSideEncryptionProvider.KMS
         legacyDefaultConstructor.keyVersion.shouldBeNull()
     }

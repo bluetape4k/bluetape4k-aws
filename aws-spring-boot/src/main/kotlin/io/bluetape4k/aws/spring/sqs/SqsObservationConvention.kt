@@ -16,7 +16,7 @@ const val SQS_ACKNOWLEDGEMENT_OBSERVATION_NAME: String = "bluetape4k.aws.sqs.ack
  * [SqsObservationContext]만 읽으며 메시지 본문, receipt handle 또는 전체 queue URL에
  * 접근하지 않습니다.
  */
-interface SqsObservationConvention : ObservationConvention<SqsObservationContext> {
+interface SqsObservationConvention: ObservationConvention<SqsObservationContext> {
     val stage: SqsObservationStage
 
     override fun supportsContext(context: Observation.Context): Boolean =
@@ -41,7 +41,7 @@ internal fun resolveSqsObservationConventions(
 
 private class DefaultSqsObservationConvention(
     override val stage: SqsObservationStage,
-) : SqsObservationConvention {
+): SqsObservationConvention {
 
     override fun getName(): String = when (stage) {
         SqsObservationStage.RECEIVE -> SQS_RECEIVE_OBSERVATION_NAME

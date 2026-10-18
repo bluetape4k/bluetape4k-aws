@@ -3,7 +3,11 @@
 package io.bluetape4k.aws.spring.connection
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,7 +26,7 @@ import software.amazon.awssdk.services.s3.S3Client
 )
 class AwsServiceConnectionLocalStackAwsEmulatorTest {
 
-    companion object {
+    companion object: KLogging() {
         @JvmField
         @Container
         @ServiceConnection(name = "s3")
@@ -40,18 +44,22 @@ class AwsServiceConnectionLocalStackAwsEmulatorTest {
 
     @Test
     fun serviceConnectionUsesExpectedBackend() {
-        context.isActive shouldBeEqualTo true
+        context.isActive.shouldBeTrue()
+
         connectionDetails.endpoint shouldBeEqualTo localStack.awsEndpoint
         connectionDetails.region shouldBeEqualTo localStack.regionName
         connectionDetails.accessKey.shouldNotBeBlank()
         connectionDetails.secretKey.shouldNotBeBlank()
-        s3Client.serviceClientConfiguration().endpointOverride().orElse(null) shouldBeEqualTo localStack.awsEndpoint
+
+        s3Client.serviceClientConfiguration()
+            .endpointOverride().orElse(null) shouldBeEqualTo localStack.awsEndpoint
     }
 
     @Test
     fun s3RoundTripStaysWithinOwnerBucket() {
         val receipt = AwsServiceConnectionTestFixtures.roundTrip(s3Client, localStack)
+        log.debug { "receipt=$receipt" }
         receipt.backend shouldBeEqualTo "LocalStackServer"
-        receipt.key.contains(receipt.ownerToken) shouldBeEqualTo true
+        receipt.key shouldContain receipt.ownerToken
     }
 }

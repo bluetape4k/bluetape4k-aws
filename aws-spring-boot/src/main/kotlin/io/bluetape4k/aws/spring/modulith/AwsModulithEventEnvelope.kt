@@ -1,8 +1,7 @@
 package io.bluetape4k.aws.spring.modulith
 
 import java.io.Serializable
-import java.util.Collections
-import java.util.LinkedHashMap
+import java.util.*
 
 /**
  * AWS 외부화 transport가 사용하는 versioned 이벤트 envelope입니다.
@@ -19,7 +18,7 @@ data class AwsModulithEventEnvelope private constructor(
     val version: Int,
     val payload: String,
     private val headerSnapshot: ImmutableStringMap,
-) : Serializable {
+): Serializable {
     constructor(
         specVersion: Int = 1,
         id: String,
@@ -27,7 +26,7 @@ data class AwsModulithEventEnvelope private constructor(
         version: Int,
         payload: String,
         headers: Map<String, String> = emptyMap(),
-    ) : this(specVersion, id, type, version, payload, ImmutableStringMap(headers))
+    ): this(specVersion, id, type, version, payload, ImmutableStringMap(headers))
 
     val headers: Map<String, String>
         get() = headerSnapshot.values
@@ -45,9 +44,9 @@ data class AwsModulithEventEnvelope private constructor(
 internal data class AwsModulithEncodedEvent private constructor(
     val body: String,
     private val attributeSnapshot: ImmutableStringMap,
-) : Serializable {
-    constructor(body: String, messageAttributes: Map<String, String>) :
-        this(body, ImmutableStringMap(messageAttributes))
+): Serializable {
+    constructor(body: String, messageAttributes: Map<String, String>):
+            this(body, ImmutableStringMap(messageAttributes))
 
     val messageAttributes: Map<String, String>
         get() = attributeSnapshot.values
@@ -60,7 +59,7 @@ internal data class AwsModulithEncodedEvent private constructor(
     }
 }
 
-private class ImmutableStringMap(source: Map<String, String>) : Serializable {
+private class ImmutableStringMap(source: Map<String, String>): Serializable {
     val values: Map<String, String> = Collections.unmodifiableMap(LinkedHashMap(source))
 
     override fun equals(other: Any?): Boolean = other is ImmutableStringMap && values == other.values

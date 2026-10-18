@@ -1,10 +1,12 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.aws.spring.sns.SnsHttpMessage
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
 import io.bluetape4k.aws.spring.sqs.SqsReceivedMessage
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
@@ -18,8 +20,10 @@ class AwsModulithSnsSourceVerifierTest {
 
         listOf("Notification", "SubscriptionConfirmation", "UnsubscribeConfirmation").forEach { type ->
             val body = notification().replace("\"Notification\"", "\"$type\"")
-            kotlin.runCatching { decoder.decode(message(body)) }.exceptionOrNull()
-                .shouldBeInstanceOf<AwsModulithSourceException>()
+
+            assertFailsWith<AwsModulithSourceException> {
+                decoder.decode(message(body))
+            }
         }
     }
 
@@ -29,6 +33,7 @@ class AwsModulithSnsSourceVerifierTest {
         val decoder = decoder(AwsModulithSourceMode.DIRECT, codec = codec)
 
         val decoded = decoder.decode(message(ENVELOPE, directAttributes()))
+        log.debug { "decoded: $decoded" }
 
         codec.body shouldBeEqualTo ENVELOPE
         decoded.key shouldBeEqualTo AwsModulithEventKey("orders.created", "evt-1")
@@ -46,9 +51,9 @@ class AwsModulithSnsSourceVerifierTest {
             },
         )
 
-        kotlin.runCatching {
+        assertFailsWith<AwsModulithSourceException> {
             decoder.decode(message(notification(topicArn = UNEXPECTED_ARN)))
-        }.exceptionOrNull().shouldBeInstanceOf<AwsModulithSourceException>()
+        }
         calls.get() shouldBeEqualTo 0
     }
 
@@ -60,7 +65,7 @@ class AwsModulithSnsSourceVerifierTest {
             mode = AwsModulithSourceMode.SNS,
             codec = codec,
             expectedArns = setOf(EXPECTED_ARN),
-            verifier = AwsModulithSnsNotificationVerifier { json, arn ->
+            verifier = { json, arn ->
                 calls.incrementAndGet()
                 SnsHttpMessageParser.parse(json, expectedTopicArn = arn)
             },
@@ -77,8 +82,9 @@ class AwsModulithSnsSourceVerifierTest {
     fun `structurally valid unsigned SNS notification is rejected`() {
         val decoder = decoder(AwsModulithSourceMode.SNS, expectedArns = setOf(EXPECTED_ARN))
 
-        kotlin.runCatching { decoder.decode(message(notification())) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithSourceException>()
+        assertFailsWith<AwsModulithSourceException> {
+            decoder.decode(message(notification()))
+        }
     }
 
     @Test
@@ -94,8 +100,9 @@ class AwsModulithSnsSourceVerifierTest {
         )
 
         hostile.forEach { json ->
-            kotlin.runCatching { decoder.decode(message(json)) }.exceptionOrNull()
-                .shouldBeInstanceOf<AwsModulithSourceException>()
+            assertFailsWith<AwsModulithSourceException> {
+                decoder.decode(message(json))
+            }
         }
     }
 
@@ -110,13 +117,14 @@ class AwsModulithSnsSourceVerifierTest {
             json + " ".repeat(MAX_SOURCE_BYTES - json.toByteArray().size)
         }
         val exactString = notification().dropLast(1) +
-            ",\"Subject\":\"${"x".repeat(MAX_STRING_LENGTH)}\"}"
+                ",\"Subject\":\"${"x".repeat(MAX_STRING_LENGTH)}\"}"
         val overString = notification().dropLast(1) +
-            ",\"Subject\":\"${"x".repeat(MAX_STRING_LENGTH + 1)}\"}"
+                ",\"Subject\":\"${"x".repeat(MAX_STRING_LENGTH + 1)}\"}"
         val exactUtf8String = notification().dropLast(1) +
-            ",\"Subject\":\"${"가".repeat(MAX_STRING_LENGTH / 3)}\"}"
+                ",\"Subject\":\"${"가".repeat(MAX_STRING_LENGTH / 3)}\"}"
         val overUtf8String = notification().dropLast(1) +
-            ",\"Subject\":\"${"가".repeat(MAX_STRING_LENGTH / 3 + 1)}\"}"
+                ",\"Subject\":\"${"가".repeat(MAX_STRING_LENGTH / 3 + 1)}\"}"
+
         val exactNumber = notification(messageAttributes = "{\"x\":${number(MAX_NUMBER_LENGTH)}}")
         val overNumber = notification(messageAttributes = "{\"x\":${number(MAX_NUMBER_LENGTH + 1)}}")
         val exactDepth = notification(messageAttributes = nestedArrays(MAX_DEPTH - 1))
@@ -125,9 +133,11 @@ class AwsModulithSnsSourceVerifierTest {
         listOf(exactBytes, exactString, exactUtf8String, exactNumber, exactDepth).forEach { json ->
             decoder.decode(message(json)).key shouldBeEqualTo AwsModulithEventKey("orders.created", "evt-1")
         }
+
         listOf(overString, overUtf8String, overNumber, overDepth).forEach { json ->
-            kotlin.runCatching { decoder.decode(message(json)) }.exceptionOrNull()
-                .shouldBeInstanceOf<AwsModulithSourceException>()
+            assertFailsWith<AwsModulithSourceException> {
+                decoder.decode(message(json))
+            }
         }
     }
 
@@ -142,8 +152,9 @@ class AwsModulithSnsSourceVerifierTest {
         val over = notification(messageAttributes = numericArray(EXACT_ARRAY_VALUES + 1))
 
         decoder.decode(message(exact)).key shouldBeEqualTo AwsModulithEventKey("orders.created", "evt-1")
-        kotlin.runCatching { decoder.decode(message(over)) }.exceptionOrNull()
-            .shouldBeInstanceOf<AwsModulithSourceException>()
+        assertFailsWith<AwsModulithSourceException> {
+            decoder.decode(message(over))
+        }
     }
 
     @Test
@@ -160,8 +171,9 @@ class AwsModulithSnsSourceVerifierTest {
                     "\"$name\":${quote(value)}",
                     "\"$name\":$replacement",
                 )
-                kotlin.runCatching { decoder.decode(message(hostile)) }.exceptionOrNull()
-                    .shouldBeInstanceOf<AwsModulithSourceException>()
+                assertFailsWith<AwsModulithSourceException> {
+                    decoder.decode(message(hostile))
+                }
             }
         }
     }
@@ -206,7 +218,8 @@ class AwsModulithSnsSourceVerifierTest {
         topicArn: String = EXPECTED_ARN,
         message: String = ENVELOPE,
         messageAttributes: String = VALID_ATTRIBUTES,
-    ): String = """{"Type":"Notification","MessageId":"sns-1","TopicArn":"$topicArn","Message":${quote(message)},"Timestamp":"2026-08-26T00:00:00Z","SignatureVersion":"1","Signature":"signature","SigningCertURL":"https://sns.us-east-1.amazonaws.com/cert.pem","MessageAttributes":$messageAttributes}"""
+    ): String =
+        """{"Type":"Notification","MessageId":"sns-1","TopicArn":"$topicArn","Message":${quote(message)},"Timestamp":"2026-08-26T00:00:00Z","SignatureVersion":"1","Signature":"signature","SigningCertURL":"https://sns.us-east-1.amazonaws.com/cert.pem","MessageAttributes":$messageAttributes}"""
 
     private fun number(length: Int): String = "1" + "0".repeat(length - 1)
 
@@ -233,7 +246,7 @@ class AwsModulithSnsSourceVerifierTest {
         append('"')
     }
 
-    private class RecordingCodec : AwsModulithEventCodec {
+    private class RecordingCodec: AwsModulithEventCodec {
         var body: String? = null
 
         override fun encode(event: Any): AwsModulithEncodedEvent = error("not used")
@@ -246,7 +259,7 @@ class AwsModulithSnsSourceVerifierTest {
 
     private data class TestEvent(val id: String)
 
-    private companion object {
+    private companion object: KLogging() {
         const val EXPECTED_ARN = "arn:aws:sns:us-east-1:123456789012:events"
         const val UNEXPECTED_ARN = "arn:aws:sns:us-east-1:123456789012:other"
         const val ENVELOPE = "{\"specVersion\":1}"
@@ -267,8 +280,8 @@ class AwsModulithSnsSourceVerifierTest {
         )
         const val VALID_ATTRIBUTES =
             "{\"bt4k-event-id\":{\"Type\":\"String\",\"Value\":\"evt-1\"}," +
-                "\"bt4k-event-type\":{\"Type\":\"String\",\"Value\":\"orders.created\"}," +
-                "\"bt4k-event-version\":{\"Type\":\"String\",\"Value\":\"1\"}}"
+                    "\"bt4k-event-type\":{\"Type\":\"String\",\"Value\":\"orders.created\"}," +
+                    "\"bt4k-event-version\":{\"Type\":\"String\",\"Value\":\"1\"}}"
     }
 }
 

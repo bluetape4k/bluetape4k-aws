@@ -1,20 +1,24 @@
 package io.bluetape4k.aws.spring.config
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataSdkAdapter
 import io.bluetape4k.aws.spring.s3.S3ConfigDataLoader
 import io.bluetape4k.aws.spring.s3.S3ConfigDataSdkAdapter
-import io.bluetape4k.aws.spring.parameterstore.ParameterStoreConfigDataSdkAdapter
 import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerConfigDataSdkAdapter
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.boot.bootstrap.DefaultBootstrapContext
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
-import org.springframework.boot.context.config.ConfigDataLocation
-import org.springframework.boot.context.config.ConfigDataLoaderContext
+import org.springframework.boot.bootstrap.DefaultBootstrapContext
 import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor
+import org.springframework.boot.context.config.ConfigDataLoaderContext
+import org.springframework.boot.context.config.ConfigDataLocation
 import org.springframework.core.env.MapPropertySource
 import org.springframework.core.env.StandardEnvironment
 import org.springframework.core.io.DefaultResourceLoader
@@ -23,6 +27,17 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.ssm.SsmClient
 
 class AwsConfigDataImportApplicationTest {
+
+    companion object: KLogging()
+
+    private val s3Client = mockk<S3Client>(relaxed = true)
+    private val ssmClient = mockk<SsmClient>(relaxed = true)
+    private val secretsManagerClient = mockk<SecretsManagerClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(s3Client, ssmClient, secretsManagerClient)
+    }
 
     @Test
     @Suppress("UNCHECKED_CAST")
@@ -43,9 +58,7 @@ class AwsConfigDataImportApplicationTest {
                 ),
             )
         }
-        val s3Client = mockk<S3Client>(relaxed = true)
-        val ssmClient = mockk<SsmClient>(relaxed = true)
-        val secretsManagerClient = mockk<SecretsManagerClient>(relaxed = true)
+
         mockkObject(
             S3ConfigDataSdkAdapter,
             ParameterStoreConfigDataSdkAdapter,
@@ -67,9 +80,10 @@ class AwsConfigDataImportApplicationTest {
                 environment,
                 DefaultResourceLoader(),
                 bootstrap,
-                emptyList<String>(),
+                emptyList(),
             )
 
+            log.debug { "environment=$environment" }
             environment.getProperty("app.value") shouldBeEqualTo "second"
             environment.getProperty("app.parameter") shouldBeEqualTo "ssm"
             environment.getProperty("app.secret") shouldBeEqualTo "secret"
@@ -101,9 +115,6 @@ class AwsConfigDataImportApplicationTest {
                 ),
             )
         }
-        val s3Client = mockk<S3Client>(relaxed = true)
-        val ssmClient = mockk<SsmClient>(relaxed = true)
-        val secretsManagerClient = mockk<SecretsManagerClient>(relaxed = true)
         mockkObject(
             S3ConfigDataSdkAdapter,
             ParameterStoreConfigDataSdkAdapter,
@@ -124,6 +135,7 @@ class AwsConfigDataImportApplicationTest {
                 emptyList<String>(),
             )
 
+            log.debug { "environment=$environment" }
             environment.getProperty("app.value") shouldBeEqualTo "yaml-s3"
             environment.getProperty("app.parameter") shouldBeEqualTo "yaml-ssm"
             environment.getProperty("app.secret") shouldBeEqualTo "yaml-secret"
@@ -154,7 +166,7 @@ class AwsConfigDataImportApplicationTest {
         )
         parsed.map { it.optional } shouldBeEqualTo listOf(true, false, true)
         parsed.map { it.source.canonicalSource } shouldBeEqualTo
-            listOf("/bucket/application.yml", "/application", "prod")
+                listOf("/bucket/application.yml", "/application", "prod")
     }
 
     @Test
@@ -162,7 +174,7 @@ class AwsConfigDataImportApplicationTest {
     fun `later ConfigData import overrides an earlier value`() {
         val bootstrap = mockk<ConfigurableBootstrapContext>(relaxed = true)
         val context = mockk<ConfigDataLoaderContext> {
-            every { getBootstrapContext() } returns bootstrap
+            every { bootstrapContext } returns bootstrap
         }
         val first = AwsConfigDataResource.from(
             AwsConfigDataLocationParser().parse(ConfigDataLocation.of("aws-s3:/bucket/first")),
@@ -184,6 +196,7 @@ class AwsConfigDataImportApplicationTest {
                 merged.putAll(source)
             }
 
+            log.debug { "merged=$merged" }
             merged["app.value"] shouldBeEqualTo "second"
         } finally {
             unmockkObject(S3ConfigDataSdkAdapter)

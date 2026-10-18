@@ -1,18 +1,24 @@
 package io.bluetape4k.aws.spring.s3vectors
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.s3vectors.S3VectorsCoroutinesTemplate
 import io.bluetape4k.aws.s3vectors.S3VectorsOperations
 import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizationContext
 import io.bluetape4k.aws.spring.AwsClientCustomizer
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -28,7 +34,14 @@ import software.amazon.awssdk.services.s3vectors.S3VectorsAsyncClientBuilder
 
 class S3VectorsAutoConfigurationTest {
 
+    companion object: KLogging()
+
     private val customS3VectorsAsyncClient = mockk<S3VectorsAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(customS3VectorsAsyncClient)
+    }
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -49,10 +62,10 @@ class S3VectorsAutoConfigurationTest {
     fun `register S3 Vectors client and operations when enabled`() {
         contextRunner.run { context ->
             context.startupFailure.shouldBeNull()
-            context.getBeansOfType(S3VectorsAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3VectorsProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3VectorsOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3VectorsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<S3VectorsAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<S3VectorsProperties>() shouldHaveSize 1
+            context.getBeansOfType<S3VectorsOperations>() shouldHaveSize 1
+            context.getBeansOfType<S3VectorsCoroutinesTemplate>() shouldHaveSize 1
         }
     }
 
@@ -68,8 +81,8 @@ class S3VectorsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.s3-vectors.region=us-east-1")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3VectorsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3VectorsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3VectorsAsyncClient>() shouldHaveSize 0
+                context.getBeansOfType<S3VectorsOperations>() shouldHaveSize 0
             }
     }
 
@@ -78,9 +91,9 @@ class S3VectorsAutoConfigurationTest {
         contextRunner
             .withBean(S3VectorsAsyncClient::class.java, { customS3VectorsAsyncClient })
             .run { context ->
-                context.getBeansOfType(S3VectorsAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(S3VectorsAsyncClient::class.java) shouldBeSameInstanceAs customS3VectorsAsyncClient
-                context.getBeansOfType(S3VectorsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3VectorsAsyncClient>() shouldHaveSize 1
+                context.getBean<S3VectorsAsyncClient>() shouldBeSameInstanceAs customS3VectorsAsyncClient
+                context.getBeansOfType<S3VectorsOperations>() shouldHaveSize 1
             }
     }
 
@@ -89,9 +102,9 @@ class S3VectorsAutoConfigurationTest {
         contextRunner
             .withBean(S3VectorsOperations::class.java, { NoopS3VectorsOperations })
             .run { context ->
-                context.getBeansOfType(S3VectorsOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3VectorsCoroutinesTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(S3VectorsOperations::class.java) shouldBeSameInstanceAs NoopS3VectorsOperations
+                context.getBeansOfType<S3VectorsOperations>() shouldHaveSize 1
+                context.getBeansOfType<S3VectorsCoroutinesTemplate>() shouldHaveSize 0
+                context.getBean<S3VectorsOperations>() shouldBeSameInstanceAs NoopS3VectorsOperations
             }
     }
 
@@ -131,7 +144,7 @@ class S3VectorsAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3VectorsAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3VectorsAsyncClient>() shouldHaveSize 1
             }
     }
 
@@ -142,7 +155,7 @@ class S3VectorsAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(S3VectorsCustomizerConfig::class.java)
             .run { context ->
-                context.getBean(S3VectorsAsyncClient::class.java).shouldNotBeNull()
+                context.getBean<S3VectorsAsyncClient>().shouldNotBeNull()
                 S3VectorsCustomizerConfig.calls shouldBeEqualTo listOf(
                     "global-async:s3vectors",
                     "s3vectors-async",
@@ -155,8 +168,8 @@ class S3VectorsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.s3vectors"))
             .run { context ->
-                context.getBeansOfType(S3VectorsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3VectorsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3VectorsAsyncClient>() shouldHaveSize 0
+                context.getBeansOfType<S3VectorsOperations>() shouldHaveSize 0
             }
     }
 

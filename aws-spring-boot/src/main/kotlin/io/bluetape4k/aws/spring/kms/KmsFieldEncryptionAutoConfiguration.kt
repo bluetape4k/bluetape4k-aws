@@ -1,12 +1,12 @@
 package io.bluetape4k.aws.spring.kms
 
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * 명시적인 필드 수준 KMS 암호화 도우미의 자동 구성입니다.

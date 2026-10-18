@@ -1,8 +1,11 @@
 package io.bluetape4k.aws.spring
 
-import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -11,6 +14,8 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 class AwsGlobalAutoConfigurationDisableTest {
+
+    companion object: KLogging()
 
     @Test
     fun `all imported AWS auto configurations are guarded by global enabled flag`() {
@@ -25,12 +30,12 @@ class AwsGlobalAutoConfigurationDisableTest {
             .withConfiguration(AutoConfigurations.of(*importedAutoConfigurationClasses()))
             .withPropertyValues("bluetape4k.aws.enabled=false")
             .run { context ->
-                context.startupFailure shouldBeEqualTo null
-                context.getBeansOfType(AwsProperties::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(AwsCredentialsProvider::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3Client::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(SqsAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(DynamoDbClient::class.java).size shouldBeEqualTo 0
+                context.startupFailure.shouldBeNull()
+                context.getBeansOfType<AwsProperties>().shouldBeEmpty()
+                context.getBeansOfType<AwsCredentialsProvider>().shouldBeEmpty()
+                context.getBeansOfType<S3Client>().shouldBeEmpty()
+                context.getBeansOfType<SqsAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<DynamoDbClient>().shouldBeEmpty()
             }
     }
 

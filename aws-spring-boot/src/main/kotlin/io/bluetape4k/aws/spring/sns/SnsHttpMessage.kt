@@ -37,7 +37,7 @@ data class SnsHttpMessage(
 
     val canConfirmSubscription: Boolean
         get() = type == SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION ||
-            type == SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
+                type == SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
 
     /** SNS와 SQS adapter가 공유하는 `SnsMessageAttribute` 타입의 방어적 snapshot입니다. */
     val messageAttributes: Map<String, SnsMessageAttribute>

@@ -2,12 +2,11 @@ package io.bluetape4k.aws.spring.connection
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
-import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsProperties
 import io.bluetape4k.aws.spring.dynamodb.DynamoDbAutoConfiguration
@@ -15,8 +14,11 @@ import io.bluetape4k.aws.spring.kinesis.KinesisAutoConfiguration
 import io.bluetape4k.aws.spring.s3.S3AutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsAutoConfiguration
 import io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -30,6 +32,8 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.net.URI
 
 class AwsServiceConnectionAutoConfigurationTest {
+
+    companion object: KLogging()
 
     @Test
     fun `details override service and shared properties for S3`() {
@@ -46,11 +50,13 @@ class AwsServiceConnectionAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                val client = context.getBean(S3Client::class.java)
-                client.serviceClientConfiguration().endpointOverride().orElse(null) shouldBeEqualTo
-                    URI.create("http://details:4566")
+                val client = context.getBean<S3Client>()
+
+                client.serviceClientConfiguration()
+                    .endpointOverride().orElse(null) shouldBeEqualTo URI.create("http://details:4566")
                 client.serviceClientConfiguration().region().id() shouldBeEqualTo "us-east-1"
-                context.getBean(AwsCredentialsProvider::class.java)
+
+                context.getBean<AwsCredentialsProvider>()
                     .resolveCredentials().accessKeyId() shouldBeEqualTo "details-access"
             }
     }
@@ -72,13 +78,13 @@ class AwsServiceConnectionAutoConfigurationTest {
                 .run { context ->
                     context.startupFailure.shouldBeNull()
                     when (serviceName) {
-                        "sqs" -> context.getBean(SqsAsyncClient::class.java)
+                        "sqs" -> context.getBean<SqsAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
-                        "sns" -> context.getBean(SnsAsyncClient::class.java)
+                        "sns" -> context.getBean<SnsAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
-                        "dynamodb" -> context.getBean(DynamoDbAsyncClient::class.java)
+                        "dynamodb" -> context.getBean<DynamoDbAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
-                        "kinesis" -> context.getBean(KinesisAsyncClient::class.java)
+                        "kinesis" -> context.getBean<KinesisAsyncClient>()
                             .serviceClientConfiguration().endpointOverride().orElse(null)
                         else -> error("Unexpected service $serviceName")
                     } shouldBeEqualTo URI.create("http://properties:4566")
@@ -98,7 +104,7 @@ class AwsServiceConnectionAutoConfigurationTest {
             })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                val credentials = context.getBean(AwsCredentialsProvider::class.java).resolveCredentials()
+                val credentials = context.getBean<AwsCredentialsProvider>().resolveCredentials()
                 credentials.accessKeyId() shouldBeEqualTo "same-access"
                 credentials.secretAccessKey() shouldBeEqualTo "same-secret"
             }
@@ -116,11 +122,15 @@ class AwsServiceConnectionAutoConfigurationTest {
             })
             .run { context ->
                 val failure = context.startupFailure.shouldNotBeNull()
-                val messages = generateSequence(failure) { it.cause }.mapNotNull { it.message }.joinToString("\n")
+                val messages = generateSequence(failure) { it.cause }
+                    .mapNotNull { it.message }
+                    .joinToString("\n")
+
+                log.debug { "messagse=$messages" }
                 messages shouldContain "CREDENTIAL_CONFLICT"
                 messages shouldContain "candidates=2"
-                messages.contains("secret-one").shouldBeFalse()
-                messages.contains("secret-two").shouldBeFalse()
+                messages shouldNotContain "secret-one"
+                messages shouldNotContain "secret-two"
             }
     }
 
@@ -155,8 +165,9 @@ class AwsServiceConnectionAutoConfigurationTest {
             .withBean(S3Client::class.java, { customClient })
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(AwsCredentialsProvider::class.java).shouldBeSameInstanceAs(customProvider)
-                context.getBean(S3Client::class.java).shouldBeSameInstanceAs(customClient)
+
+                context.getBean<AwsCredentialsProvider>().shouldBeSameInstanceAs(customProvider)
+                context.getBean<S3Client>().shouldBeSameInstanceAs(customClient)
             }
     }
 
@@ -178,9 +189,8 @@ class AwsServiceConnectionAutoConfigurationTest {
             }
             configuredRunner.run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBean(AwsCredentialsProvider::class.java)
-                    .shouldBeInstanceOf(DefaultCredentialsProvider::class)
-                context.getBean(AwsProperties::class.java).region shouldBeEqualTo "us-east-1"
+                context.getBean<AwsCredentialsProvider>().shouldBeInstanceOf(DefaultCredentialsProvider::class)
+                context.getBean<AwsProperties>().region shouldBeEqualTo "us-east-1"
             }
         }
     }

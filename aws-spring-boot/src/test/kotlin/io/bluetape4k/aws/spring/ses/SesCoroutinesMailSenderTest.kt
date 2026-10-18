@@ -3,20 +3,34 @@ package io.bluetape4k.aws.spring.ses
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeEmpty
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.mockk.CapturingSlot
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.io.Serializable
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
 import software.amazon.awssdk.services.sesv2.model.AttachmentContentDisposition
 import software.amazon.awssdk.services.sesv2.model.SendEmailRequest
 import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
-import java.util.concurrent.CompletableFuture
+import java.io.Serializable
 
 class SesCoroutinesMailSenderTest {
+
+    companion object: KLogging()
+
+    private val client = mockk<SesV2AsyncClient>()
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `sendEmail maps simple message headers and attachments`() = runTest {
@@ -38,9 +52,11 @@ class SesCoroutinesMailSenderTest {
                 ),
             )
         )
+        log.debug { "result: $result" }
+        result.messageId() shouldBeEqualTo "message-1"
 
         val request = fixture.request.captured
-        result.messageId() shouldBeEqualTo "message-1"
+        log.debug { "request=$request" }
         request.fromEmailAddress() shouldBeEqualTo "sender@example.com"
         request.destination().toAddresses() shouldBeEqualTo listOf("to@example.com")
         request.replyToAddresses() shouldBeEqualTo listOf("reply@example.com")
@@ -51,6 +67,7 @@ class SesCoroutinesMailSenderTest {
         request.content().simple().headers().first().name() shouldBeEqualTo "X-Trace-Id"
         request.content().simple().attachments().first().fileName() shouldBeEqualTo "hello.txt"
         request.content().simple().attachments().first().rawContent().asByteArray().shouldNotBeEmpty()
+
         verify(exactly = 1) { fixture.client.sendEmail(any<SendEmailRequest>()) }
     }
 
@@ -75,6 +92,7 @@ class SesCoroutinesMailSenderTest {
         )
 
         val request = fixture.request.captured
+        log.debug { "request=$request" }
         request.fromEmailAddress() shouldBeEqualTo "sender@example.com"
         request.content().template().templateName() shouldBeEqualTo "welcome"
         request.content().template().templateData() shouldBeEqualTo """{"name":"Bluetape"}"""
@@ -94,6 +112,7 @@ class SesCoroutinesMailSenderTest {
         )
 
         val request = fixture.request.captured
+        log.debug { "request=$request" }
         request.fromEmailAddress() shouldBeEqualTo "sender@example.com"
         request.destination().toAddresses() shouldBeEqualTo listOf("to@example.com")
         request.content().raw().data().asByteArray().shouldNotBeEmpty()
@@ -112,8 +131,9 @@ class SesCoroutinesMailSenderTest {
                 )
         }
 
-        error.message.orEmpty() shouldBeEqualTo
-            "from is required when bluetape4k.aws.ses.default-from is not configured."
+        log.debug { "error=$error" }
+        error.message shouldBeEqualTo
+                "from is required when bluetape4k.aws.ses.default-from is not configured."
     }
 
     private fun sender(client: SesV2AsyncClient): SesCoroutinesMailSender =
@@ -127,16 +147,16 @@ class SesCoroutinesMailSenderTest {
         )
 
     private fun mockClient(): SesClientFixture {
-        val client = mockk<SesV2AsyncClient>()
         val request = slot<SendEmailRequest>()
-        every { client.sendEmail(capture(request)) } returns
-            CompletableFuture.completedFuture(SendEmailResponse.builder().messageId("message-1").build())
+        every {
+            client.sendEmail(capture(request))
+        } returns completableFutureOf(SendEmailResponse.builder().messageId("message-1").build())
         return SesClientFixture(client, request)
     }
 
     private data class SesClientFixture(
         val client: SesV2AsyncClient,
-        val request: io.mockk.CapturingSlot<SendEmailRequest>,
+        val request: CapturingSlot<SendEmailRequest>,
     ): Serializable {
         companion object {
             private const val serialVersionUID: Long = 1L

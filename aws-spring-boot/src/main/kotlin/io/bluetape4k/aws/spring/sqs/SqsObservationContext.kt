@@ -55,7 +55,7 @@ class SqsObservationMetadata internal constructor(
     val acknowledgementAction: SqsAcknowledgementAction? = null,
     val delivery: SqsObservationDelivery = SqsObservationDelivery.UNKNOWN,
     queueNameResolved: Boolean = false,
-) : Serializable {
+): Serializable {
 
     val listenerId: String = listenerId.ifBlank { UNKNOWN }
     val queueName: String = if (queueNameResolved) {
@@ -77,7 +77,7 @@ class SqsObservationMetadata internal constructor(
 
             SqsObservationStage.PROCESS,
             SqsObservationStage.ACKNOWLEDGEMENT,
-            -> require(initialAttempt != null && initialAttempt >= 1) {
+                -> require(initialAttempt != null && initialAttempt >= 1) {
                 "initialAttempt must be greater than or equal to 1 for $stage."
             }
         }
@@ -85,8 +85,8 @@ class SqsObservationMetadata internal constructor(
 
     override fun toString(): String =
         "SqsObservationMetadata(listenerId=$listenerId, queueName=$queueName, " +
-            "stage=$stage, batch=$batch, batchSize=$batchSize, " +
-            "acknowledgementAction=$acknowledgementAction, delivery=$delivery)"
+                "stage=$stage, batch=$batch, batchSize=$batchSize, " +
+                "acknowledgementAction=$acknowledgementAction, delivery=$delivery)"
 
     companion object {
         private const val UNKNOWN: String = "unknown"
@@ -105,7 +105,7 @@ class SqsObservationMetadata internal constructor(
  */
 class SqsObservationContext internal constructor(
     val metadata: SqsObservationMetadata,
-) : Observation.Context() {
+): Observation.Context() {
 
     var outcome: SqsObservationOutcome = SqsObservationOutcome.UNKNOWN
         internal set
@@ -159,8 +159,7 @@ internal fun resolveSqsObservationQueueName(queueUrl: String?): String {
 
     val segment = rawPath.substringAfterLast('/')
     return segment.takeIf {
-        SQS_QUEUE_NAME_PATTERN.matches(it) &&
-            !SQS_ACCOUNT_ID_PATTERN.matches(it.removeSuffix(".fifo"))
+        SQS_QUEUE_NAME_PATTERN.matches(it) && !SQS_ACCOUNT_ID_PATTERN.matches(it.removeSuffix(".fifo"))
     } ?: "unknown"
 }
 
@@ -189,8 +188,8 @@ internal class SqsObservationQueueNameCache(
 private fun requireResolvedSqsObservationQueueName(queueName: String) {
     require(
         queueName == "unknown" ||
-            SQS_QUEUE_NAME_PATTERN.matches(queueName) &&
-            !SQS_ACCOUNT_ID_PATTERN.matches(queueName.removeSuffix(".fifo")),
+                SQS_QUEUE_NAME_PATTERN.matches(queueName) &&
+                !SQS_ACCOUNT_ID_PATTERN.matches(queueName.removeSuffix(".fifo")),
     ) { "queueName must already satisfy the SQS observation allowlist." }
 }
 

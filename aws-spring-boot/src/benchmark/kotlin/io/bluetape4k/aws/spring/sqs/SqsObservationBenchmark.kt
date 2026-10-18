@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong
  * 외부 I/O 횟수, observation 수명 주기, terminal 상태 및 활성 observation 누수를 검증합니다.
  */
 @State(Scope.Thread)
-open class SqsObservationBenchmark {
+class SqsObservationBenchmark {
 
     private lateinit var registry: ObservationRegistry
     private lateinit var recorder: CountingObservationHandler
@@ -65,7 +65,7 @@ open class SqsObservationBenchmark {
             factory = defaultSqsObservationFactory(defaultSqsObservationConventions()),
         )
         operations = CountingSqsOperations()
-        val messages = (1..BATCH_SIZE).map(::receivedMessage)
+        val messages = List(BATCH_SIZE) { receivedMessage(it) }
         singleAcknowledgement = DefaultSqsAcknowledgement(
             context = SqsListenerInvocationContext(LISTENER_ID, QUEUE_URL, messages.first(), 1),
             operations = operations,
@@ -175,6 +175,7 @@ open class SqsObservationBenchmark {
             "observation starts=${recorder.starts.get()} stops=${recorder.stops.get()}"
         }
         require(registry.currentObservation == null) { "current observation leaked after invocation" }
+
         when (scenario) {
             Scenario.DIRECT -> {
                 require(sentinel.get() == 1L)
@@ -245,7 +246,7 @@ open class SqsObservationBenchmark {
             }
         }
         try {
-            withTimeout(BENCHMARK_INVOCATION_TIMEOUT_MILLIS) {
+            withTimeout(timeMillis = BENCHMARK_INVOCATION_TIMEOUT_MILLIS) {
                 while (ready.get() < COROUTINE_COUNT) {
                     yield()
                 }
@@ -262,7 +263,7 @@ open class SqsObservationBenchmark {
         }
     }
 
-    private class CountingObservationHandler : ObservationHandler<SqsObservationContext> {
+    private class CountingObservationHandler: ObservationHandler<SqsObservationContext> {
         val starts = AtomicInteger()
         val stops = AtomicInteger()
         val active = AtomicInteger()
@@ -287,7 +288,7 @@ open class SqsObservationBenchmark {
         }
     }
 
-    private class CountingSqsOperations : SqsOperations {
+    private class CountingSqsOperations: SqsOperations {
         val deleteCalls = AtomicInteger()
         val deleteBatchCalls = AtomicInteger()
         val deletedBatchEntries = AtomicInteger()

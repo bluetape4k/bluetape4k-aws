@@ -25,6 +25,7 @@ open class S3ProtocolResolver(
             return null
         }
         val parsed = parser.parseExact(location)
+
         return S3Resource(s3ClientProvider.getObject(), parsed)
     }
 }

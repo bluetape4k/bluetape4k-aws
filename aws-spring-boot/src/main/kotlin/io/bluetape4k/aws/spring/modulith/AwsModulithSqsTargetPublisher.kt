@@ -3,6 +3,9 @@ package io.bluetape4k.aws.spring.modulith
 import io.bluetape4k.aws.spring.sqs.SqsFullRequestOperations
 import io.bluetape4k.aws.spring.sqs.SqsOperations
 import io.bluetape4k.aws.spring.sqs.SqsSendRequest
+import io.bluetape4k.codec.encodeHexString
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.toUtf8Bytes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -12,6 +15,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
+import java.security.MessageDigest
 
 /**
  * 기존 [SqsOperations]에 Modulith envelope를 연결하는 내부 SQS publisher입니다.
@@ -23,10 +27,11 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 internal class AwsModulithSqsTargetPublisher internal constructor(
     sqsOperations: SqsOperations,
     configuredAliases: Set<String>,
-) : AwsModulithTargetPublisher {
+): AwsModulithTargetPublisher {
 
     private val sqsOperations: SqsFullRequestOperations = sqsOperations as? SqsFullRequestOperations
         ?: throw AwsModulithConfigurationException()
+
     private val configuredAliases: Set<String> = configuredAliases.toSet()
     private val cacheLock = Mutex()
     private val queueUrlCache = LinkedHashMap<String, String>(configuredAliases.size.coerceAtLeast(1), 0.75F, true)
@@ -37,17 +42,20 @@ internal class AwsModulithSqsTargetPublisher internal constructor(
     }
 
     private sealed interface QueueUrlResolution {
-        data class Cached(val queueUrl: String) : QueueUrlResolution
-        data class Flight(val deferred: CompletableDeferred<String>, val owner: Boolean) : QueueUrlResolution
+        data class Cached(val queueUrl: String): QueueUrlResolution
+        data class Flight(val deferred: CompletableDeferred<String>, val owner: Boolean): QueueUrlResolution
     }
 
     override suspend fun publish(command: AwsModulithPublishCommand): AwsModulithPublishResult {
         currentCoroutineContext().ensureActive()
+
         val destination = requireAwsModulithDestinationName(command.destination)
         val routingKey = validateAwsModulithRoutingKey(destination, command.routingKey)
         requireConfiguredAlias(command.targetAlias)
+
         val queueUrl = resolveQueueUrl(command.targetAlias, destination)
         currentCoroutineContext().ensureActive()
+
         val response = sanitizeAwsModulithPublishCall {
             sqsOperations.send(
                 SqsSendRequest(
@@ -74,7 +82,8 @@ internal class AwsModulithSqsTargetPublisher internal constructor(
 
     private suspend fun resolveQueueUrl(alias: String, destination: String): String {
         val resolution = cacheLock.withLock {
-            queueUrlCache[alias]?.let { QueueUrlResolution.Cached(it) }
+            queueUrlCache[alias]
+                ?.let { QueueUrlResolution.Cached(it) }
                 ?: queueUrlFlights[alias]?.let { QueueUrlResolution.Flight(it, owner = false) }
                 ?: QueueUrlResolution.Flight(
                     CompletableDeferred<String>().also { queueUrlFlights[alias] = it },
@@ -83,11 +92,13 @@ internal class AwsModulithSqsTargetPublisher internal constructor(
         }
         if (resolution is QueueUrlResolution.Cached) return resolution.queueUrl
         val flight = (resolution as QueueUrlResolution.Flight).deferred
-
         if (resolution.owner) {
             try {
-                val queueUrl = sanitizeAwsModulithResolutionCall { sqsOperations.getQueueUrl(destination) }
-                require(queueUrl.isNotBlank()) { "resolved queue URL must not be blank." }
+                val queueUrl = sanitizeAwsModulithResolutionCall {
+                    sqsOperations.getQueueUrl(destination)
+                }
+                queueUrl.requireNotBlank("queueUrl")
+
                 cacheLock.withLock {
                     queueUrlFlights.remove(alias, flight)
                     queueUrlCache[alias] = queueUrl
@@ -124,6 +135,6 @@ private fun Map<String, String>.toAwsMessageAttributes(): Map<String, MessageAtt
             .build()
     }
 
-private fun sha256(value: String): String = java.security.MessageDigest.getInstance("SHA-256")
-    .digest(value.toByteArray(Charsets.UTF_8))
-    .joinToString(separator = "") { "%02x".format(it) }
+private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+    .digest(value.toUtf8Bytes())
+    .encodeHexString()

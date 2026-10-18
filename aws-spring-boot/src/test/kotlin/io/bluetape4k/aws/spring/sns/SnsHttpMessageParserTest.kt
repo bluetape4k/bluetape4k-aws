@@ -4,10 +4,14 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import java.net.URI
 
-class SnsHttpMessageParserTest {
+class SnsHttpMessageParserTest: AbstractSnsTest() {
+
+    companion object: KLogging()
 
     @Test
     fun `parse subscription confirmation payload`() {
@@ -16,12 +20,13 @@ class SnsHttpMessageParserTest {
             messageTypeHeader = "SubscriptionConfirmation",
         )
 
+        log.debug { "message=$message" }
         message.type shouldBeEqualTo SnsHttpMessageType.SUBSCRIPTION_CONFIRMATION
         message.messageId shouldBeEqualTo "165545c9-2a5c-472c-8df2-7ff2be2b3b1b"
         message.topicArn shouldBeEqualTo "arn:aws:sns:us-west-2:123456789012:MyTopic"
         message.token shouldBeEqualTo "token-1"
         message.subscribeUrl shouldBeEqualTo
-            URI.create("https://sns.us-west-2.amazonaws.com/?Action=ConfirmSubscription&Token=token-1")
+                URI.create("https://sns.us-west-2.amazonaws.com/?Action=ConfirmSubscription&Token=token-1")
         message.unsubscribeUrl.shouldBeNull()
         message.canConfirmSubscription.shouldBeTrue()
     }
@@ -33,11 +38,12 @@ class SnsHttpMessageParserTest {
             messageTypeHeader = "Notification",
         )
 
+        log.debug { "message=$message" }
         message.type shouldBeEqualTo SnsHttpMessageType.NOTIFICATION
         message.subject shouldBeEqualTo "Order created"
         message.message shouldBeEqualTo """{"orderId":"order-1"}"""
         message.unsubscribeUrl shouldBeEqualTo
-            URI.create("https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=sub-1")
+                URI.create("https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=sub-1")
         message.token.shouldBeNull()
     }
 
@@ -48,6 +54,7 @@ class SnsHttpMessageParserTest {
             messageTypeHeader = "UnsubscribeConfirmation",
         )
 
+        log.debug { "message=$message" }
         message.type shouldBeEqualTo SnsHttpMessageType.UNSUBSCRIBE_CONFIRMATION
         message.token shouldBeEqualTo "token-2"
         message.canConfirmSubscription.shouldBeTrue()
@@ -61,18 +68,21 @@ class SnsHttpMessageParserTest {
                 messageTypeHeader = "SubscriptionConfirmation",
             )
         }
-
-        error.message.orEmpty() shouldBeEqualTo
-            "x-amz-sns-message-type 'SubscriptionConfirmation' does not match JSON Type 'Notification'."
+        log.debug { "error=$error" }
+        error.message shouldBeEqualTo
+                "x-amz-sns-message-type 'SubscriptionConfirmation' does not match JSON Type 'Notification'."
     }
 
     @Test
     fun `reject confirmation payload without token`() {
         val error = assertFailsWith<IllegalArgumentException> {
-            SnsHttpMessageParser.parse(subscriptionConfirmationJson.replace("""  "Token" : "token-1",""", ""))
+            SnsHttpMessageParser.parse(
+                subscriptionConfirmationJson.replace("""  "Token" : "token-1",""", "")
+            )
         }
 
-        error.message.orEmpty() shouldBeEqualTo "SubscriptionConfirmation message requires Token."
+        log.debug { "error=$error" }
+        error.message shouldBeEqualTo "SubscriptionConfirmation message requires Token."
     }
 
     @Test
@@ -86,7 +96,8 @@ class SnsHttpMessageParserTest {
             )
         }
 
-        error.message.orEmpty() shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
+        log.debug { "error=$error" }
+        error.message shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
     }
 
     @Test
@@ -99,8 +110,8 @@ class SnsHttpMessageParserTest {
                 )
             )
         }
-
-        error.message.orEmpty() shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
+        log.debug { "error=$error" }
+        error.message shouldBeEqualTo "SNS HTTP message SigningCertURL is not allowed."
     }
 
     @Test

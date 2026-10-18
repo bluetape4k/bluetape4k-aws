@@ -1,27 +1,29 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.assertions.shouldBe
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotContain
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.core.annotation.Order
 
 // tag::sqs-observation-customization[]
 @Order(1)
-private class DeploymentEnvironmentCustomizer : SqsObservationContextCustomizer {
+private class DeploymentEnvironmentCustomizer: SqsObservationContextCustomizer {
     override fun customize(context: SqsObservationContext) {
         context.put("deployment.environment", "production")
     }
 }
 
 @Order(2)
-private class ObservationOwnerCustomizer : SqsObservationContextCustomizer {
+private class ObservationOwnerCustomizer: SqsObservationContextCustomizer {
     override fun customize(context: SqsObservationContext) {
         val environment = context.get<String>("deployment.environment")
         context.put("observation.owner", "$environment:sqs-platform")
@@ -56,9 +58,9 @@ class SqsObservationCustomizationExampleTest {
             observation.stop()
         }
 
-        assertEquals("custom.sqs.receive", names[SqsObservationStage.RECEIVE])
-        assertEquals("custom.sqs.process", names[SqsObservationStage.PROCESS])
-        assertEquals("custom.sqs.acknowledgement", names[SqsObservationStage.ACKNOWLEDGEMENT])
+        names[SqsObservationStage.RECEIVE] shouldBeEqualTo "custom.sqs.receive"
+        names[SqsObservationStage.PROCESS] shouldBeEqualTo "custom.sqs.process"
+        names[SqsObservationStage.ACKNOWLEDGEMENT] shouldBeEqualTo "custom.sqs.acknowledgement"
     }
 
     @Test
@@ -66,11 +68,12 @@ class SqsObservationCustomizationExampleTest {
         val context = processContext()
         val registry = ObservationRegistry.create()
         registry.observationConfig().observationHandler(RecordingHandler())
+
         val factory = SqsObservationFactory { suppliedContext, suppliedRegistry ->
-            assertSame(context, suppliedContext)
-            assertSame(registry, suppliedRegistry)
-            assertEquals("production", suppliedContext.get<String>("deployment.environment"))
-            assertEquals("production:sqs-platform", suppliedContext.get<String>("observation.owner"))
+            suppliedContext shouldBe context
+            suppliedRegistry shouldBe registry
+            suppliedContext.get<String>("deployment.environment") shouldBeEqualTo "production"
+            suppliedContext.get<String>("observation.owner") shouldBeEqualTo "production:sqs-platform"
             sqsObservationFactory().createNotStarted(suppliedContext, suppliedRegistry)
         }
 
@@ -83,9 +86,9 @@ class SqsObservationCustomizationExampleTest {
             factory = factory,
         )
 
-        assertSame(context, observation.context)
-        assertEquals("production", context.get<String>("deployment.environment"))
-        assertEquals("production:sqs-platform", context.get<String>("observation.owner"))
+        observation.context shouldBe context
+        context.get<String>("deployment.environment") shouldBeEqualTo "production"
+        context.get<String>("observation.owner") shouldBeEqualTo "production:sqs-platform"
     }
 
     @Test
@@ -98,19 +101,19 @@ class SqsObservationCustomizationExampleTest {
 
         val observation = prepareSqsObservation(context, registry, emptyList(), factory)
 
-        assertSame(context, observation.context)
-        assertNull(registry.currentObservation)
-        assertEquals(0, handler.starts)
+        observation.context shouldBe context
+        registry.currentObservation.shouldBeNull()
+        handler.starts shouldBeEqualTo 0
 
         observation.start()
         observation.openScope().use {
             requireSqsObservationRegistryBinding(registry, observation)
-            assertSame(observation, registry.currentObservation)
+            registry.currentObservation shouldBe observation
         }
         observation.stop()
 
-        assertEquals(1, handler.starts)
-        assertEquals(1, handler.stops)
+        handler.starts shouldBeEqualTo 1
+        handler.stops shouldBeEqualTo 1
     }
 
     @Test
@@ -126,8 +129,8 @@ class SqsObservationCustomizationExampleTest {
             prepareSqsObservation(context, registry, emptyList(), factory)
         }
 
-        assertTrue(error.message.orEmpty().contains("context"))
-        assertNull(registry.currentObservation)
+        error.message shouldContain "context"
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -143,9 +146,9 @@ class SqsObservationCustomizationExampleTest {
             prepareSqsObservation(context, suppliedRegistry, emptyList(), factory)
         }
 
-        assertTrue(error.message.orEmpty().contains("registry"))
-        assertNull(suppliedRegistry.currentObservation)
-        assertNull(otherRegistry.currentObservation)
+        error.message shouldContain "registry"
+        suppliedRegistry.currentObservation.shouldBeNull()
+        otherRegistry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -155,22 +158,22 @@ class SqsObservationCustomizationExampleTest {
             context = context,
             registry = ObservationRegistry.create(),
             customizers = emptyList(),
-            factory = SqsObservationFactory { _, _ -> Observation.NOOP },
+            factory = { _, _ -> Observation.NOOP },
         )
 
-        assertSame(Observation.NOOP, observation)
-        assertTrue(observation.isNoop)
+        observation shouldBe Observation.NOOP
+        observation.isNoop.shouldBeTrue()
     }
 
     @Test
     fun `redacted telemetry exception exposes no message cause or stack`() {
         val error = SqsObservationTelemetryException("handler")
 
-        assertNull(error.message)
-        assertNull(error.cause)
-        assertEquals(0, error.stackTrace.size)
-        assertEquals("handler", error.failureStage)
-        assertFalse(error.toString().contains("handler"))
+        error.message.shouldBeNull()
+        error.cause.shouldBeNull()
+        error.stackTrace.shouldBeEmpty()
+        error.failureStage shouldBeEqualTo "handler"
+        error.toString() shouldNotContain "handler"
     }
 
     private fun processContext(): SqsObservationContext = SqsObservationContext(
@@ -198,7 +201,7 @@ class SqsObservationCustomizationExampleTest {
         ),
     )
 
-    private class RecordingHandler : ObservationHandler<SqsObservationContext> {
+    private class RecordingHandler: ObservationHandler<SqsObservationContext> {
         var starts: Int = 0
         var stops: Int = 0
 

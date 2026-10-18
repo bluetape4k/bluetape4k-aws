@@ -7,9 +7,14 @@ import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.core.exception.SdkClientException
@@ -20,23 +25,34 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import software.amazon.awssdk.services.sqs.model.SqsException
+import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 class SqsDirectBatchTransportTest {
 
+    companion object: KLogging()
+
+    private val client = mockk<SqsAsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
+
     @Test
     fun `direct send maps every request field and submits once without closing client`() {
-        val client = mockk<SqsAsyncClient>()
-        val source = CompletableFuture.completedFuture(
+        val source = completableFutureOf(
             SendMessageResponse.builder()
                 .messageId("message-${Base58.randomString(16)}")
                 .sequenceNumber("sequence-${Base58.randomString(16)}")
                 .build(),
         )
         val captured = mutableListOf<SendMessageRequest>()
-        every { client.sendMessage(any<Consumer<SendMessageRequest.Builder>>()) } answers {
+        every {
+            client.sendMessage(any<Consumer<SendMessageRequest.Builder>>())
+        } answers {
             val builder = SendMessageRequest.builder()
             firstArg<Consumer<SendMessageRequest.Builder>>().accept(builder)
             captured += builder.build()
@@ -70,20 +86,23 @@ class SqsDirectBatchTransportTest {
             messageDeduplicationId() shouldBeEqualTo entry.request.messageDeduplicationId
             messageAttributes() shouldBeEqualTo entry.request.messageAttributes
         }
+        log.debug { "outcome=$outcome" }
         outcome.shouldBeInstanceOf<SqsBatchOutcome.SendSuccess>()
         outcome.entryId shouldBeEqualTo entry.entryId
         outcome.messageId shouldBeEqualTo source.join().messageId()
         outcome.sequenceNumber shouldBeEqualTo source.join().sequenceNumber()
+
         verify(exactly = 1) { client.sendMessage(any<Consumer<SendMessageRequest.Builder>>()) }
         verify(exactly = 0) { client.close() }
     }
 
     @Test
     fun `direct delete maps receipt handle and submits once without closing client`() {
-        val client = mockk<SqsAsyncClient>()
-        val source = CompletableFuture.completedFuture(DeleteMessageResponse.builder().build())
+        val source = completableFutureOf(DeleteMessageResponse.builder().build())
         val captured = mutableListOf<DeleteMessageRequest>()
-        every { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } answers {
+        every {
+            client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
+        } answers {
             val builder = DeleteMessageRequest.builder()
             firstArg<Consumer<DeleteMessageRequest.Builder>>().accept(builder)
             captured += builder.build()
@@ -98,10 +117,12 @@ class SqsDirectBatchTransportTest {
 
         val outcome = transport.delete(entry).join()
 
+        log.debug { "captured=$captured" }
         captured shouldHaveSize 1
         captured.single().queueUrl() shouldBeEqualTo entry.queueUrl
         captured.single().receiptHandle() shouldBeEqualTo entry.receiptHandle
         outcome shouldBeEqualTo SqsBatchOutcome.DeleteSuccess(entry.entryId)
+
         verify(exactly = 1) { client.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) }
         verify(exactly = 0) { client.close() }
     }
@@ -111,9 +132,11 @@ class SqsDirectBatchTransportTest {
         val serviceFuture = CompletableFuture<SendMessageResponse>()
         val transportFuture = CompletableFuture<SendMessageResponse>()
         val cancelledFuture = CompletableFuture<SendMessageResponse>()
-        val client = mockk<SqsAsyncClient>()
-        every { client.sendMessage(any<Consumer<SendMessageRequest.Builder>>()) } returnsMany
-            listOf(serviceFuture, transportFuture, cancelledFuture)
+
+        every {
+            client.sendMessage(any<Consumer<SendMessageRequest.Builder>>())
+        } returnsMany listOf(serviceFuture, transportFuture, cancelledFuture)
+
         val transport = DirectSqsBatchTransport(client)
         val serviceEntry = sendEntry("service")
         val transportEntry = sendEntry("transport")
@@ -145,21 +168,24 @@ class SqsDirectBatchTransportTest {
     @Test
     fun `direct transport normalizes synchronous service and transport submission failures`() {
         val serviceEntry = sendEntry("sync-service")
-        val serviceClient = mockk<SqsAsyncClient>()
-        every { serviceClient.sendMessage(any<Consumer<SendMessageRequest.Builder>>()) } throws
-            SqsException.builder()
-                .awsErrorDetails(AwsErrorDetails.builder().errorCode("ThrottlingException").build())
-                .build()
+
+        every {
+            client.sendMessage(any<Consumer<SendMessageRequest.Builder>>())
+        } throws SqsException.builder()
+            .awsErrorDetails(AwsErrorDetails.builder().errorCode("ThrottlingException").build())
+            .build()
+
         val transportEntry = SqsBatchDeleteEntry(
             entryId = entryId("sync-transport"),
             queueUrl = "https://sqs.local/${Base58.randomString(16)}",
             receiptHandle = Base58.randomString(16),
         )
         val transportClient = mockk<SqsAsyncClient>()
-        every { transportClient.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>()) } throws
-            SdkClientException.create("transport-${Base58.randomString(16)}")
+        every {
+            transportClient.deleteMessage(any<Consumer<DeleteMessageRequest.Builder>>())
+        } throws SdkClientException.create("transport-${Base58.randomString(16)}")
 
-        val serviceOutcome = DirectSqsBatchTransport(serviceClient).send(serviceEntry).join()
+        val serviceOutcome = DirectSqsBatchTransport(client).send(serviceEntry).join()
         val transportOutcome = DirectSqsBatchTransport(transportClient).delete(transportEntry).join()
 
         serviceOutcome shouldBeEqualTo SqsBatchOutcome.Failure(
@@ -173,8 +199,9 @@ class SqsDirectBatchTransportTest {
     @Test
     fun `caller cancellation cancels the source future without becoming an entry outcome`() {
         val source = CountingCompletableFuture<SendMessageResponse>()
-        val client = mockk<SqsAsyncClient>()
-        every { client.sendMessage(any<Consumer<SendMessageRequest.Builder>>()) } returns source
+        every {
+            client.sendMessage(any<Consumer<SendMessageRequest.Builder>>())
+        } returns source
         val mapped = DirectSqsBatchTransport(client).send(sendEntry("caller"))
 
         mapped.cancel(true).shouldBeTrue()
@@ -184,10 +211,15 @@ class SqsDirectBatchTransportTest {
         mapped.cancel(false)
         source.cancelCount.get() shouldBeEqualTo 1
         source.cancelArguments shouldBeEqualTo listOf(false)
-        mapped.handle { value, failure -> value to failure }.join().let { (value, failure) ->
-            value.shouldBeNull()
-            failure.shouldBeInstanceOf<java.util.concurrent.CancellationException>()
+
+        mapped.handle { value, failure ->
+            value to failure
         }
+            .join()
+            .let { (value, failure) ->
+                value.shouldBeNull()
+                failure.shouldBeInstanceOf<CancellationException>()
+            }
     }
 
     private fun sendEntry(prefix: String): SqsBatchSendEntry = SqsBatchSendEntry(
@@ -197,7 +229,7 @@ class SqsDirectBatchTransportTest {
 
     private fun entryId(prefix: String): String = "$prefix-${Base58.randomString(16)}"
 
-    private class CountingCompletableFuture<T> : CompletableFuture<T>() {
+    private class CountingCompletableFuture<T>: CompletableFuture<T>() {
         val cancelCount = AtomicInteger()
         val cancelArguments = mutableListOf<Boolean>()
 

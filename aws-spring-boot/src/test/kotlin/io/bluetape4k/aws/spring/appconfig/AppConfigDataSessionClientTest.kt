@@ -2,6 +2,11 @@ package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
+import io.bluetape4k.support.toUtf8String
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -13,16 +18,22 @@ import software.amazon.awssdk.services.appconfigdata.model.GetLatestConfiguratio
 import software.amazon.awssdk.services.appconfigdata.model.GetLatestConfigurationResponse
 import software.amazon.awssdk.services.appconfigdata.model.StartConfigurationSessionRequest
 import software.amazon.awssdk.services.appconfigdata.model.StartConfigurationSessionResponse
-import java.time.Duration
 
 class AppConfigDataSessionClientTest {
+
+    companion object: KLogging()
 
     @Test
     fun `cursor consumes the initial token and each response token exactly once`() {
         val client = FakeSessionClient()
         val cursor = AppConfigDataSessionCursor(
             client = client,
-            request = AppConfigDataStartRequest("app", "profile", "env", 15),
+            request = AppConfigDataStartRequest(
+                "app",
+                "profile",
+                "env",
+                15
+            ),
         )
 
         cursor.poll().nextPollConfigurationToken shouldBeEqualTo "token-2"
@@ -32,28 +43,49 @@ class AppConfigDataSessionClientTest {
 
     @Test
     fun `session response string does not expose token or body`() {
-        val response = AppConfigDataResponse("secret-token", 15, "text/plain", "secret-body".toByteArray())
+        val response = AppConfigDataResponse(
+            "secret-token",
+            15,
+            "text/plain",
+            "secret-body".toUtf8Bytes()
+        )
 
-        response.toString() shouldNotContain "secret-token"
-        response.toString() shouldNotContain "secret-body"
+        log.debug { "response=$response" }
+        with(response.toString()) {
+            this shouldNotContain "secret-token"
+            this shouldNotContain "secret-body"
+        }
     }
 
     @Test
     fun `initial load string does not expose configuration values`() {
         val initial = AppConfigDataInitialLoad(
             client = FakeSessionClient(),
-            request = AppConfigDataStartRequest("app", "profile", "env", 15),
-            response = AppConfigDataResponse("secret-token", 15, "text/plain", "secret-body".toByteArray()),
+            request = AppConfigDataStartRequest(
+                "app",
+                "profile",
+                "env",
+                15
+            ),
+            response = AppConfigDataResponse(
+                "secret-token",
+                15,
+                "text/plain",
+                "secret-body".toUtf8Bytes()
+            ),
             values = mapOf("secret.key" to "secret-value"),
-            refreshInterval = Duration.ofSeconds(30),
-            requiredMinimumPollInterval = Duration.ofSeconds(15),
+            refreshInterval = 30.seconds(),
+            requiredMinimumPollInterval = 15.seconds(),
             format = AppConfigFormat.PROPERTIES,
             prefix = null,
         )
 
-        initial.toString() shouldNotContain "secret-token"
-        initial.toString() shouldNotContain "secret-body"
-        initial.toString() shouldNotContain "secret-value"
+        log.debug { "initial=$initial" }
+        with(initial.toString()) {
+            this shouldNotContain "secret-token"
+            this shouldNotContain "secret-body"
+            this shouldNotContain "secret-value"
+        }
     }
 
     @Test
@@ -61,36 +93,53 @@ class AppConfigDataSessionClientTest {
         val sdkClient = mockk<AppConfigDataClient>()
         val startRequest = slot<StartConfigurationSessionRequest>()
         val getRequest = slot<GetLatestConfigurationRequest>()
-        every { sdkClient.startConfigurationSession(capture(startRequest)) } returns
-            StartConfigurationSessionResponse.builder()
-                .initialConfigurationToken("initial-token")
-                .build()
-        every { sdkClient.getLatestConfiguration(capture(getRequest)) } returns
-            GetLatestConfigurationResponse.builder()
-                .nextPollConfigurationToken("next-token")
-                .nextPollIntervalInSeconds(30)
-                .contentType("text/plain")
-                .configuration(SdkBytes.fromUtf8String("feature.enabled=true"))
-                .build()
+
+        every {
+            sdkClient.startConfigurationSession(capture(startRequest))
+        } returns
+                StartConfigurationSessionResponse.builder()
+                    .initialConfigurationToken("initial-token")
+                    .build()
+        every {
+            sdkClient.getLatestConfiguration(capture(getRequest))
+        } returns
+                GetLatestConfigurationResponse.builder()
+                    .nextPollConfigurationToken("next-token")
+                    .nextPollIntervalInSeconds(30)
+                    .contentType("text/plain")
+                    .configuration(SdkBytes.fromUtf8String("feature.enabled=true"))
+                    .build()
 
         val client = AppConfigDataSdkAdapter.sessionClient(sdkClient)
-        val response = client.startConfigurationSession(
-            AppConfigDataStartRequest("application", "profile", "environment", 15),
-        ).let { session -> client.getLatestConfiguration(session.initialConfigurationToken) }
+        val request = AppConfigDataStartRequest(
+            "application",
+            "profile",
+            "environment",
+            15
+        )
+        val response = client.startConfigurationSession(request)
+            .let { client.getLatestConfiguration(it.initialConfigurationToken) }
 
+        log.debug { "response=$response" }
         response.nextPollConfigurationToken shouldBeEqualTo "next-token"
         response.nextPollIntervalSeconds shouldBeEqualTo 30L
-        response.configuration.decodeToString() shouldBeEqualTo "feature.enabled=true"
+        response.configuration.toUtf8String() shouldBeEqualTo "feature.enabled=true"
+
         verify(exactly = 1) { sdkClient.startConfigurationSession(any<StartConfigurationSessionRequest>()) }
         verify(exactly = 1) { sdkClient.getLatestConfiguration(any<GetLatestConfigurationRequest>()) }
-        startRequest.captured.applicationIdentifier() shouldBeEqualTo "application"
-        startRequest.captured.configurationProfileIdentifier() shouldBeEqualTo "profile"
-        startRequest.captured.environmentIdentifier() shouldBeEqualTo "environment"
-        startRequest.captured.requiredMinimumPollIntervalInSeconds() shouldBeEqualTo 15
+
+        log.debug { "startRequest=${startRequest.captured}" }
+
+        with(startRequest.captured) {
+            applicationIdentifier() shouldBeEqualTo "application"
+            configurationProfileIdentifier() shouldBeEqualTo "profile"
+            environmentIdentifier() shouldBeEqualTo "environment"
+            requiredMinimumPollIntervalInSeconds() shouldBeEqualTo 15
+        }
         getRequest.captured.configurationToken() shouldBeEqualTo "initial-token"
     }
 
-    private class FakeSessionClient : AppConfigDataSessionClient {
+    private class FakeSessionClient: AppConfigDataSessionClient {
         val requestedTokens = mutableListOf<String>()
         private var responseIndex = 0
 

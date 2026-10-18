@@ -61,8 +61,9 @@ data class SqsReceivedMessage(
     /**
      * SQS가 기록한 현재 수신 횟수입니다.
      */
-    val approximateReceiveCount: Int? get() =
-        attributes[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]?.toIntOrNull()
+    val approximateReceiveCount: Int?
+        get() =
+            attributes[MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT]?.toIntOrNull()
 
     companion object {
         private const val serialVersionUID: Long = 1L

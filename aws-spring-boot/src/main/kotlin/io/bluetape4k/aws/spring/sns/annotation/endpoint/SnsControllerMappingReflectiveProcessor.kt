@@ -9,7 +9,7 @@ import java.lang.reflect.AnnotatedElement
 import java.lang.reflect.Method
 
 /** Native image에서 SNS controller method와 binding type을 보존합니다. */
-class SnsControllerMappingReflectiveProcessor : ReflectiveProcessor {
+class SnsControllerMappingReflectiveProcessor: ReflectiveProcessor {
 
     override fun registerReflectionHints(hints: ReflectionHints, element: AnnotatedElement) {
         when (element) {

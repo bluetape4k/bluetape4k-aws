@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.core.async.AsyncRequestBody
+import software.amazon.awssdk.core.async.ResponsePublisher
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest
 import software.amazon.awssdk.services.s3.model.CreateBucketConfiguration
@@ -120,6 +121,13 @@ suspend inline fun S3AsyncClient.getAsFile(
 ): GetObjectResponse =
     getAsFileAsync(bucket, key, destinationPath, builder).await()
 
+suspend inline fun S3AsyncClient.getAsPublisher(
+    bucket: String,
+    key: String,
+    builder: GetObjectRequest.Builder.() -> Unit = {},
+): ResponsePublisher<GetObjectResponse> =
+    getAsPublisherAsync(bucket, key, builder).await()
+
 /**
  * S3 서버로 [body]를 Upload 합니다.
  *
@@ -139,9 +147,10 @@ suspend inline fun S3AsyncClient.put(
     bucket: String,
     key: String,
     body: AsyncRequestBody,
+    contentType: String? = null,
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
-    putAsync(bucket, key, body, builder).await()
+    putAsync(bucket, key, body, contentType, builder).await()
 
 /**
  * S3 서버로 [bytes]를 Upload 합니다.
@@ -162,9 +171,10 @@ suspend inline fun S3AsyncClient.putAsByteArray(
     bucket: String,
     key: String,
     bytes: ByteArray,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
-    putAsByteArrayAsync(bucket, key, bytes, builder).await()
+    putAsByteArrayAsync(bucket, key, bytes, contentType, builder).await()
 
 /**
  * S3 서버로 [contents]를 Upload 합니다.
@@ -186,9 +196,10 @@ suspend inline fun S3AsyncClient.putAsString(
     key: String,
     contents: String,
     charset: Charset = Charsets.UTF_8,
+    contentType: String? = "plain/text",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
-    putAsStringAsync(bucket, key, contents, charset, builder).await()
+    putAsStringAsync(bucket, key, contents, charset, contentType, builder).await()
 
 /**
  * S3 서버로 [file]을 Upload 합니다.
@@ -210,9 +221,10 @@ suspend inline fun S3AsyncClient.putAsFile(
     bucket: String,
     key: String,
     file: File,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
-    putAsFileAsync(bucket, key, file, builder).await()
+    putAsFileAsync(bucket, key, file, contentType, builder).await()
 
 /**
  * S3 서버로 [path]의 파일을 Upload 합니다.
@@ -234,9 +246,10 @@ suspend inline fun S3AsyncClient.putAsFile(
     bucket: String,
     key: String,
     path: Path,
+    contentType: String? = "application/octet-stream",
     builder: PutObjectRequest.Builder.() -> Unit = {},
 ): PutObjectResponse =
-    putAsFileAsync(bucket, key, path, builder).await()
+    putAsFileAsync(bucket, key, path, contentType, builder).await()
 
 /**
  * [bucket]의 모든 [S3Object]를 내보내는 콜드 [Flow]를 반환합니다.

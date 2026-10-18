@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.logging.KLogging
+import jakarta.servlet.FilterChain
 import jakarta.servlet.ReadListener
 import jakarta.servlet.ServletInputStream
 import jakarta.servlet.http.HttpServletRequest
@@ -12,12 +14,13 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
-import jakarta.servlet.FilterChain
 
 /** SNS 구조·보안 gate를 수행하고 크기가 제한된 Servlet request body를 다시 읽을 수 있게 제공합니다. */
 class SnsHttpMessageServletFilter(
     private val support: SnsHttpMessageResolverSupport,
-) : OncePerRequestFilter() {
+): OncePerRequestFilter() {
+
+    companion object: KLogging()
 
     @Suppress("ReturnCount", "SwallowedException", "TooGenericExceptionCaught")
     override fun doFilterInternal(
@@ -91,9 +94,9 @@ class SnsHttpMessageServletFilter(
 private class ReplayableRequest(
     request: HttpServletRequest,
     private val bytes: ByteArray,
-) : HttpServletRequestWrapper(request) {
+): HttpServletRequestWrapper(request) {
     override fun getInputStream(): ServletInputStream =
-        object : ServletInputStream() {
+        object: ServletInputStream() {
             private val input = ByteArrayInputStream(bytes)
 
             override fun read(): Int = input.read()

@@ -2,11 +2,15 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
 class SqsExtendedClientRollbackTest {
+
+    companion object: KLoggingChannel()
 
     @Test
     fun `rollback verifies two empty visibility windows before legacy start`() = runTest {
@@ -22,6 +26,7 @@ class SqsExtendedClientRollbackTest {
         )
         val evidence = coordinator(runtime, start, retryWindowSeconds = 1, deadlineSeconds = 30).rollback()
 
+        log.debug { "evidence=$evidence" }
         evidence.state shouldBeEqualTo SqsExtendedRollbackState.LEGACY_CONSUMER_STARTED
         evidence.stateHistory shouldBeEqualTo listOf(
             SqsExtendedRollbackState.RUNNING_EXTENDED,
@@ -46,6 +51,7 @@ class SqsExtendedClientRollbackTest {
 
         val evidence = coordinator(runtime, start, retryWindowSeconds = 1, deadlineSeconds = 30).rollback()
 
+        log.debug { "evidence=$evidence" }
         evidence.state shouldBeEqualTo SqsExtendedRollbackState.ROLLBACK_BLOCKED
         evidence.blockReason shouldBeEqualTo SqsExtendedRollbackBlockReason.REDRIVE_BUDGET_EXHAUSTED
         runtime.rehydrateCalls shouldBeEqualTo 0
@@ -66,6 +72,7 @@ class SqsExtendedClientRollbackTest {
 
         val evidence = coordinator(runtime, start, retryWindowSeconds = 1, deadlineSeconds = 5).rollback()
 
+        log.debug { "evidence=$evidence" }
         evidence.state shouldBeEqualTo SqsExtendedRollbackState.ROLLBACK_BLOCKED
         evidence.blockReason shouldBeEqualTo SqsExtendedRollbackBlockReason.DEADLINE_EXCEEDED
         runtime.rehydrateCalls shouldBeEqualTo 0
@@ -82,6 +89,7 @@ class SqsExtendedClientRollbackTest {
 
         val evidence = coordinator(runtime, start, retryWindowSeconds = 1, deadlineSeconds = 30).rollback()
 
+        log.debug { "evidence=$evidence" }
         evidence.state shouldBeEqualTo SqsExtendedRollbackState.ROLLBACK_BLOCKED
         evidence.blockReason shouldBeEqualTo SqsExtendedRollbackBlockReason.REDRIVE_BUDGET_EXHAUSTED
         runtime.startCalls shouldBeEqualTo 0
@@ -121,7 +129,7 @@ class SqsExtendedClientRollbackTest {
     private class FakeRollbackRuntime(
         private val probes: ArrayDeque<SqsExtendedRollbackProbe>,
         private val rehydration: SqsExtendedRehydrationResult = SqsExtendedRehydrationResult(0, 0, 0, 0, true),
-    ) : SqsExtendedRollbackRuntime {
+    ): SqsExtendedRollbackRuntime {
         var startCalls = 0
         var rehydrateCalls = 0
         var deleteCalls = 0

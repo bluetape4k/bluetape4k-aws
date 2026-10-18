@@ -72,14 +72,10 @@ internal fun resolveAwsCredentialsProvider(
 ): AwsCredentialsProvider =
     provider.getIfAvailable { AwsServiceConnectionCredentialsResolver.resolve(connectionDetails) }
 
-internal fun <B, C> B.applyAwsDefaults(
-    defaults: AwsClientDefaults,
-): B
-    where B: AwsClientBuilder<B, C> =
-    apply {
-        defaults.region?.let { region(it) }
-        defaults.endpointOverride?.let { endpointOverride(it) }
-    }
+internal fun <B, C> B.applyAwsDefaults(defaults: AwsClientDefaults): B where B: AwsClientBuilder<B, C> = apply {
+    defaults.region?.let { region(it) }
+    defaults.endpointOverride?.let { endpointOverride(it) }
+}
 
 internal fun AwsSyncClientBuilder<*, *>.applyGlobalCustomizers(
     serviceName: String,
@@ -99,7 +95,6 @@ internal fun AwsAsyncClientBuilder<*, *>.applyGlobalCustomizers(
 
 internal fun <B> B.applyServiceCustomizers(
     customizers: ObjectProvider<AwsClientCustomizer<B>>,
-): B =
-    apply {
-        customizers.orderedStream().forEach { it.customize(this) }
-    }
+): B = apply {
+    customizers.orderedStream().forEach { it.customize(this) }
+}

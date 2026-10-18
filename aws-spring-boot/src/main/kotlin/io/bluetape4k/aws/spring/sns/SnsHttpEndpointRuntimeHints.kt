@@ -14,7 +14,7 @@ import org.springframework.aot.hint.RuntimeHints
 import org.springframework.aot.hint.RuntimeHintsRegistrar
 
 /** 소비자 AOT reflection에 SNS composed annotation과 status API를 등록합니다. */
-class SnsHttpEndpointRuntimeHints : RuntimeHintsRegistrar {
+class SnsHttpEndpointRuntimeHints: RuntimeHintsRegistrar {
     override fun registerHints(hints: RuntimeHints, classLoader: ClassLoader?) {
         listOf(
             NotificationMessageMapping::class.java,
@@ -31,6 +31,7 @@ class SnsHttpEndpointRuntimeHints : RuntimeHintsRegistrar {
             }
         }
 
+        // Jackson 3 를 참조하는가?
         val mapperType = runCatching {
             Class.forName(
                 "tools.jackson.databind.ObjectMapper",
@@ -38,6 +39,7 @@ class SnsHttpEndpointRuntimeHints : RuntimeHintsRegistrar {
                 classLoader ?: Thread.currentThread().contextClassLoader,
             )
         }.getOrNull()
+
         mapperType?.getMethod("readValue", String::class.java, Class::class.java)?.let { method ->
             hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
         }

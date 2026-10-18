@@ -6,6 +6,8 @@ import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -13,25 +15,31 @@ import org.springframework.messaging.Message
 import org.springframework.messaging.MessageHeaders
 import org.springframework.messaging.support.GenericMessage
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
-class SnsBatchMessageConverterTest {
+class SnsBatchMessageConverterTest: AbstractSnsTest() {
+
+    companion object: KLoggingChannel()
 
     @Test
     fun `default converter maps string payload and UUID fallback`() = runTest {
         val id = UUID.fromString("00000000-0000-0000-0000-000000000001")
-        val entry = SnsBatchMessageConverter().convert(message("hello", MessageHeaders.ID to id))
+        val entry = SnsBatchMessageConverter()
+            .convert(message("hello", MessageHeaders.ID to id))
 
+        log.debug { "entry=$entry" }
         entry.id shouldBeEqualTo id.toString()
         entry.message shouldBeEqualTo "hello"
     }
 
     @Test
     fun `explicit serializer handles structured payload without Jackson`() = runTest {
-        val converter = SnsBatchMessageConverter(SnsPayloadSerializer { payload -> "encoded:$payload" })
-        val entry = converter.convert(message(42, MessageHeaders.ID to UUID.randomUUID()))
+        val converter = SnsBatchMessageConverter { payload -> "encoded:$payload" }
+        val entry = converter
+            .convert(message(42, MessageHeaders.ID to UUID.randomUUID()))
 
+        log.debug { "entry=$entry" }
         entry.message shouldBeEqualTo "encoded:42"
     }
 
@@ -46,6 +54,7 @@ class SnsBatchMessageConverterTest {
                 SnsBatchMessageHeaders.MESSAGE_ID to explicit,
             )
         )
+        log.debug { "entry=$entry" }
         entry.id shouldBeEqualTo explicit.toString()
 
         val error = assertFailsWith<SnsBatchMessageConversionException> {
@@ -57,6 +66,7 @@ class SnsBatchMessageConverterTest {
                 )
             )
         }
+        log.debug { "error=$error" }
         error.error shouldBeEqualTo SnsBatchMessageConversionError.INVALID_ID_TYPE
         error.field shouldBeEqualTo SnsBatchMessageConversionField.MESSAGE_ID
     }
@@ -74,8 +84,13 @@ class SnsBatchMessageConverterTest {
                 SnsBatchMessageHeaders.MESSAGE_ATTRIBUTES to attributes,
             )
         )
-        attributes["later"] = MessageAttributeValue.builder().dataType("String").stringValue("two").build()
+        log.debug { "entry=$entry" }
+        attributes["later"] = MessageAttributeValue.builder()
+            .dataType("String")
+            .stringValue("two")
+            .build()
 
+        log.debug { "entry=$entry" }
         entry.subject shouldBeEqualTo "subject"
         entry.messageAttributes.keys shouldBeEqualTo setOf("trace")
     }
@@ -91,6 +106,7 @@ class SnsBatchMessageConverterTest {
             "arn:aws:sns:us-east-1:000000000000:orders.fifo",
             listOf(message("hello", *headers.toList().toTypedArray())),
         )
+        log.debug { "request=$request" }
         request.entries.single().messageGroupId shouldBeEqualTo "orders"
         request.entries.single().messageDeduplicationId shouldBeEqualTo "dedup"
 
@@ -100,17 +116,18 @@ class SnsBatchMessageConverterTest {
                 listOf(message("hello", *headers.toList().toTypedArray())),
             )
         }
+        log.debug { "error=$error" }
         error.error shouldBeEqualTo SnsBatchMessageConversionError.INVALID_FIFO
     }
 
     @Test
     fun `preflight rejects oversized collection before serializer`() = runTest {
         val calls = AtomicInteger()
-        val converter = SnsBatchMessageConverter(SnsPayloadSerializer {
+        val converter = SnsBatchMessageConverter {
             calls.incrementAndGet()
             "hello"
-        })
-        val messages = (1..3).map { message("$it", MessageHeaders.ID to UUID.randomUUID()) }
+        }
+        val messages = List(3) { message("$it", MessageHeaders.ID to UUID.randomUUID()) }
 
         val error = assertFailsWith<SnsBatchMessageConversionException> {
             converter.convertAll(
@@ -119,6 +136,7 @@ class SnsBatchMessageConverterTest {
                 SnsBatchMessageConversionOptions(maxMessages = 2),
             )
         }
+        log.debug { "error=$error" }
         error.error shouldBeEqualTo SnsBatchMessageConversionError.TOO_MANY_MESSAGES
         calls.get() shouldBeEqualTo 0
     }
@@ -135,14 +153,22 @@ class SnsBatchMessageConverterTest {
                 ),
             )
         }
+        log.debug { "duplicate=$duplicate" }
         duplicate.error shouldBeEqualTo SnsBatchMessageConversionError.DUPLICATE_ID
         duplicate.toString() shouldNotContain "secret-payload"
         duplicate.cause shouldBeEqualTo null
 
         val serializerError = assertFailsWith<SnsBatchMessageConversionException> {
-            SnsBatchMessageConverter(SnsPayloadSerializer { throw IllegalStateException("payload-secret") })
-                .convert(message("secret-payload", MessageHeaders.ID to UUID.randomUUID()))
+            SnsBatchMessageConverter {
+                throw IllegalStateException("payload-secret")
+            }.convert(
+                message(
+                    "secret-payload",
+                    MessageHeaders.ID to UUID.randomUUID()
+                )
+            )
         }
+        log.debug { "serializerError=$serializerError" }
         serializerError.error shouldBeEqualTo SnsBatchMessageConversionError.SERIALIZATION_FAILED
         serializerError.toString() shouldNotContain "payload-secret"
         serializerError.toString() shouldNotContain "secret-payload"
@@ -152,7 +178,7 @@ class SnsBatchMessageConverterTest {
     fun `cancellation keeps identity and converter has no network surface`() = runTest {
         val cancellation = CancellationException("caller-cancelled")
         val actual = assertFailsWith<CancellationException> {
-            SnsBatchMessageConverter(SnsPayloadSerializer { throw cancellation })
+            SnsBatchMessageConverter { throw cancellation }
                 .convert(message("hello", MessageHeaders.ID to UUID.randomUUID()))
         }
         actual shouldBeSameInstanceAs cancellation
@@ -161,6 +187,7 @@ class SnsBatchMessageConverterTest {
             "arn:aws:sns:us-east-1:000000000000:orders",
             listOf(message("hello", MessageHeaders.ID to UUID.randomUUID())),
         )
+        log.debug { "request=$request" }
         request.entries shouldHaveSize 1
         request.topicArn.endsWith(":orders").shouldBeTrue()
     }
@@ -178,5 +205,5 @@ class SnsBatchMessageConverterTest {
     private class FixedHeaders(
         id: UUID,
         headers: Map<String, Any>,
-    ) : MessageHeaders(headers, id, null)
+    ): MessageHeaders(headers, id, null)
 }

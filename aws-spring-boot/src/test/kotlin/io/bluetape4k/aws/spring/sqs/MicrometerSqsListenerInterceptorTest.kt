@@ -1,10 +1,12 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.observability.AwsMetricContract
 import io.bluetape4k.aws.spring.observability.AwsMicrometerSupport
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -12,6 +14,8 @@ import software.amazon.awssdk.services.sqs.model.Message
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MicrometerSqsListenerInterceptorTest {
+
+    companion object: KLogging()
 
     @Test
     fun `record listener acknowledgement timer`() = runSuspendIO {
@@ -37,6 +41,7 @@ class MicrometerSqsListenerInterceptorTest {
             .tag(AwsMetricContract.TAG_QUEUE_NAME, "orders")
             .tag(AwsMetricContract.TAG_ACK_ACTION, AwsMetricContract.ACK_ACTION_ACK)
             .timer()
+
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L
     }
@@ -47,6 +52,7 @@ class MicrometerSqsListenerInterceptorTest {
         val registry = SimpleMeterRegistry()
         val interceptor = MicrometerSqsListenerInterceptor(registry)
         val queueUrl = "https://sqs.ap-northeast-2.amazonaws.com/000000000000/orders"
+
         val message = SqsReceivedMessage(
             queueUrl = queueUrl,
             message = Message.builder()
@@ -57,6 +63,7 @@ class MicrometerSqsListenerInterceptorTest {
         )
         val context = SqsListenerInvocationContext("orders-listener", queueUrl, message, attempt = 1)
         val correlation = SqsListenerBatchCorrelation(generation = 7, pollerId = 2, batchSequence = 11)
+
         val result = SqsBatchAcknowledgementResult(
             operation = SqsBatchAcknowledgementOperation.ACKNOWLEDGE,
             status = SqsBatchAcknowledgementStatus.PARTIAL_FAILURE,
@@ -86,12 +93,14 @@ class MicrometerSqsListenerInterceptorTest {
             .tag(AwsMicrometerSupport.TAG_QUEUE_NAME, "orders")
             .counter()
             .count() shouldBeEqualTo 1.0
+
         registry.get(MicrometerSqsListenerInterceptor.BATCH_PARTIAL_FAILURES)
             .tag(MicrometerSqsListenerInterceptor.TAG_BATCH_SIZE_BUCKET, "2-5")
             .tag(AwsMicrometerSupport.TAG_LISTENER_ID, "orders-listener")
             .tag(AwsMicrometerSupport.TAG_QUEUE_NAME, "orders")
             .counter()
             .count() shouldBeEqualTo 1.0
+
         registry.get(MicrometerSqsListenerInterceptor.BATCH_HANDLER_DURATION)
             .tag(MicrometerSqsListenerInterceptor.TAG_BATCH_SIZE_BUCKET, "2-5")
             .tag(AwsMicrometerSupport.TAG_LISTENER_ID, "orders-listener")
@@ -102,9 +111,9 @@ class MicrometerSqsListenerInterceptorTest {
         registry.meters.forEach { meter ->
             meter.id.tags.none { tag ->
                 tag.value.contains("secret-message-id") ||
-                    tag.value.contains("secret-receipt-handle") ||
-                    tag.value.contains("secret-body")
-            }.shouldBeEqualTo(true)
+                        tag.value.contains("secret-receipt-handle") ||
+                        tag.value.contains("secret-body")
+            }.shouldBeTrue()
         }
     }
 }

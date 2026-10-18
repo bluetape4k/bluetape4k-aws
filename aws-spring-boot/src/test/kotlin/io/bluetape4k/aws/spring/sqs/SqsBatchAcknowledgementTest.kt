@@ -5,19 +5,22 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
@@ -25,12 +28,18 @@ import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse
 import software.amazon.awssdk.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 class SqsBatchAcknowledgementTest {
+
+    companion object: KLoggingChannel() {
+        private const val QUEUE_URL = "https://sqs.local/orders"
+    }
 
     @Test
     fun `cancellation while committing completed IO does not strand later waiters`() = runTest {
@@ -53,7 +62,7 @@ class SqsBatchAcknowledgementTest {
         mutex.unlock()
         assertFailsWith<CancellationException> { first.await() }
 
-        withTimeout(1_000) {
+        withTimeout(1.seconds) {
             acknowledgement.acknowledge().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
         }
         operations.deleteBatchCalls shouldBeEqualTo 1
@@ -78,6 +87,7 @@ class SqsBatchAcknowledgementTest {
         acknowledgement.acknowledge()
 
         recorder.contexts.single().apply {
+            log.debug { "context=$this" }
             metadata.stage shouldBeEqualTo SqsObservationStage.ACKNOWLEDGEMENT
             metadata.acknowledgementAction shouldBeEqualTo SqsAcknowledgementAction.ACK
             metadata.batch.shouldBeTrue()
@@ -149,9 +159,13 @@ class SqsBatchAcknowledgementTest {
         val recorder = BatchObservationRecorder()
         val acknowledgement = acknowledgement(messages, operations, observationRuntime = observationRuntime(recorder))
 
-        val first = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+        val first = async(start = CoroutineStart.UNDISPATCHED) {
+            acknowledgement.acknowledge()
+        }
         started.await()
-        val waiter = async(start = CoroutineStart.UNDISPATCHED) { acknowledgement.acknowledge() }
+        val waiter = async(start = CoroutineStart.UNDISPATCHED) {
+            acknowledgement.acknowledge()
+        }
         release.complete(Unit)
 
         first.await().status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
@@ -167,7 +181,7 @@ class SqsBatchAcknowledgementTest {
         val stopFailure = IllegalStateException("observation stop failed")
         val operations = RecordingBatchOperations().apply { deleteBatchFailure = cancellation }
         val activeAfterHooks = mutableListOf<Boolean>()
-        val interceptor = object : SqsListenerInterceptor {
+        val interceptor = object: SqsListenerInterceptor {
             override suspend fun afterAcknowledgement(
                 context: SqsListenerInvocationContext,
                 action: SqsAcknowledgementAction,
@@ -212,11 +226,14 @@ class SqsBatchAcknowledgementTest {
 
         val result = acknowledgement.acknowledge()
 
+        log.debug { "result=$result" }
         result.operation shouldBeEqualTo SqsBatchAcknowledgementOperation.ACKNOWLEDGE
         result.status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
         result.successfulMessageIds shouldBeEqualTo listOf("message-1", "message-2", "message-3")
+        log.debug { "acknowledgement=$result" }
         acknowledgement.pending shouldBeEqualTo emptyList()
         acknowledgement.completed.shouldBeTrue()
+        log.debug { "operations=$operations" }
         operations.deleteBatchCalls shouldBeEqualTo 1
         operations.deleteRequests.single() shouldBeEqualTo listOf("receipt-1", "receipt-2", "receipt-3")
     }
@@ -234,9 +251,12 @@ class SqsBatchAcknowledgementTest {
 
         val result = acknowledgement.acknowledge()
 
+        log.debug { "result=$result" }
         result.status shouldBeEqualTo SqsBatchAcknowledgementStatus.PARTIAL_FAILURE
         result.successfulMessageIds shouldBeEqualTo listOf("message-1", "message-3")
         result.failed.single().messageId shouldBeEqualTo "message-2"
+
+        log.debug { "acknowledgement=$result" }
         acknowledgement.pending.map { it.messageId } shouldBeEqualTo listOf("message-2")
         acknowledgement.completed.shouldBeFalse()
     }
@@ -249,10 +269,14 @@ class SqsBatchAcknowledgementTest {
 
         val result = acknowledgement.nack(messages, timeoutSeconds = 30)
 
+        log.debug { "result=$result" }
         result.operation shouldBeEqualTo SqsBatchAcknowledgementOperation.NACK
         result.status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
+
+        log.debug { "acknowledgement=$result" }
         acknowledgement.pending shouldBeEqualTo emptyList()
         acknowledgement.completed.shouldBeTrue()
+
         operations.deleteBatchCalls shouldBeEqualTo 0
         operations.visibilityRequests.single().map { it.timeoutSeconds } shouldBeEqualTo listOf(30, 30)
     }
@@ -265,6 +289,7 @@ class SqsBatchAcknowledgementTest {
 
         val result = acknowledgement.changeVisibility(messages, timeoutSeconds = 15)
 
+        log.debug { "result=$result" }
         result.operation shouldBeEqualTo SqsBatchAcknowledgementOperation.CHANGE_VISIBILITY
         result.status shouldBeEqualTo SqsBatchAcknowledgementStatus.SUCCESS
         acknowledgement.pending.map { it.messageId } shouldBeEqualTo listOf("message-1")
@@ -310,6 +335,7 @@ class SqsBatchAcknowledgementTest {
 
         val result = acknowledgement.acknowledge(listOf(messages[1]))
 
+        log.debug { "result=$result" }
         result.status shouldBeEqualTo SqsBatchAcknowledgementStatus.FAILURE
         result.failed.single().code shouldBeEqualTo "fifo_predecessor_pending"
         operations.deleteBatchCalls shouldBeEqualTo 0
@@ -325,10 +351,12 @@ class SqsBatchAcknowledgementTest {
         val result = acknowledgement.acknowledge()
         val rendered = "${result}${result.failed}"
 
+        log.debug { "rendered=$rendered" }
         rendered shouldContain "SqsBatchAcknowledgementResult"
-        check("message-1" !in rendered)
-        check("receipt-1" !in rendered)
-        check("payload-1" !in rendered)
+
+        rendered shouldNotContain "message-1"
+        rendered shouldNotContain "receipt-1"
+        rendered shouldNotContain "payload-1"
     }
 
     @Test
@@ -345,7 +373,9 @@ class SqsBatchAcknowledgementTest {
             observationRuntime = observationRuntime(recorder),
         )
 
-        assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+        assertFailsWith<CancellationException> {
+            acknowledgement.acknowledge()
+        }
 
         operations.deleteBatchCalls shouldBeEqualTo 0
         acknowledgement.pending.size shouldBeEqualTo 2
@@ -359,7 +389,7 @@ class SqsBatchAcknowledgementTest {
         val operations = RecordingBatchOperations()
         val registry = ObservationRegistry.create().apply {
             observationConfig().observationHandler(
-                object : ObservationHandler<SqsObservationContext> {
+                object: ObservationHandler<SqsObservationContext> {
                     override fun supportsContext(context: Observation.Context): Boolean =
                         context is SqsObservationContext
 
@@ -379,7 +409,9 @@ class SqsBatchAcknowledgementTest {
             ),
         )
 
-        val actual = assertFailsWith<IllegalStateException> { acknowledgement.acknowledge() }
+        val actual = assertFailsWith<IllegalStateException> {
+            acknowledgement.acknowledge()
+        }
 
         actual shouldBeEqualTo setupFailure
         acknowledgement.isObservationSetupFailure(actual).shouldBeTrue()
@@ -397,11 +429,13 @@ class SqsBatchAcknowledgementTest {
             observationRuntime = SqsObservationRuntime(
                 registry = ObservationRegistry.create(),
                 customizers = emptyList(),
-                factory = SqsObservationFactory { _, _ -> throw cancellation },
+                factory = { _, _ -> throw cancellation },
             ),
         )
 
-        val actual = assertFailsWith<CancellationException> { acknowledgement.acknowledge() }
+        val actual = assertFailsWith<CancellationException> {
+            acknowledgement.acknowledge()
+        }
 
         actual shouldBeEqualTo cancellation
         acknowledgement.isObservationSetupFailure(actual).shouldBeFalse()
@@ -418,7 +452,7 @@ class SqsBatchAcknowledgementTest {
             observationRuntime = SqsObservationRuntime(
                 registry = ObservationRegistry.create(),
                 customizers = emptyList(),
-                factory = SqsObservationFactory { _, _ -> throw fatal },
+                factory = { _, _ -> throw fatal },
             ),
         )
 
@@ -454,7 +488,7 @@ class SqsBatchAcknowledgementTest {
         )
     }
 
-    private class BatchObservationRecorder : ObservationHandler<SqsObservationContext> {
+    private class BatchObservationRecorder: ObservationHandler<SqsObservationContext> {
         val contexts = mutableListOf<SqsObservationContext>()
 
         override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
@@ -466,7 +500,7 @@ class SqsBatchAcknowledgementTest {
 
     private class FailFirstBatchStopHandler(
         private val failure: Throwable,
-    ) : ObservationHandler<SqsObservationContext> {
+    ): ObservationHandler<SqsObservationContext> {
         private val remainingFailures = AtomicInteger(1)
 
         override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
@@ -479,7 +513,7 @@ class SqsBatchAcknowledgementTest {
     }
 
     private fun messages(count: Int, groupId: String? = null): List<SqsReceivedMessage> =
-        (1..count).map { message(it, groupId) }
+        List(count) { message(it + 1, groupId) }
 
     private fun message(index: Int, groupId: String? = null): SqsReceivedMessage {
         val builder = Message.builder()
@@ -488,13 +522,13 @@ class SqsBatchAcknowledgementTest {
             .body("payload-$index")
         groupId?.let {
             builder.attributes(
-                mapOf(software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName.MESSAGE_GROUP_ID to it)
+                mapOf(MessageSystemAttributeName.MESSAGE_GROUP_ID to it)
             )
         }
         return SqsReceivedMessage(QUEUE_URL, builder.build())
     }
 
-    private class RecordingBatchOperations : SqsOperations {
+    private class RecordingBatchOperations: SqsOperations {
         var deleteBatchCalls = 0
         var deleteBatchResult = SqsBatchDeleteResult(emptyList(), emptyList())
         var deleteBatchFailure: Throwable? = null
@@ -509,22 +543,27 @@ class SqsBatchAcknowledgementTest {
             queueName: String,
             attributes: Map<QueueAttributeName, String>,
         ): String = QUEUE_URL
+
         override suspend fun createConfiguredQueue(queueName: String): String = QUEUE_URL
         override suspend fun send(queueUrl: String, body: String, delaySeconds: Int?): SendMessageResponse =
             SendMessageResponse.builder().build()
+
         override suspend fun receive(
             queueUrl: String,
             maxMessages: Int,
             waitTimeSeconds: Int,
             visibilityTimeoutSeconds: Int?,
         ): List<SqsReceivedMessage> = emptyList()
+
         override suspend fun delete(queueUrl: String, receiptHandle: String): DeleteMessageResponse =
             DeleteMessageResponse.builder().build()
+
         override suspend fun changeVisibility(
             queueUrl: String,
             receiptHandle: String,
             timeoutSeconds: Int,
         ): ChangeMessageVisibilityResponse = ChangeMessageVisibilityResponse.builder().build()
+
         override fun receiveFlow(
             queueUrl: String,
             maxMessages: Int,
@@ -539,7 +578,7 @@ class SqsBatchAcknowledgementTest {
             deleteBatchCalls++
             deleteRequests += receiptHandles.toList()
             deleteStarted?.complete(Unit)
-            deleteRelease?.let { it.await() }
+            deleteRelease?.await()
             deleteBatchFailure?.let { throw it }
             beforeDeleteReturn()
             return if (deleteBatchResult.successfulEntryIds.isEmpty() && deleteBatchResult.failed.isEmpty()) {
@@ -556,9 +595,5 @@ class SqsBatchAcknowledgementTest {
             visibilityRequests += requests.toList()
             return SqsBatchVisibilityResult(requests.map { it.messageId }, emptyList())
         }
-    }
-
-    companion object {
-        private const val QUEUE_URL = "https://sqs.local/orders"
     }
 }

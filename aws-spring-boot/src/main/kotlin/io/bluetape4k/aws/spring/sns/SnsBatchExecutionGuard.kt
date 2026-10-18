@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.PublishBatchRequest
+import software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry
 import software.amazon.awssdk.services.sns.model.PublishBatchResponse
 import java.util.concurrent.CompletableFuture
 
@@ -25,7 +26,7 @@ internal class SnsBatchExecutionGuard(
     private val snsAsyncClient: SnsAsyncClient,
     request: SnsPublishBatchRequest,
     private val options: SnsBatchExecutionOptions,
-) : SnsBatchExecutionPort {
+): SnsBatchExecutionPort {
 
     private val requestEntryIds = request.entries.mapTo(mutableSetOf()) { it.id }
     private val topicArn = request.topicArn
@@ -167,7 +168,7 @@ internal class SnsBatchExecutionGuard(
     }
 
     private fun toSdkEntry(entry: SnsPublishBatchEntry) =
-        software.amazon.awssdk.services.sns.model.PublishBatchRequestEntry.builder()
+        PublishBatchRequestEntry.builder()
             .id(entry.id)
             .message(entry.message)
             .apply {

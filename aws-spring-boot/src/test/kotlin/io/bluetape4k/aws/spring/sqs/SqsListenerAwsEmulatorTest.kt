@@ -1,20 +1,24 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldContainAll
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.codec.Base58
+import io.bluetape4k.concurrent.await
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
-import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
-import io.bluetape4k.assertions.shouldBeEqualTo
 import kotlinx.coroutines.delay
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
 import org.springframework.aop.framework.ProxyFactory
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
@@ -25,16 +29,13 @@ import tools.jackson.databind.ObjectMapper
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
-class SqsListenerAwsEmulatorTest {
+class SqsListenerAwsEmulatorTest: AbstractSqsTest() {
 
-    companion object {
-        private val awsEmulator by lazy {
-            AwsSpringBootTestEmulator.get("sqs")
-        }
-    }
+    companion object: KLogging()
 
     private fun contextRunner(
         queueUrl: String,
@@ -75,19 +76,19 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-success")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-success")
 
             contextRunner(queueUrl, StringListenerConfig::class.java).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(StringListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<StringListener>()
 
                 runSuspendIO { operations.send(queueUrl, "listener-ok") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.bodies shouldContain "listener-ok"
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                    await atMost 10.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
                     }
                 }
@@ -101,7 +102,7 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val bootstrapOperations = bootstrapContext.getBean(SqsOperations::class.java)
+            val bootstrapOperations = bootstrapContext.getBean<SqsOperations>()
             lateinit var queueUrl: String
             runSuspendIO {
                 queueUrl = bootstrapOperations.createQueue(
@@ -116,15 +117,15 @@ class SqsListenerAwsEmulatorTest {
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-interval-seconds=1",
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-seconds=3",
             ).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(HeartbeatListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<HeartbeatListener>()
                 runSuspendIO { operations.send(queueUrl, "listener-heartbeat") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.attempts.get() shouldBeGreaterOrEqualTo 1
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(12)).untilSuspending {
+                    await atMost 12.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
                     }
                 }
@@ -139,11 +140,11 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-suspend")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-suspend")
 
             contextRunner(queueUrl, SuspendListenerConfig::class.java).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(SuspendListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<SuspendListener>()
 
                 runSuspendIO { operations.send(queueUrl, "listener-suspend-ok") }
 
@@ -160,26 +161,26 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-fail")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-fail")
 
             contextRunner(
                 queueUrl,
                 FailingListenerConfig::class.java,
                 "bluetape4k.aws.sqs.listener.error-visibility-timeout-seconds=0",
             ).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(FailingListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<FailingListener>()
 
                 runSuspendIO { operations.send(queueUrl, "listener-fail") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.attempts.get() shouldBeGreaterOrEqualTo 2
                 }
                 val stopped = CountDownLatch(1)
-                context.getBean(SqsMessageListenerContainerRegistry::class.java).stop {
+                context.getBean<SqsMessageListenerContainerRegistry>().stop {
                     stopped.countDown()
                 }
-                stopped.await(5, TimeUnit.SECONDS).shouldBeTrue()
+                stopped.await(5.seconds).shouldBeTrue()
             }
         }
     }
@@ -190,22 +191,22 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-concurrency")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-concurrency")
 
             contextRunner(
                 queueUrl,
                 ConcurrencyListenerConfig::class.java,
                 "bluetape4k.aws.sqs.listener.concurrency=2",
             ).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(ConcurrencyListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<ConcurrencyListener>()
 
                 runSuspendIO {
                     operations.send(queueUrl, "concurrency-1")
                     operations.send(queueUrl, "concurrency-2")
                 }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.bodies shouldContainAll listOf("concurrency-1", "concurrency-2")
                 }
             }
@@ -218,15 +219,15 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-proxy")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-proxy")
 
             contextRunner(queueUrl, ProxiedListenerConfig::class.java).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
+                val operations = context.getBean<SqsOperations>()
                 ProxiedListener.bodies.clear()
 
                 runSuspendIO { operations.send(queueUrl, "listener-proxy-ok") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     ProxiedListener.bodies shouldContain "listener-proxy-ok"
                 }
             }
@@ -239,15 +240,15 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-json")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-json")
 
             contextRunner(queueUrl, JsonListenerConfig::class.java).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(JsonListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<JsonListener>()
 
                 runSuspendIO { operations.send(queueUrl, """{"id":"order-1","amount":42}""") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.payloads.map { it.id } shouldContain "order-1"
                 }
             }
@@ -260,11 +261,11 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-manual-ack")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-manual-ack")
 
             contextRunner(queueUrl, ManualAckListenerConfig::class.java).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(ManualAckListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<ManualAckListener>()
 
                 runSuspendIO { operations.send(queueUrl, "manual-ack-ok") }
 
@@ -272,7 +273,7 @@ class SqsListenerAwsEmulatorTest {
                     listener.bodies shouldContain "manual-ack-ok"
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                    await atMost 10.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
                     }
                 }
@@ -286,19 +287,19 @@ class SqsListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val queueUrl = createQueue(bootstrapContext.getBean(SqsOperations::class.java), "listener-retry")
+            val queueUrl = createQueue(bootstrapContext.getBean<SqsOperations>(), "listener-retry")
 
             contextRunner(
                 queueUrl,
                 RetryListenerConfig::class.java,
                 "bluetape4k.aws.sqs.listener.retry.max-attempts=2",
             ).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(RetryListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<RetryListener>()
 
                 runSuspendIO { operations.send(queueUrl, "retry-ok") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.bodies shouldContain "retry-ok"
                     listener.attempts.get() shouldBeGreaterOrEqualTo 2
                 }
@@ -318,7 +319,7 @@ class SqsListenerAwsEmulatorTest {
     internal class StringListener {
         val bodies: MutableList<String> = CopyOnWriteArrayList()
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         fun handle(body: String) {
             bodies += body
         }
@@ -333,11 +334,11 @@ class SqsListenerAwsEmulatorTest {
     internal class HeartbeatListener {
         val attempts = AtomicInteger()
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         suspend fun handle(body: String) {
             attempts.incrementAndGet()
             check(body == "listener-heartbeat")
-            delay(3_500)
+            delay(3_500.milliseconds)
         }
     }
 
@@ -350,7 +351,7 @@ class SqsListenerAwsEmulatorTest {
         fun listener(): JsonListener = JsonListener()
     }
 
-    internal class OrderPayload : java.io.Serializable {
+    internal class OrderPayload: java.io.Serializable {
         var id: String = ""
         var amount: Int = 0
 
@@ -362,7 +363,7 @@ class SqsListenerAwsEmulatorTest {
     internal class JsonListener {
         val payloads: MutableList<OrderPayload> = CopyOnWriteArrayList()
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         fun handle(payload: OrderPayload) {
             payloads += payload
         }
@@ -377,7 +378,7 @@ class SqsListenerAwsEmulatorTest {
     internal class ManualAckListener {
         val bodies: MutableList<String> = CopyOnWriteArrayList()
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         suspend fun handle(body: String, acknowledgement: SqsAcknowledgement) {
             bodies += body
             acknowledgement.acknowledge()
@@ -394,7 +395,7 @@ class SqsListenerAwsEmulatorTest {
         val attempts = AtomicInteger()
         val bodies: MutableList<String> = CopyOnWriteArrayList()
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         fun handle(body: String) {
             if (attempts.incrementAndGet() == 1) {
                 error("retry once")
@@ -412,8 +413,8 @@ class SqsListenerAwsEmulatorTest {
     internal class SuspendListener {
         val bodies: MutableList<String> = CopyOnWriteArrayList()
 
-        @SqsListener("\${test.queue-url}")
-        suspend fun handle(message: SqsReceivedMessage) {
+        @SqsListener($$"${test.queue-url}")
+        fun handle(message: SqsReceivedMessage) {
             bodies += message.body
         }
     }
@@ -427,7 +428,7 @@ class SqsListenerAwsEmulatorTest {
     internal class FailingListener {
         val attempts = AtomicInteger()
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         fun handle(body: String) {
             attempts.incrementAndGet()
             error("failed to process $body")
@@ -444,7 +445,7 @@ class SqsListenerAwsEmulatorTest {
         private val latch = CountDownLatch(2)
         val bodies: MutableList<String> = CopyOnWriteArrayList()
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         fun handle(body: String) {
             bodies += body
             latch.countDown()
@@ -467,7 +468,7 @@ class SqsListenerAwsEmulatorTest {
             val bodies: MutableList<String> = CopyOnWriteArrayList()
         }
 
-        @SqsListener("\${test.queue-url}")
+        @SqsListener($$"${test.queue-url}")
         open fun handle(body: String) {
             bodies += body
         }

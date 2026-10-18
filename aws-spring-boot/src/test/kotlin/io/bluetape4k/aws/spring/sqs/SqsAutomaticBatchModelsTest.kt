@@ -8,6 +8,8 @@ import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import java.io.ByteArrayInputStream
@@ -18,6 +20,8 @@ import java.io.Serializable
 import java.lang.reflect.Modifier
 
 class SqsAutomaticBatchModelsTest {
+
+    companion object: KLogging()
 
     @Test
     fun `batch models snapshot mutable input and calculate status`() {
@@ -86,6 +90,7 @@ class SqsAutomaticBatchModelsTest {
         }
 
         val rendered = models.joinToString()
+        log.debug { "rendered=$rendered" }
         rendered shouldNotContain sendEntryId
         rendered shouldNotContain deleteEntryId
         rendered shouldNotContain failedEntryId
@@ -155,6 +160,7 @@ class SqsAutomaticBatchModelsTest {
             ),
         )
         val normalized = BatchResultNormalizer.send(listOf(first.entryId, second.entryId), sendOutcomes)
+        log.debug { "normalized=$normalized" }
         normalized.successful.map { it.entryId } shouldBeEqualTo listOf(second.entryId)
         normalized.failed.map { it.entryId } shouldBeEqualTo listOf(first.entryId)
 
@@ -167,9 +173,11 @@ class SqsAutomaticBatchModelsTest {
                 ),
             ),
         )
+        log.debug { "deleteResult=$deleteResult" }
         deleteResult.successfulEntryIds shouldBeEqualTo listOf(second.entryId)
         deleteResult.failed.map { it.entryId } shouldBeEqualTo listOf(first.entryId)
         deleteResult.status shouldBeEqualTo SqsBatchResultStatus.PARTIAL_FAILURE
+
         SendBatchFailureStrategy.entries shouldBeEqualTo listOf(
             SendBatchFailureStrategy.RETURN,
             SendBatchFailureStrategy.THROW,
@@ -193,7 +201,7 @@ class SqsAutomaticBatchModelsTest {
                 ),
             )
         }
-
+        log.debug { "error=$error" }
         error.submittedEntryCount shouldBeEqualTo 2
         error.responseEntryCount shouldBeEqualTo 3
         error.unknownEntryCount shouldBeEqualTo 1
@@ -218,6 +226,7 @@ class SqsAutomaticBatchModelsTest {
             val error = assertFailsWith<SqsBatchProtocolException> {
                 BatchResultNormalizer.send(listOf(entryId), listOf(outcome))
             }
+            log.debug { "error=$error" }
             error.cause.shouldBeNull()
             error.suppressed shouldHaveSize 0
             "${error.message}$error" shouldNotContain entryId
@@ -244,11 +253,15 @@ class SqsAutomaticBatchModelsTest {
                 ),
             ),
         )
+        log.debug { "sendEntry=$sendEntry" }
+
         val deleteEntry = SqsBatchDeleteEntry(
             deleteEntryId,
             "https://sqs.local/queue-secret",
             "receipt-secret",
         )
+        log.debug { "deleteEntry=$deleteEntry" }
+        
         val success = SqsBatchSendSuccess(sendEntryId, "message-secret", "sequence-secret")
         val failure = SqsBatchEntryFailure(failedEntryId, SqsBatchFailureKind.SERVICE, "AccessDenied")
         return listOf(

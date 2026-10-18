@@ -1,37 +1,51 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeLessOrEqualTo
-import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
-import kotlinx.coroutines.CompletableDeferred
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import kotlinx.coroutines.test.runTest
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.withPollInterval
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.services.sns.model.PublishBatchResultEntry
 import software.amazon.awssdk.services.sns.model.PublishBatchResponse
+import software.amazon.awssdk.services.sns.model.PublishBatchResultEntry
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
-class SnsBatchExecutorTest {
+class SnsBatchExecutorTest: AbstractSnsTest() {
+
+    companion object: KLoggingChannel()
 
     @Test
     fun `executor chunks matrix into exact ten-entry calls`() = runTest {
         listOf(0, 1, 9, 10, 11, 20, 21, 100).forEach { size ->
             val publisher = RecordingPublisher()
-            val result = SnsBatchExecutor(publisher::publish).execute(request(size), SnsBatchExecutionOptions(4))
+            val result = SnsBatchExecutor(publisher::publish)
+                .execute(
+                    request(size),
+                    SnsBatchExecutionOptions(4)
+                )
 
+            log.debug { "result=$result" }
             publisher.chunks shouldHaveSize (if (size == 0) 0 else (size + 9) / 10)
             result.successful shouldHaveSize size
             result.failed.shouldBeEmpty()
@@ -43,7 +57,10 @@ class SnsBatchExecutorTest {
         listOf(1, 2, 8).forEach { concurrency ->
             val publisher = RecordingPublisher()
             val result = SnsBatchExecutor(publisher::publish)
-                .execute(request(1_000), SnsBatchExecutionOptions(concurrency))
+                .execute(
+                    request(1_000),
+                    SnsBatchExecutionOptions(concurrency)
+                )
 
             publisher.chunks shouldHaveSize 100
             publisher.maxActive shouldBeLessOrEqualTo concurrency
@@ -75,8 +92,10 @@ class SnsBatchExecutorTest {
                 .build()
         }
 
-        val result = SnsBatchExecutor(publisher::publish).execute(batchRequest, SnsBatchExecutionOptions())
+        val result = SnsBatchExecutor(publisher::publish)
+            .execute(batchRequest, SnsBatchExecutionOptions())
 
+        log.debug { "result=$result" }
         result.successful.single().entryId shouldBeEqualTo batchRequest.entries[1].id
         result.successful.single().messageId shouldBeEqualTo "message-2"
         result.successful.single().sequenceNumber shouldBeEqualTo "sequence-2"
@@ -124,7 +143,9 @@ class SnsBatchExecutorTest {
         assertFailsWith<SnsBatchTransportException> {
             SnsBatchExecutor(
                 onCompletedEntryIds = { transportIds.addAll(it) },
-                publishChunk = { _, _ -> throw IllegalStateException("transport-${Base58.randomString(16)}") },
+                publishChunk = { _, _ ->
+                    throw IllegalStateException("transport-${Base58.randomString(16)}")
+                },
             ).execute(batchRequest, SnsBatchExecutionOptions(maxInFlightBatches = 1))
         }
 
@@ -141,7 +162,11 @@ class SnsBatchExecutorTest {
         }
 
         val error = assertFailsWith<SnsBatchTransportException> {
-            SnsBatchExecutor(publisher::publish).execute(request(100), SnsBatchExecutionOptions(4))
+            SnsBatchExecutor(publisher::publish)
+                .execute(
+                    request(100),
+                    SnsBatchExecutionOptions(4)
+                )
         }
 
         publisher.maxActive shouldBeLessOrEqualTo 4
@@ -170,8 +195,10 @@ class SnsBatchExecutorTest {
         }
 
         firstStarted.await()
-        repeat(100) { yield() }
-        calls.size shouldBeLessOrEqualTo 4
+
+        await atMost 5.seconds withPollInterval 100.milliseconds untilAsserted {
+            calls.size shouldBeLessOrEqualTo 4
+        }
 
         releaseFirst.complete(Unit)
         result.await().successful shouldHaveSize 100
@@ -188,11 +215,19 @@ class SnsBatchExecutorTest {
 
         val protocol = RecordingPublisher {
             PublishBatchResponse.builder()
-                .successful(PublishBatchResultEntry.builder().id("unknown-entry").messageId("message").build())
+                .successful(
+                    PublishBatchResultEntry.builder()
+                        .id("unknown-entry")
+                        .messageId("message").build()
+                )
                 .build()
         }
         val protocolError = assertFailsWith<SnsBatchProtocolException> {
-            SnsBatchExecutor(protocol::publish).execute(request(1), SnsBatchExecutionOptions())
+            SnsBatchExecutor(protocol::publish)
+                .execute(
+                    request(1),
+                    SnsBatchExecutionOptions()
+                )
         }
         protocolError.unknownEntryCount shouldBeEqualTo 1
         protocolError.completedEntryIds.shouldBeEmpty()
@@ -203,6 +238,7 @@ class SnsBatchExecutorTest {
         val started = CompletableDeferred<Unit>()
         val stopped = CompletableDeferred<Unit>()
         val observed = CompletableDeferred<Throwable>()
+
         val publisher = SnsBatchExecutor { _, _ ->
             started.complete(Unit)
             try {
@@ -211,6 +247,7 @@ class SnsBatchExecutorTest {
                 stopped.complete(Unit)
             }
         }
+
         val call = launch {
             try {
                 publisher.execute(request(11), SnsBatchExecutionOptions(maxInFlightBatches = 2))
@@ -239,6 +276,7 @@ class SnsBatchExecutorTest {
         val firstStarted = CompletableDeferred<Unit>()
         val firstCancelled = CompletableDeferred<Unit>()
         val calls = CopyOnWriteArrayList<List<String>>()
+
         val publisher = SnsBatchExecutor { _, entries ->
             calls += entries.map { it.id }
             if (entries.first().id == firstEntryId) {
@@ -298,7 +336,7 @@ class SnsBatchExecutorTest {
             val current = active.incrementAndGet()
             maxActive = maxOf(maxActive, current)
             return try {
-                delay(1)
+                delay(1.milliseconds)
                 responseFactory(entries)
             } finally {
                 active.decrementAndGet()

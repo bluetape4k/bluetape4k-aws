@@ -1,8 +1,8 @@
 package io.bluetape4k.aws.spring.sns
 
 import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.ListableBeanFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -15,20 +15,22 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ImportRuntimeHints
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 
 /** Spring MVC 애플리케이션에 SNS HTTP adapter를 자동 설정합니다. */
 @AutoConfiguration(after = [SnsAutoConfiguration::class])
 @ConditionalOnAwsEnabled
 @ConditionalOnWebApplication(type = SERVLET)
-@ConditionalOnClass(name = [
-    "org.springframework.web.servlet.config.annotation.WebMvcConfigurer",
-    "org.springframework.web.filter.OncePerRequestFilter",
-    "jakarta.servlet.http.HttpServletRequest",
-    "software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse",
-])
-@ConditionalOnProperty(prefix = "bluetape4k.aws.sns", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnClass(
+    name = [
+        "org.springframework.web.servlet.config.annotation.WebMvcConfigurer",
+        "org.springframework.web.filter.OncePerRequestFilter",
+        "jakarta.servlet.http.HttpServletRequest",
+        "software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse",
+    ]
+)
+@ConditionalOnProperty(prefix = SnsProperties.PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @ConditionalOnProperty(
     prefix = SNS_HTTP_ENDPOINTS_PROPERTIES_PREFIX,
     name = ["enabled"],
@@ -77,7 +79,7 @@ class SnsHttpEndpointWebMvcAutoConfiguration {
     @ConditionalOnMissingBean(name = ["snsHttpEndpointWebMvcConfigurer"])
     fun snsHttpEndpointWebMvcConfigurer(
         resolver: SnsMvcHttpMessageArgumentResolver,
-    ): WebMvcConfigurer = object : WebMvcConfigurer {
+    ): WebMvcConfigurer = object: WebMvcConfigurer {
         override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
             resolvers += resolver
         }

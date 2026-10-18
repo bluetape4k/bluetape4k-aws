@@ -19,7 +19,7 @@ internal class SnsBatchExecutor private constructor(
             topicArn: String,
             entries: List<SnsPublishBatchEntry>,
         ) -> PublishBatchResponse,
-    ) : this(publishChunk, {}, SnsBatchExecutorConstructorMarker)
+    ): this(publishChunk, {}, SnsBatchExecutorConstructorMarker)
 
     constructor(
         publishChunk: suspend (
@@ -27,7 +27,7 @@ internal class SnsBatchExecutor private constructor(
             entries: List<SnsPublishBatchEntry>,
         ) -> PublishBatchResponse,
         onCompletedEntryIds: (List<String>) -> Unit,
-    ) : this(publishChunk, onCompletedEntryIds, SnsBatchExecutorConstructorMarker)
+    ): this(publishChunk, onCompletedEntryIds, SnsBatchExecutorConstructorMarker)
 
     private val coordinator = SnsBatchExecutionCoordinator(
         publishChunk = publishChunk,
@@ -38,5 +38,6 @@ internal class SnsBatchExecutor private constructor(
     suspend fun execute(
         request: SnsPublishBatchRequest,
         options: SnsBatchExecutionOptions = SnsBatchExecutionOptions(),
-    ): SnsPublishBatchResult = coordinator.execute(request, options)
+    ): SnsPublishBatchResult =
+        coordinator.execute(request, options)
 }

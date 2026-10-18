@@ -4,7 +4,7 @@ package io.bluetape4k.aws.spring.sqs
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.util.Base64
+import java.util.*
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -21,13 +21,13 @@ class SqsExtendedClientPointer private constructor(
 
     override fun equals(other: Any?): Boolean =
         other is SqsExtendedClientPointer &&
-            bucket == other.bucket && key == other.key && contentType == other.contentType &&
-            encrypted == other.encrypted && signatureBase64Url == other.signatureBase64Url
+                bucket == other.bucket && key == other.key && contentType == other.contentType &&
+                encrypted == other.encrypted && signatureBase64Url == other.signatureBase64Url
 
     override fun hashCode(): Int = listOf(bucket, key, contentType, encrypted, signatureBase64Url).hashCode()
 
     internal companion object {
-        fun create(
+        operator fun invoke(
             bucket: String,
             key: String,
             contentType: String?,
@@ -47,6 +47,16 @@ class SqsExtendedClientPointer private constructor(
                 "pointer signature must be canonical base64url."
             }
             return SqsExtendedClientPointer(bucket, key, contentType, encrypted, signatureBase64Url)
+        }
+
+        fun create(
+            bucket: String,
+            key: String,
+            contentType: String?,
+            encrypted: Boolean,
+            signatureBase64Url: String,
+        ): SqsExtendedClientPointer {
+            return invoke(bucket, key, contentType, encrypted, signatureBase64Url)
         }
 
         private fun isControl(value: Char): Boolean = value == '\u0000' || value == '\r' || value == '\n'

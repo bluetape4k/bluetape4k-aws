@@ -4,9 +4,17 @@ import io.bluetape4k.aws.kinesis.createStream
 import io.bluetape4k.aws.kinesis.deleteStream
 import io.bluetape4k.aws.kinesis.describeStream
 import io.bluetape4k.aws.kinesis.getRecords
+import io.bluetape4k.aws.kinesis.model.getRecordsRequest
+import io.bluetape4k.aws.kinesis.model.getShardIteratorRequest
 import io.bluetape4k.aws.kinesis.putRecord
 import io.bluetape4k.aws.kinesis.putRecords
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotEmpty
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.requirePositiveNumber
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -19,7 +27,6 @@ import software.amazon.awssdk.services.kinesis.model.CreateStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DeleteStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DescribeStreamResponse
 import software.amazon.awssdk.services.kinesis.model.ExpiredIteratorException
-import software.amazon.awssdk.services.kinesis.model.GetRecordsRequest
 import software.amazon.awssdk.services.kinesis.model.GetRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.GetShardIteratorRequest
 import software.amazon.awssdk.services.kinesis.model.GetShardIteratorResponse
@@ -31,6 +38,7 @@ import software.amazon.awssdk.services.kinesis.model.Record
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import java.time.Duration
 import kotlin.random.Random
+import kotlin.time.toKotlinDuration
 
 /**
  * AWS SDK v2 [KinesisAsyncClient]를 사용하는 코루틴 친화적인 [KinesisOperations] 구현입니다.
@@ -41,30 +49,32 @@ import kotlin.random.Random
  * 속성을 적용하며, 명시적인 폴링 사용 사례를 위한 단일 샤드 cold [Flow]를 제공합니다.
  */
 class KinesisCoroutinesTemplate(
-    private val kinesisAsyncClient: KinesisAsyncClient,
-    private val properties: KinesisProperties,
-) : KinesisOperations {
+    override val client: KinesisAsyncClient,
+    val properties: KinesisProperties,
+): KinesisOperations {
+
+    companion object: KLoggingChannel()
 
     override suspend fun createStream(streamName: String, shardCount: Int): CreateStreamResponse {
-        require(shardCount >= 1) { "shardCount must be greater than or equal to 1." }
-        return kinesisAsyncClient.createStream(streamName, shardCount)
+        shardCount.requirePositiveNumber("shardCount")
+        log.debug { "Create Kinesis Schema... streamName: $streamName, shardCount: $shardCount" }
+        return client.createStream(streamName, shardCount)
     }
 
     override suspend fun createConfiguredStream(streamName: String): CreateStreamResponse {
         streamName.requireNotBlank("streamName")
-        val stream = properties.streams[streamName]
-            ?: throw IllegalArgumentException("Stream '$streamName' is not configured.")
+        val stream = properties.streams[streamName].requireNotNull { "Stream '$streamName' is not configured." }
         return createStream(streamName, stream.shardCount)
     }
 
     override suspend fun deleteStream(streamName: String): DeleteStreamResponse =
-        kinesisAsyncClient.deleteStream(streamName)
+        client.deleteStream(streamName)
 
     override suspend fun describeStream(streamName: String): DescribeStreamResponse =
-        kinesisAsyncClient.describeStream(streamName)
+        client.describeStream(streamName)
 
     override suspend fun putRecord(request: KinesisPutRecordRequest): PutRecordResponse =
-        kinesisAsyncClient.putRecord(
+        client.putRecord(
             streamName = request.streamName,
             partitionKey = request.partitionKey,
             data = request.data,
@@ -74,27 +84,25 @@ class KinesisCoroutinesTemplate(
         streamName: String,
         entries: List<PutRecordsRequestEntry>,
     ): PutRecordsResponse {
-        require(entries.isNotEmpty()) { "entries must not be empty." }
-        return kinesisAsyncClient.putRecords(streamName, entries)
+        entries.requireNotEmpty("entries")
+        return client.putRecords(streamName, entries)
     }
 
     override suspend fun getShardIterator(request: KinesisShardIteratorRequest): GetShardIteratorResponse {
         request.streamName.requireNotBlank("streamName")
         request.shardId.requireNotBlank("shardId")
-        return kinesisAsyncClient.getShardIterator(
-            GetShardIteratorRequest.builder()
-                .streamName(request.streamName)
-                .shardId(request.shardId)
-                .shardIteratorType(request.type)
-                .apply {
-                    request.startingSequenceNumber?.let(::startingSequenceNumber)
-                }
-                .build()
-        ).await()
+
+        val iterReq = getShardIteratorRequest {
+            streamName(request.streamName)
+            shardId(request.shardId)
+            shardIteratorType(request.type)
+            request.startingSequenceNumber?.let(::startingSequenceNumber)
+        }
+        return client.getShardIterator(iterReq).await()
     }
 
     override suspend fun getRecords(shardIterator: String, limit: Int): GetRecordsResponse =
-        kinesisAsyncClient.getRecords(shardIterator, limit)
+        client.getRecords(shardIterator, limit)
 
     override fun recordFlow(request: KinesisRecordFlowRequest): Flow<Record> = flow {
         request.streamName.requireNotBlank("streamName")
@@ -114,21 +122,20 @@ class KinesisCoroutinesTemplate(
                 if (shardIterator == null) {
                     shardIterator = fetchShardIterator(request.streamName, request.shardId, currentPosition)
                 }
-                val currentShardIterator = requireNotNull(shardIterator) {
+                val currentShardIterator = shardIterator.requireNotNull {
                     "shardIterator must be initialized before GetRecords."
                 }
 
-                val response = kinesisAsyncClient.getRecords(
-                    GetRecordsRequest.builder()
-                        .shardIterator(currentShardIterator)
-                        .limit(options.batchLimit)
-                        .build()
-                ).await()
+                val recodsReq = getRecordsRequest {
+                    shardIterator(currentShardIterator)
+                    limit(options.batchLimit)
+                }
+                val response = client.getRecords(recodsReq).await()
 
                 iteratorRetryCount = 0
                 throttleRetryCount = 0
 
-                for (record in response.records().orEmpty()) {
+                response.records().forEach { record ->
                     emit(record)
                     lastSeenSequenceNumber = record.sequenceNumber()
                 }
@@ -136,12 +143,12 @@ class KinesisCoroutinesTemplate(
                 val nextShardIterator = response.nextShardIterator() ?: return@flow
                 shardIterator = nextShardIterator
 
-                val pollDelay = if (response.records().orEmpty().isEmpty()) {
+                val pollDelay = if (response.records().isEmpty()) {
                     options.emptyBackoff
                 } else {
                     options.pollInterval
                 }
-                delay(pollDelay.toMillis())
+                delay(pollDelay.toKotlinDuration())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ExpiredIteratorException) {
@@ -167,7 +174,7 @@ class KinesisCoroutinesTemplate(
                     throw e
                 }
 
-                delay(jitteredBackoff(throttleRetryCount, options).toMillis())
+                delay(jitteredBackoff(throttleRetryCount, options).toKotlinDuration())
             }
         }
     }
@@ -177,13 +184,12 @@ class KinesisCoroutinesTemplate(
         shardId: String,
         position: KinesisStartingPosition,
     ): String {
-        val response = kinesisAsyncClient.getShardIterator(
-            GetShardIteratorRequest.builder()
-                .streamName(streamName)
-                .shardId(shardId)
-                .applyPosition(position)
-                .build()
-        ).await()
+        val req = getShardIteratorRequest {
+            streamName(streamName)
+            shardId(shardId)
+            applyPosition(position)
+        }
+        val response = client.getShardIterator(req).await()
         return response.shardIterator()
             ?: error("getShardIterator returned null iterator for stream=$streamName shard=$shardId")
     }
@@ -221,11 +227,11 @@ class KinesisCoroutinesTemplate(
             (initialMs shl shift).coerceAtMost(maxMs)
         }
         if (baseMs <= 0L || options.jitterRatio == 0.0) {
-            return Duration.ofMillis(baseMs)
+            return baseMs.millis()
         }
 
         val floor = (baseMs * (1.0 - options.jitterRatio)).toLong().coerceAtLeast(0L)
-        val jittered = Random.Default.nextLong(floor, baseMs + 1)
-        return Duration.ofMillis(jittered)
+        val jittered = Random.nextLong(floor, baseMs + 1)
+        return jittered.millis()
     }
 }

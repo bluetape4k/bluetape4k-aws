@@ -24,7 +24,12 @@ interface SqsListenerInterceptor {
         beforeReceive(listenerId, queueUrl)
     }
 
-    suspend fun afterReceive(listenerId: String, queueUrl: String, messages: List<SqsReceivedMessage>, error: Throwable?) {
+    suspend fun afterReceive(
+        listenerId: String,
+        queueUrl: String,
+        messages: List<SqsReceivedMessage>,
+        error: Throwable?,
+    ) {
     }
 
     /**
@@ -140,7 +145,7 @@ data class SqsListenerInvocationContext(
     val queueUrl: String,
     val message: SqsReceivedMessage,
     val attempt: Int,
-) : java.io.Serializable {
+): java.io.Serializable {
     companion object {
         private const val serialVersionUID: Long = -5671325956177467194L
     }

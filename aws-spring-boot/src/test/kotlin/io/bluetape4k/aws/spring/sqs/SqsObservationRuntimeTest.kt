@@ -1,25 +1,29 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.assertions.shouldBe
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldNotBe
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
 import io.micrometer.context.ContextSnapshotFactory
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.lang.reflect.Proxy
 import java.util.concurrent.Executors
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SqsObservationRuntimeTest {
+
+    companion object: KLoggingChannel()
 
     @Test
     fun `process observation survives suspension and restores its parent`() = runTest {
@@ -31,21 +35,23 @@ class SqsObservationRuntimeTest {
 
         parent.openScope().use {
             val result = observeSqs(runtime, ::processContext) {
-                assertSame(observation, registry.currentObservation)
+                registry.currentObservation shouldBe observation
                 withContext(StandardTestDispatcher(testScheduler)) {
-                    assertSame(observation, registry.currentObservation)
+                    registry.currentObservation shouldBe observation
                 }
                 "done"
             }
 
-            assertEquals("done", result)
-            assertSame(parent, registry.currentObservation)
+
+            result shouldBeEqualTo "done"
+            registry.currentObservation shouldBe parent
         }
         parent.stop()
 
-        assertEquals(2, handler.starts)
-        assertEquals(2, handler.stops)
-        assertSame(parent, handler.processParent)
+        log.debug { "handler=$handler" }
+        handler.starts shouldBeEqualTo 2
+        handler.stops shouldBeEqualTo 2
+        handler.processParent shouldBe parent
     }
 
     @Test
@@ -62,14 +68,14 @@ class SqsObservationRuntimeTest {
             parent.openScope().use {
                 observeSqs(runtime(registry), ::processContext) {
                     withContext(workerDispatcher) {
-                        assertTrue(Thread.currentThread() !== callerThread)
-                        assertSame(observation, registry.currentObservation)
+                        Thread.currentThread() shouldNotBe callerThread
+                        registry.currentObservation shouldBe observation
                     }
                 }
-                assertSame(parent, registry.currentObservation)
+                registry.currentObservation shouldBe parent
             }
             withContext(workerDispatcher) {
-                assertNull(registry.currentObservation)
+                registry.currentObservation.shouldBeNull()
             }
         } finally {
             workerDispatcher.close()
@@ -86,7 +92,7 @@ class SqsObservationRuntimeTest {
         observeSqs(runtime, ::processContext) {
             val child = Observation.start("child", registry)
             try {
-                assertSame(observation, child.context.parentObservation)
+                child.context.parentObservation shouldBe observation
             } finally {
                 child.stop()
             }
@@ -98,7 +104,7 @@ class SqsObservationRuntimeTest {
         val registry = ObservationRegistry.create()
         val stopFailure = IllegalStateException("nested-stop")
         registry.observationConfig().observationHandler(
-            object : ObservationHandler<SqsObservationContext> {
+            object: ObservationHandler<SqsObservationContext> {
                 override fun supportsContext(context: Observation.Context): Boolean =
                     context is SqsObservationContext
 
@@ -119,15 +125,16 @@ class SqsObservationRuntimeTest {
                 onCleanupFailure = { cleanupFailure = it },
             ) {
                 withContext(StandardTestDispatcher(testScheduler)) {
-                    assertSame(observation, registry.currentObservation)
+                    registry.currentObservation shouldBe observation
                 }
             }
 
-            assertSame(stopFailure, cleanupFailure)
-            assertSame(processObservation, registry.currentObservation)
+            cleanupFailure shouldBe stopFailure
+            registry.currentObservation shouldBe processObservation
         }
 
-        assertNull(registry.currentObservation)
+        log.debug { "registry=$registry" }
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -142,13 +149,17 @@ class SqsObservationRuntimeTest {
             observeSqs(runtime, ::processContext) { throw failure }
         }.exceptionOrNull()
 
-        assertSame(failure, actual)
-        assertEquals(1, handler.starts)
-        assertEquals(1, handler.stops)
-        assertTrue(handler.error is SqsObservationTelemetryException)
-        assertNull(handler.error?.message)
-        assertTrue(handler.error?.stackTrace.orEmpty().isEmpty())
-        assertNull(registry.currentObservation)
+        actual shouldBe failure
+
+        log.debug { "handler=$handler" }
+        handler.starts shouldBeEqualTo 1
+        handler.stops shouldBeEqualTo 1
+        handler.error.shouldBeInstanceOf<SqsObservationTelemetryException>()
+        handler.error?.message.shouldBeNull()
+        handler.error?.stackTrace.shouldBeEmpty()
+
+        log.debug { "registry=$registry" }
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -163,11 +174,15 @@ class SqsObservationRuntimeTest {
             observeSqs(runtime, ::processContext) { throw cancellation }
         }.exceptionOrNull()
 
-        assertSame(cancellation, actual)
-        assertEquals(1, handler.stops)
-        assertTrue(handler.error is SqsObservationTelemetryException)
-        assertNull(handler.error?.message)
-        assertNull(registry.currentObservation)
+        actual shouldBe cancellation
+
+        log.debug { "handler=$handler" }
+        handler.stops shouldBeEqualTo 1
+        handler.error.shouldBeInstanceOf<SqsObservationTelemetryException>()
+        handler.error?.message.shouldBeNull()
+
+        log.debug { "registry=$registry" }
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -180,11 +195,12 @@ class SqsObservationRuntimeTest {
         observeSqs(runtime, ::processContext) {
             retry(2)
             retry(3)
-            assertEquals(3, context.attempt)
+            context.attempt shouldBeEqualTo 3
         }
 
-        assertEquals(1, handler.events)
-        assertEquals(SqsObservationOutcome.RETRIED, handler.processOutcome)
+        log.debug { "handler=$handler" }
+        handler.events shouldBeEqualTo 1
+        handler.processOutcome shouldBeEqualTo SqsObservationOutcome.RETRIED
     }
 
     @Test
@@ -195,15 +211,15 @@ class SqsObservationRuntimeTest {
         val noopRuntime = SqsObservationRuntime(
             registry = ObservationRegistry.NOOP,
             customizers = listOf(SqsObservationContextCustomizer { customizers++ }),
-            factory = SqsObservationFactory { _, _ -> factories++; Observation.NOOP },
+            factory = { _, _ -> factories++; Observation.NOOP },
         )
 
-        assertEquals("null", observeSqs(null, { contexts++; processContext() }) { "null" })
-        assertEquals("noop", observeSqs(noopRuntime, { contexts++; processContext() }) { "noop" })
+        observeSqs(null, { contexts++; processContext() }) { "null" } shouldBeEqualTo "null"
+        observeSqs(noopRuntime, { contexts++; processContext() }) { "noop" } shouldBeEqualTo "noop"
 
-        assertEquals(0, contexts)
-        assertEquals(0, customizers)
-        assertEquals(0, factories)
+        contexts shouldBeEqualTo 0
+        customizers shouldBeEqualTo 0
+        factories shouldBeEqualTo 0
     }
 
     @Test
@@ -215,7 +231,7 @@ class SqsObservationRuntimeTest {
         val runtime = SqsObservationRuntime(
             registry = registry,
             customizers = listOf(SqsObservationContextCustomizer { customizers++ }),
-            factory = SqsObservationFactory { _, _ -> factories++; Observation.NOOP },
+            factory = { _, _ -> factories++; Observation.NOOP },
             contextSnapshotFactory = throwingSnapshotFactory(AssertionError("capture must not run")),
         )
 
@@ -224,11 +240,11 @@ class SqsObservationRuntimeTest {
             "direct"
         }
 
-        assertEquals("direct", result)
-        assertEquals(1, contexts)
-        assertEquals(1, customizers)
-        assertEquals(1, factories)
-        assertNull(registry.currentObservation)
+        result shouldBeEqualTo "direct"
+        contexts shouldBeEqualTo 1
+        customizers shouldBeEqualTo 1
+        factories shouldBeEqualTo 1
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -240,19 +256,19 @@ class SqsObservationRuntimeTest {
         val customizerRuntime = SqsObservationRuntime(
             registry = registry,
             customizers = listOf(SqsObservationContextCustomizer { throw customizerFailure }),
-            factory = SqsObservationFactory { _, _ -> factoryCalls++; Observation.NOOP },
+            factory = { _, _ -> factoryCalls++; Observation.NOOP },
         )
         val factoryRuntime = SqsObservationRuntime(
             registry = registry,
             customizers = emptyList(),
-            factory = SqsObservationFactory { _, _ -> throw factoryFailure },
+            factory = { _, _ -> throw factoryFailure },
         )
 
-        assertSame(customizerFailure, failureOf { observeSqs(customizerRuntime, ::processContext) {} })
-        assertEquals(0, factoryCalls)
-        assertNull(registry.currentObservation)
-        assertSame(factoryFailure, failureOf { observeSqs(factoryRuntime, ::processContext) {} })
-        assertNull(registry.currentObservation)
+        failureOf { observeSqs(customizerRuntime, ::processContext) {} } shouldBe customizerFailure
+        factoryCalls shouldBeEqualTo 0
+        registry.currentObservation.shouldBeNull()
+        failureOf { observeSqs(factoryRuntime, ::processContext) {} } shouldBe factoryFailure
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -264,10 +280,10 @@ class SqsObservationRuntimeTest {
 
         val actual = failureOf { observeSqs(runtime(registry), ::processContext) {} }
 
-        assertSame(startFailure, actual)
-        assertEquals(1, handler.starts)
-        assertEquals(0, handler.stops)
-        assertNull(registry.currentObservation)
+        actual shouldBe startFailure
+        handler.starts shouldBeEqualTo 1
+        handler.stops shouldBeEqualTo 0
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -281,13 +297,13 @@ class SqsObservationRuntimeTest {
         parent.openScope().use {
             val actual = failureOf { observeSqs(runtime(registry), ::processContext) {} }
 
-            assertSame(scopeFailure, actual)
-            assertSame(parent, registry.currentObservation)
+            actual shouldBe scopeFailure
+            registry.currentObservation shouldBe parent
         }
         parent.stop()
 
-        assertEquals(2, handler.starts)
-        assertEquals(2, handler.stops)
+        handler.starts shouldBeEqualTo 2
+        handler.stops shouldBeEqualTo 2
     }
 
     @Test
@@ -307,13 +323,13 @@ class SqsObservationRuntimeTest {
         parent.openScope().use {
             val actual = failureOf { observeSqs(runtime, ::processContext) {} }
 
-            assertSame(captureFailure, actual)
-            assertSame(parent, registry.currentObservation)
+            actual shouldBe captureFailure
+            registry.currentObservation shouldBe parent
         }
         parent.stop()
 
-        assertEquals(2, handler.starts)
-        assertEquals(2, handler.stops)
+        handler.starts shouldBeEqualTo 2
+        handler.stops shouldBeEqualTo 2
     }
 
     @Test
@@ -330,10 +346,10 @@ class SqsObservationRuntimeTest {
             observeSqs(runtime(registry), ::processContext) { throw businessFailure }
         }
 
-        assertSame(businessFailure, actual)
-        assertSame(errorFailure, actual.suppressed.single())
-        assertSame(stopFailure, errorFailure.suppressed.single())
-        assertNull(registry.currentObservation)
+        actual shouldBe businessFailure
+        actual.suppressed.single() shouldBe errorFailure
+        errorFailure.suppressed.single() shouldBe stopFailure
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -349,10 +365,10 @@ class SqsObservationRuntimeTest {
             observeSqs(runtime(registry), ::processContext) { throw businessFailure }
         }
 
-        assertSame(businessFailure, actual)
-        assertSame(telemetryFailure, actual.suppressed.single())
-        assertEquals(0, telemetryFailure.suppressed.size)
-        assertNull(registry.currentObservation)
+        actual shouldBe businessFailure
+        actual.suppressed.single() shouldBe telemetryFailure
+        telemetryFailure.suppressed.shouldBeEmpty()
+        registry.currentObservation.shouldBeNull()
     }
 
     @Test
@@ -360,10 +376,10 @@ class SqsObservationRuntimeTest {
         val first = IllegalArgumentException("first")
         val second = UnsupportedOperationException("second")
 
-        assertSame(first, mergeSqsObservationCleanupFailure(first, first))
-        assertEquals(0, first.suppressed.size)
-        assertSame(first, mergeSqsObservationCleanupFailure(first, second))
-        assertSame(second, first.suppressed.single())
+        mergeSqsObservationCleanupFailure(first, first) shouldBe first
+        first.suppressed.shouldBeEmpty()
+        mergeSqsObservationCleanupFailure(first, second) shouldBe first
+        first.suppressed.single() shouldBe second
     }
 
     @Test
@@ -374,8 +390,8 @@ class SqsObservationRuntimeTest {
 
         val actual = failureOf { observeSqs(runtime(registry), ::processContext) { "done" } }
 
-        assertSame(stopFailure, actual)
-        assertNull(registry.currentObservation)
+        actual shouldBe stopFailure
+        registry.currentObservation.shouldBeNull()
     }
 
     private fun runtime(registry: ObservationRegistry): SqsObservationRuntime =
@@ -409,7 +425,7 @@ class SqsObservationRuntimeTest {
             throw UnsupportedOperationException(method.name)
         } as ContextSnapshotFactory
 
-    private class RecordingHandler : ObservationHandler<Observation.Context> {
+    private class RecordingHandler: ObservationHandler<Observation.Context> {
         var starts: Int = 0
         var stops: Int = 0
         var events: Int = 0
@@ -451,7 +467,7 @@ class SqsObservationRuntimeTest {
         private val scopeFailure: Throwable? = null,
         private val errorFailure: Throwable? = null,
         private val stopFailure: Throwable? = null,
-    ) : ObservationHandler<Observation.Context> {
+    ): ObservationHandler<Observation.Context> {
         var starts: Int = 0
         var stops: Int = 0
 

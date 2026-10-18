@@ -1,9 +1,15 @@
 package io.bluetape4k.aws.spring.config
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.classIsPresent
 import org.junit.jupiter.api.Test
 
 class AwsConfigDataBootstrapBridgeTest {
+
+    companion object: KLogging()
 
     @Test
     fun `initialized-only holder does not create or close unused client`() {
@@ -29,7 +35,10 @@ class AwsConfigDataBootstrapBridgeTest {
 
     @Test
     fun `class guard reports dependency without resolving SDK type`() {
-        AwsConfigDataBootstrapBridge.isClassPresent("java.lang.String") shouldBeEqualTo true
-        AwsConfigDataBootstrapBridge.isClassPresent("no.such.aws.Client") shouldBeEqualTo false
+        AwsConfigDataBootstrapBridge.isClassPresent("java.lang.String").shouldBeTrue()
+        AwsConfigDataBootstrapBridge.isClassPresent("no.such.aws.Client").shouldBeFalse()
+
+        classIsPresent("java.lang.String").shouldBeTrue()
+        classIsPresent("no.such.aws.Client").shouldBeFalse()
     }
 }

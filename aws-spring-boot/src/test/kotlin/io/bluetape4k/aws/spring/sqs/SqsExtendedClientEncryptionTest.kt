@@ -2,39 +2,58 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.codec.Base58
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.s3.S3BoundedEncryptedReadOperations
 import io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionIdentity
 import io.bluetape4k.aws.spring.s3.S3Operations
+import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
-import java.util.Base64
+import java.util.*
 
 class SqsExtendedClientEncryptionTest {
+
+    companion object: KLoggingChannel()
+
+    private val sqs = mockk<SqsFullRequestOperations>(relaxed = true)
+    private val s3 = mockk<S3Operations>(relaxed = true)
+    private val encrypted = mockk<S3BoundedEncryptedReadOperations>(relaxed = true)
+    private val identity = mockk<S3ClientSideEncryptionIdentity>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearAllMocks()
+    }
+
 
     @Test
     fun `encrypted offload delegates to bounded encryption capability`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy()
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val encrypted = mockk<S3BoundedEncryptedReadOperations>()
-        val identity = mockk<S3ClientSideEncryptionIdentity>()
         val request = slot<SqsSendRequest>()
+
         every { identity.keyFingerprint } returns "fingerprint"
-        coEvery { encrypted.uploadEncrypted(any(), any(), any(), any(), any(), any()) } returns
-            PutObjectResponse.builder().build()
-        coEvery { sqs.send(capture(request)) } returns SendMessageResponse.builder().messageId("sent").build()
+        coEvery {
+            encrypted.uploadEncrypted(any(), any(), any(), any(), any(), any())
+        } returns PutObjectResponse.builder().build()
+        coEvery {
+            sqs.send(capture(request))
+        } returns SendMessageResponse.builder().messageId("sent").build()
+
         val client = client(sqs, s3, encrypted, identity, policy, queueUrl)
 
         val result = client.send(
@@ -45,9 +64,10 @@ class SqsExtendedClientEncryptionTest {
             ),
         )
 
-        result.offloaded shouldBeEqualTo true
-        result.pointer.shouldNotBeNull().encrypted shouldBeEqualTo true
+        result.offloaded.shouldBeTrue()
+        result.pointer.shouldNotBeNull().encrypted.shouldBeTrue()
         request.captured.body shouldContain "bt4k-sqs-extended/v1."
+
         coVerify(exactly = 1) {
             encrypted.uploadEncrypted(
                 policy.bucket,
@@ -65,11 +85,9 @@ class SqsExtendedClientEncryptionTest {
     fun `encrypted offload fails closed when current key identity differs`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy()
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val encrypted = mockk<S3BoundedEncryptedReadOperations>()
-        val identity = mockk<S3ClientSideEncryptionIdentity>()
+
         every { identity.keyFingerprint } returns "foreign-fingerprint"
+
         val client = client(sqs, s3, encrypted, identity, policy, queueUrl)
 
         assertFailsWith<SqsExtendedConfigurationException> {
@@ -89,11 +107,9 @@ class SqsExtendedClientEncryptionTest {
     fun `encrypted receive restores only through matching identity capability`() = runTest {
         val queueUrl = queueUrl()
         val policy = policy()
-        val sqs = mockk<SqsFullRequestOperations>()
-        val s3 = mockk<S3Operations>()
-        val encrypted = mockk<S3BoundedEncryptedReadOperations>()
-        val identity = mockk<S3ClientSideEncryptionIdentity>()
+
         every { identity.keyFingerprint } returns "fingerprint"
+
         val client = client(sqs, s3, encrypted, identity, policy, queueUrl)
         val pointer = SqsExtendedPointerCodec.encode(
             bucket = policy.bucket,
@@ -104,17 +120,18 @@ class SqsExtendedClientEncryptionTest {
             policyFingerprint = client.policyFingerprint(queueUrl),
             signingKey = signingKey(),
         )
-        coEvery { sqs.receive(queueUrl, 1, 20, policy.minimumVisibilityTimeoutSeconds) } returns
-            listOf(
-                SqsReceivedMessage(
-                    queueUrl,
-                    Message.builder()
-                        .messageId("message-${Base58.randomString(16)}")
-                        .receiptHandle("receipt-${Base58.randomString(16)}")
-                        .body(pointer)
-                        .build(),
-                ),
-            )
+        coEvery {
+            sqs.receive(queueUrl, 1, 20, policy.minimumVisibilityTimeoutSeconds)
+        } returns listOf(
+            SqsReceivedMessage(
+                queueUrl,
+                Message.builder()
+                    .messageId("message-${Base58.randomString(16)}")
+                    .receiptHandle("receipt-${Base58.randomString(16)}")
+                    .body(pointer)
+                    .build(),
+            ),
+        )
         coEvery {
             encrypted.downloadEncryptedBytesBounded(
                 policy.bucket,
@@ -125,9 +142,10 @@ class SqsExtendedClientEncryptionTest {
         } returns "encrypted-restored".encodeToByteArray()
 
         val result = client.receive(queueUrl, visibilityTimeoutSeconds = policy.minimumVisibilityTimeoutSeconds)
+            .onEach { log.debug { "message=$it" } }
 
         result.single().body shouldBeEqualTo "encrypted-restored"
-        result.single().pointer.shouldNotBeNull().encrypted shouldBeEqualTo true
+        result.single().pointer.shouldNotBeNull().encrypted.shouldBeTrue()
     }
 
     private fun client(
@@ -152,7 +170,7 @@ class SqsExtendedClientEncryptionTest {
             security = SqsExtendedClientProperties.Security(
                 mapOf(
                     policy.pointerSigningKeyRef to
-                        Base64.getUrlEncoder().withoutPadding().encodeToString(signingKey()),
+                            Base64.getUrlEncoder().withoutPadding().encodeToString(signingKey()),
                 ),
             ),
         ),

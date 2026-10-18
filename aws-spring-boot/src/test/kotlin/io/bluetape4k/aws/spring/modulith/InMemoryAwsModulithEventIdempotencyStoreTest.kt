@@ -1,9 +1,13 @@
 package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeAfter
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.javatimes.hours
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.nanos
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.time.Clock
@@ -13,7 +17,13 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicInteger
 
-class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotencyStoreContract() {
+class InMemoryAwsModulithEventIdempotencyStoreTest: AwsModulithEventIdempotencyStoreContract() {
+
+    private companion object {
+        val LEASE_DURATION: Duration = 2.minutes()
+
+        fun key(eventId: String): AwsModulithEventKey = AwsModulithEventKey("order.placed", eventId)
+    }
 
     override fun createStore(): AwsModulithEventIdempotencyStore = InMemoryAwsModulithEventIdempotencyStore()
 
@@ -22,12 +32,12 @@ class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotency
         val clock = MutableClock()
         store(clock = clock).use { store ->
             val first = store.claim(key("evt-1"), LEASE_DURATION).acquiredToken()
-            clock.advance(LEASE_DURATION.plusNanos(1))
+            clock.advance(LEASE_DURATION + 1.nanos())
 
             val takeover = store.claim(key("evt-1"), LEASE_DURATION).acquiredToken()
 
             takeover.generation shouldBeEqualTo first.generation + 1
-            takeover.leaseUntil.isAfter(first.leaseUntil).shouldBeTrue()
+            takeover.leaseUntil shouldBeAfter first.leaseUntil
             store.complete(first) shouldBeEqualTo AwsModulithStoreMutation.STALE
         }
     }
@@ -41,11 +51,13 @@ class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotency
             assertFailsWith<AwsModulithClaimCapacityException> {
                 store.claim(key("evt-3"), LEASE_DURATION)
             }
-            (store.claim(key("evt-1"), LEASE_DURATION) is AwsModulithClaimResult.InProgress).shouldBeTrue()
+            store.claim(key("evt-1"), LEASE_DURATION)
+                .shouldBeInstanceOf<AwsModulithClaimResult.InProgress>()
         }
 
         store(maxEntries = 3, maxInProgress = 1).use { store ->
             store.claim(key("evt-1"), LEASE_DURATION)
+
             assertFailsWith<AwsModulithClaimCapacityException> {
                 store.claim(key("evt-2"), LEASE_DURATION)
             }
@@ -59,7 +71,8 @@ class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotency
 
             store.recoverExpired(recovered.leaseUntil.plusNanos(1)) shouldBeEqualTo 1
 
-            (store.claim(key("evt-2"), LEASE_DURATION) is AwsModulithClaimResult.Acquired).shouldBeTrue()
+            store.claim(key("evt-2"), LEASE_DURATION)
+                .shouldBeInstanceOf<AwsModulithClaimResult.Acquired>()
         }
     }
 
@@ -77,20 +90,21 @@ class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotency
     @Test
     fun `completed entries expire by retention and are evicted by LRU`() = runTest {
         val clock = MutableClock()
-        store(maxEntries = 2, maxInProgress = 2, retention = Duration.ofMinutes(1), clock = clock).use { store ->
+        store(maxEntries = 2, maxInProgress = 2, retention = 1.minutes(), clock = clock).use { store ->
             complete(store, "evt-1")
             complete(store, "evt-2")
             store.claim(key("evt-1"), LEASE_DURATION) shouldBeSameInstanceAs AwsModulithClaimResult.Completed
 
-            (store.claim(key("evt-3"), LEASE_DURATION) is AwsModulithClaimResult.Acquired).shouldBeTrue()
-            (store.claim(key("evt-2"), LEASE_DURATION) is AwsModulithClaimResult.Acquired).shouldBeTrue()
+            store.claim(key("evt-3"), LEASE_DURATION).shouldBeInstanceOf<AwsModulithClaimResult.Acquired>()
+            store.claim(key("evt-2"), LEASE_DURATION).shouldBeInstanceOf<AwsModulithClaimResult.Acquired>()
         }
 
-        store(retention = Duration.ofMinutes(1), clock = clock).use { store ->
+        store(retention = 1.minutes(), clock = clock).use { store ->
             complete(store, "ttl-event")
-            clock.advance(Duration.ofMinutes(1).plusNanos(1))
+            clock.advance(1.minutes() + 1.nanos())
 
-            (store.claim(key("ttl-event"), LEASE_DURATION) is AwsModulithClaimResult.Acquired).shouldBeTrue()
+            store.claim(key("ttl-event"), LEASE_DURATION)
+                .shouldBeInstanceOf<AwsModulithClaimResult.Acquired>()
         }
     }
 
@@ -115,6 +129,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotency
 
         store.use {
             it.claim(key("evt-1"), LEASE_DURATION)
+
             assertFailsWith<AwsModulithClaimCapacityException> {
                 it.claim(key("evt-2"), LEASE_DURATION)
             }
@@ -130,7 +145,7 @@ class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotency
         maxEntries: Int = 10,
         maxInProgress: Int = maxEntries,
         maxKeyBytes: Int = 1_024,
-        retention: Duration = Duration.ofHours(1),
+        retention: Duration = 1.hours(),
         clock: Clock = MutableClock(),
     ): InMemoryAwsModulithEventIdempotencyStore {
         val sequence = AtomicInteger()
@@ -146,23 +161,16 @@ class InMemoryAwsModulithEventIdempotencyStoreTest : AwsModulithEventIdempotency
             ownerIdSupplier = { "owner-${sequence.incrementAndGet()}" },
         )
     }
-
-    private companion object {
-        val LEASE_DURATION: Duration = Duration.ofMinutes(2)
-
-        fun key(eventId: String): AwsModulithEventKey = AwsModulithEventKey("order.placed", eventId)
-    }
 }
 
 private fun AwsModulithClaimResult.acquiredToken(): AwsModulithClaimToken {
-    require(this is AwsModulithClaimResult.Acquired)
-    return token
+    return this.shouldBeInstanceOf<AwsModulithClaimResult.Acquired>().token
 }
 
 private class MutableClock(
     private var current: Instant = Instant.parse("2026-08-26T00:00:00Z"),
     private val zone: ZoneId = ZoneOffset.UTC,
-) : Clock() {
+): Clock() {
     override fun getZone(): ZoneId = zone
 
     override fun withZone(zone: ZoneId): Clock = MutableClock(current, zone)

@@ -1,61 +1,70 @@
 package io.bluetape4k.aws.spring.secretsmanager
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.junit5.system.SystemProperties
+import io.bluetape4k.junit5.system.SystemProperty
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.SpringApplication
 import org.springframework.core.env.MapPropertySource
 import org.springframework.core.env.StandardEnvironment
+import org.springframework.core.env.getProperty
+import org.testcontainers.utility.Base58
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
-import java.time.Duration
-import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@SystemProperties(
+    [
+        SystemProperty("aws.accessKeyId", "test"),
+        SystemProperty("aws.secretAccessKey", "test"),
+    ]
+)
 class SecretsManagerEnvironmentPostProcessorAwsEmulatorTest {
 
-    companion object {
+    companion object: KLogging() {
         private val awsEmulator by lazy {
             AwsSpringBootTestEmulator.get("secretsmanager")
         }
-        private var systemProperties: AutoCloseable? = null
-        private var previousAccessKeyId: String? = null
-        private var previousSecretAccessKey: String? = null
+    }
 
-        @JvmStatic
-        @BeforeAll
-        fun beforeAll() {
-            systemProperties = awsEmulator.registerSystemProperties()
-            previousAccessKeyId = System.getProperty("aws.accessKeyId")
-            previousSecretAccessKey = System.getProperty("aws.secretAccessKey")
-            System.setProperty("aws.accessKeyId", "test")
-            System.setProperty("aws.secretAccessKey", "test")
-        }
+    private var systemProperties: AutoCloseable? = null
+    private var previousAccessKeyId: String? = null
+    private var previousSecretAccessKey: String? = null
 
-        @JvmStatic
-        @AfterAll
-        fun afterAll() {
-            restoreSystemProperty("aws.accessKeyId", previousAccessKeyId)
-            restoreSystemProperty("aws.secretAccessKey", previousSecretAccessKey)
-            systemProperties?.close()
+    private fun restoreSystemProperty(name: String, value: String?) {
+        if (value == null) {
+            System.clearProperty(name)
+        } else {
+            System.setProperty(name, value)
         }
+    }
 
-        private fun restoreSystemProperty(name: String, value: String?) {
-            if (value == null) {
-                System.clearProperty(name)
-            } else {
-                System.setProperty(name, value)
-            }
-        }
+    @BeforeAll
+    fun beforeAll() {
+        systemProperties = awsEmulator.registerSystemProperties()
+    }
+
+    @AfterAll
+    fun afterAll() {
+        systemProperties?.close()
     }
 
     @Test
     fun `load JSON secret into Environment properties`() {
-        val secretId = "secret-${UUID.randomUUID()}"
+        val secretId = "secret-${Base58.randomString(12)}"
         secretsManagerClient().use { client ->
             client.createSecret {
                 it.name(secretId)
@@ -73,23 +82,24 @@ class SecretsManagerEnvironmentPostProcessorAwsEmulatorTest {
 
         SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
-        environment.getProperty("app.db.username") shouldBeEqualTo "scott"
-        environment.getProperty("app.db.password") shouldBeEqualTo "tiger"
-        environment.getProperty("app.feature", Boolean::class.java) shouldBeEqualTo true
+        environment.getProperty<String>("app.db.username") shouldBeEqualTo "scott"
+        environment.getProperty<String>("app.db.password") shouldBeEqualTo "tiger"
+        environment.getProperty<Boolean>("app.feature").shouldBeTrue()
     }
 
     @Test
     fun `skip lookup when no secret sources are configured`() {
         val environment = environmentOf("bluetape4k.aws.secrets-manager.region" to awsEmulator.regionName)
-
         SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
 
-        environment.propertySources.map { it.name } shouldNotContain "bluetape4k.aws.secrets-manager"
+        log.debug { "environment=$environment" }
+        environment.propertySources.map { it.name } shouldNotContain SecretsManagerProperties.PREFIX
     }
 
     @Test
     fun `refresh configured secret source after refresh interval`() {
-        val secretId = "secret-${UUID.randomUUID()}"
+        val secretId = "secret-${Base58.randomString(12)}"
+
         secretsManagerClient().use { client ->
             client.createSecret {
                 it.name(secretId)
@@ -107,7 +117,8 @@ class SecretsManagerEnvironmentPostProcessorAwsEmulatorTest {
         )
 
         SecretsManagerEnvironmentPostProcessor().postProcessEnvironment(environment, SpringApplication())
-        environment.getProperty("app.db.password") shouldBeEqualTo "initial"
+        log.debug { "environment=$environment" }
+        environment.getProperty<String>("app.db.password") shouldBeEqualTo "initial"
 
         secretsManagerClient().use { client ->
             client.updateSecret {
@@ -116,8 +127,8 @@ class SecretsManagerEnvironmentPostProcessorAwsEmulatorTest {
             }
         }
 
-        await.atMost(Duration.ofSeconds(10)).untilAsserted {
-            environment.getProperty("app.db.password") shouldBeEqualTo "refreshed"
+        await atMost 10.seconds untilAsserted {
+            environment.getProperty<String>("app.db.password") shouldBeEqualTo "refreshed"
         }
     }
 

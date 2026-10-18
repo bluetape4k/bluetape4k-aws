@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import java.io.Serializable
 
@@ -26,16 +28,16 @@ data class SqsSendRequest(
     val messageGroupId: String? = null,
     val messageDeduplicationId: String? = null,
     val messageAttributes: Map<String, MessageAttributeValue> = emptyMap(),
-) : Serializable {
+): Serializable {
     companion object {
         private const val serialVersionUID: Long = 1L
     }
 
     init {
-        require(queueUrl.isNotBlank()) { "queueUrl must not be blank." }
-        require(body.isNotBlank()) { "body must not be blank." }
-        delaySeconds?.let { require(it in 0..900) { "delaySeconds must be between 0 and 900." } }
-        messageGroupId?.let { require(it.isNotBlank()) { "messageGroupId must not be blank." } }
-        messageDeduplicationId?.let { require(it.isNotBlank()) { "messageDeduplicationId must not be blank." } }
+        queueUrl.requireNotBlank { "queueUrl must not be blank." }
+        body.requireNotBlank { "body must not be blank." }
+        delaySeconds?.requireInRange(0, 900) { "delaySeconds must be between 0 and 900." }
+        messageGroupId?.requireNotBlank { "messageGroupId must not be blank." }
+        messageDeduplicationId?.requireNotBlank { "messageDeduplicationId must not be blank." }
     }
 }

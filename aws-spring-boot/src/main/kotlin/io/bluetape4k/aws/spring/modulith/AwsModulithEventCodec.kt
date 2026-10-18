@@ -1,5 +1,15 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.info
+import io.bluetape4k.support.requireBeTrue
+import io.bluetape4k.support.requireEquals
+import io.bluetape4k.support.requireLe
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.requirePositiveNumber
+import io.bluetape4k.support.toUtf8Bytes
 import org.springframework.modulith.events.core.EventSerializer
 import tools.jackson.core.JsonParser
 import tools.jackson.core.JsonToken
@@ -7,8 +17,7 @@ import tools.jackson.core.StreamReadConstraints
 import tools.jackson.core.StreamReadFeature
 import tools.jackson.core.json.JsonFactory
 import tools.jackson.databind.ObjectMapper
-import java.nio.charset.StandardCharsets
-import java.util.LinkedHashMap
+import tools.jackson.databind.json.JsonMapper
 import java.util.concurrent.CancellationException
 
 private const val SPEC_VERSION = 1
@@ -70,13 +79,20 @@ internal class DefaultAwsModulithEventCodec(
     private val eventSerializer: EventSerializer,
     private val maxSerializedPayloadBytes: Int = DEFAULT_MAX_SERIALIZED_PAYLOAD_BYTES,
     private val maxEnvelopeBytes: Int = DEFAULT_MAX_ENVELOPE_BYTES,
-) : AwsModulithEventCodec {
+): AwsModulithEventCodec {
 
-    private val objectMapper: ObjectMapper = CodecJsonSupport.strictObjectMapper(maxSerializedPayloadBytes)
+    companion object: KLogging() {
+        const val SYSTEM_EVENT_ID: String = SYSTEM_EVENT_ID_VALUE
+        const val SYSTEM_EVENT_TYPE: String = SYSTEM_EVENT_TYPE_VALUE
+        const val SYSTEM_EVENT_VERSION: String = SYSTEM_EVENT_VERSION_VALUE
+    }
+
+    // Jackson 3 의 JsonMapper
+    private val jsonMapper: JsonMapper = CodecJsonSupport.strictJsonMapper(maxSerializedPayloadBytes)
 
     init {
-        require(maxSerializedPayloadBytes > 0) { "maxSerializedPayloadBytes must be positive." }
-        require(maxEnvelopeBytes > 0) { "maxEnvelopeBytes must be positive." }
+        maxSerializedPayloadBytes.requirePositiveNumber("maxSerializedPayloadBytes")
+        maxEnvelopeBytes.requirePositiveNumber("maxEnvelopeBytes")
     }
 
     override fun encode(event: Any): AwsModulithEncodedEvent {
@@ -95,7 +111,7 @@ internal class DefaultAwsModulithEventCodec(
             payload = serialized,
             headers = headers.toMap(),
         )
-        val body = CodecFailureSanitizer.sanitizeOutbound { objectMapper.writeValueAsString(envelope) }
+        val body = CodecFailureSanitizer.sanitizeOutbound { jsonMapper.writeValueAsString(envelope) }
         if (CodecJsonSupport.utf8Size(body) > maxEnvelopeBytes) {
             throw AwsModulithOutboundEnvelopeException()
         }
@@ -105,12 +121,13 @@ internal class DefaultAwsModulithEventCodec(
         attributes[SYSTEM_EVENT_ID] = eventId
         attributes[SYSTEM_EVENT_TYPE] = registration.type
         attributes[SYSTEM_EVENT_VERSION] = registration.version.toString()
+
         return AwsModulithEncodedEvent(body = body, messageAttributes = attributes.toMap())
     }
 
     override fun decode(body: String, attributes: Map<String, String>): Any = CodecFailureSanitizer.sanitizeInbound {
         val envelope = CodecJsonSupport.parseEnvelope(
-            objectMapper,
+            jsonMapper,
             maxSerializedPayloadBytes,
             maxEnvelopeBytes,
             body,
@@ -121,7 +138,7 @@ internal class DefaultAwsModulithEventCodec(
         val registration = registry.registrationFor(envelope.type, envelope.version)
         val headers = CodecHeaderPolicy.validateInboundHeaders(registration, envelope.headers)
         CodecHeaderPolicy.validateBodyHeadersAgainstAttributes(headers, attributes)
-        CodecJsonSupport.preflightPayload(objectMapper, maxSerializedPayloadBytes, envelope.payload)
+        CodecJsonSupport.preflightPayload(jsonMapper, maxSerializedPayloadBytes, envelope.payload)
 
         val decoded = deserialize(envelope.payload, registration.eventClass)
         if (decoded == null || decoded.javaClass != registration.eventClass) {
@@ -142,15 +159,9 @@ internal class DefaultAwsModulithEventCodec(
             eventSerializer.deserialize(payload, concreteClass)
         }
     }
-
-    companion object {
-        const val SYSTEM_EVENT_ID: String = SYSTEM_EVENT_ID_VALUE
-        const val SYSTEM_EVENT_TYPE: String = SYSTEM_EVENT_TYPE_VALUE
-        const val SYSTEM_EVENT_VERSION: String = SYSTEM_EVENT_VERSION_VALUE
-    }
 }
 
-private object CodecJsonSupport {
+private object CodecJsonSupport: KLogging() {
     fun parseEnvelope(
         objectMapper: ObjectMapper,
         maxSerializedPayloadBytes: Int,
@@ -172,7 +183,7 @@ private object CodecJsonSupport {
         }
     }
 
-    fun strictObjectMapper(maxSerializedPayloadBytes: Int): ObjectMapper {
+    fun strictJsonMapper(maxSerializedPayloadBytes: Int): JsonMapper {
         val constraints = StreamReadConstraints.builder()
             .maxNestingDepth(MAX_DEPTH)
             .maxTokenCount(MAX_TOKEN_COUNT)
@@ -180,14 +191,20 @@ private object CodecJsonSupport {
             .maxStringLength(maxOf(MAX_STRING_BYTES, maxSerializedPayloadBytes))
             .maxNameLength(MAX_STRING_BYTES)
             .build()
-        val factory = JsonFactory.builder()
+        val factory: JsonFactory = JsonFactory.builder()
             .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
             .streamReadConstraints(constraints)
             .build()
-        return ObjectMapper(factory)
+
+        return JsonMapper.builder(factory)
+            .findAndAddModules()
+            .build()
+            .apply {
+                log.info { "Initialize JsonMapper." }
+            }
     }
 
-    fun utf8Size(value: String): Int = value.toByteArray(StandardCharsets.UTF_8).size
+    fun utf8Size(value: String): Int = value.toUtf8Bytes().size
 }
 
 private class AwsModulithEnvelopeParser(
@@ -215,6 +232,7 @@ private class AwsModulithEnvelopeParser(
     private fun readFields(reader: StrictJsonReader): MutableEnvelopeFields {
         val values = MutableEnvelopeFields()
         val fields = HashSet<String>(ENVELOPE_FIELDS.size)
+
         while (true) {
             when (val token = reader.next() ?: throw AwsModulithInboundEnvelopeException()) {
                 JsonToken.PROPERTY_NAME -> readField(reader, fields, values)
@@ -257,15 +275,16 @@ private class MutableEnvelopeFields {
     var headers: Map<String, String>? = null
 
     fun toParsedEnvelope(): ParsedEnvelope {
-        require(specVersion == SPEC_VERSION)
-        val eventId = requireNotNull(id)
-        val eventType = requireNotNull(type)
-        val eventVersion = requireNotNull(version)
-        val eventPayload = requireNotNull(payload)
-        val eventHeaders = requireNotNull(headers)
-        require(CodecEventIdPolicy.isValidEventId(eventId))
-        require(eventType.isNotBlank())
-        require(eventVersion >= 1)
+        specVersion.requireEquals(SPEC_VERSION, "specVersion")
+        val eventId = id.requireNotNull("id")
+        val eventType = type.requireNotNull("type")
+        val eventVersion = version.requireNotNull("version")
+        val eventPayload = payload.requireNotNull("payload")
+        val eventHeaders = headers.requireNotNull("headers")
+        CodecEventIdPolicy.isValidEventId(eventId).requireBeTrue("valid evnetId")
+        eventType.requireNotBlank("eventType")
+        eventVersion.requirePositiveNumber("eventVersion")
+
         return ParsedEnvelope(
             id = eventId,
             type = eventType,
@@ -274,6 +293,16 @@ private class MutableEnvelopeFields {
             headers = eventHeaders,
         )
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("specVersion", specVersion)
+            .add("id", id)
+            .add("type", type)
+            .add("version", version)
+            .add("payload", payload)
+            .add("headers", headers)
+            .toString()
 }
 
 private data class ParsedEnvelope(
@@ -307,17 +336,19 @@ private object CodecHeaderPolicy {
         return headers
             .takeIf { candidate ->
                 candidate.all { (name, value) ->
-                    name in registration.allowedHeaderNames && isBusinessHeaderName(name) && isValidHeaderValue(value)
+                    name in registration.allowedHeaderNames &&
+                            isBusinessHeaderName(name) &&
+                            isValidHeaderValue(value)
                 }
             }
             ?.let { LinkedHashMap(it).toMap() }
     }
 
     fun validateAttributes(attributes: Map<String, String>) {
-        require(attributes.size <= MAX_ATTRIBUTE_COUNT)
+        attributes.size.requireLe(MAX_ATTRIBUTE_COUNT, "attributes.size")
         attributes.forEach { (name, value) ->
-            require(isSystemAttribute(name) || isBusinessHeaderName(name))
-            require(isValidHeaderValue(value))
+            (isSystemAttribute(name) || isBusinessHeaderName(name)).requireBeTrue { "name must be system attribute or business header name." }
+            isValidHeaderValue(value).requireBeTrue { "value[$value] must be valid header value." }
         }
     }
 
@@ -499,9 +530,9 @@ private class StrictJsonReader(
 private object CodecEventIdPolicy {
     fun isValidEventId(value: String): Boolean =
         value.isNotBlank() &&
-            value.length <= MAX_EVENT_ID_LENGTH &&
-            CodecJsonSupport.utf8Size(value) <= MAX_EVENT_ID_BYTES &&
-            value.none(Char::isISOControl)
+                value.length <= MAX_EVENT_ID_LENGTH &&
+                CodecJsonSupport.utf8Size(value) <= MAX_EVENT_ID_BYTES &&
+                value.none(Char::isISOControl)
 }
 
 private object CodecFailureSanitizer {

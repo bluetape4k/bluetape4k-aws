@@ -21,7 +21,7 @@ interface S3ObjectContentTypeResolver {
 /** 파일명과 metadata를 이용하는 기본 Content-Type resolver입니다. */
 class DefaultS3ObjectContentTypeResolver(
     private val contentTypeProbe: (Path) -> String? = { Files.probeContentType(it) },
-) : S3ObjectContentTypeResolver {
+): S3ObjectContentTypeResolver {
 
     override fun resolve(
         key: String,

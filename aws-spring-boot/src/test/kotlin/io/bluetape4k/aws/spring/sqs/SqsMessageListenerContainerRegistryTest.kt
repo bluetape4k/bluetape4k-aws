@@ -2,8 +2,10 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.logging.KLogging
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -13,6 +15,8 @@ import io.mockk.verify
 import org.junit.jupiter.api.Test
 
 class SqsMessageListenerContainerRegistryTest {
+
+    companion object: KLogging()
 
     @Test
     fun `registry rejects start while asynchronous stop is draining`() {
@@ -35,7 +39,7 @@ class SqsMessageListenerContainerRegistryTest {
         registry.start("orders")
 
         verify(exactly = 2) { container.start() }
-        registry.isRunning shouldBeEqualTo true
+        registry.isRunning.shouldBeTrue()
     }
 
     @Test
@@ -44,6 +48,7 @@ class SqsMessageListenerContainerRegistryTest {
         val orders = mockk<SqsMessageListenerContainer>(relaxed = true)
         val payments = mockk<SqsMessageListenerContainer>(relaxed = true)
         val inventory = mockk<SqsMessageListenerContainer>(relaxed = true)
+
         listOf(orders, payments, inventory).forEach {
             every { it.isAutoStartup } returns true
             every { it.phase } returns 0
@@ -88,6 +93,6 @@ class SqsMessageListenerContainerRegistryTest {
         orderStopCallbacks[1].run()
 
         globalCallbackCount shouldBeEqualTo 1
-        registry.isRunning shouldBeEqualTo false
+        registry.isRunning.shouldBeFalse()
     }
 }

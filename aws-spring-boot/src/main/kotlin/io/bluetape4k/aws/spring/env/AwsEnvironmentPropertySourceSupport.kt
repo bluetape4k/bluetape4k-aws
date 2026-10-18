@@ -1,15 +1,19 @@
 package io.bluetape4k.aws.spring.env
 
 import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireNotBlank
+import io.bluetape4k.support.toUtf8Bytes
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.boot.json.JsonParserFactory
 import org.springframework.core.env.ConfigurableEnvironment
 import org.springframework.core.env.EnumerablePropertySource
 import org.springframework.core.env.MapPropertySource
+import org.springframework.core.env.PropertySource
+import org.springframework.core.env.getProperty
 import org.springframework.util.ClassUtils
 import java.io.Serializable
 import java.net.URI
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
@@ -21,7 +25,7 @@ internal const val COMMAND_LINE_PROPERTY_SOURCE_NAME = "commandLineArgs"
 private const val AWS_ENABLED_PROPERTY = "bluetape4k.aws.enabled"
 
 internal fun ConfigurableEnvironment.isAwsEnabled(): Boolean =
-    getProperty(AWS_ENABLED_PROPERTY, Boolean::class.java, true)
+    getProperty<Boolean>(AWS_ENABLED_PROPERTY, true)
 
 internal data class AwsLoadedPropertySource(
     val name: String,
@@ -44,7 +48,7 @@ internal fun requireRegionWhenEndpointOverride(
 }
 
 internal fun requireOptionalName(value: String?, name: String) {
-    value?.let { require(it.isNotBlank()) { "$name must not be blank." } }
+    value?.requireNotBlank(name)
 }
 
 internal fun requireAwsSdkClass(
@@ -53,9 +57,7 @@ internal fun requireAwsSdkClass(
     classLoader: ClassLoader?,
 ) {
     if (!ClassUtils.isPresent(className, classLoader)) {
-        throw IllegalStateException(
-            "AWS SDK class '$className' is required. Add runtime dependency '$dependencyNotation'."
-        )
+        error("AWS SDK class '$className' is required. Add runtime dependency '$dependencyNotation'.")
     }
 }
 
@@ -66,9 +68,10 @@ internal fun opaqueAwsDiagnosticIdentity(
 ): String {
     val input = "$backend\u0000$identifier"
     val digest = MessageDigest.getInstance("SHA-256")
-        .digest(input.toByteArray(StandardCharsets.UTF_8))
+        .digest(input.toUtf8Bytes())
         .joinToString(separator = "") { byte -> "%02x".format(byte) }
         .take(12)
+
     return "bluetape4k.aws.configdata.$backend.$digest"
 }
 
@@ -109,7 +112,7 @@ internal fun ConfigurableEnvironment.addAwsPropertySource(
     addAwsPropertySource(source)
 }
 
-private fun ConfigurableEnvironment.addAwsPropertySource(source: org.springframework.core.env.PropertySource<*>) {
+private fun ConfigurableEnvironment.addAwsPropertySource(source: PropertySource<*>) {
     val previousAwsSource = propertySources
         .map { it.name }
         .lastOrNull { it.startsWith("bluetape4k.aws.") }
@@ -167,6 +170,7 @@ internal class RefreshingAwsMapPropertySource(
                 return
             }
 
+            log.debug { "Refresh AWS property source values ..." }
             try {
                 reload()?.let { values ->
                     currentValues = values.toMap()
@@ -174,7 +178,7 @@ internal class RefreshingAwsMapPropertySource(
             } catch (e: RuntimeException) {
                 log.warn(
                     "Keeping previous AWS property source values after refresh failure: " +
-                        "${opaqueAwsPropertySourceIdentity(name)} (${e::class.java.simpleName}).",
+                            "${opaqueAwsPropertySourceIdentity(name)} (${e::class.java.simpleName}).",
                 )
             }
             nextRefreshAt = lockedNow.plus(refreshInterval)
@@ -217,6 +221,7 @@ internal fun parameterPathPropertyKey(
     val key = relative.split('/')
         .filter { it.isNotBlank() }
         .joinToString(".")
+
     return joinPropertyKey(prefix, key)
 }
 

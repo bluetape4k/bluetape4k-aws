@@ -75,7 +75,7 @@ class S3TransferTemplate(
             metadata = metadata,
         )
 
-    override suspend fun <T : Any> uploadObject(
+    override suspend fun <T: Any> uploadObject(
         bucket: String,
         key: String,
         value: T,
@@ -92,7 +92,7 @@ class S3TransferTemplate(
             )
         }
 
-    override suspend fun <T : Any> downloadObject(
+    override suspend fun <T: Any> downloadObject(
         bucket: String,
         key: String,
         targetType: Class<T>,

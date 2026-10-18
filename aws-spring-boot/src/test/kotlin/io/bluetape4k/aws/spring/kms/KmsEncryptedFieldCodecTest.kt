@@ -4,7 +4,10 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldNotBeEqualTo
+import io.bluetape4k.assertions.shouldStartWith
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.kms.model.DataKeySpec
 import java.io.Serializable
@@ -23,9 +26,8 @@ class KmsEncryptedFieldCodecTest {
         val encrypted = codec.encrypt("short secret", secretAnnotation)
 
         encrypted shouldNotBeEqualTo "short secret"
-        requireNotNull(encrypted) {
-            "encrypted text must not be null."
-        }.startsWith(KmsEncryptedFieldCodec.CIPHERTEXT_PREFIX) shouldBeEqualTo true
+        encrypted shouldStartWith KmsEncryptedFieldCodec.CIPHERTEXT_PREFIX
+
         operations.lastEncryptKeyId shouldBeEqualTo "alias/customer-secret"
         operations.lastEncryptContext shouldBeEqualTo mapOf(
             "service" to "orders",
@@ -76,8 +78,9 @@ class KmsEncryptedFieldCodecTest {
             codec.validate(UnsupportedFixture::class.java)
         }
 
+        log.debug { "exception=$exception" }
         exception.message shouldBeEqualTo
-            "@KmsEncrypted supports only String fields: ${UnsupportedFixture::class.java.name}.secret"
+                "@KmsEncrypted supports only String fields: ${UnsupportedFixture::class.java.name}.secret"
     }
 
     @Test
@@ -86,8 +89,9 @@ class KmsEncryptedFieldCodecTest {
             codec.encrypt("value", invalidContextAnnotation)
         }
 
+        log.debug { "exception=$exception" }
         exception.message shouldBeEqualTo
-            "@KmsEncrypted encryptionContext entry must use non-empty name=value form: 'broken'"
+                "@KmsEncrypted encryptionContext entry must use non-empty name=value form: 'broken'"
     }
 
     @Test
@@ -96,8 +100,9 @@ class KmsEncryptedFieldCodecTest {
             codec.encrypt("value", duplicateContextAnnotation)
         }
 
+        log.debug { "exception=$exception" }
         exception.message shouldBeEqualTo
-            "@KmsEncrypted encryptionContext entries must not contain duplicate names."
+                "@KmsEncrypted encryptionContext entries must not contain duplicate names."
     }
 
     private data class SecretFixture(
@@ -130,7 +135,7 @@ class KmsEncryptedFieldCodecTest {
         }
     }
 
-    private companion object {
+    private companion object: KLogging() {
         val secretAnnotation: KmsEncrypted =
             SecretFixture::class.java.getDeclaredField("secret").getAnnotation(KmsEncrypted::class.java)
 

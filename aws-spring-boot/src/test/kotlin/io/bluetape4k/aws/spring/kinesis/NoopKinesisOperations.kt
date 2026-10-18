@@ -1,6 +1,8 @@
 package io.bluetape4k.aws.spring.kinesis
 
+import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
+import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.CreateStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DeleteStreamResponse
 import software.amazon.awssdk.services.kinesis.model.DescribeStreamResponse
@@ -11,7 +13,9 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.Record
 
-internal object NoopKinesisOperations : KinesisOperations {
+internal object NoopKinesisOperations: KinesisOperations {
+    override val client: KinesisAsyncClient = mockk()
+
     override suspend fun createStream(streamName: String, shardCount: Int): CreateStreamResponse =
         error("NoopKinesisOperations should not be called.")
 

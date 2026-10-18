@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.minutes
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.support.requireInRange
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
@@ -22,26 +25,26 @@ private const val MAX_SCHEDULER_THREADS = 16
 data class SqsBatchProperties(
     val enabled: Boolean = false,
     val maxBatchSize: Int = MAX_SQS_BATCH_SIZE,
-    val flushInterval: Duration = Duration.ofMillis(DEFAULT_FLUSH_INTERVAL_MILLIS),
+    val flushInterval: Duration = DEFAULT_FLUSH_INTERVAL_MILLIS.millis(),
     val maxEntriesPerCall: Int = DEFAULT_MAX_ENTRIES_PER_CALL,
     val maxInFlightEntries: Int = DEFAULT_MAX_IN_FLIGHT_ENTRIES,
     val schedulerThreads: Int = 1,
-    val shutdownTimeout: Duration = Duration.ofSeconds(DEFAULT_SHUTDOWN_TIMEOUT_SECONDS),
-) : Serializable {
+    val shutdownTimeout: Duration = DEFAULT_SHUTDOWN_TIMEOUT_SECONDS.seconds(),
+): Serializable {
 
     init {
         maxBatchSize.requireBatchPropertyInRange(1, MAX_SQS_BATCH_SIZE, "max-batch-size")
         flushInterval.requireBatchPropertyInRange(
-            Duration.ofMillis(1),
-            Duration.ofMinutes(1),
+            1.millis(),
+            1.minutes(),
             "flush-interval",
         )
         maxEntriesPerCall.requireBatchPropertyInRange(1, MAX_CONFIGURED_ENTRIES, "max-entries-per-call")
         maxInFlightEntries.requireBatchPropertyInRange(1, MAX_CONFIGURED_ENTRIES, "max-in-flight-entries")
         schedulerThreads.requireBatchPropertyInRange(1, MAX_SCHEDULER_THREADS, "scheduler-threads")
         shutdownTimeout.requireBatchPropertyInRange(
-            Duration.ofMillis(1),
-            Duration.ofMinutes(1),
+            1.millis(),
+            1.minutes(),
             "shutdown-timeout",
         )
         require(!enabled || maxInFlightEntries >= maxBatchSize) {
@@ -61,6 +64,7 @@ private fun <T: Comparable<T>> T.requireBatchPropertyInRange(
     minimum: T,
     maximum: T,
     propertyName: String,
-): T = requireInRange(minimum, maximum) {
-    "$SQS_BATCH_PROPERTIES_PREFIX.$propertyName must be in the supported range"
-}
+): T =
+    requireInRange(minimum, maximum) {
+        "$SQS_BATCH_PROPERTIES_PREFIX.$propertyName must be in the supported range"
+    }

@@ -1,12 +1,13 @@
 package io.bluetape4k.aws.spring.parameterstore
 
+import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSupport
 import io.bluetape4k.aws.spring.config.applyConfigDataBootstrapCustomizer
 import io.bluetape4k.aws.spring.config.configDataCredentialsProvider
-import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.resolveClientDefaults
+import io.bluetape4k.support.checkNotNull
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import software.amazon.awssdk.services.ssm.SsmClient
 
@@ -33,7 +34,8 @@ internal object ParameterStoreConfigDataSdkAdapter {
     ): Map<String, Any> {
         val configuration = resource.boundProperties as AwsConfigDataSupport.ResolverConfiguration
         val source = resource.location.source as AwsConfigDataSource.ParameterStore
-        val client = checkNotNull(bootstrapContext.get(SsmClient::class.java))
+        val client = bootstrapContext.get(SsmClient::class.java).checkNotNull { "SsmClient not found" }
+
         return ParameterStorePropertySourceLoader.load(
             client,
             ParameterStoreProperties.Source(

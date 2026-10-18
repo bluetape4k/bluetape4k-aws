@@ -12,16 +12,16 @@ data class SnsHttpEndpointProperties(
     val verificationRequired: Boolean = true,
     val allowStructuralOnly: Boolean = false,
     val expectedTopicArns: Set<String> = emptySet(),
-) : Serializable {
+): Serializable {
 
     init {
         require(!(verificationRequired && allowStructuralOnly)) {
             "$SNS_HTTP_ENDPOINTS_PROPERTIES_PREFIX.verification-required and " +
-                "$SNS_HTTP_ENDPOINTS_PROPERTIES_PREFIX.allow-structural-only cannot both be true."
+                    "$SNS_HTTP_ENDPOINTS_PROPERTIES_PREFIX.allow-structural-only cannot both be true."
         }
         require(verificationRequired || allowStructuralOnly) {
             "$SNS_HTTP_ENDPOINTS_PROPERTIES_PREFIX must enable verification-required or " +
-                "allow-structural-only."
+                    "allow-structural-only."
         }
         require(expectedTopicArns.none { it.isBlank() }) {
             "$SNS_HTTP_ENDPOINTS_PROPERTIES_PREFIX.expected-topic-arns must not contain blank values."

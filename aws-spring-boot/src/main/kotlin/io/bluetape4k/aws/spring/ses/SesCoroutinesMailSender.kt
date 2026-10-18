@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.ses
 
+import io.bluetape4k.aws.core.toSdkBytes
+import io.bluetape4k.support.requireNotNull
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.sesv2.SesV2AsyncClient
@@ -106,7 +108,7 @@ class SesCoroutinesMailSender(
         SendEmailRequest.builder()
             .content(
                 EmailContent.builder()
-                    .raw(RawMessage.builder().data(SdkBytes.fromByteArray(rawContent)).build())
+                    .raw(RawMessage.builder().data(rawContent.toSdkBytes()).build())
                     .build()
             )
             .apply {
@@ -163,8 +165,9 @@ class SesCoroutinesMailSender(
         }
 
     private fun resolveRequiredFrom(from: String?): String =
-        resolveOptionalFrom(from)
-            ?: throw IllegalArgumentException("from is required when bluetape4k.aws.ses.default-from is not configured.")
+        resolveOptionalFrom(from).requireNotNull {
+            "from is required when bluetape4k.aws.ses.default-from is not configured."
+        }
 
     private fun resolveOptionalFrom(from: String?): String? =
         (from ?: properties.defaultFrom)?.also { it.requireEmailHeaderValue("from") }

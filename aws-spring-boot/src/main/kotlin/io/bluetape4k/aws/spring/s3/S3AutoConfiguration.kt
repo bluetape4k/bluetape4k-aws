@@ -1,29 +1,31 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.aws.spring.AwsClientDefaults
 import io.bluetape4k.aws.spring.AwsProperties
-import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
-import io.bluetape4k.aws.spring.kms.KmsOperations
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
-import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
-import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
 import io.bluetape4k.aws.spring.connection.S3ConnectionDetails
+import io.bluetape4k.aws.spring.kms.KmsOperations
+import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
+import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
-import org.springframework.context.annotation.Condition
-import org.springframework.context.annotation.ConditionContext
-import org.springframework.core.type.AnnotatedTypeMetadata
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Condition
+import org.springframework.context.annotation.ConditionContext
+import org.springframework.core.type.AnnotatedTypeMetadata
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
@@ -33,8 +35,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.S3ClientBuilder
 import software.amazon.awssdk.services.s3.S3Configuration
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
-import java.util.Locale
+import java.util.*
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -43,7 +44,7 @@ internal annotation class ConditionalOnS3CseProvider(
     val value: ClientSideEncryptionProvider,
 )
 
-internal class S3CseProviderCondition : Condition {
+internal class S3CseProviderCondition: Condition {
     override fun matches(
         context: ConditionContext,
         metadata: AnnotatedTypeMetadata,
@@ -55,6 +56,7 @@ internal class S3CseProviderCondition : Condition {
             ?.trim()
             ?.uppercase(Locale.ROOT)
             ?: ClientSideEncryptionProvider.KMS.name
+
         return requested != null && configured == requested.name
     }
 }
@@ -100,8 +102,8 @@ class S3AutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("s3", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("s3", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 
@@ -131,8 +133,8 @@ class S3AutoConfiguration {
             )
             .apply {
                 httpClient.getIfAvailable()?.let { httpClient(it) }
+                applyGlobalCustomizers("s3", globalCustomizers)
             }
-            .also { it.applyGlobalCustomizers("s3", globalCustomizers) }
             .applyServiceCustomizers(serviceCustomizers)
             .build()
 
@@ -203,10 +205,8 @@ class S3AutoConfiguration {
         S3ClientSideEncryptionProviderTemplate(
             s3AsyncClient = s3AsyncClient,
             properties = properties,
-            aesProvider = aesProvider.getIfUnique() ?: error(
-                "S3AesProvider is required exactly once when " +
-                    "bluetape4k.aws.s3.client-side-encryption.provider=AES.",
-            ),
+            aesProvider = aesProvider.getIfUnique()
+                ?: error("S3AesProvider is required exactly once when bluetape4k.aws.s3.client-side-encryption.provider=AES."),
         )
 
     @Bean(destroyMethod = "close")
@@ -225,10 +225,8 @@ class S3AutoConfiguration {
         S3ClientSideEncryptionProviderTemplate(
             s3AsyncClient = s3AsyncClient,
             properties = properties,
-            rsaProvider = rsaProvider.getIfUnique() ?: error(
-                "S3RsaProvider is required exactly once when " +
-                    "bluetape4k.aws.s3.client-side-encryption.provider=RSA.",
-            ),
+            rsaProvider = rsaProvider.getIfUnique()
+                ?: error("S3RsaProvider is required exactly once when bluetape4k.aws.s3.client-side-encryption.provider=RSA."),
         )
 
     private fun S3ClientBuilder.applyCommon(
@@ -242,7 +240,7 @@ class S3AutoConfiguration {
         }
 
     private fun S3AsyncClientBuilder.applyCommon(
-        defaults: io.bluetape4k.aws.spring.AwsClientDefaults,
+        defaults: AwsClientDefaults,
         properties: S3Properties,
         credentialsProvider: AwsCredentialsProvider,
     ): S3AsyncClientBuilder =
@@ -252,7 +250,7 @@ class S3AutoConfiguration {
         }
 
     private fun S3Presigner.Builder.applyCommon(
-        defaults: io.bluetape4k.aws.spring.AwsClientDefaults,
+        defaults: AwsClientDefaults,
         properties: S3Properties,
         credentialsProvider: AwsCredentialsProvider,
     ): S3Presigner.Builder =

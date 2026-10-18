@@ -2,12 +2,15 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldContain
-import org.junit.jupiter.api.Test
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
 
 class SqsObservationDocumentationParityTest {
+
+    companion object: KLogging()
 
     private val repositoryRoot: Path by lazy {
         generateSequence(Path.of("").toAbsolutePath()) { it.parent }
@@ -21,8 +24,10 @@ class SqsObservationDocumentationParityTest {
     @Test
     fun `English and Korean manuals use the tested customization example`() {
         val source = taggedSource(
-            read("aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/" +
-                "SqsObservationCustomizationExampleTest.kt"),
+            read(
+                "aws-spring-boot/src/test/kotlin/io/bluetape4k/aws/spring/sqs/" +
+                        "SqsObservationCustomizationExampleTest.kt"
+            ),
         )
         val english = fencedExample(
             read("docs/manual/en/modules/bluetape4k-aws-spring-boot/storage-and-messaging.md"),
@@ -74,9 +79,9 @@ class SqsObservationDocumentationParityTest {
             korean shouldContain token
         }
         englishStorage.lineSequence().count { it.startsWith("## ") } shouldBeEqualTo
-            koreanStorage.lineSequence().count { it.startsWith("## ") }
+                koreanStorage.lineSequence().count { it.startsWith("## ") }
         englishRuntime.lineSequence().count { it.startsWith("## ") } shouldBeEqualTo
-            koreanRuntime.lineSequence().count { it.startsWith("## ") }
+                koreanRuntime.lineSequence().count { it.startsWith("## ") }
     }
 
     private fun taggedSource(source: String): String = source

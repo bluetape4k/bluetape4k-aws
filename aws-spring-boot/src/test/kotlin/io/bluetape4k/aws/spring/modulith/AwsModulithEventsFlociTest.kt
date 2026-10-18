@@ -1,20 +1,24 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
 import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageParser
 import io.bluetape4k.aws.spring.sns.SnsHttpMessageVerifier
-import io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration
 import io.bluetape4k.aws.spring.sqs.SqsAcknowledgement
+import io.bluetape4k.aws.spring.sqs.SqsAutoConfiguration
 import io.bluetape4k.aws.spring.sqs.SqsOperations
 import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.mockk.every
 import io.mockk.mockk
@@ -25,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestReporter
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.event.EventListener
@@ -32,20 +37,27 @@ import org.springframework.modulith.events.EventExternalizationConfiguration
 import org.springframework.modulith.events.RoutingTarget
 import org.springframework.modulith.events.core.EventSerializer
 import org.springframework.modulith.events.support.EventExternalizationTransport
+import org.testcontainers.utility.Base58
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import java.time.Duration
-import java.util.ArrayDeque
-import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.toKotlinDuration
 
 /** 실제 AWS 계정 없이 Floci가 제공하는 Modulith SNS/SQS 경계를 검증합니다. */
 @Suppress("LargeClass", "TooManyFunctions")
 class AwsModulithEventsFlociTest {
+
+    private companion object: KLogging() {
+        const val TARGET_ALIAS = "events"
+        const val EVENT_TYPE = "floci.event"
+        val awsEmulator by lazy { AwsSpringBootTestEmulator.get("sns", "sqs") }
+    }
 
     @Test
     fun `Floci DIRECT round trip preserves envelope and acknowledges exactly once`() {
@@ -56,18 +68,19 @@ class AwsModulithEventsFlociTest {
 
             directContext(queueName, queueName).run { context ->
                 context.startupFailure.shouldBeNull()
-                val operations = context.getBean(SqsOperations::class.java)
-                val transport = context.getBean(EventExternalizationTransport::class.java)
-                val listener = context.getBean(AwsModulithSqsEventListener::class.java)
-                val handler = context.getBean(FlociEventHandler::class.java)
-                val event = FlociEvent("direct-${UUID.randomUUID()}", "payload", "trace-direct")
+                val operations = context.getBean<SqsOperations>()
+                val transport = context.getBean<EventExternalizationTransport>()
+                val listener = context.getBean<AwsModulithSqsEventListener>()
+                val handler = context.getBean<FlociEventHandler>()
+                val event = FlociEvent("direct-${Base58.randomString(8)}", "payload", "trace-direct")
 
                 runSuspendIO {
                     transport.externalize(event, RoutingTarget.forTarget(TARGET_ALIAS).withoutKey()).join()
                     val message = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 5).single()
                     message.messageAttributes.getValue(DefaultAwsModulithEventCodec.SYSTEM_EVENT_TYPE)
                         .stringValue() shouldBeEqualTo EVENT_TYPE
-                    message.messageAttributes.getValue("trace").stringValue() shouldBeEqualTo event.trace
+                    message.messageAttributes.getValue("trace")
+                        .stringValue() shouldBeEqualTo event.trace
 
                     val acknowledgement = deletingAcknowledgement(operations, message.queueUrl, message.receiptHandle)
                     listener.onMessage(message, acknowledgement)
@@ -89,37 +102,44 @@ class AwsModulithEventsFlociTest {
     fun `Floci SNS fanout signature-not-proven reaches the local handler through SQS`() {
         val queueName = uniqueName("modulith-fanout")
         val topicName = uniqueName("modulith-fanout")
+
         withSnsSqsResources { snsClient, sqsClient, cleanup ->
             val queueUrl = sqsClient.createQueue { it.queueName(queueName) }.await().queueUrl()
             cleanup.register { sqsClient.deleteQueue { it.queueUrl(queueUrl) }.await() }
             val queueArn = queueArn(sqsClient, queueUrl)
             val topicArn = snsClient.createTopic { it.name(topicName) }.await().topicArn()
             cleanup.register { snsClient.deleteTopic { it.topicArn(topicArn) }.await() }
+
             sqsClient.setQueueAttributes {
                 it.queueUrl(queueUrl)
                 it.attributes(mapOf(QueueAttributeName.POLICY to queuePolicy(queueArn, topicArn)))
             }.await()
+
             val subscriptionArn = snsClient.subscribe {
                 it.topicArn(topicArn)
                 it.protocol("sqs")
                 it.endpoint(queueArn)
                 it.returnSubscriptionArn(true)
             }.await().subscriptionArn()
+
             if (!subscriptionArn.isNullOrBlank() && subscriptionArn != "pending confirmation") {
                 cleanup.register { snsClient.unsubscribe { it.subscriptionArn(subscriptionArn) }.await() }
             }
 
             val testVerifier = mockk<SnsHttpMessageVerifier>()
-            every { testVerifier.verify(any(), any(), any()) } answers {
+            every {
+                testVerifier.verify(any(), any(), any())
+            } answers {
                 SnsHttpMessageParser.parse(firstArg())
             }
+
             snsContext(queueName, topicName, topicArn, testVerifier).run { context ->
                 context.startupFailure.shouldBeNull()
-                val operations = context.getBean(SqsOperations::class.java)
-                val transport = context.getBean(EventExternalizationTransport::class.java)
-                val listener = context.getBean(AwsModulithSqsEventListener::class.java)
-                val handler = context.getBean(FlociEventHandler::class.java)
-                val event = FlociEvent("sns-${UUID.randomUUID()}", "fanout", "trace-sns")
+                val operations = context.getBean<SqsOperations>()
+                val transport = context.getBean<EventExternalizationTransport>()
+                val listener = context.getBean<AwsModulithSqsEventListener>()
+                val handler = context.getBean<FlociEventHandler>()
+                val event = FlociEvent("sns-${Base58.randomString(8).lowercase()}", "fanout", "trace-sns")
 
                 runSuspendIO {
                     transport.externalize(event, RoutingTarget.forTarget(TARGET_ALIAS).withoutKey()).join()
@@ -146,20 +166,23 @@ class AwsModulithEventsFlociTest {
 
             directContext(queueName, queueName).run { context ->
                 context.startupFailure.shouldBeNull()
-                val operations = context.getBean(SqsOperations::class.java)
-                val transport = context.getBean(EventExternalizationTransport::class.java)
-                val event = FlociEvent("fifo-${UUID.randomUUID()}", "fifo", "trace-fifo")
+                val operations = context.getBean<SqsOperations>()
+                val transport = context.getBean<EventExternalizationTransport>()
+                val event = FlociEvent("fifo-${Base58.randomString(8).lowercase()}", "fifo", "trace-fifo")
 
                 runSuspendIO {
                     transport.externalize(
                         event,
                         RoutingTarget.forTarget(TARGET_ALIAS).andKey("orders"),
                     ).join()
+
                     val message = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 5).single()
 
+                    log.debug { "message=$message" }
                     message.messageGroupId shouldBeEqualTo "orders"
                     message.messageDeduplicationId.shouldNotBeBlank()
                     message.sequenceNumber.shouldNotBeBlank()
+
                     operations.delete(queueUrl, message.receiptHandle)
                 }
             }
@@ -172,10 +195,14 @@ class AwsModulithEventsFlociTest {
     ) {
         val deadLetterQueueName = uniqueName("modulith-dlq")
         val queueName = uniqueName("modulith-redrive")
+
         withSqsResources { sqsClient, cleanup ->
             val deadLetterQueueUrl = sqsClient.createQueue { it.queueName(deadLetterQueueName) }.await().queueUrl()
-            cleanup.register { sqsClient.deleteQueue { it.queueUrl(deadLetterQueueUrl) }.await() }
+            cleanup.register {
+                sqsClient.deleteQueue { it.queueUrl(deadLetterQueueUrl) }.await()
+            }
             val deadLetterQueueArn = queueArn(sqsClient, deadLetterQueueUrl)
+
             val queueUrl = sqsClient.createQueue {
                 it.queueName(queueName)
                 it.attributes(
@@ -185,15 +212,22 @@ class AwsModulithEventsFlociTest {
                     )
                 )
             }.await().queueUrl()
-            cleanup.register { sqsClient.deleteQueue { it.queueUrl(queueUrl) }.await() }
+            log.debug { "queueUrl=$queueUrl" }
+
+            cleanup.register {
+                sqsClient.deleteQueue { it.queueUrl(queueUrl) }.await()
+            }
 
             consumerContext(queueName, redriveRequired = true).run { context ->
                 context.startupFailure.shouldBeNull()
-                val operations = context.getBean(SqsOperations::class.java)
-                val consumer = context.getBean(AwsModulithSqsEventConsumer::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val consumer = context.getBean<AwsModulithSqsEventConsumer>()
 
                 runSuspendIO {
-                    sqsClient.sendMessage { it.queueUrl(queueUrl).messageBody("not-an-envelope") }.await()
+                    sqsClient.sendMessage {
+                        it.queueUrl(queueUrl).messageBody("not-an-envelope")
+                    }.await()
+
                     var lastReceiveCount = 0
                     repeat(4) {
                         val source = operations.receive(
@@ -203,8 +237,9 @@ class AwsModulithEventsFlociTest {
                             visibilityTimeoutSeconds = 0,
                         ).singleOrNull() ?: return@repeat
                         lastReceiveCount = source.approximateReceiveCount ?: lastReceiveCount
-                        kotlin.runCatching { consumer.consume(source) }.exceptionOrNull()
-                            .shouldBeInstanceOf<AwsModulithEventException>()
+                        assertFailsWith<AwsModulithEventException> {
+                            consumer.consume(source)
+                        }
                     }
 
                     val deadLetters = awaitMessages(operations, deadLetterQueueUrl)
@@ -215,12 +250,14 @@ class AwsModulithEventsFlociTest {
                         operations.delete(deadLetterQueueUrl, deadLetters.single().receiptHandle)
                     } else {
                         reporter.publishEntry("floci.redrive", "fallback-policy-and-receive-count")
-                        val policy = sqsClient.getQueueAttributes {
-                            it.queueUrl(queueUrl)
-                            it.attributeNames(QueueAttributeName.REDRIVE_POLICY)
-                        }.await().attributes()[QueueAttributeName.REDRIVE_POLICY]
+                        val policy = sqsClient
+                            .getQueueAttributes {
+                                it.queueUrl(queueUrl)
+                                it.attributeNames(QueueAttributeName.REDRIVE_POLICY)
+                            }.await().attributes()[QueueAttributeName.REDRIVE_POLICY]
+
                         policy shouldBeEqualTo redrivePolicy(deadLetterQueueArn, 2)
-                        (lastReceiveCount >= 2).shouldBeTrue()
+                        lastReceiveCount shouldBeGreaterOrEqualTo 2
                     }
                 }
             }
@@ -232,7 +269,10 @@ class AwsModulithEventsFlociTest {
         val order = mutableListOf<String>()
         val primary = IllegalStateException("primary")
         val cleanup = FlociCleanupStack()
-        cleanup.register { order += "queue" }
+
+        cleanup.register {
+            order += "queue"
+        }
         cleanup.register {
             order += "topic"
             throw IllegalStateException("cleanup")
@@ -247,11 +287,12 @@ class AwsModulithEventsFlociTest {
 
     @Test
     fun `cleanup stack bounds a stuck resource without retaining actions`() = runTest {
-        val cleanup = FlociCleanupStack(Duration.ofMillis(10))
+        val cleanup = FlociCleanupStack(10.millis())
         cleanup.register { awaitCancellation() }
 
-        kotlin.runCatching { cleanup.close() }.exceptionOrNull()
-            .shouldBeInstanceOf<FlociCleanupException>()
+        assertFailsWith<FlociCleanupException> {
+            cleanup.close()
+        }
         cleanup.pendingCount shouldBeEqualTo 0
     }
 
@@ -335,17 +376,18 @@ class AwsModulithEventsFlociTest {
         operations.delete(queueUrl, receiptHandle)
     }
 
-    private suspend fun awaitMessages(operations: SqsOperations, queueUrl: String) = withTimeout(10_000) {
-        var received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
-        while (received.isEmpty()) {
-            delay(100)
-            received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
-            if (received.isEmpty()) {
-                return@withTimeout emptyList()
+    private suspend fun awaitMessages(operations: SqsOperations, queueUrl: String) =
+        withTimeout(10_000.milliseconds) {
+            var received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+            while (received.isEmpty()) {
+                delay(100.milliseconds)
+                received = operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
+                if (received.isEmpty()) {
+                    return@withTimeout emptyList()
+                }
             }
+            received
         }
-        received
-    }
 
     private suspend fun queueArn(client: SqsAsyncClient, queueUrl: String): String =
         requireNotNull(
@@ -366,13 +408,13 @@ class AwsModulithEventsFlociTest {
         message = message.toBuilder()
             .body(
                 body.dropLast(1) +
-                    ",\"SignatureVersion\":\"1\",\"Signature\":\"floci-not-a-signature\"," +
-                    "\"SigningCertURL\":\"https://sns.us-east-1.amazonaws.com/floci.pem\"}",
+                        ",\"SignatureVersion\":\"1\",\"Signature\":\"floci-not-a-signature\"," +
+                        "\"SigningCertURL\":\"https://sns.us-east-1.amazonaws.com/floci.pem\"}",
             )
             .build(),
     )
 
-    private fun uniqueName(prefix: String): String = "$prefix-${UUID.randomUUID().toString().take(8)}"
+    private fun uniqueName(prefix: String): String = "$prefix-${Base58.randomString(8).lowercase()}"
 
     private fun withSqsResources(block: suspend (SqsAsyncClient, FlociCleanupStack) -> Unit) = runSuspendIO {
         val sqsClient = sqsClient()
@@ -418,12 +460,6 @@ class AwsModulithEventsFlociTest {
         .region(Region.of(awsEmulator.regionName))
         .endpointOverride(awsEmulator.awsEndpoint)
         .build()
-
-    private companion object {
-        const val TARGET_ALIAS = "events"
-        const val EVENT_TYPE = "floci.event"
-        val awsEmulator by lazy { AwsSpringBootTestEmulator.get("sns", "sqs") }
-    }
 }
 
 private data class FlociEvent(
@@ -432,12 +468,12 @@ private data class FlociEvent(
     val trace: String,
 )
 
-private object FlociEventSerializer : EventSerializer {
+private object FlociEventSerializer: EventSerializer {
     override fun serialize(event: Any): Any = (event as FlociEvent).let {
         """{"id":"${it.id}","payload":"${it.payload}","trace":"${it.trace}"}"""
     }
 
-    override fun <T : Any> deserialize(serialized: Any, type: Class<T>): T {
+    override fun <T: Any> deserialize(serialized: Any, type: Class<T>): T {
         val json = serialized as String
         val event = FlociEvent(
             id = json.field("id"),
@@ -462,7 +498,7 @@ private class FlociEventHandler {
 
 private class RecordingAcknowledgement(
     private val delete: suspend () -> Unit,
-) : SqsAcknowledgement {
+): SqsAcknowledgement {
     val acknowledgeCalls = AtomicInteger()
     override val completed: Boolean get() = acknowledgeCalls.get() > 0
 
@@ -477,7 +513,7 @@ private class RecordingAcknowledgement(
 }
 
 private class FlociCleanupStack(
-    private val resourceTimeout: Duration = Duration.ofSeconds(10),
+    private val resourceTimeout: Duration = 10.seconds(),
 ) {
     private val actions = ArrayDeque<suspend () -> Unit>()
     val pendingCount: Int get() = actions.size
@@ -491,7 +527,9 @@ private class FlociCleanupStack(
         while (actions.isNotEmpty()) {
             val action = actions.removeLast()
             try {
-                withTimeout(resourceTimeout.toMillis()) { action() }
+                withTimeout(resourceTimeout.toKotlinDuration()) {
+                    action()
+                }
             } catch (failure: Throwable) {
                 cleanupFailures += FlociCleanupException(failure)
             }
@@ -506,4 +544,4 @@ private class FlociCleanupStack(
     }
 }
 
-private class FlociCleanupException(cause: Throwable) : RuntimeException("Floci resource cleanup failed.", cause)
+private class FlociCleanupException(cause: Throwable): RuntimeException("Floci resource cleanup failed.", cause)

@@ -2,12 +2,20 @@ package io.bluetape4k.aws.spring.appconfig
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.aws.spring.config.AwsConfigDataBackend
+import io.bluetape4k.aws.spring.config.AwsConfigDataLocationParser
+import io.bluetape4k.aws.spring.config.AwsConfigDataSource
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import org.springframework.boot.context.config.ConfigDataLocation
 
 class AppConfigDataLocationParserTest {
 
-    private val parser = io.bluetape4k.aws.spring.config.AwsConfigDataLocationParser()
+    companion object: KLogging()
+
+    private val parser = AwsConfigDataLocationParser()
 
     @Test
     fun `parses optional app config source and decodes components once`() {
@@ -16,10 +24,11 @@ class AppConfigDataLocationParserTest {
                 "optional:aws-app-config:application%20one#profile%2523blue#environment?format=json&prefix=service",
             ),
         )
+        log.debug { "parsed=$parsed" }
 
-        parsed.backend shouldBeEqualTo io.bluetape4k.aws.spring.config.AwsConfigDataBackend.APP_CONFIG
-        parsed.optional shouldBeEqualTo true
-        parsed.source shouldBeEqualTo io.bluetape4k.aws.spring.config.AwsConfigDataSource.AppConfig(
+        parsed.backend shouldBeEqualTo AwsConfigDataBackend.APP_CONFIG
+        parsed.optional.shouldBeTrue()
+        parsed.source shouldBeEqualTo AwsConfigDataSource.AppConfig(
             application = "application one",
             profile = "profile%23blue",
             environment = "environment",
@@ -34,8 +43,9 @@ class AppConfigDataLocationParserTest {
             ConfigDataLocation.of("aws-app-config:app;profile;env?format=properties"),
             separator = ";",
         )
+        log.debug { "parsed=$parsed" }
 
-        parsed.source shouldBeEqualTo io.bluetape4k.aws.spring.config.AwsConfigDataSource.AppConfig(
+        parsed.source shouldBeEqualTo AwsConfigDataSource.AppConfig(
             application = "app",
             profile = "profile",
             environment = "env",

@@ -1,30 +1,31 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 /** Floci-first proof for the optimized SQS batch listener path. */
-class SqsBatchListenerAwsEmulatorTest {
+class SqsBatchListenerAwsEmulatorTest: AbstractSqsTest() {
 
-    companion object {
-        private val awsEmulator by lazy { AwsSpringBootTestEmulator.get("sqs") }
-    }
+    companion object: KLogging()
 
     @Test
     fun `batch listener handles ten messages and deletes them`() {
@@ -32,24 +33,26 @@ class SqsBatchListenerAwsEmulatorTest {
             .withPropertyValues("bluetape4k.aws.sqs.listener.enabled=false")
 
         bootstrap.run { bootstrapContext ->
-            val operations = bootstrapContext.getBean(SqsOperations::class.java)
+            val operations = bootstrapContext.getBean<SqsOperations>()
             lateinit var queueUrl: String
-            runSuspendIO { queueUrl = operations.createQueue("batch-${UUID.randomUUID()}") }
+            runSuspendIO {
+                queueUrl = operations.createQueue("batch-${UUID.randomUUID()}")
+            }
 
             contextRunner(queueUrl, BatchListenerConfig::class.java).run { context ->
-                val listener = context.getBean(BatchListener::class.java)
+                val listener = context.getBean<BatchListener>()
                 runSuspendIO {
                     repeat(10) { index -> operations.send(queueUrl, "batch-$index") }
                 }
 
-                await.atMost(Duration.ofSeconds(20)).untilAsserted {
+                await atMost 20.seconds untilAsserted {
                     listener.messageIds.size shouldBeGreaterOrEqualTo 10
                 }
                 listener.invocations.get() shouldBeGreaterOrEqualTo 1
                 listener.batchSizes.all { it in 1..10 } shouldBeEqualTo true
                 listener.messageIds.distinct().size shouldBeEqualTo 10
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                    await atMost 10.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 10, waitTimeSeconds = 1).isEmpty()
                     }
                 }

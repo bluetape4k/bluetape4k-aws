@@ -13,7 +13,7 @@ import org.springframework.boot.logging.DeferredLogFactory
 class SecretsManagerConfigDataLoader(
     @Suppress("UNUSED_PARAMETER") private val deferredLogFactory: DeferredLogFactory,
     private val bootstrapContext: ConfigurableBootstrapContext,
-) : ConfigDataLoader<AwsConfigDataResource> {
+): ConfigDataLoader<AwsConfigDataResource> {
 
     override fun isLoadable(context: ConfigDataLoaderContext, resource: AwsConfigDataResource): Boolean =
         resource.backendKey == AwsConfigDataBackend.SECRETS_MANAGER.key

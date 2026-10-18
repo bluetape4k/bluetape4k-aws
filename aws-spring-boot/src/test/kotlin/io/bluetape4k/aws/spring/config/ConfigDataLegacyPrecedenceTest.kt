@@ -3,12 +3,15 @@ package io.bluetape4k.aws.spring.config
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.aws.spring.env.AwsLoadedPropertySource
 import io.bluetape4k.aws.spring.env.addAwsPropertySource
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
 import org.springframework.boot.context.config.ConfigDataLocation
 import org.springframework.core.env.MapPropertySource
 import org.springframework.core.env.StandardEnvironment
 
 class ConfigDataLegacyPrecedenceTest {
+
+    companion object: KLogging()
 
     @Test
     fun `legacy EPP source stays below command line value`() {

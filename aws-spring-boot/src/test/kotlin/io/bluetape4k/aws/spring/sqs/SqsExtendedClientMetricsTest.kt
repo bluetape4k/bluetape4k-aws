@@ -3,10 +3,13 @@ package io.bluetape4k.aws.spring.sqs
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Test
 
 class SqsExtendedClientMetricsTest {
+
+    companion object: KLogging()
 
     @Test
     fun `metrics keep the four names and bounded tag vocabulary`() {
@@ -33,15 +36,19 @@ class SqsExtendedClientMetricsTest {
         registry.find(SqsExtendedClientMetrics.OFFLOAD_METRIC)
             .tag("outcome", "inline")
             .counter()?.count() shouldBeEqualTo 1.0
+
         registry.find(SqsExtendedClientMetrics.OFFLOAD_METRIC)
             .tag("outcome", "offloaded")
             .counter()?.count() shouldBeEqualTo 1.0
+
         registry.find(SqsExtendedClientMetrics.OFFLOAD_METRIC)
             .tag("outcome", "rejected")
             .counter()?.count() shouldBeEqualTo 1.0
+
         registry.find(SqsExtendedClientMetrics.ORPHAN_METRIC)
             .tag("reason", "sqs-send")
             .counter()?.count() shouldBeEqualTo 1.0
+
         registry.find(SqsExtendedClientMetrics.ORPHAN_METRIC)
             .tag("reason", "cancelled")
             .counter()?.count() shouldBeEqualTo 1.0
@@ -56,6 +63,9 @@ class SqsExtendedClientMetricsTest {
         registry.meters.flatMap { meter -> meter.id.tags.map { it.key } } shouldNotContain "bucket"
         registry.meters.flatMap { meter -> meter.id.tags.map { it.key } } shouldNotContain "key"
         registry.meters.flatMap { meter -> meter.id.tags.map { it.key } } shouldNotContain "diagnosticCode"
-        forbidden.forEach { value -> registry.meters.map { it.id.toString() } shouldNotContain value }
+
+        forbidden.forEach { value ->
+            registry.meters.map { it.id.toString() } shouldNotContain value
+        }
     }
 }

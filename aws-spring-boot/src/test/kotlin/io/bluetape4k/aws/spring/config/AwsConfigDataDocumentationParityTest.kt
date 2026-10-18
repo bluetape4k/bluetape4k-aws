@@ -1,13 +1,16 @@
 package io.bluetape4k.aws.spring.config
 
-import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldBeEqualTo
-import org.junit.jupiter.api.Test
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
 
 class AwsConfigDataDocumentationParityTest {
+
+    companion object: KLogging()
 
     private val repositoryRoot: Path by lazy {
         generateSequence(Path.of("").toAbsolutePath()) { it.parent }
@@ -24,9 +27,9 @@ class AwsConfigDataDocumentationParityTest {
         val koreanReadme = read("aws-spring-boot/README.ko.md")
 
         readme shouldContain "https://bluetape4k.github.io/manual/bluetape4k-aws/0.5/modules/" +
-            "bluetape4k-aws-spring-boot/runtime-operations/"
+                "bluetape4k-aws-spring-boot/runtime-operations/"
         koreanReadme shouldContain "https://bluetape4k.github.io/ko/manual/bluetape4k-aws/0.5/modules/" +
-            "bluetape4k-aws-spring-boot/runtime-operations/"
+                "bluetape4k-aws-spring-boot/runtime-operations/"
     }
 
     @Test
@@ -50,8 +53,8 @@ class AwsConfigDataDocumentationParityTest {
             english shouldContain token
             korean shouldContain token
         }
-        english.lineSequence().filter { it.startsWith("## ") }.count() shouldBeEqualTo
-            korean.lineSequence().filter { it.startsWith("## ") }.count()
+        english.lineSequence().count { it.startsWith("## ") } shouldBeEqualTo
+                korean.lineSequence().count { it.startsWith("## ") }
     }
 
     private fun read(relativePath: String): String {

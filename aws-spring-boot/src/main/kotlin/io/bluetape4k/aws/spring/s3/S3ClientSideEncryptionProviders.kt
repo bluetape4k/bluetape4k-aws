@@ -1,8 +1,15 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.ToStringBuilder
+import io.bluetape4k.support.hashOf
+import io.bluetape4k.support.requireBeTrue
+import io.bluetape4k.support.requireEquals
+import io.bluetape4k.support.requireLe
+import io.bluetape4k.support.requireNotNull
+import io.bluetape4k.support.requireNull
+import io.bluetape4k.support.toUtf8Bytes
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
 import java.security.GeneralSecurityException
 import java.security.KeyPair
 import java.security.MessageDigest
@@ -10,8 +17,7 @@ import java.security.SecureRandom
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.MGF1ParameterSpec
-import java.util.Base64
-import java.util.Locale
+import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -29,6 +35,7 @@ fun interface S3AesProvider {
     fun generateSecretKey(): SecretKey
 
     companion object {
+        operator fun invoke(key: SecretKey) = S3AesProvider { key }
         fun of(key: SecretKey): S3AesProvider = S3AesProvider { key }
     }
 }
@@ -37,6 +44,7 @@ fun interface S3RsaProvider {
     fun generateKeyPair(): KeyPair
 
     companion object {
+        operator fun invoke(key: KeyPair): S3RsaProvider = S3RsaProvider { key }
         fun of(keyPair: KeyPair): S3RsaProvider = S3RsaProvider { keyPair }
     }
 }
@@ -45,9 +53,9 @@ fun interface S3RsaProvider {
 open class S3ClientSideEncryptionException(
     message: String,
     cause: Throwable? = null,
-) : RuntimeException(message, cause)
+): RuntimeException(message, cause)
 
-internal sealed interface ClientSideEncryptionKeyMaterial : AutoCloseable {
+internal sealed interface ClientSideEncryptionKeyMaterial: AutoCloseable {
     val providerToken: String
     val wrappingAlgorithm: String
     val keyIdentityMaterial: ByteArray
@@ -60,19 +68,79 @@ internal sealed interface ClientSideEncryptionKeyMaterial : AutoCloseable {
 internal data class WrappedDataKey(
     val ciphertext: ByteArray,
     val nonce: ByteArray?,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null) return false
+
+        return other is WrappedDataKey &&
+                ciphertext.contentEquals(other.ciphertext) &&
+                nonce?.contentEquals(other.nonce) ?: true
+    }
+
+    override fun hashCode(): Int {
+        return hashOf(ciphertext.contentHashCode(), nonce?.contentHashCode())
+    }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("ciphertext", ciphertext.contentToString())
+            .add("nonce", nonce?.contentToString())
+            .toString()
+}
 
 internal data class ProviderEncryptedPayload(
     val ciphertext: ByteArray,
     val metadata: Map<String, String>,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null) return false
+
+        return other is ProviderEncryptedPayload &&
+                ciphertext.contentEquals(other.ciphertext) &&
+                metadata == other.metadata
+    }
+
+    override fun hashCode(): Int = hashOf(ciphertext.contentHashCode(), metadata)
+
+    override fun toString(): String = ToStringBuilder(this)
+        .add("ciphertext", ciphertext.contentToString())
+        .add("metadata", metadata)
+        .toString()
+}
 
 internal data class ProviderStreamingEnvelope(
     val dataKey: ByteArray,
     val nonce: ByteArray,
     val aad: ByteArray,
     val metadata: Map<String, String>,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null) return false
+
+        return other is ProviderStreamingEnvelope &&
+                dataKey.contentEquals(other.dataKey) &&
+                nonce.contentEquals(other.nonce) &&
+                aad.contentEquals(other.aad) &&
+                metadata == other.metadata
+    }
+
+    override fun hashCode(): Int = hashOf(
+        dataKey.contentHashCode(),
+        nonce.contentHashCode(),
+        aad.contentHashCode(),
+        nonce
+    )
+
+    override fun toString(): String = ToStringBuilder(this)
+        .add("dataKey", dataKey.contentToString())
+        .add("nonce", nonce.contentToString())
+        .add("aad", aad.contentToString())
+        .add("metadata", metadata)
+        .toString()
+}
 
 internal object ProviderEnvelope {
     private const val VERSION = "2"
@@ -111,6 +179,7 @@ internal object ProviderEnvelope {
         var aad: ByteArray? = null
         var ciphertext: ByteArray? = null
         var succeeded = false
+
         return try {
             wrapped = material.wrap(dataKey, random)
             aad = canonicalContextAad(encryptionContext)
@@ -152,30 +221,34 @@ internal object ProviderEnvelope {
         var wrapNonce: ByteArray? = null
         var dataKey: ByteArray? = null
         var aad: ByteArray? = null
+
         return try {
             validateMetadata(normalized, material, expectedKeyId, expectedKeyVersion)
             val decodedWrapped = decodeRequired(normalized, WRAPPED_KEY, MAX_WRAPPED_KEY_BYTES)
             wrapped = decodedWrapped
+
             val decodedNonce = decodeRequired(normalized, NONCE_KEY, NONCE_SIZE)
             nonce = decodedNonce
-            require(decodedNonce.size == NONCE_SIZE) { "Provider envelope nonce must be 12 bytes." }
+            decodedNonce.size.requireEquals(NONCE_SIZE) { "Provider envelope nonce must be 12 bytes." }
+
             val decodedWrapNonce = normalized[WRAPPING_NONCE_METADATA]?.let {
                 decode(it, WRAPPING_NONCE_METADATA, NONCE_SIZE)
             }
             wrapNonce = decodedWrapNonce
             if (material.providerToken == "aes") {
-                require(decodedWrapNonce?.size == NONCE_SIZE) {
-                    "AES provider envelope wrap nonce must be 12 bytes."
-                }
+                decodedWrapNonce?.size.requireEquals(NONCE_SIZE) { "AES provider envelope wrap nonce must be 12 bytes." }
             } else {
-                require(decodedWrapNonce == null) { "RSA provider envelope must not contain a wrap nonce." }
+                decodedWrapNonce.requireNull { "RSA provider envelope must not contain a wrap nonce." }
             }
+
             val unwrappedDataKey = material.unwrap(decodedWrapped, decodedWrapNonce)
             dataKey = unwrappedDataKey
-            require(unwrappedDataKey.size == DATA_KEY_SIZE) { "Provider envelope data key must be 32 bytes." }
+            unwrappedDataKey.size.requireEquals(DATA_KEY_SIZE) { "Provider envelope data key must be 32 bytes." }
+
             aad = canonicalContextAad(encryptionContext)
             val cipher = payloadCipher(Cipher.DECRYPT_MODE, unwrappedDataKey, decodedNonce)
             cipher.updateAAD(aad)
+
             try {
                 cipher.doFinal(ciphertext)
             } catch (error: GeneralSecurityException) {
@@ -198,9 +271,7 @@ internal object ProviderEnvelope {
         val normalizedKeys = HashSet<String>()
         userMetadata.forEach { (key, value) ->
             val normalized = key.lowercase(Locale.ROOT)
-            require(normalizedKeys.add(normalized)) {
-                "Duplicate S3 metadata key is not allowed: $key"
-            }
+            normalizedKeys.add(normalized).requireBeTrue { "Duplicate S3 metadata key is not allowed: $key" }
             require(normalized !in reservedMetadata.keys.map { it.lowercase(Locale.ROOT) }) {
                 "User metadata collides with reserved provider metadata: $key"
             }
@@ -208,9 +279,7 @@ internal object ProviderEnvelope {
         }
         reservedMetadata.forEach { (key, value) ->
             val normalized = key.lowercase(Locale.ROOT)
-            require(normalizedKeys.add(normalized)) {
-                "Duplicate provider metadata key is not allowed: $key"
-            }
+            normalizedKeys.add(normalized).requireBeTrue { "Duplicate provider metadata key is not allowed: $key" }
             result[normalized] = value
         }
         return result
@@ -228,6 +297,7 @@ internal object ProviderEnvelope {
         var wrapped: WrappedDataKey? = null
         var aad: ByteArray? = null
         var succeeded = false
+
         return try {
             wrapped = material.wrap(dataKey, random)
             aad = canonicalContextAad(encryptionContext)
@@ -254,11 +324,11 @@ internal object ProviderEnvelope {
             require(key.isNotBlank() && key.none(Char::isISOControl)) {
                 "Provider encryption context keys must not be blank or contain control characters."
             }
-            require(value.none(Char::isISOControl)) {
+            value.none(Char::isISOControl).requireBeTrue {
                 "Provider encryption context values must not contain control characters."
             }
-            val keyBytes = key.toByteArray(StandardCharsets.UTF_8)
-            val valueBytes = value.toByteArray(StandardCharsets.UTF_8)
+            val keyBytes = key.toUtf8Bytes()
+            val valueBytes = value.toUtf8Bytes()
             try {
                 output.write(ByteBuffer.allocate(Int.SIZE_BYTES).putInt(keyBytes.size).array())
                 output.write(keyBytes)
@@ -295,9 +365,7 @@ internal object ProviderEnvelope {
         val result = LinkedHashMap<String, String>(metadata.size)
         metadata.forEach { (key, value) ->
             val normalized = key.lowercase(Locale.ROOT)
-            require(result.put(normalized, value) == null) {
-                "Duplicate provider metadata key is not allowed: $key"
-            }
+            result.put(normalized, value).requireNull { "Duplicate provider metadata key is not allowed: $key" }
         }
         return result
     }
@@ -328,18 +396,15 @@ internal object ProviderEnvelope {
     }
 
     private fun decodeRequired(metadata: Map<String, String>, key: String, maxBytes: Int): ByteArray {
-        val value = metadata[key]
-        require(value != null) { "Provider envelope metadata is missing: $key" }
+        val value = metadata[key].requireNotNull { "Provider envelope metadata is missing: $key" }
         return decode(value, key, maxBytes)
     }
 
     private fun decode(value: String, key: String, maxBytes: Int): ByteArray {
-        require(
-            value.length <=
-                ((maxBytes + BASE64_PADDING_BYTES) / BASE64_INPUT_BYTES) * BASE64_OUTPUT_BYTES,
-        ) {
+        value.length.requireLe(((maxBytes + BASE64_PADDING_BYTES) / BASE64_INPUT_BYTES) * BASE64_OUTPUT_BYTES) {
             "Provider envelope metadata exceeds the maximum size: $key"
         }
+
         val decoded = try {
             Base64.getDecoder().decode(value)
         } catch (error: IllegalArgumentException) {
@@ -397,32 +462,37 @@ internal object ProviderEnvelopeCrypto {
         keyBytes: ByteArray,
         nonce: ByteArray,
     ): ByteArray = try {
-        val cipher = Cipher.getInstance(CONTENT_ALGORITHM).apply {
-            init(
-                Cipher.DECRYPT_MODE,
-                SecretKeySpec(keyBytes, "AES"),
-                GCMParameterSpec(GCM_TAG_BITS, nonce),
-            )
-        }
-        cipher.doFinal(wrapped)
+        Cipher.getInstance(CONTENT_ALGORITHM)
+            .apply {
+                init(
+                    Cipher.DECRYPT_MODE,
+                    SecretKeySpec(keyBytes, "AES"),
+                    GCMParameterSpec(GCM_TAG_BITS, nonce),
+                )
+            }
+            .doFinal(wrapped)
     } catch (error: GeneralSecurityException) {
         throw S3ClientSideEncryptionException("AES provider key unwrapping failed.", error)
     }
 
     fun rsaOaepWrap(dataKey: ByteArray, publicKey: RSAPublicKey, random: SecureRandom): ByteArray =
         try {
-            Cipher.getInstance(RSA_ALGORITHM).apply {
-                init(Cipher.ENCRYPT_MODE, publicKey, oaepParameterSpec, random)
-            }.doFinal(dataKey)
+            Cipher.getInstance(RSA_ALGORITHM)
+                .apply {
+                    init(Cipher.ENCRYPT_MODE, publicKey, oaepParameterSpec, random)
+                }
+                .doFinal(dataKey)
         } catch (error: GeneralSecurityException) {
             throw S3ClientSideEncryptionException("RSA provider key wrapping failed.", error)
         }
 
     fun rsaOaepUnwrap(wrapped: ByteArray, privateKey: RSAPrivateKey): ByteArray =
         try {
-            Cipher.getInstance(RSA_ALGORITHM).apply {
-                init(Cipher.DECRYPT_MODE, privateKey, oaepParameterSpec)
-            }.doFinal(wrapped)
+            Cipher.getInstance(RSA_ALGORITHM)
+                .apply {
+                    init(Cipher.DECRYPT_MODE, privateKey, oaepParameterSpec)
+                }
+                .doFinal(wrapped)
         } catch (error: GeneralSecurityException) {
             throw S3ClientSideEncryptionException("RSA provider key unwrapping failed.", error)
         }
@@ -440,12 +510,12 @@ internal fun ByteArray.toHex(): String =
 
 internal fun sha256Url(value: String): String =
     Base64.getUrlEncoder().withoutPadding().encodeToString(
-        MessageDigest.getInstance("SHA-256").digest(value.toByteArray(StandardCharsets.UTF_8)),
+        MessageDigest.getInstance("SHA-256").digest(value.toUtf8Bytes()),
     )
 
 internal class AesClientSideEncryptionKeyMaterial private constructor(
     private val keyBytes: ByteArray,
-) : ClientSideEncryptionKeyMaterial {
+): ClientSideEncryptionKeyMaterial {
     private var closed = false
     override val providerToken: String = "aes"
     override val wrappingAlgorithm: String = "AES/GCM/NoPadding"
@@ -454,10 +524,13 @@ internal class AesClientSideEncryptionKeyMaterial private constructor(
             check(!closed) { "AES provider material is closed." }
             return MessageDigest.getInstance("SHA-256").digest(keyBytes)
         }
+
     override fun wrap(dataKey: ByteArray, random: SecureRandom): WrappedDataKey =
         ProviderEnvelopeCrypto.aesGcmWrap(dataKey, openBytes(), random)
+
     override fun unwrap(wrapped: ByteArray, nonce: ByteArray?): ByteArray =
         ProviderEnvelopeCrypto.aesGcmUnwrap(wrapped, openBytes(), requireNotNull(nonce))
+
     override fun close() {
         if (!closed) {
             closed = true
@@ -483,8 +556,8 @@ internal class AesClientSideEncryptionKeyMaterial private constructor(
             }
             require(
                 encoded.size == AES_128_KEY_BYTES ||
-                    encoded.size == AES_192_KEY_BYTES ||
-                    encoded.size == AES_256_KEY_BYTES,
+                        encoded.size == AES_192_KEY_BYTES ||
+                        encoded.size == AES_256_KEY_BYTES,
             ) {
                 "AES provider key must be 16, 24, or 32 bytes. size=" + encoded.size
             }
@@ -496,13 +569,14 @@ internal class AesClientSideEncryptionKeyMaterial private constructor(
 internal class RsaClientSideEncryptionKeyMaterial private constructor(
     private var publicKey: RSAPublicKey?,
     private var privateKey: RSAPrivateKey?,
-) : ClientSideEncryptionKeyMaterial {
+): ClientSideEncryptionKeyMaterial {
     override val providerToken: String = "rsa"
     override val wrappingAlgorithm: String = "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
     override val keyIdentityMaterial: ByteArray
         get() = MessageDigest.getInstance("SHA-256").digest(
             checkNotNull(publicKey) { "RSA provider material is closed." }.encoded,
         )
+
     override fun wrap(dataKey: ByteArray, random: SecureRandom): WrappedDataKey =
         WrappedDataKey(
             ciphertext = ProviderEnvelopeCrypto.rsaOaepWrap(
@@ -512,11 +586,13 @@ internal class RsaClientSideEncryptionKeyMaterial private constructor(
             ),
             nonce = null,
         )
+
     override fun unwrap(wrapped: ByteArray, nonce: ByteArray?): ByteArray =
         ProviderEnvelopeCrypto.rsaOaepUnwrap(
             wrapped,
             checkNotNull(privateKey) { "RSA provider material is closed." },
         )
+
     override fun close() {
         publicKey = null
         privateKey = null

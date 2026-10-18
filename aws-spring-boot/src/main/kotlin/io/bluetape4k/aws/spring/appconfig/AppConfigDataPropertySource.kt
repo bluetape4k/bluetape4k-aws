@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
 import org.springframework.core.env.EnumerablePropertySource
 import java.time.Duration
@@ -16,7 +17,11 @@ internal class AppConfigDataPropertySource(
     val prefix: String?,
     val refreshInterval: Duration?,
     val requiredMinimumPollInterval: Duration,
-) : EnumerablePropertySource<Map<String, Any>>(name, initialValues.toMap()) {
+): EnumerablePropertySource<Map<String, Any>>(name, initialValues.toMap()) {
+
+    private companion object {
+        const val OPAQUE_NAME_MAX_LENGTH = 64
+    }
 
     @Volatile
     var client: AppConfigDataSessionClient = client
@@ -71,12 +76,15 @@ internal class AppConfigDataPropertySource(
         sessionActive = true
     }
 
-    override fun toString(): String = "AppConfigDataPropertySource(name=${opaqueName(name)})"
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("name", opaqueName(name))
+            .add("format", format)
+            .add("prefix", prefix)
+            .add("refreshInterval", refreshInterval)
+            .add("requiredMinimumPollInterval", requiredMinimumPollInterval)
+            .toString()
 
     private fun opaqueName(value: String): String =
         value.substringAfterLast('.').takeIf { it.length <= OPAQUE_NAME_MAX_LENGTH } ?: "opaque"
-
-    private companion object {
-        const val OPAQUE_NAME_MAX_LENGTH = 64
-    }
 }

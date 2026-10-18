@@ -3,13 +3,21 @@ package io.bluetape4k.aws.spring.sqs
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.core.read.ListAppender
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBe
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeGreaterOrEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.junit5.awaitility.untilSuspending
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import io.micrometer.observation.Observation
@@ -20,18 +28,22 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextClosedEvent
 import org.springframework.context.event.ContextRefreshedEvent
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
@@ -41,24 +53,27 @@ import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import java.time.Duration
-import java.util.UUID
+import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @Timeout(30)
 @Suppress("LargeClass")
 class SqsObservationAwsEmulatorTest {
 
-    private val openContexts = AtomicInteger()
-    private val listenerRegistries: MutableList<SqsMessageListenerContainerRegistry> = CopyOnWriteArrayList()
-
-    companion object {
+    companion object: KLogging() {
         private val floci: FlociServer by lazy { FlociServer.Launcher.floci }
         private const val SECRET_BODY: String = "body-secret-task8"
         private const val SECRET_ATTRIBUTE_NAME: String = "secret-attribute-task8"
         private const val SECRET_ATTRIBUTE_VALUE: String = "attribute-secret-task8"
         private const val SECRET_THROWABLE_TOKEN: String = "throwable-secret-task8"
     }
+
+    private val openContexts = AtomicInteger()
+    private val listenerRegistries = ConcurrentLinkedQueue<SqsMessageListenerContainerRegistry>()
 
     @Test
     fun `Floci listener propagates process context and observes heartbeat plus manual acknowledgement`() {
@@ -78,18 +93,18 @@ class SqsObservationAwsEmulatorTest {
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-interval-seconds=1",
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-seconds=3",
             ).run { context ->
-                val listener = context.getBean(ObservedListener::class.java)
+                val listener = context.getBean<ObservedListener>()
 
                 sendSecretMessage(client, queueUrl)
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.currentProcessObservations.size shouldBeEqualTo 1
                     listener.childParentMatches.single().shouldBeTrue()
                     recorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
-                        context.getBean(SqsOperations::class.java)
+                    await atMost 10.seconds untilSuspending {
+                        context.getBean<SqsOperations>()
                             .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
                             .isEmpty()
                     }
@@ -97,12 +112,14 @@ class SqsObservationAwsEmulatorTest {
 
                 recorder.snapshots.count {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
-                }.shouldBeGreaterOrEqualTo(1)
+                            it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+                } shouldBeGreaterOrEqualTo 1
+
                 recorder.snapshots.count {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.ACK
+                            it.acknowledgementAction == SqsAcknowledgementAction.ACK
                 } shouldBeEqualTo 1
+
                 recorder.renderedTelemetry().let { rendered ->
                     listOf(SECRET_BODY, SECRET_ATTRIBUTE_NAME, SECRET_ATTRIBUTE_VALUE, queueUrl, "receipt")
                         .forEach { secret -> rendered.contains(secret).shouldBeFalse() }
@@ -130,8 +147,8 @@ class SqsObservationAwsEmulatorTest {
                 "bluetape4k.aws.sqs.listener.retry.max-attempts=2",
                 "bluetape4k.aws.sqs.listener.error-visibility-timeout-seconds=0",
             ).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(RetryListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<RetryListener>()
 
                 runSuspendIO { operations.send(queueUrl, "retry-once") }
 
@@ -152,7 +169,7 @@ class SqsObservationAwsEmulatorTest {
                 }
                 recorder.snapshots.count {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.ACK
+                            it.acknowledgementAction == SqsAcknowledgementAction.ACK
                 } shouldBeEqualTo 1
             }
             assertRegistryStopped(registry)
@@ -177,31 +194,35 @@ class SqsObservationAwsEmulatorTest {
                 "bluetape4k.aws.sqs.listener.retry.max-attempts=1",
                 "bluetape4k.aws.sqs.listener.error-visibility-timeout-seconds=0",
             ).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(RedeliveryListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<RedeliveryListener>()
                 runSuspendIO { operations.send(queueUrl, "redeliver-once") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.attempts.get() shouldBeEqualTo 2
                     recorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 2
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                    await atMost 10.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
                     }
                 }
+
                 val processes = recorder.snapshots.filter { it.stage == SqsObservationStage.PROCESS }
+                    .onEach { log.debug { "observation snapshot=$it" } }
+
                 processes.map { it.outcome }.toSet() shouldBeEqualTo
-                    setOf(SqsObservationOutcome.ERROR, SqsObservationOutcome.SUCCESS)
+                        setOf(SqsObservationOutcome.ERROR, SqsObservationOutcome.SUCCESS)
                 processes.map { it.delivery }.toSet() shouldBeEqualTo
-                    setOf(SqsObservationDelivery.FIRST, SqsObservationDelivery.REDELIVERED)
+                        setOf(SqsObservationDelivery.FIRST, SqsObservationDelivery.REDELIVERED)
+
                 recorder.snapshots.count {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+                            it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
                 } shouldBeEqualTo 1
                 recorder.snapshots.count {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.ACK
+                            it.acknowledgementAction == SqsAcknowledgementAction.ACK
                 } shouldBeEqualTo 1
             }
             assertRegistryStopped(registry)
@@ -219,9 +240,10 @@ class SqsObservationAwsEmulatorTest {
         try {
             queueUrl = createQueue(client, "observation-empty")
             contextRunner(queueUrl, registry, recorder, EmptyListenerConfiguration::class.java).run {
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     recorder.snapshots.any { it.stage == SqsObservationStage.RECEIVE }.shouldBeTrue()
                 }
+                log.debug { "recorder=$recorder" }
                 recorder.snapshots.none { it.stage == SqsObservationStage.PROCESS }.shouldBeTrue()
                 recorder.snapshots.none { it.stage == SqsObservationStage.ACKNOWLEDGEMENT }.shouldBeTrue()
                 recorder.snapshots.filter { it.stage == SqsObservationStage.RECEIVE }
@@ -261,8 +283,8 @@ class SqsObservationAwsEmulatorTest {
             }
 
             contextRunner(queueUrl, registry, recorder, FifoListenerConfiguration::class.java).run { context ->
-                val listener = context.getBean(FifoListener::class.java)
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                val listener = context.getBean<FifoListener>()
+                await atMost 10.seconds untilAsserted {
                     listener.messages.size shouldBeEqualTo 1
                     recorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
                 }
@@ -299,7 +321,10 @@ class SqsObservationAwsEmulatorTest {
             runSuspendIO {
                 repeat(2) { index ->
                     client.sendMessage(
-                        SendMessageRequest.builder().queueUrl(queueUrl).messageBody("batch-$index").build(),
+                        SendMessageRequest.builder()
+                            .queueUrl(queueUrl)
+                            .messageBody("batch-$index")
+                            .build(),
                     ).await()
                 }
             }
@@ -311,18 +336,19 @@ class SqsObservationAwsEmulatorTest {
                 BatchListenerConfiguration::class.java,
                 "bluetape4k.aws.sqs.listener.max-messages=10",
             ).run { context ->
-                val listener = context.getBean(PartialBatchListener::class.java)
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                val listener = context.getBean<PartialBatchListener>()
+                await atMost 10.seconds untilAsserted {
                     listener.result.size shouldBeEqualTo 1
                     listener.batchSize shouldBeEqualTo 2
                 }
                 val process = recorder.snapshots.single { it.stage == SqsObservationStage.PROCESS }
+                log.debug { "process=$process" }
                 process.outcome shouldBeEqualTo SqsObservationOutcome.PARTIAL
                 process.batchSize shouldBeEqualTo 2
                 process.highCardinality.isEmpty().shouldBeTrue()
                 val acknowledgement = recorder.snapshots.single {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.ACK
+                            it.acknowledgementAction == SqsAcknowledgementAction.ACK
                 }
                 acknowledgement.acknowledgementSuccessCount shouldBeEqualTo 1
                 acknowledgement.acknowledgementFailureCount shouldBeEqualTo 0
@@ -349,21 +375,23 @@ class SqsObservationAwsEmulatorTest {
             queueUrl = createQueue(client, "observation-ack-failure")
             AckFailureListener.queueUrl = queueUrl
             contextRunner(queueUrl, registry, recorder, AckFailureListenerConfiguration::class.java).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(AckFailureListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<AckFailureListener>()
+
                 runSuspendIO { operations.send(queueUrl, "ack-failure") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     (listener.failure != null).shouldBeTrue()
                     recorder.snapshots.count {
                         it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                            it.acknowledgementAction == SqsAcknowledgementAction.ACK
+                                it.acknowledgementAction == SqsAcknowledgementAction.ACK
                     } shouldBeEqualTo 1
                     recorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
                 }
+
                 recorder.snapshots.single {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.ACK
+                            it.acknowledgementAction == SqsAcknowledgementAction.ACK
                 }.let { acknowledgement ->
                     acknowledgement.outcome shouldBeEqualTo SqsObservationOutcome.ERROR
                     acknowledgement.acknowledgementSuccessCount shouldBeEqualTo 0
@@ -403,17 +431,17 @@ class SqsObservationAwsEmulatorTest {
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-interval-seconds=1",
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-seconds=3",
             ).run { context ->
-                val operations = context.getBean(SqsOperations::class.java)
-                val listener = context.getBean(CleanupFailureListener::class.java)
+                val operations = context.getBean<SqsOperations>()
+                val listener = context.getBean<CleanupFailureListener>()
                 runSuspendIO { operations.send(queueUrl, "cleanup-message") }
 
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.completed.shouldBeTrue()
                     appender.list.any { it.formattedMessage.contains("BT4K-SQS-OBS-202") }.shouldBeTrue()
                     recorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
+                    await atMost 10.seconds untilSuspending {
                         operations.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1).isEmpty()
                     }
                 }
@@ -422,11 +450,12 @@ class SqsObservationAwsEmulatorTest {
             val diagnosticEvents = appender.list.filter { it.formattedMessage.contains("BT4K-SQS-OBS-202") }
             diagnosticEvents.isNotEmpty().shouldBeTrue()
             diagnosticEvents.forEach { event ->
-                event.formattedMessage.contains("stage=acknowledgement").shouldBeTrue()
-                event.formattedMessage.contains("action=change_visibility").shouldBeTrue()
-                event.formattedMessage.contains("reason=telemetry_cleanup").shouldBeTrue()
-                event.formattedMessage.contains(SECRET_THROWABLE_TOKEN).shouldBeFalse()
-                (event.throwableProxy == null).shouldBeTrue()
+                log.debug { "event=$event" }
+                event.formattedMessage shouldContain "stage=acknowledgement"
+                event.formattedMessage shouldContain "action=change_visibility"
+                event.formattedMessage shouldContain "reason=telemetry_cleanup"
+                event.formattedMessage shouldNotContain SECRET_THROWABLE_TOKEN
+                event.throwableProxy.shouldBeNull()
             }
             assertRegistryStopped(registry)
         } finally {
@@ -477,25 +506,25 @@ class SqsObservationAwsEmulatorTest {
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-interval-seconds=1",
                 "bluetape4k.aws.sqs.listener.message-visibility-heartbeat-seconds=4",
             ).run { context ->
-                val listener = context.getBean(BatchCleanupFailureListener::class.java)
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                val listener = context.getBean<BatchCleanupFailureListener>()
+                await atMost 10.seconds untilAsserted {
                     listener.started.shouldBeTrue()
                     appender.list.any { it.formattedMessage.contains("BT4K-SQS-OBS-202") }.shouldBeTrue()
                     observationRecorder.snapshots.count {
                         it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                            it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+                                it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
                     }.shouldBeGreaterOrEqualTo(1)
                 }
 
                 val visibilityHeartbeat = observationRecorder.snapshots.first {
                     it.stage == SqsObservationStage.ACKNOWLEDGEMENT &&
-                        it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
+                            it.acknowledgementAction == SqsAcknowledgementAction.CHANGE_VISIBILITY
                 }
                 visibilityHeartbeat.batch.shouldBeTrue()
                 visibilityHeartbeat.batchSize shouldBeEqualTo 2
                 visibilityHeartbeat.acknowledgementSuccessCount shouldBeEqualTo 2
 
-                runSuspendIO { delay(2_500) }
+                runSuspendIO { delay(2_500.milliseconds) }
                 runSuspendIO {
                     val visible = client.receiveMessage(
                         ReceiveMessageRequest.builder()
@@ -509,7 +538,7 @@ class SqsObservationAwsEmulatorTest {
                 }
 
                 listener.release.complete(Unit)
-                await.atMost(Duration.ofSeconds(10)).untilAsserted {
+                await atMost 10.seconds untilAsserted {
                     listener.completed.get() shouldBeEqualTo 1
                     observationRecorder.snapshots.count { it.stage == SqsObservationStage.PROCESS } shouldBeEqualTo 1
                 }
@@ -518,8 +547,8 @@ class SqsObservationAwsEmulatorTest {
                     process.outcome shouldBeEqualTo SqsObservationOutcome.SUCCESS
                 }
                 runSuspendIO {
-                    await.atMost(Duration.ofSeconds(10)).untilSuspending {
-                        context.getBean(SqsOperations::class.java)
+                    await atMost 10.seconds untilSuspending {
+                        context.getBean<SqsOperations>()
                             .receive(queueUrl, maxMessages = 1, waitTimeSeconds = 1)
                             .isEmpty()
                     }
@@ -528,11 +557,12 @@ class SqsObservationAwsEmulatorTest {
 
             appender.list.filter { it.formattedMessage.contains("BT4K-SQS-OBS-202") }
                 .forEach { event ->
-                    event.formattedMessage.contains("stage=acknowledgement").shouldBeTrue()
-                    event.formattedMessage.contains("action=change_visibility").shouldBeTrue()
-                    event.formattedMessage.contains("reason=telemetry_cleanup").shouldBeTrue()
-                    event.formattedMessage.contains(SECRET_THROWABLE_TOKEN).shouldBeFalse()
-                    (event.throwableProxy == null).shouldBeTrue()
+                    log.debug { "event=$event" }
+                    event.formattedMessage shouldContain "stage=acknowledgement"
+                    event.formattedMessage shouldContain "action=change_visibility"
+                    event.formattedMessage shouldContain "reason=telemetry_cleanup"
+                    event.formattedMessage shouldNotContain SECRET_THROWABLE_TOKEN
+                    event.throwableProxy.shouldBeNull()
                 }
             assertRegistryStopped(registry)
         } finally {
@@ -565,10 +595,12 @@ class SqsObservationAwsEmulatorTest {
             }
 
             val warningText = appender.list.joinToString("\n") { it.formattedMessage }
-            warningText.contains("BT4K-SQS-OBS-201").shouldBeTrue()
-            warningText.contains("stage=resolution").shouldBeTrue()
-            warningText.contains(SECRET_THROWABLE_TOKEN).shouldBeFalse()
-            warningText.contains("secret-queue-name-task8").shouldBeFalse()
+
+            log.debug { "warningText=$warningText" }
+            warningText shouldContain "BT4K-SQS-OBS-201"
+            warningText shouldContain "stage=resolution"
+            warningText shouldNotContain SECRET_THROWABLE_TOKEN
+            warningText shouldNotContain "secret-queue-name-task8"
             appender.list.none { it.throwableProxy != null }.shouldBeTrue()
             assertRegistryStopped(registry)
         } finally {
@@ -583,29 +615,29 @@ class SqsObservationAwsEmulatorTest {
         val customizerRuntime = observationRuntime(
             customizers = listOf(failingCustomizer(customizerFailure)),
         )
-        (captureFailure { customizerRuntime.observe<Unit>(processContext()) {} } === customizerFailure).shouldBeTrue()
+        captureFailure { customizerRuntime.observe(processContext()) {} } shouldBe customizerFailure
 
         val factoryFailure = IllegalArgumentException("$SECRET_THROWABLE_TOKEN-factory")
         val factoryRuntime = observationRuntime(
             factory = failingFactory(factoryFailure),
         )
-        (captureFailure { factoryRuntime.observe<Unit>(processContext()) {} } === factoryFailure).shouldBeTrue()
+        captureFailure { factoryRuntime.observe(processContext()) {} } shouldBe factoryFailure
 
         val conventionFailure = UnsupportedOperationException("$SECRET_THROWABLE_TOKEN-convention")
         val conventionRuntime = observationRuntime(
             factory = defaultSqsObservationFactory(
                 defaultSqsObservationConventions() +
-                    (SqsObservationStage.PROCESS to failingConvention(conventionFailure)),
+                        (SqsObservationStage.PROCESS to failingConvention(conventionFailure)),
             ),
         )
-        (captureFailure { conventionRuntime.observe<Unit>(processContext()) {} } === conventionFailure).shouldBeTrue()
+        captureFailure { conventionRuntime.observe(processContext()) {} } shouldBe conventionFailure
 
         val handlerFailure = IllegalStateException("$SECRET_THROWABLE_TOKEN-handler")
         val handlerRegistry = ObservationRegistry.create().apply {
             observationConfig().observationHandler(failingHandler(handlerFailure))
         }
         val handlerRuntime = observationRuntime(registry = handlerRegistry)
-        (captureFailure { handlerRuntime.observe<Unit>(processContext()) {} } === handlerFailure).shouldBeTrue()
+        captureFailure { handlerRuntime.observe(processContext()) {} } shouldBe handlerFailure
 
         val telemetryRecorder = TelemetryErrorRecorder()
         val businessRegistry = ObservationRegistry.create().apply {
@@ -613,15 +645,17 @@ class SqsObservationAwsEmulatorTest {
         }
         val businessFailure = IllegalStateException("$SECRET_THROWABLE_TOKEN-business")
         val businessRuntime = observationRuntime(registry = businessRegistry)
-        (captureFailure { businessRuntime.observe(processContext()) { throw businessFailure } } === businessFailure)
-            .shouldBeTrue()
+        captureFailure { businessRuntime.observe(processContext()) { throw businessFailure } } shouldBe businessFailure
+
         val telemetryError = telemetryRecorder.error
-        (telemetryError is SqsObservationTelemetryException).shouldBeTrue()
-        telemetryError?.message shouldBeEqualTo null
-        telemetryError?.cause shouldBeEqualTo null
-        telemetryError?.stackTrace?.isEmpty().shouldBeEqualTo(true)
-        telemetryError.toString().contains(SECRET_THROWABLE_TOKEN).shouldBeFalse()
-        businessRegistry.currentObservation shouldBeEqualTo null
+
+        log.debug { "telemetryError=$telemetryError" }
+        telemetryError.shouldBeInstanceOf<SqsObservationTelemetryException>()
+        telemetryError.message.shouldBeNull()
+        telemetryError.cause.shouldBeNull()
+        telemetryError.stackTrace?.isEmpty().shouldBeTrue()
+        telemetryError.toString() shouldNotContain SECRET_THROWABLE_TOKEN
+        businessRegistry.currentObservation.shouldBeNull()
     }
 
     private fun contextRunner(
@@ -645,7 +679,7 @@ class SqsObservationAwsEmulatorTest {
                 applicationContext.addApplicationListener(
                     ApplicationListener<ContextRefreshedEvent> { event ->
                         listenerRegistries += event.applicationContext
-                            .getBean(SqsMessageListenerContainerRegistry::class.java)
+                            .getBean<SqsMessageListenerContainerRegistry>()
                     },
                 )
                 applicationContext.addApplicationListener(
@@ -695,7 +729,7 @@ class SqsObservationAwsEmulatorTest {
     private fun captureFailure(block: suspend () -> Unit): Throwable {
         var failure: Throwable? = null
         runSuspendIO { failure = runCatching { block() }.exceptionOrNull() }
-        return checkNotNull(failure)
+        return failure.shouldNotBeNull()
     }
 
     private fun failingCustomizer(failure: Throwable): SqsObservationContextCustomizer =
@@ -705,13 +739,13 @@ class SqsObservationAwsEmulatorTest {
         SqsObservationFactory { _, _ -> throw failure }
 
     private fun failingConvention(failure: Throwable): SqsObservationConvention =
-        object : SqsObservationConvention {
+        object: SqsObservationConvention {
             override val stage: SqsObservationStage = SqsObservationStage.PROCESS
             override fun getName(): String = throw failure
         }
 
     private fun failingHandler(failure: Throwable): ObservationHandler<SqsObservationContext> =
-        object : ObservationHandler<SqsObservationContext> {
+        object: ObservationHandler<SqsObservationContext> {
             override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
             override fun onStart(context: SqsObservationContext) = throw failure
         }
@@ -741,7 +775,7 @@ class SqsObservationAwsEmulatorTest {
     ): List<software.amazon.awssdk.services.sqs.model.Message> {
         lateinit var remaining: List<software.amazon.awssdk.services.sqs.model.Message>
         runSuspendIO {
-            await.atMost(Duration.ofSeconds(10)).untilSuspending {
+            await atMost 10.seconds untilSuspending {
                 val received = client.receiveMessage(
                     ReceiveMessageRequest.builder()
                         .queueUrl(queueUrl)
@@ -776,7 +810,13 @@ class SqsObservationAwsEmulatorTest {
     }
 
     private fun deleteQueue(client: SqsAsyncClient, queueUrl: String) {
-        runSuspendIO { client.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build()).await() }
+        runSuspendIO {
+            client.deleteQueue(
+                DeleteQueueRequest.builder()
+                    .queueUrl(queueUrl)
+                    .build()
+            ).await()
+        }
     }
 
     private fun closeClientAfterQueueCleanup(client: SqsAsyncClient, queueUrl: String) {
@@ -796,10 +836,11 @@ class SqsObservationAwsEmulatorTest {
     private fun sqsClient(): SqsAsyncClient =
         SqsAsyncClient.builder()
             .endpointOverride(floci.awsEndpoint)
-            .region(software.amazon.awssdk.regions.Region.of(floci.regionName))
+            .region(Region.of(floci.regionName))
             .credentialsProvider(floci.getCredentialProvider())
             .build()
 
+    @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     @Configuration(proxyBeanMethods = false)
     internal class ObservedListenerConfiguration {
         @Bean
@@ -812,17 +853,17 @@ class SqsObservationAwsEmulatorTest {
         val currentProcessObservations: MutableList<Observation> = CopyOnWriteArrayList()
         val childParentMatches: MutableList<Boolean> = CopyOnWriteArrayList()
 
-        @SqsListener(queue = "\${test.queue-url}", id = "observed-listener")
+        @SqsListener(queue = $$"${test.queue-url}", id = "observed-listener")
         suspend fun handle(
             @Suppress("UNUSED_PARAMETER") message: SqsReceivedMessage,
             acknowledgement: SqsAcknowledgement,
         ) {
-            val process = checkNotNull(registry.currentObservation)
+            val process = registry.currentObservation.shouldNotBeNull()
             currentProcessObservations += process
             val child = Observation.start("task8-child", registry)
             childParentMatches += child.context.parentObservation === process
             child.stop()
-            delay(1_500)
+            delay(1_500.milliseconds)
             acknowledgement.acknowledge()
         }
     }
@@ -834,7 +875,7 @@ class SqsObservationAwsEmulatorTest {
     }
 
     internal class RetryListener {
-        val attempts = java.util.concurrent.atomic.AtomicInteger()
+        val attempts = AtomicInteger()
 
         @SqsListener(queue = "\${test.queue-url}", id = "retry-listener")
         fun handle(@Suppress("UNUSED_PARAMETER") body: String) {
@@ -895,7 +936,8 @@ class SqsObservationAwsEmulatorTest {
             var acknowledgedBody: String? = null
         }
 
-        val result: MutableList<SqsBatchAcknowledgementResult> = CopyOnWriteArrayList()
+        val result = ConcurrentLinkedQueue<SqsBatchAcknowledgementResult>()
+
         @Volatile
         var batchSize: Int = 0
 
@@ -940,7 +982,9 @@ class SqsObservationAwsEmulatorTest {
             acknowledgement: SqsAcknowledgement,
         ) {
             client.deleteQueue(
-                DeleteQueueRequest.builder().queueUrl(checkNotNull(queueUrl)).build(),
+                DeleteQueueRequest.builder()
+                    .queueUrl(queueUrl!!)
+                    .build(),
             ).await()
             failure = runCatching { acknowledgement.acknowledge() }.exceptionOrNull()
         }
@@ -956,7 +1000,7 @@ class SqsObservationAwsEmulatorTest {
         @Volatile
         var completed: Boolean = false
 
-        @SqsListener(queue = "\${test.queue-url}", id = "cleanup-failure-listener")
+        @SqsListener(queue = $$"${test.queue-url}", id = "cleanup-failure-listener")
         suspend fun handle(@Suppress("UNUSED_PARAMETER") body: String) {
             delay(1_500)
             completed = true
@@ -988,7 +1032,7 @@ class SqsObservationAwsEmulatorTest {
         }
     }
 
-    private object SecretHeartbeatCleanupFailureHandler : ObservationHandler<SqsObservationContext> {
+    private object SecretHeartbeatCleanupFailureHandler: ObservationHandler<SqsObservationContext> {
         override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
 
         override fun onStop(context: SqsObservationContext) {
@@ -1013,7 +1057,7 @@ class SqsObservationAwsEmulatorTest {
     }
 
     internal class FailingResolutionListener {
-        @SqsListener(queue = "\${test.queue-url}", id = "resolution-failure-listener")
+        @SqsListener(queue = $$"${test.queue-url}", id = "resolution-failure-listener")
         fun handle(@Suppress("UNUSED_PARAMETER") body: String) = Unit
     }
 
@@ -1033,7 +1077,7 @@ class SqsObservationAwsEmulatorTest {
         val contextText: String,
     )
 
-    private class ObservationRecorder : ObservationHandler<SqsObservationContext> {
+    private class ObservationRecorder: ObservationHandler<SqsObservationContext> {
         val snapshots: MutableList<ObservationSnapshot> = CopyOnWriteArrayList()
 
         override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
@@ -1060,7 +1104,7 @@ class SqsObservationAwsEmulatorTest {
         fun renderedTelemetry(): String = snapshots.joinToString("\n")
     }
 
-    private class TelemetryErrorRecorder : ObservationHandler<SqsObservationContext> {
+    private class TelemetryErrorRecorder: ObservationHandler<SqsObservationContext> {
         var error: Throwable? = null
 
         override fun supportsContext(context: Observation.Context): Boolean = context is SqsObservationContext
@@ -1071,12 +1115,11 @@ class SqsObservationAwsEmulatorTest {
     }
 
     private fun assertRegistryStopped(contextRunnerRegistry: ObservationRegistry) {
-        contextRunnerRegistry.currentObservation shouldBeEqualTo null
+        contextRunnerRegistry.currentObservation.shouldBeNull()
         openContexts.get() shouldBeEqualTo 0
         listenerRegistries.last().let { listenerRegistry ->
             listenerRegistry.isRunning.shouldBeFalse()
             listenerRegistry.containers.none { it.isRunning }.shouldBeTrue()
         }
     }
-
 }

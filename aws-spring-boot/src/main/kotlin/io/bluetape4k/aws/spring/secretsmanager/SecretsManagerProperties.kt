@@ -2,7 +2,10 @@ package io.bluetape4k.aws.spring.secretsmanager
 
 import io.bluetape4k.aws.spring.env.requireOptionalName
 import io.bluetape4k.aws.spring.env.requireRegionWhenEndpointOverride
+import io.bluetape4k.aws.spring.secretsmanager.SecretsManagerProperties.Companion.PREFIX
+import io.bluetape4k.logging.KLogging
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.io.Serializable
 import java.net.URI
 import java.time.Duration
@@ -15,7 +18,8 @@ import java.time.Duration
  * `bluetape4k.aws.secrets-manager`를 바인딩하고 Spring Environment 후처리 중 로드할
  * 원격 보안 소스를 정의합니다. [sources]가 비어 있으면 AWS를 요청하지 않습니다.
  */
-@ConfigurationProperties(prefix = "bluetape4k.aws.secrets-manager")
+@EnableConfigurationProperties(SecretsManagerProperties::class)
+@ConfigurationProperties(prefix = PREFIX)
 data class SecretsManagerProperties(
     val enabled: Boolean = true,
     val region: String? = null,
@@ -24,8 +28,14 @@ data class SecretsManagerProperties(
     val refreshInterval: Duration? = null,
     val sources: List<Source> = emptyList(),
 ): Serializable {
+
+    companion object: KLogging() {
+        const val PREFIX = "bluetape4k.aws.secrets-manager"
+        private const val serialVersionUID: Long = 1L
+    }
+
     init {
-        requireRegionWhenEndpointOverride(endpointOverride, region, "bluetape4k.aws.secrets-manager")
+        requireRegionWhenEndpointOverride(endpointOverride, region, PREFIX)
         refreshInterval?.let {
             require(!it.isZero && !it.isNegative) { "refreshInterval must be positive." }
         }
@@ -48,14 +58,10 @@ data class SecretsManagerProperties(
         }
 
         val propertySourceName: String
-            get() = "bluetape4k.aws.secrets-manager.${name ?: secretId}"
+            get() = "$PREFIX.${name ?: secretId}"
 
         companion object {
             private const val serialVersionUID: Long = 1L
         }
-    }
-
-    companion object {
-        private const val serialVersionUID: Long = 1L
     }
 }

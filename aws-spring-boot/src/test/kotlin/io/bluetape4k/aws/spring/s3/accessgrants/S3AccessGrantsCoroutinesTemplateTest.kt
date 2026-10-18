@@ -1,6 +1,9 @@
 package io.bluetape4k.aws.spring.s3.accessgrants
 
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.aws.spring.s3.AbstractS3Test
+import io.bluetape4k.concurrent.completableFutureOf
+import io.bluetape4k.logging.KLogging
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -19,15 +22,16 @@ import software.amazon.awssdk.services.s3control.model.ListAccessGrantsRequest
 import software.amazon.awssdk.services.s3control.model.ListAccessGrantsResponse
 import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsRequest
 import software.amazon.awssdk.services.s3control.model.ListCallerAccessGrantsResponse
-import java.util.concurrent.CompletableFuture
 
-class S3AccessGrantsCoroutinesTemplateTest {
+class S3AccessGrantsCoroutinesTemplateTest: AbstractS3Test() {
+
+    companion object: KLogging()
 
     private val client = mockk<S3ControlAsyncClient>()
     private val template = S3AccessGrantsCoroutinesTemplate(client)
 
     @BeforeEach
-    fun resetMocks() {
+    fun beforeEach() {
         clearMocks(client)
     }
 
@@ -35,7 +39,9 @@ class S3AccessGrantsCoroutinesTemplateTest {
     fun `getDataAccess delegates to S3 Control async client`() = runTest {
         val request = GetDataAccessRequest.builder().build()
         val response = GetDataAccessResponse.builder().build()
-        every { client.getDataAccess(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.getDataAccess(request)
+        } returns completableFutureOf(response)
 
         template.getDataAccess(request) shouldBeSameInstanceAs response
 
@@ -46,7 +52,9 @@ class S3AccessGrantsCoroutinesTemplateTest {
     fun `listCallerAccessGrants delegates to S3 Control async client`() = runTest {
         val request = ListCallerAccessGrantsRequest.builder().build()
         val response = ListCallerAccessGrantsResponse.builder().build()
-        every { client.listCallerAccessGrants(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listCallerAccessGrants(request)
+        } returns completableFutureOf(response)
 
         template.listCallerAccessGrants(request) shouldBeSameInstanceAs response
 
@@ -57,7 +65,9 @@ class S3AccessGrantsCoroutinesTemplateTest {
     fun `listAccessGrants delegates to S3 Control async client`() = runTest {
         val request = ListAccessGrantsRequest.builder().build()
         val response = ListAccessGrantsResponse.builder().build()
-        every { client.listAccessGrants(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listAccessGrants(request)
+        } returns completableFutureOf(response)
 
         template.listAccessGrants(request) shouldBeSameInstanceAs response
 
@@ -68,7 +78,9 @@ class S3AccessGrantsCoroutinesTemplateTest {
     fun `listAccessGrantsInstances delegates to S3 Control async client`() = runTest {
         val request = ListAccessGrantsInstancesRequest.builder().build()
         val response = ListAccessGrantsInstancesResponse.builder().build()
-        every { client.listAccessGrantsInstances(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listAccessGrantsInstances(request)
+        } returns completableFutureOf(response)
 
         template.listAccessGrantsInstances(request) shouldBeSameInstanceAs response
 
@@ -79,7 +91,9 @@ class S3AccessGrantsCoroutinesTemplateTest {
     fun `listAccessGrantsLocations delegates to S3 Control async client`() = runTest {
         val request = ListAccessGrantsLocationsRequest.builder().build()
         val response = ListAccessGrantsLocationsResponse.builder().build()
-        every { client.listAccessGrantsLocations(request) } returns CompletableFuture.completedFuture(response)
+        every {
+            client.listAccessGrantsLocations(request)
+        } returns completableFutureOf(response)
 
         template.listAccessGrantsLocations(request) shouldBeSameInstanceAs response
 

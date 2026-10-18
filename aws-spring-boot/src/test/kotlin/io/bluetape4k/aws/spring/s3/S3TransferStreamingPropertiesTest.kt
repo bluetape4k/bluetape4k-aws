@@ -2,12 +2,17 @@ package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.jackson3.Jackson
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
-import tools.jackson.databind.ObjectMapper
 
 @Suppress("DEPRECATION")
 class S3TransferStreamingPropertiesTest {
+
+    companion object: KLogging()
 
     @Test
     fun `streaming thresholds must be positive`() {
@@ -36,21 +41,24 @@ class S3TransferStreamingPropertiesTest {
     fun `Spring metadata deprecates the ignored output stream part size property`() {
         val metadata = requireNotNull(
             javaClass.getResourceAsStream("/META-INF/additional-spring-configuration-metadata.json"),
-        ).use(ObjectMapper()::readTree)
+        ).use(Jackson.defaultJsonMapper::readTree)
+
         val property = metadata["properties"].first {
             it["name"].asText() == "bluetape4k.aws.s3.transfer.output-stream-part-size-bytes"
         }
 
         property["deprecation"]["level"].asText() shouldBeEqualTo "warning"
-        property["deprecation"]["replacement"].asText() shouldBeEqualTo
-            "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"
-        metadata["properties"].any {
-            it["name"].asText() == "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"
-        } shouldBeEqualTo true
+        property["deprecation"]["replacement"].asText() shouldBeEqualTo "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"
+        metadata["properties"]
+            .any {
+                it["name"].asText() == "bluetape4k.aws.s3.crt.minimum-part-size-in-bytes"
+            }.shouldBeTrue()
     }
 
     private fun deprecatedMessage(type: Class<*>, annotationMethod: String): String =
-        requireNotNull(
-            type.getDeclaredMethod(annotationMethod).getAnnotation(Deprecated::class.java),
-        ).message
+        type
+            .getDeclaredMethod(annotationMethod)
+            .getAnnotation(Deprecated::class.java)
+            .shouldNotBeNull()
+            .message
 }

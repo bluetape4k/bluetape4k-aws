@@ -1,17 +1,25 @@
 package io.bluetape4k.aws.spring.s3.accessgrants
 
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizationContext
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.s3.AbstractS3Test
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.mockk
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -28,7 +36,9 @@ import software.amazon.awssdk.services.s3control.S3ControlAsyncClientBuilder
 import software.amazon.awssdk.services.s3control.S3ControlClient
 import software.amazon.awssdk.services.s3control.S3ControlClientBuilder
 
-class S3AccessGrantsAutoConfigurationTest {
+class S3AccessGrantsAutoConfigurationTest: AbstractS3Test() {
+
+    companion object: KLogging()
 
     private val customS3ControlClient = mockk<S3ControlClient>(relaxed = true)
     private val customS3ControlAsyncClient = mockk<S3ControlAsyncClient>(relaxed = true)
@@ -48,15 +58,20 @@ class S3AccessGrantsAutoConfigurationTest {
             "bluetape4k.aws.s3.access-grants.region=us-east-1",
         )
 
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(customS3ControlClient, customS3ControlAsyncClient)
+    }
+
     @Test
     fun `register S3 Control clients and Access Grants operations when enabled`() {
         contextRunner.run { context ->
             context.startupFailure.shouldBeNull()
-            context.getBeansOfType(S3ControlClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3ControlAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3AccessGrantsProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3AccessGrantsOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(S3AccessGrantsCoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<S3ControlClient>() shouldHaveSize 1
+            context.getBeansOfType<S3ControlAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<S3AccessGrantsProperties>() shouldHaveSize 1
+            context.getBeansOfType<S3AccessGrantsOperations>() shouldHaveSize 1
+            context.getBeansOfType<S3AccessGrantsCoroutinesTemplate>() shouldHaveSize 1
         }
     }
 
@@ -72,9 +87,9 @@ class S3AccessGrantsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.s3.access-grants.region=us-east-1")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ControlClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3ControlAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3AccessGrantsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3ControlClient>().shouldBeEmpty()
+                context.getBeansOfType<S3ControlAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<S3AccessGrantsOperations>().shouldBeEmpty()
             }
     }
 
@@ -84,9 +99,9 @@ class S3AccessGrantsAutoConfigurationTest {
             .withPropertyValues("bluetape4k.aws.s3.enabled=false")
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ControlClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3ControlAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3AccessGrantsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3ControlClient>().shouldBeEmpty()
+                context.getBeansOfType<S3ControlAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<S3AccessGrantsOperations>().shouldBeEmpty()
             }
     }
 
@@ -96,11 +111,11 @@ class S3AccessGrantsAutoConfigurationTest {
             .withBean(S3ControlClient::class.java, { customS3ControlClient })
             .withBean(S3ControlAsyncClient::class.java, { customS3ControlAsyncClient })
             .run { context ->
-                context.getBeansOfType(S3ControlClient::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3ControlAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(S3ControlClient::class.java) shouldBeSameInstanceAs customS3ControlClient
-                context.getBean(S3ControlAsyncClient::class.java) shouldBeSameInstanceAs customS3ControlAsyncClient
-                context.getBeansOfType(S3AccessGrantsOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3ControlClient>() shouldHaveSize 1
+                context.getBeansOfType<S3ControlAsyncClient>() shouldHaveSize 1
+                context.getBean<S3ControlClient>() shouldBeSameInstanceAs customS3ControlClient
+                context.getBean<S3ControlAsyncClient>() shouldBeSameInstanceAs customS3ControlAsyncClient
+                context.getBeansOfType<S3AccessGrantsOperations>() shouldHaveSize 1
             }
     }
 
@@ -109,10 +124,9 @@ class S3AccessGrantsAutoConfigurationTest {
         contextRunner
             .withBean(S3AccessGrantsOperations::class.java, { NoopS3AccessGrantsOperations })
             .run { context ->
-                context.getBeansOfType(S3AccessGrantsOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3AccessGrantsCoroutinesTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(S3AccessGrantsOperations::class.java) shouldBeSameInstanceAs
-                    NoopS3AccessGrantsOperations
+                context.getBeansOfType<S3AccessGrantsOperations>() shouldHaveSize 1
+                context.getBeansOfType<S3AccessGrantsCoroutinesTemplate>().shouldBeEmpty()
+                context.getBean<S3AccessGrantsOperations>() shouldBeSameInstanceAs NoopS3AccessGrantsOperations
             }
     }
 
@@ -152,8 +166,8 @@ class S3AccessGrantsAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(S3ControlClient::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(S3ControlAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<S3ControlClient>() shouldHaveSize 1
+                context.getBeansOfType<S3ControlAsyncClient>() shouldHaveSize 1
             }
     }
 
@@ -164,8 +178,9 @@ class S3AccessGrantsAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(S3AccessGrantsCustomizerConfig::class.java)
             .run { context ->
-                context.getBean(S3ControlClient::class.java).shouldNotBeNull()
-                context.getBean(S3ControlAsyncClient::class.java).shouldNotBeNull()
+                context.getBean<S3ControlClient>().shouldNotBeNull()
+                context.getBean<S3ControlAsyncClient>().shouldNotBeNull()
+                
                 S3AccessGrantsCustomizerConfig.calls shouldBeEqualTo listOf(
                     "global-sync:s3control",
                     "s3control-sync",
@@ -180,9 +195,9 @@ class S3AccessGrantsAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.s3control"))
             .run { context ->
-                context.getBeansOfType(S3ControlClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3ControlAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(S3AccessGrantsOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<S3ControlClient>().shouldBeEmpty()
+                context.getBeansOfType<S3ControlAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<S3AccessGrantsOperations>().shouldBeEmpty()
             }
     }
 

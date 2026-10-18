@@ -1,7 +1,9 @@
 package io.bluetape4k.aws.spring.modulith
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.warn
+import io.bluetape4k.support.toUtf8Bytes
 import java.lang.reflect.Modifier
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.CancellationException
 
 /**
@@ -14,7 +16,7 @@ import java.util.concurrent.CancellationException
  * @property allowedHeaderNames 외부 envelope에 포함할 수 있는 header 이름
  * @property headers 이벤트에서 header 값을 추출하는 함수
  */
-data class AwsModulithEventTypeRegistration<T : Any>(
+data class AwsModulithEventTypeRegistration<T: Any>(
     val type: String,
     val version: Int,
     val eventClass: Class<T>,
@@ -33,9 +35,9 @@ data class AwsModulithEventTypeRegistration<T : Any>(
 class AwsModulithEventTypeRegistry private constructor(
     registrations: List<AwsModulithEventTypeRegistration<*>>,
 ) {
-    private val registrations: List<AwsModulithEventTypeRegistration<*>> = registrations.map {
-        it.snapshot()
-    }
+    private val registrations: List<AwsModulithEventTypeRegistration<*>> = registrations
+        .map { it.snapshot() }
+
     private val byEventClass: Map<Class<*>, AwsModulithResolvedRegistration>
     private val byType: Map<RegistrationKey, AwsModulithResolvedRegistration>
     private val registeredTypes: Set<String>
@@ -49,8 +51,10 @@ class AwsModulithEventTypeRegistry private constructor(
             validateRegistration(registration)
             @Suppress("UNCHECKED_CAST")
             val eventIdExtractor = registration.eventId as (Any) -> String
+
             @Suppress("UNCHECKED_CAST")
             val headersExtractor = registration.headers as (Any) -> Map<String, String>
+
             AwsModulithResolvedRegistration(
                 type = registration.type,
                 version = registration.version,
@@ -63,11 +67,13 @@ class AwsModulithEventTypeRegistry private constructor(
 
         val duplicateClass = resolved.groupingBy { it.eventClass }.eachCount().any { it.value > 1 }
         if (duplicateClass) {
+            log.warn { "Duplicated class is exists." }
             throw AwsModulithConfigurationException()
         }
 
         val duplicateType = resolved.groupingBy { it.type }.eachCount().any { it.value > 1 }
         if (duplicateType) {
+            log.warn { "Duplicated type is exists." }
             throw AwsModulithConfigurationException()
         }
 
@@ -85,16 +91,19 @@ class AwsModulithEventTypeRegistry private constructor(
         if (type !in registeredTypes) {
             throw AwsModulithUnknownEventTypeException()
         }
-        return byType[RegistrationKey(type, version)]
-            ?: throw AwsModulithUnsupportedEventVersionException()
+        return byType[RegistrationKey(type, version)] ?: throw AwsModulithUnsupportedEventVersionException()
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val MAX_REGISTRATIONS = 256
 
         /** 주어진 등록 항목으로 registry를 만듭니다. */
-        fun of(vararg registrations: AwsModulithEventTypeRegistration<*>): AwsModulithEventTypeRegistry =
+        operator fun invoke(vararg registrations: AwsModulithEventTypeRegistration<*>): AwsModulithEventTypeRegistry =
             AwsModulithEventTypeRegistry(registrations.toList())
+
+        /** 주어진 등록 항목으로 registry를 만듭니다. */
+        fun of(vararg registrations: AwsModulithEventTypeRegistration<*>): AwsModulithEventTypeRegistry =
+            invoke(*registrations)
     }
 
     private data class RegistrationKey(val type: String, val version: Int)
@@ -127,7 +136,7 @@ internal class AwsModulithResolvedRegistration internal constructor(
         val typedEvent = cast(event)
         return sanitizeExtractorFailure {
             @Suppress("UNCHECKED_CAST")
-            val headers = (headersExtractor as (Any) -> Map<String, String>)(typedEvent)
+            val headers = headersExtractor(typedEvent)
             if (headers.keys.any { it !in allowedHeaderNames }) {
                 throw AwsModulithEventRegistrationMismatchException()
             }
@@ -147,11 +156,12 @@ internal class AwsModulithResolvedRegistration internal constructor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private inline fun <T> sanitizeExtractorFailure(block: () -> T): T = try {
-        block()
-    } catch (error: Throwable) {
-        rethrowOrRegistrationMismatch(error)
-    }
+    private inline fun <T> sanitizeExtractorFailure(block: () -> T): T =
+        try {
+            block()
+        } catch (error: Throwable) {
+            rethrowOrRegistrationMismatch(error)
+        }
 
     @Suppress("ThrowsCount")
     private fun rethrowOrRegistrationMismatch(error: Throwable): Nothing {
@@ -175,14 +185,16 @@ private fun AwsModulithEventTypeRegistration<*>.snapshot(): AwsModulithEventType
 
 private fun validateRegistration(registration: AwsModulithEventTypeRegistration<*>) {
     val eventClassModifiers = registration.eventClass.modifiers
+
     val invalidEventClass =
         registration.eventClass.isInterface ||
-            Modifier.isAbstract(eventClassModifiers) ||
-            !Modifier.isFinal(eventClassModifiers)
+                Modifier.isAbstract(eventClassModifiers) ||
+                !Modifier.isFinal(eventClassModifiers)
+
     val invalidContract =
         !EVENT_TYPE_PATTERN.matches(registration.type) ||
-            registration.version < 1 ||
-            registration.allowedHeaderNames.any { it.isBlank() }
+                registration.version < 1 ||
+                registration.allowedHeaderNames.any { it.isBlank() }
 
     if (invalidContract || invalidEventClass) {
         throw AwsModulithConfigurationException()
@@ -190,7 +202,7 @@ private fun validateRegistration(registration: AwsModulithEventTypeRegistration<
 }
 
 private fun String.isValidAwsModulithEventId(): Boolean {
-    if (isBlank() || length > MAX_EVENT_ID_LENGTH || toByteArray(StandardCharsets.UTF_8).size > MAX_EVENT_ID_BYTES) {
+    if (isBlank() || length > MAX_EVENT_ID_LENGTH || toUtf8Bytes().size > MAX_EVENT_ID_BYTES) {
         return false
     }
     return none(Char::isISOControl)

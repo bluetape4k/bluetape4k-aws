@@ -2,6 +2,7 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.aws.sqs.getQueueUrl
 import io.bluetape4k.aws.sqs.send
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,8 @@ class SqsCoroutinesTemplate(
     private val sqsAsyncClient: SqsAsyncClient,
     private val properties: SqsProperties,
 ): SqsFullRequestOperations, SqsQueueAttributesOperations {
+
+    companion object: KLoggingChannel()
 
     override suspend fun getQueueUrl(queueName: String): String =
         sqsAsyncClient.getQueueUrl(queueName).queueUrl()
@@ -131,6 +134,7 @@ class SqsCoroutinesTemplate(
             it.queueUrl(queueUrl)
             it.entries(entries)
         }.await()
+
         val expectedIds = handles.indices.map { "entry-$it" }
         val successful = response.successful().orEmpty().map { it.id() }
         val failed = response.failed().orEmpty().map {
@@ -153,6 +157,7 @@ class SqsCoroutinesTemplate(
         timeoutSeconds: Int,
     ): ChangeMessageVisibilityResponse {
         require(timeoutSeconds in 0..43_200) { "timeoutSeconds must be between 0 and 43200." }
+
         return sqsAsyncClient.changeMessageVisibility {
             it.queueUrl(queueUrl)
             it.receiptHandle(receiptHandle)
@@ -166,8 +171,10 @@ class SqsCoroutinesTemplate(
     ): SqsBatchVisibilityResult {
         val batch = requests.toList()
         requireBatchSize(batch.size, "batch visibility supports at most 10 messages")
-        require(batch.map { it.messageId }.distinct().size == batch.size &&
-            batch.map { it.receiptHandle }.distinct().size == batch.size) {
+        require(
+            batch.map { it.messageId }.distinct().size == batch.size &&
+                    batch.map { it.receiptHandle }.distinct().size == batch.size
+        ) {
             "duplicate batch visibility request"
         }
         batch.forEach { requireVisibilityTimeout(it.timeoutSeconds) }
@@ -186,6 +193,7 @@ class SqsCoroutinesTemplate(
             it.queueUrl(queueUrl)
             it.entries(entries)
         }.await()
+
         val byEntryId = batch.mapIndexed { index, request -> "entry-$index" to request.messageId }.toMap()
         val successfulEntries = response.successful().orEmpty().map { it.id() }
         val failedResponses = response.failed().orEmpty()
@@ -194,6 +202,7 @@ class SqsCoroutinesTemplate(
             SqsBatchVisibilityProtocolException(expected, actual)
         }
         val order = byEntryId.keys.withIndex().associate { it.value to it.index }
+
         return SqsBatchVisibilityResult(
             successfulMessageIds = successfulEntries.sortedBy { order.getValue(it) }
                 .map { byEntryId.getValue(it) },
@@ -230,7 +239,7 @@ class SqsCoroutinesTemplate(
             this@escapeJson.forEach {
                 when (it) {
                     '\\' -> append("\\\\")
-                    '"'  -> append("\\\"")
+                    '"' -> append("\\\"")
                     else -> append(it)
                 }
             }

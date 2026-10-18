@@ -1,22 +1,35 @@
 package io.bluetape4k.aws.spring.s3
 
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContentEqual
+import io.bluetape4k.assertions.shouldNotContain
+import io.bluetape4k.concurrent.completableFutureOf
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.toUtf8Bytes
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.core.ResponseBytes
 import software.amazon.awssdk.services.s3.S3AsyncClient
+import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse
-import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.transfer.s3.model.CompletedDownload
 import software.amazon.awssdk.transfer.s3.model.CompletedFileDownload
 import software.amazon.awssdk.transfer.s3.model.CompletedFileUpload
@@ -25,17 +38,25 @@ import software.amazon.awssdk.transfer.s3.model.DownloadFileRequest
 import software.amazon.awssdk.transfer.s3.model.DownloadRequest
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest
 import software.amazon.awssdk.transfer.s3.model.UploadRequest
-import java.nio.file.Files
 import java.nio.file.FileSystemException
+import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.RejectedExecutionException
 import java.util.function.Consumer
-import kotlin.coroutines.CoroutineContext
 import javax.crypto.spec.SecretKeySpec
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.assertFailsWith
 
-class S3ClientSideEncryptionTransferTest {
+class S3ClientSideEncryptionTransferTestç {
+
+    companion object: KLoggingChannel()
+
+    private val client = mockk<S3AsyncClient>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(client)
+    }
 
     @Test
     fun `encrypted stream never sends plaintext to delegate`() = runSuspendIO {
@@ -43,7 +64,7 @@ class S3ClientSideEncryptionTransferTest {
         val operations = EncryptedRecordingTransferOperations()
         val delegate = RecordingS3OutputStreamProvider(operations, tempDirectory, thresholdBytes = 1)
         val template = testProviderTemplate()
-        val plaintext = "plaintext that crosses threshold".encodeToByteArray()
+        val plaintext = "plaintext that crosses threshold".toUtf8Bytes()
         try {
             val encrypted = S3EncryptedOutputStream.create(
                 template = template,
@@ -73,6 +94,7 @@ class S3ClientSideEncryptionTransferTest {
         val operations = EncryptedRecordingTransferOperations()
         val delegate = RecordingS3OutputStreamProvider(operations, tempDirectory, thresholdBytes = 1)
         val template = testProviderTemplate()
+
         try {
             val encrypted = S3EncryptedOutputStream.create(
                 template = template,
@@ -84,13 +106,14 @@ class S3ClientSideEncryptionTransferTest {
                 encryptionContext = emptyMap(),
                 ioDispatcher = Dispatchers.IO,
             )
-            encrypted.write("payload".encodeToByteArray())
+            encrypted.write("payload".toUtf8Bytes())
             encrypted.complete()
             encrypted.close()
             encrypted.complete()
 
             assertFailsWith<IllegalStateException> { encrypted.write(1) }
             assertFailsWith<IllegalStateException> { encrypted.write(byteArrayOf(), 0, 0) }
+
             operations.uploadedFileContents.size shouldBeEqualTo 1
         } finally {
             template.close()
@@ -106,6 +129,7 @@ class S3ClientSideEncryptionTransferTest {
         val operations = EncryptedRecordingTransferOperations()
         val delegate = RecordingS3OutputStreamProvider(operations, blockingPath, thresholdBytes = 1)
         val template = testProviderTemplate()
+
         try {
             val encrypted = S3EncryptedOutputStream.create(
                 template = template,
@@ -118,9 +142,13 @@ class S3ClientSideEncryptionTransferTest {
                 ioDispatcher = Dispatchers.IO,
             )
 
-            assertFailsWith<Exception> { encrypted.write(ByteArray(128) { 7 }) }
-            operations.uploadedFileContents.size shouldBeEqualTo 0
-            assertFailsWith<Exception> { encrypted.close() }
+            assertFailsWith<Exception> {
+                encrypted.write(ByteArray(128) { 7 })
+            }
+            operations.uploadedFileContents.shouldBeEmpty()
+            assertFailsWith<Exception> {
+                encrypted.close()
+            }
         } finally {
             template.close()
             Files.deleteIfExists(blockingPath)
@@ -149,7 +177,7 @@ class S3ClientSideEncryptionTransferTest {
 
             val cancelled = assertFailsWith<CancellationException> { encrypted.complete() }
             cancelled.message shouldBeEqualTo "cancelled before dispatch"
-            operations.uploadedFileContents.size shouldBeEqualTo 0
+            operations.uploadedFileContents.shouldBeEmpty()
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
         } finally {
             template.close()
@@ -179,25 +207,31 @@ class S3ClientSideEncryptionTransferTest {
             var deleteAttempts = 0
             delegate.lastOutputStream.temporaryFileDelete = { path ->
                 deleteAttempts++
-                throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+                throw FileSystemException(path.toString(), null, "secret-delete-marker")
             }
 
-            val cancellation = assertFailsWith<CancellationException> { encrypted.complete() }
-
+            val cancellation = assertFailsWith<CancellationException> {
+                encrypted.complete()
+            }
+            log.debug { "cancellation=$cancellation" }
             cancellation.message shouldBeEqualTo "cancelled before dispatch"
             deleteAttempts shouldBeEqualTo 1
             Files.exists(temporary).shouldBeTrue()
+
             val cleanup = cancellation.suppressed.single() as S3TransferCleanupException
             cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.DELEGATE_DISCARD
             cleanup.attemptFailureTypes shouldBeEqualTo listOf(
                 CancellationException::class.qualifiedName,
                 S3TransferCleanupException::class.qualifiedName,
             )
-            cleanup.message?.contains(temporary.toString()).shouldBeFalse()
-            cleanup.message?.contains("secret-delete-marker").shouldBeFalse()
+
+            cleanup.message shouldNotContain temporary.toString()
+            cleanup.message shouldNotContain "secret-delete-marker"
         } finally {
             template.close()
-            Files.list(tempDirectory).use { paths -> paths.forEach(Files::deleteIfExists) }
+            Files.list(tempDirectory).use { paths ->
+                paths.forEach(Files::deleteIfExists)
+            }
             Files.deleteIfExists(tempDirectory)
         }
     }
@@ -209,6 +243,7 @@ class S3ClientSideEncryptionTransferTest {
         val operations = EncryptedRecordingTransferOperations(primary)
         val delegate = RecordingS3OutputStreamProvider(operations, tempDirectory, thresholdBytes = 1)
         val template = testProviderTemplate()
+
         try {
             val encrypted = S3EncryptedOutputStream.create(
                 template = template,
@@ -225,7 +260,7 @@ class S3ClientSideEncryptionTransferTest {
             var deleteAttempts = 0
             delegate.lastOutputStream.temporaryFileDelete = { path ->
                 deleteAttempts++
-                throw java.nio.file.FileSystemException(path.toString(), null, "secret-delete-marker")
+                throw FileSystemException(path.toString(), null, "secret-delete-marker")
             }
 
             val thrown = assertFailsWith<NonCopyableEncryptedUploadException> { encrypted.complete() }
@@ -267,12 +302,17 @@ class S3ClientSideEncryptionTransferTest {
             )
             encrypted.write(ByteArray(128) { 7 })
 
-            val rejected = assertFailsWith<RejectedExecutionException> { encrypted.complete() }
+            val rejected = assertFailsWith<RejectedExecutionException> {
+                encrypted.complete()
+            }
+            log.debug { "rejected=$rejected" }
             rejected.message shouldBeEqualTo "dispatcher rejected"
-            rejected.suppressed.size shouldBeEqualTo 0
-            operations.uploadedFileContents.size shouldBeEqualTo 0
+            rejected.suppressed.shouldBeEmpty()
+            operations.uploadedFileContents.shouldBeEmpty()
             Files.list(tempDirectory).use { stream -> stream.count() shouldBeEqualTo 0L }
-            assertFailsWith<RejectedExecutionException> { encrypted.complete() }
+            assertFailsWith<RejectedExecutionException> {
+                encrypted.complete()
+            }
         } finally {
             template.close()
             Files.deleteIfExists(tempDirectory)
@@ -280,33 +320,34 @@ class S3ClientSideEncryptionTransferTest {
     }
 
     @Test
-    fun `encrypted file download validates ETag and writes plaintext after authentication`() = runSuspendIO {
+    fun `encrypted file download validates ETag and writes plaintext after authentication`() = runTest {
         val root = Files.createTempDirectory("bluetape-s3-cse-download-")
         val destination = root.resolve("destination.bin")
-        val sentinel = "keep this value".encodeToByteArray()
+        val sentinel = "keep this value".toUtf8Bytes()
         Files.write(destination, sentinel)
-        val client = mockk<S3AsyncClient>()
+
         val transfer = RecordingEncryptedDownloadOperations()
         val providerTemplate = testProviderTemplate(client = client)
         val adapter = S3ClientSideEncryptionTransferTemplate(client, providerTemplate, transfer, transfer)
-        val plaintext = "file payload".encodeToByteArray()
+        val plaintext = "file payload".toUtf8Bytes()
         val envelope = providerTemplate.newEncryptionEnvelope(plaintext)
         val etag = "\"etag-v1\""
-        every { client.headObject(any<Consumer<HeadObjectRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(
-                HeadObjectResponse.builder()
-                    .contentLength(envelope.ciphertext.size.toLong())
-                    .eTag(etag)
-                    .build(),
-            )
+        every {
+            client.headObject(any<Consumer<HeadObjectRequest.Builder>>())
+        } returns completableFutureOf(
+            HeadObjectResponse.builder()
+                .contentLength(envelope.ciphertext.size.toLong())
+                .eTag(etag)
+                .build(),
+        )
         transfer.payload = envelope.ciphertext.copyOf()
         transfer.response = GetObjectResponse.builder().metadata(envelope.metadata).build()
 
         try {
             adapter.downloadEncryptedFile("bucket", "object", destination)
 
-            Files.readAllBytes(destination).contentEquals(plaintext).shouldBeTrue()
-            transfer.capturedRequest?.getObjectRequest()?.ifMatch() shouldBeEqualTo etag
+            Files.readAllBytes(destination) shouldContentEqual plaintext
+            transfer.capturedRequest?.objectRequest?.ifMatch() shouldBeEqualTo etag
             transfer.downloadDestination?.let(Files::exists).shouldBeFalse()
         } finally {
             providerTemplate.close()
@@ -320,20 +361,20 @@ class S3ClientSideEncryptionTransferTest {
     fun `encrypted file authentication failure preserves destination and cleans ciphertext file`() = runSuspendIO {
         val root = Files.createTempDirectory("bluetape-s3-cse-auth-failure-")
         val destination = root.resolve("destination.bin")
-        val sentinel = "keep this value".encodeToByteArray()
+        val sentinel = "keep this value".toUtf8Bytes()
         Files.write(destination, sentinel)
-        val client = mockk<S3AsyncClient>()
+
         val transfer = RecordingEncryptedDownloadOperations()
         val providerTemplate = testProviderTemplate(client = client)
         val adapter = S3ClientSideEncryptionTransferTemplate(client, providerTemplate, transfer, transfer)
-        val envelope = providerTemplate.newEncryptionEnvelope("file payload".encodeToByteArray())
+        val envelope = providerTemplate.newEncryptionEnvelope("file payload".toUtf8Bytes())
         every { client.headObject(any<Consumer<HeadObjectRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(
-                HeadObjectResponse.builder()
-                    .contentLength(envelope.ciphertext.size.toLong())
-                    .eTag("\"etag-v1\"")
-                    .build(),
-            )
+                completableFutureOf(
+                    HeadObjectResponse.builder()
+                        .contentLength(envelope.ciphertext.size.toLong())
+                        .eTag("\"etag-v1\"")
+                        .build(),
+                )
         transfer.payload = envelope.ciphertext.copyOf().also { ciphertext ->
             ciphertext[ciphertext.lastIndex] = (ciphertext.last().toInt() xor 1).toByte()
         }
@@ -343,7 +384,7 @@ class S3ClientSideEncryptionTransferTest {
             assertFailsWith<S3ClientSideEncryptionException> {
                 adapter.downloadEncryptedFile("bucket", "object", destination)
             }
-            Files.readAllBytes(destination).contentEquals(sentinel).shouldBeTrue()
+            Files.readAllBytes(destination) shouldContentEqual sentinel
             transfer.downloadDestination?.let(Files::exists).shouldBeFalse()
         } finally {
             providerTemplate.close()
@@ -357,18 +398,18 @@ class S3ClientSideEncryptionTransferTest {
     fun `authentication failure preserves bounded sanitized temporary cleanup failure`() = runSuspendIO {
         val root = Files.createTempDirectory("bluetape-s3-cse-auth-cleanup-")
         val destination = root.resolve("destination.bin")
-        val client = mockk<S3AsyncClient>()
         val transfer = RecordingEncryptedDownloadOperations()
         val providerTemplate = testProviderTemplate(client = client)
         val adapter = S3ClientSideEncryptionTransferTemplate(client, providerTemplate, transfer, transfer)
-        val envelope = providerTemplate.newEncryptionEnvelope("file payload".encodeToByteArray())
-        every { client.headObject(any<Consumer<HeadObjectRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(
-                HeadObjectResponse.builder()
-                    .contentLength(envelope.ciphertext.size.toLong())
-                    .eTag("\"etag-v1\"")
-                    .build(),
-            )
+        val envelope = providerTemplate.newEncryptionEnvelope("file payload".toUtf8Bytes())
+        every {
+            client.headObject(any<Consumer<HeadObjectRequest.Builder>>())
+        } returns completableFutureOf(
+            HeadObjectResponse.builder()
+                .contentLength(envelope.ciphertext.size.toLong())
+                .eTag("\"etag-v1\"")
+                .build(),
+        )
         transfer.payload = envelope.ciphertext.copyOf().also { ciphertext ->
             ciphertext[ciphertext.lastIndex] = (ciphertext.last().toInt() xor 1).toByte()
         }
@@ -387,7 +428,8 @@ class S3ClientSideEncryptionTransferTest {
             deleteAttempts shouldBeEqualTo 2
             val temporary = transfer.downloadDestination ?: error("missing temporary destination")
             Files.exists(temporary).shouldBeTrue()
-            val cleanup = primary.suppressed.single() as S3TransferCleanupException
+
+            val cleanup = primary.suppressed.single().shouldBeInstanceOf<S3TransferCleanupException>()
             cleanup.operation shouldBeEqualTo S3TransferCleanupOperation.TEMPORARY_FILE_DELETE
             cleanup.attemptFailureTypes shouldBeEqualTo listOf(
                 FileSystemException::class.qualifiedName,
@@ -405,30 +447,31 @@ class S3ClientSideEncryptionTransferTest {
     }
 
     @Test
-    fun `encrypted file download rejects oversized head before creating temp file`() = runSuspendIO {
+    fun `encrypted file download rejects oversized head before creating temp file`() = runTest {
         val root = Files.createTempDirectory("bluetape-s3-cse-oversize-")
         val destination = root.resolve("destination.bin")
-        val sentinel = "keep this value".encodeToByteArray()
+        val sentinel = "keep this value".toUtf8Bytes()
         Files.write(destination, sentinel)
-        val client = mockk<S3AsyncClient>()
+
         val transfer = RecordingEncryptedDownloadOperations()
         val providerTemplate = testProviderTemplate(client = client)
         val adapter = S3ClientSideEncryptionTransferTemplate(client, providerTemplate, transfer, transfer)
-        every { client.headObject(any<Consumer<HeadObjectRequest.Builder>>()) } returns
-            CompletableFuture.completedFuture(
-                HeadObjectResponse.builder()
-                    .contentLength(S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES.toLong() + 1)
-                    .eTag("\"etag-v1\"")
-                    .build(),
-            )
+        every {
+            client.headObject(any<Consumer<HeadObjectRequest.Builder>>())
+        } returns completableFutureOf(
+            HeadObjectResponse.builder()
+                .contentLength(S3BoundedEncryptedReadOperations.MAX_CIPHERTEXT_BYTES.toLong() + 1)
+                .eTag("\"etag-v1\"")
+                .build(),
+        )
 
         try {
             assertFailsWith<IllegalArgumentException> {
                 adapter.downloadEncryptedFile("bucket", "object", destination)
             }
             transfer.downloadCalls shouldBeEqualTo 0
-            transfer.downloadDestination shouldBeEqualTo null
-            Files.readAllBytes(destination).contentEquals(sentinel).shouldBeTrue()
+            transfer.downloadDestination.shouldBeNull()
+            Files.readAllBytes(destination) shouldContentEqual sentinel
         } finally {
             providerTemplate.close()
             Files.deleteIfExists(destination)
@@ -437,7 +480,7 @@ class S3ClientSideEncryptionTransferTest {
     }
 
     @Test
-    fun `closed provider rejects encrypted file download before HEAD`() = runSuspendIO {
+    fun `closed provider rejects encrypted file download before HEAD`() = runTest {
         val client = mockk<S3AsyncClient>(relaxed = true)
         val transfer = RecordingEncryptedDownloadOperations()
         val providerTemplate = testProviderTemplate(client = client)
@@ -451,12 +494,12 @@ class S3ClientSideEncryptionTransferTest {
     }
 }
 
-private object CancellingDispatcher : CoroutineDispatcher() {
+private object CancellingDispatcher: CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable): Unit =
         throw CancellationException("cancelled before dispatch")
 }
 
-private object RejectingDispatcher : CoroutineDispatcher() {
+private object RejectingDispatcher: CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable): Unit =
         throw RejectedExecutionException("dispatcher rejected")
 }
@@ -465,7 +508,7 @@ private class RecordingS3OutputStreamProvider(
     private val operations: S3TransferOperations,
     private val temporaryDirectory: Path,
     private val thresholdBytes: Long,
-) : S3OutputStreamProvider {
+): S3OutputStreamProvider {
     lateinit var lastOutputStream: S3OutputStream
 
     override fun outputStream(
@@ -474,19 +517,19 @@ private class RecordingS3OutputStreamProvider(
         contentType: String?,
         metadata: Map<String, String>,
     ): S3OutputStream = S3OutputStream(
-            operations = operations,
-            bucket = bucket,
-            key = key,
-            thresholdBytes = thresholdBytes,
-            contentType = contentType,
-            metadata = metadata,
-            temporaryDirectory = temporaryDirectory,
-        ).also { lastOutputStream = it }
+        operations = operations,
+        bucket = bucket,
+        key = key,
+        thresholdBytes = thresholdBytes,
+        contentType = contentType,
+        metadata = metadata,
+        temporaryDirectory = temporaryDirectory,
+    ).also { lastOutputStream = it }
 }
 
 private class EncryptedRecordingTransferOperations(
     private val failure: Throwable? = null,
-) : S3TransferOperations {
+): S3TransferOperations {
     val uploadedFileContents = mutableListOf<ByteArray>()
 
     override suspend fun upload(
@@ -503,7 +546,7 @@ private class EncryptedRecordingTransferOperations(
         source: Path,
         configure: UploadFileRequest.Builder.() -> Unit,
     ): CompletedFileUpload {
-        uploadedFileContents += Files.readAllBytes(source)
+        uploadedFileContents += withContext(Dispatchers.IO) { Files.readAllBytes(source) }
         failure?.let { throw it }
         return mockk(relaxed = true)
     }
@@ -526,9 +569,9 @@ private class EncryptedRecordingTransferOperations(
 
 private class NonCopyableEncryptedUploadException(
     @Suppress("unused") private val identityGuard: Any,
-) : RuntimeException("upload failed")
+): RuntimeException("upload failed")
 
-private class RecordingEncryptedDownloadOperations :
+private class RecordingEncryptedDownloadOperations:
     S3TransferOperations,
     S3OutputStreamProvider {
     var payload: ByteArray = byteArrayOf()
@@ -569,7 +612,9 @@ private class RecordingEncryptedDownloadOperations :
         downloadCalls++
         downloadDestination = destination
         capturedRequest = DownloadFileRequest.builder().destination(destination).apply(configure).build()
-        Files.write(destination, payload)
+        withContext(Dispatchers.IO) {
+            Files.write(destination, payload)
+        }
         val completed = mockk<CompletedFileDownload>()
         every { completed.response() } returns response
         return completed
@@ -601,7 +646,7 @@ private fun testProviderTemplate(
 
 private fun ByteArray.containsSubsequence(candidate: ByteArray): Boolean {
     return candidate.isEmpty() ||
-        (candidate.size <= size && (0..size - candidate.size).any { start ->
-            candidate.indices.all { offset -> this[start + offset] == candidate[offset] }
-        })
+            (candidate.size <= size && (0..size - candidate.size).any { start ->
+                candidate.indices.all { offset -> this[start + offset] == candidate[offset] }
+            })
 }

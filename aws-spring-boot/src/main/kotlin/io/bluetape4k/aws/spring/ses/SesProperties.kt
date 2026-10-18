@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.ses
 
+import io.bluetape4k.aws.spring.ses.SesProperties.Companion.PREFIX
+import io.bluetape4k.support.requireNotBlank
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
@@ -12,7 +14,7 @@ import java.net.URI
  * `bluetape4k.aws.ses`를 바인딩하고 SDK 클라이언트 설정과 [SesCoroutinesMailSender]에서
  * 사용하는 발신자 기본값을 정의합니다.
  */
-@ConfigurationProperties(prefix = "bluetape4k.aws.ses")
+@ConfigurationProperties(prefix = PREFIX)
 data class SesProperties(
     val enabled: Boolean = true,
     val region: String? = null,
@@ -22,14 +24,17 @@ data class SesProperties(
     val javaMailSender: JavaMailSenderProperties = JavaMailSenderProperties(),
 ): Serializable {
 
+    companion object {
+        const val PREFIX = "bluetape4k.aws.ses"
+        private const val serialVersionUID: Long = 1L
+    }
+
     init {
         require(endpointOverride == null || !region.isNullOrBlank()) {
-            "bluetape4k.aws.ses.region is required when endpointOverride is configured."
+            "$PREFIX.region is required when endpointOverride is configured."
         }
         defaultFrom?.requireEmailHeaderValue("defaultFrom")
-        configurationSetName?.let {
-            require(it.isNotBlank()) { "configurationSetName must not be blank." }
-        }
+        configurationSetName?.requireNotBlank { "configurationSetName must not be blank." }
     }
 
     /**
@@ -42,9 +47,5 @@ data class SesProperties(
         companion object {
             private const val serialVersionUID: Long = 1L
         }
-    }
-
-    companion object {
-        private const val serialVersionUID: Long = 1L
     }
 }

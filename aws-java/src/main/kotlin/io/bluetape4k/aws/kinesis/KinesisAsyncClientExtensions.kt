@@ -7,6 +7,8 @@ import io.bluetape4k.aws.kinesis.model.getRecordsRequest
 import io.bluetape4k.aws.kinesis.model.getShardIteratorRequest
 import io.bluetape4k.aws.kinesis.model.putRecordRequest
 import io.bluetape4k.aws.kinesis.model.putRecordsRequest
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
@@ -20,6 +22,8 @@ import software.amazon.awssdk.services.kinesis.model.PutRecordsRequestEntry
 import software.amazon.awssdk.services.kinesis.model.PutRecordsResponse
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType
 import java.util.concurrent.CompletableFuture
+
+private object KinesisAsyncClientLogger: KLogging()
 
 /**
  * Kinesis 스트림을 비동기로 생성합니다.
@@ -35,10 +39,12 @@ fun KinesisAsyncClient.createStreamAsync(
     streamName.requireNotBlank("streamName")
     shardCount.validateKinesisShardCount("shardCount")
 
-    return createStream(createStreamRequest {
+    val request = createStreamRequest {
         streamName(streamName)
         shardCount(shardCount)
-    })
+    }
+    KinesisAsyncClientLogger.log.debug { "Create stream. streamName=$streamName, shardCount=$shardCount" }
+    return createStream(request)
 }
 
 /**
@@ -60,11 +66,12 @@ fun KinesisAsyncClient.putRecordAsync(
     streamName.requireNotBlank("streamName")
     partitionKey.requireNotBlank("partitionKey")
 
-    return putRecord(putRecordRequest {
+    val request = putRecordRequest {
         streamName(streamName)
         partitionKey(partitionKey)
         data(data)
-    })
+    }
+    return putRecord(request)
 }
 
 /**
@@ -81,10 +88,11 @@ fun KinesisAsyncClient.putRecordsAsync(
     streamName.requireNotBlank("streamName")
     entries.validateKinesisPutRecordsEntries("entries")
 
-    return putRecords(putRecordsRequest {
+    val request = putRecordsRequest {
         streamName(streamName)
         records(entries)
-    })
+    }
+    return putRecords(request)
 }
 
 /**
@@ -106,11 +114,12 @@ fun KinesisAsyncClient.getShardIteratorAsync(
     streamName.requireNotBlank("streamName")
     shardId.requireNotBlank("shardId")
 
-    return getShardIterator(getShardIteratorRequest {
+    val request = getShardIteratorRequest {
         streamName(streamName)
         shardId(shardId)
         shardIteratorType(type)
-    })
+    }
+    return getShardIterator(request)
 }
 
 /**
@@ -127,10 +136,11 @@ fun KinesisAsyncClient.getRecordsAsync(
     shardIterator.requireNotBlank("shardIterator")
     limit.validateKinesisGetRecordsLimit("limit")
 
-    return getRecords(getRecordsRequest {
+    val request = getRecordsRequest {
         shardIterator(shardIterator)
         limit(limit)
-    })
+    }
+    return getRecords(request)
 }
 
 /**
@@ -145,9 +155,10 @@ fun KinesisAsyncClient.describeStreamAsync(
 ): CompletableFuture<DescribeStreamResponse> {
     streamName.requireNotBlank("streamName")
 
-    return describeStream(describeStreamRequest {
+    val request = describeStreamRequest {
         streamName(streamName)
-    })
+    }
+    return describeStream(request)
 }
 
 /**
@@ -162,7 +173,8 @@ fun KinesisAsyncClient.deleteStreamAsync(
 ): CompletableFuture<DeleteStreamResponse> {
     streamName.requireNotBlank("streamName")
 
-    return deleteStream(deleteStreamRequest {
+    val request = deleteStreamRequest {
         streamName(streamName)
-    })
+    }
+    return deleteStream(request)
 }

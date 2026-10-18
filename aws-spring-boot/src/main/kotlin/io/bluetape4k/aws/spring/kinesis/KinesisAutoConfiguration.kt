@@ -4,13 +4,14 @@ import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 import io.bluetape4k.aws.spring.applyAwsDefaults
 import io.bluetape4k.aws.spring.applyGlobalCustomizers
 import io.bluetape4k.aws.spring.applyServiceCustomizers
-import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
-import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import io.bluetape4k.aws.spring.connection.AwsServiceConnectionDetails
 import io.bluetape4k.aws.spring.connection.KinesisConnectionDetails
+import io.bluetape4k.aws.spring.resolveAwsCredentialsProvider
+import io.bluetape4k.aws.spring.resolveServiceClientDefaults
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
@@ -22,7 +23,6 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
-import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
 
 /**
  * AWS Kinesis용 Spring Boot 4 자동 구성입니다.
@@ -40,7 +40,12 @@ import io.bluetape4k.aws.spring.ConditionalOnAwsEnabled
         "software.amazon.awssdk.services.kinesis.KinesisAsyncClient",
     ]
 )
-@ConditionalOnProperty(prefix = "bluetape4k.aws.kinesis", name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+    prefix = "bluetape4k.aws.kinesis",
+    name = ["enabled"],
+    havingValue = "true",
+    matchIfMissing = true
+)
 @EnableConfigurationProperties(KinesisProperties::class)
 class KinesisAutoConfiguration {
 

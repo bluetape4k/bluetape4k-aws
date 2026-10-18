@@ -12,7 +12,7 @@ import reactor.core.scheduler.Schedulers
 /** filter가 소유한 exchange cache의 SNS HTTP envelope에서 handler parameter를 해석합니다. */
 class SnsWebFluxHttpMessageArgumentResolver(
     private val support: SnsHttpMessageResolverSupport,
-) : HandlerMethodArgumentResolver {
+): HandlerMethodArgumentResolver {
 
     override fun supportsParameter(parameter: MethodParameter): Boolean =
         support.supportsParameter(parameter)

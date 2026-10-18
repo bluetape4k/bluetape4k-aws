@@ -3,19 +3,29 @@ package io.bluetape4k.aws.spring.sns
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.messagemanager.sns.SnsMessageManager
 
-class SnsHttpMessageVerifierTest {
+class SnsHttpMessageVerifierTest: AbstractSnsTest() {
 
-    private val manager = mockk<SnsMessageManager>()
+    companion object: KLogging()
+
+    private val manager = mockk<SnsMessageManager>(relaxed = true)
     private val verifier = SnsHttpMessageVerifier(manager)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(manager)
+    }
 
     @Test
     fun `verify parses supported SNS types before SDK`() {
@@ -40,6 +50,7 @@ class SnsHttpMessageVerifierTest {
             verifier.verify(notificationJson, messageTypeHeader = "Notification")
         }
 
+        log.debug { "actual=$actual" }
         actual shouldBeSameInstanceAs failure
     }
 
@@ -54,8 +65,8 @@ class SnsHttpMessageVerifierTest {
             )
         }
 
-        actual.message.orEmpty() shouldBeEqualTo
-            "SNS HTTP message TopicArn does not match expectedTopicArn."
+        log.debug { "actual=$actual" }
+        actual.message shouldBeEqualTo "SNS HTTP message TopicArn does not match expectedTopicArn."
         verify(exactly = 0) { manager.parseMessage(any<String>()) }
     }
 

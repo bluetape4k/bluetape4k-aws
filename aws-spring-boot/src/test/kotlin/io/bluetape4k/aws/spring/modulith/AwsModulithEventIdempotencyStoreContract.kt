@@ -1,22 +1,24 @@
 package io.bluetape4k.aws.spring.modulith
 
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldBeAfter
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeGreaterThan
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldBeTrue
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
+import io.bluetape4k.javatimes.nanos
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.junit5.coroutines.SuspendedJobTester
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.util.concurrent.CancellationException
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentLinkedQueue
 
 /** 모든 Modulith idempotency store 구현이 공유하는 lease/fencing 계약입니다. */
 abstract class AwsModulithEventIdempotencyStoreContract {
@@ -26,24 +28,15 @@ abstract class AwsModulithEventIdempotencyStoreContract {
     @Test
     fun `64 concurrent claims have exactly one winner`() = runTest {
         withStore { store ->
-            val ready = AtomicInteger()
-            val start = CompletableDeferred<Unit>()
-            val outcomes = (1..64).map {
-                async(Dispatchers.Default) {
-                    ready.incrementAndGet()
-                    start.await()
-                    store.claim(EVENT_KEY, LEASE_DURATION)
+            val outcomes = ConcurrentLinkedQueue<AwsModulithClaimResult>()
+            SuspendedJobTester()
+                .rounds(64)
+                .add {
+                    outcomes += store.claim(EVENT_KEY, LEASE_DURATION)
                 }
-            }
-            while (ready.get() != 64) {
-                yield()
-            }
-            start.complete(Unit)
-
-            val results = outcomes.awaitAll()
-
-            results.count { it is AwsModulithClaimResult.Acquired } shouldBeEqualTo 1
-            results.count { it is AwsModulithClaimResult.InProgress } shouldBeEqualTo 63
+                .run()
+            outcomes.count { it is AwsModulithClaimResult.Acquired } shouldBeEqualTo 1
+            outcomes.count { it is AwsModulithClaimResult.InProgress } shouldBeEqualTo 63
         }
     }
 
@@ -51,6 +44,7 @@ abstract class AwsModulithEventIdempotencyStoreContract {
     fun `completed claims become completed duplicates`() = runTest {
         withStore { store ->
             val token = store.claim(EVENT_KEY, LEASE_DURATION).acquiredToken()
+            log.debug { "token=$token" }
 
             store.complete(token) shouldBeEqualTo AwsModulithStoreMutation.APPLIED
             store.claim(EVENT_KEY, LEASE_DURATION) shouldBeSameInstanceAs AwsModulithClaimResult.Completed
@@ -64,8 +58,8 @@ abstract class AwsModulithEventIdempotencyStoreContract {
 
             val duplicate = store.claim(EVENT_KEY, LEASE_DURATION)
 
-            (duplicate is AwsModulithClaimResult.InProgress).shouldBeTrue()
-            (duplicate as AwsModulithClaimResult.InProgress).leaseUntil shouldBeEqualTo token.leaseUntil
+            duplicate.shouldBeInstanceOf<AwsModulithClaimResult.InProgress>()
+            duplicate.leaseUntil shouldBeEqualTo token.leaseUntil
         }
     }
 
@@ -79,8 +73,9 @@ abstract class AwsModulithEventIdempotencyStoreContract {
             val released = store.claim(OTHER_KEY, LEASE_DURATION).acquiredToken()
             store.release(released) shouldBeEqualTo AwsModulithStoreMutation.APPLIED
             store.release(released) shouldBeEqualTo AwsModulithStoreMutation.NOT_FOUND
+
             val reacquired = store.claim(OTHER_KEY, LEASE_DURATION).acquiredToken()
-            (reacquired.generation > released.generation).shouldBeTrue()
+            reacquired.generation shouldBeGreaterThan released.generation
         }
     }
 
@@ -91,8 +86,8 @@ abstract class AwsModulithEventIdempotencyStoreContract {
             store.recoverExpired(stale.leaseUntil.plusNanos(1)) shouldBeEqualTo 1
 
             val current = store.claim(EVENT_KEY, LEASE_DURATION).acquiredToken()
-
             current.generation shouldBeEqualTo stale.generation + 1
+
             assertFailsWith<AwsModulithStaleClaimException> {
                 store.renew(stale, LEASE_DURATION)
             }
@@ -106,12 +101,13 @@ abstract class AwsModulithEventIdempotencyStoreContract {
         withStore { store ->
             val token = store.claim(EVENT_KEY, LEASE_DURATION).acquiredToken()
 
-            val renewed = store.renew(token, LEASE_DURATION.plusSeconds(1))
+            val renewed = store.renew(token, LEASE_DURATION + 1.seconds())
 
+            log.debug { "renewed=$renewed" }
             renewed.key shouldBeEqualTo token.key
             renewed.ownerId shouldBeEqualTo token.ownerId
             renewed.generation shouldBeEqualTo token.generation
-            renewed.leaseUntil.isAfter(token.leaseUntil).shouldBeTrue()
+            renewed.leaseUntil shouldBeAfter token.leaseUntil
 
             assertFailsWith<AwsModulithStaleClaimException> {
                 store.renew(token, LEASE_DURATION)
@@ -129,9 +125,9 @@ abstract class AwsModulithEventIdempotencyStoreContract {
             val completed = store.claim(OTHER_KEY, LEASE_DURATION).acquiredToken()
             store.complete(completed)
 
-            store.recoverExpired(active.leaseUntil.minusNanos(1)) shouldBeEqualTo 0
+            store.recoverExpired(active.leaseUntil - 1.nanos()) shouldBeEqualTo 0
             store.recoverExpired(active.leaseUntil) shouldBeEqualTo 0
-            (store.claim(EVENT_KEY, LEASE_DURATION) is AwsModulithClaimResult.InProgress).shouldBeTrue()
+            store.claim(EVENT_KEY, LEASE_DURATION).shouldBeInstanceOf<AwsModulithClaimResult.InProgress>()
             store.claim(OTHER_KEY, LEASE_DURATION) shouldBeSameInstanceAs AwsModulithClaimResult.Completed
         }
     }
@@ -148,7 +144,8 @@ abstract class AwsModulithEventIdempotencyStoreContract {
                     store.claim(EVENT_KEY, LEASE_DURATION)
                 }
             }
-            (store.claim(EVENT_KEY, LEASE_DURATION) is AwsModulithClaimResult.Acquired).shouldBeTrue()
+
+            store.claim(EVENT_KEY, LEASE_DURATION).shouldBeInstanceOf<AwsModulithClaimResult.Acquired>()
         }
     }
 
@@ -161,14 +158,12 @@ abstract class AwsModulithEventIdempotencyStoreContract {
         }
     }
 
-    private companion object {
+    private companion object: KLogging() {
         val EVENT_KEY = AwsModulithEventKey("order.placed", "evt-1")
         val OTHER_KEY = AwsModulithEventKey("order.placed", "evt-2")
         val LEASE_DURATION: Duration = Duration.ofMinutes(2)
     }
 }
 
-private fun AwsModulithClaimResult.acquiredToken(): AwsModulithClaimToken {
-    require(this is AwsModulithClaimResult.Acquired)
-    return token
-}
+private fun AwsModulithClaimResult.acquiredToken(): AwsModulithClaimToken =
+    this.shouldBeInstanceOf<AwsModulithClaimResult.Acquired>().token

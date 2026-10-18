@@ -1,10 +1,10 @@
 package io.bluetape4k.aws.spring.s3
 
 import io.bluetape4k.aws.spring.observability.AwsMicrometerSupport
+import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
@@ -81,7 +81,11 @@ class MicrometerS3Operations(
 
     override fun listFlow(bucket: String, prefix: String?, pageSize: Int): Flow<S3Object> = flow {
         record(OPERATION_LIST_FLOW, bucket) {
-            delegate.listFlow(bucket, prefix, pageSize).collect { emit(it) }
+            delegate
+                .listFlow(bucket, prefix, pageSize)
+                .collect {
+                    emit(it)
+                }
         }
     }
 
@@ -101,14 +105,19 @@ class MicrometerS3Operations(
         }
 
     private suspend fun <T> record(operation: String, bucket: String, block: suspend () -> T): T =
-        AwsMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
-            tags(operation, outcome, bucket, exception)
-        }, block)
+        AwsMicrometerSupport.record(
+            meterRegistry,
+            meterName, { outcome, exception -> tags(operation, outcome, bucket, exception) },
+            block
+        )
 
     private fun <T> recordBlocking(operation: String, bucket: String, block: () -> T): T =
-        AwsMicrometerSupport.record(meterRegistry, meterName, { outcome, exception ->
-            tags(operation, outcome, bucket, exception)
-        }, block)
+        AwsMicrometerSupport.record(
+            meterRegistry,
+            meterName,
+            { outcome, exception -> tags(operation, outcome, bucket, exception) },
+            block
+        )
 
     private fun tags(operation: String, outcome: String, bucket: String, exception: Throwable?): Tags =
         AwsMicrometerSupport.tags(
@@ -119,7 +128,7 @@ class MicrometerS3Operations(
             extras = AwsMicrometerSupport.bucketTag(bucket, includeBucketTag),
         )
 
-    companion object {
+    companion object: KLoggingChannel() {
         const val DEFAULT_METER_NAME: String = "bluetape4k.aws.s3.operation"
         const val OPERATION_EXISTS_BUCKET: String = "exists_bucket"
         const val OPERATION_HEAD: String = "head_object"

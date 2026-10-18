@@ -65,6 +65,7 @@ internal object SnsBatchResponseMapper {
 
         val successfulById = result.successful.associateBy { it.entryId }
         val failedById = result.failed.associateBy { it.entryId }
+
         return SnsBatchChunkResult(
             successful = submittedIds.mapNotNull(successfulById::get),
             failed = submittedIds.mapNotNull(failedById::get),

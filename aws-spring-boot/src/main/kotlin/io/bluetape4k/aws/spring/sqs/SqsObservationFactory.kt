@@ -71,11 +71,11 @@ internal fun requireSqsObservationRegistryBinding(
 
 internal class SqsObservationTelemetryException(
     val failureStage: String,
-) : RuntimeException(null, null, false, false)
+): RuntimeException(null, null, false, false)
 
 private class DefaultSqsObservationFactory(
     private val conventions: Map<SqsObservationStage, SqsObservationConvention>,
-) : SqsObservationFactory {
+): SqsObservationFactory {
     override fun createNotStarted(
         context: SqsObservationContext,
         registry: ObservationRegistry,

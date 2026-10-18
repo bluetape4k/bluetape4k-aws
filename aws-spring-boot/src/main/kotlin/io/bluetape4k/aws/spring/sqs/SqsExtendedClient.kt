@@ -8,6 +8,7 @@ import io.bluetape4k.aws.spring.s3.S3ClientSideEncryptionIdentity
 import io.bluetape4k.aws.spring.s3.S3ObjectMetadataOperations
 import io.bluetape4k.aws.spring.s3.S3Operations
 import io.bluetape4k.aws.spring.s3.S3PutIfAbsentResult
+import io.bluetape4k.logging.KLogging
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
@@ -20,13 +21,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
-import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 private const val POINTER_PREFIX = "bt4k-sqs-extended/v1."
@@ -51,7 +52,9 @@ class SqsExtendedClient(
     private val encryptionIdentity: S3ClientSideEncryptionIdentity?,
     private val properties: SqsExtendedClientProperties,
     private val metrics: SqsExtendedClientMetrics? = null,
-) : SqsExtendedClientOperations {
+): SqsExtendedClientOperations {
+
+    companion object: KLogging()
 
     private val activeOperations = AtomicInteger(0)
     private val acceptingOperations = AtomicReference(true)
@@ -70,11 +73,10 @@ class SqsExtendedClient(
             if (payload.size <= policy.offloadThresholdBytes) {
                 return@withOperation inlineSend(request)
             }
-            val idempotencyKey = request.idempotencyKey
-                ?: run {
-                    metrics?.recordOffloadRejected()
-                    throw SqsExtendedConfigurationException.create()
-                }
+            val idempotencyKey = request.idempotencyKey ?: run {
+                metrics?.recordOffloadRejected()
+                throw SqsExtendedConfigurationException.create()
+            }
             if (payload.size > policy.maxOffloadPayloadBytes) {
                 metrics?.recordOffloadRejected()
                 throw SqsExtendedConfigurationException.create()
@@ -150,7 +152,7 @@ class SqsExtendedClient(
         maxMessages: Int,
         waitTimeSeconds: Int,
         visibilityTimeoutSeconds: Int,
-): Flow<SqsExtendedReceivedMessage> = flow {
+    ): Flow<SqsExtendedReceivedMessage> = flow {
         receive(queueUrl, maxMessages, waitTimeSeconds, visibilityTimeoutSeconds).forEach { emit(it) }
     }
 
@@ -274,12 +276,14 @@ class SqsExtendedClient(
         }
         val completed = suspend {
             while (activeOperations.get() > 0) {
-                delay(1)
+                delay(1.milliseconds)
             }
             activeAtStart
         }
-        val completedCount = withTimeoutOrNull(effectiveTimeout) { completed() }
-            ?: (activeAtStart - activeOperations.get())
+        val completedCount = withTimeoutOrNull(effectiveTimeout) {
+            completed()
+        } ?: (activeAtStart - activeOperations.get())
+
         val timedOut = activeOperations.get() > 0
         if (timedOut) {
             lifecycleFailure.set(SqsExtendedDrainTimeoutException(activeOperations.get()))
@@ -431,7 +435,9 @@ class SqsExtendedClient(
         expected: Map<String, String>,
         handlePresent: Boolean,
     ) {
-        val matches = expected.all { (name, value) -> constantTimeEquals(actual[name], value) }
+        val matches = expected.all { (name, value) ->
+            constantTimeEquals(actual[name], value)
+        }
         if (!matches) throw SqsExtendedCleanupException.configuration(handlePresent)
     }
 
@@ -472,7 +478,13 @@ class SqsExtendedClient(
         policy: SqsExtendedClientProperties.Policy,
         pointer: SqsExtendedClientPointer,
     ): String =
-        "${policy.normalizedKeyPrefix()}.ack-marker/${sha256("${pointer.bucket}|${pointer.key}".toByteArray(StandardCharsets.UTF_8))}"
+        "${policy.normalizedKeyPrefix()}.ack-marker/${
+            sha256(
+                "${pointer.bucket}|${pointer.key}".toByteArray(
+                    StandardCharsets.UTF_8
+                )
+            )
+        }"
 
     private fun markerMetadata(
         queueUrl: String,
@@ -494,11 +506,11 @@ class SqsExtendedClient(
     private suspend fun inlineSend(request: SqsExtendedSendRequest): SqsExtendedSendResult {
         val response = try {
             sqsOperations.send(request.request)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Throwable) {
-                throw SqsExtendedSendException.inlineSqs()
-            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            throw SqsExtendedSendException.inlineSqs()
+        }
         metrics?.recordOffloadInline()
         return SqsExtendedSendResult.create(
             response = response.toExtendedResponse(),

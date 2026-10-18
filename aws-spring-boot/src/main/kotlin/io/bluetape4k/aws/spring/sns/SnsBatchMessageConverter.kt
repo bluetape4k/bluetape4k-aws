@@ -8,38 +8,38 @@ import org.springframework.messaging.MessageHeaders
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 
 /** Spring [Message] payload를 명시적인 suspend serializer로 문자열화합니다. */
-public fun interface SnsPayloadSerializer {
+fun interface SnsPayloadSerializer {
 
     /** 네트워크 호출 없이 payload를 SNS message 문자열로 변환합니다. */
-    public suspend fun serialize(payload: Any?): String
+    suspend fun serialize(payload: Any?): String
 }
 
 /** SNS Message batch 변환 전에 적용하는 유한 입력 상한입니다. */
-public data class SnsBatchMessageConversionOptions(
+data class SnsBatchMessageConversionOptions(
     /** 허용하는 최대 메시지 수입니다. 1 이상이어야 합니다. */
-    public val maxMessages: Int = 10_000,
+    val maxMessages: Int = 10_000,
 )
 
 /** SNS batch converter가 읽는 case-sensitive Spring header allowlist입니다. */
-public object SnsBatchMessageHeaders {
+object SnsBatchMessageHeaders {
     /** explicit entry ID source입니다. 값은 [java.util.UUID]여야 합니다. */
-    public const val MESSAGE_ID: String = "bluetape4k.sns.messageId"
+    const val MESSAGE_ID: String = "bluetape4k.sns.messageId"
 
     /** SNS subject source입니다. 값은 non-blank [String]이어야 합니다. */
-    public const val SUBJECT: String = "bluetape4k.sns.subject"
+    const val SUBJECT: String = "bluetape4k.sns.subject"
 
     /** typed SNS message attributes source입니다. */
-    public const val MESSAGE_ATTRIBUTES: String = "bluetape4k.sns.messageAttributes"
+    const val MESSAGE_ATTRIBUTES: String = "bluetape4k.sns.messageAttributes"
 
     /** FIFO topic의 message group ID source입니다. */
-    public const val MESSAGE_GROUP_ID: String = "MessageGroupId"
+    const val MESSAGE_GROUP_ID: String = "MessageGroupId"
 
     /** FIFO topic의 message deduplication ID source입니다. */
-    public const val MESSAGE_DEDUPLICATION_ID: String = "MessageDeduplicationId"
+    const val MESSAGE_DEDUPLICATION_ID: String = "MessageDeduplicationId"
 }
 
 /** Spring Message를 SNS batch entry로 바꿀 때의 안전한 오류 분류입니다. */
-public enum class SnsBatchMessageConversionError {
+enum class SnsBatchMessageConversionError {
     INVALID_TOPIC,
     INVALID_OPTIONS,
     MISSING_ID,
@@ -54,7 +54,7 @@ public enum class SnsBatchMessageConversionError {
 }
 
 /** 변환 오류에서 노출을 허용하는 header/payload field 분류입니다. */
-public enum class SnsBatchMessageConversionField {
+enum class SnsBatchMessageConversionField {
     MESSAGE_ID,
     SUBJECT,
     MESSAGE_ATTRIBUTES,
@@ -69,14 +69,14 @@ public enum class SnsBatchMessageConversionField {
  * payload, header map, topic ARN, credential, serializer 원인은 저장하지 않으며 문자열에는 enum,
  * entry index, allowlisted field만 남깁니다. [CancellationException]은 원래 instance로 전파됩니다.
  */
-public class SnsBatchMessageConversionException(
+class SnsBatchMessageConversionException(
     /** 실패한 collection entry index입니다. 전체 topic/options 오류면 null입니다. */
-    public val entryIndex: Int?,
+    val entryIndex: Int?,
     /** 안정적인 변환 오류 분류입니다. */
-    public val error: SnsBatchMessageConversionError,
+    val error: SnsBatchMessageConversionError,
     /** 실패한 allowlisted field입니다. 해당하지 않으면 null입니다. */
-    public val field: SnsBatchMessageConversionField?,
-) : IllegalArgumentException(
+    val field: SnsBatchMessageConversionField?,
+): IllegalArgumentException(
     "SNS batch message conversion failed: error=$error, entryIndex=$entryIndex, field=$field",
 ) {
 
@@ -92,19 +92,19 @@ public class SnsBatchMessageConversionException(
  * request를 생성합니다. `spring-messaging`은 compileOnly opt-in이므로 converter 사용자가 runtime
  * dependency를 직접 제공합니다.
  */
-public class SnsBatchMessageConverter(
+class SnsBatchMessageConverter(
     /** 구조화 payload를 문자열화하는 호출자 소유의 suspend serializer입니다. */
     private val serializer: SnsPayloadSerializer,
 ) {
 
     /** String payload만 허용하는 기본 converter입니다. */
-    public constructor() : this(SnsPayloadSerializer { payload ->
+    constructor(): this(SnsPayloadSerializer { payload ->
         require(payload is String) { "SNS batch payload must be String or use an explicit serializer." }
         payload
     })
 
     /** 단일 Spring Message를 typed SNS entry로 변환합니다. network 호출은 수행하지 않습니다. */
-    public suspend fun convert(message: Message<*>): SnsPublishBatchEntry =
+    suspend fun convert(message: Message<*>): SnsPublishBatchEntry =
         convertMessage(message, entryIndex = null)
 
     /**
@@ -114,7 +114,7 @@ public class SnsBatchMessageConverter(
      * 반환하지 않습니다. FIFO header와 ID 중복은 전체 request 규칙으로 검증합니다.
      */
     @Suppress("ThrowsCount", "TooGenericExceptionCaught", "SwallowedException")
-    public suspend fun convertAll(
+    suspend fun convertAll(
         topicArn: String,
         messages: Collection<Message<*>>,
         options: SnsBatchMessageConversionOptions = SnsBatchMessageConversionOptions(),

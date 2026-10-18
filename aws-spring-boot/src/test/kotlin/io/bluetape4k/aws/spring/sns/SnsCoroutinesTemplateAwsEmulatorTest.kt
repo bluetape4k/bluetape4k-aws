@@ -1,22 +1,23 @@
 package io.bluetape4k.aws.spring.sns
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeLessOrEqualTo
+import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldEndWith
 import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -30,16 +31,12 @@ import java.lang.management.ManagementFactory
 import java.lang.management.MemoryPoolMXBean
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
-class SnsCoroutinesTemplateAwsEmulatorTest {
+class SnsCoroutinesTemplateAwsEmulatorTest: AbstractSnsTest() {
 
-    companion object {
-        private val awsEmulator by lazy {
-            AwsSpringBootTestEmulator.get("sns", "sqs")
-        }
-    }
+    companion object: KLogging()
 
     private fun contextRunner(): ApplicationContextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -57,10 +54,10 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `create find and publish standard topic through SnsOperations`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SnsOperations::class.java)
+            val operations = context.getBean<SnsOperations>()
 
             runSuspendIO {
-                val topicName = "standard-${UUID.randomUUID()}"
+                val topicName = "standard-${Base58.randomString(8).lowercase()}"
                 val topicArn = operations.createTopic(topicName)
 
                 topicArn shouldEndWith ":$topicName"
@@ -81,10 +78,10 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `create invalidates a previously cached negative lookup`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SnsOperations::class.java)
+            val operations = context.getBean<SnsOperations>()
 
             runSuspendIO {
-                val topicName = "negative-${UUID.randomUUID()}"
+                val topicName = "negative-${Base58.randomString(8).lowercase()}"
                 operations.findTopicArn(topicName).shouldBeNull()
 
                 val topicArn = operations.createTopic(topicName)
@@ -99,7 +96,7 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
         contextRunner()
             .withPropertyValues("bluetape4k.aws.sns.topics.configured.attributes.Environment=test")
             .run { context ->
-                val operations = context.getBean(SnsOperations::class.java)
+                val operations = context.getBean<SnsOperations>()
 
                 runSuspendIO {
                     val topicArn = operations.createConfiguredTopic("configured")
@@ -113,7 +110,7 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `create FIFO topic and publish with message group`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SnsOperations::class.java)
+            val operations = context.getBean<SnsOperations>()
 
             runSuspendIO {
                 val topicName = "fifo-${UUID.randomUUID()}.fifo"
@@ -166,6 +163,7 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
         }
     }
 
+    @Suppress("UnusedDataClassCopyResult")
     @Test
     fun `publish request copy revalidates FIFO contract`() {
         val request = SnsPublishRequest(
@@ -185,7 +183,7 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `propagate AWS publish errors`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SnsOperations::class.java)
+            val operations = context.getBean<SnsOperations>()
 
             val error = assertFailsWith<Exception> {
                 runSuspendIO {
@@ -204,15 +202,16 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `publish message to SQS subscription`() {
         contextRunner().run { context ->
-            val operations = context.getBean(SnsOperations::class.java)
+            val operations = context.getBean<SnsOperations>()
 
             runSuspendIO {
                 val sqs = sqsAsyncClient()
                 try {
-                    val topicArn = operations.createTopic("fanout-${UUID.randomUUID()}")
+                    val topicArn = operations.createTopic("fanout-${Base58.randomString(8).lowercase()}")
                     val queueUrl = sqs.createQueue {
-                        it.queueName("fanout-${UUID.randomUUID()}")
+                        it.queueName("fanout-${Base58.randomString(8).lowercase()}")
                     }.await().queueUrl()
+
                     val queueArn = requireNotNull(
                         sqs.getQueueAttributes {
                             it.queueUrl(queueUrl)
@@ -228,7 +227,7 @@ class SnsCoroutinesTemplateAwsEmulatorTest {
                         it.attributes(mapOf(QueueAttributeName.POLICY to policy))
                     }.await()
 
-                    context.getBean(software.amazon.awssdk.services.sns.SnsAsyncClient::class.java)
+                    context.getBean<SnsAsyncClient>()
                         .subscribe {
                             it.topicArn(topicArn)
                             it.protocol("sqs")

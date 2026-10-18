@@ -1,14 +1,15 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
+import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationMessageAttributes
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
-import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
-import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
-import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
 import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
+import io.bluetape4k.logging.KLogging
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.core.MethodParameter
 import org.springframework.core.annotation.AnnotatedElementUtils
@@ -23,6 +24,12 @@ class SnsHttpMessageResolverSupport(
     objectMapper: Any? = null,
     private val operations: SnsOperations? = null,
 ) {
+    companion object: KLogging() {
+        const val REQUEST_ATTRIBUTE: String = "io.bluetape4k.aws.spring.sns.message"
+        const val WEBFLUX_MESSAGE_ATTRIBUTE: String = "io.bluetape4k.aws.spring.sns.message.mono"
+        const val CONTENT_TYPE_ATTRIBUTE: String = "contentType"
+        const val SNS_MESSAGE_TYPE_HEADER: String = SnsHttpMessageParser.MESSAGE_TYPE_HEADER
+    }
 
     private val payloadConverter = SnsHttpMessagePayloadConverter(objectMapper)
 
@@ -62,13 +69,12 @@ class SnsHttpMessageResolverSupport(
     fun supportsParameter(parameter: MethodParameter): Boolean {
         validateAnnotationCombination(parameter)
         validateDirectParameterType(parameter.parameterType)
-        val supported =
-            parameter.hasParameterAnnotation(NotificationMessage::class.java) ||
-            parameter.hasParameterAnnotation(NotificationSubject::class.java) ||
-            parameter.hasParameterAnnotation(NotificationMessageAttributes::class.java) ||
-            parameter.hasParameterAnnotation(NotificationRawMessage::class.java) ||
-            parameter.parameterType == SnsHttpMessage::class.java ||
-            parameter.parameterType == NotificationStatus::class.java
+        val supported = parameter.hasParameterAnnotation(NotificationMessage::class.java) ||
+                parameter.hasParameterAnnotation(NotificationSubject::class.java) ||
+                parameter.hasParameterAnnotation(NotificationMessageAttributes::class.java) ||
+                parameter.hasParameterAnnotation(NotificationRawMessage::class.java) ||
+                parameter.parameterType == SnsHttpMessage::class.java ||
+                parameter.parameterType == NotificationStatus::class.java
         if (supported) validateStaticParameter(parameter)
         return supported
     }
@@ -123,12 +129,12 @@ class SnsHttpMessageResolverSupport(
                 message.messageAttributes
             }
             parameter.hasParameterAnnotation(NotificationRawMessage::class.java) ||
-                SnsHttpMessage::class.java.isAssignableFrom(parameterType) -> {
-                    check(parameterType == SnsHttpMessage::class.java) {
-                        "@NotificationRawMessage requires an SnsHttpMessage parameter."
-                    }
-                    message
+                    SnsHttpMessage::class.java.isAssignableFrom(parameterType) -> {
+                check(parameterType == SnsHttpMessage::class.java) {
+                    "@NotificationRawMessage requires an SnsHttpMessage parameter."
                 }
+                message
+            }
             parameterType == NotificationStatus::class.java -> {
                 requireConfirmationType(message)
                 val operations = checkNotNull(operations) {
@@ -142,7 +148,7 @@ class SnsHttpMessageResolverSupport(
 
     private fun isTopicAllowed(topicArn: String): Boolean =
         (properties.expectedTopicArns.isNotEmpty() && topicArn in properties.expectedTopicArns) ||
-            (properties.expectedTopicArns.isEmpty() && properties.allowStructuralOnly)
+                (properties.expectedTopicArns.isEmpty() && properties.allowStructuralOnly)
 
     private fun requireNotificationType(message: SnsHttpMessage) {
         check(message.isNotification) {
@@ -198,6 +204,7 @@ class SnsHttpMessageResolverSupport(
             NotificationMessageAttributes::class.java,
             NotificationRawMessage::class.java,
         ).count { annotation -> parameter.hasParameterAnnotation(annotation) }
+
         check(annotationCount <= 1) {
             "An SNS HTTP handler parameter must declare at most one adapter annotation."
         }
@@ -215,14 +222,6 @@ class SnsHttpMessageResolverSupport(
             }
         }
     }
-
-    companion object {
-        const val REQUEST_ATTRIBUTE: String = "io.bluetape4k.aws.spring.sns.message"
-        const val WEBFLUX_MESSAGE_ATTRIBUTE: String = "io.bluetape4k.aws.spring.sns.message.mono"
-        const val CONTENT_TYPE_ATTRIBUTE: String = "contentType"
-        const val SNS_MESSAGE_TYPE_HEADER: String = SnsHttpMessageParser.MESSAGE_TYPE_HEADER
-    }
-
 }
 
 private enum class SnsHttpEndpointMessageType {
@@ -251,6 +250,7 @@ private fun resolveSnsHttpEndpointMessageType(method: java.lang.reflect.Method):
             }.asSequence()
         }
         .toSet()
+
     check(mappingTypes.size <= 1) {
         "An SNS HTTP handler must not combine notification and confirmation mappings."
     }
@@ -269,10 +269,10 @@ private fun validateSnsHttpEndpointMappingParameter(
         }
 
         SnsHttpEndpointMessageType.CONFIRMATION -> {
-            val notificationParameter =
-                parameter.hasParameterAnnotation(NotificationMessage::class.java) ||
+            val notificationParameter = parameter.hasParameterAnnotation(NotificationMessage::class.java) ||
                     parameter.hasParameterAnnotation(NotificationSubject::class.java) ||
                     parameter.hasParameterAnnotation(NotificationMessageAttributes::class.java)
+
             check(!notificationParameter) {
                 "Notification message parameters are only valid with NotificationMessageMapping."
             }

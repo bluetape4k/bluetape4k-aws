@@ -13,6 +13,7 @@ interface SqsMessageConverter {
      */
     fun convert(message: SqsReceivedMessage, targetType: Class<*>): Any
 
+
     /**
      * generic listener parameter 타입을 보존한 변환 진입점입니다.
      *
@@ -30,7 +31,7 @@ class SqsMessageConversionException(
     val index: Int,
     val targetType: Class<*>,
     cause: Throwable,
-) : IllegalArgumentException("SQS message conversion failed at batch index $index for ${targetType.name}", cause)
+): IllegalArgumentException("SQS message conversion failed at batch index $index for ${targetType.name}", cause)
 
 /**
  * 네이티브가 아닌 리스너 매개변수 타입에서 실패하는 변환기입니다.
@@ -45,7 +46,7 @@ object NoopSqsMessageConverter: SqsMessageConverter {
  */
 class JacksonSqsMessageConverter(
     private val objectMapper: ObjectMapper,
-) : SqsMessageConverter {
+): SqsMessageConverter {
 
     private val delegate: SnsMessageConverter by lazy(LazyThreadSafetyMode.PUBLICATION) {
         SnsMessageConverter(objectMapper)

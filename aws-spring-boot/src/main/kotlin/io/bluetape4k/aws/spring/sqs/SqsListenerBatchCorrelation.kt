@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sqs
 
+import java.io.Serializable
+
 /**
  * 하나의 batch 관측을 상관시키는 불투명한 런타임 식별자입니다.
  *
@@ -9,4 +11,8 @@ data class SqsListenerBatchCorrelation(
     val generation: Long,
     val pollerId: Int,
     val batchSequence: Long,
-)
+): Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
+}

@@ -1,14 +1,23 @@
 package io.bluetape4k.aws.spring.dynamodb
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeInstanceOf
+import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.clearMocks
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -20,6 +29,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.dax.ClusterDaxAsyncClient
 
 class DynamoDbAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val customClient = mockk<DynamoDbAsyncClient>(relaxed = true)
     private val customEnhancedClient = mockk<DynamoDbEnhancedAsyncClient>(relaxed = true)
@@ -42,13 +53,13 @@ class DynamoDbAutoConfigurationTest {
     @Test
     fun `register DynamoDB clients properties and resolver`() {
         contextRunner.run { context ->
-            context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
-            (context.getBean(DynamoDbAsyncClient::class.java) !is ClusterDaxAsyncClient).shouldBeTrue()
-            context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(DynamoDbProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(DynamoDbTableNameResolver::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(DynamoDbTableSchemaResolver::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<DynamoDbAsyncClient>() shouldHaveSize 1
+            context.getBean<DynamoDbAsyncClient>().shouldNotBeInstanceOf<ClusterDaxAsyncClient>()
+            context.getBeansOfType<DynamoDbEnhancedAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<DynamoDbProperties>() shouldHaveSize 1
+            context.getBeansOfType<DynamoDbTableNameResolver>() shouldHaveSize 1
+            context.getBeansOfType<DynamoDbTableSchemaResolver>() shouldHaveSize 1
+            context.getBeansOfType<DynamoDbTemplate>() shouldHaveSize 1
         }
     }
 
@@ -57,11 +68,11 @@ class DynamoDbAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.dynamodb.enabled=false")
             .run { context ->
-                context.getBeansOfType(DynamoDbAsyncClient::class.java).isEmpty().shouldBeTrue()
-                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).isEmpty().shouldBeTrue()
-                context.getBeansOfType(DynamoDbTableNameResolver::class.java).isEmpty().shouldBeTrue()
-                context.getBeansOfType(DynamoDbTableSchemaResolver::class.java).isEmpty().shouldBeTrue()
-                context.getBeansOfType(DynamoDbTemplate::class.java).isEmpty().shouldBeTrue()
+                context.getBeansOfType<DynamoDbAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<DynamoDbEnhancedAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<DynamoDbTableNameResolver>().shouldBeEmpty()
+                context.getBeansOfType<DynamoDbTableSchemaResolver>().shouldBeEmpty()
+                context.getBeansOfType<DynamoDbTemplate>().shouldBeEmpty()
             }
     }
 
@@ -70,10 +81,10 @@ class DynamoDbAutoConfigurationTest {
         contextRunner
             .withBean(DynamoDbAsyncClient::class.java, { customClient })
             .run { context ->
-                context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(DynamoDbAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<DynamoDbAsyncClient>() shouldHaveSize 1
+                context.getBean<DynamoDbAsyncClient>() shouldBeSameInstanceAs customClient
+                context.getBeansOfType<DynamoDbEnhancedAsyncClient>() shouldHaveSize 1
+                context.getBeansOfType<DynamoDbTemplate>() shouldHaveSize 1
             }
     }
 
@@ -86,10 +97,10 @@ class DynamoDbAutoConfigurationTest {
                 "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
             )
             .run { context ->
-                context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(DynamoDbAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<DynamoDbAsyncClient>() shouldHaveSize 1
+                context.getBean<DynamoDbAsyncClient>() shouldBeSameInstanceAs customClient
+                context.getBeansOfType<DynamoDbEnhancedAsyncClient>() shouldHaveSize 1
+                context.getBeansOfType<DynamoDbTemplate>() shouldHaveSize 1
             }
     }
 
@@ -98,9 +109,9 @@ class DynamoDbAutoConfigurationTest {
         contextRunner
             .withBean(DynamoDbEnhancedAsyncClient::class.java, { customEnhancedClient })
             .run { context ->
-                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(DynamoDbEnhancedAsyncClient::class.java) shouldBeSameInstanceAs customEnhancedClient
-                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<DynamoDbEnhancedAsyncClient>() shouldHaveSize 1
+                context.getBean<DynamoDbEnhancedAsyncClient>() shouldBeSameInstanceAs customEnhancedClient
+                context.getBeansOfType<DynamoDbTemplate>() shouldHaveSize 1
             }
     }
 
@@ -111,8 +122,8 @@ class DynamoDbAutoConfigurationTest {
         contextRunner
             .withBean(DynamoDbTableNameResolver::class.java, { customResolver })
             .run { context ->
-                context.getBeansOfType(DynamoDbTableNameResolver::class.java).size shouldBeEqualTo 1
-                context.getBean(DynamoDbTableNameResolver::class.java).resolve("orders") shouldBeEqualTo "custom-orders"
+                context.getBeansOfType<DynamoDbTableNameResolver>() shouldHaveSize 1
+                context.getBean<DynamoDbTableNameResolver>().resolve("orders") shouldBeEqualTo "custom-orders"
             }
     }
 
@@ -125,10 +136,11 @@ class DynamoDbAutoConfigurationTest {
             })
             .withPropertyValues("bluetape4k.aws.dynamodb.endpoint-override=http://localhost:4566")
             .run { context ->
-                (context.startupFailure != null).shouldBeTrue()
+                context.startupFailure.shouldNotBeNull()
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+                log.debug { "messages=$messages" }
                 messages shouldContain "region is required"
             }
     }
@@ -142,10 +154,10 @@ class DynamoDbAutoConfigurationTest {
                 "bluetape4k.aws.dynamodb.dax.url=dax://orders-cache.example.com",
             )
             .run { context ->
-                context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
-                (context.getBean(DynamoDbAsyncClient::class.java) !is ClusterDaxAsyncClient).shouldBeTrue()
-                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<DynamoDbAsyncClient>() shouldHaveSize 1
+                context.getBeansOfType<DynamoDbEnhancedAsyncClient>() shouldHaveSize 1
+                context.getBean<DynamoDbAsyncClient>().shouldNotBeInstanceOf<ClusterDaxAsyncClient>()
+                context.getBeansOfType<DynamoDbTemplate>() shouldHaveSize 1
             }
     }
 
@@ -158,6 +170,8 @@ class DynamoDbAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "dax.url"
             }
     }
@@ -176,6 +190,8 @@ class DynamoDbAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "dax.max-concurrency"
             }
     }
@@ -194,6 +210,8 @@ class DynamoDbAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "dax.max-pending-connection-acquires"
             }
     }
@@ -209,10 +227,10 @@ class DynamoDbAutoConfigurationTest {
                 "bluetape4k.aws.dynamodb.dax.max-pending-connection-acquires=1",
             )
             .run { context ->
-                context.getBeansOfType(DynamoDbAsyncClient::class.java).size shouldBeEqualTo 1
-                (context.getBean(DynamoDbAsyncClient::class.java) is ClusterDaxAsyncClient).shouldBeTrue()
-                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(DynamoDbTemplate::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<DynamoDbAsyncClient>() shouldHaveSize 1
+                context.getBean<DynamoDbAsyncClient>().shouldBeInstanceOf<ClusterDaxAsyncClient>()
+                context.getBeansOfType<DynamoDbEnhancedAsyncClient>() shouldHaveSize 1
+                context.getBeansOfType<DynamoDbTemplate>() shouldHaveSize 1
             }
     }
 
@@ -221,8 +239,8 @@ class DynamoDbAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.dynamodb.table-prefix=test-")
             .run { context ->
-                context.getBean(DynamoDbProperties::class.java).tablePrefix shouldBeEqualTo "test-"
-                context.getBean(DynamoDbTableNameResolver::class.java).resolve("orders") shouldBeEqualTo "test-orders"
+                context.getBean<DynamoDbProperties>().tablePrefix shouldBeEqualTo "test-"
+                context.getBean<DynamoDbTableNameResolver>().resolve("orders") shouldBeEqualTo "test-orders"
             }
     }
 
@@ -231,8 +249,8 @@ class DynamoDbAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.dynamodb"))
             .run { context ->
-                context.getBeansOfType(DynamoDbAsyncClient::class.java).isEmpty().shouldBeTrue()
-                context.getBeansOfType(DynamoDbEnhancedAsyncClient::class.java).isEmpty().shouldBeTrue()
+                context.getBeansOfType<DynamoDbAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<DynamoDbEnhancedAsyncClient>().shouldBeEmpty()
             }
     }
 

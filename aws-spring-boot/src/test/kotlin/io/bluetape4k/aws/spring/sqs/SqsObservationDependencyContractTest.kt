@@ -14,9 +14,9 @@ class SqsObservationDependencyContractTest {
         val implementationVersion = ContextRegistry::class.java.`package`.implementationVersion
 
         (
-            implementationVersion == "1.2.1" ||
-                contextPropagationLocation.contains("context-propagation-1.2.1")
-            ).shouldBeTrue()
+                implementationVersion == "1.2.1" ||
+                        contextPropagationLocation.contains("context-propagation-1.2.1")
+                ).shouldBeTrue()
     }
 
     @Test

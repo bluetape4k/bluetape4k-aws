@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.support.requireNotBlank
 import software.amazon.awssdk.messagemanager.sns.SnsMessageManager
 import software.amazon.awssdk.regions.Region
 import java.util.concurrent.atomic.AtomicBoolean
@@ -11,7 +13,21 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class SnsHttpMessageVerifier(
     private val messageManager: SnsMessageManager = SnsMessageManager.builder().build(),
-) : AutoCloseable {
+): AutoCloseable {
+
+    companion object: KLogging() {
+        /**
+         * 지정한 AWS region을 사용하는 verifier를 생성합니다.
+         */
+        fun forRegion(region: String?): SnsHttpMessageVerifier {
+            val builder = SnsMessageManager.builder()
+            region?.let {
+                require(it.isNotBlank()) { "region must not be blank." }
+                builder.region(Region.of(it))
+            }
+            return SnsHttpMessageVerifier(builder.build())
+        }
+    }
 
     private val closed = AtomicBoolean(false)
 
@@ -28,7 +44,7 @@ class SnsHttpMessageVerifier(
     ): SnsHttpMessage {
         val parsed = SnsHttpMessageParser.parse(json, messageTypeHeader)
         expectedTopicArn?.let { expected ->
-            require(expected.isNotBlank()) { "expectedTopicArn must not be blank." }
+            expected.requireNotBlank { "expectedTopicArn must not be blank." }
             require(parsed.topicArn == expected) {
                 "SNS HTTP message TopicArn does not match expectedTopicArn."
             }
@@ -44,20 +60,6 @@ class SnsHttpMessageVerifier(
     override fun close() {
         if (closed.compareAndSet(false, true)) {
             messageManager.close()
-        }
-    }
-
-    companion object {
-        /**
-         * 지정한 AWS region을 사용하는 verifier를 생성합니다.
-         */
-        fun forRegion(region: String?): SnsHttpMessageVerifier {
-            val builder = SnsMessageManager.builder()
-            region?.let {
-                require(it.isNotBlank()) { "region must not be blank." }
-                builder.region(Region.of(it))
-            }
-            return SnsHttpMessageVerifier(builder.build())
         }
     }
 }

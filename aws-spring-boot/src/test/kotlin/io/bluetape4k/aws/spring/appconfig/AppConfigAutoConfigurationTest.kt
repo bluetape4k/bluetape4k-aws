@@ -1,27 +1,34 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeNull
+import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldHaveSize
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.AwsClientCustomizationContext
 import io.bluetape4k.aws.spring.AwsClientCustomizer
 import io.bluetape4k.aws.spring.AwsSyncClientCustomizer
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeNull
-import io.bluetape4k.assertions.shouldBeSameInstanceAs
-import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.logging.KLogging
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.ObjectProvider
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.context.SmartLifecycle
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
-import org.springframework.context.SmartLifecycle
 import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.appconfigdata.AppConfigDataClient
 import software.amazon.awssdk.services.appconfigdata.AppConfigDataClientBuilder
 
 class AppConfigAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -35,10 +42,9 @@ class AppConfigAutoConfigurationTest {
     @Test
     fun `registers AppConfig client properties and lifecycle`() {
         contextRunner.run { context ->
-            context.getBeansOfType(AppConfigDataClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(AppConfigProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(SmartLifecycle::class.java).values
-                .count { it is AppConfigReloadLifecycle } shouldBeEqualTo 1
+            context.getBeansOfType<AppConfigDataClient>() shouldHaveSize 1
+            context.getBeansOfType<AppConfigProperties>() shouldHaveSize 1
+            context.getBeansOfType<SmartLifecycle>().values.count { it is AppConfigReloadLifecycle } shouldBeEqualTo 1
             context.startupFailure.shouldBeNull()
         }
     }
@@ -48,23 +54,25 @@ class AppConfigAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.app-config.enabled=false")
             .run { context ->
-                context.getBeansOfType(AppConfigDataClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AppConfigDataClient>().shouldBeEmpty()
             }
 
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.appconfigdata"))
             .run { context ->
-                context.getBeansOfType(AppConfigDataClient::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<AppConfigDataClient>().shouldBeEmpty()
             }
 
-        val custom = software.amazon.awssdk.services.appconfigdata.AppConfigDataClient.builder()
-            .region(software.amazon.awssdk.regions.Region.US_EAST_1)
+        val custom = AppConfigDataClient.builder()
+            .region(Region.US_EAST_1)
             .build()
+
         try {
-            contextRunner.withBean(AppConfigDataClient::class.java, { custom }).run { context ->
-                context.getBeansOfType(AppConfigDataClient::class.java).size shouldBeEqualTo 1
-                context.getBean(AppConfigDataClient::class.java) shouldBeSameInstanceAs custom
-            }
+            contextRunner.withBean(AppConfigDataClient::class.java, { custom })
+                .run { context ->
+                    context.getBeansOfType<AppConfigDataClient>() shouldHaveSize 1
+                    context.getBean<AppConfigDataClient>() shouldBeSameInstanceAs custom
+                }
         } finally {
             custom.close()
         }
@@ -86,7 +94,7 @@ class AppConfigAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(CustomizerConfig::class.java)
             .run { context ->
-                context.getBean(AppConfigDataClient::class.java).shouldNotBeNull()
+                context.getBean<AppConfigDataClient>().shouldNotBeNull()
                 CustomizerConfig.calls shouldBeEqualTo listOf("global:appconfigdata", "appconfigdata")
             }
     }
@@ -94,7 +102,7 @@ class AppConfigAutoConfigurationTest {
     @Configuration(proxyBeanMethods = false)
     internal class CustomizerConfig {
         @Bean
-        fun global(): AwsSyncClientCustomizer = object : AwsSyncClientCustomizer, Ordered {
+        fun global(): AwsSyncClientCustomizer = object: AwsSyncClientCustomizer, Ordered {
             override fun customize(context: AwsClientCustomizationContext, builder: AwsSyncClientBuilder<*, *>) {
                 calls += "global:${context.serviceName}"
             }

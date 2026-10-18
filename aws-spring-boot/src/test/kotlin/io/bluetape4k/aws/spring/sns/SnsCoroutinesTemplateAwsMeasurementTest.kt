@@ -5,9 +5,13 @@ import io.bluetape4k.assertions.shouldBeLessOrEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.codec.Base58
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.coroutines.KLoggingChannel
+import jdk.jfr.Recording
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.await
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
@@ -21,10 +25,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import jdk.jfr.Recording
 
 /** 승인된 계정의 AWS SNS batch 경로를 측정하고 민감한 입력 없이 증거를 남깁니다. */
-class SnsCoroutinesTemplateAwsMeasurementTest {
+class SnsCoroutinesTemplateAwsMeasurementTest: AbstractSnsTest() {
+
+    companion object: KLoggingChannel()
 
     @Test
     @EnabledIfSystemProperty(named = "bluetape4k.aws.sns.real-aws-measurement", matches = "true")
@@ -43,7 +48,9 @@ class SnsCoroutinesTemplateAwsMeasurementTest {
         require(!System.getenv("AWS_PROFILE").isNullOrBlank()) {
             "AWS_PROFILE must select the approved credential source"
         }
-        Files.createDirectories(output)
+        withContext(Dispatchers.IO) {
+            Files.createDirectories(output)
+        }
 
         val jfr = JfrCapture.start()
         var client: SnsAsyncClient? = null
@@ -114,7 +121,7 @@ class SnsCoroutinesTemplateAwsMeasurementTest {
             }
 
             if (primaryFailure == null) {
-                delay(retentionSeconds * 1_000L)
+                delay(timeMillis = retentionSeconds * 1_000L)
                 retentionCompleted = true
             }
         } finally {
@@ -339,10 +346,14 @@ class SnsCoroutinesTemplateAwsMeasurementTest {
             }
             val rows = CLASS_HISTOGRAM_PATTERN.findAll(text).take(100).map { match ->
                 "{\"class\":\"${jsonEscape(match.groupValues[4].trim())}\"," +
-                    "\"instances\":${match.groupValues[2]},\"bytes\":${match.groupValues[3]}}"
+                        "\"instances\":${match.groupValues[2]},\"bytes\":${match.groupValues[3]}}"
             }.toList()
             if (completed && process.exitValue() == 0 && rows.isNotEmpty()) {
-                """{"schema_version":1,"status":"available","sampled_with":"jcmd GC.class_histogram","rows":[${rows.joinToString(",")}]}
+                """{"schema_version":1,"status":"available","sampled_with":"jcmd GC.class_histogram","rows":[${
+                    rows.joinToString(
+                        ","
+                    )
+                }]}
 """
             } else {
                 """{"schema_version":1,"status":"unavailable","sampled_with":"jcmd GC.class_histogram","rows":[]}

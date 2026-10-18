@@ -50,9 +50,11 @@ class CloudWatchLogsCoroutinesTemplate(
             return emptyList()
         }
 
-        return logEvents.chunked(properties.batchSize).map { batch ->
-            cloudWatchLogsAsyncClient.putLogEvents(logGroupName, logStreamName, batch)
-        }
+        return logEvents
+            .chunked(properties.batchSize)
+            .map { batch ->
+                cloudWatchLogsAsyncClient.putLogEvents(logGroupName, logStreamName, batch)
+            }
     }
 
     override suspend fun describeLogGroups(logGroupNamePrefix: String?): DescribeLogGroupsResponse =

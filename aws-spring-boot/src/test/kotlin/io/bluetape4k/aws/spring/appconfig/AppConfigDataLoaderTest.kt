@@ -1,18 +1,24 @@
 package io.bluetape4k.aws.spring.appconfig
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeInstanceOf
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.spring.AwsProperties
+import io.bluetape4k.aws.spring.config.AwsConfigDataLoadException
 import io.bluetape4k.aws.spring.config.AwsConfigDataLocationParser
 import io.bluetape4k.aws.spring.config.AwsConfigDataResource
 import io.bluetape4k.aws.spring.config.AwsConfigDataSupport
-import io.bluetape4k.aws.spring.config.AwsConfigDataLoadException
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import org.springframework.boot.context.config.ConfigDataLoaderContext
@@ -20,19 +26,28 @@ import org.springframework.core.env.MapPropertySource
 
 class AppConfigDataLoaderTest {
 
+    companion object: KLogging()
+
+    private val bootstrap = mockk<ConfigurableBootstrapContext>(relaxed = true)
+
+    @BeforeEach
+    fun beforeEach() {
+        clearMocks(bootstrap)
+    }
+
     @Test
     fun `disabled resource returns empty ConfigData without client access`() {
-        val bootstrap = mockk<ConfigurableBootstrapContext>(relaxed = true)
         val loader = AppConfigDataLoader(mockk(relaxed = true), bootstrap)
         val data = loader.load(contextOf(bootstrap), resource(bootstrap, disabled = true))
 
-        (data!!.propertySources.single() as MapPropertySource).source shouldBeEqualTo emptyMap<String, Any>()
+        data.shouldNotBeNull()
+        (data.propertySources.single() as MapPropertySource).source shouldBeEqualTo emptyMap()
+
         verify(exactly = 0) { bootstrap.get<Any>(any()) }
     }
 
     @Test
     fun `initial response creates dynamic property source and preserves empty response`() {
-        val bootstrap = mockk<ConfigurableBootstrapContext>(relaxed = true)
         val fake = FakeSessionClient()
         val initial = AppConfigDataInitialLoad(
             client = fake,
@@ -40,17 +55,22 @@ class AppConfigDataLoaderTest {
             response = AppConfigDataResponse("token-2", 15, "text/plain", byteArrayOf()),
             values = emptyMap(),
             refreshInterval = null,
-            requiredMinimumPollInterval = java.time.Duration.ofSeconds(15),
+            requiredMinimumPollInterval = 15.seconds(),
             format = AppConfigFormat.PROPERTIES,
             prefix = null,
         )
         mockkObject(AppConfigDataSdkAdapter)
+
         try {
-            every { AppConfigDataSdkAdapter.initialLoad(bootstrap, any()) } returns initial
+            every {
+                AppConfigDataSdkAdapter.initialLoad(bootstrap, any())
+            } returns initial
+
             val data = AppConfigDataLoader(mockk(relaxed = true), bootstrap)
                 .load(contextOf(bootstrap), resource(bootstrap))
 
-            data!!.propertySources.single().shouldBeInstanceOf<AppConfigDataPropertySource>()
+            data.shouldNotBeNull()
+            data.propertySources.single().shouldBeInstanceOf<AppConfigDataPropertySource>()
             (data.propertySources.single() as AppConfigDataPropertySource).valuesSnapshot() shouldBeEqualTo emptyMap()
         } finally {
             unmockkObject(AppConfigDataSdkAdapter)
@@ -59,12 +79,13 @@ class AppConfigDataLoaderTest {
 
     @Test
     fun `optional and fail-fast policies sanitize initial failures`() {
-        val bootstrap = mockk<ConfigurableBootstrapContext>(relaxed = true)
         mockkObject(AppConfigDataSdkAdapter)
         try {
-            every { AppConfigDataSdkAdapter.initialLoad(any(), any()) } throws IllegalStateException("secret-body")
+            every {
+                AppConfigDataSdkAdapter.initialLoad(any(), any())
+            } throws IllegalStateException("secret-body")
 
-            val optional = io.bluetape4k.assertions.assertFailsWith<AwsConfigDataLoadException> {
+            val optional = assertFailsWith<AwsConfigDataLoadException> {
                 AppConfigDataLoader(mockk(relaxed = true), bootstrap)
                     .load(
                         contextOf(bootstrap),
@@ -73,7 +94,7 @@ class AppConfigDataLoaderTest {
             }
             optional.toString() shouldNotContain "secret-body"
 
-            val required = io.bluetape4k.assertions.assertFailsWith<AwsConfigDataLoadException> {
+            val required = assertFailsWith<AwsConfigDataLoadException> {
                 AppConfigDataLoader(mockk(relaxed = true), bootstrap)
                     .load(contextOf(bootstrap), resource(bootstrap))
             }
@@ -83,8 +104,11 @@ class AppConfigDataLoaderTest {
                 bootstrap,
                 properties = AppConfigProperties(failFast = false),
             )
-            val empty = AppConfigDataLoader(mockk(relaxed = true), bootstrap).load(contextOf(bootstrap), nonFailFast)
-            (empty!!.propertySources.single() as MapPropertySource).source shouldBeEqualTo emptyMap<String, Any>()
+            val empty = AppConfigDataLoader(mockk(relaxed = true), bootstrap)
+                .load(contextOf(bootstrap), nonFailFast)
+
+            empty.shouldNotBeNull()
+            (empty.propertySources.single() as MapPropertySource).source shouldBeEqualTo emptyMap()
         } finally {
             unmockkObject(AppConfigDataSdkAdapter)
         }
@@ -107,7 +131,7 @@ class AppConfigDataLoaderTest {
         every { getBootstrapContext() } returns bootstrap
     }
 
-    private class FakeSessionClient : AppConfigDataSessionClient {
+    private class FakeSessionClient: AppConfigDataSessionClient {
         override fun startConfigurationSession(request: AppConfigDataStartRequest): AppConfigDataSession =
             AppConfigDataSession("token")
 

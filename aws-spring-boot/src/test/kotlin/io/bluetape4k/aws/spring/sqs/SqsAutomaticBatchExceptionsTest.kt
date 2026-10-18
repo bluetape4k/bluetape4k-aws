@@ -1,21 +1,22 @@
 package io.bluetape4k.aws.spring.sqs
 
-import io.bluetape4k.assertions.assertFailsWith
-import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeEmpty
+import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.io.serializer.JdkBinarySerializer
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails
 import software.amazon.awssdk.services.sqs.model.SqsException
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 
 class SqsAutomaticBatchExceptionsTest {
+
+    companion object: KLogging()
 
     @Test
     fun `send exception keeps normalized result and redacts raw failure graph`() {
@@ -26,10 +27,13 @@ class SqsAutomaticBatchExceptionsTest {
         )
         val exception = SqsSendBatchFailedException(result)
 
+        log.debug { "exception=$exception" }
         exception.result shouldBeEqualTo result
         exception.cause.shouldBeNull()
         exception.suppressed.shouldBeEmpty()
+
         val rendered = "${exception.message}$exception${exception.cause}${exception.suppressed.toList()}"
+        log.debug { "rendered=$rendered" }
         rendered shouldNotContain entryId
         rendered shouldNotContain "body-secret"
         rendered shouldNotContain "https://sqs.local/queue-secret"
@@ -37,7 +41,7 @@ class SqsAutomaticBatchExceptionsTest {
         rendered shouldNotContain "raw-sdk-error"
         rendered shouldNotContain "\r"
         rendered shouldNotContain "\n"
-        roundTrip(exception).result shouldBeEqualTo result
+        roundTrip(exception).shouldNotBeNull().result shouldBeEqualTo result
     }
 
     @Test
@@ -64,6 +68,7 @@ class SqsAutomaticBatchExceptionsTest {
                 SqsBatchCleanupComponent.EXECUTOR,
             ),
         )
+        log.debug { "startup=$startup" }
         startup.startupComponent shouldBeEqualTo SqsBatchStartupComponent.TRANSPORT
         startup.cleanupComponents shouldBeEqualTo listOf(SqsBatchCleanupComponent.EXECUTOR)
         startup.cleanupFailureCount shouldBeEqualTo 1
@@ -76,6 +81,7 @@ class SqsAutomaticBatchExceptionsTest {
         startup.message shouldContain "cleanupFailureCount=1"
 
         val rendered = "$close$startup"
+        log.debug { "rendered=$rendered" }
         rendered shouldNotContain "body-secret"
         rendered shouldNotContain "queue-secret"
         rendered shouldNotContain "receipt-secret"
@@ -83,8 +89,9 @@ class SqsAutomaticBatchExceptionsTest {
         rendered shouldNotContain "raw-sdk-error"
         rendered shouldNotContain "\r"
         rendered shouldNotContain "\n"
-        roundTrip(close).components shouldBeEqualTo close.components
-        roundTrip(startup).cleanupComponents shouldBeEqualTo startup.cleanupComponents
+
+        roundTrip(close).shouldNotBeNull().components shouldBeEqualTo close.components
+        roundTrip(startup).shouldNotBeNull().cleanupComponents shouldBeEqualTo startup.cleanupComponents
 
         listOf(
             SqsSendBatchFailedException::class.java,
@@ -137,6 +144,8 @@ class SqsAutomaticBatchExceptionsTest {
             listOf(SqsBatchCleanupComponent.MANAGER),
         )
 
+        log.debug { "first=$first" }
+        log.debug { "second=$second" }
         first.startupComponent shouldBeEqualTo SqsBatchStartupComponent.MANAGER
         first.cleanupComponents.shouldBeEmpty()
         second.cleanupFailureCount shouldBeEqualTo 1
@@ -146,9 +155,9 @@ class SqsAutomaticBatchExceptionsTest {
     private fun entryId(prefix: String): String = "$prefix-${Base58.randomString(16)}"
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T> roundTrip(value: T): T {
-        val bytes = ByteArrayOutputStream()
-        ObjectOutputStream(bytes).use { it.writeObject(value) }
-        return ObjectInputStream(ByteArrayInputStream(bytes.toByteArray())).use { it.readObject() as T }
+    private fun <T: Any> roundTrip(value: T): T? {
+        val serializer = JdkBinarySerializer(objectInputFilter = null)
+        val bytes = serializer.serialize(value)
+        return serializer.deserialize(bytes)
     }
 }

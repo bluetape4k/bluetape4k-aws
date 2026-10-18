@@ -2,12 +2,17 @@ package io.bluetape4k.aws.spring.sqs
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
-import java.util.Base64
+import java.util.*
 
 class SqsExtendedClientPointerTest {
+
+    companion object: KLogging()
 
     @Test
     fun `pointer factory exposes only validated values and stable value equality`() {
@@ -20,14 +25,19 @@ class SqsExtendedClientPointerTest {
         first shouldBeEqualTo second
         first.bucket shouldBeEqualTo bucket
         first.key shouldBeEqualTo key
-        first.toString() shouldNotContain bucket
-        first.toString() shouldNotContain key
-        first.toString() shouldNotContain signature
+
+        first.toString().let {
+            log.debug { "first=$it" }
+            it shouldNotContain bucket
+            it shouldNotContain key
+            it shouldNotContain signature
+        }
     }
 
     @Test
     fun `pointer factory rejects control characters and non canonical signatures`() {
         val signature = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32) { 9 })
+
         assertFailsWith<IllegalArgumentException> {
             SqsExtendedClientPointer.create("bucket\n", "key", null, false, signature)
         }
@@ -47,6 +57,7 @@ class SqsExtendedClientPointerTest {
         val key = ByteArray(32) { it.toByte() }
         val queueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/${Base58.randomString(16)}"
         val policyFingerprint = "fingerprint-${Base58.randomString(16)}"
+
         val encoded = SqsExtendedPointerCodec.encode(
             bucket = "bucket-${Base58.randomString(16)}",
             key = "payload/${Base58.randomString(16)}",
@@ -57,7 +68,8 @@ class SqsExtendedClientPointerTest {
             signingKey = key,
         )
         val decoded = SqsExtendedPointerCodec.decode(encoded, queueUrl, policyFingerprint, key)
-        decoded.encrypted shouldBeEqualTo false
+        log.debug { "decoded=$decoded" }
+        decoded.encrypted.shouldBeFalse()
         decoded.contentType shouldBeEqualTo "application/json"
 
         assertFailsWith<SqsExtendedPointerFormatException> {
@@ -85,6 +97,7 @@ class SqsExtendedClientPointerTest {
             policyFingerprint = policyFingerprint,
             signingKey = key,
         )
+        log.debug { "encoded=$encoded" }
         val parts = encoded.split('.')
 
         assertFailsWith<SqsExtendedPointerFormatException> {

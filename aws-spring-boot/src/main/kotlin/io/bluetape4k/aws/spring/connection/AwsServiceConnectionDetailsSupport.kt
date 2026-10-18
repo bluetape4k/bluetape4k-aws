@@ -5,7 +5,6 @@ import io.bluetape4k.testcontainers.aws.FlociServer
 import io.bluetape4k.testcontainers.aws.LocalStackServer
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource
 import org.testcontainers.containers.Container
-import java.net.URI
 import java.util.function.Supplier
 
 /** Returns whether a container is one of the explicitly supported bluetape4k AWS wrappers. */

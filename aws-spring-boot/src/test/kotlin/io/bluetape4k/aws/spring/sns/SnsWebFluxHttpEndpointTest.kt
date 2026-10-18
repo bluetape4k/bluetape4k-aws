@@ -1,5 +1,7 @@
 package io.bluetape4k.aws.spring.sns
 
+import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeGreaterThan
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationMessageMapping
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationSubscriptionMapping
 import io.bluetape4k.aws.spring.sns.annotation.endpoint.NotificationUnsubscribeConfirmationMapping
@@ -9,12 +11,11 @@ import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationRawMessage
 import io.bluetape4k.aws.spring.sns.annotation.handlers.NotificationSubject
 import io.bluetape4k.aws.spring.sns.handlers.NotificationStatus
 import io.bluetape4k.aws.spring.sqs.SnsMessageAttribute
-import io.bluetape4k.assertions.shouldBeEqualTo
-import io.bluetape4k.assertions.shouldBeGreaterThan
 import io.bluetape4k.junit5.concurrency.MultithreadingTester
+import io.bluetape4k.logging.KLogging
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -23,18 +24,18 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.core.MethodParameter
-import org.springframework.web.reactive.BindingContext
-import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.reactive.BindingContext
+import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import software.amazon.awssdk.services.sns.model.ConfirmSubscriptionResponse
 import tools.jackson.databind.ObjectMapper
-import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -49,11 +50,15 @@ class SnsWebFluxHttpEndpointTest {
     @BeforeEach
     fun setUp() {
         clearMocks(verifier, operations)
-        every { verifier.verify(any(), any(), any()) } answers {
+        every {
+            verifier.verify(any(), any(), any())
+        } answers {
             SnsHttpMessageParser.parse(firstArg(), secondArg())
         }
-        coEvery { operations.confirmSubscription(any<SnsHttpMessage>(), any()) } returns
-            ConfirmSubscriptionResponse.builder().subscriptionArn("sub-1").build()
+        coEvery {
+            operations.confirmSubscription(any<SnsHttpMessage>(), any())
+        } returns
+                ConfirmSubscriptionResponse.builder().subscriptionArn("sub-1").build()
         controller = WebFluxController(operations)
         val support = SnsHttpMessageResolverSupport(
             properties = SnsHttpEndpointProperties(expectedTopicArns = setOf(TOPIC_ARN)),
@@ -63,9 +68,10 @@ class SnsWebFluxHttpEndpointTest {
         )
         resolver = CountingArgumentResolver(SnsWebFluxHttpMessageArgumentResolver(support))
         val filter = SnsHttpMessageWebFilter(support)
-        val spec = WebTestClient.bindToController(controller)
+        val spec = WebTestClient
+            .bindToController(controller)
             .argumentResolvers { configurer -> configurer.addCustomResolver(resolver) }
-        spec.webFilter< WebTestClient.ControllerSpec >(filter)
+        spec.webFilter<WebTestClient.ControllerSpec>(filter)
         client = spec.configureClient().build()
     }
 
@@ -144,7 +150,10 @@ class SnsWebFluxHttpEndpointTest {
         verify(exactly = 1) { verifier.verify(any(), any(), any()) }
 
         clearMocks(verifier)
-        every { verifier.verify(any(), any(), any()) } throws IllegalArgumentException("bad signature")
+        every {
+            verifier.verify(any(), any(), any())
+        } throws IllegalArgumentException("bad signature")
+
         client.post().uri("/resolverless")
             .header(SnsHttpMessageParser.MESSAGE_TYPE_HEADER, "Notification")
             .contentType(MediaType.TEXT_PLAIN)
@@ -172,9 +181,10 @@ class SnsWebFluxHttpEndpointTest {
             .argumentResolvers { configurer ->
                 configurer.addCustomResolver(SnsWebFluxHttpMessageArgumentResolver(missingVerifierSupport))
             }
-            .webFilter< WebTestClient.ControllerSpec >(SnsHttpMessageWebFilter(missingVerifierSupport))
+            .webFilter<WebTestClient.ControllerSpec>(SnsHttpMessageWebFilter(missingVerifierSupport))
             .configureClient()
             .build()
+
         missingVerifierClient.post().uri("/resolverless")
             .header(SnsHttpMessageParser.MESSAGE_TYPE_HEADER, "Notification")
             .contentType(MediaType.TEXT_PLAIN)
@@ -203,7 +213,9 @@ class SnsWebFluxHttpEndpointTest {
         val verifierParticipants = AtomicInteger()
         val verifierInFlight = AtomicInteger()
         val maxVerifierInFlight = AtomicInteger()
-        every { verifier.verify(any(), any(), any()) } answers {
+        every {
+            verifier.verify(any(), any(), any())
+        } answers {
             val active = verifierInFlight.incrementAndGet()
             maxVerifierInFlight.updateAndGet { current -> maxOf(current, active) }
             try {
@@ -250,11 +262,14 @@ class SnsWebFluxHttpEndpointTest {
         observed.map { it.orderId }.toSet() shouldBeEqualTo expectedAcceptedOrderIds
         observed.map { it.messageId }.toSet() shouldBeEqualTo expectedAcceptedMessageIds
         observed.map { it.orderId to it.messageId }.toSet() shouldBeEqualTo
-            expectedAcceptedOrderIds.map { it to it.replace("order-", "message-") }.toSet()
+                expectedAcceptedOrderIds.map { it to it.replace("order-", "message-") }.toSet()
+
         controller.invocations shouldBeEqualTo expectedAcceptedOrderIds.size
         resolver.invocations shouldBeEqualTo expectedAcceptedOrderIds.size * NOTIFICATION_PARAMETER_COUNT
+
         verify(exactly = expectedAcceptedOrderIds.size) { verifier.verify(any(), any(), any()) }
         coVerify(exactly = 0) { operations.confirmSubscription(any<SnsHttpMessage>(), any()) }
+
         maxVerifierInFlight.get() shouldBeGreaterThan 1
     }
 
@@ -347,7 +362,7 @@ class SnsWebFluxHttpEndpointTest {
         class OrderPayload() {
             var orderId: String = ""
 
-            constructor(orderId: String) : this() {
+            constructor(orderId: String): this() {
                 this.orderId = orderId
             }
 
@@ -358,7 +373,7 @@ class SnsWebFluxHttpEndpointTest {
 
     private class CountingArgumentResolver(
         private val delegate: HandlerMethodArgumentResolver,
-    ) : HandlerMethodArgumentResolver {
+    ): HandlerMethodArgumentResolver {
         private val invocationCounter = AtomicInteger()
         val invocations: Int get() = invocationCounter.get()
 
@@ -375,7 +390,7 @@ class SnsWebFluxHttpEndpointTest {
         }
     }
 
-    private fun <T : Any> providerOf(value: T): ObjectProvider<T> = mockk {
+    private fun <T: Any> providerOf(value: T): ObjectProvider<T> = mockk {
         every { getIfAvailable() } returns value
     }
 
@@ -383,7 +398,7 @@ class SnsWebFluxHttpEndpointTest {
         every { getIfAvailable() } returns null
     }
 
-    companion object {
+    companion object: KLogging() {
         private const val TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:MyTopic"
         private const val OTHER_TOPIC_ARN = "arn:aws:sns:us-west-2:123456789012:OtherTopic"
         private const val CONCURRENCY = 4

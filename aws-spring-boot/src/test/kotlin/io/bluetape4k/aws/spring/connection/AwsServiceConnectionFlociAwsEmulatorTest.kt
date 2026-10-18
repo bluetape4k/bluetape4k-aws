@@ -1,7 +1,11 @@
 package io.bluetape4k.aws.spring.connection
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotBeBlank
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.bluetape4k.testcontainers.aws.FlociServer
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,7 +21,7 @@ import software.amazon.awssdk.services.s3.S3Client
 )
 class AwsServiceConnectionFlociAwsEmulatorTest {
 
-    companion object {
+    companion object: KLogging() {
         @JvmField
         @ServiceConnection(name = "s3")
         val floci: FlociServer = FlociServer.Launcher.floci
@@ -34,18 +38,24 @@ class AwsServiceConnectionFlociAwsEmulatorTest {
 
     @Test
     fun serviceConnectionUsesExpectedBackend() {
-        context.isActive shouldBeEqualTo true
+        context.isActive.shouldBeTrue()
+
+        log.debug { "connectionDetails: $connectionDetails" }
         connectionDetails.endpoint shouldBeEqualTo floci.awsEndpoint
         connectionDetails.region shouldBeEqualTo floci.regionName
         connectionDetails.accessKey.shouldNotBeBlank()
         connectionDetails.secretKey.shouldNotBeBlank()
-        s3Client.serviceClientConfiguration().endpointOverride().orElse(null) shouldBeEqualTo floci.awsEndpoint
+
+        s3Client.serviceClientConfiguration()
+            .endpointOverride().orElse(null) shouldBeEqualTo floci.awsEndpoint
     }
 
     @Test
     fun s3RoundTripStaysWithinOwnerBucket() {
         val receipt = AwsServiceConnectionTestFixtures.roundTrip(s3Client, floci)
+
+        log.debug { "received: $receipt" }
         receipt.backend shouldBeEqualTo "FlociServer"
-        receipt.key.contains(receipt.ownerToken) shouldBeEqualTo true
+        receipt.key shouldContain receipt.ownerToken
     }
 }

@@ -2,13 +2,15 @@
 
 package io.bluetape4k.aws.spring.sqs
 
+import io.bluetape4k.logging.KLogging
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.util.Base64
+import java.util.*
 
-internal object SqsExtendedPolicyFingerprint {
+internal object SqsExtendedPolicyFingerprint: KLogging() {
+
     private const val DOMAIN_V1 = "bluetape4k.sqs.extended.policy/v1"
     private const val DOMAIN_V2 = "bluetape4k.sqs.extended.policy/v2"
     private const val FIELD_COUNT = 16
@@ -37,7 +39,8 @@ internal object SqsExtendedPolicyFingerprint {
             string(canonicalContext(context))
             nullableString(policy.encryption.keyFingerprint)
         }.toByteArray()
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
+        return Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(MessageDigest.getInstance("SHA-256").digest(bytes))
     }
 
     private fun ByteArrayOutputStream.string(value: String?) {
@@ -91,9 +94,11 @@ internal object SqsExtendedPolicyFingerprint {
             context.toSortedMap().entries.joinToString(";") { (key, value) -> "$key=$value" }
         }
 
-    private fun Map<String, String>.requiresVersion2Fingerprint(): Boolean = any { (key, value) ->
-        key.isBlank() || key.containsFingerprintDelimiter() || value.containsFingerprintDelimiter()
-    }
+    private fun Map<String, String>.requiresVersion2Fingerprint(): Boolean =
+        any { (key, value) ->
+            key.isBlank() || key.containsFingerprintDelimiter() || value.containsFingerprintDelimiter()
+        }
 
-    private fun String.containsFingerprintDelimiter(): Boolean = any { it == ';' || it == '=' }
+    private fun String.containsFingerprintDelimiter(): Boolean =
+        any { it == ';' || it == '=' }
 }

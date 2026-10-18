@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.spring.kinesis
 
+import io.bluetape4k.support.requireGe
+import io.bluetape4k.support.requireInRange
+import io.bluetape4k.support.requirePositiveNumber
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.io.Serializable
 import java.net.URI
@@ -20,17 +23,17 @@ data class KinesisProperties(
     val endpointOverride: URI? = null,
     val streams: Map<String, Stream> = emptyMap(),
     val consumer: Consumer = Consumer(),
-) : Serializable {
+): Serializable {
 
     /**
      * [KinesisOperations.createConfiguredStream]에서 사용하는 선언적 스트림 설정입니다.
      */
     data class Stream(
         val shardCount: Int = 1,
-    ) : Serializable {
+    ): Serializable {
 
         init {
-            require(shardCount >= 1) { "shardCount must be greater than or equal to 1." }
+            shardCount.requirePositiveNumber("shardCount")
         }
 
         companion object {
@@ -50,19 +53,17 @@ data class KinesisProperties(
         val initialThrottleBackoff: Duration = KinesisRecordFlowOptions.DEFAULT_INITIAL_THROTTLE_BACKOFF,
         val maxThrottleBackoff: Duration = KinesisRecordFlowOptions.DEFAULT_MAX_THROTTLE_BACKOFF,
         val jitterRatio: Double = KinesisRecordFlowOptions.DEFAULT_JITTER_RATIO,
-    ) : Serializable {
+    ): Serializable {
 
         init {
-            require(batchLimit in 1..KinesisRecordFlowOptions.MAX_KINESIS_BATCH_LIMIT) {
-                "batchLimit must be between 1 and ${KinesisRecordFlowOptions.MAX_KINESIS_BATCH_LIMIT}."
-            }
-            require(!pollInterval.isNegative) { "pollInterval must not be negative." }
-            require(!emptyBackoff.isNegative) { "emptyBackoff must not be negative." }
-            require(maxIteratorRetries >= 1) { "maxIteratorRetries must be greater than or equal to 1." }
-            require(maxThrottleRetries >= 1) { "maxThrottleRetries must be greater than or equal to 1." }
-            require(!initialThrottleBackoff.isNegative) { "initialThrottleBackoff must not be negative." }
-            require(!maxThrottleBackoff.isNegative) { "maxThrottleBackoff must not be negative." }
-            require(jitterRatio in 0.0..1.0) { "jitterRatio must be between 0.0 and 1.0." }
+            batchLimit.requireInRange(1, KinesisRecordFlowOptions.MAX_KINESIS_BATCH_LIMIT, "batchLimit")
+            pollInterval.requireGe(Duration.ZERO, "pollInterval")
+            emptyBackoff.requireGe(Duration.ZERO, "emptyBackoff")
+            maxIteratorRetries.requirePositiveNumber("maxIteratorRetries")
+            maxThrottleRetries.requirePositiveNumber("maxThrottleRetries")
+            initialThrottleBackoff.requireGe(Duration.ZERO, "initialThrottleBackoff")
+            maxThrottleBackoff.requireGe(Duration.ZERO, "maxThrottleBackoff")
+            jitterRatio.requireInRange(0.0, 1.0, "jitterRatio")
         }
 
         internal fun toFlowOptions(): KinesisRecordFlowOptions =

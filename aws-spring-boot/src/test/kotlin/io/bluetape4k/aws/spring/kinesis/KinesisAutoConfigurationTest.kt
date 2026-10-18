@@ -1,16 +1,24 @@
 package io.bluetape4k.aws.spring.kinesis
 
-import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.AwsClientCustomizationContext
-import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldHaveSize
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.aws.spring.AwsAsyncClientCustomizer
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.AwsClientCustomizationContext
+import io.bluetape4k.aws.spring.AwsClientCustomizer
+import io.bluetape4k.javatimes.millis
+import io.bluetape4k.javatimes.seconds
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -20,9 +28,10 @@ import org.springframework.core.Ordered
 import software.amazon.awssdk.awscore.client.builder.AwsAsyncClientBuilder
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClientBuilder
-import java.time.Duration
 
 class KinesisAutoConfigurationTest {
+
+    companion object: KLogging()
 
     private val contextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -36,10 +45,10 @@ class KinesisAutoConfigurationTest {
     @Test
     fun `register Kinesis client and operations`() {
         contextRunner.run { context ->
-            context.getBeansOfType(KinesisAsyncClient::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KinesisProperties::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KinesisOperations::class.java).size shouldBeEqualTo 1
-            context.getBeansOfType(KinesisCoroutinesTemplate::class.java).size shouldBeEqualTo 1
+            context.getBeansOfType<KinesisAsyncClient>() shouldHaveSize 1
+            context.getBeansOfType<KinesisProperties>() shouldHaveSize 1
+            context.getBeansOfType<KinesisOperations>() shouldHaveSize 1
+            context.getBeansOfType<KinesisCoroutinesTemplate>() shouldHaveSize 1
         }
     }
 
@@ -48,8 +57,8 @@ class KinesisAutoConfigurationTest {
         contextRunner
             .withPropertyValues("bluetape4k.aws.kinesis.enabled=false")
             .run { context ->
-                context.getBeansOfType(KinesisAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(KinesisOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<KinesisAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<KinesisOperations>().shouldBeEmpty()
             }
     }
 
@@ -60,9 +69,9 @@ class KinesisAutoConfigurationTest {
         contextRunner
             .withBean(KinesisAsyncClient::class.java, { customClient })
             .run { context ->
-                context.getBeansOfType(KinesisAsyncClient::class.java).size shouldBeEqualTo 1
-                context.getBean(KinesisAsyncClient::class.java) shouldBeSameInstanceAs customClient
-                context.getBeansOfType(KinesisOperations::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<KinesisAsyncClient>() shouldHaveSize 1
+                context.getBean<KinesisAsyncClient>() shouldBeSameInstanceAs customClient
+                context.getBeansOfType<KinesisOperations>() shouldHaveSize 1
             }
     }
 
@@ -71,9 +80,9 @@ class KinesisAutoConfigurationTest {
         contextRunner
             .withBean(KinesisOperations::class.java, { NoopKinesisOperations })
             .run { context ->
-                context.getBeansOfType(KinesisOperations::class.java).size shouldBeEqualTo 1
-                context.getBeansOfType(KinesisCoroutinesTemplate::class.java).size shouldBeEqualTo 0
-                context.getBean(KinesisOperations::class.java) shouldBeSameInstanceAs NoopKinesisOperations
+                context.getBeansOfType<KinesisOperations>() shouldHaveSize 1
+                context.getBeansOfType<KinesisCoroutinesTemplate>().shouldBeEmpty()
+                context.getBean<KinesisOperations>() shouldBeSameInstanceAs NoopKinesisOperations
             }
     }
 
@@ -87,6 +96,8 @@ class KinesisAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "region is required"
             }
     }
@@ -106,7 +117,7 @@ class KinesisAutoConfigurationTest {
             )
             .run { context ->
                 context.startupFailure.shouldBeNull()
-                context.getBeansOfType(KinesisAsyncClient::class.java).size shouldBeEqualTo 1
+                context.getBeansOfType<KinesisAsyncClient>() shouldHaveSize 1
             }
     }
 
@@ -117,7 +128,7 @@ class KinesisAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(KinesisCustomizerConfig::class.java)
             .run { context ->
-                context.getBean(KinesisAsyncClient::class.java).shouldNotBeNull()
+                context.getBean<KinesisAsyncClient>().shouldNotBeNull()
                 KinesisCustomizerConfig.calls shouldBeEqualTo listOf("global:kinesis", "kinesis")
             }
     }
@@ -127,8 +138,8 @@ class KinesisAutoConfigurationTest {
         contextRunner
             .withClassLoader(FilteredClassLoader("software.amazon.awssdk.services.kinesis"))
             .run { context ->
-                context.getBeansOfType(KinesisAsyncClient::class.java).size shouldBeEqualTo 0
-                context.getBeansOfType(KinesisOperations::class.java).size shouldBeEqualTo 0
+                context.getBeansOfType<KinesisAsyncClient>().shouldBeEmpty()
+                context.getBeansOfType<KinesisOperations>().shouldBeEmpty()
             }
     }
 
@@ -147,16 +158,17 @@ class KinesisAutoConfigurationTest {
                 "bluetape4k.aws.kinesis.consumer.jitter-ratio=0.5",
             )
             .run { context ->
-                val properties = context.getBean(KinesisProperties::class.java)
+                val properties = context.getBean<KinesisProperties>()
 
+                log.debug { "properties=$properties" }
                 properties.streams["orders"]?.shardCount shouldBeEqualTo 3
                 properties.consumer.batchLimit shouldBeEqualTo 250
-                properties.consumer.pollInterval shouldBeEqualTo Duration.ofMillis(500)
-                properties.consumer.emptyBackoff shouldBeEqualTo Duration.ofSeconds(2)
+                properties.consumer.pollInterval shouldBeEqualTo 500.millis()
+                properties.consumer.emptyBackoff shouldBeEqualTo 2.seconds()
                 properties.consumer.maxIteratorRetries shouldBeEqualTo 4
                 properties.consumer.maxThrottleRetries shouldBeEqualTo 6
-                properties.consumer.initialThrottleBackoff shouldBeEqualTo Duration.ofMillis(100)
-                properties.consumer.maxThrottleBackoff shouldBeEqualTo Duration.ofSeconds(5)
+                properties.consumer.initialThrottleBackoff shouldBeEqualTo 100.millis()
+                properties.consumer.maxThrottleBackoff shouldBeEqualTo 5.seconds()
                 properties.consumer.jitterRatio shouldBeEqualTo 0.5
             }
     }
@@ -170,6 +182,8 @@ class KinesisAutoConfigurationTest {
                 val messages = generateSequence(context.startupFailure) { it.cause }
                     .mapNotNull { it.message }
                     .joinToString("\n")
+
+                log.debug { "messages=$messages" }
                 messages shouldContain "batchLimit"
             }
     }
@@ -186,7 +200,7 @@ class KinesisAutoConfigurationTest {
 
         private class RecordingAsyncCustomizer(
             private val name: String,
-        ) : AwsAsyncClientCustomizer, Ordered {
+        ): AwsAsyncClientCustomizer, Ordered {
             override fun customize(
                 context: AwsClientCustomizationContext,
                 builder: AwsAsyncClientBuilder<*, *>,

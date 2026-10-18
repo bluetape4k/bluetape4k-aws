@@ -7,30 +7,29 @@ import io.bluetape4k.aws.spring.AwsAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsAutoConfiguration
 import io.bluetape4k.aws.spring.sns.SnsOperations
 import io.bluetape4k.aws.spring.sns.SnsPublishRequest
-import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.jackson3.Jackson
 import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.logging.KLogging
+import io.bluetape4k.logging.debug
+import io.bluetape4k.support.requireNotNull
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.future.await
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sns.SnsAsyncClient
+import software.amazon.awssdk.services.sns.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
-import software.amazon.awssdk.services.sns.model.MessageAttributeValue
-import java.util.UUID
-import tools.jackson.databind.ObjectMapper
 
 /** Floci-first SNS fanout과 SQS envelope 변환을 함께 검증합니다. */
-class SqsSnsMessageConverterAwsEmulatorTest {
+class SqsSnsMessageConverterAwsEmulatorTest: AbstractSqsTest() {
 
-    companion object {
-        private val awsEmulator by lazy {
-            AwsSpringBootTestEmulator.get("sns", "sqs")
-        }
-    }
+    companion object: KLogging()
 
     private fun contextRunner(): ApplicationContextRunner = ApplicationContextRunner()
         .withConfiguration(
@@ -52,9 +51,9 @@ class SqsSnsMessageConverterAwsEmulatorTest {
     @Test
     fun `Floci SNS fanout converts typed payload and preserves metadata`() {
         contextRunner().run { context ->
-            val sns = context.getBean(SnsOperations::class.java)
-            val sqs = context.getBean(SqsOperations::class.java)
-            val objectMapper = ObjectMapper()
+            val sns = context.getBean<SnsOperations>()
+            val sqs = context.getBean<SqsOperations>()
+            val objectMapper = Jackson.defaultJsonMapper
 
             runSuspendIO {
                 val sqsClient = sqsClient()
@@ -67,7 +66,7 @@ class SqsSnsMessageConverterAwsEmulatorTest {
                         it.attributes(mapOf(QueueAttributeName.POLICY to queuePolicy(queueArn, topicArn)))
                     }.await()
 
-                    context.getBean(software.amazon.awssdk.services.sns.SnsAsyncClient::class.java)
+                    context.getBean<SnsAsyncClient>()
                         .subscribe {
                             it.topicArn(topicArn)
                             it.protocol("sqs")
@@ -92,10 +91,14 @@ class SqsSnsMessageConverterAwsEmulatorTest {
                     )
 
                     val received = sqs.receive(queueUrl, maxMessages = 1, waitTimeSeconds = 5)
+                        .onEach { log.debug { "Received: $it" } }
+
                     received shouldHaveSize 1
+
                     val notification = SnsMessageConverter(objectMapper)
                         .convertNotification(received.single(), String::class.java)
 
+                    log.debug { "notification=$notification" }
                     notification.message shouldBeEqualTo orderId
                     notification.topicArn shouldBeEqualTo topicArn
                     notification.subject shouldBeEqualTo "Order created"
@@ -116,14 +119,13 @@ class SqsSnsMessageConverterAwsEmulatorTest {
         .build()
 
     private suspend fun queueArn(client: SqsAsyncClient, queueUrl: String): String =
-        requireNotNull(
-            client.getQueueAttributes {
-                it.queueUrl(queueUrl)
-                it.attributeNames(QueueAttributeName.QUEUE_ARN)
-            }.await().attributes()[QueueAttributeName.QUEUE_ARN]
-        ) {
-            "QueueArn attribute must be returned by the AWS emulator."
-        }
+        client.getQueueAttributes {
+            it.queueUrl(queueUrl)
+            it.attributeNames(QueueAttributeName.QUEUE_ARN)
+        }.await().attributes()[QueueAttributeName.QUEUE_ARN]
+            .requireNotNull {
+                "QueueArn attribute must be returned by the AWS emulator."
+            }
 
     private fun queuePolicy(queueArn: String, topicArn: String): String =
         """
@@ -138,5 +140,4 @@ class SqsSnsMessageConverterAwsEmulatorTest {
           }]
         }
         """.trimIndent()
-
 }

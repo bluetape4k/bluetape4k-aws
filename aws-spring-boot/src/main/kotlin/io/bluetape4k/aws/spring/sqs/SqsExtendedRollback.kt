@@ -60,9 +60,9 @@ data class SqsExtendedRehydrationResult(
 
     val verified: Boolean
         get() = rehydratedCount == quarantinedPointerCount &&
-            destinationPointerCount == 0 &&
-            pointerRemaining == 0 &&
-            idempotent
+                destinationPointerCount == 0 &&
+                pointerRemaining == 0 &&
+                idempotent
 }
 
 /** rollback controller가 수행해야 하는 외부 side effect 경계입니다. */
@@ -165,7 +165,7 @@ class SqsExtendedRollbackCoordinator(
                 continue
             }
             val windowComplete = probe.visibilityWindowComplete ||
-                probe.observedAt >= firstEmptyAt.plusSeconds(observationWindowSeconds)
+                    probe.observedAt >= firstEmptyAt.plusSeconds(observationWindowSeconds)
             if (windowComplete) return true
         }
     }

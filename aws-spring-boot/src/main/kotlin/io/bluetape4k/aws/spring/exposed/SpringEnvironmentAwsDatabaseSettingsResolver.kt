@@ -7,9 +7,11 @@ import io.bluetape4k.aws.exposed.AwsDatabasePoolProperties
 import io.bluetape4k.aws.exposed.AwsDatabaseSettingsResolver
 import io.bluetape4k.aws.exposed.AwsRdsIamAuthenticationProperties
 import io.bluetape4k.aws.exposed.AwsSecretString
+import io.bluetape4k.logging.KLogging
 import org.springframework.core.env.ConfigurableEnvironment
 import org.springframework.core.env.EnumerablePropertySource
 import org.springframework.core.env.Environment
+import org.springframework.core.env.getProperty
 import java.time.Duration
 
 /**
@@ -40,18 +42,14 @@ internal class SpringEnvironmentAwsDatabaseSettingsResolver(
         if (source == null) {
             return this
         }
-        val prefix = source.prefix?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return this
+        val prefix = source.prefix?.trim()?.takeIf { it.isNotEmpty() } ?: return this
 
         val overlay = ConnectionOverlay(prefix)
         if (!overlay.hasAnyProperty()) {
             if (source.optional) {
                 return this
             }
-            throw IllegalStateException(
-                "No Spring Environment properties found for ${source.type} source '${source.sourceId}' " +
-                    "under prefix '$prefix'."
-            )
+            error("No Spring Environment properties found for ${source.type} source '${source.sourceId}' under prefix '$prefix'.")
         }
 
         return copy(
@@ -62,22 +60,23 @@ internal class SpringEnvironmentAwsDatabaseSettingsResolver(
             pool = overlay.pool(pool),
             dataSourceProperties = dataSourceProperties + overlay.map("data-source-properties"),
             metadata = metadata + overlay.map("metadata"),
-            authenticationMode = overlay.enum<AwsDatabaseAuthenticationMode>("authentication-mode") ?: authenticationMode,
+            authenticationMode = overlay.enum<AwsDatabaseAuthenticationMode>("authentication-mode")
+                ?: authenticationMode,
             rdsIam = overlay.rdsIam(rdsIam),
         )
     }
 
     private inner class ConnectionOverlay(
         /** overlay를 적용할 Spring property prefix입니다. */
-        private val prefix: String,
+        prefix: String,
     ) {
 
         private val keyPrefix = "$prefix."
 
         fun hasAnyProperty(): Boolean =
             knownKeys.any { environment.containsProperty("$keyPrefix$it") } ||
-                map("data-source-properties").isNotEmpty() ||
-                map("metadata").isNotEmpty()
+                    map("data-source-properties").isNotEmpty() ||
+                    map("metadata").isNotEmpty()
 
         fun string(name: String): String? =
             environment.getProperty("$keyPrefix$name")
@@ -104,10 +103,10 @@ internal class SpringEnvironmentAwsDatabaseSettingsResolver(
                 hostname = string("rds-iam.hostname") ?: current?.hostname ?: "",
                 port = int("rds-iam.port") ?: current?.port ?: 0,
                 username = string("rds-iam.username") ?: current?.username,
-                tokenTtl = duration("rds-iam.token-ttl") ?: current?.tokenTtl
-                ?: AwsRdsIamAuthenticationProperties.MAX_TOKEN_TTL,
-                refreshBeforeExpiry = duration("rds-iam.refresh-before-expiry") ?: current?.refreshBeforeExpiry
-                ?: AwsRdsIamAuthenticationProperties.DEFAULT_REFRESH_BEFORE_EXPIRY,
+                tokenTtl = duration("rds-iam.token-ttl")
+                    ?: current?.tokenTtl ?: AwsRdsIamAuthenticationProperties.MAX_TOKEN_TTL,
+                refreshBeforeExpiry = duration("rds-iam.refresh-before-expiry")
+                    ?: current?.refreshBeforeExpiry ?: AwsRdsIamAuthenticationProperties.DEFAULT_REFRESH_BEFORE_EXPIRY,
             )
         }
 
@@ -115,31 +114,30 @@ internal class SpringEnvironmentAwsDatabaseSettingsResolver(
             val mapPrefix = "$keyPrefix$name."
             return enumerablePropertyNames()
                 .filter { it.startsWith(mapPrefix) }
-                .associate { propertyName ->
-                    propertyName.removePrefix(mapPrefix) to environment.getProperty(propertyName).orEmpty()
-                }
+                .associate { it.removePrefix(mapPrefix) to environment.getProperty(it).orEmpty() }
                 .filterKeys { it.isNotBlank() }
         }
 
         private fun int(name: String): Int? =
-            environment.getProperty("$keyPrefix$name", Int::class.java)
+            environment.getProperty<Int>("$keyPrefix$name")
 
         private fun long(name: String): Long? =
-            environment.getProperty("$keyPrefix$name", Long::class.java)
+            environment.getProperty<Long>("$keyPrefix$name")
 
         private fun duration(name: String): Duration? =
-            environment.getProperty("$keyPrefix$name", Duration::class.java)
+            environment.getProperty<Duration>("$keyPrefix$name")
     }
 
     private fun enumerablePropertyNames(): Sequence<String> {
         val configurable = environment as? ConfigurableEnvironment ?: return emptySequence()
+
         return configurable.propertySources.asSequence()
             .filterIsInstance<EnumerablePropertySource<*>>()
             .flatMap { it.propertyNames.asSequence() }
             .distinct()
     }
 
-    private companion object {
+    private companion object: KLogging() {
         val rdsIamKeys = listOf(
             "rds-iam.region",
             "rds-iam.hostname",

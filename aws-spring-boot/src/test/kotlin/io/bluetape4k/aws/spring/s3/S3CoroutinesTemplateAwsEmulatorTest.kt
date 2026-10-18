@@ -1,35 +1,35 @@
 package io.bluetape4k.aws.spring.s3
 
-import io.bluetape4k.aws.spring.AwsAutoConfiguration
-import io.bluetape4k.aws.spring.kms.KmsDataKey
-import io.bluetape4k.aws.spring.kms.KmsOperations
 import io.bluetape4k.assertions.shouldBeEmpty
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeTrue
 import io.bluetape4k.assertions.shouldContain
-import io.bluetape4k.junit5.coroutines.runSuspendIO
-import io.bluetape4k.aws.spring.test.AwsSpringBootTestEmulator
+import io.bluetape4k.assertions.shouldNotContentEqual
+import io.bluetape4k.aws.spring.AwsAutoConfiguration
+import io.bluetape4k.aws.spring.kms.KmsDataKey
+import io.bluetape4k.aws.spring.kms.KmsOperations
 import io.bluetape4k.codec.Base58
+import io.bluetape4k.coroutines.flow.extensions.log
+import io.bluetape4k.junit5.coroutines.runSuspendIO
+import io.bluetape4k.support.toUtf8Bytes
 import io.bluetape4k.testcontainers.aws.getCredentialProvider
 import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.services.kms.model.DataKeySpec
-import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.S3AsyncClient
+import software.amazon.awssdk.services.s3.S3Client
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
-class S3CoroutinesTemplateAwsEmulatorTest {
+class S3CoroutinesTemplateAwsEmulatorTest: AbstractS3Test() {
 
     companion object {
-        private val awsEmulator by lazy {
-            AwsSpringBootTestEmulator.get("s3")
-        }
         private val bucketName: String = "spring-s3-${Base58.randomString(8).lowercase()}"
     }
 
@@ -53,8 +53,8 @@ class S3CoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `upload download list delete object through S3Operations`() {
         contextRunner().run { context ->
-            val s3Client = context.getBean(S3Client::class.java)
-            val operations = context.getBean(S3Operations::class.java)
+            val s3Client = context.getBean<S3Client>()
+            val operations = context.getBean<S3Operations>()
             s3Client.createBucket { it.bucket(bucketName) }
 
             runSuspendIO {
@@ -72,7 +72,11 @@ class S3CoroutinesTemplateAwsEmulatorTest {
 
                 val page = operations.listPage(bucketName, prefix = "docs/", maxKeys = 10)
                 page.objects.map { it.key() } shouldContain key
-                operations.listFlow(bucketName, prefix = "docs/", pageSize = 1).toList().map { it.key() } shouldContain key
+
+                operations.listFlow(bucketName, prefix = "docs/", pageSize = 1)
+                    .log("List")
+                    .toList()
+                    .map { it.key() } shouldContain key
 
                 val resource = operations.resource(bucketName, key)
                 resource.exists().shouldBeTrue()
@@ -99,8 +103,8 @@ class S3CoroutinesTemplateAwsEmulatorTest {
         @TempDir tempDir: Path,
     ) {
         contextRunner().run { context ->
-            val s3Client = context.getBean(S3Client::class.java)
-            val transferOperations = context.getBean(S3TransferOperations::class.java)
+            val s3Client = context.getBean<S3Client>()
+            val transferOperations = context.getBean<S3TransferOperations>()
             val transferBucketName = "spring-s3-transfer-${Base58.randomString(8).lowercase()}"
             s3Client.createBucket { it.bucket(transferBucketName) }
 
@@ -118,7 +122,7 @@ class S3CoroutinesTemplateAwsEmulatorTest {
                 val inlineUpload = transferOperations.upload(
                     bucket = transferBucketName,
                     key = inlineKey,
-                    bytes = contents.toByteArray(StandardCharsets.UTF_8),
+                    bytes = contents.toUtf8Bytes(),
                 )
                 inlineUpload.response().eTag().isNullOrBlank() shouldBeEqualTo false
                 transferOperations.downloadBytes(transferBucketName, inlineKey)
@@ -138,18 +142,18 @@ class S3CoroutinesTemplateAwsEmulatorTest {
     @Test
     fun `streaming output and typed object operations complete through the emulator`() {
         contextRunner().run { context ->
-            val s3Client = context.getBean(S3Client::class.java)
+            val s3Client = context.getBean<S3Client>()
             val transferBucketName = "spring-s3-stream-${Base58.randomString(8).lowercase()}"
             s3Client.createBucket { it.bucket(transferBucketName) }
 
             runSuspendIO {
-                val provider = context.getBean(S3OutputStreamProvider::class.java)
+                val provider = context.getBean<S3OutputStreamProvider>()
                 provider.outputStream(
                     bucket = transferBucketName,
                     key = "stream/report.txt",
                     metadata = mapOf("source" to "issue-464"),
                 ).use { output ->
-                    output.write("streamed through TransferManager".encodeToByteArray())
+                    output.write("streamed through TransferManager".toUtf8Bytes())
                 }
 
                 val stored = s3Client.getObjectAsBytes {
@@ -159,9 +163,10 @@ class S3CoroutinesTemplateAwsEmulatorTest {
                 stored.response().contentType() shouldBeEqualTo "text/plain"
 
                 val converter = JacksonS3ObjectConverter(tools.jackson.databind.ObjectMapper())
+
                 @Suppress("UNCHECKED_CAST")
                 val typedConverter = converter as S3ObjectConverter<Map<String, Any>>
-                val typedOperations = context.getBean(S3ObjectOperations::class.java)
+                val typedOperations = context.getBean<S3ObjectOperations>()
                 val document = mapOf<String, Any>("name" to "bluetape", "revision" to 4)
                 typedOperations.uploadObject(
                     bucket = transferBucketName,
@@ -188,9 +193,9 @@ class S3CoroutinesTemplateAwsEmulatorTest {
                 "bluetape4k.aws.s3.crt.max-concurrency=2",
             )
             .run { context ->
-                context.getBean(S3AsyncClient::class.java).javaClass.name shouldContain "Crt"
-                val s3Client = context.getBean(S3Client::class.java)
-                val operations = context.getBean(S3Operations::class.java)
+                context.getBean<S3AsyncClient>().javaClass.name shouldContain "Crt"
+                val s3Client = context.getBean<S3Client>()
+                val operations = context.getBean<S3Operations>()
                 val bucket = "spring-s3-crt-${Base58.randomString(8).lowercase()}"
                 s3Client.createBucket { it.bucket(bucket) }
 
@@ -211,8 +216,8 @@ class S3CoroutinesTemplateAwsEmulatorTest {
                 "bluetape4k.aws.s3.client-side-encryption.encryption-context.service=s3-test",
             )
             .run { context ->
-                val s3Client = context.getBean(S3Client::class.java)
-                val encryptedOperations = context.getBean(S3ClientSideEncryptionOperations::class.java)
+                val s3Client = context.getBean<S3Client>()
+                val encryptedOperations = context.getBean<S3ClientSideEncryptionOperations>()
                 val encryptedBucketName = "spring-s3-enc-${Base58.randomString(8).lowercase()}"
                 s3Client.createBucket { it.bucket(encryptedBucketName) }
 
@@ -223,12 +228,13 @@ class S3CoroutinesTemplateAwsEmulatorTest {
                     encryptedOperations.uploadEncrypted(
                         bucket = encryptedBucketName,
                         key = key,
-                        bytes = plaintext.toByteArray(StandardCharsets.UTF_8),
+                        bytes = plaintext.toUtf8Bytes(),
                         contentType = "text/plain",
                     )
 
-                    val stored = s3Client.getObjectAsBytes { it.bucket(encryptedBucketName).key(key) }
-                    stored.asByteArray().contentEquals(plaintext.toByteArray(StandardCharsets.UTF_8)) shouldBeEqualTo false
+                    val stored = s3Client
+                        .getObjectAsBytes { it.bucket(encryptedBucketName).key(key) }
+                    stored.asByteArray() shouldNotContentEqual plaintext.toUtf8Bytes()
                     stored.response().metadata().keys shouldContain "bt4k-cek-alg"
 
                     encryptedOperations.downloadEncryptedText(encryptedBucketName, key) shouldBeEqualTo plaintext

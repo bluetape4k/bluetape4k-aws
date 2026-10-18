@@ -1,6 +1,4 @@
-import org.gradle.api.tasks.JavaExec
 import org.gradle.jvm.tasks.Jar
-import org.gradle.process.CommandLineArgumentProvider
 
 plugins {
     kotlin("plugin.allopen")
@@ -8,6 +6,7 @@ plugins {
     alias(bt4k.plugins.kotlin.noarg)
     alias(bt4k.plugins.kotlinx.benchmark)
     alias(bt4k.plugins.spring.boot) apply false
+    kotlin("kapt")
 }
 
 allOpen {
@@ -177,7 +176,7 @@ dependencies {
     // bluetape4k-aws modules
     api(project(":bluetape4k-aws-java"))
     compileOnly(project(":bluetape4k-aws-exposed"))
-    compileOnly(project(":bluetape4k-aws-kotlin"))
+    //compileOnly(project(":bluetape4k-aws-kotlin"))
     compileOnly(bt4k.aws.dax.client)
     compileOnly(libs.aws2.cloudwatch)
     compileOnly(libs.aws2.cloudwatchlogs)
@@ -210,27 +209,6 @@ dependencies {
     compileOnly(bt4k.bluetape4k.testcontainers)
     testImplementation(bt4k.bluetape4k.junit5)
     testImplementation(testFixtures(project(":bluetape4k-aws-java")))
-    testImplementation(project(":bluetape4k-aws-exposed"))
-    testImplementation(bt4k.aws.dax.client)
-    testImplementation(libs.aws2.cloudwatch)
-    testImplementation(libs.aws2.cloudwatchlogs)
-    testImplementation(libs.aws2.dynamodb.enhanced)
-    testImplementation(libs.aws2.eventbridge)
-    testImplementation(libs.aws2.appconfigdata)
-    testImplementation(libs.aws2.imds)
-    testImplementation(libs.aws2.kinesis)
-    testImplementation(libs.aws2.kms)
-    testImplementation(libs.aws2.s3)
-    testImplementation(libs.aws2.aws.crt.client)
-    testImplementation(libs.aws2.s3control)
-    testImplementation(libs.aws2.s3vectors)
-    testImplementation(libs.aws2.secretsmanager)
-    testImplementation(libs.aws2.sesv2)
-    testImplementation(libs.aws2.sns)
-    testImplementation(libs.aws2.sns.message.manager)
-    testImplementation(libs.aws2.sqs)
-    testImplementation(libs.aws2.sts)
-    testImplementation(libs.aws2.ssm)
 
     // Spring Boot (autoconfigure only — no runtime dep)
     compileOnly(libs.spring.boot.autoconfigure)
@@ -262,15 +240,6 @@ dependencies {
     testImplementation(libs.spring.boot.starter.webflux)
     testImplementation("io.projectreactor:reactor-test")
     testImplementation(libs.spring.boot.micrometer.metrics)
-    testImplementation(libs.micrometer.registry.cloudwatch2)
-    testImplementation(libs.spring.context.support)
-    testImplementation(libs.spring.security.crypto)
-    testImplementation(platform(bt4k.spring.modulith.bom))
-    testImplementation(libs.spring.modulith.events.api)
-    testImplementation(libs.spring.modulith.events.core)
-    testImplementation(libs.spring.modulith.events.jackson)
-    testImplementation(libs.jakarta.mail.api)
-    testImplementation(libs.angus.mail)
     testImplementation(bt4k.h2.v2)
     testImplementation(libs.testcontainers.localstack)
     testImplementation(libs.testcontainers.junit.jupiter)
@@ -283,11 +252,12 @@ dependencies {
     add("benchmarkImplementation", bt4k.jmh.core)
     add("benchmarkImplementation", libs.aws2.sns)
     add("benchmarkImplementation", libs.kotlinx.coroutines.core)
+    testImplementation(kotlin("test"))
 }
 
 tasks.withType<Test>().configureEach {
     systemProperty("bluetape4k.aws.emulator", System.getProperty("bluetape4k.aws.emulator", "floci"))
-    filter.setFailOnNoMatchingTests(true)
+    filter.isFailOnNoMatchingTests = true
     if (providers.gradleProperty("skipAwsEmulatorTests").map(String::toBoolean).orElse(false).get()) {
         exclude("**/*AwsEmulatorTest.class")
     }
@@ -307,4 +277,7 @@ tasks.register<Test>("compatibilityTest") {
         includeTestsMatching("io.bluetape4k.aws.spring.s3vectors.S3VectorsAutoConfigurationTest")
         includeTestsMatching("io.bluetape4k.aws.spring.ses.SesAutoConfigurationTest")
     }
+}
+repositories {
+    mavenCentral()
 }
