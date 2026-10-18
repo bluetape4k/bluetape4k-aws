@@ -38,7 +38,7 @@ class InMemoryDataKeyCacheTest {
         val second = cache[key].shouldNotBeNull()
         log.debug { "first=$first" }
         log.debug { "second=$second" }
-        
+
         try {
             first shouldNotBe dataKey
             first shouldNotBe second

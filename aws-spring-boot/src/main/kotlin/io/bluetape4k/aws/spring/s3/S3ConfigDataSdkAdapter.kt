@@ -43,7 +43,7 @@ internal object S3ConfigDataSdkAdapter: KLogging() {
         val source = resource.location.source as AwsConfigDataSource.S3
         val properties = configuration.backend as S3ConfigProperties
         val client = bootstrapContext.get<S3Client>().checkNotNull("S3Client")
-        
+
         return S3ConfigPropertySourceLoader.load(
             client,
             S3ConfigProperties.Source(

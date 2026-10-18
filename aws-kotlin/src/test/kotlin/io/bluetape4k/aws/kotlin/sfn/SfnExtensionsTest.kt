@@ -85,7 +85,7 @@ class SfnExtensionsTest {
             includedData = IncludedData.MetadataOnly
         }
         log.debug { "describeResult=$describeResult" }
-        
+
         stopResult shouldBeSameInstanceAs stop
         describeResult shouldBeSameInstanceAs describe
 
@@ -159,7 +159,7 @@ class SfnExtensionsTest {
                 "listExecutionsByMapRun must retain mapRunArn=$MAP_RUN_ARN and must not set stateMachineArn; " +
                 "actual mapRunArn=null, stateMachineArn=$STATE_MACHINE_ARN, " +
                 "statusFilter=null, redriveFilter=null"
-        
+
         coVerify(exactly = 0) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
 }

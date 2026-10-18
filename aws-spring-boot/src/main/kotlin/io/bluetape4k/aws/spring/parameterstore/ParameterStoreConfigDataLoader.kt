@@ -23,7 +23,7 @@ class ParameterStoreConfigDataLoader(
 
     override fun load(context: ConfigDataLoaderContext, resource: AwsConfigDataResource): ConfigData? {
         log.debug("Loading parameters from ${resource.backendKey}")
-        
+
         if (resource.isDisabled) {
             return AwsConfigDataFailurePolicy.toConfigData(resource, emptyMap())
         }

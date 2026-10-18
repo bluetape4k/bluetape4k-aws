@@ -67,7 +67,7 @@ class DynamoDbCoordinationSupportTest {
             nowEpochSeconds = 100,
         )
         log.debug { "noExpiry=$noExpiry" }
-        
+
         val expired = parseDynamoDbMetadataItem(
             schema,
             mapOf(

@@ -79,7 +79,7 @@ object SdkAsyncHttpClientProvider {
          */
         @JvmStatic
         val httpClient: SdkAsyncHttpClient by lazy {
-            awsCrtAsyncHttpClientOf().apply(ShutdownQueue::register) 
+            awsCrtAsyncHttpClientOf().apply(ShutdownQueue::register)
         }
     }
 

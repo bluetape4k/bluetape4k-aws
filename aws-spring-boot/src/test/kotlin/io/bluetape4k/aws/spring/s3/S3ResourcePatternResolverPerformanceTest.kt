@@ -58,7 +58,7 @@ class S3ResourcePatternResolverPerformanceTest {
             mockk<ListObjectsV2Iterable> {
                 every { iterator() } answers {
                     iteratorStarted.countDown()
-                    iteratorStarted.await(30.seconds).shouldBeTrue() // "paginator iterator start stalled" 
+                    iteratorStarted.await(30.seconds).shouldBeTrue() // "paginator iterator start stalled"
                     releaseIterators.await(120.seconds).shouldBeTrue() // "paginator release stalled"
                     pages.toMutableList().iterator()
                 }

@@ -180,7 +180,7 @@ class S3AccessGrantsAutoConfigurationTest: AbstractS3Test() {
             .run { context ->
                 context.getBean<S3ControlClient>().shouldNotBeNull()
                 context.getBean<S3ControlAsyncClient>().shouldNotBeNull()
-                
+
                 S3AccessGrantsCustomizerConfig.calls shouldBeEqualTo listOf(
                     "global-sync:s3control",
                     "s3control-sync",

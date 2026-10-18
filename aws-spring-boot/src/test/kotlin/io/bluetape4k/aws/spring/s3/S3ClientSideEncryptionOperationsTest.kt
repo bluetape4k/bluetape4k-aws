@@ -42,7 +42,7 @@ class S3ClientSideEncryptionOperationsTest: AbstractS3Test() {
 
         log.debug { "ordered.keyFingerprint=${ordered.keyFingerprint}" }
         log.debug { "reordered.keyFingerprint=${reordered.keyFingerprint}" }
-        
+
         ordered.keyFingerprint shouldBeEqualTo reordered.keyFingerprint
 
         val delimiterBearing = template(mapOf("a" to "b;c=d"))

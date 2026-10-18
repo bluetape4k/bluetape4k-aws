@@ -72,7 +72,7 @@ class DynamoDbCoordinationSchemaTest {
         val schema = DynamoDbCoordinationSchema(tableName = "coordination")
         val identifier = "가".repeat(DynamoDbCoordinationSchema.MAX_IDENTIFIER_UTF8_BYTES / 3 + 1)
         log.debug { "schema=$schema" }
-        
+
         assertFailsWith<IllegalArgumentException> {
             schema.resolve(DynamoDbCoordinationEntryKind.LOCK, identifier)
         }

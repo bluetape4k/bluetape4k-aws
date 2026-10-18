@@ -7,4 +7,4 @@ inline fun <reified T: Any> Binder.bind(name: String): BindResult<T> =
     bind(name, T::class.java)
 
 inline fun <reified T: Any> Binder.bindOrCreate(name: String): T =
-    bindOrCreate(name, T::class.java) 
+    bindOrCreate(name, T::class.java)

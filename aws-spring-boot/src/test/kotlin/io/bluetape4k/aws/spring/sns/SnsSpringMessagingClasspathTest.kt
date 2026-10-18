@@ -44,7 +44,7 @@ class SnsSpringMessagingClasspathTest {
         val fixtureBytes = javaClass.getResourceAsStream(LEGACY_FIXTURE_RESOURCE)
             .requireNotNull(LEGACY_FIXTURE_RESOURCE)
             .use { it.readBytes() }
-        
+
         val loader = MessagingDenyingFixtureClassLoader(
             parent = javaClass.classLoader,
             fixtureClassName = LEGACY_FIXTURE_CLASS_NAME,

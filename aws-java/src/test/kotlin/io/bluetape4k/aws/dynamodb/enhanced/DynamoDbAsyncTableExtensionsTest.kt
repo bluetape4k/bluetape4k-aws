@@ -93,7 +93,7 @@ class DynamoDbAsyncTableExtensionsTest: AbstractDynamodbTest() {
         val beforeDelete = table.getItem(entity.id).shouldNotBeNull()
         log.debug { "beforeDelete=$beforeDelete" }
 
-        // 삭제된 엔티티 
+        // 삭제된 엔티티
         val deleted = table.deleteItem(entity.id).shouldNotBeNull()
         log.debug { "deleted=$deleted" }
         deleted.id shouldBeEqualTo entity.id

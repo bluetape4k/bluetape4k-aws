@@ -91,7 +91,7 @@ internal class SqsBatchPerformanceRuntimeAdapter(
         withContext(dispatcher) { }
         val allocationStart = allocatedBytes(workerIds)
         val startedAt = System.nanoTime()
-        var allocated: Long 
+        var allocated: Long
         try {
             container.start()
             try {

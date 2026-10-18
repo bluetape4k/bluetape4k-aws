@@ -443,7 +443,7 @@ class S3ClientSideEncryptionProviderTest: AbstractS3Test() {
             ),
         )
         log.debug { "second=$second" }
-        
+
         first.keyFingerprint shouldNotBeEqualTo second.keyFingerprint
         testProviderTemplate(
             properties = S3Properties(

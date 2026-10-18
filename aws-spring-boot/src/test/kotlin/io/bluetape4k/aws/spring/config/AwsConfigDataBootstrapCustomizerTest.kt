@@ -38,7 +38,7 @@ class AwsConfigDataBootstrapCustomizerTest {
 
         val client = S3ConfigDataSdkAdapter.create(configuration)
         log.debug { "client=$client" }
-        
+
         services shouldBeEqualTo listOf("s3")
         client.shouldBeInstanceOf<S3Client>().close()
     }

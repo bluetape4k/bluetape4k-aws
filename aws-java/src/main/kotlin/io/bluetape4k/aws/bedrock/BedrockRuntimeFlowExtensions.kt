@@ -229,7 +229,7 @@ private class StreamCoordinator<T: Any>(
     private val emit: suspend (T) -> Unit,
 ) {
     companion object: KLoggingChannel()
-    
+
     private val mutex = Mutex()
     private val callbackLock = ReentrantLock()
     private val callbackSequence = AtomicLong()

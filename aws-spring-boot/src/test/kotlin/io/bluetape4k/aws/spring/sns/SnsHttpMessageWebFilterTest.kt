@@ -164,7 +164,7 @@ class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
         source.shouldBeInstanceOf<PooledDataBuffer>().isAllocated.shouldBeFalse()
         probe.replayBuffers.forEach { it.shouldBeInstanceOf<PooledDataBuffer>().isAllocated.shouldBeFalse() }
         exchange.response.statusCode.shouldBeNull()
-        
+
         coVerify(exactly = 0) {
             operations.confirmSubscription(any<SnsHttpMessage>(), any())
         }
@@ -211,7 +211,7 @@ class SnsHttpMessageWebFilterTest: AbstractSnsTest() {
         source.shouldBeInstanceOf<PooledDataBuffer>().isAllocated.shouldBeFalse()
         probe.replayBuffers.forEach { it.shouldBeInstanceOf<PooledDataBuffer>().isAllocated.shouldBeFalse() }
         exchange.response.statusCode.shouldBeNull()
-        
+
         coVerify(exactly = 0) {
             operations.confirmSubscription(any<SnsHttpMessage>(), any())
         }
