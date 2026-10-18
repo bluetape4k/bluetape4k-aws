@@ -90,7 +90,7 @@ class DynamoDbTableExtensionsTest: AbstractDynamodbTest() {
         val deleted = table.deleteItem(entity.id).shouldNotBeNull()
         deleted.id shouldBeEqualTo entity.id
 
-        // 삭제 후 조회 
+        // 삭제 후 조회
         table.getItem(entity.id).shouldBeNull()
 
         // cleanup

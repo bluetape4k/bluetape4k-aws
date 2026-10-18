@@ -22,7 +22,7 @@ class EventBridgeRequestSupportTest {
             putEventsRequestOf(emptyList())
         }
 
-        // 10개로 제한됨 
+        // 10개로 제한됨
         val entries = List(11) {
             putEventsRequestEntryOf("app.test", "event.$it", """{"id":$it}""")
         }

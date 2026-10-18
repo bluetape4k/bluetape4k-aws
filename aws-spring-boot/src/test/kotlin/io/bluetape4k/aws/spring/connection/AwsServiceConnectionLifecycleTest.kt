@@ -58,7 +58,7 @@ class AwsServiceConnectionLifecycleTest {
         thrown.message shouldContain "IllegalStateException"
         thrown.message shouldNotContain "secret"
         thrown.suppressed shouldHaveSize 1
-        
+
         events shouldBeEqualTo listOf("fixture cleanup", "context close", "container teardown")
     }
 
@@ -80,7 +80,7 @@ class AwsServiceConnectionLifecycleTest {
         thrown shouldBeSameInstanceAs cancellation
         thrown.suppressed shouldHaveSize 2
         thrown.suppressed.all { it.message.orEmpty().contains("secret") }.shouldBeFalse()
-        
+
         events shouldBeEqualTo listOf("fixture cleanup", "context close", "container teardown")
     }
 

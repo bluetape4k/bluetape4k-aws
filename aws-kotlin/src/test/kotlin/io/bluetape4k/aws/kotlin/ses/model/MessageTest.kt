@@ -91,7 +91,7 @@ class MessageTest {
             textBodyOf(contentOf("Body"))
         )
         log.debug { "msg=$msg" }
-        
+
         assertFailsWith<IllegalArgumentException> {
             sendEmailRequestOf(source = "", destination = dest, message = msg)
         }

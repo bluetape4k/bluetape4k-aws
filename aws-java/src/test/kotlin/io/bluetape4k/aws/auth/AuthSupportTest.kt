@@ -60,7 +60,7 @@ class AuthSupportTest: AbstractAwsTest() {
         val credentials = awsBasicCredentialsOf("myKey", "mySecret")
         val provider = staticCredentialsProviderOf(credentials)
 
-        provider.resolveCredentials().shouldBeInstanceOf<AwsBasicCredentials>() 
+        provider.resolveCredentials().shouldBeInstanceOf<AwsBasicCredentials>()
         provider.resolveCredentials().accessKeyId() shouldBeEqualTo "myKey"
     }
 }

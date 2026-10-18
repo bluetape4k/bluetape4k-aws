@@ -134,7 +134,7 @@ data class KinesisRecordFlowOptions(
         const val DEFAULT_MAX_ITERATOR_RETRIES: Int = 3
         const val DEFAULT_MAX_THROTTLE_RETRIES: Int = 5
         val DEFAULT_INITIAL_THROTTLE_BACKOFF: Duration = 500.millis()
-        val DEFAULT_MAX_THROTTLE_BACKOFF: Duration = 30.seconds() 
+        val DEFAULT_MAX_THROTTLE_BACKOFF: Duration = 30.seconds()
         const val DEFAULT_JITTER_RATIO: Double = 1.0
     }
 }

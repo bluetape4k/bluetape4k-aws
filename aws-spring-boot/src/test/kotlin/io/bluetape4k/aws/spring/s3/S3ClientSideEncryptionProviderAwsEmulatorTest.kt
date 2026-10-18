@@ -105,7 +105,7 @@ class S3ClientSideEncryptionProviderAwsEmulatorTest: AbstractS3Test() {
             val encrypted = context.getBean<S3ClientSideEncryptionOperations>()
             val s3Client = context.getBean<S3Client>()
             val bucket = ownerBucket("rsa")
-            s3Client.createBucket(bucket) 
+            s3Client.createBucket(bucket)
 
             try {
                 runSuspendIO {

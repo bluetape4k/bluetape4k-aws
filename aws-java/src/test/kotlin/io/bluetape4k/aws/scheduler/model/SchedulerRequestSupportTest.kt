@@ -46,7 +46,7 @@ class SchedulerRequestSupportTest {
             maximumWindowInMinutes = 15,
         )
         log.debug { "window=$window" }
-        
+
         val request = createScheduleRequestOf(
             name = "daily-job",
             scheduleExpression = "rate(1 day)",

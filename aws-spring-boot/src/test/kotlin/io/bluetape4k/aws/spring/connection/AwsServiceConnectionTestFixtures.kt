@@ -75,7 +75,7 @@ internal object AwsServiceConnectionTestFixtures {
         ownerToken.requireNotBlank { "owner token must not be blank" }
         bucket.requireContains(ownerToken) { "foreign bucket rejected" }
         key.requireContains(ownerToken) { "foreign object rejected" }
-        
+
         require(!bucket.contains('*') && !key.contains('*')) { "wildcard resource rejected" }
     }
 }

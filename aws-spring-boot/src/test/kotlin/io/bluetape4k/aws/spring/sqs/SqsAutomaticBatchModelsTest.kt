@@ -288,7 +288,7 @@ class SqsAutomaticBatchModelsTest {
             "receipt-secret",
         )
         log.debug { "deleteEntry=$deleteEntry" }
-        
+
         val success = SqsBatchSendSuccess(sendEntryId, "message-secret", "sequence-secret")
         val failure = SqsBatchEntryFailure(failedEntryId, SqsBatchFailureKind.SERVICE, "AccessDenied")
         return listOf(

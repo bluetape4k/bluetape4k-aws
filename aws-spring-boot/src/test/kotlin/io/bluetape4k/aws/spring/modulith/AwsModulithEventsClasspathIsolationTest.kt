@@ -52,7 +52,7 @@ class AwsModulithEventsClasspathIsolationTest {
             )
         ).bufferedReader().use { it.readLines() }
         log.debug { "imports=$imports" }
-        
+
         imports.count { it == AwsModulithEventsAutoConfiguration::class.qualifiedName } shouldBeEqualTo 1
         imports.none {
             it.startsWith("io.bluetape4k.aws.spring.modulith.") &&

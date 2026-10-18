@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.eventbridge.model.RemoveTargetsResponse
 
 class EventBridgeClientExtensionsTest: AbstractAwsTest() {
 
-    companion object: KLogging() 
+    companion object: KLogging()
 
     private val client = mockk<EventBridgeClient>()
 

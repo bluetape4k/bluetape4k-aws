@@ -68,7 +68,7 @@ class SnsHttpMessageServletFilterTest: AbstractSnsTest() {
 
         log.debug { "events=$events" }
         log.debug { "response=$response" }
-        
+
         events shouldBeEqualTo listOf("data", "all")
         response.status shouldBeEqualTo 200
     }

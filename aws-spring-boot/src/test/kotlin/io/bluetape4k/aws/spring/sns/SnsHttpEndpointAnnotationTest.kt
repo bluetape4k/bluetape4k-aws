@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 class SnsHttpEndpointAnnotationTest: AbstractSnsTest() {
 
     companion object: KLogging()
-    
+
     @Test
     fun `mapping annotations expose post header and no content`() {
         assertMapping(NotificationMessageMapping::class, "Notification")
