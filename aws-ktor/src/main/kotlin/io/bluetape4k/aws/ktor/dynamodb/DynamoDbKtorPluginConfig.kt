@@ -20,7 +20,10 @@ import kotlin.time.Duration.Companion.seconds
  * 계약:
  * - 주입된 [dynamoDbClient] 인스턴스는 애플리케이션이 계속 소유하며 플러그인은 닫지 않습니다.
  * - 클라이언트를 주입하지 않으면 [region]이 필요하고 플러그인이 AWS Kotlin SDK [DynamoDbClient]를 생성합니다.
- * - 외부 [httpClient]를 지정하지 않으면 생성된 client가 SDK 관리 HTTP 엔진을 사용합니다.
+ * - [httpClient] 또는 공유 [AwsKtorDefaults.kotlinHttpClient]를 지정하면 호출자가 엔진을 소유합니다.
+ *   DynamoDB 클라이언트를
+ *   먼저 닫고 공유 엔진을 마지막에 닫아야 합니다.
+ * - 두 설정을 모두 생략하면 생성된 client가 SDK 관리 HTTP 엔진을 사용합니다.
  * - [autoCreateTables]는 명시적으로 등록한 [table] 정의만 생성합니다.
  */
 class DynamoDbKtorPluginConfig {
@@ -37,7 +40,11 @@ class DynamoDbKtorPluginConfig {
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
     var credentialsProvider: CredentialsProvider? = null
 
-    /** 명시적 외부 소유권으로 사용할 선택적 Smithy HTTP 엔진입니다. 생략하면 SDK가 엔진을 관리합니다. */
+    /**
+     * 생성한 클라이언트에 전달할 호출자 소유 Smithy HTTP 엔진입니다.
+     * 공유 기본 엔진을 상속할 수 있으며,
+     * 두 설정을 모두 생략하면 SDK가 엔진을 관리합니다.
+     */
     var httpClient: HttpClientEngine? = null
 
     /** 애플리케이션 시작 시 등록된 테이블이 없으면 생성합니다. */
