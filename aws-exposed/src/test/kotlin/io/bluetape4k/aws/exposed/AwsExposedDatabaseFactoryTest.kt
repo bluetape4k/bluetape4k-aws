@@ -34,6 +34,18 @@ class AwsExposedDatabaseFactoryTest {
     companion object: KLogging()
 
     @Test
+    fun `public constructors retain their JVM signatures`() {
+        AwsExposedDatabaseFactory::class.java.getConstructor(
+            AwsDatabaseSettingsResolver::class.java,
+            AwsJdbcDataSourceFactory::class.java,
+        )
+        AwsSdkRdsIamAuthTokenGenerator::class.java.getConstructor()
+        AwsSdkRdsIamAuthTokenGenerator::class.java.getConstructor(
+            software.amazon.awssdk.services.rds.RdsUtilities::class.java,
+        )
+    }
+
+    @Test
     fun `secret string redacts generated connection output`() {
         val properties = AwsDatabaseConnectionProperties(
             url = "jdbc:h2:mem:redacted",

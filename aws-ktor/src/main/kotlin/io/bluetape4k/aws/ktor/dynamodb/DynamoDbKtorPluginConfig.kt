@@ -8,7 +8,6 @@ import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
-import io.bluetape4k.aws.kotlin.http.HttpClientEngineProvider
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.support.requireNotBlank
 import io.bluetape4k.support.requireNotEmpty
@@ -21,6 +20,7 @@ import kotlin.time.Duration.Companion.seconds
  * 계약:
  * - 주입된 [dynamoDbClient] 인스턴스는 애플리케이션이 계속 소유하며 플러그인은 닫지 않습니다.
  * - 클라이언트를 주입하지 않으면 [region]이 필요하고 플러그인이 AWS Kotlin SDK [DynamoDbClient]를 생성합니다.
+ * - 외부 [httpClient]를 지정하지 않으면 생성된 client가 SDK 관리 HTTP 엔진을 사용합니다.
  * - [autoCreateTables]는 명시적으로 등록한 [table] 정의만 생성합니다.
  */
 class DynamoDbKtorPluginConfig {
@@ -37,7 +37,7 @@ class DynamoDbKtorPluginConfig {
     /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 자격 증명 공급자입니다. */
     var credentialsProvider: CredentialsProvider? = null
 
-    /** 플러그인이 클라이언트를 생성할 때 사용하는 선택적인 Smithy HTTP 엔진입니다. */
+    /** 명시적 외부 소유권으로 사용할 선택적 Smithy HTTP 엔진입니다. 생략하면 SDK가 엔진을 관리합니다. */
     var httpClient: HttpClientEngine? = null
 
     /** 애플리케이션 시작 시 등록된 테이블이 없으면 생성합니다. */
@@ -93,7 +93,7 @@ class DynamoDbKtorPluginConfig {
                 "region must be configured when dynamoDbClient is not provided."
             },
             credentialsProvider = credentialsProvider ?: defaults.kotlinCredentialsProvider,
-            httpClient = httpClient ?: defaults.kotlinHttpClient ?: HttpClientEngineProvider.defaultHttpEngine,
+            httpClient = httpClient ?: defaults.kotlinHttpClient,
             builder = {
                 defaults.dynamoDbClientCustomizers.forEach { it.customize(this) }
                 clientBuilder()

@@ -131,7 +131,7 @@ class AwsExposedPluginConfig {
         ToStringBuilder(this)
             .add("startTimeout", startTimeout)
             .add("stopTimeout", stopTimeout)
-            .add("settingsResolver", settingsResolver)
+            .add("settingsResolverConfigured", settingsResolver !== NoopAwsDatabaseSettingsResolver)
             .toString()
 }
 
@@ -222,13 +222,14 @@ class AwsExposedConnectionConfig {
 
     override fun toString(): String =
         ToStringBuilder(this)
-            .add("url", url)
+            .add("urlConfigured", url.isNotBlank())
             .add("driverClassName", driverClassName)
-            .add("username", username)
-            .add("dataSourceProperties", dataSourceProperties)
-            .add("metadata", metadata)
+            .add("usernameConfigured", !username.isNullOrBlank())
+            .add("passwordConfigured", !password.isNullOrEmpty())
+            .add("dataSourcePropertyNames", dataSourceProperties.keys)
+            .add("metadataKeys", metadata.keys)
             .add("authenticationMode", authenticationMode)
-            .add("rdsIam", rdsIam)
+            .add("rdsIamConfigured", rdsIam != null)
             .toString()
 }
 

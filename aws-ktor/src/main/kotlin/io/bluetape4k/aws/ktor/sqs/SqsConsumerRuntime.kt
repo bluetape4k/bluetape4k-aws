@@ -275,8 +275,9 @@ class SqsMessageContext internal constructor(
 
     override fun toString(): String =
         ToStringBuilder(this)
-            .add("queueUrl", queueUrl)
-            .add("message", message)
+            .add("queueUrlConfigured", queueUrl.isNotBlank())
+            .add("messageIdPresent", !message.messageId().isNullOrBlank())
+            .add("bodyPresent", !message.body().isNullOrEmpty())
             .toString()
 }
 

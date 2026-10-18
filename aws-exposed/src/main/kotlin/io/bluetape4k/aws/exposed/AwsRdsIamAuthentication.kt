@@ -140,19 +140,13 @@ class AwsSdkRdsIamAuthTokenGenerator private constructor(
     private val delegate: CoreRdsIamAuthTokenGenerator,
 ): AwsRdsIamAuthTokenGenerator {
 
-    companion object: KLogging() {
-        operator fun invoke(): AwsSdkRdsIamAuthTokenGenerator {
-            return AwsSdkRdsIamAuthTokenGenerator(CoreAwsSdkRdsIamAuthTokenGenerator())
-        }
+    constructor(): this(CoreAwsSdkRdsIamAuthTokenGenerator())
 
-        /**
-         * 주입된 [rdsUtilities]는 호출자가 관리합니다. `RdsUtilities` 자체가 가벼운 utility 객체이고 호출자의
-         * AWS SDK lifecycle과 공유될 수 있으므로 이 generator는 닫지 않습니다.
-         */
-        operator fun invoke(rdsUtilities: RdsUtilities): AwsSdkRdsIamAuthTokenGenerator {
-            return AwsSdkRdsIamAuthTokenGenerator(CoreAwsSdkRdsIamAuthTokenGenerator(rdsUtilities))
-        }
-    }
+    /**
+     * 주입된 [rdsUtilities]는 호출자가 관리합니다. `RdsUtilities` 자체가 가벼운 utility 객체이고 호출자의
+     * AWS SDK lifecycle과 공유될 수 있으므로 이 generator는 닫지 않습니다.
+     */
+    constructor(rdsUtilities: RdsUtilities): this(CoreAwsSdkRdsIamAuthTokenGenerator(rdsUtilities))
 
     override fun generate(request: AwsRdsIamAuthTokenRequest): AwsSecretString =
         try {
