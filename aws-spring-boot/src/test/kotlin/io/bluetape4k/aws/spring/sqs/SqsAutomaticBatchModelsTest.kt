@@ -24,6 +24,33 @@ class SqsAutomaticBatchModelsTest {
     companion object: KLogging()
 
     @Test
+    fun `public model constructors retain their JVM signatures`() {
+        SnsNotification::class.java.getConstructor(
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            Any::class.java,
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            Map::class.java,
+            SqsReceivedMessage::class.java,
+            String::class.java,
+        )
+        SqsBatchSendEntry::class.java.getConstructor(String::class.java, SqsSendRequest::class.java)
+        SqsBatchDeleteEntry::class.java.getConstructor(String::class.java, String::class.java, String::class.java)
+        SqsBatchEntryFailure::class.java.getConstructor(
+            String::class.java,
+            SqsBatchFailureKind::class.java,
+            String::class.java,
+        )
+        SqsSendManyResult::class.java.getConstructor(List::class.java, List::class.java)
+        SqsDeleteManyResult::class.java.getConstructor(List::class.java, List::class.java)
+    }
+
+    @Test
     fun `batch models snapshot mutable input and calculate status`() {
         val sendEntryId = entryId("send")
         val deleteEntryId = entryId("delete")

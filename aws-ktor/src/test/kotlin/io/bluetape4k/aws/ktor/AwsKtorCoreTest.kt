@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.ktor.testing.shouldHaveStatus
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
@@ -20,6 +21,32 @@ import java.time.ZoneOffset
 class AwsKtorCoreTest {
 
     companion object: KLogging()
+
+    @Test
+    fun `core config toString redacts endpoint and credential provider`() {
+        val provider = object: software.amazon.awssdk.auth.credentials.AwsCredentialsProvider {
+            override fun resolveCredentials() = AwsBasicCredentials.create("access-key", "credential-secret")
+            override fun toString() = "provider-secret"
+        }
+        val config = AwsKtorCoreConfig().apply {
+            region = "ap-northeast-2"
+            endpointOverride = Url(
+                "https://endpoint-user:endpoint-password@example.com/private-path?token=endpoint-token",
+            )
+            javaCredentialsProvider = provider
+        }
+
+        val rendered = config.toString()
+        listOf(
+            "credential-secret",
+            "provider-secret",
+            "endpoint-user",
+            "endpoint-password",
+            "private-path",
+            "endpoint-token",
+        )
+            .forEach { rendered shouldNotContain it }
+    }
 
     @Test
     fun `application stores shared AWS defaults`() = testApplication {

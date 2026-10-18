@@ -61,6 +61,38 @@ class AwsExposedPluginTest {
     }
 
     @Test
+    fun `config toString redacts connection values and custom resolver`() {
+        val connection = AwsExposedConnectionConfig().apply {
+            url = "jdbc:postgresql://url-user:url-password@localhost/orders?token=url-token"
+            username = "database-user"
+            password = "database-password"
+            dataSourceProperties = mapOf("password" to "datasource-secret")
+            metadata = mapOf("apiToken" to "metadata-secret")
+        }
+        val connectionText = connection.toString()
+        listOf(
+            "url-user",
+            "url-password",
+            "url-token",
+            "database-user",
+            "database-password",
+            "datasource-secret",
+            "metadata-secret",
+        ).forEach { connectionText shouldNotContain it }
+
+        val resolver = object: AwsDatabaseSettingsResolver {
+            override suspend fun resolve(
+                databaseName: String,
+                properties: AwsDatabaseConnectionProperties,
+            ): AwsDatabaseConnectionProperties = properties
+
+            override fun toString(): String = "resolver-secret"
+        }
+        val pluginText = AwsExposedPluginConfig().apply { settingsResolver = resolver }.toString()
+        pluginText shouldNotContain "resolver-secret"
+    }
+
+    @Test
     fun `application helper fails before plugin install`() = testApplication {
         application {
             val error = assertFailsWith<IllegalStateException> {

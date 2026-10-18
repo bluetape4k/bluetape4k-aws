@@ -28,6 +28,7 @@ import io.bluetape4k.testcontainers.aws.LocalStackServer
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.flow.toList
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.io.Serializable
@@ -38,7 +39,7 @@ class DynamoDbKtorRuntimeLocalStackTest {
 
     private val awsEmulator: AwsEmulatorServer by lazy { awsEmulator("dynamodb") }
 
-    private val client: DynamoDbClient by lazy {
+    private val clientDelegate = lazy {
         dynamoDbClientOf(
             endpointUrl = Url.parse(awsEmulator.awsEndpoint.toString()),
             region = awsEmulator.regionName,
@@ -47,6 +48,14 @@ class DynamoDbKtorRuntimeLocalStackTest {
                 secretAccessKey = awsEmulator.awsSecretKey
             },
         )
+    }
+    private val client: DynamoDbClient by clientDelegate
+
+    @AfterAll
+    fun closeClient() {
+        if (clientDelegate.isInitialized()) {
+            client.close()
+        }
     }
 
     @Test

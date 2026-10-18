@@ -151,18 +151,18 @@ data class SqsBatchSendEntry private constructor(
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
 ): Serializable {
 
+    init {
+        validateAutomaticBatchEntryId(entryId)
+    }
+
+    constructor(entryId: String, request: SqsSendRequest) : this(
+        entryId = entryId,
+        request = request.copy(messageAttributes = request.messageAttributes.toMap()),
+        snapshotMarker = true,
+    )
+
     companion object {
         private const val serialVersionUID: Long = 1L
-
-        operator fun invoke(entryId: String, request: SqsSendRequest): SqsBatchSendEntry {
-            validateAutomaticBatchEntryId(entryId)
-            return SqsBatchSendEntry(
-                entryId = entryId,
-                request = request.copy(messageAttributes = request.messageAttributes.toMap()),
-                snapshotMarker = true,
-            )
-        }
-
     }
 
     override fun toString(): String = "SqsBatchSendEntry(request=<redacted>)"
@@ -177,18 +177,19 @@ data class SqsBatchDeleteEntry private constructor(
     @Suppress("UNUSED_PARAMETER") private val validatedMarker: Boolean,
 ): Serializable {
 
+    init {
+        validateAutomaticBatchEntryId(entryId)
+    }
+
+    constructor(entryId: String, queueUrl: String, receiptHandle: String) : this(
+        entryId = entryId,
+        queueUrl = queueUrl.requireNotBlank("queueUrl"),
+        receiptHandle = receiptHandle.requireNotBlank("receiptHandle"),
+        validatedMarker = true,
+    )
+
     companion object {
         private const val serialVersionUID: Long = 1L
-
-        operator fun invoke(entryId: String, queueUrl: String, receiptHandle: String): SqsBatchDeleteEntry {
-            validateAutomaticBatchEntryId(entryId)
-            return SqsBatchDeleteEntry(
-                entryId = entryId,
-                queueUrl = queueUrl.requireNotBlank("queueUrl"),
-                receiptHandle = receiptHandle.requireNotBlank("receiptHandle"),
-                validatedMarker = true,
-            )
-        }
     }
 
     override fun toString(): String = "SqsBatchDeleteEntry(<redacted>)"
@@ -203,29 +204,22 @@ data class SqsBatchEntryFailure private constructor(
     @Suppress("UNUSED_PARAMETER") private val normalizedMarker: Boolean,
 ): Serializable {
 
-    companion object {
-        operator fun invoke(
-            entryId: String,
-            kind: SqsBatchFailureKind,
-            code: String?,
-        ): SqsBatchEntryFailure {
-            return SqsBatchEntryFailure(
-                entryId = entryId,
-                kind = kind,
-                code = if (kind == SqsBatchFailureKind.TRANSPORT) null else normalizeAutomaticBatchErrorCode(code),
-                normalizedMarker = true,
-            )
-        }
-
-        private const val serialVersionUID: Long = 1L
-    }
-
     init {
         validateAutomaticBatchEntryId(entryId)
         require(kind == SqsBatchFailureKind.SERVICE || code == null) {
             "code must be null for transport failure."
         }
+    }
 
+    constructor(entryId: String, kind: SqsBatchFailureKind, code: String?) : this(
+        entryId = entryId,
+        kind = kind,
+        code = if (kind == SqsBatchFailureKind.TRANSPORT) null else normalizeAutomaticBatchErrorCode(code),
+        normalizedMarker = true,
+    )
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 
     override fun toString(): String = "SqsBatchEntryFailure(kind=$kind)"
@@ -266,28 +260,24 @@ data class SqsSendManyResult private constructor(
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
 ): Serializable {
 
-    companion object {
-        operator fun invoke(
-            successful: List<SqsBatchSendSuccess>,
-            failed: List<SqsBatchEntryFailure>,
-        ): SqsSendManyResult {
-            validateAutomaticBatchResultIds(successful.map { it.entryId }, failed.map { it.entryId })
-
-            return SqsSendManyResult(
-                successful.toList(),
-                failed.toList(),
-                true
-            )
-        }
-
-        private const val serialVersionUID: Long = 1L
+    init {
+        validateAutomaticBatchResultIds(successful.map { it.entryId }, failed.map { it.entryId })
     }
 
     val status: SqsBatchResultStatus
         get() = automaticBatchResultStatus(successful.size, failed.size)
 
+    constructor(
+        successful: List<SqsBatchSendSuccess>,
+        failed: List<SqsBatchEntryFailure>,
+    ) : this(successful.toList(), failed.toList(), true)
+
     override fun toString(): String =
         "SqsSendManyResult(status=$status, successful=${successful.size}, failed=${failed.size})"
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 }
 
 /** 자동 배치 삭제의 정규화된 결과입니다. */
@@ -298,23 +288,24 @@ data class SqsDeleteManyResult private constructor(
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
 ): Serializable {
 
-    companion object {
-        operator fun invoke(
-            successfulEntryIds: List<String>,
-            failed: List<SqsBatchEntryFailure>,
-        ): SqsDeleteManyResult {
-            validateAutomaticBatchResultIds(successfulEntryIds, failed.map { it.entryId })
-            return SqsDeleteManyResult(successfulEntryIds.toList(), failed.toList(), true)
-        }
-
-        private const val serialVersionUID: Long = 1L
+    init {
+        validateAutomaticBatchResultIds(successfulEntryIds, failed.map { it.entryId })
     }
 
     val status: SqsBatchResultStatus
         get() = automaticBatchResultStatus(successfulEntryIds.size, failed.size)
 
+    constructor(
+        successfulEntryIds: List<String>,
+        failed: List<SqsBatchEntryFailure>,
+    ) : this(successfulEntryIds.toList(), failed.toList(), true)
+
     override fun toString(): String =
         "SqsDeleteManyResult(status=$status, successful=${successfulEntryIds.size}, failed=${failed.size})"
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 }
 
 internal sealed interface SqsBatchOutcome {

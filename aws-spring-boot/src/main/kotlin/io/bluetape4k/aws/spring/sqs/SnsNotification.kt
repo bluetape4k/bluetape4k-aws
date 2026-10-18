@@ -63,40 +63,40 @@ data class SnsNotification<T: Any> private constructor(
     @Suppress("UNUSED_PARAMETER") private val snapshotMarker: Boolean,
 ): Serializable {
 
+    /**
+     * SNS envelope와 변환 결과를 생성합니다.
+     */
+    constructor(
+        type: String,
+        messageId: String,
+        topicArn: String,
+        message: T,
+        timestamp: String,
+        subject: String?,
+        signatureVersion: String?,
+        signature: String?,
+        signingCertUrl: String?,
+        messageAttributes: Map<String, SnsMessageAttribute>,
+        sqs: SqsReceivedMessage,
+        rawEnvelope: String?,
+    ) : this(
+        type = type,
+        messageId = messageId,
+        topicArn = topicArn,
+        message = message,
+        timestamp = timestamp,
+        subject = subject,
+        signatureVersion = signatureVersion,
+        signature = signature,
+        signingCertUrl = signingCertUrl,
+        messageAttributes = messageAttributes.toMap(),
+        sqs = sqs,
+        rawEnvelope = rawEnvelope,
+        snapshotMarker = true,
+    )
+
     companion object {
         private const val serialVersionUID: Long = 1L
-
-        /**
-         * SNS envelope와 변환 결과를 생성합니다.
-         */
-        operator fun <T: Any> invoke(
-            type: String,
-            messageId: String,
-            topicArn: String,
-            message: T,
-            timestamp: String,
-            subject: String?,
-            signatureVersion: String?,
-            signature: String?,
-            signingCertUrl: String?,
-            messageAttributes: Map<String, SnsMessageAttribute>,
-            sqs: SqsReceivedMessage,
-            rawEnvelope: String?,
-        ): SnsNotification<T> = SnsNotification(
-            type = type,
-            messageId = messageId,
-            topicArn = topicArn,
-            message = message,
-            timestamp = timestamp,
-            subject = subject,
-            signatureVersion = signatureVersion,
-            signature = signature,
-            signingCertUrl = signingCertUrl,
-            messageAttributes = messageAttributes.toMap(),
-            sqs = sqs,
-            rawEnvelope = rawEnvelope,
-            snapshotMarker = true,
-        )
     }
 
     init {

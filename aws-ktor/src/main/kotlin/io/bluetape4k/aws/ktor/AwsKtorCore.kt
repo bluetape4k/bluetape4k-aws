@@ -423,11 +423,11 @@ class AwsKtorCoreConfig {
     override fun toString(): String =
         ToStringBuilder(this)
             .add("region", region)
-            .add("endpointOverride", endpointOverride)
-            .add("javaCredentialsProvider", javaCredentialsProvider)
-            .add("kotlinCredentialsProvider", kotlinCredentialsProvider)
-            .add("signingClock", signingClock)
-            .add("kotlinHttpClient", kotlinHttpClient)
+            .add("endpointOverrideConfigured", endpointOverride != null)
+            .add("javaCredentialsProviderConfigured", javaCredentialsProvider != null)
+            .add("kotlinCredentialsProviderConfigured", kotlinCredentialsProvider != null)
+            .add("signingClockConfigured", signingClock != null)
+            .add("kotlinHttpClientConfigured", kotlinHttpClient != null)
             .toString()
 }
 

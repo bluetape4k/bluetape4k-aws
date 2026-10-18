@@ -4,6 +4,7 @@ import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeTrue
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.aws.ktor.AwsKtorSqsAsyncClientCustomizer
 import io.bluetape4k.junit5.coroutines.runSuspendIO
@@ -39,6 +40,24 @@ class SqsConsumerRuntimeConfigTest {
     companion object: KLogging()
 
     private val client = mockk<SqsAsyncClient>()
+
+    @Test
+    fun `message context toString redacts body and receipt handle`() {
+        val message = Message.builder()
+            .messageId("message-id-secret")
+            .receiptHandle("receipt-secret")
+            .body("message-body-secret")
+            .build()
+        val context = SqsMessageContext(
+            SqsConsumerRuntime(runtimeConfig()),
+            "https://sqs.local/queue-secret",
+            message,
+        )
+
+        val rendered = context.toString()
+        listOf("message-id-secret", "receipt-secret", "message-body-secret", "queue-secret")
+            .forEach { rendered shouldNotContain it }
+    }
 
     @BeforeEach
     fun beforeEach() {
