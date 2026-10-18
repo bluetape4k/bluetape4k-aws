@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException
 /** 기존 EPP와 ConfigData의 오류 처리 정책을 구분합니다. */
 internal object AwsConfigDataFailurePolicy {
 
-    // @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught")
     fun load(
         resource: AwsConfigDataResource,
         fetch: () -> Map<String, Any>,

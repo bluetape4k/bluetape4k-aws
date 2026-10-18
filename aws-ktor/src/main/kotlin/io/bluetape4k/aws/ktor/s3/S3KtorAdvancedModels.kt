@@ -150,7 +150,6 @@ private fun ByteArray.md5Base64(): String {
     return digest.encodeBase64String()
 }
 
-// TODO: escape json 기능은 bluetape4k-json 모듈에서 제공하도록 하자
 private fun Map<String, String>.toBase64Json(): String =
     entries
         .sortedBy { it.key }
@@ -160,7 +159,6 @@ private fun Map<String, String>.toBase64Json(): String =
         .toUtf8Bytes()
         .encodeBase64String()
 
-// TODO: escape json 기능은 bluetape4k-json 모듈에서 제공하도록 하자 
 private fun String.escapeJson(): String =
     buildString(length + 8) {
         this@escapeJson.forEach { ch ->

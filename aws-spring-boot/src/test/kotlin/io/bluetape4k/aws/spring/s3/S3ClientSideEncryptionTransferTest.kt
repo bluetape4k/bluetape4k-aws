@@ -47,7 +47,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.assertFailsWith
 
-class S3ClientSideEncryptionTransferTestç {
+class S3ClientSideEncryptionTransferTest {
 
     companion object: KLoggingChannel()
 

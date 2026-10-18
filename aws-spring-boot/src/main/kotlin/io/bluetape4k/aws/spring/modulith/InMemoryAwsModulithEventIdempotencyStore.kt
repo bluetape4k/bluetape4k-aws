@@ -11,6 +11,8 @@ import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+private const val DEFAULT_OWNER_ID_LENGTH = 12
+
 /**
  * 단일 process에서 bounded duplicate suppression을 제공하는 기본 idempotency store입니다.
  *
@@ -25,7 +27,7 @@ class InMemoryAwsModulithEventIdempotencyStore internal constructor(
 ): AwsModulithEventIdempotencyStore, AutoCloseable {
 
     constructor(properties: AwsModulithEventsProperties.Idempotency = AwsModulithEventsProperties.Idempotency()):
-            this(properties, Clock.systemUTC(), { Base58.randomString(12).lowercase() })
+            this(properties, Clock.systemUTC(), { Base58.randomString(DEFAULT_OWNER_ID_LENGTH).lowercase() })
 
     private val limits = properties.copy()
     private val lock = ReentrantLock()

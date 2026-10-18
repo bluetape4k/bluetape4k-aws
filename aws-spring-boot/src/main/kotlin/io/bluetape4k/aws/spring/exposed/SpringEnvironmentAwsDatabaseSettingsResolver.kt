@@ -49,7 +49,10 @@ internal class SpringEnvironmentAwsDatabaseSettingsResolver(
             if (source.optional) {
                 return this
             }
-            error("No Spring Environment properties found for ${source.type} source '${source.sourceId}' under prefix '$prefix'.")
+            error(
+                "No Spring Environment properties found for ${source.type} source '${source.sourceId}' " +
+                    "under prefix '$prefix'."
+            )
         }
 
         return copy(

@@ -108,7 +108,11 @@ internal class S3ResourceLocationParser {
         require("," !in bucket && "s3://" !in bucket.lowercase()) {
             "S3 location must contain one bucket only."
         }
-        require(bucket.none { character -> character.isWhitespace() || character.isISOControl() || character in "@:*?[]/#" }) {
+        require(
+            bucket.none { character ->
+                character.isWhitespace() || character.isISOControl() || character in "@:*?[]/#"
+            }
+        ) {
             "S3 bucket must be a single literal authority."
         }
     }

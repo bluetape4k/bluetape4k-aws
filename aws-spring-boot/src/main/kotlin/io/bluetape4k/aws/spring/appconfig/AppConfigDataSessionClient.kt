@@ -27,9 +27,17 @@ internal data class AppConfigDataStartRequest(
 ): Serializable {
     init {
         applicationIdentifier.requireNotBlank { "AppConfig application identifier must not be blank." }
-        configurationProfileIdentifier.requireNotBlank { "AppConfig configuration profile identifier must not be blank." }
+        configurationProfileIdentifier.requireNotBlank {
+            "AppConfig configuration profile identifier must not be blank."
+        }
         environmentIdentifier.requireNotBlank { "AppConfig environment identifier must not be blank." }
-        requiredMinimumPollIntervalSeconds.requirePositiveNumber { "AppConfig required minimum poll interval must be positive." }
+        requiredMinimumPollIntervalSeconds.requirePositiveNumber {
+            "AppConfig required minimum poll interval must be positive."
+        }
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1L
     }
 }
 

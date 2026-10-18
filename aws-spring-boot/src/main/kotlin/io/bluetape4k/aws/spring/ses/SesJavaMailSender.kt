@@ -48,17 +48,12 @@ class SesJavaMailSender(
         }
 
     override fun send(vararg mimeMessages: MimeMessage) {
-        val failedMessages = linkedMapOf<Any, Exception>()
-
-        val responses = mimeMessages.map { message ->
+        val failedMessages = FutureUtils.allAsList(mimeMessages.map { message ->
             sesOperations.sendRawEmailAsync(message.toRawEmailRequest())
-                .whenComplete { response, throwable ->
-                    if (throwable != null) {
-                        failedMessages[message] = throwable.toMailException()
-                    }
+                .handle { _, throwable ->
+                    throwable?.let { message to it.toMailException() }
                 }
-        }
-        FutureUtils.allAsList(responses).join()
+        }).join().filterNotNull().associateTo(linkedMapOf<Any, Exception>()) { it.first to it.second }
 
         if (failedMessages.isNotEmpty()) {
             throw MailSendException(failedMessages)
@@ -66,17 +61,12 @@ class SesJavaMailSender(
     }
 
     override fun send(vararg simpleMessages: SimpleMailMessage) {
-        val failedMessages = linkedMapOf<Any, Exception>()
-
-        val repsonses = simpleMessages.map { message ->
+        val failedMessages = FutureUtils.allAsList(simpleMessages.map { message ->
             sesOperations.sendEmailAsync(message.toEmailRequest())
-                .whenComplete { response, throwable ->
-                    if (throwable != null) {
-                        failedMessages[message] = throwable.toMailException()
-                    }
+                .handle { _, throwable ->
+                    throwable?.let { message to it.toMailException() }
                 }
-        }
-        FutureUtils.allAsList(repsonses).join()
+        }).join().filterNotNull().associateTo(linkedMapOf<Any, Exception>()) { it.first to it.second }
 
         if (failedMessages.isNotEmpty()) {
             throw MailSendException(failedMessages)

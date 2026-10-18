@@ -1,5 +1,6 @@
 package io.bluetape4k.aws.spring.ses
 
+import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldNotBeEmpty
@@ -17,6 +18,7 @@ import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.mail.MailSendException
 import org.springframework.mail.SimpleMailMessage
 import software.amazon.awssdk.services.sesv2.model.SendEmailResponse
 import java.util.*
@@ -62,6 +64,34 @@ class SesJavaMailSenderTest {
     }
 
     @Test
+    fun `send SimpleMailMessage aggregates all SES failures`() {
+        every { operations.sendEmailAsync(any()) } answers {
+            CompletableFuture.failedFuture(IllegalStateException("send failed"))
+        }
+        val messages = arrayOf(
+            SimpleMailMessage().apply {
+                from = "sender@example.com"
+                setTo("first@example.com")
+                subject = "first"
+                text = "first message"
+            },
+            SimpleMailMessage().apply {
+                from = "sender@example.com"
+                setTo("second@example.com")
+                subject = "second"
+                text = "second message"
+            },
+        )
+
+        val failure = assertFailsWith<MailSendException> {
+            SesJavaMailSender(operations).send(*messages)
+        }
+
+        failure.failedMessages.size shouldBeEqualTo messages.size
+        verify(exactly = messages.size) { operations.sendEmailAsync(any()) }
+    }
+
+    @Test
     fun `send MimeMessage delegates to SES raw email`() {
         val request = slot<SesRawEmailRequest>()
         every { operations.sendRawEmailAsync(capture(request)) } returns completedResponse()
@@ -82,6 +112,29 @@ class SesJavaMailSenderTest {
         request.captured.rawContent.shouldNotBeEmpty()
 
         verify(exactly = 1) { operations.sendRawEmailAsync(any()) }
+    }
+
+    @Test
+    fun `send MimeMessage aggregates all SES failures`() {
+        every { operations.sendRawEmailAsync(any()) } answers {
+            CompletableFuture.failedFuture(IllegalStateException("send failed"))
+        }
+        val messages = arrayOf("first", "second").map { recipient ->
+            MimeMessage(Session.getInstance(Properties())).apply {
+                setFrom(InternetAddress("sender@example.com"))
+                setRecipients(RecipientType.TO, "$recipient@example.com")
+                subject = recipient
+                setText("$recipient message")
+                saveChanges()
+            }
+        }.toTypedArray()
+
+        val failure = assertFailsWith<MailSendException> {
+            SesJavaMailSender(operations).send(*messages)
+        }
+
+        failure.failedMessages.size shouldBeEqualTo messages.size
+        verify(exactly = messages.size) { operations.sendRawEmailAsync(any()) }
     }
 
     @Test

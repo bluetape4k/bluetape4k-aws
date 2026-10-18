@@ -25,7 +25,6 @@ abstract class AbstractSfnTest: AbstractAwsTest() {
         }
 
         fun assumeSfnSupported() {
-            // TODO: floci 도 이제 Step Functions 를 지원하는 걸로 안다.
             assumeFalse(
                 configuredSfnEmulatorName() == "floci",
                 "live integration unverified: Floci does not support Step Functions",

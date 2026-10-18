@@ -95,7 +95,7 @@ class SfnExtensionsTest {
         }
 
         error.message shouldBeEqualTo
-                "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
+            "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
                 "actual stateMachineArn=null, mapRunArn=$MAP_RUN_ARN"
         verify(exactly = 0) { client.listExecutions(any<ListExecutionsRequest>()) }
     }
@@ -109,7 +109,7 @@ class SfnExtensionsTest {
         }
 
         error.message shouldBeEqualTo
-                "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
+            "listExecutionsByStateMachine must retain stateMachineArn=$STATE_MACHINE_ARN and must not set mapRunArn; " +
                 "actual stateMachineArn=$STATE_MACHINE_ARN, mapRunArn=$MAP_RUN_ARN"
         verify(exactly = 0) { client.listExecutions(any<ListExecutionsRequest>()) }
     }

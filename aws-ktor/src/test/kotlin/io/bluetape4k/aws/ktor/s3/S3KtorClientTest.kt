@@ -128,7 +128,8 @@ class S3KtorClientTest {
         captured.headers["x-amz-server-side-encryption"] shouldBeEqualTo "aws:kms"
         captured.headers["x-amz-server-side-encryption-aws-kms-key-id"] shouldBeEqualTo "alias/demo"
         captured.headers["x-amz-server-side-encryption-bucket-key-enabled"] shouldBeEqualTo "true"
-        captured.headers["x-amz-server-side-encryption-context"].decodeBase64String() shouldBeEqualTo """{"tenant":"demo"}"""
+        captured.headers["x-amz-server-side-encryption-context"].decodeBase64String() shouldBeEqualTo
+            """{"tenant":"demo"}"""
 
         s3.close()
     }

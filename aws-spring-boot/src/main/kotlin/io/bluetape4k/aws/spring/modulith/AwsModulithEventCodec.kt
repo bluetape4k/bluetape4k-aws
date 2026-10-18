@@ -347,7 +347,9 @@ private object CodecHeaderPolicy {
     fun validateAttributes(attributes: Map<String, String>) {
         attributes.size.requireLe(MAX_ATTRIBUTE_COUNT, "attributes.size")
         attributes.forEach { (name, value) ->
-            (isSystemAttribute(name) || isBusinessHeaderName(name)).requireBeTrue { "name must be system attribute or business header name." }
+            (isSystemAttribute(name) || isBusinessHeaderName(name)).requireBeTrue {
+                "name must be system attribute or business header name."
+            }
             isValidHeaderValue(value).requireBeTrue { "value[$value] must be valid header value." }
         }
     }
