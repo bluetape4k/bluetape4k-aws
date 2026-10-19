@@ -1,6 +1,7 @@
 package io.bluetape4k.aws.spring.config
 
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeInstanceOf
 import io.bluetape4k.aws.spring.AwsClientCustomizationContext
 import io.bluetape4k.aws.spring.AwsProperties
@@ -14,10 +15,18 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import software.amazon.awssdk.services.s3.S3Client
+import java.io.Serializable
 
 class AwsConfigDataBootstrapCustomizerTest {
 
     companion object: KLogging()
+
+    @Test
+    fun `resolver configuration does not claim Java serialization support`() {
+        Serializable::class.java.isAssignableFrom(
+            AwsConfigDataSupport.ResolverConfiguration::class.java
+        ).shouldBeFalse()
+    }
 
     @Test
     fun `only an explicitly registered bootstrap customizer changes ConfigData clients`() {

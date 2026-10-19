@@ -56,9 +56,6 @@ class AwsExposedDatabaseHandle(
     override fun toString(): String =
         ToStringBuilder(this)
             .add("name", name)
-            .add("properties", properties)
-            .add("dataSource", dataSource)
-            .add("database", database)
             .add("closed", closed.value)
             .toString()
 }

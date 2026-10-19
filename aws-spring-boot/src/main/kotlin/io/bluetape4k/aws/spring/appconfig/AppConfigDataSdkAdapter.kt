@@ -34,7 +34,7 @@ internal object AppConfigDataSdkAdapter: KLogging() {
 
     fun close(client: Any) {
         log.debug { "Closing ${client::class.simpleName}" }
-        (client as? AppConfigDataClient)?.close()
+        (client as AppConfigDataClient).close()
     }
 
     fun sessionClient(bootstrapContext: ConfigurableBootstrapContext): AppConfigDataSessionClient {

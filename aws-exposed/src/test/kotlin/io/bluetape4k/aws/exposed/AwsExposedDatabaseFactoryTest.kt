@@ -58,6 +58,24 @@ class AwsExposedDatabaseFactoryTest {
     }
 
     @Test
+    fun `database handle string does not expose connection settings`() = runTest {
+        val handle = AwsExposedDatabaseFactory().create(
+            properties = h2Properties("handle_to_string").copy(
+                url = "jdbc:h2:mem:database-url-canary;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                username = "database-user-canary",
+            ),
+        )
+
+        try {
+            val diagnostics = handle.toString()
+            diagnostics shouldNotContain "database-url-canary"
+            diagnostics shouldNotContain "database-user-canary"
+        } finally {
+            handle.close()
+        }
+    }
+
+    @Test
     fun `secret string serialization round-trip preserves redaction`() {
         val original = AwsSecretString.of("super-secret")
         val bytes = serialize(original)

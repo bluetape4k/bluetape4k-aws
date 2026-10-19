@@ -34,7 +34,9 @@ class ParameterStoreEnvironmentPostProcessor: EnvironmentPostProcessor, Ordered 
         }
 
         val properties = environment.bindOrCreate<ParameterStoreProperties>("bluetape4k.aws.parameter-store")
-        log.debug { "load ParameterStoreProperties. properties=$properties" }
+        log.debug {
+            "load ParameterStoreProperties. enabled=${properties.enabled}, sourceCount=${properties.sources.size}"
+        }
         if (!properties.enabled || properties.sources.isEmpty()) {
             return
         }
