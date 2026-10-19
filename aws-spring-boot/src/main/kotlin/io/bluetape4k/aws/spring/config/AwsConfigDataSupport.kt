@@ -11,7 +11,6 @@ import org.springframework.boot.bootstrap.ConfigurableBootstrapContext
 import org.springframework.boot.context.config.ConfigDataLocation
 import org.springframework.boot.context.config.ConfigDataLocationResolverContext
 import org.springframework.boot.context.properties.bind.Binder
-import java.io.Serializable
 
 /** Resolver가 공유하는 Binder, guard, bootstrap 등록 경계입니다. */
 internal object AwsConfigDataSupport: KLogging() {
@@ -20,11 +19,7 @@ internal object AwsConfigDataSupport: KLogging() {
         val aws: AwsProperties,
         val backend: Any,
         val bootstrapContext: ConfigurableBootstrapContext,
-    ): Serializable {
-        companion object {
-            private const val serialVersionUID: Long = 1L
-        }
-    }
+    )
 
     fun resolve(
         binder: Binder,

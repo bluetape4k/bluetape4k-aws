@@ -1,5 +1,8 @@
 package io.bluetape4k.aws.ktor.s3
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.core.read.ListAppender
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
@@ -36,6 +39,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -64,6 +68,26 @@ class S3KtorClientTest {
         ).toString()
 
         rendered shouldNotContain body.contentToString()
+    }
+
+    @Test
+    fun `S3 diagnostics omit request identifiers`() = runSuspendIO {
+        val logger = LoggerFactory.getLogger(S3KtorClient::class.java) as Logger
+        val appender = ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply { start() }
+        val previousLevel = logger.level
+        logger.addAppender(appender)
+        logger.level = Level.DEBUG
+        val s3 = s3Client(response = { request -> s3DiagnosticResponse(request) })
+
+        try {
+            runS3OperationsWithCanaryIdentifiers(s3)
+        } finally {
+            s3.close()
+            logger.detachAppender(appender)
+            logger.level = previousLevel
+        }
+
+        assertS3DiagnosticsAreRedacted(appender)
     }
 
     @Test
@@ -566,6 +590,68 @@ class S3KtorClientTest {
             signingClock = FIXED_CLOCK,
             closeClient = true,
         )
+    }
+
+    private suspend fun MockRequestHandleScope.s3DiagnosticResponse(request: HttpRequestData): HttpResponseData {
+        val body = when {
+            request.url.parameters.contains("list-type") ->
+                """<ListBucketResult>
+                    <Name>bucket-canary</Name><Prefix>prefix-canary</Prefix><KeyCount>0</KeyCount>
+                    <MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated>
+                </ListBucketResult>""".trimIndent()
+            request.url.parameters.contains("uploads") ->
+                """<InitiateMultipartUploadResult>
+                    <Bucket>bucket-canary</Bucket><Key>object-key-canary</Key>
+                    <UploadId>upload-id-canary</UploadId>
+                </InitiateMultipartUploadResult>""".trimIndent()
+            request.method == HttpMethod.Post -> "<CompleteMultipartUploadResult/>"
+            request.method == HttpMethod.Get -> "object-body-canary"
+            else -> ""
+        }
+
+        return respond(content = body, headers = headersOf(HttpHeaders.ETag, "etag-canary"))
+    }
+
+    private suspend fun runS3OperationsWithCanaryIdentifiers(s3: S3KtorClient) {
+        s3.putObject("bucket-canary", "object-key-canary", byteArrayOf(1), "application/canary")
+        s3.getObject("bucket-canary", "object-key-canary")
+        s3.getObjectStream("bucket-canary", "object-key-canary")
+        s3.deleteObject("bucket-canary", "object-key-canary")
+        s3.listObjectsV2(
+            S3KtorListObjectsRequest(
+                bucket = "bucket-canary",
+                prefix = "prefix-canary",
+                continuationToken = "continuation-token-canary",
+                startAfter = "start-after-canary",
+            ),
+        )
+        s3.createMultipartUpload("bucket-canary", "object-key-canary")
+        s3.uploadPart("bucket-canary", "object-key-canary", "upload-id-canary", 1, byteArrayOf(2))
+        s3.completeMultipartUpload(
+            "bucket-canary",
+            "object-key-canary",
+            "upload-id-canary",
+            listOf(S3KtorCompletedPart(partNumber = 1, eTag = "etag-canary")),
+        )
+        s3.abortMultipartUpload("bucket-canary", "object-key-canary", "upload-id-canary")
+    }
+
+    private fun assertS3DiagnosticsAreRedacted(appender: ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>) {
+        val diagnostics = appender.list.joinToString("\n") { it.formattedMessage }
+        diagnostics shouldContain "listObjectsV2"
+        diagnostics shouldContain "uploadPart"
+        diagnostics shouldContain "completeMultipartUpload"
+        listOf(
+            "bucket-canary",
+            "object-key-canary",
+            "prefix-canary",
+            "continuation-token-canary",
+            "start-after-canary",
+            "upload-id-canary",
+            "etag-canary",
+            "object-body-canary",
+            "application/canary",
+        ).forEach { diagnostics shouldNotContain it }
     }
 }
 

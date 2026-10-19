@@ -6,6 +6,7 @@ import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeFalse
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.kotlin.dynamodb.model.partitionKeyOf
 import io.bluetape4k.aws.kotlin.dynamodb.model.stringAttrDefinitionOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
@@ -28,6 +29,19 @@ class DynamoDbKtorRuntimeConfigTest {
     fun `runtime configuration does not claim Java serialization support`() {
         Serializable::class.java.isAssignableFrom(DynamoDbKtorRuntimeConfig::class.java).shouldBeFalse()
         Serializable::class.java.isAssignableFrom(DynamoDbKtorTableDefinition::class.java).shouldBeFalse()
+    }
+
+    @Test
+    fun `runtime configuration does not generate ownership copies or expose fields`() {
+        val client = mockk<DynamoDbClient>(relaxed = true)
+        val config = DynamoDbKtorRuntimeConfig(
+            dynamoDbClient = client,
+            ownsClient = true,
+        )
+
+        DynamoDbKtorRuntimeConfig::class.java.methods.any { it.name == "copy" }.shouldBeFalse()
+        config.toString() shouldNotContain "dynamoDbClient="
+        config.toString() shouldNotContain "ownsClient="
     }
 
     @Test

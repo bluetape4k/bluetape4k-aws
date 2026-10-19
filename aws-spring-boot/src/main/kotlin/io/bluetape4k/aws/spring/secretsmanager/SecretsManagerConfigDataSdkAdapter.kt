@@ -21,7 +21,7 @@ internal object SecretsManagerConfigDataSdkAdapter: KLogging() {
         val properties = configuration.backend as SecretsManagerProperties
         val defaults = configuration.aws.resolveClientDefaults(properties.region, properties.endpointOverride)
 
-        log.debug { "Create SecretsManagetClient. configuration=$configuration" }
+        log.debug { "Create SecretsManagerClient. sourceCount=${properties.sources.size}" }
         return SecretsManagerClient.builder()
             .credentialsProvider(configuration.aws.configDataCredentialsProvider())
             .applyAwsDefaults(defaults)

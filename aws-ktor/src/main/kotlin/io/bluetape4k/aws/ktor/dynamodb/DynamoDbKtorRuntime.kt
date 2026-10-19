@@ -22,7 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * [DynamoDbKtorRuntime]의 런타임 구성입니다.
  */
-data class DynamoDbKtorRuntimeConfig(
+class DynamoDbKtorRuntimeConfig(
     val dynamoDbClient: DynamoDbClient,
     val ownsClient: Boolean,
     val autoCreateTables: Boolean = false,

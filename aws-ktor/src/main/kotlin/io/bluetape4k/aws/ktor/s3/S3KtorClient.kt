@@ -121,7 +121,7 @@ class S3KtorClient(
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
     ): S3KtorPutObjectResponse {
-        log.debug { "putObject... bucket=$bucket, key=$key, contentType=$contentType" }
+        log.debug { "putObject... contentLength=${bytes.size}" }
         return putObject(
             request = S3KtorPutObjectRequest(bucket, key, contentType, metadata, headers),
             body = ByteArrayContent(bytes, contentType?.let(ContentType::parse)),
@@ -183,7 +183,7 @@ class S3KtorClient(
         body: OutgoingContent,
     ): S3KtorPutObjectResponse {
         val url = objectUrl(request.bucket, request.key)
-        log.debug { "putObject: $url" }
+        log.debug { "putObject request" }
 
         val response = httpClient.put(url) {
             applyPutHeaders(request)
@@ -206,7 +206,7 @@ class S3KtorClient(
      * S3 객체를 byte array와 metadata로 가져옵니다.
      */
     suspend fun getObject(bucket: String, key: String): S3KtorGetObjectResponse {
-        log.debug { "getObject... bucket=$bucket, key=$key" }
+        log.debug { "getObject..." }
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
         val bytes = response.bodyAsBytes()
 
@@ -226,7 +226,7 @@ class S3KtorClient(
      * 반환된 [S3KtorStreamingObjectResponse.body]는 response channel이므로 caller가 소비를 완료해야 합니다.
      */
     suspend fun getObjectStream(bucket: String, key: String): S3KtorStreamingObjectResponse {
-        log.debug { "getObjectStream... bucket=$bucket, key=$key" }
+        log.debug { "getObjectStream..." }
         val response = httpClient.get(objectUrl(bucket, key)).ensureSuccess()
         return S3KtorStreamingObjectResponse(
             body = response.bodyAsChannel(),
@@ -242,7 +242,7 @@ class S3KtorClient(
      * S3 객체를 삭제합니다.
      */
     suspend fun deleteObject(bucket: String, key: String): S3KtorDeleteObjectResponse {
-        log.debug { "deleteObject... bucket=$bucket, key=$key" }
+        log.debug { "deleteObject..." }
         val response = httpClient.delete(objectUrl(bucket, key)).ensureSuccess()
         return S3KtorDeleteObjectResponse(
             deleteMarker = response.headers[X_AMZ_DELETE_MARKER]?.toBooleanStrictOrNull(),
@@ -262,7 +262,7 @@ class S3KtorClient(
      * ```
      */
     suspend fun listObjectsV2(request: S3KtorListObjectsRequest): S3KtorListObjectsResponse {
-        log.debug { "listObjectsV2... request=$request" }
+        log.debug { "listObjectsV2..." }
         val response = httpClient
             .get(bucketUrl(request.bucket)) {
                 parameter("list-type", "2")
@@ -290,7 +290,7 @@ class S3KtorClient(
         metadata: Map<String, String> = emptyMap(),
         headers: Map<String, String> = emptyMap(),
     ): S3KtorMultipartUpload {
-        log.debug { "createMultipartUpload... bucket=$bucket, key=$key" }
+        log.debug { "createMultipartUpload..." }
         val response = httpClient
             .post(objectUrl(bucket, key)) {
                 parameter("uploads", "")
@@ -349,7 +349,7 @@ class S3KtorClient(
     ): S3KtorCompletedPart {
         partNumber.requirePositiveNumber("partNumber")
         contentLength.requireGe(0L, "contentLength")
-        log.debug { "uploadPart... bucket=$bucket, key=$key, uploadId=$uploadId, partNumber=$partNumber" }
+        log.debug { "uploadPart... contentLength=$contentLength" }
 
         val response = httpClient
             .put(objectUrl(bucket, key)) {
@@ -378,7 +378,7 @@ class S3KtorClient(
         parts: List<S3KtorCompletedPart>,
     ): S3KtorCompleteMultipartUploadResponse {
         parts.requireNotEmpty("parts")
-        log.debug { "completeMultipartUpload... bucket=$bucket, key=$key, uploadId=$uploadId, parts=$parts" }
+        log.debug { "completeMultipartUpload... partCount=${parts.size}" }
 
         val body = TextContent(
             text = S3KtorXml.completeMultipartUpload(parts),
@@ -399,7 +399,7 @@ class S3KtorClient(
      * Multipart upload를 중단합니다.
      */
     suspend fun abortMultipartUpload(bucket: String, key: String, uploadId: String) {
-        log.debug { "abortMultipartUpload... bucket=$bucket, key=$key" }
+        log.debug { "abortMultipartUpload..." }
         httpClient
             .delete(objectUrl(bucket, key)) {
                 parameter("uploadId", uploadId)
