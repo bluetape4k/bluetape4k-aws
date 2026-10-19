@@ -46,8 +46,8 @@ class S3AccessGrantsKtorRuntime(
 
     override fun toString(): String =
         ToStringBuilder(this)
-            .add("operations", operations)
-            .add("ownedClient", ownedClient)
+            .add("operationsConfigured", true)
+            .add("ownedClientConfigured", ownedClient != null)
             .add("closed", closed.value)
             .toString()
 }

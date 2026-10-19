@@ -5,6 +5,7 @@ import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.assertions.shouldNotBeNull
 import io.bluetape4k.aws.ktor.AwsKtorCore
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
@@ -22,6 +23,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
@@ -39,6 +41,21 @@ class S3AccessGrantsKtorPluginTest {
 
     private val client = mockk<S3ControlAsyncClient>(relaxed = true)
     private val operations = mockk<S3AccessGrantsKtorOperations>(relaxed = true)
+
+    @Test
+    fun `runtime toString does not invoke injected operations or client toString`() {
+        val injectedOperations = mockk<S3AccessGrantsKtorOperations>()
+        val ownedClient = mockk<S3ControlAsyncClient>()
+        every { injectedOperations.toString() } returns "operations-secret"
+        every { ownedClient.toString() } returns "client-secret"
+
+        val rendered = S3AccessGrantsKtorRuntime(injectedOperations, ownedClient).toString()
+
+        rendered shouldNotContain "operations-secret"
+        rendered shouldNotContain "client-secret"
+        verify(exactly = 0) { injectedOperations.toString() }
+        verify(exactly = 0) { ownedClient.toString() }
+    }
 
     @BeforeEach
     fun resetMocks() {

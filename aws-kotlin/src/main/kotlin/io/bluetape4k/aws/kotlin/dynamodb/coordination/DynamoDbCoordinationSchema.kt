@@ -122,7 +122,7 @@ class DynamoDbCoordinationSchema(
             .add("fencingTokenAttributeName", fencingTokenAttributeName)
             .add("valueAttributeName", valueAttributeName)
             .add("ttlAttributeName", ttlAttributeName)
-            .add("resolver", resolver)
+            .add("resolverConfigured", resolver !== DynamoDbCoordinationNameResolver.DEFAULT)
             .toString()
     }
 

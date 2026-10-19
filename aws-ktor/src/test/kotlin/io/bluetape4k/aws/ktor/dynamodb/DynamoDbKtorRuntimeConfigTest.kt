@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor.dynamodb
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.AttributeDefinition
+import aws.sdk.kotlin.services.dynamodb.model.CreateTableRequest
 import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
@@ -20,6 +21,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.io.Serializable
+import kotlin.Function1
 import kotlin.time.Duration.Companion.seconds
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -68,6 +70,30 @@ class DynamoDbKtorRuntimeConfigTest {
                 attributeDefinitions = attributeDefinitions,
             )
         }
+    }
+
+    @Test
+    fun `table definition toString does not invoke custom builder toString`() {
+        var builderToStringCalls = 0
+        val createTable = object: Function1<CreateTableRequest.Builder, Unit> {
+            override fun invoke(p1: CreateTableRequest.Builder) = Unit
+
+            override fun toString(): String {
+                builderToStringCalls++
+                return "create-table-secret"
+            }
+        }
+        val definition = DynamoDbKtorTableDefinition(
+            tableName = "orders",
+            keySchema = keySchema,
+            attributeDefinitions = attributeDefinitions,
+            createTable = createTable,
+        )
+
+        val rendered = definition.toString()
+
+        rendered shouldNotContain "create-table-secret"
+        builderToStringCalls shouldBeEqualTo 0
     }
 
     @Test

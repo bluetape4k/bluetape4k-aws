@@ -15,6 +15,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineDispatcher
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.during
@@ -40,6 +41,62 @@ class SqsConsumerRuntimeConfigTest {
     companion object: KLogging()
 
     private val client = mockk<SqsAsyncClient>()
+
+    @Test
+    fun `config toString does not invoke injected collaborator toString`() {
+        val dispatcher = mockk<CoroutineDispatcher>()
+        val converter = mockk<SqsMessageConverter>()
+        val failureVisibilityStrategy = mockk<SqsFailureVisibilityStrategy>()
+        every { dispatcher.toString() } returns "dispatcher-secret"
+        every { converter.toString() } returns "converter-secret"
+        every { failureVisibilityStrategy.toString() } returns "visibility-secret"
+
+        val config = SqsConsumerPluginConfig().apply {
+            this.dispatcher = dispatcher
+            this.converter = converter
+            this.failureVisibilityStrategy = failureVisibilityStrategy
+        }
+
+        val rendered = config.toString()
+
+        rendered shouldNotContain "dispatcher-secret"
+        rendered shouldNotContain "converter-secret"
+        rendered shouldNotContain "visibility-secret"
+        verify(exactly = 0) { dispatcher.toString() }
+        verify(exactly = 0) { converter.toString() }
+        verify(exactly = 0) { failureVisibilityStrategy.toString() }
+    }
+
+    @Test
+    fun `runtime config toString redacts queue and injected collaborator values`() {
+        val dispatcher = mockk<CoroutineDispatcher>()
+        val converter = mockk<SqsMessageConverter>()
+        val failureVisibilityStrategy = mockk<SqsFailureVisibilityStrategy>()
+        every { client.toString() } returns "sqs-client-secret"
+        every { dispatcher.toString() } returns "dispatcher-secret"
+        every { converter.toString() } returns "converter-secret"
+        every { failureVisibilityStrategy.toString() } returns "visibility-secret"
+
+        val config = runtimeConfig(queueUrl = "https://sqs.local/queue-secret").copy(
+            dispatcher = dispatcher,
+            converter = converter,
+            failureVisibilityStrategy = failureVisibilityStrategy,
+        )
+
+        val rendered = config.toString()
+
+        listOf(
+            "sqs-client-secret",
+            "queue-secret",
+            "dispatcher-secret",
+            "converter-secret",
+            "visibility-secret",
+        ).forEach { rendered shouldNotContain it }
+        verify(exactly = 0) { client.toString() }
+        verify(exactly = 0) { dispatcher.toString() }
+        verify(exactly = 0) { converter.toString() }
+        verify(exactly = 0) { failureVisibilityStrategy.toString() }
+    }
 
     @Test
     fun `message context toString redacts body and receipt handle`() {
