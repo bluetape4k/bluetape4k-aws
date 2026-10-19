@@ -8,6 +8,7 @@ import aws.sdk.kotlin.services.dynamodb.model.TableDescription
 import aws.sdk.kotlin.services.dynamodb.model.TableStatus
 import aws.sdk.kotlin.services.dynamodb.model.ThrottlingException
 import io.bluetape4k.assertions.assertFailsWith
+import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldBeNull
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
@@ -15,8 +16,13 @@ import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class DynamoDbClientExtensionsMockTest {
 
@@ -93,6 +99,24 @@ class DynamoDbClientExtensionsMockTest {
         client.waitForTableReady("orders")
 
         coVerify(exactly = 2) { client.describeTable(any<DescribeTableRequest>()) }
+    }
+
+    @Test
+    fun `waitForTableReady applies caller timeout`() = runSuspendIO {
+        coEvery {
+            client.describeTable(any<DescribeTableRequest>())
+        } coAnswers {
+            awaitCancellation()
+        }
+
+        val error = assertFailsWith<TimeoutCancellationException> {
+            withTimeout(2.seconds) {
+                client.waitForTableReady("orders", 25.milliseconds)
+            }
+        }
+
+        error.message shouldContain "25 ms"
+        coVerify(exactly = 1) { client.describeTable(any<DescribeTableRequest>()) }
     }
 
     private fun describeTableResponse(status: TableStatus): DescribeTableResponse =

@@ -13,7 +13,6 @@ import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.v1.jdbc.Database
-import java.io.Serializable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -33,7 +32,7 @@ data class AwsExposedKtorHealthConfig(
     val readinessProbeTimeout: Duration = DEFAULT_READINESS_PROBE_TIMEOUT,
     val jdbcQueryTimeout: Duration = DEFAULT_JDBC_QUERY_TIMEOUT,
     val meterRegistry: MeterRegistry? = null,
-): Serializable {
+) {
 
     init {
         databaseName?.requireValidDatabaseName()
@@ -48,8 +47,6 @@ data class AwsExposedKtorHealthConfig(
         const val DEFAULT_READINESS_PATH: String = "/readyz/exposed"
         val DEFAULT_READINESS_PROBE_TIMEOUT: Duration = 1.seconds
         val DEFAULT_JDBC_QUERY_TIMEOUT: Duration = 1.seconds
-
-        private const val serialVersionUID: Long = 1L
     }
 }
 
