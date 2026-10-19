@@ -27,6 +27,7 @@ import io.bluetape4k.logging.debug
 import io.bluetape4k.support.requireNotBlank
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
+import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -161,19 +162,10 @@ suspend fun DynamoDbClient.waitForTableReady(
 ) {
     DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비될 때까지 [$timeout] 만큼 대기합니다 ... " }
 
-    // HINT: wait 관련 함수가 상당히 많다. 이를 이용하자.
-    this.waitUntilTableExists { tableName = name }
+    withTimeout(timeout) {
+        this@waitForTableReady.waitUntilTableExists { tableName = name }
+    }
     DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비되었습니다." }
-
-//    withTimeout(timeout) {
-//        while (true) {
-//            if (getTableStatus(name) == TableStatus.Active) {
-//                DynamoDbClientLog.log.debug { "DynamoDb 테이블[$name]이 준비되었습니다." }
-//                return@withTimeout
-//            }
-//            delay(100.milliseconds)
-//        }
-//    }
 }
 
 /**

@@ -2,6 +2,7 @@ package io.bluetape4k.aws.ktor.exposed
 
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
+import io.bluetape4k.assertions.shouldBeFalse
 import io.bluetape4k.assertions.shouldBeSameInstanceAs
 import io.bluetape4k.assertions.shouldContain
 import io.bluetape4k.assertions.shouldNotContain
@@ -40,6 +41,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.io.PrintWriter
+import java.io.Serializable
 import java.sql.Connection
 import java.sql.SQLException
 import java.util.*
@@ -258,6 +260,11 @@ class AwsExposedPluginTest {
         assertFailsWith<IllegalArgumentException> {
             AwsExposedKtorHealthConfig(jdbcQueryTimeout = (-1).milliseconds)
         }
+    }
+
+    @Test
+    fun `health runtime config does not claim Java serialization support`() {
+        Serializable::class.java.isAssignableFrom(AwsExposedKtorHealthConfig::class.java).shouldBeFalse()
     }
 
     @Test
