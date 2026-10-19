@@ -84,3 +84,19 @@
 | P2 | `.github/workflows/{code-quality,dependency-submission,nightly-tests,publish-snapshot,release}.yml`이 base의 `setup-java` v6.0.1에서 v6.0.0으로 후퇴했다. | tag 및 pinned SHA를 base의 v6.0.1로 복원했다. |
 
 이후 테스트는 작업 worktree의 현재 코드에서 Ktor 29개, AWS Kotlin 9개, AWS Java 13개, Spring Boot 29개가 통과했다. `compatibilityCheck --no-configuration-cache`도 성공했다. 첫 캐시 사용 시 실행은 Central snapshot 요청의 TLS `bad_record_mac` 및 configuration-cache 직렬화 문제로 실패했으나, 캐시 비활성 재실행에서 통과했다. 전체 detekt는 수정 전 PR 변경 코드에서 9건(Kotlin 1건, Spring Boot 8건)을 보고했다. Serializable 내부 타입에 `serialVersionUID`를 추가하고 긴 테스트 및 통합 facade에 국소 suppression을 적용한 뒤 전체 `detekt`가 통과했다. exact-head 원격 CI와 새 독립 리뷰는 아직 별도 완료가 필요하다.
+
+## 2026-10-19 후속 P2 수정과 검증
+
+독립 source review가 `dd2c6875bc7e42de61051472e1eb4f06d8af8129`에서 두 P2 회귀를 확인했다. 둘 다 회귀 테스트에서 먼저 재현한 뒤 수정했다.
+
+| 발견 | 수정 및 회귀 검증 |
+|---|---|
+| 익명 RuntimeException에서 `KClass.simpleName`이 null이면 원래 오류를 `NullPointerException`으로 바꿀 수 있다. | Java 클래스의 간단한 이름을 사용하고 이름이 비어 있으면 클래스 전체 이름으로 fallback한다. 익명 예외가 안전한 `AwsConfigDataLoadException`으로 감싸지는 테스트를 추가했다. |
+| 함수 callback을 가진 `DynamoDbKtorTableDefinition`이 data class로 공개되어 불필요한 `copy`/`componentN` API와 callback 기반 equality를 생성한다. | 일반 `class`로 되돌리고 기존 안전한 `toString()`을 유지했다. JVM 공개 메서드에 소유권 복사 메서드가 없는지 검사한다. |
+
+- `AppConfigDataLoaderTest` — 4개 통과.
+- `DynamoDbKtorRuntimeConfigTest` — 13개 통과.
+- Spring Boot 모듈 — 1,778개 통과, 6개 스킵.
+- Ktor 모듈 — 286개 통과.
+- `compatibilityCheck detekt --rerun-tasks --no-configuration-cache` — compatibility 64개와 전체 Detekt 통과.
+- 새 exact-head 원격 CI와 현재 HEAD의 독립 source review는 푸시 이후 재확인한다. 아키텍처 리뷰 lane은 용량 오류와 지연 재시도 후에도 verdict를 제공하지 않아 미완료 상태다.

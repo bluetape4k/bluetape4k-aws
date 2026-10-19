@@ -97,6 +97,14 @@ class DynamoDbKtorRuntimeConfigTest {
     }
 
     @Test
+    fun `table definition does not expose data class ownership methods`() {
+        val methods = DynamoDbKtorTableDefinition::class.java.methods
+
+        methods.any { it.name == "copy" }.shouldBeFalse()
+        methods.any { it.name.startsWith("component") }.shouldBeFalse()
+    }
+
+    @Test
     fun `does not close injected client`() = runSuspendIO {
         val client = mockk<DynamoDbClient>(relaxed = true)
         every { client.close() } returns Unit

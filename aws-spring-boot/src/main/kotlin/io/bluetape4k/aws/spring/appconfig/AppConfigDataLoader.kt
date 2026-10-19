@@ -52,7 +52,8 @@ class AppConfigDataLoader(
             if (!properties.failFast) {
                 return AwsConfigDataFailurePolicy.toConfigData(resource, emptyMap())
             }
-            throw AwsConfigDataLoadException(resource.backendKey, error::class.simpleName!!)
+            val errorType = error::class.java.simpleName.ifBlank { error::class.java.name }
+            throw AwsConfigDataLoadException(resource.backendKey, errorType)
         }
         val propertySource = AppConfigDataPropertySource(
             name = resource.toString(),
