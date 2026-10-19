@@ -121,8 +121,8 @@ class MicrometerS3KtorClient(
 
     override fun toString(): String =
         ToStringBuilder(this)
-            .add("delegate", delegate)
-            .add("meterRegistry", meterRegistry)
+            .add("delegateConfigured", true)
+            .add("meterRegistryConfigured", true)
             .add("meterName", meterName)
             .add("includeBucketTag", includeBucketTag)
             .toString()

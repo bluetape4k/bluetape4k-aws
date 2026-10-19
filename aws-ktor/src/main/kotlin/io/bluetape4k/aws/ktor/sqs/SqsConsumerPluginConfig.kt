@@ -226,9 +226,9 @@ class SqsConsumerPluginConfig {
             .add("shutdownTimeout", shutdownTimeout)
             .add("pollBackoff", pollBackoff)
             .add("visibilityHeartbeatSeconds", visibilityHeartbeatSeconds)
-            .add("dispatcher", dispatcher)
-            .add("converter", converter)
+            .add("dispatcherConfigured", dispatcher != null)
+            .add("customConverter", converter !== StringOrByteArraySqsMessageConverter)
             .add("conversionFailurePolicy", conversionFailurePolicy)
-            .add("failureVisibilityStrategy", failureVisibilityStrategy)
+            .add("failureVisibilityStrategyConfigured", failureVisibilityStrategy != null)
             .toString()
 }

@@ -7,6 +7,7 @@ import aws.sdk.kotlin.services.dynamodb.model.KeySchemaElement
 import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
 import aws.smithy.kotlin.runtime.http.engine.HttpClientEngine
 import aws.smithy.kotlin.runtime.net.url.Url
+import io.bluetape4k.ToStringBuilder
 import io.bluetape4k.aws.kotlin.dynamodb.dynamoDbClientOf
 import io.bluetape4k.aws.ktor.AwsKtorDefaults
 import io.bluetape4k.support.requireNotBlank
@@ -134,4 +135,13 @@ data class DynamoDbKtorTableDefinition(
         keySchema.requireNotEmpty("keySchema")
         attributeDefinitions.requireNotEmpty("attributeDefinitions")
     }
+
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("tableName", tableName)
+            .add("keySchemaCount", keySchema.size)
+            .add("attributeDefinitionsCount", attributeDefinitions.size)
+            .add("readCapacityUnits", readCapacityUnits)
+            .add("writeCapacityUnits", writeCapacityUnits)
+            .toString()
 }

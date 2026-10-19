@@ -198,6 +198,32 @@ data class SqsConsumerRuntimeConfig(
     internal val hasManualDeadLetterQueue: Boolean =
         !deadLetterQueueUrl.isNullOrBlank() || !deadLetterQueueName.isNullOrBlank()
 
+    override fun toString(): String =
+        ToStringBuilder(this)
+            .add("clientConfigured", true)
+            .add("ownsClient", ownsClient)
+            .add("queueUrlConfigured", !queueUrl.isNullOrBlank())
+            .add("queueNameConfigured", !queueName.isNullOrBlank())
+            .add("coroutines", coroutines)
+            .add("maxMessages", maxMessages)
+            .add("waitTimeSeconds", waitTimeSeconds)
+            .add("visibilityTimeoutSeconds", visibilityTimeoutSeconds)
+            .add("deleteOnSuccess", deleteOnSuccess)
+            .add("failureVisibilityTimeoutSeconds", failureVisibilityTimeoutSeconds)
+            .add("deadLetterQueueUrlConfigured", !deadLetterQueueUrl.isNullOrBlank())
+            .add("deadLetterQueueNameConfigured", !deadLetterQueueName.isNullOrBlank())
+            .add("shutdownTimeout", shutdownTimeout)
+            .add("pollBackoff", pollBackoff)
+            .add("visibilityHeartbeatSeconds", visibilityHeartbeatSeconds)
+            .add("dispatcherConfigured", dispatcher != null)
+            .add("customConverter", converter !== StringOrByteArraySqsMessageConverter)
+            .add("conversionFailurePolicy", conversionFailurePolicy)
+            .add("failureVisibilityStrategyConfigured", failureVisibilityStrategy != null)
+            .add("interceptorsCount", interceptors.size)
+            .add("observersCount", observers.size)
+            .add("messageType", messageType.qualifiedName)
+            .toString()
+
     private fun validateDeadLetterQueue() {
         if (deadLetterQueueUrl.isNullOrBlank() && deadLetterQueueName.isNullOrBlank()) {
             return

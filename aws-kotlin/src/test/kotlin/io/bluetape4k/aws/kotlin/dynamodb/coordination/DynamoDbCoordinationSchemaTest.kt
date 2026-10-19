@@ -3,6 +3,7 @@ package io.bluetape4k.aws.kotlin.dynamodb.coordination
 import io.bluetape4k.assertions.assertFailsWith
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeEqualTo
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.logging.KLogging
 import io.bluetape4k.logging.debug
 import org.junit.jupiter.api.Test
@@ -16,6 +17,29 @@ import kotlin.time.Duration.Companion.seconds
 class DynamoDbCoordinationSchemaTest {
 
     companion object: KLogging()
+
+    @Test
+    fun `toString does not invoke custom resolver toString`() {
+        var resolverToStringCalls = 0
+        val resolver = object: DynamoDbCoordinationNameResolver {
+            override fun resolve(
+                namespace: String,
+                kind: DynamoDbCoordinationEntryKind,
+                logicalKey: String,
+            ): String = "$namespace/${kind.name}/$logicalKey"
+
+            override fun toString(): String {
+                resolverToStringCalls++
+                return "resolver-secret"
+            }
+        }
+        val schema = DynamoDbCoordinationSchema(tableName = "coordination", resolver = resolver)
+
+        val rendered = schema.toString()
+
+        rendered shouldNotContain "resolver-secret"
+        resolverToStringCalls shouldBeEqualTo 0
+    }
 
     @Test
     fun `default resolver는 delimiter가 있는 tuple을 injective하게 인코딩한다`() {

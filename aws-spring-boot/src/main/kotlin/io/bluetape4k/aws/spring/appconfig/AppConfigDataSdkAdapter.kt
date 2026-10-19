@@ -39,7 +39,7 @@ internal object AppConfigDataSdkAdapter: KLogging() {
 
     fun sessionClient(bootstrapContext: ConfigurableBootstrapContext): AppConfigDataSessionClient {
         val client = bootstrapContext.get<AppConfigDataClient>().checkNotNull("client")
-        log.debug { "Create AppConfigDataSessonClient. client=$client" }
+        log.debug { "Create AppConfigDataSessonClient. clientType=${client.javaClass.simpleName}" }
         return sessionClient(client)
     }
 

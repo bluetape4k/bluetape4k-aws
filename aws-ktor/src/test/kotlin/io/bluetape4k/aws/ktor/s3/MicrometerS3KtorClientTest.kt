@@ -2,14 +2,18 @@ package io.bluetape4k.aws.ktor.s3
 
 import io.bluetape4k.assertions.shouldBeEqualTo
 import io.bluetape4k.assertions.shouldNotBeNull
+import io.bluetape4k.assertions.shouldNotContain
 import io.bluetape4k.aws.ktor.observability.KtorMetricContract
 import io.bluetape4k.junit5.coroutines.runSuspendIO
 import io.bluetape4k.logging.coroutines.KLoggingChannel
 import io.bluetape4k.support.toUtf8Bytes
+import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.clearMocks
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -46,5 +50,16 @@ class MicrometerS3KtorClientTest {
 
         timer.shouldNotBeNull()
         timer.count() shouldBeEqualTo 1L
+    }
+
+    @Test
+    fun `toString does not invoke injected registry toString`() {
+        val registry = mockk<MeterRegistry>()
+        every { registry.toString() } returns "meter-registry-secret"
+
+        val rendered = MicrometerS3KtorClient(delegate, registry).toString()
+
+        rendered shouldNotContain "meter-registry-secret"
+        verify(exactly = 0) { registry.toString() }
     }
 }
