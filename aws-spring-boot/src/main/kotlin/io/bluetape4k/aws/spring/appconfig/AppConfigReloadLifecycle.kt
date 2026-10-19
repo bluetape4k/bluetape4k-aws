@@ -76,10 +76,15 @@ internal class AppConfigReloadLifecycle(
 
     private val lifecycleLock = ReentrantLock()
     private val stopping = atomic(false)
-    private val futures = ConcurrentHashMap<AppConfigDataPropertySource, ScheduledFuture<*>>()
+    private val futures = ConcurrentHashMap<AppConfigDataPropertySource, ScheduledTask>()
     private val retryAttempts = ConcurrentHashMap<AppConfigDataPropertySource, Int>()
     private var executor: ScheduledThreadPoolExecutor? = null
     private var runtimeClient: AppConfigDataSessionClient? = null
+
+    private class ScheduledTask {
+        @Volatile
+        var future: ScheduledFuture<*>? = null
+    }
 
     @Volatile
     private var running = false
@@ -154,17 +159,22 @@ internal class AppConfigReloadLifecycle(
             if (!stopping.value) {
                 executor?.let { currentExecutor ->
                     val existing = futures[source]
-                    if (existing == null || existing.isDone || existing.isCancelled) {
+                    if (existing == null || existing.future?.let { it.isDone || it.isCancelled } == true) {
                         val safeDelay = delay.coerceAtLeast(Duration.ZERO)
-                        val future = currentExecutor.schedule(
-                            {
-                                futures.remove(source)
-                                pollAndReschedule(source)
-                            },
-                            safeDelay.toNanos(),
-                            TimeUnit.NANOSECONDS,
-                        )
-                        futures[source] = future
+                        val task = ScheduledTask()
+                        futures[source] = task
+                        try {
+                            task.future = currentExecutor.schedule(
+                                {
+                                    if (futures.remove(source, task)) pollAndReschedule(source)
+                                },
+                                safeDelay.toNanos(),
+                                TimeUnit.NANOSECONDS,
+                            )
+                        } catch (error: RuntimeException) {
+                            futures.remove(source, task)
+                            throw error
+                        }
                     }
                 }
             }
@@ -229,7 +239,7 @@ internal class AppConfigReloadLifecycle(
     }
 
     private fun cancelAndShutdown(current: ScheduledThreadPoolExecutor) {
-        futures.values.forEach { it.cancel(false) }
+        futures.values.forEach { it.future?.cancel(false) }
         futures.clear()
         retryAttempts.clear()
         current.shutdown()
